@@ -97,7 +97,7 @@ export default function App() {
     () =>
       notes.getFilteredNotes({
         folderId: effectiveFolderId,
-        excludeFolderIds: !effectiveFolderId && clipsFolderId ? [clipsFolderId] : undefined,
+        excludeFolderIds: !effectiveFolderId && !showTrash && !showArchive && clipsFolderId ? [clipsFolderId] : undefined,
         tag: selectedTag,
         showTrashed: showTrash,
         showArchived: showArchive,
