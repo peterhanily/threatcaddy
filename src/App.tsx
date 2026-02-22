@@ -59,8 +59,9 @@ export default function App() {
 
       try {
         const clipsFolder = await findOrCreateFolder('Clips');
+        let firstNote = null;
         for (const clip of clips) {
-          await notes.createNote({
+          const note = await notes.createNote({
             title: clip.title || clip.content?.substring(0, 80) || 'Clip',
             content: clip.content || '',
             folderId: clipsFolder.id,
@@ -68,9 +69,11 @@ export default function App() {
             sourceTitle: clip.sourceTitle,
             createdAt: clip.createdAt || Date.now(),
           });
+          if (!firstNote) firstNote = note;
         }
         setActiveView('clips');
         setSelectedFolderId(undefined);
+        if (firstNote) setSelectedNoteId(firstNote.id);
       } catch (error) {
         console.error('Failed to import clips:', error);
       }
@@ -121,6 +124,14 @@ export default function App() {
     [notes.notes, selectedNoteId]
   );
 
+  // Auto-deselect when selected note is no longer in filtered list
+  // Fixes stale editor after trash, delete, archive, restore, tag change, etc.
+  useEffect(() => {
+    if (selectedNoteId && filteredNotes.length >= 0 && !filteredNotes.find((n) => n.id === selectedNoteId)) {
+      setSelectedNoteId(undefined);
+    }
+  }, [selectedNoteId, filteredNotes]);
+
   // Note counts (exclude Clips folder from total)
   const noteCounts = useMemo(() => ({
     total: notes.notes.filter((n) => !n.trashed && !n.archived && n.folderId !== clipsFolderId).length,
@@ -129,6 +140,14 @@ export default function App() {
   }), [notes.notes, clipsFolderId]);
 
   // Handlers
+  const handleDeleteFolder = useCallback(async (id: string) => {
+    await deleteFolder(id);
+    if (selectedFolderId === id) {
+      setSelectedFolderId(undefined);
+      setSelectedNoteId(undefined);
+    }
+  }, [deleteFolder, selectedFolderId]);
+
   const handleNewNote = useCallback(async () => {
     if (showQuickCapture) return;
     setShowSettings(false);
@@ -244,7 +263,7 @@ export default function App() {
             showArchive={showArchive}
             onShowArchive={setShowArchive}
             onCreateFolder={(name) => createFolder(name)}
-            onDeleteFolder={deleteFolder}
+            onDeleteFolder={handleDeleteFolder}
             onRenameFolder={(id, name) => updateFolder(id, { name })}
             onOpenSettings={() => { setShowSettings(true); }}
             collapsed={settings.sidebarCollapsed}
@@ -340,7 +359,7 @@ export default function App() {
               showArchive={showArchive}
               onShowArchive={setShowArchive}
               onCreateFolder={(name) => createFolder(name)}
-              onDeleteFolder={deleteFolder}
+              onDeleteFolder={handleDeleteFolder}
               onRenameFolder={(id, name) => updateFolder(id, { name })}
               onOpenSettings={() => { setShowSettings(true); }}
               collapsed={false}

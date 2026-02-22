@@ -128,6 +128,12 @@ async function captureAndSave(text, tab) {
 
   await saveCapture(note);
 
+  // Skip bubble on extension pages and other restricted URLs
+  const url = tab.url || '';
+  if (url.startsWith('chrome-extension://') || url.startsWith('chrome://') || url.startsWith('about:')) {
+    return;
+  }
+
   // Show confirmation bubble via content script
   try {
     // Try to ping existing content script
