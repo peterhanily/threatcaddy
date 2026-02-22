@@ -1,4 +1,5 @@
-import { Plus, Menu, ListChecks, Github, Download, Chrome } from 'lucide-react';
+import { Plus, Menu, ListChecks, Github, Download, Chrome, HardDriveDownload, FolderUp } from 'lucide-react';
+import { useRef } from 'react';
 import { SearchBar } from '../Common/SearchBar';
 import { ThemeToggle } from '../Common/ThemeToggle';
 
@@ -14,6 +15,8 @@ interface HeaderProps {
   onToggleSidebar: () => void;
   onMobileMenuToggle: () => void;
   sidebarCollapsed: boolean;
+  onQuickSave: () => void;
+  onQuickLoad: (file: File) => void;
 }
 
 export function Header({
@@ -28,7 +31,10 @@ export function Header({
   onToggleSidebar,
   onMobileMenuToggle,
   sidebarCollapsed,
+  onQuickSave,
+  onQuickLoad,
 }: HeaderProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   return (
     <header className="h-12 sm:h-14 border-b border-gray-800 flex items-center px-2 sm:px-4 gap-2 sm:gap-3 bg-gray-900/50 backdrop-blur-sm shrink-0">
       {/* Mobile menu button - always visible on mobile */}
@@ -116,6 +122,35 @@ export function Header({
           <ListChecks size={16} />
           <span className="hidden sm:inline">Task</span>
         </button>
+        <button
+          onClick={onQuickSave}
+          className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
+          title="Save Backup (Ctrl+S)"
+          aria-label="Save backup"
+        >
+          <HardDriveDownload size={16} />
+        </button>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
+          title="Load Backup"
+          aria-label="Load backup"
+        >
+          <FolderUp size={16} />
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              onQuickLoad(file);
+              e.target.value = '';
+            }
+          }}
+        />
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </div>
     </header>

@@ -16,6 +16,8 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import type { ViewMode, SortOption, EditorMode, Note, TaskViewMode } from './types';
 import { FileText } from 'lucide-react';
 import { cn } from './lib/utils';
+import { exportJSON, importJSON, downloadFile } from './lib/export';
+import { ConfirmDialog } from './components/Common/ConfirmDialog';
 
 export default function App() {
   const { settings, updateSettings, toggleTheme } = useSettings();
@@ -40,6 +42,7 @@ export default function App() {
   const [showQuickCapture, setShowQuickCapture] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
 
   // Debounce search for filtering performance
   useEffect(() => {
@@ -122,12 +125,31 @@ export default function App() {
     });
   }, []);
 
+  const handleQuickSave = useCallback(async () => {
+    const json = await exportJSON();
+    const date = new Date().toISOString().slice(0, 10);
+    downloadFile(json, `browsernotes-backup-${date}.json`, 'application/json');
+  }, []);
+
+  const handleQuickLoad = useCallback((file: File) => {
+    setPendingImportFile(file);
+  }, []);
+
+  const handleConfirmImport = useCallback(async () => {
+    if (!pendingImportFile) return;
+    const text = await pendingImportFile.text();
+    await importJSON(text);
+    setPendingImportFile(null);
+    notes.reload();
+    tasks.reload();
+  }, [pendingImportFile, notes.reload, tasks.reload]);
+
   // Keyboard shortcuts
   useKeyboardShortcuts({
     onNewNote: handleNewNote,
     onNewTask: handleNewTask,
     onSearch: () => setSearchFocusRequested(true),
-    onSave: () => {/* auto-saves, show feedback */},
+    onSave: handleQuickSave,
     onTogglePreview: handleToggleEditorMode,
     onEscape: () => {
       setShowQuickCapture(false);
@@ -162,6 +184,8 @@ export default function App() {
             onToggleSidebar={() => updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })}
             onMobileMenuToggle={() => setMobileSidebarOpen((prev) => !prev)}
             sidebarCollapsed={settings.sidebarCollapsed}
+            onQuickSave={handleQuickSave}
+            onQuickLoad={handleQuickLoad}
           />
         }
         sidebar={
@@ -292,6 +316,16 @@ export default function App() {
         open={showQuickCapture}
         onClose={() => setShowQuickCapture(false)}
         onCapture={handleQuickCapture}
+      />
+
+      <ConfirmDialog
+        open={!!pendingImportFile}
+        onClose={() => setPendingImportFile(null)}
+        onConfirm={handleConfirmImport}
+        title="Load Backup"
+        message="This will replace all your current notes, tasks, folders, and tags with the backup data. This cannot be undone."
+        confirmLabel="Replace All Data"
+        danger
       />
     </>
   );
