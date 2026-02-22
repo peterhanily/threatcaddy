@@ -28,13 +28,14 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
               onClick={() => setConfirmEmptyTrash(true)}
               className="flex items-center gap-1 px-2 py-1 rounded text-xs text-red-400 hover:bg-gray-800 hover:text-red-300 transition-colors"
               aria-label="Empty trash"
+              title="Empty trash"
             >
               <Trash2 size={12} />
               <span className="hidden sm:inline">Empty</span>
             </button>
           )}
           <div className="relative group">
-            <button className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300" aria-label="Sort notes">
+            <button className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300" aria-label="Sort notes" title="Sort notes">
               <ArrowUpDown size={14} />
             </button>
             <div className="absolute right-0 top-full mt-1 w-36 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 hidden group-hover:block">

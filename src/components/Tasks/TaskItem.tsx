@@ -42,6 +42,7 @@ export function TaskItem({ task, onToggleComplete, onSelect, onDelete, active, d
       <button
         onClick={(e) => { e.stopPropagation(); onToggleComplete(task.id); }}
         className={cn('shrink-0', task.completed ? 'text-green-400' : 'text-gray-500 hover:text-gray-300')}
+        title={task.completed ? 'Mark incomplete' : 'Mark complete'}
       >
         {task.completed ? <CheckCircle2 size={18} /> : <Circle size={18} />}
       </button>
@@ -78,6 +79,7 @@ export function TaskItem({ task, onToggleComplete, onSelect, onDelete, active, d
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
           className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
+          title="Delete task"
         >
           <Trash2 size={12} />
         </button>

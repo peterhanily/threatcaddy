@@ -96,7 +96,7 @@ export function Sidebar({
     <aside className="w-60 border-r border-gray-800 sidebar-glass flex flex-col h-full shrink-0 overflow-hidden" role="navigation" aria-label="Main navigation">
       <div className="flex items-center justify-between p-3 border-b border-gray-800">
         <span className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Navigate</span>
-        <button onClick={onToggleCollapsed} className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300" aria-label="Collapse sidebar">
+        <button onClick={onToggleCollapsed} className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300" aria-label="Collapse sidebar" title="Collapse sidebar">
           <PanelLeftClose size={16} />
         </button>
       </div>
@@ -137,6 +137,7 @@ export function Sidebar({
               onClick={(e) => { e.stopPropagation(); setShowNewFolder(true); }}
               className="ml-auto p-0.5 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
               aria-label="Create folder"
+              title="Create folder"
             >
               <Plus size={14} />
             </button>
@@ -155,10 +156,10 @@ export function Sidebar({
                     aria-label="New folder name"
                     className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
                   />
-                  <button onClick={handleCreateFolder} className="text-accent hover:text-accent-hover" aria-label="Confirm create folder">
+                  <button onClick={handleCreateFolder} className="text-accent hover:text-accent-hover" aria-label="Confirm create folder" title="Create folder">
                     <Plus size={14} />
                   </button>
-                  <button onClick={() => setShowNewFolder(false)} className="text-gray-500 hover:text-gray-300" aria-label="Cancel">
+                  <button onClick={() => setShowNewFolder(false)} className="text-gray-500 hover:text-gray-300" aria-label="Cancel" title="Cancel">
                     <X size={14} />
                   </button>
                 </div>
@@ -188,6 +189,7 @@ export function Sidebar({
                           onClick={(e) => { e.stopPropagation(); setDeletingFolderId(folder.id); }}
                           className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-600 text-gray-500 hover:text-red-400"
                           aria-label={`Delete folder ${folder.name}`}
+                          title="Delete folder"
                         >
                           <X size={12} />
                         </button>

@@ -42,6 +42,7 @@ export function Header({
         onClick={onMobileMenuToggle}
         className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors md:hidden"
         aria-label="Toggle menu"
+        title="Toggle menu"
       >
         <Menu size={20} />
       </button>
@@ -51,6 +52,7 @@ export function Header({
           onClick={onToggleSidebar}
           className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors hidden md:block"
           aria-label="Toggle sidebar"
+          title="Toggle sidebar"
         >
           <Menu size={20} />
         </button>

@@ -134,6 +134,7 @@ export function NoteEditor({
             onClick={onBack}
             className="p-1.5 rounded text-gray-500 hover:text-gray-300 md:hidden"
             aria-label="Back to notes list"
+            title="Back to list"
           >
             <ArrowLeft size={16} />
           </button>
