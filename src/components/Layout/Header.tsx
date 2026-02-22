@@ -2,6 +2,8 @@ import { Plus, Menu, ListChecks, Github, Download, Chrome, HardDriveDownload, Fo
 import { useRef } from 'react';
 import { SearchBar } from '../Common/SearchBar';
 import { ThemeToggle } from '../Common/ThemeToggle';
+import logoSvgRaw from '/logo.svg?raw';
+const logoSvg = `data:image/svg+xml,${encodeURIComponent(logoSvgRaw)}`;
 
 interface HeaderProps {
   search: string;
@@ -59,7 +61,7 @@ export function Header({
       )}
 
       <a href="https://browsernotes.online" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 sm:gap-2.5 mr-1 sm:mr-2 no-underline" title="browsernotes.online">
-        <img src="./logo.svg" alt="BrowserNotes" className="w-6 h-6 sm:w-7 sm:h-7" />
+        <img src={logoSvg} alt="BrowserNotes" className="w-6 h-6 sm:w-7 sm:h-7" />
         <span className="text-lg font-bold tracking-tight hidden sm:inline">
           <span className="text-accent">Browser</span><span className="text-gray-200">Notes</span>
         </span>
