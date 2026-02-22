@@ -85,14 +85,16 @@ export function Header({
           <Download size={15} />
           <span className="hidden lg:inline">Standalone</span>
         </a>
-        <span
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-gray-500 text-xs font-medium cursor-default"
-          title="Chrome extension — coming soon"
+        <a
+          href="https://github.com/peterhanily/browsernotes/tree/main/extension#readme"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800 text-xs font-medium transition-colors"
+          title="Get Chrome Extension"
         >
           <Chrome size={15} />
           <span className="hidden lg:inline">Extension</span>
-          <span className="text-[10px] bg-accent/20 text-accent px-1.5 py-0.5 rounded-full leading-none">Soon</span>
-        </span>
+        </a>
       </div>
 
       <div className="flex items-center gap-1 ml-auto">

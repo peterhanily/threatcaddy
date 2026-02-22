@@ -1,0 +1,138 @@
+// Popup script for BrowserNotes extension
+
+// Load stats and recent captures on popup open
+async function loadStats() {
+  try {
+    const { captures = [] } = await chrome.storage.local.get(['captures']);
+
+    // Total captures
+    document.getElementById('total-captures').textContent = captures.length;
+
+    // This week
+    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const weekCount = captures.filter(c => c.createdAt > oneWeekAgo).length;
+    document.getElementById('week-captures').textContent = weekCount;
+
+    // Recent captures (newest first, max 3)
+    renderRecentCaptures(captures.slice(-3).reverse());
+  } catch (error) {
+    console.error('Failed to load stats:', error);
+  }
+}
+
+function renderRecentCaptures(captures) {
+  const list = document.getElementById('recent-list');
+
+  if (captures.length === 0) {
+    list.innerHTML = '<div class="recent-empty">No captures yet. Select text on any page and right-click to save.</div>';
+    return;
+  }
+
+  list.innerHTML = captures.map(capture => {
+    const date = new Date(capture.createdAt);
+    const timeStr = formatRelativeTime(date);
+    const source = capture.sourceUrl ? new URL(capture.sourceUrl).hostname : '';
+
+    return `
+      <div class="recent-item">
+        <div class="recent-title">${escapeHtml(capture.title || 'Untitled')}</div>
+        <div class="recent-preview">${escapeHtml(capture.content.substring(0, 120))}</div>
+        <div class="recent-meta">
+          <span class="recent-source">${escapeHtml(source)}</span>
+          <span>${timeStr}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function formatRelativeTime(date) {
+  const now = Date.now();
+  const diff = now - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString();
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Save note from quick capture form
+document.getElementById('save-btn').addEventListener('click', async () => {
+  const titleInput = document.getElementById('capture-title');
+  const textInput = document.getElementById('capture-text');
+  const content = textInput.value.trim();
+
+  if (!content) return;
+
+  const title = titleInput.value.trim() || content.substring(0, 50);
+
+  try {
+    await chrome.runtime.sendMessage({
+      type: 'SAVE_NOTE',
+      note: {
+        title,
+        content,
+        sourceUrl: '',
+        sourceTitle: ''
+      }
+    });
+
+    // Show success
+    const successEl = document.getElementById('save-success');
+    successEl.classList.add('show');
+    titleInput.value = '';
+    textInput.value = '';
+
+    setTimeout(() => {
+      successEl.classList.remove('show');
+    }, 2000);
+
+    // Refresh stats
+    loadStats();
+  } catch (error) {
+    console.error('Failed to save note:', error);
+  }
+});
+
+// Open web app
+document.getElementById('open-app-btn').addEventListener('click', () => {
+  chrome.tabs.create({ url: 'https://browsernotes.online' });
+  window.close();
+});
+
+// Export all captures as JSON
+document.getElementById('export-btn').addEventListener('click', async () => {
+  try {
+    const { captures = [] } = await chrome.storage.local.get(['captures']);
+
+    if (captures.length === 0) {
+      return;
+    }
+
+    const blob = new Blob([JSON.stringify(captures, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `browsernotes-captures-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Failed to export:', error);
+  }
+});
+
+// Load stats when popup opens
+loadStats();
+
+// Refresh stats every 2 seconds while popup is open
+setInterval(loadStats, 2000);

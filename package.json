@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "build:extension": "cd extension && npm run build"
   },
   "dependencies": {
     "dexie": "^4.3.0",

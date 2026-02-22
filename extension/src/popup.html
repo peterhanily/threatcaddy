@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BrowserNotes</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 350px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #030712;
+      color: #f9fafb;
+      padding: 16px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #374151;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-logo {
+      width: 28px;
+      height: 28px;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #6366f1;
+    }
+
+    .version {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    section {
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #e5e7eb;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat {
+      background: #1f2937;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #f9fafb;
+    }
+
+    .capture-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .capture-title {
+      width: 100%;
+      padding: 8px 12px;
+      background: #1f2937;
+      color: #f9fafb;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .capture-title:focus {
+      border-color: #6366f1;
+    }
+
+    .capture-title::placeholder {
+      color: #6b7280;
+    }
+
+    .capture-textarea {
+      width: 100%;
+      height: 80px;
+      padding: 8px 12px;
+      background: #1f2937;
+      color: #f9fafb;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .capture-textarea:focus {
+      border-color: #6366f1;
+    }
+
+    .capture-textarea::placeholder {
+      color: #6b7280;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px 16px;
+      background: #6366f1;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 8px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #818cf8;
+    }
+
+    button.secondary {
+      background: #374151;
+      color: #f9fafb;
+    }
+
+    button.secondary:hover {
+      background: #4b5563;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .recent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .recent-item {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 10px 12px;
+      cursor: default;
+    }
+
+    .recent-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f9fafb;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .recent-preview {
+      font-size: 12px;
+      color: #9ca3af;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .recent-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .recent-source {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+
+    .recent-empty {
+      text-align: center;
+      padding: 16px;
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .help-text {
+      font-size: 12px;
+      color: #9ca3af;
+      line-height: 1.5;
+      padding: 12px;
+      background: #1f2937;
+      border-radius: 6px;
+      border: 1px solid #374151;
+    }
+
+    .kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      background: #374151;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #e5e7eb;
+    }
+
+    footer {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid #374151;
+      text-align: center;
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    footer a {
+      color: #818cf8;
+      text-decoration: none;
+      margin: 0 4px;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    .save-success {
+      color: #10b981;
+      font-size: 12px;
+      text-align: center;
+      padding: 6px;
+      display: none;
+    }
+
+    .save-success.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <img src="assets/icon.svg" alt="BrowserNotes" class="header-logo" />
+      <div>
+        <h1>BrowserNotes</h1>
+        <div class="version">v1.0.0</div>
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <h2>Quick Stats</h2>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Captures</div>
+        <div class="stat-value" id="total-captures">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">This Week</div>
+        <div class="stat-value" id="week-captures">0</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Quick Capture</h2>
+    <div class="capture-form">
+      <input
+        type="text"
+        id="capture-title"
+        class="capture-title"
+        placeholder="Note title (optional)"
+      />
+      <textarea
+        id="capture-text"
+        class="capture-textarea"
+        placeholder="Type or paste a note..."
+      ></textarea>
+      <button id="save-btn">Save Note</button>
+      <div class="save-success" id="save-success">Saved!</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Recent Captures</h2>
+    <div class="recent-list" id="recent-list">
+      <div class="recent-empty">No captures yet. Select text on any page and right-click to save.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Quick Actions</h2>
+    <div class="actions">
+      <button id="open-app-btn">Open BrowserNotes</button>
+      <button id="export-btn" class="secondary">Export All Captures</button>
+    </div>
+  </section>
+
+  <section>
+    <div class="help-text">
+      <strong>How to use:</strong><br>
+      Select text and right-click "Save to BrowserNotes"<br>
+      Or use keyboard shortcut: <span class="kbd">Ctrl+Shift+N</span><br>
+      <br>
+      <strong>Privacy:</strong><br>
+      All data stays local on your device. No tracking, no servers.
+    </div>
+  </section>
+
+  <footer>
+    <a href="https://browsernotes.online" target="_blank" rel="noopener noreferrer">browsernotes.online</a>
+    <span style="color: #6b7280;">·</span>
+    <a href="https://github.com/peterhanily/browsernotes" target="_blank" rel="noopener noreferrer">GitHub</a>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

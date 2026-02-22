@@ -274,11 +274,15 @@ export function Sidebar({
             <Download size={16} />
             <span>Download Standalone</span>
           </a>
-          <span className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-gray-500 cursor-default">
+          <a
+            href="https://github.com/peterhanily/browsernotes/tree/main/extension#readme"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors"
+          >
             <Chrome size={16} />
             <span>Extension</span>
-            <span className="text-[10px] bg-accent/20 text-accent px-1.5 py-0.5 rounded-full leading-none ml-auto">Soon</span>
-          </span>
+          </a>
         </div>
       </div>
 
