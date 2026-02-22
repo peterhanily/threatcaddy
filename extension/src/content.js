@@ -162,11 +162,15 @@ function createBubbleElement(noteTitle) {
     <div class="browsernotes-message">Saved to BrowserNotes!</div>
     <div class="browsernotes-title-preview">${escapeHtml(noteTitle)}</div>
 
-    <a class="browsernotes-open-btn" href="https://browsernotes.online" target="_blank" rel="noopener noreferrer" id="browsernotes-open">Open BrowserNotes</a>
+    <button class="browsernotes-open-btn" id="browsernotes-review">Review All Captures</button>
   `;
 
   // Event listeners
   bubble.querySelector('#browsernotes-close').addEventListener('click', hideBubble);
+  bubble.querySelector('#browsernotes-review').addEventListener('click', () => {
+    chrome.runtime.sendMessage({ type: 'OPEN_CLIPS_PAGE' });
+    hideBubble();
+  });
 
   return bubble;
 }

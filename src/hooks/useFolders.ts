@@ -37,6 +37,12 @@ export function useFolders() {
     );
   }, []);
 
+  const findOrCreateFolder = useCallback(async (name: string): Promise<Folder> => {
+    const existing = folders.find((f) => f.name === name);
+    if (existing) return existing;
+    return createFolder(name);
+  }, [folders, createFolder]);
+
   const deleteFolder = useCallback(async (id: string) => {
     await db.folders.delete(id);
     // Unset folderId on notes and tasks in this folder
@@ -52,6 +58,7 @@ export function useFolders() {
   return {
     folders,
     createFolder,
+    findOrCreateFolder,
     updateFolder,
     deleteFolder,
     reload: loadFolders,

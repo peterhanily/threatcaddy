@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BrowserNotes — Clip Review</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #030712;
+      color: #f9fafb;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* Header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #374151;
+    }
+
+    .page-header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #6366f1;
+    }
+
+    .page-header .subtitle {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-card .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #f9fafb;
+    }
+
+    .stat-card .stat-label {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+
+    /* Controls bar */
+    .controls-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+      font-family: inherit;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: #6366f1;
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #818cf8;
+    }
+
+    .btn-secondary {
+      background: #374151;
+      color: #f9fafb;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #4b5563;
+    }
+
+    .btn-danger {
+      background: #991b1b;
+      color: #fca5a5;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: #b91c1c;
+    }
+
+    .controls-bar .spacer {
+      flex: 1;
+    }
+
+    /* Capture cards */
+    .captures-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .capture-card {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .capture-card:hover {
+      border-color: #4b5563;
+    }
+
+    .capture-card.sent {
+      opacity: 0.5;
+    }
+
+    .capture-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .capture-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .capture-date {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .capture-source {
+      font-size: 12px;
+      color: #818cf8;
+      text-decoration: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 500px;
+      display: inline-block;
+    }
+
+    .capture-source:hover {
+      text-decoration: underline;
+    }
+
+    .capture-source-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e5e7eb;
+      margin-bottom: 2px;
+    }
+
+    .capture-delete-btn {
+      background: none;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      color: #9ca3af;
+      cursor: pointer;
+      font-size: 13px;
+      padding: 4px 10px;
+      transition: color 0.2s, border-color 0.2s;
+      font-family: inherit;
+      flex-shrink: 0;
+    }
+
+    .capture-delete-btn:hover {
+      color: #fca5a5;
+      border-color: #991b1b;
+    }
+
+    .capture-content {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #d1d5db;
+      max-height: 150px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #111827;
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+
+    .capture-content::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .capture-content::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .capture-content::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 3px;
+    }
+
+    .sent-badge {
+      font-size: 11px;
+      color: #10b981;
+      background: #064e3b;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 48px 16px;
+      color: #6b7280;
+    }
+
+    .empty-state .empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .empty-state p {
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    /* Settings section */
+    .settings-section {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 16px;
+    }
+
+    .settings-section h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      color: #e5e7eb;
+    }
+
+    .settings-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .settings-row label {
+      font-size: 13px;
+      color: #9ca3af;
+      white-space: nowrap;
+    }
+
+    .settings-row input[type="text"] {
+      flex: 1;
+      padding: 8px 12px;
+      background: #111827;
+      color: #f9fafb;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .settings-row input[type="text"]:focus {
+      border-color: #6366f1;
+    }
+
+    .settings-saved {
+      font-size: 12px;
+      color: #10b981;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .settings-saved.show {
+      display: block;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 420px;
+      width: 90%;
+    }
+
+    .modal h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #f9fafb;
+    }
+
+    .modal p {
+      font-size: 14px;
+      color: #9ca3af;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #065f46;
+      color: #a7f3d0;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 2000;
+      animation: toast-in 0.3s ease-out;
+    }
+
+    .toast.error {
+      background: #991b1b;
+      color: #fca5a5;
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Clip Review</h1>
+        <div class="subtitle">Browse and manage your captured clips</div>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total">0</div>
+        <div class="stat-label">Total Captures</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-week">0</div>
+        <div class="stat-label">This Week</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-unsent">0</div>
+        <div class="stat-label">Unsent</div>
+      </div>
+    </div>
+
+    <div class="controls-bar">
+      <button class="btn btn-primary" id="send-all-btn">Send All to BrowserNotes</button>
+      <button class="btn btn-secondary" id="refresh-btn">Refresh</button>
+      <div class="spacer"></div>
+      <button class="btn btn-danger" id="clear-all-btn">Clear All</button>
+    </div>
+
+    <div class="captures-list" id="captures-list">
+      <div class="empty-state">
+        <div class="empty-icon">&#128203;</div>
+        <p>No captures yet</p>
+        <p style="font-size: 13px;">Select text on any page and right-click "Save to BrowserNotes"</p>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h2>Settings</h2>
+      <div class="settings-row">
+        <label for="target-url">Target URL:</label>
+        <input type="text" id="target-url" placeholder="https://browsernotes.online" />
+        <button class="btn btn-secondary" id="save-settings-btn" style="padding: 8px 14px; font-size: 13px;">Save</button>
+      </div>
+      <div class="settings-saved" id="settings-saved">Settings saved!</div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="modal-overlay hidden" id="modal-overlay">
+    <div class="modal">
+      <h3 id="modal-title">Confirm</h3>
+      <p id="modal-message">Are you sure?</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
+        <button class="btn btn-danger" id="modal-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="clips.js"></script>
+</body>
+</html>

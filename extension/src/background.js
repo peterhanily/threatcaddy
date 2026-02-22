@@ -51,14 +51,71 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.error('Failed to save:', error);
       sendResponse({ success: false, error: error.message });
     });
-    return true; // Keep channel open for async response
+    return true;
   } else if (message.type === 'GET_STATS') {
     getStats().then(stats => {
       sendResponse(stats);
     });
     return true;
+  } else if (message.type === 'OPEN_CLIPS_PAGE') {
+    chrome.tabs.create({ url: chrome.runtime.getURL('pages/clips.html') });
+    sendResponse({ success: true });
+  } else if (message.type === 'SEND_TO_TARGET') {
+    sendToTarget(message.targetUrl, message.captures).then(result => {
+      sendResponse(result);
+    }).catch(error => {
+      sendResponse({ success: false, error: error.message });
+    });
+    return true;
   }
 });
+
+async function sendToTarget(targetUrl, captures) {
+  // Open target URL in a new tab
+  const tab = await chrome.tabs.create({ url: targetUrl, active: true });
+
+  // Wait for the tab to finish loading
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      chrome.tabs.onUpdated.removeListener(listener);
+      reject(new Error('Timed out waiting for page to load'));
+    }, 30000);
+
+    function listener(tabId, changeInfo) {
+      if (tabId === tab.id && changeInfo.status === 'complete') {
+        chrome.tabs.onUpdated.removeListener(listener);
+        clearTimeout(timeout);
+        resolve();
+      }
+    }
+
+    chrome.tabs.onUpdated.addListener(listener);
+
+    // Handle race: tab may already be complete before listener was attached
+    chrome.tabs.get(tab.id).then(currentTab => {
+      if (currentTab.status === 'complete') {
+        chrome.tabs.onUpdated.removeListener(listener);
+        clearTimeout(timeout);
+        resolve();
+      }
+    });
+  });
+
+  // Wait for the web app's React to mount and register its message listener
+  await new Promise(resolve => setTimeout(resolve, 2500));
+
+  // Inject script in MAIN world so postMessage reaches the React app directly
+  await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    world: 'MAIN',
+    func: (clips) => {
+      window.postMessage({ type: 'BROWSERNOTES_IMPORT_CLIPS', clips }, '*');
+    },
+    args: [captures]
+  });
+
+  return { success: true };
+}
 
 async function captureAndSave(text, tab) {
   const title = text.substring(0, 80).replace(/\n/g, ' ');

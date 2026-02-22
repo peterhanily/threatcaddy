@@ -41,6 +41,17 @@ copyFileSync(
   join(outdir, 'content.js')
 );
 
+// Copy pages
+mkdirSync(join(outdir, 'pages'), { recursive: true });
+copyFileSync(
+  join(rootDir, 'src/pages/clips.html'),
+  join(outdir, 'pages/clips.html')
+);
+copyFileSync(
+  join(rootDir, 'src/pages/clips.js'),
+  join(outdir, 'pages/clips.js')
+);
+
 // Copy icon files
 console.log('Copying icons...');
 const iconSizes = [16, 48, 128];

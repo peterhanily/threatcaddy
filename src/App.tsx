@@ -23,7 +23,7 @@ export default function App() {
   const { settings, updateSettings, toggleTheme } = useSettings();
   const notes = useNotes();
   const tasks = useTasks();
-  const { folders, createFolder, updateFolder, deleteFolder } = useFolders();
+  const { folders, createFolder, findOrCreateFolder, updateFolder, deleteFolder } = useFolders();
   const { tags, createTag } = useTags();
 
   // UI state
@@ -49,6 +49,36 @@ export default function App() {
     const timer = setTimeout(() => setDebouncedSearch(search), 200);
     return () => clearTimeout(timer);
   }, [search]);
+
+  // Listen for clip imports from the Chrome extension via postMessage
+  useEffect(() => {
+    const handler = async (event: MessageEvent) => {
+      if (event.data?.type !== 'BROWSERNOTES_IMPORT_CLIPS') return;
+      const clips = event.data.clips;
+      if (!Array.isArray(clips) || clips.length === 0) return;
+
+      try {
+        const clipsFolder = await findOrCreateFolder('Clips');
+        for (const clip of clips) {
+          await notes.createNote({
+            title: clip.title || clip.content?.substring(0, 80) || 'Clip',
+            content: clip.content || '',
+            folderId: clipsFolder.id,
+            sourceUrl: clip.sourceUrl,
+            sourceTitle: clip.sourceTitle,
+            createdAt: clip.createdAt || Date.now(),
+          });
+        }
+        setActiveView('notes');
+        setSelectedFolderId(clipsFolder.id);
+      } catch (error) {
+        console.error('Failed to import clips:', error);
+      }
+    };
+
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [findOrCreateFolder, notes.createNote]);
 
   // Filtered notes
   const filteredNotes = useMemo(

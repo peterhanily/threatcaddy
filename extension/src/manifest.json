@@ -8,7 +8,8 @@
     "contextMenus",
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "tabs"
   ],
 
   "background": {
@@ -29,6 +30,8 @@
     "48": "assets/icon-48.png",
     "128": "assets/icon-128.png"
   },
+
+  "optional_host_permissions": ["*://*/*"],
 
   "commands": {
     "capture-selection": {

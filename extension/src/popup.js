@@ -110,25 +110,10 @@ document.getElementById('open-app-btn').addEventListener('click', () => {
   window.close();
 });
 
-// Export all captures as JSON
-document.getElementById('export-btn').addEventListener('click', async () => {
-  try {
-    const { captures = [] } = await chrome.storage.local.get(['captures']);
-
-    if (captures.length === 0) {
-      return;
-    }
-
-    const blob = new Blob([JSON.stringify(captures, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `browsernotes-captures-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error('Failed to export:', error);
-  }
+// Open clips review page
+document.getElementById('review-btn').addEventListener('click', () => {
+  chrome.runtime.sendMessage({ type: 'OPEN_CLIPS_PAGE' });
+  window.close();
 });
 
 // Load stats when popup opens
