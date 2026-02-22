@@ -69,8 +69,8 @@ export default function App() {
             createdAt: clip.createdAt || Date.now(),
           });
         }
-        setActiveView('notes');
-        setSelectedFolderId(clipsFolder.id);
+        setActiveView('clips');
+        setSelectedFolderId(undefined);
       } catch (error) {
         console.error('Failed to import clips:', error);
       }
@@ -86,19 +86,22 @@ export default function App() {
     [folders]
   );
 
+  // When Clips view is active, show notes from the Clips folder
+  const effectiveFolderId = activeView === 'clips' ? clipsFolderId : selectedFolderId;
+
   // Filtered notes
   const filteredNotes = useMemo(
     () =>
       notes.getFilteredNotes({
-        folderId: selectedFolderId,
-        excludeFolderIds: !selectedFolderId && clipsFolderId ? [clipsFolderId] : undefined,
+        folderId: effectiveFolderId,
+        excludeFolderIds: !effectiveFolderId && clipsFolderId ? [clipsFolderId] : undefined,
         tag: selectedTag,
         showTrashed: showTrash,
         showArchived: showArchive,
         search: debouncedSearch,
         sort,
       }),
-    [notes.getFilteredNotes, selectedFolderId, clipsFolderId, selectedTag, showTrash, showArchive, debouncedSearch, sort]
+    [notes.getFilteredNotes, effectiveFolderId, clipsFolderId, selectedTag, showTrash, showArchive, debouncedSearch, sort]
   );
 
   // Filtered tasks
@@ -197,7 +200,8 @@ export default function App() {
 
   // Determine list title
   let listTitle = 'Notes';
-  if (showTrash) listTitle = 'Trash';
+  if (activeView === 'clips') listTitle = 'Clips';
+  else if (showTrash) listTitle = 'Trash';
   else if (showArchive) listTitle = 'Archive';
   else if (selectedFolderId) {
     const folder = folders.find((f) => f.id === selectedFolderId);
