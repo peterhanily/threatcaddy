@@ -11,7 +11,9 @@ export function AppLayout({ header, sidebar, children }: AppLayoutProps) {
     <div className="h-screen flex flex-col overflow-hidden">
       {header}
       <div className="flex flex-1 overflow-hidden">
-        {sidebar}
+        <div className="hidden md:contents">
+          {sidebar}
+        </div>
         {children}
       </div>
     </div>

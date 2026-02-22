@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette } from 'lucide-react';
+import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette, ArrowLeft } from 'lucide-react';
 import type { Note, Tag, EditorMode } from '../../types';
 import { NOTE_COLORS } from '../../types';
 import { MarkdownPreview } from './MarkdownPreview';
@@ -17,6 +17,7 @@ interface NoteEditorProps {
   onCreateTag: (name: string) => Promise<Tag>;
   editorMode: EditorMode;
   onEditorModeChange: (mode: EditorMode) => void;
+  onBack?: () => void;
 }
 
 export function NoteEditor({
@@ -30,6 +31,7 @@ export function NoteEditor({
   onCreateTag,
   editorMode,
   onEditorModeChange,
+  onBack,
 }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
@@ -43,6 +45,14 @@ export function NoteEditor({
     setTitle(note.title);
     setContent(note.content);
   }, [note.id, note.title, note.content]);
+
+  // Auto-focus title for new/empty notes
+  useEffect(() => {
+    if (note.content === '' && titleRef.current) {
+      titleRef.current.focus();
+      titleRef.current.select();
+    }
+  }, [note.id]);
 
   // Cleanup pending timeouts on unmount
   useEffect(() => {
@@ -116,20 +126,31 @@ export function NoteEditor({
   const showPreview = editorMode === 'preview' || editorMode === 'split';
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full">
       {/* Toolbar */}
       <div className="flex items-center gap-1 px-4 py-2 border-b border-gray-800 shrink-0">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="p-1.5 rounded text-gray-500 hover:text-gray-300 md:hidden"
+            aria-label="Back to notes list"
+          >
+            <ArrowLeft size={16} />
+          </button>
+        )}
         <button
           onClick={() => onEditorModeChange('edit')}
           className={cn('p-1.5 rounded', editorMode === 'edit' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
           title="Edit mode"
+          aria-label="Edit mode"
         >
           <Edit3 size={16} />
         </button>
         <button
           onClick={() => onEditorModeChange('split')}
-          className={cn('p-1.5 rounded', editorMode === 'split' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
+          className={cn('p-1.5 rounded hidden sm:block', editorMode === 'split' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
           title="Split mode"
+          aria-label="Split mode"
         >
           <Columns size={16} />
         </button>
@@ -137,6 +158,7 @@ export function NoteEditor({
           onClick={() => onEditorModeChange('preview')}
           className={cn('p-1.5 rounded', editorMode === 'preview' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
           title="Preview mode"
+          aria-label="Preview mode"
         >
           <Eye size={16} />
         </button>
@@ -147,6 +169,7 @@ export function NoteEditor({
           onClick={() => onTogglePin(note.id)}
           className={cn('p-1.5 rounded', note.pinned ? 'text-yellow-400' : 'text-gray-500 hover:text-gray-300')}
           title={note.pinned ? 'Unpin' : 'Pin'}
+          aria-label={note.pinned ? 'Unpin note' : 'Pin note'}
         >
           <Pin size={16} />
         </button>
@@ -154,6 +177,7 @@ export function NoteEditor({
           onClick={() => onToggleArchive(note.id)}
           className={cn('p-1.5 rounded', note.archived ? 'text-accent' : 'text-gray-500 hover:text-gray-300')}
           title={note.archived ? 'Unarchive' : 'Archive'}
+          aria-label={note.archived ? 'Unarchive note' : 'Archive note'}
         >
           <Archive size={16} />
         </button>
@@ -163,6 +187,7 @@ export function NoteEditor({
             onClick={() => setShowColors(!showColors)}
             className="p-1.5 rounded text-gray-500 hover:text-gray-300"
             title="Color"
+            aria-label="Set note color"
           >
             <Palette size={16} />
           </button>
@@ -177,6 +202,7 @@ export function NoteEditor({
                   )}
                   style={{ backgroundColor: c.value || '#374151' }}
                   title={c.name}
+                  aria-label={`Color: ${c.name}`}
                 />
               ))}
             </div>
@@ -184,12 +210,13 @@ export function NoteEditor({
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          {saved && <span className="text-xs text-green-400">Saved</span>}
+          {saved && <span className="text-xs text-green-400" role="status">Saved</span>}
           {note.trashed ? (
             <button
               onClick={() => onRestore(note.id)}
               className="p-1.5 rounded text-gray-500 hover:text-green-400"
               title="Restore"
+              aria-label="Restore note from trash"
             >
               <RotateCcw size={16} />
             </button>
@@ -198,6 +225,7 @@ export function NoteEditor({
               onClick={() => onTrash(note.id)}
               className="p-1.5 rounded text-gray-500 hover:text-red-400"
               title="Move to trash"
+              aria-label="Move note to trash"
             >
               <Trash2 size={16} />
             </button>
@@ -214,6 +242,7 @@ export function NoteEditor({
           className="w-full bg-transparent text-xl font-bold text-gray-100 placeholder-gray-600 focus:outline-none"
           placeholder="Note title..."
           readOnly={note.trashed}
+          aria-label="Note title"
         />
       </div>
 
@@ -228,6 +257,7 @@ export function NoteEditor({
               className="note-editor flex-1 w-full p-4 bg-transparent text-gray-200 placeholder-gray-600 focus:outline-none text-sm leading-relaxed"
               placeholder="Start writing in markdown..."
               readOnly={note.trashed}
+              aria-label="Note content editor"
             />
           </div>
         )}
@@ -258,9 +288,9 @@ export function NoteEditor({
             <span className="truncate max-w-32">{note.sourceTitle || note.sourceUrl}</span>
           </a>
         )}
-        <span>{stats.words} words, {stats.chars} chars</span>
-        <span>Created {formatFullDate(note.createdAt)}</span>
-        <span>Modified {formatFullDate(note.updatedAt)}</span>
+        <span className="hidden sm:inline">{stats.words} words, {stats.chars} chars</span>
+        <span className="hidden md:inline">Created {formatFullDate(note.createdAt)}</span>
+        <span className="hidden md:inline">Modified {formatFullDate(note.updatedAt)}</span>
       </div>
     </div>
   );

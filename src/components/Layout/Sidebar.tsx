@@ -29,6 +29,7 @@ interface SidebarProps {
   onToggleCollapsed: () => void;
   noteCounts: { total: number; trashed: number; archived: number };
   taskCounts: { todo: number; 'in-progress': number; done: number; total: number };
+  onNavigate?: () => void;
 }
 
 export function Sidebar({
@@ -52,6 +53,7 @@ export function Sidebar({
   onToggleCollapsed,
   noteCounts,
   taskCounts,
+  onNavigate,
 }: SidebarProps) {
   const [foldersOpen, setFoldersOpen] = useState(true);
   const [tagsOpen, setTagsOpen] = useState(true);
@@ -85,36 +87,41 @@ export function Sidebar({
     onShowArchive(false);
   };
 
+  const nav = (fn: () => void) => {
+    fn();
+    onNavigate?.();
+  };
+
   return (
-    <aside className="w-60 border-r border-gray-800 sidebar-glass flex flex-col h-full shrink-0 overflow-hidden">
+    <aside className="w-60 border-r border-gray-800 sidebar-glass flex flex-col h-full shrink-0 overflow-hidden" role="navigation" aria-label="Main navigation">
       <div className="flex items-center justify-between p-3 border-b border-gray-800">
         <span className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Navigate</span>
-        <button onClick={onToggleCollapsed} className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300">
+        <button onClick={onToggleCollapsed} className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300" aria-label="Collapse sidebar">
           <PanelLeftClose size={16} />
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-2 space-y-1">
+      <nav className="flex-1 overflow-y-auto p-2 space-y-1" aria-label="Views">
         {/* Views */}
         <SidebarItem
           icon={<FileText size={18} />}
           label="Notes"
           count={noteCounts.total}
           active={activeView === 'notes' && !showTrash && !showArchive && !selectedFolderId && !selectedTag}
-          onClick={() => { onViewChange('notes'); clearFilters(); }}
+          onClick={() => nav(() => { onViewChange('notes'); clearFilters(); })}
         />
         <SidebarItem
           icon={<ListChecks size={18} />}
           label="Tasks"
           count={taskCounts.total}
           active={activeView === 'tasks' && !selectedFolderId && !selectedTag}
-          onClick={() => { onViewChange('tasks'); clearFilters(); }}
+          onClick={() => nav(() => { onViewChange('tasks'); clearFilters(); })}
         />
         <SidebarItem
           icon={<Paperclip size={18} />}
           label="Clips"
           active={activeView === 'clips'}
-          onClick={() => { onViewChange('clips'); clearFilters(); }}
+          onClick={() => nav(() => { onViewChange('clips'); clearFilters(); })}
         />
 
         {/* Folders */}
@@ -122,12 +129,14 @@ export function Sidebar({
           <button
             onClick={() => setFoldersOpen(!foldersOpen)}
             className="flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300"
+            aria-expanded={foldersOpen}
           >
             {foldersOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             Folders
             <button
               onClick={(e) => { e.stopPropagation(); setShowNewFolder(true); }}
               className="ml-auto p-0.5 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
+              aria-label="Create folder"
             >
               <Plus size={14} />
             </button>
@@ -143,12 +152,13 @@ export function Sidebar({
                     onChange={(e) => setNewFolderName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleCreateFolder(); if (e.key === 'Escape') setShowNewFolder(false); }}
                     placeholder="Folder name"
+                    aria-label="New folder name"
                     className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
                   />
-                  <button onClick={handleCreateFolder} className="text-accent hover:text-accent-hover">
+                  <button onClick={handleCreateFolder} className="text-accent hover:text-accent-hover" aria-label="Confirm create folder">
                     <Plus size={14} />
                   </button>
-                  <button onClick={() => setShowNewFolder(false)} className="text-gray-500 hover:text-gray-300">
+                  <button onClick={() => setShowNewFolder(false)} className="text-gray-500 hover:text-gray-300" aria-label="Cancel">
                     <X size={14} />
                   </button>
                 </div>
@@ -162,6 +172,7 @@ export function Sidebar({
                         value={editFolderName}
                         onChange={(e) => setEditFolderName(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleRenameFolder(folder.id); if (e.key === 'Escape') setEditingFolder(null); }}
+                        aria-label="Rename folder"
                         className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
                       />
                     </div>
@@ -170,12 +181,13 @@ export function Sidebar({
                       icon={<FolderOpen size={16} style={{ color: folder.color }} />}
                       label={folder.name}
                       active={selectedFolderId === folder.id}
-                      onClick={() => { onFolderSelect(folder.id); onTagSelect(undefined); onShowTrash(false); onShowArchive(false); }}
+                      onClick={() => nav(() => { onFolderSelect(folder.id); onTagSelect(undefined); onShowTrash(false); onShowArchive(false); })}
                       onDoubleClick={() => { setEditingFolder(folder.id); setEditFolderName(folder.name); }}
                       actions={
                         <button
                           onClick={(e) => { e.stopPropagation(); setDeletingFolderId(folder.id); }}
                           className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-600 text-gray-500 hover:text-red-400"
+                          aria-label={`Delete folder ${folder.name}`}
                         >
                           <X size={12} />
                         </button>
@@ -193,6 +205,7 @@ export function Sidebar({
           <button
             onClick={() => setTagsOpen(!tagsOpen)}
             className="flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300"
+            aria-expanded={tagsOpen}
           >
             {tagsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             Tags
@@ -206,7 +219,7 @@ export function Sidebar({
                   icon={<Tag size={14} style={{ color: tag.color }} />}
                   label={`#${tag.name}`}
                   active={selectedTag === tag.name}
-                  onClick={() => { onTagSelect(tag.name); onFolderSelect(undefined); onShowTrash(false); onShowArchive(false); }}
+                  onClick={() => nav(() => { onTagSelect(tag.name); onFolderSelect(undefined); onShowTrash(false); onShowArchive(false); })}
                 />
               ))}
               {tags.length === 0 && (
@@ -223,14 +236,14 @@ export function Sidebar({
             label="Archive"
             count={noteCounts.archived}
             active={showArchive}
-            onClick={() => { onShowArchive(!showArchive); onShowTrash(false); onFolderSelect(undefined); onTagSelect(undefined); onViewChange('notes'); }}
+            onClick={() => nav(() => { onShowArchive(!showArchive); onShowTrash(false); onFolderSelect(undefined); onTagSelect(undefined); onViewChange('notes'); })}
           />
           <SidebarItem
             icon={<Trash2 size={16} />}
             label="Trash"
             count={noteCounts.trashed}
             active={showTrash}
-            onClick={() => { onShowTrash(!showTrash); onShowArchive(false); onFolderSelect(undefined); onTagSelect(undefined); onViewChange('notes'); }}
+            onClick={() => nav(() => { onShowTrash(!showTrash); onShowArchive(false); onFolderSelect(undefined); onTagSelect(undefined); onViewChange('notes'); })}
           />
         </div>
       </nav>
@@ -239,7 +252,7 @@ export function Sidebar({
         <SidebarItem
           icon={<Settings size={16} />}
           label="Settings"
-          onClick={onOpenSettings}
+          onClick={() => nav(onOpenSettings)}
         />
       </div>
 

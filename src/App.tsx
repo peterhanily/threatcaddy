@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { AppLayout } from './components/Layout/AppLayout';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
@@ -15,6 +15,7 @@ import { useSettings } from './hooks/useSettings';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import type { ViewMode, SortOption, EditorMode, Note, TaskViewMode } from './types';
 import { FileText } from 'lucide-react';
+import { cn } from './lib/utils';
 
 export default function App() {
   const { settings, updateSettings, toggleTheme } = useSettings();
@@ -31,12 +32,20 @@ export default function App() {
   const [showTrash, setShowTrash] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [searchFocusRequested, setSearchFocusRequested] = useState(false);
   const [sort, setSort] = useState<SortOption>('updatedAt');
   const [editorMode, setEditorMode] = useState<EditorMode>(settings.editorMode);
   const [taskViewMode, setTaskViewMode] = useState<TaskViewMode>(settings.taskViewMode);
   const [showQuickCapture, setShowQuickCapture] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Debounce search for filtering performance
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 200);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // Filtered notes
   const filteredNotes = useMemo(
@@ -46,10 +55,10 @@ export default function App() {
         tag: selectedTag,
         showTrashed: showTrash,
         showArchived: showArchive,
-        search,
+        search: debouncedSearch,
         sort,
       }),
-    [notes.getFilteredNotes, selectedFolderId, selectedTag, showTrash, showArchive, search, sort]
+    [notes.getFilteredNotes, selectedFolderId, selectedTag, showTrash, showArchive, debouncedSearch, sort]
   );
 
   // Filtered tasks
@@ -58,9 +67,9 @@ export default function App() {
       tasks.getFilteredTasks({
         folderId: selectedFolderId,
         tag: selectedTag,
-        search,
+        search: debouncedSearch,
       }),
-    [tasks.getFilteredTasks, selectedFolderId, selectedTag, search]
+    [tasks.getFilteredTasks, selectedFolderId, selectedTag, debouncedSearch]
   );
 
   // Selected note
@@ -123,6 +132,7 @@ export default function App() {
     onEscape: () => {
       setShowQuickCapture(false);
       setShowSettings(false);
+      setMobileSidebarOpen(false);
     },
   });
 
@@ -150,6 +160,7 @@ export default function App() {
             onNewNote={() => setShowQuickCapture(true)}
             onNewTask={handleNewTask}
             onToggleSidebar={() => updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })}
+            onMobileMenuToggle={() => setMobileSidebarOpen((prev) => !prev)}
             sidebarCollapsed={settings.sidebarCollapsed}
           />
         }
@@ -200,17 +211,21 @@ export default function App() {
             getTasksByStatus={(status) => tasks.getTasksByStatus(status, selectedFolderId)}
           />
         ) : (
-          /* Notes & Clips view */
+          /* Notes & Clips view — responsive: list OR editor on mobile */
           <div className="flex flex-1 overflow-hidden">
-            <NoteList
-              notes={filteredNotes}
-              selectedId={selectedNoteId}
-              onSelect={setSelectedNoteId}
-              sort={sort}
-              onSortChange={setSort}
-              title={listTitle}
-            />
-            <div className="flex-1 overflow-hidden">
+            <div className={cn(selectedNote ? 'hidden md:block' : '')}>
+              <NoteList
+                notes={filteredNotes}
+                selectedId={selectedNoteId}
+                onSelect={setSelectedNoteId}
+                sort={sort}
+                onSortChange={setSort}
+                title={listTitle}
+                showTrash={showTrash}
+                onEmptyTrash={notes.emptyTrash}
+              />
+            </div>
+            <div className={cn('flex-1 overflow-hidden', !selectedNote && 'hidden md:block')}>
               {selectedNote ? (
                 <NoteEditor
                   note={selectedNote}
@@ -223,6 +238,7 @@ export default function App() {
                   onCreateTag={createTag}
                   editorMode={editorMode}
                   onEditorModeChange={setEditorMode}
+                  onBack={() => setSelectedNoteId(undefined)}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-gray-600">
@@ -235,6 +251,38 @@ export default function App() {
           </div>
         )}
       </AppLayout>
+
+      {/* Mobile sidebar overlay */}
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileSidebarOpen(false)} />
+          <div className="relative h-full w-60 shrink-0" onClick={(e) => e.stopPropagation()}>
+            <Sidebar
+              activeView={activeView}
+              onViewChange={(v) => { setActiveView(v); setShowSettings(false); }}
+              folders={folders}
+              tags={tags}
+              selectedFolderId={selectedFolderId}
+              onFolderSelect={setSelectedFolderId}
+              selectedTag={selectedTag}
+              onTagSelect={setSelectedTag}
+              showTrash={showTrash}
+              onShowTrash={setShowTrash}
+              showArchive={showArchive}
+              onShowArchive={setShowArchive}
+              onCreateFolder={(name) => createFolder(name)}
+              onDeleteFolder={deleteFolder}
+              onRenameFolder={(id, name) => updateFolder(id, { name })}
+              onOpenSettings={() => { setShowSettings(true); }}
+              collapsed={false}
+              onToggleCollapsed={() => setMobileSidebarOpen(false)}
+              noteCounts={noteCounts}
+              taskCounts={tasks.taskCounts}
+              onNavigate={() => setMobileSidebarOpen(false)}
+            />
+          </div>
+        </div>
+      )}
 
       <QuickCapture
         open={showQuickCapture}

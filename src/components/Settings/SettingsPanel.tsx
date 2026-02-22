@@ -1,3 +1,4 @@
+import { Github, Download } from 'lucide-react';
 import type { Settings, Note } from '../../types';
 import { ExportImport } from './ExportImport';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
@@ -76,6 +77,25 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
           All data stored locally in your browser using IndexedDB.
         </p>
         <p className="text-xs text-gray-600">No server. No tracking. Your notes are yours.</p>
+        <div className="flex items-center gap-4 pt-2">
+          <a
+            href="https://github.com/peterhanily/browsernotes"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover transition-colors"
+          >
+            <Github size={16} />
+            GitHub
+          </a>
+          <a
+            href="./browsernotes-standalone.html"
+            download
+            className="flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover transition-colors"
+          >
+            <Download size={16} />
+            Download Standalone
+          </a>
+        </div>
       </div>
     </div>
   );

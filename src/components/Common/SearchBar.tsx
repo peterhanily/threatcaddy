@@ -27,6 +27,7 @@ export function SearchBar({ value, onChange, focusRequested, onFocusHandled }: S
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search notes & tasks..."
+        aria-label="Search notes and tasks"
         className="w-full pl-9 pr-8 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-sm"
       />
       {value && (

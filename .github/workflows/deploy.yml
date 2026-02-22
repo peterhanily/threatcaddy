@@ -33,6 +33,10 @@ jobs:
 
       - run: pnpm build
 
+      - run: pnpm build:single
+
+      - run: cp dist-single/index.html dist/browsernotes-standalone.html
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

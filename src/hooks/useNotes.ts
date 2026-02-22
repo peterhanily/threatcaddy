@@ -132,6 +132,13 @@ export function useNotes() {
     [notes]
   );
 
+  const emptyTrash = useCallback(async () => {
+    const trashedIds = notes.filter((n) => n.trashed).map((n) => n.id);
+    if (trashedIds.length === 0) return;
+    await db.notes.bulkDelete(trashedIds);
+    setNotes((prev) => prev.filter((n) => !n.trashed));
+  }, [notes]);
+
   return {
     notes,
     loading,
@@ -143,6 +150,7 @@ export function useNotes() {
     togglePin,
     toggleArchive,
     getFilteredNotes,
+    emptyTrash,
     reload: loadNotes,
   };
 }

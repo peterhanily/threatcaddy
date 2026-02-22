@@ -46,14 +46,14 @@ export function KanbanBoard({ getTasksByStatus, onToggleComplete, onSelect, onDe
   };
 
   return (
-    <div className="flex gap-4 h-full overflow-x-auto pb-4">
+    <div className="flex flex-col md:flex-row gap-4 h-full overflow-x-auto pb-4" role="region" aria-label="Kanban board">
       {COLUMNS.map(({ status, label, color }) => {
         const tasks = getTasksByStatus(status);
         return (
           <div
             key={status}
             className={cn(
-              'flex-1 min-w-64 flex flex-col rounded-xl border transition-colors',
+              'flex-1 min-w-0 md:min-w-64 flex flex-col rounded-xl border transition-colors',
               dragOverColumn === status
                 ? 'border-accent bg-accent/5'
                 : 'border-gray-800 bg-gray-900/50'
@@ -61,9 +61,11 @@ export function KanbanBoard({ getTasksByStatus, onToggleComplete, onSelect, onDe
             onDragOver={handleDragOver(status)}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop(status)}
+            role="group"
+            aria-label={`${label} column, ${tasks.length} tasks`}
           >
             <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-800">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} aria-hidden="true" />
               <span className="text-sm font-medium text-gray-300">{label}</span>
               <span className="text-xs text-gray-500 ml-auto">{tasks.length}</span>
             </div>
