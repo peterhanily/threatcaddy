@@ -77,6 +77,7 @@ export function useNotes() {
   const getFilteredNotes = useCallback(
     (opts: {
       folderId?: string;
+      excludeFolderIds?: string[];
       tag?: string;
       showTrashed?: boolean;
       showArchived?: boolean;
@@ -96,6 +97,8 @@ export function useNotes() {
 
       if (opts.folderId) {
         filtered = filtered.filter((n) => n.folderId === opts.folderId);
+      } else if (opts.excludeFolderIds && opts.excludeFolderIds.length > 0) {
+        filtered = filtered.filter((n) => !opts.excludeFolderIds!.includes(n.folderId!));
       }
 
       if (opts.tag) {

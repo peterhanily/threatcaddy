@@ -80,18 +80,25 @@ export default function App() {
     return () => window.removeEventListener('message', handler);
   }, [findOrCreateFolder, notes.createNote]);
 
+  // Hide Clips folder from the main "All Notes" view
+  const clipsFolderId = useMemo(
+    () => folders.find((f) => f.name === 'Clips')?.id,
+    [folders]
+  );
+
   // Filtered notes
   const filteredNotes = useMemo(
     () =>
       notes.getFilteredNotes({
         folderId: selectedFolderId,
+        excludeFolderIds: !selectedFolderId && clipsFolderId ? [clipsFolderId] : undefined,
         tag: selectedTag,
         showTrashed: showTrash,
         showArchived: showArchive,
         search: debouncedSearch,
         sort,
       }),
-    [notes.getFilteredNotes, selectedFolderId, selectedTag, showTrash, showArchive, debouncedSearch, sort]
+    [notes.getFilteredNotes, selectedFolderId, clipsFolderId, selectedTag, showTrash, showArchive, debouncedSearch, sort]
   );
 
   // Filtered tasks
@@ -111,12 +118,12 @@ export default function App() {
     [notes.notes, selectedNoteId]
   );
 
-  // Note counts
+  // Note counts (exclude Clips folder from total)
   const noteCounts = useMemo(() => ({
-    total: notes.notes.filter((n) => !n.trashed && !n.archived).length,
+    total: notes.notes.filter((n) => !n.trashed && !n.archived && n.folderId !== clipsFolderId).length,
     trashed: notes.notes.filter((n) => n.trashed).length,
     archived: notes.notes.filter((n) => n.archived && !n.trashed).length,
-  }), [notes.notes]);
+  }), [notes.notes, clipsFolderId]);
 
   // Handlers
   const handleNewNote = useCallback(async () => {
