@@ -2,8 +2,8 @@
 
 const MAX_CAPTURES = 500;
 
-// Injected into the page to capture selection as markdown
-function getSelectionAsMarkdown() {
+// Injected into the page to capture selection as markdown with inline images
+async function getSelectionAsMarkdown() {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return '';
 
@@ -25,28 +25,75 @@ function getSelectionAsMarkdown() {
     try { a.href = new URL(a.getAttribute('href'), document.baseURI).href; } catch {}
   });
 
-  function walk(node, ctx) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      return node.textContent;
+  // Convert images to inline base64 data URIs for offline use
+  function drawToCanvas(img) {
+    let w = img.naturalWidth, h = img.naturalHeight;
+    const MAX = 1200;
+    if (w > MAX || h > MAX) {
+      const s = MAX / Math.max(w, h);
+      w = Math.round(w * s);
+      h = Math.round(h * s);
     }
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    return c.toDataURL('image/webp', 0.85);
+  }
+
+  function imgToDataUri(src) {
+    return new Promise(resolve => {
+      const timer = setTimeout(() => resolve(null), 5000);
+
+      // Try 1: draw the page's already-loaded image (works for same-origin)
+      for (const pi of document.querySelectorAll('img')) {
+        if (pi.src === src && pi.complete && pi.naturalWidth > 0) {
+          try { clearTimeout(timer); return resolve(drawToCanvas(pi)); } catch {}
+          break;
+        }
+      }
+
+      // Try 2: fetch as blob (works for CORS-enabled CDNs)
+      fetch(src, { mode: 'cors' })
+        .then(r => { if (!r.ok) throw 0; return r.blob(); })
+        .then(blob => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+              try { clearTimeout(timer); resolve(drawToCanvas(img)); }
+              catch { clearTimeout(timer); resolve(reader.result); }
+            };
+            img.onerror = () => { clearTimeout(timer); resolve(reader.result); };
+            img.src = reader.result;
+          };
+          reader.onerror = () => { clearTimeout(timer); resolve(null); };
+          reader.readAsDataURL(blob);
+        })
+        .catch(() => { clearTimeout(timer); resolve(null); });
+    });
+  }
+
+  await Promise.all(Array.from(div.querySelectorAll('img[src]')).map(async imgEl => {
+    const src = imgEl.getAttribute('src');
+    if (!src || src.startsWith('data:')) return;
+    const dataUri = await imgToDataUri(src);
+    if (dataUri) imgEl.setAttribute('src', dataUri);
+  }));
+
+  function walk(node) {
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent;
     if (node.nodeType !== Node.ELEMENT_NODE) return '';
 
     const tag = node.tagName.toLowerCase();
-
-    // Skip script/style
     if (tag === 'script' || tag === 'style') return '';
 
-    // Images
     if (tag === 'img') {
       const src = node.getAttribute('src') || '';
-      // Skip large data URIs
-      if (src.startsWith('data:') && src.length > 100000) return '';
       const alt = node.getAttribute('alt') || '';
       return `![${alt}](${src})`;
     }
 
-    // Recurse into children
-    const inner = Array.from(node.childNodes).map(c => walk(c, ctx)).join('');
+    const inner = Array.from(node.childNodes).map(c => walk(c)).join('');
 
     switch (tag) {
       case 'a': {
@@ -72,7 +119,6 @@ function getSelectionAsMarkdown() {
         return `\n\n\`\`\`\n${text}\n\`\`\`\n\n`;
       }
       case 'code':
-        // Only inline code — <pre><code> handled above
         if (node.parentElement && node.parentElement.tagName.toLowerCase() === 'pre') return inner;
         return `\`${inner}\``;
       case 'blockquote':
@@ -91,7 +137,7 @@ function getSelectionAsMarkdown() {
     }
   }
 
-  let md = walk(div, {});
+  let md = walk(div);
   // Clean up excessive newlines
   md = md.replace(/\n{3,}/g, '\n\n').trim();
   return md || sel.toString();
