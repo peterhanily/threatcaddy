@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, X, FileText, Paperclip, ListChecks, Save, Trash2 } from 'lucide-react';
+import { Search, X, FileText, Paperclip, ListChecks, Save } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { formatDate } from '../../lib/utils';
 import { unifiedSearch, type SearchMode, type SearchResult, type SearchResultType } from '../../lib/search';
