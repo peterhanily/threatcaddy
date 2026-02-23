@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, RefreshCw, ChevronDown, ChevronRight, Shield, Download } from 'lucide-react';
-import type { Note, IOCEntry, IOCType } from '../../types';
+import type { IOCTarget, IOCEntry, IOCType, IOCAnalysis } from '../../types';
 import { IOC_TYPE_LABELS } from '../../types';
 import { useIOCAnalysis } from '../../hooks/useIOCAnalysis';
 import { IOCItem } from './IOCItem';
@@ -9,16 +9,16 @@ import { formatIOCsJSON, formatIOCsCSV, slugify } from '../../lib/ioc-export';
 import { downloadFile } from '../../lib/export';
 
 interface IOCPanelProps {
-  note: Note;
-  onUpdate: (id: string, updates: Partial<Note>) => void;
+  item: IOCTarget;
+  onUpdate: (id: string, updates: { iocAnalysis?: IOCAnalysis; iocTypes?: IOCType[] }) => void;
   onClose: () => void;
 }
 
-export function IOCPanel({ note, onUpdate, onClose }: IOCPanelProps) {
+export function IOCPanel({ item, onUpdate, onClose }: IOCPanelProps) {
   const {
     analysis,
     analyzing,
-    analyzeNote,
+    analyze,
     updateIOC,
     updateSummary,
     dismissIOC,
@@ -26,7 +26,7 @@ export function IOCPanel({ note, onUpdate, onClose }: IOCPanelProps) {
     iocCount,
     activeIOCs,
     dismissedIOCs,
-  } = useIOCAnalysis({ note, onUpdate });
+  } = useIOCAnalysis({ item, onUpdate });
 
   const [collapsedTypes, setCollapsedTypes] = useState<Set<IOCType>>(new Set());
   const [showDismissed, setShowDismissed] = useState(false);
@@ -47,8 +47,8 @@ export function IOCPanel({ note, onUpdate, onClose }: IOCPanelProps) {
   const handleExport = (format: 'json' | 'csv') => {
     setShowExportMenu(false);
     if (!analysis || activeIOCs.length === 0) return;
-    const entries = [{ clipTitle: note.title, sourceUrl: note.sourceUrl, iocs: analysis.iocs }];
-    const slug = slugify(note.title) || 'clip';
+    const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: analysis.iocs }];
+    const slug = slugify(item.title) || 'item';
     if (format === 'json') {
       downloadFile(formatIOCsJSON(entries), `iocs-${slug}.json`, 'application/json');
     } else {
@@ -83,7 +83,7 @@ export function IOCPanel({ note, onUpdate, onClose }: IOCPanelProps) {
           <span className="text-[10px] bg-accent/20 text-accent px-1.5 py-0.5 rounded-full">{iocCount}</span>
         )}
         <button
-          onClick={analyzeNote}
+          onClick={analyze}
           disabled={analyzing}
           className={cn('p-1 rounded text-gray-500 hover:text-gray-300', analyzing && 'animate-spin')}
           title="Re-analyze"
@@ -126,7 +126,7 @@ export function IOCPanel({ note, onUpdate, onClose }: IOCPanelProps) {
             <Shield size={32} className="mb-2" />
             <p className="text-sm">No analysis yet</p>
             <button
-              onClick={analyzeNote}
+              onClick={analyze}
               className="mt-2 text-xs text-accent hover:text-accent-hover"
             >
               Analyze now

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette, ArrowLeft, Shield, Upload } from 'lucide-react';
 import type { Note, Tag, EditorMode, Settings } from '../../types';
 import { NOTE_COLORS } from '../../types';
+import { extractIOCs, mergeIOCAnalysis } from '../../lib/ioc-extractor';
 import { MarkdownPreview } from './MarkdownPreview';
 import { TagInput } from '../Common/TagInput';
 import { IOCPanel } from '../Analysis/IOCPanel';
@@ -39,7 +40,7 @@ export function NoteEditor({
   clipsFolderId,
   settings: externalSettings,
 }: NoteEditorProps) {
-  const hasIOCData = !!(note.iocAnalysis?.iocs.length);
+  const iocCount = note.iocAnalysis?.iocs.filter((i) => !i.dismissed).length ?? 0;
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
   const [showColors, setShowColors] = useState(false);
@@ -220,27 +221,33 @@ export function NoteEditor({
           )}
         </div>
 
-        {hasIOCData && (
-          <button
-            onClick={() => setShowIOCPanel(!showIOCPanel)}
-            className={cn('p-1.5 rounded hidden md:flex items-center gap-1', showIOCPanel ? 'bg-gray-700 text-accent' : 'text-gray-500 hover:text-gray-300')}
-            title="IOC Analysis"
-            aria-label="Toggle IOC analysis panel"
-          >
-            <Shield size={16} />
-            {(note.iocAnalysis?.iocs.filter((i) => !i.dismissed).length ?? 0) > 0 && (
-              <span className="text-[10px] bg-accent/20 text-accent px-1 rounded-full">
-                {note.iocAnalysis!.iocs.filter((i) => !i.dismissed).length}
-              </span>
-            )}
-          </button>
-        )}
+        <button
+          onClick={() => {
+            if (!note.iocAnalysis && !showIOCPanel) {
+              const fresh = extractIOCs(content);
+              const merged = mergeIOCAnalysis(note.iocAnalysis, fresh);
+              const iocTypes = [...new Set(merged.iocs.filter((i) => !i.dismissed).map((i) => i.type))];
+              onUpdate(note.id, { iocAnalysis: merged, iocTypes });
+            }
+            setShowIOCPanel(!showIOCPanel);
+          }}
+          className={cn('p-1.5 rounded hidden md:flex items-center gap-1', showIOCPanel ? 'bg-gray-700 text-accent' : 'text-gray-500 hover:text-gray-300')}
+          title="IOC Analysis"
+          aria-label="Toggle IOC analysis panel"
+        >
+          <Shield size={16} />
+          {iocCount > 0 && (
+            <span className="text-[10px] bg-accent/20 text-accent px-1 rounded-full">
+              {iocCount}
+            </span>
+          )}
+        </button>
 
         {externalSettings?.ociWritePAR && (
           <div className="relative">
             <button
               onClick={() => {
-                if (note.iocAnalysis && hasIOCData) {
+                if (note.iocAnalysis && iocCount > 0) {
                   setShowShareMenu(!showShareMenu);
                 } else {
                   oci.shareNote(note, clipsFolderId);
@@ -335,10 +342,10 @@ export function NoteEditor({
             </div>
           )}
         </div>
-        {showIOCPanel && hasIOCData && (
+        {showIOCPanel && (
           <IOCPanel
-            note={note}
-            onUpdate={onUpdate}
+            item={{ id: note.id, title: note.title, content, sourceUrl: note.sourceUrl, iocAnalysis: note.iocAnalysis, iocTypes: note.iocTypes }}
+            onUpdate={(id, updates) => onUpdate(id, updates)}
             onClose={() => setShowIOCPanel(false)}
           />
         )}

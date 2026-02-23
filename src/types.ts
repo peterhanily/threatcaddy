@@ -17,6 +17,21 @@ export interface Note {
   updatedAt: number;
 }
 
+export interface IOCTarget {
+  id: string;
+  title: string;
+  content: string;
+  sourceUrl?: string;
+  iocAnalysis?: IOCAnalysis;
+  iocTypes?: IOCType[];
+}
+
+export interface TaskComment {
+  id: string;
+  text: string;
+  createdAt: number;
+}
+
 export type Priority = 'none' | 'low' | 'medium' | 'high';
 export type TaskStatus = 'todo' | 'in-progress' | 'done';
 
@@ -31,6 +46,9 @@ export interface Task {
   tags: string[];
   status: TaskStatus;
   order: number;
+  iocAnalysis?: IOCAnalysis;
+  iocTypes?: IOCType[];
+  comments?: TaskComment[];
   createdAt: number;
   updatedAt: number;
   completedAt?: number;

@@ -1,28 +1,28 @@
 import { useState, useCallback, useMemo } from 'react';
-import type { Note, IOCEntry, IOCAnalysis } from '../types';
+import type { IOCTarget, IOCEntry, IOCAnalysis, IOCType } from '../types';
 import { extractIOCs, mergeIOCAnalysis } from '../lib/ioc-extractor';
 
 interface UseIOCAnalysisOptions {
-  note: Note;
-  onUpdate: (id: string, updates: Partial<Note>) => void;
+  item: IOCTarget;
+  onUpdate: (id: string, updates: { iocAnalysis?: IOCAnalysis; iocTypes?: IOCType[] }) => void;
 }
 
-export function useIOCAnalysis({ note, onUpdate }: UseIOCAnalysisOptions) {
+export function useIOCAnalysis({ item, onUpdate }: UseIOCAnalysisOptions) {
   const [analyzing, setAnalyzing] = useState(false);
 
-  const analysis = note.iocAnalysis;
+  const analysis = item.iocAnalysis;
 
-  const analyzeNote = useCallback(() => {
+  const analyze = useCallback(() => {
     setAnalyzing(true);
     try {
-      const fresh = extractIOCs(note.content);
-      const merged = mergeIOCAnalysis(note.iocAnalysis, fresh);
+      const fresh = extractIOCs(item.content);
+      const merged = mergeIOCAnalysis(item.iocAnalysis, fresh);
       const iocTypes = [...new Set(merged.iocs.filter((i) => !i.dismissed).map((i) => i.type))];
-      onUpdate(note.id, { iocAnalysis: merged, iocTypes });
+      onUpdate(item.id, { iocAnalysis: merged, iocTypes });
     } finally {
       setAnalyzing(false);
     }
-  }, [note.id, note.content, note.iocAnalysis, onUpdate]);
+  }, [item.id, item.content, item.iocAnalysis, onUpdate]);
 
   const updateIOC = useCallback((iocId: string, updates: Partial<IOCEntry>) => {
     if (!analysis) return;
@@ -31,13 +31,13 @@ export function useIOCAnalysis({ note, onUpdate }: UseIOCAnalysisOptions) {
     );
     const updated: IOCAnalysis = { ...analysis, iocs: updatedIOCs };
     const iocTypes = [...new Set(updatedIOCs.filter((i) => !i.dismissed).map((i) => i.type))];
-    onUpdate(note.id, { iocAnalysis: updated, iocTypes });
-  }, [note.id, analysis, onUpdate]);
+    onUpdate(item.id, { iocAnalysis: updated, iocTypes });
+  }, [item.id, analysis, onUpdate]);
 
   const updateSummary = useCallback((text: string) => {
     if (!analysis) return;
-    onUpdate(note.id, { iocAnalysis: { ...analysis, analysisSummary: text } });
-  }, [note.id, analysis, onUpdate]);
+    onUpdate(item.id, { iocAnalysis: { ...analysis, analysisSummary: text } });
+  }, [item.id, analysis, onUpdate]);
 
   const dismissIOC = useCallback((iocId: string) => {
     updateIOC(iocId, { dismissed: true });
@@ -62,7 +62,7 @@ export function useIOCAnalysis({ note, onUpdate }: UseIOCAnalysisOptions) {
   return {
     analysis,
     analyzing,
-    analyzeNote,
+    analyze,
     updateIOC,
     updateSummary,
     dismissIOC,

@@ -155,6 +155,10 @@ export function TaskListView({
             onCreateTag={onCreateTag}
             onSave={handleSaveEdit}
             onCancel={() => setEditingTask(null)}
+            onUpdateTask={(id, updates) => {
+              onUpdateTask(id, updates);
+              setEditingTask((prev) => prev && prev.id === id ? { ...prev, ...updates } : prev);
+            }}
           />
         )}
       </Modal>

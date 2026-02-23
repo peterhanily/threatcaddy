@@ -25,4 +25,12 @@ db.version(2).stores({
   });
 });
 
+db.version(3).stores({
+  tasks: 'id, title, folderId, status, priority, completed, order, createdAt, updatedAt, *tags, *iocTypes',
+}).upgrade((tx) => {
+  return tx.table('tasks').toCollection().modify((task) => {
+    if (!task.iocTypes) task.iocTypes = [];
+  });
+});
+
 export { db };
