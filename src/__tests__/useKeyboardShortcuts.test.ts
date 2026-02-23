@@ -7,23 +7,24 @@ function fireKey(key: string, opts: Partial<KeyboardEventInit> = {}) {
 }
 
 describe('useKeyboardShortcuts', () => {
-  let handlers: {
-    onNewNote: ReturnType<typeof vi.fn>;
-    onNewTask: ReturnType<typeof vi.fn>;
-    onSearch: ReturnType<typeof vi.fn>;
-    onSave: ReturnType<typeof vi.fn>;
-    onTogglePreview: ReturnType<typeof vi.fn>;
-    onEscape: ReturnType<typeof vi.fn>;
+  const noop = () => {};
+  let handlers = {
+    onNewNote: vi.fn(noop),
+    onNewTask: vi.fn(noop),
+    onSearch: vi.fn(noop),
+    onSave: vi.fn(noop),
+    onTogglePreview: vi.fn(noop),
+    onEscape: vi.fn(noop),
   };
 
   beforeEach(() => {
     handlers = {
-      onNewNote: vi.fn(),
-      onNewTask: vi.fn(),
-      onSearch: vi.fn(),
-      onSave: vi.fn(),
-      onTogglePreview: vi.fn(),
-      onEscape: vi.fn(),
+      onNewNote: vi.fn(noop),
+      onNewTask: vi.fn(noop),
+      onSearch: vi.fn(noop),
+      onSave: vi.fn(noop),
+      onTogglePreview: vi.fn(noop),
+      onEscape: vi.fn(noop),
     };
   });
 

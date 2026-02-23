@@ -37,6 +37,14 @@ jobs:
 
       - run: cp dist-single/index.html dist/browsernotes-standalone.html
 
+      - name: Build and package Chrome extension
+        run: |
+          cd extension
+          npm ci
+          npm run build
+          npm run package:chrome
+          cp dist/browsernotes-chrome.zip ../dist/
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

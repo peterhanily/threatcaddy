@@ -102,9 +102,8 @@ describe('useFolders', () => {
       const { result } = renderHook(() => useFolders());
       await act(async () => {});
 
-      let folder: Awaited<ReturnType<typeof result.current.findOrCreateFolder>>;
       await act(async () => {
-        folder = await result.current.findOrCreateFolder('Clips');
+        await result.current.findOrCreateFolder('Clips');
       });
 
       expect(result.current.folders).toHaveLength(1);

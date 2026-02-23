@@ -19,9 +19,8 @@ describe('useNotes', () => {
     const { result } = renderHook(() => useNotes());
     await act(async () => {});
 
-    let note: Awaited<ReturnType<typeof result.current.createNote>>;
     await act(async () => {
-      note = await result.current.createNote();
+      await result.current.createNote();
     });
 
     expect(result.current.notes).toHaveLength(1);
