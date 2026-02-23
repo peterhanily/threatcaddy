@@ -1,15 +1,18 @@
-import { useState, useMemo } from 'react';
-import { Plus, Search, ArrowUpDown, Star, List, Grid3X3 } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { Plus, Search, ArrowUpDown, Star, List, Grid3X3, BarChart3, Download } from 'lucide-react';
 import type { TimelineEvent, TimelineEventType, Tag, Folder } from '../../types';
 import { TimelineFeed } from './TimelineFeed';
 import { EventTypeFilterBar } from './EventTypeFilterBar';
 import { TimelineEventForm } from './TimelineEventForm';
 import { MitreHeatmap } from './MitreHeatmap';
+import type { HeatmapColorMode } from './MitreHeatmap';
+import { MitreReport } from './MitreReport';
 import { TimelineEventCard } from './TimelineEventCard';
 import { Modal } from '../Common/Modal';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { cn } from '../../lib/utils';
-import { getTechniqueLabel, getParentTechniqueId } from '../../lib/mitre-attack';
+import { getTechniqueLabel, getParentTechniqueId, buildNavigatorLayer, buildMitreCSV } from '../../lib/mitre-attack';
+import { downloadFile } from '../../lib/export';
 
 interface TimelineViewProps {
   events: TimelineEvent[];
@@ -26,6 +29,61 @@ interface TimelineViewProps {
     search?: string;
     sortDir?: 'asc' | 'desc';
   }) => TimelineEvent[];
+}
+
+function ExportDropdown({ events }: { events: TimelineEvent[] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleMouseDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [open]);
+
+  const handleNavigatorExport = () => {
+    const layer = buildNavigatorLayer(events, 'BrowserNotes Export');
+    downloadFile(JSON.stringify(layer, null, 2), 'attack-navigator-layer.json', 'application/json');
+    setOpen(false);
+  };
+
+  const handleCSVExport = () => {
+    const csv = buildMitreCSV(events);
+    downloadFile(csv, 'mitre-mappings.csv', 'text/csv');
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className={cn('p-1 rounded', open ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
+        title="Export MITRE data"
+        aria-label="Export MITRE data"
+      >
+        <Download size={16} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-30 w-52 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1">
+          <button
+            onClick={handleNavigatorExport}
+            className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
+          >
+            ATT&CK Navigator JSON
+          </button>
+          <button
+            onClick={handleCSVExport}
+            className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
+          >
+            MITRE Mappings CSV
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function TimelineView({
@@ -46,7 +104,8 @@ export function TimelineView({
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [showStarredOnly, setShowStarredOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'feed' | 'heatmap'>('feed');
+  const [viewMode, setViewMode] = useState<'feed' | 'heatmap' | 'report'>('feed');
+  const [heatmapColorMode, setHeatmapColorMode] = useState<HeatmapColorMode>('count');
   const [heatmapDetailTechId, setHeatmapDetailTechId] = useState<string | null>(null);
 
   const filteredEvents = useMemo(
@@ -96,6 +155,12 @@ export function TimelineView({
     }
   };
 
+  const colorModes: { key: HeatmapColorMode; label: string }[] = [
+    { key: 'count', label: 'Events' },
+    { key: 'confidence', label: 'Confidence' },
+    { key: 'actors', label: 'Actors' },
+  ];
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Toolbar */}
@@ -120,7 +185,35 @@ export function TimelineView({
           >
             <Grid3X3 size={16} />
           </button>
+          <button
+            onClick={() => setViewMode('report')}
+            className={cn('p-1 rounded', viewMode === 'report' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
+            title="MITRE Report"
+            aria-label="MITRE Report"
+          >
+            <BarChart3 size={16} />
+          </button>
         </div>
+
+        {/* Color mode pills — heatmap only */}
+        {viewMode === 'heatmap' && (
+          <div className="flex items-center gap-0.5 ml-2">
+            {colorModes.map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setHeatmapColorMode(m.key)}
+                className={cn(
+                  'px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors',
+                  heatmapColorMode === m.key
+                    ? 'bg-gray-600 text-gray-200'
+                    : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
+                )}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="flex items-center gap-1 ml-2 flex-1 min-w-0 max-w-xs">
           <Search size={14} className="text-gray-500 shrink-0" />
@@ -150,6 +243,11 @@ export function TimelineView({
           <Star size={16} fill={showStarredOnly ? 'currentColor' : 'none'} />
         </button>
 
+        {/* Export dropdown — visible in heatmap and report views */}
+        {(viewMode === 'heatmap' || viewMode === 'report') && (
+          <ExportDropdown events={filteredEvents} />
+        )}
+
         <button
           onClick={() => setShowNewEvent(true)}
           className="ml-auto flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
@@ -174,11 +272,14 @@ export function TimelineView({
             onSelect={handleSelect}
             onToggleStar={onToggleStar}
           />
-        ) : (
+        ) : viewMode === 'heatmap' ? (
           <MitreHeatmap
             events={filteredEvents}
+            colorMode={heatmapColorMode}
             onTechniqueClick={handleTechniqueClick}
           />
+        ) : (
+          <MitreReport events={filteredEvents} />
         )}
       </div>
 

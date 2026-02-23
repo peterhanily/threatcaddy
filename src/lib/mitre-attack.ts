@@ -283,3 +283,135 @@ export function searchTechniques(query: string): MitreTechnique[] {
     (t) => t.id.toLowerCase().includes(q) || t.name.toLowerCase().includes(q)
   );
 }
+
+// ── Phase 2+3: confidence ranking, Navigator export, CSV export ──
+
+/** Map confidence level strings to numeric ranks (0 = unknown) */
+export function confidenceToRank(c: string): number {
+  switch (c) {
+    case 'low': return 1;
+    case 'medium': return 2;
+    case 'high': return 3;
+    case 'confirmed': return 4;
+    default: return 0;
+  }
+}
+
+// ATT&CK Navigator layer format v4.5
+export interface NavigatorTechnique {
+  techniqueID: string;
+  tactic: string;
+  score: number;
+  comment: string;
+  color: string;
+  enabled: boolean;
+  showSubtechniques: boolean;
+}
+
+export interface NavigatorLayer {
+  name: string;
+  versions: { attack: string; navigator: string; layer: string };
+  domain: string;
+  description: string;
+  sorting: number;
+  layout: { layout: string; showID: boolean; showName: boolean; showAggregateScores: boolean; countUnscored: boolean; aggregateFunction: string };
+  hideDisabled: boolean;
+  techniques: NavigatorTechnique[];
+  gradient: { colors: string[]; minValue: number; maxValue: number };
+}
+
+interface MitreEvent {
+  id: string;
+  title: string;
+  mitreAttackIds: string[];
+  confidence?: string;
+  actor?: string;
+  timestamp?: number;
+}
+
+/** Build an ATT&CK Navigator-compatible JSON layer from events */
+export function buildNavigatorLayer(events: MitreEvent[], layerName: string): NavigatorLayer {
+  // Aggregate by (parentTechniqueId, tacticShortName)
+  const cellMap = new Map<string, { count: number; titles: string[] }>();
+
+  for (const ev of events) {
+    for (const rawId of ev.mitreAttackIds) {
+      const parentId = getParentTechniqueId(rawId);
+      const tech = techniqueMap.get(parentId);
+      if (!tech) continue;
+      for (const tactic of tech.tactics) {
+        const key = `${parentId}|${tactic}`;
+        const entry = cellMap.get(key);
+        if (entry) {
+          entry.count++;
+          if (entry.titles.length < 10) entry.titles.push(ev.title);
+        } else {
+          cellMap.set(key, { count: 1, titles: [ev.title] });
+        }
+      }
+    }
+  }
+
+  let maxScore = 1;
+  cellMap.forEach((v) => { if (v.count > maxScore) maxScore = v.count; });
+
+  const techniques: NavigatorTechnique[] = [];
+  cellMap.forEach((val, key) => {
+    const [techId, tactic] = key.split('|');
+    techniques.push({
+      techniqueID: techId,
+      tactic,
+      score: val.count,
+      comment: val.titles.join('; '),
+      color: '',
+      enabled: true,
+      showSubtechniques: false,
+    });
+  });
+
+  return {
+    name: layerName,
+    versions: { attack: '14', navigator: '4.9.5', layer: '4.5' },
+    domain: 'enterprise-attack',
+    description: `Exported from BrowserNotes – ${events.length} events`,
+    sorting: 3,
+    layout: { layout: 'side', showID: true, showName: true, showAggregateScores: false, countUnscored: false, aggregateFunction: 'average' },
+    hideDisabled: false,
+    techniques,
+    gradient: { colors: ['#ffffff', '#ff6666'], minValue: 0, maxValue: maxScore },
+  };
+}
+
+function csvEscape(value: string): string {
+  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+/** Build a CSV string mapping techniques to events */
+export function buildMitreCSV(events: MitreEvent[]): string {
+  const rows: string[] = ['techniqueID,techniqueName,tactic,eventId,eventTitle,confidence,actor,timestamp'];
+
+  for (const ev of events) {
+    for (const rawId of ev.mitreAttackIds) {
+      const parentId = getParentTechniqueId(rawId);
+      const tech = techniqueMap.get(parentId);
+      if (!tech) continue;
+      for (const tactic of tech.tactics) {
+        rows.push([
+          csvEscape(rawId),
+          csvEscape(tech.name),
+          csvEscape(tactic),
+          csvEscape(ev.id),
+          csvEscape(ev.title),
+          csvEscape(ev.confidence || ''),
+          csvEscape(ev.actor || ''),
+          ev.timestamp ? new Date(ev.timestamp).toISOString() : '',
+        ].join(','));
+      }
+    }
+  }
+
+  return rows.join('\n');
+}
