@@ -11,7 +11,7 @@ export function ResizeHandle({ isDragging, onMouseDown }: ResizeHandleProps) {
       onMouseDown={onMouseDown}
       className={cn(
         'w-1 shrink-0 cursor-col-resize relative transition-colors',
-        isDragging ? 'bg-accent/50' : 'bg-transparent hover:bg-accent/30'
+        isDragging ? 'bg-accent/50' : 'bg-gray-700 hover:bg-accent/30'
       )}
     >
       {/* Wider invisible hit area */}
