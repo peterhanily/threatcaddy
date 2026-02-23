@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Copy, Check, ChevronDown, ChevronRight, X, RotateCcw } from 'lucide-react';
 import type { IOCEntry, ConfidenceLevel } from '../../types';
 import { CONFIDENCE_LEVELS } from '../../types';
+import { AttributionComboInput } from './AttributionComboInput';
 import { cn } from '../../lib/utils';
 
 interface IOCItemProps {
@@ -9,9 +10,10 @@ interface IOCItemProps {
   onUpdate: (id: string, updates: Partial<IOCEntry>) => void;
   onDismiss: (id: string) => void;
   onRestore: (id: string) => void;
+  attributionActors?: string[];
 }
 
-export function IOCItem({ ioc, onUpdate, onDismiss, onRestore }: IOCItemProps) {
+export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors = [] }: IOCItemProps) {
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -98,11 +100,10 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore }: IOCItemProps) {
           </div>
           <div>
             <label className="text-[10px] text-gray-500 uppercase tracking-wider">Attribution</label>
-            <input
+            <AttributionComboInput
               value={ioc.attribution || ''}
-              onChange={(e) => onUpdate(ioc.id, { attribution: e.target.value })}
-              className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600"
-              placeholder="e.g. APT29, Lazarus Group..."
+              onChange={(v) => onUpdate(ioc.id, { attribution: v })}
+              actors={attributionActors}
             />
           </div>
         </div>

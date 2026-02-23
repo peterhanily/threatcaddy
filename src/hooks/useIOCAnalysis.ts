@@ -47,6 +47,36 @@ export function useIOCAnalysis({ item, onUpdate }: UseIOCAnalysisOptions) {
     updateIOC(iocId, { dismissed: false });
   }, [updateIOC]);
 
+  const dismissByType = useCallback((type: IOCType) => {
+    if (!analysis) return;
+    const updatedIOCs = analysis.iocs.map((ioc) =>
+      ioc.type === type && !ioc.dismissed ? { ...ioc, dismissed: true } : ioc
+    );
+    const updated: IOCAnalysis = { ...analysis, iocs: updatedIOCs };
+    const iocTypes = [...new Set(updatedIOCs.filter((i) => !i.dismissed).map((i) => i.type))];
+    onUpdate(item.id, { iocAnalysis: updated, iocTypes });
+  }, [item.id, analysis, onUpdate]);
+
+  const restoreByType = useCallback((type: IOCType) => {
+    if (!analysis) return;
+    const updatedIOCs = analysis.iocs.map((ioc) =>
+      ioc.type === type && ioc.dismissed ? { ...ioc, dismissed: false } : ioc
+    );
+    const updated: IOCAnalysis = { ...analysis, iocs: updatedIOCs };
+    const iocTypes = [...new Set(updatedIOCs.filter((i) => !i.dismissed).map((i) => i.type))];
+    onUpdate(item.id, { iocAnalysis: updated, iocTypes });
+  }, [item.id, analysis, onUpdate]);
+
+  const updateByType = useCallback((type: IOCType, updates: Partial<IOCEntry>) => {
+    if (!analysis) return;
+    const updatedIOCs = analysis.iocs.map((ioc) =>
+      ioc.type === type && !ioc.dismissed ? { ...ioc, ...updates } : ioc
+    );
+    const updated: IOCAnalysis = { ...analysis, iocs: updatedIOCs };
+    const iocTypes = [...new Set(updatedIOCs.filter((i) => !i.dismissed).map((i) => i.type))];
+    onUpdate(item.id, { iocAnalysis: updated, iocTypes });
+  }, [item.id, analysis, onUpdate]);
+
   const iocCount = analysis?.iocs.filter((i) => !i.dismissed).length ?? 0;
 
   const activeIOCs = useMemo(
@@ -67,6 +97,9 @@ export function useIOCAnalysis({ item, onUpdate }: UseIOCAnalysisOptions) {
     updateSummary,
     dismissIOC,
     restoreIOC,
+    dismissByType,
+    restoreByType,
+    updateByType,
     iocCount,
     activeIOCs,
     dismissedIOCs,

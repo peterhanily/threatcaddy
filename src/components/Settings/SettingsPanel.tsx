@@ -1,6 +1,7 @@
 import { Github, Download } from 'lucide-react';
 import type { Settings, Note } from '../../types';
 import { ExportImport } from './ExportImport';
+import { AttributionActors } from './AttributionActors';
 import { OCISync } from './OCISync';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 
@@ -65,6 +66,10 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
       <hr className="border-gray-800" />
 
       <ExportImport notes={notes} onImportComplete={onImportComplete} />
+
+      <hr className="border-gray-800" />
+
+      <AttributionActors />
 
       <hr className="border-gray-800" />
 

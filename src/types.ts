@@ -82,6 +82,7 @@ export interface Settings {
   ociWritePAR?: string;
   ociReadPAR?: string;
   ociLabel?: string;
+  attributionActors?: string[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {

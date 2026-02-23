@@ -5,6 +5,7 @@ import type { Task, Priority, TaskStatus, Tag, Folder, IOCTarget, IOCAnalysis, I
 import { TagInput } from '../Common/TagInput';
 import { IOCPanel } from '../Analysis/IOCPanel';
 import { extractIOCs, mergeIOCAnalysis } from '../../lib/ioc-extractor';
+import { useSettings } from '../../hooks/useSettings';
 import { cn } from '../../lib/utils';
 
 interface TaskFormProps {
@@ -29,6 +30,7 @@ function formatRelativeTime(ts: number): string {
 }
 
 export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel, onUpdateTask }: TaskFormProps) {
+  const { settings: taskFormSettings } = useSettings();
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
   const [priority, setPriority] = useState<Priority>(task?.priority || 'none');
@@ -273,6 +275,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
           item={iocTarget}
           onUpdate={handleIOCUpdate}
           onClose={() => setShowIOCPanel(false)}
+          attributionActors={taskFormSettings.attributionActors}
         />
       )}
     </div>

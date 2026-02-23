@@ -6,7 +6,9 @@ import { extractIOCs, mergeIOCAnalysis } from '../../lib/ioc-extractor';
 import { MarkdownPreview } from './MarkdownPreview';
 import { TagInput } from '../Common/TagInput';
 import { IOCPanel } from '../Analysis/IOCPanel';
+import { ResizeHandle } from '../Common/ResizeHandle';
 import { useOCISync } from '../../hooks/useOCISync';
+import { useResizable } from '../../hooks/useResizable';
 import { wordCount, formatFullDate, cn, isSafeUrl } from '../../lib/utils';
 
 interface NoteEditorProps {
@@ -51,6 +53,11 @@ export function NoteEditor({
   const titleRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const savedTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Resizable: editor ↔ preview (split mode only)
+  const editorPreview = useResizable({ initialRatio: 0.5, minRatio: 0.25, maxRatio: 0.75 });
+  // Resizable: editor area ↔ IOC panel
+  const editorIOC = useResizable({ initialRatio: 0.75, minRatio: 0.4, maxRatio: 0.85 });
 
   useEffect(() => {
     clearTimeout(saveTimeoutRef.current);
@@ -318,10 +325,17 @@ export function NoteEditor({
       </div>
 
       {/* Editor / Preview + IOC Panel */}
-      <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 flex overflow-hidden min-w-0">
+      <div className="flex-1 flex overflow-hidden" ref={showIOCPanel ? editorIOC.containerRef : undefined}>
+        <div
+          className="flex overflow-hidden min-w-0"
+          ref={editorMode === 'split' ? editorPreview.containerRef : undefined}
+          style={showIOCPanel ? { width: `${editorIOC.ratio * 100}%` } : { flex: 1 }}
+        >
           {showEditor && (
-            <div className={cn('flex-1 flex flex-col', showPreview && 'border-r border-gray-800')}>
+            <div
+              className="flex flex-col overflow-hidden"
+              style={editorMode === 'split' ? { width: `${editorPreview.ratio * 100}%` } : { flex: 1 }}
+            >
               <textarea
                 value={content}
                 onChange={(e) => handleContentChange(e.target.value)}
@@ -333,8 +347,14 @@ export function NoteEditor({
               />
             </div>
           )}
+          {editorMode === 'split' && (
+            <ResizeHandle isDragging={editorPreview.isDragging} onMouseDown={editorPreview.handleMouseDown} />
+          )}
           {showPreview && (
-            <div className="flex-1 overflow-y-auto p-2 sm:p-4">
+            <div
+              className="overflow-y-auto p-2 sm:p-4"
+              style={editorMode === 'split' ? { width: `${(1 - editorPreview.ratio) * 100}%` } : { flex: 1 }}
+            >
               {content ? (
                 <MarkdownPreview content={content} />
               ) : (
@@ -344,11 +364,16 @@ export function NoteEditor({
           )}
         </div>
         {showIOCPanel && (
-          <IOCPanel
-            item={{ id: note.id, title: note.title, content, sourceUrl: note.sourceUrl, iocAnalysis: note.iocAnalysis, iocTypes: note.iocTypes }}
-            onUpdate={(id, updates) => onUpdate(id, updates)}
-            onClose={() => setShowIOCPanel(false)}
-          />
+          <>
+            <ResizeHandle isDragging={editorIOC.isDragging} onMouseDown={editorIOC.handleMouseDown} />
+            <IOCPanel
+              item={{ id: note.id, title: note.title, content, sourceUrl: note.sourceUrl, iocAnalysis: note.iocAnalysis, iocTypes: note.iocTypes }}
+              onUpdate={(id, updates) => onUpdate(id, updates)}
+              onClose={() => setShowIOCPanel(false)}
+              attributionActors={externalSettings?.attributionActors}
+              style={{ width: `${(1 - editorIOC.ratio) * 100}%` }}
+            />
+          </>
         )}
       </div>
 

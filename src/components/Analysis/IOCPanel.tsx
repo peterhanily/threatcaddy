@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, RefreshCw, ChevronDown, ChevronRight, Shield, Download } from 'lucide-react';
+import { X, RefreshCw, ChevronDown, ChevronRight, Shield, Download, XCircle, Tag, Check } from 'lucide-react';
 import type { IOCTarget, IOCEntry, IOCType, IOCAnalysis } from '../../types';
 import { IOC_TYPE_LABELS } from '../../types';
 import { useIOCAnalysis } from '../../hooks/useIOCAnalysis';
 import { IOCItem } from './IOCItem';
+import { AttributionComboInput } from './AttributionComboInput';
 import { cn } from '../../lib/utils';
 import { formatIOCsJSON, formatIOCsCSV, slugify } from '../../lib/ioc-export';
 import { downloadFile } from '../../lib/export';
@@ -12,9 +13,11 @@ interface IOCPanelProps {
   item: IOCTarget;
   onUpdate: (id: string, updates: { iocAnalysis?: IOCAnalysis; iocTypes?: IOCType[] }) => void;
   onClose: () => void;
+  attributionActors?: string[];
+  style?: React.CSSProperties;
 }
 
-export function IOCPanel({ item, onUpdate, onClose }: IOCPanelProps) {
+export function IOCPanel({ item, onUpdate, onClose, attributionActors, style }: IOCPanelProps) {
   const {
     analysis,
     analyzing,
@@ -23,6 +26,8 @@ export function IOCPanel({ item, onUpdate, onClose }: IOCPanelProps) {
     updateSummary,
     dismissIOC,
     restoreIOC,
+    dismissByType,
+    updateByType,
     iocCount,
     activeIOCs,
     dismissedIOCs,
@@ -31,7 +36,11 @@ export function IOCPanel({ item, onUpdate, onClose }: IOCPanelProps) {
   const [collapsedTypes, setCollapsedTypes] = useState<Set<IOCType>>(new Set());
   const [showDismissed, setShowDismissed] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [attributionForType, setAttributionForType] = useState<IOCType | null>(null);
+  const [attributionInput, setAttributionInput] = useState('');
+  const [exportForType, setExportForType] = useState<IOCType | null>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const categoryExportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!showExportMenu) return;
@@ -43,6 +52,39 @@ export function IOCPanel({ item, onUpdate, onClose }: IOCPanelProps) {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [showExportMenu]);
+
+  useEffect(() => {
+    if (!exportForType) return;
+    const handler = (e: MouseEvent) => {
+      if (categoryExportRef.current && !categoryExportRef.current.contains(e.target as Node)) {
+        setExportForType(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [exportForType]);
+
+  const handleCategoryExport = (type: IOCType, format: 'json' | 'csv') => {
+    setExportForType(null);
+    if (!analysis) return;
+    const typeIOCs = analysis.iocs.filter((ioc) => ioc.type === type && !ioc.dismissed);
+    if (typeIOCs.length === 0) return;
+    const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: typeIOCs }];
+    const slug = slugify(item.title) || 'item';
+    const typeSlug = type.replace(/[^a-z0-9]/g, '-');
+    if (format === 'json') {
+      downloadFile(formatIOCsJSON(entries), `iocs-${slug}-${typeSlug}.json`, 'application/json');
+    } else {
+      downloadFile(formatIOCsCSV(entries), `iocs-${slug}-${typeSlug}.csv`, 'text/csv');
+    }
+  };
+
+  const handleBulkAttribution = (type: IOCType) => {
+    if (!attributionInput.trim()) return;
+    updateByType(type, { attribution: attributionInput.trim() });
+    setAttributionForType(null);
+    setAttributionInput('');
+  };
 
   const handleExport = (format: 'json' | 'csv') => {
     setShowExportMenu(false);
@@ -74,7 +116,7 @@ export function IOCPanel({ item, onUpdate, onClose }: IOCPanelProps) {
   }
 
   return (
-    <div className="w-80 shrink-0 bg-gray-900 border-l border-gray-800 flex flex-col h-full overflow-hidden">
+    <div className="shrink-0 bg-gray-900 border-l border-gray-800 flex flex-col h-full overflow-hidden" style={style || { width: '20rem' }}>
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-800 shrink-0">
         <Shield size={16} className="text-accent" />
@@ -156,14 +198,81 @@ export function IOCPanel({ item, onUpdate, onClose }: IOCPanelProps) {
 
                 return (
                   <div key={type}>
-                    <button
-                      onClick={() => toggleType(type)}
-                      className="flex items-center gap-2 w-full text-left py-1"
-                    >
-                      {isCollapsed ? <ChevronRight size={12} className="text-gray-500" /> : <ChevronDown size={12} className="text-gray-500" />}
-                      <span className="text-xs font-medium" style={{ color }}>{label}</span>
-                      <span className="text-[10px] text-gray-500">({iocs.length})</span>
-                    </button>
+                    <div className="flex items-center gap-1 py-1">
+                      <button
+                        onClick={() => toggleType(type)}
+                        className="flex items-center gap-2 flex-1 text-left"
+                      >
+                        {isCollapsed ? <ChevronRight size={12} className="text-gray-500" /> : <ChevronDown size={12} className="text-gray-500" />}
+                        <span className="text-xs font-medium" style={{ color }}>{label}</span>
+                        <span className="text-[10px] text-gray-500">({iocs.length})</span>
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); dismissByType(type); }}
+                        className="p-0.5 rounded text-gray-600 hover:text-red-400"
+                        title="Dismiss all"
+                        aria-label={`Dismiss all ${label}`}
+                      >
+                        <XCircle size={12} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (attributionForType === type) {
+                            setAttributionForType(null);
+                            setAttributionInput('');
+                          } else {
+                            setAttributionForType(type);
+                            setAttributionInput('');
+                          }
+                        }}
+                        className={cn('p-0.5 rounded', attributionForType === type ? 'text-accent' : 'text-gray-600 hover:text-gray-300')}
+                        title="Set attribution"
+                        aria-label={`Set attribution for all ${label}`}
+                      >
+                        <Tag size={12} />
+                      </button>
+                      <div className="relative" ref={exportForType === type ? categoryExportRef : undefined}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExportForType(exportForType === type ? null : type);
+                          }}
+                          className={cn('p-0.5 rounded', exportForType === type ? 'text-accent' : 'text-gray-600 hover:text-gray-300')}
+                          title="Download category"
+                          aria-label={`Download ${label} IOCs`}
+                        >
+                          <Download size={12} />
+                        </button>
+                        {exportForType === type && (
+                          <div className="absolute right-0 top-full mt-1 w-28 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
+                            <button onClick={() => handleCategoryExport(type, 'json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">JSON</button>
+                            <button onClick={() => handleCategoryExport(type, 'csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">CSV</button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {attributionForType === type && (
+                      <div className="flex items-end gap-1 ml-4 mb-1">
+                        <div className="flex-1">
+                          <AttributionComboInput
+                            value={attributionInput}
+                            onChange={setAttributionInput}
+                            actors={attributionActors ?? []}
+                            placeholder="Actor name..."
+                          />
+                        </div>
+                        <button
+                          onClick={() => handleBulkAttribution(type)}
+                          disabled={!attributionInput.trim()}
+                          className="p-1 rounded bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-40"
+                          title="Apply attribution"
+                          aria-label="Apply attribution to all"
+                        >
+                          <Check size={12} />
+                        </button>
+                      </div>
+                    )}
                     {!isCollapsed && (
                       <div className="space-y-1 ml-4 mt-1">
                         {iocs.map((ioc) => (
@@ -173,6 +282,7 @@ export function IOCPanel({ item, onUpdate, onClose }: IOCPanelProps) {
                             onUpdate={updateIOC}
                             onDismiss={dismissIOC}
                             onRestore={restoreIOC}
+                            attributionActors={attributionActors}
                           />
                         ))}
                       </div>
