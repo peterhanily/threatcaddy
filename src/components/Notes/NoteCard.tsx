@@ -1,3 +1,4 @@
+import React from 'react';
 import { Pin, Shield } from 'lucide-react';
 import type { Note } from '../../types';
 import { formatDate, truncate, cn } from '../../lib/utils';
@@ -10,8 +11,8 @@ interface NoteCardProps {
   folderName?: string;
 }
 
-export function NoteCard({ note, active, onClick, folderColor, folderName }: NoteCardProps) {
-  const preview = note.content.replace(/[#*`_\[\]()>-]/g, '').trim();
+export const NoteCard = React.memo(function NoteCard({ note, active, onClick, folderColor, folderName }: NoteCardProps) {
+  const preview = note.content.replace(/[#*`_[\]()>-]/g, '').trim();
 
   return (
     <button
@@ -49,7 +50,7 @@ export function NoteCard({ note, active, onClick, folderColor, folderName }: Not
         {(note.iocAnalysis?.iocs.filter((i) => !i.dismissed).length ?? 0) > 0 && (
           <span className="flex items-center gap-0.5 text-[10px] text-accent/70 bg-accent/10 px-1.5 rounded-full">
             <Shield size={9} />
-            {note.iocAnalysis!.iocs.filter((i) => !i.dismissed).length}
+            {note.iocAnalysis?.iocs.filter((i) => !i.dismissed).length}
           </span>
         )}
         {note.tags.length > 0 && (
@@ -64,4 +65,4 @@ export function NoteCard({ note, active, onClick, folderColor, folderName }: Not
       </div>
     </button>
   );
-}
+});

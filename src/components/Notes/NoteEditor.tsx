@@ -53,6 +53,7 @@ export function NoteEditor({
   const savedTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
+    clearTimeout(saveTimeoutRef.current);
     setTitle(note.title);
     setContent(note.content);
   }, [note.id, note.title, note.content]);

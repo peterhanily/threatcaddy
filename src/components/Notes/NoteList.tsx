@@ -53,7 +53,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
     const entries: IOCExportEntry[] = notesWithIOCs.map((n) => ({
       clipTitle: n.title,
       sourceUrl: n.sourceUrl,
-      iocs: n.iocAnalysis!.iocs,
+      iocs: n.iocAnalysis?.iocs ?? [],
     }));
     const dateStr = new Date().toISOString().slice(0, 10);
     if (format === 'json') {

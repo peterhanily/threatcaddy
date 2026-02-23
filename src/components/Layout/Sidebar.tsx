@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   FileText, ListChecks, FolderOpen, Tag, Trash2,
   Archive, ChevronDown, ChevronRight, Plus, X, Settings,
@@ -294,7 +294,7 @@ export function Sidebar({
   );
 }
 
-function SidebarItem({
+const SidebarItem = React.memo(function SidebarItem({
   icon,
   label,
   count,
@@ -330,4 +330,4 @@ function SidebarItem({
       {actions}
     </button>
   );
-}
+});

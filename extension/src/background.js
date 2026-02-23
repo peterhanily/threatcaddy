@@ -40,6 +40,12 @@ async function getSelectionAsMarkdown() {
     return c.toDataURL('image/webp', 0.85);
   }
 
+  const MAX_DATA_URI_LEN = 500_000; // ~375KB
+
+  function capDataUri(uri) {
+    return uri && uri.length <= MAX_DATA_URI_LEN ? uri : null;
+  }
+
   function imgToDataUri(src) {
     return new Promise(resolve => {
       const timer = setTimeout(() => resolve(null), 5000);
@@ -47,7 +53,7 @@ async function getSelectionAsMarkdown() {
       // Try 1: draw the page's already-loaded image (works for same-origin)
       for (const pi of document.querySelectorAll('img')) {
         if (pi.src === src && pi.complete && pi.naturalWidth > 0) {
-          try { clearTimeout(timer); return resolve(drawToCanvas(pi)); } catch {}
+          try { clearTimeout(timer); return resolve(capDataUri(drawToCanvas(pi))); } catch {}
           break;
         }
       }
@@ -60,10 +66,10 @@ async function getSelectionAsMarkdown() {
           reader.onload = () => {
             const img = new Image();
             img.onload = () => {
-              try { clearTimeout(timer); resolve(drawToCanvas(img)); }
-              catch { clearTimeout(timer); resolve(reader.result); }
+              try { clearTimeout(timer); resolve(capDataUri(drawToCanvas(img))); }
+              catch { clearTimeout(timer); resolve(capDataUri(reader.result)); }
             };
-            img.onerror = () => { clearTimeout(timer); resolve(reader.result); };
+            img.onerror = () => { clearTimeout(timer); resolve(capDataUri(reader.result)); };
             img.src = reader.result;
           };
           reader.onerror = () => { clearTimeout(timer); resolve(null); };
@@ -256,12 +262,14 @@ async function sendToTarget(targetUrl, captures) {
   await new Promise(resolve => setTimeout(resolve, 2500));
 
   // Inject script in MAIN world so postMessage reaches the React app directly
-  // Use the page's own origin as the target (not '*') to prevent cross-origin leaks
+  // file:// origins are "null" so postMessage targeted at "null" won't deliver;
+  // use "*" for file:// (safe — we control the tab we opened)
   await chrome.scripting.executeScript({
     target: { tabId: tab.id },
     world: 'MAIN',
     func: (clips) => {
-      window.postMessage({ type: 'BROWSERNOTES_IMPORT_CLIPS', clips }, window.location.origin);
+      const origin = window.location.protocol === 'file:' ? '*' : window.location.origin;
+      window.postMessage({ type: 'BROWSERNOTES_IMPORT_CLIPS', clips }, origin);
     },
     args: [captures]
   });

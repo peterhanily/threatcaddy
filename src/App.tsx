@@ -21,6 +21,7 @@ import { ConfirmDialog } from './components/Common/ConfirmDialog';
 import { SearchOverlay } from './components/Search/SearchOverlay';
 import { BrowseShared } from './components/Settings/BrowseShared';
 import { extractIOCs, mergeIOCAnalysis } from './lib/ioc-extractor';
+import { ErrorBoundary } from './components/Common/ErrorBoundary';
 
 export default function App() {
   const { settings, updateSettings, toggleTheme } = useSettings();
@@ -52,7 +53,9 @@ export default function App() {
   useEffect(() => {
     const handler = async (event: MessageEvent) => {
       // Only accept messages from our own origin (extension injects into same page)
-      if (event.origin !== window.location.origin) return;
+      // For file:// URLs both event.origin and window.location.origin are "null"
+      const isFileProtocol = window.location.protocol === 'file:';
+      if (!isFileProtocol && event.origin !== window.location.origin) return;
       if (event.data?.type !== 'BROWSERNOTES_IMPORT_CLIPS') return;
       const clips = event.data.clips;
       if (!Array.isArray(clips) || clips.length === 0) return;
@@ -222,6 +225,7 @@ export default function App() {
     setShowArchive(false);
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSearchNavigateToTask = useCallback((_id: string) => {
     setActiveView('tasks');
     setSelectedFolderId(undefined);
@@ -252,6 +256,27 @@ export default function App() {
   }
   else if (selectedTag) listTitle = `#${selectedTag}`;
 
+  const sidebarProps = useMemo(() => ({
+    activeView,
+    onViewChange: (v: ViewMode) => { setActiveView(v); setShowSettings(false); },
+    folders,
+    tags,
+    selectedFolderId,
+    onFolderSelect: setSelectedFolderId,
+    selectedTag,
+    onTagSelect: setSelectedTag,
+    showTrash,
+    onShowTrash: setShowTrash,
+    showArchive,
+    onShowArchive: setShowArchive,
+    onCreateFolder: (name: string) => createFolder(name),
+    onDeleteFolder: handleDeleteFolder,
+    onRenameFolder: (id: string, name: string) => updateFolder(id, { name }),
+    onOpenSettings: () => { setShowSettings(true); },
+    noteCounts,
+    taskCounts: tasks.taskCounts,
+  }), [activeView, folders, tags, selectedFolderId, selectedTag, showTrash, showArchive, createFolder, handleDeleteFolder, updateFolder, noteCounts, tasks.taskCounts]);
+
   return (
     <>
       <AppLayout
@@ -272,30 +297,14 @@ export default function App() {
         }
         sidebar={
           <Sidebar
-            activeView={activeView}
-            onViewChange={(v) => { setActiveView(v); setShowSettings(false); }}
-            folders={folders}
-            tags={tags}
-            selectedFolderId={selectedFolderId}
-            onFolderSelect={setSelectedFolderId}
-            selectedTag={selectedTag}
-            onTagSelect={setSelectedTag}
-            showTrash={showTrash}
-            onShowTrash={setShowTrash}
-            showArchive={showArchive}
-            onShowArchive={setShowArchive}
-            onCreateFolder={(name) => createFolder(name)}
-            onDeleteFolder={handleDeleteFolder}
-            onRenameFolder={(id, name) => updateFolder(id, { name })}
-            onOpenSettings={() => { setShowSettings(true); }}
+            {...sidebarProps}
             collapsed={settings.sidebarCollapsed}
             onToggleCollapsed={() => updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })}
-            noteCounts={noteCounts}
-            taskCounts={tasks.taskCounts}
             onNavigate={() => setSelectedNoteId(undefined)}
           />
         }
       >
+        <ErrorBoundary>
         {showSettings ? (
           <SettingsPanel
             settings={settings}
@@ -366,6 +375,7 @@ export default function App() {
             </div>
           </div>
         )}
+        </ErrorBoundary>
       </AppLayout>
 
       {/* Mobile sidebar overlay */}
@@ -374,26 +384,9 @@ export default function App() {
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileSidebarOpen(false)} />
           <div className="relative h-full w-60 shrink-0" onClick={(e) => e.stopPropagation()}>
             <Sidebar
-              activeView={activeView}
-              onViewChange={(v) => { setActiveView(v); setShowSettings(false); }}
-              folders={folders}
-              tags={tags}
-              selectedFolderId={selectedFolderId}
-              onFolderSelect={setSelectedFolderId}
-              selectedTag={selectedTag}
-              onTagSelect={setSelectedTag}
-              showTrash={showTrash}
-              onShowTrash={setShowTrash}
-              showArchive={showArchive}
-              onShowArchive={setShowArchive}
-              onCreateFolder={(name) => createFolder(name)}
-              onDeleteFolder={handleDeleteFolder}
-              onRenameFolder={(id, name) => updateFolder(id, { name })}
-              onOpenSettings={() => { setShowSettings(true); }}
+              {...sidebarProps}
               collapsed={false}
               onToggleCollapsed={() => setMobileSidebarOpen(false)}
-              noteCounts={noteCounts}
-              taskCounts={tasks.taskCounts}
               onNavigate={() => { setMobileSidebarOpen(false); setSelectedNoteId(undefined); }}
             />
           </div>

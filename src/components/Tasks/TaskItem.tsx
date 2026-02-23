@@ -1,3 +1,4 @@
+import React from 'react';
 import { Circle, CheckCircle2, Calendar, Trash2, GripVertical, Shield, MessageSquare } from 'lucide-react';
 import type { Task, Priority } from '../../types';
 import { PRIORITY_COLORS } from '../../types';
@@ -20,7 +21,7 @@ const priorityLabels: Record<Priority, string> = {
   high: 'High',
 };
 
-export function TaskItem({ task, onToggleComplete, onSelect, onDelete, active, draggable, onDragStart }: TaskItemProps) {
+export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, onSelect, onDelete, active, draggable, onDragStart }: TaskItemProps) {
   const overdue = isOverdue(task.dueDate) && !task.completed;
 
   return (
@@ -60,13 +61,13 @@ export function TaskItem({ task, onToggleComplete, onSelect, onDelete, active, d
         {(task.iocAnalysis?.iocs.filter((i) => !i.dismissed).length ?? 0) > 0 && (
           <span className="flex items-center gap-0.5 text-[10px] text-accent bg-accent/10 px-1.5 py-0.5 rounded">
             <Shield size={10} />
-            {task.iocAnalysis!.iocs.filter((i) => !i.dismissed).length}
+            {task.iocAnalysis?.iocs.filter((i) => !i.dismissed).length}
           </span>
         )}
         {(task.comments?.length ?? 0) > 0 && (
           <span className="flex items-center gap-0.5 text-[10px] text-gray-400 bg-gray-700/50 px-1.5 py-0.5 rounded">
             <MessageSquare size={10} />
-            {task.comments!.length}
+            {task.comments?.length}
           </span>
         )}
         {task.priority !== 'none' && (
@@ -98,4 +99,4 @@ export function TaskItem({ task, onToggleComplete, onSelect, onDelete, active, d
       </div>
     </div>
   );
-}
+});

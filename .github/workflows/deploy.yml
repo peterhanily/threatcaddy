@@ -29,21 +29,40 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - run: pnpm lint
+
       - run: pnpm test:run
 
       - run: pnpm build
+        env:
+          VITE_CF_BEACON_TOKEN: ${{ secrets.VITE_CF_BEACON_TOKEN }}
 
       - run: pnpm build:single
 
       - run: cp dist-single/index.html dist/browsernotes-standalone.html
 
-      - name: Build and package Chrome extension
+      - name: Verify extension zip is up to date
         run: |
           cd extension
           npm ci
           npm run build
           npm run package:chrome
-          cp dist/browsernotes-chrome.zip ../dist/
+          mkdir -p /tmp/ext-committed /tmp/ext-built
+          unzip -o browsernotes-chrome.zip -d /tmp/ext-committed > /dev/null
+          unzip -o dist/browsernotes-chrome.zip -d /tmp/ext-built > /dev/null
+          # Compare non-binary files (JS, HTML, JSON, SVG) — PNGs may differ
+          # across platforms due to sharp/libvips versions but are derived
+          # deterministically from the committed SVG source
+          if ! diff -rq --exclude='*.png' /tmp/ext-committed /tmp/ext-built > /dev/null 2>&1; then
+            echo "::error::extension/browsernotes-chrome.zip is out of date. Run 'cd extension && npm run build && npm run package:chrome && cp dist/browsernotes-chrome.zip .' and commit."
+            diff -rq --exclude='*.png' /tmp/ext-committed /tmp/ext-built || true
+            exit 1
+          fi
+          # Verify the SVG icon is present in both zips
+          if [ ! -f /tmp/ext-committed/assets/icon.svg ] || [ ! -f /tmp/ext-built/assets/icon.svg ]; then
+            echo "::error::icon.svg missing from extension zip"
+            exit 1
+          fi
 
       - uses: actions/upload-pages-artifact@v3
         with:

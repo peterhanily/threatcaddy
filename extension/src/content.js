@@ -3,6 +3,7 @@ let currentBubble = null;
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (sender.id !== chrome.runtime.id) return;
   if (message.type === 'PING') {
     sendResponse({ loaded: true });
   } else if (message.type === 'SHOW_CONFIRMATION') {

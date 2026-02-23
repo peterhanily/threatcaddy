@@ -17,10 +17,18 @@ const marked = new Marked({
   },
 });
 
+// Only allow checkbox inputs (for GFM task lists), remove all others
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node.tagName === 'INPUT' && node.getAttribute('type') !== 'checkbox') {
+    node.remove();
+  }
+});
+
 export function renderMarkdown(content: string): string {
   const raw = marked.parse(content) as string;
   return DOMPurify.sanitize(raw, {
     ADD_TAGS: ['input'],
     ADD_ATTR: ['type', 'checked', 'disabled', 'class'],
+    FORBID_ATTR: ['style', 'onerror', 'onload'],
   });
 }

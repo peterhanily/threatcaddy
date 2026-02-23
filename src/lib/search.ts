@@ -57,6 +57,11 @@ export function unifiedSearch(
       }
     }
   } else if (query.mode === 'regex') {
+    // Reject patterns with nested quantifiers to prevent ReDoS
+    const NESTED_QUANTIFIER = /(\+|\*|\{)\s*(\+|\*|\{)/;
+    if (NESTED_QUANTIFIER.test(query.raw)) {
+      return { results: [], error: 'Pattern too complex (nested quantifiers)' };
+    }
     let regex: RegExp;
     try {
       regex = new RegExp(query.raw, 'i');

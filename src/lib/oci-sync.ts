@@ -27,8 +27,15 @@ export function validatePAR(url: string): { valid: boolean; error?: string } {
 // ---- URL Construction ----
 
 export function buildObjectUrl(parPrefix: string, objectPath: string): string {
+  // Decode before sanitizing to prevent %2e%2e bypass
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(objectPath);
+  } catch {
+    decoded = objectPath;
+  }
   // Sanitize object path: no .., no query params, no leading slashes
-  const sanitized = objectPath
+  const sanitized = decoded
     .replace(/\.\./g, '')
     .replace(/[?#]/g, '')
     .replace(/^\/+/, '');

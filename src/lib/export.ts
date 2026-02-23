@@ -74,6 +74,12 @@ function sanitizeTask(raw: unknown): Task | null {
     tags: strArr(r.tags),
     status: (['todo', 'in-progress', 'done'].includes(str(r.status)) ? str(r.status) : 'todo') as Task['status'],
     order: num(r.order),
+    iocAnalysis: r.iocAnalysis != null && typeof r.iocAnalysis === 'object' ? r.iocAnalysis as Task['iocAnalysis'] : undefined,
+    iocTypes: Array.isArray(r.iocTypes) ? strArr(r.iocTypes) as Task['iocTypes'] : undefined,
+    comments: Array.isArray(r.comments) ? (r.comments as unknown[]).filter(
+      (c): c is { id: string; text: string; createdAt: number } =>
+        !!c && typeof c === 'object' && typeof (c as Record<string, unknown>).id === 'string'
+    ) : undefined,
     createdAt: num(r.createdAt, Date.now()),
     updatedAt: num(r.updatedAt, Date.now()),
     completedAt: r.completedAt != null ? num(r.completedAt) : undefined,

@@ -11,7 +11,9 @@ interface ShortcutHandlers {
 
 export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
   const handlersRef = useRef(handlers);
-  handlersRef.current = handlers;
+  useEffect(() => {
+    handlersRef.current = handlers;
+  });
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {

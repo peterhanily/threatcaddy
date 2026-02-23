@@ -128,6 +128,19 @@ export function SearchOverlay({
     setQuery(saved.query.raw);
   }, []);
 
+  // Pre-compute a flat index map for keyboard navigation (avoids mutable counter during render)
+  const indexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    let idx = 0;
+    for (const type of ['note', 'clip', 'task'] as SearchResultType[]) {
+      const group = grouped[type];
+      if (group) {
+        for (const r of group) { map.set(r.id, idx++); }
+      }
+    }
+    return map;
+  }, [grouped]);
+
   if (!open) return null;
 
   const modes: { value: SearchMode; label: string }[] = [
@@ -135,8 +148,6 @@ export function SearchOverlay({
     { value: 'regex', label: 'Regex' },
     { value: 'advanced', label: 'Advanced' },
   ];
-
-  let globalIdx = 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh]" onKeyDown={handleKeyDown}>
@@ -235,7 +246,7 @@ export function SearchOverlay({
                   {TYPE_LABELS[type]} ({group.length})
                 </div>
                 {group.map((result) => {
-                  const idx = globalIdx++;
+                  const idx = indexMap.get(result.id)!;
                   const Icon = TYPE_ICONS[result.type];
                   return (
                     <button

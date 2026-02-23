@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Copy, Check, ChevronDown, ChevronRight, X, RotateCcw } from 'lucide-react';
 import type { IOCEntry, ConfidenceLevel } from '../../types';
 import { CONFIDENCE_LEVELS } from '../../types';
@@ -14,11 +14,15 @@ interface IOCItemProps {
 export function IOCItem({ ioc, onUpdate, onDismiss, onRestore }: IOCItemProps) {
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const copyTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => () => clearTimeout(copyTimer.current), []);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(ioc.value);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setCopied(false), 1500);
   };
 
   const confidenceColor = CONFIDENCE_LEVELS[ioc.confidence].color;

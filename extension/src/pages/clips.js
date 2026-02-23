@@ -77,7 +77,7 @@ function isSafeUrl(url) {
   if (!url || typeof url !== 'string') return false;
   try {
     const parsed = new URL(url);
-    return /^https?:$/.test(parsed.protocol);
+    return /^(https?|file):$/.test(parsed.protocol);
   } catch {
     return false;
   }
@@ -98,7 +98,7 @@ async function loadSettings() {
 async function saveSettings() {
   const targetUrl = targetUrlInput.value.trim() || DEFAULT_TARGET_URL;
   if (!isSafeUrl(targetUrl)) {
-    showToast('Invalid target URL — only http/https allowed', true);
+    showToast('Invalid target URL — only http, https, and file:// allowed', true);
     return;
   }
   await chrome.storage.local.set({ settings: { targetUrl } });
@@ -212,9 +212,11 @@ async function getTargetUrl() {
 
 async function requestHostPermission(targetUrl) {
   if (!isSafeUrl(targetUrl)) return false;
-  // Build an origin pattern like "*://browsernotes.online/*"
   const url = new URL(targetUrl);
-  const origin = `${url.protocol}//${url.host}/*`;
+  // file:// URLs use a different origin pattern
+  const origin = url.protocol === 'file:'
+    ? 'file:///*'
+    : `${url.protocol}//${url.host}/*`;
   const granted = await chrome.permissions.request({ origins: [origin] });
   return granted;
 }
