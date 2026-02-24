@@ -20,10 +20,11 @@ interface IOCPanelProps {
   tiExportConfig?: ThreatIntelExportConfig;
   onPushIOCs?: (entries: IOCExportEntry[], slug: string, typeSlug?: string) => void;
   ociPushing?: boolean;
+  ociWritePARConfigured?: boolean;
   style?: React.CSSProperties;
 }
 
-export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatIntelConfig, tiExportConfig, onPushIOCs, ociPushing, style }: IOCPanelProps) {
+export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatIntelConfig, tiExportConfig, onPushIOCs, ociPushing, ociWritePARConfigured, style }: IOCPanelProps) {
   const {
     analysis,
     analyzing,
@@ -167,21 +168,20 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                 </div>
               )}
             </div>
-            {onPushIOCs && (
-              <button
-                onClick={() => {
-                  const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: analysis.iocs }];
-                  const slug = slugify(item.title) || 'item';
-                  onPushIOCs(entries, slug);
-                }}
-                disabled={ociPushing}
-                className="p-1 rounded text-gray-500 hover:text-gray-300 disabled:opacity-50"
-                title="Push IOCs to OCI"
-                aria-label="Push IOCs to OCI"
-              >
-                <Upload size={14} />
-              </button>
-            )}
+            <button
+              onClick={() => {
+                if (!onPushIOCs || !ociWritePARConfigured) return;
+                const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: analysis.iocs }];
+                const slug = slugify(item.title) || 'item';
+                onPushIOCs(entries, slug);
+              }}
+              disabled={!ociWritePARConfigured || ociPushing}
+              className="p-1 rounded text-gray-500 hover:text-gray-300 disabled:opacity-50"
+              title={ociWritePARConfigured ? 'Push IOCs to OCI' : 'Configure write PAR in Settings to push IOCs'}
+              aria-label="Push IOCs to OCI"
+            >
+              <Upload size={14} />
+            </button>
           </>
         )}
         <button
@@ -282,25 +282,23 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                             <button onClick={() => handleCategoryExport(type, 'flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">JSON (flat)</button>
                             <button onClick={() => handleCategoryExport(type, 'flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">CSV (flat)</button>
                             <button onClick={() => handleCategoryExport(type, 'json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">JSON (grouped)</button>
-                            <button onClick={() => handleCategoryExport(type, 'csv')} className={cn('w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700', !onPushIOCs && 'rounded-b-lg')}>CSV (grouped)</button>
-                            {onPushIOCs && (
-                              <button
-                                onClick={() => {
-                                  setExportForType(null);
-                                  if (!analysis) return;
-                                  const typeIOCs = analysis.iocs.filter((ioc) => ioc.type === type && !ioc.dismissed);
-                                  if (typeIOCs.length === 0) return;
-                                  const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: typeIOCs }];
-                                  const slug = slugify(item.title) || 'item';
-                                  const typeSlug = type.replace(/[^a-z0-9]/g, '-');
-                                  onPushIOCs(entries, slug, typeSlug);
-                                }}
-                                disabled={ociPushing}
-                                className="w-full text-left px-3 py-1.5 text-xs text-accent hover:bg-gray-700 rounded-b-lg disabled:opacity-50"
-                              >
-                                Push to OCI (flat)
-                              </button>
-                            )}
+                            <button onClick={() => handleCategoryExport(type, 'csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">CSV (grouped)</button>
+                            <button
+                              onClick={() => {
+                                setExportForType(null);
+                                if (!onPushIOCs || !ociWritePARConfigured || !analysis) return;
+                                const typeIOCs = analysis.iocs.filter((ioc) => ioc.type === type && !ioc.dismissed);
+                                if (typeIOCs.length === 0) return;
+                                const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: typeIOCs }];
+                                const slug = slugify(item.title) || 'item';
+                                const typeSlug = type.replace(/[^a-z0-9]/g, '-');
+                                onPushIOCs(entries, slug, typeSlug);
+                              }}
+                              disabled={!ociWritePARConfigured || ociPushing}
+                              className={cn('w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 rounded-b-lg disabled:opacity-50', ociWritePARConfigured ? 'text-accent' : 'text-gray-500')}
+                            >
+                              Push to OCI (flat)
+                            </button>
                           </div>
                         )}
                       </div>

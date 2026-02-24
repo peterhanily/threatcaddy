@@ -398,12 +398,13 @@ export function NoteEditor({
                 defaultClsLevel: externalSettings.tiDefaultClsLevel,
                 defaultReportSource: externalSettings.tiDefaultReportSource,
               } : undefined}
-              onPushIOCs={externalSettings?.ociWritePAR ? (entries, slug, typeSlug) => {
+              onPushIOCs={(entries, slug, typeSlug) => {
                 oci.pushIOCs(entries, slug, typeSlug, externalSettings ? {
                   defaultClsLevel: externalSettings.tiDefaultClsLevel,
                   defaultReportSource: externalSettings.tiDefaultReportSource,
                 } : undefined);
-              } : undefined}
+              }}
+              ociWritePARConfigured={!!externalSettings?.ociWritePAR}
               ociPushing={oci.syncing}
               style={{ width: `${(1 - editorIOC.ratio) * 100}%` }}
             />
