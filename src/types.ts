@@ -168,8 +168,27 @@ export interface TimelineEvent {
   rawData?: string;
   starred: boolean;
   folderId?: string;
+  timelineId: string;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface Timeline {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  order: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface TimelineExportData {
+  format: 'browsernotes-timeline';
+  version: 1;
+  exportedAt: number;
+  timeline: { name: string; description?: string; color?: string };
+  events: TimelineEvent[];
 }
 
 export const TIMELINE_EVENT_TYPE_LABELS: Record<TimelineEventType, { label: string; color: string }> = {
@@ -232,6 +251,7 @@ export interface ExportData {
   folders: Folder[];
   tags: Tag[];
   timelineEvents?: TimelineEvent[];
+  timelines?: Timeline[];
 }
 
 export interface SharedManifest {

@@ -1,14 +1,16 @@
 import { db } from '../db';
-import type { Note, Task, Folder, Tag, TimelineEvent, ExportData, TimelineEventType, ConfidenceLevel } from '../types';
+import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, ExportData, TimelineExportData, TimelineEventType, ConfidenceLevel } from '../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS } from '../types';
+import { nanoid } from 'nanoid';
 
 export async function exportJSON(): Promise<string> {
-  const [notes, tasks, folders, tags, timelineEvents] = await Promise.all([
+  const [notes, tasks, folders, tags, timelineEvents, timelines] = await Promise.all([
     db.notes.toArray(),
     db.tasks.toArray(),
     db.folders.toArray(),
     db.tags.toArray(),
     db.timelineEvents.toArray(),
+    db.timelines.toArray(),
   ]);
 
   const data: ExportData = {
@@ -19,6 +21,7 @@ export async function exportJSON(): Promise<string> {
     folders,
     tags,
     timelineEvents,
+    timelines,
   };
 
   return JSON.stringify(data, null, 2);
@@ -137,12 +140,27 @@ function sanitizeTimelineEvent(raw: unknown): TimelineEvent | null {
     rawData: r.rawData != null ? str(r.rawData) : undefined,
     starred: bool(r.starred),
     folderId: r.folderId != null ? str(r.folderId) : undefined,
+    timelineId: str(r.timelineId),
     createdAt: num(r.createdAt, Date.now()),
     updatedAt: num(r.updatedAt, Date.now()),
   };
 }
 
-export async function importJSON(json: string): Promise<{ notes: number; tasks: number; folders: number; tags: number; timelineEvents: number }> {
+function sanitizeTimeline(raw: unknown): Timeline | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  return {
+    id: str(r.id),
+    name: str(r.name),
+    description: r.description != null ? str(r.description) : undefined,
+    color: r.color != null ? str(r.color) : undefined,
+    order: num(r.order),
+    createdAt: num(r.createdAt, Date.now()),
+    updatedAt: num(r.updatedAt, Date.now()),
+  };
+}
+
+export async function importJSON(json: string): Promise<{ notes: number; tasks: number; folders: number; tags: number; timelineEvents: number; timelines: number }> {
   if (json.length > MAX_IMPORT_SIZE) {
     throw new Error(`Backup file too large (max ${MAX_IMPORT_SIZE / 1024 / 1024} MB)`);
   }
@@ -165,19 +183,34 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
   const timelineEvents = (Array.isArray(data.timelineEvents) ? data.timelineEvents : [])
     .map(sanitizeTimelineEvent)
     .filter((e: TimelineEvent | null): e is TimelineEvent => e !== null && !!e.id);
+  let timelines = (Array.isArray(data.timelines) ? data.timelines : [])
+    .map(sanitizeTimeline)
+    .filter((t: Timeline | null): t is Timeline => t !== null && !!t.id);
 
-  await db.transaction('rw', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents], async () => {
+  // If we have timeline events but no timelines, create a Default and assign all events
+  if (timelineEvents.length > 0 && timelines.length === 0) {
+    const defaultId = nanoid();
+    const now = Date.now();
+    timelines = [{ id: defaultId, name: 'Default', order: 0, createdAt: now, updatedAt: now }];
+    for (const ev of timelineEvents) {
+      if (!ev.timelineId) ev.timelineId = defaultId;
+    }
+  }
+
+  await db.transaction('rw', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents, db.timelines], async () => {
     await db.notes.clear();
     await db.tasks.clear();
     await db.folders.clear();
     await db.tags.clear();
     await db.timelineEvents.clear();
+    await db.timelines.clear();
 
     await db.notes.bulkAdd(notes);
     await db.tasks.bulkAdd(tasks);
     await db.folders.bulkAdd(folders);
     await db.tags.bulkAdd(tags);
     await db.timelineEvents.bulkAdd(timelineEvents);
+    await db.timelines.bulkAdd(timelines);
   });
 
   return {
@@ -186,6 +219,7 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
     folders: folders.length,
     tags: tags.length,
     timelineEvents: timelineEvents.length,
+    timelines: timelines.length,
   };
 }
 
@@ -202,6 +236,107 @@ export function exportNotesMarkdown(notes: Note[]): string {
       return md;
     })
     .join('\n\n---\n\n');
+}
+
+// --- Standalone timeline export/import ---
+
+export async function exportTimelineJSON(timelineId: string): Promise<string> {
+  const timeline = await db.timelines.get(timelineId);
+  if (!timeline) throw new Error('Timeline not found');
+  const events = await db.timelineEvents.where('timelineId').equals(timelineId).toArray();
+  const data: TimelineExportData = {
+    format: 'browsernotes-timeline',
+    version: 1,
+    exportedAt: Date.now(),
+    timeline: { name: timeline.name, description: timeline.description, color: timeline.color },
+    events,
+  };
+  return JSON.stringify(data, null, 2);
+}
+
+export function parseTimelineImport(json: string): TimelineExportData {
+  if (json.length > MAX_IMPORT_SIZE) {
+    throw new Error(`File too large (max ${MAX_IMPORT_SIZE / 1024 / 1024} MB)`);
+  }
+  const data = JSON.parse(json);
+  if (!data || typeof data !== 'object' || data.format !== 'browsernotes-timeline') {
+    throw new Error('Invalid timeline export file');
+  }
+  const events = (Array.isArray(data.events) ? data.events : [])
+    .map(sanitizeTimelineEvent)
+    .filter((e: TimelineEvent | null): e is TimelineEvent => e !== null && !!e.id);
+  if (events.length > MAX_ITEMS) {
+    throw new Error(`Too many events (max ${MAX_ITEMS.toLocaleString()})`);
+  }
+  const tl = data.timeline && typeof data.timeline === 'object' ? data.timeline as Record<string, unknown> : {};
+  return {
+    format: 'browsernotes-timeline',
+    version: 1,
+    exportedAt: num(data.exportedAt, Date.now()),
+    timeline: {
+      name: str(tl.name, 'Imported Timeline'),
+      description: tl.description != null ? str(tl.description) : undefined,
+      color: tl.color != null ? str(tl.color) : undefined,
+    },
+    events,
+  };
+}
+
+export async function importTimelineAsNew(parsed: TimelineExportData): Promise<{ timelineId: string; eventCount: number }> {
+  const newTimelineId = nanoid();
+  const now = Date.now();
+  const maxOrder = (await db.timelines.toArray()).reduce((max, t) => Math.max(max, t.order), 0);
+  const timeline: Timeline = {
+    id: newTimelineId,
+    name: parsed.timeline.name,
+    description: parsed.timeline.description,
+    color: parsed.timeline.color,
+    order: maxOrder + 1,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const events = parsed.events.map((e) => ({
+    ...e,
+    id: nanoid(),
+    timelineId: newTimelineId,
+  }));
+  await db.transaction('rw', [db.timelines, db.timelineEvents], async () => {
+    await db.timelines.add(timeline);
+    await db.timelineEvents.bulkAdd(events);
+  });
+  return { timelineId: newTimelineId, eventCount: events.length };
+}
+
+export async function mergeTimelineInto(parsed: TimelineExportData, targetTimelineId: string): Promise<{ added: number; updated: number }> {
+  const existing = await db.timelineEvents.where('timelineId').equals(targetTimelineId).toArray();
+  const existingById = new Map(existing.map((e) => [e.id, e]));
+
+  let added = 0;
+  let updated = 0;
+  const toAdd: TimelineEvent[] = [];
+  const toUpdate: { id: string; changes: Partial<TimelineEvent> }[] = [];
+
+  for (const incoming of parsed.events) {
+    const match = existingById.get(incoming.id);
+    if (match) {
+      if (incoming.updatedAt > match.updatedAt) {
+        toUpdate.push({ id: match.id, changes: { ...incoming, id: match.id, timelineId: targetTimelineId } });
+        updated++;
+      }
+    } else {
+      toAdd.push({ ...incoming, id: nanoid(), timelineId: targetTimelineId });
+      added++;
+    }
+  }
+
+  await db.transaction('rw', db.timelineEvents, async () => {
+    if (toAdd.length > 0) await db.timelineEvents.bulkAdd(toAdd);
+    for (const { id, changes } of toUpdate) {
+      await db.timelineEvents.update(id, changes);
+    }
+  });
+
+  return { added, updated };
 }
 
 export function downloadFile(content: string, filename: string, type: string) {

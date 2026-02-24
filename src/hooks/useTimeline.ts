@@ -32,6 +32,7 @@ export function useTimeline() {
       assets: [],
       tags: [],
       starred: false,
+      timelineId: '',
       createdAt: Date.now(),
       updatedAt: Date.now(),
       ...partial,
@@ -62,6 +63,7 @@ export function useTimeline() {
       eventTypes?: TimelineEventType[];
       source?: string;
       folderId?: string;
+      timelineId?: string;
       tag?: string;
       starred?: boolean;
       dateStart?: number;
@@ -70,6 +72,10 @@ export function useTimeline() {
       sortDir?: 'asc' | 'desc';
     }) => {
       let filtered = events;
+
+      if (opts.timelineId) {
+        filtered = filtered.filter((e) => e.timelineId === opts.timelineId);
+      }
 
       if (opts.eventTypes && opts.eventTypes.length > 0) {
         filtered = filtered.filter((e) => opts.eventTypes!.includes(e.eventType));

@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, Search, ArrowUpDown, Star, List, Grid3X3, BarChart3, Download } from 'lucide-react';
-import type { TimelineEvent, TimelineEventType, Tag, Folder } from '../../types';
+import { Plus, Search, ArrowUpDown, Star, List, Grid3X3, BarChart3, Download, Upload } from 'lucide-react';
+import type { TimelineEvent, TimelineEventType, Tag, Folder, Timeline } from '../../types';
 import { TimelineFeed } from './TimelineFeed';
 import { EventTypeFilterBar } from './EventTypeFilterBar';
 import { TimelineEventForm } from './TimelineEventForm';
@@ -12,7 +12,8 @@ import { Modal } from '../Common/Modal';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { cn } from '../../lib/utils';
 import { getTechniqueLabel, getParentTechniqueId, buildNavigatorLayer, buildMitreCSV } from '../../lib/mitre-attack';
-import { downloadFile } from '../../lib/export';
+import { downloadFile, exportTimelineJSON } from '../../lib/export';
+import { TimelineImportModal } from './TimelineImportModal';
 
 interface TimelineViewProps {
   events: TimelineEvent[];
@@ -29,9 +30,13 @@ interface TimelineViewProps {
     search?: string;
     sortDir?: 'asc' | 'desc';
   }) => TimelineEvent[];
+  timelines?: Timeline[];
+  selectedTimelineId?: string;
+  onTimelineReload?: () => void;
+  onEventsReload?: () => void;
 }
 
-function ExportDropdown({ events }: { events: TimelineEvent[] }) {
+function ExportDropdown({ events, selectedTimelineId, onImportClick }: { events: TimelineEvent[]; selectedTimelineId?: string; onImportClick: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -56,18 +61,45 @@ function ExportDropdown({ events }: { events: TimelineEvent[] }) {
     setOpen(false);
   };
 
+  const handleTimelineExport = async () => {
+    if (!selectedTimelineId) return;
+    try {
+      const json = await exportTimelineJSON(selectedTimelineId);
+      downloadFile(json, 'timeline-export.json', 'application/json');
+    } catch (err) {
+      console.error('Timeline export failed:', err);
+    }
+    setOpen(false);
+  };
+
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
         className={cn('p-1 rounded', open ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
-        title="Export MITRE data"
-        aria-label="Export MITRE data"
+        title="Export / Import"
+        aria-label="Export / Import"
       >
         <Download size={16} />
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 z-30 w-52 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1">
+          {selectedTimelineId && (
+            <button
+              onClick={handleTimelineExport}
+              className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
+            >
+              Export Timeline JSON
+            </button>
+          )}
+          <button
+            onClick={() => { setOpen(false); onImportClick(); }}
+            className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+          >
+            <Upload size={12} />
+            Import Timeline...
+          </button>
+          <div className="border-t border-gray-700 my-1" />
           <button
             onClick={handleNavigatorExport}
             className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
@@ -96,10 +128,15 @@ export function TimelineView({
   onDeleteEvent,
   onToggleStar,
   getFilteredEvents,
+  timelines = [],
+  selectedTimelineId,
+  onTimelineReload,
+  onEventsReload,
 }: TimelineViewProps) {
   const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(null);
   const [showNewEvent, setShowNewEvent] = useState(false);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [selectedEventTypes, setSelectedEventTypes] = useState<TimelineEventType[]>([]);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [showStarredOnly, setShowStarredOnly] = useState(false);
@@ -243,10 +280,12 @@ export function TimelineView({
           <Star size={16} fill={showStarredOnly ? 'currentColor' : 'none'} />
         </button>
 
-        {/* Export dropdown — visible in heatmap and report views */}
-        {(viewMode === 'heatmap' || viewMode === 'report') && (
-          <ExportDropdown events={filteredEvents} />
-        )}
+        {/* Export / Import dropdown */}
+        <ExportDropdown
+          events={filteredEvents}
+          selectedTimelineId={selectedTimelineId}
+          onImportClick={() => setShowImportModal(true)}
+        />
 
         <button
           onClick={() => setShowNewEvent(true)}
@@ -354,6 +393,15 @@ export function TimelineView({
         message="This timeline event will be permanently deleted. This cannot be undone."
         confirmLabel="Delete Event"
         danger
+      />
+
+      {/* Timeline Import Modal */}
+      <TimelineImportModal
+        open={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        timelines={timelines}
+        selectedTimelineId={selectedTimelineId}
+        onComplete={() => { onTimelineReload?.(); onEventsReload?.(); }}
       />
     </div>
   );

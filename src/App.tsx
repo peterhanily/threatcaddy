@@ -11,6 +11,7 @@ import { SettingsPanel } from './components/Settings/SettingsPanel';
 import { useNotes } from './hooks/useNotes';
 import { useTasks } from './hooks/useTasks';
 import { useTimeline } from './hooks/useTimeline';
+import { useTimelines } from './hooks/useTimelines';
 import { useFolders } from './hooks/useFolders';
 import { useTags } from './hooks/useTags';
 import { useSettings } from './hooks/useSettings';
@@ -30,6 +31,7 @@ export default function App() {
   const notes = useNotes();
   const tasks = useTasks();
   const timeline = useTimeline();
+  const { timelines, createTimeline, updateTimeline, deleteTimeline, reload: reloadTimelines } = useTimelines();
   const { folders, createFolder, findOrCreateFolder, updateFolder, deleteFolder } = useFolders();
   const { tags, createTag } = useTags();
 
@@ -51,6 +53,7 @@ export default function App() {
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [selectedIOCTypes, setSelectedIOCTypes] = useState<IOCType[]>([]);
   const [browseSharedOpen, setBrowseSharedOpen] = useState(false);
+  const [selectedTimelineId, setSelectedTimelineId] = useState<string>();
 
   // Listen for clip imports from the Chrome extension via postMessage
   useEffect(() => {
@@ -138,9 +141,19 @@ export default function App() {
       timeline.getFilteredEvents({
         folderId: selectedFolderId,
         tag: selectedTag,
+        timelineId: selectedTimelineId,
       }),
-    [timeline.getFilteredEvents, selectedFolderId, selectedTag]
+    [timeline.getFilteredEvents, selectedFolderId, selectedTag, selectedTimelineId]
   );
+
+  // Timeline event counts per timeline
+  const timelineEventCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const ev of timeline.events) {
+      counts[ev.timelineId] = (counts[ev.timelineId] || 0) + 1;
+    }
+    return counts;
+  }, [timeline.events]);
 
   // Selected note
   const selectedNote = useMemo(
@@ -199,7 +212,8 @@ export default function App() {
     notes.reload();
     tasks.reload();
     timeline.reload();
-  }, [notes.reload, tasks.reload, timeline.reload]);
+    reloadTimelines();
+  }, [notes.reload, tasks.reload, timeline.reload, reloadTimelines]);
 
   const handleToggleEditorMode = useCallback(() => {
     setEditorMode((prev) => {
@@ -227,7 +241,8 @@ export default function App() {
     notes.reload();
     tasks.reload();
     timeline.reload();
-  }, [pendingImportFile, notes.reload, tasks.reload, timeline.reload]);
+    reloadTimelines();
+  }, [pendingImportFile, notes.reload, tasks.reload, timeline.reload, reloadTimelines]);
 
   // Keyboard shortcuts
   // Search overlay navigation callbacks
@@ -291,7 +306,14 @@ export default function App() {
     noteCounts,
     taskCounts: tasks.taskCounts,
     timelineCounts: timeline.eventCounts,
-  }), [activeView, folders, tags, selectedFolderId, selectedTag, showTrash, showArchive, createFolder, handleDeleteFolder, updateFolder, noteCounts, tasks.taskCounts, timeline.eventCounts]);
+    timelines,
+    selectedTimelineId,
+    onTimelineSelect: setSelectedTimelineId,
+    onCreateTimeline: (name: string) => createTimeline(name),
+    onDeleteTimeline: (id: string) => { deleteTimeline(id); if (selectedTimelineId === id) setSelectedTimelineId(undefined); },
+    onRenameTimeline: (id: string, name: string) => updateTimeline(id, { name }),
+    timelineEventCounts,
+  }), [activeView, folders, tags, selectedFolderId, selectedTag, showTrash, showArchive, createFolder, handleDeleteFolder, updateFolder, noteCounts, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, createTimeline, deleteTimeline, updateTimeline, timelineEventCounts]);
 
   return (
     <>
@@ -335,11 +357,15 @@ export default function App() {
             allTags={tags}
             folders={folders}
             onCreateTag={createTag}
-            onCreateEvent={(data) => timeline.createEvent(data)}
+            onCreateEvent={(data) => timeline.createEvent({ ...data, timelineId: selectedTimelineId || timelines[0]?.id || '' })}
             onUpdateEvent={timeline.updateEvent}
             onDeleteEvent={timeline.deleteEvent}
             onToggleStar={timeline.toggleStar}
             getFilteredEvents={timeline.getFilteredEvents}
+            timelines={timelines}
+            selectedTimelineId={selectedTimelineId}
+            onTimelineReload={reloadTimelines}
+            onEventsReload={timeline.reload}
           />
         ) : activeView === 'tasks' ? (
           <TaskListView

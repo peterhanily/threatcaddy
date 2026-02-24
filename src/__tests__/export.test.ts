@@ -40,7 +40,7 @@ describe('exportJSON / importJSON roundtrip', () => {
     await db.tags.clear();
 
     const counts = await importJSON(json);
-    expect(counts).toEqual({ notes: 1, tasks: 1, folders: 1, tags: 1, timelineEvents: 0 });
+    expect(counts).toEqual({ notes: 1, tasks: 1, folders: 1, tags: 1, timelineEvents: 0, timelines: 0 });
 
     // Verify data integrity
     const notes = await db.notes.toArray();

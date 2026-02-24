@@ -4,7 +4,7 @@ import {
   Archive, ChevronDown, ChevronRight, Plus, X, Settings,
   PanelLeftClose, Github, Download, Chrome,
 } from 'lucide-react';
-import type { Folder, Tag as TagType, ViewMode } from '../../types';
+import type { Folder, Tag as TagType, Timeline, ViewMode } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { cn } from '../../lib/utils';
 
@@ -30,6 +30,13 @@ interface SidebarProps {
   noteCounts: { total: number; trashed: number; archived: number };
   taskCounts: { todo: number; 'in-progress': number; done: number; total: number };
   timelineCounts?: { total: number; starred: number };
+  timelines?: Timeline[];
+  selectedTimelineId?: string;
+  onTimelineSelect?: (id?: string) => void;
+  onCreateTimeline?: (name: string) => void;
+  onDeleteTimeline?: (id: string) => void;
+  onRenameTimeline?: (id: string, name: string) => void;
+  timelineEventCounts?: Record<string, number>;
   onNavigate?: () => void;
 }
 
@@ -55,6 +62,13 @@ export function Sidebar({
   noteCounts,
   taskCounts,
   timelineCounts,
+  timelines = [],
+  selectedTimelineId,
+  onTimelineSelect,
+  onCreateTimeline,
+  onDeleteTimeline,
+  onRenameTimeline,
+  timelineEventCounts = {},
   onNavigate,
 }: SidebarProps) {
   const [foldersOpen, setFoldersOpen] = useState(true);
@@ -64,6 +78,13 @@ export function Sidebar({
   const [editingFolder, setEditingFolder] = useState<string | null>(null);
   const [editFolderName, setEditFolderName] = useState('');
   const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
+
+  const [timelinesOpen, setTimelinesOpen] = useState(true);
+  const [newTimelineName, setNewTimelineName] = useState('');
+  const [showNewTimeline, setShowNewTimeline] = useState(false);
+  const [editingTimeline, setEditingTimeline] = useState<string | null>(null);
+  const [editTimelineName, setEditTimelineName] = useState('');
+  const [deletingTimelineId, setDeletingTimelineId] = useState<string | null>(null);
 
   if (collapsed) return null;
 
@@ -79,6 +100,21 @@ export function Sidebar({
     if (editFolderName.trim()) {
       onRenameFolder(id, editFolderName.trim());
       setEditingFolder(null);
+    }
+  };
+
+  const handleCreateTimeline = () => {
+    if (newTimelineName.trim() && onCreateTimeline) {
+      onCreateTimeline(newTimelineName.trim());
+      setNewTimelineName('');
+      setShowNewTimeline(false);
+    }
+  };
+
+  const handleRenameTimeline = (id: string) => {
+    if (editTimelineName.trim() && onRenameTimeline) {
+      onRenameTimeline(id, editTimelineName.trim());
+      setEditingTimeline(null);
     }
   };
 
@@ -126,6 +162,96 @@ export function Sidebar({
           active={activeView === 'timeline' && !selectedFolderId && !selectedTag}
           onClick={() => nav(() => { onViewChange('timeline'); clearFilters(); })}
         />
+        {/* Timelines — only in timeline view */}
+        {activeView === 'timeline' && (
+          <div className="pt-3">
+            <button
+              onClick={() => setTimelinesOpen(!timelinesOpen)}
+              className="flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300"
+              aria-expanded={timelinesOpen}
+            >
+              {timelinesOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              Timelines
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowNewTimeline(true); }}
+                className="ml-auto p-0.5 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
+                aria-label="Create timeline"
+                title="Create timeline"
+              >
+                <Plus size={14} />
+              </button>
+            </button>
+
+            {timelinesOpen && (
+              <div className="mt-1 space-y-0.5">
+                {showNewTimeline && (
+                  <div className="flex items-center gap-1 px-2">
+                    <input
+                      autoFocus
+                      value={newTimelineName}
+                      onChange={(e) => setNewTimelineName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTimeline(); if (e.key === 'Escape') setShowNewTimeline(false); }}
+                      placeholder="Timeline name"
+                      aria-label="New timeline name"
+                      className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
+                    />
+                    <button onClick={handleCreateTimeline} className="text-accent hover:text-accent-hover" aria-label="Confirm create timeline" title="Create timeline">
+                      <Plus size={14} />
+                    </button>
+                    <button onClick={() => setShowNewTimeline(false)} className="text-gray-500 hover:text-gray-300" aria-label="Cancel" title="Cancel">
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+                <SidebarItem
+                  icon={<Clock size={16} />}
+                  label="All Events"
+                  count={timelineCounts?.total}
+                  active={!selectedTimelineId}
+                  onClick={() => nav(() => { onTimelineSelect?.(undefined); })}
+                />
+                {timelines.map((tl) => (
+                  <div key={tl.id} className="group relative">
+                    {editingTimeline === tl.id ? (
+                      <div className="flex items-center gap-1 px-2">
+                        <input
+                          autoFocus
+                          value={editTimelineName}
+                          onChange={(e) => setEditTimelineName(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleRenameTimeline(tl.id); if (e.key === 'Escape') setEditingTimeline(null); }}
+                          aria-label="Rename timeline"
+                          className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
+                        />
+                      </div>
+                    ) : (
+                      <SidebarItem
+                        icon={<Clock size={16} style={{ color: tl.color }} />}
+                        label={tl.name}
+                        count={timelineEventCounts[tl.id] || 0}
+                        active={selectedTimelineId === tl.id}
+                        onClick={() => nav(() => { onTimelineSelect?.(tl.id); })}
+                        onDoubleClick={() => { setEditingTimeline(tl.id); setEditTimelineName(tl.name); }}
+                        actions={
+                          timelines.length > 1 ? (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDeletingTimelineId(tl.id); }}
+                              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-600 text-gray-500 hover:text-red-400"
+                              aria-label={`Delete timeline ${tl.name}`}
+                              title="Delete timeline"
+                            >
+                              <X size={12} />
+                            </button>
+                          ) : undefined
+                        }
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Folders */}
         <div className="pt-3">
           <button
@@ -297,6 +423,16 @@ export function Sidebar({
         title="Delete Folder"
         message="This folder will be deleted. Notes and tasks inside it will be moved to &quot;All Items&quot;."
         confirmLabel="Delete Folder"
+        danger
+      />
+
+      <ConfirmDialog
+        open={deletingTimelineId !== null}
+        onClose={() => setDeletingTimelineId(null)}
+        onConfirm={() => { if (deletingTimelineId) { onDeleteTimeline?.(deletingTimelineId); setDeletingTimelineId(null); } }}
+        title="Delete Timeline"
+        message="This timeline and all its events will be permanently deleted. This cannot be undone."
+        confirmLabel="Delete Timeline"
         danger
       />
     </aside>
