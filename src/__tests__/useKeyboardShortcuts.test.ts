@@ -15,6 +15,7 @@ describe('useKeyboardShortcuts', () => {
     onSave: vi.fn(noop),
     onTogglePreview: vi.fn(noop),
     onEscape: vi.fn(noop),
+    onSwitchView: vi.fn(noop),
   };
 
   beforeEach(() => {
@@ -25,6 +26,7 @@ describe('useKeyboardShortcuts', () => {
       onSave: vi.fn(noop),
       onTogglePreview: vi.fn(noop),
       onEscape: vi.fn(noop),
+      onSwitchView: vi.fn(noop),
     };
   });
 
@@ -95,6 +97,34 @@ describe('useKeyboardShortcuts', () => {
     const { unmount } = renderHook(() => useKeyboardShortcuts(handlers));
     fireKey('n');
     expect(handlers.onNewNote).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it('triggers onSwitchView with "notes" on Ctrl+1', () => {
+    const { unmount } = renderHook(() => useKeyboardShortcuts(handlers));
+    fireKey('1', { ctrlKey: true });
+    expect(handlers.onSwitchView).toHaveBeenCalledWith('notes');
+    unmount();
+  });
+
+  it('triggers onSwitchView with "tasks" on Ctrl+2', () => {
+    const { unmount } = renderHook(() => useKeyboardShortcuts(handlers));
+    fireKey('2', { ctrlKey: true });
+    expect(handlers.onSwitchView).toHaveBeenCalledWith('tasks');
+    unmount();
+  });
+
+  it('triggers onSwitchView with "timeline" on Ctrl+3', () => {
+    const { unmount } = renderHook(() => useKeyboardShortcuts(handlers));
+    fireKey('3', { ctrlKey: true });
+    expect(handlers.onSwitchView).toHaveBeenCalledWith('timeline');
+    unmount();
+  });
+
+  it('triggers onSwitchView with "whiteboard" on Ctrl+4', () => {
+    const { unmount } = renderHook(() => useKeyboardShortcuts(handlers));
+    fireKey('4', { ctrlKey: true });
+    expect(handlers.onSwitchView).toHaveBeenCalledWith('whiteboard');
     unmount();
   });
 

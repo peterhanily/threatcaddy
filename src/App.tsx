@@ -27,6 +27,7 @@ import { SearchOverlay } from './components/Search/SearchOverlay';
 import { BrowseShared } from './components/Settings/BrowseShared';
 import { extractIOCs, mergeIOCAnalysis } from './lib/ioc-extractor';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
+import { ActiveFilterBar } from './components/Common/ActiveFilterBar';
 
 export default function App() {
   const { settings, updateSettings, toggleTheme } = useSettings();
@@ -285,12 +286,25 @@ export default function App() {
     setSelectedTag(undefined);
   }, []);
 
+  const handleSearchNavigateToTimeline = useCallback((id: string) => {
+    setActiveView('timeline');
+    // Find the event to select its timeline
+    const ev = timeline.events.find((e) => e.id === id);
+    if (ev) setSelectedTimelineId(ev.timelineId);
+  }, [timeline.events]);
+
+  const handleSearchNavigateToWhiteboard = useCallback((id: string) => {
+    setActiveView('whiteboard');
+    setSelectedWhiteboardId(id);
+  }, []);
+
   useKeyboardShortcuts({
     onNewNote: handleNewNote,
     onNewTask: handleNewTask,
     onSearch: () => setSearchOverlayOpen(true),
     onSave: handleQuickSave,
     onTogglePreview: handleToggleEditorMode,
+    onSwitchView: (view) => { setActiveView(view); setShowSettings(false); },
     onEscape: () => {
       setSearchOverlayOpen(false);
       setShowQuickCapture(false);
@@ -346,6 +360,19 @@ export default function App() {
     onMoveNoteToFolder: handleMoveNoteToFolder,
   }), [activeView, folders, tags, selectedFolderId, selectedTag, showTrash, showArchive, createFolder, handleDeleteFolder, updateFolder, noteCounts, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, createTimeline, deleteTimeline, updateTimeline, timelineEventCounts, whiteboards, selectedWhiteboardId, createWhiteboard, deleteWhiteboard, updateWhiteboard, handleMoveNoteToFolder]);
 
+  const selectedFolder = useMemo(() => folders.find((f) => f.id === selectedFolderId), [folders, selectedFolderId]);
+  const selectedTagObj = useMemo(() => tags.find((t) => t.name === selectedTag), [tags, selectedTag]);
+
+  const filterBar = (selectedFolderId || selectedTag) ? (
+    <ActiveFilterBar
+      folderName={selectedFolder?.name}
+      folderColor={selectedFolder?.color}
+      tagName={selectedTag}
+      tagColor={selectedTagObj?.color}
+      onClear={() => { setSelectedFolderId(undefined); setSelectedTag(undefined); }}
+    />
+  ) : null;
+
   return (
     <>
       <AppLayout
@@ -374,6 +401,8 @@ export default function App() {
         }
       >
         <ErrorBoundary>
+        <div className="flex flex-col flex-1 overflow-hidden">
+        {filterBar}
         {showSettings ? (
           <SettingsPanel
             settings={settings}
@@ -407,6 +436,8 @@ export default function App() {
             onUpdateWhiteboard={updateWhiteboard}
             onDeleteWhiteboard={deleteWhiteboard}
             onCreateTag={createTag}
+            selectedWhiteboardId={selectedWhiteboardId ?? null}
+            onWhiteboardSelect={(id) => setSelectedWhiteboardId(id ?? undefined)}
           />
         ) : activeView === 'tasks' ? (
           <TaskListView
@@ -471,6 +502,7 @@ export default function App() {
             </div>
           </div>
         )}
+        </div>
         </ErrorBoundary>
       </AppLayout>
 
@@ -513,6 +545,10 @@ export default function App() {
         clipsFolderId={clipsFolderId}
         onNavigateToNote={handleSearchNavigateToNote}
         onNavigateToTask={handleSearchNavigateToTask}
+        timelineEvents={timeline.events}
+        whiteboards={whiteboards}
+        onNavigateToTimeline={handleSearchNavigateToTimeline}
+        onNavigateToWhiteboard={handleSearchNavigateToWhiteboard}
       />
 
       <BrowseShared

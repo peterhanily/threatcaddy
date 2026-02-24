@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { unifiedSearch, generateSnippet, parseAdvancedQuery } from '../lib/search';
-import type { Note, Task } from '../types';
+import type { Note, Task, TimelineEvent, Whiteboard } from '../types';
 import type { FieldSet } from '../lib/search';
 
 function makeNote(overrides: Partial<Note> = {}): Note {
@@ -26,6 +26,42 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     priority: 'none',
     tags: [],
     status: 'todo',
+    order: 0,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    ...overrides,
+  };
+}
+
+function makeTimelineEvent(overrides: Partial<TimelineEvent> = {}): TimelineEvent {
+  return {
+    id: 'te1',
+    timestamp: Date.now(),
+    title: 'Test Event',
+    description: '',
+    eventType: 'other',
+    source: '',
+    confidence: 'medium',
+    linkedIOCIds: [],
+    linkedNoteIds: [],
+    linkedTaskIds: [],
+    mitreAttackIds: [],
+    assets: [],
+    tags: [],
+    starred: false,
+    timelineId: 'tl1',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    ...overrides,
+  };
+}
+
+function makeWhiteboard(overrides: Partial<Whiteboard> = {}): Whiteboard {
+  return {
+    id: 'wb1',
+    name: 'Test Board',
+    elements: '[]',
+    tags: [],
     order: 0,
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -143,6 +179,75 @@ describe('unifiedSearch', () => {
       // "cake" is a bare term, should search all fields
       expect(result.results.some((r) => r.id === 'n2')).toBe(true);
     });
+  });
+});
+
+describe('unifiedSearch — timeline events', () => {
+  const now = Date.now();
+  const events: TimelineEvent[] = [
+    makeTimelineEvent({ id: 'ev1', title: 'Phishing email received', source: 'email-gateway', updatedAt: now - 100 }),
+    makeTimelineEvent({ id: 'ev2', title: 'Malware executed', eventType: 'execution', updatedAt: now - 200 }),
+    makeTimelineEvent({ id: 'ev3', title: 'Data collected', tags: ['sensitive'], updatedAt: now - 300 }),
+  ];
+
+  it('finds timeline event by title', () => {
+    const result = unifiedSearch([], [], undefined, { mode: 'simple', raw: 'Phishing' }, events);
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].type).toBe('timeline');
+    expect(result.results[0].id).toBe('ev1');
+  });
+
+  it('finds timeline event by source', () => {
+    const result = unifiedSearch([], [], undefined, { mode: 'simple', raw: 'email-gateway' }, events);
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].id).toBe('ev1');
+  });
+
+  it('finds timeline event by eventType label', () => {
+    const result = unifiedSearch([], [], undefined, { mode: 'simple', raw: 'Execution' }, events);
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].id).toBe('ev2');
+  });
+
+  it('finds timeline event by tag', () => {
+    const result = unifiedSearch([], [], undefined, { mode: 'simple', raw: 'sensitive' }, events);
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].id).toBe('ev3');
+  });
+});
+
+describe('unifiedSearch — whiteboards', () => {
+  const now = Date.now();
+  const boards: Whiteboard[] = [
+    makeWhiteboard({ id: 'wb1', name: 'Network Diagram', updatedAt: now - 100 }),
+    makeWhiteboard({ id: 'wb2', name: 'Attack Flow', tags: ['incident'], updatedAt: now - 200 }),
+  ];
+
+  it('finds whiteboard by name', () => {
+    const result = unifiedSearch([], [], undefined, { mode: 'simple', raw: 'Network' }, undefined, boards);
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].type).toBe('whiteboard');
+    expect(result.results[0].id).toBe('wb1');
+  });
+
+  it('finds whiteboard by tag', () => {
+    const result = unifiedSearch([], [], undefined, { mode: 'simple', raw: 'incident' }, undefined, boards);
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].id).toBe('wb2');
+  });
+});
+
+describe('unifiedSearch — sort ordering with all types', () => {
+  const now = Date.now();
+  it('sorts timeline after tasks and whiteboards after timeline', () => {
+    const notes = [makeNote({ id: 'n1', title: 'alpha test', updatedAt: now })];
+    const tasks = [makeTask({ id: 't1', title: 'alpha fix', updatedAt: now })];
+    const events = [makeTimelineEvent({ id: 'ev1', title: 'alpha event', updatedAt: now })];
+    const boards = [makeWhiteboard({ id: 'wb1', name: 'alpha board', updatedAt: now })];
+
+    const result = unifiedSearch(notes, tasks, 'no-clips', { mode: 'simple', raw: 'alpha' }, events, boards);
+    const types = result.results.map((r) => r.type);
+    expect(types).toEqual(['note', 'task', 'timeline', 'whiteboard']);
   });
 });
 

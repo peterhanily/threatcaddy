@@ -1,4 +1,4 @@
-import React, { useState, Suspense } from 'react';
+import React, { Suspense } from 'react';
 import type { Whiteboard, Folder, Tag } from '../../types';
 import { WhiteboardList } from './WhiteboardList';
 import { Loader2 } from 'lucide-react';
@@ -13,6 +13,8 @@ interface WhiteboardViewProps {
   onUpdateWhiteboard: (id: string, updates: Partial<Whiteboard>) => void;
   onDeleteWhiteboard: (id: string) => void;
   onCreateTag: (name: string) => Promise<Tag>;
+  selectedWhiteboardId?: string | null;
+  onWhiteboardSelect?: (id: string | null) => void;
 }
 
 export function WhiteboardView({
@@ -23,25 +25,25 @@ export function WhiteboardView({
   onUpdateWhiteboard,
   onDeleteWhiteboard,
   onCreateTag,
+  selectedWhiteboardId = null,
+  onWhiteboardSelect,
 }: WhiteboardViewProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  const selectedWhiteboard = selectedId ? whiteboards.find((w) => w.id === selectedId) : null;
+  const selectedWhiteboard = selectedWhiteboardId ? whiteboards.find((w) => w.id === selectedWhiteboardId) : null;
 
   // Auto-deselect if whiteboard was deleted
-  if (selectedId && !selectedWhiteboard) {
+  if (selectedWhiteboardId && !selectedWhiteboard) {
     // Use setTimeout to avoid setState during render
-    setTimeout(() => setSelectedId(null), 0);
+    setTimeout(() => onWhiteboardSelect?.(null), 0);
   }
 
   const handleCreate = async () => {
     const wb = await onCreateWhiteboard();
-    setSelectedId(wb.id);
+    onWhiteboardSelect?.(wb.id);
   };
 
   const handleDelete = (id: string) => {
     onDeleteWhiteboard(id);
-    if (selectedId === id) setSelectedId(null);
+    if (selectedWhiteboardId === id) onWhiteboardSelect?.(null);
   };
 
   if (selectedWhiteboard) {
@@ -61,7 +63,7 @@ export function WhiteboardView({
             folders={folders}
             onUpdate={onUpdateWhiteboard}
             onCreateTag={onCreateTag}
-            onBack={() => setSelectedId(null)}
+            onBack={() => onWhiteboardSelect?.(null)}
           />
         </Suspense>
       </div>
@@ -73,7 +75,7 @@ export function WhiteboardView({
       <WhiteboardList
         whiteboards={whiteboards}
         folders={folders}
-        onSelect={setSelectedId}
+        onSelect={(id) => onWhiteboardSelect?.(id)}
         onCreate={handleCreate}
         onDelete={handleDelete}
         onRename={(id, name) => onUpdateWhiteboard(id, { name })}

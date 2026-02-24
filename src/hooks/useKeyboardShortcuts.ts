@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type { ViewMode } from '../types';
 
 interface ShortcutHandlers {
   onNewNote?: () => void;
@@ -7,6 +8,7 @@ interface ShortcutHandlers {
   onSave?: () => void;
   onTogglePreview?: () => void;
   onEscape?: () => void;
+  onSwitchView?: (view: ViewMode) => void;
 }
 
 export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
@@ -43,6 +45,12 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       if (ctrl && e.key === '`') {
         e.preventDefault();
         h.onTogglePreview?.();
+      }
+
+      const viewKeys: Record<string, ViewMode> = { '1': 'notes', '2': 'tasks', '3': 'timeline', '4': 'whiteboard' };
+      if (ctrl && viewKeys[e.key]) {
+        e.preventDefault();
+        h.onSwitchView?.(viewKeys[e.key]);
       }
 
       if (e.key === 'Escape') {

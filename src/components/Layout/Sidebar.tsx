@@ -184,28 +184,28 @@ export function Sidebar({
           icon={<FileText size={18} />}
           label="Notes"
           count={noteCounts.total}
-          active={activeView === 'notes' && !showTrash && !showArchive && !selectedFolderId && !selectedTag}
+          active={activeView === 'notes' && !showTrash && !showArchive}
           onClick={() => nav(() => { onViewChange('notes'); clearFilters(); })}
         />
         <SidebarItem
           icon={<ListChecks size={18} />}
           label="Tasks"
           count={taskCounts.total}
-          active={activeView === 'tasks' && !selectedFolderId && !selectedTag}
+          active={activeView === 'tasks'}
           onClick={() => nav(() => { onViewChange('tasks'); clearFilters(); })}
         />
         <SidebarItem
           icon={<Clock size={18} />}
           label="Timeline"
           count={timelineCounts?.total}
-          active={activeView === 'timeline' && !selectedFolderId && !selectedTag}
+          active={activeView === 'timeline'}
           onClick={() => nav(() => { onViewChange('timeline'); clearFilters(); })}
         />
         <SidebarItem
           icon={<PenTool size={18} />}
           label="Whiteboards"
           count={whiteboardCount}
-          active={activeView === 'whiteboard' && !selectedFolderId && !selectedTag}
+          active={activeView === 'whiteboard'}
           onClick={() => nav(() => { onViewChange('whiteboard'); clearFilters(); })}
         />
         {/* Whiteboards — only in whiteboard view */}

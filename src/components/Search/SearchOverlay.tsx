@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, X, FileText, Paperclip, ListChecks, Save } from 'lucide-react';
+import { Search, X, FileText, Paperclip, ListChecks, Clock, PenTool, Save } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { formatDate } from '../../lib/utils';
 import { unifiedSearch, type SearchMode, type SearchResult, type SearchResultType } from '../../lib/search';
 import { useSavedSearches } from '../../hooks/useSavedSearches';
-import type { Note, Task } from '../../types';
+import type { Note, Task, TimelineEvent, Whiteboard } from '../../types';
 
 interface SearchOverlayProps {
   open: boolean;
@@ -14,18 +14,26 @@ interface SearchOverlayProps {
   clipsFolderId: string | undefined;
   onNavigateToNote: (id: string) => void;
   onNavigateToTask: (id: string) => void;
+  timelineEvents?: TimelineEvent[];
+  whiteboards?: Whiteboard[];
+  onNavigateToTimeline?: (id: string) => void;
+  onNavigateToWhiteboard?: (id: string) => void;
 }
 
 const TYPE_ICONS: Record<SearchResultType, typeof FileText> = {
   note: FileText,
   clip: Paperclip,
   task: ListChecks,
+  timeline: Clock,
+  whiteboard: PenTool,
 };
 
 const TYPE_LABELS: Record<SearchResultType, string> = {
   note: 'Notes',
   clip: 'Clips',
   task: 'Tasks',
+  timeline: 'Timeline Events',
+  whiteboard: 'Whiteboards',
 };
 
 export function SearchOverlay({
@@ -36,6 +44,10 @@ export function SearchOverlay({
   clipsFolderId,
   onNavigateToNote,
   onNavigateToTask,
+  timelineEvents,
+  whiteboards,
+  onNavigateToTimeline,
+  onNavigateToWhiteboard,
 }: SearchOverlayProps) {
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<SearchMode>('simple');
@@ -66,8 +78,8 @@ export function SearchOverlay({
   // Search results
   const searchResult = useMemo(() => {
     if (!debouncedQuery.trim()) return { results: [], error: undefined };
-    return unifiedSearch(notes, tasks, clipsFolderId, { mode, raw: debouncedQuery });
-  }, [notes, tasks, clipsFolderId, mode, debouncedQuery]);
+    return unifiedSearch(notes, tasks, clipsFolderId, { mode, raw: debouncedQuery }, timelineEvents, whiteboards);
+  }, [notes, tasks, clipsFolderId, mode, debouncedQuery, timelineEvents, whiteboards]);
 
   const { results, error } = searchResult;
 
@@ -91,9 +103,11 @@ export function SearchOverlay({
 
   const handleSelect = useCallback((result: SearchResult) => {
     if (result.type === 'note' || result.type === 'clip') onNavigateToNote(result.id);
+    else if (result.type === 'timeline') onNavigateToTimeline?.(result.id);
+    else if (result.type === 'whiteboard') onNavigateToWhiteboard?.(result.id);
     else onNavigateToTask(result.id);
     onClose();
-  }, [onNavigateToNote, onNavigateToTask, onClose]);
+  }, [onNavigateToNote, onNavigateToTask, onNavigateToTimeline, onNavigateToWhiteboard, onClose]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -132,7 +146,7 @@ export function SearchOverlay({
   const indexMap = useMemo(() => {
     const map = new Map<string, number>();
     let idx = 0;
-    for (const type of ['note', 'clip', 'task'] as SearchResultType[]) {
+    for (const type of ['note', 'clip', 'task', 'timeline', 'whiteboard'] as SearchResultType[]) {
       const group = grouped[type];
       if (group) {
         for (const r of group) { map.set(r.id, idx++); }
@@ -186,7 +200,7 @@ export function SearchOverlay({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={
-                  mode === 'simple' ? 'Search all notes, clips, and tasks...' :
+                  mode === 'simple' ? 'Search notes, tasks, timeline, whiteboards...' :
                   mode === 'regex' ? 'Enter regex pattern...' :
                   'title:contains("foo") AND tags:contains("bar")...'
                 }
@@ -237,7 +251,7 @@ export function SearchOverlay({
             </div>
           )}
 
-          {(['note', 'clip', 'task'] as SearchResultType[]).map((type) => {
+          {(['note', 'clip', 'task', 'timeline', 'whiteboard'] as SearchResultType[]).map((type) => {
             const group = grouped[type];
             if (!group || group.length === 0) return null;
             return (

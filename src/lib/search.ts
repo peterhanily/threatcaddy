@@ -1,4 +1,5 @@
-import type { Note, Task } from '../types';
+import type { Note, Task, TimelineEvent, Whiteboard } from '../types';
+import { TIMELINE_EVENT_TYPE_LABELS } from '../types';
 
 export type SearchMode = 'simple' | 'regex' | 'advanced';
 
@@ -7,7 +8,7 @@ export interface SearchQuery {
   raw: string;
 }
 
-export type SearchResultType = 'note' | 'clip' | 'task';
+export type SearchResultType = 'note' | 'clip' | 'task' | 'timeline' | 'whiteboard';
 
 export interface SearchResult {
   id: string;
@@ -33,7 +34,9 @@ export function unifiedSearch(
   notes: Note[],
   tasks: Task[],
   clipsFolderId: string | undefined,
-  query: SearchQuery
+  query: SearchQuery,
+  timelineEvents?: TimelineEvent[],
+  whiteboards?: Whiteboard[],
 ): UnifiedSearchResult {
   if (!query.raw.trim()) return { results: [] };
   if (query.raw.length > MAX_QUERY_LEN) return { results: [], error: 'Query too long' };
@@ -54,6 +57,18 @@ export function unifiedSearch(
       const matchField = findSimpleTaskMatchField(task, lower);
       if (matchField) {
         results.push(taskToResult(task, matchField, query.raw));
+      }
+    }
+    if (timelineEvents) {
+      for (const ev of timelineEvents) {
+        const matchField = findSimpleTimelineMatchField(ev, lower);
+        if (matchField) results.push(timelineEventToResult(ev, matchField, query.raw));
+      }
+    }
+    if (whiteboards) {
+      for (const wb of whiteboards) {
+        const matchField = findSimpleWhiteboardMatchField(wb, lower);
+        if (matchField) results.push(whiteboardToResult(wb, matchField, query.raw));
       }
     }
   } else if (query.mode === 'regex') {
@@ -78,6 +93,18 @@ export function unifiedSearch(
       const matchField = findRegexTaskMatchField(task, regex);
       if (matchField) {
         results.push(taskToResult(task, matchField, query.raw));
+      }
+    }
+    if (timelineEvents) {
+      for (const ev of timelineEvents) {
+        const matchField = findRegexTimelineMatchField(ev, regex);
+        if (matchField) results.push(timelineEventToResult(ev, matchField, query.raw));
+      }
+    }
+    if (whiteboards) {
+      for (const wb of whiteboards) {
+        const matchField = findRegexWhiteboardMatchField(wb, regex);
+        if (matchField) results.push(whiteboardToResult(wb, matchField, query.raw));
       }
     }
   } else if (query.mode === 'advanced') {
@@ -111,10 +138,30 @@ export function unifiedSearch(
         results.push(taskToResult(task, 'title', query.raw));
       }
     }
+    if (timelineEvents) {
+      for (const ev of timelineEvents) {
+        const fields: FieldSet = {
+          title: ev.title,
+          content: [ev.description || '', ev.source, ev.actor || '', TIMELINE_EVENT_TYPE_LABELS[ev.eventType]?.label || ''].join(' '),
+          tags: ev.tags.join(' '),
+        };
+        if (predicate(fields)) results.push(timelineEventToResult(ev, 'title', query.raw));
+      }
+    }
+    if (whiteboards) {
+      for (const wb of whiteboards) {
+        const fields: FieldSet = {
+          title: wb.name,
+          content: '',
+          tags: wb.tags.join(' '),
+        };
+        if (predicate(fields)) results.push(whiteboardToResult(wb, 'name', query.raw));
+      }
+    }
   }
 
   // Sort by type group (notes, clips, tasks), then updatedAt desc
-  const typeOrder: Record<SearchResultType, number> = { note: 0, clip: 1, task: 2 };
+  const typeOrder: Record<SearchResultType, number> = { note: 0, clip: 1, task: 2, timeline: 3, whiteboard: 4 };
   results.sort((a, b) => {
     const typeDiff = typeOrder[a.type] - typeOrder[b.type];
     if (typeDiff !== 0) return typeDiff;
@@ -160,6 +207,44 @@ function findRegexTaskMatchField(task: Task, regex: RegExp): string | null {
   return null;
 }
 
+// --- Timeline simple/regex helpers ---
+
+function findSimpleTimelineMatchField(ev: TimelineEvent, lower: string): string | null {
+  if (ev.title.toLowerCase().includes(lower)) return 'title';
+  if (ev.description?.toLowerCase().includes(lower)) return 'description';
+  if (ev.source.toLowerCase().includes(lower)) return 'source';
+  if (ev.actor?.toLowerCase().includes(lower)) return 'actor';
+  const label = TIMELINE_EVENT_TYPE_LABELS[ev.eventType]?.label || '';
+  if (label.toLowerCase().includes(lower)) return 'eventType';
+  if (ev.tags.some((t) => t.toLowerCase().includes(lower))) return 'tags';
+  return null;
+}
+
+function findRegexTimelineMatchField(ev: TimelineEvent, regex: RegExp): string | null {
+  if (safeRegexTest(regex, ev.title)) return 'title';
+  if (ev.description && safeRegexTest(regex, ev.description)) return 'description';
+  if (safeRegexTest(regex, ev.source)) return 'source';
+  if (ev.actor && safeRegexTest(regex, ev.actor)) return 'actor';
+  const label = TIMELINE_EVENT_TYPE_LABELS[ev.eventType]?.label || '';
+  if (safeRegexTest(regex, label)) return 'eventType';
+  if (ev.tags.some((t) => safeRegexTest(regex, t))) return 'tags';
+  return null;
+}
+
+// --- Whiteboard simple/regex helpers ---
+
+function findSimpleWhiteboardMatchField(wb: Whiteboard, lower: string): string | null {
+  if (wb.name.toLowerCase().includes(lower)) return 'name';
+  if (wb.tags.some((t) => t.toLowerCase().includes(lower))) return 'tags';
+  return null;
+}
+
+function findRegexWhiteboardMatchField(wb: Whiteboard, regex: RegExp): string | null {
+  if (safeRegexTest(regex, wb.name)) return 'name';
+  if (wb.tags.some((t) => safeRegexTest(regex, t))) return 'tags';
+  return null;
+}
+
 // --- Result builders ---
 
 function noteToResult(
@@ -190,6 +275,38 @@ function taskToResult(task: Task, matchField: string, queryRaw: string): SearchR
     snippet: generateSnippet(text, queryRaw, 120),
     tags: task.tags,
     updatedAt: task.updatedAt,
+    matchField,
+  };
+}
+
+function timelineEventToResult(ev: TimelineEvent, matchField: string, queryRaw: string): SearchResult {
+  const textMap: Record<string, string> = {
+    title: ev.title,
+    description: ev.description || '',
+    source: ev.source,
+    actor: ev.actor || '',
+    eventType: TIMELINE_EVENT_TYPE_LABELS[ev.eventType]?.label || '',
+    tags: ev.tags.join(', '),
+  };
+  return {
+    id: ev.id,
+    type: 'timeline',
+    title: ev.title,
+    snippet: generateSnippet(textMap[matchField] || ev.title, queryRaw, 120),
+    tags: ev.tags,
+    updatedAt: ev.updatedAt,
+    matchField,
+  };
+}
+
+function whiteboardToResult(wb: Whiteboard, matchField: string, queryRaw: string): SearchResult {
+  return {
+    id: wb.id,
+    type: 'whiteboard',
+    title: wb.name,
+    snippet: generateSnippet(matchField === 'tags' ? wb.tags.join(', ') : wb.name, queryRaw, 120),
+    tags: wb.tags,
+    updatedAt: wb.updatedAt,
     matchField,
   };
 }
