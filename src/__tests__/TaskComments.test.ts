@@ -25,7 +25,7 @@ describe('Task Comments', () => {
     const { result } = renderHook(() => useTasks());
     await act(async () => {});
 
-    let taskId: string;
+    let taskId = '';
     await act(async () => {
       const task = await result.current.createTask({ title: 'Task with comments' });
       taskId = task.id;
@@ -38,10 +38,10 @@ describe('Task Comments', () => {
     };
 
     await act(async () => {
-      await result.current.updateTask(taskId!, { comments: [comment] });
+      await result.current.updateTask(taskId, { comments: [comment] });
     });
 
-    const updated = result.current.tasks.find((t) => t.id === taskId!);
+    const updated = result.current.tasks.find((t) => t.id === taskId);
     expect(updated?.comments).toHaveLength(1);
     expect(updated?.comments?.[0].text).toBe('First comment');
   });
@@ -50,7 +50,7 @@ describe('Task Comments', () => {
     const { result } = renderHook(() => useTasks());
     await act(async () => {});
 
-    let taskId: string;
+    let taskId = '';
     await act(async () => {
       const task = await result.current.createTask({ title: 'Multi comment task' });
       taskId = task.id;
@@ -63,10 +63,10 @@ describe('Task Comments', () => {
     ];
 
     await act(async () => {
-      await result.current.updateTask(taskId!, { comments });
+      await result.current.updateTask(taskId, { comments });
     });
 
-    const updated = result.current.tasks.find((t) => t.id === taskId!);
+    const updated = result.current.tasks.find((t) => t.id === taskId);
     expect(updated?.comments).toHaveLength(3);
   });
 
@@ -74,7 +74,7 @@ describe('Task Comments', () => {
     const { result } = renderHook(() => useTasks());
     await act(async () => {});
 
-    let taskId: string;
+    let taskId = '';
     await act(async () => {
       const task = await result.current.createTask({ title: 'Delete comment task' });
       taskId = task.id;
@@ -86,15 +86,15 @@ describe('Task Comments', () => {
     ];
 
     await act(async () => {
-      await result.current.updateTask(taskId!, { comments });
+      await result.current.updateTask(taskId, { comments });
     });
 
     // Remove second comment
     await act(async () => {
-      await result.current.updateTask(taskId!, { comments: [comments[0]] });
+      await result.current.updateTask(taskId, { comments: [comments[0]] });
     });
 
-    const updated = result.current.tasks.find((t) => t.id === taskId!);
+    const updated = result.current.tasks.find((t) => t.id === taskId);
     expect(updated?.comments).toHaveLength(1);
     expect(updated?.comments?.[0].id).toBe('c1');
   });
@@ -103,7 +103,7 @@ describe('Task Comments', () => {
     const { result } = renderHook(() => useTasks());
     await act(async () => {});
 
-    let taskId: string;
+    let taskId = '';
     await act(async () => {
       const task = await result.current.createTask({ title: 'Persist test' });
       taskId = task.id;
@@ -116,11 +116,11 @@ describe('Task Comments', () => {
     };
 
     await act(async () => {
-      await result.current.updateTask(taskId!, { comments: [comment] });
+      await result.current.updateTask(taskId, { comments: [comment] });
     });
 
     // Read directly from DB to verify persistence
-    const dbTask = await db.tasks.get(taskId!);
+    const dbTask = await db.tasks.get(taskId);
     expect(dbTask?.comments).toHaveLength(1);
     expect(dbTask?.comments?.[0].text).toBe('Persisted comment');
   });
