@@ -276,6 +276,16 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
           onUpdate={handleIOCUpdate}
           onClose={() => setShowIOCPanel(false)}
           attributionActors={taskFormSettings.attributionActors}
+          threatIntelConfig={{
+            clsLevels: taskFormSettings.tiClsLevels,
+            iocSubtypes: taskFormSettings.tiIocSubtypes,
+            relationshipTypes: taskFormSettings.tiRelationshipTypes,
+            iocStatuses: taskFormSettings.tiIocStatuses,
+          }}
+          tiExportConfig={{
+            defaultClsLevel: taskFormSettings.tiDefaultClsLevel,
+            defaultReportSource: taskFormSettings.tiDefaultReportSource,
+          }}
         />
       )}
     </div>

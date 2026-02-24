@@ -1,9 +1,15 @@
-import type { IOCEntry } from '../types';
+import type { IOCEntry, ConfidenceLevel } from '../types';
 
 export interface IOCExportEntry {
   clipTitle: string;
   sourceUrl?: string;
   iocs: IOCEntry[];
+  tags?: string[];
+}
+
+export interface ThreatIntelExportConfig {
+  defaultClsLevel?: string;
+  defaultReportSource?: string;
 }
 
 interface ExportedIOC {
@@ -82,6 +88,88 @@ export function formatIOCsCSV(entries: IOCExportEntry[]): string {
       ];
       rows.push(row.join(','));
     }
+  }
+
+  return rows.join('\n');
+}
+
+const CONFIDENCE_TO_NUMBER: Record<ConfidenceLevel, number> = {
+  low: 1,
+  medium: 2,
+  high: 3,
+  confirmed: 5,
+};
+
+interface FlatIOC {
+  id: number;
+  actor_name: string;
+  ioc_value: string;
+  report_date: string;
+  report_title: string;
+  report_source: string;
+  cls_level: string;
+  confidence: number;
+  first_seen: string;
+  ioc_type: string;
+  ioc_subtype: string;
+  notes: string;
+  related_id: string;
+  relationship_type: string;
+  ioc_status: string;
+  tags: string;
+}
+
+function buildFlatIOCs(entries: IOCExportEntry[], config: ThreatIntelExportConfig = {}): FlatIOC[] {
+  const active = filterActive(entries);
+  const reportDate = new Date().toISOString();
+  const result: FlatIOC[] = [];
+  let seq = 1;
+
+  for (const entry of active) {
+    const tagsStr = (entry.tags ?? []).join(':');
+    for (const ioc of entry.iocs) {
+      result.push({
+        id: seq++,
+        actor_name: ioc.attribution || '',
+        ioc_value: ioc.value,
+        report_date: reportDate,
+        report_title: entry.clipTitle,
+        report_source: entry.sourceUrl || config.defaultReportSource || '',
+        cls_level: ioc.clsLevel || config.defaultClsLevel || '',
+        confidence: CONFIDENCE_TO_NUMBER[ioc.confidence] ?? 1,
+        first_seen: new Date(ioc.firstSeen).toISOString(),
+        ioc_type: ioc.type,
+        ioc_subtype: ioc.iocSubtype || '',
+        notes: ioc.analystNotes || '',
+        related_id: ioc.relatedId || '',
+        relationship_type: ioc.relationshipType || '',
+        ioc_status: ioc.iocStatus || '',
+        tags: tagsStr,
+      });
+    }
+  }
+
+  return result;
+}
+
+export function formatIOCsFlatJSON(entries: IOCExportEntry[], config: ThreatIntelExportConfig = {}): string {
+  const iocs = buildFlatIOCs(entries, config);
+  return JSON.stringify({ iocs }, null, 2);
+}
+
+const FLAT_CSV_HEADERS: (keyof FlatIOC)[] = [
+  'id', 'actor_name', 'ioc_value', 'report_date', 'report_title', 'report_source',
+  'cls_level', 'confidence', 'first_seen', 'ioc_type', 'ioc_subtype', 'notes',
+  'related_id', 'relationship_type', 'ioc_status', 'tags',
+];
+
+export function formatIOCsFlatCSV(entries: IOCExportEntry[], config: ThreatIntelExportConfig = {}): string {
+  const iocs = buildFlatIOCs(entries, config);
+  const rows: string[] = [FLAT_CSV_HEADERS.join(',')];
+
+  for (const ioc of iocs) {
+    const row = FLAT_CSV_HEADERS.map((h) => escapeCSVField(String(ioc[h])));
+    rows.push(row.join(','));
   }
 
   return rows.join('\n');

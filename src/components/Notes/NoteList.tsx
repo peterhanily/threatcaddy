@@ -4,8 +4,8 @@ import { NoteCard } from './NoteCard';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { IOCFilterBar } from '../Clips/IOCFilterBar';
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { formatIOCsJSON, formatIOCsCSV } from '../../lib/ioc-export';
-import type { IOCExportEntry } from '../../lib/ioc-export';
+import { formatIOCsJSON, formatIOCsCSV, formatIOCsFlatJSON, formatIOCsFlatCSV } from '../../lib/ioc-export';
+import type { IOCExportEntry, ThreatIntelExportConfig } from '../../lib/ioc-export';
 import { downloadFile } from '../../lib/export';
 
 interface NoteListProps {
@@ -20,9 +20,10 @@ interface NoteListProps {
   selectedIOCTypes?: IOCType[];
   onIOCTypesChange?: (types: IOCType[]) => void;
   folders?: Folder[];
+  tiExportConfig?: ThreatIntelExportConfig;
 }
 
-export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, title, showTrash, onEmptyTrash, selectedIOCTypes, onIOCTypesChange, folders }: NoteListProps) {
+export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, title, showTrash, onEmptyTrash, selectedIOCTypes, onIOCTypesChange, folders, tiExportConfig }: NoteListProps) {
   const [confirmEmptyTrash, setConfirmEmptyTrash] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
@@ -48,15 +49,20 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
     return () => document.removeEventListener('mousedown', handler);
   }, [showExportMenu]);
 
-  const handleBulkExport = (format: 'json' | 'csv') => {
+  const handleBulkExport = (format: 'json' | 'csv' | 'flat-json' | 'flat-csv') => {
     setShowExportMenu(false);
     const entries: IOCExportEntry[] = notesWithIOCs.map((n) => ({
       clipTitle: n.title,
       sourceUrl: n.sourceUrl,
       iocs: n.iocAnalysis?.iocs ?? [],
+      tags: n.tags,
     }));
     const dateStr = new Date().toISOString().slice(0, 10);
-    if (format === 'json') {
+    if (format === 'flat-json') {
+      downloadFile(formatIOCsFlatJSON(entries, tiExportConfig), `iocs-export-${dateStr}-flat.json`, 'application/json');
+    } else if (format === 'flat-csv') {
+      downloadFile(formatIOCsFlatCSV(entries, tiExportConfig), `iocs-export-${dateStr}-flat.csv`, 'text/csv');
+    } else if (format === 'json') {
       downloadFile(formatIOCsJSON(entries), `iocs-export-${dateStr}.json`, 'application/json');
     } else {
       downloadFile(formatIOCsCSV(entries), `iocs-export-${dateStr}.csv`, 'text/csv');
@@ -90,9 +96,11 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                 <Download size={14} />
               </button>
               {showExportMenu && (
-                <div className="absolute right-0 top-full mt-1 w-32 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
-                  <button onClick={() => handleBulkExport('json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">Export JSON</button>
-                  <button onClick={() => handleBulkExport('csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">Export CSV</button>
+                <div className="absolute right-0 top-full mt-1 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
+                  <button onClick={() => handleBulkExport('flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">Export JSON (flat)</button>
+                  <button onClick={() => handleBulkExport('flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export CSV (flat)</button>
+                  <button onClick={() => handleBulkExport('json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export JSON (grouped)</button>
+                  <button onClick={() => handleBulkExport('csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">Export CSV (grouped)</button>
                 </div>
               )}
             </div>

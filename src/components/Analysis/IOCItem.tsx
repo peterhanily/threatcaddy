@@ -5,15 +5,23 @@ import { CONFIDENCE_LEVELS } from '../../types';
 import { AttributionComboInput } from './AttributionComboInput';
 import { cn } from '../../lib/utils';
 
+export interface ThreatIntelConfigProps {
+  clsLevels?: string[];
+  iocSubtypes?: string[];
+  relationshipTypes?: string[];
+  iocStatuses?: string[];
+}
+
 interface IOCItemProps {
   ioc: IOCEntry;
   onUpdate: (id: string, updates: Partial<IOCEntry>) => void;
   onDismiss: (id: string) => void;
   onRestore: (id: string) => void;
   attributionActors?: string[];
+  threatIntelConfig?: ThreatIntelConfigProps;
 }
 
-export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors = [] }: IOCItemProps) {
+export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors = [], threatIntelConfig }: IOCItemProps) {
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -106,6 +114,70 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
               actors={attributionActors}
             />
           </div>
+          {threatIntelConfig?.iocSubtypes && threatIntelConfig.iocSubtypes.length > 0 && (
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider">IOC Subtype</label>
+              <select
+                value={ioc.iocSubtype || ''}
+                onChange={(e) => onUpdate(ioc.id, { iocSubtype: e.target.value || undefined })}
+                className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600"
+              >
+                <option value="">—</option>
+                {threatIntelConfig.iocSubtypes.map((v) => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+          )}
+          {threatIntelConfig?.iocStatuses && threatIntelConfig.iocStatuses.length > 0 && (
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider">IOC Status</label>
+              <select
+                value={ioc.iocStatus || ''}
+                onChange={(e) => onUpdate(ioc.id, { iocStatus: e.target.value || undefined })}
+                className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600"
+              >
+                <option value="">—</option>
+                {threatIntelConfig.iocStatuses.map((v) => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+          )}
+          {threatIntelConfig?.clsLevels && threatIntelConfig.clsLevels.length > 0 && (
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider">Classification Level</label>
+              <select
+                value={ioc.clsLevel || ''}
+                onChange={(e) => onUpdate(ioc.id, { clsLevel: e.target.value || undefined })}
+                className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600"
+              >
+                <option value="">—</option>
+                {threatIntelConfig.clsLevels.map((v) => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+          )}
+          {threatIntelConfig?.relationshipTypes && threatIntelConfig.relationshipTypes.length > 0 && (
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider">Relationship Type</label>
+              <select
+                value={ioc.relationshipType || ''}
+                onChange={(e) => onUpdate(ioc.id, { relationshipType: e.target.value || undefined })}
+                className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600"
+              >
+                <option value="">—</option>
+                {threatIntelConfig.relationshipTypes.map((v) => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+          )}
+          {threatIntelConfig && (
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider">Related ID</label>
+              <input
+                type="text"
+                value={ioc.relatedId || ''}
+                onChange={(e) => onUpdate(ioc.id, { relatedId: e.target.value || undefined })}
+                className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600"
+                placeholder="Related ID..."
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -388,6 +388,16 @@ export function NoteEditor({
               onUpdate={(id, updates) => onUpdate(id, updates)}
               onClose={() => setShowIOCPanel(false)}
               attributionActors={externalSettings?.attributionActors}
+              threatIntelConfig={externalSettings ? {
+                clsLevels: externalSettings.tiClsLevels,
+                iocSubtypes: externalSettings.tiIocSubtypes,
+                relationshipTypes: externalSettings.tiRelationshipTypes,
+                iocStatuses: externalSettings.tiIocStatuses,
+              } : undefined}
+              tiExportConfig={externalSettings ? {
+                defaultClsLevel: externalSettings.tiDefaultClsLevel,
+                defaultReportSource: externalSettings.tiDefaultReportSource,
+              } : undefined}
               style={{ width: `${(1 - editorIOC.ratio) * 100}%` }}
             />
           </>

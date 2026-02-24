@@ -482,6 +482,10 @@ export default function App() {
                 selectedIOCTypes={selectedIOCTypes}
                 onIOCTypesChange={setSelectedIOCTypes}
                 folders={folders}
+                tiExportConfig={{
+                  defaultClsLevel: settings.tiDefaultClsLevel,
+                  defaultReportSource: settings.tiDefaultReportSource,
+                }}
               />
             </div>
             <div className={cn('flex-1 min-w-0 overflow-hidden', !selectedNote && 'hidden md:block')}>

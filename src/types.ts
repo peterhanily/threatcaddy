@@ -84,6 +84,12 @@ export interface Settings {
   ociReadPAR?: string;
   ociLabel?: string;
   attributionActors?: string[];
+  tiDefaultClsLevel?: string;
+  tiDefaultReportSource?: string;
+  tiClsLevels?: string[];
+  tiIocSubtypes?: string[];
+  tiRelationshipTypes?: string[];
+  tiIocStatuses?: string[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -111,6 +117,11 @@ export interface IOCEntry {
   attribution?: string;
   firstSeen: number;
   dismissed: boolean;
+  iocSubtype?: string;
+  iocStatus?: string;
+  clsLevel?: string;
+  relatedId?: string;
+  relationshipType?: string;
 }
 
 export interface IOCAnalysis {

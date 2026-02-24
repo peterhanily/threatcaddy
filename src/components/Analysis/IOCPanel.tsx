@@ -4,9 +4,11 @@ import type { IOCTarget, IOCEntry, IOCType, IOCAnalysis } from '../../types';
 import { IOC_TYPE_LABELS } from '../../types';
 import { useIOCAnalysis } from '../../hooks/useIOCAnalysis';
 import { IOCItem } from './IOCItem';
+import type { ThreatIntelConfigProps } from './IOCItem';
 import { AttributionComboInput } from './AttributionComboInput';
 import { cn } from '../../lib/utils';
-import { formatIOCsJSON, formatIOCsCSV, slugify } from '../../lib/ioc-export';
+import { formatIOCsJSON, formatIOCsCSV, formatIOCsFlatJSON, formatIOCsFlatCSV, slugify } from '../../lib/ioc-export';
+import type { ThreatIntelExportConfig } from '../../lib/ioc-export';
 import { downloadFile } from '../../lib/export';
 
 interface IOCPanelProps {
@@ -14,10 +16,12 @@ interface IOCPanelProps {
   onUpdate: (id: string, updates: { iocAnalysis?: IOCAnalysis; iocTypes?: IOCType[] }) => void;
   onClose: () => void;
   attributionActors?: string[];
+  threatIntelConfig?: ThreatIntelConfigProps;
+  tiExportConfig?: ThreatIntelExportConfig;
   style?: React.CSSProperties;
 }
 
-export function IOCPanel({ item, onUpdate, onClose, attributionActors, style }: IOCPanelProps) {
+export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatIntelConfig, tiExportConfig, style }: IOCPanelProps) {
   const {
     analysis,
     analyzing,
@@ -64,7 +68,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, style }: 
     return () => document.removeEventListener('mousedown', handler);
   }, [exportForType]);
 
-  const handleCategoryExport = (type: IOCType, format: 'json' | 'csv') => {
+  const handleCategoryExport = (type: IOCType, format: 'json' | 'csv' | 'flat-json' | 'flat-csv') => {
     setExportForType(null);
     if (!analysis) return;
     const typeIOCs = analysis.iocs.filter((ioc) => ioc.type === type && !ioc.dismissed);
@@ -72,7 +76,11 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, style }: 
     const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: typeIOCs }];
     const slug = slugify(item.title) || 'item';
     const typeSlug = type.replace(/[^a-z0-9]/g, '-');
-    if (format === 'json') {
+    if (format === 'flat-json') {
+      downloadFile(formatIOCsFlatJSON(entries, tiExportConfig), `iocs-${slug}-${typeSlug}-flat.json`, 'application/json');
+    } else if (format === 'flat-csv') {
+      downloadFile(formatIOCsFlatCSV(entries, tiExportConfig), `iocs-${slug}-${typeSlug}-flat.csv`, 'text/csv');
+    } else if (format === 'json') {
       downloadFile(formatIOCsJSON(entries), `iocs-${slug}-${typeSlug}.json`, 'application/json');
     } else {
       downloadFile(formatIOCsCSV(entries), `iocs-${slug}-${typeSlug}.csv`, 'text/csv');
@@ -86,12 +94,16 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, style }: 
     setAttributionInput('');
   };
 
-  const handleExport = (format: 'json' | 'csv') => {
+  const handleExport = (format: 'json' | 'csv' | 'flat-json' | 'flat-csv') => {
     setShowExportMenu(false);
     if (!analysis || activeIOCs.length === 0) return;
     const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: analysis.iocs }];
     const slug = slugify(item.title) || 'item';
-    if (format === 'json') {
+    if (format === 'flat-json') {
+      downloadFile(formatIOCsFlatJSON(entries, tiExportConfig), `iocs-${slug}-flat.json`, 'application/json');
+    } else if (format === 'flat-csv') {
+      downloadFile(formatIOCsFlatCSV(entries, tiExportConfig), `iocs-${slug}-flat.csv`, 'text/csv');
+    } else if (format === 'json') {
       downloadFile(formatIOCsJSON(entries), `iocs-${slug}.json`, 'application/json');
     } else {
       downloadFile(formatIOCsCSV(entries), `iocs-${slug}.csv`, 'text/csv');
@@ -144,9 +156,11 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, style }: 
               <Download size={14} />
             </button>
             {showExportMenu && (
-              <div className="absolute right-0 top-full mt-1 w-32 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
-                <button onClick={() => handleExport('json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">Export JSON</button>
-                <button onClick={() => handleExport('csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">Export CSV</button>
+              <div className="absolute right-0 top-full mt-1 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
+                <button onClick={() => handleExport('flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">Export JSON (flat)</button>
+                <button onClick={() => handleExport('flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export CSV (flat)</button>
+                <button onClick={() => handleExport('json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export JSON (grouped)</button>
+                <button onClick={() => handleExport('csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">Export CSV (grouped)</button>
               </div>
             )}
           </div>
@@ -245,9 +259,11 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, style }: 
                           <Download size={12} />
                         </button>
                         {exportForType === type && (
-                          <div className="absolute right-0 top-full mt-1 w-28 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
-                            <button onClick={() => handleCategoryExport(type, 'json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">JSON</button>
-                            <button onClick={() => handleCategoryExport(type, 'csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">CSV</button>
+                          <div className="absolute right-0 top-full mt-1 w-36 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
+                            <button onClick={() => handleCategoryExport(type, 'flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">JSON (flat)</button>
+                            <button onClick={() => handleCategoryExport(type, 'flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">CSV (flat)</button>
+                            <button onClick={() => handleCategoryExport(type, 'json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">JSON (grouped)</button>
+                            <button onClick={() => handleCategoryExport(type, 'csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">CSV (grouped)</button>
                           </div>
                         )}
                       </div>
@@ -283,6 +299,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, style }: 
                             onDismiss={dismissIOC}
                             onRestore={restoreIOC}
                             attributionActors={attributionActors}
+                            threatIntelConfig={threatIntelConfig}
                           />
                         ))}
                       </div>
