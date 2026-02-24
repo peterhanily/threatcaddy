@@ -15,6 +15,9 @@ function stripCSPForSingleFile(): Plugin {
 export default defineConfig({
   plugins: [react(), tailwindcss(), stripCSPForSingleFile(), viteSingleFile()],
   base: './',
+  define: {
+    __STANDALONE__: JSON.stringify(true),
+  },
   build: {
     outDir: 'dist-single',
   },

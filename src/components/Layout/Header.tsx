@@ -59,12 +59,21 @@ export function Header({
         </button>
       )}
 
-      <a href="https://browsernotes.online" className="flex items-center gap-1.5 sm:gap-2.5 mr-1 sm:mr-2 no-underline" title="browsernotes.online">
-        <img src={logoSvg} alt="BrowserNotes" className="w-6 h-6 sm:w-7 sm:h-7" />
-        <span className="text-lg font-bold tracking-tight hidden sm:inline">
-          <span className="text-accent">Browser</span><span className="text-gray-200">Notes</span>
-        </span>
-      </a>
+      {typeof __STANDALONE__ !== 'undefined' && __STANDALONE__ ? (
+        <div className="flex items-center gap-1.5 sm:gap-2.5 mr-1 sm:mr-2">
+          <img src={logoSvg} alt="BrowserNotes" className="w-6 h-6 sm:w-7 sm:h-7" />
+          <span className="text-lg font-bold tracking-tight hidden sm:inline">
+            <span className="text-accent">Browser</span><span className="text-gray-200">Notes</span>
+          </span>
+        </div>
+      ) : (
+        <a href="https://browsernotes.online" className="flex items-center gap-1.5 sm:gap-2.5 mr-1 sm:mr-2 no-underline" title="browsernotes.online">
+          <img src={logoSvg} alt="BrowserNotes" className="w-6 h-6 sm:w-7 sm:h-7" />
+          <span className="text-lg font-bold tracking-tight hidden sm:inline">
+            <span className="text-accent">Browser</span><span className="text-gray-200">Notes</span>
+          </span>
+        </a>
+      )}
 
       <button
         data-tour="search"
