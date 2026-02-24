@@ -16,6 +16,7 @@ export function TagInput({ selectedTags, allTags, onChange, onCreateTag }: TagIn
 
   const filteredTags = allTags.filter(
     (t) =>
+      t.name.trim() !== '' &&
       !selectedTags.includes(t.name) &&
       t.name.toLowerCase().includes(input.toLowerCase())
   );

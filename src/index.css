@@ -297,3 +297,80 @@
     background: rgb(248, 250, 252);
   }
 }
+
+/* ─── Tour overlay ─── */
+.tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(0, 0, 0, 0.6);
+  transition: clip-path 0.3s ease;
+  pointer-events: auto;
+}
+
+.light .tour-overlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Tour tooltip ─── */
+.tour-tooltip {
+  position: fixed;
+  z-index: 9999;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  padding: 16px;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  animation: tour-tooltip-enter 0.2s ease-out;
+}
+
+.light .tour-tooltip {
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  border-color: #e2e8f0;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.light .tour-tooltip .text-gray-100 { color: #111827; }
+.light .tour-tooltip .text-gray-400 { color: #6b7280; }
+.light .tour-tooltip .text-gray-500 { color: #9ca3af; }
+.light .tour-tooltip .text-gray-300 { color: #374151; }
+.light .tour-tooltip .bg-gray-700 { background-color: #e2e8f0; }
+.light .tour-tooltip .hover\:bg-gray-600:hover { background-color: #cbd5e1; }
+.light .tour-tooltip .bg-gray-600 { background-color: #cbd5e1; }
+
+@keyframes tour-tooltip-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tour-tooltip-arrow {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-right: none;
+  border-bottom: none;
+}
+
+.light .tour-tooltip-arrow {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-overlay {
+    transition: none;
+  }
+  .tour-tooltip {
+    animation: none;
+  }
+}

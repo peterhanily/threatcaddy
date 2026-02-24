@@ -28,6 +28,9 @@ import { BrowseShared } from './components/Settings/BrowseShared';
 import { extractIOCs, mergeIOCAnalysis } from './lib/ioc-extractor';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { ActiveFilterBar } from './components/Common/ActiveFilterBar';
+import { useTour } from './hooks/useTour';
+import { TourOverlay } from './components/Tour/TourOverlay';
+import { TourTooltip } from './components/Tour/TourTooltip';
 
 export default function App() {
   const { settings, updateSettings, toggleTheme } = useSettings();
@@ -37,7 +40,21 @@ export default function App() {
   const { timelines, createTimeline, updateTimeline, deleteTimeline, reload: reloadTimelines } = useTimelines();
   const { whiteboards, createWhiteboard, updateWhiteboard, deleteWhiteboard, reload: reloadWhiteboards } = useWhiteboards();
   const { folders, createFolder, findOrCreateFolder, updateFolder, deleteFolder } = useFolders();
-  const { tags, createTag } = useTags();
+  const { tags, createTag, updateTag, deleteTag } = useTags();
+
+  const tour = useTour({
+    onComplete: () => updateSettings({ tourCompleted: true }),
+  });
+
+  // Auto-start tour for first-time users
+  useEffect(() => {
+    if (!settings.tourCompleted && notes.notes.length === 0 && tags.length === 0) {
+      // Small delay to let the UI render first
+      const timer = setTimeout(() => tour.start(), 500);
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // UI state — guard against stale 'clips' defaultView in localStorage
   const safeDefaultView: ViewMode = settings.defaultView === 'notes' || settings.defaultView === 'tasks' || settings.defaultView === 'timeline' || settings.defaultView === 'whiteboard' ? settings.defaultView : 'notes';
@@ -358,7 +375,9 @@ export default function App() {
     onRenameWhiteboard: (id: string, name: string) => updateWhiteboard(id, { name }),
     whiteboardCount: whiteboards.length,
     onMoveNoteToFolder: handleMoveNoteToFolder,
-  }), [activeView, folders, tags, selectedFolderId, selectedTag, showTrash, showArchive, createFolder, handleDeleteFolder, updateFolder, noteCounts, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, createTimeline, deleteTimeline, updateTimeline, timelineEventCounts, whiteboards, selectedWhiteboardId, createWhiteboard, deleteWhiteboard, updateWhiteboard, handleMoveNoteToFolder]);
+    onRenameTag: (id: string, name: string) => updateTag(id, { name }),
+    onDeleteTag: deleteTag,
+  }), [activeView, folders, tags, selectedFolderId, selectedTag, showTrash, showArchive, createFolder, handleDeleteFolder, updateFolder, noteCounts, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, createTimeline, deleteTimeline, updateTimeline, timelineEventCounts, whiteboards, selectedWhiteboardId, createWhiteboard, deleteWhiteboard, updateWhiteboard, handleMoveNoteToFolder, updateTag, deleteTag]);
 
   const selectedFolder = useMemo(() => folders.find((f) => f.id === selectedFolderId), [folders, selectedFolderId]);
   const selectedTagObj = useMemo(() => tags.find((t) => t.name === selectedTag), [tags, selectedTag]);
@@ -389,6 +408,7 @@ export default function App() {
             onQuickSave={handleQuickSave}
             onQuickLoad={handleQuickLoad}
             activeView={activeView}
+            onStartTour={tour.start}
           />
         }
         sidebar={
@@ -556,6 +576,21 @@ export default function App() {
         onClose={() => setBrowseSharedOpen(false)}
         onImportComplete={handleImportComplete}
       />
+
+      {tour.isActive && tour.currentStep && (
+        <>
+          <TourOverlay targetRect={tour.targetRect} />
+          <TourTooltip
+            step={tour.currentStep}
+            targetRect={tour.targetRect}
+            currentIndex={tour.currentStepIndex}
+            totalSteps={tour.totalSteps}
+            onNext={tour.next}
+            onPrev={tour.prev}
+            onSkip={tour.skip}
+          />
+        </>
+      )}
     </>
   );
 }

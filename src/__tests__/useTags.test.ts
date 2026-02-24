@@ -9,6 +9,8 @@ describe('useTags', () => {
     await db.tags.clear();
     await db.notes.clear();
     await db.tasks.clear();
+    await db.timelineEvents.clear();
+    await db.whiteboards.clear();
   });
 
   it('starts with empty tags', async () => {
@@ -134,6 +136,76 @@ describe('useTags', () => {
     expect(task!.tags).toEqual(['new-tag']);
   });
 
+  it('propagates tag rename to timeline events', async () => {
+    const { result } = renderHook(() => useTags());
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.createTag('old-tag');
+    });
+    const tagId = result.current.tags[0].id;
+
+    await db.timelineEvents.add({
+      id: 'e1', timestamp: Date.now(), title: 'Event', eventType: 'other',
+      source: '', confidence: 'medium', linkedIOCIds: [], linkedNoteIds: [],
+      linkedTaskIds: [], mitreAttackIds: [], assets: [], tags: ['old-tag'],
+      starred: false, timelineId: 'tl1', createdAt: Date.now(), updatedAt: Date.now(),
+    });
+
+    await act(async () => {
+      await result.current.updateTag(tagId, { name: 'new-tag' });
+    });
+
+    const event = await db.timelineEvents.get('e1');
+    expect(event!.tags).toEqual(['new-tag']);
+  });
+
+  it('propagates tag rename to whiteboards', async () => {
+    const { result } = renderHook(() => useTags());
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.createTag('old-tag');
+    });
+    const tagId = result.current.tags[0].id;
+
+    await db.whiteboards.add({
+      id: 'w1', name: 'Board', elements: '[]', tags: ['old-tag'],
+      order: 0, createdAt: Date.now(), updatedAt: Date.now(),
+    });
+
+    await act(async () => {
+      await result.current.updateTag(tagId, { name: 'new-tag' });
+    });
+
+    const wb = await db.whiteboards.get('w1');
+    expect(wb!.tags).toEqual(['new-tag']);
+  });
+
+  it('renames only the target tag in a multi-tag array', async () => {
+    const { result } = renderHook(() => useTags());
+    await act(async () => {});
+
+    await act(async () => {
+      await result.current.createTag('alpha');
+      await result.current.createTag('beta');
+    });
+    const alphaId = result.current.tags.find((t) => t.name === 'alpha')!.id;
+
+    await db.notes.add({
+      id: 'n1', title: 'Multi-tag', content: '', tags: ['alpha', 'beta'],
+      pinned: false, archived: false, trashed: false,
+      createdAt: Date.now(), updatedAt: Date.now(),
+    });
+
+    await act(async () => {
+      await result.current.updateTag(alphaId, { name: 'gamma' });
+    });
+
+    const note = await db.notes.get('n1');
+    expect(note!.tags).toEqual(['gamma', 'beta']);
+  });
+
   describe('deleteTag', () => {
     it('removes the tag', async () => {
       const { result } = renderHook(() => useTags());
@@ -195,6 +267,52 @@ describe('useTags', () => {
 
       const task = await db.tasks.get('t1');
       expect(task!.tags).toEqual(['keep-me']);
+    });
+
+    it('removes tag from timeline events', async () => {
+      const { result } = renderHook(() => useTags());
+      await act(async () => {});
+
+      await act(async () => {
+        await result.current.createTag('remove-me');
+      });
+      const tagId = result.current.tags[0].id;
+
+      await db.timelineEvents.add({
+        id: 'e1', timestamp: Date.now(), title: 'Event', eventType: 'other',
+        source: '', confidence: 'medium', linkedIOCIds: [], linkedNoteIds: [],
+        linkedTaskIds: [], mitreAttackIds: [], assets: [], tags: ['remove-me', 'keep-me'],
+        starred: false, timelineId: 'tl1', createdAt: Date.now(), updatedAt: Date.now(),
+      });
+
+      await act(async () => {
+        await result.current.deleteTag(tagId);
+      });
+
+      const event = await db.timelineEvents.get('e1');
+      expect(event!.tags).toEqual(['keep-me']);
+    });
+
+    it('removes tag from whiteboards', async () => {
+      const { result } = renderHook(() => useTags());
+      await act(async () => {});
+
+      await act(async () => {
+        await result.current.createTag('remove-me');
+      });
+      const tagId = result.current.tags[0].id;
+
+      await db.whiteboards.add({
+        id: 'w1', name: 'Board', elements: '[]', tags: ['remove-me', 'keep-me'],
+        order: 0, createdAt: Date.now(), updatedAt: Date.now(),
+      });
+
+      await act(async () => {
+        await result.current.deleteTag(tagId);
+      });
+
+      const wb = await db.whiteboards.get('w1');
+      expect(wb!.tags).toEqual(['keep-me']);
     });
   });
 });

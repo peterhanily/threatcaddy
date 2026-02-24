@@ -79,6 +79,7 @@ export interface Settings {
   editorMode: EditorMode;
   sidebarCollapsed: boolean;
   taskViewMode: TaskViewMode;
+  tourCompleted?: boolean;
   ociWritePAR?: string;
   ociReadPAR?: string;
   ociLabel?: string;

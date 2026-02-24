@@ -46,6 +46,8 @@ interface SidebarProps {
   whiteboardCount?: number;
   onNavigate?: () => void;
   onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
+  onRenameTag?: (id: string, name: string) => void;
+  onDeleteTag?: (id: string) => void;
 }
 
 export function Sidebar({
@@ -86,6 +88,8 @@ export function Sidebar({
   whiteboardCount,
   onNavigate,
   onMoveNoteToFolder,
+  onRenameTag,
+  onDeleteTag,
 }: SidebarProps) {
   const [foldersOpen, setFoldersOpen] = useState(true);
   const [tagsOpen, setTagsOpen] = useState(true);
@@ -109,6 +113,10 @@ export function Sidebar({
   const [editingWhiteboard, setEditingWhiteboard] = useState<string | null>(null);
   const [editWhiteboardName, setEditWhiteboardName] = useState('');
   const [deletingWhiteboardId, setDeletingWhiteboardId] = useState<string | null>(null);
+
+  const [editingTag, setEditingTag] = useState<string | null>(null);
+  const [editTagName, setEditTagName] = useState('');
+  const [deletingTagId, setDeletingTagId] = useState<string | null>(null);
 
   if (collapsed) return null;
 
@@ -157,6 +165,13 @@ export function Sidebar({
     }
   };
 
+  const handleRenameTag = (id: string) => {
+    if (editTagName.trim() && onRenameTag) {
+      onRenameTag(id, editTagName.trim());
+      setEditingTag(null);
+    }
+  };
+
   const clearFilters = () => {
     onFolderSelect(undefined);
     onTagSelect(undefined);
@@ -178,7 +193,7 @@ export function Sidebar({
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-2 space-y-1" aria-label="Views">
+      <nav data-tour="sidebar-nav" className="flex-1 overflow-y-auto p-2 space-y-1" aria-label="Views">
         {/* Views */}
         <SidebarItem
           icon={<FileText size={18} />}
@@ -187,27 +202,33 @@ export function Sidebar({
           active={activeView === 'notes' && !showTrash && !showArchive}
           onClick={() => nav(() => { onViewChange('notes'); clearFilters(); })}
         />
-        <SidebarItem
-          icon={<ListChecks size={18} />}
-          label="Tasks"
-          count={taskCounts.total}
-          active={activeView === 'tasks'}
-          onClick={() => nav(() => { onViewChange('tasks'); clearFilters(); })}
-        />
-        <SidebarItem
-          icon={<Clock size={18} />}
-          label="Timeline"
-          count={timelineCounts?.total}
-          active={activeView === 'timeline'}
-          onClick={() => nav(() => { onViewChange('timeline'); clearFilters(); })}
-        />
-        <SidebarItem
-          icon={<PenTool size={18} />}
-          label="Whiteboards"
-          count={whiteboardCount}
-          active={activeView === 'whiteboard'}
-          onClick={() => nav(() => { onViewChange('whiteboard'); clearFilters(); })}
-        />
+        <div data-tour="tasks">
+          <SidebarItem
+            icon={<ListChecks size={18} />}
+            label="Tasks"
+            count={taskCounts.total}
+            active={activeView === 'tasks'}
+            onClick={() => nav(() => { onViewChange('tasks'); clearFilters(); })}
+          />
+        </div>
+        <div data-tour="timeline">
+          <SidebarItem
+            icon={<Clock size={18} />}
+            label="Timeline"
+            count={timelineCounts?.total}
+            active={activeView === 'timeline'}
+            onClick={() => nav(() => { onViewChange('timeline'); clearFilters(); })}
+          />
+        </div>
+        <div data-tour="whiteboards">
+          <SidebarItem
+            icon={<PenTool size={18} />}
+            label="Whiteboards"
+            count={whiteboardCount}
+            active={activeView === 'whiteboard'}
+            onClick={() => nav(() => { onViewChange('whiteboard'); clearFilters(); })}
+          />
+        </div>
         {/* Whiteboards — only in whiteboard view */}
         {activeView === 'whiteboard' && (
           <div className="pt-3">
@@ -378,7 +399,7 @@ export function Sidebar({
         )}
 
         {/* Folders */}
-        <div className="pt-3">
+        <div data-tour="tags-folders" className="pt-3">
           <button
             onClick={() => setFoldersOpen(!foldersOpen)}
             className="flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300"
@@ -480,13 +501,38 @@ export function Sidebar({
           {tagsOpen && (
             <div className="mt-1 space-y-0.5">
               {tags.map((tag) => (
-                <SidebarItem
-                  key={tag.id}
-                  icon={<Tag size={14} style={{ color: tag.color }} />}
-                  label={`#${tag.name}`}
-                  active={selectedTag === tag.name}
-                  onClick={() => nav(() => { onTagSelect(tag.name); onFolderSelect(undefined); onShowTrash(false); onShowArchive(false); })}
-                />
+                <div key={tag.id} className="group relative">
+                  {editingTag === tag.id ? (
+                    <div className="flex items-center gap-1 px-2">
+                      <input
+                        autoFocus
+                        value={editTagName}
+                        onChange={(e) => setEditTagName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleRenameTag(tag.id); if (e.key === 'Escape') setEditingTag(null); }}
+                        aria-label="Rename tag"
+                        className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
+                      />
+                    </div>
+                  ) : (
+                    <SidebarItem
+                      icon={<Tag size={14} style={{ color: tag.color }} />}
+                      label={`#${tag.name}`}
+                      active={selectedTag === tag.name}
+                      onClick={() => nav(() => { onTagSelect(tag.name); onFolderSelect(undefined); onShowTrash(false); onShowArchive(false); })}
+                      onDoubleClick={() => { setEditingTag(tag.id); setEditTagName(tag.name); }}
+                      actions={
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeletingTagId(tag.id); }}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-600 text-gray-500 hover:text-red-400"
+                          aria-label={`Delete tag ${tag.name}`}
+                          title="Delete tag"
+                        >
+                          <X size={12} />
+                        </button>
+                      }
+                    />
+                  )}
+                </div>
               ))}
               {tags.length === 0 && (
                 <p className="px-4 py-1 text-xs text-gray-600">No tags yet</p>
@@ -579,6 +625,16 @@ export function Sidebar({
         title="Delete Whiteboard"
         message="This whiteboard will be permanently deleted. This cannot be undone."
         confirmLabel="Delete Whiteboard"
+        danger
+      />
+
+      <ConfirmDialog
+        open={deletingTagId !== null}
+        onClose={() => setDeletingTagId(null)}
+        onConfirm={() => { if (deletingTagId) { onDeleteTag?.(deletingTagId); setDeletingTagId(null); } }}
+        title="Delete Tag"
+        message="This tag will be removed from all notes, tasks, timeline events, and whiteboards."
+        confirmLabel="Delete Tag"
         danger
       />
     </aside>

@@ -1,4 +1,4 @@
-import { Plus, Menu, ListChecks, Search, Github, Download, Chrome, HardDriveDownload, FolderUp } from 'lucide-react';
+import { Plus, Menu, ListChecks, Search, Github, Download, Chrome, HardDriveDownload, FolderUp, HelpCircle } from 'lucide-react';
 import { useRef } from 'react';
 import { ThemeToggle } from '../Common/ThemeToggle';
 import { cn } from '../../lib/utils';
@@ -18,6 +18,7 @@ interface HeaderProps {
   onQuickSave: () => void;
   onQuickLoad: (file: File) => void;
   activeView: ViewMode;
+  onStartTour?: () => void;
 }
 
 export function Header({
@@ -32,10 +33,11 @@ export function Header({
   onQuickSave,
   onQuickLoad,
   activeView,
+  onStartTour,
 }: HeaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   return (
-    <header className="h-12 sm:h-14 border-b border-gray-800 flex items-center px-2 sm:px-4 gap-2 sm:gap-3 bg-gray-900/50 backdrop-blur-sm shrink-0">
+    <header data-tour="header" className="h-12 sm:h-14 border-b border-gray-800 flex items-center px-2 sm:px-4 gap-2 sm:gap-3 bg-gray-900/50 backdrop-blur-sm shrink-0">
       {/* Mobile menu button - always visible on mobile */}
       <button
         onClick={onMobileMenuToggle}
@@ -65,6 +67,7 @@ export function Header({
       </a>
 
       <button
+        data-tour="search"
         onClick={onOpenSearch}
         className="flex items-center gap-2 flex-1 max-w-md pl-3 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-500 hover:text-gray-400 hover:border-gray-600 text-sm transition-colors cursor-pointer"
         title="Search all (Ctrl+K)"
@@ -87,6 +90,7 @@ export function Header({
           <span className="hidden lg:inline">GitHub</span>
         </a>
         <a
+          data-tour="standalone"
           href="./browsernotes-standalone.html"
           download
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800 text-xs font-medium transition-colors"
@@ -96,6 +100,7 @@ export function Header({
           <span className="hidden lg:inline">Standalone</span>
         </a>
         <a
+          data-tour="extension"
           href="https://github.com/peterhanily/browsernotes/tree/main/extension#readme"
           target="_blank"
           rel="noopener noreferrer"
@@ -109,6 +114,7 @@ export function Header({
 
       <div className="flex items-center gap-1 ml-auto">
         <button
+          data-tour="new-note"
           onClick={onNewNote}
           className={cn(
             'flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-sm font-medium transition-colors',
@@ -137,6 +143,7 @@ export function Header({
           <span className="hidden sm:inline">Task</span>
         </button>
         <button
+          data-tour="backup"
           onClick={onQuickSave}
           className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
           title="Save Backup (Ctrl+S)"
@@ -165,7 +172,19 @@ export function Header({
             }
           }}
         />
-        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+        <span data-tour="theme-toggle">
+          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+        </span>
+        {onStartTour && (
+          <button
+            onClick={onStartTour}
+            className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
+            title="Start tour"
+            aria-label="Start tour"
+          >
+            <HelpCircle size={16} />
+          </button>
+        )}
       </div>
     </header>
   );
