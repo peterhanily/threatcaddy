@@ -9,14 +9,18 @@ interface NoteCardProps {
   onClick: () => void;
   folderColor?: string;
   folderName?: string;
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
 }
 
-export const NoteCard = React.memo(function NoteCard({ note, active, onClick, folderColor, folderName }: NoteCardProps) {
+export const NoteCard = React.memo(function NoteCard({ note, active, onClick, folderColor, folderName, draggable, onDragStart }: NoteCardProps) {
   const preview = note.content.replace(/[#*`_[\]()>-]/g, '').trim();
 
   return (
     <button
       onClick={onClick}
+      draggable={draggable}
+      onDragStart={onDragStart}
       className={cn(
         'w-full text-left p-3 rounded-lg border transition-colors',
         active

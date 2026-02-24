@@ -185,6 +185,10 @@ export default function App() {
     }
   }, [deleteFolder, selectedFolderId]);
 
+  const handleMoveNoteToFolder = useCallback((noteId: string, folderId: string) => {
+    notes.updateNote(noteId, { folderId });
+  }, [notes.updateNote]);
+
   const handleNewNote = useCallback(async () => {
     if (showQuickCapture) return;
     setShowSettings(false);
@@ -313,7 +317,8 @@ export default function App() {
     onDeleteTimeline: (id: string) => { deleteTimeline(id); if (selectedTimelineId === id) setSelectedTimelineId(undefined); },
     onRenameTimeline: (id: string, name: string) => updateTimeline(id, { name }),
     timelineEventCounts,
-  }), [activeView, folders, tags, selectedFolderId, selectedTag, showTrash, showArchive, createFolder, handleDeleteFolder, updateFolder, noteCounts, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, createTimeline, deleteTimeline, updateTimeline, timelineEventCounts]);
+    onMoveNoteToFolder: handleMoveNoteToFolder,
+  }), [activeView, folders, tags, selectedFolderId, selectedTag, showTrash, showArchive, createFolder, handleDeleteFolder, updateFolder, noteCounts, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, createTimeline, deleteTimeline, updateTimeline, timelineEventCounts, handleMoveNoteToFolder]);
 
   return (
     <>

@@ -38,6 +38,7 @@ interface SidebarProps {
   onRenameTimeline?: (id: string, name: string) => void;
   timelineEventCounts?: Record<string, number>;
   onNavigate?: () => void;
+  onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
 }
 
 export function Sidebar({
@@ -70,6 +71,7 @@ export function Sidebar({
   onRenameTimeline,
   timelineEventCounts = {},
   onNavigate,
+  onMoveNoteToFolder,
 }: SidebarProps) {
   const [foldersOpen, setFoldersOpen] = useState(true);
   const [tagsOpen, setTagsOpen] = useState(true);
@@ -78,6 +80,7 @@ export function Sidebar({
   const [editingFolder, setEditingFolder] = useState<string | null>(null);
   const [editFolderName, setEditFolderName] = useState('');
   const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
 
   const [timelinesOpen, setTimelinesOpen] = useState(true);
   const [newTimelineName, setNewTimelineName] = useState('');
@@ -293,7 +296,18 @@ export function Sidebar({
                 </div>
               )}
               {folders.map((folder) => (
-                <div key={folder.id} className="group relative">
+                <div
+                  key={folder.id}
+                  className={cn('group relative rounded-lg transition-colors', dragOverFolderId === folder.id && 'bg-accent/15')}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverFolderId(folder.id); }}
+                  onDragLeave={() => setDragOverFolderId(null)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOverFolderId(null);
+                    const noteId = e.dataTransfer.getData('text/plain');
+                    if (noteId && onMoveNoteToFolder) onMoveNoteToFolder(noteId, folder.id);
+                  }}
+                >
                   {editingFolder === folder.id ? (
                     <div className="flex items-center gap-1 px-2">
                       <input

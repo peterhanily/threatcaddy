@@ -138,6 +138,8 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                 onClick={() => onSelect(note.id)}
                 folderColor={folder?.color}
                 folderName={folder?.name}
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData('text/plain', note.id)}
               />
             );
           })

@@ -29,6 +29,7 @@ interface TimelineViewProps {
     starred?: boolean;
     search?: string;
     sortDir?: 'asc' | 'desc';
+    timelineId?: string;
   }) => TimelineEvent[];
   timelines?: Timeline[];
   selectedTimelineId?: string;
@@ -151,8 +152,9 @@ export function TimelineView({
       starred: showStarredOnly || undefined,
       search: searchQuery || undefined,
       sortDir,
+      timelineId: selectedTimelineId,
     }),
-    [getFilteredEvents, selectedEventTypes, showStarredOnly, searchQuery, sortDir]
+    [getFilteredEvents, selectedEventTypes, showStarredOnly, searchQuery, sortDir, selectedTimelineId]
   );
 
   const heatmapDetailEvents = useMemo(() => {
