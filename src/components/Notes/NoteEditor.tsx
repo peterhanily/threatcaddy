@@ -51,10 +51,12 @@ export function NoteEditor({
   const [saved, setSaved] = useState(false);
   const [showIOCPanel, setShowIOCPanel] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [shareMessage, setShareMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const oci = useOCISync();
   const titleRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const savedTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const shareMsgTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Resizable: editor ↔ preview (split mode only)
   const editorPreview = useResizable({ initialRatio: 0.5, minRatio: 0.25, maxRatio: 0.75 });
@@ -80,6 +82,7 @@ export function NoteEditor({
     return () => {
       clearTimeout(saveTimeoutRef.current);
       clearTimeout(savedTimeoutRef.current);
+      clearTimeout(shareMsgTimeoutRef.current);
     };
   }, []);
 
@@ -141,6 +144,18 @@ export function NoteEditor({
       textarea.focus();
     }, 0);
   };
+
+  // Show share feedback when oci finishes
+  useEffect(() => {
+    if (oci.syncing) return;
+    if (oci.error) {
+      setShareMessage({ type: 'error', text: oci.error });
+    } else if (oci.progress && oci.progress.toLowerCase().includes('success')) {
+      setShareMessage({ type: 'success', text: oci.progress });
+      clearTimeout(shareMsgTimeoutRef.current);
+      shareMsgTimeoutRef.current = setTimeout(() => setShareMessage(null), 5000);
+    }
+  }, [oci.syncing, oci.progress, oci.error]);
 
   const stats = wordCount(content);
   const showEditor = editorMode === 'edit' || editorMode === 'split';
@@ -272,6 +287,7 @@ export function NoteEditor({
           <div className="relative">
             <button
               onClick={() => {
+                if (oci.syncing) return;
                 if (note.iocAnalysis && iocCount > 0) {
                   setShowShareMenu(!showShareMenu);
                 } else {
@@ -288,14 +304,16 @@ export function NoteEditor({
             {showShareMenu && (
               <div className="absolute top-full right-0 mt-1 py-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-40">
                 <button
-                  onClick={() => { oci.shareNote(note, clipsFolderId); setShowShareMenu(false); }}
-                  className="w-full px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700"
+                  onClick={() => { if (oci.syncing) return; oci.shareNote(note, clipsFolderId); setShowShareMenu(false); }}
+                  disabled={oci.syncing}
+                  className="w-full px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-50"
                 >
                   Share Note
                 </button>
                 <button
-                  onClick={() => { oci.shareIOCReport(note); setShowShareMenu(false); }}
-                  className="w-full px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700"
+                  onClick={() => { if (oci.syncing) return; oci.shareIOCReport(note); setShowShareMenu(false); }}
+                  disabled={oci.syncing}
+                  className="w-full px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-50"
                 >
                   Share IOC Report
                 </button>
@@ -305,7 +323,12 @@ export function NoteEditor({
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          {saved && <span className="text-xs text-green-400" role="status">Saved</span>}
+          {shareMessage && (
+            <span className={cn('text-xs', shareMessage.type === 'success' ? 'text-green-400' : 'text-red-400')} role="status">
+              {shareMessage.text}
+            </span>
+          )}
+          {saved && !shareMessage && <span className="text-xs text-green-400" role="status">Saved</span>}
           {note.trashed ? (
             <button
               onClick={() => onRestore(note.id)}

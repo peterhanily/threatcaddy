@@ -183,7 +183,7 @@ describe('mergeIOCAnalysis', () => {
     expect(result.analysisSummary).toBe('Initial analysis'); // Preserves summary
   });
 
-  it('preserves dismissed state on re-analysis', () => {
+  it('resets dismissed state on re-analysis so IOCs are restored', () => {
     const existing: IOCAnalysis = {
       extractedAt: 1000,
       iocs: [
@@ -195,6 +195,22 @@ describe('mergeIOCAnalysis', () => {
     ];
 
     const result = mergeIOCAnalysis(existing, fresh);
-    expect(result.iocs[0].dismissed).toBe(true);
+    expect(result.iocs[0].dismissed).toBe(false);
+  });
+
+  it('preserves lastPushedAt on re-analysis', () => {
+    const existing: IOCAnalysis = {
+      extractedAt: 1000,
+      iocs: [
+        { id: 'old-1', type: 'ipv4', value: '10.0.0.1', confidence: 'medium', firstSeen: 500, dismissed: false },
+      ],
+      lastPushedAt: 1500,
+    };
+    const fresh: IOCEntry[] = [
+      { id: 'new-1', type: 'ipv4', value: '10.0.0.1', confidence: 'medium', firstSeen: 2000, dismissed: false },
+    ];
+
+    const result = mergeIOCAnalysis(existing, fresh);
+    expect(result.lastPushedAt).toBe(1500);
   });
 });

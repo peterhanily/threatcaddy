@@ -183,7 +183,8 @@ export function mergeIOCAnalysis(existing: IOCAnalysis | undefined, fresh: IOCEn
     const key = `${freshIOC.type}:${freshIOC.value.toLowerCase()}`;
     const prev = existingMap.get(key);
     if (prev) {
-      // Preserve analyst annotations from existing entry
+      // Preserve analyst annotations from existing entry, but reset dismissed
+      // so re-analysis restores previously dismissed IOCs
       return {
         ...freshIOC,
         id: prev.id,
@@ -191,7 +192,7 @@ export function mergeIOCAnalysis(existing: IOCAnalysis | undefined, fresh: IOCEn
         analystNotes: prev.analystNotes,
         attribution: prev.attribution,
         firstSeen: prev.firstSeen,
-        dismissed: prev.dismissed,
+        dismissed: false,
       };
     }
     return freshIOC;
@@ -201,5 +202,6 @@ export function mergeIOCAnalysis(existing: IOCAnalysis | undefined, fresh: IOCEn
     extractedAt: now,
     iocs: merged,
     analysisSummary: existing.analysisSummary,
+    lastPushedAt: existing.lastPushedAt,
   };
 }
