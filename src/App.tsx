@@ -46,16 +46,6 @@ export default function App() {
     onComplete: () => updateSettings({ tourCompleted: true }),
   });
 
-  // Auto-start tour for first-time users
-  useEffect(() => {
-    if (!settings.tourCompleted && notes.notes.length === 0 && tags.length === 0) {
-      // Small delay to let the UI render first
-      const timer = setTimeout(() => tour.start(), 500);
-      return () => clearTimeout(timer);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // UI state — guard against stale 'clips' defaultView in localStorage
   const safeDefaultView: ViewMode = settings.defaultView === 'notes' || settings.defaultView === 'tasks' || settings.defaultView === 'timeline' || settings.defaultView === 'whiteboard' ? settings.defaultView : 'notes';
   const [activeView, setActiveView] = useState<ViewMode>(safeDefaultView);
