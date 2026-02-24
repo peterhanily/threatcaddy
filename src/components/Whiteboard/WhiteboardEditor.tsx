@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Excalidraw } from '@excalidraw/excalidraw';
+import { Excalidraw, MainMenu } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
+
+// Self-host fonts — prevent CDN fallback to esm.sh
+if (typeof window !== 'undefined') {
+  (window as unknown as Record<string, unknown>).EXCALIDRAW_ASSET_PATH = '/';
+}
 import { ArrowLeft, FolderOpen } from 'lucide-react';
 import type { Whiteboard, Tag, Folder } from '../../types';
 import { TagInput } from '../Common/TagInput';
@@ -173,7 +178,16 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
                 export: false,
               },
             }}
-          />
+          >
+            {/* Custom menu without social links (GitHub, X, Discord) */}
+            <MainMenu>
+              <MainMenu.DefaultItems.ClearCanvas />
+              <MainMenu.DefaultItems.ChangeCanvasBackground />
+              <MainMenu.Separator />
+              <MainMenu.DefaultItems.ToggleTheme />
+              <MainMenu.DefaultItems.Help />
+            </MainMenu>
+          </Excalidraw>
         </div>
       </div>
     </div>
