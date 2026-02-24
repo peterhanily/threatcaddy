@@ -48,6 +48,13 @@ describe('validatePAR', () => {
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Invalid URL');
   });
+
+  it('rejects non-OCI hostnames with valid path segments', () => {
+    const url = 'https://evil.com/p/token/n/ns/b/bucket/o/';
+    const result = validatePAR(url);
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('Oracle Cloud');
+  });
 });
 
 // ---- buildObjectUrl ----

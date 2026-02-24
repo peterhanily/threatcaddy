@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useSettings } from './useSettings';
-import { exportJSON, importJSON } from '../lib/export';
+import { exportJSON, importJSON, sanitizeNote } from '../lib/export';
 import { db } from '../db';
 import type { Note, SharedManifestEntry, SharedItemEnvelope, ExportData } from '../types';
 import {
@@ -211,8 +211,8 @@ export function useOCISync() {
         await importJSON(json);
         setProgress('Full backup imported successfully');
       } else {
-        // Single note/clip/ioc-report
-        const note = envelope.payload as Note;
+        // Single note/clip/ioc-report — sanitize through allowlisted field extractor
+        const note = sanitizeNote(envelope.payload);
         if (!note || !note.id) throw new Error('Invalid note in envelope');
         await db.notes.put(note);
         setProgress(`Imported: ${note.title || 'Untitled'}`);

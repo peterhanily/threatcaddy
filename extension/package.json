@@ -11,7 +11,7 @@
     "package:chrome": "cd dist/chrome && zip -r ../browsernotes-chrome.zip ."
   },
   "devDependencies": {
-    "esbuild": "^0.23.0",
+    "esbuild": "^0.25.0",
     "sharp": "^0.34.5"
   }
 }

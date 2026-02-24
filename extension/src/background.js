@@ -228,6 +228,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function sendToTarget(targetUrl, captures) {
+  // Re-validate URL before opening (defense-in-depth; clips page also validates)
+  try {
+    const parsed = new URL(targetUrl);
+    if (!/^(https?|file):$/.test(parsed.protocol)) {
+      throw new Error('Invalid target URL protocol');
+    }
+  } catch {
+    throw new Error('Invalid target URL');
+  }
+
   // Open target URL in a new tab
   const tab = await chrome.tabs.create({ url: targetUrl, active: true });
 

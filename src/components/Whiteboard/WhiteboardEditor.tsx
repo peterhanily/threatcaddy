@@ -83,7 +83,7 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
 
   let initialAppState: Record<string, unknown> = {};
   if (whiteboard.appState) {
-    try { initialAppState = JSON.parse(whiteboard.appState); } catch { /* empty */ }
+    try { initialAppState = pickAppState(JSON.parse(whiteboard.appState)); } catch { /* empty */ }
   }
 
   // Detect theme from document

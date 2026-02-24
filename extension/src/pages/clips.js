@@ -320,7 +320,9 @@ function isValidOCIPAR(url) {
   if (!url || typeof url !== 'string') return false;
   try {
     const parsed = new URL(url.trim());
-    return parsed.protocol === 'https:' && url.includes('/p/') && url.includes('/o/');
+    return parsed.protocol === 'https:'
+      && url.includes('/p/') && url.includes('/o/')
+      && /^objectstorage\..*\.oraclecloud\.com$/i.test(parsed.hostname);
   } catch {
     return false;
   }

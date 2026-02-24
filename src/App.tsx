@@ -62,8 +62,10 @@ export default function App() {
   // Listen for clip imports from the Chrome extension via postMessage
   useEffect(() => {
     const handler = async (event: MessageEvent) => {
-      // Only accept messages from our own origin (extension injects into same page)
-      // For file:// URLs both event.origin and window.location.origin are "null"
+      // Only accept messages from our own window (extension injects script into this page)
+      // event.source === window ensures only same-window postMessage is accepted,
+      // blocking cross-window/cross-tab attacks even under file:// where origins are "null"
+      if (event.source !== window) return;
       const isFileProtocol = window.location.protocol === 'file:';
       if (!isFileProtocol && event.origin !== window.location.origin) return;
       if (event.data?.type !== 'BROWSERNOTES_IMPORT_CLIPS') return;

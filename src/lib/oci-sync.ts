@@ -21,6 +21,10 @@ export function validatePAR(url: string): { valid: boolean; error?: string } {
   if (!trimmed.includes('/p/') || !trimmed.includes('/o/')) {
     return { valid: false, error: 'PAR URL must contain /p/ and /o/ path segments' };
   }
+  // Require actual OCI Object Storage hostname to prevent credential leakage to arbitrary hosts
+  if (!/^objectstorage\..*\.oraclecloud\.com$/i.test(parsed.hostname)) {
+    return { valid: false, error: 'PAR URL must be an Oracle Cloud Object Storage endpoint (*.objectstorage.*.oraclecloud.com)' };
+  }
   return { valid: true };
 }
 

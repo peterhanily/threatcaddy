@@ -1,6 +1,6 @@
 import { db } from '../db';
-import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, ExportData, TimelineExportData, TimelineEventType, ConfidenceLevel } from '../types';
-import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS } from '../types';
+import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, ExportData, TimelineExportData, TimelineEventType, ConfidenceLevel, IOCAnalysis, IOCEntry, TaskComment } from '../types';
+import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS, IOC_TYPE_LABELS } from '../types';
 import { nanoid } from 'nanoid';
 
 export async function exportJSON(): Promise<string> {
@@ -45,7 +45,50 @@ function strArr(v: unknown): string[] {
   return Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string') : [];
 }
 
-function sanitizeNote(raw: unknown): Note | null {
+const VALID_IOC_TYPES = Object.keys(IOC_TYPE_LABELS) as string[];
+
+function sanitizeIOCEntry(raw: unknown): IOCEntry | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const type = str(r.type);
+  if (!VALID_IOC_TYPES.includes(type)) return null;
+  return {
+    id: str(r.id),
+    type: type as IOCEntry['type'],
+    value: str(r.value),
+    confidence: (VALID_CONFIDENCE.includes(str(r.confidence)) ? str(r.confidence) : 'low') as ConfidenceLevel,
+    analystNotes: r.analystNotes != null ? str(r.analystNotes) : undefined,
+    attribution: r.attribution != null ? str(r.attribution) : undefined,
+    firstSeen: num(r.firstSeen, Date.now()),
+    dismissed: bool(r.dismissed),
+  };
+}
+
+function sanitizeIOCAnalysis(raw: unknown): IOCAnalysis | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const r = raw as Record<string, unknown>;
+  const iocs = Array.isArray(r.iocs)
+    ? r.iocs.map(sanitizeIOCEntry).filter((e): e is IOCEntry => e !== null)
+    : [];
+  return {
+    extractedAt: num(r.extractedAt, Date.now()),
+    iocs,
+    analysisSummary: r.analysisSummary != null ? str(r.analysisSummary) : undefined,
+  };
+}
+
+function sanitizeComment(raw: unknown): TaskComment | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.id !== 'string' || typeof r.text !== 'string') return null;
+  return {
+    id: str(r.id),
+    text: str(r.text),
+    createdAt: num(r.createdAt, Date.now()),
+  };
+}
+
+export function sanitizeNote(raw: unknown): Note | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   return {
@@ -61,8 +104,8 @@ function sanitizeNote(raw: unknown): Note | null {
     sourceUrl: r.sourceUrl != null ? str(r.sourceUrl) : undefined,
     sourceTitle: r.sourceTitle != null ? str(r.sourceTitle) : undefined,
     color: r.color != null ? str(r.color) : undefined,
-    iocAnalysis: r.iocAnalysis != null && typeof r.iocAnalysis === 'object' ? r.iocAnalysis as Note['iocAnalysis'] : undefined,
-    iocTypes: Array.isArray(r.iocTypes) ? strArr(r.iocTypes) as Note['iocTypes'] : undefined,
+    iocAnalysis: sanitizeIOCAnalysis(r.iocAnalysis),
+    iocTypes: Array.isArray(r.iocTypes) ? strArr(r.iocTypes).filter((t) => VALID_IOC_TYPES.includes(t)) as Note['iocTypes'] : undefined,
     createdAt: num(r.createdAt, Date.now()),
     updatedAt: num(r.updatedAt, Date.now()),
   };
@@ -82,12 +125,11 @@ function sanitizeTask(raw: unknown): Task | null {
     tags: strArr(r.tags),
     status: (['todo', 'in-progress', 'done'].includes(str(r.status)) ? str(r.status) : 'todo') as Task['status'],
     order: num(r.order),
-    iocAnalysis: r.iocAnalysis != null && typeof r.iocAnalysis === 'object' ? r.iocAnalysis as Task['iocAnalysis'] : undefined,
-    iocTypes: Array.isArray(r.iocTypes) ? strArr(r.iocTypes) as Task['iocTypes'] : undefined,
-    comments: Array.isArray(r.comments) ? (r.comments as unknown[]).filter(
-      (c): c is { id: string; text: string; createdAt: number } =>
-        !!c && typeof c === 'object' && typeof (c as Record<string, unknown>).id === 'string'
-    ) : undefined,
+    iocAnalysis: sanitizeIOCAnalysis(r.iocAnalysis),
+    iocTypes: Array.isArray(r.iocTypes) ? strArr(r.iocTypes).filter((t) => VALID_IOC_TYPES.includes(t)) as Task['iocTypes'] : undefined,
+    comments: Array.isArray(r.comments)
+      ? (r.comments as unknown[]).map(sanitizeComment).filter((c): c is TaskComment => c !== null)
+      : undefined,
     createdAt: num(r.createdAt, Date.now()),
     updatedAt: num(r.updatedAt, Date.now()),
     completedAt: r.completedAt != null ? num(r.completedAt) : undefined,
