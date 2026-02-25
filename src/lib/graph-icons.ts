@@ -1,320 +1,110 @@
 import type { IOCType } from '../types';
 
 /**
- * Pixel-art SVG icons for graph nodes.
- * All icons use a 16×16 grid with only <rect> elements for a crisp blocky look.
- * Each "pixel" is a 1×1 rect placed on integer coordinates.
+ * Graph node icons — clean filled SVG sprites.
+ * Each icon is a 16×16 SVG using bold filled shapes for clarity at small sizes.
+ * The fill color is parameterized to match entity colors.
  */
 
-function darken(hex: string, amount: number): string {
+/** Lighten a hex color (mix toward white) */
+function lighten(hex: string, amount: number): string {
   const h = hex.replace('#', '');
-  const r = Math.max(0, Math.round(parseInt(h.substring(0, 2), 16) * (1 - amount)));
-  const g = Math.max(0, Math.round(parseInt(h.substring(2, 4), 16) * (1 - amount)));
-  const b = Math.max(0, Math.round(parseInt(h.substring(4, 6), 16) * (1 - amount)));
+  const r = Math.min(255, Math.round(parseInt(h.substring(0, 2), 16) + (255 - parseInt(h.substring(0, 2), 16)) * amount));
+  const g = Math.min(255, Math.round(parseInt(h.substring(2, 4), 16) + (255 - parseInt(h.substring(2, 4), 16)) * amount));
+  const b = Math.min(255, Math.round(parseInt(h.substring(4, 6), 16) + (255 - parseInt(h.substring(4, 6), 16)) * amount));
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
-/** Helper: render an array of [x,y] pixel positions as 1×1 rects */
-function px(coords: [number, number][], fill: string): string {
-  return coords.map(([x, y]) => `<rect x="${x}" y="${y}" width="1" height="1" fill="${fill}"/>`).join('');
-}
-
-const S = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">`;
+const H = (c: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="${c}">`;
 const E = '</svg>';
 
-// --- Globe base (shared by ipv4, ipv6, domain) ---
-function globeOutline(c: string): string {
-  // Circle outline approximation
-  return px([
-    [5,1],[6,1],[7,1],[8,1],[9,1],[10,1],
-    [3,2],[4,2],[11,2],[12,2],
-    [2,3],[13,3],
-    [1,4],[14,4],
-    [1,5],[14,5],
-    [1,6],[14,6],
-    [1,7],[14,7],
-    [1,8],[14,8],
-    [1,9],[14,9],
-    [1,10],[14,10],
-    [1,11],[14,11],
-    [2,12],[13,12],
-    [3,13],[4,13],[11,13],[12,13],
-    [5,14],[6,14],[7,14],[8,14],[9,14],[10,14],
-  ], c);
-}
-
-function globeCross(c: string): string {
-  // Horizontal + vertical center lines
-  return px([
-    [2,7],[3,7],[4,7],[5,7],[6,7],[7,7],[8,7],[9,7],[10,7],[11,7],[12,7],[13,7],
-    [2,8],[3,8],[4,8],[5,8],[6,8],[7,8],[8,8],[9,8],[10,8],[11,8],[12,8],[13,8],
-    [7,2],[8,2],[7,3],[8,3],[7,4],[8,4],[7,5],[8,5],[7,6],[8,6],
-    [7,9],[8,9],[7,10],[8,10],[7,11],[8,11],[7,12],[8,12],[7,13],[8,13],
-  ], c);
-}
-
-// IPv4: globe + "4" in bottom-right
+// IPv4: filled globe with vertical/horizontal cross
 function svgIpv4(c: string): string {
-  const d = darken(c, 0.3);
-  // Pixel "4" at bottom-right (positions 10-14, 9-14)
-  const four = px([
-    [10,9],[10,10],[10,11],[10,12],
-    [11,12],[12,9],[12,10],[12,11],[12,12],[12,13],[12,14],
-    [13,12],[14,12],
-  ], c);
-  return S + globeOutline(d) + globeCross(d) + four + E;
+  const l = lighten(c, 0.5);
+  return `${H(c)}<circle cx="8" cy="8" r="7" fill="${l}" opacity="0.4"/><circle cx="8" cy="8" r="7" fill="none" stroke="${c}" stroke-width="1.8"/><ellipse cx="8" cy="8" rx="3.5" ry="7" fill="none" stroke="${c}" stroke-width="1.2"/><line x1="1" y1="8" x2="15" y2="8" stroke="${c}" stroke-width="1.2"/>${E}`;
 }
 
-// IPv6: globe + "6" in bottom-right
+// IPv6: filled hexagon (6-sided = v6)
 function svgIpv6(c: string): string {
-  const d = darken(c, 0.3);
-  const six = px([
-    [11,9],[12,9],[13,9],
-    [10,10],[10,11],[10,12],[10,13],
-    [11,11],[12,11],[13,11],
-    [13,12],[13,13],
-    [11,14],[12,14],
-  ], c);
-  return S + globeOutline(d) + globeCross(d) + six + E;
+  const l = lighten(c, 0.5);
+  return `${H(c)}<polygon points="8,1 14.5,4.5 14.5,11.5 8,15 1.5,11.5 1.5,4.5" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8" cy="8" r="2" fill="${c}"/>${E}`;
 }
 
-// Domain: globe + extra latitude lines
+// Domain: filled globe with latitude lines
 function svgDomain(c: string): string {
-  const d = darken(c, 0.3);
-  const lats = px([
-    [3,4],[4,4],[5,4],[6,4],[9,4],[10,4],[11,4],[12,4],
-    [3,11],[4,11],[5,11],[6,11],[9,11],[10,11],[11,11],[12,11],
-  ], d);
-  return S + globeOutline(c) + globeCross(d) + lats + E;
+  const l = lighten(c, 0.5);
+  return `${H(c)}<circle cx="8" cy="8" r="7" fill="${l}" opacity="0.4"/><circle cx="8" cy="8" r="7" fill="none" stroke="${c}" stroke-width="1.8"/><line x1="1" y1="8" x2="15" y2="8" stroke="${c}" stroke-width="1.2"/><line x1="8" y1="1" x2="8" y2="15" stroke="${c}" stroke-width="1.2"/><line x1="2.5" y1="4.5" x2="13.5" y2="4.5" stroke="${c}" stroke-width="0.8"/><line x1="2.5" y1="11.5" x2="13.5" y2="11.5" stroke="${c}" stroke-width="0.8"/>${E}`;
 }
 
-// URL: chain link
+// URL: chain link — two filled rounded rects linked
 function svgUrl(c: string): string {
-  const d = darken(c, 0.3);
-  return S +
-    // Left link
-    px([[2,5],[3,5],[4,5],[5,5],[2,6],[5,6],[2,7],[5,7],[2,8],[5,8],[2,9],[5,9],[2,10],[3,10],[4,10],[5,10]], c) +
-    // Right link
-    px([[10,5],[11,5],[12,5],[13,5],[10,6],[13,6],[10,7],[13,7],[10,8],[13,8],[10,9],[13,9],[10,10],[11,10],[12,10],[13,10]], c) +
-    // Bridge
-    px([[6,7],[7,7],[8,7],[9,7],[6,8],[7,8],[8,8],[9,8]], d) +
-    E;
+  const l = lighten(c, 0.5);
+  return `${H(c)}<rect x="1" y="4.5" width="7" height="7" rx="2" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.5"/><rect x="8" y="4.5" width="7" height="7" rx="2" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.5"/><rect x="6" y="6.5" width="4" height="3" rx="0.5" fill="${c}"/>${E}`;
 }
 
-// Email: envelope
+// Email: filled envelope
 function svgEmail(c: string): string {
-  const d = darken(c, 0.3);
-  return S +
-    // Envelope outline
-    px([
-      [1,4],[2,4],[3,4],[4,4],[5,4],[6,4],[7,4],[8,4],[9,4],[10,4],[11,4],[12,4],[13,4],[14,4],
-      [1,5],[14,5],[1,6],[14,6],[1,7],[14,7],[1,8],[14,8],[1,9],[14,9],[1,10],[14,10],
-      [1,11],[2,11],[3,11],[4,11],[5,11],[6,11],[7,11],[8,11],[9,11],[10,11],[11,11],[12,11],[13,11],[14,11],
-    ], c) +
-    // V flap
-    px([[2,5],[3,6],[4,7],[5,7],[13,5],[12,6],[11,7],[10,7],[6,8],[7,8],[8,8],[9,8]], d) +
-    E;
+  const l = lighten(c, 0.5);
+  return `${H(c)}<rect x="1" y="3.5" width="14" height="10" rx="1.5" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.5"/><path d="M1.5,4 L8,9.5 L14.5,4" fill="none" stroke="${c}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>${E}`;
 }
 
-// MD5: hash "#"
+// MD5: hash symbol "#" drawn with rects
 function svgMd5(c: string): string {
-  const d = darken(c, 0.3);
-  return S +
-    px([
-      // Two vertical bars
-      [5,2],[5,3],[5,4],[5,5],[5,6],[5,7],[5,8],[5,9],[5,10],[5,11],[5,12],[5,13],
-      [10,2],[10,3],[10,4],[10,5],[10,6],[10,7],[10,8],[10,9],[10,10],[10,11],[10,12],[10,13],
-      // Two horizontal bars
-      [3,5],[4,5],[6,5],[7,5],[8,5],[9,5],[11,5],[12,5],
-      [3,10],[4,10],[6,10],[7,10],[8,10],[9,10],[11,10],[12,10],
-    ], c) +
-    px([[6,5],[9,5],[6,10],[9,10]], d) + // Intersections slightly darker
-    E;
+  return `${H(c)}<rect x="5" y="1" width="2" height="14" rx="0.5" fill="${c}"/><rect x="9" y="1" width="2" height="14" rx="0.5" fill="${c}"/><rect x="1" y="5" width="14" height="2" rx="0.5" fill="${c}"/><rect x="1" y="9" width="14" height="2" rx="0.5" fill="${c}"/>${E}`;
 }
 
-// SHA-1: smaller hash + "1"
+// SHA-1: lock shape (hash security)
 function svgSha1(c: string): string {
-  const d = darken(c, 0.3);
-  return S +
-    // Small hash on left
-    px([
-      [3,3],[3,4],[3,5],[3,6],[3,7],[3,8],[3,9],[3,10],
-      [7,3],[7,4],[7,5],[7,6],[7,7],[7,8],[7,9],[7,10],
-      [1,5],[2,5],[4,5],[5,5],[6,5],[8,5],
-      [1,8],[2,8],[4,8],[5,8],[6,8],[8,8],
-    ], c) +
-    // "1" on right
-    px([
-      [12,3],[11,4],[12,4],[12,5],[12,6],[12,7],[12,8],[12,9],[12,10],[12,11],
-      [11,11],[13,11],
-    ], d) +
-    E;
+  const l = lighten(c, 0.5);
+  return `${H(c)}<rect x="3" y="7" width="10" height="8" rx="1.5" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.5"/><path d="M5,7 L5,5 Q5,1.5 8,1.5 Q11,1.5 11,5 L11,7" fill="none" stroke="${c}" stroke-width="1.8"/><circle cx="8" cy="11" r="1.5" fill="${c}"/>${E}`;
 }
 
-// SHA-256: hash + checkmark
+// SHA-256: shield with checkmark
 function svgSha256(c: string): string {
-  const d = darken(c, 0.3);
-  return S +
-    // Small hash on left
-    px([
-      [2,2],[2,3],[2,4],[2,5],[2,6],[2,7],[2,8],[2,9],
-      [6,2],[6,3],[6,4],[6,5],[6,6],[6,7],[6,8],[6,9],
-      [1,4],[3,4],[4,4],[5,4],[7,4],
-      [1,7],[3,7],[4,7],[5,7],[7,7],
-    ], c) +
-    // Checkmark on right
-    px([
-      [9,9],[10,10],[11,11],[12,10],[13,9],[14,8],[13,7],
-    ], d) +
-    E;
+  const l = lighten(c, 0.5);
+  return `${H(c)}<path d="M8,1 L14,4 L14,9 Q14,13 8,15 Q2,13 2,9 L2,4 Z" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.5" stroke-linejoin="round"/><polyline points="5,8.5 7.5,11 11.5,5.5" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>${E}`;
 }
 
-// CVE: shield with "!"
+// CVE: warning triangle
 function svgCve(c: string): string {
-  const d = darken(c, 0.3);
-  return S +
-    // Shield outline
-    px([
-      [4,1],[5,1],[6,1],[7,1],[8,1],[9,1],[10,1],[11,1],
-      [3,2],[12,2],[2,3],[13,3],[2,4],[13,4],[2,5],[13,5],
-      [2,6],[13,6],[3,7],[12,7],[3,8],[12,8],
-      [4,9],[11,9],[5,10],[10,10],[6,11],[9,11],[7,12],[8,12],
-    ], c) +
-    // "!" using rects
-    px([
-      [7,3],[8,3],[7,4],[8,4],[7,5],[8,5],[7,6],[8,6],
-      [7,8],[8,8],
-    ], d) +
-    E;
+  const l = lighten(c, 0.5);
+  return `${H(c)}<path d="M8,1.5 L15,14 L1,14 Z" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.5" stroke-linejoin="round"/><rect x="7" y="6" width="2" height="4" rx="0.5" fill="${c}"/><rect x="7" y="11.5" width="2" height="1.5" rx="0.5" fill="${c}"/>${E}`;
 }
 
-// MITRE ATT&CK: crosshair/target
+// MITRE ATT&CK: crosshair target
 function svgMitreAttack(c: string): string {
-  const d = darken(c, 0.3);
-  return S +
-    // Outer ring
-    px([
-      [5,1],[6,1],[7,1],[8,1],[9,1],[10,1],
-      [3,2],[4,2],[11,2],[12,2],
-      [2,3],[13,3],[2,4],[13,4],
-      [1,5],[1,6],[14,5],[14,6],
-      [1,9],[1,10],[14,9],[14,10],
-      [2,11],[13,11],[2,12],[13,12],
-      [3,13],[4,13],[11,13],[12,13],
-      [5,14],[6,14],[7,14],[8,14],[9,14],[10,14],
-    ], c) +
-    // Crosshair lines
-    px([
-      [7,0],[8,0],[7,2],[8,2],[7,3],[8,3],
-      [7,12],[8,12],[7,13],[8,13],[7,15],[8,15],
-      [0,7],[0,8],[2,7],[2,8],[3,7],[3,8],
-      [12,7],[12,8],[13,7],[13,8],[15,7],[15,8],
-    ], d) +
-    // Center dot
-    px([[7,7],[8,7],[7,8],[8,8]], c) +
-    E;
+  const l = lighten(c, 0.5);
+  return `${H(c)}<circle cx="8" cy="8" r="6.5" fill="${l}" opacity="0.3"/><circle cx="8" cy="8" r="6.5" fill="none" stroke="${c}" stroke-width="1.5"/><circle cx="8" cy="8" r="3" fill="none" stroke="${c}" stroke-width="1.5"/><circle cx="8" cy="8" r="1" fill="${c}"/><line x1="8" y1="0" x2="8" y2="4" stroke="${c}" stroke-width="1.5"/><line x1="8" y1="12" x2="8" y2="16" stroke="${c}" stroke-width="1.5"/><line x1="0" y1="8" x2="4" y2="8" stroke="${c}" stroke-width="1.5"/><line x1="12" y1="8" x2="16" y2="8" stroke="${c}" stroke-width="1.5"/>${E}`;
 }
 
 // YARA Rule: magnifying glass
 function svgYaraRule(c: string): string {
-  const d = darken(c, 0.3);
-  return S +
-    // Lens ring
-    px([
-      [4,1],[5,1],[6,1],[7,1],[8,1],
-      [3,2],[9,2],[2,3],[10,3],
-      [1,4],[11,4],[1,5],[11,5],[1,6],[11,6],[1,7],[11,7],[1,8],[11,8],
-      [2,9],[10,9],[3,10],[9,10],
-      [4,11],[5,11],[6,11],[7,11],[8,11],
-    ], c) +
-    // Handle
-    px([[10,10],[11,11],[12,12],[13,13],[14,14]], d) +
-    px([[11,10],[10,11],[12,11],[11,12],[13,12],[12,13],[14,13],[13,14]], d) +
-    E;
+  const l = lighten(c, 0.5);
+  return `${H(c)}<circle cx="7" cy="7" r="5.5" fill="${l}" opacity="0.4"/><circle cx="7" cy="7" r="5.5" fill="none" stroke="${c}" stroke-width="2"/><line x1="11" y1="11" x2="15" y2="15" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>${E}`;
 }
 
-// File Path: document with corner fold
+// File Path: filled document with corner fold
 function svgFilePath(c: string): string {
-  const d = darken(c, 0.3);
-  return S +
-    // Doc outline
-    px([
-      [3,1],[4,1],[5,1],[6,1],[7,1],[8,1],[9,1],
-      [3,2],[3,3],[3,4],[3,5],[3,6],[3,7],[3,8],[3,9],[3,10],[3,11],[3,12],[3,13],
-      [12,4],[12,5],[12,6],[12,7],[12,8],[12,9],[12,10],[12,11],[12,12],[12,13],
-      [4,14],[5,14],[6,14],[7,14],[8,14],[9,14],[10,14],[11,14],
-      [3,14],[12,14],
-    ], c) +
-    // Corner fold
-    px([[10,1],[11,2],[12,3],[10,2],[11,3],[10,3]], d) +
-    // Content lines
-    px([[5,6],[6,6],[7,6],[8,6],[9,6],[10,6]], d) +
-    px([[5,8],[6,8],[7,8],[8,8],[9,8],[10,8]], d) +
-    px([[5,10],[6,10],[7,10],[8,10]], d) +
-    E;
+  const l = lighten(c, 0.5);
+  return `${H(c)}<path d="M3,1 L10,1 L13,4 L13,15 L3,15 Z" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.5" stroke-linejoin="round"/><path d="M10,1 L10,4 L13,4" fill="${l}" opacity="0.6" stroke="${c}" stroke-width="1.2" stroke-linejoin="round"/><line x1="5.5" y1="8" x2="10.5" y2="8" stroke="${c}" stroke-width="1.2" stroke-linecap="round"/><line x1="5.5" y1="11" x2="10.5" y2="11" stroke="${c}" stroke-width="1.2" stroke-linecap="round"/>${E}`;
 }
 
-// Note: lined document
+// Note: filled notepad with lines
 function svgNote(c: string): string {
-  const d = darken(c, 0.3);
-  return S +
-    // Page outline
-    px([
-      [2,1],[3,1],[4,1],[5,1],[6,1],[7,1],[8,1],[9,1],[10,1],[11,1],[12,1],[13,1],
-      [2,2],[2,3],[2,4],[2,5],[2,6],[2,7],[2,8],[2,9],[2,10],[2,11],[2,12],[2,13],
-      [13,2],[13,3],[13,4],[13,5],[13,6],[13,7],[13,8],[13,9],[13,10],[13,11],[13,12],[13,13],
-      [2,14],[3,14],[4,14],[5,14],[6,14],[7,14],[8,14],[9,14],[10,14],[11,14],[12,14],[13,14],
-    ], c) +
-    // Text lines
-    px([[4,4],[5,4],[6,4],[7,4],[8,4],[9,4],[10,4],[11,4]], d) +
-    px([[4,7],[5,7],[6,7],[7,7],[8,7],[9,7],[10,7],[11,7]], d) +
-    px([[4,10],[5,10],[6,10],[7,10],[8,10]], d) +
-    E;
+  const l = lighten(c, 0.5);
+  return `${H(c)}<rect x="2" y="1" width="12" height="14" rx="1.5" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.5"/><line x1="5" y1="5" x2="11" y2="5" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="8" x2="11" y2="8" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="11" x2="9" y2="11" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/>${E}`;
 }
 
-// Task: checkbox with checkmark
+// Task: checkbox with bold checkmark
 function svgTask(c: string): string {
-  const d = darken(c, 0.3);
-  return S +
-    // Box outline
-    px([
-      [2,2],[3,2],[4,2],[5,2],[6,2],[7,2],[8,2],[9,2],[10,2],[11,2],[12,2],[13,2],
-      [2,3],[13,3],[2,4],[13,4],[2,5],[13,5],[2,6],[13,6],
-      [2,7],[13,7],[2,8],[13,8],[2,9],[13,9],[2,10],[13,10],[2,11],[13,11],
-      [2,12],[3,12],[4,12],[5,12],[6,12],[7,12],[8,12],[9,12],[10,12],[11,12],[12,12],[13,12],
-    ], c) +
-    // Checkmark
-    px([
-      [5,7],[5,8],[6,8],[6,9],[7,9],[7,10],
-      [8,8],[8,9],[9,7],[9,8],[10,6],[10,7],[11,5],[11,6],
-    ], d) +
-    E;
+  const l = lighten(c, 0.5);
+  return `${H(c)}<rect x="1.5" y="2" width="13" height="12" rx="2" fill="${l}" opacity="0.4" stroke="${c}" stroke-width="1.5"/><polyline points="4.5,8 7,11 11.5,5" fill="none" stroke="${c}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${E}`;
 }
 
-// Timeline Event: clock face
+// Timeline Event: clock
 function svgTimelineEvent(c: string): string {
-  const d = darken(c, 0.3);
-  return S +
-    // Circle
-    px([
-      [5,1],[6,1],[7,1],[8,1],[9,1],[10,1],
-      [3,2],[4,2],[11,2],[12,2],
-      [2,3],[13,3],[2,4],[13,4],
-      [1,5],[1,6],[14,5],[14,6],
-      [1,7],[1,8],[14,7],[14,8],
-      [1,9],[1,10],[14,9],[14,10],
-      [2,11],[13,11],[2,12],[13,12],
-      [3,13],[4,13],[11,13],[12,13],
-      [5,14],[6,14],[7,14],[8,14],[9,14],[10,14],
-    ], c) +
-    // Clock hands: vertical (12 o'clock) + angled (3 o'clock)
-    px([
-      [7,4],[8,4],[7,5],[8,5],[7,6],[8,6],[7,7],[8,7],
-      [9,8],[10,8],[11,9],[10,9],
-    ], d) +
-    // Center dot
-    px([[7,8],[8,8]], c) +
-    E;
+  const l = lighten(c, 0.5);
+  return `${H(c)}<circle cx="8" cy="8" r="7" fill="${l}" opacity="0.4"/><circle cx="8" cy="8" r="7" fill="none" stroke="${c}" stroke-width="1.8"/><line x1="8" y1="3.5" x2="8" y2="8" stroke="${c}" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="8" x2="11.5" y2="10.5" stroke="${c}" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="8" r="1" fill="${c}"/>${E}`;
 }
 
 // --- Icon resolver ---
@@ -337,7 +127,7 @@ const IOC_ICON_MAP: Record<IOCType, (c: string) => string> = {
 const cache = new Map<string, string>();
 
 /**
- * Returns a data URI for a pixel-art SVG icon matching the given entity type and color.
+ * Returns a data URI for an SVG icon matching the given entity type and color.
  */
 export function getNodeIcon(
   type: 'ioc' | 'note' | 'task' | 'timeline-event',
