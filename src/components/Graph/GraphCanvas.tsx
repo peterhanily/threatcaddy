@@ -58,10 +58,8 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
             'background-color': 'data(color)',
             'background-opacity': 0.12,
             'background-image': 'data(icon)',
-            'background-fit': 'contain' as cytoscape.Css.PropertyValueNode<'contain'>,
-            'background-clip': 'none',
-            'background-image-containment': 'over',
-            'bounds-expansion': 2,
+            // background-width/height set dynamically by zoom handler
+            'background-fit': 'none' as cytoscape.Css.PropertyValueNode<'none'>,
             'label': 'data(label)',
             'font-size': '10px',
             'color': isDark ? '#e5e7eb' : '#374151',
@@ -155,6 +153,22 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
 
     cyRef.current = cy;
 
+    // Keep icons at a constant screen size regardless of zoom level
+    const ICON_SCREEN_PX = 22;
+    let iconRafId: number | null = null;
+    const syncIconSize = () => {
+      if (iconRafId) return;
+      iconRafId = requestAnimationFrame(() => {
+        iconRafId = null;
+        const modelSize = ICON_SCREEN_PX / cy.zoom();
+        cy.batch(() => {
+          cy.nodes().style({ 'background-width': modelSize, 'background-height': modelSize });
+        });
+      });
+    };
+    cy.on('zoom', syncIconSize);
+    syncIconSize();
+
     // Events
     cy.on('tap', 'node', (evt) => {
       onSelectNode(evt.target.id());
@@ -167,6 +181,7 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
     });
 
     return () => {
+      if (iconRafId) cancelAnimationFrame(iconRafId);
       cy.destroy();
       cyRef.current = null;
     };
@@ -217,6 +232,10 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
     // Run layout
     cy.layout(getLayoutOptions(layout)).run();
     cy.fit(undefined, 40);
+
+    // Set icon size for newly added nodes
+    const modelSize = 22 / cy.zoom();
+    cy.nodes().style({ 'background-width': modelSize, 'background-height': modelSize });
   }, [data, layout, getLayoutOptions]);
 
   return (
