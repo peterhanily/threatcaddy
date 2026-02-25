@@ -578,7 +578,7 @@ export default function App() {
         }
       >
         <ErrorBoundary>
-        <div className="flex flex-col flex-1 overflow-hidden">
+        <div className={activeView === 'graph' && !showSettings ? 'hidden' : 'flex flex-col flex-1 overflow-hidden'}>
         {filterBar}
         {showSettings ? (
           <SettingsPanel
