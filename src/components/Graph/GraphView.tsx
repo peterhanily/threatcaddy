@@ -78,13 +78,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
     });
   };
 
-  const handleDoubleClickNode = useCallback((nodeId: string) => {
-    const node = fullGraphData.nodes.find((n) => n.id === nodeId);
-    if (!node) return;
-    navigateToEntity(node);
-  }, [fullGraphData.nodes]);
-
-  const navigateToEntity = (node: GraphNode) => {
+  const navigateToEntity = useCallback((node: GraphNode) => {
     if (node.type === 'note') {
       const id = node.sourceEntityIds[0];
       if (id) onNavigateToNote(id);
@@ -95,7 +89,13 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
       const id = node.sourceEntityIds[0];
       if (id) onNavigateToTimelineEvent(id);
     }
-  };
+  }, [onNavigateToNote, onNavigateToTask, onNavigateToTimelineEvent]);
+
+  const handleDoubleClickNode = useCallback((nodeId: string) => {
+    const node = fullGraphData.nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+    navigateToEntity(node);
+  }, [fullGraphData.nodes, navigateToEntity]);
 
   const nodeTypeCounts = useMemo(() => {
     const counts = { ioc: 0, note: 0, task: 0, 'timeline-event': 0 };
