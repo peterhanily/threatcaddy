@@ -56,125 +56,125 @@ export default function App() {
     const note = await notes.createNote(partial);
     activityLog.log('note', 'create', `Created note "${note.title}"`, note.id, note.title);
     return note;
-  }, [notes.createNote, activityLog.log]);
+  }, [notes, activityLog]);
 
   const loggedTrashNote = useCallback(async (id: string) => {
     const note = notes.notes.find((n) => n.id === id);
     await notes.trashNote(id);
     activityLog.log('note', 'trash', `Trashed note "${note?.title || 'Untitled'}"`, id, note?.title);
-  }, [notes.trashNote, notes.notes, activityLog.log]);
+  }, [notes, activityLog]);
 
   const loggedRestoreNote = useCallback(async (id: string) => {
     const note = notes.notes.find((n) => n.id === id);
     await notes.restoreNote(id);
     activityLog.log('note', 'restore', `Restored note "${note?.title || 'Untitled'}"`, id, note?.title);
-  }, [notes.restoreNote, notes.notes, activityLog.log]);
+  }, [notes, activityLog]);
 
   const loggedTogglePin = useCallback(async (id: string) => {
     const note = notes.notes.find((n) => n.id === id);
     await notes.togglePin(id);
     const action = note?.pinned ? 'unpin' : 'pin';
     activityLog.log('note', action, `${action === 'pin' ? 'Pinned' : 'Unpinned'} note "${note?.title || 'Untitled'}"`, id, note?.title);
-  }, [notes.togglePin, notes.notes, activityLog.log]);
+  }, [notes, activityLog]);
 
   const loggedToggleArchive = useCallback(async (id: string) => {
     const note = notes.notes.find((n) => n.id === id);
     await notes.toggleArchive(id);
     const action = note?.archived ? 'unarchive' : 'archive';
     activityLog.log('note', action, `${action === 'archive' ? 'Archived' : 'Unarchived'} note "${note?.title || 'Untitled'}"`, id, note?.title);
-  }, [notes.toggleArchive, notes.notes, activityLog.log]);
+  }, [notes, activityLog]);
 
   const loggedEmptyTrash = useCallback(async () => {
     const count = notes.notes.filter((n) => n.trashed).length;
     await notes.emptyTrash();
     activityLog.log('note', 'empty-trash', `Emptied trash (${count} notes)`);
-  }, [notes.emptyTrash, notes.notes, activityLog.log]);
+  }, [notes, activityLog]);
 
   const loggedCreateTask = useCallback(async (partial?: Partial<import('./types').Task>) => {
     const task = await tasks.createTask(partial);
     activityLog.log('task', 'create', `Created task "${task.title || 'Untitled'}"`, task.id, task.title);
     return task;
-  }, [tasks.createTask, activityLog.log]);
+  }, [tasks, activityLog]);
 
   const loggedDeleteTask = useCallback(async (id: string) => {
     const task = tasks.tasks.find((t) => t.id === id);
     await tasks.deleteTask(id);
     activityLog.log('task', 'delete', `Deleted task "${task?.title || 'Untitled'}"`, id, task?.title);
-  }, [tasks.deleteTask, tasks.tasks, activityLog.log]);
+  }, [tasks, activityLog]);
 
   const loggedToggleComplete = useCallback(async (id: string) => {
     const task = tasks.tasks.find((t) => t.id === id);
     await tasks.toggleComplete(id);
     const action = task?.completed ? 'reopen' : 'complete';
     activityLog.log('task', action, `${action === 'complete' ? 'Completed' : 'Reopened'} task "${task?.title || 'Untitled'}"`, id, task?.title);
-  }, [tasks.toggleComplete, tasks.tasks, activityLog.log]);
+  }, [tasks, activityLog]);
 
   const loggedCreateEvent = useCallback(async (data: Partial<import('./types').TimelineEvent>) => {
     const event = await timeline.createEvent(data);
     activityLog.log('timeline', 'create', `Created timeline event "${event.title || 'Untitled'}"`, event.id, event.title);
     return event;
-  }, [timeline.createEvent, activityLog.log]);
+  }, [timeline, activityLog]);
 
   const loggedDeleteEvent = useCallback(async (id: string) => {
     const event = timeline.events.find((e) => e.id === id);
     await timeline.deleteEvent(id);
     activityLog.log('timeline', 'delete', `Deleted timeline event "${event?.title || 'Untitled'}"`, id, event?.title);
-  }, [timeline.deleteEvent, timeline.events, activityLog.log]);
+  }, [timeline, activityLog]);
 
   const loggedToggleStar = useCallback(async (id: string) => {
     const event = timeline.events.find((e) => e.id === id);
     await timeline.toggleStar(id);
     const action = event?.starred ? 'unstar' : 'star';
     activityLog.log('timeline', action, `${action === 'star' ? 'Starred' : 'Unstarred'} event "${event?.title || 'Untitled'}"`, id, event?.title);
-  }, [timeline.toggleStar, timeline.events, activityLog.log]);
+  }, [timeline, activityLog]);
 
   const loggedCreateTimeline = useCallback(async (name: string) => {
     const tl = await createTimeline(name);
     activityLog.log('timeline', 'create', `Created timeline "${name}"`, tl.id, name);
     return tl;
-  }, [createTimeline, activityLog.log]);
+  }, [createTimeline, activityLog]);
 
   const loggedDeleteTimeline = useCallback(async (id: string) => {
     const tl = timelines.find((t) => t.id === id);
     await deleteTimeline(id);
     activityLog.log('timeline', 'delete', `Deleted timeline "${tl?.name || 'Untitled'}"`, id, tl?.name);
-  }, [deleteTimeline, timelines, activityLog.log]);
+  }, [deleteTimeline, timelines, activityLog]);
 
   const loggedCreateWhiteboard = useCallback(async (name?: string) => {
     const wb = await createWhiteboard(name);
     activityLog.log('whiteboard', 'create', `Created whiteboard "${wb.name}"`, wb.id, wb.name);
     return wb;
-  }, [createWhiteboard, activityLog.log]);
+  }, [createWhiteboard, activityLog]);
 
   const loggedDeleteWhiteboard = useCallback(async (id: string) => {
     const wb = whiteboards.find((w) => w.id === id);
     await deleteWhiteboard(id);
     activityLog.log('whiteboard', 'delete', `Deleted whiteboard "${wb?.name || 'Untitled'}"`, id, wb?.name);
-  }, [deleteWhiteboard, whiteboards, activityLog.log]);
+  }, [deleteWhiteboard, whiteboards, activityLog]);
 
   const loggedCreateFolder = useCallback(async (name: string) => {
     const folder = await createFolder(name);
     activityLog.log('folder', 'create', `Created folder "${name}"`, folder.id, name);
     return folder;
-  }, [createFolder, activityLog.log]);
+  }, [createFolder, activityLog]);
 
   const loggedDeleteFolder = useCallback(async (id: string) => {
     const folder = folders.find((f) => f.id === id);
     await deleteFolder(id);
     activityLog.log('folder', 'delete', `Deleted folder "${folder?.name || 'Untitled'}"`, id, folder?.name);
-  }, [deleteFolder, folders, activityLog.log]);
+  }, [deleteFolder, folders, activityLog]);
 
   const loggedCreateTag = useCallback(async (name: string) => {
     const tag = await createTag(name);
     activityLog.log('tag', 'create', `Created tag "${name}"`, tag.id, name);
     return tag;
-  }, [createTag, activityLog.log]);
+  }, [createTag, activityLog]);
 
   const loggedDeleteTag = useCallback(async (id: string) => {
     const tag = tags.find((t) => t.id === id);
     await deleteTag(id);
     activityLog.log('tag', 'delete', `Deleted tag "${tag?.name || ''}"`, id, tag?.name);
-  }, [deleteTag, tags, activityLog.log]);
+  }, [deleteTag, tags, activityLog]);
 
   // UI state — guard against stale 'clips' defaultView in localStorage
   const safeDefaultView: ViewMode = settings.defaultView === 'notes' || settings.defaultView === 'tasks' || settings.defaultView === 'timeline' || settings.defaultView === 'whiteboard' || settings.defaultView === 'activity' || settings.defaultView === 'graph' ? settings.defaultView : 'notes';
