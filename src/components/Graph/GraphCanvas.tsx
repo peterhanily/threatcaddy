@@ -19,7 +19,6 @@ interface GraphCanvasProps {
 
 export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickNode, theme }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const overlayRef = useRef<HTMLDivElement | null>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
 
   const isDark = theme === 'dark';
@@ -46,49 +45,6 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
     }
   }, []);
 
-  /** Sync DOM overlay icons with cytoscape node positions */
-  const syncOverlay = useCallback(() => {
-    const cy = cyRef.current;
-    const overlay = overlayRef.current;
-    if (!cy || !overlay) return;
-
-    const existingEls = new Map<string, HTMLImageElement>();
-    for (const img of Array.from(overlay.querySelectorAll<HTMLImageElement>('img[data-node-id]'))) {
-      existingEls.set(img.dataset.nodeId!, img);
-    }
-
-    const seen = new Set<string>();
-    cy.nodes().forEach((node) => {
-      const id = node.id();
-      seen.add(id);
-      const pos = node.renderedPosition();
-      const icon = node.data('icon') as string | undefined;
-      if (!icon) return;
-
-      let img = existingEls.get(id);
-      if (!img) {
-        img = document.createElement('img');
-        img.dataset.nodeId = id;
-        img.style.position = 'absolute';
-        img.style.left = '0';
-        img.style.top = '0';
-        img.style.width = '22px';
-        img.style.height = '22px';
-        img.style.willChange = 'transform';
-        img.style.pointerEvents = 'none';
-        img.draggable = false;
-        overlay.appendChild(img);
-      }
-      if (img.src !== icon) img.src = icon;
-      img.style.transform = `translate(${pos.x - 11}px, ${pos.y - 11}px)`;
-    });
-
-    // Remove stale elements
-    existingEls.forEach((img, id) => {
-      if (!seen.has(id)) img.remove();
-    });
-  }, []);
-
   // Initialize cytoscape
   useEffect(() => {
     if (!containerRef.current) return;
@@ -101,6 +57,10 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
           style: {
             'background-color': 'data(color)',
             'background-opacity': 0.12,
+            'background-image': 'data(icon)',
+            'background-width': 20,
+            'background-height': 20,
+            'background-fit': 'none' as const,
             'label': 'data(label)',
             'font-size': '10px',
             'color': isDark ? '#e5e7eb' : '#374151',
@@ -194,20 +154,6 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
 
     cyRef.current = cy;
 
-    // Create overlay layer inside the cytoscape container so wheel events
-    // still reach cytoscape's handler on the container element.
-    const overlay = document.createElement('div');
-    overlay.style.position = 'absolute';
-    overlay.style.inset = '0';
-    overlay.style.pointerEvents = 'none';
-    overlay.style.overflow = 'hidden';
-    overlay.style.zIndex = '10';
-    containerRef.current.appendChild(overlay);
-    overlayRef.current = overlay;
-
-    // Sync overlay on every render frame (covers zoom, pan, layout)
-    cy.on('render', syncOverlay);
-
     // Events
     cy.on('tap', 'node', (evt) => {
       onSelectNode(evt.target.id());
@@ -222,8 +168,6 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
     return () => {
       cy.destroy();
       cyRef.current = null;
-      overlay.remove();
-      overlayRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDark]);
@@ -232,9 +176,6 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
-
-    // Clear overlay icons before rebuilding data
-    if (overlayRef.current) overlayRef.current.innerHTML = '';
 
     cy.batch(() => {
       cy.elements().remove();
