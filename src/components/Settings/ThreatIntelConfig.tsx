@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react';
-import { Upload, X, ShieldCheck, FileJson, Users, ChevronDown, ChevronRight, RotateCcw, Plus } from 'lucide-react';
+import { Upload, Download, X, ShieldCheck, FileJson, Users, ChevronDown, ChevronRight, RotateCcw, Plus } from 'lucide-react';
 import { useSettings } from '../../hooks/useSettings';
 import type { IOCType, IOCRelationshipDef } from '../../types';
 import { IOC_TYPE_LABELS, DEFAULT_IOC_SUBTYPES, DEFAULT_RELATIONSHIP_TYPES } from '../../types';
+import { downloadFile } from '../../lib/export';
 
 const ALL_IOC_TYPES = Object.keys(IOC_TYPE_LABELS) as IOCType[];
 
@@ -16,12 +17,15 @@ const SIMPLE_CATEGORIES: ConfigCategory[] = [
   { key: 'tiIocStatuses', label: 'IOC Statuses' },
 ];
 
-const BULK_KEY_MAP: Record<string, 'tiClsLevels' | 'tiIocStatuses' | 'attributionActors' | 'tiIocSubtypes' | 'tiRelationshipTypes'> = {
+const BULK_KEY_MAP: Record<string, 'tiClsLevels' | 'tiIocStatuses' | 'attributionActors' | 'tiIocSubtypes' | 'tiRelationshipTypes' | 'tiDefaultClsLevel' | 'tiDefaultReportSource' | 'ociLabel'> = {
   cls_levels: 'tiClsLevels',
   ioc_subtypes: 'tiIocSubtypes',
   relationship_types: 'tiRelationshipTypes',
   ioc_statuses: 'tiIocStatuses',
   attribution_actors: 'attributionActors',
+  default_cls_level: 'tiDefaultClsLevel',
+  default_report_source: 'tiDefaultReportSource',
+  oci_label: 'ociLabel',
 };
 
 export function ThreatIntelConfig() {
@@ -152,6 +156,8 @@ export function ThreatIntelConfig() {
             updates[settingsKey] = merged;
           } else if (settingsKey === 'tiRelationshipTypes' && data[jsonKey] && typeof data[jsonKey] === 'object' && !Array.isArray(data[jsonKey])) {
             updates[settingsKey] = { ...customRelTypes, ...data[jsonKey] };
+          } else if (typeof data[jsonKey] === 'string' && (settingsKey === 'tiDefaultClsLevel' || settingsKey === 'tiDefaultReportSource' || settingsKey === 'ociLabel')) {
+            updates[settingsKey] = data[jsonKey] || undefined;
           } else if (Array.isArray(data[jsonKey])) {
             const parsed = (data[jsonKey] as unknown[]).map(String).filter((s) => s.length > 0);
             if (settingsKey === 'attributionActors') {
@@ -178,6 +184,22 @@ export function ThreatIntelConfig() {
     e.target.value = '';
   };
 
+  const handleConfigExport = () => {
+    const config: Record<string, unknown> = {};
+    const clsLevels = getSimpleValues('tiClsLevels');
+    if (clsLevels.length > 0) config.cls_levels = clsLevels;
+    const iocStatuses = getSimpleValues('tiIocStatuses');
+    if (iocStatuses.length > 0) config.ioc_statuses = iocStatuses;
+    if (actors.length > 0) config.attribution_actors = actors;
+    const subtypes = settings.tiIocSubtypes as Record<string, string[]> | undefined;
+    if (subtypes && Object.keys(subtypes).length > 0) config.ioc_subtypes = subtypes;
+    if (customRelTypes && Object.keys(customRelTypes).length > 0) config.relationship_types = customRelTypes;
+    if (settings.tiDefaultClsLevel) config.default_cls_level = settings.tiDefaultClsLevel;
+    if (settings.tiDefaultReportSource) config.default_report_source = settings.tiDefaultReportSource;
+    if (settings.ociLabel) config.oci_label = settings.ociLabel;
+    downloadFile(JSON.stringify(config, null, 2), 'browsernotes-config.json', 'application/json');
+  };
+
   const toggleTypeInList = (list: IOCType[], type: IOCType): IOCType[] =>
     list.includes(type) ? list.filter((t) => t !== type) : [...list, type];
 
@@ -188,7 +210,7 @@ export function ThreatIntelConfig() {
         Threat Intel Configuration
       </h3>
 
-      {/* Bulk JSON Import */}
+      {/* Bulk JSON Import / Export */}
       <div>
         <input
           ref={bulkRef}
@@ -197,15 +219,24 @@ export function ThreatIntelConfig() {
           onChange={handleBulkImport}
           className="hidden"
         />
-        <button
-          onClick={() => bulkRef.current?.click()}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-200"
-        >
-          <FileJson size={16} />
-          Bulk JSON Import
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => bulkRef.current?.click()}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-200"
+          >
+            <FileJson size={16} />
+            Bulk JSON Import
+          </button>
+          <button
+            onClick={handleConfigExport}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-200"
+          >
+            <Download size={16} />
+            Export Config
+          </button>
+        </div>
         <p className="text-xs text-gray-600 mt-1">
-          Accepts {'{'} cls_levels, ioc_subtypes, relationship_types, ioc_statuses, attribution_actors {'}'}
+          Accepts {'{'} cls_levels, ioc_subtypes, relationship_types, ioc_statuses, attribution_actors, default_cls_level, default_report_source, oci_label {'}'}
         </p>
       </div>
 
