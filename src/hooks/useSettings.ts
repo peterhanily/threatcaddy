@@ -10,7 +10,7 @@ function migrateSettings(raw: Record<string, unknown>): Record<string, unknown> 
     const flat = raw.tiIocSubtypes as string[];
     if (flat.length > 0) {
       // Assign all old subtypes to every IOC type so user data isn't lost
-      const allTypes = ['ipv4','ipv6','domain','url','email','md5','sha1','sha256','cve','mitre-attack','yara-rule','file-path'];
+      const allTypes = ['ipv4','ipv6','domain','url','email','md5','sha1','sha256','cve','mitre-attack','yara-rule','sigma-rule','file-path'];
       const perType: Record<string, string[]> = {};
       for (const t of allTypes) perType[t] = [...flat];
       raw.tiIocSubtypes = perType;

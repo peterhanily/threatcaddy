@@ -84,6 +84,12 @@ function svgYaraRule(c: string): string {
   return `${H(c)}<circle cx="7" cy="7" r="5.5" fill="${l}" opacity="0.4"/><circle cx="7" cy="7" r="5.5" fill="none" stroke="${c}" stroke-width="2"/><line x1="11" y1="11" x2="15" y2="15" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>${E}`;
 }
 
+// SIGMA Rule: magnifying glass with sigma (Σ) symbol
+function svgSigmaRule(c: string): string {
+  const l = lighten(c, 0.5);
+  return `${H(c)}<circle cx="7" cy="7" r="5.5" fill="${l}" opacity="0.4"/><circle cx="7" cy="7" r="5.5" fill="none" stroke="${c}" stroke-width="2"/><line x1="11" y1="11" x2="15" y2="15" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/><text x="7" y="9.5" text-anchor="middle" font-size="7" font-weight="bold" font-family="serif" fill="${c}">Σ</text>${E}`;
+}
+
 // File Path: filled document with corner fold
 function svgFilePath(c: string): string {
   const l = lighten(c, 0.5);
@@ -122,6 +128,7 @@ const IOC_ICON_MAP: Record<IOCType, (c: string) => string> = {
   cve: svgCve,
   'mitre-attack': svgMitreAttack,
   'yara-rule': svgYaraRule,
+  'sigma-rule': svgSigmaRule,
   'file-path': svgFilePath,
 };
 

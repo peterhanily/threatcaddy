@@ -46,11 +46,6 @@ const IOC_PATTERNS: { type: IOCType; pattern: RegExp; validate?: (match: string)
     type: 'mitre-attack',
     pattern: /(?:^|[\s,;([\]])([TS]\d{4}(?:\.\d{3})?)(?=[\s,;)\].]|$)/gm,
   },
-  // YARA rule names
-  {
-    type: 'yara-rule',
-    pattern: /\brule\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\{/g,
-  },
   // URLs (including defanged)
   {
     type: 'url',
@@ -88,6 +83,88 @@ const IOC_PATTERNS: { type: IOCType; pattern: RegExp; validate?: (match: string)
   },
 ];
 
+/**
+ * Extract full YARA rule bodies using brace-depth counting.
+ * Handles quoted strings so braces inside strings don't confuse the parser.
+ */
+export function extractYaraRules(text: string): string[] {
+  const results: string[] = [];
+  const ruleStart = /\brule\s+[a-zA-Z_][a-zA-Z0-9_]*\s*(:[\s\S]*?)?\{/g;
+  let startMatch: RegExpExecArray | null;
+
+  while ((startMatch = ruleStart.exec(text)) !== null) {
+    const begin = startMatch.index;
+    // Start counting after the opening brace
+    let depth = 1;
+    let i = startMatch.index + startMatch[0].length;
+    let valid = true;
+
+    while (i < text.length && depth > 0) {
+      const ch = text[i];
+      if (ch === '"') {
+        // Skip quoted string (handle escaped quotes)
+        i++;
+        while (i < text.length && text[i] !== '"') {
+          if (text[i] === '\\') i++; // skip escaped char
+          i++;
+        }
+        // i now points at closing quote (or end of text)
+      } else if (ch === '{') {
+        depth++;
+      } else if (ch === '}') {
+        depth--;
+      }
+      i++;
+    }
+
+    if (depth !== 0) {
+      valid = false; // Unbalanced braces — skip
+    }
+
+    if (valid) {
+      results.push(text.slice(begin, i).trim());
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Extract full SIGMA rule YAML blocks.
+ * Finds lines starting with `title:`, collects continuation lines until blank line / `---` / EOF,
+ * and validates the block contains `detection:` AND (`logsource:` or `condition:`).
+ */
+export function extractSigmaRules(text: string): string[] {
+  const results: string[] = [];
+  const lines = text.split('\n');
+
+  for (let i = 0; i < lines.length; i++) {
+    if (!/^\s*title\s*:/i.test(lines[i])) continue;
+
+    const blockLines: string[] = [lines[i]];
+    let j = i + 1;
+
+    // Collect continuation lines
+    while (j < lines.length) {
+      const line = lines[j];
+      // Stop on blank line or YAML document separator
+      if (/^\s*$/.test(line) || /^---\s*$/.test(line)) break;
+      blockLines.push(line);
+      j++;
+    }
+
+    const block = blockLines.join('\n');
+    const hasDetection = /^\s*detection\s*:/m.test(block);
+    const hasLogsourceOrCondition = /^\s*(?:logsource|condition)\s*:/m.test(block);
+
+    if (hasDetection && hasLogsourceOrCondition) {
+      results.push(block.trim());
+    }
+  }
+
+  return results;
+}
+
 const MAX_IOC_INPUT_LEN = 5_000_000; // 5 MB max content to scan
 const MAX_IOCS_PER_TYPE = 500;
 const MAX_TOTAL_IOCS = 5_000;
@@ -109,8 +186,8 @@ export function extractIOCs(content: string): IOCEntry[] {
 
     while ((match = pattern.exec(normalized)) !== null) {
       if (typeCount >= MAX_IOCS_PER_TYPE || entries.length >= MAX_TOTAL_IOCS) break;
-      // For MITRE ATT&CK, use capture group 1; for YARA, use group 1
-      let value = type === 'mitre-attack' || type === 'yara-rule'
+      // For MITRE ATT&CK, use capture group 1
+      let value = type === 'mitre-attack'
         ? (match[1] || match[0]).trim()
         : match[0].trim();
 
@@ -155,6 +232,40 @@ export function extractIOCs(content: string): IOCEntry[] {
       });
       typeCount++;
     }
+  }
+
+  // Extract full YARA rule bodies
+  const yaraRules = extractYaraRules(normalized);
+  for (const body of yaraRules) {
+    if (entries.length >= MAX_TOTAL_IOCS) break;
+    const key = `yara-rule:${body.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    entries.push({
+      id: nanoid(),
+      type: 'yara-rule',
+      value: body,
+      confidence: 'medium',
+      firstSeen: Date.now(),
+      dismissed: false,
+    });
+  }
+
+  // Extract full SIGMA rule YAML blocks
+  const sigmaRules = extractSigmaRules(normalized);
+  for (const block of sigmaRules) {
+    if (entries.length >= MAX_TOTAL_IOCS) break;
+    const key = `sigma-rule:${block.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    entries.push({
+      id: nanoid(),
+      type: 'sigma-rule',
+      value: block,
+      confidence: 'medium',
+      firstSeen: Date.now(),
+      dismissed: false,
+    });
   }
 
   // Dedup: remove domains that are already part of extracted URLs or emails

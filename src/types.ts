@@ -109,7 +109,7 @@ export const DEFAULT_SETTINGS: Settings = {
 export type IOCType =
   | 'ipv4' | 'ipv6' | 'domain' | 'url' | 'email'
   | 'md5' | 'sha1' | 'sha256'
-  | 'cve' | 'mitre-attack' | 'yara-rule' | 'file-path';
+  | 'cve' | 'mitre-attack' | 'yara-rule' | 'sigma-rule' | 'file-path';
 
 export type ConfidenceLevel = 'low' | 'medium' | 'high' | 'confirmed';
 
@@ -154,6 +154,7 @@ export const IOC_TYPE_LABELS: Record<IOCType, { label: string; color: string }> 
   cve:           { label: 'CVE',          color: '#10b981' },
   'mitre-attack': { label: 'MITRE ATT&CK', color: '#14b8a6' },
   'yara-rule':   { label: 'YARA Rule',   color: '#a855f7' },
+  'sigma-rule':  { label: 'SIGMA Rule',  color: '#0891b2' },
   'file-path':   { label: 'File Path',   color: '#64748b' },
 };
 
@@ -177,6 +178,7 @@ export const DEFAULT_IOC_SUBTYPES: Record<IOCType, string[]> = {
   cve: ['Remote Code Execution', 'Privilege Escalation', 'Information Disclosure', 'Denial of Service', 'Authentication Bypass'],
   'mitre-attack': ['Technique', 'Sub-technique', 'Tactic'],
   'yara-rule': ['Detection Rule', 'Hunting Rule', 'Classification Rule'],
+  'sigma-rule': ['Detection Rule', 'Hunting Rule', 'Log Correlation Rule', 'Behavioral Rule'],
   'file-path': ['Persistence Location', 'Staging Directory', 'Exfil Path', 'Log File', 'Config File'],
 };
 
@@ -196,7 +198,8 @@ export const DEFAULT_RELATIONSHIP_TYPES: Record<string, IOCRelationshipDef> = {
   'attributed-to':     { label: 'Attributed To',      sourceTypes: [],                                            targetTypes: [] },
   'exploits':          { label: 'Exploits',           sourceTypes: ['md5', 'sha1', 'sha256', 'url'],              targetTypes: ['cve'] },
   'uses-technique':    { label: 'Uses Technique',     sourceTypes: [],                                            targetTypes: ['mitre-attack'] },
-  'detected-by':       { label: 'Detected By',        sourceTypes: ['md5', 'sha1', 'sha256'],                     targetTypes: ['yara-rule'] },
+  'detected-by':       { label: 'Detected By',        sourceTypes: ['md5', 'sha1', 'sha256'],                     targetTypes: ['yara-rule', 'sigma-rule'] },
+  'alerts-on':         { label: 'Alerts On',          sourceTypes: ['sigma-rule'],                                 targetTypes: ['mitre-attack'] },
   'related-to':        { label: 'Related To',         sourceTypes: [],                                            targetTypes: [] },
 };
 

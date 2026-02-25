@@ -10,6 +10,7 @@ import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { cn, formatDate } from '../../lib/utils';
 import { formatIOCsJSON, formatIOCsCSV, formatIOCsFlatJSON, formatIOCsFlatCSV, slugify } from '../../lib/ioc-export';
 import type { IOCExportEntry, ThreatIntelExportConfig } from '../../lib/ioc-export';
+import { formatIOCsSTIX } from '../../lib/stix-export';
 import { downloadFile } from '../../lib/export';
 
 interface IOCPanelProps {
@@ -137,7 +138,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
     }
   };
 
-  const handleCategoryExport = (type: IOCType, format: 'json' | 'csv' | 'flat-json' | 'flat-csv') => {
+  const handleCategoryExport = (type: IOCType, format: 'json' | 'csv' | 'flat-json' | 'flat-csv' | 'stix') => {
     setExportForType(null);
     if (!analysis) return;
     const typeIOCs = analysis.iocs.filter((ioc) => ioc.type === type && !ioc.dismissed);
@@ -145,7 +146,9 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
     const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: typeIOCs }];
     const slug = slugify(item.title) || 'item';
     const typeSlug = type.replace(/[^a-z0-9]/g, '-');
-    if (format === 'flat-json') {
+    if (format === 'stix') {
+      downloadFile(formatIOCsSTIX(entries, tiExportConfig), `iocs-${slug}-${typeSlug}-stix.json`, 'application/json');
+    } else if (format === 'flat-json') {
       downloadFile(formatIOCsFlatJSON(entries, tiExportConfig), `iocs-${slug}-${typeSlug}-flat.json`, 'application/json');
     } else if (format === 'flat-csv') {
       downloadFile(formatIOCsFlatCSV(entries, tiExportConfig), `iocs-${slug}-${typeSlug}-flat.csv`, 'text/csv');
@@ -163,12 +166,14 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
     setAttributionInput('');
   };
 
-  const handleExport = (format: 'json' | 'csv' | 'flat-json' | 'flat-csv') => {
+  const handleExport = (format: 'json' | 'csv' | 'flat-json' | 'flat-csv' | 'stix') => {
     setShowExportMenu(false);
     if (!analysis || activeIOCs.length === 0) return;
     const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: analysis.iocs }];
     const slug = slugify(item.title) || 'item';
-    if (format === 'flat-json') {
+    if (format === 'stix') {
+      downloadFile(formatIOCsSTIX(entries, tiExportConfig), `iocs-${slug}-stix.json`, 'application/json');
+    } else if (format === 'flat-json') {
       downloadFile(formatIOCsFlatJSON(entries, tiExportConfig), `iocs-${slug}-flat.json`, 'application/json');
     } else if (format === 'flat-csv') {
       downloadFile(formatIOCsFlatCSV(entries, tiExportConfig), `iocs-${slug}-flat.csv`, 'text/csv');
@@ -230,7 +235,8 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                   <button onClick={() => handleExport('flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">Export JSON (flat)</button>
                   <button onClick={() => handleExport('flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export CSV (flat)</button>
                   <button onClick={() => handleExport('json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export JSON (grouped)</button>
-                  <button onClick={() => handleExport('csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">Export CSV (grouped)</button>
+                  <button onClick={() => handleExport('csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export CSV (grouped)</button>
+                  <button onClick={() => handleExport('stix')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">Export STIX 2.1</button>
                 </div>
               )}
             </div>
@@ -361,6 +367,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                             <button onClick={() => handleCategoryExport(type, 'flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">CSV (flat)</button>
                             <button onClick={() => handleCategoryExport(type, 'json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">JSON (grouped)</button>
                             <button onClick={() => handleCategoryExport(type, 'csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">CSV (grouped)</button>
+                            <button onClick={() => handleCategoryExport(type, 'stix')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">STIX 2.1</button>
                             <button
                               onClick={() => {
                                 setExportForType(null);

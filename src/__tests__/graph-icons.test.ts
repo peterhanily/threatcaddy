@@ -5,7 +5,7 @@ import type { IOCType } from '../types';
 const ALL_IOC_TYPES: IOCType[] = [
   'ipv4', 'ipv6', 'domain', 'url', 'email',
   'md5', 'sha1', 'sha256',
-  'cve', 'mitre-attack', 'yara-rule', 'file-path',
+  'cve', 'mitre-attack', 'yara-rule', 'sigma-rule', 'file-path',
 ];
 
 describe('getNodeIcon', () => {

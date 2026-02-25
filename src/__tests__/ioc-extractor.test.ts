@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { describe, it, expect } from 'vitest';
-import { extractIOCs, defang, mergeIOCAnalysis } from '../lib/ioc-extractor';
+import { extractIOCs, defang, mergeIOCAnalysis, extractYaraRules, extractSigmaRules } from '../lib/ioc-extractor';
 import type { IOCAnalysis, IOCEntry } from '../types';
 
 describe('defang', () => {
@@ -109,11 +109,29 @@ describe('extractIOCs', () => {
     expect(mitre.map((i) => i.value)).toContain('T1059.001');
   });
 
-  it('extracts YARA rule names', () => {
-    const result = extractIOCs('rule APT_Backdoor_Win32 { meta: author = "analyst" }');
+  it('extracts YARA rule full body', () => {
+    const input = 'rule APT_Backdoor_Win32 { meta: author = "analyst" strings: $a = "malware" condition: $a }';
+    const result = extractIOCs(input);
     const yara = result.filter((i) => i.type === 'yara-rule');
     expect(yara).toHaveLength(1);
-    expect(yara[0].value).toBe('APT_Backdoor_Win32');
+    expect(yara[0].value).toContain('rule APT_Backdoor_Win32');
+    expect(yara[0].value).toContain('condition: $a');
+    expect(yara[0].value).toContain('}');
+  });
+
+  it('extracts SIGMA rules', () => {
+    const input = `title: Suspicious PowerShell
+logsource:
+  product: windows
+detection:
+  selection:
+    CommandLine|contains: '-enc'
+  condition: selection`;
+    const result = extractIOCs(input);
+    const sigma = result.filter((i) => i.type === 'sigma-rule');
+    expect(sigma).toHaveLength(1);
+    expect(sigma[0].value).toContain('title: Suspicious PowerShell');
+    expect(sigma[0].value).toContain('detection:');
   });
 
   it('extracts file paths', () => {
@@ -213,5 +231,77 @@ describe('mergeIOCAnalysis', () => {
 
     const result = mergeIOCAnalysis(existing, fresh);
     expect(result.lastPushedAt).toBe(1500);
+  });
+});
+
+describe('extractYaraRules', () => {
+  it('extracts full YARA rule body', () => {
+    const input = 'rule TestRule { meta: author = "test" strings: $a = "evil" condition: $a }';
+    const rules = extractYaraRules(input);
+    expect(rules).toHaveLength(1);
+    expect(rules[0]).toContain('rule TestRule');
+    expect(rules[0]).toContain('condition: $a');
+  });
+
+  it('handles nested braces in strings', () => {
+    const input = 'rule Nested { strings: $a = "test{inner}" condition: $a }';
+    const rules = extractYaraRules(input);
+    expect(rules).toHaveLength(1);
+    expect(rules[0]).toContain('rule Nested');
+  });
+
+  it('extracts multiple YARA rules', () => {
+    const input = 'rule One { condition: true } some text rule Two { condition: false }';
+    const rules = extractYaraRules(input);
+    expect(rules).toHaveLength(2);
+    expect(rules[0]).toContain('rule One');
+    expect(rules[1]).toContain('rule Two');
+  });
+
+  it('gracefully skips unbalanced braces', () => {
+    const input = 'rule Broken { meta: author = "test" strings: $a = "evil"';
+    const rules = extractYaraRules(input);
+    expect(rules).toHaveLength(0);
+  });
+});
+
+describe('extractSigmaRules', () => {
+  it('extracts basic SIGMA rule', () => {
+    const input = `title: Test Rule
+logsource:
+  product: windows
+detection:
+  selection:
+    EventID: 1
+  condition: selection`;
+    const rules = extractSigmaRules(input);
+    expect(rules).toHaveLength(1);
+    expect(rules[0]).toContain('title: Test Rule');
+    expect(rules[0]).toContain('detection:');
+    expect(rules[0]).toContain('logsource:');
+  });
+
+  it('rejects YAML without detection block', () => {
+    const input = `title: Not A Sigma Rule
+logsource:
+  product: windows
+description: This has no detection block`;
+    const rules = extractSigmaRules(input);
+    expect(rules).toHaveLength(0);
+  });
+
+  it('stops at blank line boundary', () => {
+    const input = `title: Rule One
+logsource:
+  product: windows
+detection:
+  condition: selection
+
+title: Not A Rule
+description: separate block`;
+    const rules = extractSigmaRules(input);
+    expect(rules).toHaveLength(1);
+    expect(rules[0]).toContain('Rule One');
+    expect(rules[0]).not.toContain('Not A Rule');
   });
 });
