@@ -31,6 +31,9 @@ import { extractIOCs, mergeIOCAnalysis } from './lib/ioc-extractor';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { ActiveFilterBar } from './components/Common/ActiveFilterBar';
 import { GraphView } from './components/Graph/GraphView';
+import type { LayoutName } from './components/Graph/GraphCanvas';
+import { useNavigationHistory } from './hooks/useNavigationHistory';
+import type { NavState } from './hooks/useNavigationHistory';
 import { useTour } from './hooks/useTour';
 import { TourOverlay } from './components/Tour/TourOverlay';
 import { TourTooltip } from './components/Tour/TourTooltip';
@@ -211,6 +214,23 @@ export default function App() {
   const [selectedIOCTypes, setSelectedIOCTypes] = useState<IOCType[]>([]);
   const [selectedTimelineId, setSelectedTimelineId] = useState<string>();
   const [selectedWhiteboardId, setSelectedWhiteboardId] = useState<string>();
+  const [graphLayout, setGraphLayout] = useState<LayoutName>('cose-bilkent');
+
+  // Browser back/forward navigation
+  const handleNavRestore = useCallback((state: NavState) => {
+    setActiveView(state.view);
+    if (state.selectedNoteId !== undefined) setSelectedNoteId(state.selectedNoteId);
+    if (state.selectedTimelineId !== undefined) setSelectedTimelineId(state.selectedTimelineId);
+    if (state.selectedWhiteboardId !== undefined) setSelectedWhiteboardId(state.selectedWhiteboardId);
+    setShowSettings(false);
+  }, []);
+  const { navigate: navPush } = useNavigationHistory({ onViewChange: handleNavRestore });
+
+  const navigateTo = useCallback((view: ViewMode, opts?: { selectedNoteId?: string; selectedTimelineId?: string; selectedWhiteboardId?: string }) => {
+    setActiveView(view);
+    setShowSettings(false);
+    navPush({ view, ...opts });
+  }, [navPush]);
 
   // Resolve timeline deep-link once events are loaded
   const deepLinkTimelineResolved = useCallback(() => {
@@ -261,9 +281,8 @@ export default function App() {
           });
           if (!firstNote) firstNote = note;
         }
-        setActiveView('notes');
+        navigateTo('notes', { selectedNoteId: firstNote?.id });
         setSelectedFolderId(clipsFolder.id);
-        if (firstNote) setSelectedNoteId(firstNote.id);
       } catch (error) {
         console.error('Failed to import clips:', error);
       }
@@ -271,7 +290,7 @@ export default function App() {
 
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [findOrCreateFolder, loggedCreateNote]);
+  }, [findOrCreateFolder, loggedCreateNote, navigateTo]);
 
   // Track Clips folder ID for OCI envelope type detection
   const clipsFolderId = useMemo(
@@ -365,26 +384,24 @@ export default function App() {
 
   const handleNewNote = useCallback(async () => {
     if (showQuickCapture) return;
-    setShowSettings(false);
-    setActiveView('notes');
     setShowTrash(false);
     setShowArchive(false);
     const note = await loggedCreateNote({
       folderId: selectedFolderId,
     });
     setSelectedNoteId(note.id);
-  }, [loggedCreateNote, selectedFolderId, showQuickCapture]);
+    navigateTo('notes', { selectedNoteId: note.id });
+  }, [loggedCreateNote, selectedFolderId, showQuickCapture, navigateTo]);
 
   const handleNewTask = useCallback(async () => {
-    setShowSettings(false);
-    setActiveView('tasks');
-  }, []);
+    navigateTo('tasks');
+  }, [navigateTo]);
 
   const handleQuickCapture = useCallback(async (data: Partial<Note>) => {
     const note = await loggedCreateNote(data);
-    setActiveView('notes');
     setSelectedNoteId(note.id);
-  }, [loggedCreateNote]);
+    navigateTo('notes', { selectedNoteId: note.id });
+  }, [loggedCreateNote, navigateTo]);
 
   const handleImportComplete = useCallback(() => {
     notes.reload();
@@ -429,32 +446,31 @@ export default function App() {
   // Keyboard shortcuts
   // Search overlay navigation callbacks
   const handleSearchNavigateToNote = useCallback((id: string) => {
-    setActiveView('notes');
     setSelectedNoteId(id);
     setSelectedFolderId(undefined);
     setSelectedTag(undefined);
     setShowTrash(false);
     setShowArchive(false);
-  }, []);
+    navigateTo('notes', { selectedNoteId: id });
+  }, [navigateTo]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSearchNavigateToTask = useCallback((_id: string) => {
-    setActiveView('tasks');
     setSelectedFolderId(undefined);
     setSelectedTag(undefined);
-  }, []);
+    navigateTo('tasks');
+  }, [navigateTo]);
 
   const handleSearchNavigateToTimeline = useCallback((id: string) => {
-    setActiveView('timeline');
-    // Find the event to select its timeline
     const ev = timeline.events.find((e) => e.id === id);
     if (ev) setSelectedTimelineId(ev.timelineId);
-  }, [timeline.events]);
+    navigateTo('timeline', { selectedTimelineId: ev?.timelineId });
+  }, [timeline.events, navigateTo]);
 
   const handleSearchNavigateToWhiteboard = useCallback((id: string) => {
-    setActiveView('whiteboard');
     setSelectedWhiteboardId(id);
-  }, []);
+    navigateTo('whiteboard', { selectedWhiteboardId: id });
+  }, [navigateTo]);
 
   useKeyboardShortcuts({
     onNewNote: handleNewNote,
@@ -462,7 +478,7 @@ export default function App() {
     onSearch: () => setSearchOverlayOpen(true),
     onSave: handleQuickSave,
     onTogglePreview: handleToggleEditorMode,
-    onSwitchView: (view) => { setActiveView(view); setShowSettings(false); },
+    onSwitchView: (view) => { navigateTo(view); },
     onEscape: () => {
       setSearchOverlayOpen(false);
       setShowQuickCapture(false);
@@ -483,7 +499,7 @@ export default function App() {
 
   const sidebarProps = useMemo(() => ({
     activeView,
-    onViewChange: (v: ViewMode) => { setActiveView(v); setShowSettings(false); },
+    onViewChange: (v: ViewMode) => { navigateTo(v); },
     folders,
     tags,
     selectedFolderId,
@@ -518,7 +534,7 @@ export default function App() {
     onMoveNoteToFolder: handleMoveNoteToFolder,
     onRenameTag: (id: string, name: string) => updateTag(id, { name }),
     onDeleteTag: loggedDeleteTag,
-  }), [activeView, folders, tags, selectedFolderId, selectedTag, showTrash, showArchive, loggedCreateFolder, loggedDeleteFolder, updateFolder, noteCounts, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, loggedCreateTimeline, loggedDeleteTimeline, updateTimeline, timelineEventCounts, whiteboards, selectedWhiteboardId, loggedCreateWhiteboard, loggedDeleteWhiteboard, updateWhiteboard, handleMoveNoteToFolder, updateTag, loggedDeleteTag]);
+  }), [activeView, folders, tags, selectedFolderId, selectedTag, showTrash, showArchive, loggedCreateFolder, loggedDeleteFolder, updateFolder, noteCounts, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, loggedCreateTimeline, loggedDeleteTimeline, updateTimeline, timelineEventCounts, whiteboards, selectedWhiteboardId, loggedCreateWhiteboard, loggedDeleteWhiteboard, updateWhiteboard, handleMoveNoteToFolder, updateTag, loggedDeleteTag, navigateTo]);
 
   const selectedFolder = useMemo(() => folders.find((f) => f.id === selectedFolderId), [folders, selectedFolderId]);
   const selectedTagObj = useMemo(() => tags.find((t) => t.name === selectedTag), [tags, selectedTag]);
@@ -578,18 +594,7 @@ export default function App() {
             onClear={activityLog.clear}
           />
         ) : activeView === 'graph' ? (
-          <GraphView
-            notes={notes.notes}
-            tasks={tasks.tasks}
-            timelineEvents={timeline.events}
-            settings={settings}
-            onNavigateToNote={(id) => { setActiveView('notes'); setSelectedNoteId(id); setSelectedFolderId(undefined); setSelectedTag(undefined); setShowTrash(false); setShowArchive(false); }}
-            onNavigateToTask={() => { setActiveView('tasks'); setSelectedFolderId(undefined); setSelectedTag(undefined); }}
-            onNavigateToTimelineEvent={(id) => { setActiveView('timeline'); const ev = timeline.events.find((e) => e.id === id); if (ev) setSelectedTimelineId(ev.timelineId); }}
-            onUpdateNote={notes.updateNote}
-            onUpdateTask={tasks.updateTask}
-            onUpdateEvent={timeline.updateEvent}
-          />
+          null /* GraphView is always-mounted below for layout persistence */
         ) : activeView === 'timeline' ? (
           <TimelineView
             events={filteredTimelineEvents}
@@ -691,6 +696,23 @@ export default function App() {
             </div>
           </div>
         )}
+        </div>
+        {/* Always-mounted GraphView — hidden via CSS when not active to preserve layout/positions */}
+        <div className={activeView === 'graph' && !showSettings ? 'flex flex-1 overflow-hidden' : 'hidden'}>
+          <GraphView
+            notes={notes.notes}
+            tasks={tasks.tasks}
+            timelineEvents={timeline.events}
+            settings={settings}
+            layout={graphLayout}
+            onLayoutChange={setGraphLayout}
+            onNavigateToNote={(id) => { setSelectedNoteId(id); setSelectedFolderId(undefined); setSelectedTag(undefined); setShowTrash(false); setShowArchive(false); navigateTo('notes', { selectedNoteId: id }); }}
+            onNavigateToTask={() => { setSelectedFolderId(undefined); setSelectedTag(undefined); navigateTo('tasks'); }}
+            onNavigateToTimelineEvent={(id) => { const ev = timeline.events.find((e) => e.id === id); if (ev) setSelectedTimelineId(ev.timelineId); navigateTo('timeline', { selectedTimelineId: ev?.timelineId }); }}
+            onUpdateNote={notes.updateNote}
+            onUpdateTask={tasks.updateTask}
+            onUpdateEvent={timeline.updateEvent}
+          />
         </div>
         </ErrorBoundary>
       </AppLayout>

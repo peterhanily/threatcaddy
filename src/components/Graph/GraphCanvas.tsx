@@ -14,11 +14,12 @@ interface GraphCanvasProps {
   layout: LayoutName;
   onSelectNode: (nodeId: string | null) => void;
   onDoubleClickNode: (nodeId: string) => void;
+  onSelectMulti?: (nodeIds: string[]) => void;
   theme: 'dark' | 'light';
   fitTrigger?: number;
 }
 
-export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickNode, theme, fitTrigger }: GraphCanvasProps) {
+export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickNode, onSelectMulti, theme, fitTrigger }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
   // Stable refs for callbacks so cytoscape event handlers always use latest versions
@@ -26,6 +27,8 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
   onSelectNodeRef.current = onSelectNode;
   const onDoubleClickNodeRef = useRef(onDoubleClickNode);
   onDoubleClickNodeRef.current = onDoubleClickNode;
+  const onSelectMultiRef = useRef(onSelectMulti);
+  onSelectMultiRef.current = onSelectMulti;
 
   const isDark = theme === 'dark';
 
@@ -57,6 +60,8 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
 
     const cy = cytoscape({
       container: containerRef.current,
+      boxSelectionEnabled: true,
+      selectionType: 'additive',
       style: [
         {
           selector: 'node',
@@ -188,11 +193,23 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
     cy.on('tap', (evt) => {
       if (evt.target === cy) {
         cy.elements().removeClass('faded').removeClass('highlighted');
+        cy.elements().unselect();
         onSelectNodeRef.current(null);
       }
     });
     cy.on('dbltap', 'node', (evt) => {
       onDoubleClickNodeRef.current(evt.target.id());
+    });
+
+    // Box selection — highlight combined neighborhood of all selected nodes
+    cy.on('boxselect', () => {
+      const selected = cy.nodes(':selected');
+      if (selected.length === 0) return;
+      const neighborhood = selected.neighborhood().add(selected);
+      cy.elements().addClass('faded').removeClass('highlighted');
+      neighborhood.removeClass('faded').addClass('highlighted');
+      const ids = selected.map((n) => n.id());
+      onSelectMultiRef.current?.(ids);
     });
 
     return () => {
@@ -201,6 +218,29 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDark]);
+
+  // ResizeObserver — call cy.resize() when container becomes visible
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let prevWidth = el.offsetWidth;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const newWidth = entry.contentRect.width;
+      // Container transitioned from hidden (0-width) to visible
+      if (prevWidth === 0 && newWidth > 0) {
+        const cy = cyRef.current;
+        if (cy) {
+          cy.resize();
+          cy.fit(undefined, 40);
+        }
+      }
+      prevWidth = newWidth;
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Update data
   useEffect(() => {

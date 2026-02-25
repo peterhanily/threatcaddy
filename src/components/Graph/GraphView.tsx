@@ -1,5 +1,5 @@
 import React, { Suspense, useState, useMemo, useCallback } from 'react';
-import { Loader2, Search, Network, Maximize2 } from 'lucide-react';
+import { Loader2, Search, Network, Maximize2, ChevronDown, ChevronRight } from 'lucide-react';
 import type { Note, Task, TimelineEvent, Settings, IOCType } from '../../types';
 import { IOC_TYPE_LABELS } from '../../types';
 import { buildGraphData } from '../../lib/graph-data';
@@ -7,6 +7,7 @@ import type { GraphNode, GraphEdge } from '../../lib/graph-data';
 import { GraphDetailPanel } from './GraphDetailPanel';
 import { GraphIOCEditDialog } from './GraphIOCEditDialog';
 import type { LayoutName } from './GraphCanvas';
+import { getLegendEntries } from '../../lib/graph-icons';
 
 const GraphCanvas = React.lazy(() => import('./GraphCanvas'));
 
@@ -17,6 +18,8 @@ interface GraphViewProps {
   tasks: Task[];
   timelineEvents: TimelineEvent[];
   settings: Settings;
+  layout?: LayoutName;
+  onLayoutChange?: (layout: LayoutName) => void;
   onNavigateToNote: (id: string) => void;
   onNavigateToTask: (id: string) => void;
   onNavigateToTimelineEvent: (id: string) => void;
@@ -35,15 +38,19 @@ const ALL_EDGE_TYPES: { key: EdgeTypeFilter; label: string; color: string }[] = 
   { key: 'entity-link', label: 'Entity Links', color: '#22c55e' },
 ];
 
-export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateToNote, onNavigateToTask, onNavigateToTimelineEvent, onUpdateNote, onUpdateTask, onUpdateEvent }: GraphViewProps) {
-  const [layout, setLayout] = useState<LayoutName>('cose-bilkent');
+export function GraphView({ notes, tasks, timelineEvents, settings, layout: externalLayout, onLayoutChange, onNavigateToNote, onNavigateToTask, onNavigateToTimelineEvent, onUpdateNote, onUpdateTask, onUpdateEvent }: GraphViewProps) {
+  const [internalLayout, setInternalLayout] = useState<LayoutName>('cose-bilkent');
+  const layout = externalLayout ?? internalLayout;
+  const handleLayoutChange = onLayoutChange ?? setInternalLayout;
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleNodeTypes, setVisibleNodeTypes] = useState<Set<NodeTypeFilter>>(new Set(['ioc', 'note', 'task', 'timeline-event']));
   const [visibleIOCTypes, setVisibleIOCTypes] = useState<Set<IOCType>>(new Set(ALL_IOC_TYPES));
   const [visibleEdgeTypes, setVisibleEdgeTypes] = useState<Set<EdgeTypeFilter>>(new Set(['contains-ioc', 'ioc-relationship', 'timeline-link', 'entity-link']));
   const [editingIOCNode, setEditingIOCNode] = useState<GraphNode | null>(null);
   const [fitTrigger, setFitTrigger] = useState(0);
+  const [legendOpen, setLegendOpen] = useState(false);
   // Stable ref to full graph data for use in cytoscape callbacks
   const fullGraphDataRef = React.useRef<ReturnType<typeof buildGraphData>>({ nodes: [], edges: [] });
 
@@ -112,6 +119,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
 
   // Handle node click: IOC nodes open edit dialog directly, others show detail panel
   const handleSelectNode = useCallback((nodeId: string | null) => {
+    setSelectedNodeIds([]);
     if (!nodeId) {
       setSelectedNodeId(null);
       return;
@@ -125,6 +133,11 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
       setSelectedNodeId(nodeId);
     }
   }, [onUpdateNote, onUpdateTask]);
+
+  const handleSelectMulti = useCallback((nodeIds: string[]) => {
+    setSelectedNodeId(null);
+    setSelectedNodeIds(nodeIds);
+  }, []);
 
   const navigateToEntity = useCallback((node: GraphNode) => {
     if (node.type === 'note') {
@@ -163,6 +176,22 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
     for (const n of fullGraphData.nodes) counts[n.type]++;
     return counts;
   }, [fullGraphData.nodes]);
+
+  // Multi-selection type breakdown
+  const multiSelectInfo = useMemo(() => {
+    if (selectedNodeIds.length <= 1) return null;
+    const counts: Record<string, number> = {};
+    for (const id of selectedNodeIds) {
+      const node = fullGraphData.nodes.find((n) => n.id === id);
+      if (node) {
+        const label = node.type === 'ioc' ? 'IOC' : node.type === 'note' ? 'Note' : node.type === 'task' ? 'Task' : 'Event';
+        counts[label] = (counts[label] || 0) + 1;
+      }
+    }
+    return { total: selectedNodeIds.length, counts };
+  }, [selectedNodeIds, fullGraphData.nodes]);
+
+  const legendEntries = useMemo(() => getLegendEntries(), []);
 
   return (
     <div className="flex flex-1 overflow-hidden h-full">
@@ -243,13 +272,34 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
           ))}
         </div>
 
+        {/* Legend */}
+        <div className="p-3 border-t border-gray-800">
+          <button
+            onClick={() => setLegendOpen((o) => !o)}
+            className="flex items-center gap-1 text-[10px] text-gray-500 uppercase tracking-wider font-semibold w-full hover:text-gray-300"
+          >
+            {legendOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            Legend
+          </button>
+          {legendOpen && (
+            <div className="mt-2 space-y-1.5">
+              {legendEntries.map((entry) => (
+                <div key={entry.type + (entry.iocType ?? '')} className="flex items-center gap-2">
+                  <img src={entry.icon} alt="" className="w-4 h-4" />
+                  <span className="text-[11px] text-gray-400">{entry.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Layout */}
         <div className="p-3 border-t border-gray-800 space-y-2">
           <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Layout</span>
           <div className="flex gap-1">
             <select
               value={layout}
-              onChange={(e) => setLayout(e.target.value as LayoutName)}
+              onChange={(e) => handleLayoutChange(e.target.value as LayoutName)}
               className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
             >
               <option value="cose-bilkent">Force-Directed</option>
@@ -293,6 +343,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
               layout={layout}
               onSelectNode={handleSelectNode}
               onDoubleClickNode={handleDoubleClickNode}
+              onSelectMulti={handleSelectMulti}
               theme={settings.theme}
               fitTrigger={fitTrigger}
             />
@@ -300,7 +351,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
         )}
       </div>
 
-      {/* Detail panel */}
+      {/* Detail panel — single selection */}
       {selectedNode && (
         <GraphDetailPanel
           node={selectedNode}
@@ -314,6 +365,31 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
           onOpenNewTab={handleOpenNewTab}
           onEditIOC={onUpdateNote && onUpdateTask ? setEditingIOCNode : undefined}
         />
+      )}
+
+      {/* Multi-selection info panel */}
+      {multiSelectInfo && (
+        <div className="w-56 border-l border-gray-800 bg-gray-900 p-4 shrink-0 overflow-y-auto">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold text-gray-300">Selection</span>
+            <button
+              onClick={() => setSelectedNodeIds([])}
+              className="text-[10px] text-gray-500 hover:text-gray-300"
+            >
+              Clear
+            </button>
+          </div>
+          <p className="text-sm text-gray-200 mb-2">{multiSelectInfo.total} nodes selected</p>
+          <div className="space-y-1">
+            {Object.entries(multiSelectInfo.counts).map(([label, count]) => (
+              <div key={label} className="flex items-center justify-between text-xs">
+                <span className="text-gray-400">{label}</span>
+                <span className="text-gray-500">{count}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-gray-600 mt-3">Shift+drag to box-select nodes</p>
+        </div>
       )}
 
       {/* IOC edit dialog */}

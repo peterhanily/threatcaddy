@@ -1,4 +1,5 @@
 import type { IOCType } from '../types';
+import { IOC_TYPE_LABELS } from '../types';
 
 /**
  * Graph node icons — clean filled SVG sprites.
@@ -159,6 +160,33 @@ export function getNodeIcon(
   const uri = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   cache.set(key, uri);
   return uri;
+}
+
+export interface LegendEntry {
+  type: 'note' | 'task' | 'timeline-event' | 'ioc';
+  iocType?: IOCType;
+  label: string;
+  color: string;
+  icon: string;
+}
+
+/** Returns legend entries for all entity types and IOC subtypes. */
+export function getLegendEntries(): LegendEntry[] {
+  const entries: LegendEntry[] = [
+    { type: 'note', label: 'Note', color: '#3b82f6', icon: getNodeIcon('note', '#3b82f6') },
+    { type: 'task', label: 'Task', color: '#22c55e', icon: getNodeIcon('task', '#22c55e') },
+    { type: 'timeline-event', label: 'Timeline Event', color: '#6366f1', icon: getNodeIcon('timeline-event', '#6366f1') },
+  ];
+  for (const [iocType, meta] of Object.entries(IOC_TYPE_LABELS) as [IOCType, { label: string; color: string }][]) {
+    entries.push({
+      type: 'ioc',
+      iocType,
+      label: meta.label,
+      color: meta.color,
+      icon: getNodeIcon('ioc', meta.color, iocType),
+    });
+  }
+  return entries;
 }
 
 /** Visible for testing only. */
