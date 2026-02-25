@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
-import { Shield, X, MessageSquare } from 'lucide-react';
+import { Shield, X, MessageSquare, Trash2 } from 'lucide-react';
 import type { Task, Priority, TaskStatus, Tag, Folder, IOCTarget, IOCAnalysis, IOCType, TaskComment } from '../../types';
 import { TagInput } from '../Common/TagInput';
+import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { IOCPanel } from '../Analysis/IOCPanel';
 import { extractIOCs, mergeIOCAnalysis } from '../../lib/ioc-extractor';
 import { useSettings } from '../../hooks/useSettings';
@@ -16,6 +17,7 @@ interface TaskFormProps {
   onSave: (data: Partial<Task>) => void;
   onCancel: () => void;
   onUpdateTask?: (id: string, updates: Partial<Task>) => void;
+  onDelete?: (id: string) => void;
 }
 
 function formatRelativeTime(ts: number): string {
@@ -29,7 +31,7 @@ function formatRelativeTime(ts: number): string {
   return `${days}d ago`;
 }
 
-export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel, onUpdateTask }: TaskFormProps) {
+export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel, onUpdateTask, onDelete }: TaskFormProps) {
   const { settings: taskFormSettings } = useSettings();
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
@@ -39,6 +41,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
   const [folderId, setFolderId] = useState(task?.folderId || '');
   const [tags, setTags] = useState<string[]>(task?.tags || []);
   const [showIOCPanel, setShowIOCPanel] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [commentText, setCommentText] = useState('');
 
   const isEditMode = !!task;
@@ -252,20 +255,33 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
-          >
-            {task ? 'Update Task' : 'Create Task'}
-          </button>
+        <div className={cn('flex gap-3 pt-2', isEditMode && onDelete ? 'justify-between' : 'justify-end')}>
+          {isEditMode && onDelete && task && (
+            <button
+              type="button"
+              onClick={() => setShowConfirmDelete(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-red-500 hover:text-red-400 hover:bg-gray-800 text-sm"
+              title="Delete task"
+              aria-label="Delete task"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
+            >
+              {task ? 'Update Task' : 'Create Task'}
+            </button>
+          </div>
         </div>
       </form>
 
@@ -286,6 +302,18 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
             defaultClsLevel: taskFormSettings.tiDefaultClsLevel,
             defaultReportSource: taskFormSettings.tiDefaultReportSource,
           }}
+        />
+      )}
+
+      {task && onDelete && (
+        <ConfirmDialog
+          open={showConfirmDelete}
+          onClose={() => setShowConfirmDelete(false)}
+          onConfirm={() => onDelete(task.id)}
+          title="Delete Task"
+          message="This task will be permanently deleted. This cannot be undone."
+          confirmLabel="Delete Task"
+          danger
         />
       )}
     </div>

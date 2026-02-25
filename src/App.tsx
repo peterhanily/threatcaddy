@@ -610,6 +610,7 @@ export default function App() {
                   defaultClsLevel: settings.tiDefaultClsLevel,
                   defaultReportSource: settings.tiDefaultReportSource,
                 }}
+                onTrash={loggedTrashNote}
               />
             </div>
             <div className={cn('flex-1 min-w-0 overflow-hidden', !selectedNote && 'hidden md:block')}>

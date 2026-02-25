@@ -21,9 +21,10 @@ interface NoteListProps {
   onIOCTypesChange?: (types: IOCType[]) => void;
   folders?: Folder[];
   tiExportConfig?: ThreatIntelExportConfig;
+  onTrash?: (id: string) => void;
 }
 
-export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, title, showTrash, onEmptyTrash, selectedIOCTypes, onIOCTypesChange, folders, tiExportConfig }: NoteListProps) {
+export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, title, showTrash, onEmptyTrash, selectedIOCTypes, onIOCTypesChange, folders, tiExportConfig, onTrash }: NoteListProps) {
   const [confirmEmptyTrash, setConfirmEmptyTrash] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
@@ -144,6 +145,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                 note={note}
                 active={note.id === selectedId}
                 onClick={() => onSelect(note.id)}
+                onTrash={onTrash}
                 folderColor={folder?.color}
                 folderName={folder?.name}
                 draggable

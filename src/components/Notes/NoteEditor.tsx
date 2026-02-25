@@ -345,7 +345,7 @@ export function NoteEditor({
           ) : (
             <button
               onClick={() => onTrash(note.id)}
-              className="p-1.5 rounded text-gray-500 hover:text-red-400"
+              className="p-1.5 rounded text-red-500 hover:text-red-400"
               title="Move to trash"
               aria-label="Move note to trash"
             >

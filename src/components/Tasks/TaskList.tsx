@@ -159,6 +159,7 @@ export function TaskListView({
               onUpdateTask(id, updates);
               setEditingTask((prev) => prev && prev.id === id ? { ...prev, ...updates } : prev);
             }}
+            onDelete={(id) => { onDeleteTask(id); setEditingTask(null); }}
           />
         )}
       </Modal>

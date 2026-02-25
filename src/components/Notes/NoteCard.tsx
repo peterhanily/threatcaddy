@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pin, Shield } from 'lucide-react';
+import { Pin, Shield, Trash2 } from 'lucide-react';
 import type { Note } from '../../types';
 import { formatDate, truncate, cn } from '../../lib/utils';
 
@@ -7,28 +7,42 @@ interface NoteCardProps {
   note: Note;
   active: boolean;
   onClick: () => void;
+  onTrash?: (id: string) => void;
   folderColor?: string;
   folderName?: string;
   draggable?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
 }
 
-export const NoteCard = React.memo(function NoteCard({ note, active, onClick, folderColor, folderName, draggable, onDragStart }: NoteCardProps) {
+export const NoteCard = React.memo(function NoteCard({ note, active, onClick, onTrash, folderColor, folderName, draggable, onDragStart }: NoteCardProps) {
   const preview = note.content.replace(/[#*`_[\]()>-]/g, '').trim();
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
       draggable={draggable}
       onDragStart={onDragStart}
       className={cn(
-        'w-full text-left p-3 rounded-lg border transition-colors',
+        'w-full text-left p-3 rounded-lg border transition-colors cursor-pointer group relative',
         active
           ? 'bg-accent/10 border-accent/30'
           : 'bg-gray-800/50 border-gray-800 hover:bg-gray-800 hover:border-gray-700'
       )}
       style={folderColor && !active ? { borderLeftColor: folderColor, borderLeftWidth: 3 } : undefined}
     >
+      {onTrash && !note.trashed && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onTrash(note.id); }}
+          className="absolute top-2 right-2 p-1 rounded text-red-500 hover:text-red-400 hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          title="Move to trash"
+          aria-label="Move note to trash"
+        >
+          <Trash2 size={14} />
+        </button>
+      )}
       {note.color && (
         <div className="w-full h-0.5 rounded-full mb-2" style={{ backgroundColor: note.color }} />
       )}
@@ -67,6 +81,6 @@ export const NoteCard = React.memo(function NoteCard({ note, active, onClick, fo
           </div>
         )}
       </div>
-    </button>
+    </div>
   );
 });

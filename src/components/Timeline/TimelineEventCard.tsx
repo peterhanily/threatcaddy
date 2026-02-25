@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, FileText, ListChecks, Shield, Tag } from 'lucide-react';
+import { Star, FileText, ListChecks, Shield, Tag, Trash2 } from 'lucide-react';
 import type { TimelineEvent } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 import { cn, truncate } from '../../lib/utils';
@@ -10,6 +10,7 @@ interface TimelineEventCardProps {
   active?: boolean;
   onClick: () => void;
   onToggleStar: () => void;
+  onDelete?: (id: string) => void;
 }
 
 function formatTime(timestamp: number): string {
@@ -21,6 +22,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
   active,
   onClick,
   onToggleStar,
+  onDelete,
 }: TimelineEventCardProps) {
   const typeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType];
   const confidenceInfo = CONFIDENCE_LEVELS[event.confidence];
@@ -57,18 +59,30 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
         >
           {confidenceInfo.label}
         </span>
-        <button
-          onClick={(e) => { e.stopPropagation(); onToggleStar(); }}
-          className={cn(
-            'ml-auto p-0.5 rounded transition-colors shrink-0',
-            event.starred
-              ? 'text-yellow-400'
-              : 'text-gray-600 opacity-0 group-hover:opacity-100 hover:text-yellow-400'
+        <div className="ml-auto flex items-center gap-0.5 shrink-0">
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(event.id); }}
+              className="text-red-500 opacity-0 group-hover:opacity-100 hover:text-red-400 p-0.5 rounded transition-colors"
+              title="Delete event"
+              aria-label="Delete event"
+            >
+              <Trash2 size={14} />
+            </button>
           )}
-          aria-label={event.starred ? 'Unstar event' : 'Star event'}
-        >
-          <Star size={14} fill={event.starred ? 'currentColor' : 'none'} />
-        </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleStar(); }}
+            className={cn(
+              'p-0.5 rounded transition-colors',
+              event.starred
+                ? 'text-yellow-400'
+                : 'text-gray-600 opacity-0 group-hover:opacity-100 hover:text-yellow-400'
+            )}
+            aria-label={event.starred ? 'Unstar event' : 'Star event'}
+          >
+            <Star size={14} fill={event.starred ? 'currentColor' : 'none'} />
+          </button>
+        </div>
       </div>
 
       {/* Title */}

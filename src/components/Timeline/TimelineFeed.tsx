@@ -7,6 +7,7 @@ interface TimelineFeedProps {
   selectedId?: string;
   onSelect: (id: string) => void;
   onToggleStar: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 function formatDateHeader(dateKey: string): string {
@@ -38,7 +39,7 @@ function groupByDate(events: TimelineEvent[]): Map<string, TimelineEvent[]> {
   return groups;
 }
 
-export function TimelineFeed({ events, selectedId, onSelect, onToggleStar }: TimelineFeedProps) {
+export function TimelineFeed({ events, selectedId, onSelect, onToggleStar, onDelete }: TimelineFeedProps) {
   if (events.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-gray-600">
@@ -71,6 +72,7 @@ export function TimelineFeed({ events, selectedId, onSelect, onToggleStar }: Tim
                 active={event.id === selectedId}
                 onClick={() => onSelect(event.id)}
                 onToggleStar={() => onToggleStar(event.id)}
+                onDelete={onDelete}
               />
             ))}
           </div>

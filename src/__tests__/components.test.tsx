@@ -141,18 +141,18 @@ describe('NoteCard', () => {
 
   it('applies folder color left border when not active', () => {
     const { container } = render(<NoteCard note={note} active={false} onClick={() => {}} folderColor="#ef4444" folderName="Clips" />);
-    const button = container.querySelector('button') as HTMLButtonElement;
-    expect(button).toBeTruthy();
+    const card = container.querySelector('div[role="button"]') as HTMLElement;
+    expect(card).toBeTruthy();
     // jsdom normalizes hex to rgb
-    expect(button.style.borderLeftColor).toBe('rgb(239, 68, 68)');
-    expect(parseInt(button.style.borderLeftWidth)).toBe(3);
+    expect(card.style.borderLeftColor).toBe('rgb(239, 68, 68)');
+    expect(parseInt(card.style.borderLeftWidth)).toBe(3);
   });
 
   it('does not apply folder color left border when active', () => {
     const { container } = render(<NoteCard note={note} active={true} onClick={() => {}} folderColor="#ef4444" folderName="Clips" />);
-    const button = container.querySelector('button') as HTMLButtonElement;
-    expect(button).toBeTruthy();
-    expect(button.style.borderLeftColor).toBe('');
+    const card = container.querySelector('div[role="button"]') as HTMLElement;
+    expect(card).toBeTruthy();
+    expect(card.style.borderLeftColor).toBe('');
   });
 
   it('shows IOC count badge when note has active IOCs', () => {

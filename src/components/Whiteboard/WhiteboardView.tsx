@@ -64,6 +64,7 @@ export function WhiteboardView({
             onUpdate={onUpdateWhiteboard}
             onCreateTag={onCreateTag}
             onBack={() => onWhiteboardSelect?.(null)}
+            onDelete={handleDelete}
           />
         </Suspense>
       </div>

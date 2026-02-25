@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, Search, ArrowUpDown, Star, List, Grid3X3, BarChart3, GanttChart, Download, Upload } from 'lucide-react';
+import { Plus, Search, ArrowUpDown, Star, List, Grid3X3, BarChart3, GanttChart, Download, Upload, Trash2 } from 'lucide-react';
 import type { TimelineEvent, TimelineEventType, Tag, Folder, Timeline } from '../../types';
 import { TimelineFeed } from './TimelineFeed';
 import { EventTypeFilterBar } from './EventTypeFilterBar';
@@ -341,6 +341,7 @@ export function TimelineView({
               events={filteredEvents}
               onSelect={handleSelect}
               onToggleStar={onToggleStar}
+              onDelete={(id) => setDeletingEventId(id)}
             />
           ) : viewMode === 'heatmap' ? (
             <MitreHeatmap
@@ -370,9 +371,11 @@ export function TimelineView({
               <button
                 type="button"
                 onClick={() => setDeletingEventId(editingEvent.id)}
-                className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-red-500 hover:text-red-400 hover:bg-gray-800 text-sm transition-colors"
+                title="Delete event"
+                aria-label="Delete event"
               >
-                Delete this event
+                <Trash2 size={16} />
               </button>
             </div>
           </div>
@@ -410,6 +413,7 @@ export function TimelineView({
                   setEditingEvent(ev);
                 }}
                 onToggleStar={() => onToggleStar(ev.id)}
+                onDelete={(id) => setDeletingEventId(id)}
               />
             ))
           )}

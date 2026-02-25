@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Circle, CheckCircle2, Calendar, Trash2, GripVertical, Shield, MessageSquare } from 'lucide-react';
 import type { Task, Priority } from '../../types';
 import { PRIORITY_COLORS } from '../../types';
+import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { isOverdue, cn } from '../../lib/utils';
 
 interface TaskItemProps {
@@ -22,6 +23,7 @@ const priorityLabels: Record<Priority, string> = {
 };
 
 export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, onSelect, onDelete, active, draggable, onDragStart }: TaskItemProps) {
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const overdue = isOverdue(task.dueDate) && !task.completed;
 
   return (
@@ -90,13 +92,23 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
           </span>
         ))}
         <button
-          onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
+          onClick={(e) => { e.stopPropagation(); setShowConfirmDelete(true); }}
           className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
           title="Delete task"
         >
           <Trash2 size={12} />
         </button>
       </div>
+
+      <ConfirmDialog
+        open={showConfirmDelete}
+        onClose={() => setShowConfirmDelete(false)}
+        onConfirm={() => onDelete(task.id)}
+        title="Delete Task"
+        message="This task will be permanently deleted. This cannot be undone."
+        confirmLabel="Delete Task"
+        danger
+      />
     </div>
   );
 });

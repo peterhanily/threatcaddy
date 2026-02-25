@@ -6,9 +6,10 @@ import '@excalidraw/excalidraw/index.css';
 if (typeof window !== 'undefined') {
   (window as unknown as Record<string, unknown>).EXCALIDRAW_ASSET_PATH = '/';
 }
-import { ArrowLeft, FolderOpen } from 'lucide-react';
+import { ArrowLeft, FolderOpen, Trash2 } from 'lucide-react';
 import type { Whiteboard, Tag, Folder } from '../../types';
 import { TagInput } from '../Common/TagInput';
+import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { cn } from '../../lib/utils';
 
 interface WhiteboardEditorProps {
@@ -18,6 +19,7 @@ interface WhiteboardEditorProps {
   onUpdate: (id: string, updates: Partial<Whiteboard>) => void;
   onCreateTag: (name: string) => Promise<Tag>;
   onBack: () => void;
+  onDelete?: (id: string) => void;
 }
 
 function pickAppState(appState: Record<string, unknown>): Record<string, unknown> {
@@ -25,10 +27,11 @@ function pickAppState(appState: Record<string, unknown>): Record<string, unknown
   return { zoom, scrollX, scrollY, theme };
 }
 
-export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdate, onCreateTag, onBack }: WhiteboardEditorProps) {
+export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdate, onCreateTag, onBack, onDelete }: WhiteboardEditorProps) {
   const [name, setName] = useState(whiteboard.name);
   const [saved, setSaved] = useState(false);
   const [showFolderSelect, setShowFolderSelect] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const savedTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const excalidrawSaveRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -146,6 +149,16 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
           )}
         </div>
         {saved && <span className="text-xs text-green-500 shrink-0">Saved</span>}
+        {onDelete && (
+          <button
+            onClick={() => setShowConfirmDelete(true)}
+            className="p-1.5 rounded text-red-500 hover:text-red-400 hover:bg-gray-800"
+            title="Delete whiteboard"
+            aria-label="Delete whiteboard"
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
       </div>
 
       {/* Tags */}
@@ -190,6 +203,16 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
           </Excalidraw>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showConfirmDelete}
+        onClose={() => setShowConfirmDelete(false)}
+        onConfirm={() => onDelete?.(whiteboard.id)}
+        title="Delete Whiteboard"
+        message="This whiteboard will be permanently deleted. This cannot be undone."
+        confirmLabel="Delete Whiteboard"
+        danger
+      />
     </div>
   );
 }
