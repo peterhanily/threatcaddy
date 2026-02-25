@@ -58,8 +58,9 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
             'background-color': 'data(color)',
             'background-opacity': 0.12,
             'background-image': 'data(icon)',
-            // background-width/height set dynamically by zoom handler
-            'background-fit': 'none' as cytoscape.Css.PropertyValueNode<'none'>,
+            'background-width': 'data(iconSize)' as unknown as number,
+            'background-height': 'data(iconSize)' as unknown as number,
+            'background-fit': 'none' as const,
             'label': 'data(label)',
             'font-size': '10px',
             'color': isDark ? '#e5e7eb' : '#374151',
@@ -153,21 +154,13 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
 
     cyRef.current = cy;
 
-    // Keep icons at a constant screen size regardless of zoom level
+    // Keep icons at a constant screen size regardless of zoom level.
+    // Updating node data triggers a reactive style recalculation via data(iconSize).
     const ICON_SCREEN_PX = 22;
-    let iconRafId: number | null = null;
-    const syncIconSize = () => {
-      if (iconRafId) return;
-      iconRafId = requestAnimationFrame(() => {
-        iconRafId = null;
-        const modelSize = ICON_SCREEN_PX / cy.zoom();
-        cy.batch(() => {
-          cy.nodes().style({ 'background-width': modelSize, 'background-height': modelSize });
-        });
-      });
-    };
-    cy.on('zoom', syncIconSize);
-    syncIconSize();
+    cy.on('zoom', () => {
+      const modelSize = ICON_SCREEN_PX / cy.zoom();
+      cy.nodes().data('iconSize', modelSize);
+    });
 
     // Events
     cy.on('tap', 'node', (evt) => {
@@ -181,7 +174,6 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
     });
 
     return () => {
-      if (iconRafId) cancelAnimationFrame(iconRafId);
       cy.destroy();
       cyRef.current = null;
     };
@@ -196,7 +188,8 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
     cy.batch(() => {
       cy.elements().remove();
 
-      // Add nodes
+      // Add nodes — include iconSize so stylesheet data(iconSize) is available
+      const iconSize = 22 / cy.zoom();
       for (const node of data.nodes) {
         cy.add({
           group: 'nodes',
@@ -207,6 +200,7 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
             type: node.type,
             icon: node.icon,
             iocType: node.iocType ?? '',
+            iconSize,
           },
         });
       }
@@ -233,9 +227,9 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
     cy.layout(getLayoutOptions(layout)).run();
     cy.fit(undefined, 40);
 
-    // Set icon size for newly added nodes
-    const modelSize = 22 / cy.zoom();
-    cy.nodes().style({ 'background-width': modelSize, 'background-height': modelSize });
+    // After fit changes zoom, update iconSize data so icons stay at constant screen size
+    const postFitSize = 22 / cy.zoom();
+    cy.nodes().data('iconSize', postFitSize);
   }, [data, layout, getLayoutOptions]);
 
   return (
