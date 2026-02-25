@@ -44,12 +44,15 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
   const [visibleEdgeTypes, setVisibleEdgeTypes] = useState<Set<EdgeTypeFilter>>(new Set(['contains-ioc', 'ioc-relationship', 'timeline-link', 'entity-link']));
   const [editingIOCNode, setEditingIOCNode] = useState<GraphNode | null>(null);
   const [fitTrigger, setFitTrigger] = useState(0);
+  // Stable ref to full graph data for use in cytoscape callbacks
+  const fullGraphDataRef = React.useRef<ReturnType<typeof buildGraphData>>({ nodes: [], edges: [] });
 
   // Build full graph data
-  const fullGraphData = useMemo(
-    () => buildGraphData(notes, tasks, timelineEvents, settings),
-    [notes, tasks, timelineEvents, settings],
-  );
+  const fullGraphData = useMemo(() => {
+    const data = buildGraphData(notes, tasks, timelineEvents, settings);
+    fullGraphDataRef.current = data;
+    return data;
+  }, [notes, tasks, timelineEvents, settings]);
 
   // Filter graph data
   const filteredGraphData = useMemo(() => {
@@ -71,8 +74,10 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
   }, [fullGraphData, visibleNodeTypes, visibleIOCTypes, visibleEdgeTypes, searchQuery]);
 
   const selectedNode = useMemo(
-    () => filteredGraphData.nodes.find((n) => n.id === selectedNodeId) || null,
-    [filteredGraphData.nodes, selectedNodeId],
+    () => filteredGraphData.nodes.find((n) => n.id === selectedNodeId)
+      || fullGraphData.nodes.find((n) => n.id === selectedNodeId)
+      || null,
+    [filteredGraphData.nodes, fullGraphData.nodes, selectedNodeId],
   );
 
   const toggleNodeType = (type: NodeTypeFilter) => {
@@ -102,6 +107,22 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
     });
   };
 
+  // Handle node click: IOC nodes open edit dialog directly, others show detail panel
+  const handleSelectNode = useCallback((nodeId: string | null) => {
+    if (!nodeId) {
+      setSelectedNodeId(null);
+      return;
+    }
+    // Look up from ref (always up-to-date) to handle IOC nodes
+    const node = fullGraphDataRef.current.nodes.find((n) => n.id === nodeId);
+    if (node?.type === 'ioc' && onUpdateNote && onUpdateTask) {
+      setEditingIOCNode(node);
+      setSelectedNodeId(null);
+    } else {
+      setSelectedNodeId(nodeId);
+    }
+  }, [onUpdateNote, onUpdateTask]);
+
   const navigateToEntity = useCallback((node: GraphNode) => {
     if (node.type === 'note') {
       const id = node.sourceEntityIds[0];
@@ -118,8 +139,12 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
   const handleDoubleClickNode = useCallback((nodeId: string) => {
     const node = fullGraphData.nodes.find((n) => n.id === nodeId);
     if (!node) return;
-    navigateToEntity(node);
-  }, [fullGraphData.nodes, navigateToEntity]);
+    if (node.type === 'ioc' && onUpdateNote && onUpdateTask) {
+      setEditingIOCNode(node);
+    } else {
+      navigateToEntity(node);
+    }
+  }, [fullGraphData.nodes, navigateToEntity, onUpdateNote, onUpdateTask]);
 
   const handleOpenNewTab = useCallback((node: GraphNode) => {
     const entityId = node.sourceEntityIds[0];
@@ -263,7 +288,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
             <GraphCanvas
               data={filteredGraphData}
               layout={layout}
-              onSelectNode={setSelectedNodeId}
+              onSelectNode={handleSelectNode}
               onDoubleClickNode={handleDoubleClickNode}
               theme={settings.theme}
               fitTrigger={fitTrigger}

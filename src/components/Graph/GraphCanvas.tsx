@@ -21,6 +21,11 @@ interface GraphCanvasProps {
 export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickNode, theme, fitTrigger }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
+  // Stable refs for callbacks so cytoscape event handlers always use latest versions
+  const onSelectNodeRef = useRef(onSelectNode);
+  onSelectNodeRef.current = onSelectNode;
+  const onDoubleClickNodeRef = useRef(onDoubleClickNode);
+  onDoubleClickNodeRef.current = onDoubleClickNode;
 
   const isDark = theme === 'dark';
 
@@ -178,16 +183,16 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
       const neighborhood = node.neighborhood().add(node);
       cy.elements().addClass('faded').removeClass('highlighted');
       neighborhood.removeClass('faded').addClass('highlighted');
-      onSelectNode(node.id());
+      onSelectNodeRef.current(node.id());
     });
     cy.on('tap', (evt) => {
       if (evt.target === cy) {
         cy.elements().removeClass('faded').removeClass('highlighted');
-        onSelectNode(null);
+        onSelectNodeRef.current(null);
       }
     });
     cy.on('dbltap', 'node', (evt) => {
-      onDoubleClickNode(evt.target.id());
+      onDoubleClickNodeRef.current(evt.target.id());
     });
 
     return () => {
