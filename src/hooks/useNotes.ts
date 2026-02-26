@@ -56,10 +56,10 @@ export function useNotes() {
     await db.notes.delete(id);
     // Clean orphaned links from other entities
     await db.notes.filter(n => n.linkedNoteIds?.includes(id) ?? false).modify(n => {
-      n.linkedNoteIds = n.linkedNoteIds!.filter(nid => nid !== id);
+      n.linkedNoteIds = (n.linkedNoteIds ?? []).filter(nid => nid !== id);
     });
     await db.tasks.filter(t => t.linkedNoteIds?.includes(id) ?? false).modify(t => {
-      t.linkedNoteIds = t.linkedNoteIds!.filter(nid => nid !== id);
+      t.linkedNoteIds = (t.linkedNoteIds ?? []).filter(nid => nid !== id);
     });
     await db.timelineEvents.filter(e => e.linkedNoteIds.includes(id)).modify(e => {
       e.linkedNoteIds = e.linkedNoteIds.filter(nid => nid !== id);
@@ -169,10 +169,10 @@ export function useNotes() {
     // Clean orphaned links from other entities
     const idSet = new Set(trashedIds);
     await db.notes.filter(n => n.linkedNoteIds?.some(nid => idSet.has(nid)) ?? false).modify(n => {
-      n.linkedNoteIds = n.linkedNoteIds!.filter(nid => !idSet.has(nid));
+      n.linkedNoteIds = (n.linkedNoteIds ?? []).filter(nid => !idSet.has(nid));
     });
     await db.tasks.filter(t => t.linkedNoteIds?.some(nid => idSet.has(nid)) ?? false).modify(t => {
-      t.linkedNoteIds = t.linkedNoteIds!.filter(nid => !idSet.has(nid));
+      t.linkedNoteIds = (t.linkedNoteIds ?? []).filter(nid => !idSet.has(nid));
     });
     await db.timelineEvents.filter(e => e.linkedNoteIds.some(nid => idSet.has(nid))).modify(e => {
       e.linkedNoteIds = e.linkedNoteIds.filter(nid => !idSet.has(nid));

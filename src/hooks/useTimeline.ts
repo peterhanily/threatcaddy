@@ -53,10 +53,10 @@ export function useTimeline() {
     await db.timelineEvents.delete(id);
     // Clean orphaned links from other entities
     await db.notes.filter(n => n.linkedTimelineEventIds?.includes(id) ?? false).modify(n => {
-      n.linkedTimelineEventIds = n.linkedTimelineEventIds!.filter(eid => eid !== id);
+      n.linkedTimelineEventIds = (n.linkedTimelineEventIds ?? []).filter(eid => eid !== id);
     });
     await db.tasks.filter(t => t.linkedTimelineEventIds?.includes(id) ?? false).modify(t => {
-      t.linkedTimelineEventIds = t.linkedTimelineEventIds!.filter(eid => eid !== id);
+      t.linkedTimelineEventIds = (t.linkedTimelineEventIds ?? []).filter(eid => eid !== id);
     });
     setEvents((prev) => prev.filter((e) => e.id !== id));
   }, []);

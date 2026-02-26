@@ -143,15 +143,16 @@ describe('exportJSON / importJSON roundtrip', () => {
     expect(events[0].clsLevel).toBe('TLP:AMBER');
     expect(events[0].iocTypes).toEqual(['ipv4']);
     expect(events[0].iocAnalysis).toBeDefined();
-    expect(events[0].iocAnalysis!.lastPushedAt).toBe(4000);
-    expect(events[0].iocAnalysis!.analysisSummary).toBe('Suspicious IP');
+    expect(events[0].iocAnalysis?.lastPushedAt).toBe(4000);
+    expect(events[0].iocAnalysis?.analysisSummary).toBe('Suspicious IP');
 
     // Verify IOCEntry fields within iocAnalysis
-    const ioc = events[0].iocAnalysis!.iocs[0];
-    expect(ioc.iocSubtype).toBe('ipv4');
-    expect(ioc.iocStatus).toBe('active');
-    expect(ioc.clsLevel).toBe('TLP:RED');
-    expect(ioc.relationships).toEqual([{ targetIOCId: 'ioc2', relationshipType: 'communicates-with' }]);
+    const ioc = events[0].iocAnalysis?.iocs[0];
+    expect(ioc).toBeDefined();
+    expect(ioc?.iocSubtype).toBe('ipv4');
+    expect(ioc?.iocStatus).toBe('active');
+    expect(ioc?.clsLevel).toBe('TLP:RED');
+    expect(ioc?.relationships).toEqual([{ targetIOCId: 'ioc2', relationshipType: 'communicates-with' }]);
   });
 
   it('rejects invalid import data', async () => {

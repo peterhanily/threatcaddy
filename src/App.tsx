@@ -478,13 +478,14 @@ export default function App() {
     if (showQuickCapture) return;
     setShowTrash(false);
     setShowArchive(false);
+    const folder = selectedFolderId ? folders.find((f) => f.id === selectedFolderId) : undefined;
     const note = await loggedCreateNote({
       folderId: selectedFolderId,
-      clsLevel: selectedFolder?.clsLevel,
+      clsLevel: folder?.clsLevel,
     });
     setSelectedNoteId(note.id);
     navigateTo('notes', { selectedNoteId: note.id });
-  }, [loggedCreateNote, selectedFolderId, showQuickCapture, navigateTo]);
+  }, [loggedCreateNote, selectedFolderId, showQuickCapture, navigateTo, folders]);
 
   const handleNewTask = useCallback(async () => {
     navigateTo('tasks');

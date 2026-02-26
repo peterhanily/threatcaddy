@@ -110,6 +110,7 @@ export function GraphLinkDialog({ sourceNode, targetNode, notes, tasks, timeline
         const existing = ioc.relationships || [];
         if (existing.some((r) => r.targetIOCId === targetIOCId && r.relationshipType === selectedRelType)) return ioc;
         changed = true;
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return { ...ioc, relationships: [...existing, { targetIOCId: targetIOCId!, relationshipType: selectedRelType }] };
       });
       if (!changed) continue;
