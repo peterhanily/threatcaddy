@@ -249,7 +249,7 @@ export function Sidebar({
         />
         {/* Whiteboards — only in whiteboard view */}
         {activeView === 'whiteboard' && (
-          <div className="pt-3">
+          <div className="pt-2">
             <button
               onClick={() => setWhiteboardsOpen(!whiteboardsOpen)}
               className="flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300"
@@ -303,7 +303,8 @@ export function Sidebar({
                       </div>
                     ) : (
                       <SidebarItem
-                        icon={<PenTool size={16} />}
+                        compact
+                        icon={<PenTool size={14} />}
                         label={wb.name}
                         active={selectedWhiteboardId === wb.id}
                         onClick={() => nav(() => { onWhiteboardSelect?.(wb.id); })}
@@ -328,7 +329,7 @@ export function Sidebar({
         )}
         {/* Timelines — only in timeline view */}
         {activeView === 'timeline' && (
-          <div className="pt-3">
+          <div className="pt-2">
             <button
               onClick={() => setTimelinesOpen(!timelinesOpen)}
               className="flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300"
@@ -368,7 +369,8 @@ export function Sidebar({
                   </div>
                 )}
                 <SidebarItem
-                  icon={<Clock size={16} />}
+                  compact
+                  icon={<Clock size={14} />}
                   label="All Events"
                   count={timelineCounts?.total}
                   active={!selectedTimelineId}
@@ -389,7 +391,8 @@ export function Sidebar({
                       </div>
                     ) : (
                       <SidebarItem
-                        icon={<Clock size={16} style={{ color: tl.color }} />}
+                        compact
+                        icon={<Clock size={14} style={{ color: tl.color }} />}
                         label={tl.name}
                         count={timelineEventCounts[tl.id] || 0}
                         active={selectedTimelineId === tl.id}
@@ -417,7 +420,7 @@ export function Sidebar({
         )}
 
         {/* Folders */}
-        <div data-tour="tags-folders" className="pt-3">
+        <div data-tour="tags-folders" className="pt-2">
           <button
             onClick={() => setFoldersOpen(!foldersOpen)}
             className="flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300"
@@ -482,7 +485,8 @@ export function Sidebar({
                     </div>
                   ) : (
                     <SidebarItem
-                      icon={<FolderOpen size={16} style={{ color: folder.color }} />}
+                      compact
+                      icon={<FolderOpen size={14} style={{ color: folder.color }} />}
                       label={folder.name}
                       active={selectedFolderId === folder.id}
                       onClick={() => nav(() => { onFolderSelect(folder.id); onTagSelect(undefined); onShowTrash(false); onShowArchive(false); })}
@@ -506,7 +510,7 @@ export function Sidebar({
         </div>
 
         {/* Tags */}
-        <div className="pt-3">
+        <div className="pt-2">
           <button
             onClick={() => setTagsOpen(!tagsOpen)}
             className="flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300"
@@ -533,7 +537,8 @@ export function Sidebar({
                     </div>
                   ) : (
                     <SidebarItem
-                      icon={<Tag size={14} style={{ color: tag.color }} />}
+                      compact
+                      icon={<Tag size={12} style={{ color: tag.color }} />}
                       label={`#${tag.name}`}
                       active={selectedTag === tag.name}
                       onClick={() => nav(() => { onTagSelect(tag.name); onFolderSelect(undefined); onShowTrash(false); onShowArchive(false); })}
@@ -560,7 +565,7 @@ export function Sidebar({
         </div>
 
         {/* Special */}
-        <div className="pt-3 space-y-0.5">
+        <div className="pt-2 space-y-0.5">
           <SidebarItem
             icon={<Archive size={16} />}
             label="Archive"
@@ -667,6 +672,7 @@ const SidebarItem = React.memo(function SidebarItem({
   onClick,
   onDoubleClick,
   actions,
+  compact,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -675,13 +681,15 @@ const SidebarItem = React.memo(function SidebarItem({
   onClick: () => void;
   onDoubleClick?: () => void;
   actions?: React.ReactNode;
+  compact?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       className={cn(
-        'flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm transition-colors group',
+        'flex items-center w-full rounded-lg transition-colors group',
+        compact ? 'gap-1.5 px-2 py-0.5 text-xs' : 'gap-2 px-3 py-1.5 text-sm',
         active
           ? 'bg-accent/15 text-accent'
           : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
