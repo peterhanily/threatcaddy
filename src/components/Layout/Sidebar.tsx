@@ -530,26 +530,26 @@ export function Sidebar({
                       onClick={() => nav(() => { onFolderSelect(folder.id); onTagSelect(undefined); onShowTrash(false); onShowArchive(false); })}
                       onDoubleClick={() => { setEditingFolder(folder.id); setEditFolderName(folder.name); }}
                       actions={
-                        <>
+                        <span className="flex items-center">
                           {onEditFolder && (
                             <button
                               onClick={(e) => { e.stopPropagation(); onEditFolder(folder.id); }}
-                              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-600 text-gray-500 hover:text-gray-300"
+                              className="opacity-0 group-hover:opacity-100 p-px rounded hover:bg-gray-600 text-gray-500 hover:text-gray-300"
                               aria-label={`Edit investigation ${folder.name}`}
                               title="Edit investigation"
                             >
-                              <Info size={12} />
+                              <Info size={10} />
                             </button>
                           )}
                           <button
                             onClick={(e) => { e.stopPropagation(); setDeletingFolderId(folder.id); }}
-                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-600 text-gray-500 hover:text-red-400"
+                            className="opacity-0 group-hover:opacity-100 p-px rounded hover:bg-gray-600 text-gray-500 hover:text-red-400"
                             aria-label={`Delete investigation ${folder.name}`}
                             title="Delete investigation"
                           >
-                            <X size={12} />
+                            <X size={10} />
                           </button>
-                        </>
+                        </span>
                       }
                     />
                   )}
