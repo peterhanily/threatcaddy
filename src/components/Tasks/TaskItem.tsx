@@ -3,6 +3,7 @@ import { Circle, CheckCircle2, Calendar, Trash2, GripVertical, Shield, MessageSq
 import type { Task, Priority } from '../../types';
 import { PRIORITY_COLORS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
+import { ClsBadge } from '../Common/ClsBadge';
 import { isOverdue, cn } from '../../lib/utils';
 
 interface TaskItemProps {
@@ -80,6 +81,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
             {priorityLabels[task.priority]}
           </span>
         )}
+        {task.clsLevel && <ClsBadge level={task.clsLevel} />}
         {task.dueDate && (
           <span className={cn('flex items-center gap-1 text-[10px]', overdue ? 'text-red-400' : 'text-gray-500')}>
             <Calendar size={10} />

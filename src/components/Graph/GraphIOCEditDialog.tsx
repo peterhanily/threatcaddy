@@ -5,6 +5,7 @@ import { parseIOCNodeId } from '../../lib/graph-data';
 import type { GraphNode } from '../../lib/graph-data';
 import type { Note, Task, TimelineEvent, IOCEntry, IOCType, ConfidenceLevel, Settings } from '../../types';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, DEFAULT_IOC_SUBTYPES } from '../../types';
+import { getEffectiveClsLevels } from '../../lib/classification';
 
 interface GraphIOCEditDialogProps {
   node: GraphNode;
@@ -246,19 +247,17 @@ export function GraphIOCEditDialog({ node, notes, tasks, timelineEvents, setting
         )}
 
         {/* Classification Level */}
-        {settings.tiClsLevels && settings.tiClsLevels.length > 0 && (
-          <div>
-            <label className="text-[10px] text-gray-500 uppercase tracking-wider">Classification Level</label>
-            <select
-              value={clsLevel}
-              onChange={(e) => setClsLevel(e.target.value)}
-              className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600"
-            >
-              <option value="">—</option>
-              {settings.tiClsLevels.map((v) => <option key={v} value={v}>{v}</option>)}
-            </select>
-          </div>
-        )}
+        <div>
+          <label className="text-[10px] text-gray-500 uppercase tracking-wider">Classification Level</label>
+          <select
+            value={clsLevel}
+            onChange={(e) => setClsLevel(e.target.value)}
+            className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600"
+          >
+            <option value="">—</option>
+            {getEffectiveClsLevels(settings.tiClsLevels).map((v) => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </div>
 
         {/* Save / Cancel */}
         <div className="flex justify-end gap-2 pt-2 border-t border-gray-700">

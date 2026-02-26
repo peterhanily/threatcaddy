@@ -7,6 +7,7 @@ import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { IOCPanel } from '../Analysis/IOCPanel';
 import { EntityLinker } from '../Common/EntityLinker';
 import { extractIOCs, mergeIOCAnalysis } from '../../lib/ioc-extractor';
+import { getEffectiveClsLevels } from '../../lib/classification';
 import { useSettings } from '../../hooks/useSettings';
 import { useAutoIOCExtraction } from '../../hooks/useAutoIOCExtraction';
 import { cn } from '../../lib/utils';
@@ -44,6 +45,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
   const [dueDate, setDueDate] = useState(task?.dueDate || '');
   const [folderId, setFolderId] = useState(task?.folderId || '');
   const [tags, setTags] = useState<string[]>(task?.tags || []);
+  const [clsLevel, setClsLevel] = useState(task?.clsLevel || '');
   const [showIOCPanel, setShowIOCPanel] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [commentText, setCommentText] = useState('');
@@ -71,6 +73,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
       setDueDate(task.dueDate || '');
       setFolderId(task.folderId || '');
       setTags(task.tags);
+      setClsLevel(task.clsLevel || '');
     }
   }, [task]);
 
@@ -85,6 +88,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
       dueDate: dueDate || undefined,
       folderId: folderId || undefined,
       tags,
+      clsLevel: clsLevel || undefined,
     });
   };
 
@@ -123,6 +127,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
     id: task.id,
     title,
     content: description,
+    clsLevel: task.clsLevel,
     iocAnalysis: task.iocAnalysis,
     iocTypes: task.iocTypes,
   } : null;
@@ -192,6 +197,15 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
 
         <div className="grid grid-cols-2 gap-3">
           <div>
+            <label className={labelClass}>Classification</label>
+            <select value={clsLevel} onChange={(e) => setClsLevel(e.target.value)} className={inputClass}>
+              <option value="">None</option>
+              {getEffectiveClsLevels(taskFormSettings.tiClsLevels).map((v) => (
+                <option key={v} value={v}>{v}</option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label className={labelClass}>Due Date</label>
             <input
               type="date"
@@ -200,6 +214,9 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
               className={inputClass}
             />
           </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelClass}>Folder</label>
             <select value={folderId} onChange={(e) => setFolderId(e.target.value)} className={inputClass}>

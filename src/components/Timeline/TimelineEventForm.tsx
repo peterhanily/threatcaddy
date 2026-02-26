@@ -7,6 +7,7 @@ import { AttributionComboInput } from '../Analysis/AttributionComboInput';
 import { IOCPanel } from '../Analysis/IOCPanel';
 import { MitreComboInput } from './MitreComboInput';
 import { extractIOCs, mergeIOCAnalysis } from '../../lib/ioc-extractor';
+import { getEffectiveClsLevels } from '../../lib/classification';
 import { useSettings } from '../../hooks/useSettings';
 import { useAutoIOCExtraction } from '../../hooks/useAutoIOCExtraction';
 import { cn } from '../../lib/utils';
@@ -52,6 +53,7 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
   const [tags, setTags] = useState<string[]>(event?.tags || []);
   const [starred, setStarred] = useState(event?.starred || false);
   const [mitreAttackIds, setMitreAttackIds] = useState<string[]>(event?.mitreAttackIds || []);
+  const [clsLevel, setClsLevel] = useState(event?.clsLevel || '');
   const [rawData, setRawData] = useState(event?.rawData || '');
   const [rawDataOpen, setRawDataOpen] = useState(false);
   const [showIOCPanel, setShowIOCPanel] = useState(false);
@@ -84,6 +86,7 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
       setAssets(event.assets.join(', '));
       setTags(event.tags);
       setStarred(event.starred);
+      setClsLevel(event.clsLevel || '');
       setRawData(event.rawData || '');
     }
   }, [event]);
@@ -107,6 +110,7 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
       assets: parsedAssets,
       tags,
       starred,
+      clsLevel: clsLevel || undefined,
       rawData: rawData.trim() || undefined,
       // Preserve linked arrays on edit, default empty on create
       linkedIOCIds: event?.linkedIOCIds || [],
@@ -123,6 +127,7 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
     id: event.id,
     title,
     content: description,
+    clsLevel: event.clsLevel,
     iocAnalysis: event.iocAnalysis,
     iocTypes: event.iocTypes,
   } : null;
@@ -187,6 +192,15 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
 
       <div className="grid grid-cols-2 gap-3">
         <div>
+          <label className={labelClass}>Classification</label>
+          <select value={clsLevel} onChange={(e) => setClsLevel(e.target.value)} className={inputClass}>
+            <option value="">None</option>
+            {getEffectiveClsLevels(settings.tiClsLevels).map((v) => (
+              <option key={v} value={v}>{v}</option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label className={labelClass}>Source</label>
           <input
             value={source}
@@ -195,6 +209,9 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
             placeholder="e.g. Firewall logs, EDR..."
           />
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelClass}>Folder</label>
           <select value={folderId} onChange={(e) => setFolderId(e.target.value)} className={inputClass}>

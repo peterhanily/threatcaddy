@@ -80,7 +80,7 @@ describe('formatIOCsCSV', () => {
   it('has correct header row', () => {
     const csv = formatIOCsCSV([makeEntry()]);
     const header = csv.split('\n')[0];
-    expect(header).toBe('type,value,confidence,analystNotes,attribution,firstSeen,dismissed,clipTitle,sourceUrl');
+    expect(header).toBe('type,value,confidence,analystNotes,attribution,firstSeen,dismissed,clsLevel,clipTitle,sourceUrl');
   });
 
   it('produces one data row per active IOC', () => {

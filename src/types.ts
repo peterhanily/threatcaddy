@@ -11,6 +11,7 @@ export interface Note {
   sourceUrl?: string;
   sourceTitle?: string;
   color?: string;
+  clsLevel?: string;
   iocAnalysis?: IOCAnalysis;
   iocTypes?: IOCType[];
   linkedNoteIds?: string[];
@@ -25,6 +26,7 @@ export interface IOCTarget {
   title: string;
   content: string;
   sourceUrl?: string;
+  clsLevel?: string;
   iocAnalysis?: IOCAnalysis;
   iocTypes?: IOCType[];
 }
@@ -49,6 +51,7 @@ export interface Task {
   tags: string[];
   status: TaskStatus;
   order: number;
+  clsLevel?: string;
   iocAnalysis?: IOCAnalysis;
   iocTypes?: IOCType[];
   comments?: TaskComment[];
@@ -232,6 +235,7 @@ export interface TimelineEvent {
   starred: boolean;
   folderId?: string;
   timelineId: string;
+  clsLevel?: string;
   iocAnalysis?: IOCAnalysis;
   iocTypes?: IOCType[];
   createdAt: number;
@@ -310,6 +314,9 @@ export const PRIORITY_COLORS: Record<Priority, string> = {
   medium: '#eab308',
   high: '#ef4444',
 };
+
+export const DEFAULT_CLS_LEVELS = ['TLP:CLEAR', 'TLP:GREEN', 'TLP:AMBER', 'TLP:AMBER+STRICT', 'TLP:RED'];
+export const DEFAULT_PAP_LEVELS = ['PAP:WHITE', 'PAP:GREEN', 'PAP:AMBER', 'PAP:RED'];
 
 // OCI Sync types
 export interface SharedItemEnvelope {

@@ -3,6 +3,7 @@ import { Upload, Download, X, ShieldCheck, FileJson, Users, ChevronDown, Chevron
 import { useSettings } from '../../hooks/useSettings';
 import type { IOCType, IOCRelationshipDef } from '../../types';
 import { IOC_TYPE_LABELS, DEFAULT_IOC_SUBTYPES, DEFAULT_RELATIONSHIP_TYPES } from '../../types';
+import { getEffectiveClsLevels } from '../../lib/classification';
 import { downloadFile } from '../../lib/export';
 
 const ALL_IOC_TYPES = Object.keys(IOC_TYPE_LABELS) as IOCType[];
@@ -243,14 +244,19 @@ export function ThreatIntelConfig() {
       {/* Default values */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <label className="text-sm text-gray-400">Default Classification Level</label>
+          <div>
+            <label className="text-sm text-gray-400">Default Classification Level</label>
+            {getSimpleValues('tiClsLevels').length === 0 && (
+              <p className="text-[10px] text-gray-600">Using TLP defaults</p>
+            )}
+          </div>
           <select
             value={settings.tiDefaultClsLevel || ''}
             onChange={(e) => updateSettings({ tiDefaultClsLevel: e.target.value || undefined })}
             className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
           >
             <option value="">None</option>
-            {getSimpleValues('tiClsLevels').map((v) => (
+            {getEffectiveClsLevels(getSimpleValues('tiClsLevels')).map((v) => (
               <option key={v} value={v}>{v}</option>
             ))}
           </select>

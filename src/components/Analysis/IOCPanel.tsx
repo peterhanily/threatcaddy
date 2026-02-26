@@ -93,7 +93,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
 
   const doPushAll = async () => {
     if (!onPushIOCs || !analysis) return;
-    const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: analysis.iocs }];
+    const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: analysis.iocs, entityClsLevel: item.clsLevel }];
     const slug = slugify(item.title) || 'item';
     const ok = await onPushIOCs(entries, slug);
     if (ok) {
@@ -108,7 +108,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
     if (!onPushIOCs || !analysis) return;
     const typeIOCs = analysis.iocs.filter((ioc) => ioc.type === type && !ioc.dismissed);
     if (typeIOCs.length === 0) return;
-    const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: typeIOCs }];
+    const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: typeIOCs, entityClsLevel: item.clsLevel }];
     const slug = slugify(item.title) || 'item';
     const typeSlug = type.replace(/[^a-z0-9]/g, '-');
     const ok = await onPushIOCs(entries, slug, typeSlug);
@@ -143,7 +143,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
     if (!analysis) return;
     const typeIOCs = analysis.iocs.filter((ioc) => ioc.type === type && !ioc.dismissed);
     if (typeIOCs.length === 0) return;
-    const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: typeIOCs }];
+    const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: typeIOCs, entityClsLevel: item.clsLevel }];
     const slug = slugify(item.title) || 'item';
     const typeSlug = type.replace(/[^a-z0-9]/g, '-');
     if (format === 'stix') {
@@ -169,7 +169,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
   const handleExport = (format: 'json' | 'csv' | 'flat-json' | 'flat-csv' | 'stix') => {
     setShowExportMenu(false);
     if (!analysis || activeIOCs.length === 0) return;
-    const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: analysis.iocs }];
+    const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: analysis.iocs, entityClsLevel: item.clsLevel }];
     const slug = slugify(item.title) || 'item';
     if (format === 'stix') {
       downloadFile(formatIOCsSTIX(entries, tiExportConfig), `iocs-${slug}-stix.json`, 'application/json');

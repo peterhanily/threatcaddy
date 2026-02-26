@@ -4,6 +4,7 @@ import type { TimelineEvent } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 import { cn, truncate } from '../../lib/utils';
 import { getTechniqueLabel } from '../../lib/mitre-attack';
+import { ClsBadge } from '../Common/ClsBadge';
 
 interface TimelineEventCardProps {
   event: TimelineEvent;
@@ -102,6 +103,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
             {event.source}
           </span>
         )}
+        {event.clsLevel && <ClsBadge level={event.clsLevel} />}
         {event.actor && (
           <span className="text-[10px] px-1.5 rounded-full bg-purple-500/15 text-purple-400 truncate max-w-[100px]">
             {event.actor}

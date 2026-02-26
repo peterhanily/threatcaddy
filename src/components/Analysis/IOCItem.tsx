@@ -3,6 +3,7 @@ import { Copy, Check, ChevronDown, ChevronRight, X, RotateCcw, Plus, ArrowRight 
 import type { IOCEntry, IOCType, ConfidenceLevel, IOCRelationship, IOCRelationshipDef } from '../../types';
 import { CONFIDENCE_LEVELS, DEFAULT_IOC_SUBTYPES, DEFAULT_RELATIONSHIP_TYPES, IOC_TYPE_LABELS } from '../../types';
 import { AttributionComboInput } from './AttributionComboInput';
+import { getEffectiveClsLevels } from '../../lib/classification';
 import { cn } from '../../lib/utils';
 
 export interface ThreatIntelConfigProps {
@@ -216,19 +217,17 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
               </select>
             </div>
           )}
-          {threatIntelConfig?.clsLevels && threatIntelConfig.clsLevels.length > 0 && (
-            <div>
-              <label className="text-[10px] text-gray-500 uppercase tracking-wider">Classification Level</label>
-              <select
-                value={ioc.clsLevel || ''}
-                onChange={(e) => onUpdate(ioc.id, { clsLevel: e.target.value || undefined })}
-                className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600"
-              >
-                <option value="">—</option>
-                {threatIntelConfig.clsLevels.map((v) => <option key={v} value={v}>{v}</option>)}
-              </select>
-            </div>
-          )}
+          <div>
+            <label className="text-[10px] text-gray-500 uppercase tracking-wider">Classification Level</label>
+            <select
+              value={ioc.clsLevel || ''}
+              onChange={(e) => onUpdate(ioc.id, { clsLevel: e.target.value || undefined })}
+              className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600"
+            >
+              <option value="">—</option>
+              {getEffectiveClsLevels(threatIntelConfig?.clsLevels).map((v) => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </div>
           {/* Relationships (many-to-many) */}
           <div>
             <label className="text-[10px] text-gray-500 uppercase tracking-wider">Relationships</label>

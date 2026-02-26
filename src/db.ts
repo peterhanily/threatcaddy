@@ -81,4 +81,7 @@ db.version(8).stores({
 // Version 9: entity linking fields (optional arrays, no index changes needed)
 db.version(9).stores({});
 
+// Version 10: clsLevel on notes, tasks, timeline events (optional, not indexed)
+db.version(10).stores({});
+
 export { db };

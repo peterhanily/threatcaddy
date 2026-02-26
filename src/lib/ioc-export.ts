@@ -5,6 +5,7 @@ export interface IOCExportEntry {
   sourceUrl?: string;
   iocs: IOCEntry[];
   tags?: string[];
+  entityClsLevel?: string;
 }
 
 export interface ThreatIntelExportConfig {
@@ -20,9 +21,11 @@ interface ExportedIOC {
   attribution?: string;
   firstSeen: number;
   dismissed: boolean;
+  clsLevel?: string;
 }
 
-function toExportedIOC(ioc: IOCEntry): ExportedIOC {
+function toExportedIOC(ioc: IOCEntry, entityClsLevel?: string): ExportedIOC {
+  const level = ioc.clsLevel || entityClsLevel || undefined;
   return {
     type: ioc.type,
     value: ioc.value,
@@ -31,6 +34,7 @@ function toExportedIOC(ioc: IOCEntry): ExportedIOC {
     attribution: ioc.attribution,
     firstSeen: ioc.firstSeen,
     dismissed: ioc.dismissed,
+    clsLevel: level,
   };
 }
 
@@ -52,7 +56,7 @@ export function formatIOCsJSON(entries: IOCExportEntry[]): string {
       clips: active.map((e) => ({
         clipTitle: e.clipTitle,
         sourceUrl: e.sourceUrl,
-        iocs: e.iocs.map(toExportedIOC),
+        iocs: e.iocs.map((ioc) => toExportedIOC(ioc, e.entityClsLevel)),
       })),
     },
     null,
@@ -67,7 +71,7 @@ function escapeCSVField(value: string): string {
   return value;
 }
 
-const CSV_HEADERS = ['type', 'value', 'confidence', 'analystNotes', 'attribution', 'firstSeen', 'dismissed', 'clipTitle', 'sourceUrl'];
+const CSV_HEADERS = ['type', 'value', 'confidence', 'analystNotes', 'attribution', 'firstSeen', 'dismissed', 'clsLevel', 'clipTitle', 'sourceUrl'];
 
 export function formatIOCsCSV(entries: IOCExportEntry[]): string {
   const active = filterActive(entries);
@@ -83,6 +87,7 @@ export function formatIOCsCSV(entries: IOCExportEntry[]): string {
         escapeCSVField(ioc.attribution || ''),
         escapeCSVField(new Date(ioc.firstSeen).toISOString()),
         escapeCSVField(String(ioc.dismissed)),
+        escapeCSVField(ioc.clsLevel || entry.entityClsLevel || ''),
         escapeCSVField(entry.clipTitle),
         escapeCSVField(entry.sourceUrl || ''),
       ];
@@ -135,7 +140,7 @@ function buildFlatIOCs(entries: IOCExportEntry[], config: ThreatIntelExportConfi
         report_date: reportDate,
         report_title: entry.clipTitle,
         report_source: entry.sourceUrl || config.defaultReportSource || '',
-        cls_level: ioc.clsLevel || config.defaultClsLevel || '',
+        cls_level: ioc.clsLevel || entry.entityClsLevel || config.defaultClsLevel || '',
         confidence: CONFIDENCE_TO_NUMBER[ioc.confidence] ?? 1,
         first_seen: new Date(ioc.firstSeen).toISOString(),
         ioc_type: ioc.type,

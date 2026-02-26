@@ -1,5 +1,6 @@
 import type { IOCType, ConfidenceLevel } from '../types';
 import type { IOCExportEntry, ThreatIntelExportConfig } from './ioc-export';
+import { STIX_TLP_MARKING_DEFS, resolveIOCClsLevel } from './classification';
 
 // --- Deterministic UUID via FNV-1a hash ---
 
@@ -104,6 +105,7 @@ export function formatIOCsSTIX(
   const now = new Date().toISOString();
   const objects: STIXObject[] = [];
   const objectRefs: string[] = [];
+  const referencedMarkingDefIds = new Set<string>();
 
   // Filter out dismissed IOCs
   const activeEntries = entries.map((e) => ({
@@ -130,11 +132,18 @@ export function formatIOCsSTIX(
   // 2. Indicator + Vulnerability SDOs
   for (const entry of activeEntries) {
     for (const ioc of entry.iocs) {
+      // Resolve TLP level for this IOC via cascade
+      const resolvedLevel = resolveIOCClsLevel(ioc.clsLevel, entry.entityClsLevel, config.defaultClsLevel);
+      const tlpKey = resolvedLevel.toUpperCase();
+      const markingDef = STIX_TLP_MARKING_DEFS[tlpKey];
+      const markingRefs = markingDef ? [markingDef.id] : undefined;
+      if (markingDef) referencedMarkingDefIds.add(tlpKey);
+
       // CVEs → Vulnerability SDO
       if (ioc.type === 'cve') {
         const vulnId = `vulnerability--${deterministicUUID('vulnerability', ioc.value)}`;
         iocIdToStixId.set(ioc.id, vulnId);
-        objects.push({
+        const vuln: STIXObject = {
           type: 'vulnerability',
           spec_version: '2.1',
           id: vulnId,
@@ -147,7 +156,9 @@ export function formatIOCsSTIX(
               external_id: ioc.value.toUpperCase(),
             },
           ],
-        });
+        };
+        if (markingRefs) vuln.object_marking_refs = markingRefs;
+        objects.push(vuln);
         objectRefs.push(vulnId);
         continue;
       }
@@ -173,6 +184,8 @@ export function formatIOCsSTIX(
         confidence: CONFIDENCE_MAP[ioc.confidence] ?? 50,
         created_by_ref: identityId,
       };
+
+      if (markingRefs) indicator.object_marking_refs = markingRefs;
 
       if (ioc.analystNotes) {
         indicator.description = ioc.analystNotes;
@@ -229,11 +242,20 @@ export function formatIOCsSTIX(
     });
   }
 
-  // 5. Bundle
+  // 5. Prepend referenced TLP marking-definition SDOs
+  const markingDefObjects: STIXObject[] = [];
+  for (const key of referencedMarkingDefIds) {
+    const def = STIX_TLP_MARKING_DEFS[key];
+    if (def) {
+      markingDefObjects.push(def as unknown as STIXObject);
+    }
+  }
+
+  // 6. Bundle
   const bundle: STIXBundle = {
     type: 'bundle',
     id: `bundle--${deterministicUUID('bundle', now)}`,
-    objects,
+    objects: [...markingDefObjects, ...objects],
   };
 
   return JSON.stringify(bundle, null, 2);

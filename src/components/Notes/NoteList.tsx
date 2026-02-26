@@ -57,6 +57,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
       sourceUrl: n.sourceUrl,
       iocs: n.iocAnalysis?.iocs ?? [],
       tags: n.tags,
+      entityClsLevel: n.clsLevel,
     }));
     const dateStr = new Date().toISOString().slice(0, 10);
     if (format === 'flat-json') {

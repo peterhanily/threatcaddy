@@ -2,6 +2,7 @@ import React from 'react';
 import { Pin, Shield, Trash2 } from 'lucide-react';
 import type { Note } from '../../types';
 import { formatDate, truncate, cn } from '../../lib/utils';
+import { ClsBadge } from '../Common/ClsBadge';
 
 interface NoteCardProps {
   note: Note;
@@ -65,6 +66,7 @@ export const NoteCard = React.memo(function NoteCard({ note, active, onClick, on
             {folderName}
           </span>
         )}
+        {note.clsLevel && <ClsBadge level={note.clsLevel} />}
         {(note.iocAnalysis?.iocs.filter((i) => !i.dismissed).length ?? 0) > 0 && (
           <span className="flex items-center gap-0.5 text-[10px] text-accent/70 bg-accent/10 px-1.5 rounded-full">
             <Shield size={9} />
