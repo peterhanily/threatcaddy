@@ -37,6 +37,7 @@ interface TimelineViewProps {
   selectedTimelineId?: string;
   onTimelineReload?: () => void;
   onEventsReload?: () => void;
+  scopeLabel?: string;
 }
 
 function ExportDropdown({ events, selectedTimelineId, timelines, onImportClick }: { events: TimelineEvent[]; selectedTimelineId?: string; timelines: Timeline[]; onImportClick: () => void }) {
@@ -144,6 +145,7 @@ export function TimelineView({
   selectedTimelineId,
   onTimelineReload,
   onEventsReload,
+  scopeLabel,
 }: TimelineViewProps) {
   const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(null);
   const [showNewEvent, setShowNewEvent] = useState(false);
@@ -215,7 +217,9 @@ export function TimelineView({
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Toolbar */}
       <div className="flex items-center gap-1.5 px-3 py-2 border-b border-gray-800 shrink-0">
-        <span className="text-sm font-medium text-gray-300 hidden sm:inline">Timeline ({events.length})</span>
+        <span className="text-sm font-medium text-gray-300 hidden sm:inline">
+          {scopeLabel ? `Timeline \u2014 ${scopeLabel} (${events.length})` : `Timeline (${events.length})`}
+        </span>
         <span className="text-sm font-medium text-gray-300 sm:hidden">{events.length}</span>
 
         <div className="flex items-center gap-0.5 ml-2">

@@ -633,6 +633,7 @@ export default function App() {
     <ActiveFilterBar
       folderName={selectedFolder?.name}
       folderColor={selectedFolder?.color}
+      folderStatus={selectedFolder?.status}
       tagName={selectedTag}
       tagColor={selectedTagObj?.color}
       onClear={() => { setSelectedFolderId(undefined); setSelectedTag(undefined); }}
@@ -657,6 +658,7 @@ export default function App() {
             onQuickLoad={handleQuickLoad}
             activeView={activeView}
             onStartTour={() => tour.start(activeView)}
+            selectedFolderName={selectedFolder?.name}
             screenshareMaxLevel={screenshareMaxLevel}
             onScreenshareChange={setScreenshareMaxLevel}
             effectiveClsLevels={effectiveClsLevels}
@@ -716,6 +718,7 @@ export default function App() {
             selectedTimelineId={selectedTimelineId}
             onTimelineReload={reloadTimelines}
             onEventsReload={timeline.reload}
+            scopeLabel={selectedFolder?.name}
           />
         ) : activeView === 'whiteboard' ? (
           <WhiteboardView
@@ -744,6 +747,7 @@ export default function App() {
             getTasksByStatus={(status) => tasks.getTasksByStatus(status, selectedFolderId)}
             allNotes={screensafeNotes}
             allTimelineEvents={screensafeTimelineEvents}
+            scopeLabel={selectedFolder?.name}
           />
         ) : (
           /* Notes view — responsive: list OR editor on mobile */

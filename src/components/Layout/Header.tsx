@@ -23,6 +23,7 @@ interface HeaderProps {
   screenshareMaxLevel: string | null;
   onScreenshareChange: (level: string | null) => void;
   effectiveClsLevels: string[];
+  selectedFolderName?: string;
 }
 
 export function Header({
@@ -41,6 +42,7 @@ export function Header({
   screenshareMaxLevel,
   onScreenshareChange,
   effectiveClsLevels,
+  selectedFolderName,
 }: HeaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   return (
@@ -90,11 +92,11 @@ export function Header({
         data-tour="search"
         onClick={onOpenSearch}
         className="flex items-center gap-2 flex-1 max-w-md pl-3 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-500 hover:text-gray-400 hover:border-gray-600 text-sm transition-colors cursor-pointer"
-        title="Search all (Ctrl+K)"
+        title={selectedFolderName ? `Search in ${selectedFolderName} (Ctrl+K)` : 'Search all (Ctrl+K)'}
       >
         <Search size={16} />
-        <span className="hidden sm:inline">Search all...</span>
-        <kbd className="hidden sm:inline ml-auto text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-500 border border-gray-600 font-mono">Ctrl+K</kbd>
+        <span className="hidden sm:inline truncate">{selectedFolderName ? `Search in ${selectedFolderName}...` : 'Search all...'}</span>
+        <kbd className="hidden sm:inline ml-auto text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-500 border border-gray-600 font-mono shrink-0">Ctrl+K</kbd>
       </button>
 
       {/* Links — hidden on mobile, shown on md+ */}

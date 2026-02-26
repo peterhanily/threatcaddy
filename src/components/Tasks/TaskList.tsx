@@ -21,6 +21,7 @@ interface TaskListProps {
   getTasksByStatus: (status: TaskStatus) => Task[];
   allNotes?: Note[];
   allTimelineEvents?: TimelineEvent[];
+  scopeLabel?: string;
 }
 
 export function TaskListView({
@@ -37,6 +38,7 @@ export function TaskListView({
   getTasksByStatus,
   allNotes,
   allTimelineEvents,
+  scopeLabel,
 }: TaskListProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showNewTask, setShowNewTask] = useState(false);
@@ -67,7 +69,9 @@ export function TaskListView({
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Toolbar */}
       <div className="flex items-center gap-1.5 px-3 py-2 border-b border-gray-800 shrink-0">
-        <span className="text-sm font-medium text-gray-300 hidden sm:inline">Tasks ({tasks.length})</span>
+        <span className="text-sm font-medium text-gray-300 hidden sm:inline">
+          {scopeLabel ? `Tasks \u2014 ${scopeLabel} (${tasks.length})` : `Tasks (${tasks.length})`}
+        </span>
         <span className="text-sm font-medium text-gray-300 sm:hidden">{tasks.length}</span>
 
         <div className="flex items-center gap-0.5 ml-1">
