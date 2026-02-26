@@ -1,5 +1,5 @@
 import React, { Suspense, useState, useMemo, useCallback } from 'react';
-import { Loader2, Search, Network, Maximize2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Loader2, Search, Network, Maximize2, ChevronDown, ChevronRight, HelpCircle, X as XIcon } from 'lucide-react';
 import type { Note, Task, TimelineEvent, Settings, IOCType } from '../../types';
 import { IOC_TYPE_LABELS } from '../../types';
 import { buildGraphData } from '../../lib/graph-data';
@@ -53,6 +53,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
   const [linkDialogState, setLinkDialogState] = useState<{ sourceNodeId: string; targetNodeId: string } | null>(null);
   const [fitTrigger, setFitTrigger] = useState(0);
   const [legendOpen, setLegendOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   // Stable ref to full graph data for use in cytoscape callbacks
   const fullGraphDataRef = React.useRef<ReturnType<typeof buildGraphData>>({ nodes: [], edges: [] });
 
@@ -325,9 +326,8 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
         </div>
 
         {/* Stats */}
-        <div className="p-3 border-t border-gray-800 text-[10px] text-gray-600 mt-auto space-y-1">
+        <div className="p-3 border-t border-gray-800 text-[10px] text-gray-600 mt-auto">
           <div>{filteredGraphData.nodes.length} nodes, {filteredGraphData.edges.length} edges</div>
-          <div data-tour="graph-link-hint">Alt+drag to link nodes</div>
         </div>
       </div>
 
@@ -358,6 +358,36 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
             />
           </Suspense>
         )}
+
+        {/* Floating help overlay */}
+        <div className="absolute bottom-3 right-3 z-10">
+          {helpOpen ? (
+            <div className="bg-gray-900/95 border border-gray-700 rounded-lg shadow-lg p-3 w-52">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-gray-300">Controls</span>
+                <button onClick={() => setHelpOpen(false)} className="p-0.5 rounded text-gray-500 hover:text-gray-300" aria-label="Close help">
+                  <XIcon size={12} />
+                </button>
+              </div>
+              <div className="space-y-1.5 text-[11px]">
+                <div className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Click</kbd><span className="text-gray-500">Select &amp; inspect node</span></div>
+                <div className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Dbl-click</kbd><span className="text-gray-500">Open entity</span></div>
+                <div data-tour="graph-link-hint" className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Alt+drag</kbd><span className="text-gray-500">Link two nodes</span></div>
+                <div className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Shift+drag</kbd><span className="text-gray-500">Box-select</span></div>
+                <div className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Scroll</kbd><span className="text-gray-500">Zoom</span></div>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setHelpOpen(true)}
+              className="w-7 h-7 rounded-full bg-gray-800/80 border border-gray-700 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors"
+              aria-label="Show graph controls"
+              title="Graph controls"
+            >
+              <HelpCircle size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Detail panel — single selection */}
@@ -373,6 +403,9 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
           }}
           onOpenNewTab={handleOpenNewTab}
           onEditIOC={onUpdateNote && onUpdateTask ? setEditingIOCNode : undefined}
+          notes={notes}
+          tasks={tasks}
+          timelineEvents={timelineEvents}
         />
       )}
 

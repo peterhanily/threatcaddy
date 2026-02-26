@@ -1,6 +1,7 @@
 import { X, ArrowRight, ExternalLink, Pencil } from 'lucide-react';
 import type { GraphNode, GraphEdge } from '../../lib/graph-data';
 import { IOC_TYPE_LABELS, TIMELINE_EVENT_TYPE_LABELS } from '../../types';
+import type { Note, Task, TimelineEvent } from '../../types';
 
 interface GraphDetailPanelProps {
   node: GraphNode;
@@ -10,9 +11,44 @@ interface GraphDetailPanelProps {
   onNavigate: (nodeId: string) => void;
   onOpenNewTab?: (node: GraphNode) => void;
   onEditIOC?: (node: GraphNode) => void;
+  notes?: Note[];
+  tasks?: Task[];
+  timelineEvents?: TimelineEvent[];
 }
 
-export function GraphDetailPanel({ node, edges, allNodes, onClose, onNavigate, onOpenNewTab, onEditIOC }: GraphDetailPanelProps) {
+const PRIORITY_COLORS: Record<string, string> = {
+  high: 'bg-red-500/20 text-red-400',
+  medium: 'bg-yellow-500/20 text-yellow-400',
+  low: 'bg-blue-500/20 text-blue-400',
+  none: 'bg-gray-500/20 text-gray-400',
+};
+
+const CONFIDENCE_COLORS: Record<string, string> = {
+  confirmed: 'bg-green-500/20 text-green-400',
+  high: 'bg-emerald-500/20 text-emerald-400',
+  medium: 'bg-yellow-500/20 text-yellow-400',
+  low: 'bg-orange-500/20 text-orange-400',
+};
+
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/#{1,6}\s/g, '')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/`(.+?)`/g, '$1')
+    .replace(/\[(.+?)\]\(.+?\)/g, '$1')
+    .replace(/^\s*[-*+]\s/gm, '')
+    .replace(/\n+/g, ' ')
+    .trim();
+}
+
+function snippet(text: string, maxLen = 120): string {
+  const clean = stripMarkdown(text);
+  if (clean.length <= maxLen) return clean;
+  return clean.slice(0, maxLen) + '...';
+}
+
+export function GraphDetailPanel({ node, edges, allNodes, onClose, onNavigate, onOpenNewTab, onEditIOC, notes, tasks, timelineEvents }: GraphDetailPanelProps) {
   const connectedEdges = edges.filter((e) => e.source === node.id || e.target === node.id);
 
   const getNodeLabel = (id: string) => {
@@ -20,8 +56,17 @@ export function GraphDetailPanel({ node, edges, allNodes, onClose, onNavigate, o
     return n?.label || id;
   };
 
+  // Look up source entities
+  const sourceId = node.sourceEntityIds[0];
+  const sourceEvent = node.type === 'timeline-event' && sourceId && timelineEvents
+    ? timelineEvents.find((e) => e.id === sourceId) : undefined;
+  const sourceNote = node.type === 'note' && sourceId && notes
+    ? notes.find((n) => n.id === sourceId) : undefined;
+  const sourceTask = node.type === 'task' && sourceId && tasks
+    ? tasks.find((t) => t.id === sourceId) : undefined;
+
   return (
-    <div className="w-72 border-l border-gray-800 bg-gray-900 flex flex-col h-full overflow-hidden shrink-0">
+    <div className="w-72 border-l-2 bg-gray-900 flex flex-col h-full overflow-hidden shrink-0" style={{ borderLeftColor: node.color }}>
       <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-800">
         <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: node.color }} />
         <span className="text-sm font-medium text-gray-200 flex-1 truncate">{node.label}</span>
@@ -31,18 +76,115 @@ export function GraphDetailPanel({ node, edges, allNodes, onClose, onNavigate, o
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        {/* Node info */}
+        {/* Node type */}
         <div className="space-y-1">
           <div className="text-[10px] text-gray-500 uppercase tracking-wider">Type</div>
-          <div className="text-xs text-gray-300 capitalize">
-            {node.type === 'ioc' && node.iocType
-              ? IOC_TYPE_LABELS[node.iocType].label
-              : node.type === 'timeline-event' && node.eventType
-                ? TIMELINE_EVENT_TYPE_LABELS[node.eventType]?.label || node.eventType
+          {node.type === 'timeline-event' && node.eventType ? (
+            <span
+              className="inline-block text-[11px] px-1.5 py-0.5 rounded font-medium"
+              style={{
+                backgroundColor: (TIMELINE_EVENT_TYPE_LABELS[node.eventType]?.color || '#6b7280') + '33',
+                color: TIMELINE_EVENT_TYPE_LABELS[node.eventType]?.color || '#6b7280',
+              }}
+            >
+              {TIMELINE_EVENT_TYPE_LABELS[node.eventType]?.label || node.eventType}
+            </span>
+          ) : (
+            <div className="text-xs text-gray-300 capitalize">
+              {node.type === 'ioc' && node.iocType
+                ? IOC_TYPE_LABELS[node.iocType].label
                 : node.type.replace('-', ' ')}
-          </div>
+            </div>
+          )}
         </div>
 
+        {/* Timeline event enriched info */}
+        {sourceEvent && (
+          <>
+            <div className="space-y-1">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider">Timestamp</div>
+              <div className="text-xs text-gray-300">{new Date(sourceEvent.timestamp).toLocaleString()}</div>
+            </div>
+            {sourceEvent.description && (
+              <div className="space-y-1">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wider">Description</div>
+                <div className="text-xs text-gray-400 leading-relaxed">{snippet(sourceEvent.description)}</div>
+              </div>
+            )}
+            {sourceEvent.actor && (
+              <div className="space-y-1">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wider">Actor</div>
+                <div className="text-xs text-gray-300 font-mono">{sourceEvent.actor}</div>
+              </div>
+            )}
+            {sourceEvent.mitreAttackIds.length > 0 && (
+              <div className="space-y-1">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wider">MITRE ATT&CK</div>
+                <div className="flex flex-wrap gap-1">
+                  {sourceEvent.mitreAttackIds.map((id) => (
+                    <span key={id} className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 font-mono">{id}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider">Confidence</div>
+              <span className={`inline-block text-[11px] px-1.5 py-0.5 rounded font-medium capitalize ${CONFIDENCE_COLORS[sourceEvent.confidence] || 'bg-gray-500/20 text-gray-400'}`}>
+                {sourceEvent.confidence}
+              </span>
+            </div>
+          </>
+        )}
+
+        {/* Note enriched info */}
+        {sourceNote && (
+          <>
+            <div className="space-y-1">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider">Created</div>
+              <div className="text-xs text-gray-300">{new Date(sourceNote.createdAt).toLocaleDateString()}</div>
+            </div>
+            {sourceNote.content && (
+              <div className="space-y-1">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wider">Content</div>
+                <div className="text-xs text-gray-400 leading-relaxed">{snippet(sourceNote.content)}</div>
+              </div>
+            )}
+            {sourceNote.tags.length > 0 && (
+              <div className="space-y-1">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wider">Tags</div>
+                <div className="flex flex-wrap gap-1">
+                  {sourceNote.tags.map((tag) => (
+                    <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">{tag}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Task enriched info */}
+        {sourceTask && (
+          <>
+            <div className="space-y-1">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider">Priority</div>
+              <span className={`inline-block text-[11px] px-1.5 py-0.5 rounded font-medium capitalize ${PRIORITY_COLORS[sourceTask.priority] || 'bg-gray-500/20 text-gray-400'}`}>
+                {sourceTask.priority}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider">Status</div>
+              <div className="text-xs text-gray-300 capitalize">{sourceTask.status}</div>
+            </div>
+            {sourceTask.dueDate && (
+              <div className="space-y-1">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wider">Due Date</div>
+                <div className="text-xs text-gray-300">{sourceTask.dueDate}</div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* IOC info */}
         {node.type === 'ioc' && (
           <div className="space-y-1">
             <div className="text-[10px] text-gray-500 uppercase tracking-wider">Value</div>
