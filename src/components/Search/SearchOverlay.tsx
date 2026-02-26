@@ -18,6 +18,11 @@ interface SearchOverlayProps {
   whiteboards?: Whiteboard[];
   onNavigateToTimeline?: (id: string) => void;
   onNavigateToWhiteboard?: (id: string) => void;
+  selectedFolderId?: string;
+  scopedNotes?: Note[];
+  scopedTasks?: Task[];
+  scopedTimelineEvents?: TimelineEvent[];
+  scopedWhiteboards?: Whiteboard[];
 }
 
 const TYPE_ICONS: Record<SearchResultType, typeof FileText> = {
@@ -48,11 +53,17 @@ export function SearchOverlay({
   whiteboards,
   onNavigateToTimeline,
   onNavigateToWhiteboard,
+  selectedFolderId,
+  scopedNotes,
+  scopedTasks,
+  scopedTimelineEvents,
+  scopedWhiteboards,
 }: SearchOverlayProps) {
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<SearchMode>('simple');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
+  const [searchScope, setSearchScope] = useState<'investigation' | 'all'>('investigation');
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(undefined);
@@ -74,15 +85,22 @@ export function SearchOverlay({
       setQuery('');
       setDebouncedQuery('');
       setActiveIndex(0);
+      setSearchScope('investigation');
     }
     return () => { if (rafRef.current !== undefined) cancelAnimationFrame(rafRef.current); };
   }, [open]);
 
+  // Determine effective arrays based on scope
+  const effectiveNotes = selectedFolderId && searchScope === 'investigation' && scopedNotes ? scopedNotes : notes;
+  const effectiveTasks = selectedFolderId && searchScope === 'investigation' && scopedTasks ? scopedTasks : tasks;
+  const effectiveEvents = selectedFolderId && searchScope === 'investigation' && scopedTimelineEvents ? scopedTimelineEvents : timelineEvents;
+  const effectiveWhiteboards = selectedFolderId && searchScope === 'investigation' && scopedWhiteboards ? scopedWhiteboards : whiteboards;
+
   // Search results
   const searchResult = useMemo(() => {
     if (!debouncedQuery.trim()) return { results: [], error: undefined };
-    return unifiedSearch(notes, tasks, clipsFolderId, { mode, raw: debouncedQuery }, timelineEvents, whiteboards);
-  }, [notes, tasks, clipsFolderId, mode, debouncedQuery, timelineEvents, whiteboards]);
+    return unifiedSearch(effectiveNotes, effectiveTasks, clipsFolderId, { mode, raw: debouncedQuery }, effectiveEvents, effectiveWhiteboards);
+  }, [effectiveNotes, effectiveTasks, clipsFolderId, mode, debouncedQuery, effectiveEvents, effectiveWhiteboards]);
 
   const { results, error } = searchResult;
 
@@ -195,6 +213,19 @@ export function SearchOverlay({
                 </button>
               ))}
             </div>
+
+            {/* Scope toggle */}
+            {selectedFolderId && (
+              <label className="flex items-center gap-1.5 shrink-0 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={searchScope === 'all'}
+                  onChange={(e) => setSearchScope(e.target.checked ? 'all' : 'investigation')}
+                  className="rounded border-gray-600 bg-gray-800 text-accent focus:ring-accent"
+                />
+                <span className="text-[10px] text-gray-400 whitespace-nowrap">Search all</span>
+              </label>
+            )}
 
             {/* Search input */}
             <div className="relative flex-1">

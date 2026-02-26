@@ -27,6 +27,11 @@ interface GraphViewProps {
   onUpdateNote?: (id: string, updates: Partial<Note>) => void;
   onUpdateTask?: (id: string, updates: Partial<Task>) => void;
   onUpdateEvent?: (id: string, updates: Partial<TimelineEvent>) => void;
+  scopedNotes?: Note[];
+  scopedTasks?: Task[];
+  scopedTimelineEvents?: TimelineEvent[];
+  selectedFolderId?: string;
+  selectedFolderName?: string;
 }
 
 type NodeTypeFilter = 'ioc' | 'note' | 'task' | 'timeline-event';
@@ -39,11 +44,12 @@ const ALL_EDGE_TYPES: { key: EdgeTypeFilter; label: string; color: string }[] = 
   { key: 'entity-link', label: 'Entity Links', color: '#22c55e' },
 ];
 
-export function GraphView({ notes, tasks, timelineEvents, settings, layout: externalLayout, onLayoutChange, onNavigateToNote, onNavigateToTask, onNavigateToTimelineEvent, onUpdateNote, onUpdateTask, onUpdateEvent }: GraphViewProps) {
+export function GraphView({ notes, tasks, timelineEvents, settings, layout: externalLayout, onLayoutChange, onNavigateToNote, onNavigateToTask, onNavigateToTimelineEvent, onUpdateNote, onUpdateTask, onUpdateEvent, scopedNotes, scopedTasks, scopedTimelineEvents, selectedFolderId, selectedFolderName }: GraphViewProps) {
   const [internalLayout, setInternalLayout] = useState<LayoutName>('cose-bilkent');
   const layout = externalLayout ?? internalLayout;
   const handleLayoutChange = onLayoutChange ?? setInternalLayout;
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [scopeMode, setScopeMode] = useState<'investigation' | 'global'>('investigation');
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleNodeTypes, setVisibleNodeTypes] = useState<Set<NodeTypeFilter>>(new Set(['ioc', 'note', 'task', 'timeline-event']));
@@ -54,13 +60,23 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
   const [fitTrigger, setFitTrigger] = useState(0);
   const [legendOpen, setLegendOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  // Reset scope mode when investigation changes
+  React.useEffect(() => {
+    setScopeMode('investigation');
+  }, [selectedFolderId]);
+
+  // Determine which data arrays to use based on scope
+  const effectiveNotes = selectedFolderId && scopeMode === 'investigation' && scopedNotes ? scopedNotes : notes;
+  const effectiveTasks = selectedFolderId && scopeMode === 'investigation' && scopedTasks ? scopedTasks : tasks;
+  const effectiveEvents = selectedFolderId && scopeMode === 'investigation' && scopedTimelineEvents ? scopedTimelineEvents : timelineEvents;
+
   // Stable ref to full graph data for use in cytoscape callbacks
   const fullGraphDataRef = React.useRef<ReturnType<typeof buildGraphData>>({ nodes: [], edges: [] });
 
   // Build full graph data
   const fullGraphData = useMemo(() => {
-    return buildGraphData(notes, tasks, timelineEvents, settings);
-  }, [notes, tasks, timelineEvents, settings]);
+    return buildGraphData(effectiveNotes, effectiveTasks, effectiveEvents, settings);
+  }, [effectiveNotes, effectiveTasks, effectiveEvents, settings]);
 
   // Keep ref in sync for use in cytoscape callbacks (outside render)
   React.useEffect(() => {
@@ -220,6 +236,26 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
             />
           </div>
         </div>
+
+        {/* Scope toggle */}
+        {selectedFolderId && (
+          <div className="px-3 py-2 border-b border-gray-800">
+            <div className="flex rounded-lg overflow-hidden border border-gray-700">
+              <button
+                onClick={() => setScopeMode('investigation')}
+                className={`flex-1 px-2 py-1 text-[10px] font-medium transition-colors ${scopeMode === 'investigation' ? 'bg-accent/20 text-accent' : 'text-gray-500 hover:text-gray-300'}`}
+              >
+                {selectedFolderName || 'Investigation'}
+              </button>
+              <button
+                onClick={() => setScopeMode('global')}
+                className={`flex-1 px-2 py-1 text-[10px] font-medium transition-colors ${scopeMode === 'global' ? 'bg-accent/20 text-accent' : 'text-gray-500 hover:text-gray-300'}`}
+              >
+                Global
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Node type filters */}
         <div className="p-3 space-y-2">

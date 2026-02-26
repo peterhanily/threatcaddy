@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette, ArrowLeft, Shield, Upload, FolderOpen } from 'lucide-react';
+import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette, ArrowLeft, Shield, Upload, Briefcase } from 'lucide-react';
 import type { Note, Task, TimelineEvent, Tag, Folder, EditorMode, Settings } from '../../types';
 import { NOTE_COLORS } from '../../types';
 import { extractIOCs, mergeIOCAnalysis } from '../../lib/ioc-extractor';
@@ -267,14 +267,14 @@ export function NoteEditor({
         </div>
 
         <div className="flex items-center gap-1">
-          <FolderOpen size={16} className="text-gray-500" />
+          <Briefcase size={16} className="text-gray-500" />
           <select
             value={note.folderId || ''}
             onChange={(e) => onUpdate(note.id, { folderId: e.target.value || undefined })}
             className="bg-transparent text-xs text-gray-300 border-none focus:outline-none cursor-pointer"
-            aria-label="Move to folder"
+            aria-label="Assign to investigation"
           >
-            <option value="">No folder</option>
+            <option value="">No investigation</option>
             {folders.map((f) => (
               <option key={f.id} value={f.id}>{f.name}</option>
             ))}

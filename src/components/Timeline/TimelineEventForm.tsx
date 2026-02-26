@@ -213,9 +213,9 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelClass}>Folder</label>
+          <label className={labelClass}>Investigation</label>
           <select value={folderId} onChange={(e) => setFolderId(e.target.value)} className={inputClass}>
-            <option value="">No folder</option>
+            <option value="">No investigation</option>
             {folders.map((f) => (
               <option key={f.id} value={f.id}>{f.name}</option>
             ))}

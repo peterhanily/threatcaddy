@@ -63,6 +63,8 @@ export interface Task {
   completedAt?: number;
 }
 
+export type InvestigationStatus = 'active' | 'closed' | 'archived';
+
 export interface Folder {
   id: string;
   name: string;
@@ -70,6 +72,13 @@ export interface Folder {
   color?: string;
   order: number;
   createdAt: number;
+  description?: string;
+  status?: InvestigationStatus;
+  clsLevel?: string;
+  papLevel?: string;
+  updatedAt?: number;
+  tags?: string[];
+  timelineId?: string;
 }
 
 export interface Tag {
@@ -374,7 +383,7 @@ export const ACTIVITY_CATEGORY_LABELS: Record<ActivityCategory, { label: string;
   task:       { label: 'Task',       color: '#22c55e' },
   timeline:   { label: 'Timeline',   color: '#f97316' },
   whiteboard: { label: 'Whiteboard', color: '#a855f7' },
-  folder:     { label: 'Folder',     color: '#eab308' },
+  folder:     { label: 'Investigation', color: '#eab308' },
   tag:        { label: 'Tag',        color: '#ec4899' },
   ioc:        { label: 'IOC',        color: '#ef4444' },
   sync:       { label: 'Sync',       color: '#06b6d4' },

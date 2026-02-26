@@ -1,4 +1,4 @@
-import { FolderOpen, Tag, X } from 'lucide-react';
+import { Briefcase, Tag, X } from 'lucide-react';
 
 interface ActiveFilterBarProps {
   folderName?: string;
@@ -15,7 +15,7 @@ export function ActiveFilterBar({ folderName, folderColor, tagName, tagColor, on
     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-900/60 border-b border-gray-800 text-sm text-gray-300 shrink-0">
       {folderName && (
         <span className="flex items-center gap-1.5">
-          <FolderOpen size={14} style={{ color: folderColor }} />
+          <Briefcase size={14} style={{ color: folderColor }} />
           <span>{folderName}</span>
         </span>
       )}

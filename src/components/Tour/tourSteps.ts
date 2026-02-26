@@ -23,7 +23,7 @@ export const tourSteps: TourStep[] = [
     id: 'sidebar',
     target: '[data-tour="sidebar-nav"]',
     title: 'Sidebar Navigation',
-    description: 'Switch between Notes, Tasks, Timeline, Graph, IOC Stats, and Whiteboards. Manage folders and tags to keep things organized.',
+    description: 'Switch between Notes, Tasks, Timeline, Graph, IOC Stats, and Whiteboards. Manage investigations and tags to keep things organized.',
     placement: 'right',
     view: 'notes',
   },
@@ -44,8 +44,8 @@ export const tourSteps: TourStep[] = [
   {
     id: 'tags-folders',
     target: '[data-tour="tags-folders"]',
-    title: 'Tags & Folders',
-    description: 'Organize your work with folders and color-coded tags. Double-click to rename, hover for delete. Tags apply across notes, tasks, and more.',
+    title: 'Tags & Investigations',
+    description: 'Organize your work with investigations and color-coded tags. Double-click to rename, hover for delete. Tags apply across notes, tasks, and more.',
     placement: 'right',
   },
   {

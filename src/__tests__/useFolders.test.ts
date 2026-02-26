@@ -9,6 +9,8 @@ describe('useFolders', () => {
     await db.folders.clear();
     await db.notes.clear();
     await db.tasks.clear();
+    await db.timelineEvents.clear();
+    await db.whiteboards.clear();
   });
 
   it('starts with empty folders', async () => {
@@ -192,6 +194,53 @@ describe('useFolders', () => {
 
       const task = await db.tasks.get('t1');
       expect(task!.folderId).toBeUndefined();
+    });
+
+    it('unsets folderId on timeline events in the deleted folder', async () => {
+      const { result } = renderHook(() => useFolders());
+      await act(async () => {});
+
+      await act(async () => {
+        await result.current.createFolder('Doomed');
+      });
+      const folderId = result.current.folders[0].id;
+
+      await db.timelineEvents.add({
+        id: 'e1', title: 'Event in folder', timestamp: Date.now(),
+        eventType: 'other', source: '', confidence: 'low',
+        linkedIOCIds: [], linkedNoteIds: [], linkedTaskIds: [],
+        mitreAttackIds: [], assets: [], tags: [], starred: false,
+        folderId, timelineId: 'tl1', createdAt: Date.now(), updatedAt: Date.now(),
+      });
+
+      await act(async () => {
+        await result.current.deleteFolder(folderId);
+      });
+
+      const event = await db.timelineEvents.get('e1');
+      expect(event!.folderId).toBeUndefined();
+    });
+
+    it('unsets folderId on whiteboards in the deleted folder', async () => {
+      const { result } = renderHook(() => useFolders());
+      await act(async () => {});
+
+      await act(async () => {
+        await result.current.createFolder('Doomed');
+      });
+      const folderId = result.current.folders[0].id;
+
+      await db.whiteboards.add({
+        id: 'w1', name: 'Whiteboard in folder', elements: '[]',
+        tags: [], order: 1, folderId, createdAt: Date.now(), updatedAt: Date.now(),
+      });
+
+      await act(async () => {
+        await result.current.deleteFolder(folderId);
+      });
+
+      const wb = await db.whiteboards.get('w1');
+      expect(wb!.folderId).toBeUndefined();
     });
   });
 });

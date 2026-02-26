@@ -53,8 +53,8 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
     try {
       const text = await pendingFile.text();
       const counts = await importJSON(text);
-      showMessage(`Imported ${counts.notes} notes, ${counts.tasks} tasks, ${counts.folders} folders, ${counts.tags} tags`);
-      logActivity('data', 'import', `Imported ${counts.notes} notes, ${counts.tasks} tasks, ${counts.folders} folders, ${counts.tags} tags`);
+      showMessage(`Imported ${counts.notes} notes, ${counts.tasks} tasks, ${counts.folders} investigations, ${counts.tags} tags`);
+      logActivity('data', 'import', `Imported ${counts.notes} notes, ${counts.tasks} tasks, ${counts.folders} investigations, ${counts.tags} tags`);
       onImportComplete();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to import');

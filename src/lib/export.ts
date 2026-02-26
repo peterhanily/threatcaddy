@@ -136,6 +136,8 @@ function sanitizeTask(raw: unknown): Task | null {
   };
 }
 
+const VALID_INVESTIGATION_STATUS = ['active', 'closed', 'archived'];
+
 function sanitizeFolder(raw: unknown): Folder | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
@@ -146,6 +148,15 @@ function sanitizeFolder(raw: unknown): Folder | null {
     color: r.color != null ? str(r.color) : undefined,
     order: num(r.order),
     createdAt: num(r.createdAt, Date.now()),
+    description: r.description != null ? str(r.description) : undefined,
+    status: r.status != null && VALID_INVESTIGATION_STATUS.includes(str(r.status))
+      ? str(r.status) as Folder['status']
+      : undefined,
+    clsLevel: r.clsLevel != null ? str(r.clsLevel) : undefined,
+    papLevel: r.papLevel != null ? str(r.papLevel) : undefined,
+    updatedAt: r.updatedAt != null ? num(r.updatedAt) : undefined,
+    tags: Array.isArray(r.tags) ? strArr(r.tags) : undefined,
+    timelineId: r.timelineId != null ? str(r.timelineId) : undefined,
   };
 }
 
@@ -288,6 +299,49 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
     timelines: timelines.length,
     whiteboards: whiteboards.length,
   };
+}
+
+export async function exportInvestigationJSON(folderId: string): Promise<string> {
+  const [folder, allNotes, allTasks, allTags, allEvents, allTimelines, allWhiteboards] = await Promise.all([
+    db.folders.get(folderId),
+    db.notes.where('folderId').equals(folderId).toArray(),
+    db.tasks.where('folderId').equals(folderId).toArray(),
+    db.tags.toArray(),
+    db.timelineEvents.where('folderId').equals(folderId).toArray(),
+    db.timelines.toArray(),
+    db.whiteboards.where('folderId').equals(folderId).toArray(),
+  ]);
+
+  if (!folder) throw new Error('Investigation not found');
+
+  // Collect all tag names used in this investigation's entities
+  const usedTagNames = new Set<string>();
+  for (const n of allNotes) n.tags.forEach((t) => usedTagNames.add(t));
+  for (const t of allTasks) t.tags.forEach((tg) => usedTagNames.add(tg));
+  for (const e of allEvents) e.tags.forEach((tg) => usedTagNames.add(tg));
+  for (const w of allWhiteboards) w.tags.forEach((tg) => usedTagNames.add(tg));
+  if (folder.tags) folder.tags.forEach((t) => usedTagNames.add(t));
+
+  const tags = allTags.filter((t) => usedTagNames.has(t.name));
+
+  // Include linked timelines
+  const timelineIds = new Set(allEvents.map((e) => e.timelineId));
+  if (folder.timelineId) timelineIds.add(folder.timelineId);
+  const timelines = allTimelines.filter((t) => timelineIds.has(t.id));
+
+  const data: ExportData = {
+    version: 1,
+    exportedAt: Date.now(),
+    notes: allNotes,
+    tasks: allTasks,
+    folders: [folder],
+    tags,
+    timelineEvents: allEvents,
+    timelines,
+    whiteboards: allWhiteboards,
+  };
+
+  return JSON.stringify(data, null, 2);
 }
 
 export function exportNotesMarkdown(notes: Note[]): string {

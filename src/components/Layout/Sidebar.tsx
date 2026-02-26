@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import {
-  FileText, ListChecks, Clock, FolderOpen, Tag, Trash2,
-  Archive, ChevronDown, ChevronRight, Plus, X, Settings,
-  PanelLeftClose, Github, Download, Chrome, PenTool, Activity, Network, ShieldCheck,
+  FileText, ListChecks, Clock, Briefcase, Tag, Trash2,
+  Archive, ChevronDown, ChevronRight, Plus, X, Settings as SettingsIcon,
+  PanelLeftClose, Github, Download, Chrome, PenTool, Activity, Network, ShieldCheck, Info,
 } from 'lucide-react';
-import type { Folder, Tag as TagType, Timeline, Whiteboard, ViewMode } from '../../types';
+import type { Folder, Tag as TagType, Timeline, Whiteboard, ViewMode, InvestigationStatus } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { cn } from '../../lib/utils';
 
@@ -48,6 +48,9 @@ interface SidebarProps {
   onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
   onRenameTag?: (id: string, name: string) => void;
   onDeleteTag?: (id: string) => void;
+  onEditFolder?: (id: string) => void;
+  folderStatusFilter?: InvestigationStatus[];
+  onFolderStatusFilterChange?: (filter: InvestigationStatus[]) => void;
 }
 
 export function Sidebar({
@@ -90,6 +93,9 @@ export function Sidebar({
   onMoveNoteToFolder,
   onRenameTag,
   onDeleteTag,
+  onEditFolder,
+  folderStatusFilter = ['active'],
+  onFolderStatusFilterChange,
 }: SidebarProps) {
   const [foldersOpen, setFoldersOpen] = useState(true);
   const [tagsOpen, setTagsOpen] = useState(true);
@@ -427,12 +433,12 @@ export function Sidebar({
             aria-expanded={foldersOpen}
           >
             {foldersOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            Folders
+            Investigations
             <button
               onClick={(e) => { e.stopPropagation(); setShowNewFolder(true); }}
               className="ml-auto p-0.5 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
-              aria-label="Create folder"
-              title="Create folder"
+              aria-label="Create investigation"
+              title="Create investigation"
             >
               <Plus size={14} />
             </button>
@@ -440,6 +446,32 @@ export function Sidebar({
 
           {foldersOpen && (
             <div className="mt-1 space-y-0.5">
+              {/* Status filter chips */}
+              {onFolderStatusFilterChange && (
+                <div className="flex gap-1 px-2 pb-1">
+                  {(['active', 'closed', 'archived'] as InvestigationStatus[]).map((s) => {
+                    const count = folders.filter((f) => (f.status || 'active') === s).length;
+                    const isActive = folderStatusFilter.includes(s);
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => {
+                          const next = isActive
+                            ? folderStatusFilter.filter((x) => x !== s)
+                            : [...folderStatusFilter, s];
+                          onFolderStatusFilterChange(next.length > 0 ? next : ['active']);
+                        }}
+                        className={cn(
+                          'px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors',
+                          isActive ? 'bg-accent/20 text-accent' : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+                        )}
+                      >
+                        {s.charAt(0).toUpperCase() + s.slice(1)} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               {showNewFolder && (
                 <div className="flex items-center gap-1 px-2">
                   <input
@@ -447,11 +479,11 @@ export function Sidebar({
                     value={newFolderName}
                     onChange={(e) => setNewFolderName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleCreateFolder(); if (e.key === 'Escape') setShowNewFolder(false); }}
-                    placeholder="Folder name"
-                    aria-label="New folder name"
+                    placeholder="Investigation name"
+                    aria-label="New investigation name"
                     className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
                   />
-                  <button onClick={handleCreateFolder} className="text-accent hover:text-accent-hover" aria-label="Confirm create folder" title="Create folder">
+                  <button onClick={handleCreateFolder} className="text-accent hover:text-accent-hover" aria-label="Confirm create investigation" title="Create investigation">
                     <Plus size={14} />
                   </button>
                   <button onClick={() => setShowNewFolder(false)} className="text-gray-500 hover:text-gray-300" aria-label="Cancel" title="Cancel">
@@ -459,10 +491,16 @@ export function Sidebar({
                   </button>
                 </div>
               )}
-              {folders.map((folder) => (
+              {folders
+                .filter((f) => folderStatusFilter.includes(f.status || 'active'))
+                .map((folder) => (
                 <div
                   key={folder.id}
-                  className={cn('group relative rounded-lg transition-colors', dragOverFolderId === folder.id && 'bg-accent/15')}
+                  className={cn(
+                    'group relative rounded-lg transition-colors',
+                    dragOverFolderId === folder.id && 'bg-accent/15',
+                    (folder.status === 'closed' || folder.status === 'archived') && 'opacity-60'
+                  )}
                   onDragOver={(e) => { e.preventDefault(); setDragOverFolderId(folder.id); }}
                   onDragLeave={() => setDragOverFolderId(null)}
                   onDrop={(e) => {
@@ -479,27 +517,39 @@ export function Sidebar({
                         value={editFolderName}
                         onChange={(e) => setEditFolderName(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleRenameFolder(folder.id); if (e.key === 'Escape') setEditingFolder(null); }}
-                        aria-label="Rename folder"
+                        aria-label="Rename investigation"
                         className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
                       />
                     </div>
                   ) : (
                     <SidebarItem
                       compact
-                      icon={<FolderOpen size={14} style={{ color: folder.color }} />}
+                      icon={<Briefcase size={14} style={{ color: folder.color }} />}
                       label={folder.name}
                       active={selectedFolderId === folder.id}
                       onClick={() => nav(() => { onFolderSelect(folder.id); onTagSelect(undefined); onShowTrash(false); onShowArchive(false); })}
                       onDoubleClick={() => { setEditingFolder(folder.id); setEditFolderName(folder.name); }}
                       actions={
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setDeletingFolderId(folder.id); }}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-600 text-gray-500 hover:text-red-400"
-                          aria-label={`Delete folder ${folder.name}`}
-                          title="Delete folder"
-                        >
-                          <X size={12} />
-                        </button>
+                        <>
+                          {onEditFolder && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onEditFolder(folder.id); }}
+                              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-600 text-gray-500 hover:text-gray-300"
+                              aria-label={`Edit investigation ${folder.name}`}
+                              title="Edit investigation"
+                            >
+                              <Info size={12} />
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeletingFolderId(folder.id); }}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-600 text-gray-500 hover:text-red-400"
+                            aria-label={`Delete investigation ${folder.name}`}
+                            title="Delete investigation"
+                          >
+                            <X size={12} />
+                          </button>
+                        </>
                       }
                     />
                   )}
@@ -585,7 +635,7 @@ export function Sidebar({
 
       <div className="border-t border-gray-800 p-2 space-y-0.5">
         <SidebarItem
-          icon={<Settings size={16} />}
+          icon={<SettingsIcon size={16} />}
           label="Settings"
           onClick={() => nav(onOpenSettings)}
         />
@@ -625,9 +675,9 @@ export function Sidebar({
         open={deletingFolderId !== null}
         onClose={() => setDeletingFolderId(null)}
         onConfirm={() => { if (deletingFolderId) onDeleteFolder(deletingFolderId); }}
-        title="Delete Folder"
-        message="This folder will be deleted. Notes and tasks inside it will be moved to &quot;All Items&quot;."
-        confirmLabel="Delete Folder"
+        title="Delete Investigation"
+        message="This investigation will be deleted. Notes, tasks, and other items inside it will be moved to &quot;All Items&quot;."
+        confirmLabel="Delete Investigation"
         danger
       />
 

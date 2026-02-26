@@ -26,12 +26,14 @@ import { getEffectiveClsLevels, isAboveClsThreshold } from './lib/classification
 import type { ViewMode, SortOption, EditorMode, Note, TaskViewMode, IOCType } from './types';
 import { FileText } from 'lucide-react';
 import { cn } from './lib/utils';
-import { exportJSON, importJSON, downloadFile } from './lib/export';
+import { exportJSON, importJSON, downloadFile, exportInvestigationJSON } from './lib/export';
 import { ConfirmDialog } from './components/Common/ConfirmDialog';
 import { SearchOverlay } from './components/Search/SearchOverlay';
 import { extractIOCs, mergeIOCAnalysis } from './lib/ioc-extractor';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { ActiveFilterBar } from './components/Common/ActiveFilterBar';
+import { InvestigationDetailPanel } from './components/Investigation/InvestigationDetailPanel';
+import type { InvestigationStatus } from './types';
 import { GraphView } from './components/Graph/GraphView';
 import { IOCStatsView } from './components/Analysis/IOCStatsView';
 import type { LayoutName } from './components/Graph/GraphCanvas';
@@ -158,11 +160,14 @@ export default function App() {
     activityLog.log('timeline', 'delete', `Deleted timeline "${tl?.name || 'Untitled'}"`, id, tl?.name);
   }, [deleteTimeline, timelines, activityLog]);
 
-  const loggedCreateWhiteboard = useCallback(async (name?: string) => {
+  const loggedCreateWhiteboard = useCallback(async (name?: string, folderId?: string) => {
     const wb = await createWhiteboard(name);
+    if (folderId) {
+      await updateWhiteboard(wb.id, { folderId });
+    }
     activityLog.log('whiteboard', 'create', `Created whiteboard "${wb.name}"`, wb.id, wb.name);
     return wb;
-  }, [createWhiteboard, activityLog]);
+  }, [createWhiteboard, updateWhiteboard, activityLog]);
 
   const loggedDeleteWhiteboard = useCallback(async (id: string) => {
     const wb = whiteboards.find((w) => w.id === id);
@@ -172,14 +177,14 @@ export default function App() {
 
   const loggedCreateFolder = useCallback(async (name: string) => {
     const folder = await createFolder(name);
-    activityLog.log('folder', 'create', `Created folder "${name}"`, folder.id, name);
+    activityLog.log('folder', 'create', `Created investigation "${name}"`, folder.id, name);
     return folder;
   }, [createFolder, activityLog]);
 
   const loggedDeleteFolder = useCallback(async (id: string) => {
     const folder = folders.find((f) => f.id === id);
     await deleteFolder(id);
-    activityLog.log('folder', 'delete', `Deleted folder "${folder?.name || 'Untitled'}"`, id, folder?.name);
+    activityLog.log('folder', 'delete', `Deleted investigation "${folder?.name || 'Untitled'}"`, id, folder?.name);
   }, [deleteFolder, folders, activityLog]);
 
   const loggedCreateTag = useCallback(async (name: string) => {
@@ -220,6 +225,8 @@ export default function App() {
   const [selectedWhiteboardId, setSelectedWhiteboardId] = useState<string>();
   const [graphLayout, setGraphLayout] = useState<LayoutName>('cose-bilkent');
   const [screenshareMaxLevel, setScreenshareMaxLevel] = useState<string | null>(null);
+  const [editingFolderId, setEditingFolderId] = useState<string | undefined>();
+  const [folderStatusFilter, setFolderStatusFilter] = useState<InvestigationStatus[]>(['active']);
 
   const effectiveClsLevels = useMemo(() => getEffectiveClsLevels(settings.tiClsLevels), [settings.tiClsLevels]);
 
@@ -229,6 +236,7 @@ export default function App() {
     if (state.selectedNoteId !== undefined) setSelectedNoteId(state.selectedNoteId);
     if (state.selectedTimelineId !== undefined) setSelectedTimelineId(state.selectedTimelineId);
     if (state.selectedWhiteboardId !== undefined) setSelectedWhiteboardId(state.selectedWhiteboardId);
+    if (state.selectedFolderId !== undefined) setSelectedFolderId(state.selectedFolderId);
     setShowSettings(false);
   }, []);
   const { navigate: navPush } = useNavigationHistory({ onViewChange: handleNavRestore });
@@ -236,8 +244,17 @@ export default function App() {
   const navigateTo = useCallback((view: ViewMode, opts?: { selectedNoteId?: string; selectedTimelineId?: string; selectedWhiteboardId?: string }) => {
     setActiveView(view);
     setShowSettings(false);
+    // Auto-select investigation timeline when switching to timeline view
+    if (view === 'timeline' && !opts?.selectedTimelineId && selectedFolderId) {
+      const folder = folders.find((f) => f.id === selectedFolderId);
+      if (folder?.timelineId) {
+        setSelectedTimelineId(folder.timelineId);
+        navPush({ view, ...opts, selectedTimelineId: folder.timelineId });
+        return;
+      }
+    }
     navPush({ view, ...opts });
-  }, [navPush]);
+  }, [navPush, selectedFolderId, folders]);
 
   // Resolve timeline deep-link once events are loaded
   const deepLinkTimelineResolved = useCallback(() => {
@@ -382,6 +399,24 @@ export default function App() {
     [timeline.events, screenshareMaxLevel, effectiveClsLevels]
   );
 
+  // Investigation-scoped arrays (for graph, IOC stats, search)
+  const investigationNotes = useMemo(
+    () => selectedFolderId ? screensafeNotes.filter((n) => n.folderId === selectedFolderId) : screensafeNotes,
+    [screensafeNotes, selectedFolderId]
+  );
+  const investigationTasks = useMemo(
+    () => selectedFolderId ? screensafeTasks.filter((t) => t.folderId === selectedFolderId) : screensafeTasks,
+    [screensafeTasks, selectedFolderId]
+  );
+  const investigationTimelineEvents = useMemo(
+    () => selectedFolderId ? screensafeTimelineEvents.filter((e) => e.folderId === selectedFolderId) : screensafeTimelineEvents,
+    [screensafeTimelineEvents, selectedFolderId]
+  );
+  const investigationWhiteboards = useMemo(
+    () => selectedFolderId ? whiteboards.filter((w) => w.folderId === selectedFolderId) : whiteboards,
+    [whiteboards, selectedFolderId]
+  );
+
   // Screenshare context value
   const screenshareCtx = useMemo(
     () => ({ maxLevel: screenshareMaxLevel, effectiveLevels: effectiveClsLevels }),
@@ -429,6 +464,7 @@ export default function App() {
     setShowArchive(false);
     const note = await loggedCreateNote({
       folderId: selectedFolderId,
+      clsLevel: selectedFolder?.clsLevel,
     });
     setSelectedNoteId(note.id);
     navigateTo('notes', { selectedNoteId: note.id });
@@ -534,7 +570,7 @@ export default function App() {
   else if (showArchive) listTitle = 'Archive';
   else if (selectedFolderId) {
     const folder = folders.find((f) => f.id === selectedFolderId);
-    listTitle = folder?.name || 'Folder';
+    listTitle = folder?.name || 'Investigation';
   }
   else if (selectedTag) listTitle = `#${selectedTag}`;
 
@@ -568,17 +604,30 @@ export default function App() {
     whiteboards,
     selectedWhiteboardId,
     onWhiteboardSelect: (id: string) => setSelectedWhiteboardId(id),
-    onCreateWhiteboard: loggedCreateWhiteboard,
+    onCreateWhiteboard: (name?: string) => loggedCreateWhiteboard(name, selectedFolderId),
     onDeleteWhiteboard: (id: string) => { loggedDeleteWhiteboard(id); if (selectedWhiteboardId === id) setSelectedWhiteboardId(undefined); },
     onRenameWhiteboard: (id: string, name: string) => updateWhiteboard(id, { name }),
     whiteboardCount: whiteboards.length,
     onMoveNoteToFolder: handleMoveNoteToFolder,
     onRenameTag: (id: string, name: string) => updateTag(id, { name }),
     onDeleteTag: loggedDeleteTag,
-  }), [activeView, folders, tags, selectedFolderId, selectedTag, showTrash, showArchive, loggedCreateFolder, loggedDeleteFolder, updateFolder, noteCounts, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, loggedCreateTimeline, loggedDeleteTimeline, updateTimeline, timelineEventCounts, whiteboards, selectedWhiteboardId, loggedCreateWhiteboard, loggedDeleteWhiteboard, updateWhiteboard, handleMoveNoteToFolder, updateTag, loggedDeleteTag, navigateTo]);
+    onEditFolder: setEditingFolderId,
+    folderStatusFilter,
+    onFolderStatusFilterChange: setFolderStatusFilter,
+  }), [activeView, folders, tags, selectedFolderId, selectedTag, showTrash, showArchive, loggedCreateFolder, loggedDeleteFolder, updateFolder, noteCounts, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, loggedCreateTimeline, loggedDeleteTimeline, updateTimeline, timelineEventCounts, whiteboards, selectedWhiteboardId, loggedCreateWhiteboard, loggedDeleteWhiteboard, updateWhiteboard, handleMoveNoteToFolder, updateTag, loggedDeleteTag, navigateTo, folderStatusFilter]);
 
   const selectedFolder = useMemo(() => folders.find((f) => f.id === selectedFolderId), [folders, selectedFolderId]);
   const selectedTagObj = useMemo(() => tags.find((t) => t.name === selectedTag), [tags, selectedTag]);
+  const editingFolder = useMemo(() => folders.find((f) => f.id === editingFolderId), [folders, editingFolderId]);
+  const investigationEntityCounts = useMemo(() => {
+    if (!editingFolderId) return { notes: 0, tasks: 0, events: 0, whiteboards: 0 };
+    return {
+      notes: notes.notes.filter((n) => n.folderId === editingFolderId && !n.trashed).length,
+      tasks: tasks.tasks.filter((t) => t.folderId === editingFolderId).length,
+      events: timeline.events.filter((e) => e.folderId === editingFolderId).length,
+      whiteboards: whiteboards.filter((w) => w.folderId === editingFolderId).length,
+    };
+  }, [editingFolderId, notes.notes, tasks.tasks, timeline.events, whiteboards]);
 
   const filterBar = (selectedFolderId || selectedTag) ? (
     <ActiveFilterBar
@@ -638,6 +687,11 @@ export default function App() {
             tasks={screensafeTasks}
             timelineEvents={screensafeTimelineEvents}
             settings={settings}
+            scopedNotes={investigationNotes}
+            scopedTasks={investigationTasks}
+            scopedTimelineEvents={investigationTimelineEvents}
+            selectedFolderId={selectedFolderId}
+            selectedFolderName={selectedFolder?.name}
           />
         ) : activeView === 'activity' ? (
           <ActivityLogView
@@ -653,7 +707,7 @@ export default function App() {
             allTags={tags}
             folders={folders}
             onCreateTag={loggedCreateTag}
-            onCreateEvent={(data) => loggedCreateEvent({ ...data, timelineId: selectedTimelineId || timelines[0]?.id || '' })}
+            onCreateEvent={(data) => loggedCreateEvent({ ...data, folderId: data.folderId ?? selectedFolderId, clsLevel: data.clsLevel ?? selectedFolder?.clsLevel, timelineId: selectedTimelineId || timelines[0]?.id || '' })}
             onUpdateEvent={timeline.updateEvent}
             onDeleteEvent={loggedDeleteEvent}
             onToggleStar={loggedToggleStar}
@@ -668,7 +722,7 @@ export default function App() {
             whiteboards={filteredWhiteboards}
             folders={folders}
             allTags={tags}
-            onCreateWhiteboard={loggedCreateWhiteboard}
+            onCreateWhiteboard={(name?: string) => loggedCreateWhiteboard(name, selectedFolderId)}
             onUpdateWhiteboard={updateWhiteboard}
             onDeleteWhiteboard={loggedDeleteWhiteboard}
             onCreateTag={loggedCreateTag}
@@ -684,7 +738,7 @@ export default function App() {
             onToggleComplete={loggedToggleComplete}
             onUpdateTask={tasks.updateTask}
             onDeleteTask={loggedDeleteTask}
-            onCreateTask={(data) => loggedCreateTask(data)}
+            onCreateTask={(data) => loggedCreateTask({ ...data, folderId: data.folderId ?? selectedFolderId, clsLevel: data.clsLevel ?? selectedFolder?.clsLevel })}
             viewMode={taskViewMode}
             onViewModeChange={setTaskViewMode}
             getTasksByStatus={(status) => tasks.getTasksByStatus(status, selectedFolderId)}
@@ -758,6 +812,11 @@ export default function App() {
             settings={settings}
             layout={graphLayout}
             onLayoutChange={setGraphLayout}
+            scopedNotes={investigationNotes}
+            scopedTasks={investigationTasks}
+            scopedTimelineEvents={investigationTimelineEvents}
+            selectedFolderId={selectedFolderId}
+            selectedFolderName={selectedFolder?.name}
             onNavigateToNote={(id) => { setSelectedNoteId(id); setSelectedFolderId(undefined); setSelectedTag(undefined); setShowTrash(false); setShowArchive(false); navigateTo('notes', { selectedNoteId: id }); }}
             onNavigateToTask={() => { setSelectedFolderId(undefined); setSelectedTag(undefined); navigateTo('tasks'); }}
             onNavigateToTimelineEvent={(id) => { const ev = timeline.events.find((e) => e.id === id); if (ev) setSelectedTimelineId(ev.timelineId); navigateTo('timeline', { selectedTimelineId: ev?.timelineId }); }}
@@ -812,7 +871,41 @@ export default function App() {
         whiteboards={whiteboards}
         onNavigateToTimeline={handleSearchNavigateToTimeline}
         onNavigateToWhiteboard={handleSearchNavigateToWhiteboard}
+        selectedFolderId={selectedFolderId}
+        scopedNotes={investigationNotes}
+        scopedTasks={investigationTasks}
+        scopedTimelineEvents={investigationTimelineEvents}
+        scopedWhiteboards={investigationWhiteboards}
       />
+
+      {editingFolder && (
+        <InvestigationDetailPanel
+          folder={editingFolder}
+          onUpdate={updateFolder}
+          onClose={() => setEditingFolderId(undefined)}
+          allTags={tags}
+          onCreateTag={loggedCreateTag}
+          entityCounts={investigationEntityCounts}
+          effectiveClsLevels={effectiveClsLevels}
+          onCreateTimeline={async (name) => {
+            const tl = await loggedCreateTimeline(name);
+            return tl;
+          }}
+          onNavigateToTimeline={(timelineId) => {
+            setEditingFolderId(undefined);
+            setSelectedTimelineId(timelineId);
+            navigateTo('timeline', { selectedTimelineId: timelineId });
+          }}
+          onExport={async (folderId) => {
+            const json = await exportInvestigationJSON(folderId);
+            const folder = folders.find((f) => f.id === folderId);
+            const slug = (folder?.name || 'investigation').toLowerCase().replace(/\s+/g, '-');
+            const date = new Date().toISOString().slice(0, 10);
+            downloadFile(json, `browsernotes-${slug}-${date}.json`, 'application/json');
+            activityLog.log('data', 'export', `Exported investigation "${folder?.name}"`, folderId, folder?.name);
+          }}
+        />
+      )}
 
       {tour.isActive && tour.currentStep && (
         <>

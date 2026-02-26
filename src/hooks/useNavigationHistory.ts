@@ -6,6 +6,7 @@ export interface NavState {
   selectedNoteId?: string;
   selectedTimelineId?: string;
   selectedWhiteboardId?: string;
+  selectedFolderId?: string;
 }
 
 interface UseNavigationHistoryOptions {
@@ -38,6 +39,7 @@ export function useNavigationHistory({ onViewChange }: UseNavigationHistoryOptio
         selectedNoteId: e.state.selectedNoteId,
         selectedTimelineId: e.state.selectedTimelineId,
         selectedWhiteboardId: e.state.selectedWhiteboardId,
+        selectedFolderId: e.state.selectedFolderId,
       };
       onViewChangeRef.current(state);
       // Reset popping flag after microtask so navigate() called from the

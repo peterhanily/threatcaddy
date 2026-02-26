@@ -6,7 +6,7 @@ import '@excalidraw/excalidraw/index.css';
 if (typeof window !== 'undefined') {
   (window as unknown as Record<string, unknown>).EXCALIDRAW_ASSET_PATH = '/';
 }
-import { ArrowLeft, FolderOpen, Trash2 } from 'lucide-react';
+import { ArrowLeft, Briefcase, Trash2 } from 'lucide-react';
 import type { Whiteboard, Tag, Folder } from '../../types';
 import { TagInput } from '../Common/TagInput';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
@@ -124,10 +124,10 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
               'flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors',
               currentFolder ? 'bg-gray-800 text-gray-300' : 'text-gray-500 hover:text-gray-300'
             )}
-            title="Move to folder"
+            title="Assign to investigation"
           >
-            <FolderOpen size={14} />
-            <span>{currentFolder?.name || 'No folder'}</span>
+            <Briefcase size={14} />
+            <span>{currentFolder?.name || 'No investigation'}</span>
           </button>
           {showFolderSelect && (
             <div className="absolute right-0 top-full mt-1 z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[160px]">
@@ -135,7 +135,7 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
                 onClick={() => handleFolderChange(undefined)}
                 className={cn('w-full text-left px-3 py-1.5 text-xs hover:bg-gray-800', !whiteboard.folderId && 'text-accent')}
               >
-                No folder
+                No investigation
               </button>
               {folders.map((f) => (
                 <button

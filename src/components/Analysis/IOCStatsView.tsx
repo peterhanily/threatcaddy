@@ -8,6 +8,11 @@ interface IOCStatsViewProps {
   tasks: Task[];
   timelineEvents: TimelineEvent[];
   settings: Settings;
+  scopedNotes?: Note[];
+  scopedTasks?: Task[];
+  scopedTimelineEvents?: TimelineEvent[];
+  selectedFolderId?: string;
+  selectedFolderName?: string;
 }
 
 interface UniqueIOC {
@@ -20,8 +25,19 @@ interface UniqueIOC {
   sourceTypes: Set<'note' | 'task' | 'event'>;
 }
 
-export function IOCStatsView({ notes, tasks, timelineEvents }: IOCStatsViewProps) {
+export function IOCStatsView({ notes, tasks, timelineEvents, scopedNotes, scopedTasks, scopedTimelineEvents, selectedFolderId, selectedFolderName }: IOCStatsViewProps) {
   const [actorsExpanded, setActorsExpanded] = useState(false);
+  const [scopeMode, setScopeMode] = useState<'investigation' | 'global'>('investigation');
+
+  // Reset scope when investigation changes
+  const prevFolderIdRef = useMemo(() => ({ current: selectedFolderId }), [selectedFolderId]);
+  if (prevFolderIdRef.current !== selectedFolderId) {
+    setScopeMode('investigation');
+  }
+
+  const effectiveNotes = selectedFolderId && scopeMode === 'investigation' && scopedNotes ? scopedNotes : notes;
+  const effectiveTasks = selectedFolderId && scopeMode === 'investigation' && scopedTasks ? scopedTasks : tasks;
+  const effectiveEvents = selectedFolderId && scopeMode === 'investigation' && scopedTimelineEvents ? scopedTimelineEvents : timelineEvents;
 
   const { uniqueIOCs, entitiesWithIOCs } = useMemo(() => {
     const iocMap = new Map<string, UniqueIOC>();
@@ -59,19 +75,19 @@ export function IOCStatsView({ notes, tasks, timelineEvents }: IOCStatsViewProps
       if (hasActiveIOC) entityIds.add(entityId);
     };
 
-    for (const note of notes) {
+    for (const note of effectiveNotes) {
       if (note.trashed) continue;
       if (note.iocAnalysis?.iocs) processIOCs(note.iocAnalysis.iocs, note.id, 'note');
     }
-    for (const task of tasks) {
+    for (const task of effectiveTasks) {
       if (task.iocAnalysis?.iocs) processIOCs(task.iocAnalysis.iocs, task.id, 'task');
     }
-    for (const event of timelineEvents) {
+    for (const event of effectiveEvents) {
       if (event.iocAnalysis?.iocs) processIOCs(event.iocAnalysis.iocs, event.id, 'event');
     }
 
     return { uniqueIOCs: Array.from(iocMap.values()), entitiesWithIOCs: entityIds.size };
-  }, [notes, tasks, timelineEvents]);
+  }, [effectiveNotes, effectiveTasks, effectiveEvents]);
 
   // IOCs by type
   const byType = useMemo(() => {
@@ -186,6 +202,22 @@ export function IOCStatsView({ notes, tasks, timelineEvents }: IOCStatsViewProps
       <div data-tour="ioc-stats-header" className="flex items-center gap-2 px-4 py-3 border-b border-gray-800 shrink-0">
         <ShieldCheck size={18} className="text-accent" />
         <span className="text-sm font-medium text-gray-200">IOC Statistics</span>
+        {selectedFolderId && (
+          <div className="flex rounded-lg overflow-hidden border border-gray-700 ml-2">
+            <button
+              onClick={() => setScopeMode('investigation')}
+              className={`px-2 py-0.5 text-[10px] font-medium transition-colors ${scopeMode === 'investigation' ? 'bg-accent/20 text-accent' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+              {selectedFolderName || 'Investigation'}
+            </button>
+            <button
+              onClick={() => setScopeMode('global')}
+              className={`px-2 py-0.5 text-[10px] font-medium transition-colors ${scopeMode === 'global' ? 'bg-accent/20 text-accent' : 'text-gray-500 hover:text-gray-300'}`}
+            >
+              Global
+            </button>
+          </div>
+        )}
         <span className="text-xs text-gray-500">({uniqueIOCs.length} unique IOCs)</span>
       </div>
 
