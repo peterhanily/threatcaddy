@@ -282,6 +282,74 @@
     .save-success.show {
       display: block;
     }
+
+    .options-toggle {
+      background: none;
+      border: none;
+      color: #9ca3af;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 2px 0;
+      margin-bottom: 0;
+      width: auto;
+      text-align: left;
+      font-weight: 400;
+      transition: color 0.2s;
+    }
+
+    .options-toggle:hover {
+      color: #e5e7eb;
+      background: none;
+    }
+
+    .options-panel {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 10px;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 6px;
+    }
+
+    .options-panel.show {
+      display: flex;
+    }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .option-row label {
+      font-size: 11px;
+      color: #9ca3af;
+      white-space: nowrap;
+      min-width: 72px;
+    }
+
+    .option-row input,
+    .option-row select {
+      flex: 1;
+      padding: 4px 8px;
+      background: #1f2937;
+      color: #f9fafb;
+      border: 1px solid #374151;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .option-row input:focus,
+    .option-row select:focus {
+      border-color: #6366f1;
+    }
+
+    .option-row input::placeholder {
+      color: #6b7280;
+    }
   </style>
 </head>
 <body>
@@ -323,6 +391,32 @@
         class="capture-textarea"
         placeholder="Type or paste a note..."
       ></textarea>
+      <button type="button" class="options-toggle" id="options-toggle">&#9662; Options</button>
+      <div class="options-panel" id="options-panel">
+        <div class="option-row">
+          <label for="opt-folder">Investigation</label>
+          <input type="text" id="opt-folder" placeholder="Default: Clips" />
+        </div>
+        <div class="option-row">
+          <label for="opt-entity">Save as</label>
+          <select id="opt-entity">
+            <option value="note">Note</option>
+            <option value="task">Task</option>
+            <option value="timeline-event">Timeline Event</option>
+          </select>
+        </div>
+        <div class="option-row">
+          <label for="opt-cls">Classification</label>
+          <select id="opt-cls">
+            <option value="">None</option>
+            <option value="TLP:CLEAR">TLP:CLEAR</option>
+            <option value="TLP:GREEN">TLP:GREEN</option>
+            <option value="TLP:AMBER">TLP:AMBER</option>
+            <option value="TLP:AMBER+STRICT">TLP:AMBER+STRICT</option>
+            <option value="TLP:RED">TLP:RED</option>
+          </select>
+        </div>
+      </div>
       <button id="save-btn">Save Note</button>
       <div class="save-success" id="save-success">Saved!</div>
     </div>

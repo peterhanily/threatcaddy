@@ -66,6 +66,14 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+// Toggle options panel
+document.getElementById('options-toggle').addEventListener('click', () => {
+  const panel = document.getElementById('options-panel');
+  const toggle = document.getElementById('options-toggle');
+  const open = panel.classList.toggle('show');
+  toggle.innerHTML = (open ? '&#9652; Options' : '&#9662; Options');
+});
+
 // Save note from quick capture form
 document.getElementById('save-btn').addEventListener('click', async () => {
   const titleInput = document.getElementById('capture-title');
@@ -75,6 +83,9 @@ document.getElementById('save-btn').addEventListener('click', async () => {
   if (!content) return;
 
   const title = titleInput.value.trim() || content.substring(0, 50);
+  const entityType = document.getElementById('opt-entity').value;
+  const folderName = document.getElementById('opt-folder').value.trim();
+  const clsLevel = document.getElementById('opt-cls').value;
 
   try {
     await chrome.runtime.sendMessage({
@@ -83,7 +94,10 @@ document.getElementById('save-btn').addEventListener('click', async () => {
         title,
         content,
         sourceUrl: '',
-        sourceTitle: ''
+        sourceTitle: '',
+        entityType,
+        folderName,
+        clsLevel
       }
     });
 

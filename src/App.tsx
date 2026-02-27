@@ -286,8 +286,12 @@ export default function App() {
       if (!Array.isArray(clips) || clips.length === 0) return;
 
       try {
-        const clipsFolder = await findOrCreateFolder('Clips');
-        let firstNote = null;
+        const folderCache = new Map<string, typeof folders[0]>();
+        let firstEntityType: string = 'note';
+        let firstEntityId: string | undefined;
+        let lastFolderId: string | undefined;
+        const entityTypesUsed = new Set<string>();
+
         for (const clip of clips) {
           // Sanitize clip fields — only accept expected string/number types
           const rawContent = typeof clip.content === 'string' ? clip.content : '';
@@ -295,25 +299,83 @@ export default function App() {
           const sourceTitle = typeof clip.sourceTitle === 'string' ? clip.sourceTitle : '';
           const clipTitle = typeof clip.title === 'string' ? clip.title : '';
           const createdAt = typeof clip.createdAt === 'number' ? clip.createdAt : Date.now();
+          const entityType = typeof clip.entityType === 'string' ? clip.entityType : 'note';
+          const folderName = typeof clip.folderName === 'string' && clip.folderName.trim()
+            ? clip.folderName.trim() : 'Clips';
+          const clsLevel = typeof clip.clsLevel === 'string' && clip.clsLevel ? clip.clsLevel : undefined;
+
+          // Resolve folder (cached)
+          if (!folderCache.has(folderName)) {
+            folderCache.set(folderName, await findOrCreateFolder(folderName));
+          }
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- just set above
+          const folder = folderCache.get(folderName)!;
+          lastFolderId = folder.id;
+
           const timestamp = new Date(createdAt).toLocaleString();
           const content = `*Clipped ${timestamp}*\n\n${rawContent}`;
           const freshIOCs = extractIOCs(rawContent);
           const iocAnalysis = mergeIOCAnalysis(undefined, freshIOCs);
           const iocTypes = [...new Set(freshIOCs.filter((i) => !i.dismissed).map((i) => i.type))];
-          const note = await loggedCreateNote({
-            title: sourceUrl || clipTitle || rawContent.substring(0, 80) || 'Clip',
-            content,
-            folderId: clipsFolder.id,
-            sourceUrl,
-            sourceTitle,
-            createdAt,
-            iocAnalysis,
-            iocTypes,
-          });
-          if (!firstNote) firstNote = note;
+
+          entityTypesUsed.add(entityType);
+
+          if (entityType === 'task') {
+            const task = await loggedCreateTask({
+              title: clipTitle || rawContent.substring(0, 80) || 'Clip Task',
+              description: content,
+              folderId: folder.id,
+              clsLevel: clsLevel || folder.clsLevel,
+              status: 'todo',
+              priority: 'none',
+              iocAnalysis,
+              iocTypes,
+            });
+            if (!firstEntityId) { firstEntityId = task.id; firstEntityType = 'task'; }
+          } else if (entityType === 'timeline-event') {
+            const event = await loggedCreateEvent({
+              title: clipTitle || rawContent.substring(0, 80) || 'Clip Event',
+              description: content,
+              source: sourceUrl || 'Extension clip',
+              folderId: folder.id,
+              clsLevel: clsLevel || folder.clsLevel,
+              eventType: 'evidence',
+              confidence: 'medium',
+              timelineId: timelines[0]?.id || '',
+              iocAnalysis,
+              iocTypes,
+            });
+            if (!firstEntityId) { firstEntityId = event.id; firstEntityType = 'timeline-event'; }
+          } else {
+            const note = await loggedCreateNote({
+              title: sourceUrl || clipTitle || rawContent.substring(0, 80) || 'Clip',
+              content,
+              folderId: folder.id,
+              clsLevel: clsLevel || folder.clsLevel,
+              sourceUrl,
+              sourceTitle,
+              createdAt,
+              iocAnalysis,
+              iocTypes,
+            });
+            if (!firstEntityId) { firstEntityId = note.id; firstEntityType = 'note'; }
+          }
         }
-        navigateTo('notes', { selectedNoteId: firstNote?.id });
-        setSelectedFolderId(clipsFolder.id);
+
+        // Navigate to the appropriate view
+        if (entityTypesUsed.size === 1) {
+          if (firstEntityType === 'task') {
+            navigateTo('tasks');
+          } else if (firstEntityType === 'timeline-event') {
+            navigateTo('timeline');
+          } else {
+            navigateTo('notes', { selectedNoteId: firstEntityId });
+          }
+        } else {
+          // Mixed batch — default to notes
+          navigateTo('notes');
+        }
+        if (lastFolderId) setSelectedFolderId(lastFolderId);
       } catch (error) {
         console.error('Failed to import clips:', error);
       }
@@ -321,7 +383,7 @@ export default function App() {
 
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [findOrCreateFolder, loggedCreateNote, navigateTo]);
+  }, [findOrCreateFolder, loggedCreateNote, loggedCreateTask, loggedCreateEvent, timelines, navigateTo]);
 
   // Track Clips folder ID for OCI envelope type detection
   const clipsFolderId = useMemo(

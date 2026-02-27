@@ -14,6 +14,12 @@ const targetUrlInput = document.getElementById('target-url');
 const saveSettingsBtn = document.getElementById('save-settings-btn');
 const settingsSaved = document.getElementById('settings-saved');
 
+// Import options references
+const importFolder = document.getElementById('import-folder');
+const importEntity = document.getElementById('import-entity');
+const importCls = document.getElementById('import-cls');
+const applyDefaultsBtn = document.getElementById('apply-defaults-btn');
+
 // Modal references
 const modalOverlay = document.getElementById('modal-overlay');
 const modalTitle = document.getElementById('modal-title');
@@ -140,6 +146,8 @@ function renderCaptures(captures) {
   // Newest first
   const sorted = [...captures].sort((a, b) => b.createdAt - a.createdAt);
 
+  const entityLabels = { 'note': 'Note', 'task': 'Task', 'timeline-event': 'Timeline Event' };
+
   capturesList.innerHTML = sorted.map(capture => {
     const sentClass = capture.sent ? ' sent' : '';
     const sentBadge = capture.sent ? '<span class="sent-badge">Sent</span>' : '';
@@ -152,6 +160,13 @@ function renderCaptures(captures) {
       ? `<div class="capture-source-title">${escapeHtml(capture.sourceTitle)}</div>`
       : '';
 
+    const eType = capture.entityType || 'note';
+    const fName = capture.folderName || '';
+    const cls = capture.clsLevel || '';
+    const typeBadge = `<span class="meta-badge type-${escapeHtml(eType)}" data-id="${escapeHtml(capture.id)}" data-field="entityType">${escapeHtml(entityLabels[eType] || 'Note')}</span>`;
+    const folderBadge = fName ? `<span class="meta-badge folder-badge" data-id="${escapeHtml(capture.id)}" data-field="folderName">${escapeHtml(fName)}</span>` : '';
+    const clsBadge = cls ? `<span class="meta-badge cls-badge" data-id="${escapeHtml(capture.id)}" data-field="clsLevel">${escapeHtml(cls)}</span>` : '';
+
     return `
       <div class="capture-card${sentClass}" data-id="${escapeHtml(capture.id)}">
         <div class="capture-card-header">
@@ -163,6 +178,23 @@ function renderCaptures(captures) {
           <button class="capture-delete-btn" data-id="${escapeHtml(capture.id)}">Delete</button>
         </div>
         <div class="capture-content">${escapeHtml(capture.content)}</div>
+        <div class="capture-metadata">${typeBadge}${folderBadge}${clsBadge}</div>
+        <div class="meta-inline-edit" data-id="${escapeHtml(capture.id)}">
+          <select data-field="entityType">
+            <option value="note"${eType === 'note' ? ' selected' : ''}>Note</option>
+            <option value="task"${eType === 'task' ? ' selected' : ''}>Task</option>
+            <option value="timeline-event"${eType === 'timeline-event' ? ' selected' : ''}>Timeline Event</option>
+          </select>
+          <input type="text" data-field="folderName" value="${escapeHtml(fName)}" placeholder="Folder" style="width:100px;" />
+          <select data-field="clsLevel">
+            <option value=""${!cls ? ' selected' : ''}>None</option>
+            <option value="TLP:CLEAR"${cls === 'TLP:CLEAR' ? ' selected' : ''}>TLP:CLEAR</option>
+            <option value="TLP:GREEN"${cls === 'TLP:GREEN' ? ' selected' : ''}>TLP:GREEN</option>
+            <option value="TLP:AMBER"${cls === 'TLP:AMBER' ? ' selected' : ''}>TLP:AMBER</option>
+            <option value="TLP:AMBER+STRICT"${cls === 'TLP:AMBER+STRICT' ? ' selected' : ''}>TLP:AMBER+STRICT</option>
+            <option value="TLP:RED"${cls === 'TLP:RED' ? ' selected' : ''}>TLP:RED</option>
+          </select>
+        </div>
       </div>
     `;
   }).join('');
@@ -184,6 +216,39 @@ function renderCaptures(captures) {
         showToast('Capture deleted');
       }
     });
+  });
+
+  // Wire up metadata badge clicks to toggle inline edit
+  capturesList.querySelectorAll('.meta-badge').forEach(badge => {
+    badge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = badge.dataset.id;
+      const editRow = capturesList.querySelector(`.meta-inline-edit[data-id="${id}"]`);
+      if (editRow) editRow.classList.toggle('show');
+    });
+  });
+
+  // Wire up inline edit changes
+  capturesList.querySelectorAll('.meta-inline-edit select, .meta-inline-edit input').forEach(el => {
+    const eventType = el.tagName === 'SELECT' ? 'change' : 'blur';
+    el.addEventListener(eventType, async () => {
+      const editRow = el.closest('.meta-inline-edit');
+      const id = editRow.dataset.id;
+      const field = el.dataset.field;
+      await updateCaptureField(id, field, el.value);
+      await refresh();
+    });
+    // Also save on Enter for text inputs
+    if (el.tagName === 'INPUT') {
+      el.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+          const editRow = el.closest('.meta-inline-edit');
+          const id = editRow.dataset.id;
+          await updateCaptureField(id, el.dataset.field, el.value);
+          await refresh();
+        }
+      });
+    }
   });
 }
 
@@ -283,6 +348,37 @@ async function sendAllToTarget() {
     sendAllBtn.textContent = 'Send All to BrowserNotes';
   }
 }
+
+// ---- Apply Defaults & Per-Clip Editing ----
+
+async function applyDefaults(entityType, folderName, clsLevel) {
+  const { captures = [] } = await chrome.storage.local.get(['captures']);
+  for (const c of captures) {
+    if (c.sent) continue;
+    if (entityType) c.entityType = entityType;
+    if (folderName !== undefined) c.folderName = folderName;
+    if (clsLevel !== undefined) c.clsLevel = clsLevel;
+  }
+  await chrome.storage.local.set({ captures });
+}
+
+async function updateCaptureField(id, field, value) {
+  const { captures = [] } = await chrome.storage.local.get(['captures']);
+  const capture = captures.find(c => c.id === id);
+  if (capture) {
+    capture[field] = value;
+    await chrome.storage.local.set({ captures });
+  }
+}
+
+applyDefaultsBtn.addEventListener('click', async () => {
+  const entityType = importEntity.value;
+  const folderName = importFolder.value.trim();
+  const clsLevel = importCls.value;
+  await applyDefaults(entityType, folderName, clsLevel);
+  await refresh();
+  showToast('Defaults applied to all unsent clips');
+});
 
 // ---- Event Listeners ----
 

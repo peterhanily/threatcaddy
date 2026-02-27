@@ -346,6 +346,9 @@ async function saveCapture(note) {
     content: note.content || '',
     sourceUrl: note.sourceUrl || '',
     sourceTitle: note.sourceTitle || '',
+    entityType: note.entityType || 'note',
+    folderName: note.folderName || '',
+    clsLevel: note.clsLevel || '',
     createdAt: Date.now()
   };
 

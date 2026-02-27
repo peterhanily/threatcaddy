@@ -242,6 +242,125 @@
       margin-left: 8px;
     }
 
+    /* Import Options bar */
+    .import-options-bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+    }
+
+    .import-options-bar label {
+      font-size: 12px;
+      color: #9ca3af;
+      white-space: nowrap;
+    }
+
+    .import-options-bar input[type="text"],
+    .import-options-bar select {
+      padding: 6px 10px;
+      background: #111827;
+      color: #f9fafb;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .import-options-bar input[type="text"]:focus,
+    .import-options-bar select:focus {
+      border-color: #6366f1;
+    }
+
+    .import-options-bar input[type="text"]::placeholder {
+      color: #6b7280;
+    }
+
+    .import-options-bar .spacer {
+      flex: 1;
+    }
+
+    /* Per-clip metadata badges */
+    .capture-metadata {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .meta-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    .meta-badge:hover {
+      border-color: #6366f1;
+    }
+
+    .meta-badge.type-note {
+      color: #93c5fd;
+      background: #1e3a5f;
+    }
+
+    .meta-badge.type-task {
+      color: #fbbf24;
+      background: #422006;
+    }
+
+    .meta-badge.type-timeline-event {
+      color: #a78bfa;
+      background: #2e1065;
+    }
+
+    .meta-badge.folder-badge {
+      color: #6ee7b7;
+      background: #064e3b;
+    }
+
+    .meta-badge.cls-badge {
+      color: #fca5a5;
+      background: #450a0a;
+    }
+
+    .meta-inline-edit {
+      display: none;
+      align-items: center;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .meta-inline-edit.show {
+      display: flex;
+    }
+
+    .meta-inline-edit select,
+    .meta-inline-edit input {
+      padding: 3px 6px;
+      background: #111827;
+      color: #f9fafb;
+      border: 1px solid #374151;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .meta-inline-edit select:focus,
+    .meta-inline-edit input:focus {
+      border-color: #6366f1;
+    }
+
     /* Empty state */
     .empty-state {
       text-align: center;
@@ -409,6 +528,28 @@
         <div class="stat-value" id="stat-unsent">0</div>
         <div class="stat-label">Unsent</div>
       </div>
+    </div>
+
+    <div class="import-options-bar" id="import-options-bar">
+      <label for="import-folder">Investigation:</label>
+      <input type="text" id="import-folder" placeholder="Default: Clips" style="width: 140px;" />
+      <label for="import-entity">Save as:</label>
+      <select id="import-entity">
+        <option value="note">Note</option>
+        <option value="task">Task</option>
+        <option value="timeline-event">Timeline Event</option>
+      </select>
+      <label for="import-cls">Classification:</label>
+      <select id="import-cls">
+        <option value="">None</option>
+        <option value="TLP:CLEAR">TLP:CLEAR</option>
+        <option value="TLP:GREEN">TLP:GREEN</option>
+        <option value="TLP:AMBER">TLP:AMBER</option>
+        <option value="TLP:AMBER+STRICT">TLP:AMBER+STRICT</option>
+        <option value="TLP:RED">TLP:RED</option>
+      </select>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary" id="apply-defaults-btn" style="padding: 6px 14px; font-size: 13px;">Apply to All</button>
     </div>
 
     <div class="controls-bar">
