@@ -22,9 +22,13 @@ export function Modal({ open, onClose, title, children, wide }: ModalProps) {
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
+  // Stable ref for onClose so the keydown listener doesn't churn
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   // Focus trap
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape') { onClose(); return; }
+    if (e.key === 'Escape') { onCloseRef.current(); return; }
     if (e.key !== 'Tab') return;
     const el = overlayRef.current;
     if (!el) return;
@@ -41,15 +45,15 @@ export function Modal({ open, onClose, title, children, wide }: ModalProps) {
       e.preventDefault();
       first.focus();
     }
-  }, [onClose]);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
     document.addEventListener('keydown', handleKeyDown);
-    // Focus first focusable element
+    // Focus first focusable element only when modal opens
     const el = overlayRef.current;
     if (el) {
-      const first = el.querySelector<HTMLElement>('button, [href], input, select, textarea, [contenteditable]');
+      const first = el.querySelector<HTMLElement>('input, select, textarea, button, [href], [contenteditable]');
       first?.focus();
     }
     return () => document.removeEventListener('keydown', handleKeyDown);
