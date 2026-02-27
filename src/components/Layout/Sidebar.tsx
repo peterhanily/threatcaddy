@@ -822,11 +822,14 @@ const SidebarItem = React.memo(function SidebarItem({
   compact?: boolean;
 }) {
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
       className={cn(
-        'flex items-center w-full rounded-lg transition-colors group',
+        'flex items-center w-full rounded-lg transition-colors group cursor-pointer',
         compact ? 'gap-1.5 px-2 py-0.5 text-xs' : 'gap-2 px-3 py-1.5 text-sm',
         active
           ? 'bg-accent/15 text-accent'
@@ -839,6 +842,6 @@ const SidebarItem = React.memo(function SidebarItem({
         <span className="text-xs text-gray-500 tabular-nums">{count}</span>
       )}
       {actions}
-    </button>
+    </div>
   );
 });
