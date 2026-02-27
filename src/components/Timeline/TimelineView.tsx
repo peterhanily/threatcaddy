@@ -3,6 +3,7 @@ import { Plus, Search, ArrowUpDown, Star, List, Grid3X3, BarChart3, GanttChart, 
 import type { TimelineEvent, TimelineEventType, Tag, Folder, Timeline } from '../../types';
 import { TimelineFeed } from './TimelineFeed';
 import { EventTypeFilterBar } from './EventTypeFilterBar';
+import { DateRangeSlider } from './DateRangeSlider';
 import { TimelineEventForm } from './TimelineEventForm';
 import { MitreHeatmap } from './MitreHeatmap';
 import type { HeatmapColorMode } from './MitreHeatmap';
@@ -33,6 +34,8 @@ interface TimelineViewProps {
     search?: string;
     sortDir?: 'asc' | 'desc';
     timelineId?: string;
+    dateStart?: number;
+    dateEnd?: number;
   }) => TimelineEvent[];
   timelines?: Timeline[];
   selectedTimelineId?: string;
@@ -162,6 +165,8 @@ export function TimelineView({
   const [newEventCoords, setNewEventCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [heatmapColorMode, setHeatmapColorMode] = useState<HeatmapColorMode>('count');
   const [heatmapDetailTechId, setHeatmapDetailTechId] = useState<string | null>(null);
+  const [dateStart, setDateStart] = useState<number | undefined>(undefined);
+  const [dateEnd, setDateEnd] = useState<number | undefined>(undefined);
 
   const filteredEvents = useMemo(
     () => getFilteredEvents({
@@ -170,8 +175,10 @@ export function TimelineView({
       search: searchQuery || undefined,
       sortDir,
       timelineId: selectedTimelineId,
+      dateStart,
+      dateEnd,
     }),
-    [getFilteredEvents, selectedEventTypes, showStarredOnly, searchQuery, sortDir, selectedTimelineId]
+    [getFilteredEvents, selectedEventTypes, showStarredOnly, searchQuery, sortDir, selectedTimelineId, dateStart, dateEnd]
   );
 
   const heatmapDetailEvents = useMemo(() => {
@@ -339,6 +346,14 @@ export function TimelineView({
       <EventTypeFilterBar
         selectedTypes={selectedEventTypes}
         onChange={setSelectedEventTypes}
+      />
+
+      {/* Date Range Slider */}
+      <DateRangeSlider
+        events={events}
+        dateStart={dateStart}
+        dateEnd={dateEnd}
+        onChange={(start, end) => { setDateStart(start); setDateEnd(end); }}
       />
 
       {/* Scrollable content area */}
