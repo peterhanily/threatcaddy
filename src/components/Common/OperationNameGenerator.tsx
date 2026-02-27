@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Copy, Check, FolderPlus } from 'lucide-react';
-import { Modal } from './Modal';
+import { Copy, Check, FolderPlus, X } from 'lucide-react';
 import {
   generateName,
   getRandomWords,
@@ -120,140 +119,164 @@ export function OperationNameGenerator({ open, onClose, onCreateInvestigation }:
 
   const levelInfo = COMEDY_LEVELS[comedyLevel];
 
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
   return (
-    <Modal open={open} onClose={onClose} title="Operation Name Generator" wide>
-      <div className="space-y-5">
-        {/* Comedy level badge */}
-        <div className="flex justify-end">
-          <button
-            onClick={cycleLevel}
-            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${levelInfo.bg} ${levelInfo.text} hover:opacity-80`}
-          >
-            {levelInfo.label}
-          </button>
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh]">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Panel */}
+      <div className="relative w-full max-w-2xl mx-4 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-100">Operation Name Generator</h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={cycleLevel}
+              className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${levelInfo.bg} ${levelInfo.text} hover:opacity-80`}
+            >
+              {levelInfo.label}
+            </button>
+            <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-gray-200 transition-colors" aria-label="Close">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
-        {/* Slot machine area */}
-        <div className="flex items-stretch gap-3">
-          {/* Reels */}
-          <div className="flex-1 flex gap-3">
-            {/* Reel A */}
-            <div className="flex-1 relative">
-              <div className="h-12 overflow-hidden rounded-lg bg-gray-800 border border-gray-600 relative">
-                {/* Gradient overlays */}
-                <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-gray-800 to-transparent z-10 pointer-events-none" />
-                <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-gray-800 to-transparent z-10 pointer-events-none" />
-                {/* Scrolling column */}
-                <div
-                  className="transition-transform will-change-transform"
-                  style={{
-                    transform: `translateY(-${reelAOffset}px)`,
-                    transitionDuration: `${REEL_A_DURATION}s`,
-                    transitionTimingFunction: 'cubic-bezier(0.15, 0.8, 0.2, 1)',
-                  }}
-                >
-                  {reelAWords.map((word, i) => (
-                    <div
-                      key={`${i}-${word}`}
-                      className="h-12 flex items-center justify-center text-sm font-bold text-green-400 tracking-widest"
-                    >
-                      {word}
-                    </div>
-                  ))}
+        <div className="p-4 space-y-5">
+          {/* Slot machine area */}
+          <div className="flex items-stretch gap-3">
+            {/* Reels */}
+            <div className="flex-1 flex gap-3">
+              {/* Reel A */}
+              <div className="flex-1 relative">
+                <div className="h-12 overflow-hidden rounded-lg bg-gray-800 border border-gray-600 relative">
+                  {/* Gradient overlays */}
+                  <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-gray-800 to-transparent z-10 pointer-events-none" />
+                  <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-gray-800 to-transparent z-10 pointer-events-none" />
+                  {/* Scrolling column */}
+                  <div
+                    className="transition-transform will-change-transform"
+                    style={{
+                      transform: `translateY(-${reelAOffset}px)`,
+                      transitionDuration: `${REEL_A_DURATION}s`,
+                      transitionTimingFunction: 'cubic-bezier(0.15, 0.8, 0.2, 1)',
+                    }}
+                  >
+                    {reelAWords.map((word, i) => (
+                      <div
+                        key={`${i}-${word}`}
+                        className="h-12 flex items-center justify-center text-sm font-bold text-green-400 tracking-widest"
+                      >
+                        {word}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Reel B */}
+              <div className="flex-1 relative">
+                <div className="h-12 overflow-hidden rounded-lg bg-gray-800 border border-gray-600 relative">
+                  <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-gray-800 to-transparent z-10 pointer-events-none" />
+                  <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-gray-800 to-transparent z-10 pointer-events-none" />
+                  <div
+                    className="transition-transform will-change-transform"
+                    style={{
+                      transform: `translateY(-${reelBOffset}px)`,
+                      transitionDuration: `${REEL_B_DURATION}s`,
+                      transitionTimingFunction: 'cubic-bezier(0.15, 0.8, 0.2, 1)',
+                    }}
+                  >
+                    {reelBWords.map((word, i) => (
+                      <div
+                        key={`${i}-${word}`}
+                        className="h-12 flex items-center justify-center text-sm font-bold text-green-400 tracking-widest"
+                      >
+                        {word}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Reel B */}
-            <div className="flex-1 relative">
-              <div className="h-12 overflow-hidden rounded-lg bg-gray-800 border border-gray-600 relative">
-                <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-gray-800 to-transparent z-10 pointer-events-none" />
-                <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-gray-800 to-transparent z-10 pointer-events-none" />
+            {/* Lever */}
+            <button
+              onClick={spin}
+              disabled={spinning}
+              className="relative w-10 flex flex-col items-center justify-start pt-1 cursor-pointer group disabled:cursor-not-allowed"
+              aria-label="Pull lever to spin"
+              title="Pull lever"
+            >
+              {/* Track */}
+              <div className="w-1.5 h-full bg-gray-600 rounded-full relative">
+                {/* Ball */}
                 <div
-                  className="transition-transform will-change-transform"
+                  className={`absolute left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-red-500 shadow-lg shadow-red-500/30 transition-all ${
+                    leverPulled
+                      ? 'top-[calc(100%-24px)]'
+                      : 'top-0 group-hover:top-1'
+                  }`}
                   style={{
-                    transform: `translateY(-${reelBOffset}px)`,
-                    transitionDuration: `${REEL_B_DURATION}s`,
-                    transitionTimingFunction: 'cubic-bezier(0.15, 0.8, 0.2, 1)',
+                    transitionDuration: leverPulled ? '0.3s' : '0.6s',
+                    transitionTimingFunction: leverPulled ? 'ease-in' : 'cubic-bezier(0.34, 1.56, 0.64, 1)',
                   }}
-                >
-                  {reelBWords.map((word, i) => (
-                    <div
-                      key={`${i}-${word}`}
-                      className="h-12 flex items-center justify-center text-sm font-bold text-green-400 tracking-widest"
-                    >
-                      {word}
-                    </div>
-                  ))}
-                </div>
+                />
               </div>
+              <span className="text-[9px] text-gray-500 mt-1 font-medium tracking-tight">PULL</span>
+            </button>
+          </div>
+
+          {/* Result display */}
+          <div className="text-center py-3">
+            <div className="text-[10px] text-gray-500 uppercase tracking-[0.3em] mb-1">Operation</div>
+            <div className={`text-xl font-black tracking-wider transition-opacity duration-300 ${
+              currentName && !spinning ? 'opacity-100 text-gray-100' : 'opacity-30 text-gray-500'
+            }`}>
+              {currentName ? currentName.full : 'SPIN TO GENERATE'}
             </div>
           </div>
 
-          {/* Lever */}
-          <button
-            onClick={spin}
-            disabled={spinning}
-            className="relative w-10 flex flex-col items-center justify-start pt-1 cursor-pointer group disabled:cursor-not-allowed"
-            aria-label="Pull lever to spin"
-            title="Pull lever"
-          >
-            {/* Track */}
-            <div className="w-1.5 h-full bg-gray-600 rounded-full relative">
-              {/* Ball */}
-              <div
-                className={`absolute left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-red-500 shadow-lg shadow-red-500/30 transition-all ${
-                  leverPulled
-                    ? 'top-[calc(100%-24px)]'
-                    : 'top-0 group-hover:top-1'
-                }`}
-                style={{
-                  transitionDuration: leverPulled ? '0.3s' : '0.6s',
-                  transitionTimingFunction: leverPulled ? 'ease-in' : 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-                }}
-              />
-            </div>
-            <span className="text-[9px] text-gray-500 mt-1 font-medium tracking-tight">PULL</span>
-          </button>
-        </div>
-
-        {/* Result display */}
-        <div className="text-center py-3">
-          <div className="text-[10px] text-gray-500 uppercase tracking-[0.3em] mb-1">Operation</div>
-          <div className={`text-xl font-black tracking-wider transition-opacity duration-300 ${
-            currentName && !spinning ? 'opacity-100 text-gray-100' : 'opacity-30 text-gray-500'
-          }`}>
-            {currentName ? currentName.full : 'SPIN TO GENERATE'}
+          {/* Action buttons */}
+          <div className="flex items-center justify-center gap-2">
+            <button
+              onClick={spin}
+              disabled={spinning}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Spin Again
+            </button>
+            <button
+              onClick={handleCopy}
+              disabled={!currentName || spinning}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            >
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+            <button
+              onClick={handleCreate}
+              disabled={!currentName || spinning}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            >
+              <FolderPlus size={14} />
+              Create Investigation
+            </button>
           </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={spin}
-            disabled={spinning}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Spin Again
-          </button>
-          <button
-            onClick={handleCopy}
-            disabled={!currentName || spinning}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-          >
-            {copied ? <Check size={14} /> : <Copy size={14} />}
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
-          <button
-            onClick={handleCreate}
-            disabled={!currentName || spinning}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-          >
-            <FolderPlus size={14} />
-            Create Investigation
-          </button>
         </div>
       </div>
-    </Modal>
+    </div>
   );
 }
