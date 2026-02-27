@@ -79,49 +79,47 @@ export function DateRangeSlider({ events, dateStart, dateEnd, onChange }: DateRa
 
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800">
-      <span className="text-[10px] text-gray-500 shrink-0 select-none">Range</span>
-      <div className="relative flex-1 flex items-center h-6 select-none touch-none">
+      <span className="text-[10px] text-gray-500 whitespace-nowrap shrink-0 select-none tabular-nums">
+        {formatDate(dateStart ?? minTs, shortSpan)}
+      </span>
+      <div
+        ref={trackRef}
+        className="relative flex-1 h-4 select-none touch-none cursor-pointer"
+        onPointerDown={(e) => {
+          const frac = getTrackFraction(e.clientX);
+          // Pick the closer handle
+          const pick = Math.abs(frac - startFrac) <= Math.abs(frac - endFrac) ? 'start' : 'end';
+          e.preventDefault();
+          setDragging(pick);
+        }}
+      >
         {/* Track */}
-        <div
-          ref={trackRef}
-          className="absolute inset-x-0 h-1.5 rounded bg-gray-700"
-        />
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1 rounded-full bg-gray-700" />
         {/* Selected fill */}
         <div
-          className="absolute h-1.5 rounded bg-accent/40"
+          className="absolute top-1/2 -translate-y-1/2 h-1 rounded-full bg-accent/40"
           style={{ left: `${startFrac * 100}%`, right: `${(1 - endFrac) * 100}%` }}
         />
         {/* Start handle */}
         <div
-          className="absolute w-3 h-3 rounded-full bg-accent cursor-grab active:cursor-grabbing z-10"
-          style={{ left: `${startFrac * 100}%`, transform: 'translateX(-50%)' }}
-          onPointerDown={(e) => { e.preventDefault(); setDragging('start'); }}
+          className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-accent border-2 border-gray-900 cursor-grab active:cursor-grabbing z-10 hover:scale-125 transition-transform"
+          style={{ left: `${startFrac * 100}%`, transform: `translateX(-50%) translateY(-50%)` }}
+          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setDragging('start'); }}
         />
         {/* End handle */}
         <div
-          className="absolute w-3 h-3 rounded-full bg-accent cursor-grab active:cursor-grabbing z-10"
-          style={{ left: `${endFrac * 100}%`, transform: 'translateX(-50%)' }}
-          onPointerDown={(e) => { e.preventDefault(); setDragging('end'); }}
+          className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-accent border-2 border-gray-900 cursor-grab active:cursor-grabbing z-10 hover:scale-125 transition-transform"
+          style={{ left: `${endFrac * 100}%`, transform: `translateX(-50%) translateY(-50%)` }}
+          onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setDragging('end'); }}
         />
-        {/* Start label */}
-        <div
-          className="absolute top-3.5 text-[10px] text-gray-500 whitespace-nowrap pointer-events-none"
-          style={{ left: `${startFrac * 100}%`, transform: 'translateX(-50%)' }}
-        >
-          {formatDate(dateStart ?? minTs, shortSpan)}
-        </div>
-        {/* End label */}
-        <div
-          className="absolute top-3.5 text-[10px] text-gray-500 whitespace-nowrap pointer-events-none"
-          style={{ left: `${endFrac * 100}%`, transform: 'translateX(-50%)' }}
-        >
-          {formatDate(dateEnd ?? maxTs, shortSpan)}
-        </div>
       </div>
+      <span className="text-[10px] text-gray-500 whitespace-nowrap shrink-0 select-none tabular-nums">
+        {formatDate(dateEnd ?? maxTs, shortSpan)}
+      </span>
       {isNarrowed && (
         <button
           onClick={() => onChange(undefined, undefined)}
-          className="text-[10px] text-gray-500 hover:text-gray-300 shrink-0"
+          className="text-[10px] text-accent hover:text-accent-hover shrink-0 ml-0.5"
         >
           Reset
         </button>
