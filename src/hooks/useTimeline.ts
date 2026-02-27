@@ -38,26 +38,41 @@ export function useTimeline() {
       updatedAt: Date.now(),
       ...partial,
     };
-    await db.timelineEvents.add(event);
+    try {
+      await db.timelineEvents.add(event);
+    } catch (err) {
+      console.error('Failed to create timeline event:', err);
+      throw err;
+    }
     setEvents((prev) => [event, ...prev]);
     return event;
   }, []);
 
   const updateEvent = useCallback(async (id: string, updates: Partial<TimelineEvent>) => {
     const patched = { ...updates, updatedAt: Date.now() };
-    await db.timelineEvents.update(id, patched);
+    try {
+      await db.timelineEvents.update(id, patched);
+    } catch (err) {
+      console.error('Failed to update timeline event:', err);
+      throw err;
+    }
     setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...patched } : e)));
   }, []);
 
   const deleteEvent = useCallback(async (id: string) => {
-    await db.timelineEvents.delete(id);
-    // Clean orphaned links from other entities
-    await db.notes.filter(n => n.linkedTimelineEventIds?.includes(id) ?? false).modify(n => {
-      n.linkedTimelineEventIds = (n.linkedTimelineEventIds ?? []).filter(eid => eid !== id);
-    });
-    await db.tasks.filter(t => t.linkedTimelineEventIds?.includes(id) ?? false).modify(t => {
-      t.linkedTimelineEventIds = (t.linkedTimelineEventIds ?? []).filter(eid => eid !== id);
-    });
+    try {
+      await db.timelineEvents.delete(id);
+      // Clean orphaned links from other entities
+      await db.notes.filter(n => n.linkedTimelineEventIds?.includes(id) ?? false).modify(n => {
+        n.linkedTimelineEventIds = (n.linkedTimelineEventIds ?? []).filter(eid => eid !== id);
+      });
+      await db.tasks.filter(t => t.linkedTimelineEventIds?.includes(id) ?? false).modify(t => {
+        t.linkedTimelineEventIds = (t.linkedTimelineEventIds ?? []).filter(eid => eid !== id);
+      });
+    } catch (err) {
+      console.error('Failed to delete timeline event:', err);
+      throw err;
+    }
     setEvents((prev) => prev.filter((e) => e.id !== id));
   }, []);
 

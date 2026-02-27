@@ -32,6 +32,7 @@ interface GraphViewProps {
   scopedTimelineEvents?: TimelineEvent[];
   selectedFolderId?: string;
   selectedFolderName?: string;
+  visible?: boolean;
 }
 
 type NodeTypeFilter = 'ioc' | 'note' | 'task' | 'timeline-event';
@@ -44,7 +45,7 @@ const ALL_EDGE_TYPES: { key: EdgeTypeFilter; label: string; color: string }[] = 
   { key: 'entity-link', label: 'Entity Links', color: '#22c55e' },
 ];
 
-export function GraphView({ notes, tasks, timelineEvents, settings, layout: externalLayout, onLayoutChange, onNavigateToNote, onNavigateToTask, onNavigateToTimelineEvent, onUpdateNote, onUpdateTask, onUpdateEvent, scopedNotes, scopedTasks, scopedTimelineEvents, selectedFolderId, selectedFolderName }: GraphViewProps) {
+export function GraphView({ notes, tasks, timelineEvents, settings, layout: externalLayout, onLayoutChange, onNavigateToNote, onNavigateToTask, onNavigateToTimelineEvent, onUpdateNote, onUpdateTask, onUpdateEvent, scopedNotes, scopedTasks, scopedTimelineEvents, selectedFolderId, selectedFolderName, visible = true }: GraphViewProps) {
   const [internalLayout, setInternalLayout] = useState<LayoutName>('cose-bilkent');
   const layout = externalLayout ?? internalLayout;
   const handleLayoutChange = onLayoutChange ?? setInternalLayout;
@@ -73,10 +74,11 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
   // Stable ref to full graph data for use in cytoscape callbacks
   const fullGraphDataRef = React.useRef<ReturnType<typeof buildGraphData>>({ nodes: [], edges: [] });
 
-  // Build full graph data
+  // Build full graph data — skip expensive computation when not visible
   const fullGraphData = useMemo(() => {
+    if (!visible) return { nodes: [] as GraphNode[], edges: [] as GraphEdge[] };
     return buildGraphData(effectiveNotes, effectiveTasks, effectiveEvents, settings);
-  }, [effectiveNotes, effectiveTasks, effectiveEvents, settings]);
+  }, [visible, effectiveNotes, effectiveTasks, effectiveEvents, settings]);
 
   // Keep ref in sync for use in cytoscape callbacks (outside render)
   React.useEffect(() => {

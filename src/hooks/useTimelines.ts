@@ -28,26 +28,41 @@ export function useTimelines() {
       createdAt: now,
       updatedAt: now,
     };
-    await db.timelines.add(timeline);
+    try {
+      await db.timelines.add(timeline);
+    } catch (err) {
+      console.error('Failed to create timeline:', err);
+      throw err;
+    }
     setTimelines((prev) => [...prev, timeline].sort((a, b) => a.order - b.order));
     return timeline;
   }, [timelines]);
 
   const updateTimeline = useCallback(async (id: string, updates: Partial<Timeline>) => {
     const patched = { ...updates, updatedAt: Date.now() };
-    await db.timelines.update(id, patched);
+    try {
+      await db.timelines.update(id, patched);
+    } catch (err) {
+      console.error('Failed to update timeline:', err);
+      throw err;
+    }
     setTimelines((prev) =>
       prev.map((t) => (t.id === id ? { ...t, ...patched } : t)).sort((a, b) => a.order - b.order)
     );
   }, []);
 
   const deleteTimeline = useCallback(async (id: string) => {
-    await db.transaction('rw', [db.timelines, db.timelineEvents, db.folders], async () => {
-      await db.timelines.delete(id);
-      await db.timelineEvents.where('timelineId').equals(id).delete();
-      // Clear orphaned folder.timelineId references
-      await db.folders.filter(f => f.timelineId === id).modify({ timelineId: undefined });
-    });
+    try {
+      await db.transaction('rw', [db.timelines, db.timelineEvents, db.folders], async () => {
+        await db.timelines.delete(id);
+        await db.timelineEvents.where('timelineId').equals(id).delete();
+        // Clear orphaned folder.timelineId references
+        await db.folders.filter(f => f.timelineId === id).modify({ timelineId: undefined });
+      });
+    } catch (err) {
+      console.error('Failed to delete timeline:', err);
+      throw err;
+    }
     setTimelines((prev) => prev.filter((t) => t.id !== id));
   }, []);
 

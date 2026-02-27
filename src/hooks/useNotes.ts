@@ -41,29 +41,44 @@ export function useNotes() {
       updatedAt: Date.now(),
       ...partial,
     };
-    await db.notes.add(note);
+    try {
+      await db.notes.add(note);
+    } catch (err) {
+      console.error('Failed to create note:', err);
+      throw err;
+    }
     setNotes((prev) => [note, ...prev]);
     return note;
   }, []);
 
   const updateNote = useCallback(async (id: string, updates: Partial<Note>) => {
     const patched = { ...updates, updatedAt: Date.now() };
-    await db.notes.update(id, patched);
+    try {
+      await db.notes.update(id, patched);
+    } catch (err) {
+      console.error('Failed to update note:', err);
+      throw err;
+    }
     setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...patched } : n)));
   }, []);
 
   const deleteNote = useCallback(async (id: string) => {
-    await db.notes.delete(id);
-    // Clean orphaned links from other entities
-    await db.notes.filter(n => n.linkedNoteIds?.includes(id) ?? false).modify(n => {
-      n.linkedNoteIds = (n.linkedNoteIds ?? []).filter(nid => nid !== id);
-    });
-    await db.tasks.filter(t => t.linkedNoteIds?.includes(id) ?? false).modify(t => {
-      t.linkedNoteIds = (t.linkedNoteIds ?? []).filter(nid => nid !== id);
-    });
-    await db.timelineEvents.filter(e => e.linkedNoteIds.includes(id)).modify(e => {
-      e.linkedNoteIds = e.linkedNoteIds.filter(nid => nid !== id);
-    });
+    try {
+      await db.notes.delete(id);
+      // Clean orphaned links from other entities
+      await db.notes.filter(n => n.linkedNoteIds?.includes(id) ?? false).modify(n => {
+        n.linkedNoteIds = (n.linkedNoteIds ?? []).filter(nid => nid !== id);
+      });
+      await db.tasks.filter(t => t.linkedNoteIds?.includes(id) ?? false).modify(t => {
+        t.linkedNoteIds = (t.linkedNoteIds ?? []).filter(nid => nid !== id);
+      });
+      await db.timelineEvents.filter(e => e.linkedNoteIds.includes(id)).modify(e => {
+        e.linkedNoteIds = e.linkedNoteIds.filter(nid => nid !== id);
+      });
+    } catch (err) {
+      console.error('Failed to delete note:', err);
+      throw err;
+    }
     setNotes((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
@@ -165,18 +180,23 @@ export function useNotes() {
   const emptyTrash = useCallback(async () => {
     const trashedIds = notes.filter((n) => n.trashed).map((n) => n.id);
     if (trashedIds.length === 0) return;
-    await db.notes.bulkDelete(trashedIds);
-    // Clean orphaned links from other entities
-    const idSet = new Set(trashedIds);
-    await db.notes.filter(n => n.linkedNoteIds?.some(nid => idSet.has(nid)) ?? false).modify(n => {
-      n.linkedNoteIds = (n.linkedNoteIds ?? []).filter(nid => !idSet.has(nid));
-    });
-    await db.tasks.filter(t => t.linkedNoteIds?.some(nid => idSet.has(nid)) ?? false).modify(t => {
-      t.linkedNoteIds = (t.linkedNoteIds ?? []).filter(nid => !idSet.has(nid));
-    });
-    await db.timelineEvents.filter(e => e.linkedNoteIds.some(nid => idSet.has(nid))).modify(e => {
-      e.linkedNoteIds = e.linkedNoteIds.filter(nid => !idSet.has(nid));
-    });
+    try {
+      await db.notes.bulkDelete(trashedIds);
+      // Clean orphaned links from other entities
+      const idSet = new Set(trashedIds);
+      await db.notes.filter(n => n.linkedNoteIds?.some(nid => idSet.has(nid)) ?? false).modify(n => {
+        n.linkedNoteIds = (n.linkedNoteIds ?? []).filter(nid => !idSet.has(nid));
+      });
+      await db.tasks.filter(t => t.linkedNoteIds?.some(nid => idSet.has(nid)) ?? false).modify(t => {
+        t.linkedNoteIds = (t.linkedNoteIds ?? []).filter(nid => !idSet.has(nid));
+      });
+      await db.timelineEvents.filter(e => e.linkedNoteIds.some(nid => idSet.has(nid))).modify(e => {
+        e.linkedNoteIds = e.linkedNoteIds.filter(nid => !idSet.has(nid));
+      });
+    } catch (err) {
+      console.error('Failed to empty trash:', err);
+      throw err;
+    }
     setNotes((prev) => prev.filter((n) => !n.trashed));
   }, [notes]);
 

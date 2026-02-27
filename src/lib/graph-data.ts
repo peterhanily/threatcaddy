@@ -51,6 +51,8 @@ export function buildGraphData(
 ): GraphData {
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
+  const nodeIdSet = new Set<string>();
+  const edgeIdSet = new Set<string>();
 
   // IOC deduplication map: key = `${type}:${value.toLowerCase()}`
   const iocNodeMap = new Map<string, GraphNode>();
@@ -79,6 +81,7 @@ export function buildGraphData(
       };
       iocNodeMap.set(key, node);
       nodes.push(node);
+      nodeIdSet.add(node.id);
     }
     iocIdToNodeId.set(ioc.id, node.id);
     return node;
@@ -88,6 +91,7 @@ export function buildGraphData(
   const activeNotes = notes.filter((n) => !n.trashed);
   for (const note of activeNotes) {
     const noteNodeId = `note:${note.id}`;
+    nodeIdSet.add(noteNodeId);
     nodes.push({
       id: noteNodeId,
       label: note.title || 'Untitled',
@@ -107,7 +111,8 @@ export function buildGraphData(
         }
         // Note ↔ IOC edge
         const edgeId = `${noteNodeId}--${iocNode.id}`;
-        if (!edges.find((e) => e.id === edgeId)) {
+        if (!edgeIdSet.has(edgeId)) {
+          edgeIdSet.add(edgeId);
           edges.push({
             id: edgeId,
             source: noteNodeId,
@@ -123,6 +128,7 @@ export function buildGraphData(
   // Process tasks
   for (const task of tasks) {
     const taskNodeId = `task:${task.id}`;
+    nodeIdSet.add(taskNodeId);
     nodes.push({
       id: taskNodeId,
       label: task.title || 'Untitled',
@@ -141,7 +147,8 @@ export function buildGraphData(
           iocNode.sourceEntityIds.push(task.id);
         }
         const edgeId = `${taskNodeId}--${iocNode.id}`;
-        if (!edges.find((e) => e.id === edgeId)) {
+        if (!edgeIdSet.has(edgeId)) {
+          edgeIdSet.add(edgeId);
           edges.push({
             id: edgeId,
             source: taskNodeId,
@@ -159,6 +166,7 @@ export function buildGraphData(
     const eventNodeId = `event:${event.id}`;
     const eventTypeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType];
     const eventColor = eventTypeInfo?.color || '#6b7280';
+    nodeIdSet.add(eventNodeId);
     nodes.push({
       id: eventNodeId,
       label: event.title || 'Untitled',
@@ -179,7 +187,8 @@ export function buildGraphData(
           iocNode.sourceEntityIds.push(event.id);
         }
         const edgeId = `${eventNodeId}--${iocNode.id}`;
-        if (!edges.find((e) => e.id === edgeId)) {
+        if (!edgeIdSet.has(edgeId)) {
+          edgeIdSet.add(edgeId);
           edges.push({
             id: edgeId,
             source: eventNodeId,
@@ -194,7 +203,7 @@ export function buildGraphData(
     // Timeline → Note links
     for (const noteId of event.linkedNoteIds) {
       const noteNodeId = `note:${noteId}`;
-      if (nodes.find((n) => n.id === noteNodeId)) {
+      if (nodeIdSet.has(noteNodeId)) {
         edges.push({
           id: `${eventNodeId}--${noteNodeId}`,
           source: eventNodeId,
@@ -208,7 +217,7 @@ export function buildGraphData(
     // Timeline → Task links
     for (const taskId of event.linkedTaskIds) {
       const taskNodeId = `task:${taskId}`;
-      if (nodes.find((n) => n.id === taskNodeId)) {
+      if (nodeIdSet.has(taskNodeId)) {
         edges.push({
           id: `${eventNodeId}--${taskNodeId}`,
           source: eventNodeId,
@@ -224,7 +233,8 @@ export function buildGraphData(
       const iocNodeId = iocIdToNodeId.get(iocId);
       if (iocNodeId) {
         const edgeId = `${eventNodeId}--${iocNodeId}`;
-        if (!edges.find((e) => e.id === edgeId)) {
+        if (!edgeIdSet.has(edgeId)) {
+          edgeIdSet.add(edgeId);
           edges.push({
             id: edgeId,
             source: eventNodeId,
@@ -285,7 +295,7 @@ export function buildGraphData(
     // Deduplicate bidirectional: sort to create canonical key
     const key = [sourceNodeId, targetNodeId].sort().join('--');
     if (seenEntityLinks.has(key)) return;
-    if (!nodes.find((n) => n.id === sourceNodeId) || !nodes.find((n) => n.id === targetNodeId)) return;
+    if (!nodeIdSet.has(sourceNodeId) || !nodeIdSet.has(targetNodeId)) return;
     seenEntityLinks.add(key);
     edges.push({
       id: `link:${key}`,

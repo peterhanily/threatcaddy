@@ -911,6 +911,7 @@ export default function App() {
         {/* Always-mounted GraphView — hidden via CSS when not active to preserve layout/positions */}
         <div className={activeView === 'graph' && !showSettings ? 'flex flex-1 overflow-hidden' : 'hidden'}>
           <GraphView
+            visible={activeView === 'graph' && !showSettings}
             notes={screensafeNotes}
             tasks={screensafeTasks}
             timelineEvents={screensafeTimelineEvents}

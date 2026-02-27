@@ -1,15 +1,78 @@
 import { Marked } from 'marked';
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/core';
 import DOMPurify from 'dompurify';
+
+// Register commonly used languages (security/threat intel + general dev)
+import javascript from 'highlight.js/lib/languages/javascript';
+import typescript from 'highlight.js/lib/languages/typescript';
+import python from 'highlight.js/lib/languages/python';
+import bash from 'highlight.js/lib/languages/bash';
+import shell from 'highlight.js/lib/languages/shell';
+import json from 'highlight.js/lib/languages/json';
+import xml from 'highlight.js/lib/languages/xml';
+import yaml from 'highlight.js/lib/languages/yaml';
+import sql from 'highlight.js/lib/languages/sql';
+import css from 'highlight.js/lib/languages/css';
+import markdown from 'highlight.js/lib/languages/markdown';
+import powershell from 'highlight.js/lib/languages/powershell';
+import ini from 'highlight.js/lib/languages/ini';
+import plaintext from 'highlight.js/lib/languages/plaintext';
+import diff from 'highlight.js/lib/languages/diff';
+import c from 'highlight.js/lib/languages/c';
+import cpp from 'highlight.js/lib/languages/cpp';
+import csharp from 'highlight.js/lib/languages/csharp';
+import java from 'highlight.js/lib/languages/java';
+import go from 'highlight.js/lib/languages/go';
+import rust from 'highlight.js/lib/languages/rust';
+import ruby from 'highlight.js/lib/languages/ruby';
+import php from 'highlight.js/lib/languages/php';
+
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('js', javascript);
+hljs.registerLanguage('typescript', typescript);
+hljs.registerLanguage('ts', typescript);
+hljs.registerLanguage('python', python);
+hljs.registerLanguage('py', python);
+hljs.registerLanguage('bash', bash);
+hljs.registerLanguage('sh', bash);
+hljs.registerLanguage('shell', shell);
+hljs.registerLanguage('json', json);
+hljs.registerLanguage('xml', xml);
+hljs.registerLanguage('html', xml);
+hljs.registerLanguage('yaml', yaml);
+hljs.registerLanguage('yml', yaml);
+hljs.registerLanguage('sql', sql);
+hljs.registerLanguage('css', css);
+hljs.registerLanguage('markdown', markdown);
+hljs.registerLanguage('md', markdown);
+hljs.registerLanguage('powershell', powershell);
+hljs.registerLanguage('ps1', powershell);
+hljs.registerLanguage('ini', ini);
+hljs.registerLanguage('toml', ini);
+hljs.registerLanguage('plaintext', plaintext);
+hljs.registerLanguage('text', plaintext);
+hljs.registerLanguage('diff', diff);
+hljs.registerLanguage('c', c);
+hljs.registerLanguage('cpp', cpp);
+hljs.registerLanguage('csharp', csharp);
+hljs.registerLanguage('cs', csharp);
+hljs.registerLanguage('java', java);
+hljs.registerLanguage('go', go);
+hljs.registerLanguage('rust', rust);
+hljs.registerLanguage('rs', rust);
+hljs.registerLanguage('ruby', ruby);
+hljs.registerLanguage('rb', ruby);
+hljs.registerLanguage('php', php);
 
 const marked = new Marked({
   gfm: true,
   breaks: true,
   renderer: {
     code({ text, lang }) {
-      if (lang && hljs.getLanguage(lang)) {
-        const highlighted = hljs.highlight(text, { language: lang }).value;
-        return `<pre><code class="hljs language-${lang}">${highlighted}</code></pre>`;
+      const safeLang = lang?.replace(/[^a-zA-Z0-9_-]/g, '') || '';
+      if (safeLang && hljs.getLanguage(safeLang)) {
+        const highlighted = hljs.highlight(text, { language: safeLang }).value;
+        return `<pre><code class="hljs language-${safeLang}">${highlighted}</code></pre>`;
       }
       const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       return `<pre><code class="hljs">${escaped}</code></pre>`;

@@ -32,7 +32,12 @@ export function useTasks() {
       updatedAt: Date.now(),
       ...partial,
     };
-    await db.tasks.add(task);
+    try {
+      await db.tasks.add(task);
+    } catch (err) {
+      console.error('Failed to create task:', err);
+      throw err;
+    }
     setTasks((prev) => [...prev, task]);
     return task;
   }, [tasks]);
@@ -47,22 +52,32 @@ export function useTasks() {
       patched.completed = false;
       patched.completedAt = undefined;
     }
-    await db.tasks.update(id, patched);
+    try {
+      await db.tasks.update(id, patched);
+    } catch (err) {
+      console.error('Failed to update task:', err);
+      throw err;
+    }
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patched } : t)));
   }, []);
 
   const deleteTask = useCallback(async (id: string) => {
-    await db.tasks.delete(id);
-    // Clean orphaned links from other entities
-    await db.notes.filter(n => n.linkedTaskIds?.includes(id) ?? false).modify(n => {
-      n.linkedTaskIds = (n.linkedTaskIds ?? []).filter(tid => tid !== id);
-    });
-    await db.tasks.filter(t => t.linkedTaskIds?.includes(id) ?? false).modify(t => {
-      t.linkedTaskIds = (t.linkedTaskIds ?? []).filter(tid => tid !== id);
-    });
-    await db.timelineEvents.filter(e => e.linkedTaskIds.includes(id)).modify(e => {
-      e.linkedTaskIds = e.linkedTaskIds.filter(tid => tid !== id);
-    });
+    try {
+      await db.tasks.delete(id);
+      // Clean orphaned links from other entities
+      await db.notes.filter(n => n.linkedTaskIds?.includes(id) ?? false).modify(n => {
+        n.linkedTaskIds = (n.linkedTaskIds ?? []).filter(tid => tid !== id);
+      });
+      await db.tasks.filter(t => t.linkedTaskIds?.includes(id) ?? false).modify(t => {
+        t.linkedTaskIds = (t.linkedTaskIds ?? []).filter(tid => tid !== id);
+      });
+      await db.timelineEvents.filter(e => e.linkedTaskIds.includes(id)).modify(e => {
+        e.linkedTaskIds = e.linkedTaskIds.filter(tid => tid !== id);
+      });
+    } catch (err) {
+      console.error('Failed to delete task:', err);
+      throw err;
+    }
     setTasks((prev) => prev.filter((t) => t.id !== id));
   }, []);
 

@@ -22,6 +22,12 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       const ctrl = e.ctrlKey || e.metaKey;
       const h = handlersRef.current;
 
+      // Skip shortcuts when typing in inputs (except Ctrl+S save and Escape)
+      const tag = (e.target as HTMLElement)?.tagName;
+      const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
+        (e.target as HTMLElement)?.isContentEditable;
+      if (isEditable && !(ctrl && e.key === 's') && e.key !== 'Escape') return;
+
       if (ctrl && e.key === 'n') {
         e.preventDefault();
         h.onNewNote?.();
