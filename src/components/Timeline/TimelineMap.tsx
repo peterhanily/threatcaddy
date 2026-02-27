@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import { Crosshair, MapPin, Star, Trash2 } from 'lucide-react';
@@ -49,7 +49,7 @@ function formatTime(timestamp: number): string {
   });
 }
 
-function PlaceModeHandler({ onPlace }: { onPlace: (lat: number, lng: number) => void }) {
+function ClickHandler({ onPlace }: { onPlace: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e) {
       onPlace(e.latlng.lat, e.latlng.lng);
@@ -58,12 +58,25 @@ function PlaceModeHandler({ onPlace }: { onPlace: (lat: number, lng: number) => 
   return null;
 }
 
+function FitBounds({ bounds }: { bounds: L.LatLngBounds }) {
+  const map = useMap();
+  useMemo(() => {
+    map.fitBounds(bounds, { padding: [40, 40] });
+  }, [map, bounds]);
+  return null;
+}
+
 function isLightTheme(): boolean {
   return document.documentElement.classList.contains('light');
 }
 
+// Default: world view centered at 20N, 0E
+const DEFAULT_CENTER: [number, number] = [20, 0];
+const DEFAULT_ZOOM = 2;
+
 export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreateEventAtLocation }: TimelineMapProps) {
-  const [placeMode, setPlaceMode] = useState(false);
+  const hasAnyMapped = events.some((e) => e.latitude != null && e.longitude != null);
+  const [placeMode, setPlaceMode] = useState(!hasAnyMapped);
 
   const mappedEvents = useMemo(
     () => events.filter((e) => e.latitude != null && e.longitude != null),
@@ -71,6 +84,13 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
   );
 
   const unmappedCount = events.length - mappedEvents.length;
+
+  const bounds = useMemo(() => {
+    if (mappedEvents.length === 0) return null;
+    return L.latLngBounds(
+      mappedEvents.map((e) => [e.latitude as number, e.longitude as number] as [number, number])
+    );
+  }, [mappedEvents]);
 
   const handlePlace = useCallback(
     (lat: number, lng: number) => {
@@ -88,32 +108,16 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
 
   const tileAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>';
 
-  if (mappedEvents.length === 0) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center text-gray-500 gap-3 p-8">
-        <MapPin size={48} className="text-gray-600" />
-        <p className="text-sm">No events with location data</p>
-        <p className="text-xs text-gray-600">
-          Add latitude and longitude to events to see them on the map
-        </p>
-        {unmappedCount > 0 && (
-          <p className="text-xs text-gray-600">{unmappedCount} event{unmappedCount !== 1 ? 's' : ''} without location</p>
-        )}
-      </div>
-    );
-  }
-
-  // Compute bounds for auto-fit
-  const bounds = L.latLngBounds(
-    mappedEvents.map((e) => [e.latitude as number, e.longitude as number] as [number, number])
-  );
-
   return (
-    <div className="flex-1 flex flex-col overflow-hidden relative">
+    <div className="flex flex-col h-full">
       {/* Status bar */}
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800 text-xs text-gray-500 shrink-0">
         <MapPin size={12} />
-        <span>{mappedEvents.length} mapped</span>
+        {mappedEvents.length > 0 ? (
+          <span>{mappedEvents.length} mapped</span>
+        ) : (
+          <span>Click map to place events</span>
+        )}
         {unmappedCount > 0 && (
           <span className="text-gray-600">&middot; {unmappedCount} without location</span>
         )}
@@ -137,15 +141,16 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
       </div>
 
       {/* Map */}
-      <div className={cn('flex-1', placeMode && 'cursor-crosshair')}>
+      <div className={cn('flex-1 min-h-0', placeMode && 'cursor-crosshair')}>
         <MapContainer
-          bounds={bounds}
-          boundsOptions={{ padding: [40, 40] }}
+          center={DEFAULT_CENTER}
+          zoom={DEFAULT_ZOOM}
           style={{ height: '100%', width: '100%' }}
           zoomControl={true}
         >
           <TileLayer url={tileUrl} attribution={tileAttribution} />
-          {placeMode && <PlaceModeHandler onPlace={handlePlace} />}
+          {bounds && <FitBounds bounds={bounds} />}
+          {placeMode && <ClickHandler onPlace={handlePlace} />}
           <MarkerClusterGroup
             chunkedLoading
             maxClusterRadius={50}
