@@ -117,17 +117,6 @@ export function MitreHeatmap({ events, colorMode, onTechniqueClick }: MitreHeatm
     };
   }, [events]);
 
-  const hasAny = events.some((e) => e.mitreAttackIds.length > 0);
-
-  if (!hasAny) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-        <p className="text-sm">No events have MITRE ATT&CK techniques mapped.</p>
-        <p className="text-xs mt-1">Edit events to add technique IDs and see coverage here.</p>
-      </div>
-    );
-  }
-
   // Legend configuration per mode
   const legendLabel = colorMode === 'count' ? 'Events' : colorMode === 'confidence' ? 'Confidence' : 'Actors';
   const legendSteps = colorMode === 'confidence'

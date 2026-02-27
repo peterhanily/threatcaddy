@@ -61,17 +61,6 @@ export function MitreReport({ events }: MitreReportProps) {
     };
   }, [events]);
 
-  const hasAny = events.some((e) => e.mitreAttackIds.length > 0);
-
-  if (!hasAny) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-        <p className="text-sm">No events have MITRE ATT&CK techniques mapped.</p>
-        <p className="text-xs mt-1">Edit events to add technique IDs and see analytics here.</p>
-      </div>
-    );
-  }
-
   const coveragePct = ((techniqueCoverage / MITRE_TECHNIQUES.length) * 100).toFixed(1);
 
   return (

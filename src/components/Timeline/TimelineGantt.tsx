@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { ZoomIn, ZoomOut, Maximize2, Clock, Layers } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Layers } from 'lucide-react';
 import type { TimelineEvent, TimelineEventType } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS } from '../../types';
 import { cn } from '../../lib/utils';
@@ -106,7 +106,7 @@ export function TimelineGantt({ events, onSelect, onToggleStar: _onToggleStar }:
   // Time range
   const { minTime, maxTime, span } = useMemo(() => {
     if (sortedEvents.length === 0) {
-      const now = 0;
+      const now = Date.now();
       return { minTime: now, maxTime: now + 86400000, span: 86400000 };
     }
     let min = Infinity;
@@ -190,16 +190,6 @@ export function TimelineGantt({ events, onSelect, onToggleStar: _onToggleStar }:
   const handleBarHover = useCallback((ev: TimelineEvent, e: React.MouseEvent) => {
     setTooltip({ event: ev, x: e.clientX, y: e.clientY });
   }, []);
-
-  if (events.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-gray-600">
-        <Clock size={32} className="mb-2" />
-        <p className="text-sm">No timeline events to chart</p>
-        <p className="text-xs mt-1">Add events with timestamps to see the Gantt view</p>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-full">
