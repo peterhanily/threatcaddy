@@ -271,9 +271,12 @@ export function Sidebar({
         {/* Whiteboards — only in whiteboard view */}
         {activeView === 'whiteboard' && (
           <div className="pt-2">
-            <button
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => setWhiteboardsOpen(!whiteboardsOpen)}
-              className="flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setWhiteboardsOpen(!whiteboardsOpen); } }}
+              className="flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300 cursor-pointer"
               aria-expanded={whiteboardsOpen}
             >
               {whiteboardsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -286,7 +289,7 @@ export function Sidebar({
               >
                 <Plus size={14} />
               </button>
-            </button>
+            </div>
 
             {whiteboardsOpen && (
               <div className="mt-1 space-y-0.5">
@@ -351,9 +354,12 @@ export function Sidebar({
         {/* Timelines — only in timeline view */}
         {activeView === 'timeline' && (
           <div className="pt-2">
-            <button
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => setTimelinesOpen(!timelinesOpen)}
-              className="flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTimelinesOpen(!timelinesOpen); } }}
+              className="flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300 cursor-pointer"
               aria-expanded={timelinesOpen}
             >
               {timelinesOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -366,7 +372,7 @@ export function Sidebar({
               >
                 <Plus size={14} />
               </button>
-            </button>
+            </div>
 
             {timelinesOpen && (
               <div className="mt-1 space-y-0.5">
@@ -491,9 +497,12 @@ export function Sidebar({
             );
           })() : (
           <>
-          <button
+          <div
+            role="button"
+            tabIndex={0}
             onClick={() => setFoldersOpen(!foldersOpen)}
-            className="flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300"
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFoldersOpen(!foldersOpen); } }}
+            className="flex items-center gap-1 w-full px-2 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-300 cursor-pointer"
             aria-expanded={foldersOpen}
           >
             {foldersOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -516,7 +525,7 @@ export function Sidebar({
                 <Plus size={14} />
               </button>
             </span>
-          </button>
+          </div>
 
           {foldersOpen && (
             <div className="mt-1 space-y-0.5">

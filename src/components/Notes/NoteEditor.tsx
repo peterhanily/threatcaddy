@@ -146,7 +146,7 @@ export function NoteEditor({
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
       const newContent = content.slice(0, start) + '  ' + content.slice(end);
-      setContent(newContent);
+      handleContentChange(newContent);
       setTimeout(() => { textarea.selectionStart = textarea.selectionEnd = start + 2; }, 0);
     }
   };

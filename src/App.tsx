@@ -529,7 +529,7 @@ export default function App() {
   // Auto-deselect when selected note is no longer in filtered list
   // Fixes stale editor after trash, delete, archive, restore, tag change, etc.
   useEffect(() => {
-    if (selectedNoteId && filteredNotes.length >= 0 && !filteredNotes.find((n) => n.id === selectedNoteId)) {
+    if (selectedNoteId && filteredNotes.length > 0 && !filteredNotes.find((n) => n.id === selectedNoteId)) {
       setSelectedNoteId(undefined);
     }
   }, [selectedNoteId, filteredNotes]);

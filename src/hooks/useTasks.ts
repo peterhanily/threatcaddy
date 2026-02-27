@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../db';
 import type { Task, TaskStatus } from '../types';
 import { nanoid } from 'nanoid';
@@ -122,12 +122,12 @@ export function useTasks() {
     [tasks]
   );
 
-  const taskCounts = {
+  const taskCounts = useMemo(() => ({
     todo: tasks.filter((t) => t.status === 'todo').length,
     'in-progress': tasks.filter((t) => t.status === 'in-progress').length,
     done: tasks.filter((t) => t.status === 'done').length,
     total: tasks.length,
-  };
+  }), [tasks]);
 
   return {
     tasks,

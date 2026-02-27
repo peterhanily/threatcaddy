@@ -65,7 +65,7 @@ function ClickHandler({ onPlace }: { onPlace: (lat: number, lng: number) => void
 
 function FitBounds({ bounds }: { bounds: L.LatLngBounds }) {
   const map = useMap();
-  useMemo(() => {
+  useEffect(() => {
     map.fitBounds(bounds, { padding: [40, 40] });
   }, [map, bounds]);
   return null;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../db';
 import type { TimelineEvent, TimelineEventType } from '../types';
 import { nanoid } from 'nanoid';
@@ -139,10 +139,10 @@ export function useTimeline() {
     [events]
   );
 
-  const eventCounts = {
+  const eventCounts = useMemo(() => ({
     total: events.length,
     starred: events.filter((e) => e.starred).length,
-  };
+  }), [events]);
 
   return {
     events,
