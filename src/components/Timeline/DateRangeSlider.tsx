@@ -123,6 +123,9 @@ function computeMonthTicks(minTs: number, maxTs: number, stepMonths: number, maj
 export function DateRangeSlider({ events, dateStart, dateEnd, onChange }: DateRangeSliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<'start' | 'end' | null>(null);
+  // Local fractions used during drag for smooth visuals (no parent re-render until pointerup)
+  const [dragStartFrac, setDragStartFrac] = useState<number | null>(null);
+  const [dragEndFrac, setDragEndFrac] = useState<number | null>(null);
 
   const { minTs, maxTs } = useMemo(() => {
     if (events.length < 2) return { minTs: 0, maxTs: 0 };
@@ -139,9 +142,15 @@ export function DateRangeSlider({ events, dateStart, dateEnd, onChange }: DateRa
   const hidden = events.length < 2 || range === 0;
 
   const shortSpan = range < 2 * 24 * 60 * 60 * 1000;
-  const startFrac = dateStart !== undefined && range > 0 ? (dateStart - minTs) / range : 0;
-  const endFrac = dateEnd !== undefined && range > 0 ? (dateEnd - minTs) / range : 1;
-  const isNarrowed = dateStart !== undefined || dateEnd !== undefined;
+  const propsStartFrac = dateStart !== undefined && range > 0 ? (dateStart - minTs) / range : 0;
+  const propsEndFrac = dateEnd !== undefined && range > 0 ? (dateEnd - minTs) / range : 1;
+
+  // Use local drag fractions when actively dragging, otherwise use props
+  const startFrac = dragStartFrac ?? propsStartFrac;
+  const endFrac = dragEndFrac ?? propsEndFrac;
+
+  const fracToTs = useCallback((frac: number) => minTs + frac * range, [minTs, range]);
+  const isNarrowed = dateStart !== undefined || dateEnd !== undefined || dragStartFrac !== null || dragEndFrac !== null;
 
   const ticks = useMemo(() => {
     if (hidden) return [];
@@ -160,17 +169,22 @@ export function DateRangeSlider({ events, dateStart, dateEnd, onChange }: DateRa
 
     const handleMove = (e: PointerEvent) => {
       const frac = getTrackFraction(e.clientX);
-      const toTs = (f: number) => minTs + f * range;
       if (dragging === 'start') {
-        const clamped = Math.min(frac, endFrac);
-        onChange(clamped <= 0 ? undefined : toTs(clamped), dateEnd);
+        setDragStartFrac(Math.min(frac, endFrac));
       } else {
-        const clamped = Math.max(frac, startFrac);
-        onChange(dateStart, clamped >= 1 ? undefined : toTs(clamped));
+        setDragEndFrac(Math.max(frac, startFrac));
       }
     };
 
-    const handleUp = () => setDragging(null);
+    const handleUp = () => {
+      // Commit final values to parent
+      const newStart = startFrac <= 0 ? undefined : fracToTs(startFrac);
+      const newEnd = endFrac >= 1 ? undefined : fracToTs(endFrac);
+      onChange(newStart, newEnd);
+      setDragStartFrac(null);
+      setDragEndFrac(null);
+      setDragging(null);
+    };
 
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', handleUp);
@@ -178,16 +192,27 @@ export function DateRangeSlider({ events, dateStart, dateEnd, onChange }: DateRa
       window.removeEventListener('pointermove', handleMove);
       window.removeEventListener('pointerup', handleUp);
     };
-  }); // intentionally no deps — re-subscribes each render to capture latest values
+  }, [dragging, getTrackFraction, fracToTs, onChange, startFrac, endFrac]);
+
+  const beginDrag = useCallback((handle: 'start' | 'end') => {
+    // Seed local drag state from current positions
+    setDragStartFrac(propsStartFrac);
+    setDragEndFrac(propsEndFrac);
+    setDragging(handle);
+  }, [propsStartFrac, propsEndFrac]);
 
   if (hidden) return null;
+
+  // Compute display timestamps from fractions
+  const displayStartTs = fracToTs(startFrac);
+  const displayEndTs = fracToTs(endFrac);
 
   return (
     <div className="px-3 py-1.5 border-b border-gray-800">
       {/* Slider row */}
       <div className="flex items-center gap-2">
         <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0 select-none tabular-nums w-[70px] text-right">
-          {formatLabel(dateStart ?? minTs, shortSpan)}
+          {formatLabel(displayStartTs, shortSpan)}
         </span>
         <div
           ref={trackRef}
@@ -196,7 +221,7 @@ export function DateRangeSlider({ events, dateStart, dateEnd, onChange }: DateRa
             const frac = getTrackFraction(e.clientX);
             const pick = Math.abs(frac - startFrac) <= Math.abs(frac - endFrac) ? 'start' : 'end';
             e.preventDefault();
-            setDragging(pick);
+            beginDrag(pick);
           }}
         >
           {/* Track */}
@@ -220,43 +245,41 @@ export function DateRangeSlider({ events, dateStart, dateEnd, onChange }: DateRa
           ))}
           {/* Start handle + tooltip */}
           <div
-            className="absolute top-1/2 z-10 group"
+            className="absolute top-1/2 z-10"
             style={{ left: `${startFrac * 100}%`, transform: 'translateX(-50%) translateY(-50%)' }}
           >
             <div
               className="w-3.5 h-3.5 rounded-full bg-accent border-2 border-gray-900 cursor-grab active:cursor-grabbing hover:scale-125 transition-transform"
-              onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setDragging('start'); }}
+              onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); beginDrag('start'); }}
             />
-            {/* Tooltip */}
             {dragging === 'start' && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-1.5 py-0.5 rounded bg-gray-700 text-[10px] text-gray-200 whitespace-nowrap tabular-nums shadow-lg pointer-events-none">
-                {formatLabel(dateStart ?? minTs, true)}
+                {formatLabel(displayStartTs, true)}
               </div>
             )}
           </div>
           {/* End handle + tooltip */}
           <div
-            className="absolute top-1/2 z-10 group"
+            className="absolute top-1/2 z-10"
             style={{ left: `${endFrac * 100}%`, transform: 'translateX(-50%) translateY(-50%)' }}
           >
             <div
               className="w-3.5 h-3.5 rounded-full bg-accent border-2 border-gray-900 cursor-grab active:cursor-grabbing hover:scale-125 transition-transform"
-              onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setDragging('end'); }}
+              onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); beginDrag('end'); }}
             />
-            {/* Tooltip */}
             {dragging === 'end' && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-1.5 py-0.5 rounded bg-gray-700 text-[10px] text-gray-200 whitespace-nowrap tabular-nums shadow-lg pointer-events-none">
-                {formatLabel(dateEnd ?? maxTs, true)}
+                {formatLabel(displayEndTs, true)}
               </div>
             )}
           </div>
         </div>
         <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0 select-none tabular-nums w-[70px]">
-          {formatLabel(dateEnd ?? maxTs, shortSpan)}
+          {formatLabel(displayEndTs, shortSpan)}
         </span>
         {isNarrowed && (
           <button
-            onClick={() => onChange(undefined, undefined)}
+            onClick={() => { setDragStartFrac(null); setDragEndFrac(null); onChange(undefined, undefined); }}
             className="text-[10px] text-accent hover:text-accent-hover shrink-0"
           >
             Reset
