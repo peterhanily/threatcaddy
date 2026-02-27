@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
@@ -50,11 +50,16 @@ function formatTime(timestamp: number): string {
 }
 
 function ClickHandler({ onPlace }: { onPlace: (lat: number, lng: number) => void }) {
-  useMapEvents({
+  const map = useMapEvents({
     click(e) {
       onPlace(e.latlng.lat, e.latlng.lng);
     },
   });
+  // Disable double-click zoom in place mode so single clicks fire immediately
+  useEffect(() => {
+    map.doubleClickZoom.disable();
+    return () => { map.doubleClickZoom.enable(); };
+  }, [map]);
   return null;
 }
 
