@@ -22,6 +22,16 @@ function migrateSettings(raw: Record<string, unknown>): Record<string, unknown> 
   if (Array.isArray(raw.tiRelationshipTypes)) {
     raw.tiRelationshipTypes = undefined;
   }
+  // Migrate legacy OCI PAR fields → backupDestinations array
+  if (raw.ociWritePAR && typeof raw.ociWritePAR === 'string' && !raw.backupDestinations) {
+    raw.backupDestinations = [{
+      id: 'migrated-oci',
+      provider: 'oci',
+      label: (raw.ociLabel as string) || 'OCI Backup',
+      url: raw.ociWritePAR as string,
+      enabled: true,
+    }];
+  }
   return raw;
 }
 

@@ -86,4 +86,43 @@ describe('useSettings', () => {
     expect(result.current.settings.ociWritePAR).toBe('https://example.com/p/write/o/');
     expect(result.current.settings.ociLabel).toBe('my-device');
   });
+
+  it('migrates legacy ociWritePAR to backupDestinations', () => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      ociWritePAR: 'https://objectstorage.us-ashburn-1.oraclecloud.com/p/token/n/ns/b/bucket/o/',
+      ociLabel: 'My OCI',
+    }));
+    const { result } = renderHook(() => useSettings());
+    const dests = result.current.settings.backupDestinations;
+    expect(dests).toBeDefined();
+    expect(dests).toHaveLength(1);
+    expect(dests![0].provider).toBe('oci');
+    expect(dests![0].label).toBe('My OCI');
+    expect(dests![0].url).toBe('https://objectstorage.us-ashburn-1.oraclecloud.com/p/token/n/ns/b/bucket/o/');
+    expect(dests![0].enabled).toBe(true);
+    expect(dests![0].id).toBe('migrated-oci');
+  });
+
+  it('does not re-migrate if backupDestinations already exists', () => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      ociWritePAR: 'https://objectstorage.us-ashburn-1.oraclecloud.com/p/token/n/ns/b/bucket/o/',
+      ociLabel: 'Old',
+      backupDestinations: [{ id: 'custom', provider: 'aws-s3', label: 'S3', url: 'https://mybucket.s3.us-east-1.amazonaws.com/', enabled: true }],
+    }));
+    const { result } = renderHook(() => useSettings());
+    const dests = result.current.settings.backupDestinations;
+    expect(dests).toHaveLength(1);
+    expect(dests![0].id).toBe('custom');
+    expect(dests![0].provider).toBe('aws-s3');
+  });
+
+  it('uses default label when ociLabel is not set', () => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      ociWritePAR: 'https://objectstorage.us-ashburn-1.oraclecloud.com/p/token/n/ns/b/bucket/o/',
+    }));
+    const { result } = renderHook(() => useSettings());
+    const dests = result.current.settings.backupDestinations;
+    expect(dests).toBeDefined();
+    expect(dests![0].label).toBe('OCI Backup');
+  });
 });

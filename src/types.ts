@@ -87,6 +87,16 @@ export interface Tag {
   color: string;
 }
 
+export type CloudProvider = 'oci' | 'aws-s3' | 'azure-blob' | 'gcs';
+
+export interface BackupDestination {
+  id: string;
+  provider: CloudProvider;
+  label: string;
+  url: string;
+  enabled: boolean;
+}
+
 export type ViewMode = 'notes' | 'tasks' | 'timeline' | 'whiteboard' | 'activity' | 'graph' | 'ioc-stats';
 export type EditorMode = 'edit' | 'preview' | 'split';
 export type TaskViewMode = 'list' | 'kanban';
@@ -107,6 +117,7 @@ export interface Settings {
   tiIocSubtypes?: Record<string, string[]>;
   tiRelationshipTypes?: Record<string, IOCRelationshipDef>;
   tiIocStatuses?: string[];
+  backupDestinations?: BackupDestination[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {

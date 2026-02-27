@@ -2,7 +2,7 @@ import { Github, Download } from 'lucide-react';
 import type { Settings, Note } from '../../types';
 import { ExportImport } from './ExportImport';
 import { ThreatIntelConfig } from './ThreatIntelConfig';
-import { OCISync } from './OCISync';
+import { CloudBackup } from './CloudBackup';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { EncryptionSettings } from '../Encryption/EncryptionSettings';
 
@@ -77,7 +77,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       <hr className="border-gray-800" />
 
-      <OCISync />
+      <CloudBackup />
 
       <hr className="border-gray-800" />
 

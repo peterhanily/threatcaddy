@@ -23,14 +23,14 @@ interface IOCPanelProps {
   threatIntelConfig?: ThreatIntelConfigProps;
   tiExportConfig?: ThreatIntelExportConfig;
   onPushIOCs?: (entries: IOCExportEntry[], slug: string, typeSlug?: string) => Promise<boolean>;
-  ociPushing?: boolean;
-  ociWritePARConfigured?: boolean;
+  cloudPushing?: boolean;
+  cloudBackupConfigured?: boolean;
   lastPushedAt?: number;
   onPushComplete?: () => void;
   style?: React.CSSProperties;
 }
 
-export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatIntelConfig, tiExportConfig, onPushIOCs, ociPushing, ociWritePARConfigured, lastPushedAt, onPushComplete, style }: IOCPanelProps) {
+export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatIntelConfig, tiExportConfig, onPushIOCs, cloudPushing, cloudBackupConfigured, lastPushedAt, onPushComplete, style }: IOCPanelProps) {
   const {
     analysis,
     analyzing,
@@ -107,7 +107,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
     const slug = slugify(item.title) || 'item';
     const ok = await onPushIOCs(entries, slug);
     if (ok) {
-      showPushMessage('success', 'Pushed to OCI');
+      showPushMessage('success', 'Pushed to cloud');
       onPushComplete?.();
     } else {
       showPushMessage('error', 'Push failed');
@@ -123,7 +123,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
     const typeSlug = type.replace(/[^a-z0-9]/g, '-');
     const ok = await onPushIOCs(entries, slug, typeSlug);
     if (ok) {
-      showPushMessage('success', 'Pushed to OCI');
+      showPushMessage('success', 'Pushed to cloud');
       onPushComplete?.();
     } else {
       showPushMessage('error', 'Push failed');
@@ -131,7 +131,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
   };
 
   const handlePushAll = () => {
-    if (!ociWritePARConfigured || !onPushIOCs) return;
+    if (!cloudBackupConfigured || !onPushIOCs) return;
     if (lastPushedAt) {
       setConfirmPushAll(true);
     } else {
@@ -140,7 +140,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
   };
 
   const handlePushCategory = (type: IOCType) => {
-    if (!ociWritePARConfigured || !onPushIOCs) return;
+    if (!cloudBackupConfigured || !onPushIOCs) return;
     if (lastPushedAt) {
       setConfirmPushCategory(type);
     } else {
@@ -252,10 +252,10 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
             </div>
             <button
               onClick={handlePushAll}
-              disabled={!ociWritePARConfigured || ociPushing}
+              disabled={!cloudBackupConfigured || cloudPushing}
               className="p-1 rounded text-gray-500 hover:text-gray-300 disabled:opacity-50"
-              title={ociWritePARConfigured ? 'Push IOCs to OCI' : 'Configure write PAR in Settings to push IOCs'}
-              aria-label="Push IOCs to OCI"
+              title={cloudBackupConfigured ? 'Push IOCs to cloud' : 'Configure backup destination in Settings to push IOCs'}
+              aria-label="Push IOCs to cloud"
             >
               <Upload size={14} />
             </button>
@@ -383,10 +383,10 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                                 setExportForType(null);
                                 handlePushCategory(type);
                               }}
-                              disabled={!ociWritePARConfigured || ociPushing}
-                              className={cn('w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 rounded-b-lg disabled:opacity-50', ociWritePARConfigured ? 'text-accent' : 'text-gray-500')}
+                              disabled={!cloudBackupConfigured || cloudPushing}
+                              className={cn('w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 rounded-b-lg disabled:opacity-50', cloudBackupConfigured ? 'text-accent' : 'text-gray-500')}
                             >
-                              Push to OCI (flat)
+                              Push to cloud (flat)
                             </button>
                           </div>
                         )}

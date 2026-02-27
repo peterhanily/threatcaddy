@@ -9,7 +9,7 @@ import { TagInput } from '../Common/TagInput';
 import { IOCPanel } from '../Analysis/IOCPanel';
 import { ResizeHandle } from '../Common/ResizeHandle';
 import { EntityLinker } from '../Common/EntityLinker';
-import { useOCISync } from '../../hooks/useOCISync';
+import { useCloudSync } from '../../hooks/useCloudSync';
 import { useResizable } from '../../hooks/useResizable';
 import { useLogActivity } from '../../hooks/ActivityLogContext';
 import { useAutoIOCExtraction } from '../../hooks/useAutoIOCExtraction';
@@ -62,7 +62,7 @@ export function NoteEditor({
   const [showIOCPanel, setShowIOCPanel] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [shareMessage, setShareMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const oci = useOCISync();
+  const cloud = useCloudSync();
   const logActivity = useLogActivity();
   const titleRef = useRef<HTMLInputElement>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -165,17 +165,17 @@ export function NoteEditor({
     }, 0);
   };
 
-  // Show share feedback when oci finishes
+  // Show share feedback when cloud sync finishes
   useEffect(() => {
-    if (oci.syncing) return;
-    if (oci.error) {
-      setShareMessage({ type: 'error', text: oci.error });
-    } else if (oci.progress && oci.progress.toLowerCase().includes('success')) {
-      setShareMessage({ type: 'success', text: oci.progress });
+    if (cloud.syncing) return;
+    if (cloud.error) {
+      setShareMessage({ type: 'error', text: cloud.error });
+    } else if (cloud.progress && cloud.progress.toLowerCase().includes('success')) {
+      setShareMessage({ type: 'success', text: cloud.progress });
       clearTimeout(shareMsgTimeoutRef.current);
       shareMsgTimeoutRef.current = setTimeout(() => setShareMessage(null), 5000);
     }
-  }, [oci.syncing, oci.progress, oci.error]);
+  }, [cloud.syncing, cloud.progress, cloud.error]);
 
   const stats = wordCount(content);
   const showEditor = editorMode === 'edit' || editorMode === 'split';
@@ -315,37 +315,37 @@ export function NoteEditor({
           )}
         </button>
 
-        {externalSettings?.ociWritePAR && (
+        {cloud.hasDestinations && (
           <div className="relative">
             <button
               onClick={() => {
-                if (oci.syncing) return;
+                if (cloud.syncing) return;
                 if (note.iocAnalysis && iocCount > 0) {
                   setShowShareMenu(!showShareMenu);
                 } else {
-                  oci.shareNote(note, clipsFolderId);
+                  cloud.shareNote(note, clipsFolderId);
                   logActivity('sync', 'share', `Shared note "${note.title}"`, note.id, note.title);
                 }
               }}
-              disabled={oci.syncing}
+              disabled={cloud.syncing}
               className="p-1.5 rounded text-gray-500 hover:text-gray-300 disabled:opacity-50"
-              title="Share to OCI"
-              aria-label="Share to OCI Object Storage"
+              title="Share to cloud"
+              aria-label="Share to cloud backup"
             >
               <Upload size={16} />
             </button>
             {showShareMenu && (
               <div className="absolute top-full right-0 mt-1 py-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 min-w-40">
                 <button
-                  onClick={() => { if (oci.syncing) return; oci.shareNote(note, clipsFolderId); logActivity('sync', 'share', `Shared note "${note.title}"`, note.id, note.title); setShowShareMenu(false); }}
-                  disabled={oci.syncing}
+                  onClick={() => { if (cloud.syncing) return; cloud.shareNote(note, clipsFolderId); logActivity('sync', 'share', `Shared note "${note.title}"`, note.id, note.title); setShowShareMenu(false); }}
+                  disabled={cloud.syncing}
                   className="w-full px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-50"
                 >
                   Share Note
                 </button>
                 <button
-                  onClick={() => { if (oci.syncing) return; oci.shareIOCReport(note); logActivity('sync', 'share-ioc-report', `Shared IOC report for "${note.title}"`, note.id, note.title); setShowShareMenu(false); }}
-                  disabled={oci.syncing}
+                  onClick={() => { if (cloud.syncing) return; cloud.shareIOCReport(note); logActivity('sync', 'share-ioc-report', `Shared IOC report for "${note.title}"`, note.id, note.title); setShowShareMenu(false); }}
+                  disabled={cloud.syncing}
                   className="w-full px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-50"
                 >
                   Share IOC Report
@@ -456,13 +456,13 @@ export function NoteEditor({
               } : undefined}
               onPushIOCs={(entries, slug, typeSlug) => {
                 logActivity('ioc', 'push-iocs', `Pushed ${entries.length} IOCs from "${note.title}"`, note.id, note.title);
-                return oci.pushIOCs(entries, slug, typeSlug, externalSettings ? {
+                return cloud.pushIOCs(entries, slug, typeSlug, externalSettings ? {
                   defaultClsLevel: externalSettings.tiDefaultClsLevel,
                   defaultReportSource: externalSettings.tiDefaultReportSource,
                 } : undefined);
               }}
-              ociWritePARConfigured={!!externalSettings?.ociWritePAR}
-              ociPushing={oci.syncing}
+              cloudBackupConfigured={cloud.hasDestinations}
+              cloudPushing={cloud.syncing}
               lastPushedAt={note.iocAnalysis?.lastPushedAt}
               onPushComplete={() => {
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

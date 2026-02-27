@@ -1,3 +1,5 @@
+// @deprecated — Use cloud-sync.ts and cloud-providers.ts for new code.
+// This file is retained for envelope/key helpers which are provider-agnostic.
 import type { Note, SharedItemEnvelope, ExportData } from '../types';
 
 // ---- Validation ----
