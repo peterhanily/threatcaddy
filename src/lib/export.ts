@@ -395,7 +395,7 @@ export async function exportTimelineJSON(timelineId: string): Promise<string> {
   if (!timeline) throw new Error('Timeline not found');
   const events = await db.timelineEvents.where('timelineId').equals(timelineId).toArray();
   const data: TimelineExportData = {
-    format: 'browsernotes-timeline',
+    format: 'threatcaddy-timeline',
     version: 1,
     exportedAt: Date.now(),
     timeline: { name: timeline.name, description: timeline.description, color: timeline.color },
@@ -406,7 +406,7 @@ export async function exportTimelineJSON(timelineId: string): Promise<string> {
 
 export function exportEventsJSON(events: TimelineEvent[], timelineMeta?: { name?: string; description?: string; color?: string }): string {
   const data: TimelineExportData = {
-    format: 'browsernotes-timeline',
+    format: 'threatcaddy-timeline',
     version: 1,
     exportedAt: Date.now(),
     timeline: { name: timelineMeta?.name ?? 'All Events', description: timelineMeta?.description, color: timelineMeta?.color },
@@ -424,7 +424,7 @@ export function parseTimelineImport(json: string): TimelineExportData {
     throw new Error(`File too large (max ${MAX_IMPORT_SIZE / 1024 / 1024} MB)`);
   }
   const data = JSON.parse(json);
-  if (!data || typeof data !== 'object' || data.format !== 'browsernotes-timeline') {
+  if (!data || typeof data !== 'object' || (data.format !== 'threatcaddy-timeline' && data.format !== 'browsernotes-timeline')) {
     throw new Error('Invalid timeline export file');
   }
   const events = (Array.isArray(data.events) ? data.events : [])
@@ -435,7 +435,7 @@ export function parseTimelineImport(json: string): TimelineExportData {
   }
   const tl = data.timeline && typeof data.timeline === 'object' ? data.timeline as Record<string, unknown> : {};
   return {
-    format: 'browsernotes-timeline',
+    format: 'threatcaddy-timeline',
     version: 1,
     exportedAt: num(data.exportedAt, Date.now()),
     timeline: {

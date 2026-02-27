@@ -114,7 +114,7 @@ export function formatIOCsSTIX(
   }));
 
   // 1. Identity SDO
-  const identityName = config.identityName || 'BrowserNotes Analyst';
+  const identityName = config.identityName || 'ThreatCaddy Analyst';
   const identityId = `identity--${deterministicUUID('identity', identityName)}`;
   objects.push({
     type: 'identity',

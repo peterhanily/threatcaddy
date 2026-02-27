@@ -1,6 +1,6 @@
 {
-  "name": "browsernotes",
-  "description": "Privacy-first browser-based note-taking and threat intelligence analysis app",
+  "name": "threatcaddy",
+  "description": "ThreatCaddy — Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs. No server. No tracking.",
   "private": true,
   "version": "1.0.0",
   "packageManager": "pnpm@10.29.1",

@@ -728,7 +728,7 @@ export function Sidebar({
         {/* Links — visible on mobile (md:hidden) since header hides them on mobile */}
         <div className="md:hidden pt-2 space-y-0.5">
           <a
-            href="https://github.com/peterhanily/browsernotes"
+            href="https://github.com/peterhanily/threatcaddy"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors"
@@ -737,7 +737,7 @@ export function Sidebar({
             <span>GitHub</span>
           </a>
           <a
-            href="./browsernotes-standalone.html"
+            href="./threatcaddy-standalone.html"
             download
             className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors"
           >
@@ -745,7 +745,7 @@ export function Sidebar({
             <span>Download Standalone</span>
           </a>
           <a
-            href="https://github.com/peterhanily/browsernotes/tree/main/extension#readme"
+            href="https://github.com/peterhanily/threatcaddy/tree/main/extension#readme"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors"

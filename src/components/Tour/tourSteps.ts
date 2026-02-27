@@ -14,8 +14,8 @@ export const tourSteps: TourStep[] = [
   {
     id: 'welcome',
     target: '[data-tour="header"]',
-    title: 'Welcome to BrowserNotes',
-    description: 'Your private, browser-based notebook for notes, tasks, timelines, and whiteboards. Everything stays in your browser — nothing is sent to a server.',
+    title: 'Welcome to ThreatCaddy',
+    description: 'Your private threat investigation workspace for notes, IOCs, timelines, and graphs. Everything stays in your browser — nothing is sent to a server.',
     placement: 'bottom',
     view: 'notes',
   },
@@ -136,14 +136,14 @@ export const tourSteps: TourStep[] = [
     id: 'standalone',
     target: '[data-tour="standalone"]',
     title: 'Standalone HTML',
-    description: 'Download BrowserNotes as a single HTML file. Run it from your desktop — no server, no internet needed.',
+    description: 'Download ThreatCaddy as a single HTML file. Run it from your desktop — no server, no internet needed.',
     placement: 'bottom',
   },
   {
     id: 'extension',
     target: '[data-tour="extension"]',
     title: 'Browser Extension',
-    description: 'Clip web pages, text selections, and links directly into BrowserNotes with the Chrome extension.',
+    description: 'Clip web pages, text selections, and links directly into ThreatCaddy with the Chrome extension.',
     placement: 'bottom',
   },
 ];

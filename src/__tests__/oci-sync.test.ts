@@ -63,33 +63,33 @@ describe('buildObjectUrl', () => {
   const prefix = 'https://objectstorage.us-ashburn-1.oraclecloud.com/p/token/n/ns/b/bucket/o/';
 
   it('appends path to prefix', () => {
-    const url = buildObjectUrl(prefix, 'browsernotes/test.json');
-    expect(url).toBe(prefix + 'browsernotes/test.json');
+    const url = buildObjectUrl(prefix, 'threatcaddy/test.json');
+    expect(url).toBe(prefix + 'threatcaddy/test.json');
   });
 
   it('handles prefix without trailing slash', () => {
     const prefixNoSlash = prefix.slice(0, -1);
-    const url = buildObjectUrl(prefixNoSlash, 'browsernotes/test.json');
-    expect(url).toBe(prefix + 'browsernotes/test.json');
+    const url = buildObjectUrl(prefixNoSlash, 'threatcaddy/test.json');
+    expect(url).toBe(prefix + 'threatcaddy/test.json');
   });
 
   it('strips leading slashes from object path', () => {
-    const url = buildObjectUrl(prefix, '/browsernotes/test.json');
-    expect(url).toBe(prefix + 'browsernotes/test.json');
+    const url = buildObjectUrl(prefix, '/threatcaddy/test.json');
+    expect(url).toBe(prefix + 'threatcaddy/test.json');
   });
 
   it('sanitizes .. from object path', () => {
-    const url = buildObjectUrl(prefix, 'browsernotes/../secret.json');
+    const url = buildObjectUrl(prefix, 'threatcaddy/../secret.json');
     expect(url).not.toContain('..');
   });
 
   it('strips query params from object path', () => {
-    const url = buildObjectUrl(prefix, 'browsernotes/test.json?param=evil');
+    const url = buildObjectUrl(prefix, 'threatcaddy/test.json?param=evil');
     expect(url).not.toContain('?');
   });
 
   it('strips hash from object path', () => {
-    const url = buildObjectUrl(prefix, 'browsernotes/test.json#frag');
+    const url = buildObjectUrl(prefix, 'threatcaddy/test.json#frag');
     expect(url).not.toContain('#');
   });
 
@@ -190,30 +190,30 @@ describe('buildFullBackupEnvelope', () => {
 describe('buildObjectKey', () => {
   it('creates backup key with label', () => {
     const key = buildObjectKey('full-backup', '', 'MyTeam');
-    expect(key).toMatch(/^browsernotes\/backups\/MyTeam-\d+\.json$/);
+    expect(key).toMatch(/^threatcaddy\/backups\/MyTeam-\d+\.json$/);
   });
 
   it('creates note key with id', () => {
     const key = buildObjectKey('note', 'n1', 'Alice');
-    expect(key).toMatch(/^browsernotes\/shared\/notes\/n1-\d+\.json$/);
+    expect(key).toMatch(/^threatcaddy\/shared\/notes\/n1-\d+\.json$/);
   });
 
   it('creates clip key', () => {
     const key = buildObjectKey('clip', 'c1', 'Bob');
-    expect(key).toMatch(/^browsernotes\/shared\/clips\/c1-\d+\.json$/);
+    expect(key).toMatch(/^threatcaddy\/shared\/clips\/c1-\d+\.json$/);
   });
 
   it('creates ioc-report key', () => {
     const key = buildObjectKey('ioc-report', 'n2', 'Alice');
-    expect(key).toMatch(/^browsernotes\/shared\/ioc-reports\/n2-\d+\.json$/);
+    expect(key).toMatch(/^threatcaddy\/shared\/ioc-reports\/n2-\d+\.json$/);
   });
 
   it('sanitizes unsafe label characters', () => {
     const key = buildObjectKey('full-backup', '', 'My Team / Backup!');
     // The label portion should not contain slashes or special chars
-    const labelPart = key.replace('browsernotes/backups/', '').replace(/-\d+\.json$/, '');
+    const labelPart = key.replace('threatcaddy/backups/', '').replace(/-\d+\.json$/, '');
     expect(labelPart).not.toContain('/');
     expect(labelPart).not.toContain('!');
-    expect(key).toMatch(/^browsernotes\/backups\//);
+    expect(key).toMatch(/^threatcaddy\/backups\//);
   });
 });

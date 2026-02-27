@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useSavedSearches } from '../hooks/useSavedSearches';
 
-const STORAGE_KEY = 'browsernotes-saved-searches';
+const STORAGE_KEY = 'threatcaddy-saved-searches';
 
 describe('useSavedSearches', () => {
   beforeEach(() => {

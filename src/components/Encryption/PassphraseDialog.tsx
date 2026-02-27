@@ -125,7 +125,7 @@ export function PassphraseDialog({ onUnlocked }: PassphraseDialogProps) {
       <div className="bg-gray-900 rounded-xl shadow-2xl border border-gray-700 w-full max-w-md p-6">
         <div className="flex items-center gap-3 mb-6">
           <Lock className="text-accent" size={24} />
-          <h2 className="text-xl font-bold text-gray-100">Unlock BrowserNotes</h2>
+          <h2 className="text-xl font-bold text-gray-100">Unlock ThreatCaddy</h2>
         </div>
 
         <p className="text-sm text-gray-400 mb-4">

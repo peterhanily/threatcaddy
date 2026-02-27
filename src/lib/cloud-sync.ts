@@ -111,7 +111,7 @@ export async function testDestination(
   const validation = provider.validateUrl(destination.url);
   if (!validation.valid) return { ok: false, error: validation.error };
 
-  const testKey = 'browsernotes/.connectivity-test';
+  const testKey = 'threatcaddy/.connectivity-test';
   const result = await cloudPut(destination, testKey, JSON.stringify({ test: true, at: Date.now() }));
   return { ok: result.ok, error: result.error };
 }

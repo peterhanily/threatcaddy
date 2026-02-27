@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { nanoid } from 'nanoid';
 import type { SearchMode } from '../lib/search';
 
-const STORAGE_KEY = 'browsernotes-saved-searches';
+const STORAGE_KEY = 'threatcaddy-saved-searches';
 const MAX_SAVED = 20;
 
 export interface SavedSearch {

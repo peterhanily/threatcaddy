@@ -37,7 +37,7 @@ describe('formatIOCsSTIX', () => {
     const bundle = parseBundle([makeEntry([makeIOC({ type: 'ipv4', value: '10.0.0.1' })])]);
     const identity = bundle.objects.find((o: Record<string, unknown>) => o.type === 'identity');
     expect(identity).toBeDefined();
-    expect(identity.name).toBe('BrowserNotes Analyst');
+    expect(identity.name).toBe('ThreatCaddy Analyst');
     expect(identity.identity_class).toBe('individual');
   });
 

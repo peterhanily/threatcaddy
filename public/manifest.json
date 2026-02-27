@@ -1,7 +1,7 @@
 {
-  "name": "BrowserNotes",
-  "short_name": "BrowserNotes",
-  "description": "A privacy-first, browser-based note-taking app with threat intelligence analysis, IOC extraction, entity graph visualization, and task management. No server. No tracking.",
+  "name": "ThreatCaddy",
+  "short_name": "ThreatCaddy",
+  "description": "Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs. No server. No tracking.",
   "start_url": "/",
   "display": "standalone",
   "theme_color": "#030712",

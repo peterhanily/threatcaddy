@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Settings } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 
-const SETTINGS_KEY = 'browsernotes-settings';
+const SETTINGS_KEY = 'threatcaddy-settings';
 
 function migrateSettings(raw: Record<string, unknown>): Record<string, unknown> {
   // Migrate flat tiIocSubtypes array → per-type map

@@ -1,14 +1,14 @@
 {
-  "name": "browsernotes-extension",
+  "name": "threatcaddy-extension",
   "version": "1.0.0",
-  "description": "Chrome extension for BrowserNotes — quick capture notes from any page",
+  "description": "Chrome extension for ThreatCaddy — quick capture notes from any page",
   "private": true,
   "type": "module",
   "scripts": {
     "generate:icons": "node scripts/generate-icons.js",
     "build": "npm run generate:icons && node scripts/build.js",
     "build:chrome": "npm run generate:icons && BROWSER=chrome node scripts/build.js",
-    "package:chrome": "cd dist/chrome && zip -r ../browsernotes-chrome.zip ."
+    "package:chrome": "cd dist/chrome && zip -r ../threatcaddy-chrome.zip ."
   },
   "devDependencies": {
     "esbuild": "^0.25.0",

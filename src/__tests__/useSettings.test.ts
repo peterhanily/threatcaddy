@@ -4,7 +4,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useSettings } from '../hooks/useSettings';
 import { DEFAULT_SETTINGS } from '../types';
 
-const SETTINGS_KEY = 'browsernotes-settings';
+const SETTINGS_KEY = 'threatcaddy-settings';
 
 describe('useSettings', () => {
   beforeEach(() => {

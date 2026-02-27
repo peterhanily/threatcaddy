@@ -1,6 +1,6 @@
 // Clips review page logic
 
-const DEFAULT_TARGET_URL = 'https://browsernotes.online';
+const DEFAULT_TARGET_URL = 'https://threatcaddy.com';
 
 // DOM references
 const capturesList = document.getElementById('captures-list');
@@ -137,7 +137,7 @@ function renderCaptures(captures) {
       <div class="empty-state">
         <div class="empty-icon">&#128203;</div>
         <p>No captures yet</p>
-        <p style="font-size: 13px;">Select text on any page and right-click "Save to BrowserNotes"</p>
+        <p style="font-size: 13px;">Select text on any page and right-click "Save to ThreatCaddy"</p>
       </div>
     `;
     return;
@@ -345,7 +345,7 @@ async function sendAllToTarget() {
     showToast('Failed to send: ' + error.message, true);
   } finally {
     sendAllBtn.disabled = false;
-    sendAllBtn.textContent = 'Send All to BrowserNotes';
+    sendAllBtn.textContent = 'Send All to ThreatCaddy';
   }
 }
 

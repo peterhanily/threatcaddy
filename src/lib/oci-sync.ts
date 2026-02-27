@@ -130,13 +130,13 @@ export function buildObjectKey(type: SharedItemEnvelope['type'], id: string, lab
 
   switch (type) {
     case 'full-backup':
-      return `browsernotes/backups/${safeLabel}-${timestamp}.json`;
+      return `threatcaddy/backups/${safeLabel}-${timestamp}.json`;
     case 'note':
-      return `browsernotes/shared/notes/${safeId}-${timestamp}.json`;
+      return `threatcaddy/shared/notes/${safeId}-${timestamp}.json`;
     case 'clip':
-      return `browsernotes/shared/clips/${safeId}-${timestamp}.json`;
+      return `threatcaddy/shared/clips/${safeId}-${timestamp}.json`;
     case 'ioc-report':
-      return `browsernotes/shared/ioc-reports/${safeId}-${timestamp}.json`;
+      return `threatcaddy/shared/ioc-reports/${safeId}-${timestamp}.json`;
   }
 }
 
@@ -148,7 +148,7 @@ export async function testPAR(parUrl: string): Promise<{ ok: boolean; error?: st
     return { ok: false, error: validation.error };
   }
 
-  const testKey = 'browsernotes/.connectivity-test';
+  const testKey = 'threatcaddy/.connectivity-test';
   const result = await ociPut(parUrl, testKey, JSON.stringify({ test: true, at: Date.now() }));
   return result;
 }

@@ -88,13 +88,13 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
       <div className="space-y-2">
         <h3 className="text-sm font-semibold text-gray-300">About</h3>
         <p className="text-sm text-gray-400">
-          BrowserNotes v1.0 — A privacy-first, browser-based note-taking app.
+          ThreatCaddy v1.0 — Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs.
           All data stored locally in your browser using IndexedDB.
         </p>
         <p className="text-xs text-gray-600">No server. No tracking. Your notes are yours.</p>
         <div className="flex items-center gap-4 pt-2">
           <a
-            href="https://github.com/peterhanily/browsernotes"
+            href="https://github.com/peterhanily/threatcaddy"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover transition-colors"
@@ -103,7 +103,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
             GitHub
           </a>
           <a
-            href="./browsernotes-standalone.html"
+            href="./threatcaddy-standalone.html"
             download
             className="flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover transition-colors"
           >

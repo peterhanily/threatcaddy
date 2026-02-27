@@ -1,8 +1,8 @@
-# BrowserNotes
+# ThreatCaddy
 
-A privacy-first, browser-based note-taking and threat intelligence analysis app. All data is stored locally in your browser — no server, no tracking, no accounts.
+Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs. No server. No tracking.
 
-**Live at [browsernotes.online](https://browsernotes.online)**
+**Live at [threatcaddy.com](https://threatcaddy.com)**
 
 ## Features
 
@@ -33,7 +33,7 @@ A privacy-first, browser-based note-taking and threat intelligence analysis app.
 - **Dark & Light Mode** — Dark by default, toggle anytime
 - **Export & Import** — Full JSON backup/restore with timeline and whiteboard data
 - **Standalone HTML** — Download a single-file version that works offline from `file://`
-- **Chrome Extension** — Clip web content directly into BrowserNotes
+- **Chrome Extension** — Clip web content directly into ThreatCaddy
 - **Keyboard Shortcuts** — Ctrl+N, Ctrl+K, Ctrl+S, and more
 - **Guided Tour** — Interactive onboarding tour for new users
 - **OCI Sync** — Optional sync via Oracle Cloud object storage pre-authenticated requests
@@ -65,7 +65,7 @@ pnpm build:single # Standalone HTML → dist-single/index.html
 
 ## Chrome Extension
 
-The `extension/` directory contains a Chrome extension for clipping web content into BrowserNotes.
+The `extension/` directory contains a Chrome extension for clipping web content into ThreatCaddy.
 
 To load during development:
 1. Open `chrome://extensions`
@@ -74,7 +74,7 @@ To load during development:
 
 ## Deploy
 
-The `dist/` output is configured for GitHub Pages with a custom domain (`browsernotes.online`). Push to `main` and deploy via GitHub Pages settings pointing at the `dist/` directory or a GitHub Actions workflow.
+The `dist/` output is configured for GitHub Pages with a custom domain (`threatcaddy.com`). Push to `main` and deploy via GitHub Pages settings pointing at the `dist/` directory or a GitHub Actions workflow.
 
 ## License
 

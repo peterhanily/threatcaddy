@@ -157,8 +157,8 @@ export function useCloudSync(backupDestinations?: BackupDestination[]) {
       const timestamp = Date.now();
       const safeSlug = slugify(slug) || 'iocs';
       const objectKey = typeSlug
-        ? `browsernotes/iocs/${safeSlug}-${typeSlug}-${timestamp}.json`
-        : `browsernotes/iocs/${safeSlug}-${timestamp}.json`;
+        ? `threatcaddy/iocs/${safeSlug}-${typeSlug}-${timestamp}.json`
+        : `threatcaddy/iocs/${safeSlug}-${timestamp}.json`;
 
       const results = await multiCloudPut(dests, objectKey, data, 'application/json', setProgress);
       setLastResults(results);

@@ -198,7 +198,7 @@ export function ThreatIntelConfig() {
     if (settings.tiDefaultClsLevel) config.default_cls_level = settings.tiDefaultClsLevel;
     if (settings.tiDefaultReportSource) config.default_report_source = settings.tiDefaultReportSource;
     if (settings.ociLabel) config.oci_label = settings.ociLabel;
-    downloadFile(JSON.stringify(config, null, 2), 'browsernotes-config.json', 'application/json');
+    downloadFile(JSON.stringify(config, null, 2), 'threatcaddy-config.json', 'application/json');
   };
 
   const toggleTypeInList = (list: IOCType[], type: IOCType): IOCType[] =>

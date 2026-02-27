@@ -8,7 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
 const outdir = join(rootDir, 'dist', 'chrome');
 
-console.log('Building BrowserNotes extension...');
+console.log('Building ThreatCaddy extension...');
 
 // Create output directories
 mkdirSync(join(outdir, 'assets'), { recursive: true });

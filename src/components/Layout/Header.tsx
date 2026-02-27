@@ -71,19 +71,19 @@ export function Header({
 
       {typeof __STANDALONE__ !== 'undefined' && __STANDALONE__ ? (
         <div className="flex items-center gap-1.5 sm:gap-2.5 mr-1 sm:mr-2">
-          <img src={logoSvg} alt="BrowserNotes" className="w-6 h-6 sm:w-7 sm:h-7" />
+          <img src={logoSvg} alt="ThreatCaddy" className="w-6 h-6 sm:w-7 sm:h-7" />
           <div className="hidden sm:flex flex-col leading-none">
             <span className="text-lg font-bold tracking-tight">
-              <span className="text-accent">Browser</span><span className="text-gray-200">Notes</span>
+              <span className="text-accent">Threat</span><span className="text-gray-200">Caddy</span>
             </span>
             <span className="text-[9px] font-medium tracking-widest uppercase text-gray-500">Local Edition</span>
           </div>
         </div>
       ) : (
-        <a href="https://browsernotes.online" className="flex items-center gap-1.5 sm:gap-2.5 mr-1 sm:mr-2 no-underline" title="browsernotes.online">
-          <img src={logoSvg} alt="BrowserNotes" className="w-6 h-6 sm:w-7 sm:h-7" />
+        <a href="https://threatcaddy.com" className="flex items-center gap-1.5 sm:gap-2.5 mr-1 sm:mr-2 no-underline" title="threatcaddy.com">
+          <img src={logoSvg} alt="ThreatCaddy" className="w-6 h-6 sm:w-7 sm:h-7" />
           <span className="text-lg font-bold tracking-tight hidden sm:inline">
-            <span className="text-accent">Browser</span><span className="text-gray-200">Notes</span>
+            <span className="text-accent">Threat</span><span className="text-gray-200">Caddy</span>
           </span>
         </a>
       )}
@@ -102,7 +102,7 @@ export function Header({
       {/* Links — hidden on mobile, shown on md+ */}
       <div className="hidden md:flex items-center gap-1">
         <a
-          href="https://github.com/peterhanily/browsernotes"
+          href="https://github.com/peterhanily/threatcaddy"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800 text-xs font-medium transition-colors"
@@ -113,7 +113,7 @@ export function Header({
         </a>
         <a
           data-tour="standalone"
-          href="./browsernotes-standalone.html"
+          href="./threatcaddy-standalone.html"
           download
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800 text-xs font-medium transition-colors"
           title="Download standalone HTML"
@@ -123,7 +123,7 @@ export function Header({
         </a>
         <a
           data-tour="extension"
-          href="https://github.com/peterhanily/browsernotes/tree/main/extension#readme"
+          href="https://github.com/peterhanily/threatcaddy/tree/main/extension#readme"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800 text-xs font-medium transition-colors"

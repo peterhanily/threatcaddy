@@ -30,8 +30,8 @@ describe('OCI provider', () => {
 
   it('builds object URL by appending path', () => {
     const base = 'https://objectstorage.us-ashburn-1.oraclecloud.com/p/token/n/ns/b/bucket/o/';
-    const url = provider.buildObjectUrl(base, 'browsernotes/test.json');
-    expect(url).toBe(base + 'browsernotes/test.json');
+    const url = provider.buildObjectUrl(base, 'threatcaddy/test.json');
+    expect(url).toBe(base + 'threatcaddy/test.json');
   });
 
   it('adds trailing slash to base URL if missing', () => {
@@ -73,9 +73,9 @@ describe('AWS S3 provider', () => {
 
   it('builds object URL preserving query params', () => {
     const base = 'https://mybucket.s3.us-east-1.amazonaws.com/?X-Amz-Signature=abc';
-    const url = provider.buildObjectUrl(base, 'browsernotes/test.json');
+    const url = provider.buildObjectUrl(base, 'threatcaddy/test.json');
     const parsed = new URL(url);
-    expect(parsed.pathname).toBe('/browsernotes/test.json');
+    expect(parsed.pathname).toBe('/threatcaddy/test.json');
     expect(parsed.searchParams.get('X-Amz-Signature')).toBe('abc');
   });
 
@@ -107,9 +107,9 @@ describe('Azure Blob provider', () => {
 
   it('builds object URL preserving SAS query params', () => {
     const base = 'https://myaccount.blob.core.windows.net/container?sv=2020&sig=abc';
-    const url = provider.buildObjectUrl(base, 'browsernotes/test.json');
+    const url = provider.buildObjectUrl(base, 'threatcaddy/test.json');
     const parsed = new URL(url);
-    expect(parsed.pathname).toBe('/container/browsernotes/test.json');
+    expect(parsed.pathname).toBe('/container/threatcaddy/test.json');
     expect(parsed.searchParams.get('sv')).toBe('2020');
     expect(parsed.searchParams.get('sig')).toBe('abc');
   });
@@ -147,9 +147,9 @@ describe('GCS provider', () => {
 
   it('builds object URL preserving query params', () => {
     const base = 'https://storage.googleapis.com/bucket?X-Goog-Signature=abc';
-    const url = provider.buildObjectUrl(base, 'browsernotes/test.json');
+    const url = provider.buildObjectUrl(base, 'threatcaddy/test.json');
     const parsed = new URL(url);
-    expect(parsed.pathname).toBe('/bucket/browsernotes/test.json');
+    expect(parsed.pathname).toBe('/bucket/threatcaddy/test.json');
     expect(parsed.searchParams.get('X-Goog-Signature')).toBe('abc');
   });
 
@@ -202,7 +202,7 @@ describe('detectProvider', () => {
 
 describe('sanitizePath', () => {
   it('strips .. sequences', () => {
-    expect(sanitizePath('browsernotes/../secret')).not.toContain('..');
+    expect(sanitizePath('threatcaddy/../secret')).not.toContain('..');
   });
 
   it('strips query params', () => {
@@ -226,6 +226,6 @@ describe('sanitizePath', () => {
   });
 
   it('handles normal paths unchanged', () => {
-    expect(sanitizePath('browsernotes/backups/test.json')).toBe('browsernotes/backups/test.json');
+    expect(sanitizePath('threatcaddy/backups/test.json')).toBe('threatcaddy/backups/test.json');
   });
 });

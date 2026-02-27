@@ -60,7 +60,7 @@ function ExportDropdown({ events, selectedTimelineId, timelines, onImportClick }
   }, [open]);
 
   const handleNavigatorExport = () => {
-    const layer = buildNavigatorLayer(events, 'BrowserNotes Export');
+    const layer = buildNavigatorLayer(events, 'ThreatCaddy Export');
     downloadFile(JSON.stringify(layer, null, 2), 'attack-navigator-layer.json', 'application/json');
     logActivity('timeline', 'export', 'Exported ATT&CK Navigator layer');
     setOpen(false);

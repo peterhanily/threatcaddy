@@ -2,8 +2,8 @@
  * Persisted encryption metadata in localStorage.
  */
 
-const STORAGE_KEY = 'browsernotes-encryption';
-const SESSION_CACHE_KEY = 'browsernotes-session-cache';
+const STORAGE_KEY = 'threatcaddy-encryption';
+const SESSION_CACHE_KEY = 'threatcaddy-session-cache';
 
 export type SessionDuration = 'every-load' | 'tab-close' | '1h' | '8h' | '24h';
 

@@ -2,7 +2,7 @@ import Dexie, { type EntityTable } from 'dexie';
 import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, ActivityLogEntry } from './types';
 import { installEncryptionMiddleware } from './lib/encryptionMiddleware';
 
-const db = new Dexie('BrowserNotesDB') as Dexie & {
+const db = new Dexie('ThreatCaddyDB') as Dexie & {
   notes: EntityTable<Note, 'id'>;
   tasks: EntityTable<Task, 'id'>;
   folders: EntityTable<Folder, 'id'>;

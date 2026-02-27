@@ -10,13 +10,13 @@
   <rect x="0" y="0" width="1200" height="4" fill="#6366f1" />
   <!-- Logo circle -->
   <circle cx="600" cy="220" r="60" fill="#6366f1" opacity="0.15" />
-  <text x="600" y="240" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="bold" fill="#a5b4fc">BN</text>
+  <text x="600" y="240" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="bold" fill="#a5b4fc">TC</text>
   <!-- App name -->
-  <text x="600" y="340" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="bold" fill="#f9fafb">BrowserNotes</text>
+  <text x="600" y="340" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="bold" fill="#f9fafb">ThreatCaddy</text>
   <!-- Tagline -->
-  <text x="600" y="400" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#9ca3af">Privacy-First Notes &amp; Tasks in Your Browser</text>
+  <text x="600" y="400" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#9ca3af">Threat Investigation Workspace</text>
   <!-- Features -->
-  <text x="600" y="470" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#6366f1">No Server  ·  No Tracking  ·  100% Local</text>
+  <text x="600" y="470" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#6366f1">Notes · IOCs · Timelines · Graphs · No server · No tracking</text>
   <!-- Bottom accent bar -->
   <rect x="0" y="626" width="1200" height="4" fill="#6366f1" />
 </svg>

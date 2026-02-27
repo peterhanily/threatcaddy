@@ -594,7 +594,7 @@ export default function App() {
   const handleQuickSave = useCallback(async () => {
     const json = await exportJSON();
     const date = new Date().toISOString().slice(0, 10);
-    downloadFile(json, `browsernotes-backup-${date}.json`, 'application/json');
+    downloadFile(json, `threatcaddy-backup-${date}.json`, 'application/json');
   }, []);
 
   const handleQuickLoad = useCallback((file: File) => {
@@ -1007,7 +1007,7 @@ export default function App() {
             const folder = folders.find((f) => f.id === folderId);
             const slug = (folder?.name || 'investigation').toLowerCase().replace(/\s+/g, '-');
             const date = new Date().toISOString().slice(0, 10);
-            downloadFile(json, `browsernotes-${slug}-${date}.json`, 'application/json');
+            downloadFile(json, `threatcaddy-${slug}-${date}.json`, 'application/json');
             activityLog.log('data', 'export', `Exported investigation "${folder?.name}"`, folderId, folder?.name);
           }}
         />

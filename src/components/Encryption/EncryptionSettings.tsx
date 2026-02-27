@@ -202,7 +202,7 @@ export function EncryptionSettings() {
             </div>
             <p className="text-xs text-gray-500">
               {sessionDuration === 'every-load'
-                ? 'You\'ll enter your passphrase every time you open BrowserNotes.'
+                ? 'You\'ll enter your passphrase every time you open ThreatCaddy.'
                 : sessionDuration === 'tab-close'
                   ? 'Your session stays unlocked until you close the tab.'
                   : `Your session stays unlocked for ${SESSION_DURATION_LABELS[sessionDuration]} after entering your passphrase.`}
@@ -228,7 +228,7 @@ export function EncryptionSettings() {
       ) : (
         <>
           <p className="text-sm text-gray-400">
-            Encrypt your data at rest using AES-256-GCM. You'll need to enter a passphrase each time you open BrowserNotes.
+            Encrypt your data at rest using AES-256-GCM. You'll need to enter a passphrase each time you open ThreatCaddy.
           </p>
           <button
             onClick={() => setShowSetup(true)}

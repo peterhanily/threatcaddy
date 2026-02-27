@@ -39,7 +39,7 @@ jobs:
 
       - run: pnpm build:single
 
-      - run: cp dist-single/index.html dist/browsernotes-standalone.html
+      - run: cp dist-single/index.html dist/threatcaddy-standalone.html
 
       - name: Verify extension zip is up to date
         run: |
@@ -48,13 +48,13 @@ jobs:
           npm run build
           npm run package:chrome
           mkdir -p /tmp/ext-committed /tmp/ext-built
-          unzip -o browsernotes-chrome.zip -d /tmp/ext-committed > /dev/null
-          unzip -o dist/browsernotes-chrome.zip -d /tmp/ext-built > /dev/null
+          unzip -o threatcaddy-chrome.zip -d /tmp/ext-committed > /dev/null
+          unzip -o dist/threatcaddy-chrome.zip -d /tmp/ext-built > /dev/null
           # Compare non-binary files (JS, HTML, JSON, SVG) — PNGs may differ
           # across platforms due to sharp/libvips versions but are derived
           # deterministically from the committed SVG source
           if ! diff -rq --exclude='*.png' /tmp/ext-committed /tmp/ext-built > /dev/null 2>&1; then
-            echo "::error::extension/browsernotes-chrome.zip is out of date. Run 'cd extension && npm run build && npm run package:chrome && cp dist/browsernotes-chrome.zip .' and commit."
+            echo "::error::extension/threatcaddy-chrome.zip is out of date. Run 'cd extension && npm run build && npm run package:chrome && cp dist/threatcaddy-chrome.zip .' and commit."
             diff -rq --exclude='*.png' /tmp/ext-committed /tmp/ext-built || true
             exit 1
           fi

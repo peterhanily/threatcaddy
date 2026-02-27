@@ -27,7 +27,7 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
 
   const handleExportJSON = async () => {
     const json = await exportJSON();
-    downloadFile(json, `browsernotes-backup-${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+    downloadFile(json, `threatcaddy-backup-${new Date().toISOString().split('T')[0]}.json`, 'application/json');
     showMessage('Backup exported successfully');
     logActivity('data', 'export', 'Exported JSON backup');
   };
@@ -35,7 +35,7 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
   const handleExportMarkdown = () => {
     const activeNotes = notes.filter((n) => !n.trashed && !n.archived);
     const md = exportNotesMarkdown(activeNotes);
-    downloadFile(md, `browsernotes-${new Date().toISOString().split('T')[0]}.md`, 'text/markdown');
+    downloadFile(md, `threatcaddy-${new Date().toISOString().split('T')[0]}.md`, 'text/markdown');
     showMessage(`Exported ${activeNotes.length} notes as Markdown`);
     logActivity('data', 'export', `Exported ${activeNotes.length} notes as Markdown`);
   };

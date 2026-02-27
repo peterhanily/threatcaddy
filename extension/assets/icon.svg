@@ -4,39 +4,18 @@
       <stop offset="0%" stop-color="#6366f1"/>
       <stop offset="100%" stop-color="#8b5cf6"/>
     </linearGradient>
-    <linearGradient id="page" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f8fafc"/>
-      <stop offset="100%" stop-color="#e2e8f0"/>
-    </linearGradient>
-    <linearGradient id="fold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#cbd5e1"/>
-      <stop offset="100%" stop-color="#94a3b8"/>
-    </linearGradient>
   </defs>
   <!-- Rounded square background -->
   <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#bg)"/>
-  <!-- Shadow under page -->
-  <rect x="138" y="98" width="260" height="330" rx="16" fill="#4338ca" opacity="0.3" transform="translate(6,6)"/>
-  <!-- Main page -->
-  <path d="M138 98 h204 l56 56 v258 a16 16 0 0 1-16 16 H154 a16 16 0 0 1-16-16 V114 a16 16 0 0 1 16-16z" fill="url(#page)"/>
-  <!-- Corner fold -->
-  <path d="M342 98 v40 a16 16 0 0 0 16 16 h40 z" fill="url(#fold)"/>
-  <!-- Text lines -->
-  <rect x="178" y="184" width="160" height="10" rx="5" fill="#6366f1" opacity="0.8"/>
-  <rect x="178" y="214" width="120" height="8" rx="4" fill="#94a3b8" opacity="0.6"/>
-  <rect x="178" y="238" width="140" height="8" rx="4" fill="#94a3b8" opacity="0.5"/>
-  <rect x="178" y="262" width="100" height="8" rx="4" fill="#94a3b8" opacity="0.4"/>
-  <!-- Checkbox lines -->
-  <rect x="178" y="300" width="12" height="12" rx="3" fill="none" stroke="#6366f1" stroke-width="2.5" opacity="0.7"/>
-  <rect x="200" y="302" width="90" height="8" rx="4" fill="#94a3b8" opacity="0.5"/>
-  <rect x="178" y="324" width="12" height="12" rx="3" fill="#6366f1" opacity="0.7"/>
-  <polyline points="181,330 185,334 191,326" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="200" y="326" width="110" height="8" rx="4" fill="#94a3b8" opacity="0.4"/>
-  <!-- Pencil accent -->
-  <g transform="translate(330, 340) rotate(-45)">
-    <rect x="0" y="0" width="14" height="80" rx="3" fill="#fbbf24"/>
-    <polygon points="3,80 11,80 7,94" fill="#fbbf24"/>
-    <rect x="0" y="0" width="14" height="12" rx="3" fill="#f59e0b"/>
-    <polygon points="4,90 10,90 7,96" fill="#1e293b"/>
-  </g>
+  <!-- Shield shape -->
+  <path d="M256 96 L376 152 V280 C376 352 324 408 256 432 C188 408 136 352 136 280 V152 Z" fill="#ffffff" opacity="0.95"/>
+  <!-- Crosshair circle -->
+  <circle cx="256" cy="252" r="72" fill="none" stroke="#6366f1" stroke-width="8" opacity="0.85"/>
+  <!-- Crosshair lines -->
+  <line x1="256" y1="160" x2="256" y2="210" stroke="#6366f1" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+  <line x1="256" y1="294" x2="256" y2="344" stroke="#6366f1" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+  <line x1="164" y1="252" x2="214" y2="252" stroke="#6366f1" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+  <line x1="298" y1="252" x2="348" y2="252" stroke="#6366f1" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+  <!-- Center dot -->
+  <circle cx="256" cy="252" r="6" fill="#6366f1" opacity="0.9"/>
 </svg>

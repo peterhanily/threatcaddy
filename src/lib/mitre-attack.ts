@@ -373,7 +373,7 @@ export function buildNavigatorLayer(events: MitreEvent[], layerName: string): Na
     name: layerName,
     versions: { attack: '14', navigator: '4.9.5', layer: '4.5' },
     domain: 'enterprise-attack',
-    description: `Exported from BrowserNotes – ${events.length} events`,
+    description: `Exported from ThreatCaddy – ${events.length} events`,
     sorting: 3,
     layout: { layout: 'side', showID: true, showName: true, showAggregateScores: false, countUnscored: false, aggregateFunction: 'average' },
     hideDisabled: false,

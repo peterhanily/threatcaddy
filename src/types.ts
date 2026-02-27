@@ -287,7 +287,7 @@ export interface Whiteboard {
 }
 
 export interface TimelineExportData {
-  format: 'browsernotes-timeline';
+  format: 'threatcaddy-timeline';
   version: 1;
   exportedAt: number;
   timeline: { name: string; description?: string; color?: string };

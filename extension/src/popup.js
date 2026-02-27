@@ -1,4 +1,4 @@
-// Popup script for BrowserNotes extension
+// Popup script for ThreatCaddy extension
 
 // Load stats and recent captures on popup open
 async function loadStats() {
@@ -120,7 +120,7 @@ document.getElementById('save-btn').addEventListener('click', async () => {
 
 // Open web app
 document.getElementById('open-app-btn').addEventListener('click', () => {
-  chrome.tabs.create({ url: 'https://browsernotes.online' });
+  chrome.tabs.create({ url: 'https://threatcaddy.com' });
   window.close();
 });
 

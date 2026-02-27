@@ -1,4 +1,4 @@
-// Background service worker for BrowserNotes extension
+// Background service worker for ThreatCaddy extension
 
 const MAX_CAPTURES = 500;
 
@@ -152,15 +152,15 @@ async function getSelectionAsMarkdown() {
 // Create context menu on install
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
-    id: 'save-to-browsernotes',
-    title: 'Save to BrowserNotes',
+    id: 'save-to-threatcaddy',
+    title: 'Save to ThreatCaddy',
     contexts: ['selection']
   });
 });
 
 // Handle context menu click
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId === 'save-to-browsernotes' && info.selectionText) {
+  if (info.menuItemId === 'save-to-threatcaddy' && info.selectionText) {
     let text = info.selectionText;
     try {
       const [result] = await chrome.scripting.executeScript({

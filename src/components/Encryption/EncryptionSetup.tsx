@@ -133,7 +133,7 @@ export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupPro
               <span className="text-sm font-medium">Step 1 of 2: Set Passphrase</span>
             </div>
             <p className="text-sm text-gray-400">
-              Choose a strong passphrase to encrypt your data. You'll enter this each time you open BrowserNotes.
+              Choose a strong passphrase to encrypt your data. You'll enter this each time you open ThreatCaddy.
             </p>
             <div>
               <label className="block text-sm text-gray-400 mb-1">Passphrase (min 8 characters)</label>

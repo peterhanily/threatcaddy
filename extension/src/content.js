@@ -46,12 +46,12 @@ function showConfirmationBubble(noteTitle) {
 
 function createBubbleElement(noteTitle) {
   const bubble = document.createElement('div');
-  bubble.id = 'browsernotes-bubble';
-  bubble.className = 'browsernotes-bubble';
+  bubble.id = 'threatcaddy-bubble';
+  bubble.className = 'threatcaddy-bubble';
 
   bubble.innerHTML = `
     <style>
-      .browsernotes-bubble {
+      .threatcaddy-bubble {
         position: fixed;
         z-index: 2147483647;
         background: #030712;
@@ -63,34 +63,34 @@ function createBubbleElement(noteTitle) {
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
         font-family: system-ui, -apple-system, sans-serif;
         color: #f9fafb;
-        animation: browsernotes-fadeIn 0.2s ease-out;
+        animation: threatcaddy-fadeIn 0.2s ease-out;
       }
 
-      @keyframes browsernotes-fadeIn {
+      @keyframes threatcaddy-fadeIn {
         from { opacity: 0; transform: translateY(-10px); }
         to { opacity: 1; transform: translateY(0); }
       }
 
-      .browsernotes-bubble * {
+      .threatcaddy-bubble * {
         box-sizing: border-box;
         margin: 0;
         padding: 0;
       }
 
-      .browsernotes-header {
+      .threatcaddy-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 12px;
       }
 
-      .browsernotes-logo {
+      .threatcaddy-logo {
         font-size: 13px;
         font-weight: 700;
         color: #6366f1;
       }
 
-      .browsernotes-close {
+      .threatcaddy-close {
         background: none;
         border: none;
         color: #9ca3af;
@@ -105,17 +105,17 @@ function createBubbleElement(noteTitle) {
         justify-content: center;
       }
 
-      .browsernotes-close:hover {
+      .threatcaddy-close:hover {
         color: #f9fafb;
       }
 
-      .browsernotes-check {
+      .threatcaddy-check {
         text-align: center;
         margin-bottom: 8px;
         font-size: 28px;
       }
 
-      .browsernotes-message {
+      .threatcaddy-message {
         text-align: center;
         font-size: 14px;
         font-weight: 600;
@@ -123,7 +123,7 @@ function createBubbleElement(noteTitle) {
         margin-bottom: 8px;
       }
 
-      .browsernotes-title-preview {
+      .threatcaddy-title-preview {
         text-align: center;
         font-size: 12px;
         color: #9ca3af;
@@ -133,7 +133,7 @@ function createBubbleElement(noteTitle) {
         text-overflow: ellipsis;
       }
 
-      .browsernotes-open-btn {
+      .threatcaddy-open-btn {
         display: block;
         width: 100%;
         padding: 8px 12px;
@@ -149,26 +149,26 @@ function createBubbleElement(noteTitle) {
         transition: background 0.2s;
       }
 
-      .browsernotes-open-btn:hover {
+      .threatcaddy-open-btn:hover {
         background: #818cf8;
       }
     </style>
 
-    <div class="browsernotes-header">
-      <div class="browsernotes-logo">BrowserNotes</div>
-      <button class="browsernotes-close" id="browsernotes-close">&times;</button>
+    <div class="threatcaddy-header">
+      <div class="threatcaddy-logo">ThreatCaddy</div>
+      <button class="threatcaddy-close" id="threatcaddy-close">&times;</button>
     </div>
 
-    <div class="browsernotes-check">&#10003;</div>
-    <div class="browsernotes-message">Saved to BrowserNotes!</div>
-    <div class="browsernotes-title-preview">${escapeHtml(noteTitle)}</div>
+    <div class="threatcaddy-check">&#10003;</div>
+    <div class="threatcaddy-message">Saved to ThreatCaddy!</div>
+    <div class="threatcaddy-title-preview">${escapeHtml(noteTitle)}</div>
 
-    <button class="browsernotes-open-btn" id="browsernotes-review">Review All Captures</button>
+    <button class="threatcaddy-open-btn" id="threatcaddy-review">Review All Captures</button>
   `;
 
   // Event listeners
-  bubble.querySelector('#browsernotes-close').addEventListener('click', hideBubble);
-  bubble.querySelector('#browsernotes-review').addEventListener('click', () => {
+  bubble.querySelector('#threatcaddy-close').addEventListener('click', hideBubble);
+  bubble.querySelector('#threatcaddy-review').addEventListener('click', () => {
     chrome.runtime.sendMessage({ type: 'OPEN_CLIPS_PAGE' });
     hideBubble();
   });
