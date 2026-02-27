@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import {
   FileText, ListChecks, Clock, Briefcase, Tag, Trash2,
   Archive, ChevronDown, ChevronRight, ChevronLeft, Plus, X, Settings as SettingsIcon,
-  PanelLeftClose, Github, Download, Chrome, PenTool, Activity, Network, ShieldCheck, Info,
+  PanelLeftClose, Github, Download, Chrome, PenTool, Activity, Network, ShieldCheck, Info, Dices,
 } from 'lucide-react';
 import type { Folder, Tag as TagType, Timeline, Whiteboard, ViewMode, InvestigationStatus } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { Modal } from '../Common/Modal';
+import { OperationNameGenerator } from '../Common/OperationNameGenerator';
 import { cn } from '../../lib/utils';
 
 interface SidebarProps {
@@ -128,6 +129,7 @@ export function Sidebar({
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [editTagName, setEditTagName] = useState('');
   const [deletingTagId, setDeletingTagId] = useState<string | null>(null);
+  const [showNameGenerator, setShowNameGenerator] = useState(false);
 
   if (collapsed) return null;
 
@@ -498,14 +500,24 @@ export function Sidebar({
           >
             {foldersOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             Investigations
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowNewFolder(true); }}
-              className="ml-auto p-0.5 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
-              aria-label="Create investigation"
-              title="Create investigation"
-            >
-              <Plus size={14} />
-            </button>
+            <span className="ml-auto flex items-center gap-0.5">
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowNameGenerator(true); }}
+                className="p-0.5 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
+                aria-label="Generate operation name"
+                title="Generate operation name"
+              >
+                <Dices size={14} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowNewFolder(true); }}
+                className="p-0.5 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
+                aria-label="Create investigation"
+                title="Create investigation"
+              >
+                <Plus size={14} />
+              </button>
+            </span>
           </button>
 
           {foldersOpen && (
@@ -797,6 +809,12 @@ export function Sidebar({
         message="This tag will be removed from all notes, tasks, timeline events, and whiteboards."
         confirmLabel="Delete Tag"
         danger
+      />
+
+      <OperationNameGenerator
+        open={showNameGenerator}
+        onClose={() => setShowNameGenerator(false)}
+        onCreateInvestigation={(name) => { onCreateFolder(name); setShowNameGenerator(false); }}
       />
     </aside>
   );
