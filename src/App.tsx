@@ -53,6 +53,9 @@ import { TourTooltip } from './components/Tour/TourTooltip';
 import { DemoWelcomeModal } from './components/Common/DemoWelcomeModal';
 import { DataImportModal } from './components/Import/DataImportModal';
 import type { ImportResult } from './lib/data-import';
+import { ToastProvider, useToast } from './contexts/ToastContext';
+import { ToastContainer } from './components/Common/Toast';
+import { generateInvestigationReport } from './lib/report';
 
 // Parse hash deep-link on initial load: #entity=note:xxx, #entity=task:xxx, #entity=event:xxx
 function parseEntityHash(): { type: 'note' | 'task' | 'event'; id: string } | null {
@@ -77,7 +80,16 @@ function loadNavState(): NavState | null {
 const savedNavState = loadNavState();
 
 export default function App() {
+  return (
+    <ToastProvider>
+      <AppInner />
+    </ToastProvider>
+  );
+}
+
+function AppInner() {
   const { settings, updateSettings, toggleTheme } = useSettings();
+  const { addToast } = useToast();
   const notes = useNotes();
   const tasks = useTasks();
   const timeline = useTimeline();
@@ -562,12 +574,13 @@ export default function App() {
         if (lastFolderId) setSelectedFolderId(lastFolderId);
       } catch (error) {
         console.error('Failed to import clips:', error);
+        addToast('error', 'Failed to import clips from extension');
       }
     };
 
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [findOrCreateFolder, loggedCreateNote, loggedCreateTask, loggedCreateEvent, timelines, navigateTo]);
+  }, [findOrCreateFolder, loggedCreateNote, loggedCreateTask, loggedCreateEvent, timelines, navigateTo, addToast]);
 
   // Track Clips folder ID for OCI envelope type detection
   const clipsFolderId = useMemo(
@@ -810,6 +823,7 @@ export default function App() {
       'import',
       `Data import: ${result.timelineEventsCreated} events, ${result.iocsExtracted} IOCs`,
     );
+    addToast('success', `Imported ${result.timelineEventsCreated} events and ${result.iocsExtracted} IOCs`);
     // Reload all hooks to pick up new entities
     notes.reload();
     timeline.reload();
@@ -823,7 +837,7 @@ export default function App() {
       navigateTo('ioc-stats');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityLog, notes.reload, timeline.reload, standaloneIOCsHook.reload, reloadTimelines, reloadTags, navigateTo]);
+  }, [activityLog, addToast, notes.reload, timeline.reload, standaloneIOCsHook.reload, reloadTimelines, reloadTags, navigateTo]);
 
   const handleQuickCapture = useCallback(async (data: Partial<Note>) => {
     const folder = selectedFolderId ? folders.find((f) => f.id === selectedFolderId) : undefined;
@@ -1437,6 +1451,20 @@ export default function App() {
             const date = new Date().toISOString().slice(0, 10);
             downloadFile(json, `threatcaddy-${slug}-${date}.json`, 'application/json');
             activityLog.log('data', 'export', `Exported investigation "${folder?.name}"`, folderId, folder?.name);
+            addToast('success', `Exported investigation "${folder?.name}"`);
+          }}
+          onGenerateReport={(folderId) => {
+            const folder = folders.find((f) => f.id === folderId);
+            if (!folder) return;
+            const folderNotes = notes.notes.filter((n) => n.folderId === folderId && !n.trashed && !n.archived);
+            const folderTasks = tasks.tasks.filter((t) => t.folderId === folderId && !t.trashed && !t.archived);
+            const folderEvents = timeline.events.filter((e) => e.folderId === folderId && !e.trashed && !e.archived);
+            const folderIOCs = standaloneIOCsHook.iocs.filter((i) => i.folderId === folderId && !i.trashed && !i.archived);
+            const html = generateInvestigationReport({ folder, notes: folderNotes, tasks: folderTasks, events: folderEvents, standaloneIOCs: folderIOCs });
+            const blob = new Blob([html], { type: 'text/html' });
+            window.open(URL.createObjectURL(blob));
+            activityLog.log('data', 'export', `Generated report for "${folder.name}"`, folderId, folder.name);
+            addToast('success', `Report generated for "${folder.name}"`);
           }}
         />
       )}
@@ -1456,6 +1484,7 @@ export default function App() {
         </>
       )}
     </ActivityLogContext.Provider>
+    <ToastContainer />
     </ScreenshareContext.Provider>
   );
 }

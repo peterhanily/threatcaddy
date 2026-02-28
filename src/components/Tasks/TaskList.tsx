@@ -6,6 +6,7 @@ import { TaskForm } from './TaskForm';
 import { KanbanBoard } from './KanbanBoard';
 import { Modal } from '../Common/Modal';
 import { cn } from '../../lib/utils';
+import { Virtuoso } from 'react-virtuoso';
 
 interface TaskListProps {
   tasks: Task[];
@@ -141,9 +142,9 @@ export function TaskListView({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className={cn('flex-1 p-4', viewMode === 'list' ? 'overflow-hidden' : 'overflow-y-auto')}>
         {viewMode === 'list' ? (
-          <div className="space-y-1.5 max-w-3xl mx-auto">
+          <div className="max-w-3xl mx-auto h-full">
             {filteredTasks.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-gray-600">
                 <ListChecks size={32} className="mb-2" />
@@ -151,18 +152,22 @@ export function TaskListView({
                 <p className="text-xs mt-1">Click "New Task" or press Ctrl+Shift+T</p>
               </div>
             ) : (
-              filteredTasks.map((task) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  onToggleComplete={onToggleComplete}
-                  onSelect={handleSelect}
-                  onDelete={onDeleteTask}
-                  onTrash={onTrashTask}
-                  onRestore={onRestoreTask}
-                  onToggleArchive={onToggleArchiveTask}
-                />
-              ))
+              <Virtuoso
+                data={filteredTasks}
+                itemContent={(_index, task) => (
+                  <div className="pb-1.5">
+                    <TaskItem
+                      task={task}
+                      onToggleComplete={onToggleComplete}
+                      onSelect={handleSelect}
+                      onDelete={onDeleteTask}
+                      onTrash={onTrashTask}
+                      onRestore={onRestoreTask}
+                      onToggleArchive={onToggleArchiveTask}
+                    />
+                  </div>
+                )}
+              />
             )}
           </div>
         ) : (

@@ -6,6 +6,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { formatIOCsJSON, formatIOCsCSV, formatIOCsFlatJSON, formatIOCsFlatCSV } from '../../lib/ioc-export';
 import type { IOCExportEntry, ThreatIntelExportConfig } from '../../lib/ioc-export';
 import { downloadFile } from '../../lib/export';
+import { Virtuoso } from 'react-virtuoso';
 
 interface NoteListProps {
   notes: Note[];
@@ -138,7 +139,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
         <IOCFilterBar selectedTypes={selectedIOCTypes} onChange={onIOCTypesChange} />
       )}
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+      <div className="flex-1 overflow-hidden p-2">
         {notes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-gray-600">
             <FileText size={32} className="mb-2" />
@@ -146,22 +147,26 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
             <p className="text-xs mt-1">Press Ctrl+N to create one</p>
           </div>
         ) : (
-          notes.map((note) => {
-            const folder = note.folderId ? folderMap.get(note.folderId) : undefined;
-            return (
-              <NoteCard
-                key={note.id}
-                note={note}
-                active={note.id === selectedId}
-                onSelect={onSelect}
-                onTrash={onTrash}
-                folderColor={folder?.color}
-                folderName={folder?.name}
-                draggable
-                onDragStart={(e) => e.dataTransfer.setData('text/plain', note.id)}
-              />
-            );
-          })
+          <Virtuoso
+            data={notes}
+            itemContent={(_index, note) => {
+              const folder = note.folderId ? folderMap.get(note.folderId) : undefined;
+              return (
+                <div className="pb-1.5">
+                  <NoteCard
+                    note={note}
+                    active={note.id === selectedId}
+                    onSelect={onSelect}
+                    onTrash={onTrash}
+                    folderColor={folder?.color}
+                    folderName={folder?.name}
+                    draggable
+                    onDragStart={(e) => e.dataTransfer.setData('text/plain', note.id)}
+                  />
+                </div>
+              );
+            }}
+          />
         )}
       </div>
 

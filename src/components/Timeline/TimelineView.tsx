@@ -18,6 +18,7 @@ import { getTechniqueLabel, getParentTechniqueId, buildNavigatorLayer, buildMitr
 import { downloadFile, exportTimelineJSON, exportEventsJSON } from '../../lib/export';
 import { TimelineImportModal } from './TimelineImportModal';
 import { useLogActivity } from '../../hooks/ActivityLogContext';
+import { useToast } from '../../contexts/ToastContext';
 
 interface TimelineViewProps {
   events: TimelineEvent[];
@@ -52,6 +53,7 @@ interface TimelineViewProps {
 
 function ExportDropdown({ events, selectedTimelineId, timelines, onImportClick }: { events: TimelineEvent[]; selectedTimelineId?: string; timelines: Timeline[]; onImportClick: () => void }) {
   const logActivity = useLogActivity();
+  const { addToast } = useToast();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -93,6 +95,7 @@ function ExportDropdown({ events, selectedTimelineId, timelines, onImportClick }
       }
     } catch (err) {
       console.error('Timeline export failed:', err);
+      addToast('error', 'Timeline export failed');
     }
     setOpen(false);
   };
@@ -397,7 +400,7 @@ export function TimelineView({
           />
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className={viewMode === 'feed' ? 'flex-1 overflow-hidden p-4' : 'flex-1 overflow-y-auto p-4'}>
           {viewMode === 'feed' ? (
             <TimelineFeed
               events={filteredEvents}

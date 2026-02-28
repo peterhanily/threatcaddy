@@ -2,9 +2,10 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, X, FileText, Paperclip, ListChecks, Clock, PenTool, Save } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { formatDate } from '../../lib/utils';
-import { unifiedSearch, type SearchMode, type SearchResult, type SearchResultType } from '../../lib/search';
+import { unifiedSearch, type SearchMode, type SearchResult, type SearchResultType, type UnifiedSearchResult } from '../../lib/search';
 import { useSavedSearches } from '../../hooks/useSavedSearches';
 import type { Note, Task, TimelineEvent, Whiteboard } from '../../types';
+import SearchWorker from '../../workers/search.worker?worker';
 
 interface SearchOverlayProps {
   open: boolean;
@@ -96,10 +97,50 @@ export function SearchOverlay({
   const effectiveEvents = selectedFolderId && searchScope === 'investigation' && scopedTimelineEvents ? scopedTimelineEvents : timelineEvents;
   const effectiveWhiteboards = selectedFolderId && searchScope === 'investigation' && scopedWhiteboards ? scopedWhiteboards : whiteboards;
 
-  // Search results
-  const searchResult = useMemo(() => {
-    if (!debouncedQuery.trim()) return { results: [], error: undefined };
-    return unifiedSearch(effectiveNotes, effectiveTasks, clipsFolderId, { mode, raw: debouncedQuery }, effectiveEvents, effectiveWhiteboards);
+  // Worker-based search
+  const workerRef = useRef<Worker | null>(null);
+  const requestIdRef = useRef(0);
+  const [searchResult, setSearchResult] = useState<UnifiedSearchResult>({ results: [] });
+  const workerSupported = useRef(true);
+
+  // Initialize worker once
+  useEffect(() => {
+    try {
+      const w = new SearchWorker();
+      w.onmessage = (e: MessageEvent<{ id: number; result: UnifiedSearchResult }>) => {
+        if (e.data.id === requestIdRef.current) {
+          setSearchResult(e.data.result);
+        }
+      };
+      workerRef.current = w;
+    } catch {
+      workerSupported.current = false;
+    }
+    return () => { workerRef.current?.terminate(); };
+  }, []);
+
+  // Post to worker when query changes
+  useEffect(() => {
+    if (!debouncedQuery.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncing search results from worker/fallback
+      setSearchResult({ results: [] });
+      return;
+    }
+    const id = ++requestIdRef.current;
+    if (workerRef.current && workerSupported.current) {
+      workerRef.current.postMessage({
+        id,
+        notes: effectiveNotes,
+        tasks: effectiveTasks,
+        clipsFolderId,
+        query: { mode, raw: debouncedQuery },
+        timelineEvents: effectiveEvents,
+        whiteboards: effectiveWhiteboards,
+      });
+    } else {
+      // Fallback: direct call (standalone/CSP issues)
+      setSearchResult(unifiedSearch(effectiveNotes, effectiveTasks, clipsFolderId, { mode, raw: debouncedQuery }, effectiveEvents, effectiveWhiteboards));
+    }
   }, [effectiveNotes, effectiveTasks, clipsFolderId, mode, debouncedQuery, effectiveEvents, effectiveWhiteboards]);
 
   const { results, error } = searchResult;

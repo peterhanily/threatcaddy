@@ -20,4 +20,14 @@ function cloudflareAnalytics(): Plugin {
 export default defineConfig({
   plugins: [react(), tailwindcss(), cloudflareAnalytics()],
   base: './',
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          excalidraw: ['@excalidraw/excalidraw'],
+          cytoscape: ['cytoscape', 'cytoscape-cose-bilkent'],
+        },
+      },
+    },
+  },
 })
