@@ -14,7 +14,7 @@ Clip text, images, and selections from any web page directly into ThreatCaddy. A
 ## Features
 
 - **Right-click to save** — Select text on any page, right-click, and choose "Save to ThreatCaddy"
-- **Keyboard shortcut** — `Ctrl+Shift+N` (Mac: `Cmd+Shift+N`) to capture the current selection
+- **Keyboard shortcut** — `Alt+Shift+S` (Mac: `Ctrl+Shift+S`) to capture the current selection
 - **Rich content** — Preserves formatting, links, and inline images as Markdown
 - **Confirmation bubble** — Visual feedback after each capture
 - **Send to ThreatCaddy** — Transfer all captured clips to the web app with one click
