@@ -7,7 +7,7 @@ describe('Type constants', () => {
     expect(DEFAULT_SETTINGS.editorMode).toBe('split');
     expect(DEFAULT_SETTINGS.sidebarCollapsed).toBe(false);
     expect(DEFAULT_SETTINGS.taskViewMode).toBe('list');
-    expect(DEFAULT_SETTINGS.defaultView).toBe('notes');
+    expect(DEFAULT_SETTINGS.defaultView).toBe('dashboard');
   });
 
   it('has NOTE_COLORS with a "None" option', () => {

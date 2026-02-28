@@ -22,7 +22,7 @@ describe('useSettings', () => {
     expect(result.current.settings.theme).toBe('light');
     expect(result.current.settings.editorMode).toBe('preview');
     // Non-persisted values come from defaults
-    expect(result.current.settings.defaultView).toBe('notes');
+    expect(result.current.settings.defaultView).toBe('dashboard');
   });
 
   it('falls back to defaults on corrupted localStorage', () => {
@@ -69,7 +69,7 @@ describe('useSettings', () => {
     });
 
     expect(result.current.settings.theme).toBe('dark');
-    expect(result.current.settings.defaultView).toBe('notes');
+    expect(result.current.settings.defaultView).toBe('dashboard');
     expect(result.current.settings.editorMode).toBe('edit');
   });
 
