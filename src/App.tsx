@@ -2,7 +2,6 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { AppLayout } from './components/Layout/AppLayout';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
-import { IconRail } from './components/Layout/IconRail';
 import { NoteList } from './components/Notes/NoteList';
 import { NoteEditor } from './components/Notes/NoteEditor';
 import { TaskListView } from './components/Tasks/TaskList';
@@ -779,30 +778,6 @@ function AppInner() {
     [noteCounts.archived, tasks.taskCounts.archived, timeline.eventCounts.archived, whiteboardCounts.archived, standaloneIOCsHook.iocCounts.archived]
   );
 
-  // Icon rail badge counts — investigation-scoped when available, global otherwise
-  const iconRailCounts = useMemo(() => {
-    if (investigationScopedCounts) {
-      return {
-        notes: investigationScopedCounts.notes,
-        tasks: investigationScopedCounts.tasks,
-        events: investigationScopedCounts.events,
-        whiteboards: investigationScopedCounts.whiteboards,
-        iocs: investigationScopedCounts.iocs,
-        archived: combinedArchivedCount,
-        trashed: combinedTrashedCount,
-      };
-    }
-    return {
-      notes: noteCounts.total,
-      tasks: tasks.taskCounts.total,
-      events: timeline.eventCounts.total,
-      whiteboards: whiteboardCounts.total,
-      iocs: 0,
-      archived: combinedArchivedCount,
-      trashed: combinedTrashedCount,
-    };
-  }, [investigationScopedCounts, noteCounts.total, tasks.taskCounts.total, timeline.eventCounts.total, whiteboardCounts.total, combinedArchivedCount, combinedTrashedCount]);
-
   const handleMoveNoteToFolder = useCallback((noteId: string, folderId: string) => {
     notes.updateNote(noteId, { folderId });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1130,7 +1105,9 @@ function AppInner() {
             onNewWhiteboard={handleNewWhiteboard}
             onNewIOC={handleNewIOC}
             onImportData={() => setShowDataImport(true)}
+            onToggleSidebar={() => updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })}
             onMobileMenuToggle={() => setMobileSidebarOpen((prev) => !prev)}
+            sidebarCollapsed={settings.sidebarCollapsed}
             onQuickSave={handleQuickSave}
             onQuickLoad={handleQuickLoad}
             onStartTour={() => tour.start(activeView)}
@@ -1141,30 +1118,12 @@ function AppInner() {
           />
         }
         sidebar={
-          <div className="flex h-full">
-            <IconRail
-              activeView={activeView}
-              onViewChange={(v) => navigateTo(v)}
-              counts={iconRailCounts}
-              showArchive={showArchive}
-              onShowArchive={setShowArchive}
-              showTrash={showTrash}
-              onShowTrash={setShowTrash}
-              onOpenSettings={() => setShowSettings(true)}
-              panelOpen={!settings.sidebarCollapsed}
-              onTogglePanel={() => updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })}
-              onNavigate={() => setSelectedNoteId(undefined)}
-              selectedFolderId={selectedFolderId}
-              onClearFilters={() => { setSelectedFolderId(undefined); setSelectedTag(undefined); }}
-            />
-            <Sidebar
-              {...sidebarProps}
-              mode="panel"
-              collapsed={settings.sidebarCollapsed}
-              onToggleCollapsed={() => updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })}
-              onNavigate={() => setSelectedNoteId(undefined)}
-            />
-          </div>
+          <Sidebar
+            {...sidebarProps}
+            collapsed={settings.sidebarCollapsed}
+            onToggleCollapsed={() => updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })}
+            onNavigate={() => setSelectedNoteId(undefined)}
+          />
         }
       >
         <ErrorBoundary>
@@ -1405,7 +1364,6 @@ function AppInner() {
           <div className="relative h-full w-60 shrink-0" onClick={(e) => e.stopPropagation()}>
             <Sidebar
               {...sidebarProps}
-              mode="full"
               collapsed={false}
               onToggleCollapsed={() => setMobileSidebarOpen(false)}
               onNavigate={() => { setMobileSidebarOpen(false); setSelectedNoteId(undefined); }}

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   FileText, ListChecks, Clock, Briefcase, Tag, Trash2,
   Archive, ChevronDown, ChevronRight, ChevronLeft, Plus, X, Settings as SettingsIcon,
-  PanelLeftClose, Github, Download, Chrome, PenTool, Activity, Network, Info, Dices, RotateCcw, Search,
+  PanelLeftClose, PanelLeft, Github, Download, Chrome, PenTool, Activity, Network, Info, Dices, RotateCcw, Search,
   LayoutDashboard,
 } from 'lucide-react';
 import type { Folder, Tag as TagType, Timeline, Whiteboard, ViewMode, InvestigationStatus } from '../../types';
@@ -12,7 +12,6 @@ import { OperationNameGenerator } from '../Common/OperationNameGenerator';
 import { cn } from '../../lib/utils';
 
 interface SidebarProps {
-  mode?: 'full' | 'panel';
   activeView: ViewMode;
   onViewChange: (view: ViewMode) => void;
   folders: Folder[];
@@ -62,7 +61,6 @@ interface SidebarProps {
 }
 
 export function Sidebar({
-  mode = 'full',
   activeView,
   onViewChange,
   folders,
@@ -138,8 +136,6 @@ export function Sidebar({
   const [deletingTagId, setDeletingTagId] = useState<string | null>(null);
   const [showNameGenerator, setShowNameGenerator] = useState(false);
 
-  if (collapsed) return null;
-
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
       onCreateFolder(newFolderName.trim());
@@ -209,89 +205,147 @@ export function Sidebar({
     onNavigate?.();
   };
 
-  const isPanel = mode === 'panel';
+  // View items for collapsed icon rail
+  const collapsedViewItems: { view: ViewMode; icon: typeof FileText; label: string; badge?: number; dataTour?: string }[] = [
+    { view: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { view: 'notes', icon: FileText, label: 'Notes', badge: investigationScopedCounts ? investigationScopedCounts.notes : noteCounts.total },
+    { view: 'tasks', icon: ListChecks, label: 'Tasks', badge: investigationScopedCounts ? investigationScopedCounts.tasks : taskCounts.total, dataTour: 'tasks' },
+    { view: 'timeline', icon: Clock, label: 'Timeline', badge: investigationScopedCounts ? investigationScopedCounts.events : timelineCounts?.total, dataTour: 'timeline' },
+    { view: 'graph', icon: Network, label: 'Graph' },
+    { view: 'ioc-stats', icon: Search, label: 'IOC Stats', badge: investigationScopedCounts ? investigationScopedCounts.iocs : undefined },
+    { view: 'whiteboard', icon: PenTool, label: 'Whiteboards', badge: investigationScopedCounts ? investigationScopedCounts.whiteboards : whiteboardCount, dataTour: 'whiteboards' },
+    { view: 'activity', icon: Activity, label: 'Activity', dataTour: 'activity' },
+  ];
 
+  // --- Collapsed: icon-only rail ---
+  if (collapsed) {
+    return (
+      <aside
+        className="w-12 border-r border-gray-800 sidebar-glass flex flex-col items-center py-2 gap-0.5 h-full shrink-0 overflow-y-auto overflow-x-hidden"
+        role="navigation"
+        aria-label="Main navigation"
+        data-tour="sidebar-nav"
+      >
+        {collapsedViewItems.map((item) => (
+          <CollapsedIcon
+            key={item.view}
+            icon={item.icon}
+            label={item.label}
+            active={activeView === item.view && !showTrash && !showArchive}
+            badge={item.badge}
+            onClick={() => nav(() => navToView(item.view))}
+            dataTour={item.dataTour}
+          />
+        ))}
+
+        <div className="flex-1" />
+        <div className="w-6 border-t border-gray-700 my-1" />
+
+        <CollapsedIcon
+          icon={Archive}
+          label="Archive"
+          active={showArchive}
+          badge={noteCounts.archived}
+          onClick={() => nav(() => { onShowArchive(!showArchive); onShowTrash(false); onFolderSelect(undefined); onTagSelect(undefined); })}
+        />
+        <CollapsedIcon
+          icon={Trash2}
+          label="Trash"
+          active={showTrash}
+          badge={noteCounts.trashed}
+          onClick={() => nav(() => { onShowTrash(!showTrash); onShowArchive(false); onFolderSelect(undefined); onTagSelect(undefined); })}
+        />
+        <CollapsedIcon
+          icon={SettingsIcon}
+          label="Settings"
+          onClick={() => nav(onOpenSettings)}
+        />
+        <div className="mt-1">
+          <CollapsedIcon
+            icon={PanelLeft}
+            label="Expand sidebar"
+            onClick={onToggleCollapsed}
+          />
+        </div>
+      </aside>
+    );
+  }
+
+  // --- Expanded: full sidebar ---
   return (
-    <aside className={cn(
-      'border-r border-gray-800 sidebar-glass flex flex-col h-full shrink-0 overflow-hidden',
-      isPanel ? 'w-[220px]' : 'w-60'
-    )} role={isPanel ? 'complementary' : 'navigation'} aria-label={isPanel ? 'Explorer panel' : 'Main navigation'}>
+    <aside className="w-[200px] border-r border-gray-800 sidebar-glass flex flex-col h-full shrink-0 overflow-hidden" role="navigation" aria-label="Main navigation">
       <div className="flex items-center justify-between p-3 border-b border-gray-800">
-        <span className="text-sm font-semibold text-gray-400 uppercase tracking-wider">{isPanel ? 'Explorer' : 'Navigate'}</span>
-        <button onClick={onToggleCollapsed} className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300" aria-label={isPanel ? 'Close panel' : 'Collapse sidebar'} title={isPanel ? 'Close panel' : 'Collapse sidebar'}>
-          {isPanel ? <X size={16} /> : <PanelLeftClose size={16} />}
+        <span className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Navigate</span>
+        <button onClick={onToggleCollapsed} className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300" aria-label="Collapse sidebar" title="Collapse sidebar">
+          <PanelLeftClose size={16} />
         </button>
       </div>
 
-      <nav data-tour={isPanel ? undefined : 'sidebar-nav'} className="flex-1 overflow-y-auto p-2 space-y-1" aria-label={isPanel ? 'Explorer' : 'Views'}>
-        {/* Views — only in full mode */}
-        {!isPanel && (
-          <>
-            <SidebarItem
-              icon={<LayoutDashboard size={18} />}
-              label="Dashboard"
-              active={activeView === 'dashboard' && !showTrash && !showArchive}
-              onClick={() => nav(() => navToView('dashboard'))}
-            />
-            <SidebarItem
-              icon={<FileText size={18} />}
-              label="Notes"
-              count={investigationScopedCounts ? investigationScopedCounts.notes : noteCounts.total}
-              active={activeView === 'notes' && !showTrash && !showArchive}
-              onClick={() => nav(() => navToView('notes'))}
-            />
-            <div data-tour="tasks">
-              <SidebarItem
-                icon={<ListChecks size={18} />}
-                label="Tasks"
-                count={investigationScopedCounts ? investigationScopedCounts.tasks : taskCounts.total}
-                active={activeView === 'tasks'}
-                onClick={() => nav(() => navToView('tasks'))}
-              />
-            </div>
-            <div data-tour="timeline">
-              <SidebarItem
-                icon={<Clock size={18} />}
-                label="Timeline"
-                count={investigationScopedCounts ? investigationScopedCounts.events : timelineCounts?.total}
-                active={activeView === 'timeline'}
-                onClick={() => nav(() => navToView('timeline'))}
-              />
-            </div>
-            <SidebarItem
-              icon={<Network size={18} />}
-              label="Graph"
-              active={activeView === 'graph'}
-              onClick={() => nav(() => navToView('graph'))}
-            />
-            <SidebarItem
-              icon={<Search size={16} />}
-              label="IOC Stats"
-              count={investigationScopedCounts ? investigationScopedCounts.iocs : undefined}
-              active={activeView === 'ioc-stats'}
-              onClick={() => nav(() => navToView('ioc-stats'))}
-            />
-            <div data-tour="whiteboards">
-              <SidebarItem
-                icon={<PenTool size={18} />}
-                label="Whiteboards"
-                count={investigationScopedCounts ? investigationScopedCounts.whiteboards : whiteboardCount}
-                active={activeView === 'whiteboard'}
-                onClick={() => nav(() => navToView('whiteboard'))}
-              />
-            </div>
-            <div data-tour="activity">
-              <SidebarItem
-                icon={<Activity size={18} />}
-                label="Activity"
-                active={activeView === 'activity'}
-                onClick={() => nav(() => navToView('activity'))}
-              />
-            </div>
-          </>
-        )}
-        {/* Whiteboards sub-list — always in panel mode, only in whiteboard view for full mode */}
-        {(isPanel || activeView === 'whiteboard') && (
+      <nav data-tour="sidebar-nav" className="flex-1 overflow-y-auto p-2 space-y-1" aria-label="Views">
+        {/* Views */}
+        <SidebarItem
+          icon={<LayoutDashboard size={18} />}
+          label="Dashboard"
+          active={activeView === 'dashboard' && !showTrash && !showArchive}
+          onClick={() => nav(() => navToView('dashboard'))}
+        />
+        <SidebarItem
+          icon={<FileText size={18} />}
+          label="Notes"
+          count={investigationScopedCounts ? investigationScopedCounts.notes : noteCounts.total}
+          active={activeView === 'notes' && !showTrash && !showArchive}
+          onClick={() => nav(() => navToView('notes'))}
+        />
+        <div data-tour="tasks">
+          <SidebarItem
+            icon={<ListChecks size={18} />}
+            label="Tasks"
+            count={investigationScopedCounts ? investigationScopedCounts.tasks : taskCounts.total}
+            active={activeView === 'tasks'}
+            onClick={() => nav(() => navToView('tasks'))}
+          />
+        </div>
+        <div data-tour="timeline">
+          <SidebarItem
+            icon={<Clock size={18} />}
+            label="Timeline"
+            count={investigationScopedCounts ? investigationScopedCounts.events : timelineCounts?.total}
+            active={activeView === 'timeline'}
+            onClick={() => nav(() => navToView('timeline'))}
+          />
+        </div>
+        <SidebarItem
+          icon={<Network size={18} />}
+          label="Graph"
+          active={activeView === 'graph'}
+          onClick={() => nav(() => navToView('graph'))}
+        />
+        <SidebarItem
+          icon={<Search size={16} />}
+          label="IOC Stats"
+          count={investigationScopedCounts ? investigationScopedCounts.iocs : undefined}
+          active={activeView === 'ioc-stats'}
+          onClick={() => nav(() => navToView('ioc-stats'))}
+        />
+        <div data-tour="whiteboards">
+          <SidebarItem
+            icon={<PenTool size={18} />}
+            label="Whiteboards"
+            count={investigationScopedCounts ? investigationScopedCounts.whiteboards : whiteboardCount}
+            active={activeView === 'whiteboard'}
+            onClick={() => nav(() => navToView('whiteboard'))}
+          />
+        </div>
+        <div data-tour="activity">
+          <SidebarItem
+            icon={<Activity size={18} />}
+            label="Activity"
+            active={activeView === 'activity'}
+            onClick={() => nav(() => navToView('activity'))}
+          />
+        </div>
+        {/* Whiteboards — only in whiteboard view */}
+        {activeView === 'whiteboard' && (
           <div className="pt-2">
             <div
               role="button"
@@ -373,8 +427,8 @@ export function Sidebar({
             )}
           </div>
         )}
-        {/* Timelines sub-list — always in panel mode, only in timeline view for full mode */}
-        {(isPanel || activeView === 'timeline') && (
+        {/* Timelines — only in timeline view */}
+        {activeView === 'timeline' && (
           <div className="pt-2">
             <div
               role="button"
@@ -740,67 +794,62 @@ export function Sidebar({
           )}
         </div>
 
-        {/* Archive/Trash — only in full mode (icon rail handles these in panel mode) */}
-        {!isPanel && (
-          <div className="pt-2 space-y-0.5">
-            <SidebarItem
-              icon={<Archive size={16} />}
-              label="Archive"
-              count={noteCounts.archived}
-              active={showArchive}
-              onClick={() => nav(() => { onShowArchive(!showArchive); onShowTrash(false); onFolderSelect(undefined); onTagSelect(undefined); })}
-            />
-            <SidebarItem
-              icon={<Trash2 size={16} />}
-              label="Trash"
-              count={noteCounts.trashed}
-              active={showTrash}
-              onClick={() => nav(() => { onShowTrash(!showTrash); onShowArchive(false); onFolderSelect(undefined); onTagSelect(undefined); })}
-            />
-          </div>
-        )}
+        {/* Special */}
+        <div className="pt-2 space-y-0.5">
+          <SidebarItem
+            icon={<Archive size={16} />}
+            label="Archive"
+            count={noteCounts.archived}
+            active={showArchive}
+            onClick={() => nav(() => { onShowArchive(!showArchive); onShowTrash(false); onFolderSelect(undefined); onTagSelect(undefined); })}
+          />
+          <SidebarItem
+            icon={<Trash2 size={16} />}
+            label="Trash"
+            count={noteCounts.trashed}
+            active={showTrash}
+            onClick={() => nav(() => { onShowTrash(!showTrash); onShowArchive(false); onFolderSelect(undefined); onTagSelect(undefined); })}
+          />
+        </div>
       </nav>
 
-      {/* Settings footer — only in full mode */}
-      {!isPanel && (
-        <div className="border-t border-gray-800 p-2 space-y-0.5">
-          <SidebarItem
-            icon={<SettingsIcon size={16} />}
-            label="Settings"
-            onClick={() => nav(onOpenSettings)}
-          />
+      <div className="border-t border-gray-800 p-2 space-y-0.5">
+        <SidebarItem
+          icon={<SettingsIcon size={16} />}
+          label="Settings"
+          onClick={() => nav(onOpenSettings)}
+        />
 
-          {/* Links — visible on mobile (md:hidden) since header hides them on mobile */}
-          <div className="md:hidden pt-2 space-y-0.5">
-            <a
-              href="https://github.com/peterhanily/threatcaddy"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors"
-            >
-              <Github size={16} />
-              <span>GitHub</span>
-            </a>
-            <a
-              href="./threatcaddy-standalone.html"
-              download
-              className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors"
-            >
-              <Download size={16} />
-              <span>Download Standalone</span>
-            </a>
-            <a
-              href="https://github.com/peterhanily/threatcaddy/tree/main/extension#readme"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors"
-            >
-              <Chrome size={16} />
-              <span>Extension</span>
-            </a>
-          </div>
+        {/* Links — visible on mobile (md:hidden) since header hides them on mobile */}
+        <div className="md:hidden pt-2 space-y-0.5">
+          <a
+            href="https://github.com/peterhanily/threatcaddy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors"
+          >
+            <Github size={16} />
+            <span>GitHub</span>
+          </a>
+          <a
+            href="./threatcaddy-standalone.html"
+            download
+            className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors"
+          >
+            <Download size={16} />
+            <span>Download Standalone</span>
+          </a>
+          <a
+            href="https://github.com/peterhanily/threatcaddy/tree/main/extension#readme"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors"
+          >
+            <Chrome size={16} />
+            <span>Extension</span>
+          </a>
         </div>
-      )}
+      </div>
 
       <Modal
         open={deletingFolderId !== null}
@@ -913,6 +962,51 @@ const SidebarItem = React.memo(function SidebarItem({
         <span className="text-xs text-gray-500 tabular-nums">{count}</span>
       )}
       {actions}
+    </div>
+  );
+});
+
+function formatBadge(n: number): string {
+  return n > 999 ? '999+' : String(n);
+}
+
+const CollapsedIcon = React.memo(function CollapsedIcon({
+  icon: Icon,
+  label,
+  active,
+  badge,
+  onClick,
+  dataTour,
+}: {
+  icon: typeof FileText;
+  label: string;
+  active?: boolean;
+  badge?: number;
+  onClick: () => void;
+  dataTour?: string;
+}) {
+  return (
+    <div className="group relative" {...(dataTour ? { 'data-tour': dataTour } : {})}>
+      <button
+        onClick={onClick}
+        className={cn(
+          'w-9 h-9 flex items-center justify-center rounded-lg transition-colors relative',
+          active
+            ? 'bg-accent/15 text-accent'
+            : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
+        )}
+        aria-label={label}
+      >
+        <Icon size={18} />
+        {badge !== undefined && badge > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-accent/80 text-[9px] font-medium text-white flex items-center justify-center px-1 leading-none">
+            {formatBadge(badge)}
+          </span>
+        )}
+      </button>
+      <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 rounded bg-gray-900 border border-gray-700 text-xs text-gray-200 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
+        {label}
+      </div>
     </div>
   );
 });
