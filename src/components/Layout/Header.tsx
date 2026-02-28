@@ -1,5 +1,5 @@
 import { Menu, Search, Github, Download, Chrome, HardDriveDownload, FolderUp, HelpCircle } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { ThemeToggle } from '../Common/ThemeToggle';
 import { ScreenshareToggle } from '../Common/ScreenshareToggle';
 import { CreateDropdown } from '../Common/CreateDropdown';
@@ -49,6 +49,11 @@ export function Header({
   selectedFolderName,
 }: HeaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [buildAge] = useState(() => {
+    if (typeof __BUILD_TIME__ !== 'number') return '';
+    const d = Math.floor((Date.now() - __BUILD_TIME__) / 86_400_000);
+    return ` · Built ${d === 0 ? 'today' : d === 1 ? '1 day ago' : `${d} days ago`}`;
+  });
   return (
     <header data-tour="header" className={cn("h-12 sm:h-14 border-b border-gray-800 flex items-center px-2 sm:px-4 gap-2 sm:gap-3 bg-gray-900/50 backdrop-blur-sm shrink-0 relative", screenshareMaxLevel && "pt-0.5")}>
       {screenshareMaxLevel && <div className="absolute top-0 left-0 right-0 h-0.5 bg-red-500" />}
@@ -80,7 +85,7 @@ export function Header({
             <span className="text-lg font-bold tracking-tight">
               <span className="text-accent">Threat</span><span className="text-gray-200">Caddy</span>
             </span>
-            <span className="text-[9px] font-medium tracking-widest uppercase text-gray-500">Local Edition</span>
+            <span className="text-[9px] font-medium tracking-widest uppercase text-gray-500">Local Edition{buildAge}</span>
           </div>
         </div>
       ) : (
