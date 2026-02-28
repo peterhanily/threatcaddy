@@ -1,4 +1,4 @@
-import { Briefcase, Tag, FileText, ListChecks, Clock, PenTool, Info, Search } from 'lucide-react';
+import { Briefcase, Tag, FileText, ListChecks, Clock, PenTool, Search } from 'lucide-react';
 import type { InvestigationStatus, ViewMode } from '../../types';
 import { cn } from '../../lib/utils';
 
@@ -59,20 +59,19 @@ export function ActiveFilterBar({ folderName, folderColor, folderStatus, tagName
         backgroundColor: `color-mix(in srgb, ${accentColor} 8%, transparent)`,
       }}
     >
-      <span className="text-gray-500 text-xs font-medium">Viewing:</span>
       {folderName && (
         <span className="flex items-center gap-1.5">
           <Briefcase size={14} style={{ color: folderColor }} />
-          <span className="text-gray-200 font-medium">{folderName}</span>
-          {onEditFolder && (
+          {onEditFolder ? (
             <button
               onClick={onEditFolder}
-              className="p-0.5 rounded text-gray-500 hover:text-gray-300"
-              title="Investigation details"
-              aria-label="View investigation details"
+              className="text-gray-200 font-medium hover:text-accent transition-colors"
+              title="View investigation details"
             >
-              <Info size={13} />
+              {folderName}
             </button>
+          ) : (
+            <span className="text-gray-200 font-medium">{folderName}</span>
           )}
         </span>
       )}
