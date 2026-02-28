@@ -1,7 +1,9 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import type { SlashCommand } from './slashCommands';
 
 const CATEGORY_ORDER: SlashCommand['category'][] = ['Formatting', 'Blocks', 'Threat Intel', 'Insert'];
+const MAX_HEIGHT = 320;
+const LINE_HEIGHT = 24;
 
 interface SlashCommandMenuProps {
   commands: SlashCommand[];
@@ -13,6 +15,32 @@ interface SlashCommandMenuProps {
 
 export function SlashCommandMenu({ commands, activeIndex, position, onSelect, menuRef }: SlashCommandMenuProps) {
   const listRef = useRef<HTMLDivElement>(null);
+  const [adjustedPos, setAdjustedPos] = useState<{ top: number; left: number } | null>(null);
+
+  // After render, measure menu rect against viewport and flip/shift if needed
+  useLayoutEffect(() => {
+    const menu = menuRef.current;
+    if (!menu) return;
+
+    const rect = menu.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    let top = position.top + LINE_HEIGHT;
+    let left = Math.max(0, position.left);
+
+    // Flip above cursor if overflowing bottom
+    if (rect.bottom > vh) {
+      top = position.top - menu.offsetHeight - 4;
+    }
+
+    // Shift left if overflowing right edge
+    if (rect.right > vw) {
+      left = Math.max(0, left - (rect.right - vw) - 8);
+    }
+
+    setAdjustedPos({ top, left });
+  }, [position, commands.length, menuRef]);
 
   // Scroll active item into view
   useEffect(() => {
@@ -34,18 +62,18 @@ export function SlashCommandMenu({ commands, activeIndex, position, onSelect, me
     items: g.items.map(cmd => ({ cmd, index: globalIdx++ })),
   }));
 
-  const lineHeight = 24;
-  const menuTop = position.top + lineHeight;
-  const menuLeft = Math.max(0, position.left);
+  // Initial position (before layout measurement adjusts it)
+  const defaultTop = position.top + LINE_HEIGHT;
+  const defaultLeft = Math.max(0, position.left);
 
   return (
     <div
       ref={menuRef}
       className="absolute z-50 bg-gray-800 border border-gray-700 rounded-lg shadow-xl overflow-y-auto"
       style={{
-        top: menuTop,
-        left: menuLeft,
-        maxHeight: 320,
+        top: adjustedPos?.top ?? defaultTop,
+        left: adjustedPos?.left ?? defaultLeft,
+        maxHeight: MAX_HEIGHT,
         minWidth: 260,
         maxWidth: 340,
       }}
