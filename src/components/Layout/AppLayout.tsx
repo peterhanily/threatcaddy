@@ -10,10 +10,11 @@ interface AppLayoutProps {
 export function AppLayout({ header, sidebar, children }: AppLayoutProps) {
   const [dismissed, setDismissed] = useState(false);
 
-  const daysSinceBuild =
+  const [daysSinceBuild] = useState(() =>
     typeof __BUILD_TIME__ === 'number'
       ? Math.floor((Date.now() - __BUILD_TIME__) / 86_400_000)
-      : undefined;
+      : undefined
+  );
 
   const showBanner =
     typeof __STANDALONE__ !== 'undefined' &&
