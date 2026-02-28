@@ -17,6 +17,7 @@ export default defineConfig({
   base: './',
   define: {
     __STANDALONE__: JSON.stringify(true),
+    __BUILD_TIME__: JSON.stringify(Date.now()),
   },
   build: {
     outDir: 'dist-single',
