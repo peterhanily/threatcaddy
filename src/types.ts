@@ -166,7 +166,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'dark',
-  defaultView: 'notes',
+  defaultView: 'dashboard',
   editorMode: 'split',
   sidebarCollapsed: false,
   taskViewMode: 'list',
