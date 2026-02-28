@@ -195,6 +195,29 @@
 
 .light .markdown-preview a:hover { color: #6366f1; }
 
+.markdown-preview .wiki-link {
+  color: #818cf8;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  cursor: pointer;
+}
+
+.light .markdown-preview .wiki-link {
+  color: #4f46e5;
+}
+
+.markdown-preview .wiki-link-broken {
+  color: #6b7280;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  opacity: 0.6;
+  cursor: default;
+}
+
+.light .markdown-preview .wiki-link-broken {
+  color: #9ca3af;
+}
+
 .markdown-preview hr {
   border-color: #374151;
   margin: 1rem 0;

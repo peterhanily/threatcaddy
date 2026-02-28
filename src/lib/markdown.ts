@@ -87,11 +87,46 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
   }
 });
 
-export function renderMarkdown(content: string): string {
-  const raw = marked.parse(content) as string;
+export interface WikiLinkTarget {
+  id: string;
+  title: string;
+}
+
+/**
+ * Replace [[title]] wiki-links with HTML anchors, skipping code fences and inline code.
+ * Resolved links get a clickable anchor; unresolved get a dimmed span.
+ */
+export function preprocessWikiLinks(content: string, notes: WikiLinkTarget[]): string {
+  // Build case-insensitive title → target map
+  const titleMap = new Map<string, WikiLinkTarget>();
+  for (const n of notes) {
+    titleMap.set(n.title.toLowerCase(), n);
+  }
+
+  // Split on code fences and inline code to skip those regions
+  // Match: fenced code (``` ... ```) or inline code (` ... `)
+  const parts = content.split(/(```[\s\S]*?```|`[^`]+`)/);
+
+  return parts.map((part, i) => {
+    // Odd indices are code regions — pass through unchanged
+    if (i % 2 === 1) return part;
+    // Replace [[...]] in non-code regions
+    return part.replace(/\[\[([^\]]+)\]\]/g, (_match, title: string) => {
+      const target = titleMap.get(title.toLowerCase());
+      if (target) {
+        return `<a data-note-link="true" data-note-id="${target.id}" class="wiki-link">${title}</a>`;
+      }
+      return `<span data-note-link="broken" class="wiki-link-broken">${title}</span>`;
+    });
+  }).join('');
+}
+
+export function renderMarkdown(content: string, wikiLinkTargets?: WikiLinkTarget[]): string {
+  const processed = wikiLinkTargets ? preprocessWikiLinks(content, wikiLinkTargets) : content;
+  const raw = marked.parse(processed) as string;
   return DOMPurify.sanitize(raw, {
     ADD_TAGS: ['input'],
-    ADD_ATTR: ['type', 'checked', 'disabled', 'class'],
+    ADD_ATTR: ['type', 'checked', 'disabled', 'class', 'data-note-link', 'data-note-id'],
     FORBID_ATTR: ['style', 'onerror', 'onload'],
   });
 }

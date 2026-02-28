@@ -36,6 +36,7 @@ interface NoteEditorProps {
   allNotes?: Note[];
   allTasks?: Task[];
   allTimelineEvents?: TimelineEvent[];
+  onNavigateToNote?: (noteId: string) => void;
 }
 
 export function NoteEditor({
@@ -56,6 +57,7 @@ export function NoteEditor({
   allNotes = [],
   allTasks = [],
   allTimelineEvents = [],
+  onNavigateToNote,
 }: NoteEditorProps) {
   const iocCount = note.iocAnalysis?.iocs.filter((i) => !i.dismissed).length ?? 0;
   const [title, setTitle] = useState(note.title);
@@ -598,7 +600,7 @@ export function NoteEditor({
               style={editorMode === 'split' ? { width: `${(1 - editorPreview.ratio) * 100}%` } : { flex: 1 }}
             >
               {content ? (
-                <MarkdownPreview content={content} defanged={defangPreview} />
+                <MarkdownPreview content={content} defanged={defangPreview} allNotes={allNotes} onNavigateToNote={onNavigateToNote} />
               ) : (
                 <p className="text-gray-600 text-sm italic">Nothing to preview</p>
               )}

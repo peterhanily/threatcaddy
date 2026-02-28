@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { AppLayout } from './components/Layout/AppLayout';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
@@ -50,6 +50,7 @@ import type { NavState } from './hooks/useNavigationHistory';
 import { useTour } from './hooks/useTour';
 import { TourOverlay } from './components/Tour/TourOverlay';
 import { TourTooltip } from './components/Tour/TourTooltip';
+import { DemoWelcomeModal } from './components/Common/DemoWelcomeModal';
 
 // Parse hash deep-link on initial load: #entity=note:xxx, #entity=task:xxx, #entity=event:xxx
 function parseEntityHash(): { type: 'note' | 'task' | 'event'; id: string } | null {
@@ -402,6 +403,8 @@ export default function App() {
   const [screenshareMaxLevel, setScreenshareMaxLevel] = useState<string | null>(null);
   const [editingFolderId, setEditingFolderId] = useState<string | undefined>();
   const [folderStatusFilter, setFolderStatusFilter] = useState<InvestigationStatus[]>(['active']);
+  const [showDemoModal, setShowDemoModal] = useState(false);
+  const demoProcessedRef = useRef(false);
 
   const effectiveClsLevels = useMemo(() => getEffectiveClsLevels(settings.tiClsLevels), [settings.tiClsLevels]);
 
@@ -894,6 +897,21 @@ export default function App() {
     activityLog.log('data', 'delete', 'Removed sample investigation "Operation DARK GLACIER"');
   }, [handleImportComplete, selectedFolderId, activityLog]);
 
+  // ?demo URL parameter handling
+  useEffect(() => {
+    if (demoProcessedRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('demo')) return;
+    demoProcessedRef.current = true;
+    // Clean the URL
+    history.replaceState(null, '', location.pathname + location.hash);
+    if (sampleLoaded) {
+      setShowDemoModal(true);
+    } else {
+      handleLoadSample().then(() => setShowDemoModal(true));
+    }
+  }, [sampleLoaded, handleLoadSample]);
+
   // Keyboard shortcuts
   // Search overlay navigation callbacks
   const handleSearchNavigateToNote = useCallback((id: string) => {
@@ -1247,6 +1265,7 @@ export default function App() {
                   allNotes={screensafeNotes}
                   allTasks={screensafeTasks}
                   allTimelineEvents={screensafeTimelineEvents}
+                  onNavigateToNote={handleSearchNavigateToNote}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-gray-600">
@@ -1327,6 +1346,13 @@ export default function App() {
         message="This will replace all your current notes, tasks, folders, and tags with the backup data. This cannot be undone."
         confirmLabel="Replace All Data"
         danger
+      />
+
+      <DemoWelcomeModal
+        open={showDemoModal}
+        onClose={() => setShowDemoModal(false)}
+        onStartTour={() => tour.start(activeView)}
+        onDeleteDemo={handleDeleteSample}
       />
 
       <SearchOverlay
