@@ -38,6 +38,9 @@ importers:
       nanoid:
         specifier: ^5.1.6
         version: 5.1.6
+      pako:
+        specifier: ^2.1.0
+        version: 2.1.0
       papaparse:
         specifier: ^5.5.3
         version: 5.5.3
@@ -81,6 +84,9 @@ importers:
       '@types/node':
         specifier: ^24.10.1
         version: 24.10.13
+      '@types/pako':
+        specifier: ^2.0.4
+        version: 2.0.4
       '@types/papaparse':
         specifier: ^5.5.2
         version: 5.5.2
@@ -1150,6 +1156,9 @@ packages:
 
   '@types/node@24.10.13':
     resolution: {integrity: sha512-oH72nZRfDv9lADUBSo104Aq7gPHpQZc4BTx38r9xf9pg5LfP6EzSyH2n7qFmmxRQXh7YlUXODcYsg6PuTDSxGg==}
+
+  '@types/pako@2.0.4':
+    resolution: {integrity: sha512-VWDCbrLeVXJM9fihYodcLiIv0ku+AlOa/TQ1SvYOaBuyrSKgEcro95LJyIsJ4vSo6BXIxOKxiJAat04CmST9Fw==}
 
   '@types/papaparse@5.5.2':
     resolution: {integrity: sha512-gFnFp/JMzLHCwRf7tQHrNnfhN4eYBVYYI897CGX4MY1tzY9l2aLkVyx2IlKZ/SAqDbB3I1AOZW5gTMGGsqWliA==}
@@ -2274,6 +2283,9 @@ packages:
 
   pako@2.0.3:
     resolution: {integrity: sha512-WjR1hOeg+kki3ZIOjaf4b5WVcay1jaliKSYiEaB1XzwhMQZJxRdQRv0V31EKBYlxb4T7SK3hjfc/jxyU64BoSw==}
+
+  pako@2.1.0:
+    resolution: {integrity: sha512-w+eufiZ1WuJYgPXbV/PO3NCMEc3xqylkKHzp8bxp1uW4qaSNQUkwmLLEc3kKsfz8lpV1F8Ht3U1Cm+9Srog2ug==}
 
   papaparse@5.5.3:
     resolution: {integrity: sha512-5QvjGxYVjxO59MGU2lHVYpRWBBtKHnlIAcSe1uNFCkkptUh63NFRj0FJQm7nR67puEruUci/ZkjmEFrjCAyP4A==}
@@ -3745,6 +3757,8 @@ snapshots:
     dependencies:
       undici-types: 7.16.0
 
+  '@types/pako@2.0.4': {}
+
   '@types/papaparse@5.5.2':
     dependencies:
       '@types/node': 24.10.13
@@ -4961,6 +4975,8 @@ snapshots:
       p-limit: 3.1.0
 
   pako@2.0.3: {}
+
+  pako@2.1.0: {}
 
   papaparse@5.5.3: {}
 

@@ -1,13 +1,31 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { LayoutDashboard, FolderOpen, Activity, Sun, Moon, Monitor, Shield } from 'lucide-react';
-import type { Folder, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ActivityLogEntry } from '../../types';
+import type { Folder, Note, Task, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, Tag, ActivityLogEntry } from '../../types';
 import { cn } from '../../lib/utils';
 import { ExecMetricsBar } from './ExecMetricsBar';
 import { ExecInvestigationList } from './ExecInvestigationList';
 import { ExecInvestigationDetail } from './ExecInvestigationDetail';
 import { ExecActivityFeed } from './ExecActivityFeed';
+import { ExecEntityList } from './ExecEntityList';
+import { ExecNoteView } from './ExecNoteView';
+import { ExecTaskView } from './ExecTaskView';
+import { ExecEventView } from './ExecEventView';
+import { ShareDialog } from './ShareDialog';
+import type { SharePayload, InvestigationBundle } from '../../lib/share';
 
 type ExecNav = 'overview' | 'investigations' | 'activity';
+
+type ExecDrillDown =
+  | null
+  | { screen: 'investigation'; folderId: string }
+  | { screen: 'noteList'; folderId: string }
+  | { screen: 'noteDetail'; folderId: string; noteId: string }
+  | { screen: 'taskList'; folderId: string }
+  | { screen: 'taskDetail'; folderId: string; taskId: string }
+  | { screen: 'eventList'; folderId: string }
+  | { screen: 'eventDetail'; folderId: string; eventId: string }
+  | { screen: 'whiteboardList'; folderId: string }
+  | { screen: 'iocList'; folderId: string };
 
 interface ExecDashboardProps {
   folders: Folder[];
@@ -16,6 +34,8 @@ interface ExecDashboardProps {
   allEvents: TimelineEvent[];
   allWhiteboards: Whiteboard[];
   allIOCs: StandaloneIOC[];
+  allTimelines: Timeline[];
+  allTags: Tag[];
   activityEntries: ActivityLogEntry[];
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
@@ -29,35 +49,209 @@ export function ExecDashboard({
   allEvents,
   allWhiteboards,
   allIOCs,
+  allTimelines,
+  allTags,
   activityEntries,
   theme,
   onToggleTheme,
   onSwitchToAnalystMode,
 }: ExecDashboardProps) {
   const [nav, setNav] = useState<ExecNav>('overview');
-  const [detailFolderId, setDetailFolderId] = useState<string | null>(null);
-
-  const detailFolder = detailFolderId ? folders.find((f) => f.id === detailFolderId) : null;
+  const [drillDown, setDrillDown] = useState<ExecDrillDown>(null);
+  const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
 
   const handleSelectInvestigation = useCallback((id: string) => {
-    setDetailFolderId(id);
+    setDrillDown({ screen: 'investigation', folderId: id });
   }, []);
 
-  const handleBackFromDetail = useCallback(() => {
-    setDetailFolderId(null);
+  const handleBack = useCallback(() => {
+    setDrillDown((prev) => {
+      if (!prev) return null;
+      switch (prev.screen) {
+        case 'investigation': return null;
+        case 'noteList':
+        case 'taskList':
+        case 'eventList':
+        case 'whiteboardList':
+        case 'iocList':
+          return { screen: 'investigation', folderId: prev.folderId };
+        case 'noteDetail':
+          return { screen: 'noteList', folderId: prev.folderId };
+        case 'taskDetail':
+          return { screen: 'taskList', folderId: prev.folderId };
+        case 'eventDetail':
+          return { screen: 'eventList', folderId: prev.folderId };
+        default: return null;
+      }
+    });
   }, []);
 
   const handleOpenAnalystMode = useCallback(() => {
-    onSwitchToAnalystMode(detailFolderId ?? undefined);
-  }, [detailFolderId, onSwitchToAnalystMode]);
+    const folderId = drillDown?.folderId;
+    onSwitchToAnalystMode(folderId ?? undefined);
+  }, [drillDown, onSwitchToAnalystMode]);
+
+  const handleShareInvestigation = useCallback(() => {
+    if (!drillDown) return;
+    const folderId = drillDown.folderId;
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder) return;
+
+    const bundle: InvestigationBundle = {
+      folder,
+      notes: allNotes.filter((n) => n.folderId === folderId && !n.trashed),
+      tasks: allTasks.filter((t) => t.folderId === folderId && !t.trashed),
+      events: allEvents.filter((e) => e.folderId === folderId && !e.trashed),
+      timelines: allTimelines.filter((tl) => {
+        const f = folders.find((fo) => fo.id === folderId);
+        return f?.timelineId === tl.id;
+      }),
+      whiteboards: allWhiteboards.filter((w) => w.folderId === folderId && !w.trashed),
+      iocs: allIOCs.filter((i) => i.folderId === folderId && !i.trashed),
+      tags: allTags,
+    };
+    setSharePayload({ v: 1, s: 'investigation', t: Date.now(), d: bundle });
+  }, [drillDown, folders, allNotes, allTasks, allEvents, allTimelines, allWhiteboards, allIOCs, allTags]);
 
   const activeFolders = folders.filter((f) => (f.status || 'active') === 'active');
+
+  const drillFolder = useMemo(
+    () => drillDown ? folders.find((f) => f.id === drillDown.folderId) : null,
+    [drillDown, folders],
+  );
+  const drillFolderName = drillFolder?.name ?? 'Investigation';
 
   const tabs: { key: ExecNav; label: string; icon: typeof LayoutDashboard }[] = [
     { key: 'overview', label: 'Overview', icon: LayoutDashboard },
     { key: 'investigations', label: 'Cases', icon: FolderOpen },
     { key: 'activity', label: 'Activity', icon: Activity },
   ];
+
+  // Render drill-down content
+  const renderDrillDown = () => {
+    if (!drillDown) return null;
+
+    switch (drillDown.screen) {
+      case 'investigation':
+        return drillFolder ? (
+          <ExecInvestigationDetail
+            folder={drillFolder}
+            allNotes={allNotes}
+            allTasks={allTasks}
+            allEvents={allEvents}
+            allWhiteboards={allWhiteboards}
+            allIOCs={allIOCs}
+            activityEntries={activityEntries}
+            onBack={handleBack}
+            onOpenAnalystMode={handleOpenAnalystMode}
+            onTapNotes={() => setDrillDown({ screen: 'noteList', folderId: drillDown.folderId })}
+            onTapTasks={() => setDrillDown({ screen: 'taskList', folderId: drillDown.folderId })}
+            onTapEvents={() => setDrillDown({ screen: 'eventList', folderId: drillDown.folderId })}
+            onTapWhiteboards={() => setDrillDown({ screen: 'whiteboardList', folderId: drillDown.folderId })}
+            onTapIOCs={() => setDrillDown({ screen: 'iocList', folderId: drillDown.folderId })}
+            onShare={handleShareInvestigation}
+          />
+        ) : null;
+
+      case 'noteList':
+        return (
+          <ExecEntityList
+            mode="notes"
+            folderId={drillDown.folderId}
+            folderName={drillFolderName}
+            allNotes={allNotes}
+            allTasks={allTasks}
+            allEvents={allEvents}
+            allWhiteboards={allWhiteboards}
+            allIOCs={allIOCs}
+            onBack={handleBack}
+            onSelectNote={(id) => setDrillDown({ screen: 'noteDetail', folderId: drillDown.folderId, noteId: id })}
+          />
+        );
+
+      case 'noteDetail': {
+        const note = allNotes.find((n) => n.id === drillDown.noteId);
+        return note ? (
+          <ExecNoteView note={note} allNotes={allNotes} onBack={handleBack} />
+        ) : null;
+      }
+
+      case 'taskList':
+        return (
+          <ExecEntityList
+            mode="tasks"
+            folderId={drillDown.folderId}
+            folderName={drillFolderName}
+            allNotes={allNotes}
+            allTasks={allTasks}
+            allEvents={allEvents}
+            allWhiteboards={allWhiteboards}
+            allIOCs={allIOCs}
+            onBack={handleBack}
+            onSelectTask={(id) => setDrillDown({ screen: 'taskDetail', folderId: drillDown.folderId, taskId: id })}
+          />
+        );
+
+      case 'taskDetail': {
+        const task = allTasks.find((t) => t.id === drillDown.taskId);
+        return task ? <ExecTaskView task={task} onBack={handleBack} /> : null;
+      }
+
+      case 'eventList':
+        return (
+          <ExecEntityList
+            mode="events"
+            folderId={drillDown.folderId}
+            folderName={drillFolderName}
+            allNotes={allNotes}
+            allTasks={allTasks}
+            allEvents={allEvents}
+            allWhiteboards={allWhiteboards}
+            allIOCs={allIOCs}
+            onBack={handleBack}
+            onSelectEvent={(id) => setDrillDown({ screen: 'eventDetail', folderId: drillDown.folderId, eventId: id })}
+          />
+        );
+
+      case 'eventDetail': {
+        const event = allEvents.find((e) => e.id === drillDown.eventId);
+        return event ? <ExecEventView event={event} onBack={handleBack} /> : null;
+      }
+
+      case 'whiteboardList':
+        return (
+          <ExecEntityList
+            mode="whiteboards"
+            folderId={drillDown.folderId}
+            folderName={drillFolderName}
+            allNotes={allNotes}
+            allTasks={allTasks}
+            allEvents={allEvents}
+            allWhiteboards={allWhiteboards}
+            allIOCs={allIOCs}
+            onBack={handleBack}
+            onSwitchToAnalystMode={handleOpenAnalystMode}
+          />
+        );
+
+      case 'iocList':
+        return (
+          <ExecEntityList
+            mode="iocs"
+            folderId={drillDown.folderId}
+            folderName={drillFolderName}
+            allNotes={allNotes}
+            allTasks={allTasks}
+            allEvents={allEvents}
+            allWhiteboards={allWhiteboards}
+            allIOCs={allIOCs}
+            onBack={handleBack}
+          />
+        );
+
+      default: return null;
+    }
+  };
 
   return (
     <div className={cn('h-screen flex flex-col bg-bg-deep', theme)}>
@@ -89,18 +283,8 @@ export function ExecDashboard({
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
-        {detailFolder ? (
-          <ExecInvestigationDetail
-            folder={detailFolder}
-            allNotes={allNotes}
-            allTasks={allTasks}
-            allEvents={allEvents}
-            allWhiteboards={allWhiteboards}
-            allIOCs={allIOCs}
-            activityEntries={activityEntries}
-            onBack={handleBackFromDetail}
-            onOpenAnalystMode={handleOpenAnalystMode}
-          />
+        {drillDown ? (
+          renderDrillDown()
         ) : nav === 'overview' ? (
           <div className="flex flex-col gap-5">
             <ExecMetricsBar
@@ -172,8 +356,8 @@ export function ExecDashboard({
         )}
       </div>
 
-      {/* Bottom tab bar */}
-      {!detailFolder && (
+      {/* Bottom tab bar — hide when drilled in */}
+      {!drillDown && (
         <div className="flex items-center justify-around bg-bg-surface border-t border-border-subtle py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shrink-0">
           {tabs.map((tab) => (
             <button
@@ -192,6 +376,13 @@ export function ExecDashboard({
           ))}
         </div>
       )}
+
+      {/* Share dialog */}
+      <ShareDialog
+        open={sharePayload !== null}
+        onClose={() => setSharePayload(null)}
+        payload={sharePayload}
+      />
     </div>
   );
 }

@@ -58,9 +58,19 @@ import { ToastContainer } from './components/Common/Toast';
 import { generateInvestigationReport } from './lib/report';
 import { useIsMobile } from './hooks/useIsMobile';
 import { ExecDashboard } from './components/ExecMode/ExecDashboard';
+import { ShareReceiver } from './components/ExecMode/ShareReceiver';
+
+// Parse share hash on initial load: #share=<encoded>
+function parseShareHash(): string | null {
+  const match = window.location.hash.match(/^#share=(.+)$/);
+  return match?.[1] ?? null;
+}
+const initialShareData = parseShareHash();
 
 // Parse hash deep-link on initial load: #entity=note:xxx, #entity=task:xxx, #entity=event:xxx
 function parseEntityHash(): { type: 'note' | 'task' | 'event'; id: string } | null {
+  // Don't parse entity hash if we have a share hash
+  if (initialShareData) return null;
   const match = window.location.hash.match(/^#entity=(note|task|event):(.+)$/);
   if (!match) return null;
   // Clear the hash after reading
@@ -108,6 +118,9 @@ function AppInner() {
   });
 
   const activityLog = useActivityLog();
+
+  // Share receiver state
+  const [shareData, setShareData] = useState<string | null>(initialShareData);
 
   // Mobile exec mode
   const isMobile = useIsMobile();
@@ -1107,6 +1120,20 @@ function AppInner() {
     />
   ) : null;
 
+  // Share receiver — early return on all devices
+  if (shareData) {
+    return (
+      <ShareReceiver
+        encodedData={shareData}
+        theme={settings.theme}
+        onDismiss={() => {
+          setShareData(null);
+          history.replaceState(null, '', location.pathname + location.search);
+        }}
+      />
+    );
+  }
+
   // Mobile exec mode — replace entire UI with executive dashboard
   if (isMobile && !forceAnalystMode) {
     return (
@@ -1119,6 +1146,8 @@ function AppInner() {
           allEvents={timeline.events}
           allWhiteboards={whiteboards}
           allIOCs={standaloneIOCsHook.iocs}
+          allTimelines={timelines}
+          allTags={tags}
           activityEntries={activityLog.entries}
           theme={settings.theme}
           onToggleTheme={toggleTheme}

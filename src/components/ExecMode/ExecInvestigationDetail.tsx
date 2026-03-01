@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ArrowLeft, FileText, ListChecks, Clock, PenTool, Shield, ExternalLink } from 'lucide-react';
+import { ArrowLeft, FileText, ListChecks, Clock, PenTool, Shield, ExternalLink, Share2 } from 'lucide-react';
 import type { Folder, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ActivityLogEntry } from '../../types';
 import { ACTIVITY_CATEGORY_LABELS } from '../../types';
 import { cn } from '../../lib/utils';
@@ -15,6 +15,12 @@ interface ExecInvestigationDetailProps {
   activityEntries: ActivityLogEntry[];
   onBack: () => void;
   onOpenAnalystMode: () => void;
+  onTapNotes?: () => void;
+  onTapTasks?: () => void;
+  onTapEvents?: () => void;
+  onTapWhiteboards?: () => void;
+  onTapIOCs?: () => void;
+  onShare?: () => void;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -33,6 +39,12 @@ export function ExecInvestigationDetail({
   activityEntries,
   onBack,
   onOpenAnalystMode,
+  onTapNotes,
+  onTapTasks,
+  onTapEvents,
+  onTapWhiteboards,
+  onTapIOCs,
+  onShare,
 }: ExecInvestigationDetailProps) {
   const status = folder.status || 'active';
 
@@ -74,20 +86,27 @@ export function ExecInvestigationDetail({
   }, [folder.id, activityEntries, allNotes, allTasks, allEvents, allIOCs]);
 
   const metricItems = [
-    { label: 'Notes', value: counts.notes, icon: FileText, color: 'text-accent-blue' },
-    { label: 'Tasks', value: counts.tasks, icon: ListChecks, color: 'text-accent-amber' },
-    { label: 'Events', value: counts.events, icon: Clock, color: 'text-accent-green' },
-    { label: 'Boards', value: counts.whiteboards, icon: PenTool, color: 'text-accent-pink' },
-    { label: 'IOCs', value: counts.iocs, icon: Shield, color: 'text-red-400' },
+    { key: 'notes' as const, label: 'Notes', value: counts.notes, icon: FileText, color: 'text-accent-blue', onTap: onTapNotes },
+    { key: 'tasks' as const, label: 'Tasks', value: counts.tasks, icon: ListChecks, color: 'text-accent-amber', onTap: onTapTasks },
+    { key: 'events' as const, label: 'Events', value: counts.events, icon: Clock, color: 'text-accent-green', onTap: onTapEvents },
+    { key: 'boards' as const, label: 'Boards', value: counts.whiteboards, icon: PenTool, color: 'text-accent-pink', onTap: onTapWhiteboards },
+    { key: 'iocs' as const, label: 'IOCs', value: counts.iocs, icon: Shield, color: 'text-red-400', onTap: onTapIOCs },
   ];
 
   return (
     <div className="flex flex-col gap-4">
       {/* Back button + title */}
-      <button onClick={onBack} className="flex items-center gap-2 text-text-secondary active:text-text-primary -ml-1">
-        <ArrowLeft size={18} />
-        <span className="text-sm">Back</span>
-      </button>
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="flex items-center gap-2 text-text-secondary active:text-text-primary -ml-1">
+          <ArrowLeft size={18} />
+          <span className="text-sm">Back</span>
+        </button>
+        {onShare && (
+          <button onClick={onShare} className="p-2 rounded-lg text-text-muted active:bg-bg-hover" title="Share investigation">
+            <Share2 size={16} />
+          </button>
+        )}
+      </div>
 
       <div className="flex items-center gap-2.5">
         <span
@@ -111,14 +130,18 @@ export function ExecInvestigationDetail({
         <p className="text-sm text-text-secondary leading-relaxed">{folder.description}</p>
       )}
 
-      {/* Metrics row */}
+      {/* Metrics row — clickable */}
       <div className="grid grid-cols-5 gap-1 bg-bg-raised rounded-xl p-3">
         {metricItems.map((m) => (
-          <div key={m.label} className="flex flex-col items-center py-1">
+          <button
+            key={m.key}
+            onClick={m.onTap}
+            className="flex flex-col items-center py-1 rounded-lg active:bg-bg-hover transition-colors"
+          >
             <m.icon size={14} className={m.color} />
             <span className="text-lg font-bold mt-0.5 text-text-primary">{m.value}</span>
             <span className="text-[8px] font-medium text-text-muted uppercase tracking-wide">{m.label}</span>
-          </div>
+          </button>
         ))}
       </div>
 
