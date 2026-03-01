@@ -49,6 +49,23 @@ function formatTime(timestamp: number): string {
   });
 }
 
+// Always-on double-click handler: creates event at clicked location
+function DblClickHandler({ onPlace }: { onPlace: (lat: number, lng: number) => void }) {
+  const map = useMapEvents({
+    dblclick(e) {
+      L.DomEvent.stopPropagation(e.originalEvent);
+      onPlace(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  // Disable default double-click zoom so our handler works
+  useEffect(() => {
+    map.doubleClickZoom.disable();
+    return () => { map.doubleClickZoom.enable(); };
+  }, [map]);
+  return null;
+}
+
+// Place-mode single-click handler for precision placement
 function ClickHandler({ onPlace }: { onPlace: (lat: number, lng: number) => void }) {
   const map = useMapEvents({
     click(e) {
@@ -114,6 +131,16 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
     [onCreateEventAtLocation]
   );
 
+  // Double-click always creates, doesn't exit any mode
+  const handleDblClickPlace = useCallback(
+    (lat: number, lng: number) => {
+      if (onCreateEventAtLocation) {
+        onCreateEventAtLocation(lat, lng);
+      }
+    },
+    [onCreateEventAtLocation]
+  );
+
   const tileUrl = isLight
     ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -128,7 +155,7 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
         {mappedEvents.length > 0 ? (
           <span>{mappedEvents.length} mapped</span>
         ) : (
-          <span>Click map to place events</span>
+          <span>Double-click map to place events</span>
         )}
         {unmappedCount > 0 && (
           <span className="text-gray-600">&middot; {unmappedCount} without location</span>
@@ -143,7 +170,7 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
                   ? 'bg-accent/20 text-accent'
                   : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
               )}
-              title={placeMode ? 'Cancel place mode' : 'Click map to create event at location'}
+              title={placeMode ? 'Cancel single-click place mode' : 'Enable single-click placement'}
             >
               <Crosshair size={12} />
               Place
@@ -162,7 +189,10 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
         >
           <TileLayer url={tileUrl} attribution={tileAttribution} />
           {bounds && <FitBounds bounds={bounds} />}
-          {placeMode && <ClickHandler onPlace={handlePlace} />}
+          {/* Double-click to create event (when not in single-click place mode) */}
+          {onCreateEventAtLocation && !placeMode && <DblClickHandler onPlace={handleDblClickPlace} />}
+          {/* Place mode: single-click for precision placement */}
+          {onCreateEventAtLocation && placeMode && <ClickHandler onPlace={handlePlace} />}
           <MarkerClusterGroup
             chunkedLoading
             maxClusterRadius={50}
