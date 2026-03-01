@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Briefcase, FileBarChart } from 'lucide-react';
+import { X, Briefcase, FileBarChart, Share2 } from 'lucide-react';
 import type { Folder, InvestigationStatus, ClosureResolution } from '../../types';
 import { NOTE_COLORS, CLOSURE_RESOLUTION_LABELS } from '../../types';
 import { TagInput } from '../Common/TagInput';
@@ -18,6 +18,7 @@ interface InvestigationDetailPanelProps {
   onNavigateToTimeline?: (timelineId: string) => void;
   onExport?: (folderId: string) => void;
   onGenerateReport?: (folderId: string) => void;
+  onShareLink?: (folderId: string) => void;
 }
 
 const STATUS_OPTIONS: { value: InvestigationStatus; label: string }[] = [
@@ -38,6 +39,7 @@ export function InvestigationDetailPanel({
   onNavigateToTimeline,
   onExport,
   onGenerateReport,
+  onShareLink,
 }: InvestigationDetailPanelProps) {
   const [name, setName] = useState(folder.name);
   const [description, setDescription] = useState(folder.description || '');
@@ -275,9 +277,9 @@ export function InvestigationDetailPanel({
             )}
           </div>
 
-          {/* Export & Report */}
-          {(onExport || onGenerateReport) && (
-            <div className="flex gap-2">
+          {/* Export, Report & Share */}
+          {(onExport || onGenerateReport || onShareLink) && (
+            <div className="flex gap-2 flex-wrap">
               {onExport && (
                 <button
                   onClick={() => onExport(folder.id)}
@@ -293,6 +295,15 @@ export function InvestigationDetailPanel({
                 >
                   <FileBarChart size={14} />
                   Generate Report
+                </button>
+              )}
+              {onShareLink && (
+                <button
+                  onClick={() => onShareLink(folder.id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 transition-colors"
+                >
+                  <Share2 size={14} />
+                  Share Link
                 </button>
               )}
             </div>

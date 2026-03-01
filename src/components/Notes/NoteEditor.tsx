@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette, ArrowLeft, Upload, Briefcase, MessageSquare, Search, Lock, LockOpen } from 'lucide-react';
+import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette, ArrowLeft, Upload, Briefcase, MessageSquare, Search, Lock, LockOpen, Share2 } from 'lucide-react';
 import type { Note, Task, TimelineEvent, Tag, Folder, EditorMode, Settings, NoteAnnotation } from '../../types';
 import { NOTE_COLORS } from '../../types';
 import { nanoid } from 'nanoid';
@@ -39,6 +39,7 @@ interface NoteEditorProps {
   allTasks?: Task[];
   allTimelineEvents?: TimelineEvent[];
   onNavigateToNote?: (noteId: string) => void;
+  onShareLink?: (note: Note) => void;
 }
 
 export function NoteEditor({
@@ -60,6 +61,7 @@ export function NoteEditor({
   allTasks = [],
   allTimelineEvents = [],
   onNavigateToNote,
+  onShareLink,
 }: NoteEditorProps) {
   const iocCount = note.iocAnalysis?.iocs.filter((i) => !i.dismissed).length ?? 0;
   const [title, setTitle] = useState(note.title);
@@ -640,6 +642,17 @@ export function NoteEditor({
             </span>
           )}
         </button>
+
+        {onShareLink && (
+          <button
+            onClick={() => onShareLink(note)}
+            className="p-1.5 rounded text-gray-500 hover:text-gray-300"
+            title="Share link"
+            aria-label="Generate shareable link"
+          >
+            <Share2 size={16} />
+          </button>
+        )}
 
         {cloud.hasDestinations && (
           <div className="relative">

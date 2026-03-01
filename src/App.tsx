@@ -59,6 +59,8 @@ import { generateInvestigationReport } from './lib/report';
 import { useIsMobile } from './hooks/useIsMobile';
 import { ExecDashboard } from './components/ExecMode/ExecDashboard';
 import { ShareReceiver } from './components/ExecMode/ShareReceiver';
+import { ShareDialog } from './components/ExecMode/ShareDialog';
+import type { SharePayload, InvestigationBundle } from './lib/share';
 
 // Parse share hash on initial load: #share=<encoded>
 function parseShareHash(): string | null {
@@ -440,6 +442,7 @@ function AppInner() {
   const [showSettings, setShowSettings] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
+  const [shareLinkPayload, setShareLinkPayload] = useState<SharePayload | null>(null);
   const [selectedIOCTypes, setSelectedIOCTypes] = useState<IOCType[]>([]);
   const [selectedTimelineId, setSelectedTimelineId] = useState<string | undefined>(savedNavState?.selectedTimelineId);
   const [selectedWhiteboardId, setSelectedWhiteboardId] = useState<string | undefined>(savedNavState?.selectedWhiteboardId);
@@ -854,6 +857,26 @@ function AppInner() {
   const handleNewIOC = useCallback(() => {
     setShowIOCForm(true);
   }, []);
+
+  const handleShareNoteLink = useCallback((note: Note) => {
+    setShareLinkPayload({ v: 1, s: 'note', t: Date.now(), d: note });
+  }, []);
+
+  const handleShareInvestigationLink = useCallback((folderId: string) => {
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder) return;
+    const bundle: InvestigationBundle = {
+      folder,
+      notes: notes.notes.filter((n) => n.folderId === folderId && !n.trashed),
+      tasks: tasks.tasks.filter((t) => t.folderId === folderId && !t.trashed),
+      events: timeline.events.filter((e) => e.folderId === folderId && !e.trashed),
+      timelines: timelines.filter((tl) => folder.timelineId === tl.id),
+      whiteboards: whiteboards.filter((w) => w.folderId === folderId && !w.trashed),
+      iocs: standaloneIOCsHook.iocs.filter((i) => i.folderId === folderId && !i.trashed),
+      tags,
+    };
+    setShareLinkPayload({ v: 1, s: 'investigation', t: Date.now(), d: bundle });
+  }, [folders, notes.notes, tasks.tasks, timeline.events, timelines, whiteboards, standaloneIOCsHook.iocs, tags]);
 
   const [showDataImport, setShowDataImport] = useState(false);
 
@@ -1419,6 +1442,7 @@ function AppInner() {
                   allTasks={screensafeTasks}
                   allTimelineEvents={screensafeTimelineEvents}
                   onNavigateToNote={handleSearchNavigateToNote}
+                  onShareLink={handleShareNoteLink}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-gray-600">
@@ -1511,6 +1535,12 @@ function AppInner() {
         danger
       />
 
+      <ShareDialog
+        open={shareLinkPayload !== null}
+        onClose={() => setShareLinkPayload(null)}
+        payload={shareLinkPayload}
+      />
+
       <DemoWelcomeModal
         open={showDemoModal}
         onClose={() => setShowDemoModal(false)}
@@ -1580,6 +1610,7 @@ function AppInner() {
             activityLog.log('data', 'export', `Generated report for "${folder.name}"`, folderId, folder.name);
             addToast('success', `Report generated for "${folder.name}"`);
           }}
+          onShareLink={handleShareInvestigationLink}
         />
       )}
 
