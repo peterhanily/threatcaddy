@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '../Common/Modal';
 import { CLIP_TEMPLATES } from './ClipTemplates';
 import type { Note, Folder } from '../../types';
@@ -17,10 +17,15 @@ export function QuickCapture({ open, onClose, onCapture, folders = [], defaultFo
   const [sourceUrl, setSourceUrl] = useState('');
   const [folderId, setFolderId] = useState(defaultFolderId || '');
 
+  // Keep folderId in sync when the active investigation changes
+  useEffect(() => {
+    setFolderId(defaultFolderId || '');
+  }, [defaultFolderId]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onCapture({
-      title: title.trim() || 'Quick Capture',
+      title: title.trim() || 'Untitled',
       content: content.trim(),
       sourceUrl: sourceUrl.trim() || undefined,
       sourceTitle: title.trim() || undefined,
@@ -40,7 +45,7 @@ export function QuickCapture({ open, onClose, onCapture, folders = [], defaultFo
   const inputClass = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent';
 
   return (
-    <Modal open={open} onClose={onClose} title="Quick Capture" wide>
+    <Modal open={open} onClose={onClose} title="Create Note" wide>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Templates */}
         <div>
@@ -119,7 +124,7 @@ export function QuickCapture({ open, onClose, onCapture, folders = [], defaultFo
             type="submit"
             className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
           >
-            Save Capture
+            Create Note
           </button>
         </div>
       </form>

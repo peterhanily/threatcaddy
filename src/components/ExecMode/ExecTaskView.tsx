@@ -34,8 +34,9 @@ export function ExecTaskView({ task, onBack, onShare }: ExecTaskViewProps) {
           <span className="text-sm">Back</span>
         </button>
         {onShare && (
-          <button onClick={onShare} className="p-2 rounded-lg text-text-muted active:bg-bg-hover" title="Share task">
-            <Share2 size={16} />
+          <button onClick={onShare} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-accent bg-accent/10 active:bg-accent/20 text-xs font-medium">
+            <Share2 size={14} />
+            Share
           </button>
         )}
       </div>
