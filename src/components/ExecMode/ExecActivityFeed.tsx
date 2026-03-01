@@ -38,11 +38,12 @@ function groupByTimePeriod(entries: ActivityLogEntry[]): { period: string; entri
   for (const entry of entries) {
     const period = getTimePeriod(entry.timestamp);
     if (!groups.has(period)) groups.set(period, []);
-    groups.get(period)!.push(entry);
+    const arr = groups.get(period);
+    if (arr) arr.push(entry);
   }
   return order
     .filter((p) => groups.has(p))
-    .map((period) => ({ period, entries: groups.get(period)! }));
+    .map((period) => ({ period, entries: groups.get(period) ?? [] }));
 }
 
 export function ExecActivityFeed({ entries, limit = 50 }: ExecActivityFeedProps) {

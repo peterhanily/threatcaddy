@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { FolderOpen, ListChecks, Shield, Clock } from 'lucide-react';
 import type { Folder, Note, Task, TimelineEvent, StandaloneIOC } from '../../types';
 
@@ -11,6 +11,8 @@ interface ExecMetricsBarProps {
 }
 
 export function ExecMetricsBar({ folders, allTasks, allEvents, allIOCs }: ExecMetricsBarProps) {
+  const [now] = useState(() => Date.now());
+
   const metrics = useMemo(() => {
     const activeInvestigations = folders.filter((f) => (f.status || 'active') === 'active').length;
 
@@ -18,7 +20,7 @@ export function ExecMetricsBar({ folders, allTasks, allEvents, allIOCs }: ExecMe
 
     const iocCount = allIOCs.filter((i) => !i.trashed && !i.archived && i.iocStatus !== 'dismissed').length;
 
-    const weekAgo = Date.now() - 7 * 86400000;
+    const weekAgo = now - 7 * 86400000;
     const eventsThisWeek = allEvents.filter((e) => !e.trashed && e.createdAt >= weekAgo).length;
 
     return [
@@ -27,7 +29,7 @@ export function ExecMetricsBar({ folders, allTasks, allEvents, allIOCs }: ExecMe
       { label: 'IOCs Tracked', value: iocCount, icon: Shield, color: 'text-red-400', bg: 'bg-red-400/10' },
       { label: 'Events This Week', value: eventsThisWeek, icon: Clock, color: 'text-accent-blue', bg: 'bg-accent-blue/10' },
     ];
-  }, [folders, allTasks, allEvents, allIOCs]);
+  }, [folders, allTasks, allEvents, allIOCs, now]);
 
   return (
     <div className="grid grid-cols-2 gap-3">
