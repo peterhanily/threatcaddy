@@ -1,0 +1,130 @@
+import { useState, useMemo } from 'react';
+import { FileText, ListChecks, Clock, PenTool, Shield } from 'lucide-react';
+import type { Folder, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, InvestigationStatus } from '../../types';
+import { cn } from '../../lib/utils';
+
+type FilterStatus = 'all' | InvestigationStatus;
+
+interface ExecInvestigationListProps {
+  folders: Folder[];
+  allNotes: Note[];
+  allTasks: Task[];
+  allEvents: TimelineEvent[];
+  allWhiteboards: Whiteboard[];
+  allIOCs: StandaloneIOC[];
+  onSelect: (folderId: string) => void;
+}
+
+const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'closed', label: 'Closed' },
+  { value: 'archived', label: 'Archived' },
+];
+
+const STATUS_COLORS: Record<string, string> = {
+  active: 'bg-accent-green',
+  closed: 'bg-accent-amber',
+  archived: 'bg-text-muted',
+};
+
+export function ExecInvestigationList({ folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, onSelect }: ExecInvestigationListProps) {
+  const [filter, setFilter] = useState<FilterStatus>('all');
+
+  const filtered = useMemo(
+    () => folders.filter((f) => filter === 'all' || (f.status || 'active') === filter),
+    [folders, filter],
+  );
+
+  const countsMap = useMemo(() => {
+    const ids = new Set(folders.map((f) => f.id));
+    const counts = new Map<string, { notes: number; tasks: number; events: number; whiteboards: number; iocs: number }>();
+    for (const id of ids) counts.set(id, { notes: 0, tasks: 0, events: 0, whiteboards: 0, iocs: 0 });
+    for (const n of allNotes) { const c = counts.get(n.folderId ?? ''); if (c) c.notes++; }
+    for (const t of allTasks) { const c = counts.get(t.folderId ?? ''); if (c) c.tasks++; }
+    for (const e of allEvents) { const c = counts.get(e.folderId ?? ''); if (c) c.events++; }
+    for (const w of allWhiteboards) { const c = counts.get(w.folderId ?? ''); if (c) c.whiteboards++; }
+    for (const i of allIOCs) { const c = counts.get(i.folderId ?? ''); if (c) c.iocs++; }
+    return counts;
+  }, [folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs]);
+
+  const stats = [
+    { label: 'Notes', icon: FileText, color: 'text-accent-blue', key: 'notes' as const },
+    { label: 'Tasks', icon: ListChecks, color: 'text-accent-amber', key: 'tasks' as const },
+    { label: 'Events', icon: Clock, color: 'text-accent-green', key: 'events' as const },
+    { label: 'Boards', icon: PenTool, color: 'text-accent-pink', key: 'whiteboards' as const },
+    { label: 'IOCs', icon: Shield, color: 'text-red-400', key: 'iocs' as const },
+  ];
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Filter pills */}
+      <div className="flex gap-2">
+        {FILTER_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setFilter(opt.value)}
+            className={cn(
+              'px-3 py-1.5 rounded-full text-xs font-medium transition-colors',
+              filter === opt.value
+                ? 'bg-accent text-white'
+                : 'bg-bg-raised text-text-secondary hover:bg-bg-hover',
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Investigation cards */}
+      <div className="flex flex-col gap-3">
+        {filtered.length === 0 && (
+          <p className="text-text-muted text-sm text-center py-8">No investigations found</p>
+        )}
+        {filtered.map((folder) => {
+          const status = folder.status || 'active';
+          const c = countsMap.get(folder.id) ?? { notes: 0, tasks: 0, events: 0, whiteboards: 0, iocs: 0 };
+          return (
+            <button
+              key={folder.id}
+              onClick={() => onSelect(folder.id)}
+              className="bg-bg-raised rounded-xl p-4 text-left active:bg-bg-hover transition-colors"
+            >
+              {/* Name + status */}
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    'w-2.5 h-2.5 rounded-full shrink-0',
+                    STATUS_COLORS[status] ?? 'bg-text-muted',
+                    status === 'active' && 'animate-pulse',
+                  )}
+                />
+                <span className="text-text-primary font-semibold text-base truncate">{folder.name}</span>
+              </div>
+
+              {/* Status label + date */}
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className="text-xs text-text-muted capitalize">{status}</span>
+                <span className="text-xs text-text-muted">·</span>
+                <span className="text-xs text-text-muted">
+                  {new Date(folder.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              </div>
+
+              {/* Entity counts grid */}
+              <div className="grid grid-cols-5 gap-1 mt-3">
+                {stats.map((s) => (
+                  <div key={s.key} className="flex flex-col items-center rounded-md py-1.5">
+                    <s.icon size={12} className={s.color} />
+                    <span className="text-sm font-bold mt-0.5 text-text-primary">{c[s.key]}</span>
+                    <span className="text-[8px] font-medium text-text-muted uppercase tracking-wide mt-0.5">{s.label}</span>
+                  </div>
+                ))}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

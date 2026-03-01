@@ -56,6 +56,8 @@ import type { ImportResult } from './lib/data-import';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import { ToastContainer } from './components/Common/Toast';
 import { generateInvestigationReport } from './lib/report';
+import { useIsMobile } from './hooks/useIsMobile';
+import { ExecDashboard } from './components/ExecMode/ExecDashboard';
 
 // Parse hash deep-link on initial load: #entity=note:xxx, #entity=task:xxx, #entity=event:xxx
 function parseEntityHash(): { type: 'note' | 'task' | 'event'; id: string } | null {
@@ -106,6 +108,21 @@ function AppInner() {
   });
 
   const activityLog = useActivityLog();
+
+  // Mobile exec mode
+  const isMobile = useIsMobile();
+  const [forceAnalystMode, setForceAnalystMode] = useState(() =>
+    typeof sessionStorage !== 'undefined' && sessionStorage.getItem('tc-analyst-mode') === '1',
+  );
+  useEffect(() => {
+    if (forceAnalystMode) sessionStorage.setItem('tc-analyst-mode', '1');
+    else sessionStorage.removeItem('tc-analyst-mode');
+  }, [forceAnalystMode]);
+
+  // Deep links force analyst mode on mobile so the target entity is reachable
+  useEffect(() => {
+    if (initialDeepLink && isMobile) setForceAnalystMode(true);
+  }, [isMobile]);
 
   // Instrumented wrappers for activity logging
   const loggedCreateNote = useCallback(async (partial?: Partial<Note>) => {
@@ -1090,9 +1107,50 @@ function AppInner() {
     />
   ) : null;
 
+  // Mobile exec mode — replace entire UI with executive dashboard
+  if (isMobile && !forceAnalystMode) {
+    return (
+      <ScreenshareContext.Provider value={screenshareCtx}>
+      <ActivityLogContext.Provider value={activityLog.log}>
+        <ExecDashboard
+          folders={folders}
+          allNotes={notes.notes}
+          allTasks={tasks.tasks}
+          allEvents={timeline.events}
+          allWhiteboards={whiteboards}
+          allIOCs={standaloneIOCsHook.iocs}
+          activityEntries={activityLog.entries}
+          theme={settings.theme}
+          onToggleTheme={toggleTheme}
+          onSwitchToAnalystMode={(folderId) => {
+            setForceAnalystMode(true);
+            if (folderId) {
+              setSelectedFolderId(folderId);
+              setActiveView('notes');
+            }
+          }}
+        />
+      </ActivityLogContext.Provider>
+      <ToastContainer />
+      </ScreenshareContext.Provider>
+    );
+  }
+
   return (
     <ScreenshareContext.Provider value={screenshareCtx}>
     <ActivityLogContext.Provider value={activityLog.log}>
+      {/* Analyst mode banner on mobile */}
+      {isMobile && forceAnalystMode && (
+        <div className="bg-accent/10 border-b border-accent/20 px-3 py-2 flex items-center justify-between text-xs shrink-0">
+          <span className="text-text-secondary">Analyst Mode — optimized for desktop</span>
+          <button
+            onClick={() => setForceAnalystMode(false)}
+            className="text-accent font-medium ml-2 whitespace-nowrap"
+          >
+            Back to Exec Mode
+          </button>
+        </div>
+      )}
       <AppLayout
         header={
           <Header
