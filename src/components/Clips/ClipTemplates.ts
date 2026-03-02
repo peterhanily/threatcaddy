@@ -1,13 +1,17 @@
+export type TemplateCategory = 'General' | 'Investigation' | 'Cloud';
+
 export interface ClipTemplate {
   name: string;
   icon: string;
   content: string;
+  category: TemplateCategory;
 }
 
 export const CLIP_TEMPLATES: ClipTemplate[] = [
   {
     name: 'Article',
     icon: '📰',
+    category: 'General',
     content: `# Article Title
 
 **Source:** [Link](url)
@@ -33,6 +37,7 @@ export const CLIP_TEMPLATES: ClipTemplate[] = [
   {
     name: 'Bookmark',
     icon: '🔗',
+    category: 'General',
     content: `# Bookmark
 
 **URL:** [Link](url)
@@ -48,6 +53,7 @@ export const CLIP_TEMPLATES: ClipTemplate[] = [
   {
     name: 'Code Snippet',
     icon: '💻',
+    category: 'General',
     content: `# Code Snippet
 
 **Language:**
@@ -71,6 +77,7 @@ export const CLIP_TEMPLATES: ClipTemplate[] = [
   {
     name: 'Quote',
     icon: '💬',
+    category: 'General',
     content: `# Quote
 
 > "Quote text here"
@@ -87,6 +94,7 @@ export const CLIP_TEMPLATES: ClipTemplate[] = [
   {
     name: 'Meeting Notes',
     icon: '📋',
+    category: 'General',
     content: `# Meeting Notes
 
 **Date:** ${new Date().toLocaleDateString()}
@@ -113,6 +121,7 @@ export const CLIP_TEMPLATES: ClipTemplate[] = [
   {
     name: 'Host/Endpoint Details',
     icon: '🖥️',
+    category: 'Investigation',
     content: `# Host/Endpoint Details
 
 **Hostname:**
@@ -157,6 +166,7 @@ export const CLIP_TEMPLATES: ClipTemplate[] = [
   {
     name: 'Cloud Account Details',
     icon: '☁️',
+    category: 'Cloud',
     content: `# Cloud Account Details
 
 **Provider:** AWS / Azure / GCP
@@ -198,6 +208,7 @@ export const CLIP_TEMPLATES: ClipTemplate[] = [
   {
     name: 'User Account Details',
     icon: '👤',
+    category: 'Investigation',
     content: `# User Account Details
 
 **Username:**
@@ -235,6 +246,7 @@ export const CLIP_TEMPLATES: ClipTemplate[] = [
   {
     name: 'Malware Sample',
     icon: '🦠',
+    category: 'Investigation',
     content: `# Malware Sample
 
 **Filename:**
@@ -283,6 +295,7 @@ export const CLIP_TEMPLATES: ClipTemplate[] = [
   {
     name: 'OCI User Details',
     icon: '🔑',
+    category: 'Cloud',
     content: `# OCI User Details
 
 **User OCID:** ocid1.user.oc1..
@@ -332,6 +345,7 @@ export const CLIP_TEMPLATES: ClipTemplate[] = [
   {
     name: 'OCI Tenancy Details',
     icon: '🏢',
+    category: 'Cloud',
     content: `# OCI Tenancy Details
 
 **Tenancy OCID:** ocid1.tenancy.oc1..
