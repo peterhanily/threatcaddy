@@ -4,6 +4,14 @@ import type { Folder, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, Acti
 import { ACTIVITY_CATEGORY_LABELS } from '../../types';
 import { cn } from '../../lib/utils';
 import { formatDate } from '../../lib/utils';
+import { isEncryptedEnvelope } from '../../lib/crypto';
+
+function safeText(value: unknown): string {
+  if (value == null) return '';
+  if (isEncryptedEnvelope(value)) return '[Encrypted]';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
 
 interface ExecInvestigationDetailProps {
   folder: Folder;
@@ -184,7 +192,7 @@ export function ExecInvestigationDetail({
                     style={{ backgroundColor: cat?.color ?? '#6b7280' }}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-text-primary truncate">{entry.detail}</p>
+                    <p className="text-xs text-text-primary truncate">{safeText(entry.detail)}</p>
                     <p className="text-[10px] text-text-muted mt-0.5">{formatDate(entry.timestamp)}</p>
                   </div>
                 </div>

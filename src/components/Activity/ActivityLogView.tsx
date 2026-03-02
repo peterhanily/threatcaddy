@@ -6,7 +6,15 @@ import {
 import type { ActivityLogEntry, ActivityCategory } from '../../types';
 import { ACTIVITY_CATEGORY_LABELS } from '../../types';
 import { formatDate, formatFullDate, cn } from '../../lib/utils';
+import { isEncryptedEnvelope } from '../../lib/crypto';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
+
+function safeText(value: unknown): string {
+  if (value == null) return '';
+  if (isEncryptedEnvelope(value)) return '[Encrypted]';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
 
 interface ActivityLogViewProps {
   entries: ActivityLogEntry[];
@@ -163,7 +171,7 @@ export function ActivityLogView({ entries, getFiltered, onClear }: ActivityLogVi
                       <Icon size={14} style={{ color: meta.color }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-200 leading-snug">{entry.detail}</p>
+                      <p className="text-sm text-gray-200 leading-snug">{safeText(entry.detail)}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span
                           className="text-[10px] font-medium px-1.5 py-0.5 rounded"

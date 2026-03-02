@@ -3,6 +3,14 @@ import { FileText, ListChecks, Clock, PenTool, FolderOpen, Tag, Shield, Cloud, D
 import type { ActivityLogEntry, ActivityCategory } from '../../types';
 import { ACTIVITY_CATEGORY_LABELS } from '../../types';
 import { formatDate } from '../../lib/utils';
+import { isEncryptedEnvelope } from '../../lib/crypto';
+
+function safeText(value: unknown): string {
+  if (value == null) return '';
+  if (isEncryptedEnvelope(value)) return '[Encrypted]';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
 
 interface ExecActivityFeedProps {
   entries: ActivityLogEntry[];
@@ -75,7 +83,7 @@ export function ExecActivityFeed({ entries, limit = 50 }: ExecActivityFeedProps)
                     <Icon size={14} style={{ color: cat?.color ?? '#6b7280' }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-text-primary leading-snug">{entry.detail}</p>
+                    <p className="text-sm text-text-primary leading-snug">{safeText(entry.detail)}</p>
                     <p className="text-[11px] text-text-muted mt-0.5">{formatDate(entry.timestamp)}</p>
                   </div>
                 </div>
