@@ -195,7 +195,7 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
             className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg text-sm"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                mode === 'login' ? handleLogin() : handleRegister();
+                if (mode === 'login') { handleLogin(); } else { handleRegister(); }
               }
             }}
           />

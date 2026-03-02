@@ -23,6 +23,7 @@ const AuthContext = createContext<AuthState>({
   setServerUrl: () => {},
 });
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthState {
   return useContext(AuthContext);
 }

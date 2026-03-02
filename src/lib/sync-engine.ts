@@ -1,5 +1,9 @@
 import { db } from '../db';
+import type { Dexie as DexieType } from 'dexie';
 import { syncPush, syncPull, type SyncChange, type SyncResult } from './server-api';
+
+// Cast db for dynamic table access (sync tables aren't in the typed schema)
+const dynamicDb = db as unknown as DexieType;
 
 const SYNC_INTERVAL = 30_000; // 30 seconds
 const META_KEY_LAST_SYNC = 'lastSyncTimestamp';
@@ -54,7 +58,7 @@ export class SyncEngine {
 
   // Push local changes to server
   private async push() {
-    const queue: SyncQueueEntry[] = await (db as any).table('_syncQueue').toArray();
+    const queue: SyncQueueEntry[] = await dynamicDb.table('_syncQueue').toArray();
     if (queue.length === 0) return;
 
     // Batch into sync changes
@@ -81,7 +85,7 @@ export class SyncEngine {
       }
 
       if (acceptedSeqs.length > 0) {
-        await (db as any).table('_syncQueue').bulkDelete(acceptedSeqs);
+        await dynamicDb.table('_syncQueue').bulkDelete(acceptedSeqs);
       }
 
       if (conflicts.length > 0 && this.onConflict) {
@@ -94,7 +98,7 @@ export class SyncEngine {
 
   // Pull remote changes from server
   private async pull() {
-    const meta = await (db as any).table('_syncMeta').get(META_KEY_LAST_SYNC);
+    const meta = await dynamicDb.table('_syncMeta').get(META_KEY_LAST_SYNC);
     const since = meta?.value || new Date(0).toISOString();
 
     try {
@@ -107,7 +111,7 @@ export class SyncEngine {
           const id = entityData.id as string;
 
           if (op === 'delete') {
-            await (db as any).table(tableName).delete(id);
+            await dynamicDb.table(tableName).delete(id);
           } else {
             // Convert server timestamps to milliseconds for Dexie
             const localData = { ...entityData };
@@ -118,7 +122,7 @@ export class SyncEngine {
               localData.updatedAt = new Date(localData.updatedAt as string).getTime();
             }
 
-            await (db as any).table(tableName).put(localData);
+            await dynamicDb.table(tableName).put(localData);
           }
         }
 
@@ -128,7 +132,7 @@ export class SyncEngine {
       }
 
       // Update last sync timestamp
-      await (db as any).table('_syncMeta').put({ key: META_KEY_LAST_SYNC, value: serverTimestamp });
+      await dynamicDb.table('_syncMeta').put({ key: META_KEY_LAST_SYNC, value: serverTimestamp });
     } catch (err) {
       console.error('SyncEngine: pull error', err);
     }
@@ -136,7 +140,7 @@ export class SyncEngine {
 
   // Manually enqueue a change (called by sync middleware)
   async enqueue(table: string, entityId: string, op: 'put' | 'delete', data?: Record<string, unknown>) {
-    await (db as any).table('_syncQueue').add({
+    await dynamicDb.table('_syncQueue').add({
       table,
       entityId,
       op,
