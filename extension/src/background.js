@@ -858,18 +858,8 @@ async function sendToTarget(targetUrl, captures) {
   // Wait for the web app's React to mount and register its message listener
   await new Promise(resolve => setTimeout(resolve, 2500));
 
-  // Inject script in MAIN world so postMessage reaches the React app directly
-  // file:// origins are "null" so postMessage targeted at "null" won't deliver;
-  // use "*" for file:// (safe — we control the tab we opened)
-  await chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    world: 'MAIN',
-    func: (clips) => {
-      const origin = window.location.protocol === 'file:' ? '*' : window.location.origin;
-      window.postMessage({ type: 'BROWSERNOTES_IMPORT_CLIPS', clips }, origin);
-    },
-    args: [captures]
-  });
+  // Send clips via content script bridge (works on both Chrome and Firefox)
+  await chrome.tabs.sendMessage(tab.id, { type: 'INJECT_CLIPS_TO_PAGE', clips: captures });
 
   return { success: true };
 }

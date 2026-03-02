@@ -13,7 +13,10 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "build:extension": "cd extension && npm run build"
+    "test:coverage": "vitest run --coverage",
+    "build:extension": "cd extension && npm run build",
+    "build:extension:chrome": "cd extension && npm run build:chrome",
+    "build:extension:firefox": "cd extension && npm run build:firefox"
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",
@@ -48,6 +51,7 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",

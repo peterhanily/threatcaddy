@@ -1,0 +1,355 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { TOOL_DEFINITIONS, isWriteTool, executeTool, buildSystemPrompt } from '../lib/llm-tools';
+import { db } from '../db';
+import type { ToolUseBlock } from '../types';
+
+function makeToolUse(name: string, input: Record<string, unknown> = {}): ToolUseBlock {
+  return { type: 'tool_use', id: `tool-${name}`, name, input };
+}
+
+describe('TOOL_DEFINITIONS', () => {
+  it('has the expected number of tool definitions', () => {
+    expect(TOOL_DEFINITIONS.length).toBe(12);
+  });
+
+  it('each tool has name, description, and input_schema', () => {
+    for (const tool of TOOL_DEFINITIONS) {
+      expect(tool.name).toBeTruthy();
+      expect(tool.description).toBeTruthy();
+      expect(tool.input_schema).toBeDefined();
+      expect(tool.input_schema.type).toBe('object');
+    }
+  });
+
+  it('all tool names are unique', () => {
+    const names = TOOL_DEFINITIONS.map(t => t.name);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('each tool has a properties and required field in schema', () => {
+    for (const tool of TOOL_DEFINITIONS) {
+      expect(tool.input_schema.properties).toBeDefined();
+      expect(Array.isArray(tool.input_schema.required)).toBe(true);
+    }
+  });
+});
+
+describe('isWriteTool', () => {
+  it('returns true for create_note', () => {
+    expect(isWriteTool('create_note')).toBe(true);
+  });
+
+  it('returns true for create_task', () => {
+    expect(isWriteTool('create_task')).toBe(true);
+  });
+
+  it('returns true for create_ioc', () => {
+    expect(isWriteTool('create_ioc')).toBe(true);
+  });
+
+  it('returns true for create_timeline_event', () => {
+    expect(isWriteTool('create_timeline_event')).toBe(true);
+  });
+
+  it('returns false for read tools', () => {
+    expect(isWriteTool('search_notes')).toBe(false);
+    expect(isWriteTool('read_note')).toBe(false);
+    expect(isWriteTool('list_tasks')).toBe(false);
+    expect(isWriteTool('list_iocs')).toBe(false);
+    expect(isWriteTool('list_timeline_events')).toBe(false);
+    expect(isWriteTool('get_investigation_summary')).toBe(false);
+    expect(isWriteTool('extract_iocs')).toBe(false);
+  });
+
+  it('returns false for unknown tools', () => {
+    expect(isWriteTool('nonexistent')).toBe(false);
+  });
+});
+
+describe('executeTool — read tools', () => {
+  beforeEach(async () => {
+    await db.notes.clear();
+    await db.tasks.clear();
+    await db.standaloneIOCs.clear();
+    await db.timelineEvents.clear();
+    await db.folders.clear();
+  });
+
+  it('search_notes requires a query', async () => {
+    const { result } = await executeTool(makeToolUse('search_notes', {}));
+    expect(JSON.parse(result).error).toContain('query');
+  });
+
+  it('search_notes finds matching notes', async () => {
+    await db.notes.add({
+      id: 'n1', title: 'Malware Analysis', content: 'Found suspicious binary',
+      folderId: 'f1', tags: [], pinned: false, archived: false, trashed: false, createdAt: Date.now(), updatedAt: Date.now(),
+    });
+    await db.notes.add({
+      id: 'n2', title: 'Unrelated', content: 'Nothing here',
+      folderId: 'f1', tags: [], pinned: false, archived: false, trashed: false, createdAt: Date.now(), updatedAt: Date.now(),
+    });
+
+    const { result } = await executeTool(makeToolUse('search_notes', { query: 'malware' }), 'f1');
+    const parsed = JSON.parse(result);
+    expect(parsed.count).toBe(1);
+    expect(parsed.notes[0].title).toBe('Malware Analysis');
+  });
+
+  it('read_note finds by id', async () => {
+    await db.notes.add({
+      id: 'n1', title: 'My Note', content: 'Content here',
+      tags: [], pinned: false, archived: false, trashed: false, createdAt: Date.now(), updatedAt: Date.now(),
+    });
+
+    const { result } = await executeTool(makeToolUse('read_note', { id: 'n1' }));
+    const parsed = JSON.parse(result);
+    expect(parsed.title).toBe('My Note');
+    expect(parsed.content).toBe('Content here');
+  });
+
+  it('read_note finds by title', async () => {
+    await db.notes.add({
+      id: 'n1', title: 'Incident Report', content: 'Details...',
+      folderId: 'f1', tags: [], pinned: false, archived: false, trashed: false, createdAt: Date.now(), updatedAt: Date.now(),
+    });
+
+    const { result } = await executeTool(makeToolUse('read_note', { title: 'incident report' }), 'f1');
+    const parsed = JSON.parse(result);
+    expect(parsed.title).toBe('Incident Report');
+  });
+
+  it('read_note returns error for missing note', async () => {
+    const { result } = await executeTool(makeToolUse('read_note', { id: 'nonexistent' }));
+    expect(JSON.parse(result).error).toContain('not found');
+  });
+
+  it('list_tasks returns tasks', async () => {
+    await db.tasks.add({
+      id: 't1', title: 'Check logs', completed: false, priority: 'high', status: 'todo',
+      order: 0, folderId: 'f1', tags: [], trashed: false, archived: false, createdAt: Date.now(), updatedAt: Date.now(),
+    });
+
+    const { result } = await executeTool(makeToolUse('list_tasks'), 'f1');
+    const parsed = JSON.parse(result);
+    expect(parsed.count).toBe(1);
+    expect(parsed.tasks[0].title).toBe('Check logs');
+  });
+
+  it('list_tasks filters by status', async () => {
+    await db.tasks.add({
+      id: 't1', title: 'Done task', completed: true, priority: 'none', status: 'done',
+      order: 0, folderId: 'f1', tags: [], trashed: false, archived: false, createdAt: Date.now(), updatedAt: Date.now(),
+    });
+    await db.tasks.add({
+      id: 't2', title: 'Todo task', completed: false, priority: 'none', status: 'todo',
+      order: 1, folderId: 'f1', tags: [], trashed: false, archived: false, createdAt: Date.now(), updatedAt: Date.now(),
+    });
+
+    const { result } = await executeTool(makeToolUse('list_tasks', { status: 'todo' }), 'f1');
+    const parsed = JSON.parse(result);
+    expect(parsed.count).toBe(1);
+    expect(parsed.tasks[0].title).toBe('Todo task');
+  });
+
+  it('list_iocs returns IOCs', async () => {
+    await db.standaloneIOCs.add({
+      id: 'ioc1', type: 'ipv4', value: '1.2.3.4', confidence: 'high',
+      folderId: 'f1', tags: [], trashed: false, archived: false, createdAt: Date.now(), updatedAt: Date.now(),
+    });
+
+    const { result } = await executeTool(makeToolUse('list_iocs'), 'f1');
+    const parsed = JSON.parse(result);
+    expect(parsed.count).toBe(1);
+    expect(parsed.iocs[0].value).toBe('1.2.3.4');
+  });
+
+  it('list_timeline_events returns events', async () => {
+    await db.timelineEvents.add({
+      id: 'e1', timestamp: Date.now(), title: 'Initial Access', eventType: 'initial-access',
+      source: 'EDR', confidence: 'high', linkedIOCIds: [], linkedNoteIds: [], linkedTaskIds: [],
+      mitreAttackIds: [], assets: [], tags: [], starred: false, folderId: 'f1', timelineId: 'tl1',
+      trashed: false, archived: false, createdAt: Date.now(), updatedAt: Date.now(),
+    });
+
+    const { result } = await executeTool(makeToolUse('list_timeline_events'), 'f1');
+    const parsed = JSON.parse(result);
+    expect(parsed.count).toBe(1);
+    expect(parsed.events[0].title).toBe('Initial Access');
+  });
+
+  it('get_investigation_summary requires folderId', async () => {
+    const { result } = await executeTool(makeToolUse('get_investigation_summary'));
+    expect(JSON.parse(result).error).toContain('No investigation');
+  });
+
+  it('get_investigation_summary returns counts', async () => {
+    await db.folders.add({ id: 'f1', name: 'Test Investigation', order: 0, createdAt: Date.now() });
+    await db.notes.add({
+      id: 'n1', title: 'Note', content: '', folderId: 'f1',
+      tags: [], pinned: false, archived: false, trashed: false, createdAt: Date.now(), updatedAt: Date.now(),
+    });
+
+    const { result } = await executeTool(makeToolUse('get_investigation_summary'), 'f1');
+    const parsed = JSON.parse(result);
+    expect(parsed.name).toBe('Test Investigation');
+    expect(parsed.counts.notes).toBe(1);
+  });
+});
+
+describe('executeTool — write tools', () => {
+  beforeEach(async () => {
+    await db.notes.clear();
+    await db.tasks.clear();
+    await db.standaloneIOCs.clear();
+    await db.timelineEvents.clear();
+    await db.timelines.clear();
+  });
+
+  it('create_note persists a note', async () => {
+    const { result, isError } = await executeTool(
+      makeToolUse('create_note', { title: 'AI Note', content: '# Hello' }),
+      'f1',
+    );
+    expect(isError).toBe(false);
+    const parsed = JSON.parse(result);
+    expect(parsed.success).toBe(true);
+    expect(parsed.title).toBe('AI Note');
+
+    const stored = await db.notes.get(parsed.id);
+    expect(stored).toBeDefined();
+    expect(stored!.content).toBe('# Hello');
+    expect(stored!.folderId).toBe('f1');
+  });
+
+  it('create_task persists a task', async () => {
+    const { result, isError } = await executeTool(
+      makeToolUse('create_task', { title: 'Review logs', priority: 'high', status: 'in-progress' }),
+      'f1',
+    );
+    expect(isError).toBe(false);
+    const parsed = JSON.parse(result);
+    expect(parsed.success).toBe(true);
+
+    const stored = await db.tasks.get(parsed.id);
+    expect(stored).toBeDefined();
+    expect(stored!.priority).toBe('high');
+    expect(stored!.status).toBe('in-progress');
+  });
+
+  it('create_ioc persists an IOC', async () => {
+    const { result, isError } = await executeTool(
+      makeToolUse('create_ioc', { type: 'domain', value: 'evil.com', confidence: 'high', analystNotes: 'Known C2' }),
+    );
+    expect(isError).toBe(false);
+    const parsed = JSON.parse(result);
+    expect(parsed.success).toBe(true);
+    expect(parsed.type).toBe('domain');
+    expect(parsed.value).toBe('evil.com');
+
+    const stored = await db.standaloneIOCs.get(parsed.id);
+    expect(stored!.analystNotes).toBe('Known C2');
+  });
+
+  it('create_timeline_event persists and parses timestamp', async () => {
+    const { result, isError } = await executeTool(
+      makeToolUse('create_timeline_event', {
+        title: 'Lateral Movement',
+        timestamp: '2025-06-15T14:30:00Z',
+        eventType: 'lateral-movement',
+        source: 'SIEM',
+      }),
+    );
+    expect(isError).toBe(false);
+    const parsed = JSON.parse(result);
+    expect(parsed.success).toBe(true);
+    expect(parsed.timestamp).toBe('2025-06-15T14:30:00.000Z');
+
+    const stored = await db.timelineEvents.get(parsed.id);
+    expect(stored!.eventType).toBe('lateral-movement');
+    expect(stored!.source).toBe('SIEM');
+  });
+
+  it('create_timeline_event validates geo coordinates', async () => {
+    const { result } = await executeTool(
+      makeToolUse('create_timeline_event', {
+        title: 'Geolocated Event',
+        timestamp: '2025-06-15T14:30:00Z',
+        latitude: 40.7128,
+        longitude: -74.006,
+      }),
+    );
+    const parsed = JSON.parse(result);
+    const stored = await db.timelineEvents.get(parsed.id);
+    expect(stored!.latitude).toBe(40.7128);
+    expect(stored!.longitude).toBe(-74.006);
+  });
+
+  it('create_timeline_event rejects invalid geo coordinates', async () => {
+    const { result } = await executeTool(
+      makeToolUse('create_timeline_event', {
+        title: 'Bad Geo',
+        timestamp: '2025-01-01T00:00:00Z',
+        latitude: 200,
+        longitude: -74,
+      }),
+    );
+    const parsed = JSON.parse(result);
+    const stored = await db.timelineEvents.get(parsed.id);
+    expect(stored!.latitude).toBeUndefined();
+    expect(stored!.longitude).toBeUndefined();
+  });
+});
+
+describe('executeTool — extract_iocs', () => {
+  it('extracts IOCs from text', async () => {
+    const { result, isError } = await executeTool(
+      makeToolUse('extract_iocs', { text: 'Found IP 192.168.1.1 and domain evil.com with hash d41d8cd98f00b204e9800998ecf8427e' }),
+    );
+    expect(isError).toBe(false);
+    const parsed = JSON.parse(result);
+    expect(parsed.totalFound).toBeGreaterThan(0);
+    expect(parsed.byType).toBeDefined();
+  });
+
+  it('extract_iocs requires text', async () => {
+    const { result } = await executeTool(makeToolUse('extract_iocs', {}));
+    expect(JSON.parse(result).error).toContain('text');
+  });
+});
+
+describe('executeTool — error handling', () => {
+  it('returns error for unknown tool', async () => {
+    const { result, isError } = await executeTool(makeToolUse('nonexistent_tool'));
+    expect(isError).toBe(false);
+    expect(JSON.parse(result).error).toContain('Unknown tool');
+  });
+});
+
+describe('buildSystemPrompt', () => {
+  beforeEach(async () => {
+    await db.notes.clear();
+    await db.tasks.clear();
+    await db.standaloneIOCs.clear();
+    await db.timelineEvents.clear();
+  });
+
+  it('returns a prompt without folder context', async () => {
+    const prompt = await buildSystemPrompt();
+    expect(prompt).toContain('ThreatCaddy AI');
+    expect(prompt).not.toContain('Current investigation');
+  });
+
+  it('includes folder context when provided', async () => {
+    await db.notes.add({
+      id: 'n1', title: 'Note', content: '', folderId: 'f1',
+      tags: [], pinned: false, archived: false, trashed: false, createdAt: Date.now(), updatedAt: Date.now(),
+    });
+
+    const folder = { id: 'f1', name: 'APT29 Investigation', order: 0, createdAt: Date.now(), description: 'Tracking APT29', status: 'active' as const };
+    const prompt = await buildSystemPrompt(folder);
+    expect(prompt).toContain('APT29 Investigation');
+    expect(prompt).toContain('Tracking APT29');
+    expect(prompt).toContain('1 notes');
+  });
+});

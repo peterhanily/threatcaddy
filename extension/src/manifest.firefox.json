@@ -1,0 +1,62 @@
+{
+  "manifest_version": 3,
+  "name": "ThreatCaddy — Quick Capture",
+  "version": "1.0.0",
+  "description": "Clip text from any page into ThreatCaddy. Privacy-first, all data stays local.",
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "threatcaddy@threatcaddy.com",
+      "strict_min_version": "109.0"
+    }
+  },
+
+  "permissions": [
+    "contextMenus",
+    "storage",
+    "activeTab",
+    "scripting",
+    "tabs"
+  ],
+
+  "background": {
+    "scripts": ["background.js"]
+  },
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icon-16.png",
+      "48": "assets/icon-48.png",
+      "128": "assets/icon-128.png"
+    }
+  },
+
+  "icons": {
+    "16": "assets/icon-16.png",
+    "48": "assets/icon-48.png",
+    "128": "assets/icon-128.png"
+  },
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+
+  "optional_permissions": ["*://*/*", "file:///*"],
+
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["bridge.js"],
+    "run_at": "document_idle"
+  }],
+
+  "commands": {
+    "capture-selection": {
+      "suggested_key": {
+        "default": "Alt+Shift+X",
+        "mac": "MacCtrl+Shift+X"
+      },
+      "description": "Capture selected text or full page"
+    }
+  }
+}

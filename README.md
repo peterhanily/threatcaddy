@@ -14,17 +14,24 @@ Try it instantly: [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loa
 - **Slash Commands** — Type `/` for a Notion-style command menu with formatting, blocks, threat intel templates (IOC tables, MITRE references, TLP headers), and quick inserts (date, callouts, wiki-links)
 - **Note Annotations** — Add timestamped comments and annotations to any note
 - **Defang/Refang Toggle** — Preview network IOCs in defanged form (e.g. `hxxps://`, `example[.]com`) with one click
-- **Quick Capture** — Clip articles, bookmarks, code snippets, quotes, and meeting notes with templates
+- **Quick Capture** — Clip articles, bookmarks, code snippets, quotes, and meeting notes with 10 templates grouped by category (general, threat intel, investigation)
 
 ### Task Management
 - **Task Manager** — Priorities, due dates, statuses with list and kanban views
 - **Task Comments** — Threaded comments on tasks
 
+### AI / LLM Chat
+- **Multi-Provider** — Anthropic (Claude), OpenAI (GPT-4o), Google Gemini, Mistral, and local models (Ollama / LM Studio / vLLM)
+- **Chat Threads** — Persistent conversation threads with auto-generated titles
+- **Tool Calling** — Agentic loop with tools to search notes, read notes, list tasks/IOCs/timeline events, create entities, extract IOCs, and fetch URLs
+- **Slash Commands** — `/fetch`, `/search`, `/note`, `/task`, `/iocs`, `/summary`, `/timeline` for quick actions
+- **Auto-Titles** — Threads automatically titled from the first user message; background LLM call refines the title after the first exchange
+
 ### Threat Intelligence & Analysis
-- **IOC Extraction** — Automatically extract IPv4, IPv6, domains, URLs, emails, hashes (MD5/SHA-1/SHA-256), CVEs, MITRE ATT&CK IDs, YARA rules, and file paths from note content
+- **IOC Extraction** — Automatically extract IPv4, IPv6, domains, URLs, emails, hashes (MD5/SHA-1/SHA-256), CVEs, MITRE ATT&CK IDs, YARA rules, Sigma rules, and file paths from note content
 - **Standalone IOCs** — Create and manage IOCs independently with type, confidence, analyst notes, attribution, and classification
 - **Type-Constrained Subtypes** — IOC subtypes scoped per IOC type (e.g. "C2 Server" for IPs, "Phishing Domain" for domains) with built-in defaults and custom overrides
-- **Many-to-Many Relationships** — Link IOCs with typed, directional relationships (e.g. domain "resolves-to" IP, hash "exploits" CVE) with source/target type constraints
+- **Many-to-Many Relationships** — Link IOCs with typed, directional relationships (e.g. domain "resolves-to" IP, hash "exploits" CVE) with source/target type constraints including `detected-by` and `alerts-on` for detection rules
 - **Entity Graph View** — Visualize IOCs, notes, tasks, and timeline events as an interactive graph with force-directed, circle, and breadth-first layouts, node/edge filtering, and detail panel
 - **Graph Drag-to-Link** — Alt+drag between graph nodes to create IOC relationships or entity links directly on the canvas
 - **IOC Statistics Dashboard** — Aggregate view of all IOCs: type/confidence distribution, top actors, timeline, frequency tables, and source breakdown
@@ -34,16 +41,23 @@ Try it instantly: [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loa
 
 ### Timeline & Whiteboard
 - **Incident Timeline** — Map events to MITRE ATT&CK tactics with timestamps, confidence levels, linked IOCs, and multi-timeline support
+- **Timeline Map** — View geolocated timeline events on an interactive Leaflet map with clustered markers
 - **Smart Data Import** — Paste or drop CSV, TSV, JSON, or NDJSON from SIEMs and EDR tools; auto-detect format, auto-map columns (Splunk, CrowdStrike, Elastic), bulk-create timeline events and IOCs
 - **Whiteboards** — Freeform drawing with Excalidraw integration
 - **Activity Log** — Track all actions across notes, tasks, timeline, and IOCs
 
 ### Organization
 - **Investigations** — Color-coded investigations with active/closed/archived lifecycle, scoped entity counts, and bulk archive/trash operations
+- **Investigation Closure** — Close investigations with a resolution: resolved, false-positive, escalated, duplicate, or inconclusive
 - **Entity Cross-Linking** — Link notes, tasks, and timeline events to each other with a searchable linker
 - **Tags** — Color-coded tags with rename and delete support
 - **Full-Text Search** — Instantly search across all notes, tasks, timeline events, and whiteboards with saved searches and investigation-scoped filtering
 - **Unified Trash & Archive** — Manage deleted and archived items across all entity types in one view, with 30-day auto-delete for trashed items
+
+### Security & Backup
+- **Encryption at Rest** — Passphrase-based AES-256-GCM encryption of IndexedDB data using PBKDF2 key derivation (600k iterations), with configurable session duration and recovery phrase support
+- **Cloud Backup** — Multi-provider cloud backup to OCI Object Storage, AWS S3, Azure Blob Storage, or Google Cloud Storage via pre-authenticated URLs
+- **Export & Import** — Full JSON backup/restore including all entity types; per-investigation export
 
 ### Platform
 - **Quick Links Dashboard** — Configurable shortcut tiles for threat intel tools (VirusTotal, Shodan, AbuseIPDB, etc.) as the default home view
@@ -51,9 +65,8 @@ Try it instantly: [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loa
 - **Dark & Light Mode** — Dark by default, toggle anytime
 - **Guided Tour** — Interactive onboarding tour highlighting key features
 - **Browser Navigation** — Back/forward buttons navigate between views; navigation state persists across page refresh
-- **Export & Import** — Full JSON backup/restore including all entity types; per-investigation export
 - **Standalone HTML** — Download a single-file version that works offline from `file://`
-- **Chrome Extension** — Clip web content directly into ThreatCaddy with smart clip (selection or full page)
+- **Browser Extension** — Chrome and Firefox extension to clip web content directly into ThreatCaddy with smart clip (selection or full page) and LLM API proxy
 - **Keyboard Shortcuts** — Ctrl+N (new note), Ctrl+K (search), Ctrl+S (backup), Ctrl+E (toggle preview), and more
 - **OCI Sync** — Optional sync via Oracle Cloud object storage pre-authenticated requests
 
@@ -65,8 +78,11 @@ Try it instantly: [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loa
 - Dexie.js (IndexedDB)
 - Cytoscape.js (entity graph visualization)
 - Excalidraw (whiteboards)
+- Leaflet + react-leaflet (timeline map)
 - Papa Parse (CSV/TSV parsing)
 - marked + highlight.js + DOMPurify
+- nanoid (ID generation)
+- pako (compression)
 - lucide-react
 
 ## Development
@@ -75,6 +91,7 @@ Try it instantly: [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loa
 pnpm install
 pnpm dev          # Dev server at localhost:5173
 pnpm test:run     # Run test suite
+pnpm test:coverage # Run tests with coverage report
 pnpm lint         # Run ESLint
 pnpm tsc -b       # Type check
 ```
@@ -86,14 +103,9 @@ pnpm build        # Production build → dist/
 pnpm build:single # Standalone HTML → dist-single/index.html
 ```
 
-## Chrome Extension
+## Browser Extension
 
-The `extension/` directory contains a Chrome extension for clipping web content into ThreatCaddy.
-
-To load during development:
-1. Open `chrome://extensions`
-2. Enable "Developer mode"
-3. Click "Load unpacked" and select the `extension/` directory
+The `extension/` directory contains a browser extension for Chrome and Firefox. See [extension/README.md](extension/README.md) for build and install instructions.
 
 ## Deploy
 

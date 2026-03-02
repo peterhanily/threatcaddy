@@ -37,5 +37,8 @@ extension/node_modules
 *.key
 *.cert
 
+# Test coverage
+coverage
+
 # Claude / AI
 .claude/

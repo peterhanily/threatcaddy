@@ -6,18 +6,25 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
-const outdir = join(rootDir, 'dist', 'chrome');
 
-console.log('Building ThreatCaddy extension...');
+const browser = (process.env.BROWSER || 'chrome').toLowerCase();
+if (browser !== 'chrome' && browser !== 'firefox') {
+  console.error(`Unknown BROWSER="${browser}". Use "chrome" or "firefox".`);
+  process.exit(1);
+}
+
+const outdir = join(rootDir, 'dist', browser);
+
+console.log(`Building ThreatCaddy extension for ${browser}...`);
 
 // Create output directories
 mkdirSync(join(outdir, 'assets'), { recursive: true });
 
-// Copy manifest
-copyFileSync(
-  join(rootDir, 'src/manifest.json'),
-  join(outdir, 'manifest.json')
-);
+// Copy manifest (use browser-specific manifest for Firefox)
+const manifestSrc = browser === 'firefox'
+  ? join(rootDir, 'src/manifest.firefox.json')
+  : join(rootDir, 'src/manifest.json');
+copyFileSync(manifestSrc, join(outdir, 'manifest.json'));
 
 // Copy popup files
 copyFileSync(
@@ -79,10 +86,18 @@ if (existsSync(svgSource)) {
   copyFileSync(svgSource, join(outdir, 'assets/icon.svg'));
 }
 
-console.log('\nExtension built successfully!');
+console.log(`\nExtension built successfully for ${browser}!`);
 console.log(`Output: ${outdir}`);
-console.log('\nTo load in Chrome:');
-console.log('1. Go to chrome://extensions');
-console.log('2. Enable "Developer mode"');
-console.log(`3. Click "Load unpacked"`);
-console.log(`4. Select: ${outdir}`);
+
+if (browser === 'chrome') {
+  console.log('\nTo load in Chrome:');
+  console.log('1. Go to chrome://extensions');
+  console.log('2. Enable "Developer mode"');
+  console.log(`3. Click "Load unpacked"`);
+  console.log(`4. Select: ${outdir}`);
+} else {
+  console.log('\nTo load in Firefox:');
+  console.log('1. Go to about:debugging#/runtime/this-firefox');
+  console.log('2. Click "Load Temporary Add-on..."');
+  console.log(`3. Select: ${join(outdir, 'manifest.json')}`);
+}
