@@ -59,8 +59,8 @@ export function useActivityLog() {
       const lower = opts.search.toLowerCase();
       filtered = filtered.filter(
         (e) =>
-          e.detail.toLowerCase().includes(lower) ||
-          (e.itemTitle?.toLowerCase().includes(lower) ?? false)
+          (typeof e.detail === 'string' && e.detail.toLowerCase().includes(lower)) ||
+          (typeof e.itemTitle === 'string' && e.itemTitle.toLowerCase().includes(lower))
       );
     }
     return filtered;
