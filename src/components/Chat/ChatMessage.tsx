@@ -1,37 +1,90 @@
+import { useState } from 'react';
+import { ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { renderMarkdown } from '../../lib/markdown';
+import type { ToolCallRecord } from '../../types';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
   isStreaming?: boolean;
+  toolCalls?: ToolCallRecord[];
 }
 
-function renderMarkdown(text: string): string {
-  let html = text
-    // Code blocks
-    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="bg-bg-deep rounded-lg p-3 my-2 overflow-x-auto text-xs font-mono"><code>$2</code></pre>')
-    // Inline code
-    .replace(/`([^`]+)`/g, '<code class="bg-bg-deep rounded px-1 py-0.5 text-xs font-mono">$1</code>')
-    // Bold
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // Italic
-    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
-    // Unordered lists
-    .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc">$1</li>')
-    // Ordered lists
-    .replace(/^\d+\. (.+)$/gm, '<li class="ml-4 list-decimal">$1</li>')
-    // Paragraphs (double newline)
-    .replace(/\n\n/g, '</p><p class="mt-2">');
-
-  // Wrap in paragraph
-  html = '<p>' + html + '</p>';
-  // Clean up empty paragraphs
-  html = html.replace(/<p>\s*<\/p>/g, '');
-
-  return html;
+function summarizeInput(input: Record<string, unknown>): string {
+  const parts: string[] = [];
+  for (const [key, val] of Object.entries(input)) {
+    if (val === undefined || val === null) continue;
+    const str = typeof val === 'string' ? val : JSON.stringify(val);
+    parts.push(`${key}: ${str.length > 60 ? str.slice(0, 60) + '...' : str}`);
+  }
+  return parts.join(', ') || '(no input)';
 }
 
-export function ChatMessageBubble({ role, content, isStreaming }: ChatMessageProps) {
+function ToolCallBlock({ tc }: { tc: ToolCallRecord }) {
+  const [expanded, setExpanded] = useState(false);
+
+  let resultPreview = '';
+  try {
+    const parsed = JSON.parse(tc.result);
+    if (parsed.error) {
+      resultPreview = `Error: ${parsed.error}`;
+    } else if (parsed.count !== undefined) {
+      resultPreview = `${parsed.count} result${parsed.count !== 1 ? 's' : ''}`;
+    } else if (parsed.success) {
+      resultPreview = `Created: ${parsed.title || parsed.value || parsed.id}`;
+    } else if (parsed.title) {
+      resultPreview = parsed.title;
+    } else {
+      resultPreview = tc.result.length > 80 ? tc.result.slice(0, 80) + '...' : tc.result;
+    }
+  } catch {
+    resultPreview = tc.result.length > 80 ? tc.result.slice(0, 80) + '...' : tc.result;
+  }
+
+  return (
+    <div className={cn(
+      'my-1.5 rounded-lg border text-[11px]',
+      tc.isError ? 'border-red-500/20 bg-red-500/5' : 'border-border-subtle bg-bg-deep/50'
+    )}>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-1.5 w-full px-2.5 py-1.5 text-left hover:bg-bg-hover/50 rounded-lg transition-colors"
+      >
+        <ChevronRight
+          size={12}
+          className={cn('shrink-0 text-text-muted transition-transform', expanded && 'rotate-90')}
+        />
+        <span className="font-mono font-medium text-purple">{tc.name}</span>
+        <span className="text-text-muted truncate flex-1">{summarizeInput(tc.input)}</span>
+        <span className={cn(
+          'shrink-0 ml-1',
+          tc.isError ? 'text-red-400' : 'text-emerald-400'
+        )}>
+          {resultPreview}
+        </span>
+      </button>
+      {expanded && (
+        <div className="px-2.5 pb-2 border-t border-border-subtle mt-0.5 pt-1.5">
+          <div className="mb-1">
+            <span className="text-text-muted">Input:</span>
+            <pre className="mt-0.5 p-1.5 rounded bg-bg-deep text-[10px] font-mono overflow-x-auto whitespace-pre-wrap">
+              {JSON.stringify(tc.input, null, 2)}
+            </pre>
+          </div>
+          <div>
+            <span className="text-text-muted">Result:</span>
+            <pre className="mt-0.5 p-1.5 rounded bg-bg-deep text-[10px] font-mono overflow-x-auto whitespace-pre-wrap max-h-48 overflow-y-auto">
+              {(() => { try { return JSON.stringify(JSON.parse(tc.result), null, 2); } catch { return tc.result; } })()}
+            </pre>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ChatMessageBubble({ role, content, isStreaming, toolCalls }: ChatMessageProps) {
   const isUser = role === 'user';
 
   return (
@@ -47,10 +100,22 @@ export function ChatMessageBubble({ role, content, isStreaming }: ChatMessagePro
         {isUser ? (
           <p className="whitespace-pre-wrap">{content}</p>
         ) : (
-          <div
-            className="prose-chat [&_pre]:my-2 [&_code]:text-xs [&_li]:my-0.5"
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
-          />
+          <>
+            {/* Tool calls rendered before/between text */}
+            {toolCalls && toolCalls.length > 0 && (
+              <div className="mb-2">
+                {toolCalls.map((tc) => (
+                  <ToolCallBlock key={tc.id} tc={tc} />
+                ))}
+              </div>
+            )}
+            {content && (
+              <div
+                className="markdown-preview text-sm"
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+              />
+            )}
+          </>
         )}
         {isStreaming && (
           <span className="inline-block w-1.5 h-4 bg-purple/60 rounded-sm animate-pulse ml-0.5 align-text-bottom" />

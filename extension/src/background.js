@@ -274,11 +274,114 @@ chrome.commands.onCommand.addListener(async (command) => {
   }
 });
 
+// Convert raw HTML to readable markdown text (regex-based, no DOM needed)
+function htmlToText(html) {
+  // Cap input to 2MB to prevent regex backtracking on giant pages
+  if (html.length > 2_000_000) {
+    html = html.substring(0, 2_000_000);
+  }
+
+  // Extract title before any processing
+  const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+  const title = titleMatch ? titleMatch[1].trim() : '';
+
+  let text = html;
+
+  // Remove scripts, styles, and noscript blocks (non-greedy, tag-to-tag)
+  text = text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+  text = text.replace(/<noscript\b[^<]*(?:(?!<\/noscript>)<[^<]*)*<\/noscript>/gi, '');
+  text = text.replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, '');
+  text = text.replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, '');
+  text = text.replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, '');
+  text = text.replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, '');
+
+  // Convert headings to markdown
+  for (let i = 1; i <= 6; i++) {
+    const hashes = '#'.repeat(i);
+    text = text.replace(new RegExp(`<h${i}[^>]*>([^<]*(?:<(?!/h${i})[^<]*)*)</h${i}>`, 'gi'),
+      `\n\n${hashes} $1\n\n`);
+  }
+
+  // Convert links: <a href="url">text</a> → [text](url)
+  text = text.replace(/<a[^>]+href="([^"]*)"[^>]*>([^<]*(?:<(?!\/a)[^<]*)*)<\/a>/gi, '[$2]($1)');
+
+  // Convert bold and italic
+  text = text.replace(/<(?:strong|b)\b[^>]*>([^<]*(?:<(?!\/(?:strong|b)>)[^<]*)*)<\/(?:strong|b)>/gi, '**$1**');
+  text = text.replace(/<(?:em|i)\b[^>]*>([^<]*(?:<(?!\/(?:em|i)>)[^<]*)*)<\/(?:em|i)>/gi, '*$1*');
+
+  // Convert code blocks
+  text = text.replace(/<pre[^>]*>(?:<code[^>]*>)?([^<]*(?:<(?!\/(?:code|pre)>)[^<]*)*?)(?:<\/code>)?<\/pre>/gi, '\n\n```\n$1\n```\n\n');
+  text = text.replace(/<code[^>]*>([^<]*)<\/code>/gi, '`$1`');
+
+  // Convert lists
+  text = text.replace(/<li[^>]*>([^<]*(?:<(?!\/li>)[^<]*)*)<\/li>/gi, '- $1\n');
+
+  // Convert paragraphs and line breaks
+  text = text.replace(/<p[^>]*>/gi, '\n\n');
+  text = text.replace(/<\/p>/gi, '\n\n');
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+  text = text.replace(/<hr\s*\/?>/gi, '\n\n---\n\n');
+  text = text.replace(/<\/(?:div|section|article)>/gi, '\n');
+
+  // Strip remaining HTML tags
+  text = text.replace(/<[^>]+>/g, '');
+
+  // Decode common HTML entities
+  text = text.replace(/&amp;/g, '&');
+  text = text.replace(/&lt;/g, '<');
+  text = text.replace(/&gt;/g, '>');
+  text = text.replace(/&quot;/g, '"');
+  text = text.replace(/&#39;/g, "'");
+  text = text.replace(/&nbsp;/g, ' ');
+  text = text.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+  text = text.replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+
+  // Clean up whitespace
+  text = text.replace(/[ \t]+/g, ' ');
+  text = text.replace(/\n[ \t]+/g, '\n');
+  text = text.replace(/\n{3,}/g, '\n\n');
+  text = text.trim();
+
+  // Truncate to 50KB
+  if (text.length > 50000) {
+    text = text.substring(0, 50000) + '\n\n...(truncated)';
+  }
+
+  return { title, content: text };
+}
+
 // Handle messages from popup and content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return;
   if (message.type === 'PING') {
     sendResponse({ loaded: true });
+  } else if (message.type === 'FETCH_URL') {
+    (async () => {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 15000);
+        const resp = await fetch(message.url, {
+          signal: controller.signal,
+          headers: { 'Accept': 'text/html,application/xhtml+xml,*/*' },
+          redirect: 'follow',
+        });
+        clearTimeout(timer);
+        if (!resp.ok) {
+          sendResponse({ success: false, error: `HTTP ${resp.status} ${resp.statusText}` });
+          return;
+        }
+        const html = await resp.text();
+        const { title, content } = htmlToText(html);
+        sendResponse({ success: true, title, content, url: message.url });
+      } catch (err) {
+        const msg = err.name === 'AbortError'
+          ? 'Request timed out (15s). The page may be unreachable.'
+          : (err.message || String(err));
+        sendResponse({ success: false, error: msg });
+      }
+    })();
+    return true;
   } else if (message.type === 'SAVE_NOTE') {
     saveCapture(message.note).then(() => {
       sendResponse({ success: true });
@@ -339,6 +442,24 @@ async function streamAnthropic(port, payload, signal) {
     ? { 'x-api-key': payload.apiKey, 'anthropic-dangerous-direct-browser-access': 'true' }
     : { 'Authorization': `Bearer ${payload.apiKey}` };
 
+  // Build messages — pass structured content through as-is
+  const messages = payload.messages.map((m) => {
+    if (typeof m.content === 'string') return { role: m.role, content: m.content };
+    // Structured content (e.g. tool_result blocks) — pass through
+    return { role: m.role, content: m.content };
+  });
+
+  const body = {
+    model: payload.model,
+    max_tokens: 8192,
+    stream: true,
+    system: payload.systemPrompt || undefined,
+    messages,
+  };
+  if (payload.tools && payload.tools.length > 0) {
+    body.tools = payload.tools;
+  }
+
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     signal,
@@ -347,24 +468,23 @@ async function streamAnthropic(port, payload, signal) {
       'anthropic-version': '2023-06-01',
       ...authHeaders,
     },
-    body: JSON.stringify({
-      model: payload.model,
-      max_tokens: 4096,
-      stream: true,
-      system: payload.systemPrompt || undefined,
-      messages: payload.messages.map((m) => ({ role: m.role, content: m.content })),
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!resp.ok) {
-    const body = await resp.text().catch(() => '');
-    port.postMessage({ type: 'error', error: `Anthropic API ${resp.status}: ${body}` });
+    const respBody = await resp.text().catch(() => '');
+    port.postMessage({ type: 'error', error: `Anthropic API ${resp.status}: ${respBody}` });
     return;
   }
 
   const reader = resp.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+
+  // Track content blocks for tool calling
+  const contentBlocks = [];
+  let currentBlockIndex = -1;
+  let stopReason = null;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -380,14 +500,42 @@ async function streamAnthropic(port, payload, signal) {
       if (data === '[DONE]') continue;
       try {
         const parsed = JSON.parse(data);
-        if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-          port.postMessage({ type: 'chunk', content: parsed.delta.text });
+
+        if (parsed.type === 'content_block_start') {
+          currentBlockIndex = parsed.index;
+          const block = parsed.content_block;
+          if (block.type === 'text') {
+            contentBlocks[currentBlockIndex] = { type: 'text', text: '' };
+          } else if (block.type === 'tool_use') {
+            contentBlocks[currentBlockIndex] = { type: 'tool_use', id: block.id, name: block.name, input: '' };
+          }
+        }
+
+        if (parsed.type === 'content_block_delta') {
+          const block = contentBlocks[parsed.index];
+          if (parsed.delta?.type === 'text_delta' && parsed.delta.text) {
+            if (block) block.text += parsed.delta.text;
+            port.postMessage({ type: 'chunk', content: parsed.delta.text });
+          } else if (parsed.delta?.type === 'input_json_delta' && parsed.delta.partial_json) {
+            if (block) block.input += parsed.delta.partial_json;
+          }
+        }
+
+        if (parsed.type === 'content_block_stop') {
+          const block = contentBlocks[parsed.index];
+          if (block && block.type === 'tool_use' && typeof block.input === 'string') {
+            try { block.input = JSON.parse(block.input); } catch { block.input = {}; }
+          }
+        }
+
+        if (parsed.type === 'message_delta' && parsed.delta?.stop_reason) {
+          stopReason = parsed.delta.stop_reason;
         }
       } catch {}
     }
   }
 
-  port.postMessage({ type: 'done' });
+  port.postMessage({ type: 'done', stopReason: stopReason || 'end_turn', contentBlocks });
 }
 
 async function streamOpenAI(port, payload, signal) {
@@ -395,7 +543,47 @@ async function streamOpenAI(port, payload, signal) {
   if (payload.systemPrompt) {
     messages.push({ role: 'system', content: payload.systemPrompt });
   }
-  messages.push(...payload.messages.map((m) => ({ role: m.role, content: m.content })));
+
+  // Convert structured messages for OpenAI format
+  for (const m of payload.messages) {
+    if (m.role === 'assistant' && Array.isArray(m.content)) {
+      // Anthropic-style content blocks → OpenAI assistant message + tool_calls
+      let textContent = '';
+      const toolCalls = [];
+      for (const block of m.content) {
+        if (block.type === 'text') textContent += block.text;
+        else if (block.type === 'tool_use') {
+          toolCalls.push({ id: block.id, type: 'function', function: { name: block.name, arguments: JSON.stringify(block.input) } });
+        }
+      }
+      const msg = { role: 'assistant', content: textContent || null };
+      if (toolCalls.length > 0) msg.tool_calls = toolCalls;
+      messages.push(msg);
+    } else if (m.role === 'user' && Array.isArray(m.content)) {
+      // Tool result blocks → OpenAI tool messages
+      for (const block of m.content) {
+        if (block.type === 'tool_result') {
+          messages.push({ role: 'tool', tool_call_id: block.tool_use_id, content: block.content });
+        }
+      }
+    } else {
+      messages.push({ role: m.role, content: m.content });
+    }
+  }
+
+  const body = {
+    model: payload.model,
+    stream: true,
+    messages,
+  };
+
+  // Convert Anthropic tool format → OpenAI function format
+  if (payload.tools && payload.tools.length > 0) {
+    body.tools = payload.tools.map(t => ({
+      type: 'function',
+      function: { name: t.name, description: t.description, parameters: t.input_schema },
+    }));
+  }
 
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -404,22 +592,22 @@ async function streamOpenAI(port, payload, signal) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${payload.apiKey}`,
     },
-    body: JSON.stringify({
-      model: payload.model,
-      stream: true,
-      messages,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!resp.ok) {
-    const body = await resp.text().catch(() => '');
-    port.postMessage({ type: 'error', error: `OpenAI API ${resp.status}: ${body}` });
+    const respBody = await resp.text().catch(() => '');
+    port.postMessage({ type: 'error', error: `OpenAI API ${resp.status}: ${respBody}` });
     return;
   }
 
   const reader = resp.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let stopReason = null;
+
+  // Track tool calls being assembled from deltas
+  const toolCallAccum = {}; // index → { id, name, arguments }
 
   while (true) {
     const { done, value } = await reader.read();
@@ -435,15 +623,53 @@ async function streamOpenAI(port, payload, signal) {
       if (data === '[DONE]') continue;
       try {
         const parsed = JSON.parse(data);
-        const content = parsed.choices?.[0]?.delta?.content;
+        const choice = parsed.choices?.[0];
+        if (!choice) continue;
+
+        // Text content
+        const content = choice.delta?.content;
         if (content) {
           port.postMessage({ type: 'chunk', content });
+        }
+
+        // Tool call deltas
+        if (choice.delta?.tool_calls) {
+          for (const tc of choice.delta.tool_calls) {
+            const idx = tc.index;
+            if (!toolCallAccum[idx]) toolCallAccum[idx] = { id: '', name: '', arguments: '' };
+            if (tc.id) toolCallAccum[idx].id = tc.id;
+            if (tc.function?.name) toolCallAccum[idx].name = tc.function.name;
+            if (tc.function?.arguments) toolCallAccum[idx].arguments += tc.function.arguments;
+          }
+        }
+
+        // Finish reason
+        if (choice.finish_reason) {
+          stopReason = choice.finish_reason;
         }
       } catch {}
     }
   }
 
-  port.postMessage({ type: 'done' });
+  // Build content blocks in Anthropic format
+  const contentBlocks = [];
+  // If there was streamed text, it was already sent as chunks. Reconstruct the text block isn't
+  // needed since useLLM tracks accumulated text. But we still need tool_use blocks.
+  const toolEntries = Object.values(toolCallAccum);
+  if (toolEntries.length > 0) {
+    for (const tc of toolEntries) {
+      let parsedArgs = {};
+      try { parsedArgs = JSON.parse(tc.arguments); } catch {}
+      contentBlocks.push({ type: 'tool_use', id: tc.id, name: tc.name, input: parsedArgs });
+    }
+  }
+
+  // Normalize OpenAI stop reasons to Anthropic format
+  const normalizedStop = stopReason === 'tool_calls' ? 'tool_use'
+    : stopReason === 'stop' ? 'end_turn'
+    : stopReason || 'end_turn';
+
+  port.postMessage({ type: 'done', stopReason: normalizedStop, contentBlocks });
 }
 
 async function sendToTarget(targetUrl, captures) {

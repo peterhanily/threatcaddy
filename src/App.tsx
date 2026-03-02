@@ -25,7 +25,7 @@ import { useActivityLog } from './hooks/useActivityLog';
 import { ActivityLogContext } from './hooks/ActivityLogContext';
 import { ScreenshareContext } from './hooks/ScreenshareContext';
 import { getEffectiveClsLevels, isAboveClsThreshold } from './lib/classification';
-import type { ViewMode, SortOption, EditorMode, Note, Task, TimelineEvent, TaskViewMode, IOCType, StandaloneIOC } from './types';
+import type { ViewMode, SortOption, EditorMode, Note, Task, TimelineEvent, TaskViewMode, IOCType, StandaloneIOC, ChatThread } from './types';
 import { DEFAULT_QUICK_LINKS } from './types';
 import { DashboardView } from './components/Dashboard/DashboardView';
 import { FileText } from 'lucide-react';
@@ -918,6 +918,10 @@ function AppInner() {
     setShareLinkPayload({ v: 1, s: 'investigation', t: Date.now(), d: bundle });
   }, [folders, notes.notes, tasks.tasks, timeline.events, timelines, whiteboards, standaloneIOCsHook.iocs, tags]);
 
+  const handleShareChatThread = useCallback((thread: ChatThread) => {
+    setShareLinkPayload({ v: 1, s: 'chat', t: Date.now(), d: thread });
+  }, []);
+
   const handleSaveSharedPayload = useCallback(async (payload: SharePayload) => {
     if (payload.s === 'investigation') {
       const bundle = payload.d as InvestigationBundle;
@@ -952,8 +956,12 @@ function AppInner() {
       await db.timelineEvents.put(payload.d as TimelineEvent);
       timeline.reload();
       addToast('success', 'Event saved to ThreatCaddy');
+    } else if (payload.s === 'chat') {
+      await db.chatThreads.put(payload.d as ChatThread);
+      chatsHook.reload();
+      addToast('success', 'Chat saved to ThreatCaddy');
     }
-  }, [notes, tasks, timeline, reloadFolders, reloadTimelines, reloadWhiteboards, standaloneIOCsHook, reloadTags, addToast]);
+  }, [notes, tasks, timeline, chatsHook, reloadFolders, reloadTimelines, reloadWhiteboards, standaloneIOCsHook, reloadTags, addToast]);
 
   const [showDataImport, setShowDataImport] = useState(false);
 
@@ -1462,9 +1470,11 @@ function AppInner() {
             onUpdateThread={chatsHook.updateThread}
             onAddMessage={chatsHook.addMessage}
             onTrashThread={loggedTrashChatThread}
+            onShareThread={handleShareChatThread}
             settings={settings}
             selectedFolderId={selectedFolderId}
             selectedFolder={selectedFolder}
+            onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); }}
           />
         ) : activeView === 'tasks' ? (
           <TaskListView

@@ -1,5 +1,5 @@
 import pako from 'pako';
-import type { Note, Task, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, Folder, Tag } from '../types';
+import type { Note, Task, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, Folder, Tag, ChatThread } from '../types';
 
 // --- Payload types ---
 
@@ -14,13 +14,13 @@ export interface InvestigationBundle {
   tags: Tag[];
 }
 
-export type ShareScope = 'note' | 'task' | 'event' | 'whiteboard' | 'ioc' | 'investigation';
+export type ShareScope = 'note' | 'task' | 'event' | 'whiteboard' | 'ioc' | 'investigation' | 'chat';
 
 export interface SharePayload {
   v: 1;
   s: ShareScope;
   t: number; // sharedAt
-  d: Note | Task | TimelineEvent | Whiteboard | StandaloneIOC | InvestigationBundle;
+  d: Note | Task | TimelineEvent | Whiteboard | StandaloneIOC | InvestigationBundle | ChatThread;
 }
 
 export const MAX_URL_LENGTH = 32_000;

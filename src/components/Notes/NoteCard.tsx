@@ -3,6 +3,7 @@ import { Pin, Trash2, Search } from 'lucide-react';
 import type { Note } from '../../types';
 import { formatDate, truncate, cn } from '../../lib/utils';
 import { ClsBadge } from '../Common/ClsBadge';
+import { TagPills } from '../Common/TagPills';
 
 interface NoteCardProps {
   note: Note;
@@ -74,15 +75,7 @@ export const NoteCard = React.memo(function NoteCard({ note, active, onSelect, o
             {activeIOCCount}
           </span>
         )}
-        {note.tags.length > 0 && (
-          <div className="flex gap-1 flex-1 min-w-0 overflow-hidden">
-            {note.tags.slice(0, 3).map((tag) => (
-              <span key={tag} className="text-[10px] text-accent/70 bg-accent/10 px-1.5 rounded-full truncate">
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
+        <TagPills tags={note.tags} />
       </div>
     </div>
   );

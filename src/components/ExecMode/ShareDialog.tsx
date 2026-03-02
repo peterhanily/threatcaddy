@@ -32,6 +32,7 @@ const SCOPE_LABELS: Record<string, string> = {
   whiteboard: 'Whiteboard',
   ioc: 'IOC',
   investigation: 'Investigation',
+  chat: 'Chat',
 };
 
 export function ShareDialog({ open, onClose, payload }: ShareDialogProps) {

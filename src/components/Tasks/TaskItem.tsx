@@ -4,6 +4,7 @@ import type { Task, Priority } from '../../types';
 import { PRIORITY_COLORS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { ClsBadge } from '../Common/ClsBadge';
+import { TagPills } from '../Common/TagPills';
 import { isOverdue, cn } from '../../lib/utils';
 
 interface TaskItemProps {
@@ -91,11 +92,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
             {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
         )}
-        {task.tags.slice(0, 2).map((tag) => (
-          <span key={tag} className="text-[10px] text-accent/70 bg-accent/10 px-1.5 rounded-full">
-            {tag}
-          </span>
-        ))}
+        <TagPills tags={task.tags} />
         {task.trashed ? (
           <>
             {onRestore && (

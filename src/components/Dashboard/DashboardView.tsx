@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Pencil, Trash2, FileText, ListChecks, Clock, PenTool, Search, Network, Activity } from 'lucide-react';
+import { Plus, Pencil, Trash2, FileText, ListChecks, Clock, PenTool, Search, Network, Activity, MessageSquare } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import type { QuickLink, ViewMode, Folder, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC } from '../../types';
 import { QuickLinkForm } from './QuickLinkForm';
@@ -14,6 +14,7 @@ const INTERNAL_TOOLS: { view: ViewMode; label: string; description: string; icon
   { view: 'ioc-stats', label: 'IOC Stats', description: 'Indicator of compromise analytics', icon: Search, color: '#10b981' },
   { view: 'graph', label: 'Graph', description: 'Relationship & link analysis', icon: Network, color: '#6366f1' },
   { view: 'activity', label: 'Activity', description: 'Audit log of all actions', icon: Activity, color: '#f472b6' },
+  { view: 'chat', label: 'AI Chat', description: 'Chat with AI about your investigation', icon: MessageSquare, color: '#8b5cf6' },
 ];
 
 interface DashboardViewProps {

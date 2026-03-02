@@ -2,8 +2,9 @@ import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Shield, Lock, X, AlertCircle, Download, Check } from 'lucide-react';
 import { isEncryptedShare, decodeSharePayload } from '../../lib/share';
 import type { SharePayload } from '../../lib/share';
-import type { Note, Task, TimelineEvent } from '../../types';
+import type { Note, Task, TimelineEvent, ChatThread } from '../../types';
 import type { InvestigationBundle } from '../../lib/share';
+import { renderMarkdown } from '../../lib/markdown';
 import { ExecNoteView } from './ExecNoteView';
 import { ExecTaskView } from './ExecTaskView';
 import { ExecEventView } from './ExecEventView';
@@ -41,6 +42,7 @@ const SCOPE_LABELS: Record<string, string> = {
   whiteboard: 'Whiteboard',
   ioc: 'IOC',
   investigation: 'Investigation',
+  chat: 'Chat',
 };
 
 export function ShareReceiver({ encodedData, theme, onDismiss, onSave }: ShareReceiverProps) {
@@ -215,6 +217,42 @@ export function ShareReceiver({ encodedData, theme, onDismiss, onSave }: ShareRe
         return <ExecTaskView task={payload.d as Task} onBack={onDismiss} />;
       case 'event':
         return <ExecEventView event={payload.d as TimelineEvent} onBack={onDismiss} />;
+      case 'chat': {
+        const thread = payload.d as ChatThread;
+        return (
+          <div className="flex flex-col gap-4 max-w-2xl mx-auto">
+            <div>
+              <h2 className="text-lg font-bold text-text-primary">{thread.title}</h2>
+              <p className="text-xs text-text-muted mt-1">{thread.messages.length} message{thread.messages.length !== 1 ? 's' : ''}</p>
+            </div>
+            <div className="flex flex-col gap-3">
+              {thread.messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={cn(
+                    'rounded-xl px-4 py-2.5 text-sm leading-relaxed',
+                    msg.role === 'user'
+                      ? 'bg-purple/20 text-text-primary ml-8'
+                      : 'bg-bg-raised text-text-primary mr-8 border border-border-subtle'
+                  )}
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted block mb-1">
+                    {msg.role === 'user' ? 'You' : 'Assistant'}
+                  </span>
+                  {msg.role === 'assistant' ? (
+                    <div
+                      className="markdown-preview text-sm"
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                    />
+                  ) : (
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
       default:
         return <p className="text-sm text-text-muted">Unsupported share type: {payload.s}</p>;
     }

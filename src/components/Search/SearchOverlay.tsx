@@ -5,6 +5,7 @@ import { formatDate } from '../../lib/utils';
 import { unifiedSearch, type SearchMode, type SearchResult, type SearchResultType, type UnifiedSearchResult } from '../../lib/search';
 import { useSavedSearches } from '../../hooks/useSavedSearches';
 import type { Note, Task, TimelineEvent, Whiteboard, Folder } from '../../types';
+import { TagPills } from '../Common/TagPills';
 import SearchWorker from '../../workers/search.worker?worker';
 
 interface SearchOverlayProps {
@@ -450,12 +451,8 @@ export function SearchOverlay({
                           <p className="text-xs text-gray-500 truncate mt-0.5">{result.snippet}</p>
                         )}
                         {result.tags.length > 0 && (
-                          <div className="flex gap-1 mt-1 flex-wrap">
-                            {result.tags.slice(0, 3).map((tag) => (
-                              <span key={tag} className="px-1.5 py-0.5 text-[10px] rounded bg-gray-800 text-gray-400">
-                                #{tag}
-                              </span>
-                            ))}
+                          <div className="mt-1">
+                            <TagPills tags={result.tags} />
                           </div>
                         )}
                       </div>

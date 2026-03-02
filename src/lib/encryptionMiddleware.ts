@@ -8,7 +8,7 @@
  *   Collection.modify() works correctly even without cursor-level decryption.
  */
 
-import type Dexie from 'dexie';
+import Dexie from 'dexie';
 import type { DBCore, DBCoreTable, DBCoreMutateRequest, DBCoreGetRequest, DBCoreGetManyRequest, DBCoreQueryRequest } from 'dexie';
 import { encryptField, decryptField } from './crypto';
 
@@ -95,8 +95,13 @@ export function installEncryptionMiddleware(db: Dexie): void {
               if (!sessionKey || (req.type !== 'add' && req.type !== 'put')) {
                 return downlevelTable.mutate(req);
               }
-              const encryptedValues = await Promise.all(
-                (req.values ?? []).map((v) => encryptRow(tableName, v as Record<string, unknown>)),
+              // Dexie.waitFor() keeps the IDB transaction alive while we
+              // await Web Crypto (which returns native Promises outside Dexie's
+              // zone and would otherwise cause TransactionInactiveError).
+              const encryptedValues = await Dexie.waitFor(
+                Promise.all(
+                  (req.values ?? []).map((v) => encryptRow(tableName, v as Record<string, unknown>)),
+                ),
               );
               return downlevelTable.mutate({ ...req, values: encryptedValues });
             },

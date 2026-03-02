@@ -1,10 +1,11 @@
 import React from 'react';
-import { Star, FileText, ListChecks, Tag, Trash2, MapPin, Search } from 'lucide-react';
+import { Star, FileText, ListChecks, Trash2, MapPin, Search } from 'lucide-react';
 import type { TimelineEvent } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 import { cn, truncate } from '../../lib/utils';
 import { getTechniqueLabel } from '../../lib/mitre-attack';
 import { ClsBadge } from '../Common/ClsBadge';
+import { TagPills } from '../Common/TagPills';
 
 interface TimelineEventCardProps {
   event: TimelineEvent;
@@ -152,15 +153,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
         {event.assets.length > 0 && (
           <span className="text-[10px] text-gray-500">{event.assets.length} asset{event.assets.length !== 1 ? 's' : ''}</span>
         )}
-        {event.tags.length > 0 && (
-          <div className="flex gap-1 flex-1 min-w-0 overflow-hidden">
-            {event.tags.slice(0, 3).map((tag) => (
-              <span key={tag} className="flex items-center gap-0.5 text-[10px] text-accent/70 bg-accent/10 px-1.5 rounded-full truncate">
-                <Tag size={8} />{tag}
-              </span>
-            ))}
-          </div>
-        )}
+        <TagPills tags={event.tags} />
       </div>
     </button>
   );

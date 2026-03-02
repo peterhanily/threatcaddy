@@ -50,7 +50,7 @@ window.addEventListener('message', function (event) {
         if (msg.type === 'chunk') {
           window.postMessage({ type: 'TC_LLM_CHUNK', requestId: requestId, content: msg.content }, '*');
         } else if (msg.type === 'done') {
-          window.postMessage({ type: 'TC_LLM_DONE', requestId: requestId }, '*');
+          window.postMessage({ type: 'TC_LLM_DONE', requestId: requestId, stopReason: msg.stopReason, contentBlocks: msg.contentBlocks }, '*');
           ports.delete(requestId);
         } else if (msg.type === 'error') {
           window.postMessage({ type: 'TC_LLM_ERROR', requestId: requestId, error: msg.error }, '*');
@@ -76,6 +76,59 @@ window.addEventListener('message', function (event) {
         type: 'TC_LLM_ERROR',
         requestId: requestId,
         error: 'Extension error: ' + (err.message || 'unknown. Try reloading the page.')
+      }, '*');
+    }
+  }
+
+  if (event.data.type === 'TC_FETCH_URL') {
+    var fetchRequestId = event.data.requestId;
+    var fetchUrl = event.data.url;
+
+    if (!isExtensionValid()) {
+      window.postMessage({
+        type: 'TC_FETCH_URL_RESULT',
+        requestId: fetchRequestId,
+        success: false,
+        error: 'Extension context invalidated. Please reload this page.'
+      }, '*');
+      return;
+    }
+
+    try {
+      chrome.runtime.sendMessage({ type: 'FETCH_URL', url: fetchUrl }, function (response) {
+        var lastError = chrome.runtime.lastError;
+        if (lastError) {
+          window.postMessage({
+            type: 'TC_FETCH_URL_RESULT',
+            requestId: fetchRequestId,
+            success: false,
+            error: lastError.message || 'Extension error'
+          }, '*');
+        } else if (!response) {
+          window.postMessage({
+            type: 'TC_FETCH_URL_RESULT',
+            requestId: fetchRequestId,
+            success: false,
+            error: 'No response from extension background'
+          }, '*');
+        } else {
+          window.postMessage({
+            type: 'TC_FETCH_URL_RESULT',
+            requestId: fetchRequestId,
+            success: response.success,
+            title: response.title,
+            content: response.content,
+            url: response.url,
+            error: response.error
+          }, '*');
+        }
+      });
+    } catch (err) {
+      window.postMessage({
+        type: 'TC_FETCH_URL_RESULT',
+        requestId: fetchRequestId,
+        success: false,
+        error: 'Extension error: ' + (err.message || 'unknown')
       }, '*');
     }
   }

@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Plus, Trash2, MessageSquare } from 'lucide-react';
-import type { ChatThread, ChatMessage, LLMProvider, Settings, Folder } from '../../types';
+import { Plus, Trash2, MessageSquare, Share2, Pencil } from 'lucide-react';
+import type { ChatThread, ChatMessage, LLMProvider, Settings, Folder, ToolUseBlock } from '../../types';
 import { ChatMessageBubble } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { useLLM } from '../../hooks/useLLM';
 import { cn, formatDate } from '../../lib/utils';
 import { nanoid } from 'nanoid';
+import { TOOL_DEFINITIONS, buildSystemPrompt, executeTool, isWriteTool, fetchViaExtensionBridge } from '../../lib/llm-tools';
+import { generateChatTitle } from '../../lib/chat-utils';
+import { db } from '../../db';
 
 interface ChatViewProps {
   threads: ChatThread[];
@@ -15,9 +18,11 @@ interface ChatViewProps {
   onUpdateThread: (id: string, updates: Partial<ChatThread>) => void;
   onAddMessage: (threadId: string, message: ChatMessage) => Promise<void>;
   onTrashThread: (id: string) => void;
+  onShareThread?: (thread: ChatThread) => void;
   settings: Settings;
   selectedFolderId?: string;
   selectedFolder?: Folder;
+  onEntitiesChanged?: () => void;
 }
 
 export function ChatView({
@@ -28,20 +33,25 @@ export function ChatView({
   onUpdateThread,
   onAddMessage,
   onTrashThread,
+  onShareThread,
   settings,
   selectedFolderId,
   selectedFolder,
+  onEntitiesChanged,
 }: ChatViewProps) {
-  const { extensionAvailable, streamingContent, isStreaming, error, sendRequest, abort } = useLLM();
+  const { extensionAvailable, streamingContent, isStreaming, error, toolActivity, sendAgentRequest, abort } = useLLM();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editingTitleValue, setEditingTitleValue] = useState('');
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const activeThread = threads.find((t) => t.id === selectedThreadId);
 
   // Scroll to bottom on new messages or streaming content
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeThread?.messages?.length, streamingContent]);
+  }, [activeThread?.messages?.length, streamingContent, toolActivity.length]);
 
   // Show LLM errors
   useEffect(() => {
@@ -88,42 +98,139 @@ export function ChatView({
     };
     await onAddMessage(activeThread.id, userMsg);
 
-    // Build system prompt from investigation context
-    let systemPrompt = 'You are a helpful AI assistant for threat investigation and security analysis.';
-    if (selectedFolder) {
-      systemPrompt += `\n\nCurrent investigation: "${selectedFolder.name}"`;
-      if (selectedFolder.description) {
-        systemPrompt += `\nDescription: ${selectedFolder.description}`;
+    // Transform slash hint commands to natural language before sending to LLM
+    const SLASH_TRANSFORMS: Record<string, (arg: string) => string> = {
+      '/search':   (q) => `Search my notes for: ${q}`,
+      '/note':     (t) => `Create a note titled "${t}"`,
+      '/task':     (t) => `Create a task: ${t}`,
+      '/iocs':     (t) => `Extract IOCs from the following text:\n${t}`,
+      '/summary':  ()  => `Give me a summary of this investigation`,
+      '/timeline': ()  => `List the timeline events in this investigation`,
+    };
+
+    const slashMatch = text.match(/^(\/\w+)\s*([\s\S]*)$/);
+    let llmText = text;
+    if (slashMatch) {
+      const [, cmd, arg] = slashMatch;
+      const transform = SLASH_TRANSFORMS[cmd.toLowerCase()];
+      if (transform) {
+        llmText = transform(arg.trim());
       }
     }
 
-    // Build conversation messages
+    // Intercept /fetch <url> — fetch directly without LLM
+    const fetchMatch = text.match(/^\/fetch\s+(https?:\/\/\S+)$/i);
+    if (fetchMatch) {
+      const url = fetchMatch[1];
+      try {
+        const result = await fetchViaExtensionBridge(url);
+        if (result.success) {
+          const title = result.title || new URL(url).hostname;
+          const now = Date.now();
+          await db.notes.add({
+            id: nanoid(),
+            title,
+            content: result.content || '',
+            folderId: selectedFolderId || undefined,
+            tags: [],
+            pinned: false,
+            archived: false,
+            trashed: false,
+            createdAt: now,
+            updatedAt: now,
+          });
+          const confirmMsg: ChatMessage = {
+            id: nanoid(),
+            role: 'assistant',
+            content: `Created note **${title}** from ${url}`,
+            createdAt: Date.now(),
+          };
+          await onAddMessage(activeThread.id, confirmMsg);
+          onEntitiesChanged?.();
+        } else {
+          const errorMsg: ChatMessage = {
+            id: nanoid(),
+            role: 'assistant',
+            content: `Failed to fetch URL: ${result.error || 'Unknown error'}`,
+            createdAt: Date.now(),
+          };
+          await onAddMessage(activeThread.id, errorMsg);
+        }
+      } catch (err) {
+        const errorMsg: ChatMessage = {
+          id: nanoid(),
+          role: 'assistant',
+          content: `Failed to fetch URL: ${(err as Error).message || String(err)}`,
+          createdAt: Date.now(),
+        };
+        await onAddMessage(activeThread.id, errorMsg);
+      }
+      return;
+    }
+
+    // Build enriched system prompt with investigation context
+    const systemPrompt = await buildSystemPrompt(selectedFolder);
+
+    // Build conversation messages (string content for history)
+    // Use transformed text for the last user message so the LLM gets natural language
     const conversationMessages = [...activeThread.messages, userMsg].map((m) => ({
       role: m.role as 'user' | 'assistant',
-      content: m.content,
+      content: m === userMsg ? llmText : m.content,
     }));
 
-    // Send to LLM
-    sendRequest(
+    // Track whether any write tools were used
+    let usedWriteTool = false;
+
+    // Send with agentic loop
+    sendAgentRequest(
       {
         provider: activeThread.provider,
         model: activeThread.model,
         messages: conversationMessages,
         apiKey,
         systemPrompt,
+        tools: TOOL_DEFINITIONS,
       },
-      async (finalContent) => {
+      async (toolUse: ToolUseBlock) => {
+        const result = await executeTool(toolUse, selectedFolderId);
+        if (isWriteTool(toolUse.name) && !result.isError) {
+          usedWriteTool = true;
+        }
+        return result;
+      },
+      async ({ content, toolCalls }) => {
         const assistantMsg: ChatMessage = {
           id: nanoid(),
           role: 'assistant',
-          content: finalContent,
+          content,
           model: activeThread.model,
+          toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
           createdAt: Date.now(),
         };
         await onAddMessage(activeThread.id, assistantMsg);
+
+        // Trigger entity reload if any write tools were used
+        if (usedWriteTool && onEntitiesChanged) {
+          onEntitiesChanged();
+        }
+
+        // Auto-generate a contextual title after first exchange
+        // The initial auto-title is the truncated first user message — improve it with LLM
+        if (activeThread.messages.length <= 1 && content) {
+          const apiKey = (activeThread.provider === 'anthropic'
+            ? settings.llmAnthropicApiKey
+            : settings.llmOpenAIApiKey)?.trim();
+          if (apiKey) {
+            generateChatTitle(text, content, activeThread.provider, activeThread.model, apiKey)
+              .then((title) => {
+                if (title) onUpdateThread(activeThread.id, { title });
+              })
+              .catch(() => { /* ignore title generation failures */ });
+          }
+        }
       }
     );
-  }, [activeThread, settings, selectedFolder, sendRequest, onAddMessage]);
+  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged]);
 
   const handleModelChange = useCallback((model: string, provider: LLMProvider) => {
     if (activeThread) {
@@ -186,6 +293,56 @@ export function ChatView({
       <div className="flex-1 flex flex-col min-w-0">
         {activeThread ? (
           <>
+            {/* Header toolbar */}
+            <div className="flex items-center gap-2 px-4 py-2 border-b border-border-subtle shrink-0">
+              {editingTitle ? (
+                <input
+                  ref={titleInputRef}
+                  value={editingTitleValue}
+                  onChange={(e) => setEditingTitleValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const trimmed = editingTitleValue.trim();
+                      if (trimmed) onUpdateThread(activeThread.id, { title: trimmed });
+                      setEditingTitle(false);
+                    } else if (e.key === 'Escape') {
+                      setEditingTitle(false);
+                    }
+                  }}
+                  onBlur={() => {
+                    const trimmed = editingTitleValue.trim();
+                    if (trimmed) onUpdateThread(activeThread.id, { title: trimmed });
+                    setEditingTitle(false);
+                  }}
+                  className="flex-1 min-w-0 bg-bg-raised border border-border-subtle rounded px-2 py-1 text-sm font-medium text-text-primary focus:outline-none focus:border-purple"
+                />
+              ) : (
+                <button
+                  onClick={() => {
+                    setEditingTitleValue(activeThread.title);
+                    setEditingTitle(true);
+                    setTimeout(() => titleInputRef.current?.select(), 0);
+                  }}
+                  className="flex items-center gap-1.5 min-w-0 group"
+                  title="Click to rename"
+                >
+                  <span className="text-sm font-medium text-text-primary truncate">{activeThread.title}</span>
+                  <Pencil size={12} className="shrink-0 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              )}
+              <div className="flex items-center gap-1 ml-auto shrink-0">
+                {onShareThread && activeThread.messages.length > 0 && (
+                  <button
+                    onClick={() => onShareThread(activeThread)}
+                    className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors"
+                    title="Share chat"
+                  >
+                    <Share2 size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4">
               {activeThread.messages.length === 0 && !isStreaming && (
@@ -193,13 +350,39 @@ export function ChatView({
                   <MessageSquare size={40} className="mb-3 opacity-30" />
                   <p className="text-sm font-medium">Start a conversation</p>
                   <p className="text-xs mt-1">Messages are stored locally and encrypted at rest</p>
+                  {selectedFolder && (
+                    <p className="text-xs mt-1 text-purple/70">
+                      AI can read and create entities in &ldquo;{selectedFolder.name}&rdquo;
+                    </p>
+                  )}
                 </div>
               )}
               {activeThread.messages.map((msg) => (
-                <ChatMessageBubble key={msg.id} role={msg.role} content={msg.content} />
+                <ChatMessageBubble key={msg.id} role={msg.role} content={msg.content} toolCalls={msg.toolCalls} />
               ))}
               {isStreaming && streamingContent && (
                 <ChatMessageBubble role="assistant" content={streamingContent} isStreaming />
+              )}
+              {/* Tool activity indicators during streaming */}
+              {isStreaming && toolActivity.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 ml-2 mb-2">
+                  {toolActivity.map((ta) => (
+                    <span
+                      key={ta.id}
+                      className={cn(
+                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono border',
+                        ta.status === 'running'
+                          ? 'border-purple/30 text-purple bg-purple/10 animate-pulse'
+                          : ta.status === 'error'
+                          ? 'border-red-500/30 text-red-400 bg-red-500/10'
+                          : 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
+                      )}
+                    >
+                      {ta.status === 'running' ? '...' : ta.status === 'error' ? '!' : '\u2713'}{' '}
+                      {ta.name}
+                    </span>
+                  ))}
+                </div>
               )}
               {localError && (
                 <div className="mx-auto max-w-md my-3 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
