@@ -42,7 +42,7 @@ app.get('/', async (c) => {
         isNull(posts.parentId), // Only top-level posts
         folderId
           ? eq(posts.folderId, folderId)
-          : or(isNull(posts.folderId), eq(posts.folderId, '')).mapWith(Boolean) as ReturnType<typeof isNull>,
+          : or(isNull(posts.folderId), eq(posts.folderId, '')),
         cursor ? lt(posts.createdAt, new Date(cursor)) : undefined
       )
     )

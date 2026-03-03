@@ -1,10 +1,12 @@
 import { eq, and, gt } from 'drizzle-orm';
+import type { PgTable } from 'drizzle-orm/pg-core';
 import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import type { SyncChange, SyncResult } from '../types.js';
 
 // Maps table names to Drizzle table references
-const TABLE_MAP: Record<string, typeof schema.notes> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const TABLE_MAP: Record<string, PgTable<any>> = {
   notes: schema.notes,
   tasks: schema.tasks,
   folders: schema.folders,

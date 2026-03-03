@@ -30,9 +30,9 @@ export const investigationMembers = pgTable('investigation_members', {
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   role: text('role', { enum: ['owner', 'editor', 'viewer'] }).notNull().default('editor'),
   joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [
-  unique('uq_folder_user').on(t.folderId, t.userId),
-]);
+}, (t) => ({
+  uqFolderUser: unique('uq_folder_user').on(t.folderId, t.userId),
+}));
 
 // ─── Entity Tables ──────────────────────────────────────────────
 
@@ -271,9 +271,9 @@ export const reactions = pgTable('reactions', {
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   emoji: text('emoji').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [
-  unique('uq_post_user_emoji').on(t.postId, t.userId, t.emoji),
-]);
+}, (t) => ({
+  uqPostUserEmoji: unique('uq_post_user_emoji').on(t.postId, t.userId, t.emoji),
+}));
 
 // ─── Notifications ──────────────────────────────────────────────
 
