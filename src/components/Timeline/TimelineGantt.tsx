@@ -227,12 +227,11 @@ export function TimelineGantt({ events, onSelect, onToggleStar: _onToggleStar }:
           className="shrink-0 overflow-hidden border-r border-gray-800"
           style={{ width: LABEL_WIDTH }}
         >
-          {/* Header spacer */}
-          <div className="border-b border-gray-700" style={{ height: HEADER_HEIGHT }}>
+          {/* Sticky header */}
+          <div className="sticky top-0 z-10 bg-gray-900 border-b border-gray-700" style={{ height: HEADER_HEIGHT }}>
             <div className="px-2 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Event</div>
           </div>
           {/* Row labels */}
-          <div className="overflow-hidden" style={{ height: `calc(100% - ${HEADER_HEIGHT}px)` }}>
             <div style={{ height: chartHeight }}>
               {sortedEvents.map((ev, i) => {
                 const meta = getEventMeta(ev.eventType);
@@ -274,7 +273,6 @@ export function TimelineGantt({ events, onSelect, onToggleStar: _onToggleStar }:
                 );
               })}
             </div>
-          </div>
         </div>
 
         {/* Scrollable chart */}

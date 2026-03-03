@@ -47,18 +47,21 @@ export function CreateDropdown({ onNewNote, onNewTask, onNewTimelineEvent, onNew
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-44 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50">
-          {items.map((item, i) => (
-            <button
-              key={item.label}
-              onClick={() => { item.action(); setOpen(false); }}
-              className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 ${i === 0 ? 'rounded-t-lg' : ''} ${i === items.length - 1 ? 'rounded-b-lg' : ''}`}
-            >
-              <item.icon size={14} />
-              {item.label}
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 w-44 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-[101] py-1">
+            {items.map((item) => (
+              <button
+                key={item.label}
+                onClick={() => { item.action(); setOpen(false); }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700"
+              >
+                <item.icon size={14} />
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
