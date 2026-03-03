@@ -9,7 +9,7 @@ function makeToolUse(name: string, input: Record<string, unknown> = {}): ToolUse
 
 describe('TOOL_DEFINITIONS', () => {
   it('has the expected number of tool definitions', () => {
-    expect(TOOL_DEFINITIONS.length).toBe(12);
+    expect(TOOL_DEFINITIONS.length).toBe(19);
   });
 
   it('each tool has name, description, and input_schema', () => {
@@ -51,6 +51,26 @@ describe('isWriteTool', () => {
     expect(isWriteTool('create_timeline_event')).toBe(true);
   });
 
+  it('returns true for update_note', () => {
+    expect(isWriteTool('update_note')).toBe(true);
+  });
+
+  it('returns true for update_task', () => {
+    expect(isWriteTool('update_task')).toBe(true);
+  });
+
+  it('returns true for bulk_create_iocs', () => {
+    expect(isWriteTool('bulk_create_iocs')).toBe(true);
+  });
+
+  it('returns true for link_entities', () => {
+    expect(isWriteTool('link_entities')).toBe(true);
+  });
+
+  it('returns true for generate_report', () => {
+    expect(isWriteTool('generate_report')).toBe(true);
+  });
+
   it('returns false for read tools', () => {
     expect(isWriteTool('search_notes')).toBe(false);
     expect(isWriteTool('read_note')).toBe(false);
@@ -59,6 +79,8 @@ describe('isWriteTool', () => {
     expect(isWriteTool('list_timeline_events')).toBe(false);
     expect(isWriteTool('get_investigation_summary')).toBe(false);
     expect(isWriteTool('extract_iocs')).toBe(false);
+    expect(isWriteTool('search_all')).toBe(false);
+    expect(isWriteTool('analyze_graph')).toBe(false);
   });
 
   it('returns false for unknown tools', () => {

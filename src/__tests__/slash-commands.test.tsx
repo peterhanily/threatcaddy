@@ -50,13 +50,13 @@ describe('ChatInput slash command menu', () => {
       expect(screen.getByText('/timeline')).toBeInTheDocument();
     });
 
-    it('shows all 7 commands when only "/" is typed', async () => {
+    it('shows all 11 commands when only "/" is typed', async () => {
       renderInput();
       await userEvent.type(getTextarea(), '/');
       const buttons = screen.getAllByRole('button').filter(
         (b) => b.textContent?.startsWith('/')
       );
-      expect(buttons).toHaveLength(7);
+      expect(buttons).toHaveLength(11);
     });
 
     it('hides menu when text does not start with "/"', async () => {
@@ -152,18 +152,18 @@ describe('ChatInput slash command menu', () => {
       renderInput();
       const textarea = getTextarea();
       await userEvent.type(textarea, '/');
-      // ArrowUp from index 0 wraps to last item (/timeline)
+      // ArrowUp from index 0 wraps to last item (/link)
       fireEvent.keyDown(textarea, { key: 'ArrowUp' });
       fireEvent.keyDown(textarea, { key: 'Enter' });
-      expect(textarea.value).toBe('/timeline ');
+      expect(textarea.value).toBe('/link ');
     });
 
     it('wraps around when ArrowDown goes past last item', async () => {
       renderInput();
       const textarea = getTextarea();
       await userEvent.type(textarea, '/');
-      // Press ArrowDown 7 times to wrap back to first
-      for (let i = 0; i < 7; i++) {
+      // Press ArrowDown 11 times to wrap back to first
+      for (let i = 0; i < 11; i++) {
         fireEvent.keyDown(textarea, { key: 'ArrowDown' });
       }
       fireEvent.keyDown(textarea, { key: 'Enter' });

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Plus, Trash2, MessageSquare, Share2, Pencil } from 'lucide-react';
+import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText } from 'lucide-react';
 import type { ChatThread, ChatMessage, LLMProvider, Settings, Folder, ToolUseBlock } from '../../types';
 import { ChatMessageBubble } from './ChatMessage';
 import { ChatInput } from './ChatInput';
@@ -23,6 +23,7 @@ interface ChatViewProps {
   selectedFolderId?: string;
   selectedFolder?: Folder;
   onEntitiesChanged?: () => void;
+  onNavigateToEntity?: (type: string, id: string) => void;
 }
 
 export function ChatView({
@@ -38,6 +39,7 @@ export function ChatView({
   selectedFolderId,
   selectedFolder,
   onEntitiesChanged,
+  onNavigateToEntity,
 }: ChatViewProps) {
   const { extensionAvailable, streamingContent, isStreaming, error, toolActivity, sendAgentRequest, abort } = useLLM();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -134,6 +136,10 @@ export function ChatView({
       '/iocs':     (t) => `Extract IOCs from the following text:\n${t}`,
       '/summary':  ()  => `Give me a summary of this investigation`,
       '/timeline': ()  => `List the timeline events in this investigation`,
+      '/report':   ()  => `Generate a comprehensive investigation report. Analyze all notes, tasks, IOCs, and timeline events, then use the generate_report tool to create a structured report note.`,
+      '/triage':   (t) => `Auto-triage the following alert/email. Extract all IOCs, create them as standalone IOCs using bulk_create_iocs, create relevant timeline events, and provide a triage summary:\n\n${t}`,
+      '/graph':    ()  => `Analyze the entity relationship graph for this investigation. Identify the most connected entities, any isolated nodes, and interesting clusters or patterns.`,
+      '/link':     (t) => `Search across all entities for "${t}" and suggest which ones should be linked together. Then use the link_entities tool to create the cross-references.`,
     };
 
     const slashMatch = text.match(/^(\/\w+)\s*([\s\S]*)$/);
@@ -266,6 +272,40 @@ export function ChatView({
     }
   }, [activeThread, onUpdateThread]);
 
+  const handleExportAsNote = useCallback(async () => {
+    if (!activeThread || activeThread.messages.length === 0) return;
+    let content = `# Chat: ${activeThread.title}\n\n`;
+    content += `*Exported on ${new Date().toLocaleDateString()} — Model: ${activeThread.model}*\n\n---\n\n`;
+    for (const msg of activeThread.messages) {
+      const label = msg.role === 'user' ? '**You:**' : '**AI:**';
+      content += `${label}\n\n${msg.content}\n\n`;
+      if (msg.toolCalls && msg.toolCalls.length > 0) {
+        for (const tc of msg.toolCalls) {
+          content += `> Tool: \`${tc.name}\` — ${tc.isError ? 'Error' : 'Success'}\n\n`;
+        }
+      }
+      content += '---\n\n';
+    }
+    const now = Date.now();
+    await db.notes.add({
+      id: nanoid(),
+      title: `Chat Export: ${activeThread.title}`,
+      content,
+      folderId: selectedFolderId || undefined,
+      tags: ['chat-export'],
+      pinned: false,
+      archived: false,
+      trashed: false,
+      createdAt: now,
+      updatedAt: now,
+    });
+    onEntitiesChanged?.();
+  }, [activeThread, selectedFolderId, onEntitiesChanged]);
+
+  const handleSuggestionClick = useCallback((text: string) => {
+    handleSend(text);
+  }, [handleSend]);
+
   return (
     <div className="flex flex-1 overflow-hidden">
       {/* Thread list */}
@@ -361,6 +401,15 @@ export function ChatView({
                 </button>
               )}
               <div className="flex items-center gap-1 ml-auto shrink-0">
+                {activeThread.messages.length > 0 && (
+                  <button
+                    onClick={handleExportAsNote}
+                    className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors"
+                    title="Export as note"
+                  >
+                    <FileText size={14} />
+                  </button>
+                )}
                 {onShareThread && activeThread.messages.length > 0 && (
                   <button
                     onClick={() => onShareThread(activeThread)}
@@ -387,8 +436,16 @@ export function ChatView({
                   )}
                 </div>
               )}
-              {activeThread.messages.map((msg) => (
-                <ChatMessageBubble key={msg.id} role={msg.role} content={msg.content} toolCalls={msg.toolCalls} />
+              {activeThread.messages.map((msg, idx) => (
+                <ChatMessageBubble
+                  key={msg.id}
+                  role={msg.role}
+                  content={msg.content}
+                  toolCalls={msg.toolCalls}
+                  onEntityClick={onNavigateToEntity}
+                  onSuggestionClick={handleSuggestionClick}
+                  isLastAssistant={msg.role === 'assistant' && idx === activeThread.messages.length - 1}
+                />
               ))}
               {isStreaming && streamingContent && (
                 <ChatMessageBubble role="assistant" content={streamingContent} isStreaming />

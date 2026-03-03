@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Send, Square, Wifi, WifiOff, Globe, Search, FileText, CheckSquare, Shield, BarChart3, Clock } from 'lucide-react';
+import { Send, Square, Wifi, WifiOff, Globe, Search, FileText, CheckSquare, Shield, BarChart3, Clock, Network, ClipboardList, Zap, Link2 } from 'lucide-react';
 import type { LLMProvider } from '../../types';
 import { cn } from '../../lib/utils';
 
@@ -11,6 +11,10 @@ const SLASH_COMMANDS = [
   { command: '/iocs', description: 'Extract IOCs from text', placeholder: '<text>', icon: Shield },
   { command: '/summary', description: 'Summarize this investigation', placeholder: '', icon: BarChart3 },
   { command: '/timeline', description: 'List timeline events', placeholder: '', icon: Clock },
+  { command: '/report', description: 'Generate investigation report', placeholder: '', icon: ClipboardList },
+  { command: '/triage', description: 'Auto-triage an alert or email', placeholder: '<paste alert>', icon: Zap },
+  { command: '/graph', description: 'Analyze entity relationships', placeholder: '', icon: Network },
+  { command: '/link', description: 'Find and link related entities', placeholder: '<description>', icon: Link2 },
 ];
 
 interface ModelEntry { label: string; value: string; provider: LLMProvider; group: string }
