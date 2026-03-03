@@ -17,6 +17,7 @@ dist-single
 extension/dist
 extension/assets/icon-*.png
 extension/node_modules
+*.zip
 
 # Editor directories and files
 .vscode/*
