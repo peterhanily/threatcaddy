@@ -17,6 +17,7 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const SAFE_INLINE_MIME = /^(image\/(?!svg)[\w+-]+|video\/[\w+-]+|audio\/[\w+-]+|application\/pdf)$/;
 
 function sanitizeFilename(name: string): string {
+  // eslint-disable-next-line no-control-regex -- intentional: strip control chars for Content-Disposition safety
   return name.replace(/["\\\r\n\x00-\x1f]/g, '_');
 }
 
