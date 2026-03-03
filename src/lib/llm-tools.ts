@@ -837,9 +837,10 @@ async function addLink(sourceType: string, sourceId: string, targetType: string,
   const entity = await table.get(sourceId);
   if (!entity) throw new Error(`${sourceType} ${sourceId} not found`);
 
-  const existing: string[] = (entity as Record<string, unknown>)[linkField] as string[] || [];
+  const existing: string[] = (entity as unknown as Record<string, unknown>)[linkField] as string[] || [];
   if (!existing.includes(targetId)) {
-    await table.update(sourceId, { [linkField]: [...existing, targetId], updatedAt: Date.now() });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic link field update across union table types
+    await (table as any).update(sourceId, { [linkField]: [...existing, targetId], updatedAt: Date.now() });
   }
 }
 
