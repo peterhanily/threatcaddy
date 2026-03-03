@@ -38,7 +38,10 @@ app.use('*', cors({
   exposeHeaders: ['Content-Length'],
   maxAge: 86400,
 }));
-app.use('*', honoLogger());
+app.use('*', honoLogger((str: string, ...rest: string[]) => {
+  // Redact JWT tokens from WS connection logs
+  console.log(str.replace(/token=[^\s&]+/g, 'token=[REDACTED]'), ...rest);
+}));
 
 // Body limits — file routes get 50 MB, other API routes get 1 MB
 app.use('/api/files/*', bodyLimit({ maxSize: 50 * 1024 * 1024 }));
@@ -78,7 +81,7 @@ app.get('/ws', upgradeWebSocket((c) => {
     },
     onMessage: (event, ws) => {
       const data = typeof event.data === 'string' ? event.data : event.data.toString();
-      handleWSMessage(ws, data);
+      void handleWSMessage(ws, data);
     },
     onClose: (_event, ws) => {
       handleWSClose(ws);

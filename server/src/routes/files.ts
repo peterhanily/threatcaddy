@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { checkInvestigationAccess } from '../middleware/access.js';
 import { db } from '../db/index.js';
 import { files } from '../db/schema.js';
 import type { AuthUser } from '../types.js';
@@ -11,6 +12,13 @@ import { logger } from '../lib/logger.js';
 
 const STORAGE_PATH = process.env.FILE_STORAGE_PATH || '/data/files';
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+// MIME types safe to serve inline (no XSS risk)
+const SAFE_INLINE_MIME = /^(image\/(?!svg)[\w+-]+|video\/[\w+-]+|audio\/[\w+-]+|application\/pdf)$/;
+
+function sanitizeFilename(name: string): string {
+  return name.replace(/["\\\r\n\x00-\x1f]/g, '_');
+}
 
 const app = new Hono<{ Variables: { user: AuthUser } }>();
 
@@ -82,6 +90,7 @@ app.post('/upload', requireRole('admin', 'analyst'), async (c) => {
 
 // GET /api/files/:id — serve file
 app.get('/:id', async (c) => {
+  const user = c.get('user');
   const fileId = c.req.param('id');
 
   const result = await db.select().from(files).where(eq(files.id, fileId)).limit(1);
@@ -90,18 +99,30 @@ app.get('/:id', async (c) => {
   }
 
   const file = result[0];
+
+  // Check folder access if file belongs to a folder
+  if (file.folderId && user.role !== 'admin') {
+    const hasAccess = await checkInvestigationAccess(user.id, file.folderId, 'viewer');
+    if (!hasAccess) {
+      return c.json({ error: 'No access to this file' }, 403);
+    }
+  }
+
   const filePath = join(STORAGE_PATH, file.storagePath);
 
   try {
     const data = await readFile(filePath);
     const fileStat = await stat(filePath);
+    const safeName = sanitizeFilename(file.filename);
+    const disposition = SAFE_INLINE_MIME.test(file.mimeType) ? 'inline' : 'attachment';
 
     return new Response(data, {
       headers: {
         'Content-Type': file.mimeType,
         'Content-Length': fileStat.size.toString(),
-        'Content-Disposition': `inline; filename="${file.filename}"`,
+        'Content-Disposition': `${disposition}; filename="${safeName}"`,
         'Cache-Control': 'public, max-age=31536000, immutable',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch {
@@ -111,6 +132,7 @@ app.get('/:id', async (c) => {
 
 // GET /api/files/:id/thumbnail — serve thumbnail
 app.get('/:id/thumbnail', async (c) => {
+  const user = c.get('user');
   const fileId = c.req.param('id');
 
   const result = await db.select().from(files).where(eq(files.id, fileId)).limit(1);
@@ -118,7 +140,17 @@ app.get('/:id/thumbnail', async (c) => {
     return c.json({ error: 'Thumbnail not found' }, 404);
   }
 
-  const thumbPath = join(STORAGE_PATH, result[0].thumbnailPath);
+  const file = result[0];
+
+  // Check folder access if file belongs to a folder
+  if (file.folderId && user.role !== 'admin') {
+    const hasAccess = await checkInvestigationAccess(user.id, file.folderId, 'viewer');
+    if (!hasAccess) {
+      return c.json({ error: 'No access to this file' }, 403);
+    }
+  }
+
+  const thumbPath = join(STORAGE_PATH, file.thumbnailPath!);
 
   try {
     const data = await readFile(thumbPath);
@@ -126,6 +158,7 @@ app.get('/:id/thumbnail', async (c) => {
       headers: {
         'Content-Type': 'image/webp',
         'Cache-Control': 'public, max-age=31536000, immutable',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch {

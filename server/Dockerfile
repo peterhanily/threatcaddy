@@ -11,7 +11,7 @@ COPY tsconfig.json ./
 COPY drizzle.config.ts ./
 COPY src/ ./src/
 
-RUN npx tsc
+RUN npx tsc && find dist -name '*.map' -delete
 
 FROM node:22-alpine
 

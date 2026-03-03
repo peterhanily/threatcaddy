@@ -1,8 +1,11 @@
 import type { WSContext } from 'hono/ws';
 import { verifyAccessToken } from '../middleware/auth.js';
+import { checkInvestigationAccess } from '../middleware/access.js';
 import { updatePresence, removePresence, removeUserFromAllFolders, getPresence } from './presence.js';
 import { logger } from '../lib/logger.js';
 import type { AuthUser } from '../types.js';
+
+const MAX_WS_MESSAGE_SIZE = 64 * 1024; // 64 KB
 
 interface ConnectedClient {
   ws: WSContext;
@@ -53,7 +56,9 @@ export function handleWSConnection(ws: WSContext, token: string) {
     });
 }
 
-export function handleWSMessage(ws: WSContext, data: string) {
+export async function handleWSMessage(ws: WSContext, data: string) {
+  if (data.length > MAX_WS_MESSAGE_SIZE) return; // Drop oversized messages
+
   const client = clients.get(ws);
   if (!client) return;
 
@@ -69,6 +74,14 @@ export function handleWSMessage(ws: WSContext, data: string) {
       case 'subscribe': {
         const folderId = msg.folderId as string;
         if (folderId) {
+          // Verify folder access before subscribing
+          if (client.user.role !== 'admin') {
+            const hasAccess = await checkInvestigationAccess(client.user.id, folderId, 'viewer');
+            if (!hasAccess) {
+              sendTo(ws, { type: 'error', message: 'No access to this investigation' });
+              break;
+            }
+          }
           client.subscribedFolders.add(folderId);
           // Send current presence
           const presence = getPresence(folderId);
@@ -90,7 +103,8 @@ export function handleWSMessage(ws: WSContext, data: string) {
 
       case 'presence-update': {
         const folderId = msg.folderId as string;
-        if (folderId) {
+        // Only allow presence updates for folders the client is subscribed to
+        if (folderId && client.subscribedFolders.has(folderId)) {
           updatePresence(
             folderId,
             client.user.id,

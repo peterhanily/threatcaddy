@@ -19,6 +19,22 @@ const TABLE_MAP: Record<string, PgTable<any>> = {
   chatThreads: schema.chatThreads,
 };
 
+// Fields managed exclusively by the server — never accept from client
+const SERVER_MANAGED_FIELDS = new Set([
+  'id', 'createdBy', 'updatedBy', 'version', 'createdAt', 'updatedAt',
+]);
+
+function stripServerFields(data: Record<string, unknown> | undefined): Record<string, unknown> {
+  if (!data) return {};
+  const clean: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (!SERVER_MANAGED_FIELDS.has(key)) {
+      clean[key] = value;
+    }
+  }
+  return clean;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getTable(name: string): any {
   const table = TABLE_MAP[name];
@@ -45,17 +61,18 @@ export async function processPush(
 
       // op === 'put'
       const existing = await db.select().from(table).where(eq(table.id, entityId)).limit(1);
+      const cleanData = stripServerFields(data);
 
       if (existing.length === 0) {
         // New entity — insert
         const now = new Date();
         await db.insert(table).values({
-          ...data,
+          ...cleanData,
           id: entityId,
           createdBy: userId,
           updatedBy: userId,
           version: 1,
-          createdAt: data?.createdAt ? new Date(data.createdAt as number) : now,
+          createdAt: now,
           updatedAt: now,
         });
         results.push({ entityId, status: 'accepted', serverVersion: 1 });
@@ -74,19 +91,38 @@ export async function processPush(
             serverData: serverEntity as Record<string, unknown>,
           });
         } else {
-          // Accept update
+          // Accept update — atomic version check to prevent concurrent overwrites
           const newVersion = serverVersion + 1;
           const now = new Date();
-          await db
+          const updated = await db
             .update(table)
             .set({
-              ...data,
+              ...cleanData,
               updatedBy: userId,
               version: newVersion,
               updatedAt: now,
             })
-            .where(eq(table.id, entityId));
-          results.push({ entityId, status: 'accepted', serverVersion: newVersion });
+            .where(and(eq(table.id, entityId), eq(table.version, serverVersion)))
+            .returning({ id: table.id });
+
+          if (updated.length === 0) {
+            // Concurrent modification — fetch current state
+            const current = await db.select().from(table).where(eq(table.id, entityId)).limit(1);
+            if (current.length > 0) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const currentVersion = (current[0] as any).version as number;
+              results.push({
+                entityId,
+                status: 'conflict',
+                serverVersion: currentVersion,
+                serverData: current[0] as Record<string, unknown>,
+              });
+            } else {
+              results.push({ entityId, status: 'conflict' });
+            }
+          } else {
+            results.push({ entityId, status: 'accepted', serverVersion: newVersion });
+          }
         }
       }
     } catch (err) {
