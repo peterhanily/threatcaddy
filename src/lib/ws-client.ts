@@ -9,10 +9,15 @@ export class WSClient {
   private reconnectDelay = 1000;
   private maxReconnectDelay = 30000;
   private intentionallyClosed = false;
+  private statusCallback: ((ok: boolean) => void) | null = null;
 
   constructor(serverUrl: string, accessToken: string) {
     this.serverUrl = serverUrl;
     this.accessToken = accessToken;
+  }
+
+  onStatusChange(cb: (ok: boolean) => void) {
+    this.statusCallback = cb;
   }
 
   connect() {
@@ -30,6 +35,10 @@ export class WSClient {
       try {
         const msg = JSON.parse(event.data);
         const type = msg.type as string;
+        // Fire status callback on successful auth
+        if (type === 'auth-ok' && this.statusCallback) {
+          this.statusCallback(true);
+        }
         const typeHandlers = this.handlers.get(type);
         if (typeHandlers) {
           for (const handler of typeHandlers) {
@@ -48,6 +57,7 @@ export class WSClient {
 
     this.ws.onclose = () => {
       if (!this.intentionallyClosed) {
+        if (this.statusCallback) this.statusCallback(false);
         this.scheduleReconnect();
       }
     };
@@ -91,7 +101,7 @@ export class WSClient {
     };
   }
 
-  private send(msg: unknown) {
+  send(msg: unknown) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg));
     }

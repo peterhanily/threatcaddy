@@ -39,6 +39,16 @@ export function CaddyShackView({ folderId, folderName }: CaddyShackViewProps) {
     loadFeed();
   }, [loadFeed]);
 
+  // Listen for notification-driven post selection
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const postId = (e as CustomEvent).detail?.postId;
+      if (postId) setSelectedPostId(postId);
+    };
+    window.addEventListener('caddyshack-select-post', handler);
+    return () => window.removeEventListener('caddyshack-select-post', handler);
+  }, []);
+
   const handleReact = async (postId: string, emoji: string) => {
     try {
       await addReaction(postId, emoji);

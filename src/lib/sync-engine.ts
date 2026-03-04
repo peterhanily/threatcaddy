@@ -2,12 +2,14 @@ import { db } from '../db';
 import type { Dexie as DexieType } from 'dexie';
 import { syncPush, syncPull, type SyncChange, type SyncResult } from './server-api';
 import { disableSync, enableSync } from './sync-middleware';
+import type { WSClient } from './ws-client';
 
 // Cast db for dynamic table access (sync tables aren't in the typed schema)
 const dynamicDb = db as unknown as DexieType;
 
 const SYNC_INTERVAL = 30_000; // 30 seconds — safety-net full sync
-const PUSH_DEBOUNCE = 200;    // 200ms — fast debounce for near real-time sync
+const PUSH_DEBOUNCE = 50;     // 50ms — fast debounce for near real-time sync
+const PUSH_MAX_WAIT = 300;    // 300ms — max time before forcing a push during continuous typing
 const META_KEY_LAST_SYNC = 'lastSyncTimestamp';
 
 interface SyncQueueEntry {
@@ -23,6 +25,8 @@ export class SyncEngine {
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private pushTimer: ReturnType<typeof setTimeout> | null = null;
   private pushing = false;
+  private firstPendingAt: number | null = null;
+  private wsClient: WSClient | null = null;
   private onConflict: ((conflicts: SyncResult[]) => void) | null = null;
   private onRemoteChange: ((changes: Record<string, unknown>[], tables: Set<string>) => void) | null = null;
 
@@ -32,6 +36,10 @@ export class SyncEngine {
 
   setRemoteChangeHandler(handler: (changes: Record<string, unknown>[], tables: Set<string>) => void) {
     this.onRemoteChange = handler;
+  }
+
+  setWSClient(ws: WSClient | null) {
+    this.wsClient = ws;
   }
 
   start() {
@@ -70,8 +78,18 @@ export class SyncEngine {
   }
 
   // Schedule a debounced push — coalesces rapid edits into a single push
+  // Uses maxWait to guarantee pushes happen even during continuous typing
   private schedulePush() {
     if (!this.running) return;
+    if (this.firstPendingAt === null) {
+      this.firstPendingAt = Date.now();
+    }
+    // If we've waited long enough since the first pending change, push immediately
+    if (Date.now() - this.firstPendingAt >= PUSH_MAX_WAIT) {
+      if (this.pushTimer) { clearTimeout(this.pushTimer); this.pushTimer = null; }
+      this.push().catch((err) => console.error('SyncEngine: maxWait push error', err));
+      return;
+    }
     if (this.pushTimer) clearTimeout(this.pushTimer);
     this.pushTimer = setTimeout(() => {
       this.pushTimer = null;
@@ -123,6 +141,7 @@ export class SyncEngine {
       console.error('SyncEngine: push error', err);
     } finally {
       this.pushing = false;
+      this.firstPendingAt = null;
     }
   }
 
@@ -249,7 +268,11 @@ export class SyncEngine {
       op,
       data,
     });
-    // Trigger a debounced push so changes sync within ~1 second
+    // Optimistic WS broadcast for instant relay to other clients
+    if (this.wsClient) {
+      this.wsClient.send({ type: 'entity-change-preview', table, entityId, op, data });
+    }
+    // Trigger a debounced push so changes sync within ~300ms max
     this.schedulePush();
   }
 

@@ -10,6 +10,7 @@ interface AuthState {
   logout(): Promise<void>;
   getAccessToken(): Promise<string | null>;
   setServerUrl(url: string | null): void;
+  setReachable(reachable: boolean): void;
 }
 
 const AuthContext = createContext<AuthState>({
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthState>({
   logout: async () => {},
   getAccessToken: async () => null,
   setServerUrl: () => {},
+  setReachable: () => {},
 });
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -69,6 +71,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshToken: refresh,
       user: u,
     }));
+  }, []);
+
+  const setReachable = useCallback((reachable: boolean) => {
+    // Only update connection state if we have stored tokens (i.e. user is logged in)
+    if (accessTokenRef.current || refreshTokenRef.current) {
+      setConnected(reachable);
+    }
   }, []);
 
   const setServerUrl = useCallback((url: string | null) => {
@@ -223,6 +232,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       getAccessToken,
       setServerUrl,
+      setReachable,
     }}>
       {children}
     </AuthContext.Provider>

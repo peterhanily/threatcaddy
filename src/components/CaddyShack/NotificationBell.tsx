@@ -51,6 +51,14 @@ export function NotificationBell() {
     }
   };
 
+  const handleNotificationClick = async (n: Notification) => {
+    await handleMarkRead(n.id);
+    setOpen(false);
+    window.dispatchEvent(new CustomEvent('notification-navigate', {
+      detail: { type: n.type, postId: n.postId, folderId: n.folderId },
+    }));
+  };
+
   const handleMarkAllRead = async () => {
     try {
       await markAllNotificationsRead();
@@ -66,7 +74,7 @@ export function NotificationBell() {
     <div className="relative">
       <button
         onClick={() => { setOpen(!open); if (!open) loadNotifications(); }}
-        className="relative p-1.5 rounded hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+        className="relative p-1.5 rounded hover:bg-gray-800/50 text-gray-500 hover:text-gray-300"
         title="Notifications"
       >
         <Bell size={18} />
@@ -80,9 +88,9 @@ export function NotificationBell() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-8 z-50 w-80 max-h-96 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)]">
-              <span className="text-sm font-medium text-[var(--text-primary)]">Notifications</span>
+          <div className="absolute right-0 top-8 z-50 w-80 max-h-96 bg-gray-900 border border-gray-700 rounded-lg shadow-xl overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700">
+              <span className="text-sm font-medium text-gray-100">Notifications</span>
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
@@ -94,24 +102,24 @@ export function NotificationBell() {
             </div>
             <div className="overflow-y-auto max-h-80">
               {loading && notifications.length === 0 ? (
-                <div className="p-4 text-center text-sm text-[var(--text-tertiary)]">Loading...</div>
+                <div className="p-4 text-center text-sm text-gray-500">Loading...</div>
               ) : notifications.length === 0 ? (
-                <div className="p-4 text-center text-sm text-[var(--text-tertiary)]">No notifications</div>
+                <div className="p-4 text-center text-sm text-gray-500">No notifications</div>
               ) : (
                 notifications.map((n) => (
                   <div
                     key={n.id}
-                    className={`px-3 py-2.5 border-b border-[var(--border)] hover:bg-[var(--bg-secondary)] cursor-pointer flex items-start gap-2 ${
+                    className={`px-3 py-2.5 border-b border-gray-700 hover:bg-gray-800/50 cursor-pointer flex items-start gap-2 ${
                       !n.read ? 'bg-blue-500/5' : ''
                     }`}
-                    onClick={() => handleMarkRead(n.id)}
+                    onClick={() => handleNotificationClick(n)}
                   >
                     <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs shrink-0 mt-0.5">
                       {n.sourceUserDisplayName?.[0]?.toUpperCase() || '?'}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[var(--text-secondary)] line-clamp-2">{n.message}</p>
-                      <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
+                      <p className="text-sm text-gray-300 line-clamp-2">{n.message}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
                         {new Date(n.createdAt).toLocaleString()}
                       </p>
                     </div>

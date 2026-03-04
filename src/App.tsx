@@ -168,7 +168,9 @@ function AppInner() {
       auth.getAccessToken().then((token) => {
         if (token && auth.serverUrl) {
           const ws = new WSClient(auth.serverUrl, token);
+          ws.onStatusChange((ok) => auth.setReachable(ok));
           ws.connect();
+          syncEngine.setWSClient(ws);
           ws.on('entity-change', (msg) => {
             // Fast-path: apply the entity change directly to Dexie
             const { table, op, entityId, data } = msg as { table: string; op: 'put' | 'delete'; entityId: string; data?: Record<string, unknown> };
@@ -193,6 +195,7 @@ function AppInner() {
     } else {
       disableSync();
       syncEngine.stop();
+      syncEngine.setWSClient(null);
       configureServerApi(null, async () => null);
       if (wsClientRef.current) {
         wsClientRef.current.disconnect();
@@ -203,6 +206,7 @@ function AppInner() {
 
     return () => {
       syncEngine.stop();
+      syncEngine.setWSClient(null);
       disableSync();
       if (wsClientRef.current) {
         wsClientRef.current.disconnect();
@@ -645,6 +649,23 @@ function AppInner() {
   }, [timeline.events, selectedTimelineId]);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- run when events load for deep-link resolution
   useEffect(deepLinkTimelineResolved, [timeline.events]);
+
+  // Navigate in response to notification clicks
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { type, postId, folderId } = (e as CustomEvent).detail ?? {};
+      if ((type === 'mention' || type === 'reply' || type === 'reaction') && postId) {
+        if (folderId) setSelectedFolderId(folderId);
+        setActiveView('caddyshack');
+        window.dispatchEvent(new CustomEvent('caddyshack-select-post', { detail: { postId } }));
+      } else if (type === 'invite' && folderId) {
+        setSelectedFolderId(folderId);
+        navigateTo('notes');
+      }
+    };
+    window.addEventListener('notification-navigate', handler);
+    return () => window.removeEventListener('notification-navigate', handler);
+  }, [navigateTo]);
 
   // Listen for clip imports from the Chrome extension via postMessage
   useEffect(() => {

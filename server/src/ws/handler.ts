@@ -182,6 +182,24 @@ export async function handleWSMessage(ws: WSContext, data: string) {
         }
         break;
       }
+
+      case 'entity-change-preview': {
+        // Relay as entity-change to other clients for optimistic real-time sync
+        const { table, entityId, op, data } = msg as {
+          table?: string; entityId?: string; op?: string; data?: Record<string, unknown>;
+        };
+        if (!table || !entityId || !op) break;
+        const relayMsg = { type: 'entity-change', table, entityId, op, data };
+        // Determine scope: if data has folderId and client is subscribed, broadcast to folder
+        const dataFolderId = data?.folderId as string | undefined;
+        if (dataFolderId && client.subscribedFolders.has(dataFolderId)) {
+          broadcastToFolder(dataFolderId, relayMsg, client.user.id);
+        } else {
+          // Global broadcast (e.g. tags, folders themselves)
+          broadcastGlobal(relayMsg, client.user.id);
+        }
+        break;
+      }
     }
   } catch (err) {
     logger.error('WS message parse error', { error: String(err) });
