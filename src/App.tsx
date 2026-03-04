@@ -1185,9 +1185,10 @@ function AppInner() {
     await db.whiteboards.bulkPut([data.whiteboard]);
     // Reload all hooks
     handleImportComplete();
-    // Navigate to sample
+    // Navigate to sample and open first note
     setSelectedFolderId('sample-investigation');
     navigateTo('notes');
+    setSelectedNoteId(data.notes[0]?.id);
     activityLog.log('data', 'import', 'Loaded sample investigation "Operation DARK GLACIER"');
   }, [handleImportComplete, navigateTo, activityLog]);
 
@@ -1228,11 +1229,14 @@ function AppInner() {
     url.searchParams.delete('demo');
     window.history.replaceState({}, '', url.pathname + url.search + url.hash);
     if (sampleLoaded) {
+      setSelectedFolderId('sample-investigation');
+      navigateTo('notes');
+      setSelectedNoteId('sample-note-1');
       setShowDemoModal(true);
     } else {
       handleLoadSample().then(() => setShowDemoModal(true));
     }
-  }, [sampleLoaded, handleLoadSample]);
+  }, [sampleLoaded, handleLoadSample, navigateTo]);
 
   // Keyboard shortcuts
   // Search overlay navigation callbacks
