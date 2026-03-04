@@ -3,6 +3,9 @@ import { Send, Paperclip, AtSign, X, FileText, Film, Music } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext';
 import { createPost, uploadFile, searchUsers } from '../../lib/server-api';
 import type { TeamUser, PostAttachment } from '../../types';
+import { SLASH_COMMANDS, getCaretCoordinates } from '../Notes/slashCommands';
+import type { SlashCommand } from '../Notes/slashCommands';
+import { SlashCommandMenu } from '../Notes/SlashCommandMenu';
 
 const ACCEPTED_FILE_TYPES = 'image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.json,.xml,.yaml,.yml,.log';
 
@@ -34,6 +37,14 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Slash command state
+  const [slashMenuOpen, setSlashMenuOpen] = useState(false);
+  const [slashTriggerPos, setSlashTriggerPos] = useState(-1);
+  const [slashFilter, setSlashFilter] = useState('');
+  const [slashActiveIndex, setSlashActiveIndex] = useState(0);
+  const [slashMenuPosition, setSlashMenuPosition] = useState({ top: 0, left: 0 });
+  const slashMenuRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (initialContent !== undefined) {
       setContent(initialContent);
@@ -41,6 +52,102 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
   }, [initialContent]);
 
   if (!user || !serverUrl) return null;
+
+  // Filtered slash commands
+  const filteredCommands = slashFilter
+    ? SLASH_COMMANDS.filter(c =>
+        c.label.toLowerCase().includes(slashFilter.toLowerCase()) ||
+        c.keywords.some(k => k.toLowerCase().includes(slashFilter.toLowerCase()))
+      )
+    : SLASH_COMMANDS;
+
+  // Detect slash trigger in text
+  const detectSlash = (text: string, cursorPos: number) => {
+    let i = cursorPos - 1;
+    while (i >= 0 && text[i] !== '/' && text[i] !== '\n' && text[i] !== ' ') {
+      i--;
+    }
+
+    if (i >= 0 && text[i] === '/' && (i === 0 || text[i - 1] === ' ' || text[i - 1] === '\n')) {
+      const filter = text.substring(i + 1, cursorPos);
+      setSlashFilter(filter);
+      setSlashTriggerPos(i);
+      setSlashActiveIndex(0);
+
+      if (textareaRef.current) {
+        const coords = getCaretCoordinates(textareaRef.current, i);
+        setSlashMenuPosition(coords);
+      }
+      setSlashMenuOpen(true);
+      return;
+    }
+    setSlashMenuOpen(false);
+  };
+
+  // Select a slash command
+  const selectSlashCommand = (cmd: SlashCommand) => {
+    if (!textareaRef.current) return;
+    const textarea = textareaRef.current;
+    const cursorPos = textarea.selectionStart;
+    const before = content.substring(0, slashTriggerPos);
+    const after = content.substring(cursorPos);
+
+    let insertText = cmd.insert;
+    if (insertText === '__DATE__') {
+      insertText = new Date().toISOString().split('T')[0];
+    } else if (insertText === '__DATETIME__') {
+      insertText = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+    }
+
+    const newContent = before + insertText + after;
+    setContent(newContent);
+    setSlashMenuOpen(false);
+
+    requestAnimationFrame(() => {
+      const newPos = slashTriggerPos + insertText.length + (cmd.cursorOffset || 0);
+      textarea.setSelectionRange(newPos, newPos);
+      textarea.focus();
+    });
+  };
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setContent(val);
+    detectSlash(val, e.target.selectionStart);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Slash command navigation
+    if (slashMenuOpen && filteredCommands.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSlashActiveIndex(i => (i + 1) % filteredCommands.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSlashActiveIndex(i => (i - 1 + filteredCommands.length) % filteredCommands.length);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        if (filteredCommands[slashActiveIndex]) {
+          selectSlashCommand(filteredCommands[slashActiveIndex]);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setSlashMenuOpen(false);
+        return;
+      }
+    }
+
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
 
   const handleSubmit = async () => {
     if (!content.trim() || submitting) return;
@@ -123,43 +230,49 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
   };
 
   return (
-    <div className="border border-[var(--border)] rounded-lg bg-[var(--bg-secondary)] p-3">
-      <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium shrink-0 mt-1">
+    <div className="border border-[var(--border)] rounded-xl bg-[var(--bg-secondary)] focus-within:border-blue-500/40 transition-colors">
+      <div className="flex gap-3 p-3 pb-2">
+        <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium shrink-0">
           {user.displayName[0]?.toUpperCase() || '?'}
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 relative">
           <textarea
             ref={textareaRef}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder={placeholder || "Share an update with your team..."}
-            className="w-full bg-transparent border-0 resize-none text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none min-h-[60px]"
+            onChange={handleContentChange}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder || "What's happening?"}
+            className="w-full bg-transparent border-0 resize-none text-[14px] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none min-h-[48px]"
             rows={2}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                handleSubmit();
-              }
-            }}
           />
+
+          {/* Slash command menu */}
+          {slashMenuOpen && filteredCommands.length > 0 && (
+            <SlashCommandMenu
+              commands={filteredCommands}
+              activeIndex={slashActiveIndex}
+              position={slashMenuPosition}
+              onSelect={selectSlashCommand}
+              menuRef={slashMenuRef}
+            />
+          )}
 
           {/* Attachment previews */}
           {attachments.length > 0 && (
-            <div className="flex gap-2 flex-wrap mb-2">
+            <div className="flex gap-2 flex-wrap mt-2">
               {attachments.map((att, i) => (
                 <div key={i} className="relative group">
                   {att.type === 'image' ? (
-                    <img src={att.thumbnailUrl || att.url} alt={att.alt || ''} className="h-16 rounded border border-[var(--border)] object-cover" />
+                    <img src={att.thumbnailUrl || att.url} alt={att.alt || ''} className="h-16 rounded-lg border border-[var(--border)] object-cover" />
                   ) : (
-                    <div className="h-16 w-20 rounded border border-[var(--border)] bg-[var(--bg-primary)] flex flex-col items-center justify-center gap-1 px-1">
+                    <div className="h-16 w-20 rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] flex flex-col items-center justify-center gap-1 px-1">
                       <AttachmentIcon type={att.type} />
                       <span className="text-[9px] text-[var(--text-tertiary)] truncate w-full text-center">{att.filename}</span>
                     </div>
                   )}
                   <button
                     onClick={() => removeAttachment(i)}
-                    className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X size={10} className="text-white" />
                   </button>
@@ -170,27 +283,27 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
 
           {/* Mention dropdown */}
           {showMentions && (
-            <div className="mb-2">
+            <div className="mt-2">
               <input
                 type="text"
                 value={mentionSearch}
                 onChange={(e) => handleMentionSearch(e.target.value)}
                 placeholder="Search users..."
-                className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded px-2 py-1 text-sm"
+                className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-2.5 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
                 autoFocus
               />
               {mentionResults.length > 0 && (
-                <div className="mt-1 border border-[var(--border)] rounded bg-[var(--bg-primary)] max-h-32 overflow-y-auto">
+                <div className="mt-1 border border-[var(--border)] rounded-lg bg-[var(--bg-primary)] max-h-32 overflow-y-auto">
                   {mentionResults.map((u) => (
                     <button
                       key={u.id}
                       onClick={() => insertMention(u)}
-                      className="w-full px-3 py-1.5 text-left text-sm hover:bg-[var(--bg-secondary)] flex items-center gap-2"
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--bg-secondary)] flex items-center gap-2 transition-colors"
                     >
-                      <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs">
+                      <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs">
                         {u.displayName[0]?.toUpperCase()}
                       </div>
-                      {u.displayName}
+                      <span className="text-[var(--text-primary)]">{u.displayName}</span>
                       <span className="text-[var(--text-tertiary)] text-xs ml-auto">{u.email}</span>
                     </button>
                   ))}
@@ -198,44 +311,46 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
               )}
             </div>
           )}
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 pt-2 border-t border-[var(--border)]">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-              title="Attach file"
-            >
-              <Paperclip size={16} />
-            </button>
-            <button
-              onClick={() => setShowMentions(!showMentions)}
-              className="p-1.5 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-              title="Mention user"
-            >
-              <AtSign size={16} />
-            </button>
-            <div className="flex-1" />
-            <span className="text-xs text-[var(--text-tertiary)]">Ctrl+Enter to post</span>
-            <button
-              onClick={handleSubmit}
-              disabled={!content.trim() || submitting}
-              className="px-3 py-1 bg-blue-600 text-white rounded text-sm font-medium disabled:opacity-50 flex items-center gap-1.5"
-            >
-              <Send size={14} /> Post
-            </button>
-          </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={ACCEPTED_FILE_TYPES}
-            multiple
-            className="hidden"
-            onChange={handleFileUpload}
-          />
         </div>
       </div>
+
+      {/* Actions bar — no divider line */}
+      <div className="flex items-center gap-1 px-3 pb-2.5 ml-12">
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="p-1.5 rounded-full hover:bg-blue-500/10 text-blue-400 transition-colors"
+          title="Attach file"
+        >
+          <Paperclip size={18} />
+        </button>
+        <button
+          onClick={() => setShowMentions(!showMentions)}
+          className="p-1.5 rounded-full hover:bg-blue-500/10 text-blue-400 transition-colors"
+          title="Mention user"
+        >
+          <AtSign size={18} />
+        </button>
+        <div className="flex-1" />
+        <span className="text-[11px] text-[var(--text-tertiary)] mr-2 select-none">
+          Type <kbd className="px-1 py-0.5 rounded bg-[var(--bg-tertiary)] text-[10px] font-mono">/</kbd> for commands
+        </span>
+        <button
+          onClick={handleSubmit}
+          disabled={!content.trim() || submitting}
+          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-sm font-semibold disabled:opacity-40 disabled:hover:bg-blue-600 transition-colors flex items-center gap-1.5"
+        >
+          <Send size={14} /> Post
+        </button>
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_FILE_TYPES}
+        multiple
+        className="hidden"
+        onChange={handleFileUpload}
+      />
     </div>
   );
 }

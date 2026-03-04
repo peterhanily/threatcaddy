@@ -74,6 +74,7 @@ export function CaddyShackView({ folderId, folderName }: CaddyShackViewProps) {
 
   const pinnedPosts = useMemo(() => posts.filter(p => p.pinned), [posts]);
   const unpinnedPosts = useMemo(() => posts.filter(p => !p.pinned), [posts]);
+  const allOrdered = useMemo(() => [...pinnedPosts, ...unpinnedPosts], [pinnedPosts, unpinnedPosts]);
 
   if (!connected) {
     return (
@@ -103,13 +104,13 @@ export function CaddyShackView({ folderId, folderName }: CaddyShackViewProps) {
             <div className="flex bg-[var(--bg-secondary)] rounded-lg border border-[var(--border)] overflow-hidden">
               <button
                 onClick={() => setFeedScope('global')}
-                className={`px-3 py-1 text-xs flex items-center gap-1 ${feedScope === 'global' ? 'bg-blue-600 text-white' : 'text-[var(--text-tertiary)]'}`}
+                className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors ${feedScope === 'global' ? 'bg-blue-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'}`}
               >
                 <Globe size={12} /> Global
               </button>
               <button
                 onClick={() => setFeedScope('investigation')}
-                className={`px-3 py-1 text-xs flex items-center gap-1 ${feedScope === 'investigation' ? 'bg-blue-600 text-white' : 'text-[var(--text-tertiary)]'}`}
+                className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors ${feedScope === 'investigation' ? 'bg-blue-600 text-white' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'}`}
               >
                 <FolderOpen size={12} /> {folderName || 'Investigation'}
               </button>
@@ -117,7 +118,7 @@ export function CaddyShackView({ folderId, folderName }: CaddyShackViewProps) {
           )}
           <button
             onClick={loadFeed}
-            className="p-1.5 rounded hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)]"
+            className="p-2 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] transition-colors"
             title="Refresh"
           >
             <RefreshCw size={16} />
@@ -131,31 +132,16 @@ export function CaddyShackView({ folderId, folderName }: CaddyShackViewProps) {
         onPostCreated={loadFeed}
       />
 
-      {/* Posts */}
+      {/* Feed container */}
       {loading ? (
-        <div className="text-center py-8 text-[var(--text-tertiary)] text-sm">Loading feed...</div>
+        <div className="text-center py-12 text-[var(--text-tertiary)] text-sm">Loading feed...</div>
       ) : posts.length === 0 ? (
-        <div className="text-center py-8 text-[var(--text-tertiary)] text-sm">
+        <div className="text-center py-12 text-[var(--text-tertiary)] text-sm">
           No posts yet. Be the first to share an update!
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          {/* Pinned posts first */}
-          {pinnedPosts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              currentUserId={user?.id}
-              onReply={setSelectedPostId}
-              onReact={handleReact}
-              onRemoveReaction={handleRemoveReaction}
-              onDelete={handleDelete}
-              onEdit={handleEdit}
-              onPin={handlePin}
-              onClick={setSelectedPostId}
-            />
-          ))}
-          {unpinnedPosts.map((post) => (
+        <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--bg-secondary)] divide-y divide-[var(--border)]">
+          {allOrdered.map((post) => (
             <PostCard
               key={post.id}
               post={post}

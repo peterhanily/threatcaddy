@@ -68,7 +68,6 @@ export function ReplyThread({ postId, currentUserId, onBack }: ReplyThreadProps)
   };
 
   const handleReplyToReply = (replyId: string) => {
-    // Find the reply to get author name
     const reply = post?.replies?.find((r) => r.id === replyId);
     if (reply) {
       setReplyTo({ id: replyId, authorName: reply.authorDisplayName || 'Unknown' });
@@ -103,21 +102,23 @@ export function ReplyThread({ postId, currentUserId, onBack }: ReplyThreadProps)
     <div className="flex-1 flex flex-col max-w-2xl mx-auto w-full p-4 gap-4">
       <button
         onClick={onBack}
-        className="flex items-center gap-1 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] w-fit"
+        className="flex items-center gap-1.5 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] w-fit transition-colors"
       >
         <ArrowLeft size={16} /> Back to CaddyShack
       </button>
 
       {/* Original post */}
-      <PostCard
-        post={post}
-        currentUserId={currentUserId}
-        onReact={handleReact}
-        onRemoveReaction={handleRemoveReaction}
-        onDelete={handleDelete}
-        onEdit={handleEdit}
-        onPin={handlePin}
-      />
+      <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--bg-secondary)]">
+        <PostCard
+          post={post}
+          currentUserId={currentUserId}
+          onReact={handleReact}
+          onRemoveReaction={handleRemoveReaction}
+          onDelete={handleDelete}
+          onEdit={handleEdit}
+          onPin={handlePin}
+        />
+      </div>
 
       {/* Reply composer */}
       <PostComposer
@@ -130,9 +131,12 @@ export function ReplyThread({ postId, currentUserId, onBack }: ReplyThreadProps)
         onPostCreated={() => { setReplyTo(null); loadPost(); }}
       />
 
-      {/* Replies — flat list with full actions */}
+      {/* Replies — flat list */}
       {post.replies && post.replies.length > 0 && (
-        <div className="flex flex-col gap-2 pl-4 border-l-2 border-[var(--border)]">
+        <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--bg-secondary)] divide-y divide-[var(--border)]">
+          <div className="px-4 py-2 text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider bg-[var(--bg-primary)]/50">
+            {post.replies.length} {post.replies.length === 1 ? 'Reply' : 'Replies'}
+          </div>
           {post.replies.map((reply) => (
             <PostCard
               key={reply.id}
@@ -144,6 +148,7 @@ export function ReplyThread({ postId, currentUserId, onBack }: ReplyThreadProps)
               onDelete={handleDelete}
               onEdit={handleEdit}
               onPin={handlePin}
+              compact
             />
           ))}
         </div>
