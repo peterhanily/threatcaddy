@@ -197,14 +197,14 @@ function TeamTab({ folderId }: { folderId: string }) {
   const handleSync = useCallback(async () => {
     setSyncing(true);
     try {
-      await syncEngine.sync();
-      // Wait a moment for the server to process, then retry
-      await new Promise((r) => setTimeout(r, 1000));
+      await syncEngine.syncFolder(folderId);
       await loadMembers();
+    } catch {
+      setError('Sync failed — please try again');
     } finally {
       setSyncing(false);
     }
-  }, [loadMembers]);
+  }, [folderId, loadMembers]);
 
   useEffect(() => {
     loadMembers();

@@ -147,6 +147,41 @@ export class SyncEngine {
       data,
     });
   }
+
+  // Push an entire folder and all its scoped content to the server.
+  // Used when a folder was created locally before sync was active.
+  async syncFolder(folderId: string) {
+    const FOLDER_SCOPED_TABLES = ['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'chatThreads'];
+
+    const changes: SyncChange[] = [];
+
+    // Push the folder itself
+    const folder = await dynamicDb.table('folders').get(folderId);
+    if (folder) {
+      changes.push({ table: 'folders', op: 'put', entityId: folderId, data: folder });
+    }
+
+    // Push all scoped entities
+    for (const tableName of FOLDER_SCOPED_TABLES) {
+      try {
+        const rows = await dynamicDb.table(tableName).where('folderId').equals(folderId).toArray();
+        for (const row of rows) {
+          if (row.trashed) continue;
+          changes.push({ table: tableName, op: 'put', entityId: row.id, data: row });
+        }
+      } catch {
+        // Table may not have folderId index — skip
+      }
+    }
+
+    if (changes.length === 0) return;
+
+    const { results } = await syncPush(changes);
+    const conflicts = results.filter((r) => r.status !== 'accepted');
+    if (conflicts.length > 0 && this.onConflict) {
+      this.onConflict(conflicts);
+    }
+  }
 }
 
 // Singleton instance
