@@ -42,6 +42,31 @@ function getTable(name: string): any {
   return table;
 }
 
+/**
+ * Look up the folderId for an existing entity in the DB.
+ * Returns undefined if the entity doesn't exist or the table has no folderId column.
+ */
+export async function lookupEntityFolderId(
+  tableName: string,
+  entityId: string,
+): Promise<string | undefined> {
+  const table = TABLE_MAP[tableName];
+  if (!table) return undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const t = table as any;
+  if (!t.folderId) return undefined; // table has no folderId column
+  try {
+    const rows = await db
+      .select({ folderId: t.folderId })
+      .from(table)
+      .where(eq(t.id, entityId))
+      .limit(1);
+    return rows.length > 0 ? (rows[0].folderId as string) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function processPush(
   changes: SyncChange[],
   userId: string

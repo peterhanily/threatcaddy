@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { requireAuth } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
-import { processPush, pullChanges, getSnapshot } from '../services/sync-service.js';
+import { processPush, pullChanges, getSnapshot, lookupEntityFolderId } from '../services/sync-service.js';
 import { logActivity } from '../services/audit-service.js';
 import { broadcastToFolder } from '../ws/handler.js';
 import { db } from '../db/index.js';
@@ -35,14 +35,29 @@ app.post('/push', async (c) => {
       continue;
     }
 
-    // Extract folderId: for folders table, entityId IS the folderId
-    const folderId =
-      change.table === 'folders'
-        ? change.entityId
-        : (change.data?.folderId as string | undefined);
+    // Extract folderId: for folders table, entityId IS the folderId.
+    // For other tables, look up the entity's actual folderId from the DB
+    // (never trust the client-supplied folderId for auth decisions).
+    let folderId: string | undefined;
+    if (change.table === 'folders') {
+      folderId = change.entityId;
+    } else if (change.op === 'delete' || !change.data?.folderId) {
+      // For deletes (no data) or missing folderId: look up from DB
+      folderId = await lookupEntityFolderId(change.table, change.entityId);
+      // If entity doesn't exist yet and no folderId provided, use client data
+      if (!folderId && change.op === 'put') {
+        folderId = change.data?.folderId as string | undefined;
+      }
+    } else {
+      // New entity with folderId in payload — verify against DB if entity exists
+      const dbFolderId = await lookupEntityFolderId(change.table, change.entityId);
+      folderId = dbFolderId || (change.data?.folderId as string | undefined);
+    }
 
     if (!folderId) {
-      authorized.push(true); // No folder context — allow
+      // Entity has no folder association and table is folder-scoped — reject
+      // (folder-scoped entities must have a folderId)
+      authorized.push(false);
       continue;
     }
 

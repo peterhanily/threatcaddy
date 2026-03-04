@@ -463,10 +463,10 @@ function loadInvestigations() {
     var statusColors = { active: '#3fb950', closed: '#8b949e', archived: '#d29922' };
     tbody.innerHTML = data.investigations.map(function(inv) {
       var created = new Date(inv.createdAt).toLocaleDateString();
-      var color = inv.color || '#8b949e';
+      var color = /^#[0-9a-fA-F]{3,8}$/.test(inv.color || '') ? inv.color : '#8b949e';
       var statusColor = statusColors[inv.status] || '#8b949e';
       return '<tr>' +
-        '<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';margin-right:6px;vertical-align:middle;"></span>' + esc(inv.name) + '</td>' +
+        '<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + esc(color) + ';margin-right:6px;vertical-align:middle;"></span>' + esc(inv.name) + '</td>' +
         '<td><span style="color:' + statusColor + '">' + esc(inv.status || 'active') + '</span></td>' +
         '<td>' + esc(inv.creatorName) + ' <span style="color:#8b949e">(' + esc(inv.creatorEmail) + ')</span></td>' +
         '<td>' + inv.memberCount + '</td>' +

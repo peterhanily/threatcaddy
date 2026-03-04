@@ -67,6 +67,10 @@ app.post('/:id/members', async (c) => {
   const body = await c.req.json();
   const { userId, role = 'editor' } = body;
 
+  if (!['owner', 'editor', 'viewer'].includes(role)) {
+    return c.json({ error: 'Invalid role' }, 400);
+  }
+
   // Check requester is owner
   const requesterMembership = await db
     .select()
@@ -198,6 +202,10 @@ app.post('/:id/invite', async (c) => {
   const folderId = c.req.param('id');
   const body = await c.req.json();
   const { email, role = 'editor' } = body;
+
+  if (!['owner', 'editor', 'viewer'].includes(role)) {
+    return c.json({ error: 'Invalid role' }, 400);
+  }
 
   // Find user by email
   const targetUser = await db.select().from(users).where(eq(users.email, email)).limit(1);

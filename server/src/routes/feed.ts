@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { eq, and, lt, desc, isNull, or } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { requireAuth } from '../middleware/auth.js';
+import { checkInvestigationAccess } from '../middleware/access.js';
 import { db } from '../db/index.js';
 import { posts, reactions, users } from '../db/schema.js';
 import { notifyMentions, createNotification } from '../services/notification-service.js';
@@ -14,9 +15,17 @@ app.use('*', requireAuth);
 
 // GET /api/feed — paginated feed
 app.get('/', async (c) => {
+  const user = c.get('user');
   const cursor = c.req.query('cursor');
   const limit = parseInt(c.req.query('limit') || '20', 10);
   const folderId = c.req.query('folderId');
+
+  if (folderId) {
+    const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer');
+    if (!hasAccess) {
+      return c.json({ error: 'No access to this investigation' }, 403);
+    }
+  }
 
   const query = db
     .select({
@@ -93,6 +102,13 @@ app.post('/posts', async (c) => {
 
   if (!content?.trim()) {
     return c.json({ error: 'Content is required' }, 400);
+  }
+
+  if (folderId) {
+    const hasAccess = await checkInvestigationAccess(user.id, folderId, 'editor');
+    if (!hasAccess) {
+      return c.json({ error: 'No access to this investigation' }, 403);
+    }
   }
 
   const id = nanoid();
@@ -188,6 +204,14 @@ app.get('/posts/:id', async (c) => {
 
   if (result.length === 0) {
     return c.json({ error: 'Post not found' }, 404);
+  }
+
+  if (result[0].folderId) {
+    const user = c.get('user');
+    const hasAccess = await checkInvestigationAccess(user.id, result[0].folderId, 'viewer');
+    if (!hasAccess) {
+      return c.json({ error: 'No access to this investigation' }, 403);
+    }
   }
 
   // Get replies
