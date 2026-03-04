@@ -1730,6 +1730,9 @@ function AppInner() {
         open={shareLinkPayload !== null}
         onClose={() => setShareLinkPayload(null)}
         payload={shareLinkPayload}
+        folderId={shareLinkPayload?.s === 'investigation'
+          ? (shareLinkPayload.d as InvestigationBundle).folder.id
+          : undefined}
       />
 
       <DemoWelcomeModal

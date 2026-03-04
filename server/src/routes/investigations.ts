@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { requireAuth } from '../middleware/auth.js';
+import { checkInvestigationAccess } from '../middleware/access.js';
 import { db } from '../db/index.js';
 import { investigationMembers, folders, users } from '../db/schema.js';
 import { createNotification } from '../services/notification-service.js';
@@ -15,44 +16,32 @@ app.use('*', requireAuth);
 app.get('/', async (c) => {
   const user = c.get('user');
 
-  let memberships;
-  if (user.role === 'admin') {
-    // Admin sees all investigations
-    memberships = await db
-      .select({
-        folderId: investigationMembers.folderId,
-        role: investigationMembers.role,
-        joinedAt: investigationMembers.joinedAt,
-        folderName: folders.name,
-        folderStatus: folders.status,
-        folderColor: folders.color,
-        folderIcon: folders.icon,
-      })
-      .from(investigationMembers)
-      .innerJoin(folders, eq(folders.id, investigationMembers.folderId))
-      .where(eq(investigationMembers.userId, user.id));
-  } else {
-    memberships = await db
-      .select({
-        folderId: investigationMembers.folderId,
-        role: investigationMembers.role,
-        joinedAt: investigationMembers.joinedAt,
-        folderName: folders.name,
-        folderStatus: folders.status,
-        folderColor: folders.color,
-        folderIcon: folders.icon,
-      })
-      .from(investigationMembers)
-      .innerJoin(folders, eq(folders.id, investigationMembers.folderId))
-      .where(eq(investigationMembers.userId, user.id));
-  }
+  const memberships = await db
+    .select({
+      folderId: investigationMembers.folderId,
+      role: investigationMembers.role,
+      joinedAt: investigationMembers.joinedAt,
+      folderName: folders.name,
+      folderStatus: folders.status,
+      folderColor: folders.color,
+      folderIcon: folders.icon,
+    })
+    .from(investigationMembers)
+    .innerJoin(folders, eq(folders.id, investigationMembers.folderId))
+    .where(eq(investigationMembers.userId, user.id));
 
   return c.json(memberships);
 });
 
 // GET /api/investigations/:id/members
 app.get('/:id/members', async (c) => {
+  const user = c.get('user');
   const folderId = c.req.param('id');
+
+  const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer');
+  if (!hasAccess) {
+    return c.json({ error: 'No access to this investigation' }, 403);
+  }
 
   const members = await db
     .select({
@@ -78,22 +67,20 @@ app.post('/:id/members', async (c) => {
   const body = await c.req.json();
   const { userId, role = 'editor' } = body;
 
-  // Check requester is owner or admin
-  if (user.role !== 'admin') {
-    const requesterMembership = await db
-      .select()
-      .from(investigationMembers)
-      .where(
-        and(
-          eq(investigationMembers.folderId, folderId),
-          eq(investigationMembers.userId, user.id)
-        )
+  // Check requester is owner
+  const requesterMembership = await db
+    .select()
+    .from(investigationMembers)
+    .where(
+      and(
+        eq(investigationMembers.folderId, folderId),
+        eq(investigationMembers.userId, user.id)
       )
-      .limit(1);
+    )
+    .limit(1);
 
-    if (requesterMembership.length === 0 || requesterMembership[0].role !== 'owner') {
-      return c.json({ error: 'Only investigation owners can add members' }, 403);
-    }
+  if (requesterMembership.length === 0 || requesterMembership[0].role !== 'owner') {
+    return c.json({ error: 'Only investigation owners can add members' }, 403);
   }
 
   // Check target user exists
@@ -140,22 +127,20 @@ app.patch('/:id/members/:userId', async (c) => {
     return c.json({ error: 'Invalid role' }, 400);
   }
 
-  // Check permissions
-  if (user.role !== 'admin') {
-    const requesterMembership = await db
-      .select()
-      .from(investigationMembers)
-      .where(
-        and(
-          eq(investigationMembers.folderId, folderId),
-          eq(investigationMembers.userId, user.id)
-        )
+  // Check permissions — must be owner
+  const requesterMembershipPatch = await db
+    .select()
+    .from(investigationMembers)
+    .where(
+      and(
+        eq(investigationMembers.folderId, folderId),
+        eq(investigationMembers.userId, user.id)
       )
-      .limit(1);
+    )
+    .limit(1);
 
-    if (requesterMembership.length === 0 || requesterMembership[0].role !== 'owner') {
-      return c.json({ error: 'Insufficient permissions' }, 403);
-    }
+  if (requesterMembershipPatch.length === 0 || requesterMembershipPatch[0].role !== 'owner') {
+    return c.json({ error: 'Insufficient permissions' }, 403);
   }
 
   await db
@@ -177,9 +162,9 @@ app.delete('/:id/members/:userId', async (c) => {
   const folderId = c.req.param('id');
   const targetUserId = c.req.param('userId');
 
-  // Users can remove themselves, or owners/admins can remove others
-  if (user.id !== targetUserId && user.role !== 'admin') {
-    const requesterMembership = await db
+  // Users can remove themselves, or owners can remove others
+  if (user.id !== targetUserId) {
+    const requesterMembershipDel = await db
       .select()
       .from(investigationMembers)
       .where(
@@ -190,7 +175,7 @@ app.delete('/:id/members/:userId', async (c) => {
       )
       .limit(1);
 
-    if (requesterMembership.length === 0 || requesterMembership[0].role !== 'owner') {
+    if (requesterMembershipDel.length === 0 || requesterMembershipDel[0].role !== 'owner') {
       return c.json({ error: 'Insufficient permissions' }, 403);
     }
   }
@@ -223,22 +208,20 @@ app.post('/:id/invite', async (c) => {
   // Delegate to member add logic
   const userId = targetUser[0].id;
 
-  // Check requester is owner or admin
-  if (user.role !== 'admin') {
-    const requesterMembership = await db
-      .select()
-      .from(investigationMembers)
-      .where(
-        and(
-          eq(investigationMembers.folderId, folderId),
-          eq(investigationMembers.userId, user.id)
-        )
+  // Check requester is owner
+  const requesterMembershipInv = await db
+    .select()
+    .from(investigationMembers)
+    .where(
+      and(
+        eq(investigationMembers.folderId, folderId),
+        eq(investigationMembers.userId, user.id)
       )
-      .limit(1);
+    )
+    .limit(1);
 
-    if (requesterMembership.length === 0 || requesterMembership[0].role !== 'owner') {
-      return c.json({ error: 'Only investigation owners can invite members' }, 403);
-    }
+  if (requesterMembershipInv.length === 0 || requesterMembershipInv[0].role !== 'owner') {
+    return c.json({ error: 'Only investigation owners can invite members' }, 403);
   }
 
   try {

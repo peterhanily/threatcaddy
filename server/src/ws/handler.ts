@@ -6,6 +6,9 @@ import { logger } from '../lib/logger.js';
 import type { AuthUser } from '../types.js';
 
 const MAX_WS_MESSAGE_SIZE = 64 * 1024; // 64 KB
+const MAX_CONNECTIONS_PER_USER = 10;
+const MSG_RATE_WINDOW_MS = 1000;
+const MSG_RATE_MAX = 30; // max 30 messages per second
 
 interface ConnectedClient {
   ws: WSContext;
@@ -13,54 +16,102 @@ interface ConnectedClient {
   subscribedFolders: Set<string>;
   alive: boolean;
   pingTimer: ReturnType<typeof setInterval>;
+  msgCount: number;
+  msgWindowStart: number;
 }
 
 const clients = new Map<WSContext, ConnectedClient>();
 // userId → Set<WSContext> for per-user broadcasting
 const userConnections = new Map<string, Set<WSContext>>();
+// Pending auth: ws → timeout timer (connections not yet authenticated)
+const pendingAuth = new Map<WSContext, ReturnType<typeof setTimeout>>();
 
-export function handleWSConnection(ws: WSContext, token: string) {
-  // Auth happens asynchronously
-  verifyAccessToken(token)
-    .then((user) => {
-      const client: ConnectedClient = {
-        ws,
-        user,
-        subscribedFolders: new Set(),
-        alive: true,
-        pingTimer: null as unknown as ReturnType<typeof setInterval>,
-      };
+export function handleWSConnection(ws: WSContext) {
+  // Give client 5 seconds to send auth message
+  const timer = setTimeout(() => {
+    pendingAuth.delete(ws);
+    try { ws.close(4001, 'Authentication timeout'); } catch { /* noop */ }
+  }, 5000);
+  pendingAuth.set(ws, timer);
+}
 
-      client.pingTimer = setInterval(() => {
-        if (!client.alive) {
-          clearInterval(client.pingTimer);
-          try { ws.close(4002, 'Ping timeout'); } catch { /* noop */ }
-          return;
-        }
-        client.alive = false;
-        sendTo(ws, { type: 'ping' });
-      }, 25_000);
+function registerClient(ws: WSContext, user: AuthUser): boolean {
+  // Enforce per-user connection limit
+  const existing = userConnections.get(user.id);
+  if (existing && existing.size >= MAX_CONNECTIONS_PER_USER) {
+    try { ws.close(4003, 'Too many connections'); } catch { /* noop */ }
+    return false;
+  }
 
-      clients.set(ws, client);
+  const client: ConnectedClient = {
+    ws,
+    user,
+    subscribedFolders: new Set(),
+    alive: true,
+    pingTimer: null as unknown as ReturnType<typeof setInterval>,
+    msgCount: 0,
+    msgWindowStart: Date.now(),
+  };
 
-      // Track user connections
-      let conns = userConnections.get(user.id);
-      if (!conns) {
-        conns = new Set();
-        userConnections.set(user.id, conns);
-      }
-      conns.add(ws);
-    })
-    .catch(() => {
-      try { ws.close(4001, 'Authentication failed'); } catch { /* noop */ }
-    });
+  client.pingTimer = setInterval(() => {
+    if (!client.alive) {
+      clearInterval(client.pingTimer);
+      try { ws.close(4002, 'Ping timeout'); } catch { /* noop */ }
+      return;
+    }
+    client.alive = false;
+    sendTo(ws, { type: 'ping' });
+  }, 25_000);
+
+  clients.set(ws, client);
+
+  let conns = userConnections.get(user.id);
+  if (!conns) {
+    conns = new Set();
+    userConnections.set(user.id, conns);
+  }
+  conns.add(ws);
+
+  sendTo(ws, { type: 'auth-ok' });
+  return true;
 }
 
 export async function handleWSMessage(ws: WSContext, data: string) {
-  if (data.length > MAX_WS_MESSAGE_SIZE) return; // Drop oversized messages
+  if (data.length > MAX_WS_MESSAGE_SIZE) return;
+
+  // Handle auth for unauthenticated connections
+  if (pendingAuth.has(ws)) {
+    const timer = pendingAuth.get(ws)!;
+    clearTimeout(timer);
+    pendingAuth.delete(ws);
+
+    try {
+      const msg = JSON.parse(data);
+      if (msg.type !== 'auth' || !msg.token) {
+        try { ws.close(4001, 'First message must be auth'); } catch { /* noop */ }
+        return;
+      }
+      const user = await verifyAccessToken(msg.token);
+      registerClient(ws, user);
+    } catch {
+      try { ws.close(4001, 'Authentication failed'); } catch { /* noop */ }
+    }
+    return;
+  }
 
   const client = clients.get(ws);
   if (!client) return;
+
+  // Message rate limiting
+  const now = Date.now();
+  if (now - client.msgWindowStart > MSG_RATE_WINDOW_MS) {
+    client.msgCount = 0;
+    client.msgWindowStart = now;
+  }
+  client.msgCount++;
+  if (client.msgCount > MSG_RATE_MAX) {
+    return; // Silently drop messages exceeding rate limit
+  }
 
   try {
     const msg = JSON.parse(data);
@@ -73,14 +124,12 @@ export async function handleWSMessage(ws: WSContext, data: string) {
 
       case 'subscribe': {
         const folderId = msg.folderId as string;
-        if (folderId) {
+        if (folderId && typeof folderId === 'string' && folderId.length < 128) {
           // Verify folder access before subscribing
-          if (client.user.role !== 'admin') {
-            const hasAccess = await checkInvestigationAccess(client.user.id, folderId, 'viewer');
-            if (!hasAccess) {
-              sendTo(ws, { type: 'error', message: 'No access to this investigation' });
-              break;
-            }
+          const hasAccess = await checkInvestigationAccess(client.user.id, folderId, 'viewer');
+          if (!hasAccess) {
+            sendTo(ws, { type: 'error', message: 'No access to this investigation' });
+            break;
           }
           client.subscribedFolders.add(folderId);
           // Send current presence
@@ -105,13 +154,15 @@ export async function handleWSMessage(ws: WSContext, data: string) {
         const folderId = msg.folderId as string;
         // Only allow presence updates for folders the client is subscribed to
         if (folderId && client.subscribedFolders.has(folderId)) {
+          const view = typeof msg.view === 'string' ? msg.view.slice(0, 64) : 'unknown';
+          const entityId = typeof msg.entityId === 'string' ? msg.entityId.slice(0, 128) : undefined;
           updatePresence(
             folderId,
             client.user.id,
             client.user.displayName,
             client.user.avatarUrl,
-            msg.view as string || 'unknown',
-            msg.entityId as string | undefined
+            view,
+            entityId
           );
           broadcastPresence(folderId);
         }
@@ -124,6 +175,13 @@ export async function handleWSMessage(ws: WSContext, data: string) {
 }
 
 export function handleWSClose(ws: WSContext) {
+  // Clean up pending auth if connection closes before auth
+  const authTimer = pendingAuth.get(ws);
+  if (authTimer) {
+    clearTimeout(authTimer);
+    pendingAuth.delete(ws);
+  }
+
   const client = clients.get(ws);
   if (client) {
     clearInterval(client.pingTimer);

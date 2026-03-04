@@ -1,8 +1,10 @@
 import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
+import { writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { db } from '../db/index.js';
-import { serverSettings } from '../db/schema.js';
+import { serverSettings, folders, investigationMembers } from '../db/schema.js';
 import { logger } from '../lib/logger.js';
 
 const SETTINGS_KEY = 'admin_secret_hash';
@@ -30,29 +32,24 @@ export async function initAdminSecret(): Promise<void> {
     return;
   }
 
-  // No env var, no DB entry — generate new secret
+  // No env var, no DB entry — generate new secret and write to file
   const secret = nanoid(32);
   const hash = await argon2.hash(secret, { type: argon2.argon2id });
 
-  // INSERT ... ON CONFLICT DO NOTHING to handle race conditions
   await db.insert(serverSettings).values({ key: SETTINGS_KEY, value: hash }).onConflictDoNothing();
 
-  // Verify we won the race
   const inserted = await db.select().from(serverSettings).where(eq(serverSettings.key, SETTINGS_KEY)).limit(1);
   if (inserted.length > 0 && inserted[0].value === hash) {
-    // We won — print the secret
-    const banner = [
-      '',
-      '╔══════════════════════════════════════════════════════════════╗',
-      '║  ADMIN SECRET (save this — it will not be shown again):     ║',
-      `║  ${secret.padEnd(56)} ║`,
-      '║  Set ADMIN_SECRET env var to use your own.                  ║',
-      '╚══════════════════════════════════════════════════════════════╝',
-      '',
-    ].join('\n');
-    // Print directly to stdout so it's visible even with structured logging
-    process.stdout.write(banner + '\n');
-    logger.info('Generated new admin secret');
+    // Write to file instead of stdout to avoid log exposure
+    const secretFilePath = join(process.env.FILE_STORAGE_PATH || '/data/files', '.admin-secret');
+    try {
+      await writeFile(secretFilePath, secret, { mode: 0o600 });
+      logger.info(`Generated new admin secret — written to ${secretFilePath} (read and delete it)`);
+    } catch {
+      // Fall back to logger if file write fails (e.g. read-only FS)
+      logger.warn('Generated new admin secret — could not write to file, check structured logs');
+      logger.info('Admin secret value', { adminSecret: secret, _onetime: true });
+    }
   } else {
     logger.info('Another instance set the admin secret first, using that');
   }
@@ -81,6 +78,54 @@ export async function setRegistrationMode(mode: 'invite' | 'open'): Promise<void
     await db.update(serverSettings).set({ value: mode, updatedAt: new Date() }).where(eq(serverSettings.key, REG_MODE_KEY));
   } else {
     await db.insert(serverSettings).values({ key: REG_MODE_KEY, value: mode });
+  }
+}
+
+// ─── Session Settings ───────────────────────────────────────────
+
+export async function getSessionSettings(): Promise<{ ttlHours: number; maxPerUser: number }> {
+  const ttlRow = await db.select().from(serverSettings).where(eq(serverSettings.key, 'session_ttl_hours')).limit(1);
+  const maxRow = await db.select().from(serverSettings).where(eq(serverSettings.key, 'max_sessions_per_user')).limit(1);
+  return {
+    ttlHours: ttlRow.length > 0 ? parseInt(ttlRow[0].value, 10) : 24,
+    maxPerUser: maxRow.length > 0 ? parseInt(maxRow[0].value, 10) : 0,
+  };
+}
+
+export async function setSessionSettings(ttlHours: number, maxPerUser: number): Promise<void> {
+  for (const [key, value] of [['session_ttl_hours', String(ttlHours)], ['max_sessions_per_user', String(maxPerUser)]] as const) {
+    const existing = await db.select().from(serverSettings).where(eq(serverSettings.key, key)).limit(1);
+    if (existing.length > 0) {
+      await db.update(serverSettings).set({ value, updatedAt: new Date() }).where(eq(serverSettings.key, key));
+    } else {
+      await db.insert(serverSettings).values({ key, value });
+    }
+  }
+}
+
+// ─── Backfill Folder Owners ─────────────────────────────────────
+
+export async function backfillFolderOwners(): Promise<void> {
+  const allFolders = await db.select({ id: folders.id, createdBy: folders.createdBy }).from(folders);
+  let backfilled = 0;
+  for (const f of allFolders) {
+    const ownerExists = await db
+      .select({ id: investigationMembers.id })
+      .from(investigationMembers)
+      .where(and(eq(investigationMembers.folderId, f.id), eq(investigationMembers.role, 'owner')))
+      .limit(1);
+    if (ownerExists.length === 0) {
+      await db.insert(investigationMembers).values({
+        id: nanoid(),
+        folderId: f.id,
+        userId: f.createdBy,
+        role: 'owner',
+      }).onConflictDoNothing();
+      backfilled++;
+    }
+  }
+  if (backfilled > 0) {
+    logger.info(`Backfilled owner membership for ${backfilled} folder(s)`);
   }
 }
 

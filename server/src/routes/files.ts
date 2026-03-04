@@ -16,9 +16,42 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 // MIME types safe to serve inline (no XSS risk)
 const SAFE_INLINE_MIME = /^(image\/(?!svg)[\w+-]+|video\/[\w+-]+|audio\/[\w+-]+|application\/pdf)$/;
 
+// Allowed file extensions
+const ALLOWED_EXTENSIONS = new Set([
+  'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'ico', 'avif',
+  'mp4', 'webm', 'ogg', 'mov', 'avi',
+  'mp3', 'wav', 'flac', 'aac', 'm4a',
+  'pdf', 'txt', 'csv', 'json', 'xml',
+  'zip', 'gz', 'tar',
+  'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+  'bin',
+]);
+
 function sanitizeFilename(name: string): string {
   // eslint-disable-next-line no-control-regex -- intentional: strip control chars for Content-Disposition safety
-  return name.replace(/["\\\r\n\x00-\x1f]/g, '_');
+  return name.replace(/["\\\r\n\x00-\x1f;/]/g, '_');
+}
+
+function detectMimeFromMagicBytes(buffer: Buffer): string | null {
+  if (buffer.length < 12) return null;
+  const b = buffer;
+  // JPEG: FF D8 FF
+  if (b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return 'image/jpeg';
+  // PNG: 89 50 4E 47
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47) return 'image/png';
+  // GIF: GIF8
+  if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return 'image/gif';
+  // WebP: RIFF....WEBP
+  if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
+      b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return 'image/webp';
+  // PDF: %PDF
+  if (b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46) return 'application/pdf';
+  // SVG: XML-like with <svg
+  if (b[0] === 0x3C) {
+    const head = buffer.subarray(0, Math.min(512, buffer.length)).toString('utf8').toLowerCase();
+    if (head.includes('<svg') || head.includes('<!doctype svg')) return 'image/svg+xml';
+  }
+  return null;
 }
 
 const app = new Hono<{ Variables: { user: AuthUser } }>();
@@ -41,7 +74,10 @@ app.post('/upload', requireRole('admin', 'analyst'), async (c) => {
   }
 
   const id = nanoid();
-  const ext = blob.name.split('.').pop() || 'bin';
+  const ext = (blob.name.split('.').pop() || 'bin').toLowerCase();
+  if (!ALLOWED_EXTENSIONS.has(ext)) {
+    return c.json({ error: 'File type not allowed' }, 400);
+  }
   const storageName = `${id}.${ext}`;
   const storagePath = join(STORAGE_PATH, storageName);
 
@@ -49,6 +85,24 @@ app.post('/upload', requireRole('admin', 'analyst'), async (c) => {
   await mkdir(STORAGE_PATH, { recursive: true });
 
   const buffer = Buffer.from(await blob.arrayBuffer());
+
+  // Validate magic bytes for image types (primary inline XSS vector)
+  const claimedMime = blob.type;
+  if (claimedMime.startsWith('image/')) {
+    const detected = detectMimeFromMagicBytes(buffer);
+    if (detected === 'image/svg+xml') {
+      return c.json({ error: 'SVG uploads are not allowed' }, 400);
+    }
+    if (detected && !detected.startsWith('image/')) {
+      return c.json({ error: 'File content does not match claimed image type' }, 400);
+    }
+  }
+  // Block SVG regardless of claimed type
+  const detectedAny = detectMimeFromMagicBytes(buffer);
+  if (detectedAny === 'image/svg+xml') {
+    return c.json({ error: 'SVG uploads are not allowed' }, 400);
+  }
+
   await writeFile(storagePath, buffer);
 
   // Generate thumbnail for images
@@ -101,12 +155,15 @@ app.get('/:id', async (c) => {
 
   const file = result[0];
 
-  // Check folder access if file belongs to a folder
-  if (file.folderId && user.role !== 'admin') {
+  // Check access: folder-scoped files require investigation membership,
+  // unscoped files are restricted to the uploader
+  if (file.folderId) {
     const hasAccess = await checkInvestigationAccess(user.id, file.folderId, 'viewer');
     if (!hasAccess) {
       return c.json({ error: 'No access to this file' }, 403);
     }
+  } else if (file.uploadedBy !== user.id) {
+    return c.json({ error: 'No access to this file' }, 403);
   }
 
   const filePath = join(STORAGE_PATH, file.storagePath);
@@ -122,7 +179,7 @@ app.get('/:id', async (c) => {
         'Content-Type': file.mimeType,
         'Content-Length': fileStat.size.toString(),
         'Content-Disposition': `${disposition}; filename="${safeName}"`,
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'private, max-age=31536000, immutable',
         'X-Content-Type-Options': 'nosniff',
       },
     });
@@ -143,12 +200,13 @@ app.get('/:id/thumbnail', async (c) => {
 
   const file = result[0];
 
-  // Check folder access if file belongs to a folder
-  if (file.folderId && user.role !== 'admin') {
+  if (file.folderId) {
     const hasAccess = await checkInvestigationAccess(user.id, file.folderId, 'viewer');
     if (!hasAccess) {
       return c.json({ error: 'No access to this file' }, 403);
     }
+  } else if (file.uploadedBy !== user.id) {
+    return c.json({ error: 'No access to this file' }, 403);
   }
 
   const thumbPath = join(STORAGE_PATH, file.thumbnailPath!);
@@ -158,7 +216,7 @@ app.get('/:id/thumbnail', async (c) => {
     return new Response(data, {
       headers: {
         'Content-Type': 'image/webp',
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'private, max-age=31536000, immutable',
         'X-Content-Type-Options': 'nosniff',
       },
     });

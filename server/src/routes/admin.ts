@@ -1,18 +1,28 @@
 import { Hono } from 'hono';
-import { eq, count } from 'drizzle-orm';
+import { eq, count, sql } from 'drizzle-orm';
 import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
-import { users, folders, allowedEmails } from '../db/schema.js';
-import { verifyAdminSecret, getRegistrationMode, setRegistrationMode } from '../services/admin-secret.js';
+import { users, folders, allowedEmails, investigationMembers } from '../db/schema.js';
+import {
+  verifyAdminSecret, getRegistrationMode, setRegistrationMode,
+  getSessionSettings, setSessionSettings,
+} from '../services/admin-secret.js';
 import { signAdminToken, requireAdminAuth } from '../middleware/admin-auth.js';
-import { ADMIN_HTML } from './admin-html.js';
+import { getAdminHtml } from './admin-html.js';
+import { logger } from '../lib/logger.js';
+import { randomBytes } from 'node:crypto';
 
 const app = new Hono();
 
-// GET /admin — serve HTML admin panel
+// GET /admin — serve HTML admin panel with CSP nonce
 app.get('/', (c) => {
-  return c.html(ADMIN_HTML);
+  const nonce = randomBytes(16).toString('base64');
+  c.header('Content-Security-Policy',
+    `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'`);
+  c.header('X-Frame-Options', 'DENY');
+  c.header('X-Content-Type-Options', 'nosniff');
+  return c.html(getAdminHtml(nonce));
 });
 
 // POST /admin/api/login
@@ -25,10 +35,12 @@ app.post('/api/login', async (c) => {
 
   const valid = await verifyAdminSecret(secret);
   if (!valid) {
+    logger.info('Admin login failed — invalid secret');
     return c.json({ error: 'Invalid admin secret' }, 401);
   }
 
   const token = await signAdminToken();
+  logger.info('Admin login successful');
   return c.json({ token });
 });
 
@@ -59,6 +71,7 @@ app.patch('/api/users/:id', requireAdminAuth, async (c) => {
       return c.json({ error: 'Invalid role' }, 400);
     }
     updates.role = body.role;
+    logger.info('Admin action: user role changed', { targetUserId: id, newRole: body.role });
   }
 
   if (body.active !== undefined) {
@@ -66,6 +79,7 @@ app.patch('/api/users/:id', requireAdminAuth, async (c) => {
       return c.json({ error: 'Invalid active value' }, 400);
     }
     updates.active = body.active;
+    logger.info('Admin action: user active status changed', { targetUserId: id, active: body.active });
   }
 
   const result = await db.update(users).set(updates).where(eq(users.id, id)).returning({ id: users.id });
@@ -80,7 +94,7 @@ app.patch('/api/users/:id', requireAdminAuth, async (c) => {
 app.post('/api/users/:id/reset-password', requireAdminAuth, async (c) => {
   const id = c.req.param('id');
 
-  const user = await db.select({ id: users.id }).from(users).where(eq(users.id, id)).limit(1);
+  const user = await db.select({ id: users.id, email: users.email }).from(users).where(eq(users.id, id)).limit(1);
   if (user.length === 0) {
     return c.json({ error: 'User not found' }, 404);
   }
@@ -88,6 +102,8 @@ app.post('/api/users/:id/reset-password', requireAdminAuth, async (c) => {
   const temporaryPassword = nanoid(16);
   const hash = await argon2.hash(temporaryPassword, { type: argon2.argon2id });
   await db.update(users).set({ passwordHash: hash, updatedAt: new Date() }).where(eq(users.id, id));
+
+  logger.info('Admin action: password reset', { targetUserId: id, targetEmail: user[0].email });
 
   return c.json({ temporaryPassword });
 });
@@ -108,18 +124,34 @@ app.get('/api/stats', requireAdminAuth, async (c) => {
 // GET /admin/api/settings
 app.get('/api/settings', requireAdminAuth, async (c) => {
   const registrationMode = await getRegistrationMode();
-  return c.json({ registrationMode });
+  const sessionSettings = await getSessionSettings();
+  return c.json({ registrationMode, ...sessionSettings });
 });
 
 // PATCH /admin/api/settings
 app.patch('/api/settings', requireAdminAuth, async (c) => {
   const body = await c.req.json();
-  const mode = body?.registrationMode;
-  if (mode !== 'invite' && mode !== 'open') {
-    return c.json({ error: 'Invalid registrationMode, must be "invite" or "open"' }, 400);
+
+  if (body.registrationMode !== undefined) {
+    const mode = body.registrationMode;
+    if (mode !== 'invite' && mode !== 'open') {
+      return c.json({ error: 'Invalid registrationMode, must be "invite" or "open"' }, 400);
+    }
+    await setRegistrationMode(mode);
+    logger.info('Admin action: registration mode changed', { registrationMode: mode });
   }
-  await setRegistrationMode(mode);
-  return c.json({ ok: true, registrationMode: mode });
+
+  if (body.ttlHours !== undefined || body.maxPerUser !== undefined) {
+    const current = await getSessionSettings();
+    const ttlHours = typeof body.ttlHours === 'number' && body.ttlHours >= 1 ? Math.floor(body.ttlHours) : current.ttlHours;
+    const maxPerUser = typeof body.maxPerUser === 'number' && body.maxPerUser >= 0 ? Math.floor(body.maxPerUser) : current.maxPerUser;
+    await setSessionSettings(ttlHours, maxPerUser);
+    logger.info('Admin action: session settings changed', { ttlHours, maxPerUser });
+  }
+
+  const registrationMode = await getRegistrationMode();
+  const sessionSettings = await getSessionSettings();
+  return c.json({ ok: true, registrationMode, ...sessionSettings });
 });
 
 // GET /admin/api/allowed-emails
@@ -136,6 +168,7 @@ app.post('/api/allowed-emails', requireAdminAuth, async (c) => {
     return c.json({ error: 'Invalid email' }, 400);
   }
   await db.insert(allowedEmails).values({ email }).onConflictDoNothing();
+  logger.info('Admin action: email added to allowlist', { email });
   return c.json({ ok: true, email });
 });
 
@@ -146,7 +179,28 @@ app.delete('/api/allowed-emails/:email', requireAdminAuth, async (c) => {
   if (result.length === 0) {
     return c.json({ error: 'Email not found' }, 404);
   }
+  logger.info('Admin action: email removed from allowlist', { email });
   return c.json({ ok: true });
+});
+
+// GET /admin/api/investigations — overview (metadata only, no content)
+app.get('/api/investigations', requireAdminAuth, async (c) => {
+  const rows = await db
+    .select({
+      id: folders.id,
+      name: folders.name,
+      status: folders.status,
+      color: folders.color,
+      createdAt: folders.createdAt,
+      creatorName: users.displayName,
+      creatorEmail: users.email,
+      memberCount: sql<number>`(select count(*) from investigation_members where folder_id = ${folders.id})`.as('member_count'),
+    })
+    .from(folders)
+    .innerJoin(users, eq(users.id, folders.createdBy))
+    .orderBy(folders.createdAt);
+
+  return c.json({ investigations: rows });
 });
 
 export default app;

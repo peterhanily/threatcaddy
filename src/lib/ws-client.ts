@@ -18,10 +18,12 @@ export class WSClient {
   connect() {
     this.intentionallyClosed = false;
     const wsUrl = this.serverUrl.replace(/^http/, 'ws');
-    this.ws = new WebSocket(`${wsUrl}/ws?token=${encodeURIComponent(this.accessToken)}`);
+    this.ws = new WebSocket(`${wsUrl}/ws`);
 
     this.ws.onopen = () => {
       this.reconnectDelay = 1000;
+      // Authenticate via first message instead of URL query param
+      this.send({ type: 'auth', token: this.accessToken });
     };
 
     this.ws.onmessage = (event) => {

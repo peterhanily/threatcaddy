@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { eq, and, gt, desc } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth.js';
+import { checkInvestigationAccess } from '../middleware/access.js';
 import { db } from '../db/index.js';
 import { activityLog, users } from '../db/schema.js';
 import type { AuthUser } from '../types.js';
@@ -11,11 +12,23 @@ app.use('*', requireAuth);
 
 // GET /api/audit
 app.get('/', async (c) => {
+  const user = c.get('user');
   const folderId = c.req.query('folderId');
   const userId = c.req.query('userId');
   const since = c.req.query('since');
   const category = c.req.query('category');
-  const limit = parseInt(c.req.query('limit') || '100', 10);
+  const limit = Math.min(parseInt(c.req.query('limit') || '100', 10), 500);
+
+  // Non-admin users must specify a folderId and be an owner of that investigation
+  if (user.role !== 'admin') {
+    if (!folderId) {
+      return c.json({ error: 'folderId is required' }, 400);
+    }
+    const hasAccess = await checkInvestigationAccess(user.id, folderId, 'owner');
+    if (!hasAccess) {
+      return c.json({ error: 'Only investigation owners can view audit logs' }, 403);
+    }
+  }
 
   const conditions = [];
   if (folderId) conditions.push(eq(activityLog.folderId, folderId));

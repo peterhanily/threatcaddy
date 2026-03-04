@@ -13,7 +13,7 @@ interface RateLimitOptions {
 function getClientIp(c: Context): string {
   // Only trust proxy headers behind a reverse proxy (opt-in via TRUST_PROXY)
   if (process.env.TRUST_PROXY === '1') {
-    const forwarded = c.req.header('x-forwarded-for')?.split(',')[0]?.trim();
+    const forwarded = c.req.header('x-forwarded-for')?.split(',').pop()?.trim();
     if (forwarded) return forwarded;
     const realIp = c.req.header('x-real-ip');
     if (realIp) return realIp;

@@ -30,6 +30,6 @@ RUN mkdir -p /data/files && \
 
 USER app
 
-EXPOSE 3001
+EXPOSE 3001 3002
 
 CMD ["node", "dist/index.js"]

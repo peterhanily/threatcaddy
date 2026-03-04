@@ -1,19 +1,19 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
+import { eq, asc } from 'drizzle-orm';
 import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
 import { users, sessions, allowedEmails } from '../db/schema.js';
 import { requireAuth, signAccessToken } from '../middleware/auth.js';
-import { getRegistrationMode } from '../services/admin-secret.js';
+import { getRegistrationMode, getSessionSettings } from '../services/admin-secret.js';
 import type { AuthUser } from '../types.js';
 
 const app = new Hono<{ Variables: { user: AuthUser } }>();
 
 const registerSchema = z.object({
   email: z.string().email(),
-  displayName: z.string().min(1).max(100),
+  displayName: z.string().min(1).max(15),
   password: z.string().min(8).max(128),
 });
 
@@ -27,10 +27,34 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(8).max(128),
 });
 
+const updateProfileSchema = z.object({
+  displayName: z.string().min(1).max(15).optional(),
+  avatarUrl: z.string().url().nullish(),
+});
+
 async function createTokenPair(user: AuthUser) {
   const accessToken = await signAccessToken(user);
   const refreshTokenId = nanoid(32);
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+  const settings = await getSessionSettings();
+  const expiresAt = new Date(Date.now() + settings.ttlHours * 60 * 60 * 1000);
+
+  // Enforce max sessions per user
+  if (settings.maxPerUser > 0) {
+    const existing = await db
+      .select({ id: sessions.id })
+      .from(sessions)
+      .where(eq(sessions.userId, user.id))
+      .orderBy(asc(sessions.createdAt));
+
+    const excess = existing.length - settings.maxPerUser + 1;
+    if (excess > 0) {
+      const toDelete = existing.slice(0, excess);
+      for (const s of toDelete) {
+        await db.delete(sessions).where(eq(sessions.id, s.id));
+      }
+    }
+  }
 
   await db.insert(sessions).values({
     id: refreshTokenId,
@@ -215,10 +239,14 @@ app.get('/me', requireAuth, async (c) => {
 app.patch('/me', requireAuth, async (c) => {
   const authUser = c.get('user');
   const body = await c.req.json();
-  const updates: Record<string, unknown> = { updatedAt: new Date() };
+  const parsed = updateProfileSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
+  }
 
-  if (body.displayName) updates.displayName = body.displayName;
-  if (body.avatarUrl !== undefined) updates.avatarUrl = body.avatarUrl;
+  const updates: Record<string, unknown> = { updatedAt: new Date() };
+  if (parsed.data.displayName) updates.displayName = parsed.data.displayName;
+  if (parsed.data.avatarUrl !== undefined) updates.avatarUrl = parsed.data.avatarUrl;
 
   await db.update(users).set(updates).where(eq(users.id, authUser.id));
 
@@ -246,6 +274,9 @@ app.post('/change-password', requireAuth, async (c) => {
 
   const newHash = await argon2.hash(parsed.data.newPassword, { type: argon2.argon2id });
   await db.update(users).set({ passwordHash: newHash, updatedAt: new Date() }).where(eq(users.id, authUser.id));
+
+  // Invalidate all existing sessions for this user
+  await db.delete(sessions).where(eq(sessions.userId, authUser.id));
 
   return c.json({ ok: true });
 });

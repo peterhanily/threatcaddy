@@ -1,4 +1,5 @@
-export const ADMIN_HTML = `<!DOCTYPE html>
+export function getAdminHtml(nonce: string): string {
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -31,6 +32,8 @@ export const ADMIN_HTML = `<!DOCTYPE html>
   .settings-section h2 { font-size: 0.95rem; color: #c9d1d9; margin-bottom: 0.75rem; }
   .setting-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
   .setting-row label { font-size: 0.85rem; color: #8b949e; min-width: 130px; }
+  .setting-row input[type="number"] { width: 80px; padding: 0.3rem 0.5rem; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; font-size: 0.85rem; }
+  .setting-row input[type="number"]:focus { outline: none; border-color: #58a6ff; }
   .allowed-emails-section { margin-top: 0.75rem; }
   .allowed-emails-section .add-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
   .allowed-emails-section .add-row input { flex: 1; padding: 0.4rem 0.6rem; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; font-size: 0.85rem; }
@@ -117,6 +120,21 @@ export const ADMIN_HTML = `<!DOCTYPE html>
     </div>
   </div>
 
+  <div class="settings-section">
+    <h2>Session Settings</h2>
+    <div class="setting-row">
+      <label>Session TTL (hours)</label>
+      <input type="number" id="sessionTtl" min="1" max="8760" value="24">
+      <button class="btn btn-primary btn-sm" onclick="saveSessionSettings()">Save</button>
+    </div>
+    <div class="setting-row">
+      <label>Max sessions/user</label>
+      <input type="number" id="maxSessions" min="0" max="1000" value="0">
+      <span style="font-size:0.8rem;color:#8b949e;">(0 = unlimited)</span>
+    </div>
+  </div>
+
+  <h2 style="font-size:0.95rem;color:#c9d1d9;margin-bottom:0.75rem;">Users</h2>
   <table>
     <thead>
       <tr>
@@ -129,6 +147,20 @@ export const ADMIN_HTML = `<!DOCTYPE html>
       </tr>
     </thead>
     <tbody id="usersBody"></tbody>
+  </table>
+
+  <h2 style="font-size:0.95rem;color:#c9d1d9;margin:1.5rem 0 0.75rem;">Investigations</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Status</th>
+        <th>Creator</th>
+        <th>Members</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody id="investigationsBody"></tbody>
   </table>
 </div>
 
@@ -146,43 +178,48 @@ export const ADMIN_HTML = `<!DOCTYPE html>
   </div>
 </div>
 
-<script>
-const BASE = location.origin;
-let token = sessionStorage.getItem('adminToken');
-let resetUserId = null;
+<script nonce="${nonce}">
+var BASE = location.origin;
+var token = sessionStorage.getItem('adminToken');
+var resetUserId = null;
 
-function api(path, opts = {}) {
-  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+function api(path, opts) {
+  opts = opts || {};
+  var headers = { 'Content-Type': 'application/json' };
+  if (opts.headers) { for (var k in opts.headers) headers[k] = opts.headers[k]; }
   if (token) headers['Authorization'] = 'Bearer ' + token;
-  return fetch(BASE + '/admin/api' + path, { ...opts, headers }).then(async r => {
+  return fetch(BASE + '/admin/api' + path, Object.assign({}, opts, { headers: headers })).then(function(r) {
     if (r.status === 401 && token) { logout(); throw new Error('Session expired'); }
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error || 'Request failed');
-    return data;
+    return r.json().then(function(data) {
+      if (!r.ok) throw new Error(data.error || 'Request failed');
+      return data;
+    });
   });
 }
 
-function toast(msg, type = 'success') {
-  const el = document.createElement('div');
+function toast(msg, type) {
+  type = type || 'success';
+  var el = document.createElement('div');
   el.className = 'toast toast-' + type;
   el.textContent = msg;
   document.getElementById('toasts').appendChild(el);
-  setTimeout(() => el.remove(), 3500);
+  setTimeout(function() { el.remove(); }, 3500);
 }
 
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
+document.getElementById('loginForm').addEventListener('submit', function(e) {
   e.preventDefault();
-  const errEl = document.getElementById('loginError');
+  var errEl = document.getElementById('loginError');
   errEl.style.display = 'none';
-  try {
-    const res = await api('/login', { method: 'POST', body: JSON.stringify({ secret: document.getElementById('secret').value }) });
-    token = res.token;
-    sessionStorage.setItem('adminToken', token);
-    showDashboard();
-  } catch (err) {
-    errEl.textContent = err.message;
-    errEl.style.display = 'block';
-  }
+  api('/login', { method: 'POST', body: JSON.stringify({ secret: document.getElementById('secret').value }) })
+    .then(function(res) {
+      token = res.token;
+      sessionStorage.setItem('adminToken', token);
+      showDashboard();
+    })
+    .catch(function(err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    });
 });
 
 function logout() {
@@ -193,55 +230,73 @@ function logout() {
   document.getElementById('secret').value = '';
 }
 
-async function showDashboard() {
+function showDashboard() {
   document.getElementById('login').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
-  await Promise.all([loadStats(), loadUsers(), loadSettings(), loadAllowedEmails()]);
+  Promise.all([loadStats(), loadUsers(), loadInvestigations(), loadSettings(), loadAllowedEmails()]);
 }
 
-async function loadStats() {
-  try {
-    const s = await api('/stats');
+function loadStats() {
+  return api('/stats').then(function(s) {
     document.getElementById('statsGrid').innerHTML =
       [['Total Users', s.totalUsers], ['Active Users', s.activeUsers], ['Investigations', s.investigations]]
-        .map(([l, v]) => '<div class="stat-card"><div class="label">' + l + '</div><div class="value">' + v + '</div></div>').join('');
-  } catch (err) { toast(err.message, 'error'); }
+        .map(function(a) { return '<div class="stat-card"><div class="label">' + a[0] + '</div><div class="value">' + a[1] + '</div></div>'; }).join('');
+  }).catch(function(err) { toast(err.message, 'error'); });
 }
 
-async function loadUsers() {
-  try {
-    const data = await api('/users');
-    const tbody = document.getElementById('usersBody');
-    tbody.innerHTML = data.users.map(u => {
-      const lastLogin = u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : 'Never';
+function loadUsers() {
+  return api('/users').then(function(data) {
+    var tbody = document.getElementById('usersBody');
+    tbody.innerHTML = data.users.map(function(u) {
+      var lastLogin = u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : 'Never';
       return '<tr>' +
         '<td>' + esc(u.email) + '</td>' +
         '<td>' + esc(u.displayName) + '</td>' +
         '<td><select onchange="changeRole(\\'' + u.id + '\\', this.value)">' +
-          ['admin','analyst','viewer'].map(r => '<option value="' + r + '"' + (r === u.role ? ' selected' : '') + '>' + r + '</option>').join('') +
+          ['admin','analyst','viewer'].map(function(r) { return '<option value="' + r + '"' + (r === u.role ? ' selected' : '') + '>' + r + '</option>'; }).join('') +
         '</select></td>' +
         '<td><label class="toggle"><input type="checkbox"' + (u.active ? ' checked' : '') + ' onchange="toggleActive(\\'' + u.id + '\\', this.checked)"><span class="slider"></span></label></td>' +
         '<td>' + lastLogin + '</td>' +
         '<td><button class="btn btn-danger btn-sm" onclick="openResetModal(\\'' + u.id + '\\', \\'' + esc(u.email) + '\\')">Reset Password</button></td>' +
         '</tr>';
     }).join('');
-  } catch (err) { toast(err.message, 'error'); }
+  }).catch(function(err) { toast(err.message, 'error'); });
 }
 
-function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
-
-async function changeRole(id, role) {
-  try {
-    await api('/users/' + id, { method: 'PATCH', body: JSON.stringify({ role }) });
-    toast('Role updated');
-  } catch (err) { toast(err.message, 'error'); loadUsers(); }
+function loadInvestigations() {
+  return api('/investigations').then(function(data) {
+    var tbody = document.getElementById('investigationsBody');
+    var statusColors = { active: '#3fb950', closed: '#8b949e', archived: '#d29922' };
+    tbody.innerHTML = data.investigations.map(function(inv) {
+      var created = new Date(inv.createdAt).toLocaleDateString();
+      var color = inv.color || '#8b949e';
+      var statusColor = statusColors[inv.status] || '#8b949e';
+      return '<tr>' +
+        '<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';margin-right:6px;vertical-align:middle;"></span>' + esc(inv.name) + '</td>' +
+        '<td><span style="color:' + statusColor + '">' + esc(inv.status || 'active') + '</span></td>' +
+        '<td>' + esc(inv.creatorName) + ' <span style="color:#8b949e">(' + esc(inv.creatorEmail) + ')</span></td>' +
+        '<td>' + inv.memberCount + '</td>' +
+        '<td>' + created + '</td>' +
+        '</tr>';
+    }).join('');
+    if (data.investigations.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:#8b949e;font-style:italic;">No investigations yet</td></tr>';
+    }
+  }).catch(function(err) { toast(err.message, 'error'); });
 }
 
-async function toggleActive(id, active) {
-  try {
-    await api('/users/' + id, { method: 'PATCH', body: JSON.stringify({ active }) });
-    toast(active ? 'User activated' : 'User deactivated');
-  } catch (err) { toast(err.message, 'error'); loadUsers(); }
+function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function changeRole(id, role) {
+  api('/users/' + id, { method: 'PATCH', body: JSON.stringify({ role: role }) })
+    .then(function() { toast('Role updated'); })
+    .catch(function(err) { toast(err.message, 'error'); loadUsers(); });
+}
+
+function toggleActive(id, active) {
+  api('/users/' + id, { method: 'PATCH', body: JSON.stringify({ active: active }) })
+    .then(function() { toast(active ? 'User activated' : 'User deactivated'); })
+    .catch(function(err) { toast(err.message, 'error'); loadUsers(); });
 }
 
 function openResetModal(id, email) {
@@ -258,77 +313,79 @@ function closeModal() {
   resetUserId = null;
 }
 
-async function confirmReset() {
+function confirmReset() {
   if (!resetUserId) return;
-  try {
-    const res = await api('/users/' + resetUserId + '/reset-password', { method: 'POST' });
-    document.getElementById('modalText').textContent = 'Temporary password (share securely):';
-    document.getElementById('tempPwBox').textContent = res.temporaryPassword;
-    document.getElementById('tempPwBox').style.display = 'block';
-    document.getElementById('confirmResetBtn').style.display = 'none';
-    toast('Password reset');
-  } catch (err) { toast(err.message, 'error'); closeModal(); }
+  api('/users/' + resetUserId + '/reset-password', { method: 'POST' })
+    .then(function(res) {
+      document.getElementById('modalText').textContent = 'Temporary password (share securely):';
+      document.getElementById('tempPwBox').textContent = res.temporaryPassword;
+      document.getElementById('tempPwBox').style.display = 'block';
+      document.getElementById('confirmResetBtn').style.display = 'none';
+      toast('Password reset');
+    })
+    .catch(function(err) { toast(err.message, 'error'); closeModal(); });
 }
 
-// ─── Registration Settings ───────────────────────────────────────
-
-async function loadSettings() {
-  try {
-    const data = await api('/settings');
+function loadSettings() {
+  return api('/settings').then(function(data) {
     document.getElementById('regModeSelect').value = data.registrationMode;
     toggleEmailSection(data.registrationMode);
-  } catch (err) { toast(err.message, 'error'); }
+    document.getElementById('sessionTtl').value = data.ttlHours || 24;
+    document.getElementById('maxSessions').value = data.maxPerUser || 0;
+  }).catch(function(err) { toast(err.message, 'error'); });
 }
 
 function toggleEmailSection(mode) {
   document.getElementById('allowedEmailsSection').style.display = mode === 'invite' ? '' : 'none';
 }
 
-async function changeRegMode(mode) {
-  try {
-    await api('/settings', { method: 'PATCH', body: JSON.stringify({ registrationMode: mode }) });
-    toggleEmailSection(mode);
-    toast('Registration mode updated');
-  } catch (err) { toast(err.message, 'error'); loadSettings(); }
+function changeRegMode(mode) {
+  api('/settings', { method: 'PATCH', body: JSON.stringify({ registrationMode: mode }) })
+    .then(function() { toggleEmailSection(mode); toast('Registration mode updated'); })
+    .catch(function(err) { toast(err.message, 'error'); loadSettings(); });
 }
 
-async function loadAllowedEmails() {
-  try {
-    const data = await api('/allowed-emails');
-    const list = document.getElementById('emailList');
+function saveSessionSettings() {
+  var ttl = parseInt(document.getElementById('sessionTtl').value, 10);
+  var max = parseInt(document.getElementById('maxSessions').value, 10);
+  if (isNaN(ttl) || ttl < 1) { toast('TTL must be at least 1 hour', 'error'); return; }
+  if (isNaN(max) || max < 0) { toast('Max sessions must be 0 or more', 'error'); return; }
+  api('/settings', { method: 'PATCH', body: JSON.stringify({ ttlHours: ttl, maxPerUser: max }) })
+    .then(function() { toast('Session settings updated'); })
+    .catch(function(err) { toast(err.message, 'error'); });
+}
+
+function loadAllowedEmails() {
+  return api('/allowed-emails').then(function(data) {
+    var list = document.getElementById('emailList');
     if (data.emails.length === 0) {
       list.innerHTML = '<div class="email-empty">No emails on the allowlist</div>';
       return;
     }
-    list.innerHTML = data.emails.map(e =>
-      '<div class="email-item"><span class="email-addr">' + esc(e.email) + '</span>' +
-      '<button class="btn btn-danger btn-sm" onclick="removeEmail(\\'' + esc(e.email) + '\\')">Remove</button></div>'
-    ).join('');
-  } catch (err) { toast(err.message, 'error'); }
+    list.innerHTML = data.emails.map(function(e) {
+      return '<div class="email-item"><span class="email-addr">' + esc(e.email) + '</span>' +
+        '<button class="btn btn-danger btn-sm" onclick="removeEmail(\\'' + esc(e.email) + '\\')">Remove</button></div>';
+    }).join('');
+  }).catch(function(err) { toast(err.message, 'error'); });
 }
 
-async function addEmail() {
-  const input = document.getElementById('newEmailInput');
-  const email = input.value.trim().toLowerCase();
+function addEmail() {
+  var input = document.getElementById('newEmailInput');
+  var email = input.value.trim().toLowerCase();
   if (!email) return;
-  try {
-    await api('/allowed-emails', { method: 'POST', body: JSON.stringify({ email }) });
-    input.value = '';
-    toast('Email added');
-    loadAllowedEmails();
-  } catch (err) { toast(err.message, 'error'); }
+  api('/allowed-emails', { method: 'POST', body: JSON.stringify({ email: email }) })
+    .then(function() { input.value = ''; toast('Email added'); loadAllowedEmails(); })
+    .catch(function(err) { toast(err.message, 'error'); });
 }
 
-async function removeEmail(email) {
-  try {
-    await api('/allowed-emails/' + encodeURIComponent(email), { method: 'DELETE' });
-    toast('Email removed');
-    loadAllowedEmails();
-  } catch (err) { toast(err.message, 'error'); }
+function removeEmail(email) {
+  api('/allowed-emails/' + encodeURIComponent(email), { method: 'DELETE' })
+    .then(function() { toast('Email removed'); loadAllowedEmails(); })
+    .catch(function(err) { toast(err.message, 'error'); });
 }
 
-// Auto-login if token exists
 if (token) showDashboard();
 </script>
 </body>
 </html>`;
+}

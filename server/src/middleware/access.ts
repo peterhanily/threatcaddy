@@ -35,12 +35,6 @@ export function requireInvestigationAccess(minRole: InvestigationRole = 'viewer'
   return createMiddleware<{ Variables: { user: AuthUser } }>(async (c, next) => {
     const user = c.get('user');
 
-    // Admin bypasses investigation-level checks
-    if (user.role === 'admin') {
-      await next();
-      return;
-    }
-
     const folderId = c.req.param('folderId') || c.req.query('folderId');
     if (!folderId) {
       await next();

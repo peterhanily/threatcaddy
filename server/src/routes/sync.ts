@@ -1,12 +1,13 @@
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 import { requireAuth } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
 import { processPush, pullChanges, getSnapshot } from '../services/sync-service.js';
 import { logActivity } from '../services/audit-service.js';
 import { broadcastToFolder } from '../ws/handler.js';
 import { db } from '../db/index.js';
-import { folders } from '../db/schema.js';
+import { folders, investigationMembers } from '../db/schema.js';
 import type { AuthUser, SyncChange, SyncResult } from '../types.js';
 
 // Tables that are global (not scoped to a folder)
@@ -26,12 +27,10 @@ app.post('/push', async (c) => {
     return c.json({ results: [] });
   }
 
-  const isAdmin = user.role === 'admin';
-
   // Build authorization list
   const authorized: boolean[] = [];
   for (const change of changes) {
-    if (isAdmin || TABLES_WITHOUT_FOLDER.has(change.table)) {
+    if (TABLES_WITHOUT_FOLDER.has(change.table)) {
       authorized.push(true);
       continue;
     }
@@ -77,6 +76,25 @@ app.post('/push', async (c) => {
       results.push(processedResults[processedIdx++]);
     } else {
       results.push({ entityId: changes[i].entityId, status: 'rejected' });
+    }
+  }
+
+  // Auto-create owner membership for newly created folders
+  for (let i = 0; i < changes.length; i++) {
+    const change = changes[i];
+    const result = results[i];
+    if (
+      change.table === 'folders' &&
+      change.op === 'put' &&
+      result.status === 'accepted' &&
+      result.serverVersion === 1
+    ) {
+      await db.insert(investigationMembers).values({
+        id: nanoid(),
+        folderId: change.entityId,
+        userId: user.id,
+        role: 'owner',
+      }).onConflictDoNothing();
     }
   }
 
@@ -126,16 +144,13 @@ app.get('/pull', async (c) => {
 
   const folderId = c.req.query('folderId');
 
-  // Non-admin users must specify a folderId
-  if (!folderId && user.role !== 'admin') {
+  if (!folderId) {
     return c.json({ error: 'folderId is required' }, 400);
   }
 
-  if (folderId && user.role !== 'admin') {
-    const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer');
-    if (!hasAccess) {
-      return c.json({ error: 'No access to this investigation' }, 403);
-    }
+  const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer');
+  if (!hasAccess) {
+    return c.json({ error: 'No access to this investigation' }, 403);
   }
 
   const result = await pullChanges(since, folderId || undefined);
@@ -147,11 +162,9 @@ app.get('/snapshot/:folderId', async (c) => {
   const user = c.get('user');
   const folderId = c.req.param('folderId');
 
-  if (user.role !== 'admin') {
-    const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer');
-    if (!hasAccess) {
-      return c.json({ error: 'No access to this investigation' }, 403);
-    }
+  const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer');
+  if (!hasAccess) {
+    return c.json({ error: 'No access to this investigation' }, 403);
   }
 
   const snapshot = await getSnapshot(folderId);
