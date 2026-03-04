@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq, count, sql, desc, and, gte, lte, ilike, or, isNull } from 'drizzle-orm';
+import { eq, count, sql, desc, and, gte, lte, ilike, or } from 'drizzle-orm';
 import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
 import { unlink } from 'node:fs/promises';
