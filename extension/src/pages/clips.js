@@ -298,7 +298,7 @@ async function sendAllToTarget() {
   let targetUrl = await getTargetUrl();
 
   // If no target URL configured, prompt user
-  if (!targetUrl || targetUrl === DEFAULT_TARGET_URL) {
+  if (!targetUrl) {
     const currentVal = targetUrlInput.value.trim();
     if (!currentVal) {
       targetUrlInput.focus();
@@ -308,16 +308,21 @@ async function sendAllToTarget() {
     targetUrl = currentVal;
   }
 
-  // Request host permission for the target (Chrome will prompt the user)
+  if (!isSafeUrl(targetUrl)) {
+    showToast('Invalid target URL — only http, https, and file:// allowed', true);
+    return;
+  }
+
+  // Request host permission for the target (Chrome prompts, Firefox may already have it)
   try {
     const granted = await requestHostPermission(targetUrl);
     if (!granted) {
       showToast('Permission denied — cannot send to this host', true);
       return;
     }
-  } catch (err) {
-    showToast('Invalid target URL', true);
-    return;
+  } catch {
+    // Firefox with <all_urls> content scripts may not need explicit host permission
+    // Fall through and attempt the send anyway
   }
 
   sendAllBtn.disabled = true;

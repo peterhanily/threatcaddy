@@ -348,8 +348,8 @@ function AppInner() {
 
       try {
         const folderCache = new Map<string, typeof folders[0]>();
-        let firstEntityType: string = 'note';
-        let firstEntityId: string | undefined;
+        let lastEntityType: string = 'note';
+        let lastEntityId: string | undefined;
         let lastFolderId: string | undefined;
         const entityTypesUsed = new Set<string>();
 
@@ -394,7 +394,7 @@ function AppInner() {
               iocAnalysis,
               iocTypes,
             });
-            if (!firstEntityId) { firstEntityId = task.id; firstEntityType = 'task'; }
+            lastEntityId = task.id; lastEntityType = 'task';
           } else if (entityType === 'timeline-event') {
             const event = await loggedCreateEvent({
               title: clipTitle || rawContent.substring(0, 80) || 'Clip Event',
@@ -408,7 +408,7 @@ function AppInner() {
               iocAnalysis,
               iocTypes,
             });
-            if (!firstEntityId) { firstEntityId = event.id; firstEntityType = 'timeline-event'; }
+            lastEntityId = event.id; lastEntityType = 'timeline-event';
           } else {
             const note = await loggedCreateNote({
               title: sourceUrl || clipTitle || rawContent.substring(0, 80) || 'Clip',
@@ -421,7 +421,7 @@ function AppInner() {
               iocAnalysis,
               iocTypes,
             });
-            if (!firstEntityId) { firstEntityId = note.id; firstEntityType = 'note'; }
+            lastEntityId = note.id; lastEntityType = 'note';
           }
           } catch (clipErr) {
             console.error('Failed to import clip:', clipErr);
@@ -432,20 +432,22 @@ function AppInner() {
           addToast('warning', `Imported with ${failedClips} failed clip${failedClips > 1 ? 's' : ''}`);
         }
 
-        // Navigate to the appropriate view
+        // Navigate to the appropriate view and select the latest entity
+        if (lastFolderId) setSelectedFolderId(lastFolderId);
         if (entityTypesUsed.size === 1) {
-          if (firstEntityType === 'task') {
+          if (lastEntityType === 'task') {
             navigateTo('tasks');
-          } else if (firstEntityType === 'timeline-event') {
+          } else if (lastEntityType === 'timeline-event') {
             navigateTo('timeline');
           } else {
-            navigateTo('notes', { selectedNoteId: firstEntityId });
+            setSelectedNoteId(lastEntityId);
+            navigateTo('notes', { selectedNoteId: lastEntityId });
           }
         } else {
-          // Mixed batch — default to notes
-          navigateTo('notes');
+          // Mixed batch — default to notes, select last note
+          setSelectedNoteId(lastEntityId);
+          navigateTo('notes', { selectedNoteId: lastEntityId });
         }
-        if (lastFolderId) setSelectedFolderId(lastFolderId);
       } catch (error) {
         console.error('Failed to import clips:', error);
         addToast('error', 'Failed to import clips from extension');
