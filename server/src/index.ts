@@ -19,7 +19,7 @@ import auditRoutes from './routes/audit.js';
 import notificationRoutes from './routes/notifications.js';
 import userRoutes from './routes/users.js';
 import adminRoutes from './routes/admin.js';
-import { initAdminSecret } from './services/admin-secret.js';
+import { initAdminSecret, initRegistrationMode } from './services/admin-secret.js';
 import { handleWSConnection, handleWSMessage, handleWSClose } from './ws/handler.js';
 import { db, sql as pgSql } from './db/index.js';
 import { rateLimiter } from './middleware/rate-limit.js';
@@ -105,6 +105,7 @@ async function main() {
   logger.info('Database migrations complete');
 
   await initAdminSecret();
+  await initRegistrationMode();
 
   const server = serve({
     fetch: app.fetch,

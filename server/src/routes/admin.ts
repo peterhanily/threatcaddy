@@ -3,8 +3,8 @@ import { eq, count } from 'drizzle-orm';
 import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
-import { users, folders } from '../db/schema.js';
-import { verifyAdminSecret } from '../services/admin-secret.js';
+import { users, folders, allowedEmails } from '../db/schema.js';
+import { verifyAdminSecret, getRegistrationMode, setRegistrationMode } from '../services/admin-secret.js';
 import { signAdminToken, requireAdminAuth } from '../middleware/admin-auth.js';
 import { ADMIN_HTML } from './admin-html.js';
 
@@ -103,6 +103,50 @@ app.get('/api/stats', requireAdminAuth, async (c) => {
     activeUsers: activeResult.count,
     investigations: invResult.count,
   });
+});
+
+// GET /admin/api/settings
+app.get('/api/settings', requireAdminAuth, async (c) => {
+  const registrationMode = await getRegistrationMode();
+  return c.json({ registrationMode });
+});
+
+// PATCH /admin/api/settings
+app.patch('/api/settings', requireAdminAuth, async (c) => {
+  const body = await c.req.json();
+  const mode = body?.registrationMode;
+  if (mode !== 'invite' && mode !== 'open') {
+    return c.json({ error: 'Invalid registrationMode, must be "invite" or "open"' }, 400);
+  }
+  await setRegistrationMode(mode);
+  return c.json({ ok: true, registrationMode: mode });
+});
+
+// GET /admin/api/allowed-emails
+app.get('/api/allowed-emails', requireAdminAuth, async (c) => {
+  const emails = await db.select().from(allowedEmails).orderBy(allowedEmails.createdAt);
+  return c.json({ emails });
+});
+
+// POST /admin/api/allowed-emails
+app.post('/api/allowed-emails', requireAdminAuth, async (c) => {
+  const body = await c.req.json();
+  const email = body?.email?.trim()?.toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return c.json({ error: 'Invalid email' }, 400);
+  }
+  await db.insert(allowedEmails).values({ email }).onConflictDoNothing();
+  return c.json({ ok: true, email });
+});
+
+// DELETE /admin/api/allowed-emails/:email
+app.delete('/api/allowed-emails/:email', requireAdminAuth, async (c) => {
+  const email = decodeURIComponent(c.req.param('email'));
+  const result = await db.delete(allowedEmails).where(eq(allowedEmails.email, email)).returning({ email: allowedEmails.email });
+  if (result.length === 0) {
+    return c.json({ error: 'Email not found' }, 404);
+  }
+  return c.json({ ok: true });
 });
 
 export default app;

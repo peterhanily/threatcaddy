@@ -243,6 +243,11 @@ export const serverSettings = pgTable('server_settings', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const allowedEmails = pgTable('allowed_emails', {
+  email: text('email').primaryKey(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ─── Activity Log ───────────────────────────────────────────────
 
 export const activityLog = pgTable('activity_log', {

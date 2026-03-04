@@ -4,8 +4,9 @@ import { eq } from 'drizzle-orm';
 import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
-import { users, sessions } from '../db/schema.js';
+import { users, sessions, allowedEmails } from '../db/schema.js';
 import { requireAuth, signAccessToken } from '../middleware/auth.js';
+import { getRegistrationMode } from '../services/admin-secret.js';
 import type { AuthUser } from '../types.js';
 
 const app = new Hono<{ Variables: { user: AuthUser } }>();
@@ -56,6 +57,15 @@ app.post('/register', async (c) => {
     return c.json({ error: 'Email already registered' }, 409);
   }
 
+  // Invite-only gate
+  const mode = await getRegistrationMode();
+  if (mode === 'invite') {
+    const allowed = await db.select().from(allowedEmails).where(eq(allowedEmails.email, email)).limit(1);
+    if (allowed.length === 0) {
+      return c.json({ error: 'Registration is invite-only. Contact an admin.' }, 403);
+    }
+  }
+
   const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
   const userId = nanoid();
   const now = new Date();
@@ -73,6 +83,11 @@ app.post('/register', async (c) => {
     createdAt: now,
     updatedAt: now,
   });
+
+  // Consume invite if in invite mode
+  if (mode === 'invite') {
+    await db.delete(allowedEmails).where(eq(allowedEmails.email, email));
+  }
 
   const user: AuthUser = { id: userId, email, role, displayName, avatarUrl: null };
   const tokens = await createTokenPair(user);

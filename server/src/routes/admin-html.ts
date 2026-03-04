@@ -27,6 +27,20 @@ export const ADMIN_HTML = `<!DOCTYPE html>
   .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #21262d; padding-bottom: 1rem; }
   .header h1 { font-size: 1.25rem; color: #c9d1d9; }
 
+  .settings-section { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+  .settings-section h2 { font-size: 0.95rem; color: #c9d1d9; margin-bottom: 0.75rem; }
+  .setting-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+  .setting-row label { font-size: 0.85rem; color: #8b949e; min-width: 130px; }
+  .allowed-emails-section { margin-top: 0.75rem; }
+  .allowed-emails-section .add-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .allowed-emails-section .add-row input { flex: 1; padding: 0.4rem 0.6rem; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; font-size: 0.85rem; }
+  .allowed-emails-section .add-row input:focus { outline: none; border-color: #58a6ff; }
+  .email-list { max-height: 240px; overflow-y: auto; }
+  .email-item { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0.5rem; border-bottom: 1px solid #21262d; font-size: 0.85rem; }
+  .email-item:last-child { border-bottom: none; }
+  .email-item .email-addr { color: #c9d1d9; }
+  .email-empty { color: #8b949e; font-size: 0.85rem; font-style: italic; }
+
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
   .stat-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 1rem 1.25rem; }
   .stat-card .label { font-size: 0.8rem; color: #8b949e; margin-bottom: 0.25rem; }
@@ -84,6 +98,25 @@ export const ADMIN_HTML = `<!DOCTYPE html>
     <button class="btn btn-outline btn-sm" onclick="logout()">Sign Out</button>
   </div>
   <div class="stats" id="statsGrid"></div>
+
+  <div class="settings-section">
+    <h2>Registration Settings</h2>
+    <div class="setting-row">
+      <label>Registration Mode</label>
+      <select id="regModeSelect" onchange="changeRegMode(this.value)">
+        <option value="invite">Invite Only</option>
+        <option value="open">Open</option>
+      </select>
+    </div>
+    <div id="allowedEmailsSection" class="allowed-emails-section">
+      <div class="add-row">
+        <input type="email" id="newEmailInput" placeholder="user@example.com" onkeydown="if(event.key==='Enter'){addEmail();}">
+        <button class="btn btn-primary btn-sm" onclick="addEmail()">Add</button>
+      </div>
+      <div class="email-list" id="emailList"></div>
+    </div>
+  </div>
+
   <table>
     <thead>
       <tr>
@@ -163,7 +196,7 @@ function logout() {
 async function showDashboard() {
   document.getElementById('login').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
-  await Promise.all([loadStats(), loadUsers()]);
+  await Promise.all([loadStats(), loadUsers(), loadSettings(), loadAllowedEmails()]);
 }
 
 async function loadStats() {
@@ -235,6 +268,63 @@ async function confirmReset() {
     document.getElementById('confirmResetBtn').style.display = 'none';
     toast('Password reset');
   } catch (err) { toast(err.message, 'error'); closeModal(); }
+}
+
+// ─── Registration Settings ───────────────────────────────────────
+
+async function loadSettings() {
+  try {
+    const data = await api('/settings');
+    document.getElementById('regModeSelect').value = data.registrationMode;
+    toggleEmailSection(data.registrationMode);
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+function toggleEmailSection(mode) {
+  document.getElementById('allowedEmailsSection').style.display = mode === 'invite' ? '' : 'none';
+}
+
+async function changeRegMode(mode) {
+  try {
+    await api('/settings', { method: 'PATCH', body: JSON.stringify({ registrationMode: mode }) });
+    toggleEmailSection(mode);
+    toast('Registration mode updated');
+  } catch (err) { toast(err.message, 'error'); loadSettings(); }
+}
+
+async function loadAllowedEmails() {
+  try {
+    const data = await api('/allowed-emails');
+    const list = document.getElementById('emailList');
+    if (data.emails.length === 0) {
+      list.innerHTML = '<div class="email-empty">No emails on the allowlist</div>';
+      return;
+    }
+    list.innerHTML = data.emails.map(e =>
+      '<div class="email-item"><span class="email-addr">' + esc(e.email) + '</span>' +
+      '<button class="btn btn-danger btn-sm" onclick="removeEmail(\\'' + esc(e.email) + '\\')">Remove</button></div>'
+    ).join('');
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function addEmail() {
+  const input = document.getElementById('newEmailInput');
+  const email = input.value.trim().toLowerCase();
+  if (!email) return;
+  try {
+    await api('/allowed-emails', { method: 'POST', body: JSON.stringify({ email }) });
+    input.value = '';
+    toast('Email added');
+    loadAllowedEmails();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function removeEmail(email) {
+  try {
+    await api('/allowed-emails/' + encodeURIComponent(email), { method: 'DELETE' });
+    toast('Email removed');
+    loadAllowedEmails();
+  } catch (err) { toast(err.message, 'error'); }
 }
 
 // Auto-login if token exists

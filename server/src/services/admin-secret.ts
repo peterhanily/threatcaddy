@@ -58,6 +58,32 @@ export async function initAdminSecret(): Promise<void> {
   }
 }
 
+// ─── Registration Mode ──────────────────────────────────────────
+
+const REG_MODE_KEY = 'registration_mode';
+
+export async function initRegistrationMode(): Promise<void> {
+  await db.insert(serverSettings)
+    .values({ key: REG_MODE_KEY, value: 'invite' })
+    .onConflictDoNothing();
+  logger.info('Registration mode initialized');
+}
+
+export async function getRegistrationMode(): Promise<'invite' | 'open'> {
+  const row = await db.select().from(serverSettings).where(eq(serverSettings.key, REG_MODE_KEY)).limit(1);
+  if (row.length === 0) return 'invite';
+  return row[0].value === 'open' ? 'open' : 'invite';
+}
+
+export async function setRegistrationMode(mode: 'invite' | 'open'): Promise<void> {
+  const existing = await db.select().from(serverSettings).where(eq(serverSettings.key, REG_MODE_KEY)).limit(1);
+  if (existing.length > 0) {
+    await db.update(serverSettings).set({ value: mode, updatedAt: new Date() }).where(eq(serverSettings.key, REG_MODE_KEY));
+  } else {
+    await db.insert(serverSettings).values({ key: REG_MODE_KEY, value: mode });
+  }
+}
+
 export async function verifyAdminSecret(plaintext: string): Promise<boolean> {
   const row = await db.select().from(serverSettings).where(eq(serverSettings.key, SETTINGS_KEY)).limit(1);
   if (row.length === 0) return false;
