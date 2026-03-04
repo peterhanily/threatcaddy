@@ -42,9 +42,10 @@ export function useTour(options?: UseTourOptions) {
     }
   }, [isActive, currentStep]);
 
-  // Update rect on step change, scroll, resize
+  // Update rect on step change, scroll, resize — reads external DOM state
   useEffect(() => {
     if (!isActive) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     updateRect();
 
     const onUpdate = () => {

@@ -107,6 +107,8 @@ export function TourTooltip({
       }
     }
 
+    // Layout effects synchronize with the DOM — setState here is intentional
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPos(bestPos);
     setActualPlacement(bestPlacement);
   }, [targetRect, step.placement]);
