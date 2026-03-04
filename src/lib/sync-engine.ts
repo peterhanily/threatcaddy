@@ -6,7 +6,8 @@ import { disableSync, enableSync } from './sync-middleware';
 // Cast db for dynamic table access (sync tables aren't in the typed schema)
 const dynamicDb = db as unknown as DexieType;
 
-const SYNC_INTERVAL = 30_000; // 30 seconds
+const SYNC_INTERVAL = 30_000; // 30 seconds — safety-net full sync
+const PUSH_DEBOUNCE = 1_000;  // 1 second — debounced immediate push after local changes
 const META_KEY_LAST_SYNC = 'lastSyncTimestamp';
 
 interface SyncQueueEntry {
@@ -20,6 +21,8 @@ interface SyncQueueEntry {
 export class SyncEngine {
   private running = false;
   private intervalId: ReturnType<typeof setInterval> | null = null;
+  private pushTimer: ReturnType<typeof setTimeout> | null = null;
+  private pushing = false;
   private onConflict: ((conflicts: SyncResult[]) => void) | null = null;
   private onRemoteChange: ((changes: Record<string, unknown>[]) => void) | null = null;
 
@@ -36,7 +39,7 @@ export class SyncEngine {
     this.running = true;
     // Initial sync
     this.sync();
-    // Periodic sync
+    // Periodic full sync as safety net
     this.intervalId = setInterval(() => this.sync(), SYNC_INTERVAL);
   }
 
@@ -45,6 +48,10 @@ export class SyncEngine {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
+    }
+    if (this.pushTimer) {
+      clearTimeout(this.pushTimer);
+      this.pushTimer = null;
     }
   }
 
@@ -57,20 +64,34 @@ export class SyncEngine {
     }
   }
 
+  // Schedule a debounced push — coalesces rapid edits into a single push
+  private schedulePush() {
+    if (!this.running) return;
+    if (this.pushTimer) clearTimeout(this.pushTimer);
+    this.pushTimer = setTimeout(() => {
+      this.pushTimer = null;
+      if (this.running && !this.pushing) {
+        this.push().catch((err) => console.error('SyncEngine: immediate push error', err));
+      }
+    }, PUSH_DEBOUNCE);
+  }
+
   // Push local changes to server
   private async push() {
-    const queue: SyncQueueEntry[] = await dynamicDb.table('_syncQueue').toArray();
-    if (queue.length === 0) return;
-
-    // Batch into sync changes
-    const changes: SyncChange[] = queue.map((entry) => ({
-      table: entry.table,
-      op: entry.op,
-      entityId: entry.entityId,
-      data: entry.data,
-    }));
-
+    if (this.pushing) return;
+    this.pushing = true;
     try {
+      const queue: SyncQueueEntry[] = await dynamicDb.table('_syncQueue').toArray();
+      if (queue.length === 0) return;
+
+      // Batch into sync changes
+      const changes: SyncChange[] = queue.map((entry) => ({
+        table: entry.table,
+        op: entry.op,
+        entityId: entry.entityId,
+        data: entry.data,
+      }));
+
       const { results } = await syncPush(changes);
 
       // Remove accepted entries from queue
@@ -94,6 +115,8 @@ export class SyncEngine {
       }
     } catch (err) {
       console.error('SyncEngine: push error', err);
+    } finally {
+      this.pushing = false;
     }
   }
 
@@ -217,6 +240,8 @@ export class SyncEngine {
       op,
       data,
     });
+    // Trigger a debounced push so changes sync within ~1 second
+    this.schedulePush();
   }
 
   // Push an entire folder and all its scoped content to the server.

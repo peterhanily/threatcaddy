@@ -1,6 +1,30 @@
-import { useState } from 'react';
-import { Server, LogIn, LogOut, UserPlus, CheckCircle, XCircle, Wifi, WifiOff } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Server, LogIn, LogOut, UserPlus, CheckCircle, XCircle, Wifi, WifiOff, RotateCw, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+
+const LAST_SESSION_KEY = 'threatcaddy-last-session';
+
+interface LastSession {
+  serverUrl: string;
+  email: string;
+  displayName: string;
+}
+
+function getLastSession(): LastSession | null {
+  try {
+    const raw = localStorage.getItem(LAST_SESSION_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+function saveLastSession(session: LastSession) {
+  localStorage.setItem(LAST_SESSION_KEY, JSON.stringify(session));
+}
+
+function clearLastSession() {
+  localStorage.removeItem(LAST_SESSION_KEY);
+}
 
 interface ServerConnectionProps {
   settings: { serverUrl?: string; serverDisplayName?: string };
@@ -9,13 +33,32 @@ interface ServerConnectionProps {
 
 export function ServerConnection({ settings, onUpdateSettings }: ServerConnectionProps) {
   const { user, connected, serverUrl, login, register, logout, setServerUrl } = useAuth();
-  const [mode, setMode] = useState<'connect' | 'login' | 'register'>('connect');
+  const [mode, setMode] = useState<'connect' | 'login' | 'register' | 'reconnect'>('connect');
   const [url, setUrl] = useState(settings.serverUrl || '');
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [lastSession, setLastSession] = useState<LastSession | null>(null);
+
+  // Check for cached session on mount
+  useEffect(() => {
+    if (!connected) {
+      const session = getLastSession();
+      if (session) {
+        setLastSession(session);
+        setMode('reconnect');
+      }
+    }
+  }, [connected]);
+
+  // Save session info when connected
+  useEffect(() => {
+    if (connected && user && serverUrl) {
+      saveLastSession({ serverUrl, email: user.email, displayName: user.displayName });
+    }
+  }, [connected, user, serverUrl]);
 
   const handleConnect = () => {
     if (!url.trim()) return;
@@ -49,11 +92,41 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
     }
   };
 
+  const handleReconnect = async () => {
+    if (!lastSession || !password) return;
+    setError('');
+    setLoading(true);
+    try {
+      await login(lastSession.email, password, lastSession.serverUrl);
+      onUpdateSettings({ serverUrl: lastSession.serverUrl });
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearSession = () => {
+    clearLastSession();
+    setLastSession(null);
+    setMode('connect');
+    setPassword('');
+    setError('');
+  };
+
   const handleDisconnect = async () => {
+    // Session details already saved via the useEffect above
     await logout();
     setServerUrl(null);
     onUpdateSettings({ serverUrl: undefined, serverDisplayName: undefined });
-    setMode('connect');
+    // Reload last session for reconnect
+    const session = getLastSession();
+    if (session) {
+      setLastSession(session);
+      setMode('reconnect');
+    } else {
+      setMode('connect');
+    }
     setUrl('');
     setEmail('');
     setPassword('');
@@ -112,6 +185,67 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
         Team Server
       </div>
 
+      {/* Quick Reconnect — shown when we have a cached session */}
+      {mode === 'reconnect' && lastSession && (
+        <div className="border border-[var(--border)] rounded-lg p-4 bg-[var(--bg-secondary)] space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <RotateCw size={14} className="text-blue-400" />
+              <span className="text-sm font-medium text-[var(--text-primary)]">Quick Reconnect</span>
+            </div>
+            <button
+              onClick={handleClearSession}
+              className="p-1 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+              title="Clear saved session"
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          <div className="space-y-1 text-xs">
+            <div className="flex justify-between">
+              <span className="text-[var(--text-tertiary)]">Server</span>
+              <span className="text-[var(--text-secondary)] font-mono">{lastSession.serverUrl}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--text-tertiary)]">User</span>
+              <span className="text-[var(--text-secondary)]">{lastSession.displayName} ({lastSession.email})</span>
+            </div>
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 px-3 py-2 rounded">
+              <XCircle size={14} /> {error}
+            </div>
+          )}
+
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg text-sm"
+            autoFocus
+            onKeyDown={(e) => { if (e.key === 'Enter') handleReconnect(); }}
+          />
+
+          <button
+            onClick={handleReconnect}
+            disabled={loading || !password}
+            className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg text-sm flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-blue-500 transition-colors"
+          >
+            {loading ? 'Connecting...' : <><RotateCw size={14} /> Reconnect</>}
+          </button>
+
+          <button
+            onClick={() => { setMode('connect'); setError(''); }}
+            className="w-full text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+          >
+            Use different server or account
+          </button>
+        </div>
+      )}
+
       {mode === 'connect' && (
         <div className="border border-[var(--border)] rounded-lg p-4 bg-[var(--bg-secondary)] space-y-3">
           <div className="flex items-center gap-2 mb-1">
@@ -137,6 +271,16 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
           >
             <Wifi size={14} /> Connect
           </button>
+
+          {/* Show option to return to quick reconnect if session is cached */}
+          {lastSession && (
+            <button
+              onClick={() => { setMode('reconnect'); setError(''); }}
+              className="w-full text-xs text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              Reconnect as {lastSession.displayName}
+            </button>
+          )}
         </div>
       )}
 

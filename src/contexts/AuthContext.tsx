@@ -5,7 +5,7 @@ interface AuthState {
   user: TeamUser | null;
   connected: boolean;
   serverUrl: string | null;
-  login(email: string, password: string): Promise<void>;
+  login(email: string, password: string, overrideServerUrl?: string): Promise<void>;
   register(email: string, displayName: string, password: string): Promise<void>;
   logout(): Promise<void>;
   getAccessToken(): Promise<string | null>;
@@ -82,10 +82,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    if (!serverUrl) throw new Error('No server URL configured');
+  const login = useCallback(async (email: string, password: string, overrideServerUrl?: string) => {
+    const url = overrideServerUrl || serverUrl;
+    if (!url) throw new Error('No server URL configured');
 
-    const resp = await fetch(`${serverUrl}/api/auth/login`, {
+    const resp = await fetch(`${url}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -105,9 +106,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: data.user.role,
     };
 
+    if (overrideServerUrl) {
+      setServerUrlState(overrideServerUrl);
+    }
     setUser(teamUser);
     setConnected(true);
-    persist(serverUrl, data.accessToken, data.refreshToken, teamUser);
+    persist(url, data.accessToken, data.refreshToken, teamUser);
   }, [serverUrl, persist]);
 
   const register = useCallback(async (email: string, displayName: string, password: string) => {
