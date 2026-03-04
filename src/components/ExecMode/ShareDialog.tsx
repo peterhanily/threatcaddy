@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Lock, Unlock, Copy, Check, Trash2, UserPlus, Users } from 'lucide-react';
+import { Lock, Unlock, Copy, Check, Trash2, UserPlus, Users, RefreshCw } from 'lucide-react';
 import { Modal } from '../Common/Modal';
 import type { SharePayload } from '../../lib/share';
 import { encodeSharePayload, buildShareUrl, MAX_URL_LENGTH } from '../../lib/share';
@@ -10,6 +10,7 @@ import {
   removeInvestigationMember,
   updateMemberRole,
 } from '../../lib/server-api';
+import { syncEngine } from '../../lib/sync-engine';
 
 interface ShareDialogProps {
   open: boolean;
@@ -173,18 +174,37 @@ function TeamTab({ folderId }: { folderId: string }) {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('editor');
   const [error, setError] = useState<string | null>(null);
+  const [notSynced, setNotSynced] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [inviting, setInviting] = useState(false);
 
   const loadMembers = useCallback(async () => {
     try {
       const data = await fetchInvestigationMembers(folderId);
       setMembers(data);
-    } catch {
-      setError('Failed to load members');
+      setNotSynced(false);
+    } catch (err) {
+      if (err instanceof Error && err.message === 'not_synced') {
+        setNotSynced(true);
+      } else {
+        setError('Failed to load members');
+      }
     } finally {
       setLoading(false);
     }
   }, [folderId]);
+
+  const handleSync = useCallback(async () => {
+    setSyncing(true);
+    try {
+      await syncEngine.sync();
+      // Wait a moment for the server to process, then retry
+      await new Promise((r) => setTimeout(r, 1000));
+      await loadMembers();
+    } finally {
+      setSyncing(false);
+    }
+  }, [loadMembers]);
 
   useEffect(() => {
     loadMembers();
@@ -228,6 +248,25 @@ function TeamTab({ folderId }: { folderId: string }) {
 
   if (loading) {
     return <p className="text-sm text-gray-400 py-4 text-center">Loading members...</p>;
+  }
+
+  if (notSynced) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-4">
+        <p className="text-sm text-gray-400 text-center">
+          This investigation hasn&apos;t been synced to the server yet.
+          Sync it first to manage team members.
+        </p>
+        <button
+          onClick={handleSync}
+          disabled={syncing}
+          className="flex items-center gap-2 bg-accent text-white rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 transition-opacity"
+        >
+          <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
+          {syncing ? 'Syncing...' : 'Sync Now'}
+        </button>
+      </div>
+    );
   }
 
   return (

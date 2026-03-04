@@ -111,7 +111,10 @@ export async function fetchInvestigations() {
 
 export async function fetchInvestigationMembers(folderId: string) {
   const resp = await apiFetch(`/api/investigations/${folderId}/members`);
-  if (!resp.ok) throw new Error('Failed to fetch members');
+  if (!resp.ok) {
+    if (resp.status === 403) throw new Error('not_synced');
+    throw new Error('Failed to fetch members');
+  }
   return resp.json();
 }
 
