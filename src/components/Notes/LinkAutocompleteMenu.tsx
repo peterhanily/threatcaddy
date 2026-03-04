@@ -42,6 +42,7 @@ export function LinkAutocompleteMenu({ items, activeIndex, position, onSelect, m
       left = Math.max(0, left - (rect.right - vw) - 8);
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAdjustedPos({ top, left });
   }, [position, items.length, menuRef]);
 
