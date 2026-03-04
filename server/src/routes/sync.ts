@@ -144,16 +144,23 @@ app.get('/pull', async (c) => {
 
   const folderId = c.req.query('folderId');
 
-  if (!folderId) {
-    return c.json({ error: 'folderId is required' }, 400);
+  if (folderId) {
+    // Specific folder: verify access
+    const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer');
+    if (!hasAccess) {
+      return c.json({ error: 'No access to this investigation' }, 403);
+    }
+    const result = await pullChanges(since, [folderId]);
+    return c.json(result);
   }
 
-  const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer');
-  if (!hasAccess) {
-    return c.json({ error: 'No access to this investigation' }, 403);
-  }
-
-  const result = await pullChanges(since, folderId || undefined);
+  // No folderId: pull from all folders the user is a member of
+  const memberships = await db
+    .select({ folderId: investigationMembers.folderId })
+    .from(investigationMembers)
+    .where(eq(investigationMembers.userId, user.id));
+  const folderIds = memberships.map((m) => m.folderId);
+  const result = await pullChanges(since, folderIds);
   return c.json(result);
 });
 

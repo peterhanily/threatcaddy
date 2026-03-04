@@ -1,4 +1,4 @@
-import { eq, and, gt } from 'drizzle-orm';
+import { eq, and, gt, inArray } from 'drizzle-orm';
 import type { PgTable } from 'drizzle-orm/pg-core';
 import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
@@ -136,22 +136,27 @@ export async function processPush(
 
 export async function pullChanges(
   since: string,
-  folderId?: string
+  folderIds?: string[],
 ): Promise<{ changes: Record<string, unknown>[]; serverTimestamp: string }> {
   const sinceDate = new Date(since);
   const changes: Record<string, unknown>[] = [];
 
   for (const [tableName, table] of Object.entries(TABLE_MAP)) {
-    let query;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const t = table as any;
 
-    if (folderId && t.folderId) {
+    let query;
+    if (folderIds && folderIds.length > 0 && t.folderId) {
+      // Scoped tables: only pull from accessible folders
       query = db
         .select()
         .from(table)
-        .where(and(gt(t.updatedAt, sinceDate), eq(t.folderId, folderId)));
+        .where(and(gt(t.updatedAt, sinceDate), inArray(t.folderId, folderIds)));
+    } else if (t.folderId) {
+      // Table has folderId but no filter provided — skip (would leak data)
+      continue;
     } else {
+      // Global tables (tags, timelines, etc.)
       query = db.select().from(table).where(gt(t.updatedAt, sinceDate));
     }
 
