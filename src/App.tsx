@@ -69,7 +69,10 @@ import { ConflictDialog } from './components/Common/ConflictDialog';
 import type { PresenceUser } from './types';
 import { configureServerApi } from './lib/server-api';
 import { syncEngine } from './lib/sync-engine';
-import { enableSync, disableSync } from './lib/sync-middleware';
+import { enableSync, disableSync, installSyncHooks } from './lib/sync-middleware';
+
+// Install Dexie hooks once at module load so every write is captured
+installSyncHooks();
 import { WSClient } from './lib/ws-client';
 import type { SyncResult } from './lib/server-api';
 
