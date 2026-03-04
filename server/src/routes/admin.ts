@@ -5,7 +5,7 @@ import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
 import { users, folders, allowedEmails, investigationMembers } from '../db/schema.js';
 import {
-  verifyAdminSecret, getRegistrationMode, setRegistrationMode,
+  verifyAdminSecret, changeAdminSecret, getRegistrationMode, setRegistrationMode,
   getSessionSettings, setSessionSettings,
 } from '../services/admin-secret.js';
 import { signAdminToken, requireAdminAuth } from '../middleware/admin-auth.js';
@@ -106,6 +106,24 @@ app.post('/api/users/:id/reset-password', requireAdminAuth, async (c) => {
   logger.info('Admin action: password reset', { targetUserId: id, targetEmail: user[0].email });
 
   return c.json({ temporaryPassword });
+});
+
+// POST /admin/api/change-secret
+app.post('/api/change-secret', requireAdminAuth, async (c) => {
+  const body = await c.req.json();
+  const { currentSecret, newSecret } = body || {};
+  if (!currentSecret || typeof currentSecret !== 'string') {
+    return c.json({ error: 'Missing current secret' }, 400);
+  }
+  if (!newSecret || typeof newSecret !== 'string' || newSecret.length < 12) {
+    return c.json({ error: 'New secret must be at least 12 characters' }, 400);
+  }
+  const changed = await changeAdminSecret(currentSecret, newSecret);
+  if (!changed) {
+    return c.json({ error: 'Current secret is incorrect' }, 401);
+  }
+  logger.info('Admin action: admin secret changed');
+  return c.json({ ok: true });
 });
 
 // GET /admin/api/stats

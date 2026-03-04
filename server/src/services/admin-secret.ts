@@ -138,3 +138,11 @@ export async function verifyAdminSecret(plaintext: string): Promise<boolean> {
     return false;
   }
 }
+
+export async function changeAdminSecret(currentPlaintext: string, newPlaintext: string): Promise<boolean> {
+  const valid = await verifyAdminSecret(currentPlaintext);
+  if (!valid) return false;
+  const hash = await argon2.hash(newPlaintext, { type: argon2.argon2id });
+  await db.update(serverSettings).set({ value: hash, updatedAt: new Date() }).where(eq(serverSettings.key, SETTINGS_KEY));
+  return true;
+}

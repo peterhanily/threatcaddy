@@ -23,6 +23,8 @@ export function getAdminHtml(nonce: string): string {
   .btn-danger:hover { background: #f85149; }
   .btn-outline { background: transparent; border: 1px solid #30363d; color: #c9d1d9; }
   .btn-outline:hover { border-color: #58a6ff; color: #58a6ff; }
+  .btn-warning { background: #d29922; color: #fff; }
+  .btn-warning:hover { background: #e3b341; }
 
   .dashboard { display: none; max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
   .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #21262d; padding-bottom: 1rem; }
@@ -34,6 +36,8 @@ export function getAdminHtml(nonce: string): string {
   .setting-row label { font-size: 0.85rem; color: #8b949e; min-width: 130px; }
   .setting-row input[type="number"] { width: 80px; padding: 0.3rem 0.5rem; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; font-size: 0.85rem; }
   .setting-row input[type="number"]:focus { outline: none; border-color: #58a6ff; }
+  .setting-row input[type="password"] { width: 240px; padding: 0.3rem 0.5rem; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; font-size: 0.85rem; }
+  .setting-row input[type="password"]:focus { outline: none; border-color: #58a6ff; }
   .allowed-emails-section { margin-top: 0.75rem; }
   .allowed-emails-section .add-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
   .allowed-emails-section .add-row input { flex: 1; padding: 0.4rem 0.6rem; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; font-size: 0.85rem; }
@@ -98,7 +102,7 @@ export function getAdminHtml(nonce: string): string {
 <div id="dashboard" class="dashboard">
   <div class="header">
     <h1>Admin Panel</h1>
-    <button class="btn btn-outline btn-sm" onclick="logout()">Sign Out</button>
+    <button id="logoutBtn" class="btn btn-outline btn-sm">Sign Out</button>
   </div>
   <div class="stats" id="statsGrid"></div>
 
@@ -106,15 +110,15 @@ export function getAdminHtml(nonce: string): string {
     <h2>Registration Settings</h2>
     <div class="setting-row">
       <label>Registration Mode</label>
-      <select id="regModeSelect" onchange="changeRegMode(this.value)">
+      <select id="regModeSelect">
         <option value="invite">Invite Only</option>
         <option value="open">Open</option>
       </select>
     </div>
     <div id="allowedEmailsSection" class="allowed-emails-section">
       <div class="add-row">
-        <input type="email" id="newEmailInput" placeholder="user@example.com" onkeydown="if(event.key==='Enter'){addEmail();}">
-        <button class="btn btn-primary btn-sm" onclick="addEmail()">Add</button>
+        <input type="email" id="newEmailInput" placeholder="user@example.com">
+        <button id="addEmailBtn" class="btn btn-primary btn-sm">Add</button>
       </div>
       <div class="email-list" id="emailList"></div>
     </div>
@@ -125,12 +129,29 @@ export function getAdminHtml(nonce: string): string {
     <div class="setting-row">
       <label>Session TTL (hours)</label>
       <input type="number" id="sessionTtl" min="1" max="8760" value="24">
-      <button class="btn btn-primary btn-sm" onclick="saveSessionSettings()">Save</button>
+      <button id="saveSessionBtn" class="btn btn-primary btn-sm">Save</button>
     </div>
     <div class="setting-row">
       <label>Max sessions/user</label>
       <input type="number" id="maxSessions" min="0" max="1000" value="0">
       <span style="font-size:0.8rem;color:#8b949e;">(0 = unlimited)</span>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <h2>Change Admin Secret</h2>
+    <div class="setting-row">
+      <label>Current secret</label>
+      <input type="password" id="currentSecret" placeholder="Current secret" autocomplete="off">
+    </div>
+    <div class="setting-row">
+      <label>New secret</label>
+      <input type="password" id="newSecret" placeholder="New secret (min 12 chars)" autocomplete="off">
+    </div>
+    <div class="setting-row">
+      <label>Confirm new secret</label>
+      <input type="password" id="confirmSecret" placeholder="Confirm new secret" autocomplete="off">
+      <button id="changeSecretBtn" class="btn btn-warning btn-sm">Change Secret</button>
     </div>
   </div>
 
@@ -172,8 +193,8 @@ export function getAdminHtml(nonce: string): string {
     <p id="modalText"></p>
     <div id="tempPwBox" class="temp-password" style="display:none;"></div>
     <div class="modal-actions">
-      <button class="btn btn-outline btn-sm" onclick="closeModal()">Close</button>
-      <button id="confirmResetBtn" class="btn btn-danger btn-sm" onclick="confirmReset()">Reset</button>
+      <button id="closeModalBtn" class="btn btn-outline btn-sm">Close</button>
+      <button id="confirmResetBtn" class="btn btn-danger btn-sm">Reset</button>
     </div>
   </div>
 </div>
@@ -206,6 +227,10 @@ function toast(msg, type) {
   setTimeout(function() { el.remove(); }, 3500);
 }
 
+function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+/* ─── Login ─────────────────────────────────────────── */
+
 document.getElementById('loginForm').addEventListener('submit', function(e) {
   e.preventDefault();
   var errEl = document.getElementById('loginError');
@@ -222,6 +247,10 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     });
 });
 
+/* ─── Logout ────────────────────────────────────────── */
+
+document.getElementById('logoutBtn').addEventListener('click', function() { logout(); });
+
 function logout() {
   token = null;
   sessionStorage.removeItem('adminToken');
@@ -229,6 +258,8 @@ function logout() {
   document.getElementById('login').style.display = 'flex';
   document.getElementById('secret').value = '';
 }
+
+/* ─── Dashboard ─────────────────────────────────────── */
 
 function showDashboard() {
   document.getElementById('login').style.display = 'none';
@@ -244,6 +275,8 @@ function loadStats() {
   }).catch(function(err) { toast(err.message, 'error'); });
 }
 
+/* ─── Users (event delegation) ──────────────────────── */
+
 function loadUsers() {
   return api('/users').then(function(data) {
     var tbody = document.getElementById('usersBody');
@@ -252,40 +285,30 @@ function loadUsers() {
       return '<tr>' +
         '<td>' + esc(u.email) + '</td>' +
         '<td>' + esc(u.displayName) + '</td>' +
-        '<td><select onchange="changeRole(\\'' + u.id + '\\', this.value)">' +
+        '<td><select data-action="role" data-id="' + esc(u.id) + '">' +
           ['admin','analyst','viewer'].map(function(r) { return '<option value="' + r + '"' + (r === u.role ? ' selected' : '') + '>' + r + '</option>'; }).join('') +
         '</select></td>' +
-        '<td><label class="toggle"><input type="checkbox"' + (u.active ? ' checked' : '') + ' onchange="toggleActive(\\'' + u.id + '\\', this.checked)"><span class="slider"></span></label></td>' +
+        '<td><label class="toggle"><input type="checkbox" data-action="active" data-id="' + esc(u.id) + '"' + (u.active ? ' checked' : '') + '><span class="slider"></span></label></td>' +
         '<td>' + lastLogin + '</td>' +
-        '<td><button class="btn btn-danger btn-sm" onclick="openResetModal(\\'' + u.id + '\\', \\'' + esc(u.email) + '\\')">Reset Password</button></td>' +
+        '<td><button class="btn btn-danger btn-sm" data-action="reset" data-id="' + esc(u.id) + '" data-email="' + esc(u.email) + '">Reset Password</button></td>' +
         '</tr>';
     }).join('');
   }).catch(function(err) { toast(err.message, 'error'); });
 }
 
-function loadInvestigations() {
-  return api('/investigations').then(function(data) {
-    var tbody = document.getElementById('investigationsBody');
-    var statusColors = { active: '#3fb950', closed: '#8b949e', archived: '#d29922' };
-    tbody.innerHTML = data.investigations.map(function(inv) {
-      var created = new Date(inv.createdAt).toLocaleDateString();
-      var color = inv.color || '#8b949e';
-      var statusColor = statusColors[inv.status] || '#8b949e';
-      return '<tr>' +
-        '<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';margin-right:6px;vertical-align:middle;"></span>' + esc(inv.name) + '</td>' +
-        '<td><span style="color:' + statusColor + '">' + esc(inv.status || 'active') + '</span></td>' +
-        '<td>' + esc(inv.creatorName) + ' <span style="color:#8b949e">(' + esc(inv.creatorEmail) + ')</span></td>' +
-        '<td>' + inv.memberCount + '</td>' +
-        '<td>' + created + '</td>' +
-        '</tr>';
-    }).join('');
-    if (data.investigations.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="color:#8b949e;font-style:italic;">No investigations yet</td></tr>';
-    }
-  }).catch(function(err) { toast(err.message, 'error'); });
-}
+document.getElementById('usersBody').addEventListener('change', function(e) {
+  var el = e.target;
+  if (el.dataset.action === 'role') {
+    changeRole(el.dataset.id, el.value);
+  } else if (el.dataset.action === 'active') {
+    toggleActive(el.dataset.id, el.checked);
+  }
+});
 
-function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+document.getElementById('usersBody').addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-action="reset"]');
+  if (btn) openResetModal(btn.dataset.id, btn.dataset.email);
+});
 
 function changeRole(id, role) {
   api('/users/' + id, { method: 'PATCH', body: JSON.stringify({ role: role }) })
@@ -298,6 +321,11 @@ function toggleActive(id, active) {
     .then(function() { toast(active ? 'User activated' : 'User deactivated'); })
     .catch(function(err) { toast(err.message, 'error'); loadUsers(); });
 }
+
+/* ─── Reset password modal ──────────────────────────── */
+
+document.getElementById('closeModalBtn').addEventListener('click', function() { closeModal(); });
+document.getElementById('confirmResetBtn').addEventListener('click', function() { confirmReset(); });
 
 function openResetModal(id, email) {
   resetUserId = id;
@@ -326,6 +354,12 @@ function confirmReset() {
     .catch(function(err) { toast(err.message, 'error'); closeModal(); });
 }
 
+/* ─── Settings ──────────────────────────────────────── */
+
+document.getElementById('regModeSelect').addEventListener('change', function() {
+  changeRegMode(this.value);
+});
+
 function loadSettings() {
   return api('/settings').then(function(data) {
     document.getElementById('regModeSelect').value = data.registrationMode;
@@ -345,6 +379,12 @@ function changeRegMode(mode) {
     .catch(function(err) { toast(err.message, 'error'); loadSettings(); });
 }
 
+/* ─── Session settings ──────────────────────────────── */
+
+document.getElementById('saveSessionBtn').addEventListener('click', function() {
+  saveSessionSettings();
+});
+
 function saveSessionSettings() {
   var ttl = parseInt(document.getElementById('sessionTtl').value, 10);
   var max = parseInt(document.getElementById('maxSessions').value, 10);
@@ -355,6 +395,37 @@ function saveSessionSettings() {
     .catch(function(err) { toast(err.message, 'error'); });
 }
 
+/* ─── Change admin secret ───────────────────────────── */
+
+document.getElementById('changeSecretBtn').addEventListener('click', function() {
+  var current = document.getElementById('currentSecret').value;
+  var newSec = document.getElementById('newSecret').value;
+  var confirm = document.getElementById('confirmSecret').value;
+  if (!current) { toast('Enter current secret', 'error'); return; }
+  if (newSec.length < 12) { toast('New secret must be at least 12 characters', 'error'); return; }
+  if (newSec !== confirm) { toast('New secrets do not match', 'error'); return; }
+  api('/change-secret', { method: 'POST', body: JSON.stringify({ currentSecret: current, newSecret: newSec }) })
+    .then(function() {
+      toast('Admin secret changed');
+      document.getElementById('currentSecret').value = '';
+      document.getElementById('newSecret').value = '';
+      document.getElementById('confirmSecret').value = '';
+    })
+    .catch(function(err) { toast(err.message, 'error'); });
+});
+
+/* ─── Allowed emails (event delegation) ─────────────── */
+
+document.getElementById('addEmailBtn').addEventListener('click', function() { addEmail(); });
+document.getElementById('newEmailInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') addEmail();
+});
+
+document.getElementById('emailList').addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-action="remove-email"]');
+  if (btn) removeEmail(btn.dataset.email);
+});
+
 function loadAllowedEmails() {
   return api('/allowed-emails').then(function(data) {
     var list = document.getElementById('emailList');
@@ -364,7 +435,7 @@ function loadAllowedEmails() {
     }
     list.innerHTML = data.emails.map(function(e) {
       return '<div class="email-item"><span class="email-addr">' + esc(e.email) + '</span>' +
-        '<button class="btn btn-danger btn-sm" onclick="removeEmail(\\'' + esc(e.email) + '\\')">Remove</button></div>';
+        '<button class="btn btn-danger btn-sm" data-action="remove-email" data-email="' + esc(e.email) + '">Remove</button></div>';
     }).join('');
   }).catch(function(err) { toast(err.message, 'error'); });
 }
@@ -383,6 +454,32 @@ function removeEmail(email) {
     .then(function() { toast('Email removed'); loadAllowedEmails(); })
     .catch(function(err) { toast(err.message, 'error'); });
 }
+
+/* ─── Investigations ────────────────────────────────── */
+
+function loadInvestigations() {
+  return api('/investigations').then(function(data) {
+    var tbody = document.getElementById('investigationsBody');
+    var statusColors = { active: '#3fb950', closed: '#8b949e', archived: '#d29922' };
+    tbody.innerHTML = data.investigations.map(function(inv) {
+      var created = new Date(inv.createdAt).toLocaleDateString();
+      var color = inv.color || '#8b949e';
+      var statusColor = statusColors[inv.status] || '#8b949e';
+      return '<tr>' +
+        '<td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';margin-right:6px;vertical-align:middle;"></span>' + esc(inv.name) + '</td>' +
+        '<td><span style="color:' + statusColor + '">' + esc(inv.status || 'active') + '</span></td>' +
+        '<td>' + esc(inv.creatorName) + ' <span style="color:#8b949e">(' + esc(inv.creatorEmail) + ')</span></td>' +
+        '<td>' + inv.memberCount + '</td>' +
+        '<td>' + created + '</td>' +
+        '</tr>';
+    }).join('');
+    if (data.investigations.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:#8b949e;font-style:italic;">No investigations yet</td></tr>';
+    }
+  }).catch(function(err) { toast(err.message, 'error'); });
+}
+
+/* ─── Init ──────────────────────────────────────────── */
 
 if (token) showDashboard();
 </script>
