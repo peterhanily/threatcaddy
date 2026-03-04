@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq, and, or, isNull } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
 import { db } from '../db/index.js';
