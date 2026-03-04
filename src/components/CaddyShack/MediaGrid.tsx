@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Music, Film, Download } from 'lucide-react';
+import { FileText, Music, Download } from 'lucide-react';
 import type { PostAttachment } from '../../types';
 import { MediaLightbox } from './MediaLightbox';
 

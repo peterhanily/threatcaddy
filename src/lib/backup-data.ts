@@ -6,10 +6,11 @@ import { db } from '../db';
 import type { BackupPayload } from './backup-crypto';
 
 // Helper: get a Dexie table by name, returning an untyped handle for dynamic access
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
 function getTable(name: string): any {
   return (db as any)[name];
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export async function buildFullBackupPayload(
   scope: 'all' | 'investigation' | 'entity',
