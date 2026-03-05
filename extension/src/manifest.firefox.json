@@ -47,7 +47,8 @@
   "content_scripts": [{
     "matches": [
       "https://threatcaddy.com/*",
-      "https://www.threatcaddy.com/*"
+      "https://www.threatcaddy.com/*",
+      "file:///*"
     ],
     "js": ["bridge.js"],
     "run_at": "document_idle"
