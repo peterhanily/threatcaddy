@@ -19,7 +19,8 @@ export async function purgeOldTrash<T extends Trashable>(
   const purgeThreshold = Date.now() - TRASH_PURGE_DAYS * 86400000;
   const toPurge = items.filter((item) => item.trashed && item.trashedAt && item.trashedAt < purgeThreshold);
   if (toPurge.length > 0) {
-    await table.bulkDelete(toPurge.map((item) => item.id));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- IDType<T,'id'> is always string at runtime
+    await table.bulkDelete(toPurge.map((item) => item.id) as any);
   }
   return toPurge.length > 0
     ? items.filter((item) => !toPurge.some((p) => p.id === item.id))
