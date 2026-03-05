@@ -85,6 +85,8 @@ describe('useChats', () => {
     expect(result.current.threads[0].title).toBe('Second');
 
     // Update first thread — it should move to the top
+    // Small delay ensures updatedAt is strictly greater than Second's timestamp
+    await new Promise(r => setTimeout(r, 5));
     await act(async () => {
       await result.current.updateThread(t1Id!, { title: 'First Updated' });
     });
