@@ -73,6 +73,7 @@ export class SyncEngine {
       await this.push();
       await this.pull();
     } catch (err) {
+      if (err instanceof Error && err.message.includes('Not connected')) return;
       console.error('SyncEngine: sync error', err);
     }
   }
@@ -138,6 +139,8 @@ export class SyncEngine {
         this.onConflict(conflicts);
       }
     } catch (err) {
+      // "Not connected" is expected when server is temporarily unreachable — don't spam console
+      if (err instanceof Error && err.message.includes('Not connected')) return;
       console.error('SyncEngine: push error', err);
     } finally {
       this.pushing = false;
@@ -186,6 +189,8 @@ export class SyncEngine {
       // Update last sync timestamp
       await dynamicDb.table('_syncMeta').put({ key: META_KEY_LAST_SYNC, value: serverTimestamp });
     } catch (err) {
+      // "Not connected" is expected when server is temporarily unreachable — don't spam console
+      if (err instanceof Error && err.message.includes('Not connected')) return;
       console.error('SyncEngine: pull error', err);
     }
   }
