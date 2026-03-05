@@ -25,6 +25,7 @@ import { useActivityLog } from './hooks/useActivityLog';
 import { ActivityLogContext } from './hooks/ActivityLogContext';
 import { ScreenshareContext } from './hooks/ScreenshareContext';
 import { getEffectiveClsLevels, isAboveClsThreshold } from './lib/classification';
+import { isEncryptionEnabled } from './lib/encryptionStore';
 import type { ViewMode, SortOption, EditorMode, Note, Task, TimelineEvent, TaskViewMode, IOCType, ChatThread } from './types';
 import { DEFAULT_QUICK_LINKS } from './types';
 const DashboardView = lazy(() => import('./components/Dashboard/DashboardView').then(m => ({ default: m.DashboardView })));
@@ -176,6 +177,15 @@ function AppInner() {
   useEffect(() => {
     if (initialDeepLink && isMobile) setForceAnalystMode(true);
   }, [isMobile]);
+
+  // Standalone file:// encryption warning — dismissible via localStorage
+  const [showFileEncryptionWarning] = useState(() =>
+    typeof __STANDALONE__ !== 'undefined' && __STANDALONE__
+    && window.location.protocol === 'file:'
+    && !isEncryptionEnabled()
+    && localStorage.getItem('tc-file-encrypt-dismissed') !== '1',
+  );
+  const [fileEncryptionDismissed, setFileEncryptionDismissed] = useState(false);
 
   // Instrumented wrappers for activity logging
   const {
@@ -1106,6 +1116,29 @@ function AppInner() {
             className="text-accent font-medium ml-2 whitespace-nowrap"
           >
             Back to Exec Mode
+          </button>
+        </div>
+      )}
+      {showFileEncryptionWarning && !fileEncryptionDismissed && (
+        <div className="bg-yellow-900/30 border-b border-yellow-700/40 px-3 py-2 flex items-center justify-between text-xs shrink-0 gap-3">
+          <span className="text-yellow-300">
+            Running standalone on file:// without encryption. Other local HTML files can access your data.{' '}
+            <button
+              onClick={() => { setShowSettings(true); }}
+              className="underline text-yellow-200 font-medium"
+            >
+              Enable encryption
+            </button>{' '}
+            in Settings to protect it.
+          </span>
+          <button
+            onClick={() => {
+              localStorage.setItem('tc-file-encrypt-dismissed', '1');
+              setFileEncryptionDismissed(true);
+            }}
+            className="text-yellow-400 hover:text-yellow-200 font-medium whitespace-nowrap"
+          >
+            Dismiss
           </button>
         </div>
       )}
