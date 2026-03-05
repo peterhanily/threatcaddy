@@ -26,8 +26,9 @@ export default defineConfig({
       manifest: false,
       injectRegister: 'auto',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,woff,woff2}'],
+        globPatterns: ['**/*.{js,css,ico,woff,woff2}'],
         globIgnores: ['**/excalidraw-*', '**/locales/**'],
+        navigateFallback: null,
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {
