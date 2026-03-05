@@ -27,7 +27,7 @@ export default defineConfig({
       injectRegister: 'auto',
       workbox: {
         globPatterns: ['**/*.{js,css,ico,woff,woff2}'],
-        globIgnores: ['**/excalidraw-*', '**/locales/**'],
+        globIgnores: ['**/excalidraw-*', '**/locales/**', 'chunk-reload-guard.js'],
         navigateFallback: null,
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
