@@ -941,17 +941,18 @@ async function sendToTarget(targetUrl, captures) {
   // Wait for the web app's React to mount and register its message listener
   await new Promise(resolve => setTimeout(resolve, 2500));
 
-  // Try sending clips — if bridge.js isn't present, inject it and retry
+  // Proactively inject bridge.js — static content_scripts only cover threatcaddy.com,
+  // so for custom targets (self-hosted, localhost, file://) we must inject explicitly.
+  // For threatcaddy.com this is harmless (duplicate listeners are fine).
+  try {
+    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['bridge.js'] });
+    await new Promise(r => setTimeout(r, 200));
+  } catch { /* restricted page or missing host permission */ }
+
   try {
     await chrome.tabs.sendMessage(tab.id, { type: 'INJECT_CLIPS_TO_PAGE', clips: captures });
   } catch {
-    try {
-      await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['bridge.js'] });
-      await new Promise(r => setTimeout(r, 300));
-      await chrome.tabs.sendMessage(tab.id, { type: 'INJECT_CLIPS_TO_PAGE', clips: captures });
-    } catch (retryErr) {
-      throw new Error('Failed to inject clips. The target page may not be accessible.');
-    }
+    throw new Error('Failed to deliver clips — bridge.js could not reach the page. Check that the extension has permission for this site.');
   }
 
   return { success: true };
