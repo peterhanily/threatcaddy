@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../db';
 import type { Task, TaskStatus } from '../types';
 import { nanoid } from 'nanoid';
-
-const TRASH_PURGE_DAYS = 30;
+import { purgeOldTrash } from '../lib/trash-purge';
 
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -11,14 +10,7 @@ export function useTasks() {
 
   const loadTasks = useCallback(async () => {
     const allTasks = await db.tasks.toArray();
-    // Auto-purge old trash
-    const now = Date.now();
-    const purgeThreshold = now - TRASH_PURGE_DAYS * 86400000;
-    const toPurge = allTasks.filter((t) => t.trashed && t.trashedAt && t.trashedAt < purgeThreshold);
-    if (toPurge.length > 0) {
-      await db.tasks.bulkDelete(toPurge.map((t) => t.id));
-    }
-    const remaining = allTasks.filter((t) => !toPurge.some((p) => p.id === t.id));
+    const remaining = await purgeOldTrash(allTasks, db.tasks);
     setTasks(remaining);
     setLoading(false);
   }, []);

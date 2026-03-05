@@ -536,6 +536,17 @@ function AppInner() {
     [standaloneIOCsHook.getFilteredIOCs, selectedFolderId, selectedTag]
   );
 
+  // Filtered chat threads
+  const filteredChatThreads = useMemo(
+    () => chatsHook.getFilteredThreads({
+      folderId: selectedFolderId,
+      showTrashed: false,
+      showArchived: false,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [chatsHook.getFilteredThreads, selectedFolderId]
+  );
+
   // Screenshare-safe: filter once on full arrays, derive folder-scoped and investigation-scoped from these
   const screensafeNotes = useMemo(
     () => screenshareMaxLevel ? notes.notes.filter((n) => !isAboveClsThreshold(n.clsLevel, screenshareMaxLevel, effectiveClsLevels)) : notes.notes,
@@ -1274,7 +1285,7 @@ function AppInner() {
           />
         ) : activeView === 'chat' ? (
           <ChatView
-            threads={chatsHook.getFilteredThreads({ folderId: selectedFolderId, showTrashed: false, showArchived: false })}
+            threads={filteredChatThreads}
             selectedThreadId={selectedChatThreadId}
             onSelectThread={setSelectedChatThreadId}
             onCreateThread={loggedCreateChatThread}

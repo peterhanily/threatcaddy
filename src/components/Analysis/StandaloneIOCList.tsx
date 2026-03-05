@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import { Plus, Pencil, Trash2, Archive, RotateCcw, Search } from 'lucide-react';
 import type { StandaloneIOC, Folder, Tag } from '../../types';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { StandaloneIOCForm } from './StandaloneIOCForm';
 import { formatDate } from '../../lib/utils';
+import { TableVirtuoso } from 'react-virtuoso';
 
 const STATUS_COLORS: Record<string, string> = {
   active: '#22c55e',
@@ -75,7 +76,7 @@ export function StandaloneIOCList({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-hidden p-4">
         {iocs.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-600">
             <Search size={36} className="mb-3" />
@@ -83,10 +84,17 @@ export function StandaloneIOCList({
             <p className="text-sm mt-1">Create IOCs to track indicators independently</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-gray-800">
+          <div className="overflow-x-auto h-full">
+            <TableVirtuoso
+              data={iocs}
+              components={{
+                Table: (props) => <table {...props} className="w-full text-xs" />,
+                TableHead: forwardRef((props, ref) => <thead ref={ref} {...props} />),
+                TableRow: (props) => <tr {...props} className="border-b border-gray-800/50 group" />,
+                TableBody: forwardRef((props, ref) => <tbody ref={ref} {...props} />),
+              }}
+              fixedHeaderContent={() => (
+                <tr className="border-b border-gray-800 bg-gray-900">
                   <th className="text-left text-gray-500 font-medium py-2 pr-2">Value</th>
                   <th className="text-left text-gray-500 font-medium py-2 px-2">Type</th>
                   <th className="text-left text-gray-500 font-medium py-2 px-2">Confidence</th>
@@ -96,123 +104,121 @@ export function StandaloneIOCList({
                   <th className="text-left text-gray-500 font-medium py-2 px-2">Updated</th>
                   <th className="text-right text-gray-500 font-medium py-2 pl-2">Actions</th>
                 </tr>
-              </thead>
-              <tbody>
-                {iocs.map((ioc) => {
-                  const typeInfo = IOC_TYPE_LABELS[ioc.type];
-                  const confInfo = CONFIDENCE_LEVELS[ioc.confidence];
-                  const statusColor = ioc.iocStatus ? STATUS_COLORS[ioc.iocStatus] || '#6b7280' : undefined;
-                  const clsColor = ioc.clsLevel ? CLS_COLORS[ioc.clsLevel] || '#6b7280' : undefined;
-                  return (
-                    <tr key={ioc.id} className="border-b border-gray-800/50 group">
-                      <td className="py-2 pr-2 text-gray-200 font-mono max-w-[240px] truncate">{ioc.value}</td>
-                      <td className="py-2 px-2">
+              )}
+              itemContent={(_index, ioc) => {
+                const typeInfo = IOC_TYPE_LABELS[ioc.type];
+                const confInfo = CONFIDENCE_LEVELS[ioc.confidence];
+                const statusColor = ioc.iocStatus ? STATUS_COLORS[ioc.iocStatus] || '#6b7280' : undefined;
+                const clsColor = ioc.clsLevel ? CLS_COLORS[ioc.clsLevel] || '#6b7280' : undefined;
+                return (
+                  <>
+                    <td className="py-2 pr-2 text-gray-200 font-mono max-w-[240px] truncate">{ioc.value}</td>
+                    <td className="py-2 px-2">
+                      <span
+                        className="text-[10px] px-1.5 py-0.5 rounded"
+                        style={{ backgroundColor: typeInfo.color + '22', color: typeInfo.color }}
+                      >
+                        {typeInfo.label}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2">
+                      <span
+                        className="text-[10px] px-1.5 py-0.5 rounded"
+                        style={{ backgroundColor: confInfo.color + '22', color: confInfo.color }}
+                      >
+                        {confInfo.label}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2">
+                      {ioc.iocStatus ? (
                         <span
                           className="text-[10px] px-1.5 py-0.5 rounded"
-                          style={{ backgroundColor: typeInfo.color + '22', color: typeInfo.color }}
+                          style={{ backgroundColor: statusColor + '22', color: statusColor }}
                         >
-                          {typeInfo.label}
+                          {ioc.iocStatus}
                         </span>
-                      </td>
-                      <td className="py-2 px-2">
+                      ) : (
+                        <span className="text-gray-600">—</span>
+                      )}
+                    </td>
+                    <td className="py-2 px-2 text-gray-400">{ioc.attribution || '—'}</td>
+                    <td className="py-2 px-2">
+                      {ioc.clsLevel ? (
                         <span
-                          className="text-[10px] px-1.5 py-0.5 rounded"
-                          style={{ backgroundColor: confInfo.color + '22', color: confInfo.color }}
+                          className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                          style={{ backgroundColor: clsColor + '22', color: clsColor }}
                         >
-                          {confInfo.label}
+                          {ioc.clsLevel}
                         </span>
-                      </td>
-                      <td className="py-2 px-2">
-                        {ioc.iocStatus ? (
-                          <span
-                            className="text-[10px] px-1.5 py-0.5 rounded"
-                            style={{ backgroundColor: statusColor + '22', color: statusColor }}
-                          >
-                            {ioc.iocStatus}
-                          </span>
-                        ) : (
-                          <span className="text-gray-600">—</span>
-                        )}
-                      </td>
-                      <td className="py-2 px-2 text-gray-400">{ioc.attribution || '—'}</td>
-                      <td className="py-2 px-2">
-                        {ioc.clsLevel ? (
-                          <span
-                            className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-                            style={{ backgroundColor: clsColor + '22', color: clsColor }}
-                          >
-                            {ioc.clsLevel}
-                          </span>
-                        ) : (
-                          <span className="text-gray-600">—</span>
-                        )}
-                      </td>
-                      <td className="py-2 px-2 text-gray-500">{formatDate(ioc.updatedAt)}</td>
-                      <td className="py-2 pl-2">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {ioc.trashed ? (
-                            <>
-                              {onRestore && (
-                                <button
-                                  onClick={() => onRestore(ioc.id)}
-                                  className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-green-400"
-                                  title="Restore"
-                                >
-                                  <RotateCcw size={14} />
-                                </button>
-                              )}
+                      ) : (
+                        <span className="text-gray-600">—</span>
+                      )}
+                    </td>
+                    <td className="py-2 px-2 text-gray-500">{formatDate(ioc.updatedAt)}</td>
+                    <td className="py-2 pl-2">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {ioc.trashed ? (
+                          <>
+                            {onRestore && (
                               <button
-                                onClick={() => setDeletingId(ioc.id)}
+                                onClick={() => onRestore(ioc.id)}
+                                className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-green-400"
+                                title="Restore"
+                              >
+                                <RotateCcw size={14} />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setDeletingId(ioc.id)}
+                              className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
+                              title="Delete permanently"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => { setEditingIOC(ioc); setShowForm(true); }}
+                              className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
+                              title="Edit"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            {onToggleArchive && (
+                              <button
+                                onClick={() => onToggleArchive(ioc.id)}
+                                className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
+                                title={ioc.archived ? 'Unarchive' : 'Archive'}
+                              >
+                                <Archive size={14} />
+                              </button>
+                            )}
+                            {onTrash ? (
+                              <button
+                                onClick={() => onTrash(ioc.id)}
                                 className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
-                                title="Delete permanently"
+                                title="Move to trash"
                               >
                                 <Trash2 size={14} />
                               </button>
-                            </>
-                          ) : (
-                            <>
+                            ) : (
                               <button
-                                onClick={() => { setEditingIOC(ioc); setShowForm(true); }}
-                                className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
-                                title="Edit"
+                                onClick={() => setDeletingId(ioc.id)}
+                                className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
+                                title="Delete"
                               >
-                                <Pencil size={14} />
+                                <Trash2 size={14} />
                               </button>
-                              {onToggleArchive && (
-                                <button
-                                  onClick={() => onToggleArchive(ioc.id)}
-                                  className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
-                                  title={ioc.archived ? 'Unarchive' : 'Archive'}
-                                >
-                                  <Archive size={14} />
-                                </button>
-                              )}
-                              {onTrash ? (
-                                <button
-                                  onClick={() => onTrash(ioc.id)}
-                                  className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
-                                  title="Move to trash"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => setDeletingId(ioc.id)}
-                                  className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
-                                  title="Delete"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </>
+                );
+              }}
+            />
           </div>
         )}
       </div>

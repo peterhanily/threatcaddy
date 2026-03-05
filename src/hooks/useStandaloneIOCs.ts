@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../db';
 import type { StandaloneIOC } from '../types';
 import { nanoid } from 'nanoid';
-
-const TRASH_PURGE_DAYS = 30;
+import { purgeOldTrash } from '../lib/trash-purge';
 
 export function useStandaloneIOCs() {
   const [iocs, setIOCs] = useState<StandaloneIOC[]>([]);
@@ -11,14 +10,7 @@ export function useStandaloneIOCs() {
 
   const loadIOCs = useCallback(async () => {
     const all = await db.standaloneIOCs.toArray();
-    // Auto-purge old trash
-    const now = Date.now();
-    const purgeThreshold = now - TRASH_PURGE_DAYS * 86400000;
-    const toPurge = all.filter((i) => i.trashed && i.trashedAt && i.trashedAt < purgeThreshold);
-    if (toPurge.length > 0) {
-      await db.standaloneIOCs.bulkDelete(toPurge.map((i) => i.id));
-    }
-    const remaining = all.filter((i) => !toPurge.some((p) => p.id === i.id));
+    const remaining = await purgeOldTrash(all, db.standaloneIOCs);
     setIOCs(remaining.sort((a, b) => b.createdAt - a.createdAt));
     setLoading(false);
   }, []);

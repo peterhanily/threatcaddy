@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../db';
 import type { TimelineEvent, TimelineEventType } from '../types';
 import { nanoid } from 'nanoid';
-
-const TRASH_PURGE_DAYS = 30;
+import { purgeOldTrash } from '../lib/trash-purge';
 
 export function useTimeline() {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
@@ -11,14 +10,7 @@ export function useTimeline() {
 
   const loadEvents = useCallback(async () => {
     const all = await db.timelineEvents.toArray();
-    // Auto-purge old trash
-    const now = Date.now();
-    const purgeThreshold = now - TRASH_PURGE_DAYS * 86400000;
-    const toPurge = all.filter((e) => e.trashed && e.trashedAt && e.trashedAt < purgeThreshold);
-    if (toPurge.length > 0) {
-      await db.timelineEvents.bulkDelete(toPurge.map((e) => e.id));
-    }
-    const remaining = all.filter((e) => !toPurge.some((p) => p.id === e.id));
+    const remaining = await purgeOldTrash(all, db.timelineEvents);
     setEvents(remaining);
     setLoading(false);
   }, []);

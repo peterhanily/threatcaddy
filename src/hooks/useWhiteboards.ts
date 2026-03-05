@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../db';
 import type { Whiteboard } from '../types';
 import { nanoid } from 'nanoid';
-
-const TRASH_PURGE_DAYS = 30;
+import { purgeOldTrash } from '../lib/trash-purge';
 
 export function useWhiteboards() {
   const [whiteboards, setWhiteboards] = useState<Whiteboard[]>([]);
@@ -11,14 +10,7 @@ export function useWhiteboards() {
 
   const loadWhiteboards = useCallback(async () => {
     const all = await db.whiteboards.toArray();
-    // Auto-purge old trash
-    const now = Date.now();
-    const purgeThreshold = now - TRASH_PURGE_DAYS * 86400000;
-    const toPurge = all.filter((w) => w.trashed && w.trashedAt && w.trashedAt < purgeThreshold);
-    if (toPurge.length > 0) {
-      await db.whiteboards.bulkDelete(toPurge.map((w) => w.id));
-    }
-    const remaining = all.filter((w) => !toPurge.some((p) => p.id === w.id));
+    const remaining = await purgeOldTrash(all, db.whiteboards);
     setWhiteboards(remaining.sort((a, b) => a.order - b.order));
     setLoading(false);
   }, []);

@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { db } from '../db';
 import type { Note, SortOption, SortDirection, IOCType } from '../types';
 import { nanoid } from 'nanoid';
-
-const TRASH_PURGE_DAYS = 30;
+import { purgeOldTrash } from '../lib/trash-purge';
 
 export function useNotes() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -11,14 +10,7 @@ export function useNotes() {
 
   const loadNotes = useCallback(async () => {
     const allNotes = await db.notes.toArray();
-    // Auto-purge old trash
-    const now = Date.now();
-    const purgeThreshold = now - TRASH_PURGE_DAYS * 86400000;
-    const toPurge = allNotes.filter((n) => n.trashed && n.trashedAt && n.trashedAt < purgeThreshold);
-    if (toPurge.length > 0) {
-      await db.notes.bulkDelete(toPurge.map((n) => n.id));
-    }
-    const remaining = allNotes.filter((n) => !toPurge.some((p) => p.id === n.id));
+    const remaining = await purgeOldTrash(allNotes, db.notes);
     setNotes(remaining);
     setLoading(false);
   }, []);

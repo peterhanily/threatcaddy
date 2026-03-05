@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../db';
 import type { ChatThread, ChatMessage } from '../types';
 import { nanoid } from 'nanoid';
-
-const TRASH_PURGE_DAYS = 30;
+import { purgeOldTrash } from '../lib/trash-purge';
 
 /** Ensure the DB connection is open (handles v14→v15 upgrade on first call). */
 async function ensureDB() {
@@ -20,14 +19,7 @@ export function useChats() {
     try {
       await ensureDB();
       const all = await db.chatThreads.toArray();
-      // Auto-purge old trash
-      const now = Date.now();
-      const purgeThreshold = now - TRASH_PURGE_DAYS * 86400000;
-      const toPurge = all.filter((t) => t.trashed && t.trashedAt && t.trashedAt < purgeThreshold);
-      if (toPurge.length > 0) {
-        await db.chatThreads.bulkDelete(toPurge.map((t) => t.id));
-      }
-      const remaining = all.filter((t) => !toPurge.some((p) => p.id === t.id));
+      const remaining = await purgeOldTrash(all, db.chatThreads);
       setThreads(remaining.sort((a, b) => b.updatedAt - a.updatedAt));
     } catch (err) {
       console.warn('useChats: failed to load threads', err);
