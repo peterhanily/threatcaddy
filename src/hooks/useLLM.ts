@@ -44,6 +44,7 @@ export function useLLM() {
   const onCompleteRef = useRef<((result: AgentResult) => void) | null>(null);
   const accumulatedRef = useRef('');
   const requestIdRef = useRef<string | null>(null);
+  const rafRef = useRef<number | null>(null);
   const agentStateRef = useRef<{
     opts: SendRequestOptions;
     messages: SendRequestOptions['messages'];
@@ -200,12 +201,24 @@ export function useLLM() {
       if (event.data.type === 'TC_LLM_CHUNK') {
         if (event.data.requestId && event.data.requestId !== requestIdRef.current) return;
         accumulatedRef.current += event.data.content;
-        setStreamingContent(accumulatedRef.current);
+        // Batch rendering to once per animation frame to avoid thrashing
+        if (!rafRef.current) {
+          rafRef.current = requestAnimationFrame(() => {
+            rafRef.current = null;
+            setStreamingContent(accumulatedRef.current);
+          });
+        }
         return;
       }
 
       if (event.data.type === 'TC_LLM_DONE') {
         if (event.data.requestId && event.data.requestId !== requestIdRef.current) return;
+        // Flush any pending RAF so final content is rendered
+        if (rafRef.current) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+          setStreamingContent(accumulatedRef.current);
+        }
         const stopReason: string = event.data.stopReason || 'end_turn';
         const contentBlocks: ContentBlock[] = event.data.contentBlocks || [];
         handleDoneRef.current?.(stopReason, contentBlocks);
@@ -214,6 +227,7 @@ export function useLLM() {
 
       if (event.data.type === 'TC_LLM_ERROR') {
         if (event.data.requestId && event.data.requestId !== requestIdRef.current) return;
+        if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
         setError(event.data.error);
         setActiveRequestId(null);
         requestIdRef.current = null;
@@ -278,6 +292,7 @@ export function useLLM() {
       if (agentStateRef.current) {
         agentStateRef.current.aborted = true;
       }
+      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
 
       // Capture before clearing
       const content = accumulatedRef.current;

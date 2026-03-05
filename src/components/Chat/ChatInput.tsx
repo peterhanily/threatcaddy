@@ -46,16 +46,22 @@ interface ChatInputProps {
   onModelChange: (model: string, provider: LLMProvider) => void;
   disabled?: boolean;
   localModelName?: string;
+  /** Set of providers that have an API key configured */
+  configuredProviders?: Set<string>;
 }
 
-export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, model, onModelChange, disabled, localModelName }: ChatInputProps) {
+export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, model, onModelChange, disabled, localModelName, configuredProviders }: ChatInputProps) {
   const MODELS = useMemo(() => {
-    const models = [...STATIC_MODELS];
+    let models = [...STATIC_MODELS];
     if (localModelName) {
       models.push({ label: `Local: ${localModelName}`, value: localModelName, provider: 'local' as LLMProvider, group: 'Local' });
     }
+    // Only show models for providers that have an API key configured
+    if (configuredProviders && configuredProviders.size > 0) {
+      models = models.filter(m => configuredProviders.has(m.provider));
+    }
     return models;
-  }, [localModelName]);
+  }, [localModelName, configuredProviders]);
 
   const [text, setText] = useState('');
   const [slashOpen, setSlashOpen] = useState(false);

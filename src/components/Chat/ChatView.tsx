@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText } from 'lucide-react';
 import type { ChatThread, ChatMessage, LLMProvider, Settings, Folder, ToolUseBlock } from '../../types';
 import { ChatMessageBubble } from './ChatMessage';
@@ -87,6 +87,17 @@ export function ChatView({
       default: return undefined;
     }
   }, []);
+
+  // Compute which providers have API keys configured
+  const configuredProviders = useMemo(() => {
+    const providers = new Set<string>();
+    if (settings.llmAnthropicApiKey?.trim()) providers.add('anthropic');
+    if (settings.llmOpenAIApiKey?.trim()) providers.add('openai');
+    if (settings.llmGeminiApiKey?.trim()) providers.add('gemini');
+    if (settings.llmMistralApiKey?.trim()) providers.add('mistral');
+    if (settings.llmLocalEndpoint?.trim()) providers.add('local');
+    return providers;
+  }, [settings.llmAnthropicApiKey, settings.llmOpenAIApiKey, settings.llmGeminiApiKey, settings.llmMistralApiKey, settings.llmLocalEndpoint]);
 
   const getProviderLabel = useCallback((provider: LLMProvider): string => {
     switch (provider) {
@@ -491,6 +502,7 @@ export function ChatView({
               model={activeThread.model}
               onModelChange={handleModelChange}
               localModelName={settings.llmLocalModelName}
+              configuredProviders={configuredProviders}
             />
           </>
         ) : (

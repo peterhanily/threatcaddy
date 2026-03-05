@@ -1,5 +1,14 @@
 // Content script (ISOLATED world) — bridges postMessage between web app and background SW
 
+// Guard against duplicate injection (static content_scripts + dynamic executeScript)
+if (document.documentElement.dataset.tcBridgeLoaded) {
+  // Already loaded — just re-signal readiness and bail out
+  if (chrome && chrome.runtime && chrome.runtime.id) {
+    window.postMessage({ type: 'TC_EXTENSION_READY' }, '*');
+  }
+} else {
+document.documentElement.dataset.tcBridgeLoaded = '1';
+
 var ports = new Map(); // requestId → Port
 
 function isExtensionValid() {
@@ -152,3 +161,5 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     sendResponse({ success: true });
   }
 });
+
+} // end duplicate-injection guard
