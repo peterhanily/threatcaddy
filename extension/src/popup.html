@@ -439,6 +439,16 @@
 
   <section>
     <h2>Permissions</h2>
+    <div class="help-text" style="display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:8px;">
+      <div>
+        <strong>Allow AI chat</strong><br>
+        <span style="font-size:11px;color:#9ca3af;">Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral).</span>
+      </div>
+      <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
+        <input type="checkbox" id="ai-perm-toggle" style="opacity:0;width:0;height:0;">
+        <span id="ai-perm-slider" class="perm-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#4b5563;border-radius:11px;transition:background-color .2s;"></span>
+      </label>
+    </div>
     <div class="help-text" style="display:flex;align-items:center;gap:8px;justify-content:space-between;">
       <div>
         <strong>Allow URL fetching</strong><br>
@@ -446,7 +456,7 @@
       </div>
       <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
         <input type="checkbox" id="url-perm-toggle" style="opacity:0;width:0;height:0;">
-        <span id="url-perm-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#4b5563;border-radius:11px;transition:background-color .2s;"></span>
+        <span id="url-perm-slider" class="perm-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#4b5563;border-radius:11px;transition:background-color .2s;"></span>
       </label>
     </div>
   </section>

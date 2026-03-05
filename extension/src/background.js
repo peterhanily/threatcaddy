@@ -72,11 +72,15 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 // Auto-inject bridge.js on file:// targets (can't use registerContentScripts for file://)
+// Injects on: pages matching configured file:// target, or pages with "threatcaddy" in the URL
+// (covers standalone HTML). Silently fails if file:// access is not granted.
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status !== 'complete' || !tab.url?.startsWith('file://')) return;
   const { settings = {} } = await chrome.storage.local.get(['settings']);
-  if (!settings.targetUrl?.startsWith('file://')) return;
-  if (tab.url.startsWith(settings.targetUrl) || tab.url === settings.targetUrl) {
+  const targetIsFile = settings.targetUrl?.startsWith('file://');
+  const matchesTarget = targetIsFile && (tab.url.startsWith(settings.targetUrl) || tab.url === settings.targetUrl);
+  const looksLikeThreatCaddy = /threatcaddy/i.test(tab.url);
+  if (matchesTarget || looksLikeThreatCaddy) {
     try {
       await chrome.scripting.executeScript({ target: { tabId }, files: ['bridge.js'] });
     } catch { /* no file access or restricted page */ }
@@ -558,7 +562,21 @@ chrome.runtime.onConnect.addListener((port) => {
   });
 });
 
+// Check host permission before making LLM API calls (AI API origins are optional_host_permissions)
+async function ensureLLMPermission(url) {
+  const parsed = new URL(url);
+  const origin = parsed.origin + '/*';
+  const has = await chrome.permissions.contains({ origins: [origin] });
+  if (!has) {
+    throw new Error(
+      'AI chat permission required. Open the ThreatCaddy extension popup and enable "Allow AI chat" under Permissions.'
+    );
+  }
+}
+
 async function streamAnthropic(send, payload, signal) {
+  await ensureLLMPermission('https://api.anthropic.com/v1/messages');
+
   // Support both API keys (sk-ant-...) and OAuth/Bearer tokens
   const isApiKey = payload.apiKey.startsWith('sk-ant-');
   const authHeaders = isApiKey
@@ -663,6 +681,8 @@ async function streamAnthropic(send, payload, signal) {
 
 // Shared streamer for OpenAI-compatible APIs (OpenAI, Mistral, Local/Ollama/vLLM)
 async function streamOpenAICompatible(send, payload, signal, endpoint, headers, providerLabel) {
+  await ensureLLMPermission(endpoint);
+
   const messages = [];
   if (payload.systemPrompt) {
     messages.push({ role: 'system', content: payload.systemPrompt });
@@ -813,6 +833,8 @@ async function streamLocal(send, payload, signal) {
 }
 
 async function streamGemini(send, payload, signal) {
+  await ensureLLMPermission('https://generativelanguage.googleapis.com/v1beta/models');
+
   const model = payload.model;
   const apiKey = payload.apiKey;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;

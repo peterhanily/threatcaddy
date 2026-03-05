@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ThreatCaddy — Quick Capture",
   "version": "1.0.0",
-  "description": "Clip text from any page into ThreatCaddy and power AI-assisted threat analysis. Privacy-first, all data stays local.",
+  "description": "Clip text from any page into ThreatCaddy for AI-assisted threat analysis. Data stays on your device — AI queries go only to your chosen provider.",
 
   "permissions": [
     "contextMenus",
@@ -13,10 +13,6 @@
   ],
 
   "host_permissions": [
-    "https://api.anthropic.com/*",
-    "https://api.openai.com/*",
-    "https://generativelanguage.googleapis.com/*",
-    "https://api.mistral.ai/*",
     "http://localhost/*",
     "http://127.0.0.1/*"
   ],
@@ -44,7 +40,14 @@
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
 
-  "optional_host_permissions": ["*://*/*", "file:///*"],
+  "optional_host_permissions": [
+    "https://api.anthropic.com/*",
+    "https://api.openai.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.mistral.ai/*",
+    "*://*/*",
+    "file:///*"
+  ],
 
   "content_scripts": [{
     "matches": [

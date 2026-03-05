@@ -140,22 +140,13 @@ setInterval(loadStats, 2000);
 const isMac = /Mac/i.test(navigator.platform);
 document.getElementById('shortcut-kbd').textContent = isMac ? '⌃+Shift+X' : 'Alt+Shift+X';
 
-// ── URL fetching permission toggle ──────────────────────────────────────
-const urlPermToggle = document.getElementById('url-perm-toggle');
-const urlPermSlider = document.getElementById('url-perm-slider');
+// ── Permission toggles ──────────────────────────────────────────────────
 
-function updateSliderStyle(granted) {
-  urlPermSlider.style.backgroundColor = granted ? '#8b5cf6' : '#4b5563';
-  // Thumb
-  const thumb = '::after';
-  urlPermSlider.style.setProperty('--thumb-left', granted ? '20px' : '2px');
-}
-
-// Use a real pseudo-element by injecting a style rule once
+// Shared slider styles (pseudo-element thumb)
 (function initSliderStyles() {
   const style = document.createElement('style');
   style.textContent = `
-    #url-perm-slider::after {
+    .perm-slider::after {
       content: '';
       position: absolute;
       width: 18px; height: 18px;
@@ -164,26 +155,41 @@ function updateSliderStyle(granted) {
       border-radius: 50%;
       transition: transform .2s;
     }
-    #url-perm-toggle:checked + #url-perm-slider::after {
+    input:checked + .perm-slider::after {
       transform: translateX(18px);
     }
   `;
   document.head.appendChild(style);
 })();
 
-// Check current permission state
-chrome.permissions.contains({ origins: ['*://*/*'] }, (granted) => {
-  urlPermToggle.checked = granted;
-  urlPermSlider.style.backgroundColor = granted ? '#8b5cf6' : '#4b5563';
-});
+function setupPermToggle(toggleId, sliderId, origins) {
+  const toggle = document.getElementById(toggleId);
+  const slider = document.getElementById(sliderId);
 
-urlPermToggle.addEventListener('change', async () => {
-  if (urlPermToggle.checked) {
-    const granted = await chrome.permissions.request({ origins: ['*://*/*'] }).catch(() => false);
-    urlPermToggle.checked = granted;
-    urlPermSlider.style.backgroundColor = granted ? '#8b5cf6' : '#4b5563';
-  } else {
-    await chrome.permissions.remove({ origins: ['*://*/*'] }).catch(() => {});
-    urlPermSlider.style.backgroundColor = '#4b5563';
-  }
-});
+  chrome.permissions.contains({ origins }, (granted) => {
+    toggle.checked = granted;
+    slider.style.backgroundColor = granted ? '#8b5cf6' : '#4b5563';
+  });
+
+  toggle.addEventListener('change', async () => {
+    if (toggle.checked) {
+      const granted = await chrome.permissions.request({ origins }).catch(() => false);
+      toggle.checked = granted;
+      slider.style.backgroundColor = granted ? '#8b5cf6' : '#4b5563';
+    } else {
+      await chrome.permissions.remove({ origins }).catch(() => {});
+      slider.style.backgroundColor = '#4b5563';
+    }
+  });
+}
+
+// AI chat — grants access to provider API origins
+setupPermToggle('ai-perm-toggle', 'ai-perm-slider', [
+  'https://api.anthropic.com/*',
+  'https://api.openai.com/*',
+  'https://generativelanguage.googleapis.com/*',
+  'https://api.mistral.ai/*',
+]);
+
+// URL fetching — grants broad host access for /fetch command
+setupPermToggle('url-perm-toggle', 'url-perm-slider', ['*://*/*']);

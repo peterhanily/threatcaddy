@@ -24,6 +24,20 @@ if (isExtensionValid()) {
   window.postMessage({ type: 'TC_EXTENSION_READY' }, '*');
 }
 
+// Re-signal readiness when page is restored from BFCache (back/forward navigation)
+document.addEventListener('pageshow', function (event) {
+  if (event.persisted && isExtensionValid()) {
+    window.postMessage({ type: 'TC_EXTENSION_READY' }, '*');
+  }
+});
+
+// Re-signal when tab becomes visible again (covers additional edge cases)
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden && isExtensionValid()) {
+    window.postMessage({ type: 'TC_EXTENSION_READY' }, '*');
+  }
+});
+
 // Respond to ping requests from the web app (handles race condition)
 window.addEventListener('message', function (event) {
   if (event.source === window && event.data && event.data.type === 'TC_EXTENSION_PING') {
