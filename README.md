@@ -142,6 +142,10 @@ docker compose up -d    # Starts Hono server + PostgreSQL
 
 Set `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` (Ed25519) in `.env`. Optionally add `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `GEMINI_API_KEY` to enable server-side LLM proxying.
 
+## Privacy
+
+All data stays local. No accounts, no tracking, no cookies. API keys are stored in your browser and sent only to your chosen LLM provider. See the full [Privacy Policy](https://threatcaddy.com/privacy.html).
+
 ## License
 
 MIT

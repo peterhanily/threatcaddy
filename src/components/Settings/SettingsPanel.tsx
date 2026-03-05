@@ -1,4 +1,4 @@
-import { Github, Download, FlaskConical, Trash2, Bot, X } from 'lucide-react';
+import { Github, Download, FlaskConical, Trash2, Bot, X, Shield } from 'lucide-react';
 import type { Settings, Note } from '../../types';
 import { ExportImport } from './ExportImport';
 import { ThreatIntelConfig } from './ThreatIntelConfig';
@@ -318,6 +318,15 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
           >
             <Download size={16} />
             Download Standalone
+          </a>
+          <a
+            href="https://threatcaddy.com/privacy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover transition-colors"
+          >
+            <Shield size={16} />
+            Privacy
           </a>
         </div>
       </div>

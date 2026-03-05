@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — ThreatCaddy</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #0f1117;
+      color: #d1d5db;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #f3f4f6;
+      font-size: 1.75rem;
+      margin-bottom: 0.25rem;
+    }
+    .subtitle {
+      color: #6b7280;
+      font-size: 0.875rem;
+      margin-bottom: 2rem;
+    }
+    h2 {
+      color: #e5e7eb;
+      font-size: 1.125rem;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid #1f2937;
+    }
+    p, li {
+      font-size: 0.9375rem;
+      margin-bottom: 0.75rem;
+    }
+    ul {
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    li { margin-bottom: 0.4rem; }
+    a {
+      color: #60a5fa;
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    .back {
+      display: inline-block;
+      margin-bottom: 1.5rem;
+      color: #9ca3af;
+      font-size: 0.875rem;
+    }
+    .back:hover { color: #e5e7eb; }
+    .disclaimer {
+      margin-top: 2.5rem;
+      padding: 1rem 1.25rem;
+      background: #1a1d2e;
+      border: 1px solid #2d3148;
+      border-radius: 0.5rem;
+      font-size: 0.8125rem;
+      color: #9ca3af;
+    }
+    .disclaimer strong { color: #d1d5db; }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #1f2937;
+      font-size: 0.8125rem;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="https://threatcaddy.com" class="back">&larr; Back to ThreatCaddy</a>
+    <h1>Privacy Policy</h1>
+    <p class="subtitle">Last updated: March 5, 2026</p>
+
+    <p>
+      ThreatCaddy is a personal open-source project. It is <strong>not affiliated with any
+      employer, organization, or company — past, present, or future</strong>.
+    </p>
+
+    <h2>Data Storage</h2>
+    <ul>
+      <li>All notes, tasks, timelines, and investigation data are stored locally in your browser using IndexedDB. Nothing is sent to any server.</li>
+      <li>Extension clips are stored in <code>chrome.storage.local</code> on your device.</li>
+      <li>There are no user accounts, no server-side storage, and no cookies.</li>
+    </ul>
+
+    <h2>API Keys &amp; AI Features</h2>
+    <ul>
+      <li>API keys you configure for AI features (e.g., OpenAI, Anthropic, Google, or other LLM providers) are stored locally in your browser.</li>
+      <li>Keys are transmitted only to your chosen provider's API endpoint when you use AI chat features. They are never sent anywhere else.</li>
+    </ul>
+
+    <h2>Extension Permissions</h2>
+    <ul>
+      <li>The ThreatCaddy extension requests only the permissions necessary to capture clips and deliver them to your ThreatCaddy instance.</li>
+      <li>Optional host permissions are requested only when you configure a custom target URL or enable file:// access.</li>
+      <li>The extension does not collect browsing history, form data, or any information beyond what you explicitly clip.</li>
+    </ul>
+
+    <h2>Analytics</h2>
+    <ul>
+      <li>The hosted site at <a href="https://threatcaddy.com">threatcaddy.com</a> uses Cloudflare Web Analytics, which collects anonymous page-view metrics only. It does not use cookies, does not collect personal information, and does not track individual users.</li>
+      <li>The standalone HTML file and the extension include no analytics whatsoever.</li>
+    </ul>
+
+    <h2>Third Parties</h2>
+    <p>ThreatCaddy does not share any data with third parties. The only external network requests are:</p>
+    <ul>
+      <li>AI chat requests sent to the LLM provider endpoint you configure (e.g., <code>api.openai.com</code>).</li>
+      <li>URL fetch requests you explicitly initiate through AI chat tools.</li>
+    </ul>
+
+    <div class="disclaimer">
+      <strong>Disclaimer:</strong> ThreatCaddy is provided "as is" without warranty of any kind,
+      express or implied. Users assume all liability for their use of the tool. The author is not
+      responsible for any data loss, security issues, or other damages arising from use of this software.
+    </div>
+
+    <footer>
+      <a href="https://threatcaddy.com">ThreatCaddy</a> · <a href="https://github.com/peterhanily/threatcaddy">GitHub</a>
+    </footer>
+  </div>
+</body>
+</html>

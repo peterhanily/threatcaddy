@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ThreatCaddy — Quick Capture",
   "version": "1.0.0",
-  "description": "Clip text from any page into ThreatCaddy. Privacy-first, all data stays local.",
+  "description": "Clip text from any page into ThreatCaddy and power AI-assisted threat analysis. Privacy-first, all data stays local.",
 
   "browser_specific_settings": {
     "gecko": {
@@ -47,8 +47,7 @@
   "content_scripts": [{
     "matches": [
       "https://threatcaddy.com/*",
-      "https://www.threatcaddy.com/*",
-      "file:///*"
+      "https://www.threatcaddy.com/*"
     ],
     "js": ["bridge.js"],
     "run_at": "document_idle"

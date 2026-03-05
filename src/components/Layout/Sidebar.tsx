@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   FileText, ListChecks, Clock, Trash2, Briefcase,
   Archive, ChevronDown, Plus, X, Settings as SettingsIcon,
-  PanelLeftClose, PanelLeft, Github, Download, Chrome, PenTool, Activity, Network, Dices, Search,
+  PanelLeftClose, PanelLeft, Github, Download, Chrome, PenTool, Activity, Network, Dices, Search, Shield,
   LayoutDashboard, MessageSquare, MessagesSquare, FolderOpen, FolderClosed,
 } from 'lucide-react';
 import type { Folder, Tag as TagType, Timeline, Whiteboard, ViewMode, InvestigationStatus } from '../../types';
@@ -634,6 +634,15 @@ export function Sidebar({
         >
           <Chrome size={16} />
           <span>Extension</span>
+        </a>
+        <a
+          href="https://threatcaddy.com/privacy.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
+        >
+          <Shield size={16} />
+          <span>Privacy</span>
         </a>
       </div>
 

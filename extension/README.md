@@ -49,3 +49,7 @@ npm run package:firefox  # Zip Firefox build → dist/threatcaddy-firefox.zip
 ```
 
 The build script reads the `BROWSER` environment variable (`chrome` or `firefox`) and copies the appropriate manifest and source files into `dist/<browser>/`.
+
+## Privacy
+
+All captured clips stay local in `chrome.storage.local`. The extension makes no external network requests except those you explicitly initiate (sending clips to your ThreatCaddy instance, AI chat API calls to your configured provider). See the full [Privacy Policy](https://threatcaddy.com/privacy.html).

@@ -440,6 +440,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PING') {
     sendResponse({ loaded: true });
   } else if (message.type === 'FETCH_URL') {
+    // Validate URL scheme
+    let parsed;
+    try {
+      parsed = new URL(message.url);
+    } catch {
+      sendResponse({ success: false, error: 'Invalid URL' });
+      return;
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      sendResponse({ success: false, error: 'Only HTTP and HTTPS URLs are supported' });
+      return;
+    }
     (async () => {
       try {
         const controller = new AbortController();

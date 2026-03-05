@@ -1,4 +1,4 @@
-import { Menu, Search, Github, Download, Chrome, HardDriveDownload, FolderUp, HelpCircle } from 'lucide-react';
+import { Menu, Search, Github, Download, Chrome, HardDriveDownload, FolderUp, HelpCircle, Shield } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { ThemeToggle } from '../Common/ThemeToggle';
 import { ScreenshareToggle } from '../Common/ScreenshareToggle';
@@ -144,6 +144,16 @@ export function Header({
         >
           <Chrome size={15} />
           <span className="hidden lg:inline">Extension</span>
+        </a>
+        <a
+          href="https://threatcaddy.com/privacy.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800 text-xs font-medium transition-colors"
+          title="Privacy Policy"
+        >
+          <Shield size={15} />
+          <span className="hidden lg:inline">Privacy</span>
         </a>
       </div>
 
