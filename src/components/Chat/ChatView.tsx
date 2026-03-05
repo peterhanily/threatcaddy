@@ -277,7 +277,7 @@ export function ChatView({
     let content = `# Chat: ${activeThread.title}\n\n`;
     content += `*Exported on ${new Date().toLocaleDateString()} — Model: ${activeThread.model}*\n\n---\n\n`;
     for (const msg of activeThread.messages) {
-      const label = msg.role === 'user' ? '**You:**' : '**AI:**';
+      const label = msg.role === 'user' ? '**You:**' : '**Caddy:**';
       content += `${label}\n\n${msg.content}\n\n`;
       if (msg.toolCalls && msg.toolCalls.length > 0) {
         for (const tc of msg.toolCalls) {
@@ -286,9 +286,10 @@ export function ChatView({
       }
       content += '---\n\n';
     }
+    const noteId = nanoid();
     const now = Date.now();
     await db.notes.add({
-      id: nanoid(),
+      id: noteId,
       title: `Chat Export: ${activeThread.title}`,
       content,
       folderId: selectedFolderId || undefined,
@@ -300,7 +301,9 @@ export function ChatView({
       updatedAt: now,
     });
     onEntitiesChanged?.();
-  }, [activeThread, selectedFolderId, onEntitiesChanged]);
+    // Navigate to the newly created note
+    onNavigateToEntity?.('note', noteId);
+  }, [activeThread, selectedFolderId, onEntitiesChanged, onNavigateToEntity]);
 
   const handleSuggestionClick = useCallback((text: string) => {
     handleSend(text);

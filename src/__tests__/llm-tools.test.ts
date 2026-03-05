@@ -358,7 +358,7 @@ describe('buildSystemPrompt', () => {
 
   it('returns a prompt without folder context', async () => {
     const prompt = await buildSystemPrompt();
-    expect(prompt).toContain('ThreatCaddy AI');
+    expect(prompt).toContain('Caddy');
     expect(prompt).not.toContain('Current investigation');
   });
 
