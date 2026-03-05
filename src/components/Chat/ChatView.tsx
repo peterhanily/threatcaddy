@@ -225,7 +225,7 @@ export function ChatView({
     }
 
     // Build enriched system prompt with investigation context
-    const systemPrompt = await buildSystemPrompt(selectedFolder);
+    const systemPrompt = await buildSystemPrompt(selectedFolder, settings.llmSystemPrompt);
 
     // Build conversation messages (string content for history)
     // Use transformed text for the last user message so the LLM gets natural language

@@ -186,6 +186,7 @@ export interface Settings {
   llmLocalModelName?: string;
   llmDefaultModel?: string;
   llmDefaultProvider?: LLMProvider;
+  llmSystemPrompt?: string;
   serverUrl?: string;
   serverDisplayName?: string;
 }

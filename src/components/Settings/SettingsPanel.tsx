@@ -1,5 +1,7 @@
-import { Github, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { Github, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw } from 'lucide-react';
 import type { Settings, Note } from '../../types';
+import { DEFAULT_SYSTEM_PROMPT } from '../../lib/llm-tools';
 import { ExportImport } from './ExportImport';
 import { ThreatIntelConfig } from './ThreatIntelConfig';
 import { CloudBackup } from './CloudBackup';
@@ -7,6 +9,56 @@ import { ServerBackup } from './ServerBackup';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { EncryptionSettings } from '../Encryption/EncryptionSettings';
 import { ServerConnection } from './ServerConnection';
+
+function SystemPromptEditor({ value, onChange }: { value?: string; onChange: (v: string | undefined) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const isCustom = !!value?.trim();
+  const displayValue = value ?? DEFAULT_SYSTEM_PROMPT;
+
+  return (
+    <div className="border border-gray-700 rounded-lg p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-sm text-gray-300 font-medium hover:text-gray-100 transition-colors text-left"
+        >
+          CaddyAI System Prompt {expanded ? '▾' : '▸'}
+        </button>
+        <div className="flex items-center gap-2">
+          {isCustom && (
+            <span className="text-[10px] text-accent font-medium">Custom</span>
+          )}
+          {isCustom && (
+            <button
+              onClick={() => onChange(undefined)}
+              className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300 transition-colors"
+              title="Reset to default"
+            >
+              <RotateCcw size={13} />
+            </button>
+          )}
+        </div>
+      </div>
+      {expanded && (
+        <>
+          <p className="text-[10px] text-gray-500">
+            Customize the system prompt sent to the LLM. The current investigation context (name, status, entity counts) is always appended automatically.
+          </p>
+          <textarea
+            value={displayValue}
+            onChange={(e) => {
+              const v = e.target.value;
+              // If identical to default, clear custom override
+              onChange(v.trim() === DEFAULT_SYSTEM_PROMPT.trim() ? undefined : v);
+            }}
+            rows={16}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent font-mono resize-y min-h-[200px]"
+          />
+        </>
+      )}
+    </div>
+  );
+}
 
 interface SettingsPanelProps {
   settings: Settings;
@@ -233,6 +285,11 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               )}
             </select>
           </div>
+
+          <SystemPromptEditor
+            value={settings.llmSystemPrompt}
+            onChange={(v) => onUpdateSettings({ llmSystemPrompt: v })}
+          />
 
           <p className="text-[10px] text-gray-600">
             Keys are saved locally and sent only to your chosen provider. LLM calls are proxied through the browser extension to bypass CORS.
