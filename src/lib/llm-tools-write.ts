@@ -337,7 +337,7 @@ export async function executeCreateInInvestigation(input: Record<string, unknown
     folder = await db.folders.get(id);
   } else if (name) {
     const lower = name.toLowerCase();
-    const all = await db.folders.filter(f => !f.trashed).toArray();
+    const all = await db.folders.toArray();
     folder = all.find(f => f.name.toLowerCase() === lower)
       || all.find(f => f.name.toLowerCase().includes(lower));
   }

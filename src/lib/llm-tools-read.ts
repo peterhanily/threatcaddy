@@ -193,9 +193,9 @@ export async function executeListInvestigations(input: Record<string, unknown>):
   const statusFilter = input.status as string | undefined;
   const limit = Math.min(Number(input.limit) || 20, 50);
 
-  let folders = await db.folders.filter(f => !f.trashed).toArray();
+  let folders = await db.folders.toArray();
   if (statusFilter) folders = folders.filter(f => (f.status || 'active') === statusFilter);
-  folders.sort((a, b) => b.updatedAt - a.updatedAt);
+  folders.sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
   folders = folders.slice(0, limit);
 
   const results = await Promise.all(folders.map(async (f) => {
@@ -213,7 +213,7 @@ export async function executeListInvestigations(input: Record<string, unknown>):
       counts: { notes: noteCount, tasks: taskCount, iocs: iocCount, events: eventCount },
       clsLevel: f.clsLevel,
       createdAt: new Date(f.createdAt).toISOString(),
-      updatedAt: new Date(f.updatedAt).toISOString(),
+      updatedAt: new Date(f.updatedAt || f.createdAt).toISOString(),
     };
   }));
 
@@ -229,7 +229,7 @@ export async function executeGetInvestigationDetails(input: Record<string, unkno
     folder = await db.folders.get(id);
   } else if (name) {
     const lower = name.toLowerCase();
-    const all = await db.folders.filter(f => !f.trashed).toArray();
+    const all = await db.folders.toArray();
     folder = all.find(f => f.name.toLowerCase() === lower)
       || all.find(f => f.name.toLowerCase().includes(lower));
   }
@@ -265,7 +265,7 @@ export async function executeGetInvestigationDetails(input: Record<string, unkno
     topIOCs,
     recentNotes,
     createdAt: new Date(folder.createdAt).toISOString(),
-    updatedAt: new Date(folder.updatedAt).toISOString(),
+    updatedAt: new Date(folder.updatedAt || folder.createdAt).toISOString(),
   });
 }
 
@@ -275,7 +275,7 @@ export async function executeSearchAcrossInvestigations(input: Record<string, un
   const limit = Math.min(Number(input.limit) || 5, 20);
   const entityTypes = (input.entityTypes as string[] | undefined) || ['notes', 'tasks', 'iocs', 'events'];
 
-  const folders = await db.folders.filter(f => !f.trashed).toArray();
+  const folders = await db.folders.toArray();
   const results: Record<string, unknown>[] = [];
 
   for (const folder of folders) {
