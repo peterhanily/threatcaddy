@@ -158,6 +158,7 @@ document.getElementById('shortcut-kbd').textContent = isMac ? '⌃+Shift+X' : 'A
     input:checked + .perm-slider::after {
       transform: translateX(18px);
     }
+    #settings-btn:hover { color: #e5e7eb; }
   `;
   document.head.appendChild(style);
 })();
@@ -193,3 +194,42 @@ setupPermToggle('ai-perm-toggle', 'ai-perm-slider', [
 
 // URL fetching — grants broad host access for /fetch command
 setupPermToggle('url-perm-toggle', 'url-perm-slider', ['*://*/*']);
+
+// ── Settings page ────────────────────────────────────────────────────────
+
+const mainSections = document.querySelectorAll('body > section, body > footer, body > header');
+const settingsPage = document.getElementById('settings-page');
+
+document.getElementById('settings-btn').addEventListener('click', () => {
+  mainSections.forEach(el => el.style.display = 'none');
+  settingsPage.style.display = 'block';
+});
+
+document.getElementById('settings-back').addEventListener('click', () => {
+  settingsPage.style.display = 'none';
+  mainSections.forEach(el => el.style.display = '');
+});
+
+// Settings page permission toggles (mirror the main page ones)
+setupPermToggle('settings-ai-toggle', 'settings-ai-slider', [
+  'https://api.anthropic.com/*',
+  'https://api.openai.com/*',
+  'https://generativelanguage.googleapis.com/*',
+  'https://api.mistral.ai/*',
+]);
+setupPermToggle('settings-url-toggle', 'settings-url-slider', ['*://*/*']);
+
+// Target URL
+(async function loadTargetUrl() {
+  const { targetUrl = 'https://threatcaddy.com' } = await chrome.storage.local.get(['targetUrl']);
+  document.getElementById('settings-target-url').value = targetUrl;
+})();
+
+document.getElementById('settings-save-url').addEventListener('click', async () => {
+  const url = document.getElementById('settings-target-url').value.trim();
+  if (!url) return;
+  await chrome.storage.local.set({ targetUrl: url });
+  const saved = document.getElementById('settings-url-saved');
+  saved.classList.add('show');
+  setTimeout(() => saved.classList.remove('show'), 2000);
+});

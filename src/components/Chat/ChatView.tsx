@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText } from 'lucide-react';
+import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield } from 'lucide-react';
 import type { ChatThread, ChatMessage, LLMProvider, Settings, Folder, ToolUseBlock } from '../../types';
 import { ChatMessageBubble } from './ChatMessage';
 import { ChatInput } from './ChatInput';
@@ -44,6 +44,14 @@ export function ChatView({
   const { extensionAvailable, streamingContent, isStreaming, error, toolActivity, sendAgentRequest, abort } = useLLM();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return !localStorage.getItem('caddyai-onboarded');
+  });
+
+  const dismissOnboarding = useCallback(() => {
+    localStorage.setItem('caddyai-onboarded', '1');
+    setShowOnboarding(false);
+  }, []);
   const [editingTitle, setEditingTitle] = useState(false);
   const [editingTitleValue, setEditingTitleValue] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -339,7 +347,7 @@ export function ChatView({
   }, [handleSend]);
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="relative flex flex-1 overflow-hidden">
       {/* Thread list */}
       <div className="w-56 border-r border-border-subtle flex flex-col shrink-0">
         <div className="p-2 border-b border-border-subtle">
@@ -540,6 +548,56 @@ export function ChatView({
           </div>
         )}
       </div>
+
+      {/* First-use onboarding overlay */}
+      {showOnboarding && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-bg-raised border border-border-subtle rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6">
+            <h2 className="text-lg font-semibold text-text-primary mb-4">Getting Started with CaddyAI</h2>
+            <div className="space-y-4">
+              <div className="flex gap-3">
+                <div className="shrink-0 mt-0.5 w-8 h-8 rounded-lg bg-purple/15 flex items-center justify-center">
+                  <Key size={16} className="text-purple" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-text-primary">1. Configure an API key</p>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    Go to Settings &gt; CaddyAI / LLM and add an API key for at least one provider (Anthropic, OpenAI, Google Gemini, Mistral) or configure a local LLM endpoint.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="shrink-0 mt-0.5 w-8 h-8 rounded-lg bg-purple/15 flex items-center justify-center">
+                  <Puzzle size={16} className="text-purple" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-text-primary">2. Install the browser extension</p>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    CaddyAI requires the ThreatCaddy browser extension to proxy API requests. Install it from the extension page.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="shrink-0 mt-0.5 w-8 h-8 rounded-lg bg-purple/15 flex items-center justify-center">
+                  <Shield size={16} className="text-purple" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-text-primary">3. Enable permissions</p>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    In the extension popup, enable &ldquo;Allow CaddyAI&rdquo; for AI provider access and &ldquo;Allow URL fetching&rdquo; for the /fetch tool.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={dismissOnboarding}
+              className="mt-6 w-full h-9 rounded-lg bg-purple text-white text-sm font-medium hover:brightness-110 transition-all"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
