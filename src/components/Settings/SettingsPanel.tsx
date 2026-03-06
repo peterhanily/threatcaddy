@@ -245,6 +245,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 const model = e.target.value;
                 const providerMap: Record<string, string> = {
                   'claude-opus-4-6': 'anthropic', 'claude-sonnet-4-6': 'anthropic', 'claude-3-5-haiku-latest': 'anthropic',
+                  'gpt-5.4': 'openai', 'gpt-5.4-pro': 'openai',
                   'gpt-5.2': 'openai', 'gpt-5-mini': 'openai', 'o3': 'openai', 'o4-mini': 'openai',
                   'gpt-4.1': 'openai', 'gpt-4.1-mini': 'openai', 'gpt-4o': 'openai',
                   'gemini-2.5-pro-preview-06-05': 'gemini', 'gemini-2.5-flash-preview-05-20': 'gemini',
@@ -261,6 +262,8 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 <option value="claude-3-5-haiku-latest">Claude Haiku 3.5</option>
               </optgroup>
               <optgroup label="OpenAI">
+                <option value="gpt-5.4">GPT-5.4</option>
+                <option value="gpt-5.4-pro">GPT-5.4 Pro</option>
                 <option value="gpt-5.2">GPT-5.2</option>
                 <option value="gpt-5-mini">GPT-5 Mini</option>
                 <option value="o3">o3</option>

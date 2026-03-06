@@ -1,150 +1,203 @@
-# ThreatCaddy
+<p align="center">
+  <img src="https://threatcaddy.com/favicon.svg" alt="ThreatCaddy" width="80" height="80" />
+</p>
 
-Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs. No server. No tracking.
+<h1 align="center">ThreatCaddy</h1>
 
-**Live at [threatcaddy.com](https://threatcaddy.com)**
+<p align="center">
+  <strong>Local-first threat investigation workspace for security analysts.</strong><br/>
+  Notes, IOCs, timelines, graphs, AI chat, and team collaboration — all in your browser.
+</p>
 
-Try it instantly: [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loads a sample investigation with a guided walkthrough.
+<p align="center">
+  <a href="https://threatcaddy.com">threatcaddy.com</a> &nbsp;|&nbsp;
+  <a href="https://threatcaddy.com/?demo=1">Live Demo</a>
+</p>
+
+---
+
+## Why ThreatCaddy?
+
+Most investigation tools lock your data in a cloud you don't control, cost per seat, and force you into rigid workflows. ThreatCaddy is different:
+
+- **Local-first** — All data lives in your browser's IndexedDB. No accounts, no tracking, no cookies.
+- **Zero setup** — Open the URL and start working. No install, no server required.
+- **Optional team server** — When you need collaboration, spin up a Docker container. Per-investigation sync lets you choose what stays local and what gets shared.
+- **Encryption at rest** — AES-256-GCM encryption with PBKDF2 key derivation protects your data even on shared machines.
+- **Works offline** — Download a standalone HTML file that runs from `file://`.
+
+## Quick Start
+
+**Try it now:** [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loads a sample investigation with a guided walkthrough.
+
+**Self-host the client:**
+
+```bash
+pnpm install
+pnpm dev          # Dev server at localhost:5173
+```
+
+**Deploy a team server:**
+
+```bash
+cd server
+cp .env.example .env   # Configure JWT keys and optional LLM API keys
+docker compose up -d   # Starts Hono server + PostgreSQL
+```
+
+---
 
 ## Features
 
 ### Notes & Editor
-- **Markdown Notes** — Write in markdown with live preview, split editor, and syntax highlighting for 20+ languages
-- **ThreatCaddyLink** — Type `[[note title]]` to create clickable links between notes with autocomplete, case-insensitive matching and broken-link indicators
-- **Slash Commands** — Type `/` for a Notion-style command menu with formatting, blocks, threat intel templates (IOC tables, MITRE references, TLP headers), and quick inserts (date, callouts, wiki-links)
-- **Note Annotations** — Add timestamped comments and annotations to any note
-- **Defang/Refang Toggle** — Preview network IOCs in defanged form (e.g. `hxxps://`, `example[.]com`) with one click
-- **Quick Capture** — Clip articles, bookmarks, code snippets, quotes, and meeting notes with 10 templates grouped by category (general, threat intel, investigation)
+
+- **Markdown editor** with live preview, split view, and syntax highlighting for 20+ languages
+- **Wiki-links** — Type `[[note title]]` to link between notes with autocomplete and broken-link indicators
+- **Slash commands** — `/` menu with formatting, threat intel templates (IOC tables, MITRE references, TLP headers), and quick inserts
+- **Note annotations** — Timestamped comments on any note
+- **Defang/Refang toggle** — Preview network IOCs in defanged form (`hxxps://`, `example[.]com`)
+- **Quick capture** — Clip articles, bookmarks, code snippets, and meeting notes with 10 templates
 
 ### Task Management
-- **Task Manager** — Priorities, due dates, statuses with list and kanban views
-- **Task Comments** — Threaded comments on tasks
 
-### AI / LLM Chat
-- **Multi-Provider** — Anthropic (Claude), OpenAI (GPT-4o), Google Gemini, Mistral, and local models (Ollama / LM Studio / vLLM)
-- **Chat Threads** — Persistent conversation threads with auto-generated titles
-- **Tool Calling** — Agentic loop with tools to search notes, read notes, list tasks/IOCs/timeline events, create entities, extract IOCs, and fetch URLs
-- **Slash Commands** — `/fetch`, `/search`, `/note`, `/task`, `/iocs`, `/summary`, `/timeline` for quick actions
-- **Auto-Titles** — Threads automatically titled from the first user message; background LLM call refines the title after the first exchange
+- Priorities, due dates, and statuses with list and kanban views
+- Threaded comments on tasks
+
+### AI Chat
+
+- **Multi-provider** — Anthropic (Claude Opus 4, Sonnet 4, Haiku 3.5), OpenAI (GPT-5.4, GPT-5.4 Pro, GPT-5.2, o3, o4-mini), Google Gemini, Mistral, and local models (Ollama / LM Studio / vLLM)
+- **Tool calling** — Agentic loop with tools to search notes, read notes, list tasks/IOCs/timeline events, create entities, extract IOCs, and fetch URLs
+- **Slash commands** — `/fetch`, `/search`, `/note`, `/task`, `/iocs`, `/summary`, `/timeline`, `/report`, `/triage`, `/graph`, `/link`
+- **Persistent threads** with auto-generated titles
 
 ### Threat Intelligence & Analysis
-- **IOC Extraction** — Automatically extract IPv4, IPv6, domains, URLs, emails, hashes (MD5/SHA-1/SHA-256), CVEs, MITRE ATT&CK IDs, YARA rules, Sigma rules, and file paths from note content
-- **Standalone IOCs** — Create and manage IOCs independently with type, confidence, analyst notes, attribution, and classification
-- **Type-Constrained Subtypes** — IOC subtypes scoped per IOC type (e.g. "C2 Server" for IPs, "Phishing Domain" for domains) with built-in defaults and custom overrides
-- **Many-to-Many Relationships** — Link IOCs with typed, directional relationships (e.g. domain "resolves-to" IP, hash "exploits" CVE) with source/target type constraints including `detected-by` and `alerts-on` for detection rules
-- **Entity Graph View** — Visualize IOCs, notes, tasks, and timeline events as an interactive graph with force-directed, circle, and breadth-first layouts, node/edge filtering, and detail panel
-- **Graph Drag-to-Link** — Alt+drag between graph nodes to create IOC relationships or entity links directly on the canvas
-- **IOC Statistics Dashboard** — Aggregate view of all IOCs: type/confidence distribution, top actors, timeline, frequency tables, and source breakdown
-- **Attribution & Classification** — Tag IOCs with threat actors, classification levels, and statuses
-- **TLP/PAP Classification** — Assign Traffic Light Protocol and Permissible Actions Protocol levels to entities and investigations with screenshare-safe filtering
-- **IOC Export** — Download IOCs as JSON, CSV (grouped or flat), or STIX 2.1 bundles; push to OCI object storage
+
+- **IOC extraction** — Auto-extract IPv4, IPv6, domains, URLs, emails, hashes (MD5/SHA-1/SHA-256), CVEs, MITRE ATT&CK IDs, YARA rules, Sigma rules, and file paths
+- **Standalone IOCs** — Manage IOCs with type, confidence, subtypes, analyst notes, attribution, and classification
+- **IOC relationships** — Many-to-many links with typed, directional relationships (e.g. domain "resolves-to" IP, hash "exploits" CVE)
+- **Entity graph** — Interactive force-directed graph of IOCs, notes, tasks, and timeline events with drag-to-link, filtering, and multiple layouts
+- **IOC dashboard** — Aggregate stats: type/confidence distribution, top actors, timeline, frequency tables
+- **TLP/PAP classification** — Traffic Light Protocol and Permissible Actions Protocol levels on entities and investigations
+- **Export** — JSON, CSV (grouped or flat), STIX 2.1 bundles; push to OCI object storage
 
 ### Timeline & Whiteboard
-- **Incident Timeline** — Map events to MITRE ATT&CK tactics with timestamps, confidence levels, linked IOCs, and multi-timeline support
-- **Timeline Map** — View geolocated timeline events on an interactive Leaflet map with clustered markers
-- **Smart Data Import** — Paste or drop CSV, TSV, JSON, or NDJSON from SIEMs and EDR tools; auto-detect format, auto-map columns (Splunk, CrowdStrike, Elastic), bulk-create timeline events and IOCs
+
+- **Incident timeline** — Map events to MITRE ATT&CK tactics with timestamps, confidence, and linked IOCs
+- **Multi-timeline support** — Per-investigation timelines with dedicated views
+- **Timeline map** — Geolocated events on an interactive Leaflet map with clustered markers
+- **Smart data import** — Paste CSV, TSV, JSON, or NDJSON from SIEMs and EDR tools; auto-detect format, auto-map columns (Splunk, CrowdStrike, Elastic)
 - **Whiteboards** — Freeform drawing with Excalidraw integration
-- **Activity Log** — Track all actions across notes, tasks, timeline, and IOCs
+- **Activity log** — Track all actions across notes, tasks, timeline, and IOCs
 
 ### Organization
-- **Investigations** — Color-coded investigations with active/closed/archived lifecycle, scoped entity counts, and bulk archive/trash operations
-- **Investigation Closure** — Close investigations with a resolution: resolved, false-positive, escalated, duplicate, or inconclusive
-- **Entity Cross-Linking** — Link notes, tasks, and timeline events to each other with a searchable linker
-- **Tags** — Color-coded tags with rename and delete support
-- **Full-Text Search** — Instantly search across all notes, tasks, timeline events, and whiteboards with saved searches and investigation-scoped filtering
-- **Unified Trash & Archive** — Manage deleted and archived items across all entity types in one view, with 30-day auto-delete for trashed items
+
+- **Investigations** — Color-coded folders with active/closed/archived lifecycle, closure resolutions, scoped entity counts, and bulk operations
+- **Per-investigation sync** — Toggle cloud sync per investigation; mark sensitive cases as local-only
+- **Entity cross-linking** — Link notes, tasks, and timeline events to each other
+- **Tags** — Color-coded tags with rename and delete
+- **Full-text search** — Instant search across all entity types with saved searches and investigation-scoped filtering
+- **Unified trash & archive** — Manage deleted and archived items in one view with 30-day auto-delete
 
 ### Security & Backup
-- **Encryption at Rest** — Passphrase-based AES-256-GCM encryption of IndexedDB data using PBKDF2 key derivation (600k iterations), with configurable session duration and recovery phrase support
-- **Cloud Backup** — Multi-provider cloud backup to OCI Object Storage, AWS S3, Azure Blob Storage, or Google Cloud Storage via pre-authenticated URLs
-- **Export & Import** — Full JSON backup/restore including all entity types; per-investigation export
+
+- **Encryption at rest** — Passphrase-based AES-256-GCM via PBKDF2 (600k iterations) with configurable session duration and recovery phrase
+- **Cloud backup** — OCI Object Storage, AWS S3, Azure Blob Storage, or Google Cloud Storage via pre-authenticated URLs
+- **Export & import** — Full JSON backup/restore; per-investigation export
 
 ### Team Server
-- **Docker Deployment** — `docker compose up` spins up the team server (Hono + Node.js) and PostgreSQL
-- **Authentication** — Ed25519 JWT-based auth with user roles (admin, analyst, viewer)
-- **Real-Time Sync** — Push/pull synchronization with version tracking and conflict detection
-- **WebSocket Presence** — See who's online and what view they're in
-- **Team Feed** — Social feed with posts, reactions, threaded replies, mentions, and notifications
-- **Investigation Sharing** — Invite team members with per-investigation role-based access (owner, editor, viewer)
-- **Audit Trail** — Server-side activity logging for compliance
-- **Server-Side LLM** — Proxy LLM requests through the team server with shared API keys
-- **File Storage** — Upload and share files within investigations
+
+- **Docker deployment** — `docker compose up` for Hono + Node.js server and PostgreSQL
+- **Authentication** — Ed25519 JWT auth with user roles (admin, analyst, viewer)
+- **Real-time sync** — Push/pull synchronization with version tracking, conflict detection, and WebSocket live updates
+- **Presence** — See who's online and what they're viewing
+- **Team feed** — Posts, reactions, threaded replies, mentions, and notifications
+- **Investigation sharing** — Invite members with per-investigation roles (owner, editor, viewer)
+- **Audit trail** — Server-side activity logging
+- **Server-side LLM** — Proxy LLM requests through the server with shared API keys
+- **File storage** — Upload and share files within investigations
 
 ### Platform
-- **Quick Links Dashboard** — Configurable shortcut tiles for threat intel tools (VirusTotal, Shodan, AbuseIPDB, Forensicate.ai, OpenSlaw.ai, etc.) as the default home view
-- **Shareable Demo Link** — Visit `?demo=1` to auto-load a sample investigation with a welcome modal offering explore, guided tour, or fresh start options
-- **Dark & Light Mode** — Dark by default, toggle anytime
-- **Guided Tour** — Interactive onboarding tour highlighting key features
-- **Browser Navigation** — Back/forward buttons navigate between views; navigation state persists across page refresh
-- **Standalone HTML** — Download a single-file version that works offline from `file://`
-- **Browser Extension** — Chrome and Firefox extension to clip web content directly into ThreatCaddy with smart clip (selection or full page) and LLM API proxy
-- **Keyboard Shortcuts** — Ctrl+N (new note), Ctrl+K (search), Ctrl+S (backup), Ctrl+E (toggle preview), and more
-- **OCI Sync** — Optional sync via Oracle Cloud object storage pre-authenticated requests
+
+- **Quick Links dashboard** — Configurable shortcut tiles for VirusTotal, Shodan, AbuseIPDB, and other threat intel tools
+- **Dark & light mode** — Dark by default
+- **Guided tour** — Interactive onboarding walkthrough
+- **Browser navigation** — Back/forward with persistent state across refresh
+- **Standalone HTML** — Single-file offline version
+- **Browser extension** — Chrome and Firefox extension to clip web content into ThreatCaddy
+- **Keyboard shortcuts** — `Ctrl+N` (new note), `Ctrl+K` (search), `Ctrl+S` (backup), `Ctrl+E` (toggle preview), and more
+
+---
 
 ## Tech Stack
 
 ### Client
-- React 19 + TypeScript 5
-- Vite 7
-- Tailwind CSS 4
-- Dexie.js (IndexedDB)
-- Cytoscape.js (entity graph visualization)
-- Excalidraw (whiteboards)
-- Leaflet + react-leaflet (timeline map)
-- Papa Parse (CSV/TSV parsing)
-- marked + highlight.js + DOMPurify
-- nanoid (ID generation)
-- pako (compression)
-- lucide-react
 
-### Server (Team Server)
-- Hono (HTTP + WebSocket framework)
-- drizzle-orm + PostgreSQL
-- argon2 (password hashing)
-- jose (JWT signing/verification)
-- Docker + Docker Compose
+| Library | Purpose |
+|---------|---------|
+| React 19 + TypeScript 5 | UI framework |
+| Vite 7 | Build tooling |
+| Tailwind CSS 4 | Styling |
+| Dexie.js | IndexedDB persistence |
+| Cytoscape.js | Entity graph visualization |
+| Excalidraw | Whiteboards |
+| Leaflet + react-leaflet | Timeline map |
+| Papa Parse | CSV/TSV parsing |
+| marked + highlight.js + DOMPurify | Markdown rendering |
+| lucide-react | Icons |
+
+### Server
+
+| Library | Purpose |
+|---------|---------|
+| Hono | HTTP + WebSocket framework |
+| drizzle-orm + PostgreSQL | Database |
+| argon2 | Password hashing |
+| jose | JWT signing/verification |
+| Docker + Docker Compose | Deployment |
+
+---
 
 ## Development
 
 ```bash
 pnpm install
-pnpm dev          # Dev server at localhost:5173
-pnpm test:run     # Run test suite
-pnpm test:coverage # Run tests with coverage report
-pnpm lint         # Run ESLint
-pnpm tsc -b       # Type check
+pnpm dev              # Dev server at localhost:5173
+pnpm test:run         # Run test suite
+pnpm test:coverage    # Tests with coverage report
+pnpm lint             # ESLint
+pnpm tsc -b           # Type check
 ```
 
 ## Build
 
 ```bash
-pnpm build        # Production build → dist/
-pnpm build:single # Standalone HTML → dist-single/index.html
+pnpm build            # Production build -> dist/
+pnpm build:single     # Standalone HTML -> dist-single/index.html
 ```
 
 ## Browser Extension
 
-The `extension/` directory contains a browser extension for Chrome and Firefox. See [extension/README.md](extension/README.md) for build and install instructions.
+See [extension/README.md](extension/README.md) for build and install instructions.
 
 ## Deploy
 
 ### Client (GitHub Pages)
 
-The `dist/` output is configured for GitHub Pages with a custom domain (`threatcaddy.com`). Push to `main` and deploy via GitHub Pages settings pointing at the `dist/` directory or a GitHub Actions workflow.
+Push to `main` and deploy via GitHub Pages pointing at `dist/` or a GitHub Actions workflow. Configured for `threatcaddy.com`.
 
 ### Team Server (Docker)
 
 ```bash
 cd server
-cp .env.example .env   # Configure JWT keys and optional LLM API keys
-docker compose up -d    # Starts Hono server + PostgreSQL
+cp .env.example .env   # Set JWT_PRIVATE_KEY, JWT_PUBLIC_KEY (Ed25519)
+docker compose up -d   # Starts Hono server + PostgreSQL
 ```
 
-Set `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` (Ed25519) in `.env`. Optionally add `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `GEMINI_API_KEY` to enable server-side LLM proxying.
+Optionally add `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, or `MISTRAL_API_KEY` to `.env` for server-side LLM proxying.
 
 ## Privacy
 
-All data stays local. No accounts, no tracking, no cookies. API keys are stored in your browser and sent only to your chosen LLM provider. See the full [Privacy Policy](https://threatcaddy.com/privacy.html).
+All data stays local by default. No accounts, no tracking, no cookies. API keys are stored in your browser and sent only to your chosen LLM provider. See the full [Privacy Policy](https://threatcaddy.com/privacy.html).
 
 ## License
 

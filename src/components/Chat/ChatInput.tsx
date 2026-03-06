@@ -23,6 +23,8 @@ const STATIC_MODELS: ModelEntry[] = [
   { label: 'Claude Opus 4', value: 'claude-opus-4-6', provider: 'anthropic', group: 'Anthropic' },
   { label: 'Claude Sonnet 4', value: 'claude-sonnet-4-6', provider: 'anthropic', group: 'Anthropic' },
   { label: 'Claude Haiku 3.5', value: 'claude-3-5-haiku-latest', provider: 'anthropic', group: 'Anthropic' },
+  { label: 'GPT-5.4', value: 'gpt-5.4', provider: 'openai', group: 'OpenAI' },
+  { label: 'GPT-5.4 Pro', value: 'gpt-5.4-pro', provider: 'openai', group: 'OpenAI' },
   { label: 'GPT-5.2', value: 'gpt-5.2', provider: 'openai', group: 'OpenAI' },
   { label: 'GPT-5 Mini', value: 'gpt-5-mini', provider: 'openai', group: 'OpenAI' },
   { label: 'o3', value: 'o3', provider: 'openai', group: 'OpenAI' },

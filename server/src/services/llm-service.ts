@@ -283,7 +283,7 @@ export function getAvailableProviders(): Array<{ provider: string; models: strin
   if (process.env.OPENAI_API_KEY) {
     providers.push({
       provider: 'openai',
-      models: ['gpt-5.2', 'gpt-5-mini', 'o3', 'o4-mini', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4o', 'gpt-4o-mini'],
+      models: ['gpt-5.4', 'gpt-5.4-pro', 'gpt-5.2', 'gpt-5-mini', 'o3', 'o4-mini', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4o', 'gpt-4o-mini'],
     });
   }
   if (process.env.GEMINI_API_KEY) {
