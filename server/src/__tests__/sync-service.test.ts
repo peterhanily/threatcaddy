@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { SyncChange } from '../types.js';
+import type { SyncChange, SyncResult } from '../types.js';
 
 // Mock the db module before importing the sync service
 const mockSelect = vi.fn();
@@ -76,7 +76,7 @@ vi.mock('../lib/logger.js', () => ({
 }));
 
 // Dynamic import after mocks are set up
-let processPush: (changes: SyncChange[], userId: string) => Promise<unknown[]>;
+let processPush: (changes: SyncChange[], userId: string) => Promise<SyncResult[]>;
 let pullChanges: (since: string, folderIds?: string[]) => Promise<{ changes: Record<string, unknown>[]; serverTimestamp: string }>;
 let lookupEntityFolderId: (tableName: string, entityId: string) => Promise<string | undefined>;
 
