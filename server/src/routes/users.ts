@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq, and, inArray, ilike, or } from 'drizzle-orm';
+import { eq, and, ilike, or } from 'drizzle-orm';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { db } from '../db/index.js';
 import { users, posts, investigationMembers, sessions } from '../db/schema.js';
