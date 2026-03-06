@@ -968,7 +968,7 @@ function AppInner() {
     navigateTo('whiteboard', { selectedWhiteboardId: id });
   }, [navigateTo]);
 
-  const handleSearchNavigateToIOC = useCallback((_: string) => {
+  const handleSearchNavigateToIOC = useCallback(() => {
     navigateTo('ioc-stats');
   }, [navigateTo]);
 
