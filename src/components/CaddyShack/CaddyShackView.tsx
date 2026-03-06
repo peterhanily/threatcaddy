@@ -106,7 +106,49 @@ export function CaddyShackView({ folderId, folderName }: CaddyShackViewProps) {
 
   if (!connected) {
     return (
-      <div className="flex-1 flex items-center justify-center text-[var(--text-tertiary)]">
+      <div className="flex-1 flex items-center justify-center text-[var(--text-tertiary)] relative">
+        {showOnboarding && (
+          <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl">
+            <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl shadow-2xl p-6 max-w-md mx-4 w-full">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Getting Started with CaddyShack</h3>
+              <div className="space-y-4">
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                    <Server size={16} className="text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">1. Deploy a team server</p>
+                    <p className="text-xs text-[var(--text-tertiary)] mt-0.5">CaddyShack requires a ThreatCaddy team server. Spin up the Docker container from the server README.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                    <Settings size={16} className="text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">2. Configure server URL</p>
+                    <p className="text-xs text-[var(--text-tertiary)] mt-0.5">Go to Settings and enter your team server URL to connect ThreatCaddy to your instance.</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-500/15 flex items-center justify-center shrink-0 mt-0.5">
+                    <UserPlus size={16} className="text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">3. Register and sign in</p>
+                    <p className="text-xs text-[var(--text-tertiary)] mt-0.5">Create an account on your team server and sign in to start posting, reacting, and collaborating with your team.</p>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={dismissOnboarding}
+                className="w-full mt-5 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        )}
         <p>Connect to a team server to use CaddyShack.</p>
       </div>
     );
