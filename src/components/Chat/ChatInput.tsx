@@ -57,7 +57,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
       models.push({ label: `Local: ${localModelName}`, value: localModelName, provider: 'local' as LLMProvider, group: 'Local' });
     }
     // Only show models for providers that have an API key configured
-    if (configuredProviders && configuredProviders.size > 0) {
+    if (configuredProviders) {
       models = models.filter(m => configuredProviders.has(m.provider));
     }
     return models;
@@ -159,22 +159,26 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
     <div className="border-t border-border-subtle p-3 space-y-2">
       {/* Model selector + extension status */}
       <div className="flex items-center gap-2 text-xs">
-        <select
-          value={model}
-          onChange={(e) => {
-            const m = MODELS.find((m) => m.value === e.target.value);
-            if (m) onModelChange(m.value, m.provider);
-          }}
-          className="bg-bg-deep border border-border-medium rounded px-2 py-1 text-text-secondary focus:outline-none focus:border-purple text-xs"
-        >
-          {Array.from(new Set(MODELS.map(m => m.group))).map(group => (
-            <optgroup key={group} label={group}>
-              {MODELS.filter(m => m.group === group).map(m => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+        {MODELS.length === 0 ? (
+          <span className="text-text-muted text-[10px] italic">No API keys configured — add one in Settings → AI/LLM</span>
+        ) : (
+          <select
+            value={model}
+            onChange={(e) => {
+              const m = MODELS.find((m) => m.value === e.target.value);
+              if (m) onModelChange(m.value, m.provider);
+            }}
+            className="bg-bg-deep border border-border-medium rounded px-2 py-1 text-text-secondary focus:outline-none focus:border-purple text-xs"
+          >
+            {Array.from(new Set(MODELS.map(m => m.group))).map(group => (
+              <optgroup key={group} label={group}>
+                {MODELS.filter(m => m.group === group).map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        )}
         <div className="flex-1" />
         <div className={cn(
           'flex items-center gap-1 text-[10px]',
