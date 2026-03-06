@@ -284,6 +284,73 @@ export const TOOL_DEFINITIONS = [
       required: ['text'],
     },
   },
+
+  // ── Global investigation tools ─────────────────────────────────
+  {
+    name: 'list_investigations',
+    description: 'List all investigations (folders) with their status, entity counts, and metadata. Use this to get an overview of all active cases.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        status: { type: 'string', enum: ['active', 'closed', 'archived'], description: 'Filter by investigation status (default: all)' },
+        limit: { type: 'number', description: 'Max results (default 20)' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'get_investigation_details',
+    description: 'Get detailed summary of a specific investigation by ID or name, including entity counts, task status breakdown, recent activity, and top IOCs.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        id: { type: 'string', description: 'Investigation (folder) ID' },
+        name: { type: 'string', description: 'Investigation name (partial match). Used if id is not provided.' },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'search_across_investigations',
+    description: 'Search for entities across ALL investigations simultaneously. Returns results grouped by investigation. Useful for finding patterns, shared IOCs, or related activity across cases.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        query: { type: 'string', description: 'Search keyword or phrase' },
+        entityTypes: { type: 'array', items: { type: 'string', enum: ['notes', 'tasks', 'iocs', 'events'] }, description: 'Entity types to search (default: all)' },
+        limit: { type: 'number', description: 'Max results per investigation (default 5)' },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'create_in_investigation',
+    description: 'Create an entity (note, task, IOC, or timeline event) in a specific investigation by ID or name. Use this when you need to create entities outside the currently selected investigation.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        investigationId: { type: 'string', description: 'Target investigation (folder) ID' },
+        investigationName: { type: 'string', description: 'Target investigation name (partial match). Used if investigationId is not provided.' },
+        entityType: { type: 'string', enum: ['note', 'task', 'ioc', 'timeline-event'], description: 'Type of entity to create' },
+        data: {
+          type: 'object',
+          description: 'Entity data. For notes: {title, content}. For tasks: {title, description, priority, status}. For IOCs: {type, value, confidence, analystNotes}. For timeline events: {title, description, timestamp, eventType, source}.',
+        },
+      },
+      required: ['entityType', 'data'],
+    },
+  },
+  {
+    name: 'compare_investigations',
+    description: 'Compare two or more investigations side by side. Shows shared IOCs, common TTPs, overlapping timelines, and entity count comparison.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        investigationIds: { type: 'array', items: { type: 'string' }, description: 'Array of investigation (folder) IDs to compare' },
+      },
+      required: ['investigationIds'],
+    },
+  },
 ];
 
 // ── Write tool classification ──────────────────────────────────────────
@@ -295,6 +362,7 @@ const WRITE_TOOLS = new Set([
   'create_timeline_event',
   'link_entities',
   'generate_report',
+  'create_in_investigation',
 ]);
 
 export function isWriteTool(name: string): boolean {

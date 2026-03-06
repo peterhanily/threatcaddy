@@ -226,7 +226,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={extensionAvailable ? 'Send a message...' : 'Extension required for AI chat'}
+          placeholder={extensionAvailable ? 'Send a message...' : 'Extension required for CaddyChat'}
           disabled={!extensionAvailable || disabled}
           rows={1}
           className="flex-1 bg-bg-deep border border-border-medium rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted resize-none focus:outline-none focus:border-purple disabled:opacity-50"

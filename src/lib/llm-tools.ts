@@ -12,13 +12,15 @@ import {
   executeSearchNotes, executeSearchAll, executeReadNote,
   executeListTasks, executeListIOCs, executeListTimelineEvents,
   executeGetInvestigationSummary,
+  executeListInvestigations, executeGetInvestigationDetails,
+  executeSearchAcrossInvestigations, executeCompareInvestigations,
 } from './llm-tools-read';
 
 // Write tools
 import {
   executeCreateNote, executeUpdateNote, executeCreateTask, executeUpdateTask,
   executeCreateIOC, executeBulkCreateIOCs, executeCreateTimelineEvent,
-  executeLinkEntities, executeGenerateReport,
+  executeLinkEntities, executeGenerateReport, executeCreateInInvestigation,
 } from './llm-tools-write';
 
 // Analysis tools
@@ -70,7 +72,7 @@ Understand the IR lifecycle (NIST SP 800-61): Preparation, Detection & Analysis,
 
 ## Available Tools
 
-You have 19 tools organized into four categories:
+You have 24 tools organized into five categories:
 
 **Search & Read** (7 tools): search_notes, search_all (cross-entity search), read_note, list_tasks, list_iocs, list_timeline_events, get_investigation_summary.
 
@@ -79,6 +81,8 @@ You have 19 tools organized into four categories:
 **Analysis** (2 tools): extract_iocs (from arbitrary text), analyze_graph (entity relationship graph — node/edge counts, most connected entities, shortest path between entities).
 
 **Web** (1 tool): fetch_url (extract readable content from any URL — threat reports, blog posts, advisories, and search engines). You can search the internet by fetching search engine URLs like \`https://www.google.com/search?q=your+query\` or \`https://duckduckgo.com/?q=your+query\`. This is how you perform online research when asked.
+
+**Global Investigation** (5 tools): list_investigations, get_investigation_details, search_across_investigations, create_in_investigation (create entities in any investigation), compare_investigations (find shared IOCs and TTPs).
 
 ### Tool Usage Guidelines
 - When creating or updating entities, confirm exactly what you did with clickable entity links.
@@ -89,6 +93,10 @@ You have 19 tools organized into four categories:
 - Use bulk_create_iocs when processing threat reports or indicator feeds with multiple IOCs.
 - Use link_entities to build the investigation graph — connected investigations are more valuable than isolated data points.
 - Use generate_report for formal deliverables with executive summaries and structured sections.
+- Use list_investigations and get_investigation_details when the user asks about their overall caseload or a specific investigation.
+- Use search_across_investigations to find patterns, shared IOCs, or related activity across multiple cases.
+- Use compare_investigations to identify overlapping TTPs and shared infrastructure between investigations.
+- Use create_in_investigation when you need to add entities to a specific investigation that isn't currently selected.
 
 ## Entity Linking Format
 
@@ -161,6 +169,11 @@ export async function executeTool(
       case 'generate_report':         result = await executeGenerateReport(inp, folderId); break;
       case 'extract_iocs':            result = executeExtractIOCs(inp); break;
       case 'fetch_url':               result = await executeFetchUrl(inp); break;
+      case 'list_investigations':           result = await executeListInvestigations(inp); break;
+      case 'get_investigation_details':     result = await executeGetInvestigationDetails(inp); break;
+      case 'search_across_investigations':  result = await executeSearchAcrossInvestigations(inp); break;
+      case 'create_in_investigation':       result = await executeCreateInInvestigation(inp); break;
+      case 'compare_investigations':        result = await executeCompareInvestigations(inp); break;
       default: result = JSON.stringify({ error: `Unknown tool: ${name}` });
     }
     return { result, isError: false };

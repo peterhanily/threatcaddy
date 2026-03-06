@@ -1,6 +1,6 @@
 # ThreatCaddy Server
 
-Backend API server for ThreatCaddy. Handles authentication, real-time sync, social feed, file storage, and LLM chat. Built with Hono + Drizzle ORM on PostgreSQL.
+Backend API server for ThreatCaddy. Handles authentication, real-time sync, social feed, file storage, and CaddyChat. Built with Hono + Drizzle ORM on PostgreSQL.
 
 ## Prerequisites
 

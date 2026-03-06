@@ -877,6 +877,7 @@ function AppInner() {
     await db.timelineEvents.bulkPut(data.timelineEvents);
     await db.standaloneIOCs.bulkPut(data.standaloneIOCs);
     await db.whiteboards.bulkPut([data.whiteboard]);
+    if (data.chatThreads) await db.chatThreads.bulkPut(data.chatThreads);
     // Reload all hooks
     handleImportComplete();
     // Navigate to sample and open first note
@@ -895,6 +896,7 @@ function AppInner() {
     const allWB = await db.whiteboards.toArray();
     const allTimelines = await db.timelines.toArray();
     const allTags = await db.tags.toArray();
+    const allChats = await db.chatThreads.toArray();
 
     await db.notes.bulkDelete(allNotes.filter((n) => isSampleEntity(n.id)).map((n) => n.id));
     await db.tasks.bulkDelete(allTasks.filter((t) => isSampleEntity(t.id)).map((t) => t.id));
@@ -903,6 +905,7 @@ function AppInner() {
     await db.whiteboards.bulkDelete(allWB.filter((w) => isSampleEntity(w.id)).map((w) => w.id));
     await db.timelines.bulkDelete(allTimelines.filter((t) => isSampleEntity(t.id)).map((t) => t.id));
     await db.tags.bulkDelete(allTags.filter((t) => isSampleEntity(t.id)).map((t) => t.id));
+    await db.chatThreads.bulkDelete(allChats.filter((c) => isSampleEntity(c.id)).map((c) => c.id));
     await db.folders.delete('sample-investigation');
 
     handleImportComplete();

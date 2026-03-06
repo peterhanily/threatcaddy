@@ -349,11 +349,11 @@ describe('Slash command transforms', () => {
   });
 });
 
-// ── Dashboard AI Chat link ──
+// ── Dashboard CaddyChat link ──
 
-describe('Dashboard AI Chat tool link', () => {
+describe('Dashboard CaddyChat tool link', () => {
   // Dynamically import to avoid heavy mocking of the full dashboard
-  it('includes AI Chat in the internal tools list', async () => {
+  it('includes CaddyChat in the internal tools list', async () => {
     // We test the INTERNAL_TOOLS constant indirectly by rendering DashboardView
     const { DashboardView } = await import('../components/Dashboard/DashboardView');
     const onViewChange = vi.fn();
@@ -364,9 +364,9 @@ describe('Dashboard AI Chat tool link', () => {
         onViewChange={onViewChange}
       />
     );
-    const chatButton = screen.getByText('AI Chat');
+    const chatButton = screen.getByText('CaddyChat');
     expect(chatButton).toBeInTheDocument();
-    expect(screen.getByText('Chat with AI about your investigation')).toBeInTheDocument();
+    expect(screen.getByText('AI-powered investigation assistant')).toBeInTheDocument();
   });
 
   it('navigates to chat view when clicked', async () => {
@@ -379,7 +379,7 @@ describe('Dashboard AI Chat tool link', () => {
         onViewChange={onViewChange}
       />
     );
-    const chatButton = screen.getByText('AI Chat').closest('button') as HTMLButtonElement;
+    const chatButton = screen.getByText('CaddyChat').closest('button') as HTMLButtonElement;
     fireEvent.click(chatButton);
     expect(onViewChange).toHaveBeenCalledWith('chat');
   });

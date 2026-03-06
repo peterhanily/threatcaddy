@@ -189,7 +189,7 @@ export function Sidebar({
     { view: 'timeline', icon: Clock, label: 'Timeline', badge: investigationScopedCounts ? investigationScopedCounts.events : timelineCounts?.total, badgeColor: 'bg-accent-green', dataTour: 'timeline' },
     { view: 'whiteboard', icon: PenTool, label: 'Whiteboards', badge: investigationScopedCounts ? investigationScopedCounts.whiteboards : whiteboardCount, dataTour: 'whiteboards' },
     { view: 'ioc-stats', icon: Search, label: 'IOC Stats', badge: investigationScopedCounts ? investigationScopedCounts.iocs : undefined, badgeColor: 'bg-accent-green' },
-    { view: 'chat', icon: MessageSquare, label: 'AI Chat', badge: chatCount },
+    { view: 'chat', icon: MessageSquare, label: 'CaddyChat', badge: chatCount },
     { view: 'graph', icon: Network, label: 'Graph' },
     { view: 'activity', icon: Activity, label: 'Activity', dataTour: 'activity' },
     { view: 'caddyshack', icon: MessagesSquare, label: 'CaddyShack' },
@@ -497,7 +497,7 @@ export function Sidebar({
         <div data-tour="chat">
           <NavItem
             icon={<MessageSquare size={16} />}
-            label="AI Chat"
+            label="CaddyChat"
             badge={chatCount}
             badgeColor="bg-purple/15 text-purple"
             active={activeView === 'chat'}

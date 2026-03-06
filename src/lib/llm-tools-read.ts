@@ -188,3 +188,208 @@ export async function executeGetInvestigationSummary(_input: Record<string, unkn
     createdAt: new Date(folder.createdAt).toISOString(),
   });
 }
+
+export async function executeListInvestigations(input: Record<string, unknown>): Promise<string> {
+  const statusFilter = input.status as string | undefined;
+  const limit = Math.min(Number(input.limit) || 20, 50);
+
+  let folders = await db.folders.filter(f => !f.trashed).toArray();
+  if (statusFilter) folders = folders.filter(f => (f.status || 'active') === statusFilter);
+  folders.sort((a, b) => b.updatedAt - a.updatedAt);
+  folders = folders.slice(0, limit);
+
+  const results = await Promise.all(folders.map(async (f) => {
+    const [noteCount, taskCount, iocCount, eventCount] = await Promise.all([
+      db.notes.where('folderId').equals(f.id).and(n => !n.trashed).count(),
+      db.tasks.where('folderId').equals(f.id).and(t => !t.trashed).count(),
+      db.standaloneIOCs.where('folderId').equals(f.id).and(i => !i.trashed).count(),
+      db.timelineEvents.where('folderId').equals(f.id).and(e => !e.trashed).count(),
+    ]);
+    return {
+      id: f.id,
+      name: f.name,
+      status: f.status || 'active',
+      description: f.description ? snippet(f.description) : '',
+      counts: { notes: noteCount, tasks: taskCount, iocs: iocCount, events: eventCount },
+      clsLevel: f.clsLevel,
+      createdAt: new Date(f.createdAt).toISOString(),
+      updatedAt: new Date(f.updatedAt).toISOString(),
+    };
+  }));
+
+  return JSON.stringify({ count: results.length, investigations: results });
+}
+
+export async function executeGetInvestigationDetails(input: Record<string, unknown>): Promise<string> {
+  const id = String(input.id || '');
+  const name = String(input.name || '');
+
+  let folder;
+  if (id) {
+    folder = await db.folders.get(id);
+  } else if (name) {
+    const lower = name.toLowerCase();
+    const all = await db.folders.filter(f => !f.trashed).toArray();
+    folder = all.find(f => f.name.toLowerCase() === lower)
+      || all.find(f => f.name.toLowerCase().includes(lower));
+  }
+
+  if (!folder) return JSON.stringify({ error: 'Investigation not found' });
+
+  const [notes, tasks, iocs, events] = await Promise.all([
+    db.notes.where('folderId').equals(folder.id).and(n => !n.trashed).toArray(),
+    db.tasks.where('folderId').equals(folder.id).and(t => !t.trashed).toArray(),
+    db.standaloneIOCs.where('folderId').equals(folder.id).and(i => !i.trashed).toArray(),
+    db.timelineEvents.where('folderId').equals(folder.id).and(e => !e.trashed).toArray(),
+  ]);
+
+  const tasksByStatus = { todo: 0, 'in-progress': 0, done: 0 };
+  tasks.forEach(t => { tasksByStatus[t.status] = (tasksByStatus[t.status] || 0) + 1; });
+
+  const topIOCs = iocs.slice(0, 10).map(i => ({ type: i.type, value: i.value, confidence: i.confidence }));
+
+  const recentNotes = notes
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, 5)
+    .map(n => ({ id: n.id, title: n.title }));
+
+  return JSON.stringify({
+    id: folder.id,
+    name: folder.name,
+    description: folder.description || '',
+    status: folder.status || 'active',
+    clsLevel: folder.clsLevel,
+    papLevel: folder.papLevel,
+    counts: { notes: notes.length, tasks: tasks.length, iocs: iocs.length, events: events.length },
+    tasksByStatus,
+    topIOCs,
+    recentNotes,
+    createdAt: new Date(folder.createdAt).toISOString(),
+    updatedAt: new Date(folder.updatedAt).toISOString(),
+  });
+}
+
+export async function executeSearchAcrossInvestigations(input: Record<string, unknown>): Promise<string> {
+  const query = String(input.query || '').toLowerCase();
+  if (!query) return JSON.stringify({ error: 'query is required' });
+  const limit = Math.min(Number(input.limit) || 5, 20);
+  const entityTypes = (input.entityTypes as string[] | undefined) || ['notes', 'tasks', 'iocs', 'events'];
+
+  const folders = await db.folders.filter(f => !f.trashed).toArray();
+  const results: Record<string, unknown>[] = [];
+
+  for (const folder of folders) {
+    const match: Record<string, unknown> = { investigationId: folder.id, investigationName: folder.name };
+    let totalHits = 0;
+
+    if (entityTypes.includes('notes')) {
+      const notes = await db.notes.where('folderId').equals(folder.id).and(n => !n.trashed).toArray();
+      const hits = notes
+        .filter(n => n.title.toLowerCase().includes(query) || n.content.toLowerCase().includes(query))
+        .slice(0, limit)
+        .map(n => ({ id: n.id, title: n.title, snippet: snippet(n.content) }));
+      if (hits.length > 0) { match.notes = hits; totalHits += hits.length; }
+    }
+
+    if (entityTypes.includes('tasks')) {
+      const tasks = await db.tasks.where('folderId').equals(folder.id).and(t => !t.trashed).toArray();
+      const hits = tasks
+        .filter(t => t.title.toLowerCase().includes(query) || (t.description || '').toLowerCase().includes(query))
+        .slice(0, limit)
+        .map(t => ({ id: t.id, title: t.title, status: t.status }));
+      if (hits.length > 0) { match.tasks = hits; totalHits += hits.length; }
+    }
+
+    if (entityTypes.includes('iocs')) {
+      const iocs = await db.standaloneIOCs.where('folderId').equals(folder.id).and(i => !i.trashed).toArray();
+      const hits = iocs
+        .filter(i => i.value.toLowerCase().includes(query) || (i.analystNotes || '').toLowerCase().includes(query))
+        .slice(0, limit)
+        .map(i => ({ id: i.id, type: i.type, value: i.value, confidence: i.confidence }));
+      if (hits.length > 0) { match.iocs = hits; totalHits += hits.length; }
+    }
+
+    if (entityTypes.includes('events')) {
+      const events = await db.timelineEvents.where('folderId').equals(folder.id).and(e => !e.trashed).toArray();
+      const hits = events
+        .filter(e => e.title.toLowerCase().includes(query) || (e.description || '').toLowerCase().includes(query))
+        .slice(0, limit)
+        .map(e => ({ id: e.id, title: e.title, eventType: e.eventType }));
+      if (hits.length > 0) { match.events = hits; totalHits += hits.length; }
+    }
+
+    if (totalHits > 0) results.push(match);
+  }
+
+  return JSON.stringify({ query, investigationsSearched: folders.length, investigationsWithHits: results.length, results });
+}
+
+export async function executeCompareInvestigations(input: Record<string, unknown>): Promise<string> {
+  const ids = input.investigationIds as string[];
+  if (!ids || ids.length < 2) return JSON.stringify({ error: 'At least 2 investigation IDs required' });
+
+  const comparisons = await Promise.all(ids.map(async (id) => {
+    const folder = await db.folders.get(id);
+    if (!folder) return { id, error: 'Not found' };
+
+    const [notes, tasks, iocs, events] = await Promise.all([
+      db.notes.where('folderId').equals(id).and(n => !n.trashed).count(),
+      db.tasks.where('folderId').equals(id).and(t => !t.trashed).count(),
+      db.standaloneIOCs.where('folderId').equals(id).and(i => !i.trashed).toArray(),
+      db.timelineEvents.where('folderId').equals(id).and(e => !e.trashed).toArray(),
+    ]);
+
+    const eventTypes = new Set(events.map(e => e.eventType));
+
+    return {
+      id,
+      name: folder.name,
+      status: folder.status || 'active',
+      counts: { notes, tasks, iocs: iocs.length, events: events.length },
+      iocValues: iocs.map(i => i.value),
+      iocTypes: [...new Set(iocs.map(i => i.type))],
+      eventTypes: [...eventTypes],
+      timeRange: events.length > 0 ? {
+        earliest: new Date(Math.min(...events.map(e => e.timestamp))).toISOString(),
+        latest: new Date(Math.max(...events.map(e => e.timestamp))).toISOString(),
+      } : null,
+    };
+  }));
+
+  // Find shared IOCs
+  const validComparisons = comparisons.filter(c => !('error' in c && c.error));
+  const iocSets = validComparisons.map(c => new Set((c as { iocValues: string[] }).iocValues));
+  const sharedIOCs: string[] = [];
+  if (iocSets.length >= 2) {
+    for (const val of iocSets[0]) {
+      if (iocSets.slice(1).every(s => s.has(val))) sharedIOCs.push(val);
+    }
+  }
+
+  // Find shared event types (TTPs)
+  const ttpSets = validComparisons.map(c => new Set((c as { eventTypes: string[] }).eventTypes));
+  const sharedTTPs: string[] = [];
+  if (ttpSets.length >= 2) {
+    for (const val of ttpSets[0]) {
+      if (ttpSets.slice(1).every(s => s.has(val))) sharedTTPs.push(val);
+    }
+  }
+
+  // Clean up before returning — remove raw arrays
+  const summaries = comparisons.map(c => {
+    if ('error' in c && c.error) return c;
+    const { iocValues, ...rest } = c as Record<string, unknown>;
+    void iocValues;
+    return rest;
+  });
+
+  return JSON.stringify({
+    investigations: summaries,
+    sharedIOCs,
+    sharedTTPs,
+    overlap: {
+      sharedIOCCount: sharedIOCs.length,
+      sharedTTPCount: sharedTTPs.length,
+    },
+  });
+}

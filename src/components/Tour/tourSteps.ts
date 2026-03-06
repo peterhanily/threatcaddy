@@ -69,8 +69,8 @@ export const tourSteps: TourStep[] = [
   {
     id: 'chat',
     target: '[data-tour="chat"]',
-    title: 'AI Chat',
-    description: 'Chat with AI models that can search your notes, extract IOCs, and create entities.',
+    title: 'CaddyChat',
+    description: 'AI-powered investigation assistant — search notes, extract IOCs, create entities, and analyze threats.',
     placement: 'right',
   },
   {

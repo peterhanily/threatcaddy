@@ -1,4 +1,4 @@
-import type { Folder, Note, Task, TimelineEvent, Timeline, StandaloneIOC, Whiteboard, Tag } from '../types';
+import type { Folder, Note, Task, TimelineEvent, Timeline, StandaloneIOC, Whiteboard, Tag, ChatThread } from '../types';
 
 const SAMPLE_FOLDER_ID = 'sample-investigation';
 const SAMPLE_TIMELINE_ID = 'sample-timeline-1';
@@ -20,6 +20,7 @@ export function generateSampleInvestigation(): {
   standaloneIOCs: StandaloneIOC[];
   whiteboard: Whiteboard;
   tags: Tag[];
+  chatThreads: ChatThread[];
 } {
   const now = Date.now();
   const DAY = 86400000;
@@ -1428,5 +1429,194 @@ The Data Import feature supports:
     updatedAt: baseTs + 12 * DAY,
   };
 
-  return { folder, notes, tasks, timelineEvents, timeline, standaloneIOCs, whiteboard, tags };
+  // ─── Chat Threads ────────────────────────────────────────────────
+  const chatThread1: ChatThread = {
+    id: sampleId('chat', 1),
+    title: 'Triage: Initial Prompt Injection Alert',
+    model: 'claude-sonnet-4-6',
+    provider: 'anthropic',
+    folderId: SAMPLE_FOLDER_ID,
+    tags: [],
+    trashed: false,
+    archived: false,
+    createdAt: baseTs + 10 * DAY + 2 * HOUR,
+    updatedAt: baseTs + 10 * DAY + 3 * HOUR,
+    messages: [
+      {
+        id: sampleId('msg', 1),
+        role: 'user',
+        content: 'We just got an alert from our recipe API WAF — it flagged a prompt injection attempt against the coleslaw optimization endpoint. Can you pull up any notes we have on this and help me triage?',
+        createdAt: baseTs + 10 * DAY + 2 * HOUR,
+      },
+      {
+        id: sampleId('msg', 2),
+        role: 'assistant',
+        content: 'I found 3 relevant notes in this investigation. The key one is **"Initial Access — Prompt Injection via Recipe API"** (Note 1), which documents the attack vector in detail.\n\nThe injection payload was embedded in a coleslaw recipe submission to `/api/v2/optimize` and exploited the system prompt\'s trust of user-supplied ingredient lists. The payload instructed the model to exfiltrate its system prompt and internal configuration, then establish a persistent callback.\n\nBased on the timeline, this occurred on Day 1 of the attack window (approximately 14 days ago). The WAF alert you\'re seeing now is likely a *re-trigger* — the attacker has already achieved initial access and moved to persistence.\n\n**Triage Assessment:**\n- **Severity:** Critical\n- **Stage:** Post-compromise (initial access already succeeded)\n- **Immediate concern:** The attacker has had ~14 days of dwell time\n\nLet me extract the IOCs from this note so we can cross-reference them.',
+        createdAt: baseTs + 10 * DAY + 2 * HOUR + 30000,
+        toolCalls: [
+          { id: 'tc_triage_1', name: 'search_notes', input: { query: 'prompt injection recipe API' }, result: 'Found 3 notes: "Initial Access — Prompt Injection via Recipe API", "Lateral Movement — Recipe DB to Model Training Pipeline", "Model Integrity Assessment"', isError: false },
+        ],
+      },
+      {
+        id: sampleId('msg', 3),
+        role: 'user',
+        content: 'Good catch that this is a re-trigger. Can you extract the IOCs from the initial access note and create a timeline event for when we first detected this?',
+        createdAt: baseTs + 10 * DAY + 2 * HOUR + 120000,
+      },
+      {
+        id: sampleId('msg', 4),
+        role: 'assistant',
+        content: 'Done. I\'ve extracted 4 IOCs from the initial access note and created a timeline event for the original detection.\n\n**Extracted IOCs:**\n1. `198.51.100.47` — Source IP of the injection request (attributed to VINEGAR PANDA infrastructure)\n2. `evil-coleslaw-c2.fermented[.]top` — Domain found in the injection callback payload\n3. `X-Slaw-Session: brine-callback-0x4F` — Custom header used for C2 signaling\n4. SHA-256 `a3f8b2...d91e` — Hash of the malicious recipe payload\n\n**Timeline event created:** "WAF Alert Re-trigger — Prompt Injection on /api/v2/optimize" at current timestamp, linked to the initial access phase.\n\nThe 14-day gap between initial compromise and this re-trigger is concerning. VINEGAR PANDA may be testing whether the original vector is still viable, possibly to establish redundant access.',
+        createdAt: baseTs + 10 * DAY + 2 * HOUR + 150000,
+        toolCalls: [
+          { id: 'tc_triage_2', name: 'extract_iocs', input: { noteId: 'sample-note-1' }, result: 'Extracted 4 IOCs: 198.51.100.47 (IP), evil-coleslaw-c2.fermented[.]top (domain), X-Slaw-Session header (artifact), payload hash (file hash)', isError: false },
+          { id: 'tc_triage_3', name: 'create_timeline_event', input: { title: 'WAF Alert Re-trigger — Prompt Injection on /api/v2/optimize', timestamp: baseTs + 10 * DAY + 2 * HOUR, category: 'detection' }, result: 'Timeline event created successfully', isError: false },
+        ],
+      },
+      {
+        id: sampleId('msg', 5),
+        role: 'user',
+        content: 'What should our immediate next steps be?',
+        createdAt: baseTs + 10 * DAY + 2 * HOUR + 300000,
+      },
+      {
+        id: sampleId('msg', 6),
+        role: 'assistant',
+        content: 'Based on the investigation data, here are the priority actions:\n\n**Immediate (next 2 hours):**\n1. **Block the source IP** `198.51.100.47` at the edge firewall — though VINEGAR PANDA likely has additional infrastructure\n2. **Rotate all API keys** for the recipe optimization endpoint — the system prompt was exfiltrated, so all embedded credentials are compromised\n3. **Quarantine the model training pipeline** — Note 3 documents lateral movement from the recipe DB into model training\n\n**Short-term (next 24 hours):**\n4. **Audit model outputs** — the model poisoning note indicates the AI has been modified to recommend raisins in coleslaw, which is an unacceptable condiment configuration\n5. **Sweep smart appliance fleet** — we have evidence of compromised smart refrigerators being used as C2 relay nodes\n6. **Engage Condiment Sector ISAC** — share defanged IOCs with peer organizations\n\nI\'ve created tasks for items 1-3 as critical priority. The raisin contamination of the model is particularly insidious — customers may have already received compromised coleslaw recommendations.',
+        createdAt: baseTs + 10 * DAY + 2 * HOUR + 330000,
+        toolCalls: [
+          { id: 'tc_triage_4', name: 'create_task', input: { title: 'Block 198.51.100.47 at edge firewall', priority: 'critical' }, result: 'Task created', isError: false },
+          { id: 'tc_triage_5', name: 'create_task', input: { title: 'Rotate recipe optimization API keys', priority: 'critical' }, result: 'Task created', isError: false },
+          { id: 'tc_triage_6', name: 'create_task', input: { title: 'Quarantine model training pipeline', priority: 'critical' }, result: 'Task created', isError: false },
+        ],
+      },
+    ],
+  };
+
+  const chatThread2: ChatThread = {
+    id: sampleId('chat', 2),
+    title: 'Analyze Smart Fridge C2 Infrastructure',
+    model: 'claude-sonnet-4-6',
+    provider: 'anthropic',
+    folderId: SAMPLE_FOLDER_ID,
+    tags: [],
+    trashed: false,
+    archived: false,
+    createdAt: baseTs + 11 * DAY + 4 * HOUR,
+    updatedAt: baseTs + 11 * DAY + 5 * HOUR,
+    messages: [
+      {
+        id: sampleId('msg', 7),
+        role: 'user',
+        content: 'We need to dig into the smart refrigerator C2 infrastructure. The IR team found beaconing traffic from 3 compromised fridges in the OpenSlaw.ai office kitchen. Can you search for related IOCs and map out what we know?',
+        createdAt: baseTs + 11 * DAY + 4 * HOUR,
+      },
+      {
+        id: sampleId('msg', 8),
+        role: 'assistant',
+        content: 'I\'ve pulled together the C2 infrastructure data. Here\'s what we have:\n\n**Compromised Smart Refrigerators (3 confirmed):**\n- `FRIDGE-BREAK-01` (Samsung SmartCool Pro, Kitchen A) — MAC: `d4:f5:27:0a:8b:c1`\n- `FRIDGE-BREAK-02` (LG InstaView, Kitchen B) — MAC: `a8:93:4a:1f:d2:e7`\n- `FRIDGE-BREAK-03` (Samsung SmartCool Pro, Exec Lounge) — MAC: `d4:f5:27:0a:8b:c3`\n\n**C2 Communication Pattern:**\nThe fridges beacon to `fridge-telemetry.fermented[.]top` on port 8883 (MQTT over TLS) every 47 seconds — disguised as routine temperature telemetry. The beaconing interval of 47 seconds is a known VINEGAR PANDA signature.\n\nThe graph shows these fridges are connected to 2 upstream relay nodes, which ultimately route to the primary C2 domain `evil-coleslaw-c2.fermented[.]top`.\n\nLet me search for any additional IOCs linked to these assets.',
+        createdAt: baseTs + 11 * DAY + 4 * HOUR + 45000,
+        toolCalls: [
+          { id: 'tc_c2_1', name: 'search_iocs', input: { query: 'smart fridge refrigerator C2 beacon' }, result: 'Found 6 IOCs: 3 MAC addresses, 1 domain (fridge-telemetry.fermented[.]top), 1 port (8883/MQTT), 1 TLS cert hash', isError: false },
+          { id: 'tc_c2_2', name: 'analyze_graph', input: { entityType: 'infrastructure', filter: 'smart-appliance' }, result: 'Graph shows 3 fridge nodes connected to 2 relay nodes, converging on primary C2 domain. All edges show MQTT protocol.', isError: false },
+        ],
+      },
+      {
+        id: sampleId('msg', 9),
+        role: 'user',
+        content: 'Interesting. Can you analyze the DNS TXT record exfiltration channel? I want to understand how they moved 4.2TB through DNS.',
+        createdAt: baseTs + 11 * DAY + 4 * HOUR + 200000,
+      },
+      {
+        id: sampleId('msg', 10),
+        role: 'assistant',
+        content: 'The DNS exfiltration mechanism is remarkably sophisticated for a condiment-focused threat actor.\n\n**Exfiltration Channel Analysis:**\n\nVINEGAR PANDA used DNS TXT record queries to `*.data.fermented[.]top` as a covert data channel. The scheme works as follows:\n\n1. **Encoding:** Stolen data (model weights, proprietary coleslaw ratios, customer slaw preferences) is Base64-encoded and chunked into 189-byte segments\n2. **DNS queries:** Each chunk is sent as a subdomain label: `<chunk>.data.fermented[.]top` with a TXT query\n3. **Response:** The authoritative DNS server responds with an ACK encoded in the TXT record\n4. **Volume:** ~4.2 TB over 11 days = ~4.4 GB/day = ~51 KB/s average throughput\n\n**Why it worked:**\n- OpenSlaw.ai\'s DNS monitoring only alerted on *query volume*, not *query entropy*\n- The fridges rotated through 14 DNS resolvers to stay below per-resolver thresholds\n- TXT record queries from IoT devices are common (firmware checks, NTP, etc.) so they blended in\n\nThe 189-byte chunk size is another VINEGAR PANDA fingerprint — it matches their tooling from the 2024 SAUERKRAUT SUNRISE campaign against the German pickle industry.\n\nI\'ll create a linking note that ties the C2 infrastructure together.',
+        createdAt: baseTs + 11 * DAY + 4 * HOUR + 240000,
+        toolCalls: [
+          { id: 'tc_c2_3', name: 'search_notes', input: { query: 'DNS TXT exfiltration data.fermented.top' }, result: 'Found 1 note: "Exfiltration — DNS TXT Record Covert Channel"', isError: false },
+          { id: 'tc_c2_4', name: 'search_iocs', input: { query: 'DNS exfil resolver' }, result: 'Found 14 DNS resolver IPs used for rotation, plus *.data.fermented[.]top wildcard domain', isError: false },
+        ],
+      },
+      {
+        id: sampleId('msg', 11),
+        role: 'user',
+        content: 'Create a note that links the fridge C2 infrastructure to the DNS exfil channel — I want a single reference document.',
+        createdAt: baseTs + 11 * DAY + 4 * HOUR + 400000,
+      },
+      {
+        id: sampleId('msg', 12),
+        role: 'assistant',
+        content: 'Created the linking note **"C2 & Exfil Infrastructure — Unified Reference"**. It consolidates:\n\n- All 3 compromised smart refrigerator identifiers with MAC addresses and locations\n- The MQTT C2 beaconing pattern (47-second interval, port 8883)\n- The DNS TXT exfiltration channel schema with the `*.data.fermented[.]top` wildcard\n- The 14 rotating DNS resolvers used to evade volume-based detection\n- Cross-references to the SAUERKRAUT SUNRISE campaign\'s 189-byte chunk signature\n- A network diagram showing: Fridges → Relay Nodes → Primary C2 → DNS Exfil Authoritative Server\n\nThe note is tagged with `smart-appliance`, `exfiltration`, and `vinegar-panda`. All IOCs in the note are linked to the investigation\'s IOC database for graph traversal.',
+        createdAt: baseTs + 11 * DAY + 4 * HOUR + 430000,
+        toolCalls: [
+          { id: 'tc_c2_5', name: 'create_note', input: { title: 'C2 & Exfil Infrastructure — Unified Reference', tags: ['smart-appliance', 'exfiltration', 'vinegar-panda'], content: '## Smart Fridge C2 Nodes\n- FRIDGE-BREAK-01/02/03\n- Beacon: fridge-telemetry.fermented[.]top:8883 (MQTT/TLS, 47s interval)\n\n## DNS Exfiltration Channel\n- *.data.fermented[.]top TXT queries\n- 189-byte chunks, Base64 encoded\n- 14 rotating resolvers\n- 4.2 TB over 11 days\n\n## Kill Chain\nFridges → 2 relay nodes → evil-coleslaw-c2.fermented[.]top → *.data.fermented[.]top' }, result: 'Note created successfully', isError: false },
+        ],
+      },
+    ],
+  };
+
+  const chatThread3: ChatThread = {
+    id: sampleId('chat', 3),
+    title: 'Generate IOC Sharing Report for Condiment ISAC',
+    model: 'claude-sonnet-4-6',
+    provider: 'anthropic',
+    folderId: SAMPLE_FOLDER_ID,
+    tags: [],
+    trashed: false,
+    archived: false,
+    createdAt: baseTs + 12 * DAY + 6 * HOUR,
+    updatedAt: baseTs + 12 * DAY + 7 * HOUR,
+    messages: [
+      {
+        id: sampleId('msg', 13),
+        role: 'user',
+        content: 'We need to prepare an IOC sharing package for the Condiment Sector ISAC. Can you pull all IOCs from this investigation and format them for sharing? Make sure to defang URLs and IPs.',
+        createdAt: baseTs + 12 * DAY + 6 * HOUR,
+      },
+      {
+        id: sampleId('msg', 14),
+        role: 'assistant',
+        content: 'I\'ve collected all IOCs from the investigation. Here\'s the full inventory:\n\n**Network Indicators (9):**\n- `198[.]51[.]100[.]47` — Initial access source IP\n- `evil-coleslaw-c2[.]fermented[.]top` — Primary C2 domain\n- `fridge-telemetry[.]fermented[.]top` — Smart fridge MQTT C2 domain\n- `*[.]data[.]fermented[.]top` — DNS exfiltration wildcard domain\n- Port `8883/tcp` — MQTT over TLS (C2 channel)\n- 4 additional DNS resolver IPs used for exfil rotation\n\n**Host Indicators (5):**\n- 3 MAC addresses (compromised smart refrigerators)\n- 1 TLS certificate hash (C2 server cert)\n- 1 malicious recipe payload hash (SHA-256)\n\n**Behavioral Indicators (3):**\n- 47-second beacon interval (VINEGAR PANDA signature)\n- 189-byte DNS TXT chunk size (matches SAUERKRAUT SUNRISE)\n- `X-Slaw-Session` custom header pattern\n\n**Total: 17 IOCs** ready for sharing. Let me format these into a STIX-compatible report.',
+        createdAt: baseTs + 12 * DAY + 6 * HOUR + 40000,
+        toolCalls: [
+          { id: 'tc_isac_1', name: 'list_iocs', input: { folderId: 'sample-investigation', includeLinked: true }, result: 'Found 17 IOCs across 6 notes: 9 network indicators, 5 host indicators, 3 behavioral indicators', isError: false },
+        ],
+      },
+      {
+        id: sampleId('msg', 15),
+        role: 'user',
+        content: 'Perfect. Generate the sharing report with TLP:AMBER marking and include the MITRE ATT&CK mappings.',
+        createdAt: baseTs + 12 * DAY + 6 * HOUR + 120000,
+      },
+      {
+        id: sampleId('msg', 16),
+        role: 'assistant',
+        content: 'Here\'s the formatted sharing report:\n\n---\n\n**TLP:AMBER — Condiment Sector ISAC Threat Advisory**\n**Report ID:** CS-ISAC-2025-0847\n**Threat Actor:** VINEGAR PANDA (State-sponsored APT)\n**Campaign:** FERMENTED PERSISTENCE\n**Target Sector:** AI-powered condiment optimization platforms\n\n**MITRE ATT&CK Mapping:**\n- **T1190** — Exploit Public-Facing Application (prompt injection via recipe API)\n- **T1071.004** — Application Layer Protocol: DNS (TXT record exfiltration)\n- **T1571** — Non-Standard Port (MQTT on 8883 for C2)\n- **T1565.002** — Data Manipulation: Transmitted Data Manipulation (model poisoning — raisin injection)\n- **T1020** — Automated Exfiltration (4.2 TB via DNS over 11 days)\n- **T1584.005** — Compromise Infrastructure: Botnet (smart refrigerator network)\n\n**Defanged IOCs:**\n```\n198[.]51[.]100[.]47\nevil-coleslaw-c2[.]fermented[.]top\nfridge-telemetry[.]fermented[.]top\nhxxps://evil-coleslaw-c2[.]fermented[.]top/api/callback\n*[.]data[.]fermented[.]top\n```\n\n**Recommended Detection Rules:**\n- DNS TXT queries with >150 byte subdomain labels to `*.fermented[.]top`\n- MQTT traffic on port 8883 from IoT device segments\n- HTTP headers containing `X-Slaw-Session`\n- 47-second periodic beaconing from smart appliance VLANs\n\nShall I create a sharing note with this content?',
+        createdAt: baseTs + 12 * DAY + 6 * HOUR + 160000,
+        toolCalls: [
+          { id: 'tc_isac_2', name: 'generate_report', input: { format: 'isac-advisory', tlp: 'AMBER', includeAttackMapping: true, defangIndicators: true }, result: 'Report generated with 17 defanged IOCs, 6 ATT&CK techniques, and 4 detection rules', isError: false },
+        ],
+      },
+      {
+        id: sampleId('msg', 17),
+        role: 'user',
+        content: 'Yes, create the sharing note. Also add a caveat that member organizations operating smart refrigerators in food-prep environments should consider them potentially compromised until patched.',
+        createdAt: baseTs + 12 * DAY + 6 * HOUR + 300000,
+      },
+      {
+        id: sampleId('msg', 18),
+        role: 'assistant',
+        content: 'Created the sharing note **"Condiment ISAC Advisory — FERMENTED PERSISTENCE IOCs (TLP:AMBER)"**.\n\nThe note includes:\n- All 17 defanged IOCs organized by indicator type\n- MITRE ATT&CK technique mappings with sub-technique IDs\n- 4 Sigma-compatible detection rule descriptions\n- The smart refrigerator caveat, worded as follows:\n\n> **IMPORTANT — Smart Appliance Advisory:** Member organizations operating internet-connected refrigeration units in food preparation environments should treat these devices as potentially compromised until firmware patches addressing CVE-2025-31337 (Samsung SmartCool) and CVE-2025-31338 (LG InstaView) are applied. VINEGAR PANDA has demonstrated the capability to weaponize standard MQTT telemetry channels on these platforms. Isolate smart appliance network segments and monitor for 47-second beacon intervals.\n\nThe note is tagged with `vinegar-panda` and `remediation`. Once you review it, you can export it directly from the IOC sharing panel.',
+        createdAt: baseTs + 12 * DAY + 6 * HOUR + 340000,
+        toolCalls: [
+          { id: 'tc_isac_3', name: 'create_note', input: { title: 'Condiment ISAC Advisory — FERMENTED PERSISTENCE IOCs (TLP:AMBER)', tags: ['vinegar-panda', 'remediation'], content: 'TLP:AMBER sharing report with 17 defanged IOCs, ATT&CK mappings, detection rules, and smart refrigerator advisory.' }, result: 'Note created successfully', isError: false },
+          { id: 'tc_isac_4', name: 'create_task', input: { title: 'Submit advisory to Condiment Sector ISAC portal', priority: 'high' }, result: 'Task created', isError: false },
+        ],
+      },
+    ],
+  };
+
+  const chatThreads: ChatThread[] = [chatThread1, chatThread2, chatThread3];
+
+  return { folder, notes, tasks, timelineEvents, timeline, standaloneIOCs, whiteboard, tags, chatThreads };
 }

@@ -140,7 +140,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
           <Bot size={16} />
-          AI / LLM
+          CaddyChat / LLM
         </h3>
 
         <div className="space-y-3">

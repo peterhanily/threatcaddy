@@ -173,7 +173,7 @@ export async function executeCreateTimelineEvent(input: Record<string, unknown>,
     title: String(input.title || 'Untitled Event'),
     description: input.description ? String(input.description) : undefined,
     eventType: (input.eventType as TimelineEventType) || 'other',
-    source: input.source ? String(input.source) : 'AI Chat',
+    source: input.source ? String(input.source) : 'CaddyChat',
     confidence: 'medium' as const,
     linkedIOCIds: [],
     linkedNoteIds: [],
@@ -321,4 +321,40 @@ export async function executeGenerateReport(input: Record<string, unknown>, fold
   await db.notes.add(note);
 
   return JSON.stringify({ success: true, id: note.id, title: note.title, contentLength: report.length });
+}
+
+export async function executeCreateInInvestigation(input: Record<string, unknown>): Promise<string> {
+  const id = String(input.investigationId || '');
+  const name = String(input.investigationName || '');
+  const entityType = String(input.entityType || '');
+  const data = input.data as Record<string, unknown> | undefined;
+
+  if (!entityType || !data) return JSON.stringify({ error: 'entityType and data are required' });
+
+  // Resolve investigation
+  let folder;
+  if (id) {
+    folder = await db.folders.get(id);
+  } else if (name) {
+    const lower = name.toLowerCase();
+    const all = await db.folders.filter(f => !f.trashed).toArray();
+    folder = all.find(f => f.name.toLowerCase() === lower)
+      || all.find(f => f.name.toLowerCase().includes(lower));
+  }
+
+  if (!folder) return JSON.stringify({ error: 'Investigation not found' });
+
+  // Delegate to existing create functions with the resolved folderId
+  switch (entityType) {
+    case 'note':
+      return executeCreateNote(data, folder.id);
+    case 'task':
+      return executeCreateTask(data, folder.id);
+    case 'ioc':
+      return executeCreateIOC(data, folder.id);
+    case 'timeline-event':
+      return executeCreateTimelineEvent(data, folder.id);
+    default:
+      return JSON.stringify({ error: `Unknown entity type: ${entityType}. Use: note, task, ioc, timeline-event` });
+  }
 }

@@ -28,7 +28,7 @@ Clip text, images, and selections from any web page directly into ThreatCaddy. W
 - **Rich content** — Preserves formatting, links, and inline images as Markdown
 - **Confirmation bubble** — Visual feedback after each capture
 - **Send to ThreatCaddy** — Transfer all captured clips to the web app with one click
-- **LLM Proxy** — Routes AI chat API calls from the web app through the extension's background script, bypassing CORS restrictions for Anthropic, OpenAI, Gemini, Mistral, and local LLM endpoints
+- **LLM Proxy** — Routes CaddyChat API calls from the web app through the extension's background script, bypassing CORS restrictions for Anthropic, OpenAI, Gemini, Mistral, and local LLM endpoints
 
 ## Usage
 
@@ -52,4 +52,4 @@ The build script reads the `BROWSER` environment variable (`chrome` or `firefox`
 
 ## Privacy
 
-All captured clips stay local in `chrome.storage.local`. The extension makes no external network requests except those you explicitly initiate (sending clips to your ThreatCaddy instance, AI chat API calls to your configured provider). See the full [Privacy Policy](https://threatcaddy.com/privacy.html).
+All captured clips stay local in `chrome.storage.local`. The extension makes no external network requests except those you explicitly initiate (sending clips to your ThreatCaddy instance, CaddyChat API calls to your configured provider). See the full [Privacy Policy](https://threatcaddy.com/privacy.html).
