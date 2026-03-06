@@ -2,7 +2,17 @@ import { Marked } from 'marked';
 import hljs from 'highlight.js/lib/core';
 import DOMPurify from 'dompurify';
 
+// Load highlight.js CSS on first use (removed from index.css to avoid blocking initial render)
+let hljsCssLoaded = false;
+function ensureHljsCss() {
+  if (hljsCssLoaded) return;
+  hljsCssLoaded = true;
+  import('highlight.js/styles/github-dark.min.css');
+}
+
 // Register commonly used languages (security/threat intel + general dev)
+// These are kept synchronous so highlighting works immediately when this chunk loads.
+// The chunk itself is code-split and only loaded when markdown rendering is needed.
 import javascript from 'highlight.js/lib/languages/javascript';
 import typescript from 'highlight.js/lib/languages/typescript';
 import python from 'highlight.js/lib/languages/python';
@@ -126,6 +136,8 @@ export function preprocessWikiLinks(content: string, notes: WikiLinkTarget[]): s
 }
 
 export function renderMarkdown(content: string, wikiLinkTargets?: WikiLinkTarget[]): string {
+  // Load highlight.js CSS on first use (lazy-loaded to avoid blocking initial render)
+  ensureHljsCss();
   const processed = wikiLinkTargets ? preprocessWikiLinks(content, wikiLinkTargets) : content;
   const raw = marked.parse(processed) as string;
   return DOMPurify.sanitize(raw, {

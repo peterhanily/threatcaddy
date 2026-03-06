@@ -26,14 +26,12 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-async function boot() {
-  await migrateIndexedDB();
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <AppShell />
-    </StrictMode>,
-  );
-}
+// Run DB migration in the background — don't block first render
+migrateIndexedDB().catch(console.error);
 
-boot();
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <AppShell />
+  </StrictMode>,
+);

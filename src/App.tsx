@@ -2,14 +2,14 @@ import { useState, useCallback, useMemo, useEffect, useRef, lazy, Suspense } fro
 import { AppLayout } from './components/Layout/AppLayout';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
-import { NoteList } from './components/Notes/NoteList';
+const NoteList = lazy(() => import('./components/Notes/NoteList').then(m => ({ default: m.NoteList })));
 const NoteEditor = lazy(() => import('./components/Notes/NoteEditor').then(m => ({ default: m.NoteEditor })));
-import { TaskListView } from './components/Tasks/TaskList';
+const TaskListView = lazy(() => import('./components/Tasks/TaskList').then(m => ({ default: m.TaskListView })));
 const TimelineView = lazy(() => import('./components/Timeline/TimelineView').then(m => ({ default: m.TimelineView })));
 const WhiteboardView = lazy(() => import('./components/Whiteboard/WhiteboardView').then(m => ({ default: m.WhiteboardView })));
 const ActivityLogView = lazy(() => import('./components/Activity/ActivityLogView').then(m => ({ default: m.ActivityLogView })));
-import { QuickCapture } from './components/Clips/QuickCapture';
-import { SettingsPanel } from './components/Settings/SettingsPanel';
+const QuickCapture = lazy(() => import('./components/Clips/QuickCapture').then(m => ({ default: m.QuickCapture })));
+const SettingsPanel = lazy(() => import('./components/Settings/SettingsPanel').then(m => ({ default: m.SettingsPanel })));
 import { useNotes } from './hooks/useNotes';
 import { useTasks } from './hooks/useTasks';
 import { useTimeline } from './hooks/useTimeline';
@@ -45,8 +45,8 @@ import type { InvestigationStatus } from './types';
 const GraphView = lazy(() => import('./components/Graph/GraphView').then(m => ({ default: m.GraphView })));
 const ChatView = lazy(() => import('./components/Chat/ChatView').then(m => ({ default: m.ChatView })));
 const IOCStatsView = lazy(() => import('./components/Analysis/IOCStatsView').then(m => ({ default: m.IOCStatsView })));
-import { StandaloneIOCForm } from './components/Analysis/StandaloneIOCForm';
-import { StandaloneIOCList } from './components/Analysis/StandaloneIOCList';
+const StandaloneIOCForm = lazy(() => import('./components/Analysis/StandaloneIOCForm').then(m => ({ default: m.StandaloneIOCForm })));
+const StandaloneIOCList = lazy(() => import('./components/Analysis/StandaloneIOCList').then(m => ({ default: m.StandaloneIOCList })));
 const TrashArchiveView = lazy(() => import('./components/TrashArchive/TrashArchiveView').then(m => ({ default: m.TrashArchiveView })));
 import type { LayoutName } from './components/Graph/GraphCanvas';
 import { useNavigationHistory } from './hooks/useNavigationHistory';
@@ -832,10 +832,11 @@ function AppInner() {
     reloadTimelines();
     reloadWhiteboards();
     standaloneIOCsHook.reload();
+    chatsHook.reload();
     reloadFolders();
     reloadTags();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes.reload, tasks.reload, timeline.reload, reloadTimelines, reloadWhiteboards, standaloneIOCsHook.reload, reloadFolders, reloadTags]);
+  }, [notes.reload, tasks.reload, timeline.reload, reloadTimelines, reloadWhiteboards, standaloneIOCsHook.reload, chatsHook.reload, reloadFolders, reloadTags]);
 
   const handleToggleEditorMode = useCallback(() => {
     setEditorMode((prev) => {
@@ -1485,24 +1486,26 @@ function AppInner() {
         </div>
       )}
 
-      <QuickCapture
-        open={showQuickCapture}
-        onClose={() => setShowQuickCapture(false)}
-        onCapture={handleQuickCapture}
-        folders={folders}
-        defaultFolderId={selectedFolderId}
-      />
+      <Suspense fallback={null}>
+        <QuickCapture
+          open={showQuickCapture}
+          onClose={() => setShowQuickCapture(false)}
+          onCapture={handleQuickCapture}
+          folders={folders}
+          defaultFolderId={selectedFolderId}
+        />
 
-      <StandaloneIOCForm
-        open={showIOCForm}
-        onClose={() => setShowIOCForm(false)}
-        onSubmit={async (data) => {
-          await loggedCreateIOC(data);
-          navigateTo('ioc-stats');
-        }}
-        folders={folders}
-        defaultFolderId={selectedFolderId}
-      />
+        <StandaloneIOCForm
+          open={showIOCForm}
+          onClose={() => setShowIOCForm(false)}
+          onSubmit={async (data) => {
+            await loggedCreateIOC(data);
+            navigateTo('ioc-stats');
+          }}
+          folders={folders}
+          defaultFolderId={selectedFolderId}
+        />
+      </Suspense>
 
       <DataImportModal
         open={showDataImport}
