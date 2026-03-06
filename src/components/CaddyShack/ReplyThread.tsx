@@ -10,9 +10,10 @@ interface ReplyThreadProps {
   postId: string;
   currentUserId?: string;
   onBack: () => void;
+  onUserClick?: (userId: string) => void;
 }
 
-export function ReplyThread({ postId, currentUserId, onBack }: ReplyThreadProps) {
+export function ReplyThread({ postId, currentUserId, onBack, onUserClick }: ReplyThreadProps) {
   const { addToast } = useToast();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,6 +120,7 @@ export function ReplyThread({ postId, currentUserId, onBack }: ReplyThreadProps)
           onDelete={handleDelete}
           onEdit={handleEdit}
           onPin={handlePin}
+          onUserClick={onUserClick}
         />
       </div>
 
@@ -150,6 +152,7 @@ export function ReplyThread({ postId, currentUserId, onBack }: ReplyThreadProps)
               onDelete={handleDelete}
               onEdit={handleEdit}
               onPin={handlePin}
+              onUserClick={onUserClick}
               compact
             />
           ))}

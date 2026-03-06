@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
-import { eq, and, ilike, or } from 'drizzle-orm';
+import { eq, and, ilike, or, desc, inArray } from 'drizzle-orm';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { db } from '../db/index.js';
-import { users, posts, investigationMembers, sessions } from '../db/schema.js';
+import { users, posts, investigationMembers, sessions, reactions, activityLog } from '../db/schema.js';
 import { disconnectUser } from '../ws/handler.js';
 import type { AuthUser } from '../types.js';
 
@@ -114,6 +114,91 @@ app.get('/:id/feed', async (c) => {
     .slice(-50);
 
   return c.json(result);
+});
+
+// GET /api/users/:id/likes — posts the user has liked
+app.get('/:id/likes', async (c) => {
+  const requestingUser = c.get('user');
+  const targetUserId = c.req.param('id');
+
+  // Get accessible folder IDs for scoping
+  const memberships = await db
+    .select({ folderId: investigationMembers.folderId })
+    .from(investigationMembers)
+    .where(eq(investigationMembers.userId, requestingUser.id));
+  const accessibleFolderIds = new Set(memberships.map((m) => m.folderId));
+
+  // Find posts the user reacted to
+  const userReactions = await db
+    .select({ postId: reactions.postId })
+    .from(reactions)
+    .where(eq(reactions.userId, targetUserId));
+  const postIds = [...new Set(userReactions.map((r) => r.postId))];
+
+  if (postIds.length === 0) return c.json([]);
+
+  const likedPosts = await db
+    .select({
+      id: posts.id,
+      authorId: posts.authorId,
+      content: posts.content,
+      attachments: posts.attachments,
+      folderId: posts.folderId,
+      parentId: posts.parentId,
+      replyToId: posts.replyToId,
+      mentions: posts.mentions,
+      pinned: posts.pinned,
+      deleted: posts.deleted,
+      createdAt: posts.createdAt,
+      updatedAt: posts.updatedAt,
+      authorDisplayName: users.displayName,
+      authorAvatarUrl: users.avatarUrl,
+    })
+    .from(posts)
+    .innerJoin(users, eq(users.id, posts.authorId))
+    .where(and(
+      inArray(posts.id, postIds),
+      eq(posts.deleted, false),
+    ))
+    .orderBy(desc(posts.createdAt))
+    .limit(50);
+
+  // Filter by access
+  const result = likedPosts.filter((p) => !p.folderId || accessibleFolderIds.has(p.folderId));
+  return c.json(result);
+});
+
+// GET /api/users/:id/activity — user's recent activity from audit log
+app.get('/:id/activity', async (c) => {
+  const requestingUser = c.get('user');
+  const targetUserId = c.req.param('id');
+
+  // Get accessible folder IDs for scoping
+  const memberships = await db
+    .select({ folderId: investigationMembers.folderId })
+    .from(investigationMembers)
+    .where(eq(investigationMembers.userId, requestingUser.id));
+  const accessibleFolderIds = new Set(memberships.map((m) => m.folderId));
+
+  const entries = await db
+    .select({
+      id: activityLog.id,
+      category: activityLog.category,
+      action: activityLog.action,
+      detail: activityLog.detail,
+      itemId: activityLog.itemId,
+      itemTitle: activityLog.itemTitle,
+      folderId: activityLog.folderId,
+      timestamp: activityLog.timestamp,
+    })
+    .from(activityLog)
+    .where(eq(activityLog.userId, targetUserId))
+    .orderBy(desc(activityLog.timestamp))
+    .limit(100);
+
+  // Filter: global entries (no folderId) visible to all; folder-scoped need access
+  const result = entries.filter((e) => !e.folderId || accessibleFolderIds.has(e.folderId));
+  return c.json(result.slice(0, 50));
 });
 
 // PATCH /api/users/:id — admin update user

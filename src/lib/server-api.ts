@@ -371,6 +371,18 @@ export async function fetchUserFeed(userId: string) {
   return resp.json();
 }
 
+export async function fetchUserLikes(userId: string) {
+  const resp = await apiFetch(`/api/users/${userId}/likes`);
+  if (!resp.ok) throw new Error('Failed to fetch user likes');
+  return resp.json();
+}
+
+export async function fetchUserActivity(userId: string) {
+  const resp = await apiFetch(`/api/users/${userId}/activity`);
+  if (!resp.ok) throw new Error('Failed to fetch user activity');
+  return resp.json();
+}
+
 // ─── Backups ─────────────────────────────────────────────────────
 
 export interface BackupMeta {

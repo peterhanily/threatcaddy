@@ -14,6 +14,7 @@ interface PostCardProps {
   onDelete?: (postId: string) => void;
   onEdit?: (postId: string, content: string) => void;
   onPin?: (postId: string, pinned: boolean) => void;
+  onUserClick?: (userId: string) => void;
   onClick?: (postId: string) => void;
   compact?: boolean;
 }
@@ -27,6 +28,7 @@ export function PostCard({
   onDelete,
   onEdit,
   onPin,
+  onUserClick,
   onClick,
   compact,
 }: PostCardProps) {
@@ -69,17 +71,23 @@ export function PostCard({
 
       <div className="flex gap-3">
         {/* Avatar */}
-        <div className={`${compact ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm'} rounded-full bg-blue-600 flex items-center justify-center text-white font-medium shrink-0`}>
+        <button
+          onClick={(e) => { e.stopPropagation(); onUserClick?.(post.authorId); }}
+          className={`${compact ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm'} rounded-full bg-blue-600 flex items-center justify-center text-white font-medium shrink-0 hover:ring-2 hover:ring-blue-400/50 transition-all`}
+        >
           {post.authorDisplayName?.[0]?.toUpperCase() || '?'}
-        </div>
+        </button>
 
         {/* Content area */}
         <div className="flex-1 min-w-0">
-          {/* Header: name · time · pin · menu */}
+          {/* Header: name · handle · time · pin · menu */}
           <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-[13px] text-[var(--text-primary)] truncate">
+            <button
+              onClick={(e) => { e.stopPropagation(); onUserClick?.(post.authorId); }}
+              className="font-semibold text-[13px] text-[var(--text-primary)] truncate hover:underline"
+            >
               {post.authorDisplayName || 'Unknown'}
-            </span>
+            </button>
             <span className="text-[var(--text-tertiary)] text-xs shrink-0">·</span>
             <span className="text-xs text-[var(--text-tertiary)] shrink-0">{timeAgo}</span>
             {post.pinned && (

@@ -6,6 +6,7 @@ import { fetchFeed, fetchServerInfo, addReaction, removeReaction, deletePost, ed
 import { PostCard } from './PostCard';
 import { PostComposer } from './PostComposer';
 import { ReplyThread } from './ReplyThread';
+import { UserProfile } from './UserProfile';
 import type { Post } from '../../types';
 
 interface CaddyShackViewProps {
@@ -21,6 +22,7 @@ export function CaddyShackView({ folderId, folderName }: CaddyShackViewProps) {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [feedScope, setFeedScope] = useState<'global' | 'investigation'>(folderId ? 'investigation' : 'global');
   const [serverName, setServerName] = useState<string>('Global');
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
 
   const loadFeed = useCallback(async () => {
     if (!connected) return;
@@ -104,12 +106,24 @@ export function CaddyShackView({ folderId, folderName }: CaddyShackViewProps) {
     );
   }
 
+  if (profileUserId) {
+    return (
+      <UserProfile
+        userId={profileUserId}
+        currentUserId={user?.id}
+        onBack={() => setProfileUserId(null)}
+        onUserClick={setProfileUserId}
+      />
+    );
+  }
+
   if (selectedPostId) {
     return (
       <ReplyThread
         postId={selectedPostId}
         currentUserId={user?.id}
         onBack={() => setSelectedPostId(null)}
+        onUserClick={setProfileUserId}
       />
     );
   }
@@ -172,6 +186,7 @@ export function CaddyShackView({ folderId, folderName }: CaddyShackViewProps) {
               onDelete={handleDelete}
               onEdit={handleEdit}
               onPin={handlePin}
+              onUserClick={setProfileUserId}
               onClick={setSelectedPostId}
             />
           ))}
