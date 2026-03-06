@@ -107,7 +107,9 @@ export const InvestigationListItem = React.memo(function InvestigationListItem({
       <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', statusColor)} />
       <span className="truncate flex-1 text-left text-[12px]">{folder.name}</span>
       {synced && (
-        <Cloud size={10} className="shrink-0 text-purple/60" title="Synced with team server" />
+        <span title="Synced with team server">
+          <Cloud size={10} className="shrink-0 text-purple/60" />
+        </span>
       )}
       <span className="font-mono text-[10px] text-text-muted shrink-0">
         {formatDate(folder.createdAt)}
