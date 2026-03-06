@@ -63,6 +63,7 @@ interface SidebarProps {
   onFolderStatusFilterChange?: (filter: InvestigationStatus[]) => void;
   investigationScopedCounts?: { notes: number; tasks: number; events: number; whiteboards: number; iocs: number } | null;
   chatCount?: number;
+  serverConnected?: boolean;
 }
 
 type SegmentedFilter = 'all' | InvestigationStatus;
@@ -115,6 +116,7 @@ export function Sidebar({
   onFolderStatusFilterChange,
   investigationScopedCounts,
   chatCount,
+  serverConnected,
 }: SidebarProps) {
   const [investigationsListOpen, setInvestigationsListOpen] = useState(true);
   const [editingFolder, setEditingFolder] = useState<string | null>(null);
@@ -345,6 +347,7 @@ export function Sidebar({
                   <InvestigationListItem
                     folder={folder}
                     active={selectedFolderId === folder.id}
+                    synced={serverConnected}
                     onClick={() => nav(() => {
                       if (selectedFolderId === folder.id) {
                         onFolderSelect(undefined);

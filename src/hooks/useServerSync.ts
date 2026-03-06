@@ -77,6 +77,27 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns) {
           ws.on('notification', () => {
             window.dispatchEvent(new CustomEvent('ws-notification'));
           });
+          ws.on('folder-invite', (msg) => {
+            // New investigation shared with us — pull the full folder snapshot
+            const inviteFolderId = (msg as { folderId?: string }).folderId;
+            if (inviteFolderId) {
+              syncEngine.pullFolder(inviteFolderId).then(() => {
+                reloadFns.folders();
+                reloadFns.notes();
+                reloadFns.tasks();
+                reloadFns.timeline();
+                reloadFns.whiteboards();
+                reloadFns.standaloneIOCs();
+                reloadFns.chats();
+              });
+            }
+          });
+          ws.on('access-revoked', (msg) => {
+            const { folderId: revokedId } = msg as { folderId?: string };
+            if (revokedId) {
+              reloadFns.folders();
+            }
+          });
           wsClientRef.current = ws;
         }
       }).catch((err) => {

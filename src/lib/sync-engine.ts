@@ -1,6 +1,6 @@
 import { db } from '../db';
 import type { Dexie as DexieType } from 'dexie';
-import { syncPush, syncPull, type SyncChange, type SyncResult } from './server-api';
+import { syncPush, syncPull, syncSnapshot, type SyncChange, type SyncResult } from './server-api';
 import { disableSync, enableSync } from './sync-middleware';
 import type { WSClient } from './ws-client';
 
@@ -197,26 +197,31 @@ export class SyncEngine {
       if (changes && changes.length > 0) {
         const affectedTables = new Set<string>();
 
-        // Apply remote changes to local Dexie
-        for (const change of changes) {
-          const { table: tableName, op, ...entityData } = change;
-          const id = entityData.id as string;
-          affectedTables.add(tableName);
+        // Disable sync hooks so pulled data doesn't re-enqueue for push
+        disableSync();
+        try {
+          for (const change of changes) {
+            const { table: tableName, op, ...entityData } = change;
+            const id = entityData.id as string;
+            affectedTables.add(tableName);
 
-          if (op === 'delete') {
-            await dynamicDb.table(tableName).delete(id);
-          } else {
-            // Convert server timestamps to milliseconds for Dexie
-            const localData = { ...entityData };
-            if (localData.createdAt && typeof localData.createdAt === 'string') {
-              localData.createdAt = new Date(localData.createdAt as string).getTime();
-            }
-            if (localData.updatedAt && typeof localData.updatedAt === 'string') {
-              localData.updatedAt = new Date(localData.updatedAt as string).getTime();
-            }
+            if (op === 'delete') {
+              await dynamicDb.table(tableName).delete(id);
+            } else {
+              // Convert server timestamps to milliseconds for Dexie
+              const localData = { ...entityData };
+              if (localData.createdAt && typeof localData.createdAt === 'string') {
+                localData.createdAt = new Date(localData.createdAt as string).getTime();
+              }
+              if (localData.updatedAt && typeof localData.updatedAt === 'string') {
+                localData.updatedAt = new Date(localData.updatedAt as string).getTime();
+              }
 
-            await dynamicDb.table(tableName).put(localData);
+              await dynamicDb.table(tableName).put(localData);
+            }
           }
+        } finally {
+          enableSync();
         }
 
         if (this.onRemoteChange) {
@@ -317,6 +322,42 @@ export class SyncEngine {
     }
     // Trigger a debounced push so changes sync within ~300ms max
     this.schedulePush();
+  }
+
+  /**
+   * Pull a full snapshot for a specific folder from the server.
+   * Used when a user is newly invited to an investigation.
+   */
+  async pullFolder(folderId: string) {
+    try {
+      const snapshot: Record<string, unknown[]> = await syncSnapshot(folderId);
+      const affectedTables = new Set<string>();
+
+      disableSync();
+      try {
+        for (const [tableName, rows] of Object.entries(snapshot)) {
+          if (!Array.isArray(rows) || rows.length === 0) continue;
+          affectedTables.add(tableName);
+          for (const row of rows) {
+            const localData = { ...(row as Record<string, unknown>) };
+            for (const key of ['createdAt', 'updatedAt', 'trashedAt', 'completedAt', 'closedAt'] as const) {
+              if (localData[key] && typeof localData[key] === 'string') {
+                localData[key] = new Date(localData[key] as string).getTime();
+              }
+            }
+            await dynamicDb.table(tableName).put(localData);
+          }
+        }
+      } finally {
+        enableSync();
+      }
+
+      if (affectedTables.size > 0 && this.onRemoteChange) {
+        this.onRemoteChange([], affectedTables);
+      }
+    } catch (err) {
+      console.warn('SyncEngine: pullFolder failed', err);
+    }
   }
 
   // Push an entire folder and all its scoped content to the server.

@@ -7,7 +7,7 @@ import { db } from '../db/index.js';
 import { investigationMembers, folders, users, notes, tasks, timelineEvents, whiteboards, standaloneIOCs, chatThreads, posts, files, notifications } from '../db/schema.js';
 import { createNotification } from '../services/notification-service.js';
 import { logActivity } from '../services/audit-service.js';
-import { revokeUserFolderAccess } from '../ws/handler.js';
+import { revokeUserFolderAccess, broadcastToUser } from '../ws/handler.js';
 import type { AuthUser } from '../types.js';
 import { unlink } from 'node:fs/promises';
 
@@ -124,6 +124,9 @@ app.post('/:id/members', async (c) => {
     folderId,
     message: `${user.displayName} added you to ${folder.name}`,
   });
+
+  // Notify the invited user via WS so their client pulls the investigation data
+  broadcastToUser(userId, { type: 'folder-invite', folderId });
 
   return c.json({ ok: true }, 201);
 });
@@ -347,6 +350,9 @@ app.post('/:id/invite', async (c) => {
     folderId,
     message: `${user.displayName} invited you to ${folder.name}`,
   });
+
+  // Notify the invited user via WS so their client pulls the investigation data
+  broadcastToUser(userId, { type: 'folder-invite', folderId });
 
   return c.json({ ok: true }, 201);
 });
