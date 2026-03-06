@@ -181,6 +181,9 @@ function setupPermToggle(toggleId, sliderId, origins) {
       await chrome.permissions.remove({ origins }).catch(() => {});
       slider.style.backgroundColor = '#4b5563';
     }
+    // *://*/* is a superset of the AI origins, so toggling one can
+    // implicitly grant or revoke the other. Refresh all toggles.
+    if (typeof refreshAllPermToggles === 'function') refreshAllPermToggles();
   });
 }
 
