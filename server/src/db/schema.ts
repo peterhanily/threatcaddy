@@ -364,7 +364,7 @@ export const adminUsers = pgTable('admin_users', {
 
 export const activityLog = pgTable('activity_log', {
   id: text('id').primaryKey(),
-  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+  userId: text('user_id'),  // No FK — can reference users or admin_users
   category: text('category').notNull(),
   action: text('action').notNull(),
   detail: text('detail').notNull(),

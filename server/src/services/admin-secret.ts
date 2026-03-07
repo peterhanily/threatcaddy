@@ -198,7 +198,7 @@ export async function initAdminSystemUser(): Promise<void> {
   const hash = await argon2.hash(nanoid(32), { type: argon2.argon2id });
   await db.insert(users).values({
     id: ADMIN_SYSTEM_USER_ID,
-    email: 'admin@system.local',
+    email: 'system@threatcaddy.internal',
     displayName: 'System Admin',
     passwordHash: hash,
     role: 'admin',

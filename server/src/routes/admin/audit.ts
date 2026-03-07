@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
-import { eq, count, desc, and, gte, lte, ilike, or } from 'drizzle-orm';
+import { eq, count, desc, and, gte, lte, ilike, or, sql } from 'drizzle-orm';
 import {
-  db, users, folders, activityLog,
+  db, users, folders, activityLog, adminUsers,
   requireAdminAuth, logAdminAction, getAdminId,
 } from './shared.js';
 
@@ -41,8 +41,8 @@ app.get('/api/audit-log', requireAdminAuth, async (c) => {
   const entries = await db.select({
     id: activityLog.id,
     userId: activityLog.userId,
-    userDisplayName: users.displayName,
-    userEmail: users.email,
+    userDisplayName: sql<string>`COALESCE(${users.displayName}, ${adminUsers.displayName})`.as('user_display_name'),
+    userEmail: sql<string>`COALESCE(${users.email}, ${adminUsers.username})`.as('user_email'),
     category: activityLog.category,
     action: activityLog.action,
     detail: activityLog.detail,
@@ -53,6 +53,7 @@ app.get('/api/audit-log', requireAdminAuth, async (c) => {
     timestamp: activityLog.timestamp,
   }).from(activityLog)
     .leftJoin(users, eq(users.id, activityLog.userId))
+    .leftJoin(adminUsers, eq(adminUsers.id, activityLog.userId))
     .leftJoin(folders, eq(folders.id, activityLog.folderId))
     .where(whereClause)
     .orderBy(desc(activityLog.timestamp))
@@ -91,7 +92,7 @@ app.get('/api/audit-log/export', requireAdminAuth, async (c) => {
   const entries = await db.select({
     id: activityLog.id,
     userId: activityLog.userId,
-    userEmail: users.email,
+    userEmail: sql<string>`COALESCE(${users.email}, ${adminUsers.username})`.as('user_email'),
     category: activityLog.category,
     action: activityLog.action,
     detail: activityLog.detail,
@@ -102,6 +103,7 @@ app.get('/api/audit-log/export', requireAdminAuth, async (c) => {
     timestamp: activityLog.timestamp,
   }).from(activityLog)
     .leftJoin(users, eq(users.id, activityLog.userId))
+    .leftJoin(adminUsers, eq(adminUsers.id, activityLog.userId))
     .leftJoin(folders, eq(folders.id, activityLog.folderId))
     .where(whereClause)
     .orderBy(desc(activityLog.timestamp))
