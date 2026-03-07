@@ -68,7 +68,7 @@ vi.mock('../routes/admin/shared.js', async () => {
 
   return {
     db: {
-      select: (...args: any[]) => makeThenableChain(selectQueue),
+      select: () => makeThenableChain(selectQueue),
       insert: () => makeThenableChain(insertQueue),
       update: () => makeThenableChain([]),
       delete: () => makeThenableChain(deleteQueue),

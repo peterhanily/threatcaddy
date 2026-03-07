@@ -107,7 +107,8 @@ vi.mock('drizzle-orm', () => ({
 // ── Mock: requireAuth middleware ───────────────────────────────────────────────
 
 vi.mock('../middleware/auth.js', () => ({
-  requireAuth: vi.fn(async (c: any, next: any) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  requireAuth: vi.fn(async (c: any, next: () => Promise<void>) => {
     const authHeader = c.req.header('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return c.json({ error: 'Unauthorized' }, 401);

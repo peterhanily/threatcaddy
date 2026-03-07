@@ -24,10 +24,10 @@ vi.mock('../lib/logger.js', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-vi.mock('../middleware/auth.js', () => {
-  const { createMiddleware } = require('hono/factory');
+vi.mock('../middleware/auth.js', async () => {
+  const { createMiddleware } = await import('hono/factory');
   return {
-    requireAuth: createMiddleware(async (c: any, next: any) => {
+    requireAuth: createMiddleware(async (c: { set: (k: string, v: unknown) => void; json: (b: unknown, s: number) => Response }, next: () => Promise<void>) => {
       if (!currentUser.authenticated) {
         return c.json({ error: 'Missing authorization header' }, 401);
       }
@@ -35,7 +35,7 @@ vi.mock('../middleware/auth.js', () => {
       return next();
     }),
     requireRole: (...roles: string[]) =>
-      createMiddleware(async (c: any, next: any) => {
+      createMiddleware(async (c: { get: (k: string) => { role: string }; json: (b: unknown, s: number) => Response }, next: () => Promise<void>) => {
         const user = c.get('user');
         if (!roles.includes(user.role)) {
           return c.json({ error: 'Insufficient permissions' }, 403);
@@ -107,7 +107,7 @@ describe('Role-based access', () => {
 
   it('allows admin role to POST /api/llm/chat', async () => {
     currentUser.role = 'admin';
-    mockStreamLLM.mockImplementation(async (_body: any, callbacks: any) => {
+    mockStreamLLM.mockImplementation(async (_body: unknown, callbacks: { onChunk: (t: string) => void; onDone: (r: string) => void; onError: (e: string) => void }) => {
       callbacks.onChunk('Hello');
       callbacks.onDone('end_turn');
     });
@@ -121,7 +121,7 @@ describe('Role-based access', () => {
 
   it('allows analyst role to POST /api/llm/chat', async () => {
     currentUser.role = 'analyst';
-    mockStreamLLM.mockImplementation(async (_body: any, callbacks: any) => {
+    mockStreamLLM.mockImplementation(async (_body: unknown, callbacks: { onChunk: (t: string) => void; onDone: (r: string) => void; onError: (e: string) => void }) => {
       callbacks.onChunk('Hello');
       callbacks.onDone('end_turn');
     });
@@ -188,7 +188,7 @@ describe('POST /api/llm/chat validation', () => {
 
 describe('POST /api/llm/chat SSE streaming', () => {
   it('streams SSE chunks from streamLLM', async () => {
-    mockStreamLLM.mockImplementation(async (_body: any, callbacks: any) => {
+    mockStreamLLM.mockImplementation(async (_body: unknown, callbacks: { onChunk: (t: string) => void; onDone: (r: string) => void; onError: (e: string) => void }) => {
       await callbacks.onChunk('Hello');
       await callbacks.onChunk(' world');
       await callbacks.onDone('end_turn');
@@ -208,7 +208,7 @@ describe('POST /api/llm/chat SSE streaming', () => {
   });
 
   it('calls streamLLM with the correct body and callbacks', async () => {
-    mockStreamLLM.mockImplementation(async (_body: any, callbacks: any) => {
+    mockStreamLLM.mockImplementation(async (_body: unknown, callbacks: { onChunk: (t: string) => void; onDone: (r: string) => void; onError: (e: string) => void }) => {
       callbacks.onChunk('test');
       callbacks.onDone('end_turn');
     });
