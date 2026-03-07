@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import { eq, sql } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import { logActivity } from '../services/audit-service.js';
@@ -7,7 +7,7 @@ import { logger } from '../lib/logger.js';
 import { botEventBus, botEventDepth, botEventOrigins } from './event-bus.js';
 import { botRateLimiter } from './rate-limiter.js';
 import { decryptConfigSecrets } from './secret-store.js';
-import type { Bot, BotConfig, BotContext, BotEvent, BotRunStatus, BotTriggerType, BotCapability } from './types.js';
+import type { Bot, BotConfig, BotContext, BotEvent, BotEventType, BotRunStatus, BotTriggerType, BotCapability } from './types.js';
 import { createBotImplementation } from './implementations/index.js';
 
 const BOT_EXECUTION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes max per run
@@ -23,6 +23,15 @@ export class BotManager {
   private cronIntervals = new Map<string, ReturnType<typeof setInterval>>();
   private activeRuns = 0;
   private initialized = false;
+
+  /** Reverse index: event type → set of bot IDs that subscribe to that event */
+  private eventTypeIndex = new Map<BotEventType, Set<string>>();
+
+  /** Active AbortControllers per bot, so we can abort in-flight executions on disable */
+  private activeAbortControllers = new Map<string, Set<AbortController>>();
+
+  /** Wildcard listener reference for cleanup on shutdown */
+  private wildcardListener: ((event: BotEvent) => void) | null = null;
 
   /** Load all enabled bot configs from DB and start them */
   async init(): Promise<void> {
@@ -51,9 +60,10 @@ export class BotManager {
     }
 
     // Listen for all events and route to bots
-    botEventBus.onBotEvent('*', (event) => {
+    this.wildcardListener = (event: BotEvent) => {
       void this.routeEvent(event);
-    });
+    };
+    botEventBus.onBotEvent('*', this.wildcardListener);
 
     this.initialized = true;
     logger.info(`BotManager initialized with ${this.bots.size} bot(s)`);
@@ -61,6 +71,20 @@ export class BotManager {
 
   /** Shut down all bots and clean up */
   async shutdown(): Promise<void> {
+    // Remove wildcard event listener
+    if (this.wildcardListener) {
+      botEventBus.offBotEvent('*', this.wildcardListener);
+      this.wildcardListener = null;
+    }
+
+    // Abort all in-flight executions
+    for (const controllers of this.activeAbortControllers.values()) {
+      for (const controller of controllers) {
+        controller.abort();
+      }
+    }
+    this.activeAbortControllers.clear();
+
     for (const [id, bot] of this.bots) {
       try {
         await bot.onDestroy();
@@ -76,6 +100,7 @@ export class BotManager {
     this.bots.clear();
     this.configs.clear();
     this.cronIntervals.clear();
+    this.eventTypeIndex.clear();
     this.initialized = false;
   }
 
@@ -83,6 +108,18 @@ export class BotManager {
   async loadBot(config: BotConfig): Promise<void> {
     // Store config
     this.configs.set(config.id, config);
+
+    // Update event type reverse index
+    if (config.triggers.events) {
+      for (const eventType of config.triggers.events) {
+        let botIds = this.eventTypeIndex.get(eventType);
+        if (!botIds) {
+          botIds = new Set();
+          this.eventTypeIndex.set(eventType, botIds);
+        }
+        botIds.add(config.id);
+      }
+    }
 
     // Register rate limit buckets
     botRateLimiter.register(`bot:${config.id}:hour`, config.rateLimitPerHour, 60 * 60 * 1000);
@@ -103,6 +140,15 @@ export class BotManager {
 
   /** Unload a bot */
   async unloadBot(botId: string): Promise<void> {
+    // Abort any in-flight executions for this bot
+    const controllers = this.activeAbortControllers.get(botId);
+    if (controllers) {
+      for (const controller of controllers) {
+        controller.abort();
+      }
+      this.activeAbortControllers.delete(botId);
+    }
+
     const bot = this.bots.get(botId);
     if (bot) {
       await bot.onDestroy();
@@ -113,6 +159,20 @@ export class BotManager {
     if (interval) {
       clearInterval(interval);
       this.cronIntervals.delete(botId);
+    }
+
+    // Remove from event type reverse index
+    const config = this.configs.get(botId);
+    if (config?.triggers.events) {
+      for (const eventType of config.triggers.events) {
+        const botIds = this.eventTypeIndex.get(eventType);
+        if (botIds) {
+          botIds.delete(botId);
+          if (botIds.size === 0) {
+            this.eventTypeIndex.delete(eventType);
+          }
+        }
+      }
     }
 
     botRateLimiter.removeBuckets(botId);
@@ -140,9 +200,13 @@ export class BotManager {
       return;
     }
 
-    for (const [botId, config] of this.configs) {
-      if (!config.enabled) continue;
-      if (!config.triggers.events?.includes(event.type)) continue;
+    // O(1) lookup: only iterate bots that subscribe to this event type
+    const subscribedBotIds = this.eventTypeIndex.get(event.type);
+    if (!subscribedBotIds || subscribedBotIds.size === 0) return;
+
+    for (const botId of subscribedBotIds) {
+      const config = this.configs.get(botId);
+      if (!config || !config.enabled) continue;
 
       // Check event filters
       const filters = config.triggers.eventFilters;
@@ -197,6 +261,14 @@ export class BotManager {
     const runId = nanoid();
     const startTime = Date.now();
     const abortController = new AbortController();
+
+    // Track this AbortController for in-flight abort on disable
+    let botControllers = this.activeAbortControllers.get(botId);
+    if (!botControllers) {
+      botControllers = new Set();
+      this.activeAbortControllers.set(botId, botControllers);
+    }
+    botControllers.add(abortController);
 
     // Create run record
     await db.insert(schema.botRuns).values({
@@ -272,6 +344,15 @@ export class BotManager {
       clearTimeout(timeout);
       this.activeRuns--;
 
+      // Remove this AbortController from tracking
+      const controllers = this.activeAbortControllers.get(botId);
+      if (controllers) {
+        controllers.delete(abortController);
+        if (controllers.size === 0) {
+          this.activeAbortControllers.delete(botId);
+        }
+      }
+
       const durationMs = Date.now() - startTime;
 
       // Update run record
@@ -312,6 +393,26 @@ export class BotManager {
         updatedConfig.lastRunAt = new Date();
         updatedConfig.lastError = error;
         if (status === 'error' || status === 'timeout') updatedConfig.errorCount++;
+      }
+
+      // Circuit breaker: auto-disable after 5 consecutive failures
+      if (status === 'error' || status === 'timeout') {
+        try {
+          const recentRuns = await db
+            .select({ status: schema.botRuns.status })
+            .from(schema.botRuns)
+            .where(eq(schema.botRuns.botConfigId, botId))
+            .orderBy(desc(schema.botRuns.createdAt))
+            .limit(5);
+
+          if (recentRuns.length >= 5 && recentRuns.every(r => r.status === 'error' || r.status === 'timeout')) {
+            logger.warn(`Circuit breaker: auto-disabling bot "${config.name}" after 5 consecutive failures`, { botId });
+            await db.update(schema.botConfigs).set({ enabled: false, updatedAt: new Date() }).where(eq(schema.botConfigs.id, botId));
+            await this.unloadBot(botId);
+          }
+        } catch (err) {
+          logger.error(`Failed to check circuit breaker for bot ${botId}`, { error: String(err) });
+        }
       }
 
       // Audit: bot run completed
