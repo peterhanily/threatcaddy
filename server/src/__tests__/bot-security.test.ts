@@ -64,6 +64,10 @@ vi.mock('../ws/handler.js', () => ({
   broadcastToFolder: vi.fn(),
 }));
 
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn().mockResolvedValue({ address: '93.184.216.34', family: 4 }),
+}));
+
 // Set BOT_MASTER_KEY before importing secret-store (used by bot-manager)
 process.env.BOT_MASTER_KEY = 'test-master-key-for-unit-tests-32chars!!';
 

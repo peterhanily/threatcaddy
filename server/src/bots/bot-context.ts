@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid';
+import { lookup } from 'node:dns/promises';
 import { eq, and, or, isNull, ilike, inArray } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
@@ -7,6 +8,28 @@ import { createNotification } from '../services/notification-service.js';
 import { logActivity } from '../services/audit-service.js';
 import { broadcastToFolder } from '../ws/handler.js';
 import type { BotContext, BotCapability } from './types.js';
+
+const BOT_WRITABLE_TABLES = new Set(['notes', 'tasks', 'standaloneIOCs', 'timelineEvents']);
+
+function isPrivateIP(ip: string): boolean {
+  // IPv6 checks
+  if (ip === '::1') return true;
+  const lowerIp = ip.toLowerCase();
+  if (lowerIp.startsWith('fc') || lowerIp.startsWith('fd')) return true; // fc00::/7
+  if (lowerIp.startsWith('fe8') || lowerIp.startsWith('fe9') || lowerIp.startsWith('fea') || lowerIp.startsWith('feb')) return true; // fe80::/10
+
+  // IPv4 checks
+  const parts = ip.split('.').map(Number);
+  if (parts.length !== 4) return false;
+  const [a, b] = parts;
+  if (a === 127) return true;                              // 127.0.0.0/8
+  if (a === 10) return true;                               // 10.0.0.0/8
+  if (a === 172 && b >= 16 && b <= 31) return true;        // 172.16.0.0/12
+  if (a === 192 && b === 168) return true;                 // 192.168.0.0/16
+  if (a === 169 && b === 254) return true;                 // 169.254.0.0/16
+  if (a === 0) return true;                                // 0.0.0.0/8
+  return false;
+}
 
 /**
  * Provides safe, capability-gated operations for bot execution.
@@ -219,6 +242,9 @@ export class BotExecutionContext {
   // ─── Write Operations (via sync-service) ──────────────────────
 
   async createEntity(table: string, entityId: string, data: Record<string, unknown>): Promise<void> {
+    if (!BOT_WRITABLE_TABLES.has(table)) {
+      throw new Error(`Bot "${this.ctx.botConfig.name}" cannot write to table "${table}"`);
+    }
     this.checkAborted();
     this.requireCapability('create_entities');
 
@@ -255,6 +281,9 @@ export class BotExecutionContext {
   }
 
   async updateEntity(table: string, entityId: string, data: Record<string, unknown>, clientVersion?: number): Promise<void> {
+    if (!BOT_WRITABLE_TABLES.has(table)) {
+      throw new Error(`Bot "${this.ctx.botConfig.name}" cannot write to table "${table}"`);
+    }
     this.checkAborted();
     this.requireCapability('update_entities');
 
@@ -264,6 +293,10 @@ export class BotExecutionContext {
       this.requireScope(existingFolderId);
     } else if (this.ctx.botConfig.scopeType !== 'global') {
       throw new Error(`Bot "${this.ctx.botConfig.name}" cannot update entity without verifiable scope (folderId not found)`);
+    }
+
+    if (data.folderId && typeof data.folderId === 'string' && data.folderId !== existingFolderId) {
+      this.requireScope(data.folderId);
     }
 
     const results = await processPush(
@@ -278,7 +311,7 @@ export class BotExecutionContext {
 
     this.ctx.entitiesUpdated++;
 
-    const folderId = data.folderId as string | undefined;
+    const folderId = existingFolderId || data.folderId as string | undefined;
     if (folderId) {
       broadcastToFolder(folderId, {
         type: 'entity-change',
@@ -410,6 +443,11 @@ export class BotExecutionContext {
   async fetchExternal(url: string, opts?: RequestInit): Promise<Response> {
     this.requireDomain(url);
     this.checkAborted();
+
+    const { address } = await lookup(new URL(url).hostname);
+    if (isPrivateIP(address)) {
+      throw new Error(`Bot "${this.ctx.botConfig.name}" blocked from accessing private IP ${address} (resolved from ${new URL(url).hostname})`);
+    }
 
     this.ctx.apiCallsMade++;
 

@@ -196,15 +196,14 @@ export async function handleWSMessage(ws: WSContext, data: string) {
           table?: string; entityId?: string; op?: string; data?: Record<string, unknown>;
         };
         if (!table || !entityId || !op) break;
-        const relayMsg = { type: 'entity-change', table, entityId, op, data };
-        // Determine scope: if data has folderId and client is subscribed, broadcast to folder
+        // Require a folderId — never broadcast globally from client messages
         const dataFolderId = data?.folderId as string | undefined;
-        if (dataFolderId && client.subscribedFolders.has(dataFolderId)) {
-          broadcastToFolder(dataFolderId, relayMsg, client.user.id);
-        } else {
-          // Global broadcast (e.g. tags, folders themselves)
-          broadcastGlobal(relayMsg, client.user.id);
-        }
+        if (!dataFolderId || !client.subscribedFolders.has(dataFolderId)) break;
+        // Verify sender has editor access to the folder
+        const canEdit = await checkInvestigationAccess(client.user.id, dataFolderId, 'editor');
+        if (!canEdit) break;
+        const relayMsg = { type: 'entity-change', table, entityId, op, data };
+        broadcastToFolder(dataFolderId, relayMsg, client.user.id);
         break;
       }
     }

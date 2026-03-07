@@ -59,6 +59,9 @@ export const requireAuth = createMiddleware<{
   const token = header.slice(7);
   try {
     const user = await verifyAccessToken(token);
+    if (user.email?.endsWith('@threatcaddy.internal')) {
+      return c.json({ error: 'Bot accounts cannot use the API directly' }, 403);
+    }
     c.set('user', user);
   } catch {
     return c.json({ error: 'Invalid or expired token' }, 401);

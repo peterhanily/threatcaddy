@@ -74,7 +74,13 @@ app.post('/register', async (c) => {
     return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
   }
 
-  const { email, displayName, password } = parsed.data;
+  const { displayName, password } = parsed.data;
+  const email = parsed.data.email.trim().toLowerCase();
+
+  // Block internal bot domain from registration
+  if (email.endsWith('@threatcaddy.internal')) {
+    return c.json({ error: 'Cannot register with this email domain' }, 400);
+  }
 
   // Check if email already exists
   const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
