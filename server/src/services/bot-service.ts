@@ -506,6 +506,13 @@ export async function getBotRuns(botId: string, limit = 50) {
     .limit(Math.min(limit, 200));
 }
 
+export async function getBotRunDetail(runId: string) {
+  const rows = await db.select().from(schema.botRuns)
+    .where(eq(schema.botRuns.id, runId))
+    .limit(1);
+  return rows.length > 0 ? rows[0] : null;
+}
+
 /** Audit helper — log a bot action attributed to a specific user. */
 export async function auditBotAction(
   userId: string,

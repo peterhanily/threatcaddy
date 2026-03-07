@@ -145,6 +145,8 @@ export function adminStyles(): string {
   .danger-zone h4 { color: #f85149; font-size: 0.9rem; margin-bottom: 0.5rem; }
   .danger-zone p { color: #8b949e; font-size: 0.85rem; margin-bottom: 0.75rem; }
 
+  tr.self-row td { background: rgba(88,166,255,0.05); }
+
   input[type="checkbox"].row-check { width: 16px; height: 16px; accent-color: #58a6ff; cursor: pointer; }
 
   /* ─── Bot-specific styles ──────────────────────────────── */
@@ -167,5 +169,13 @@ export function adminStyles(): string {
   .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.3rem; margin: 0.5rem 0; }
   .checkbox-grid label { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: #c9d1d9; cursor: pointer; }
   .checkbox-grid input[type="checkbox"] { accent-color: #58a6ff; }
-  .trigger-section { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #21262d; }`;
+  .trigger-section { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #21262d; }
+
+  /* ─── AI Assistant styles ──────────────────────────────── */
+  .ai-msg { padding: 0.75rem; margin-bottom: 0.5rem; border-radius: 6px; font-size: 0.85rem; line-height: 1.5; word-wrap: break-word; }
+  .ai-msg-user { background: rgba(88,166,255,0.08); border-left: 3px solid #58a6ff; }
+  .ai-msg-assistant { background: rgba(63,185,80,0.06); border-left: 3px solid #3fb950; }
+  .ai-tool-call, .ai-tool-result { margin-top: 0.5rem; padding: 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+  .ai-tool-call { background: rgba(210,153,34,0.08); border: 1px solid rgba(210,153,34,0.2); }
+  .ai-tool-result { background: rgba(88,166,255,0.06); border: 1px solid rgba(88,166,255,0.15); }`;
 }

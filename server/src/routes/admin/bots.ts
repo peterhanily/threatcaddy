@@ -3,7 +3,7 @@ import { requireAdminAuth, logAdminAction, ADMIN_SYSTEM_USER_ID, getAdminId } fr
 import {
   validateBotCreate, validateBotUpdate,
   createBot, updateBot, enableBot, disableBot, triggerBot, deleteBot,
-  listBotsWithCreator, getBotDetail, getBotRuns,
+  listBotsWithCreator, getBotDetail, getBotRuns, getBotRunDetail,
 } from '../../services/bot-service.js';
 
 const app = new Hono();
@@ -91,6 +91,15 @@ app.get('/api/bots/:id/runs', requireAdminAuth, async (c) => {
   const limit = Math.min(200, Math.max(1, parseInt(c.req.query('limit') || '50', 10) || 50));
   const runs = await getBotRuns(c.req.param('id'), limit);
   return c.json({ runs });
+});
+
+// GET /admin/api/bots/:id/runs/:runId — run detail with execution log
+app.get('/api/bots/:id/runs/:runId', requireAdminAuth, async (c) => {
+  const run = await getBotRunDetail(c.req.param('runId'));
+  if (!run || run.botConfigId !== c.req.param('id')) {
+    return c.json({ error: 'Run not found' }, 404);
+  }
+  return c.json({ run });
 });
 
 export default app;

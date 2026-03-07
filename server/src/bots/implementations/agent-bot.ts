@@ -285,6 +285,7 @@ export class AgentBot extends GenericBot {
       const textBlocks = msg.content.filter(b => b.type === 'text');
       if (textBlocks.length > 0) {
         const text = textBlocks.map(b => b.text).join('\n');
+        execCtx.addLogEntry({ ts: Date.now(), type: 'llm_response', text: text.slice(0, 2000) });
         await execCtx.audit('agent.response', text.slice(0, 500));
       }
       return { continueLoop: false };
@@ -300,17 +301,20 @@ export class AgentBot extends GenericBot {
           tool_use_id: block.id!,
           content: JSON.stringify({ error: `Unknown tool: ${block.name}` }),
         });
+        execCtx.addLogEntry({ ts: Date.now(), type: 'tool_call', name: block.name, error: 'Unknown tool' });
         continue;
       }
 
+      const toolStart = Date.now();
       try {
         const result = await tool.execute(block.input || {}, execCtx);
         const resultStr = JSON.stringify(result);
-        // Truncate large results
-        toolResults.push({
-          type: 'tool_result',
-          tool_use_id: block.id!,
-          content: resultStr.length > 20000 ? resultStr.slice(0, 20000) + '... [truncated]' : resultStr,
+        const truncated = resultStr.length > 20000 ? resultStr.slice(0, 20000) + '... [truncated]' : resultStr;
+        toolResults.push({ type: 'tool_result', tool_use_id: block.id!, content: truncated });
+        execCtx.addLogEntry({
+          ts: toolStart, type: 'tool_call', name: block.name!,
+          input: block.input, output: resultStr.length > 500 ? resultStr.slice(0, 500) + '...' : result,
+          durationMs: Date.now() - toolStart,
         });
         logger.info(`AgentBot "${this.name}" tool call: ${block.name}`, { botId: this.id });
       } catch (err) {
@@ -318,6 +322,10 @@ export class AgentBot extends GenericBot {
           type: 'tool_result',
           tool_use_id: block.id!,
           content: JSON.stringify({ error: String(err) }),
+        });
+        execCtx.addLogEntry({
+          ts: toolStart, type: 'tool_call', name: block.name!,
+          input: block.input, error: String(err), durationMs: Date.now() - toolStart,
         });
         logger.warn(`AgentBot "${this.name}" tool error: ${block.name}`, { botId: this.id, error: String(err) });
       }
@@ -356,6 +364,7 @@ export class AgentBot extends GenericBot {
       // No tool calls — agent is done
       if (assistantMsg.content) {
         messages.push({ role: 'assistant', content: assistantMsg.content });
+        execCtx.addLogEntry({ ts: Date.now(), type: 'llm_response', text: assistantMsg.content.slice(0, 2000) });
         await execCtx.audit('agent.response', assistantMsg.content.slice(0, 500));
       }
       return { continueLoop: false };
@@ -375,15 +384,26 @@ export class AgentBot extends GenericBot {
 
       if (!tool) {
         resultStr = JSON.stringify({ error: `Unknown tool: ${tc.function.name}` });
+        execCtx.addLogEntry({ ts: Date.now(), type: 'tool_call', name: tc.function.name, error: 'Unknown tool' });
       } else {
+        const toolStart = Date.now();
         try {
           const args = JSON.parse(tc.function.arguments) as Record<string, unknown>;
           const result = await tool.execute(args, execCtx);
           resultStr = JSON.stringify(result);
           if (resultStr.length > 20000) resultStr = resultStr.slice(0, 20000) + '... [truncated]';
+          execCtx.addLogEntry({
+            ts: toolStart, type: 'tool_call', name: tc.function.name,
+            input: args, output: resultStr.length > 500 ? resultStr.slice(0, 500) + '...' : result,
+            durationMs: Date.now() - toolStart,
+          });
           logger.info(`AgentBot "${this.name}" tool call: ${tc.function.name}`, { botId: this.id });
         } catch (err) {
           resultStr = JSON.stringify({ error: String(err) });
+          execCtx.addLogEntry({
+            ts: toolStart, type: 'tool_call', name: tc.function.name,
+            error: String(err), durationMs: Date.now() - toolStart,
+          });
           logger.warn(`AgentBot "${this.name}" tool error: ${tc.function.name}`, { botId: this.id, error: String(err) });
         }
       }

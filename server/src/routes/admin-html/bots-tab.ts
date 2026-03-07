@@ -199,7 +199,7 @@ function openBotDetail(botId) {
     if (runs.length > 0) {
       html += '<table><thead><tr><th>Time</th><th>Trigger</th><th>Status</th><th>Duration</th><th>Created</th><th>Updated</th><th>API</th></tr></thead><tbody>';
       runs.forEach(function(r) {
-        html += '<tr>' +
+        html += '<tr style="cursor:pointer;" onclick="openRunDetail(\\'' + esc(b.id) + '\\',\\'' + esc(r.id) + '\\')">' +
           '<td style="white-space:nowrap;">' + fmtDate(r.createdAt) + '</td>' +
           '<td>' + esc(r.trigger) + '</td>' +
           '<td>' + runStatusBadge(r.status) + '</td>' +
@@ -521,5 +521,74 @@ document.getElementById('submitCreateBot').addEventListener('click', function() 
       loadBotsData();
     })
     .catch(function(err) { toast(err.message, 'error'); });
-});`;
+});
+
+// ─── Run Detail Viewer ────────────────────────────────────────
+
+function openRunDetail(botId, runId) {
+  api('/bots/' + botId + '/runs/' + runId).then(function(data) {
+    var r = data.run;
+    var html = '<h3>Run Detail</h3>';
+    html += '<div class="info-grid">';
+    html += '<span class="lbl">Run ID</span><span class="val" style="font-family:monospace;font-size:0.8rem;">' + esc(r.id) + '</span>';
+    html += '<span class="lbl">Status</span><span class="val">' + runStatusBadge(r.status) + '</span>';
+    html += '<span class="lbl">Trigger</span><span class="val">' + esc(r.trigger) + '</span>';
+    html += '<span class="lbl">Duration</span><span class="val">' + (r.durationMs > 0 ? (r.durationMs / 1000).toFixed(1) + 's' : '-') + '</span>';
+    html += '<span class="lbl">Created</span><span class="val">' + (r.entitiesCreated || 0) + '</span>';
+    html += '<span class="lbl">Updated</span><span class="val">' + (r.entitiesUpdated || 0) + '</span>';
+    html += '<span class="lbl">API Calls</span><span class="val">' + (r.apiCallsMade || 0) + '</span>';
+    html += '<span class="lbl">Started</span><span class="val">' + fmtDate(r.createdAt) + '</span>';
+    html += '</div>';
+
+    if (r.error) {
+      html += '<div class="section"><h4>Error</h4><p style="color:#f85149;font-size:0.8rem;font-family:monospace;background:#1c2128;padding:0.5rem;border-radius:4px;word-break:break-all;">' + esc(r.error) + '</p></div>';
+    }
+
+    // Execution Timeline
+    var log = r.log || [];
+    if (log.length > 0) {
+      html += '<div class="section"><h4>Execution Timeline (' + log.length + ' entries)</h4>';
+      html += '<div style="max-height:400px;overflow-y:auto;">';
+      log.forEach(function(entry, i) {
+        var time = new Date(entry.ts).toLocaleTimeString();
+        if (entry.type === 'tool_call') {
+          var statusIcon = entry.error ? '<span style="color:#f85149;">✗</span>' : '<span style="color:#3fb950;">✓</span>';
+          html += '<div style="margin-bottom:0.75rem;padding:0.5rem;background:#1c2128;border-radius:4px;border-left:3px solid ' + (entry.error ? '#f85149' : '#58a6ff') + ';">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">';
+          html += '<span style="font-size:0.8rem;color:#58a6ff;font-weight:600;">' + statusIcon + ' ' + esc(entry.name || 'unknown') + '</span>';
+          html += '<span style="font-size:0.75rem;color:#8b949e;">' + time;
+          if (entry.durationMs != null) html += ' · ' + entry.durationMs + 'ms';
+          html += '</span></div>';
+          if (entry.input) {
+            html += '<details><summary style="font-size:0.75rem;color:#8b949e;cursor:pointer;">Input</summary>';
+            html += '<pre style="font-size:0.7rem;color:#c9d1d9;background:#0d1117;padding:0.3rem;border-radius:3px;overflow-x:auto;max-height:150px;">' + esc(typeof entry.input === 'string' ? entry.input : JSON.stringify(entry.input, null, 2)) + '</pre>';
+            html += '</details>';
+          }
+          if (entry.output) {
+            html += '<details><summary style="font-size:0.75rem;color:#8b949e;cursor:pointer;">Output</summary>';
+            html += '<pre style="font-size:0.7rem;color:#c9d1d9;background:#0d1117;padding:0.3rem;border-radius:3px;overflow-x:auto;max-height:150px;">' + esc(typeof entry.output === 'string' ? entry.output : JSON.stringify(entry.output, null, 2)) + '</pre>';
+            html += '</details>';
+          }
+          if (entry.error) {
+            html += '<p style="font-size:0.75rem;color:#f85149;margin-top:0.25rem;">' + esc(entry.error) + '</p>';
+          }
+          html += '</div>';
+        } else if (entry.type === 'llm_response') {
+          html += '<div style="margin-bottom:0.75rem;padding:0.5rem;background:#1c2128;border-radius:4px;border-left:3px solid #3fb950;">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">';
+          html += '<span style="font-size:0.8rem;color:#3fb950;font-weight:600;">LLM Response</span>';
+          html += '<span style="font-size:0.75rem;color:#8b949e;">' + time + '</span></div>';
+          html += '<p style="font-size:0.8rem;color:#c9d1d9;white-space:pre-wrap;max-height:200px;overflow-y:auto;">' + esc(entry.text || '') + '</p>';
+          html += '</div>';
+        }
+      });
+      html += '</div></div>';
+    }
+
+    html += '<div style="margin-top:1rem;"><button class="btn btn-outline btn-sm" onclick="openBotDetail(\\'' + esc(botId) + '\\')">Back to Bot</button></div>';
+
+    document.getElementById('detailContent').innerHTML = html;
+    openDetailPanel();
+  }).catch(function(err) { toast(err.message, 'error'); });
+}`;
 }

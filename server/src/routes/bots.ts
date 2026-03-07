@@ -1,12 +1,12 @@
 import { Hono } from 'hono';
-import { timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual, createHmac } from 'node:crypto';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { botManager } from '../bots/bot-manager.js';
 import { logger } from '../lib/logger.js';
 import {
   validateBotCreate, validateBotUpdate,
   createBot, updateBot, enableBot, disableBot, triggerBot, deleteBot,
-  listBots, getBot, getBotRuns, auditBotAction,
+  listBots, getBot, getBotRuns, getBotRunDetail, auditBotAction,
 } from '../services/bot-service.js';
 
 const app = new Hono();
@@ -113,15 +113,36 @@ app.post('/:id/webhook', async (c) => {
     return c.json({ error: 'Not found' }, 404);
   }
 
-  const authHeader = c.req.header('X-Webhook-Secret') || '';
-  const secretBuf = Buffer.from(webhookSecret);
-  const headerBuf = Buffer.from(authHeader);
-  if (secretBuf.length !== headerBuf.length || !timingSafeEqual(secretBuf, headerBuf)) {
+  // Support two auth modes: HMAC-SHA256 signature or raw secret comparison
+  const signatureHeader = c.req.header('X-Webhook-Signature') || '';
+  const secretHeader = c.req.header('X-Webhook-Secret') || '';
+
+  // We need the raw body for HMAC verification and JSON parsing
+  const rawBody = await c.req.text();
+  let authenticated = false;
+
+  if (signatureHeader.startsWith('sha256=')) {
+    const expected = createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
+    const providedHex = signatureHeader.slice(7);
+    const expectedBuf = Buffer.from(expected);
+    const providedBuf = Buffer.from(providedHex);
+    if (expectedBuf.length === providedBuf.length && timingSafeEqual(expectedBuf, providedBuf)) {
+      authenticated = true;
+    }
+  } else if (secretHeader) {
+    const secretBuf = Buffer.from(webhookSecret);
+    const headerBuf = Buffer.from(secretHeader);
+    if (secretBuf.length === headerBuf.length && timingSafeEqual(secretBuf, headerBuf)) {
+      authenticated = true;
+    }
+  }
+
+  if (!authenticated) {
     return c.json({ error: 'Invalid webhook secret' }, 401);
   }
 
   let payload: Record<string, unknown>;
-  try { payload = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON body' }, 400); }
+  try { payload = JSON.parse(rawBody); } catch { return c.json({ error: 'Invalid JSON body' }, 400); }
 
   botManager.executeBot(id, 'webhook', undefined, payload).catch(err => {
     logger.error('Webhook bot execution failed', { botId: id, error: String(err) });
@@ -146,6 +167,14 @@ app.get('/:id/runs', requireRole('admin', 'analyst'), async (c) => {
   const limit = Math.min(Math.max(1, parseInt(c.req.query('limit') || '50', 10) || 50), 100);
   const runs = await getBotRuns(c.req.param('id'), limit);
   return c.json({ runs });
+});
+
+app.get('/:id/runs/:runId', requireRole('admin', 'analyst'), async (c) => {
+  const run = await getBotRunDetail(c.req.param('runId'));
+  if (!run || run.botConfigId !== c.req.param('id')) {
+    return c.json({ error: 'Run not found' }, 404);
+  }
+  return c.json({ run });
 });
 
 export default app;

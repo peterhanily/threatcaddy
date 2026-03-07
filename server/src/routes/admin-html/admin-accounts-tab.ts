@@ -10,19 +10,20 @@ function loadAdminAccounts() {
     }
     body.innerHTML = data.accounts.map(function(a) {
       var isSelf = currentAdmin && currentAdmin.id === a.id;
-      return '<tr>' +
+      return '<tr' + (isSelf ? ' class="self-row"' : '') + '>' +
         '<td>' + esc(a.username) + (isSelf ? ' <span class="badge badge-blue">you</span>' : '') + '</td>' +
         '<td>' + esc(a.displayName) + '</td>' +
         '<td>' + (a.active ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-gray">Disabled</span>') + '</td>' +
         '<td>' + fmtDate(a.lastLoginAt) + '</td>' +
         '<td>' + fmtShortDate(a.createdAt) + '</td>' +
         '<td>' +
-          '<button class="btn btn-outline btn-sm" onclick="resetAdminPassword(\\'' + a.id + '\\',\\'' + esc(a.username) + '\\')">Reset Password</button> ' +
-          (isSelf ? '' :
-            (a.active
-              ? '<button class="btn btn-warning btn-sm" onclick="toggleAdmin(\\'' + a.id + '\\',false)">Disable</button> '
-              : '<button class="btn btn-primary btn-sm" onclick="toggleAdmin(\\'' + a.id + '\\',true)">Enable</button> ') +
-            '<button class="btn btn-danger btn-sm" onclick="deleteAdmin(\\'' + a.id + '\\',\\'' + esc(a.username) + '\\')">Delete</button>'
+          (isSelf
+            ? '<button class="btn btn-primary btn-sm" onclick="changeMyPassword()">Change My Password</button>'
+            : '<button class="btn btn-outline btn-sm" onclick="resetAdminPassword(\\'' + a.id + '\\',\\'' + esc(a.username) + '\\')">Reset Password</button> ' +
+              (a.active
+                ? '<button class="btn btn-warning btn-sm" onclick="toggleAdmin(\\'' + a.id + '\\',false)">Disable</button> '
+                : '<button class="btn btn-primary btn-sm" onclick="toggleAdmin(\\'' + a.id + '\\',true)">Enable</button> ') +
+              '<button class="btn btn-danger btn-sm" onclick="deleteAdmin(\\'' + a.id + '\\',\\'' + esc(a.username) + '\\')">Delete</button>'
           ) +
         '</td>' +
       '</tr>';
@@ -96,5 +97,38 @@ function deleteAdmin(id, username) {
   api('/admin-accounts/' + id, { method: 'DELETE' })
     .then(function() { toast('Admin account deleted'); loadAdminAccounts(); })
     .catch(function(err) { toast(err.message, 'error'); });
+}
+
+/* ─── Change My Password ─────────────────────────────────────── */
+
+function changeMyPassword() {
+  var content = document.getElementById('modalExtraContent');
+  content.innerHTML = '<div class="form-group"><label>Current Password</label>' +
+    '<input type="password" id="myCurrentPw" autocomplete="current-password"></div>' +
+    '<div class="form-group"><label>New Password (min 12 chars)</label>' +
+    '<input type="password" id="myNewPw" autocomplete="new-password"></div>' +
+    '<div class="form-group"><label>Confirm New Password</label>' +
+    '<input type="password" id="myConfirmPw" autocomplete="new-password"></div>';
+  document.getElementById('modalTitle').textContent = 'Change My Password';
+  document.getElementById('modalText').textContent = '';
+  var confirmBtn = document.getElementById('confirmModalBtn');
+  confirmBtn.textContent = 'Change Password';
+  confirmBtn.className = 'btn btn-primary btn-sm';
+  confirmBtn.onclick = function() {
+    var cur = document.getElementById('myCurrentPw').value;
+    var nw = document.getElementById('myNewPw').value;
+    var conf = document.getElementById('myConfirmPw').value;
+    if (!cur) { toast('Current password required', 'error'); return; }
+    if (nw.length < 12) { toast('New password must be at least 12 characters', 'error'); return; }
+    if (nw !== conf) { toast('Passwords do not match', 'error'); return; }
+    api('/admin-accounts/me/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword: cur, newPassword: nw })
+    }).then(function() {
+      document.getElementById('genericModal').classList.remove('active');
+      toast('Password changed successfully');
+    }).catch(function(err) { toast(err.message, 'error'); });
+  };
+  document.getElementById('genericModal').classList.add('active');
 }`;
 }

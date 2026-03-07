@@ -6,6 +6,7 @@ import { botsTabJs } from './bots-tab.js';
 import { auditTabJs } from './audit-tab.js';
 import { settingsTabJs } from './settings-tab.js';
 import { adminAccountsTabJs } from './admin-accounts-tab.js';
+import { aiTabJs } from './ai-tab.js';
 
 export function getAdminHtml(nonce: string): string {
   return `<!DOCTYPE html>
@@ -66,7 +67,11 @@ ${adminStyles()}
 <div id="dashboard" class="dashboard">
   <div class="header">
     <h1>Admin Panel</h1>
-    <button id="logoutBtn" class="btn btn-outline btn-sm">Sign Out</button>
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <span id="adminIdentity" style="font-size:0.85rem;color:#8b949e;"></span>
+      <span id="sessionTimer" style="font-size:0.8rem;color:#8b949e;"></span>
+      <button id="logoutBtn" class="btn btn-outline btn-sm">Sign Out</button>
+    </div>
   </div>
 
   <div class="tab-bar">
@@ -77,6 +82,7 @@ ${adminStyles()}
     <button class="tab-btn" data-tab="tab-sessions">Sessions</button>
     <button class="tab-btn" data-tab="tab-bots">Bots</button>
     <button class="tab-btn" data-tab="tab-admins">Admin Accounts</button>
+    <button class="tab-btn" data-tab="tab-ai">AI Assistant</button>
   </div>
 
   <!-- ─── Dashboard Tab ──────────────────────────────────── -->
@@ -382,6 +388,20 @@ ${adminStyles()}
       </table>
     </div>
   </div>
+
+  <!-- ─── AI Assistant Tab ─────────────────────────────────── -->
+  <div id="tab-ai" class="tab-content">
+    <div style="display:flex;flex-direction:column;height:calc(100vh - 180px);">
+      <div id="aiChatArea" style="flex:1;overflow-y:auto;padding:1rem;background:#0d1117;border:1px solid #21262d;border-radius:6px;margin-bottom:0.5rem;">
+        <div style="text-align:center;color:#8b949e;padding:2rem;">Ask me anything about your server — users, bots, investigations, audit logs, and more.</div>
+      </div>
+      <div style="display:flex;gap:0.5rem;padding:0.5rem 0;">
+        <input type="text" id="aiInput" placeholder="Ask about your server..." style="flex:1;padding:0.5rem 0.75rem;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;font-size:0.9rem;">
+        <button id="aiSendBtn" class="btn btn-primary btn-sm">Send</button>
+        <button id="aiClearBtn" class="btn btn-outline btn-sm">Clear</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ═══ TOASTS ═══════════════════════════════════════════════════ -->
@@ -623,6 +643,7 @@ ${investigationsTabJs()}
 ${auditTabJs()}
 ${botsTabJs()}
 ${adminAccountsTabJs()}
+${aiTabJs()}
 
 /* ═══ INIT ════════════════════════════════════════════════════ */
 

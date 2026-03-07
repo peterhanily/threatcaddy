@@ -283,6 +283,18 @@ export async function verifyAdminUser(username: string, password: string): Promi
   return { id: user.id, username: user.username, displayName: user.displayName };
 }
 
+export async function verifyAdminUserById(id: string, password: string): Promise<boolean> {
+  const rows = await db.select().from(adminUsers)
+    .where(eq(adminUsers.id, id))
+    .limit(1);
+  if (rows.length === 0) return false;
+  try {
+    return await argon2.verify(rows[0].passwordHash, password);
+  } catch {
+    return false;
+  }
+}
+
 export async function updateAdminUser(id: string, updates: { displayName?: string; active?: boolean }): Promise<boolean> {
   const result = await db.update(adminUsers).set(updates).where(eq(adminUsers.id, id)).returning({ id: adminUsers.id });
   return result.length > 0;

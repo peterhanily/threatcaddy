@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { randomBytes } from 'node:crypto';
 import { signAdminToken } from '../../middleware/admin-auth.js';
 import {
-  verifyBootstrapSecret, verifyAdminUser,
+  verifyBootstrapSecret, verifyAdminUser, verifyAdminUserById,
   getAdminUserCount, createAdminUser, listAdminUsers,
   updateAdminUser, changeAdminUserPassword, deleteAdminUser,
 } from '../../services/admin-secret.js';
@@ -15,6 +15,7 @@ import investigationsRouter from './investigations.js';
 import botsRouter from './bots.js';
 import settingsRouter from './settings.js';
 import auditRouter from './audit.js';
+import aiRouter from './ai.js';
 
 const app = new Hono();
 
@@ -166,6 +167,28 @@ app.patch('/api/admin-accounts/:id', requireAdminAuth, async (c) => {
   return c.json({ ok: true });
 });
 
+app.post('/api/admin-accounts/me/change-password', requireAdminAuth, async (c) => {
+  const body = await c.req.json();
+  const { currentPassword, newPassword } = body || {};
+
+  if (!currentPassword || typeof currentPassword !== 'string') {
+    return c.json({ error: 'Current password required' }, 400);
+  }
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 12) {
+    return c.json({ error: 'New password must be at least 12 characters' }, 400);
+  }
+
+  const adminId = getAdminId(c);
+  const valid = await verifyAdminUserById(adminId, currentPassword);
+  if (!valid) {
+    return c.json({ error: 'Current password is incorrect' }, 401);
+  }
+
+  await changeAdminUserPassword(adminId, newPassword);
+  await logAdminAction(adminId, 'admin-account.change-password', 'Changed own password');
+  return c.json({ ok: true });
+});
+
 app.post('/api/admin-accounts/:id/reset-password', requireAdminAuth, async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json();
@@ -205,5 +228,6 @@ app.route('', investigationsRouter);
 app.route('', botsRouter);
 app.route('', settingsRouter);
 app.route('', auditRouter);
+app.route('', aiRouter);
 
 export default app;

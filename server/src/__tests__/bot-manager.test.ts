@@ -711,8 +711,8 @@ describe('validateCronExpression', () => {
     expect(validateCronExpression('* *')).toBeTypeOf('string');
   });
 
-  it('rejects unsupported patterns', () => {
-    expect(validateCronExpression('0 0 1 * *')).toBeTypeOf('string');
+  it('accepts monthly patterns (croner)', () => {
+    expect(validateCronExpression('0 0 1 * *')).toBeNull();
   });
 });
 

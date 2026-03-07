@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import { eq, sql } from 'drizzle-orm';
+import { Cron } from 'croner';
 import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import { logActivity } from '../services/audit-service.js';
@@ -23,7 +24,7 @@ export class BotManager {
   private bots = new Map<string, Bot>();
   private configs = new Map<string, BotConfig>();
   private decryptedConfigs = new Map<string, Record<string, unknown>>();
-  private cronIntervals = new Map<string, ReturnType<typeof setInterval>>();
+  private cronJobs = new Map<string, Cron>();
   private activeRuns = 0;
   private initialized = false;
   private initializing = false;
@@ -111,14 +112,14 @@ export class BotManager {
       }
     }
 
-    for (const interval of this.cronIntervals.values()) {
-      clearInterval(interval);
+    for (const job of this.cronJobs.values()) {
+      job.stop();
     }
 
     this.bots.clear();
     this.configs.clear();
     this.decryptedConfigs.clear();
-    this.cronIntervals.clear();
+    this.cronJobs.clear();
     this.eventTypeIndex.clear();
     this.consecutiveErrors.clear();
     this.executionQueue.length = 0;
@@ -128,11 +129,11 @@ export class BotManager {
 
   /** Load and start a single bot from its config */
   async loadBot(config: BotConfig): Promise<void> {
-    // Clean up prior state to prevent interval leaks on reload
-    const priorInterval = this.cronIntervals.get(config.id);
-    if (priorInterval) {
-      clearInterval(priorInterval);
-      this.cronIntervals.delete(config.id);
+    // Clean up prior state to prevent cron job leaks on reload
+    const priorJob = this.cronJobs.get(config.id);
+    if (priorJob) {
+      priorJob.stop();
+      this.cronJobs.delete(config.id);
     }
     const priorConfig = this.configs.get(config.id);
     if (priorConfig?.triggers.events) {
@@ -191,10 +192,10 @@ export class BotManager {
       this.bots.delete(botId);
     }
 
-    const interval = this.cronIntervals.get(botId);
-    if (interval) {
-      clearInterval(interval);
-      this.cronIntervals.delete(botId);
+    const job = this.cronJobs.get(botId);
+    if (job) {
+      job.stop();
+      this.cronJobs.delete(botId);
     }
 
     // Remove from event type reverse index
@@ -392,6 +393,7 @@ export class BotManager {
         entitiesCreated: 0,
         entitiesUpdated: 0,
         apiCallsMade: 0,
+        log: [],
         signal: abortController.signal,
       };
 
@@ -476,6 +478,7 @@ export class BotManager {
             entitiesCreated: ctx?.entitiesCreated ?? 0,
             entitiesUpdated: ctx?.entitiesUpdated ?? 0,
             apiCallsMade: ctx?.apiCallsMade ?? 0,
+            log: ctx?.log ?? [],
           }).where(eq(schema.botRuns.id, runId)).catch(err => {
             logger.error(`Failed to update bot run record ${runId}`, { error: String(err) });
           }),
@@ -556,25 +559,24 @@ export class BotManager {
     return config.scopeFolderIds.includes(folderId);
   }
 
-  /** Set up cron-like scheduling for a bot */
+  /** Set up cron scheduling for a bot using croner */
   private setupSchedule(config: BotConfig): void {
-    // Simple interval-based scheduling from cron expression
-    // Supports: '*/N * * * *' (every N minutes), '0 */N * * *' (every N hours)
-    const intervalMs = parseCronToMs(config.triggers.schedule!);
-    if (intervalMs <= 0) {
-      logger.warn(`Invalid cron expression for bot ${config.name}: ${config.triggers.schedule}`);
-      return;
-    }
-
-    const interval = setInterval(() => {
-      this.executeBot(config.id, 'schedule').catch(err => {
-        logger.error(`Scheduled bot ${config.name} execution failed`, { botId: config.id, error: String(err) });
+    try {
+      const job = new Cron(config.triggers.schedule!, {
+        name: `bot:${config.id}`,
+        protect: true, // skip if previous invocation still running
+      }, () => {
+        this.executeBot(config.id, 'schedule').catch(err => {
+          logger.error(`Scheduled bot ${config.name} execution failed`, { botId: config.id, error: String(err) });
+        });
       });
-    }, intervalMs);
-    interval.unref(); // Don't prevent process exit
 
-    this.cronIntervals.set(config.id, interval);
-    logger.info(`Scheduled bot ${config.name} every ${Math.round(intervalMs / 1000)}s`, { botId: config.id });
+      this.cronJobs.set(config.id, job);
+      const next = job.nextRun();
+      logger.info(`Scheduled bot ${config.name}: "${config.triggers.schedule}"${next ? `, next run: ${next.toISOString()}` : ''}`, { botId: config.id });
+    } catch (err) {
+      logger.warn(`Invalid cron expression for bot ${config.name}: ${config.triggers.schedule}`, { error: String(err) });
+    }
   }
 
   /** Get all loaded bot configs (for admin API) */
@@ -601,45 +603,17 @@ export class BotManager {
   }
 }
 
-/** Parse a simple cron expression to interval in milliseconds. */
-function parseCronToMs(cron: string): number {
-  const parts = cron.trim().split(/\s+/);
-  if (parts.length < 5) return 0;
-
-  const [minute, hour] = parts;
-
-  // Every N minutes: '*/N * * * *'
-  if (minute.startsWith('*/')) {
-    const n = parseInt(minute.slice(2), 10);
-    if (n > 0 && n <= 1440) return n * 60 * 1000;
-  }
-
-  // Every N hours: '0 */N * * *'
-  if (minute === '0' && hour.startsWith('*/')) {
-    const n = parseInt(hour.slice(2), 10);
-    if (n > 0 && n <= 24) return n * 60 * 60 * 1000;
-  }
-
-  // Daily at specific hour: '0 N * * *' or 'M N * * *'
-  if (/^\d+$/.test(minute) && /^\d+$/.test(hour) && parts[2] === '*') {
-    return 24 * 60 * 60 * 1000; // Run daily
-  }
-
-  // Hourly: '0 * * * *' or 'N * * * *'
-  if (/^\d+$/.test(minute) && hour === '*') {
-    return 60 * 60 * 1000;
-  }
-
-  return 0;
-}
-
-/** Validate a cron expression can be parsed. Returns error message or null. */
+/** Validate a cron expression using croner. Returns error message or null. */
 export function validateCronExpression(cron: string): string | null {
-  const parts = cron.trim().split(/\s+/);
-  if (parts.length < 5) return 'Cron expression must have 5 fields (minute hour day month weekday)';
-  const ms = parseCronToMs(cron);
-  if (ms <= 0) return 'Unsupported cron pattern. Supported: */N * * * * (every N min), 0 */N * * * (every N hours), 0 0 * * * (daily), N * * * * (hourly at min N)';
-  return null;
+  try {
+    const job = new Cron(cron.trim());
+    const next = job.nextRun();
+    job.stop();
+    if (!next) return 'Cron expression has no upcoming run';
+    return null;
+  } catch (err) {
+    return `Invalid cron expression: ${err instanceof Error ? err.message : String(err)}`;
+  }
 }
 
 // Singleton

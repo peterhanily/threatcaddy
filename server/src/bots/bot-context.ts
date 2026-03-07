@@ -9,7 +9,7 @@ import { processPush, lookupEntityFolderId } from '../services/sync-service.js';
 import { createNotification } from '../services/notification-service.js';
 import { logActivity } from '../services/audit-service.js';
 import { broadcastToFolder } from '../ws/handler.js';
-import type { BotContext, BotCapability } from './types.js';
+import type { BotContext, BotCapability, BotRunLogEntry } from './types.js';
 
 const BOT_WRITABLE_TABLES = new Set(['notes', 'tasks', 'standaloneIOCs', 'timelineEvents']);
 
@@ -738,6 +738,15 @@ export class BotExecutionContext {
     await this.audit('code.execute', `Ran ${language} code (${result.durationMs}ms, exit ${result.exitCode})`).catch(() => {});
 
     return result;
+  }
+
+  // ─── Execution Log ───────────────────────────────────────────
+
+  addLogEntry(entry: BotRunLogEntry): void {
+    // Cap at 200 entries to prevent unbounded growth
+    if (this.ctx.log.length < 200) {
+      this.ctx.log.push(entry);
+    }
   }
 
   // ─── Audit Helper ────────────────────────────────────────────

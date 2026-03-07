@@ -110,6 +110,7 @@ document.getElementById('setupForm').addEventListener('submit', function(e) {
     currentAdmin = res.admin;
     sessionStorage.setItem('adminToken', token);
     sessionStorage.setItem('adminInfo', JSON.stringify(currentAdmin));
+    sessionStorage.setItem('adminLoginTime', String(Date.now()));
     showDashboard();
   }).catch(function(err) {
     errEl.textContent = err.message;
@@ -134,6 +135,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     currentAdmin = res.admin;
     sessionStorage.setItem('adminToken', token);
     sessionStorage.setItem('adminInfo', JSON.stringify(currentAdmin));
+    sessionStorage.setItem('adminLoginTime', String(Date.now()));
     showDashboard();
   }).catch(function(err) {
     errEl.textContent = err.message;
@@ -146,12 +148,16 @@ document.getElementById('logoutBtn').addEventListener('click', function() { logo
 function logout() {
   token = null;
   currentAdmin = null;
+  if (sessionTimerInterval) clearInterval(sessionTimerInterval);
   sessionStorage.removeItem('adminToken');
   sessionStorage.removeItem('adminInfo');
+  sessionStorage.removeItem('adminLoginTime');
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('login').style.display = 'flex';
   document.getElementById('loginUsername').value = '';
   document.getElementById('loginPassword').value = '';
+  document.getElementById('adminIdentity').textContent = '';
+  document.getElementById('sessionTimer').textContent = '';
   checkSetupStatus();
 }
 
@@ -180,7 +186,49 @@ document.querySelectorAll('.tab-btn').forEach(function(btn) {
 function showDashboard() {
   document.getElementById('login').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
+  // Show identity
+  if (currentAdmin) {
+    document.getElementById('adminIdentity').textContent = 'Signed in as ' + currentAdmin.displayName;
+  }
+  startSessionTimer();
   loadAll();
+}
+
+var sessionTimerInterval = null;
+
+function startSessionTimer() {
+  if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+  // Admin JWT expires 1 hour after login. We track from token storage time.
+  var loginTime = sessionStorage.getItem('adminLoginTime');
+  if (!loginTime) {
+    loginTime = String(Date.now());
+    sessionStorage.setItem('adminLoginTime', loginTime);
+  }
+  var expiresAt = parseInt(loginTime, 10) + 3600000; // 1 hour
+
+  function updateTimer() {
+    var remaining = expiresAt - Date.now();
+    var timerEl = document.getElementById('sessionTimer');
+    if (remaining <= 0) {
+      timerEl.textContent = '';
+      logout();
+      toast('Session expired — please sign in again', 'error');
+      return;
+    }
+    var mins = Math.floor(remaining / 60000);
+    if (mins <= 5) {
+      timerEl.textContent = mins + 'm remaining';
+      timerEl.style.color = '#f85149';
+    } else if (mins <= 15) {
+      timerEl.textContent = mins + 'm remaining';
+      timerEl.style.color = '#d29922';
+    } else {
+      timerEl.textContent = '';
+    }
+  }
+
+  updateTimer();
+  sessionTimerInterval = setInterval(updateTimer, 30000);
 }
 
 function loadAll() {

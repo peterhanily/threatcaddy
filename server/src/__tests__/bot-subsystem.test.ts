@@ -358,7 +358,7 @@ describe('createBotImplementation', () => {
     const ctx = {
       botConfig: makeImplConfig({ capabilities: ['read_entities'] }),
       botUserId: 'bot-user-1', runId: 'run-1', trigger: 'manual' as const,
-      entitiesCreated: 0, entitiesUpdated: 0, apiCallsMade: 0,
+      entitiesCreated: 0, entitiesUpdated: 0, apiCallsMade: 0, log: [],
       signal: new AbortController().signal,
     };
 

@@ -135,9 +135,9 @@ describe('validateCronExpression', () => {
   });
 });
 
-// ─── Section 2: parseCronToMs indirectly via validateCronExpression ──
+// ─── Section 2: Cron expression validation (croner) ──
 
-describe('parseCronToMs (tested via validateCronExpression)', () => {
+describe('cron expression validation (croner)', () => {
   it('valid minute intervals return null', () => {
     expect(validateCronExpression('*/1 * * * *')).toBeNull();
     expect(validateCronExpression('*/10 * * * *')).toBeNull();
@@ -155,10 +155,10 @@ describe('parseCronToMs (tested via validateCronExpression)', () => {
     expect(validateCronExpression('0 23 * * *')).toBeNull();
   });
 
-  it('unsupported complex patterns return error string', () => {
-    // Patterns that have 5 fields but are not supported by parseCronToMs
-    expect(validateCronExpression('* * * * 1')).toBeTypeOf('string');
-    expect(validateCronExpression('0 0 1 * *')).toBeTypeOf('string');
+  it('complex patterns now supported via croner', () => {
+    // croner supports full cron syntax including day-of-week and monthly
+    expect(validateCronExpression('* * * * 1')).toBeNull();
+    expect(validateCronExpression('0 0 1 * *')).toBeNull();
   });
 });
 

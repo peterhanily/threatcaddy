@@ -340,6 +340,7 @@ export const botRuns = pgTable('bot_runs', {
   entitiesCreated: integer('entities_created').notNull().default(0),
   entitiesUpdated: integer('entities_updated').notNull().default(0),
   apiCallsMade: integer('api_calls_made').notNull().default(0),
+  log: jsonb('log').$type<Array<{ ts: number; type: string; name?: string; input?: unknown; output?: unknown; error?: string; durationMs?: number; text?: string }>>().default([]),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   idxBotRunsBotConfigId: index('idx_bot_runs_bot_config_id').on(t.botConfigId),

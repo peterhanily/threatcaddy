@@ -109,6 +109,7 @@ function makeBotContext(configOverrides: Partial<BotConfig> = {}): BotContext {
     entitiesCreated: 0,
     entitiesUpdated: 0,
     apiCallsMade: 0,
+    log: [],
     signal: new AbortController().signal,
   };
 }

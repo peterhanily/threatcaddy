@@ -76,6 +76,17 @@ export interface BotConfig {
   updatedAt: Date;
 }
 
+export interface BotRunLogEntry {
+  ts: number;
+  type: string;      // 'tool_call' | 'tool_result' | 'llm_response' | 'error'
+  name?: string;     // tool name
+  input?: unknown;
+  output?: unknown;
+  error?: string;
+  durationMs?: number;
+  text?: string;     // LLM response text
+}
+
 export interface BotRun {
   id: string;
   botConfigId: string;
@@ -88,6 +99,7 @@ export interface BotRun {
   entitiesCreated: number;
   entitiesUpdated: number;
   apiCallsMade: number;
+  log: BotRunLogEntry[];
   createdAt: Date;
 }
 
@@ -103,6 +115,9 @@ export interface BotContext {
   entitiesCreated: number;
   entitiesUpdated: number;
   apiCallsMade: number;
+
+  // Execution log entries (written to bot_runs.log on completion)
+  log: BotRunLogEntry[];
 
   /** Abort signal — bot must check this and stop when aborted */
   signal: AbortSignal;
