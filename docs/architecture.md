@@ -459,22 +459,22 @@ erDiagram
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Created: Admin creates bot via API/UI
+    [*] --> Created: Admin creates bot
     Created --> Configured: Set triggers, capabilities, scope
-    Configured --> Enabled: POST /api/bots/:id/enable
+    Configured --> Enabled: Enable bot
     Enabled --> Running: Event/schedule/webhook/manual trigger
     Running --> Success: Execution completes
     Running --> Error: Exception thrown
-    Running --> Timeout: Exceeds timeout (default 5m)
+    Running --> Timeout: Exceeds timeout (5m default)
     Success --> Enabled: Ready for next trigger
-    Error --> Enabled: Error count < 5
+    Error --> Enabled: Error count lt 5
     Error --> Disabled: Circuit breaker (5 consecutive errors)
-    Timeout --> Enabled: Error count < 5
+    Timeout --> Enabled: Error count lt 5
     Timeout --> Disabled: Circuit breaker
-    Enabled --> Disabled: POST /api/bots/:id/disable
-    Disabled --> Enabled: POST /api/bots/:id/enable
-    Enabled --> Deleted: DELETE /api/bots/:id
-    Disabled --> Deleted: DELETE /api/bots/:id
+    Enabled --> Disabled: Disable bot
+    Disabled --> Enabled: Re-enable bot
+    Enabled --> Deleted: Delete bot
+    Disabled --> Deleted: Delete bot
     Deleted --> [*]
 ```
 
