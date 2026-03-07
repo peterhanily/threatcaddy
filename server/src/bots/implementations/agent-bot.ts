@@ -2,7 +2,7 @@ import { logger } from '../../lib/logger.js';
 import { BotExecutionContext } from '../bot-context.js';
 import { getToolsForCapabilities, toAnthropicTools, toOpenAITools } from '../bot-tools.js';
 import type { BotTool } from '../bot-tools.js';
-import type { BotContext, BotEvent } from '../types.js';
+import type { BotEvent } from '../types.js';
 import { GenericBot } from './generic-bot.js';
 
 const DEFAULT_MAX_ITERATIONS = 10;
