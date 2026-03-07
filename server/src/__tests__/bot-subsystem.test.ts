@@ -329,8 +329,14 @@ describe('createBotImplementation', () => {
     expect(bot).toBeInstanceOf(MonitorBot);
   });
 
+  it('returns AgentBot for type "ai-agent"', () => {
+    const bot = createBotImplementation(makeImplConfig({ type: 'ai-agent' }));
+    expect(bot.type).toBe('ai-agent');
+    expect(bot.constructor.name).toBe('AgentBot');
+  });
+
   it('returns GenericBot for "custom" and other types', () => {
-    for (const type of ['custom', 'feed', 'triage', 'report', 'correlation', 'ai-agent']) {
+    for (const type of ['custom', 'feed', 'triage', 'report', 'correlation']) {
       const bot = createBotImplementation(makeImplConfig({ type }));
       expect(bot).toBeInstanceOf(GenericBot);
     }
@@ -613,5 +619,114 @@ describe('isPrivateIP', () => {
   it('allows IPv4-mapped IPv6 public addresses', () => {
     expect(isPrivateIP('::ffff:8.8.8.8')).toBe(false);
     expect(isPrivateIP('::ffff:1.1.1.1')).toBe(false);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// 5. Bot Tools — capability gating and tool format conversion
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe('bot-tools', () => {
+  let getToolsForCapabilities: typeof import('../bots/bot-tools.js').getToolsForCapabilities;
+  let toAnthropicTools: typeof import('../bots/bot-tools.js').toAnthropicTools;
+  let toOpenAITools: typeof import('../bots/bot-tools.js').toOpenAITools;
+
+  beforeEach(async () => {
+    const mod = await import('../bots/bot-tools.js');
+    getToolsForCapabilities = mod.getToolsForCapabilities;
+    toAnthropicTools = mod.toAnthropicTools;
+    toOpenAITools = mod.toOpenAITools;
+  });
+
+  it('returns no tools for empty capabilities', () => {
+    const tools = getToolsForCapabilities([]);
+    expect(tools).toHaveLength(0);
+  });
+
+  it('returns read tools for read_entities capability', () => {
+    const tools = getToolsForCapabilities(['read_entities']);
+    const names = tools.map(t => t.name);
+    expect(names).toContain('search_notes');
+    expect(names).toContain('read_note');
+    expect(names).toContain('list_iocs');
+    expect(names).toContain('list_tasks');
+    expect(names).toContain('list_timeline_events');
+    expect(names).toContain('get_investigation');
+    expect(names).toContain('list_investigations');
+    // Should NOT include write tools
+    expect(names).not.toContain('create_note');
+    expect(names).not.toContain('fetch_url');
+  });
+
+  it('returns write tools for create_entities capability', () => {
+    const tools = getToolsForCapabilities(['create_entities']);
+    const names = tools.map(t => t.name);
+    expect(names).toContain('create_note');
+    expect(names).toContain('create_ioc');
+    expect(names).toContain('create_task');
+    expect(names).toContain('create_timeline_event');
+    expect(names).not.toContain('search_notes');
+  });
+
+  it('returns fetch_url for call_external_apis capability', () => {
+    const tools = getToolsForCapabilities(['call_external_apis']);
+    const names = tools.map(t => t.name);
+    expect(names).toEqual(['fetch_url']);
+  });
+
+  it('returns cross-investigation search for cross_investigation capability', () => {
+    const tools = getToolsForCapabilities(['cross_investigation']);
+    const names = tools.map(t => t.name);
+    expect(names).toEqual(['search_across_investigations']);
+  });
+
+  it('combines tools for multiple capabilities without duplicates', () => {
+    const tools = getToolsForCapabilities(['read_entities', 'create_entities', 'call_external_apis']);
+    const names = tools.map(t => t.name);
+    // Should have read + write + fetch
+    expect(names).toContain('search_notes');
+    expect(names).toContain('create_note');
+    expect(names).toContain('fetch_url');
+    // No duplicates
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('returns post_to_feed and notify_user for their capabilities', () => {
+    const tools = getToolsForCapabilities(['post_to_feed', 'notify_users']);
+    const names = tools.map(t => t.name);
+    expect(names).toContain('post_to_feed');
+    expect(names).toContain('notify_user');
+  });
+
+  it('toAnthropicTools formats tools correctly', () => {
+    const tools = getToolsForCapabilities(['post_to_feed']);
+    const formatted = toAnthropicTools(tools) as Array<{ name: string; description: string; input_schema: Record<string, unknown> }>;
+    expect(formatted).toHaveLength(1);
+    expect(formatted[0].name).toBe('post_to_feed');
+    expect(formatted[0].description).toBeTruthy();
+    expect(formatted[0].input_schema).toBeDefined();
+    expect(formatted[0].input_schema.type).toBe('object');
+  });
+
+  it('toOpenAITools formats tools correctly', () => {
+    const tools = getToolsForCapabilities(['post_to_feed']);
+    const formatted = toOpenAITools(tools) as Array<{ type: string; function: { name: string; description: string; parameters: Record<string, unknown> } }>;
+    expect(formatted).toHaveLength(1);
+    expect(formatted[0].type).toBe('function');
+    expect(formatted[0].function.name).toBe('post_to_feed');
+    expect(formatted[0].function.parameters.type).toBe('object');
+  });
+
+  it('all tools have required name, description, parameters, and execute', () => {
+    const allCaps = ['read_entities', 'create_entities', 'post_to_feed', 'notify_users', 'call_external_apis', 'cross_investigation'] as const;
+    const tools = getToolsForCapabilities([...allCaps]);
+    for (const tool of tools) {
+      expect(tool.name).toBeTruthy();
+      expect(tool.description).toBeTruthy();
+      expect(tool.parameters).toBeDefined();
+      expect(typeof tool.execute).toBe('function');
+    }
+    // Should have all 15 tools
+    expect(tools.length).toBe(15);
   });
 });
