@@ -21,7 +21,7 @@ import auditRoutes from './routes/audit.js';
 import notificationRoutes from './routes/notifications.js';
 import userRoutes from './routes/users.js';
 import botRoutes from './routes/bots.js';
-import adminRoutes from './routes/admin.js';
+import adminRoutes from './routes/admin/index.js';
 import { botManager } from './bots/bot-manager.js';
 import { initAdminSecret, initRegistrationMode, initServerName, getServerName, backfillFolderOwners, initAdminSystemUser } from './services/admin-secret.js';
 import { pruneOldData } from './services/cleanup-service.js';
