@@ -68,7 +68,8 @@ export function validateBotCreate(input: BotCreateInput): string | null {
   }
 
   if (triggers?.schedule) {
-    const cronError = validateCronExpression(triggers.schedule as string);
+    if (typeof triggers.schedule !== 'string') return 'Schedule must be a string';
+    const cronError = validateCronExpression(triggers.schedule);
     if (cronError) return cronError;
   }
 

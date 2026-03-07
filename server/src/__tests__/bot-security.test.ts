@@ -603,6 +603,15 @@ describe('validateBotCreate', () => {
 
   // ─── Cron validation ───────────────────────────────────────────
 
+  it('returns error when schedule is not a string', () => {
+    const result = validateBotCreate({
+      name: 'Bot',
+      type: 'custom',
+      triggers: { schedule: 12345 },
+    });
+    expect(result).toContain('Schedule must be a string');
+  });
+
   it('returns error for invalid cron expression', () => {
     const result = validateBotCreate({
       name: 'Bot',

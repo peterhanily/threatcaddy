@@ -88,7 +88,7 @@ app.delete('/api/bots/:id', requireAdminAuth, async (c) => {
 
 // GET /admin/api/bots/:id/runs — run history
 app.get('/api/bots/:id/runs', requireAdminAuth, async (c) => {
-  const limit = Math.min(200, Math.max(1, parseInt(c.req.query('limit') || '50', 10)));
+  const limit = Math.min(200, Math.max(1, parseInt(c.req.query('limit') || '50', 10) || 50));
   const runs = await getBotRuns(c.req.param('id'), limit);
   return c.json({ runs });
 });
