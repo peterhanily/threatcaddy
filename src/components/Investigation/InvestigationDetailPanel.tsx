@@ -49,6 +49,7 @@ export function InvestigationDetailPanel({
   const [description, setDescription] = useState(folder.description || '');
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setName(folder.name);
     setDescription(folder.description || '');
   }, [folder.id, folder.name, folder.description]);

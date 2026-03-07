@@ -153,6 +153,7 @@ describe('BotManager', () => {
       const manager = new BotManager();
       const config = makeBotConfig({ id: 'b1', enabled: false });
       // Manually set config but disabled
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (manager as any).configs.set('b1', config);
 
       await manager.executeBot('b1', 'manual');
@@ -223,9 +224,9 @@ function makeBotConfig(overrides: Record<string, any> = {}): any {
     name: 'Test Bot',
     description: '',
     enabled: true,
-    triggers: { events: ['entity.created'] as any, schedule: null },
+    triggers: { events: ['entity.created'] as unknown, schedule: null },
     config: {},
-    capabilities: ['read_entities'] as any[],
+    capabilities: ['read_entities'] as unknown[],
     allowedDomains: [],
     scopeType: 'global',
     scopeFolderIds: [],

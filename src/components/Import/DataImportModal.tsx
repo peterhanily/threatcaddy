@@ -72,6 +72,7 @@ export function DataImportModal({
   // Reset state when modal opens
   useEffect(() => {
     if (open) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       setStep('input');
       setRawText('');
       setDetectedFormat('');
@@ -85,6 +86,7 @@ export function DataImportModal({
       setNewTimelineName('');
       setImportResult(null);
       setImportError('');
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [open, defaultFolderId, defaultTimelineId]);
 

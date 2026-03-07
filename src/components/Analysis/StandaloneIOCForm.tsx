@@ -36,6 +36,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
   const [newRelTarget, setNewRelTarget] = useState('');
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (open) {
       if (editingIOC) {
         setType(editingIOC.type);
@@ -67,6 +68,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
       setNewRelType(RELATIONSHIP_TYPE_KEYS[0]);
       setNewRelTarget('');
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [open, editingIOC, defaultFolderId]);
 
   // Close on Escape key

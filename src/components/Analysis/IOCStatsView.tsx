@@ -33,6 +33,7 @@ export function IOCStatsView({ notes, tasks, timelineEvents, standaloneIOCs = []
 
   // Reset scope when investigation changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setScopeMode('investigation');
   }, [selectedFolderId]);
 
