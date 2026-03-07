@@ -392,7 +392,7 @@ ${adminStyles()}
   <!-- ─── AI Assistant Tab ─────────────────────────────────── -->
   <div id="tab-ai" class="tab-content">
     <div style="display:flex;flex-direction:column;height:calc(100vh - 180px);">
-      <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;">
+      <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap;">
         <select id="aiProviderSelect" style="padding:0.3rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;font-size:0.8rem;">
           <option value="">Loading...</option>
         </select>
@@ -400,7 +400,41 @@ ${adminStyles()}
           <option value="">—</option>
         </select>
         <span id="aiProviderHint" style="font-size:0.75rem;color:#d29922;display:none;"></span>
+        <div style="flex:1;"></div>
+        <button id="aiSettingsToggle" class="btn btn-outline btn-sm">Settings</button>
       </div>
+
+      <!-- AI Settings Panel (collapsible) -->
+      <div id="aiSettingsPanel" style="display:none;background:#161b22;border:1px solid #30363d;border-radius:6px;padding:1rem;margin-bottom:0.5rem;font-size:0.85rem;">
+        <h3 style="font-size:0.9rem;color:#c9d1d9;margin-bottom:0.75rem;">AI Assistant Settings</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div>
+            <label style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Local LLM Endpoint</label>
+            <input type="text" id="aiLocalEndpoint" placeholder="http://localhost:11434/v1" style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;">
+            <span style="font-size:0.7rem;color:#8b949e;">Ollama, LM Studio, vLLM, etc.</span>
+          </div>
+          <div>
+            <label style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Local API Key (optional)</label>
+            <input type="password" id="aiLocalApiKey" placeholder="Leave blank if not needed" style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;">
+          </div>
+          <div>
+            <label style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Local Model Name</label>
+            <input type="text" id="aiLocalModel" placeholder="e.g. llama3, mistral, codestral" style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;">
+          </div>
+          <div>
+            <label style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Temperature</label>
+            <input type="number" id="aiTemperature" min="0" max="2" step="0.1" value="0.7" style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;">
+          </div>
+        </div>
+        <div style="margin-top:0.75rem;">
+          <label style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Custom System Prompt (appended to built-in prompt)</label>
+          <textarea id="aiCustomPrompt" rows="3" placeholder="Add custom instructions for the AI assistant..." style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;resize:vertical;font-family:inherit;"></textarea>
+        </div>
+        <div style="margin-top:0.75rem;display:flex;gap:0.5rem;justify-content:flex-end;">
+          <button id="aiSettingsSave" class="btn btn-primary btn-sm">Save Settings</button>
+        </div>
+      </div>
+
       <div id="aiChatArea" style="flex:1;overflow-y:auto;padding:1rem;background:#0d1117;border:1px solid #21262d;border-radius:6px;margin-bottom:0.5rem;">
         <div style="text-align:center;color:#8b949e;padding:2rem;">Ask me anything about your server — users, bots, investigations, audit logs, and more.</div>
       </div>

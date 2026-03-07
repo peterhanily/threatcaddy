@@ -6,6 +6,7 @@ import {
   getToolByName, ADMIN_AI_SYSTEM_PROMPT,
 } from '../../services/admin-ai-service.js';
 import { getAvailableProviders } from '../../services/llm-service.js';
+import { getAiSettings, setAiSettings, type AiAssistantSettings } from '../../services/admin-secret.js';
 import { logger } from '../../lib/logger.js';
 
 const app = new Hono();
@@ -13,7 +14,81 @@ const MAX_TOOL_CALLS = 20;
 
 // GET /admin/api/ai/providers — list available providers with API keys configured
 app.get('/api/ai/providers', requireAdminAuth, async (c) => {
-  return c.json({ providers: getAvailableProviders() });
+  const providers = getAvailableProviders();
+  const aiSettings = await getAiSettings();
+
+  // Add local provider if endpoint is configured
+  if (aiSettings.localEndpoint) {
+    providers.push({
+      provider: 'local',
+      models: aiSettings.localModelName
+        ? [aiSettings.localModelName]
+        : ['default'],
+    });
+  }
+
+  return c.json({ providers, settings: {
+    defaultProvider: aiSettings.defaultProvider,
+    defaultModel: aiSettings.defaultModel,
+  }});
+});
+
+// GET /admin/api/ai/settings — get AI assistant settings
+app.get('/api/ai/settings', requireAdminAuth, async (c) => {
+  const settings = await getAiSettings();
+  // Mask the local API key for security
+  return c.json({
+    ...settings,
+    localApiKey: settings.localApiKey ? '***configured***' : '',
+  });
+});
+
+// PATCH /admin/api/ai/settings — update AI assistant settings
+app.patch('/api/ai/settings', requireAdminAuth, async (c) => {
+  let body;
+  try { body = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON' }, 400); }
+
+  const updates: Record<string, unknown> = {};
+
+  if (body.localEndpoint !== undefined) {
+    const ep = String(body.localEndpoint).trim();
+    if (ep && !/^https?:\/\//.test(ep)) {
+      return c.json({ error: 'Local endpoint must start with http:// or https://' }, 400);
+    }
+    updates.localEndpoint = ep;
+  }
+  if (body.localApiKey !== undefined && body.localApiKey !== '***configured***') {
+    updates.localApiKey = String(body.localApiKey);
+  }
+  if (body.localModelName !== undefined) {
+    updates.localModelName = String(body.localModelName).trim();
+  }
+  if (body.customSystemPrompt !== undefined) {
+    updates.customSystemPrompt = String(body.customSystemPrompt);
+  }
+  if (body.defaultProvider !== undefined) {
+    updates.defaultProvider = String(body.defaultProvider);
+  }
+  if (body.defaultModel !== undefined) {
+    updates.defaultModel = String(body.defaultModel);
+  }
+  if (body.temperature !== undefined) {
+    const temp = parseFloat(body.temperature);
+    if (isNaN(temp) || temp < 0 || temp > 2) {
+      return c.json({ error: 'Temperature must be 0-2' }, 400);
+    }
+    updates.temperature = temp;
+  }
+
+  await setAiSettings(updates as Partial<AiAssistantSettings>);
+  await logAdminAction(getAdminId(c), 'ai-settings.update', `Updated AI assistant settings`);
+
+  const settings = await getAiSettings();
+  return c.json({
+    ok: true,
+    ...settings,
+    localApiKey: settings.localApiKey ? '***configured***' : '',
+  });
 });
 
 // ─── Provider-specific LLM call abstractions ─────────────────────
@@ -36,7 +111,7 @@ function getApiKey(provider: string): string {
   }
 }
 
-async function callAnthropic(model: string, messages: unknown[], apiKey: string): Promise<LLMResult> {
+async function callAnthropic(model: string, messages: unknown[], apiKey: string, systemPrompt: string, temperature: number): Promise<LLMResult> {
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -47,9 +122,10 @@ async function callAnthropic(model: string, messages: unknown[], apiKey: string)
     body: JSON.stringify({
       model,
       max_tokens: 4096,
-      system: ADMIN_AI_SYSTEM_PROMPT,
+      system: systemPrompt,
       messages,
       tools: getAnthropicTools(),
+      temperature,
     }),
   });
 
@@ -82,13 +158,13 @@ function buildAnthropicToolResults(
   };
 }
 
-async function callOpenAI(model: string, messages: unknown[], apiKey: string, provider: 'openai' | 'mistral'): Promise<LLMResult> {
+async function callOpenAI(model: string, messages: unknown[], apiKey: string, provider: 'openai' | 'mistral', systemPrompt: string, temperature: number): Promise<LLMResult> {
   const url = provider === 'mistral'
     ? 'https://api.mistral.ai/v1/chat/completions'
     : 'https://api.openai.com/v1/chat/completions';
 
   // Prepend system message
-  const allMessages = [{ role: 'system', content: ADMIN_AI_SYSTEM_PROMPT }, ...(messages as Array<Record<string, unknown>>)];
+  const allMessages = [{ role: 'system', content: systemPrompt }, ...(messages as Array<Record<string, unknown>>)];
 
   const resp = await fetch(url, {
     method: 'POST',
@@ -101,6 +177,7 @@ async function callOpenAI(model: string, messages: unknown[], apiKey: string, pr
       messages: allMessages,
       tools: getOpenAITools(),
       max_tokens: 4096,
+      temperature,
     }),
   });
 
@@ -147,7 +224,7 @@ function buildOpenAIToolResults(
   }));
 }
 
-async function callGemini(model: string, messages: unknown[], apiKey: string): Promise<LLMResult> {
+async function callGemini(model: string, messages: unknown[], apiKey: string, systemPrompt: string, temperature: number): Promise<LLMResult> {
   // Convert messages to Gemini format
   const contents = (messages as Array<{ role: string; content: unknown }>).map(m => {
     if (m.role === 'assistant') {
@@ -169,7 +246,8 @@ async function callGemini(model: string, messages: unknown[], apiKey: string): P
     body: JSON.stringify({
       contents,
       tools: getGeminiTools(),
-      systemInstruction: { parts: [{ text: ADMIN_AI_SYSTEM_PROMPT }] },
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      generationConfig: { temperature },
     }),
   });
 
@@ -201,6 +279,58 @@ async function callGemini(model: string, messages: unknown[], apiKey: string): P
   };
 }
 
+async function callLocal(model: string, messages: unknown[], endpoint: string, apiKey: string, systemPrompt: string, temperature: number): Promise<LLMResult> {
+  const url = endpoint.replace(/\/+$/, '') + '/chat/completions';
+
+  const allMessages = [{ role: 'system', content: systemPrompt }, ...(messages as Array<Record<string, unknown>>)];
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model,
+      messages: allMessages,
+      tools: getOpenAITools(),
+      max_tokens: 4096,
+      temperature,
+    }),
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`Local LLM error ${resp.status}: ${errText}`);
+  }
+
+  const result = await resp.json() as {
+    choices: Array<{
+      message: {
+        role: string;
+        content: string | null;
+        tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }>;
+      };
+      finish_reason: string;
+    }>;
+  };
+
+  const msg = result.choices[0]?.message;
+  const textParts = msg?.content ? [msg.content] : [];
+  const toolCalls = (msg?.tool_calls || []).map(tc => ({
+    id: tc.id,
+    name: tc.function.name,
+    input: JSON.parse(tc.function.arguments || '{}') as Record<string, unknown>,
+  }));
+
+  return {
+    textParts,
+    toolCalls,
+    stopReason: result.choices[0]?.finish_reason || 'stop',
+    rawAssistantContent: msg,
+  };
+}
+
 // ─── Unified agent loop ──────────────────────────────────────────
 
 app.post('/api/ai/chat', requireAdminAuth, async (c) => {
@@ -215,23 +345,51 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
     return c.json({ error: 'Too many messages (max 50)' }, 400);
   }
 
-  // Determine provider: use requested or first available
+  // Load AI settings for system prompt, temperature, defaults
+  const aiSettings = await getAiSettings();
+
+  const effectiveSystemPrompt = aiSettings.customSystemPrompt
+    ? ADMIN_AI_SYSTEM_PROMPT + '\n\n' + aiSettings.customSystemPrompt
+    : ADMIN_AI_SYSTEM_PROMPT;
+
+  // Determine provider: use requested, or settings default, or first available
   const available = getAvailableProviders();
-  if (available.length === 0) {
-    return c.json({ error: 'No AI provider API keys configured. Set ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, or MISTRAL_API_KEY.' }, 503);
+
+  // Add local provider to available list if configured
+  if (aiSettings.localEndpoint) {
+    available.push({
+      provider: 'local',
+      models: aiSettings.localModelName
+        ? [aiSettings.localModelName]
+        : ['default'],
+    });
   }
 
-  const provider = reqProvider && available.some(p => p.provider === reqProvider)
-    ? reqProvider as string
-    : available[0].provider;
+  if (available.length === 0) {
+    return c.json({ error: 'No AI provider API keys configured. Set ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, or MISTRAL_API_KEY, or configure a local endpoint.' }, 503);
+  }
+
+  let provider: string;
+  if (reqProvider && available.some(p => p.provider === reqProvider)) {
+    provider = reqProvider as string;
+  } else if (aiSettings.defaultProvider && available.some(p => p.provider === aiSettings.defaultProvider)) {
+    provider = aiSettings.defaultProvider;
+  } else {
+    provider = available[0].provider;
+  }
 
   const providerInfo = available.find(p => p.provider === provider)!;
-  const model = reqModel && providerInfo.models.includes(reqModel)
-    ? reqModel as string
-    : providerInfo.models[0];
+  let model: string;
+  if (reqModel && providerInfo.models.includes(reqModel)) {
+    model = reqModel as string;
+  } else if (aiSettings.defaultModel && providerInfo.models.includes(aiSettings.defaultModel)) {
+    model = aiSettings.defaultModel;
+  } else {
+    model = providerInfo.models[0];
+  }
 
-  const apiKey = getApiKey(provider);
-  if (!apiKey) {
+  const apiKey = provider === 'local' ? '' : getApiKey(provider);
+  if (provider !== 'local' && !apiKey) {
     return c.json({ error: `${provider.toUpperCase()} API key not configured` }, 503);
   }
 
@@ -250,17 +408,25 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
       try {
         switch (provider) {
           case 'anthropic':
-            result = await callAnthropic(model, currentMessages, apiKey);
+            result = await callAnthropic(model, currentMessages, apiKey, effectiveSystemPrompt, aiSettings.temperature);
             break;
           case 'openai':
-            result = await callOpenAI(model, currentMessages, apiKey, 'openai');
+            result = await callOpenAI(model, currentMessages, apiKey, 'openai', effectiveSystemPrompt, aiSettings.temperature);
             break;
           case 'mistral':
-            result = await callOpenAI(model, currentMessages, apiKey, 'mistral');
+            result = await callOpenAI(model, currentMessages, apiKey, 'mistral', effectiveSystemPrompt, aiSettings.temperature);
             break;
           case 'gemini':
-            result = await callGemini(model, currentMessages, apiKey);
+            result = await callGemini(model, currentMessages, apiKey, effectiveSystemPrompt, aiSettings.temperature);
             break;
+          case 'local': {
+            if (!aiSettings.localEndpoint) {
+              await stream.writeSSE({ data: JSON.stringify({ type: 'error', error: 'Local LLM endpoint not configured' }) });
+              return;
+            }
+            result = await callLocal(model, currentMessages, aiSettings.localEndpoint, aiSettings.localApiKey, effectiveSystemPrompt, aiSettings.temperature);
+            break;
+          }
           default:
             await stream.writeSSE({ data: JSON.stringify({ type: 'error', error: `Unsupported provider: ${provider}` }) });
             return;
@@ -284,7 +450,7 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
       // Append assistant message to history
       if (provider === 'anthropic') {
         currentMessages.push({ role: 'assistant', content: result.rawAssistantContent });
-      } else if (provider === 'openai' || provider === 'mistral') {
+      } else if (provider === 'openai' || provider === 'mistral' || provider === 'local') {
         currentMessages.push(result.rawAssistantContent);
       } else if (provider === 'gemini') {
         // For Gemini, we'll include the model response as a model turn
@@ -329,7 +495,7 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
       // Append tool results in provider-specific format
       if (provider === 'anthropic') {
         currentMessages.push(buildAnthropicToolResults(toolResultEntries));
-      } else if (provider === 'openai' || provider === 'mistral') {
+      } else if (provider === 'openai' || provider === 'mistral' || provider === 'local') {
         currentMessages.push(...buildOpenAIToolResults(toolResultEntries));
       } else if (provider === 'gemini') {
         // Gemini: add function responses as user messages

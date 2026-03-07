@@ -144,7 +144,7 @@ export function ChatView({
 
     // Local provider: validate endpoint is set
     if (provider === 'local' && !settings.llmLocalEndpoint) {
-      setLocalError('No Local LLM endpoint configured. Add it in Settings.');
+      setLocalError('No Local LLM endpoint configured. Add it in Settings → AI/LLM.');
       return;
     }
 
@@ -152,7 +152,7 @@ export function ChatView({
     const apiKey = getApiKeyForProvider(provider, settings);
 
     if (!apiKey) {
-      setLocalError(`No ${getProviderLabel(provider)} API key configured. Add it in Settings.`);
+      setLocalError(`No ${getProviderLabel(provider)} API key configured. Add an API key or local LLM endpoint in Settings → AI/LLM.`);
       return;
     }
 

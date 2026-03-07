@@ -310,3 +310,73 @@ export async function deleteAdminUser(id: string): Promise<boolean> {
   const result = await db.delete(adminUsers).where(eq(adminUsers.id, id)).returning({ id: adminUsers.id });
   return result.length > 0;
 }
+
+// ─── AI Assistant Settings ───────────────────────────────────────
+
+export interface AiAssistantSettings {
+  localEndpoint: string;
+  localApiKey: string;
+  localModelName: string;
+  customSystemPrompt: string;
+  defaultProvider: string;
+  defaultModel: string;
+  temperature: number;
+}
+
+const AI_SETTINGS_DEFAULTS: AiAssistantSettings = {
+  localEndpoint: '',
+  localApiKey: '',
+  localModelName: '',
+  customSystemPrompt: '',
+  defaultProvider: '',
+  defaultModel: '',
+  temperature: 0.7,
+};
+
+async function getSettingValue(key: string): Promise<string | null> {
+  const row = await db.select().from(serverSettings).where(eq(serverSettings.key, key)).limit(1);
+  return row.length > 0 ? row[0].value : null;
+}
+
+async function setSettingValue(key: string, value: string): Promise<void> {
+  const existing = await db.select().from(serverSettings).where(eq(serverSettings.key, key)).limit(1);
+  if (existing.length > 0) {
+    await db.update(serverSettings).set({ value, updatedAt: new Date() }).where(eq(serverSettings.key, key));
+  } else {
+    await db.insert(serverSettings).values({ key, value });
+  }
+}
+
+export async function getAiSettings(): Promise<AiAssistantSettings> {
+  const [endpoint, apiKey, modelName, systemPrompt, provider, model, temp] = await Promise.all([
+    getSettingValue('ai_local_endpoint'),
+    getSettingValue('ai_local_api_key'),
+    getSettingValue('ai_local_model_name'),
+    getSettingValue('ai_custom_system_prompt'),
+    getSettingValue('ai_default_provider'),
+    getSettingValue('ai_default_model'),
+    getSettingValue('ai_temperature'),
+  ]);
+
+  return {
+    localEndpoint: endpoint || AI_SETTINGS_DEFAULTS.localEndpoint,
+    localApiKey: apiKey || AI_SETTINGS_DEFAULTS.localApiKey,
+    localModelName: modelName || AI_SETTINGS_DEFAULTS.localModelName,
+    customSystemPrompt: systemPrompt || AI_SETTINGS_DEFAULTS.customSystemPrompt,
+    defaultProvider: provider || AI_SETTINGS_DEFAULTS.defaultProvider,
+    defaultModel: model || AI_SETTINGS_DEFAULTS.defaultModel,
+    temperature: temp ? parseFloat(temp) : AI_SETTINGS_DEFAULTS.temperature,
+  };
+}
+
+export async function setAiSettings(settings: Partial<AiAssistantSettings>): Promise<void> {
+  const updates: Array<Promise<void>> = [];
+  if (settings.localEndpoint !== undefined) updates.push(setSettingValue('ai_local_endpoint', settings.localEndpoint));
+  if (settings.localApiKey !== undefined) updates.push(setSettingValue('ai_local_api_key', settings.localApiKey));
+  if (settings.localModelName !== undefined) updates.push(setSettingValue('ai_local_model_name', settings.localModelName));
+  if (settings.customSystemPrompt !== undefined) updates.push(setSettingValue('ai_custom_system_prompt', settings.customSystemPrompt));
+  if (settings.defaultProvider !== undefined) updates.push(setSettingValue('ai_default_provider', settings.defaultProvider));
+  if (settings.defaultModel !== undefined) updates.push(setSettingValue('ai_default_model', settings.defaultModel));
+  if (settings.temperature !== undefined) updates.push(setSettingValue('ai_temperature', String(settings.temperature)));
+  await Promise.all(updates);
+}

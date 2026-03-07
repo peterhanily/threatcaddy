@@ -4,6 +4,7 @@ export function aiTabJs(): string {
 var aiMessages = [];
 var aiStreaming = false;
 var aiProvidersLoaded = false;
+var aiSettingsLoaded = false;
 
 function loadAiProviders() {
   if (aiProvidersLoaded) return;
@@ -17,24 +18,41 @@ function loadAiProviders() {
     if (!data.providers || data.providers.length === 0) {
       sel.innerHTML = '<option value="">No providers configured</option>';
       modelSel.innerHTML = '<option value="">—</option>';
-      document.getElementById('aiProviderHint').textContent = 'Set ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, or MISTRAL_API_KEY on the server.';
+      document.getElementById('aiProviderHint').textContent = 'Set ANTHROPIC_API_KEY, OPENAI_API_KEY, GEMINI_API_KEY, or MISTRAL_API_KEY on the server, or configure a local LLM endpoint in Settings.';
       document.getElementById('aiProviderHint').style.display = 'block';
       return;
     }
     document.getElementById('aiProviderHint').style.display = 'none';
     window._aiProviders = data.providers;
+    var labels = { anthropic: 'Anthropic', openai: 'OpenAI', gemini: 'Gemini', mistral: 'Mistral', local: 'Local LLM' };
     for (var i = 0; i < data.providers.length; i++) {
       var p = data.providers[i];
       var opt = document.createElement('option');
       opt.value = p.provider;
-      opt.textContent = p.provider.charAt(0).toUpperCase() + p.provider.slice(1);
+      opt.textContent = labels[p.provider] || p.provider;
       sel.appendChild(opt);
     }
+    // Select default provider if configured
+    if (data.settings && data.settings.defaultProvider) {
+      var defP = data.settings.defaultProvider;
+      if (data.providers.some(function(p) { return p.provider === defP; })) {
+        sel.value = defP;
+      }
+    }
     updateAiModels();
+    // Select default model if configured
+    if (data.settings && data.settings.defaultModel) {
+      var defM = data.settings.defaultModel;
+      if (modelSel.querySelector('option[value="' + defM + '"]')) {
+        modelSel.value = defM;
+      }
+    }
   }).catch(function() {
     document.getElementById('aiProviderHint').textContent = 'Failed to load providers.';
     document.getElementById('aiProviderHint').style.display = 'block';
   });
+  // Also load settings
+  loadAiSettings();
 }
 
 function updateAiModels() {
@@ -55,6 +73,55 @@ function updateAiModels() {
     }
   }
 }
+
+/* ═══ AI SETTINGS ═══════════════════════════════════════════ */
+
+function loadAiSettings() {
+  if (aiSettingsLoaded) return;
+  aiSettingsLoaded = true;
+  fetch(BASE + '/admin/api/ai/settings', {
+    headers: { 'Authorization': 'Bearer ' + token },
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    document.getElementById('aiLocalEndpoint').value = data.localEndpoint || '';
+    document.getElementById('aiLocalApiKey').value = data.localApiKey === '***configured***' ? '' : (data.localApiKey || '');
+    if (data.localApiKey === '***configured***') {
+      document.getElementById('aiLocalApiKey').placeholder = '***configured*** (leave blank to keep)';
+    }
+    document.getElementById('aiLocalModel').value = data.localModelName || '';
+    document.getElementById('aiCustomPrompt').value = data.customSystemPrompt || '';
+    document.getElementById('aiTemperature').value = data.temperature !== undefined ? data.temperature : 0.7;
+  }).catch(function() {});
+}
+
+function saveAiSettings() {
+  var body = {
+    localEndpoint: document.getElementById('aiLocalEndpoint').value.trim(),
+    localModelName: document.getElementById('aiLocalModel').value.trim(),
+    customSystemPrompt: document.getElementById('aiCustomPrompt').value,
+    temperature: parseFloat(document.getElementById('aiTemperature').value) || 0.7,
+  };
+  // Only send API key if user typed something
+  var apiKeyInput = document.getElementById('aiLocalApiKey');
+  if (apiKeyInput.value) {
+    body.localApiKey = apiKeyInput.value;
+  }
+
+  api('/ai/settings', {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  }).then(function(data) {
+    toast('AI settings saved');
+    // Reload providers to pick up local endpoint changes
+    aiProvidersLoaded = false;
+    loadAiProviders();
+    if (data.localApiKey === '***configured***') {
+      apiKeyInput.value = '';
+      apiKeyInput.placeholder = '***configured*** (leave blank to keep)';
+    }
+  }).catch(function(err) { toast(err.message, 'error'); });
+}
+
+/* ═══ CHAT ══════════════════════════════════════════════════ */
 
 function sendAiMessage() {
   if (aiStreaming) return;
@@ -121,7 +188,7 @@ function runAiChat() {
           return;
         }
         buffer += decoder.decode(result.value, { stream: true });
-        var lines = buffer.split('\\n');
+        var lines = buffer.split('\\\\n');
         buffer = lines.pop() || '';
 
         for (var i = 0; i < lines.length; i++) {
@@ -172,10 +239,12 @@ function finishAiStream(text) {
 
 function formatAiText(text) {
   return esc(text)
-    .replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>')
-    .replace(/\\\`([^\\\`]+)\\\`/g, '<code style="background:#161b22;padding:1px 4px;border-radius:3px;">$1</code>')
-    .replace(/\\n/g, '<br>');
+    .replace(/\\\\*\\\\*(.+?)\\\\*\\\\*/g, '<strong>$1</strong>')
+    .replace(/\\\\\\\`([^\\\\\\\`]+)\\\\\\\`/g, '<code style="background:#161b22;padding:1px 4px;border-radius:3px;">$1</code>')
+    .replace(/\\\\n/g, '<br>');
 }
+
+/* ═══ EVENT LISTENERS ═══════════════════════════════════════ */
 
 document.getElementById('aiSendBtn').addEventListener('click', function() { sendAiMessage(); });
 document.getElementById('aiInput').addEventListener('keydown', function(e) {
@@ -185,5 +254,10 @@ document.getElementById('aiInput').addEventListener('keydown', function(e) {
   }
 });
 document.getElementById('aiClearBtn').addEventListener('click', function() { clearAiChat(); });
-document.getElementById('aiProviderSelect').addEventListener('change', function() { updateAiModels(); });`;
+document.getElementById('aiProviderSelect').addEventListener('change', function() { updateAiModels(); });
+document.getElementById('aiSettingsToggle').addEventListener('click', function() {
+  var panel = document.getElementById('aiSettingsPanel');
+  panel.style.display = panel.style.display === 'none' ? '' : 'none';
+});
+document.getElementById('aiSettingsSave').addEventListener('click', function() { saveAiSettings(); });`;
 }
