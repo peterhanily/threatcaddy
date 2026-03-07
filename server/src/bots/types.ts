@@ -10,13 +10,9 @@ export type BotCapability =
   | 'read_entities'       // search, list, read notes/tasks/IOCs/events
   | 'create_entities'     // create notes, tasks, IOCs, timeline events
   | 'update_entities'     // update existing entities
-  | 'delete_entities'     // soft-delete entities
-  | 'link_entities'       // cross-reference entities
   | 'post_to_feed'        // post to CaddyShack
   | 'notify_users'        // send notifications
   | 'call_external_apis'  // make outbound HTTP requests
-  | 'use_llm'             // invoke LLM via server proxy
-  | 'manage_investigations' // create/update folders
   | 'cross_investigation'; // search/read across investigations
 
 export interface BotEvent {
@@ -28,6 +24,7 @@ export interface BotEvent {
   data?: Record<string, unknown>;
   timestamp: Date;
   depth?: number;        // event chain depth — prevents infinite mutual bot loops
+  originBotIds?: string[];  // tracks all bots in the event chain to prevent amplification
 }
 
 export type BotEventType =

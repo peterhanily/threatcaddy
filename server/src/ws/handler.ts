@@ -24,6 +24,8 @@ interface ConnectedClient {
 const clients = new Map<WSContext, ConnectedClient>();
 // userId → Set<WSContext> for per-user broadcasting
 const userConnections = new Map<string, Set<WSContext>>();
+// folderId → Set<WSContext> for fast folder-scoped broadcasts
+const folderSubscribers = new Map<string, Set<WSContext>>();
 // Pending auth: ws → timeout timer (connections not yet authenticated)
 const pendingAuth = new Map<WSContext, ReturnType<typeof setTimeout>>();
 // Per-user message rate limiting (sliding window)
@@ -146,6 +148,9 @@ export async function handleWSMessage(ws: WSContext, data: string) {
             break;
           }
           client.subscribedFolders.add(folderId);
+          let subs = folderSubscribers.get(folderId);
+          if (!subs) { subs = new Set(); folderSubscribers.set(folderId, subs); }
+          subs.add(ws);
           // Send current presence
           const presence = getPresence(folderId);
           sendTo(ws, { type: 'presence', folderId, users: presence });
@@ -157,6 +162,8 @@ export async function handleWSMessage(ws: WSContext, data: string) {
         const folderId = msg.folderId as string;
         if (folderId) {
           client.subscribedFolders.delete(folderId);
+          const subs = folderSubscribers.get(folderId);
+          if (subs) { subs.delete(ws); if (subs.size === 0) folderSubscribers.delete(folderId); }
           removePresence(folderId, client.user.id);
           // Broadcast updated presence
           broadcastPresence(folderId);
@@ -221,6 +228,12 @@ export function handleWSClose(ws: WSContext) {
     // Remove from all subscribed folders' presence
     removeUserFromAllFolders(client.user.id);
 
+    // Remove from folder subscriber index
+    for (const folderId of client.subscribedFolders) {
+      const subs = folderSubscribers.get(folderId);
+      if (subs) { subs.delete(ws); if (subs.size === 0) folderSubscribers.delete(folderId); }
+    }
+
     // Broadcast updated presence for all folders this client was in
     for (const folderId of client.subscribedFolders) {
       broadcastPresence(folderId);
@@ -247,21 +260,24 @@ function sendTo(ws: WSContext, msg: unknown) {
 }
 
 function broadcastPresence(folderId: string) {
+  const subs = folderSubscribers.get(folderId);
+  if (!subs) return;
   const presence = getPresence(folderId);
   const msg = { type: 'presence', folderId, users: presence };
 
-  for (const [, client] of clients) {
-    if (client.subscribedFolders.has(folderId)) {
-      sendTo(client.ws, msg);
-    }
+  for (const ws of subs) {
+    sendTo(ws, msg);
   }
 }
 
 // Broadcast entity changes to all clients subscribed to a folder (except sender)
 export function broadcastToFolder(folderId: string, msg: unknown, excludeUserId?: string) {
-  for (const [, client] of clients) {
-    if (client.subscribedFolders.has(folderId) && client.user.id !== excludeUserId) {
-      sendTo(client.ws, msg);
+  const subs = folderSubscribers.get(folderId);
+  if (!subs) return;
+  for (const ws of subs) {
+    const client = clients.get(ws);
+    if (client && client.user.id !== excludeUserId) {
+      sendTo(ws, msg);
     }
   }
 }

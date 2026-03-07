@@ -117,13 +117,14 @@ app.post('/:id/webhook', async (c) => {
   const decryptedConfig = decryptConfigSecrets(config.config as Record<string, unknown>);
   const webhookSecret = decryptedConfig.webhookSecret as string | undefined;
 
-  if (webhookSecret) {
-    const authHeader = c.req.header('X-Webhook-Secret') || '';
-    const secretBuf = Buffer.from(webhookSecret);
-    const headerBuf = Buffer.from(authHeader);
-    if (secretBuf.length !== headerBuf.length || !timingSafeEqual(secretBuf, headerBuf)) {
-      return c.json({ error: 'Invalid webhook secret' }, 401);
-    }
+  if (!webhookSecret) {
+    return c.json({ error: 'Webhook secret not configured' }, 403);
+  }
+  const authHeader = c.req.header('X-Webhook-Secret') || '';
+  const secretBuf = Buffer.from(webhookSecret);
+  const headerBuf = Buffer.from(authHeader);
+  if (secretBuf.length !== headerBuf.length || !timingSafeEqual(secretBuf, headerBuf)) {
+    return c.json({ error: 'Invalid webhook secret' }, 401);
   }
 
   const payload = await c.req.json().catch(() => ({}));

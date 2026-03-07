@@ -6,6 +6,9 @@ import { logger } from '../lib/logger.js';
 /** Tracks current bot event chain depth to prevent infinite mutual bot loops */
 export const botEventDepth = new AsyncLocalStorage<number>();
 
+/** Tracks all bot user IDs in the current event chain to prevent amplification */
+export const botEventOrigins = new AsyncLocalStorage<string[]>();
+
 /**
  * In-process event bus for bot triggers.
  * Wired into sync-service to emit events on every entity mutation.
@@ -83,6 +86,7 @@ export function emitEntityEvent(
   }
 
   const depth = botEventDepth.getStore() || 0;
+  const originBotIds = botEventOrigins.getStore() || [];
   botEventBus.emitBotEvent({
     type,
     table,
@@ -92,5 +96,6 @@ export function emitEntityEvent(
     data,
     timestamp: new Date(),
     depth,
+    originBotIds,
   });
 }

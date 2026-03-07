@@ -4,10 +4,11 @@ import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import { logActivity } from '../services/audit-service.js';
 import { logger } from '../lib/logger.js';
-import { botEventBus, botEventDepth } from './event-bus.js';
+import { botEventBus, botEventDepth, botEventOrigins } from './event-bus.js';
 import { botRateLimiter } from './rate-limiter.js';
 import { decryptConfigSecrets } from './secret-store.js';
 import type { Bot, BotConfig, BotContext, BotEvent, BotRunStatus, BotTriggerType, BotCapability } from './types.js';
+import { createBotImplementation } from './implementations/index.js';
 
 const BOT_EXECUTION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes max per run
 const MAX_CONCURRENT_RUNS = 10;
@@ -87,6 +88,11 @@ export class BotManager {
     botRateLimiter.register(`bot:${config.id}:hour`, config.rateLimitPerHour, 60 * 60 * 1000);
     botRateLimiter.register(`bot:${config.id}:day`, config.rateLimitPerDay, 24 * 60 * 60 * 1000);
 
+    // Create and initialize bot implementation
+    const bot = createBotImplementation(config);
+    await bot.onInit(config);
+    this.bots.set(config.id, bot);
+
     // Set up cron schedule if configured
     if (config.triggers.schedule) {
       this.setupSchedule(config);
@@ -152,8 +158,9 @@ export class BotManager {
       // Check scope
       if (!this.isInScope(config, event.folderId)) continue;
 
-      // Don't let bots trigger themselves (prevent infinite loops)
+      // Don't let bots trigger themselves or re-enter a chain they're already in
       if (event.userId === config.userId) continue;
+      if (event.originBotIds?.includes(config.userId)) continue;
 
       void this.executeBot(botId, 'event', event);
     }
@@ -233,21 +240,25 @@ export class BotManager {
         folderId: event?.folderId,
       });
 
-      // Dispatch to the right handler, wrapped in botEventDepth context
-      // so any entity mutations emitted by the bot carry the incremented depth
+      // Dispatch to the right handler, wrapped in botEventDepth and
+      // botEventOrigins context so entity mutations emitted by the bot
+      // carry incremented depth and the full chain of origin bot IDs
       const nextDepth = (event?.depth || 0) + 1;
-      await botEventDepth.run(nextDepth, async () => {
-        const bot = this.bots.get(botId);
-        if (bot) {
-          if (trigger === 'event' && event && bot.onEvent) {
-            await bot.onEvent(ctx, event);
-          } else if (trigger === 'schedule' && bot.onSchedule) {
-            await bot.onSchedule(ctx);
-          } else if (trigger === 'webhook' && webhookPayload && bot.onWebhook) {
-            await bot.onWebhook(ctx, webhookPayload);
+      const origins = [...(event?.originBotIds || []), config.userId];
+      await botEventDepth.run(nextDepth, () =>
+        botEventOrigins.run(origins, async () => {
+          const bot = this.bots.get(botId);
+          if (bot) {
+            if (trigger === 'event' && event && bot.onEvent) {
+              await bot.onEvent(ctx, event);
+            } else if (trigger === 'schedule' && bot.onSchedule) {
+              await bot.onSchedule(ctx);
+            } else if (trigger === 'webhook' && webhookPayload && bot.onWebhook) {
+              await bot.onWebhook(ctx, webhookPayload);
+            }
           }
-        }
-      });
+        }),
+      );
     } catch (err) {
       if (abortController.signal.aborted) {
         status = 'timeout';

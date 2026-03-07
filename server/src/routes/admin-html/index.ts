@@ -428,13 +428,9 @@ ${adminStyles()}
         <label><input type="checkbox" class="bot-cap-check" value="read_entities"> Read Entities</label>
         <label><input type="checkbox" class="bot-cap-check" value="create_entities"> Create Entities</label>
         <label><input type="checkbox" class="bot-cap-check" value="update_entities"> Update Entities</label>
-        <label><input type="checkbox" class="bot-cap-check" value="delete_entities"> Delete Entities</label>
-        <label><input type="checkbox" class="bot-cap-check" value="link_entities"> Link Entities</label>
         <label><input type="checkbox" class="bot-cap-check" value="post_to_feed"> Post to Feed</label>
         <label><input type="checkbox" class="bot-cap-check" value="notify_users"> Notify Users</label>
         <label><input type="checkbox" class="bot-cap-check" value="call_external_apis"> Call External APIs</label>
-        <label><input type="checkbox" class="bot-cap-check" value="use_llm"> Use LLM</label>
-        <label><input type="checkbox" class="bot-cap-check" value="manage_investigations"> Manage Investigations</label>
         <label><input type="checkbox" class="bot-cap-check" value="cross_investigation"> Cross Investigation</label>
       </div>
     </div>
