@@ -18,7 +18,7 @@ function escapeLikePattern(s: string): string {
 
 export function isPrivateIP(ip: string): boolean {
   // IPv6 checks
-  if (ip === '::1') return true;
+  if (ip === '::1' || ip === '::' || ip === '0:0:0:0:0:0:0:0') return true;
   const lowerIp = ip.toLowerCase();
   if (lowerIp.startsWith('fc') || lowerIp.startsWith('fd')) return true; // fc00::/7
   if (lowerIp.startsWith('fe8') || lowerIp.startsWith('fe9') || lowerIp.startsWith('fea') || lowerIp.startsWith('feb')) return true; // fe80::/10
@@ -39,6 +39,9 @@ export function isPrivateIP(ip: string): boolean {
   if (a === 192 && b === 168) return true;                 // 192.168.0.0/16
   if (a === 169 && b === 254) return true;                 // 169.254.0.0/16
   if (a === 0) return true;                                // 0.0.0.0/8
+  if (a === 100 && b >= 64 && b <= 127) return true;       // 100.64.0.0/10 (CGNAT)
+  if (a === 198 && (b === 18 || b === 19)) return true;    // 198.18.0.0/15 (benchmarking)
+  if (a >= 240) return true;                               // 240.0.0.0/4 (reserved + broadcast)
   return false;
 }
 
@@ -105,6 +108,7 @@ export class BotExecutionContext {
   // ─── Read Operations ──────────────────────────────────────────
 
   async searchNotes(folderId: string, query: string, limit = 20): Promise<Record<string, unknown>[]> {
+    limit = Math.min(limit, 100);
     this.checkAborted();
     this.requireCapability('read_entities');
     this.requireScope(folderId);
@@ -156,6 +160,7 @@ export class BotExecutionContext {
   }
 
   async listIOCs(folderId: string, typeFilter?: string, limit = 500): Promise<Record<string, unknown>[]> {
+    limit = Math.min(limit, 500);
     this.checkAborted();
     this.requireCapability('read_entities');
     this.requireScope(folderId);
@@ -175,6 +180,7 @@ export class BotExecutionContext {
   }
 
   async listTasks(folderId: string, statusFilter?: string, limit = 500): Promise<Record<string, unknown>[]> {
+    limit = Math.min(limit, 500);
     this.checkAborted();
     this.requireCapability('read_entities');
     this.requireScope(folderId);
@@ -194,6 +200,7 @@ export class BotExecutionContext {
   }
 
   async listTimelineEvents(folderId: string, limit = 500): Promise<Record<string, unknown>[]> {
+    limit = Math.min(limit, 500);
     this.checkAborted();
     this.requireCapability('read_entities');
     this.requireScope(folderId);
@@ -464,6 +471,9 @@ export class BotExecutionContext {
     this.checkAborted();
 
     const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      throw new Error(`Bot "${this.ctx.botConfig.name}": only HTTPS and HTTP URLs are allowed`);
+    }
     const hostname = parsed.hostname;
     const { address } = await lookup(hostname);
     if (isPrivateIP(address)) {
@@ -473,7 +483,7 @@ export class BotExecutionContext {
     // Prevent DNS rebinding TOCTOU: replace hostname with resolved IP and set Host header
     // so fetch connects to the verified IP, not a potentially re-resolved one
     const resolvedUrl = new URL(url);
-    resolvedUrl.hostname = address;
+    resolvedUrl.hostname = address.includes(':') ? `[${address}]` : address;
     const resolvedUrlStr = resolvedUrl.toString();
 
     this.ctx.apiCallsMade++;

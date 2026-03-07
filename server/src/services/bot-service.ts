@@ -76,6 +76,30 @@ export function validateBotCreate(input: BotCreateInput): string | null {
     return 'webhookSecret is required in config when triggers.webhook is enabled';
   }
 
+  if (input.scopeType !== undefined && !['global', 'investigation'].includes(input.scopeType)) {
+    return 'Invalid scopeType. Must be "global" or "investigation"';
+  }
+
+  if (input.rateLimitPerHour !== undefined) {
+    if (typeof input.rateLimitPerHour !== 'number' || input.rateLimitPerHour <= 0) {
+      return 'rateLimitPerHour must be a positive number';
+    }
+  }
+
+  if (input.rateLimitPerDay !== undefined) {
+    if (typeof input.rateLimitPerDay !== 'number' || input.rateLimitPerDay <= 0) {
+      return 'rateLimitPerDay must be a positive number';
+    }
+  }
+
+  if (Array.isArray(input.scopeFolderIds)) {
+    for (const fid of input.scopeFolderIds) {
+      if (typeof fid !== 'string' || fid.length === 0) {
+        return 'scopeFolderIds must contain non-empty strings';
+      }
+    }
+  }
+
   return null;
 }
 
@@ -104,8 +128,16 @@ export function validateBotUpdate(body: Record<string, unknown>): { updates: Rec
   if (body.triggers !== undefined) {
     const triggers = body.triggers as Record<string, unknown> | null;
     if (triggers?.schedule) {
-      const cronError = validateCronExpression(triggers.schedule as string);
+      if (typeof triggers.schedule !== 'string') return { error: 'Schedule must be a string' };
+      const cronError = validateCronExpression(triggers.schedule);
       if (cronError) return { error: cronError };
+    }
+    // Cross-validate: enabling webhooks requires a webhookSecret
+    if (triggers?.webhook === true) {
+      const hasNewSecret = body.config && typeof body.config === 'object' && (body.config as Record<string, unknown>).webhookSecret;
+      if (!hasNewSecret) {
+        return { error: 'webhookSecret is required in config when triggers.webhook is enabled' };
+      }
     }
     updates.triggers = triggers && typeof triggers === 'object' ? triggers : {};
   }
@@ -145,17 +177,30 @@ export function validateBotUpdate(body: Record<string, unknown>): { updates: Rec
   }
 
   if (body.scopeFolderIds !== undefined) {
-    updates.scopeFolderIds = Array.isArray(body.scopeFolderIds) ? body.scopeFolderIds : [];
+    if (Array.isArray(body.scopeFolderIds)) {
+      for (const fid of body.scopeFolderIds) {
+        if (typeof fid !== 'string' || fid.length === 0) {
+          return { error: 'scopeFolderIds must contain non-empty strings' };
+        }
+      }
+      updates.scopeFolderIds = body.scopeFolderIds;
+    } else {
+      updates.scopeFolderIds = [];
+    }
   }
 
   if (body.rateLimitPerHour !== undefined) {
-    updates.rateLimitPerHour = typeof body.rateLimitPerHour === 'number' && body.rateLimitPerHour > 0
-      ? body.rateLimitPerHour : 100;
+    if (typeof body.rateLimitPerHour !== 'number' || body.rateLimitPerHour <= 0) {
+      return { error: 'rateLimitPerHour must be a positive number' };
+    }
+    updates.rateLimitPerHour = body.rateLimitPerHour;
   }
 
   if (body.rateLimitPerDay !== undefined) {
-    updates.rateLimitPerDay = typeof body.rateLimitPerDay === 'number' && body.rateLimitPerDay > 0
-      ? body.rateLimitPerDay : 1000;
+    if (typeof body.rateLimitPerDay !== 'number' || body.rateLimitPerDay <= 0) {
+      return { error: 'rateLimitPerDay must be a positive number' };
+    }
+    updates.rateLimitPerDay = body.rateLimitPerDay;
   }
 
   return { updates };
@@ -262,9 +307,12 @@ export async function updateBot(id: string, updates: Record<string, unknown>): P
 function mergeSentinelSecrets(newConfig: Record<string, unknown>, existingConfig: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(newConfig)) {
-    if (value === '***configured***' || value === '***not set***') {
+    if (value === '***configured***') {
       // Restore the existing encrypted value
       result[key] = existingConfig[key] ?? '';
+    } else if (value === '***not set***') {
+      // Admin explicitly cleared this secret
+      result[key] = '';
     } else if (value && typeof value === 'object' && !Array.isArray(value)) {
       // Recurse into nested objects
       const existingNested = (existingConfig[key] && typeof existingConfig[key] === 'object' && !Array.isArray(existingConfig[key]))
@@ -321,6 +369,7 @@ export async function deleteBot(id: string): Promise<{ name: string } | null> {
   await botManager.unloadBot(id);
 
   await db.transaction(async (tx) => {
+    await tx.delete(schema.investigationMembers).where(eq(schema.investigationMembers.userId, rows[0].userId));
     await tx.delete(schema.botConfigs).where(eq(schema.botConfigs.id, id));
     await tx.update(schema.users).set({ active: false, updatedAt: new Date() })
       .where(eq(schema.users.id, rows[0].userId));

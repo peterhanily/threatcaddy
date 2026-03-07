@@ -1,11 +1,8 @@
 import { Hono } from 'hono';
 import { timingSafeEqual } from 'node:crypto';
-import { eq } from 'drizzle-orm';
-import { db } from '../db/index.js';
-import * as schema from '../db/schema.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
-import { decryptConfigSecrets } from '../bots/secret-store.js';
 import { botManager } from '../bots/bot-manager.js';
+import { logger } from '../lib/logger.js';
 import {
   validateBotCreate, validateBotUpdate,
   createBot, updateBot, enableBot, disableBot, triggerBot, deleteBot,
@@ -108,20 +105,14 @@ app.post('/:id/trigger', requireRole('admin'), async (c) => {
 
 app.post('/:id/webhook', async (c) => {
   const id = c.req.param('id');
-  const rows = await db.select().from(schema.botConfigs).where(eq(schema.botConfigs.id, id)).limit(1);
-  if (rows.length === 0) return c.json({ error: 'Not found' }, 404);
-  if (!rows[0].enabled) return c.json({ error: 'Bot is disabled' }, 400);
 
-  const config = rows[0];
-  const triggers = config.triggers as Record<string, unknown>;
-  if (!triggers?.webhook) return c.json({ error: 'Webhooks not enabled for this bot' }, 400);
-
-  const decryptedConfig = decryptConfigSecrets(config.config as Record<string, unknown>);
-  const webhookSecret = decryptedConfig.webhookSecret as string | undefined;
-
+  // Authenticate FIRST — avoid leaking bot state to unauthenticated callers.
+  // Uses cached decrypted config from BotManager (no DB query or decryption per request).
+  const webhookSecret = botManager.getWebhookSecret(id);
   if (!webhookSecret) {
-    return c.json({ error: 'Webhook secret not configured' }, 403);
+    return c.json({ error: 'Not found' }, 404);
   }
+
   const authHeader = c.req.header('X-Webhook-Secret') || '';
   const secretBuf = Buffer.from(webhookSecret);
   const headerBuf = Buffer.from(authHeader);
@@ -129,8 +120,12 @@ app.post('/:id/webhook', async (c) => {
     return c.json({ error: 'Invalid webhook secret' }, 401);
   }
 
-  const payload = await c.req.json().catch(() => ({}));
-  void botManager.executeBot(id, 'webhook', undefined, payload);
+  let payload: Record<string, unknown>;
+  try { payload = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON body' }, 400); }
+
+  botManager.executeBot(id, 'webhook', undefined, payload).catch(err => {
+    logger.error('Webhook bot execution failed', { botId: id, error: String(err) });
+  });
   return c.json({ ok: true, message: 'Webhook received' });
 });
 
@@ -148,7 +143,7 @@ app.delete('/:id', requireRole('admin'), async (c) => {
 // ─── Bot run history ────────────────────────────────────────────
 
 app.get('/:id/runs', requireRole('admin', 'analyst'), async (c) => {
-  const limit = Math.min(parseInt(c.req.query('limit') || '50', 10), 100);
+  const limit = Math.min(Math.max(1, parseInt(c.req.query('limit') || '50', 10) || 50), 100);
   const runs = await getBotRuns(c.req.param('id'), limit);
   return c.json({ runs });
 });

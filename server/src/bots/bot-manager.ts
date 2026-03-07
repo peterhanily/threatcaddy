@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import { logActivity } from '../services/audit-service.js';
@@ -39,6 +39,9 @@ export class BotManager {
 
   /** Simple FIFO execution queue for when concurrency limit is hit */
   private executionQueue: Array<() => void> = [];
+
+  /** In-memory consecutive error counter for circuit breaker (avoids DB query on every error) */
+  private consecutiveErrors = new Map<string, number>();
 
   /** Counters for observability */
   private stats = { queued: 0, dropped: 0, rateLimited: 0 };
@@ -117,7 +120,9 @@ export class BotManager {
     this.decryptedConfigs.clear();
     this.cronIntervals.clear();
     this.eventTypeIndex.clear();
+    this.consecutiveErrors.clear();
     this.executionQueue.length = 0;
+    this.activeRuns = 0;
     this.initialized = false;
   }
 
@@ -243,7 +248,7 @@ export class BotManager {
       // Check event filters
       const filters = config.triggers.eventFilters;
       if (filters) {
-        if (filters.tables && event.table && !filters.tables.includes(event.table)) continue;
+        if (filters.tables && (!event.table || !filters.tables.includes(event.table))) continue;
         // If folder filter is set, reject events that don't match — including events without a folderId
         if (filters.folderIds && (!event.folderId || !filters.folderIds.includes(event.folderId))) continue;
         if (filters.iocTypes && event.table === 'standaloneIOCs' && event.data) {
@@ -275,18 +280,6 @@ export class BotManager {
     const config = this.configs.get(botId);
     if (!config || !config.enabled) return;
 
-    // Rate limiting — check both limits before consuming either to avoid
-    // consuming an hourly token when the daily limit is already exhausted
-    const hourlyKey = `bot:${botId}:hour`;
-    const dailyKey = `bot:${botId}:day`;
-    if (!botRateLimiter.canConsume(hourlyKey) || !botRateLimiter.canConsume(dailyKey)) {
-      this.stats.rateLimited++;
-      logger.warn(`Bot ${config.name} rate limited`, { botId });
-      return;
-    }
-    botRateLimiter.tryConsume(hourlyKey);
-    botRateLimiter.tryConsume(dailyKey);
-
     // Concurrency limit — queue if at capacity, drop if queue is full
     if (this.activeRuns >= MAX_CONCURRENT_RUNS) {
       if (this.executionQueue.length >= MAX_QUEUE_SIZE) {
@@ -297,15 +290,37 @@ export class BotManager {
       this.stats.queued++;
       return new Promise<void>((resolve) => {
         this.executionQueue.push(() => {
-          // Run directly instead of re-entering executeBot to avoid double rate-limit consumption.
-          // Rate tokens were already consumed above, so just proceed to the execution phase.
+          // Rate-limit when dequeued so tokens aren't wasted on queued items that may never run
+          if (!this.consumeRateTokens(botId)) {
+            resolve();
+            this.drainQueue();
+            return;
+          }
           this.activeRuns++;
           this.executeBotInner(botId, trigger, event, webhookPayload).then(resolve, resolve);
         });
       });
     }
+
+    // Rate limiting for immediate execution
+    if (!this.consumeRateTokens(botId)) return;
+
     this.activeRuns++;
     await this.executeBotInner(botId, trigger, event, webhookPayload);
+  }
+
+  /** Check and consume rate limit tokens. Returns false if rate-limited. */
+  private consumeRateTokens(botId: string): boolean {
+    const hourlyKey = `bot:${botId}:hour`;
+    const dailyKey = `bot:${botId}:day`;
+    if (!botRateLimiter.canConsume(hourlyKey) || !botRateLimiter.canConsume(dailyKey)) {
+      this.stats.rateLimited++;
+      logger.warn('Bot rate limited', { botId });
+      return false;
+    }
+    botRateLimiter.tryConsume(hourlyKey);
+    botRateLimiter.tryConsume(dailyKey);
+    return true;
   }
 
   /** Inner execution logic — called after rate limiting and concurrency checks */
@@ -369,8 +384,8 @@ export class BotManager {
         abortController.abort();
       }, BOT_EXECUTION_TIMEOUT_MS);
 
-      // Audit: bot run started
-      await logActivity({
+      // Audit: bot run started (fire-and-forget — don't block execution)
+      logActivity({
         userId: config.userId,
         category: 'bot',
         action: `run.${trigger}`,
@@ -378,7 +393,7 @@ export class BotManager {
         itemId: runId,
         itemTitle: config.name,
         folderId: event?.folderId,
-      });
+      }).catch(() => {});
 
       // Dispatch to the right handler, wrapped in botEventDepth and
       // botEventOrigins context so entity mutations emitted by the bot
@@ -422,76 +437,70 @@ export class BotManager {
         }
       }
 
-      // Skip DB updates if the run record was never inserted
-      if (!runInserted) return;
+      if (runInserted) {
+        const durationMs = Date.now() - startTime;
 
-      const durationMs = Date.now() - startTime;
-
-      // Update run record + bot config stats in parallel
-      const statsUpdate: Record<string, unknown> = {
-        lastRunAt: new Date(),
-        lastError: error,
-        runCount: sql`${schema.botConfigs.runCount} + 1`,
-        updatedAt: new Date(),
-      };
-      if (status === 'error' || status === 'timeout') {
-        statsUpdate.errorCount = sql`${schema.botConfigs.errorCount} + 1`;
-      }
-
-      await Promise.all([
-        db.update(schema.botRuns).set({
-          status,
-          durationMs,
-          error,
-          outputSummary: ctx ? `Created: ${ctx.entitiesCreated}, Updated: ${ctx.entitiesUpdated}, API calls: ${ctx.apiCallsMade}` : '',
-          entitiesCreated: ctx?.entitiesCreated ?? 0,
-          entitiesUpdated: ctx?.entitiesUpdated ?? 0,
-          apiCallsMade: ctx?.apiCallsMade ?? 0,
-        }).where(eq(schema.botRuns.id, runId)).catch(err => {
-          logger.error(`Failed to update bot run record ${runId}`, { error: String(err) });
-        }),
-        db.update(schema.botConfigs).set(statsUpdate).where(eq(schema.botConfigs.id, botId)).catch(err => {
-          logger.error(`Failed to update bot config stats for ${botId}`, { error: String(err) });
-        }),
-      ]);
-
-      // Update in-memory config (best-effort cache)
-      const updatedConfig = this.configs.get(botId);
-      if (updatedConfig) {
-        updatedConfig.runCount++;
-        updatedConfig.lastRunAt = new Date();
-        updatedConfig.lastError = error;
-        if (status === 'error' || status === 'timeout') updatedConfig.errorCount++;
-      }
-
-      // Circuit breaker: auto-disable after 5 consecutive failures
-      if (status === 'error' || status === 'timeout') {
-        try {
-          const recentRuns = await db
-            .select({ status: schema.botRuns.status })
-            .from(schema.botRuns)
-            .where(eq(schema.botRuns.botConfigId, botId))
-            .orderBy(desc(schema.botRuns.createdAt))
-            .limit(5);
-
-          if (recentRuns.length >= 5 && recentRuns.every(r => r.status === 'error' || r.status === 'timeout')) {
-            logger.warn(`Circuit breaker: auto-disabling bot "${config.name}" after 5 consecutive failures`, { botId });
-            await db.update(schema.botConfigs).set({ enabled: false, updatedAt: new Date() }).where(eq(schema.botConfigs.id, botId));
-            await this.unloadBot(botId);
-            createNotification({
-              userId: config.createdBy,
-              type: 'bot_disabled',
-              message: `Bot "${config.name}" was auto-disabled after 5 consecutive failures. Last error: ${error}`,
-            }).catch(() => { /* best effort */ });
-          }
-        } catch (err) {
-          logger.error(`Failed to check circuit breaker for bot ${botId}`, { error: String(err) });
+        // Update run record + bot config stats in parallel
+        const statsUpdate: Record<string, unknown> = {
+          lastRunAt: new Date(),
+          lastError: error,
+          runCount: sql`${schema.botConfigs.runCount} + 1`,
+          updatedAt: new Date(),
+        };
+        if (status === 'error' || status === 'timeout') {
+          statsUpdate.errorCount = sql`${schema.botConfigs.errorCount} + 1`;
         }
-      }
 
-      // Audit: bot run completed
-      try {
-        await logActivity({
+        await Promise.all([
+          db.update(schema.botRuns).set({
+            status,
+            durationMs,
+            error,
+            outputSummary: ctx ? `Created: ${ctx.entitiesCreated}, Updated: ${ctx.entitiesUpdated}, API calls: ${ctx.apiCallsMade}` : '',
+            entitiesCreated: ctx?.entitiesCreated ?? 0,
+            entitiesUpdated: ctx?.entitiesUpdated ?? 0,
+            apiCallsMade: ctx?.apiCallsMade ?? 0,
+          }).where(eq(schema.botRuns.id, runId)).catch(err => {
+            logger.error(`Failed to update bot run record ${runId}`, { error: String(err) });
+          }),
+          db.update(schema.botConfigs).set(statsUpdate).where(eq(schema.botConfigs.id, botId)).catch(err => {
+            logger.error(`Failed to update bot config stats for ${botId}`, { error: String(err) });
+          }),
+        ]);
+
+        // Update in-memory config (best-effort cache)
+        const updatedConfig = this.configs.get(botId);
+        if (updatedConfig) {
+          updatedConfig.runCount++;
+          updatedConfig.lastRunAt = new Date();
+          updatedConfig.lastError = error;
+          if (status === 'error' || status === 'timeout') updatedConfig.errorCount++;
+        }
+
+        // Circuit breaker: in-memory counter avoids DB query on every error
+        if (status === 'error' || status === 'timeout') {
+          const count = (this.consecutiveErrors.get(botId) || 0) + 1;
+          this.consecutiveErrors.set(botId, count);
+          if (count >= 5) {
+            try {
+              logger.warn(`Circuit breaker: auto-disabling bot "${config.name}" after ${count} consecutive failures`, { botId });
+              await db.update(schema.botConfigs).set({ enabled: false, updatedAt: new Date() }).where(eq(schema.botConfigs.id, botId));
+              await this.unloadBot(botId);
+              createNotification({
+                userId: config.createdBy,
+                type: 'bot_disabled',
+                message: `Bot "${config.name}" was auto-disabled after ${count} consecutive failures. Last error: ${error}`,
+              }).catch(() => { /* best effort */ });
+            } catch (err) {
+              logger.error(`Failed to check circuit breaker for bot ${botId}`, { error: String(err) });
+            }
+          }
+        } else {
+          this.consecutiveErrors.delete(botId);
+        }
+
+        // Audit: bot run completed (fire-and-forget)
+        logActivity({
           userId: config.userId,
           category: 'bot',
           action: `run.${status}`,
@@ -499,16 +508,22 @@ export class BotManager {
           itemId: runId,
           itemTitle: config.name,
           folderId: event?.folderId,
+        }).catch(err => {
+          logger.error(`Failed to log bot run audit for ${botId}`, { error: String(err) });
         });
-      } catch (err) {
-        logger.error(`Failed to log bot run audit for ${botId}`, { error: String(err) });
       }
     }
   }
 
-  /** Register a bot implementation (called by bot modules) */
-  registerBot(bot: Bot): void {
-    this.bots.set(bot.id, bot);
+  /** Get cached webhook secret for a bot (returns null if bot not loaded or no webhook configured) */
+  getWebhookSecret(botId: string): string | null {
+    const config = this.configs.get(botId);
+    if (!config || !config.enabled) return null;
+    const triggers = config.triggers;
+    if (!triggers?.webhook) return null;
+    const decrypted = this.decryptedConfigs.get(botId);
+    const secret = decrypted?.webhookSecret as string | undefined;
+    return secret && secret.length > 0 ? secret : null;
   }
 
   /** Check if a bot has a specific capability */

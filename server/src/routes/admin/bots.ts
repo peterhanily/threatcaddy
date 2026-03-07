@@ -15,7 +15,8 @@ app.get('/api/bots', requireAdminAuth, async (c) => {
 
 // POST /admin/api/bots — create a new bot
 app.post('/api/bots', requireAdminAuth, async (c) => {
-  const body = await c.req.json();
+  let body;
+  try { body = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON body' }, 400); }
 
   const error = validateBotCreate(body);
   if (error) return c.json({ error }, 400);
@@ -35,7 +36,8 @@ app.get('/api/bots/:id', requireAdminAuth, async (c) => {
 
 // PATCH /admin/api/bots/:id — update bot config
 app.patch('/api/bots/:id', requireAdminAuth, async (c) => {
-  const body = await c.req.json();
+  let body;
+  try { body = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON body' }, 400); }
 
   const result = validateBotUpdate(body);
   if ('error' in result) return c.json({ error: result.error }, 400);

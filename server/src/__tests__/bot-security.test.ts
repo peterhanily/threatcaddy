@@ -766,11 +766,11 @@ describe('validateBotUpdate', () => {
     }
   });
 
-  it('defaults rateLimitPerHour to 100 when invalid value provided', () => {
+  it('returns error for invalid rateLimitPerHour', () => {
     const result = validateBotUpdate({ rateLimitPerHour: -5 });
-    expect('updates' in result).toBe(true);
-    if ('updates' in result) {
-      expect(result.updates.rateLimitPerHour).toBe(100);
+    expect('error' in result).toBe(true);
+    if ('error' in result) {
+      expect(result.error).toContain('rateLimitPerHour');
     }
   });
 
@@ -782,11 +782,11 @@ describe('validateBotUpdate', () => {
     }
   });
 
-  it('defaults rateLimitPerDay to 1000 when invalid value provided', () => {
+  it('returns error for invalid rateLimitPerDay', () => {
     const result = validateBotUpdate({ rateLimitPerDay: 0 });
-    expect('updates' in result).toBe(true);
-    if ('updates' in result) {
-      expect(result.updates.rateLimitPerDay).toBe(1000);
+    expect('error' in result).toBe(true);
+    if ('error' in result) {
+      expect(result.error).toContain('rateLimitPerDay');
     }
   });
 

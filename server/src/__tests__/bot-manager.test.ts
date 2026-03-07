@@ -483,24 +483,22 @@ describe('BotManager', () => {
       const bot = (manager as any).bots.get('b1'); // eslint-disable-line @typescript-eslint/no-explicit-any
       bot.onEvent = vi.fn().mockRejectedValue(new Error('bot error'));
 
-      // Mock select to return 5 consecutive failures for circuit breaker check
-      mockSelectResolve.mockResolvedValueOnce([
-        { status: 'error' }, { status: 'error' }, { status: 'error' },
-        { status: 'error' }, { status: 'error' },
-      ]);
-
-      await manager.executeBot('b1', 'event', {
-        type: 'entity.created',
+      const event = {
+        type: 'entity.created' as const,
         table: 'notes',
         entityId: 'n1',
         folderId: 'f1',
         userId: 'human-user',
         timestamp: new Date(),
-      });
+      };
+
+      // Run 5 consecutive failures to trigger in-memory circuit breaker
+      for (let i = 0; i < 5; i++) {
+        await manager.executeBot('b1', 'event', event);
+      }
 
       // Circuit breaker should have called db.update to disable the bot
       const updateCalls = (db.update as ReturnType<typeof vi.fn>).mock.calls;
-      // At least one update call should be for disabling (set enabled: false)
       expect(updateCalls.length).toBeGreaterThanOrEqual(2);
     });
   });
