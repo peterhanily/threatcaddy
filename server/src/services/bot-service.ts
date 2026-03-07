@@ -15,9 +15,9 @@ export const VALID_BOT_TYPES: BotType[] = [
 ];
 
 export const VALID_CAPABILITIES: BotCapability[] = [
-  'read_entities', 'create_entities', 'update_entities', 'delete_entities',
-  'link_entities', 'post_to_feed', 'notify_users', 'call_external_apis',
-  'use_llm', 'manage_investigations', 'cross_investigation',
+  'read_entities', 'create_entities', 'update_entities',
+  'post_to_feed', 'notify_users', 'call_external_apis',
+  'cross_investigation',
 ];
 
 const DOMAIN_REGEX = /^[a-zA-Z0-9]([a-zA-Z0-9-]*\.)+[a-zA-Z]{2,}$/;
@@ -70,6 +70,10 @@ export function validateBotCreate(input: BotCreateInput): string | null {
   if (triggers?.schedule) {
     const cronError = validateCronExpression(triggers.schedule as string);
     if (cronError) return cronError;
+  }
+
+  if (triggers?.webhook && !input.config?.webhookSecret) {
+    return 'webhookSecret is required in config when triggers.webhook is enabled';
   }
 
   return null;

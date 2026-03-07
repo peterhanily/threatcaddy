@@ -146,6 +146,10 @@ app.post('/login', async (c) => {
     return c.json({ error: 'Account disabled' }, 403);
   }
 
+  if (user.email.endsWith('@threatcaddy.internal')) {
+    return c.json({ error: 'Bot accounts cannot log in interactively' }, 403);
+  }
+
   const valid = await argon2.verify(user.passwordHash, password);
   if (!valid) {
     await logActivity({ userId: user.id, category: 'auth', action: 'login.failed', detail: 'Login failed' });

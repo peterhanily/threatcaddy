@@ -107,6 +107,8 @@ export class BotExecutionContext {
     const note = rows[0];
     if (note.folderId) {
       this.requireScope(note.folderId);
+    } else if (this.ctx.botConfig.scopeType !== 'global') {
+      throw new Error(`Bot "${this.ctx.botConfig.name}" cannot access unscoped note (non-global bot)`);
     }
     return note as Record<string, unknown>;
   }
@@ -222,6 +224,8 @@ export class BotExecutionContext {
 
     if (data.folderId && typeof data.folderId === 'string') {
       this.requireScope(data.folderId);
+    } else if (this.ctx.botConfig.scopeType !== 'global') {
+      throw new Error(`Bot "${this.ctx.botConfig.name}" must specify folderId for entity creation (non-global scope)`);
     }
 
     const results = await processPush(
@@ -258,6 +262,8 @@ export class BotExecutionContext {
     const existingFolderId = await lookupEntityFolderId(table, entityId);
     if (existingFolderId) {
       this.requireScope(existingFolderId);
+    } else if (this.ctx.botConfig.scopeType !== 'global') {
+      throw new Error(`Bot "${this.ctx.botConfig.name}" cannot update entity without verifiable scope (folderId not found)`);
     }
 
     const results = await processPush(
@@ -348,6 +354,11 @@ export class BotExecutionContext {
   async postToFeed(content: string, folderId?: string): Promise<string> {
     this.requireCapability('post_to_feed');
     this.checkAborted();
+    if (folderId) {
+      this.requireScope(folderId);
+    } else if (this.ctx.botConfig.scopeType !== 'global') {
+      throw new Error(`Bot "${this.ctx.botConfig.name}" cannot post to global feed (non-global bot)`);
+    }
 
     const id = nanoid();
     await db.insert(schema.posts).values({
