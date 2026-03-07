@@ -83,9 +83,12 @@ npm run build && npm start  # production
 | `OPENAI_API_KEY` | No | — | OpenAI API key |
 | `GEMINI_API_KEY` | No | — | Google AI API key for Gemini models |
 | `MISTRAL_API_KEY` | No | — | Mistral API key |
-| `BOT_MASTER_KEY` | No | auto-generated | AES-256 master key for encrypting bot secrets |
-| `BOT_EXECUTION_TIMEOUT_MS` | No | `30000` | Max execution time per bot run (ms) |
-| `BOT_MAX_CONCURRENT_RUNS` | No | `5` | Max concurrent bot executions |
+| `BOT_MASTER_KEY` | No | auto-generated | AES-256 master key for encrypting bot secrets (generate: `openssl rand -base64 32`) |
+| `BOT_EXECUTION_TIMEOUT_MS` | No | `300000` | Max execution time per bot run (ms) — default 5 minutes |
+| `BOT_MAX_CONCURRENT_RUNS` | No | `10` | Max concurrent bot executions |
+| `SANDBOX_PYTHON_IMAGE` | No | `python:3.12-slim` | Docker image for Python code execution |
+| `SANDBOX_NODE_IMAGE` | No | `node:22-alpine` | Docker image for Node.js code execution |
+| `SANDBOX_BASH_IMAGE` | No | `alpine:3.19` | Docker image for Bash code execution |
 
 ## API Endpoints
 

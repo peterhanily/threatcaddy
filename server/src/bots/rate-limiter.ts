@@ -8,10 +8,28 @@ interface Bucket {
   maxTokens: number;
   refillRate: number;   // tokens per millisecond
   lastRefill: number;   // timestamp
+  lastAccessed: number; // timestamp — for TTL cleanup
 }
+
+const BUCKET_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours — evict idle buckets
+const CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // run cleanup every hour
 
 export class BotRateLimiter {
   private buckets = new Map<string, Bucket>();
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+
+  constructor() {
+    this.cleanupTimer = setInterval(() => this.evictStale(), CLEANUP_INTERVAL_MS);
+    this.cleanupTimer.unref();
+  }
+
+  /** Stop the cleanup timer (for shutdown) */
+  destroy(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+  }
 
   /**
    * Register a rate limit bucket.
@@ -20,11 +38,13 @@ export class BotRateLimiter {
    * @param windowMs - Window size in milliseconds
    */
   register(key: string, maxTokens: number, windowMs: number): void {
+    const now = Date.now();
     this.buckets.set(key, {
       tokens: maxTokens,
       maxTokens,
       refillRate: maxTokens / windowMs,
-      lastRefill: Date.now(),
+      lastRefill: now,
+      lastAccessed: now,
     });
   }
 
@@ -36,6 +56,7 @@ export class BotRateLimiter {
     if (!bucket) return true; // No limit registered = allow
 
     this.refill(bucket);
+    bucket.lastAccessed = Date.now();
 
     if (bucket.tokens >= count) {
       bucket.tokens -= count;
@@ -51,6 +72,7 @@ export class BotRateLimiter {
     const bucket = this.buckets.get(key);
     if (!bucket) return true; // No limit registered = allow
     this.refill(bucket);
+    bucket.lastAccessed = Date.now();
     return bucket.tokens >= count;
   }
 
@@ -82,6 +104,16 @@ export class BotRateLimiter {
   removeBuckets(botId: string): void {
     for (const key of this.buckets.keys()) {
       if (key.startsWith(`bot:${botId}:`)) {
+        this.buckets.delete(key);
+      }
+    }
+  }
+
+  /** Evict buckets that haven't been accessed within BUCKET_TTL_MS */
+  private evictStale(): void {
+    const cutoff = Date.now() - BUCKET_TTL_MS;
+    for (const [key, bucket] of this.buckets) {
+      if (bucket.lastAccessed < cutoff) {
         this.buckets.delete(key);
       }
     }

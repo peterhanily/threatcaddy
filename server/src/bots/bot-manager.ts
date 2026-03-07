@@ -229,7 +229,7 @@ export class BotManager {
   /** Route an event to all bots that subscribe to it */
   private async routeEvent(event: BotEvent): Promise<void> {
     const eventDepth = event.depth || 0;
-    if (eventDepth >= 5) {
+    if (eventDepth >= 3) {
       logger.warn('Bot event chain depth limit reached, dropping event', {
         type: event.type,
         depth: eventDepth,
@@ -241,7 +241,22 @@ export class BotManager {
     const subscribedBotIds = this.eventTypeIndex.get(event.type);
     if (!subscribedBotIds || subscribedBotIds.size === 0) return;
 
+    // Breadth limit: max 10 bots triggered per single event to prevent
+    // exponential amplification (N bots × N bots at each depth level)
+    const MAX_BOTS_PER_EVENT = 10;
+    let triggered = 0;
+
     for (const botId of subscribedBotIds) {
+      if (triggered >= MAX_BOTS_PER_EVENT) {
+        logger.warn('Bot event breadth limit reached, skipping remaining bots', {
+          type: event.type,
+          depth: eventDepth,
+          triggered,
+          remaining: subscribedBotIds.size - triggered,
+        });
+        break;
+      }
+
       const config = this.configs.get(botId);
       if (!config || !config.enabled) continue;
 
@@ -264,6 +279,7 @@ export class BotManager {
       if (event.userId === config.userId) continue;
       if (event.originBotIds?.includes(config.userId)) continue;
 
+      triggered++;
       this.executeBot(botId, 'event', event).catch(err => {
         logger.error(`Error executing bot ${botId} for event`, { error: String(err) });
       });

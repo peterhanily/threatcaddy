@@ -23,6 +23,7 @@ import userRoutes from './routes/users.js';
 import botRoutes from './routes/bots.js';
 import adminRoutes from './routes/admin/index.js';
 import { botManager } from './bots/bot-manager.js';
+import { prePullSandboxImages } from './bots/sandbox.js';
 import { initAdminSecret, initRegistrationMode, initServerName, getServerName, backfillFolderOwners, initAdminSystemUser } from './services/admin-secret.js';
 import { pruneOldData } from './services/cleanup-service.js';
 import { initAdminKey } from './middleware/admin-auth.js';
@@ -209,6 +210,9 @@ async function main() {
 
   // Initialize bot runtime
   await botManager.init();
+
+  // Pre-pull Docker sandbox images (fire-and-forget — don't block startup)
+  prePullSandboxImages().catch(() => {});
 
   // Data pruning on startup (fire-and-forget) + every 6 hours
   pruneOldData().catch(() => {});

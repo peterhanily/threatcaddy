@@ -7,6 +7,7 @@ import { GenericBot } from './generic-bot.js';
 
 const DEFAULT_MAX_ITERATIONS = 10;
 const MAX_RESPONSE_TOKENS = 4096;
+const MAX_MESSAGE_BUDGET_CHARS = 200_000; // ~50k tokens — trim old messages beyond this
 
 /**
  * AgentBot: LLM-powered bot that runs a tool-calling loop.
@@ -79,6 +80,11 @@ export class AgentBot extends GenericBot {
     for (let iteration = 0; iteration < maxIterations; iteration++) {
       // Check abort before each LLM call
       if (botConfig.capabilities.length === 0) break; // safety
+
+      // Sliding window: trim old messages if total size exceeds budget.
+      // Keep the first user message (trigger context) and the most recent
+      // messages, dropping middle tool call/result pairs.
+      this.trimMessages(messages);
 
       const response = await this.callLLM(provider, model, apiKey, systemPrompt, messages, tools);
 
@@ -390,6 +396,29 @@ export class AgentBot extends GenericBot {
     }
 
     return { continueLoop: choice.finish_reason === 'tool_calls' };
+  }
+
+  /**
+   * Trim the message array if cumulative size exceeds budget.
+   * Keeps the first message (trigger context) and trims from the middle,
+   * preserving the most recent conversation turns.
+   */
+  private trimMessages(messages: Array<{ role: string; content: string | unknown[] }>): void {
+    const totalChars = messages.reduce((sum, m) => {
+      return sum + (typeof m.content === 'string' ? m.content.length : JSON.stringify(m.content).length);
+    }, 0);
+
+    if (totalChars <= MAX_MESSAGE_BUDGET_CHARS || messages.length <= 3) return;
+
+    // Keep first message (trigger) + last 4 messages (recent context)
+    // Drop messages from index 1 to (length - 4)
+    const keepTail = Math.min(4, messages.length - 1);
+    const dropCount = messages.length - 1 - keepTail;
+    if (dropCount > 0) {
+      const summary = `[${dropCount} earlier messages trimmed to fit context budget]`;
+      messages.splice(1, dropCount, { role: 'user', content: summary });
+      logger.info(`AgentBot "${this.name}": trimmed ${dropCount} messages (${totalChars} chars exceeded ${MAX_MESSAGE_BUDGET_CHARS} budget)`);
+    }
   }
 
   private extractTextResponse(response: unknown, provider: string): string {

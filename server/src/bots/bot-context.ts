@@ -155,8 +155,11 @@ export class BotExecutionContext {
     const note = rows[0];
     if (note.folderId) {
       this.requireScope(note.folderId);
-    } else if (this.ctx.botConfig.scopeType !== 'global') {
-      throw new Error(`Bot "${this.ctx.botConfig.name}" cannot access unscoped note (non-global bot)`);
+    } else {
+      // Note has no folderId — only global bots may access unscoped entities
+      if (this.ctx.botConfig.scopeType !== 'global') {
+        throw new Error(`Bot "${this.ctx.botConfig.name}" cannot access unscoped note (non-global bot)`);
+      }
     }
     return note as Record<string, unknown>;
   }
@@ -538,6 +541,13 @@ export class BotExecutionContext {
     const { address } = await lookup(host);
     if (isPrivateIP(address)) {
       throw new Error(`Bot "${config.name}" blocked from SSH to private IP ${address} (resolved from ${host})`);
+    }
+
+    // Block shell metacharacters to prevent command injection via prefix bypass
+    // e.g. allowedPrefixes=["ls"] must NOT allow "ls; rm -rf /" or "ls|cat /etc/passwd"
+    const SHELL_METACHARACTERS = /[;|&`$(){}[\]<>!\n\r]/;
+    if (SHELL_METACHARACTERS.test(command)) {
+      throw new Error(`Bot "${config.name}": command contains disallowed shell metacharacters (;|&\`$(){}[]<>!). Use simple commands without pipes or chaining.`);
     }
 
     // Command prefix allowlist
