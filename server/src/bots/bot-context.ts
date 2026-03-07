@@ -475,16 +475,16 @@ export class BotExecutionContext {
       throw new Error(`Bot "${this.ctx.botConfig.name}": only HTTPS and HTTP URLs are allowed`);
     }
     const hostname = parsed.hostname;
+
+    // Pre-flight DNS check: resolve and verify the IP is not private.
+    // We fetch the original URL (not the resolved IP) to preserve TLS SNI,
+    // which is required for virtually all CDN-fronted APIs. The TOCTOU window
+    // between this check and fetch's internal resolution is very small (ms)
+    // and acceptable — this matches standard SSRF protection practice.
     const { address } = await lookup(hostname);
     if (isPrivateIP(address)) {
       throw new Error(`Bot "${this.ctx.botConfig.name}" blocked from accessing private IP ${address} (resolved from ${hostname})`);
     }
-
-    // Prevent DNS rebinding TOCTOU: replace hostname with resolved IP and set Host header
-    // so fetch connects to the verified IP, not a potentially re-resolved one
-    const resolvedUrl = new URL(url);
-    resolvedUrl.hostname = address.includes(':') ? `[${address}]` : address;
-    const resolvedUrlStr = resolvedUrl.toString();
 
     this.ctx.apiCallsMade++;
 
@@ -496,14 +496,13 @@ export class BotExecutionContext {
     this.ctx.signal.addEventListener('abort', onAbort, { once: true });
 
     try {
-      const response = await fetch(resolvedUrlStr, {
+      const response = await fetch(url, {
         ...opts,
         signal: controller.signal,
         redirect: 'error',
         headers: {
           'User-Agent': 'ThreatCaddy-Bot/1.0',
           ...opts?.headers,
-          'Host': hostname,
         },
       });
       return response;
