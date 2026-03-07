@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import { lookup } from 'node:dns/promises';
+import { Client as SSHClient } from 'ssh2';
 import { eq, and, or, isNull, ilike, inArray } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
@@ -510,6 +511,205 @@ export class BotExecutionContext {
       clearTimeout(timeout);
       this.ctx.signal.removeEventListener('abort', onAbort);
     }
+  }
+
+  // ─── SSH Execution (execute_remote) ─────────────────────────
+
+  async execSSH(host: string, command: string, opts?: { port?: number; timeout?: number }): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+    this.requireCapability('execute_remote');
+    this.checkAborted();
+
+    const config = this.ctx.botConfig;
+    const port = opts?.port || 22;
+    const timeout = Math.min(opts?.timeout || 30_000, 120_000);
+    const MAX_OUTPUT = 50 * 1024; // 50KB per stream
+
+    // Host allowlist check
+    const allowedHosts = (this.getConfig().allowedHosts as string[] | undefined) || [];
+    if (allowedHosts.length === 0) {
+      throw new Error(`Bot "${config.name}": no allowedHosts configured — SSH is blocked`);
+    }
+    if (!allowedHosts.includes(host)) {
+      throw new Error(`Bot "${config.name}": host "${host}" not in allowedHosts. Allowed: ${allowedHosts.join(', ')}`);
+    }
+
+    // DNS resolve + private IP check (reuse SSRF guard)
+    const { address } = await lookup(host);
+    if (isPrivateIP(address)) {
+      throw new Error(`Bot "${config.name}" blocked from SSH to private IP ${address} (resolved from ${host})`);
+    }
+
+    // Command prefix allowlist
+    const allowedPrefixes = (this.getConfig().allowedCommandPrefixes as string[] | undefined) || [];
+    if (allowedPrefixes.length > 0) {
+      const cmdTrimmed = command.trimStart();
+      const allowed = allowedPrefixes.some(p => cmdTrimmed.startsWith(p));
+      if (!allowed) {
+        throw new Error(`Bot "${config.name}": command not allowed. Must start with one of: ${allowedPrefixes.join(', ')}`);
+      }
+    }
+
+    // Resolve credentials from config
+    const sshCreds = (this.getConfig().sshCredentials as Record<string, Record<string, string>> | undefined) || {};
+    const hostCreds = sshCreds[host];
+    if (!hostCreds) {
+      throw new Error(`Bot "${config.name}": no SSH credentials configured for host "${host}"`);
+    }
+
+    this.ctx.apiCallsMade++;
+
+    return new Promise<{ exitCode: number; stdout: string; stderr: string }>((resolve, reject) => {
+      const conn = new SSHClient();
+      let stdoutBuf = '';
+      let stderrBuf = '';
+      let resolved = false;
+      const timer = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          conn.end();
+          reject(new Error(`SSH command timed out after ${timeout}ms`));
+        }
+      }, timeout);
+
+      const onAbort = () => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timer);
+          conn.end();
+          reject(new Error('Bot execution aborted'));
+        }
+      };
+      this.ctx.signal.addEventListener('abort', onAbort, { once: true });
+
+      conn.on('ready', () => {
+        conn.exec(command, (err, stream) => {
+          if (err) {
+            resolved = true;
+            clearTimeout(timer);
+            this.ctx.signal.removeEventListener('abort', onAbort);
+            conn.end();
+            reject(err);
+            return;
+          }
+
+          stream.on('data', (data: Buffer) => {
+            if (stdoutBuf.length < MAX_OUTPUT) {
+              stdoutBuf += data.toString('utf8').slice(0, MAX_OUTPUT - stdoutBuf.length);
+            }
+          });
+          stream.stderr.on('data', (data: Buffer) => {
+            if (stderrBuf.length < MAX_OUTPUT) {
+              stderrBuf += data.toString('utf8').slice(0, MAX_OUTPUT - stderrBuf.length);
+            }
+          });
+          stream.on('close', (code: number) => {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(timer);
+              this.ctx.signal.removeEventListener('abort', onAbort);
+              conn.end();
+              // Audit the command execution
+              this.audit('ssh.exec', `SSH ${host}: ${command.slice(0, 200)} → exit ${code}`).catch(() => {});
+              resolve({ exitCode: code ?? 1, stdout: stdoutBuf, stderr: stderrBuf });
+            }
+          });
+        });
+      });
+
+      conn.on('error', (err) => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timer);
+          this.ctx.signal.removeEventListener('abort', onAbort);
+          reject(new Error(`SSH connection failed: ${err.message}`));
+        }
+      });
+
+      conn.connect({
+        host,
+        port,
+        username: hostCreds.username || 'root',
+        privateKey: hostCreds.privateKey || undefined,
+        passphrase: hostCreds.passphrase || undefined,
+        password: hostCreds.password || undefined,
+        readyTimeout: 10_000,
+      });
+    });
+  }
+
+  // ─── Fetch and Poll (execute_remote) ──────────────────────────
+
+  async fetchAndPoll(
+    url: string,
+    pollUrl: string,
+    opts?: {
+      method?: string;
+      headers?: Record<string, string>;
+      body?: string;
+      pollIntervalMs?: number;
+      pollTimeoutMs?: number;
+      completionPath?: string;
+      completionValues?: string[];
+    },
+  ): Promise<{ initialResponse: { status: number; data: unknown }; pollResult: { status: number; data: unknown; pollCount: number } }> {
+    this.requireCapability('execute_remote');
+    this.checkAborted();
+
+    const pollInterval = Math.max(opts?.pollIntervalMs || 5000, 2000);
+    const pollTimeout = Math.min(opts?.pollTimeoutMs || 60_000, 300_000);
+    const completionPath = opts?.completionPath || 'status';
+    const completionValues = opts?.completionValues || ['completed', 'done', 'finished', 'success', 'failed', 'error'];
+
+    // Initial request
+    const initResponse = await this.fetchExternal(url, {
+      method: opts?.method || 'POST',
+      headers: opts?.headers ? { ...opts.headers } : undefined,
+      body: opts?.body,
+    });
+    const initData = await initResponse.json().catch(() => ({})) as unknown;
+
+    // Poll loop
+    const startTime = Date.now();
+    let pollCount = 0;
+    let backoff = pollInterval;
+
+    while (Date.now() - startTime < pollTimeout) {
+      this.checkAborted();
+      await new Promise(r => setTimeout(r, backoff));
+      pollCount++;
+
+      const pollResponse = await this.fetchExternal(pollUrl, {
+        headers: opts?.headers ? { ...opts.headers } : undefined,
+      });
+      const pollData = await pollResponse.json().catch(() => ({})) as Record<string, unknown>;
+
+      // Check completion by traversing the path
+      const pathParts = completionPath.split('.');
+      let current: unknown = pollData;
+      for (const part of pathParts) {
+        if (current && typeof current === 'object') {
+          current = (current as Record<string, unknown>)[part];
+        } else {
+          current = undefined;
+          break;
+        }
+      }
+
+      if (typeof current === 'string' && completionValues.includes(current.toLowerCase())) {
+        await this.audit('remote.poll', `Poll completed: ${pollUrl} after ${pollCount} polls`);
+        return {
+          initialResponse: { status: initResponse.status, data: initData },
+          pollResult: { status: pollResponse.status, data: pollData, pollCount },
+        };
+      }
+
+      // Exponential backoff after 5 polls
+      if (pollCount > 5 && backoff < 30_000) {
+        backoff = Math.min(backoff * 1.5, 30_000);
+      }
+    }
+
+    throw new Error(`Polling timed out after ${pollTimeout}ms (${pollCount} polls) for ${pollUrl}`);
   }
 
   // ─── Audit Helper ────────────────────────────────────────────

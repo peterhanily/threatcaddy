@@ -309,6 +309,92 @@ const fetchUrlTool: BotTool = {
   },
 };
 
+// ─── Execute Remote Tools ───────────────────────────────────────
+
+const sshExecTool: BotTool = {
+  name: 'ssh_exec',
+  description: 'Execute a command on a remote host via SSH. The host must be in the bot\'s allowedHosts list. Credentials are resolved from bot config (never provided as arguments).',
+  parameters: {
+    type: 'object',
+    properties: {
+      host: { type: 'string', description: 'Remote host to connect to (must be in allowedHosts)' },
+      command: { type: 'string', description: 'Shell command to execute' },
+      port: { type: 'number', description: 'SSH port (default 22)' },
+      timeout: { type: 'number', description: 'Command timeout in ms (default 30000, max 120000)' },
+    },
+    required: ['host', 'command'],
+  },
+  async execute(args, ctx) {
+    return ctx.execSSH(args.host as string, args.command as string, {
+      port: args.port as number | undefined,
+      timeout: args.timeout as number | undefined,
+    });
+  },
+};
+
+const triggerPlaybookTool: BotTool = {
+  name: 'trigger_playbook',
+  description: 'Trigger an external playbook/workflow via HTTP and poll for completion. Used for SOAR integrations (TheHive/Cortex, Shuffle, n8n, etc.). The URL must be in the bot\'s allowed domains.',
+  parameters: {
+    type: 'object',
+    properties: {
+      url: { type: 'string', description: 'URL to trigger the playbook (POST)' },
+      payload: { type: 'object', description: 'JSON payload to send' },
+      headers: { type: 'object', description: 'Additional request headers (e.g., API key)' },
+      pollUrl: { type: 'string', description: 'URL to poll for completion status' },
+      pollIntervalMs: { type: 'number', description: 'Polling interval in ms (default 5000, min 2000)' },
+      pollTimeoutMs: { type: 'number', description: 'Total polling timeout in ms (default 60000, max 300000)' },
+      completionPath: { type: 'string', description: 'JSON path to check for completion (default "status")' },
+      completionValues: { type: 'array', items: { type: 'string' }, description: 'Values indicating completion (default ["completed","done","finished","success","failed","error"])' },
+    },
+    required: ['url'],
+  },
+  async execute(args, ctx) {
+    const payload = args.payload ? JSON.stringify(args.payload) : undefined;
+    const pollUrl = (args.pollUrl as string) || (args.url as string);
+    return ctx.fetchAndPoll(args.url as string, pollUrl, {
+      method: 'POST',
+      headers: args.headers as Record<string, string> | undefined,
+      body: payload,
+      pollIntervalMs: args.pollIntervalMs as number | undefined,
+      pollTimeoutMs: args.pollTimeoutMs as number | undefined,
+      completionPath: args.completionPath as string | undefined,
+      completionValues: args.completionValues as string[] | undefined,
+    });
+  },
+};
+
+const fetchAndPollTool: BotTool = {
+  name: 'fetch_and_poll',
+  description: 'Send an HTTP request then poll a status URL until completion. Useful for async APIs that return a job ID. The URLs must be in the bot\'s allowed domains.',
+  parameters: {
+    type: 'object',
+    properties: {
+      url: { type: 'string', description: 'Initial request URL' },
+      method: { type: 'string', description: 'HTTP method for initial request (default POST)' },
+      headers: { type: 'object', description: 'Request headers' },
+      body: { type: 'string', description: 'Request body' },
+      pollUrl: { type: 'string', description: 'URL to poll for status' },
+      pollIntervalMs: { type: 'number', description: 'Polling interval in ms (default 5000, min 2000)' },
+      pollTimeoutMs: { type: 'number', description: 'Total polling timeout in ms (default 60000, max 300000)' },
+      completionPath: { type: 'string', description: 'JSON path to check for completion (default "status")' },
+      completionValues: { type: 'array', items: { type: 'string' }, description: 'Values indicating completion' },
+    },
+    required: ['url', 'pollUrl'],
+  },
+  async execute(args, ctx) {
+    return ctx.fetchAndPoll(args.url as string, args.pollUrl as string, {
+      method: args.method as string | undefined,
+      headers: args.headers as Record<string, string> | undefined,
+      body: args.body as string | undefined,
+      pollIntervalMs: args.pollIntervalMs as number | undefined,
+      pollTimeoutMs: args.pollTimeoutMs as number | undefined,
+      completionPath: args.completionPath as string | undefined,
+      completionValues: args.completionValues as string[] | undefined,
+    });
+  },
+};
+
 // ─── Capability → Tool mapping ──────────────────────────────────
 
 const CAPABILITY_TOOLS: Array<{ capability: BotCapability; tools: BotTool[] }> = [
@@ -335,6 +421,10 @@ const CAPABILITY_TOOLS: Array<{ capability: BotCapability; tools: BotTool[] }> =
   {
     capability: 'cross_investigation',
     tools: [searchAcrossInvestigationsTool],
+  },
+  {
+    capability: 'execute_remote',
+    tools: [sshExecTool, triggerPlaybookTool, fetchAndPollTool],
   },
 ];
 

@@ -13,7 +13,8 @@ export type BotCapability =
   | 'post_to_feed'        // post to CaddyShack
   | 'notify_users'        // send notifications
   | 'call_external_apis'  // make outbound HTTP requests
-  | 'cross_investigation'; // search/read across investigations
+  | 'cross_investigation' // search/read across investigations
+  | 'execute_remote';     // SSH commands, SOAR playbook triggers
 
 export interface BotEvent {
   type: BotEventType;

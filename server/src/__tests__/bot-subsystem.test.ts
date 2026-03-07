@@ -717,8 +717,18 @@ describe('bot-tools', () => {
     expect(formatted[0].function.parameters.type).toBe('object');
   });
 
+  it('returns execute_remote tools for execute_remote capability', () => {
+    const tools = getToolsForCapabilities(['execute_remote']);
+    const names = tools.map(t => t.name);
+    expect(names).toContain('ssh_exec');
+    expect(names).toContain('trigger_playbook');
+    expect(names).toContain('fetch_and_poll');
+    expect(names).not.toContain('search_notes');
+    expect(names).not.toContain('fetch_url');
+  });
+
   it('all tools have required name, description, parameters, and execute', () => {
-    const allCaps = ['read_entities', 'create_entities', 'post_to_feed', 'notify_users', 'call_external_apis', 'cross_investigation'] as const;
+    const allCaps = ['read_entities', 'create_entities', 'post_to_feed', 'notify_users', 'call_external_apis', 'cross_investigation', 'execute_remote'] as const;
     const tools = getToolsForCapabilities([...allCaps]);
     for (const tool of tools) {
       expect(tool.name).toBeTruthy();
@@ -726,7 +736,7 @@ describe('bot-tools', () => {
       expect(tool.parameters).toBeDefined();
       expect(typeof tool.execute).toBe('function');
     }
-    // Should have all 15 tools
-    expect(tools.length).toBe(15);
+    // Should have all 18 tools (15 original + 3 execute_remote)
+    expect(tools.length).toBe(18);
   });
 });
