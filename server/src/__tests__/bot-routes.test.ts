@@ -22,9 +22,22 @@ vi.mock('../db/index.js', () => ({
   },
 }));
 
+const col = (n: string) => ({ name: n });
 vi.mock('../db/schema.js', () => ({
-  botConfigs: { id: { name: 'id' }, enabled: { name: 'enabled' }, runCount: { name: 'run_count' }, errorCount: { name: 'error_count' } },
-  botRuns: { id: { name: 'id' }, botConfigId: { name: 'bot_config_id' }, status: { name: 'status' } },
+  botConfigs: { id: col('id'), enabled: col('enabled'), runCount: col('run_count'), errorCount: col('error_count') },
+  botRuns: { id: col('id'), botConfigId: col('bot_config_id'), status: col('status') },
+  notes: { id: col('id'), folderId: col('folder_id'), title: col('title'), content: col('content'), tags: col('tags'), trashed: col('trashed'), deletedAt: col('deleted_at'), createdAt: col('created_at'), updatedAt: col('updated_at') },
+  tasks: { id: col('id'), folderId: col('folder_id'), status: col('status'), trashed: col('trashed'), deletedAt: col('deleted_at') },
+  folders: { id: col('id'), name: col('name'), deletedAt: col('deleted_at') },
+  tags: { id: col('id') },
+  timelineEvents: { id: col('id'), folderId: col('folder_id'), trashed: col('trashed'), deletedAt: col('deleted_at') },
+  timelines: { id: col('id') },
+  whiteboards: { id: col('id') },
+  standaloneIOCs: { id: col('id'), folderId: col('folder_id'), type: col('type'), value: col('value'), trashed: col('trashed'), deletedAt: col('deleted_at') },
+  chatThreads: { id: col('id') },
+  posts: { id: col('id') },
+  investigationMembers: { folderId: col('folder_id'), userId: col('user_id'), role: col('role') },
+  users: { id: col('id'), displayName: col('display_name') },
 }));
 
 vi.mock('../lib/logger.js', () => ({
@@ -33,6 +46,19 @@ vi.mock('../lib/logger.js', () => ({
 
 vi.mock('../services/audit-service.js', () => ({
   logActivity: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../services/sync-service.js', () => ({
+  processPush: vi.fn().mockResolvedValue([{ status: 'accepted', serverRecord: {} }]),
+  lookupEntityFolderId: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock('../services/notification-service.js', () => ({
+  createNotification: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../ws/handler.js', () => ({
+  broadcastToFolder: vi.fn(),
 }));
 
 // ─── Section 1: validateCronExpression ──────────────────────────
