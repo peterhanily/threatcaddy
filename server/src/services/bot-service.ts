@@ -164,66 +164,70 @@ export interface CreateBotResult {
   enabled: boolean;
 }
 
-/** Create a new bot with its user account and investigation memberships. */
+/** Create a new bot with its user account and investigation memberships.
+ *  Wrapped in a transaction so partial failures don't leave orphaned records. */
 export async function createBot(input: BotCreateInput, createdBy: string): Promise<CreateBotResult> {
   const botId = nanoid();
   const botUserId = nanoid();
   const now = new Date();
 
-  // Create bot user account
+  // Pre-hash outside transaction to avoid holding it open during slow argon2
   const botEmail = `bot-${botUserId}@threatcaddy.internal`;
-  await db.insert(schema.users).values({
-    id: botUserId,
-    email: botEmail,
-    displayName: `[Bot] ${input.name.trim()}`,
-    passwordHash: await argon2.hash(nanoid(32)),
-    role: 'analyst',
-    active: true,
-    createdAt: now,
-    updatedAt: now,
-  });
+  const passwordHash = await argon2.hash(nanoid(32));
 
-  // Encrypt config secrets
   const encryptedConfig = input.config && typeof input.config === 'object'
     ? encryptConfigSecrets(input.config)
     : {};
-
   const caps = Array.isArray(input.capabilities) ? input.capabilities : [];
 
-  // Create bot config record
-  await db.insert(schema.botConfigs).values({
-    id: botId,
-    userId: botUserId,
-    type: input.type as BotType,
-    name: input.name.trim(),
-    description: (input.description || '').trim(),
-    enabled: false,
-    triggers: (input.triggers || {}) as BotTriggerConfig,
-    config: encryptedConfig,
-    capabilities: caps as BotCapability[],
-    allowedDomains: Array.isArray(input.allowedDomains) ? input.allowedDomains : [],
-    scopeType: (['global', 'investigation', 'tag-based'].includes(input.scopeType || '') ? input.scopeType : 'investigation') as 'global' | 'investigation' | 'tag-based',
-    scopeFolderIds: Array.isArray(input.scopeFolderIds) ? input.scopeFolderIds : [],
-    rateLimitPerHour: typeof input.rateLimitPerHour === 'number' && input.rateLimitPerHour > 0 ? input.rateLimitPerHour : 100,
-    rateLimitPerDay: typeof input.rateLimitPerDay === 'number' && input.rateLimitPerDay > 0 ? input.rateLimitPerDay : 1000,
-    createdBy,
-    createdAt: now,
-    updatedAt: now,
-  });
+  await db.transaction(async (tx) => {
+    // Create bot user account
+    await tx.insert(schema.users).values({
+      id: botUserId,
+      email: botEmail,
+      displayName: `[Bot] ${input.name.trim()}`,
+      passwordHash,
+      role: 'analyst',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    });
 
-  // Grant investigation access if scoped
-  if (input.scopeType === 'investigation' && Array.isArray(input.scopeFolderIds)) {
-    for (const folderId of input.scopeFolderIds) {
-      if (typeof folderId !== 'string') continue;
-      await db.insert(schema.investigationMembers).values({
-        id: nanoid(),
-        folderId,
-        userId: botUserId,
-        role: caps.includes('create_entities') || caps.includes('update_entities') ? 'editor' : 'viewer',
-        joinedAt: new Date(),
-      }).onConflictDoNothing();
+    // Create bot config record
+    await tx.insert(schema.botConfigs).values({
+      id: botId,
+      userId: botUserId,
+      type: input.type as BotType,
+      name: input.name.trim(),
+      description: (input.description || '').trim(),
+      enabled: false,
+      triggers: (input.triggers || {}) as BotTriggerConfig,
+      config: encryptedConfig,
+      capabilities: caps as BotCapability[],
+      allowedDomains: Array.isArray(input.allowedDomains) ? input.allowedDomains : [],
+      scopeType: (['global', 'investigation'].includes(input.scopeType || '') ? input.scopeType : 'investigation') as 'global' | 'investigation',
+      scopeFolderIds: Array.isArray(input.scopeFolderIds) ? input.scopeFolderIds : [],
+      rateLimitPerHour: typeof input.rateLimitPerHour === 'number' && input.rateLimitPerHour > 0 ? input.rateLimitPerHour : 100,
+      rateLimitPerDay: typeof input.rateLimitPerDay === 'number' && input.rateLimitPerDay > 0 ? input.rateLimitPerDay : 1000,
+      createdBy,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Grant investigation access if scoped
+    if (input.scopeType === 'investigation' && Array.isArray(input.scopeFolderIds)) {
+      for (const folderId of input.scopeFolderIds) {
+        if (typeof folderId !== 'string') continue;
+        await tx.insert(schema.investigationMembers).values({
+          id: nanoid(),
+          folderId,
+          userId: botUserId,
+          role: caps.includes('create_entities') || caps.includes('update_entities') ? 'editor' : 'viewer',
+          joinedAt: new Date(),
+        }).onConflictDoNothing();
+      }
     }
-  }
+  });
 
   return { id: botId, userId: botUserId, name: input.name.trim(), type: input.type, enabled: false };
 }
