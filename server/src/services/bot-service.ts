@@ -468,15 +468,16 @@ export async function getBotDetail(id: string) {
 
   if (!bot) return null;
 
-  const recentRuns = await getBotRuns(id, 20);
-
-  const memberships = await db.select({
-    folderId: schema.investigationMembers.folderId,
-    role: schema.investigationMembers.role,
-    folderName: schema.folders.name,
-  }).from(schema.investigationMembers)
-    .leftJoin(schema.folders, eq(schema.folders.id, schema.investigationMembers.folderId))
-    .where(eq(schema.investigationMembers.userId, bot.userId));
+  const [recentRuns, memberships] = await Promise.all([
+    getBotRuns(id, 20),
+    db.select({
+      folderId: schema.investigationMembers.folderId,
+      role: schema.investigationMembers.role,
+      folderName: schema.folders.name,
+    }).from(schema.investigationMembers)
+      .leftJoin(schema.folders, eq(schema.folders.id, schema.investigationMembers.folderId))
+      .where(eq(schema.investigationMembers.userId, bot.userId)),
+  ]);
 
   return {
     bot: { ...bot, config: redactConfigSecrets(bot.config as Record<string, unknown>) },

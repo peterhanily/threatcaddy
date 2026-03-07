@@ -55,7 +55,7 @@ app.post('/api/bots/:id/enable', requireAdminAuth, async (c) => {
   if (!bot) return c.json({ error: 'Bot not found' }, 404);
 
   await logAdminAction('bot.enable', `Enabled bot "${bot.name}"`, { itemId: c.req.param('id') });
-  return c.json({ ok: true });
+  return c.json({ ok: true, enabled: true });
 });
 
 // POST /admin/api/bots/:id/disable
@@ -64,7 +64,7 @@ app.post('/api/bots/:id/disable', requireAdminAuth, async (c) => {
   if (!bot) return c.json({ error: 'Bot not found' }, 404);
 
   await logAdminAction('bot.disable', `Disabled bot "${bot.name}"`, { itemId: c.req.param('id') });
-  return c.json({ ok: true });
+  return c.json({ ok: true, enabled: false });
 });
 
 // POST /admin/api/bots/:id/trigger — manual trigger

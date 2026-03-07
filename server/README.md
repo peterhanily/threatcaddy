@@ -83,6 +83,9 @@ npm run build && npm start  # production
 | `OPENAI_API_KEY` | No | — | OpenAI API key |
 | `GEMINI_API_KEY` | No | — | Google AI API key for Gemini models |
 | `MISTRAL_API_KEY` | No | — | Mistral API key |
+| `BOT_MASTER_KEY` | No | auto-generated | AES-256 master key for encrypting bot secrets |
+| `BOT_EXECUTION_TIMEOUT_MS` | No | `30000` | Max execution time per bot run (ms) |
+| `BOT_MAX_CONCURRENT_RUNS` | No | `5` | Max concurrent bot executions |
 
 ## API Endpoints
 
@@ -169,6 +172,21 @@ npm run build && npm start  # production
 | PATCH | `/:id` | Admin update user |
 | DELETE | `/:id` | Admin deactivate user |
 
+### Bots (`/api/bots`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | List all bots (admin/analyst) |
+| GET | `/:id` | Get bot config (admin/analyst) |
+| POST | `/` | Create a bot (admin) |
+| PATCH | `/:id` | Update bot config (admin) |
+| POST | `/:id/enable` | Enable a bot (admin) |
+| POST | `/:id/disable` | Disable a bot (admin) |
+| POST | `/:id/trigger` | Manual trigger (admin) |
+| DELETE | `/:id` | Delete a bot (admin) |
+| GET | `/:id/runs` | Bot run history (admin/analyst) |
+| POST | `/:id/webhook` | Webhook trigger (secret auth) |
+
 ### Admin (`/admin`)
 
 Served on a separate port (`ADMIN_PORT`).
@@ -188,6 +206,15 @@ Served on a separate port (`ADMIN_PORT`).
 | POST | `/api/allowed-emails` | Add allowed email |
 | DELETE | `/api/allowed-emails/:email` | Remove allowed email |
 | GET | `/api/investigations` | Investigation overview |
+| GET | `/api/bots` | List all bots |
+| POST | `/api/bots` | Create a bot |
+| GET | `/api/bots/:id` | Bot detail with runs |
+| PATCH | `/api/bots/:id` | Update bot config |
+| POST | `/api/bots/:id/enable` | Enable a bot |
+| POST | `/api/bots/:id/disable` | Disable a bot |
+| POST | `/api/bots/:id/trigger` | Manually trigger a bot |
+| DELETE | `/api/bots/:id` | Delete a bot |
+| GET | `/api/bots/:id/runs` | Bot run history |
 
 ### WebSocket (`/ws`)
 
