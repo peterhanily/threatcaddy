@@ -41,7 +41,8 @@ app.get('/:id', requireRole('admin', 'analyst'), async (c) => {
 
 app.post('/', requireRole('admin'), async (c) => {
   const user = c.get('user' as never) as { id: string };
-  const body = await c.req.json();
+  let body;
+  try { body = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON body' }, 400); }
 
   const error = validateBotCreate(body);
   if (error) return c.json({ error }, 400);
@@ -57,7 +58,8 @@ app.post('/', requireRole('admin'), async (c) => {
 
 app.patch('/:id', requireRole('admin'), async (c) => {
   const user = c.get('user' as never) as { id: string };
-  const body = await c.req.json();
+  let body;
+  try { body = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON body' }, 400); }
 
   const result = validateBotUpdate(body);
   if ('error' in result) return c.json({ error: result.error }, 400);

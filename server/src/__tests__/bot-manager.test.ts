@@ -256,6 +256,278 @@ describe('BotManager', () => {
       expect(stats.rateLimited).toBe(0);
     });
   });
+
+  describe('routeEvent', () => {
+    it('routes event to bot subscribed to that event type', async () => {
+      const manager = new BotManager();
+      await manager.loadBot(makeBotConfig({
+        id: 'b1',
+        userId: 'bot-user-1',
+        triggers: { events: ['entity.created'] },
+      }));
+
+      const { db } = await import('../db/index.js');
+      const insertBefore = (db.insert as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (manager as any).routeEvent({
+        type: 'entity.created',
+        table: 'notes',
+        entityId: 'n1',
+        folderId: 'f1',
+        userId: 'human-user',
+        timestamp: new Date(),
+      });
+
+      // Give async executeBot time to start
+      await new Promise(r => setTimeout(r, 50));
+      expect((db.insert as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(insertBefore);
+    });
+
+    it('does not route event to bot not subscribed to that event type', async () => {
+      const manager = new BotManager();
+      await manager.loadBot(makeBotConfig({
+        id: 'b1',
+        userId: 'bot-user-1',
+        triggers: { events: ['entity.deleted'] },
+      }));
+
+      const { db } = await import('../db/index.js');
+      const insertBefore = (db.insert as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (manager as any).routeEvent({
+        type: 'entity.created',
+        table: 'notes',
+        entityId: 'n1',
+        folderId: 'f1',
+        userId: 'human-user',
+        timestamp: new Date(),
+      });
+
+      await new Promise(r => setTimeout(r, 50));
+      expect((db.insert as ReturnType<typeof vi.fn>).mock.calls.length).toBe(insertBefore);
+    });
+
+    it('filters events by folder when eventFilters.folderIds is set', async () => {
+      const manager = new BotManager();
+      await manager.loadBot(makeBotConfig({
+        id: 'b1',
+        userId: 'bot-user-1',
+        triggers: {
+          events: ['entity.created'],
+          eventFilters: { folderIds: ['f1'] },
+        },
+      }));
+
+      const { db } = await import('../db/index.js');
+      const insertBefore = (db.insert as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      // Event with wrong folder should be filtered out
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (manager as any).routeEvent({
+        type: 'entity.created',
+        table: 'notes',
+        entityId: 'n1',
+        folderId: 'wrong-folder',
+        userId: 'human-user',
+        timestamp: new Date(),
+      });
+
+      await new Promise(r => setTimeout(r, 50));
+      expect((db.insert as ReturnType<typeof vi.fn>).mock.calls.length).toBe(insertBefore);
+    });
+
+    it('rejects events without folderId when folder filter is set', async () => {
+      const manager = new BotManager();
+      await manager.loadBot(makeBotConfig({
+        id: 'b1',
+        userId: 'bot-user-1',
+        triggers: {
+          events: ['entity.created'],
+          eventFilters: { folderIds: ['f1'] },
+        },
+      }));
+
+      const { db } = await import('../db/index.js');
+      const insertBefore = (db.insert as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (manager as any).routeEvent({
+        type: 'entity.created',
+        table: 'notes',
+        entityId: 'n1',
+        userId: 'human-user',
+        timestamp: new Date(),
+        // no folderId
+      });
+
+      await new Promise(r => setTimeout(r, 50));
+      expect((db.insert as ReturnType<typeof vi.fn>).mock.calls.length).toBe(insertBefore);
+    });
+
+    it('prevents bot from triggering itself (self-trigger prevention)', async () => {
+      const manager = new BotManager();
+      await manager.loadBot(makeBotConfig({
+        id: 'b1',
+        userId: 'bot-user-1',
+        triggers: { events: ['entity.created'] },
+      }));
+
+      const { db } = await import('../db/index.js');
+      const insertBefore = (db.insert as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      // Event from the bot's own userId should be ignored
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (manager as any).routeEvent({
+        type: 'entity.created',
+        table: 'notes',
+        entityId: 'n1',
+        folderId: 'f1',
+        userId: 'bot-user-1',
+        timestamp: new Date(),
+      });
+
+      await new Promise(r => setTimeout(r, 50));
+      expect((db.insert as ReturnType<typeof vi.fn>).mock.calls.length).toBe(insertBefore);
+    });
+
+    it('prevents re-entry via originBotIds chain', async () => {
+      const manager = new BotManager();
+      await manager.loadBot(makeBotConfig({
+        id: 'b1',
+        userId: 'bot-user-1',
+        triggers: { events: ['entity.created'] },
+      }));
+
+      const { db } = await import('../db/index.js');
+      const insertBefore = (db.insert as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (manager as any).routeEvent({
+        type: 'entity.created',
+        table: 'notes',
+        entityId: 'n1',
+        folderId: 'f1',
+        userId: 'other-user',
+        originBotIds: ['bot-user-1'],
+        timestamp: new Date(),
+      });
+
+      await new Promise(r => setTimeout(r, 50));
+      expect((db.insert as ReturnType<typeof vi.fn>).mock.calls.length).toBe(insertBefore);
+    });
+
+    it('drops events at depth >= 5', async () => {
+      const manager = new BotManager();
+      await manager.loadBot(makeBotConfig({
+        id: 'b1',
+        userId: 'bot-user-1',
+        triggers: { events: ['entity.created'] },
+      }));
+
+      const { db } = await import('../db/index.js');
+      const insertBefore = (db.insert as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (manager as any).routeEvent({
+        type: 'entity.created',
+        table: 'notes',
+        entityId: 'n1',
+        folderId: 'f1',
+        userId: 'human-user',
+        depth: 5,
+        timestamp: new Date(),
+      });
+
+      await new Promise(r => setTimeout(r, 50));
+      expect((db.insert as ReturnType<typeof vi.fn>).mock.calls.length).toBe(insertBefore);
+    });
+
+    it('filters by scope (investigation-scoped bot rejects out-of-scope events)', async () => {
+      const manager = new BotManager();
+      await manager.loadBot(makeBotConfig({
+        id: 'b1',
+        userId: 'bot-user-1',
+        scopeType: 'investigation',
+        scopeFolderIds: ['f1'],
+        triggers: { events: ['entity.created'] },
+      }));
+
+      const { db } = await import('../db/index.js');
+      const insertBefore = (db.insert as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (manager as any).routeEvent({
+        type: 'entity.created',
+        table: 'notes',
+        entityId: 'n1',
+        folderId: 'f2',
+        userId: 'human-user',
+        timestamp: new Date(),
+      });
+
+      await new Promise(r => setTimeout(r, 50));
+      expect((db.insert as ReturnType<typeof vi.fn>).mock.calls.length).toBe(insertBefore);
+    });
+  });
+
+  describe('circuit breaker', () => {
+    it('auto-disables bot after 5 consecutive failures', async () => {
+      const manager = new BotManager();
+      await manager.loadBot(makeBotConfig({ id: 'b1', createdBy: 'admin-1' }));
+
+      const { db } = await import('../db/index.js');
+
+      // Make the bot execution throw
+      const bot = (manager as any).bots.get('b1'); // eslint-disable-line @typescript-eslint/no-explicit-any
+      bot.onEvent = vi.fn().mockRejectedValue(new Error('bot error'));
+
+      // Mock select to return 5 consecutive failures for circuit breaker check
+      mockSelectResolve.mockResolvedValueOnce([
+        { status: 'error' }, { status: 'error' }, { status: 'error' },
+        { status: 'error' }, { status: 'error' },
+      ]);
+
+      await manager.executeBot('b1', 'event', {
+        type: 'entity.created',
+        table: 'notes',
+        entityId: 'n1',
+        folderId: 'f1',
+        userId: 'human-user',
+        timestamp: new Date(),
+      });
+
+      // Circuit breaker should have called db.update to disable the bot
+      const updateCalls = (db.update as ReturnType<typeof vi.fn>).mock.calls;
+      // At least one update call should be for disabling (set enabled: false)
+      expect(updateCalls.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  describe('loadBot idempotency', () => {
+    it('clears old cron interval on reload', async () => {
+      vi.useFakeTimers();
+      const manager = new BotManager();
+
+      await manager.loadBot(makeBotConfig({
+        id: 'b1',
+        triggers: { events: [], schedule: '*/5 * * * *' },
+      }));
+
+      // Reload with different schedule
+      await manager.loadBot(makeBotConfig({
+        id: 'b1',
+        triggers: { events: [], schedule: '*/10 * * * *' },
+      }));
+
+      // Should still only have 1 loaded bot
+      expect(manager.getLoadedBots()).toHaveLength(1);
+
+      await manager.shutdown();
+      vi.useRealTimers();
+    });
+  });
 });
 
 describe('validateCronExpression', () => {

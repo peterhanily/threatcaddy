@@ -11,6 +11,11 @@ import type { BotContext, BotCapability } from './types.js';
 
 const BOT_WRITABLE_TABLES = new Set(['notes', 'tasks', 'standaloneIOCs', 'timelineEvents']);
 
+/** Escape LIKE/ILIKE wildcard characters so user input is treated as literals */
+function escapeLikePattern(s: string): string {
+  return s.replace(/[%_\\]/g, '\\$&');
+}
+
 export function isPrivateIP(ip: string): boolean {
   // IPv6 checks
   if (ip === '::1') return true;
@@ -82,6 +87,13 @@ export class BotExecutionContext {
     }
   }
 
+  // ─── Config Access ──────────────────────────────────────────
+
+  /** Get the decrypted bot config (secrets are already decrypted) */
+  getConfig(): Record<string, unknown> {
+    return (this.ctx.botConfig.config ?? {}) as Record<string, unknown>;
+  }
+
   // ─── Abort Check ──────────────────────────────────────────────
 
   private checkAborted(): void {
@@ -103,10 +115,11 @@ export class BotExecutionContext {
       isNull(schema.notes.deletedAt),
     ];
     if (query) {
+      const escaped = escapeLikePattern(query);
       conditions.push(
         or(
-          ilike(schema.notes.title, `%${query}%`),
-          ilike(schema.notes.content, `%${query}%`),
+          ilike(schema.notes.title, `%${escaped}%`),
+          ilike(schema.notes.content, `%${escaped}%`),
         )!
       );
     }
@@ -227,7 +240,7 @@ export class BotExecutionContext {
     this.requireCapability('cross_investigation');
 
     const config = this.ctx.botConfig;
-    const q = `%${query}%`;
+    const q = `%${escapeLikePattern(query)}%`;
 
     const conditions = [
       ilike(schema.standaloneIOCs.value, q),
@@ -478,9 +491,9 @@ export class BotExecutionContext {
         signal: controller.signal,
         redirect: 'error',
         headers: {
-          'Host': hostname,
           'User-Agent': 'ThreatCaddy-Bot/1.0',
           ...opts?.headers,
+          'Host': hostname,
         },
       });
       return response;

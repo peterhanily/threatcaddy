@@ -32,8 +32,9 @@ export class EnrichmentBot extends GenericBot {
     const iocValue = (event.data.value as string) || 'unknown';
     const iocType = (event.data.type as string) || 'unknown';
 
-    const enrichmentUrl = this.config.config.enrichmentUrl as string | undefined;
-    const enrichmentApiKey = this.config.config.enrichmentApiKey as string | undefined;
+    const botConfig = execCtx.getConfig();
+    const enrichmentUrl = botConfig.enrichmentUrl as string | undefined;
+    const enrichmentApiKey = botConfig.enrichmentApiKey as string | undefined;
 
     if (enrichmentUrl && enrichmentApiKey) {
       try {

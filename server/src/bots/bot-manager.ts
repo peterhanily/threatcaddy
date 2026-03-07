@@ -48,38 +48,40 @@ export class BotManager {
     if (this.initialized || this.initializing) return;
     this.initializing = true;
 
-    const rows = await db.select().from(schema.botConfigs).where(eq(schema.botConfigs.enabled, true));
-    for (const row of rows) {
-      try {
-        await this.loadBot(row as unknown as BotConfig);
-      } catch (err) {
-        logger.error(`Failed to load bot ${row.name}`, { botId: row.id, error: String(err) });
-      }
-    }
-
-    // Clean up stale 'running' bot_runs from previous crash
     try {
-      const stale = await db.update(schema.botRuns)
-        .set({ status: 'error', error: 'Server restarted during execution', durationMs: 0 })
-        .where(eq(schema.botRuns.status, 'running'))
-        .returning({ id: schema.botRuns.id });
-      if (stale.length > 0) {
-        logger.info(`Cleaned up ${stale.length} stale bot run(s) from previous crash`);
+      const rows = await db.select().from(schema.botConfigs).where(eq(schema.botConfigs.enabled, true));
+      await Promise.allSettled(
+        rows.map(row => this.loadBot(row as unknown as BotConfig).catch(err => {
+          logger.error(`Failed to load bot ${row.name}`, { botId: row.id, error: String(err) });
+        }))
+      );
+
+      // Clean up stale 'running' bot_runs from previous crash
+      try {
+        const stale = await db.update(schema.botRuns)
+          .set({ status: 'error', error: 'Server restarted during execution', durationMs: 0 })
+          .where(eq(schema.botRuns.status, 'running'))
+          .returning({ id: schema.botRuns.id });
+        if (stale.length > 0) {
+          logger.info(`Cleaned up ${stale.length} stale bot run(s) from previous crash`);
+        }
+      } catch (err) {
+        logger.error('Failed to clean up stale bot runs', { error: String(err) });
       }
-    } catch (err) {
-      logger.error('Failed to clean up stale bot runs', { error: String(err) });
+
+      // Listen for all events and route to bots
+      this.wildcardListener = (event: BotEvent) => {
+        this.routeEvent(event).catch(err => {
+          logger.error('Error routing bot event', { type: event.type, error: String(err) });
+        });
+      };
+      botEventBus.onBotEvent('*', this.wildcardListener);
+
+      this.initialized = true;
+      logger.info(`BotManager initialized with ${this.bots.size} bot(s)`);
+    } finally {
+      this.initializing = false;
     }
-
-    // Listen for all events and route to bots
-    this.wildcardListener = (event: BotEvent) => {
-      this.routeEvent(event).catch(err => {
-        logger.error('Error routing bot event', { type: event.type, error: String(err) });
-      });
-    };
-    botEventBus.onBotEvent('*', this.wildcardListener);
-
-    this.initialized = true;
-    logger.info(`BotManager initialized with ${this.bots.size} bot(s)`);
   }
 
   /** Shut down all bots and clean up */
@@ -121,6 +123,19 @@ export class BotManager {
 
   /** Load and start a single bot from its config */
   async loadBot(config: BotConfig): Promise<void> {
+    // Clean up prior state to prevent interval leaks on reload
+    const priorInterval = this.cronIntervals.get(config.id);
+    if (priorInterval) {
+      clearInterval(priorInterval);
+      this.cronIntervals.delete(config.id);
+    }
+    const priorConfig = this.configs.get(config.id);
+    if (priorConfig?.triggers.events) {
+      for (const et of priorConfig.triggers.events) {
+        this.eventTypeIndex.get(et)?.delete(config.id);
+      }
+    }
+
     // Store config
     this.configs.set(config.id, config);
 
@@ -244,7 +259,9 @@ export class BotManager {
       if (event.userId === config.userId) continue;
       if (event.originBotIds?.includes(config.userId)) continue;
 
-      void this.executeBot(botId, 'event', event);
+      this.executeBot(botId, 'event', event).catch(err => {
+        logger.error(`Error executing bot ${botId} for event`, { error: String(err) });
+      });
     }
   }
 
@@ -283,7 +300,7 @@ export class BotManager {
           // Run directly instead of re-entering executeBot to avoid double rate-limit consumption.
           // Rate tokens were already consumed above, so just proceed to the execution phase.
           this.activeRuns++;
-          void this.executeBotInner(botId, trigger, event, webhookPayload).then(resolve);
+          this.executeBotInner(botId, trigger, event, webhookPayload).then(resolve, resolve);
         });
       });
     }
@@ -301,6 +318,7 @@ export class BotManager {
     const config = this.configs.get(botId);
     if (!config) {
       this.activeRuns--;
+      this.drainQueue();
       return;
     }
 
@@ -316,37 +334,41 @@ export class BotManager {
     }
     botControllers.add(abortController);
 
-    // Create run record
-    await db.insert(schema.botRuns).values({
-      id: runId,
-      botConfigId: botId,
-      status: 'running',
-      trigger,
-      inputSummary: event ? `${event.type} on ${event.table || 'unknown'}` : trigger,
-      createdAt: new Date(),
-    });
-
-    const ctx: BotContext = {
-      botConfig: { ...config, config: this.decryptedConfigs.get(botId) || config.config },
-      botUserId: config.userId,
-      runId,
-      trigger,
-      event,
-      entitiesCreated: 0,
-      entitiesUpdated: 0,
-      apiCallsMade: 0,
-      signal: abortController.signal,
-    };
-
-    // Execution timeout
-    const timeout = setTimeout(() => {
-      abortController.abort();
-    }, BOT_EXECUTION_TIMEOUT_MS);
-
     let status: BotRunStatus = 'success';
     let error: string | null = null;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    let runInserted = false;
+    let ctx: BotContext | undefined;
 
     try {
+      // Create run record
+      await db.insert(schema.botRuns).values({
+        id: runId,
+        botConfigId: botId,
+        status: 'running',
+        trigger,
+        inputSummary: event ? `${event.type} on ${event.table || 'unknown'}` : trigger,
+        createdAt: new Date(),
+      });
+      runInserted = true;
+
+      ctx = {
+        botConfig: { ...config, config: this.decryptedConfigs.get(botId) || config.config },
+        botUserId: config.userId,
+        runId,
+        trigger,
+        event,
+        entitiesCreated: 0,
+        entitiesUpdated: 0,
+        apiCallsMade: 0,
+        signal: abortController.signal,
+      };
+
+      // Execution timeout
+      timeout = setTimeout(() => {
+        abortController.abort();
+      }, BOT_EXECUTION_TIMEOUT_MS);
+
       // Audit: bot run started
       await logActivity({
         userId: config.userId,
@@ -368,11 +390,11 @@ export class BotManager {
           const bot = this.bots.get(botId);
           if (bot) {
             if (trigger === 'event' && event && bot.onEvent) {
-              await bot.onEvent(ctx, event);
+              await bot.onEvent(ctx!, event);
             } else if (trigger === 'schedule' && bot.onSchedule) {
-              await bot.onSchedule(ctx);
+              await bot.onSchedule(ctx!);
             } else if (trigger === 'webhook' && webhookPayload && bot.onWebhook) {
-              await bot.onWebhook(ctx, webhookPayload);
+              await bot.onWebhook(ctx!, webhookPayload);
             }
           }
         }),
@@ -387,14 +409,9 @@ export class BotManager {
       }
       logger.error(`Bot "${config.name}" execution failed`, { botId, runId, error });
     } finally {
-      clearTimeout(timeout);
+      if (timeout) clearTimeout(timeout);
       this.activeRuns--;
-
-      // Drain one item from the execution queue
-      if (this.executionQueue.length > 0) {
-        const next = this.executionQueue.shift()!;
-        next();
-      }
+      this.drainQueue();
 
       // Remove this AbortController from tracking
       const controllers = this.activeAbortControllers.get(botId);
@@ -404,6 +421,9 @@ export class BotManager {
           this.activeAbortControllers.delete(botId);
         }
       }
+
+      // Skip DB updates if the run record was never inserted
+      if (!runInserted) return;
 
       const durationMs = Date.now() - startTime;
 
@@ -423,10 +443,10 @@ export class BotManager {
           status,
           durationMs,
           error,
-          outputSummary: `Created: ${ctx.entitiesCreated}, Updated: ${ctx.entitiesUpdated}, API calls: ${ctx.apiCallsMade}`,
-          entitiesCreated: ctx.entitiesCreated,
-          entitiesUpdated: ctx.entitiesUpdated,
-          apiCallsMade: ctx.apiCallsMade,
+          outputSummary: ctx ? `Created: ${ctx.entitiesCreated}, Updated: ${ctx.entitiesUpdated}, API calls: ${ctx.apiCallsMade}` : '',
+          entitiesCreated: ctx?.entitiesCreated ?? 0,
+          entitiesUpdated: ctx?.entitiesUpdated ?? 0,
+          apiCallsMade: ctx?.apiCallsMade ?? 0,
         }).where(eq(schema.botRuns.id, runId)).catch(err => {
           logger.error(`Failed to update bot run record ${runId}`, { error: String(err) });
         }),
@@ -458,7 +478,6 @@ export class BotManager {
             logger.warn(`Circuit breaker: auto-disabling bot "${config.name}" after 5 consecutive failures`, { botId });
             await db.update(schema.botConfigs).set({ enabled: false, updatedAt: new Date() }).where(eq(schema.botConfigs.id, botId));
             await this.unloadBot(botId);
-            // Notify the bot creator
             createNotification({
               userId: config.createdBy,
               type: 'bot_disabled',
@@ -476,7 +495,7 @@ export class BotManager {
           userId: config.userId,
           category: 'bot',
           action: `run.${status}`,
-          detail: `Bot "${config.name}" ${status} in ${durationMs}ms — created ${ctx.entitiesCreated}, updated ${ctx.entitiesUpdated}`,
+          detail: `Bot "${config.name}" ${status} in ${durationMs}ms — created ${ctx?.entitiesCreated ?? 0}, updated ${ctx?.entitiesUpdated ?? 0}`,
           itemId: runId,
           itemTitle: config.name,
           folderId: event?.folderId,
@@ -517,7 +536,9 @@ export class BotManager {
     }
 
     const interval = setInterval(() => {
-      void this.executeBot(config.id, 'schedule');
+      this.executeBot(config.id, 'schedule').catch(err => {
+        logger.error(`Scheduled bot ${config.name} execution failed`, { botId: config.id, error: String(err) });
+      });
     }, intervalMs);
     interval.unref(); // Don't prevent process exit
 
@@ -538,6 +559,14 @@ export class BotManager {
       queueSize: this.executionQueue.length,
       ...this.stats,
     };
+  }
+
+  /** Drain one item from the execution queue */
+  private drainQueue(): void {
+    if (this.executionQueue.length > 0) {
+      const next = this.executionQueue.shift()!;
+      next();
+    }
   }
 }
 

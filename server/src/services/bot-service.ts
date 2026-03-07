@@ -308,7 +308,7 @@ export async function triggerBot(id: string): Promise<{ name: string } | { error
   if (rows.length === 0) return null;
   if (!rows[0].enabled) return { error: 'Bot is disabled' };
 
-  void botManager.executeBot(id, 'manual');
+  botManager.executeBot(id, 'manual').catch(() => { /* fire-and-forget */ });
   return { name: rows[0].name };
 }
 
