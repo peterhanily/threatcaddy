@@ -112,6 +112,7 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns) {
         wsClientRef.current.disconnect();
         wsClientRef.current = null;
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPresenceUsers([]);
     }
 
