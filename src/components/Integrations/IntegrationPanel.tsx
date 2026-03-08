@@ -1,7 +1,12 @@
-import { useState, useRef } from 'react';
-import { Trash2, Settings2, Power, AlertCircle, Check, ExternalLink, Clock, Plus, Search, Upload } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Trash2, Settings2, Power, AlertCircle, Check, ExternalLink, Clock, Plus, Search, Upload, Download, RefreshCw, Share2, Users, Globe2, Loader2, ArrowUpCircle, Wrench } from 'lucide-react';
 import { useIntegrations } from '../../hooks/useIntegrations';
-import type { IntegrationTemplate, InstalledIntegration, IntegrationRun, IntegrationConfigField, IntegrationCategory } from '../../types/integration-types';
+import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
+import { fetchCatalog, fetchTemplate, clearCatalogCache } from '../../lib/integration-catalog';
+import { shareIntegrationTemplate, fetchTeamTemplates, deleteTeamTemplate } from '../../lib/server-api';
+import { IntegrationBuilder } from './IntegrationBuilder';
+import type { IntegrationTemplate, InstalledIntegration, IntegrationRun, IntegrationConfigField, IntegrationCategory, CatalogEntry } from '../../types/integration-types';
 
 type SubTab = 'installed' | 'catalog' | 'history';
 
@@ -64,6 +69,53 @@ function TemplateIcon({ name, color }: { name: string; color: string }) {
       {name.charAt(0).toUpperCase()}
     </div>
   );
+}
+
+/** Compare semver strings (a < b => negative, a > b => positive, equal => 0) */
+function compareSemver(a: string, b: string): number {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    const diff = (pa[i] || 0) - (pb[i] || 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+/** Export a template as a clean JSON file (strips runtime/config data). */
+function exportTemplateAsJson(template: IntegrationTemplate): void {
+  const clean: Record<string, unknown> = {
+    id: template.id,
+    schemaVersion: template.schemaVersion,
+    version: template.version,
+    name: template.name,
+    description: template.description,
+    author: template.author,
+    license: template.license,
+    icon: template.icon,
+    color: template.color,
+    category: template.category,
+    tags: template.tags,
+    triggers: template.triggers,
+    configSchema: template.configSchema,
+    steps: template.steps,
+    outputs: template.outputs,
+    rateLimit: template.rateLimit,
+    requiredDomains: template.requiredDomains,
+    minVersion: template.minVersion,
+    source: 'community',
+  };
+
+  const json = JSON.stringify(clean, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${template.name.toLowerCase().replace(/\s+/g, '-')}-integration.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // --- Config Form ---
@@ -201,6 +253,9 @@ function InstalledTab({
   onConfigure,
   onDelete,
   onInstall,
+  onExport,
+  onShareWithTeam,
+  isTeamConnected,
 }: {
   installations: InstalledIntegration[];
   templates: IntegrationTemplate[];
@@ -208,6 +263,9 @@ function InstalledTab({
   onConfigure: (id: string, config: Record<string, unknown>) => void;
   onDelete: (id: string) => void;
   onInstall: (templateId: string) => void;
+  onExport: (template: IntegrationTemplate) => void;
+  onShareWithTeam: (template: IntegrationTemplate) => void;
+  isTeamConnected: boolean;
 }) {
   const [configuringId, setConfiguringId] = useState<string | null>(null);
 
@@ -226,6 +284,7 @@ function InstalledTab({
           {installations.map((inst) => {
             const template = templates.find((t) => t.id === inst.templateId);
             const isConfiguring = configuringId === inst.id;
+            const isUserCreated = template?.source === 'user' || template?.source === 'community' || template?.source === 'team';
 
             return (
               <div key={inst.id} className="bg-gray-800 border border-gray-700 rounded-lg p-3">
@@ -279,6 +338,28 @@ function InstalledTab({
                   >
                     <Settings2 size={14} />
                   </button>
+
+                  {/* Export (user-created templates only) */}
+                  {isUserCreated && template && (
+                    <button
+                      onClick={() => onExport(template)}
+                      className="p-1.5 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300 transition-colors"
+                      title="Export"
+                    >
+                      <Download size={14} />
+                    </button>
+                  )}
+
+                  {/* Share with Team (user-created + connected) */}
+                  {isUserCreated && template && isTeamConnected && (
+                    <button
+                      onClick={() => onShareWithTeam(template)}
+                      className="p-1.5 rounded hover:bg-gray-700 text-gray-500 hover:text-blue-400 transition-colors"
+                      title="Share with Team"
+                    >
+                      <Share2 size={14} />
+                    </button>
+                  )}
 
                   {/* Delete */}
                   <button
@@ -360,19 +441,40 @@ function CatalogTab({
   installedTemplateIds,
   onInstall,
   onImportJson,
+  onInstallCommunityEntry,
+  catalogEntries,
+  catalogLoading,
+  catalogError,
+  onRefreshCatalog,
+  teamTemplates,
+  teamLoading,
+  isTeamConnected,
+  onInstallTeamTemplate,
+  onDeleteTeamTemplate,
 }: {
   templates: IntegrationTemplate[];
   installedTemplateIds: Set<string>;
   onInstall: (templateId: string) => void;
   onImportJson: (json: string) => void;
+  onInstallCommunityEntry: (entry: CatalogEntry) => void;
+  catalogEntries: CatalogEntry[];
+  catalogLoading: boolean;
+  catalogError: string | null;
+  onRefreshCatalog: () => void;
+  teamTemplates: IntegrationTemplate[];
+  teamLoading: boolean;
+  isTeamConnected: boolean;
+  onInstallTeamTemplate: (template: IntegrationTemplate) => void;
+  onDeleteTeamTemplate: (id: string) => void;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [pasteJson, setPasteJson] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
+  const [installingEntryId, setInstallingEntryId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Group templates by category
+  // Group builtin templates by category
   const categories = Array.from(new Set(templates.map((t) => t.category)));
   const filtered = searchQuery
     ? templates.filter(
@@ -389,6 +491,35 @@ function CatalogTab({
       templates: filtered.filter((t) => t.category === cat),
     }))
     .filter((g) => g.templates.length > 0);
+
+  // Filter community entries by search
+  const filteredCommunity = searchQuery
+    ? catalogEntries.filter(
+        (e) =>
+          e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          e.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          e.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : catalogEntries;
+
+  // Group community entries by category
+  const communityCategories = Array.from(new Set(filteredCommunity.map((e) => e.category)));
+  const communityGrouped = communityCategories
+    .map((cat) => ({
+      category: cat,
+      entries: filteredCommunity.filter((e) => e.category === cat),
+    }))
+    .filter((g) => g.entries.length > 0);
+
+  // Filter team templates by search
+  const filteredTeam = searchQuery
+    ? teamTemplates.filter(
+        (t) =>
+          t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          t.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : teamTemplates;
 
   const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -417,6 +548,25 @@ function CatalogTab({
     }
   };
 
+  const handleInstallCommunityEntry = async (entry: CatalogEntry) => {
+    setInstallingEntryId(entry.id);
+    try {
+      onInstallCommunityEntry(entry);
+    } finally {
+      setInstallingEntryId(null);
+    }
+  };
+
+  /** Check if a community entry has an update available vs installed version */
+  const getUpdateStatus = (entryId: string, entryVersion: string): 'installed' | 'update-available' | 'not-installed' => {
+    if (!installedTemplateIds.has(entryId)) return 'not-installed';
+    const installedTemplate = templates.find((t) => t.id === entryId);
+    if (installedTemplate && compareSemver(installedTemplate.version, entryVersion) < 0) {
+      return 'update-available';
+    }
+    return 'installed';
+  };
+
   return (
     <div className="space-y-6">
       {/* Search */}
@@ -431,7 +581,7 @@ function CatalogTab({
         />
       </div>
 
-      {/* Template groups */}
+      {/* Builtin template groups */}
       {grouped.map(({ category, templates: catTemplates }) => (
         <div key={category} className="space-y-2">
           <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
@@ -529,9 +679,213 @@ function CatalogTab({
         </div>
       ))}
 
-      {filtered.length === 0 && searchQuery && (
+      {filtered.length === 0 && searchQuery && !catalogLoading && filteredCommunity.length === 0 && filteredTeam.length === 0 && (
         <p className="text-sm text-gray-500 text-center py-4">No templates match your search.</p>
       )}
+
+      {/* Team Templates Section */}
+      {isTeamConnected && (
+        <div className="border-t border-gray-700 pt-4 space-y-3">
+          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+            <Users size={12} />
+            Team Templates
+          </h4>
+
+          {teamLoading ? (
+            <div className="flex items-center gap-2 py-4 justify-center">
+              <Loader2 size={14} className="animate-spin text-gray-500" />
+              <span className="text-xs text-gray-500">Loading team templates...</span>
+            </div>
+          ) : filteredTeam.length === 0 ? (
+            <p className="text-xs text-gray-500 py-2">
+              No team templates shared yet. Share your custom templates from the Installed tab.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {filteredTeam.map((template) => {
+                const isInstalled = installedTemplateIds.has(template.id);
+
+                return (
+                  <div
+                    key={template.id}
+                    className="bg-gray-800 border border-gray-700 rounded-lg p-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      <TemplateIcon name={template.name} color={template.color} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-gray-200">
+                            {template.name}
+                          </span>
+                          <span className="text-[10px] text-gray-600">v{template.version}</span>
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            shared by {template.author}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5">{template.description}</p>
+                        {template.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {template.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="px-1.5 py-0.5 rounded text-[10px] bg-gray-700/50 text-gray-400 border border-gray-700"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isInstalled ? (
+                          <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-green-400 bg-green-500/10 border border-green-500/20">
+                            <Check size={12} />
+                            Installed
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => onInstallTeamTemplate(template)}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors"
+                          >
+                            <Plus size={12} />
+                            Install
+                          </button>
+                        )}
+                        <button
+                          onClick={() => onDeleteTeamTemplate(template.id)}
+                          className="p-1.5 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400 transition-colors"
+                          title="Remove from team"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Community Catalog Section */}
+      <div className="border-t border-gray-700 pt-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+            <Globe2 size={12} />
+            Community Catalog
+          </h4>
+          <button
+            onClick={onRefreshCatalog}
+            disabled={catalogLoading}
+            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors disabled:opacity-40"
+            title="Refresh catalog"
+          >
+            <RefreshCw size={10} className={catalogLoading ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        </div>
+
+        {catalogLoading && catalogEntries.length === 0 ? (
+          <div className="flex items-center gap-2 py-4 justify-center">
+            <Loader2 size={14} className="animate-spin text-gray-500" />
+            <span className="text-xs text-gray-500">Loading community catalog...</span>
+          </div>
+        ) : catalogError ? (
+          <div className="flex items-center gap-2 text-xs text-red-400 py-2">
+            <AlertCircle size={12} />
+            {catalogError}
+          </div>
+        ) : filteredCommunity.length === 0 && !catalogLoading ? (
+          <p className="text-xs text-gray-500 py-2">
+            {searchQuery ? 'No community templates match your search.' : 'No community templates available yet.'}
+          </p>
+        ) : (
+          communityGrouped.map(({ category, entries }) => (
+            <div key={`community-${category}`} className="space-y-2">
+              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: CATEGORY_COLORS[category] || '#6b7280' }}
+                />
+                {CATEGORY_LABELS[category] || category}
+              </h4>
+
+              {entries.map((entry) => {
+                const updateStatus = getUpdateStatus(entry.id, entry.version);
+                const isInstalling = installingEntryId === entry.id;
+
+                return (
+                  <div
+                    key={entry.id}
+                    className="bg-gray-800 border border-gray-700 rounded-lg p-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      <TemplateIcon name={entry.name} color={entry.color} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-gray-200">
+                            {entry.name}
+                          </span>
+                          <span className="text-[10px] text-gray-600">v{entry.version}</span>
+                          <span className="text-[10px] text-gray-600">by {entry.author}</span>
+                          {entry.downloads > 0 && (
+                            <span className="text-[10px] text-gray-600 flex items-center gap-0.5">
+                              <Download size={8} />
+                              {entry.downloads.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5">{entry.description}</p>
+                        {entry.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {entry.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="px-1.5 py-0.5 rounded text-[10px] bg-gray-700/50 text-gray-400 border border-gray-700"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {updateStatus === 'installed' ? (
+                          <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-green-400 bg-green-500/10 border border-green-500/20">
+                            <Check size={12} />
+                            Installed
+                          </span>
+                        ) : updateStatus === 'update-available' ? (
+                          <button
+                            onClick={() => handleInstallCommunityEntry(entry)}
+                            disabled={isInstalling}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs font-medium hover:bg-yellow-500/30 transition-colors disabled:opacity-50"
+                          >
+                            {isInstalling ? <Loader2 size={12} className="animate-spin" /> : <ArrowUpCircle size={12} />}
+                            Update
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleInstallCommunityEntry(entry)}
+                            disabled={isInstalling}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
+                          >
+                            {isInstalling ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                            Install
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))
+        )}
+      </div>
 
       {/* Import section */}
       <div className="border-t border-gray-700 pt-4 space-y-3">
@@ -715,19 +1069,67 @@ export function IntegrationPanel() {
     installations,
     runs,
     importTemplate,
+    installTemplate,
     createInstallation,
     updateInstallation,
     deleteInstallation,
     loading,
   } = useIntegrations();
 
+  const { connected: isTeamConnected } = useAuth();
+  const { addToast } = useToast();
+
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('installed');
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [catalogEntries, setCatalogEntries] = useState<CatalogEntry[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [teamTemplates, setTeamTemplates] = useState<IntegrationTemplate[]>([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+
   const installedTemplateIds = new Set(installations.map((i) => i.templateId));
+
+  // Fetch community catalog on mount
+  const loadCatalog = useCallback(async () => {
+    setCatalogLoading(true);
+    setCatalogError(null);
+    try {
+      const entries = await fetchCatalog();
+      setCatalogEntries(entries);
+    } catch {
+      setCatalogError('Could not load community catalog. Check your network connection.');
+    } finally {
+      setCatalogLoading(false);
+    }
+  }, []);
+
+  // Fetch team templates
+  const loadTeamTemplates = useCallback(async () => {
+    if (!isTeamConnected) return;
+    setTeamLoading(true);
+    try {
+      const raw = await fetchTeamTemplates();
+      setTeamTemplates(raw as IntegrationTemplate[]);
+    } catch {
+      // Silently fail for team templates
+    } finally {
+      setTeamLoading(false);
+    }
+  }, [isTeamConnected]);
+
+  useEffect(() => {
+    void loadCatalog();
+    void loadTeamTemplates();
+  }, [loadCatalog, loadTeamTemplates]);
+
+  const handleRefreshCatalog = () => {
+    clearCatalogCache();
+    void loadCatalog();
+  };
 
   const handleInstall = async (templateId: string) => {
     const template = templates.find((t) => t.id === templateId);
     await createInstallation(templateId, {});
-    // If the template has config fields, switch to installed tab so the user can configure
     if (template && template.configSchema.length > 0) {
       setActiveSubTab('installed');
     }
@@ -735,6 +1137,60 @@ export function IntegrationPanel() {
 
   const handleImportJson = async (json: string) => {
     await importTemplate(json);
+  };
+
+  const handleInstallCommunityEntry = async (entry: CatalogEntry) => {
+    try {
+      const template = await fetchTemplate(entry);
+      template.source = 'community';
+      await installTemplate(template);
+      await createInstallation(template.id, {});
+      addToast('success', `Installed ${entry.name} from community catalog`);
+      if (template.configSchema.length > 0) {
+        setActiveSubTab('installed');
+      }
+    } catch (err) {
+      addToast('error', err instanceof Error ? err.message : 'Failed to install community template');
+    }
+  };
+
+  const handleExport = (template: IntegrationTemplate) => {
+    exportTemplateAsJson(template);
+    addToast('success', `Exported ${template.name}`);
+  };
+
+  const handleShareWithTeam = async (template: IntegrationTemplate) => {
+    try {
+      await shareIntegrationTemplate(template);
+      addToast('success', 'Template shared with team');
+      void loadTeamTemplates();
+    } catch (err) {
+      addToast('error', err instanceof Error ? err.message : 'Failed to share template');
+    }
+  };
+
+  const handleInstallTeamTemplate = async (template: IntegrationTemplate) => {
+    try {
+      const teamTemplate = { ...template, source: 'team' as const };
+      await installTemplate(teamTemplate);
+      await createInstallation(teamTemplate.id, {});
+      addToast('success', `Installed ${template.name} from team`);
+      if (template.configSchema.length > 0) {
+        setActiveSubTab('installed');
+      }
+    } catch (err) {
+      addToast('error', err instanceof Error ? err.message : 'Failed to install team template');
+    }
+  };
+
+  const handleDeleteTeamTemplate = async (id: string) => {
+    try {
+      await deleteTeamTemplate(id);
+      setTeamTemplates((prev) => prev.filter((t) => t.id !== id));
+      addToast('success', 'Template removed from team');
+    } catch (err) {
+      addToast('error', err instanceof Error ? err.message : 'Failed to delete team template');
+    }
   };
 
   if (loading) {
@@ -797,16 +1253,44 @@ export function IntegrationPanel() {
           onConfigure={(id, config) => updateInstallation(id, { config })}
           onDelete={deleteInstallation}
           onInstall={handleInstall}
+          onExport={handleExport}
+          onShareWithTeam={handleShareWithTeam}
+          isTeamConnected={isTeamConnected}
         />
       )}
 
       {activeSubTab === 'catalog' && (
-        <CatalogTab
-          templates={templates}
-          installedTemplateIds={installedTemplateIds}
-          onInstall={handleInstall}
-          onImportJson={handleImportJson}
-        />
+        showBuilder ? (
+          <IntegrationBuilder onBack={() => setShowBuilder(false)} />
+        ) : (
+          <>
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={() => setShowBuilder(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-700 text-gray-200 text-xs font-medium hover:bg-gray-600 transition-colors"
+              >
+                <Wrench size={12} />
+                Create Custom
+              </button>
+            </div>
+            <CatalogTab
+              templates={templates}
+              installedTemplateIds={installedTemplateIds}
+              onInstall={handleInstall}
+              onImportJson={handleImportJson}
+              onInstallCommunityEntry={handleInstallCommunityEntry}
+              catalogEntries={catalogEntries}
+              catalogLoading={catalogLoading}
+              catalogError={catalogError}
+              onRefreshCatalog={handleRefreshCatalog}
+              teamTemplates={teamTemplates}
+              teamLoading={teamLoading}
+              isTeamConnected={isTeamConnected}
+              onInstallTeamTemplate={handleInstallTeamTemplate}
+              onDeleteTeamTemplate={handleDeleteTeamTemplate}
+            />
+          </>
+        )
       )}
 
       {activeSubTab === 'history' && (

@@ -1,6 +1,6 @@
 // ─── Bot System Types ────────────────────────────────────────────
 
-export type BotType = 'enrichment' | 'feed' | 'monitor' | 'triage' | 'report' | 'correlation' | 'ai-agent' | 'custom';
+export type BotType = 'enrichment' | 'feed' | 'monitor' | 'triage' | 'report' | 'correlation' | 'ai-agent' | 'integration' | 'custom';
 
 export type BotTriggerType = 'event' | 'schedule' | 'webhook' | 'manual';
 

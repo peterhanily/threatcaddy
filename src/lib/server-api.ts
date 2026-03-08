@@ -456,3 +456,24 @@ export async function deleteBackup(id: string): Promise<void> {
   const resp = await apiFetch(`/api/backups/${id}`, { method: 'DELETE' });
   if (!resp.ok) throw new Error('Failed to delete backup');
 }
+
+// ─── Integration Templates (Team Sharing) ────────────────────────
+
+export async function shareIntegrationTemplate(template: unknown): Promise<void> {
+  const resp = await apiFetch('/api/integrations/templates', {
+    method: 'POST',
+    body: JSON.stringify(template),
+  });
+  if (!resp.ok) throw new Error('Failed to share template');
+}
+
+export async function fetchTeamTemplates(): Promise<unknown[]> {
+  const resp = await apiFetch('/api/integrations/templates');
+  if (!resp.ok) throw new Error('Failed to fetch team templates');
+  return resp.json();
+}
+
+export async function deleteTeamTemplate(id: string): Promise<void> {
+  const resp = await apiFetch(`/api/integrations/templates/${id}`, { method: 'DELETE' });
+  if (!resp.ok) throw new Error('Failed to delete template');
+}

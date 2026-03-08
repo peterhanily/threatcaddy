@@ -450,6 +450,22 @@ export const files = pgTable('files', {
   idxFilesFolderId: index('idx_files_folder_id').on(t.folderId),
 }));
 
+// ─── Integration Templates ──────────────────────────────────────
+
+export const integrationTemplates = pgTable('integration_templates', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description').notNull().default(''),
+  template: jsonb('template').notNull(),
+  sharedBy: text('shared_by').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  idxIntegrationTemplatesName: index('idx_integration_templates_name').on(t.name),
+  idxIntegrationTemplatesSharedBy: index('idx_integration_templates_shared_by').on(t.sharedBy),
+  idxIntegrationTemplatesCreatedAt: index('idx_integration_templates_created_at').on(t.createdAt),
+}));
+
 // ─── Encrypted Backups ──────────────────────────────────────────
 
 export const backups = pgTable('backups', {
