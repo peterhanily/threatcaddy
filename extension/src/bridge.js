@@ -3,7 +3,7 @@
 // Protocol version — increment when message shapes change in breaking ways.
 // The webapp reads this to know which features/messages the extension supports.
 var TC_PROTOCOL_VERSION = 1;
-var TC_CAPABILITIES = ['llm_streaming', 'fetch_url', 'clip_import'];
+var TC_CAPABILITIES = ['llm_streaming', 'fetch_url', 'clip_import', 'proxy_fetch'];
 
 function readyPayload() {
   return {
@@ -163,6 +163,66 @@ window.addEventListener('message', function (event) {
       window.postMessage({
         type: 'TC_FETCH_URL_RESULT',
         requestId: fetchRequestId,
+        success: false,
+        error: 'Extension error: ' + (err.message || 'unknown')
+      }, '*');
+    }
+  }
+
+  if (event.data.type === 'TC_PROXY_FETCH') {
+    var proxyId = event.data.requestId;
+    var proxyPayload = {
+      type: 'PROXY_FETCH',
+      url: event.data.url,
+      method: event.data.method || 'GET',
+      headers: event.data.headers || {},
+      body: event.data.body || null,
+    };
+
+    if (!isExtensionValid()) {
+      window.postMessage({
+        type: 'TC_PROXY_FETCH_RESULT',
+        requestId: proxyId,
+        success: false,
+        error: 'Extension context invalidated. Please reload this page.'
+      }, '*');
+      return;
+    }
+
+    try {
+      chrome.runtime.sendMessage(proxyPayload, function (response) {
+        var lastError = chrome.runtime.lastError;
+        if (lastError) {
+          window.postMessage({
+            type: 'TC_PROXY_FETCH_RESULT',
+            requestId: proxyId,
+            success: false,
+            error: lastError.message || 'Extension error'
+          }, '*');
+        } else if (!response) {
+          window.postMessage({
+            type: 'TC_PROXY_FETCH_RESULT',
+            requestId: proxyId,
+            success: false,
+            error: 'No response from extension background'
+          }, '*');
+        } else {
+          window.postMessage({
+            type: 'TC_PROXY_FETCH_RESULT',
+            requestId: proxyId,
+            success: response.success,
+            status: response.status,
+            statusText: response.statusText,
+            data: response.data,
+            headers: response.headers,
+            error: response.error
+          }, '*');
+        }
+      });
+    } catch (err) {
+      window.postMessage({
+        type: 'TC_PROXY_FETCH_RESULT',
+        requestId: proxyId,
         success: false,
         error: 'Extension error: ' + (err.message || 'unknown')
       }, '*');

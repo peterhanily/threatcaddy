@@ -495,6 +495,64 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     })();
     return true;
+  } else if (message.type === 'PROXY_FETCH') {
+    // Generic fetch proxy for integration API calls (bypasses CSP/CORS)
+    let parsed;
+    try {
+      parsed = new URL(message.url);
+    } catch {
+      sendResponse({ success: false, error: 'Invalid URL' });
+      return;
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      sendResponse({ success: false, error: 'Only HTTP and HTTPS URLs are supported' });
+      return;
+    }
+    (async () => {
+      try {
+        // Ensure we have host permission
+        const origin = parsed.origin + '/*';
+        const hasPermission = await chrome.permissions.contains({ origins: [origin] });
+        if (!hasPermission) {
+          const granted = await chrome.permissions.request({ origins: [origin] }).catch(() => false);
+          if (!granted) {
+            sendResponse({ success: false, error: 'Host permission required for ' + parsed.hostname });
+            return;
+          }
+        }
+        const fetchOptions = {
+          method: message.method || 'GET',
+          headers: message.headers || {},
+        };
+        if (message.body && message.method !== 'GET') {
+          fetchOptions.body = message.body;
+        }
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 30000);
+        fetchOptions.signal = controller.signal;
+        const resp = await fetch(message.url, fetchOptions);
+        clearTimeout(timer);
+        const text = await resp.text();
+        let data;
+        try { data = JSON.parse(text); } catch { data = text; }
+        const headers = {};
+        resp.headers.forEach((v, k) => { headers[k] = v; });
+        sendResponse({
+          success: resp.ok,
+          status: resp.status,
+          statusText: resp.statusText,
+          data,
+          headers,
+          error: resp.ok ? null : `HTTP ${resp.status} ${resp.statusText}`,
+        });
+      } catch (err) {
+        const msg = err.name === 'AbortError'
+          ? 'Request timed out (30s)'
+          : (err.message || String(err));
+        sendResponse({ success: false, error: msg });
+      }
+    })();
+    return true;
   } else if (message.type === 'SAVE_NOTE') {
     saveCapture(message.note).then(() => {
       sendResponse({ success: true });

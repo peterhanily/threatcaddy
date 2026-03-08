@@ -59,6 +59,64 @@ function validateHttpUrl(urlStr: string): URL {
   return url;
 }
 
+/**
+ * Proxy fetch via the extension bridge (postMessage → bridge.js → background.js).
+ * Returns a Response-like object. Used to bypass CSP/CORS in extension context.
+ */
+function bridgeProxyFetch(
+  url: string,
+  method: string,
+  headers: Record<string, string>,
+  body: string | null,
+): Promise<{ ok: boolean; status: number; statusText: string; data: unknown; headers: Record<string, string> }> {
+  return new Promise((resolve, reject) => {
+    const requestId = nanoid();
+    const timeout = setTimeout(() => {
+      window.removeEventListener('message', handler);
+      reject(new Error('Bridge proxy fetch timed out (30s)'));
+    }, 30000);
+
+    function handler(event: MessageEvent) {
+      if (event.source !== window || !event.data) return;
+      if (event.data.type !== 'TC_PROXY_FETCH_RESULT') return;
+      if (event.data.requestId !== requestId) return;
+      window.removeEventListener('message', handler);
+      clearTimeout(timeout);
+
+      if (!event.data.success && event.data.error) {
+        reject(new Error(event.data.error));
+      } else {
+        resolve({
+          ok: event.data.status >= 200 && event.data.status < 300,
+          status: event.data.status,
+          statusText: event.data.statusText || '',
+          data: event.data.data,
+          headers: event.data.headers || {},
+        });
+      }
+    }
+
+    window.addEventListener('message', handler);
+    window.postMessage({
+      type: 'TC_PROXY_FETCH',
+      requestId,
+      url,
+      method,
+      headers,
+      body,
+    }, '*');
+  });
+}
+
+/** Check if the extension bridge supports proxy_fetch */
+function hasBridgeProxyFetch(): boolean {
+  try {
+    return document.documentElement.dataset.tcBridgeLoaded === '1';
+  } catch {
+    return false;
+  }
+}
+
 export class IntegrationExecutor {
   async run(
     template: IntegrationTemplate,
@@ -371,37 +429,63 @@ export class IntegrationExecutor {
       });
 
       apiCalls++;
-      const response = await fetch(url.toString(), fetchOptions);
 
-      const responseData =
-        step.responseType === 'text' ? await response.text() : await response.json().catch(() => null);
+      let responseStatus: number;
+      let responseStatusText: string;
+      let responseData: unknown;
+      let responseHeaders: Record<string, string> = {};
 
-      const responseHeaders: Record<string, string> = {};
-      response.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
-      });
+      if (hasBridgeProxyFetch()) {
+        // Route through extension background script to bypass CSP/CORS
+        const bodyStr = fetchOptions.body instanceof URLSearchParams
+          ? fetchOptions.body.toString()
+          : typeof fetchOptions.body === 'string'
+            ? fetchOptions.body
+            : fetchOptions.body != null ? String(fetchOptions.body) : null;
+        // For form-encoded, set Content-Type header
+        const proxyHeaders = { ...(fetchOptions.headers as Record<string, string>) };
+        if (fetchOptions.body instanceof URLSearchParams && !proxyHeaders['Content-Type'] && !proxyHeaders['content-type']) {
+          proxyHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
+        }
+        const proxyResult = await bridgeProxyFetch(url.toString(), step.method, proxyHeaders, bodyStr);
+        responseStatus = proxyResult.status;
+        responseStatusText = proxyResult.statusText;
+        responseData = step.responseType === 'text' ? String(proxyResult.data) : proxyResult.data;
+        responseHeaders = proxyResult.headers;
+      } else {
+        // Direct fetch (standalone/team-server mode)
+        const response = await fetch(url.toString(), fetchOptions);
+        responseStatus = response.status;
+        responseStatusText = response.statusText;
+        responseData = step.responseType === 'text'
+          ? await response.text()
+          : await response.json().catch(() => null);
+        response.headers.forEach((value, key) => {
+          responseHeaders[key] = value;
+        });
+      }
 
       addLog({
         ts: Date.now(),
         stepId: step.id,
         stepLabel: step.label,
         type: 'http-response',
-        detail: `${response.status} ${response.statusText}`,
+        detail: `${responseStatus} ${responseStatusText}`,
       });
 
       // Check if we should retry
-      if (!response.ok && attempt < maxRetries && retryOn.includes(response.status)) {
+      if (responseStatus >= 400 && attempt < maxRetries && retryOn.includes(responseStatus)) {
         await new Promise((r) => setTimeout(r, backoffMs * (attempt + 1)));
         continue;
       }
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      if (responseStatus >= 400) {
+        throw new Error(`HTTP ${responseStatus}: ${responseStatusText}`);
       }
 
       return {
         response: {
-          status: response.status,
+          status: responseStatus,
           data: responseData,
           headers: responseHeaders,
         },
