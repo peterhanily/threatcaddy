@@ -50,6 +50,24 @@ interface ExecutionContext {
 
 const MAX_EXECUTION_MS = 5 * 60 * 1000; // 5 minutes
 
+/** Validate that a URL is safe to fetch (no SSRF) */
+function validateHttpUrl(urlStr: string): URL {
+  const url = new URL(urlStr);
+  if (!['http:', 'https:'].includes(url.protocol)) {
+    throw new Error(`Blocked URL scheme: ${url.protocol} — only HTTP/HTTPS allowed`);
+  }
+  const host = url.hostname;
+  if (
+    ['169.254.169.254', 'localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(host) ||
+    /^10\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+    /^192\.168\./.test(host)
+  ) {
+    throw new Error(`Blocked request to private/internal address: ${host}`);
+  }
+  return url;
+}
+
 export class IntegrationExecutor {
   async run(
     template: IntegrationTemplate,
@@ -306,8 +324,8 @@ export class IntegrationExecutor {
       : {};
     const resolvedBody = step.body != null ? resolveDeep(step.body, context) : undefined;
 
-    // Build URL with query params
-    const url = new URL(resolvedUrl);
+    // Validate URL before fetching (SSRF protection)
+    const url = validateHttpUrl(resolvedUrl);
     for (const [key, value] of Object.entries(resolvedParams)) {
       url.searchParams.set(key, String(value));
     }

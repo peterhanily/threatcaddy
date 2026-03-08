@@ -81,7 +81,7 @@ export function TagSubList({
                   {tag.name}
                   <button
                     onClick={(e) => { e.stopPropagation(); setDeletingId(tag.id); }}
-                    className="opacity-0 group-hover:opacity-100 p-0 hover:text-red-400 transition-all"
+                    className="opacity-40 group-hover:opacity-100 p-0 hover:text-red-400 transition-all"
                     aria-label={`Delete tag ${tag.name}`}
                     title="Delete tag"
                   >

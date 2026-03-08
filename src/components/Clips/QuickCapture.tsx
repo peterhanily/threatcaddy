@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { Loader2 } from 'lucide-react';
 import { Modal } from '../Common/Modal';
 import type { Note, Folder, NoteTemplate } from '../../types';
 
 interface QuickCaptureProps {
   open: boolean;
   onClose: () => void;
-  onCapture: (data: Partial<Note>) => void;
+  onCapture: (data: Partial<Note>) => void | Promise<void>;
   folders?: Folder[];
   defaultFolderId?: string;
   templates?: NoteTemplate[];
@@ -16,6 +17,7 @@ export function QuickCapture({ open, onClose, onCapture, folders = [], defaultFo
   const [content, setContent] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [folderId, setFolderId] = useState(defaultFolderId || '');
+  const [saving, setSaving] = useState(false);
   const titleTouchedByUser = useRef(false);
 
   // Keep folderId in sync when the active investigation changes
@@ -23,21 +25,26 @@ export function QuickCapture({ open, onClose, onCapture, folders = [], defaultFo
     setFolderId(defaultFolderId || '');
   }, [defaultFolderId]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onCapture({
-      title: title.trim() || 'Untitled',
-      content: content.trim(),
-      sourceUrl: sourceUrl.trim() || undefined,
-      sourceTitle: title.trim() || undefined,
-      folderId: folderId || undefined,
-    });
-    setTitle('');
-    setContent('');
-    setSourceUrl('');
-    setFolderId(defaultFolderId || '');
-    titleTouchedByUser.current = false;
-    onClose();
+    setSaving(true);
+    try {
+      await onCapture({
+        title: title.trim() || 'Untitled',
+        content: content.trim(),
+        sourceUrl: sourceUrl.trim() || undefined,
+        sourceTitle: title.trim() || undefined,
+        folderId: folderId || undefined,
+      });
+      setTitle('');
+      setContent('');
+      setSourceUrl('');
+      setFolderId(defaultFolderId || '');
+      titleTouchedByUser.current = false;
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   const applyTemplate = (tpl: NoteTemplate) => {
@@ -152,9 +159,11 @@ export function QuickCapture({ open, onClose, onCapture, folders = [], defaultFo
           </button>
           <button
             type="submit"
-            className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
+            disabled={saving}
+            className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium transition-colors flex items-center gap-2"
           >
-            Create Note
+            {saving && <Loader2 size={14} className="animate-spin" />}
+            {saving ? 'Saving...' : 'Create Note'}
           </button>
         </div>
       </form>

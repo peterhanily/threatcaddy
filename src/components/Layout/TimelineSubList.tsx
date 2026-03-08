@@ -125,7 +125,7 @@ export function TimelineSubList({
                   actions={
                     <button
                       onClick={(e) => { e.stopPropagation(); setDeletingId(tl.id); }}
-                      className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-bg-hover text-text-muted hover:text-red-400 transition-all"
+                      className="opacity-40 group-hover:opacity-100 p-0.5 rounded hover:bg-bg-hover text-text-muted hover:text-red-400 transition-all"
                       aria-label={`Delete timeline ${tl.name}`}
                       title="Delete timeline"
                     >

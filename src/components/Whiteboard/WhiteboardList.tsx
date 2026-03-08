@@ -98,7 +98,7 @@ export function WhiteboardList({ whiteboards, folders, onSelect, onCreate, onDel
                   ) : (
                     <h3 className="text-sm font-medium text-gray-200 truncate">{wb.name}</h3>
                   )}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity shrink-0">
                     {wb.trashed ? (
                       <>
                         {onRestore && (

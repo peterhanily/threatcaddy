@@ -391,7 +391,7 @@ export function ChatView({
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); onTrashThread(thread.id); }}
-                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-bg-hover text-text-muted hover:text-red-400 transition-all shrink-0"
+                  className="opacity-40 group-hover:opacity-100 p-0.5 rounded hover:bg-bg-hover text-text-muted hover:text-red-400 transition-all shrink-0"
                   title="Delete thread"
                 >
                   <Trash2 size={12} />
@@ -448,7 +448,7 @@ export function ChatView({
                   title="Click to rename"
                 >
                   <span className="text-sm font-medium text-text-primary truncate">{activeThread.title}</span>
-                  <Pencil size={12} className="shrink-0 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Pencil size={12} className="shrink-0 text-text-muted opacity-40 group-hover:opacity-100 transition-opacity" />
                 </button>
               )}
               <div className="flex items-center gap-1 ml-auto shrink-0">

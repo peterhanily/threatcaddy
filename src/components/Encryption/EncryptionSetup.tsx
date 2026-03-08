@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Modal } from '../Common/Modal';
-import { Shield, Copy, Check } from 'lucide-react';
+import { Shield, Copy, Check, Loader2 } from 'lucide-react';
 import {
   generateMasterKey,
   deriveWrappingKey,
@@ -208,10 +208,11 @@ export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupPro
               </button>
               <button
                 onClick={handleFinalize}
-                disabled={!saved}
-                className="flex-1 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                disabled={!saved || encrypting}
+                className="flex-1 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
               >
-                Enable Encryption
+                {encrypting && <Loader2 size={14} className="animate-spin" />}
+                {encrypting ? 'Encrypting...' : 'Enable Encryption'}
               </button>
             </div>
           </>

@@ -65,7 +65,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(event.id); }}
-              className="text-red-500 opacity-0 group-hover:opacity-100 hover:text-red-400 p-0.5 rounded transition-colors"
+              className="text-red-500 opacity-40 group-hover:opacity-100 hover:text-red-400 p-0.5 rounded transition-colors"
               title="Delete event"
               aria-label="Delete event"
             >
@@ -78,7 +78,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
               'p-0.5 rounded transition-colors',
               event.starred
                 ? 'text-yellow-400'
-                : 'text-gray-600 opacity-0 group-hover:opacity-100 hover:text-yellow-400'
+                : 'text-gray-600 opacity-40 group-hover:opacity-100 hover:text-yellow-400'
             )}
             aria-label={event.starred ? 'Unstar event' : 'Star event'}
           >

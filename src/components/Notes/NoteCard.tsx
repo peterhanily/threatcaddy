@@ -39,7 +39,7 @@ export const NoteCard = React.memo(function NoteCard({ note, active, onSelect, o
       {onTrash && !note.trashed && (
         <button
           onClick={(e) => { e.stopPropagation(); onTrash(note.id); }}
-          className="absolute top-2 right-2 p-1 rounded text-red-500 hover:text-red-400 hover:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute top-2 right-2 p-1 rounded text-red-500 hover:text-red-400 hover:bg-gray-700 opacity-40 group-hover:opacity-100 transition-opacity z-10"
           title="Move to trash"
           aria-label="Move note to trash"
         >

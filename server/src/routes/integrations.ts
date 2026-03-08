@@ -1,10 +1,22 @@
 import { Hono } from 'hono';
 import { nanoid } from 'nanoid';
 import { eq, desc } from 'drizzle-orm';
+import { z } from 'zod';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import { logActivity } from '../services/audit-service.js';
+
+const integrationTemplateSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1).max(200),
+  version: z.string().optional(),
+  description: z.string().max(2000).optional(),
+  category: z.string().optional(),
+  steps: z.array(z.object({}).passthrough()),
+  outputs: z.union([z.array(z.object({}).passthrough()), z.object({}).passthrough()]),
+  triggers: z.array(z.object({}).passthrough()).optional().default([]),
+}).passthrough();
 
 const app = new Hono();
 
@@ -72,21 +84,23 @@ app.post('/templates', requireRole('admin', 'analyst'), async (c) => {
     return c.json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const template = body.template as Record<string, unknown> | undefined;
-  if (!template || typeof template !== 'object') {
+  const rawTemplate = body.template;
+  if (!rawTemplate || typeof rawTemplate !== 'object') {
     return c.json({ error: 'Missing or invalid "template" field' }, 400);
   }
 
-  const name = (template.name as string) || (body.name as string);
-  if (!name || typeof name !== 'string') {
-    return c.json({ error: 'Template must have a name' }, 400);
+  const parsed = integrationTemplateSchema.safeParse(rawTemplate);
+  if (!parsed.success) {
+    return c.json({ error: 'Invalid template', details: parsed.error.flatten().fieldErrors }, 400);
   }
 
+  const template = parsed.data as Record<string, unknown>;
+  const name = template.name as string;
   const description = (template.description as string) || (body.description as string) || '';
   const id = (template.id as string) || nanoid();
 
   // Ensure the template has an ID
-  (template as Record<string, unknown>).id = id;
+  template.id = id;
 
   await db.insert(schema.integrationTemplates).values({
     id,

@@ -153,6 +153,13 @@ db.version(19).stores({
   integrationRuns: 'id, integrationId, templateId, status, createdAt',
 });
 
+// Version 20: Composite indexes for common query patterns (performance)
+db.version(20).stores({
+  notes: 'id, title, folderId, pinned, archived, trashed, createdAt, updatedAt, *tags, *iocTypes, createdBy, [folderId+updatedAt]',
+  tasks: 'id, title, folderId, status, priority, completed, trashed, archived, order, createdAt, updatedAt, *tags, *iocTypes, createdBy, assigneeId, [folderId+status], [folderId+updatedAt]',
+  timelineEvents: 'id, timestamp, eventType, source, starred, trashed, archived, folderId, timelineId, createdAt, updatedAt, *tags, *iocTypes, createdBy, [folderId+timestamp]',
+});
+
 // Encryption-at-rest middleware (transparent to all CRUD hooks)
 installEncryptionMiddleware(db);
 

@@ -118,7 +118,7 @@ export const InvestigationListItem = React.memo(function InvestigationListItem({
         {onInfo && (
           <button
             onClick={(e) => { e.stopPropagation(); onInfo(); }}
-            className="opacity-0 group-hover:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-all"
+            className="opacity-40 group-hover:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-all"
             aria-label={`Edit investigation ${folder.name}`}
             title="Edit investigation"
           >
@@ -128,7 +128,7 @@ export const InvestigationListItem = React.memo(function InvestigationListItem({
         {onArchive && (
           <button
             onClick={(e) => { e.stopPropagation(); onArchive(); }}
-            className="opacity-0 group-hover:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-amber-400 transition-all"
+            className="opacity-40 group-hover:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-amber-400 transition-all"
             aria-label={`Archive investigation ${folder.name}`}
             title="Archive investigation"
           >
@@ -138,7 +138,7 @@ export const InvestigationListItem = React.memo(function InvestigationListItem({
         {onUnarchive && (
           <button
             onClick={(e) => { e.stopPropagation(); onUnarchive(); }}
-            className="opacity-0 group-hover:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-green-400 transition-all"
+            className="opacity-40 group-hover:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-green-400 transition-all"
             aria-label={`Unarchive investigation ${folder.name}`}
             title="Unarchive investigation"
           >
@@ -147,7 +147,7 @@ export const InvestigationListItem = React.memo(function InvestigationListItem({
         )}
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="opacity-0 group-hover:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-red-400 transition-all"
+          className="opacity-40 group-hover:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-red-400 transition-all"
           aria-label={`Delete investigation ${folder.name}`}
           title="Delete investigation"
         >

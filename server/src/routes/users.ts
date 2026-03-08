@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq, and, ilike, or, desc, inArray } from 'drizzle-orm';
+import { eq, and, ilike, or, desc, inArray, count } from 'drizzle-orm';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { db } from '../db/index.js';
 import { users, posts, investigationMembers, sessions, reactions, activityLog } from '../db/schema.js';
@@ -13,12 +13,13 @@ app.use('*', requireAuth);
 // GET /api/users — list all users (admin) or search users (any authenticated)
 app.get('/', async (c) => {
   const search = c.req.query('search');
-  let result;
+  const limit = Math.min(Math.max(parseInt(c.req.query('limit') || '50', 10) || 50, 1), 200);
+  const offset = Math.max(parseInt(c.req.query('offset') || '0', 10) || 0, 0);
 
   if (search) {
     // Allow any authenticated user to search (for @mentions, invite by email)
     const pattern = `%${search}%`;
-    result = await db
+    const result = await db
       .select({
         id: users.id,
         email: users.email,
@@ -35,15 +36,20 @@ app.get('/', async (c) => {
           ilike(users.email, pattern),
         )
       ))
-      .limit(20);
-  } else {
-    // Full list requires admin
-    const user = c.get('user');
-    if (user.role !== 'admin') {
-      return c.json({ error: 'Admin access required' }, 403);
-    }
+      .limit(Math.min(limit, 20));
 
-    result = await db
+    return c.json(result);
+  }
+
+  // Full list requires admin
+  const user = c.get('user');
+  if (user.role !== 'admin') {
+    return c.json({ error: 'Admin access required' }, 403);
+  }
+
+  const [totalResult, result] = await Promise.all([
+    db.select({ count: count() }).from(users),
+    db
       .select({
         id: users.id,
         email: users.email,
@@ -54,10 +60,13 @@ app.get('/', async (c) => {
         lastLoginAt: users.lastLoginAt,
         createdAt: users.createdAt,
       })
-      .from(users);
-  }
+      .from(users)
+      .limit(limit)
+      .offset(offset),
+  ]);
 
-  return c.json(result);
+  const total = totalResult[0]?.count ?? 0;
+  return c.json({ data: result, total, limit, offset });
 });
 
 // GET /api/users/:id — get user profile

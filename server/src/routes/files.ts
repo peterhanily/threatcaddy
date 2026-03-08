@@ -7,7 +7,7 @@ import { db } from '../db/index.js';
 import { files } from '../db/schema.js';
 import type { AuthUser } from '../types.js';
 import { mkdir, writeFile, readFile, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { logger } from '../lib/logger.js';
 
 const STORAGE_PATH = process.env.FILE_STORAGE_PATH || '/data/files';
@@ -176,6 +176,13 @@ app.get('/:id', async (c) => {
 
   const filePath = join(STORAGE_PATH, file.storagePath);
 
+  // Path traversal protection
+  const resolvedFilePath = resolve(filePath);
+  const basePath = resolve(STORAGE_PATH);
+  if (!resolvedFilePath.startsWith(basePath + '/') && resolvedFilePath !== basePath) {
+    return c.json({ error: 'Invalid file path' }, 403);
+  }
+
   try {
     const data = await readFile(filePath);
     const fileStat = await stat(filePath);
@@ -218,6 +225,13 @@ app.get('/:id/thumbnail', async (c) => {
   }
 
   const thumbPath = join(STORAGE_PATH, file.thumbnailPath!);
+
+  // Path traversal protection
+  const resolvedThumbPath = resolve(thumbPath);
+  const thumbBasePath = resolve(STORAGE_PATH);
+  if (!resolvedThumbPath.startsWith(thumbBasePath + '/') && resolvedThumbPath !== thumbBasePath) {
+    return c.json({ error: 'Invalid file path' }, 403);
+  }
 
   try {
     const data = await readFile(thumbPath);

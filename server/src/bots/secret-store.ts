@@ -5,8 +5,8 @@ import { logger } from '../lib/logger.js';
  * Encrypts/decrypts bot API keys and secrets at rest.
  * Uses AES-256-GCM with a server master key derived via scrypt.
  *
- * Master key source: BOT_MASTER_KEY env var, or falls back to JWT_PRIVATE_KEY.
- * In production, set BOT_MASTER_KEY to a dedicated 32+ char secret.
+ * Master key source: BOT_MASTER_KEY env var (required in production).
+ * If not set, a random key is generated for development (secrets won't survive restarts).
  */
 
 const ALGORITHM = 'aes-256-gcm';
@@ -18,9 +18,13 @@ let derivedKey: Buffer | null = null;
 
 function getDerivedKey(): Buffer {
   if (derivedKey) return derivedKey;
-  const masterKey = process.env.BOT_MASTER_KEY || process.env.JWT_PRIVATE_KEY;
+  let masterKey = process.env.BOT_MASTER_KEY;
   if (!masterKey) {
-    throw new Error('No BOT_MASTER_KEY or JWT_PRIVATE_KEY configured — cannot encrypt bot secrets');
+    logger.warn(
+      'BOT_MASTER_KEY is not set — generating a random key. ' +
+      'Bot secrets will NOT survive server restarts. Set BOT_MASTER_KEY in production.',
+    );
+    masterKey = randomBytes(32).toString('hex');
   }
   derivedKey = scryptSync(masterKey, SALT, 32);
   return derivedKey;

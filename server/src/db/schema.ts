@@ -71,6 +71,8 @@ export const notes = pgTable('notes', {
   idxNotesFolderId: index('idx_notes_folder_id').on(t.folderId),
   idxNotesUpdatedAt: index('idx_notes_updated_at').on(t.updatedAt),
   idxNotesCreatedBy: index('idx_notes_created_by').on(t.createdBy),
+  idxNotesArchived: index('idx_notes_archived').on(t.archived),
+  idxNotesPinned: index('idx_notes_pinned').on(t.pinned),
 }));
 
 export const tasks = pgTable('tasks', {
@@ -107,6 +109,7 @@ export const tasks = pgTable('tasks', {
   idxTasksUpdatedAt: index('idx_tasks_updated_at').on(t.updatedAt),
   idxTasksAssigneeId: index('idx_tasks_assignee_id').on(t.assigneeId),
   idxTasksCreatedBy: index('idx_tasks_created_by').on(t.createdBy),
+  idxTasksStatus: index('idx_tasks_status').on(t.status),
 }));
 
 export const folders = pgTable('folders', {

@@ -108,7 +108,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
             {onRestore && (
               <button
                 onClick={(e) => { e.stopPropagation(); onRestore(task.id); }}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-green-400"
+                className="opacity-40 group-hover:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-green-400"
                 title="Restore task"
               >
                 <RotateCcw size={12} />
@@ -116,7 +116,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
             )}
             <button
               onClick={(e) => { e.stopPropagation(); setShowConfirmDelete(true); }}
-              className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
+              className="opacity-40 group-hover:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
               title="Delete permanently"
             >
               <Trash2 size={12} />
@@ -127,7 +127,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
             {onToggleArchive && (
               <button
                 onClick={(e) => { e.stopPropagation(); onToggleArchive(task.id); }}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
+                className="opacity-40 group-hover:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
                 title={task.archived ? 'Unarchive' : 'Archive'}
               >
                 <Archive size={12} />
@@ -136,7 +136,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
             {onTrash ? (
               <button
                 onClick={(e) => { e.stopPropagation(); onTrash(task.id); }}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
+                className="opacity-40 group-hover:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
                 title="Move to trash"
               >
                 <Trash2 size={12} />
@@ -144,7 +144,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
             ) : (
               <button
                 onClick={(e) => { e.stopPropagation(); setShowConfirmDelete(true); }}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
+                className="opacity-40 group-hover:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
                 title="Delete task"
               >
                 <Trash2 size={12} />

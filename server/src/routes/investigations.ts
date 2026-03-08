@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, count } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { requireAuth } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
@@ -22,22 +22,33 @@ app.use('*', requireAuth);
 // GET /api/investigations — list investigations the user has access to
 app.get('/', async (c) => {
   const user = c.get('user');
+  const limit = Math.min(Math.max(parseInt(c.req.query('limit') || '50', 10) || 50, 1), 200);
+  const offset = Math.max(parseInt(c.req.query('offset') || '0', 10) || 0, 0);
 
-  const memberships = await db
-    .select({
-      folderId: investigationMembers.folderId,
-      role: investigationMembers.role,
-      joinedAt: investigationMembers.joinedAt,
-      folderName: folders.name,
-      folderStatus: folders.status,
-      folderColor: folders.color,
-      folderIcon: folders.icon,
-    })
-    .from(investigationMembers)
-    .innerJoin(folders, eq(folders.id, investigationMembers.folderId))
-    .where(eq(investigationMembers.userId, user.id));
+  const [totalResult, memberships] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(investigationMembers)
+      .where(eq(investigationMembers.userId, user.id)),
+    db
+      .select({
+        folderId: investigationMembers.folderId,
+        role: investigationMembers.role,
+        joinedAt: investigationMembers.joinedAt,
+        folderName: folders.name,
+        folderStatus: folders.status,
+        folderColor: folders.color,
+        folderIcon: folders.icon,
+      })
+      .from(investigationMembers)
+      .innerJoin(folders, eq(folders.id, investigationMembers.folderId))
+      .where(eq(investigationMembers.userId, user.id))
+      .limit(limit)
+      .offset(offset),
+  ]);
 
-  return c.json(memberships);
+  const total = totalResult[0]?.count ?? 0;
+  return c.json({ data: memberships, total, limit, offset });
 });
 
 // GET /api/investigations/:id/members
