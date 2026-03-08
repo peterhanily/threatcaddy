@@ -346,7 +346,7 @@ export const BUILTIN_INTEGRATIONS: IntegrationTemplate[] = [
     schemaVersion: '1.0',
     version: '1.1.0',
     name: 'URLhaus URL Lookup',
-    description: 'Look up a URL on URLhaus (abuse.ch) for known malware distribution activity.',
+    description: 'Look up a URL on URLhaus (abuse.ch) for known malware distribution activity. Requires a free API key from auth.abuse.ch.',
     author: 'ThreatCaddy',
     icon: 'link',
     color: '#ef4444',
@@ -358,7 +358,15 @@ export const BUILTIN_INTEGRATIONS: IntegrationTemplate[] = [
     triggers: [
       { type: 'manual', iocTypes: ['url'] },
     ],
-    configSchema: [],
+    configSchema: [
+      {
+        key: 'apiKey',
+        label: 'Auth Key',
+        description: 'Your abuse.ch Auth Key (free at auth.abuse.ch)',
+        type: 'password',
+        required: true,
+      },
+    ],
     steps: [
       {
         id: 'fetch-urlhaus',
@@ -366,6 +374,7 @@ export const BUILTIN_INTEGRATIONS: IntegrationTemplate[] = [
         label: 'Query URLhaus',
         method: 'POST',
         url: 'https://urlhaus-api.abuse.ch/v1/url/',
+        headers: { 'Auth-Key': '{{config.apiKey}}' },
         contentType: 'form',
         body: { url: '{{ioc.value}}' },
         responseType: 'json',
@@ -419,7 +428,7 @@ export const BUILTIN_INTEGRATIONS: IntegrationTemplate[] = [
     schemaVersion: '1.0',
     version: '1.0.0',
     name: 'URLhaus Domain Lookup',
-    description: 'Look up a domain on URLhaus (abuse.ch) for known malware distribution URLs.',
+    description: 'Look up a domain on URLhaus (abuse.ch) for known malware distribution URLs. Requires a free API key from auth.abuse.ch.',
     author: 'ThreatCaddy',
     icon: 'link',
     color: '#ef4444',
@@ -431,7 +440,15 @@ export const BUILTIN_INTEGRATIONS: IntegrationTemplate[] = [
     triggers: [
       { type: 'manual', iocTypes: ['domain'] },
     ],
-    configSchema: [],
+    configSchema: [
+      {
+        key: 'apiKey',
+        label: 'Auth Key',
+        description: 'Your abuse.ch Auth Key (free at auth.abuse.ch)',
+        type: 'password',
+        required: true,
+      },
+    ],
     steps: [
       {
         id: 'fetch-urlhaus',
@@ -439,6 +456,7 @@ export const BUILTIN_INTEGRATIONS: IntegrationTemplate[] = [
         label: 'Query URLhaus host',
         method: 'POST',
         url: 'https://urlhaus-api.abuse.ch/v1/host/',
+        headers: { 'Auth-Key': '{{config.apiKey}}' },
         contentType: 'form',
         body: { host: '{{ioc.value}}' },
         responseType: 'json',
