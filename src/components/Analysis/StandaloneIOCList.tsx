@@ -70,7 +70,7 @@ export function StandaloneIOCList({
   };
 
   return (
-    <div className="flex flex-col" style={{ minHeight: iocs.length > 0 ? Math.min(400, 56 + iocs.length * 40) : 200 }}>
+    <div className="flex flex-col">
       <div className="flex items-center justify-between p-4 border-b border-gray-800">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold text-gray-200">Standalone IOCs</h2>
@@ -85,15 +85,15 @@ export function StandaloneIOCList({
         </button>
       </div>
 
-      <div className="flex-1 overflow-hidden p-4">
+      <div className="p-4">
         {iocs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-600">
+          <div className="flex flex-col items-center justify-center py-12 text-gray-600">
             <Search size={36} className="mb-3" />
             <p className="text-lg font-medium">No standalone IOCs yet</p>
             <p className="text-sm mt-1">Create IOCs to track indicators independently</p>
           </div>
         ) : (
-          <div className="overflow-x-auto h-full">
+          <div className="overflow-x-auto" style={{ height: Math.min(600, 40 + iocs.length * 40) }}>
             <TableVirtuoso
               data={iocs}
               components={{
