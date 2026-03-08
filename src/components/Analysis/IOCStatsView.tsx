@@ -1517,15 +1517,25 @@ function AllIOCsTab({
                             )}
                           </>
                         ) : (
-                          onNavigateToSource && (
-                            <button
-                              onClick={() => onNavigateToSource(row.sourceType as 'note' | 'task' | 'event', row.sourceId)}
-                              className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-accent"
-                              title={`Go to ${row.sourceType}`}
-                            >
-                              <ExternalLink size={14} />
-                            </button>
-                          )
+                          <>
+                            <RunIntegrationMenu
+                              ioc={{ id: row.id, value: row.value, type: row.type, confidence: row.confidence }}
+                              investigation={currentFolderId ? { id: currentFolderId, name: currentFolderName || '' } : undefined}
+                              matching={getInstallationsForIOCType(row.type)}
+                              addRun={addRun}
+                              onOpenSettings={onOpenSettings}
+                              onNavigateToNote={onNavigateToSource ? (noteId) => onNavigateToSource('note', noteId) : undefined}
+                            />
+                            {onNavigateToSource && (
+                              <button
+                                onClick={() => onNavigateToSource(row.sourceType as 'note' | 'task' | 'event', row.sourceId)}
+                                className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-accent"
+                                title={`Go to ${row.sourceType}`}
+                              >
+                                <ExternalLink size={14} />
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>
