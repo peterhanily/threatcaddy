@@ -1,5 +1,6 @@
 import type { IOCType, ConfidenceLevel } from '../types';
-import type { IOCExportEntry, ThreatIntelExportConfig } from './ioc-export';
+import type { IOCExportEntry, ThreatIntelExportConfig, IOCExportFilter } from './ioc-export';
+import { applyExportFilter } from './ioc-export';
 import { STIX_TLP_MARKING_DEFS, resolveIOCClsLevel } from './classification';
 
 // --- Deterministic UUID via FNV-1a hash ---
@@ -101,14 +102,15 @@ export interface STIXExportConfig extends ThreatIntelExportConfig {
 export function formatIOCsSTIX(
   entries: IOCExportEntry[],
   config: STIXExportConfig = {},
+  filter?: IOCExportFilter,
 ): string {
   const now = new Date().toISOString();
   const objects: STIXObject[] = [];
   const objectRefs: string[] = [];
   const referencedMarkingDefIds = new Set<string>();
 
-  // Filter out dismissed IOCs
-  const activeEntries = entries.map((e) => ({
+  // Filter out dismissed IOCs (and apply export filter if provided)
+  const activeEntries = applyExportFilter(entries, filter).map((e) => ({
     ...e,
     iocs: e.iocs.filter((ioc) => !ioc.dismissed),
   }));

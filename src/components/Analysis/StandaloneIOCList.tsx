@@ -1,11 +1,13 @@
 import { useState, forwardRef } from 'react';
-import { Plus, Pencil, Trash2, Archive, RotateCcw, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Archive, RotateCcw, Search, ListPlus, Clipboard } from 'lucide-react';
 import type { StandaloneIOC, Folder, Tag } from '../../types';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { StandaloneIOCForm } from './StandaloneIOCForm';
+import { BulkIOCImportModal } from './BulkIOCImportModal';
 import { RunIntegrationMenu } from '../Integrations/RunIntegrationMenu';
 import { useIntegrations } from '../../hooks/useIntegrations';
+import { useToast } from '../../contexts/ToastContext';
 import { formatDate } from '../../lib/utils';
 import { TableVirtuoso } from 'react-virtuoso';
 
@@ -35,6 +37,7 @@ interface StandaloneIOCListProps {
   iocs: StandaloneIOC[];
   folders: Folder[];
   allTags?: Tag[];
+  allIOCs?: StandaloneIOC[];
   onCreate: (data: Partial<StandaloneIOC>) => Promise<StandaloneIOC>;
   onUpdate: (id: string, updates: Partial<StandaloneIOC>) => void;
   onDelete: (id: string) => void;
@@ -51,6 +54,7 @@ export function StandaloneIOCList({
   iocs,
   folders,
   allTags,
+  allIOCs,
   onCreate,
   onUpdate,
   onDelete,
@@ -63,7 +67,9 @@ export function StandaloneIOCList({
   onOpenSettings,
 }: StandaloneIOCListProps) {
   const { getInstallationsForIOCType, addRun } = useIntegrations();
+  const { addToast } = useToast();
   const [showForm, setShowForm] = useState(false);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [editingIOC, setEditingIOC] = useState<StandaloneIOC | undefined>();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -83,13 +89,41 @@ export function StandaloneIOCList({
           <h2 className="text-lg font-semibold text-gray-200">Standalone IOCs</h2>
           <span className="text-xs text-gray-500 tabular-nums">{iocs.length}</span>
         </div>
-        <button
-          onClick={() => { setEditingIOC(undefined); setShowForm(true); }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 text-sm font-medium transition-colors"
-        >
-          <Plus size={16} />
-          New IOC
-        </button>
+        <div className="flex items-center gap-2">
+          {iocs.length > 0 && (
+            <button
+              onClick={async () => {
+                const text = iocs.map((i) => i.value).join('\n');
+                try {
+                  await navigator.clipboard.writeText(text);
+                  addToast('success', `Copied ${iocs.length} IOC${iocs.length !== 1 ? 's' : ''} to clipboard`);
+                } catch {
+                  addToast('error', 'Failed to copy to clipboard');
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 text-sm font-medium transition-colors"
+              title="Copy all visible IOC values to clipboard"
+            >
+              <Clipboard size={16} />
+              Copy
+            </button>
+          )}
+          <button
+            onClick={() => setShowBulkImport(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 text-sm font-medium transition-colors"
+            title="Bulk import IOCs from text"
+          >
+            <ListPlus size={16} />
+            Bulk Import
+          </button>
+          <button
+            onClick={() => { setEditingIOC(undefined); setShowForm(true); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 text-sm font-medium transition-colors"
+          >
+            <Plus size={16} />
+            New IOC
+          </button>
+        </div>
       </div>
 
       <div className="p-4">
@@ -264,6 +298,16 @@ export function StandaloneIOCList({
         message="This IOC will be permanently deleted. This cannot be undone."
         confirmLabel="Delete IOC"
         danger
+      />
+
+      <BulkIOCImportModal
+        open={showBulkImport}
+        onClose={() => setShowBulkImport(false)}
+        onCreate={onCreate}
+        existingIOCs={allIOCs ?? iocs}
+        folders={folders}
+        allTags={allTags}
+        defaultFolderId={defaultFolderId}
       />
 
     </div>

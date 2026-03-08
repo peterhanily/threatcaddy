@@ -10,7 +10,7 @@ import {
   type DestinationPutResult,
 } from '../lib/cloud-sync';
 import { formatIOCsFlatJSON, slugify } from '../lib/ioc-export';
-import type { IOCExportEntry, ThreatIntelExportConfig } from '../lib/ioc-export';
+import type { IOCExportEntry, ThreatIntelExportConfig, IOCExportFilter } from '../lib/ioc-export';
 
 function getLabel(destinations: BackupDestination[]): string {
   return destinations[0]?.label || 'default';
@@ -145,6 +145,7 @@ export function useCloudSync(backupDestinations?: BackupDestination[]) {
     slug: string,
     typeSlug?: string,
     tiExportConfig?: ThreatIntelExportConfig,
+    exportFilter?: IOCExportFilter,
   ): Promise<boolean> => {
     setSyncing(true);
     setError(null);
@@ -153,7 +154,7 @@ export function useCloudSync(backupDestinations?: BackupDestination[]) {
       const dests = destinations.filter((d) => d.enabled);
       if (dests.length === 0) throw new Error('No backup destinations configured.');
 
-      const data = formatIOCsFlatJSON(entries, tiExportConfig);
+      const data = formatIOCsFlatJSON(entries, tiExportConfig, exportFilter);
       const timestamp = Date.now();
       const safeSlug = slugify(slug) || 'iocs';
       const objectKey = typeSlug

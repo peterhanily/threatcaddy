@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { X, RefreshCw, ChevronDown, ChevronRight, Download, Upload, XCircle, Tag, Check, Search } from 'lucide-react';
-import type { IOCTarget, IOCEntry, IOCType, IOCAnalysis } from '../../types';
-import { IOC_TYPE_LABELS } from '../../types';
+import { X, RefreshCw, ChevronDown, ChevronRight, Download, Upload, XCircle, Tag, Check, Search, Clipboard } from 'lucide-react';
+import type { IOCTarget, IOCEntry, IOCType, IOCAnalysis, ConfidenceLevel } from '../../types';
+import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 import { useIOCAnalysis } from '../../hooks/useIOCAnalysis';
 import { useScreenshare } from '../../hooks/ScreenshareContext';
 import { isAboveClsThreshold } from '../../lib/classification';
@@ -10,8 +10,8 @@ import type { ThreatIntelConfigProps } from './IOCItem';
 import { AttributionComboInput } from './AttributionComboInput';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { cn, formatDate } from '../../lib/utils';
-import { formatIOCsJSON, formatIOCsCSV, formatIOCsFlatJSON, formatIOCsFlatCSV, slugify } from '../../lib/ioc-export';
-import type { IOCExportEntry, ThreatIntelExportConfig } from '../../lib/ioc-export';
+import { formatIOCsJSON, formatIOCsCSV, formatIOCsFlatJSON, formatIOCsFlatCSV, slugify, applyExportFilter } from '../../lib/ioc-export';
+import type { IOCExportEntry, ThreatIntelExportConfig, IOCExportFilter } from '../../lib/ioc-export';
 import { formatIOCsSTIX } from '../../lib/stix-export';
 import { downloadFile } from '../../lib/export';
 
@@ -22,7 +22,7 @@ interface IOCPanelProps {
   attributionActors?: string[];
   threatIntelConfig?: ThreatIntelConfigProps;
   tiExportConfig?: ThreatIntelExportConfig;
-  onPushIOCs?: (entries: IOCExportEntry[], slug: string, typeSlug?: string) => Promise<boolean>;
+  onPushIOCs?: (entries: IOCExportEntry[], slug: string, typeSlug?: string, exportFilter?: IOCExportFilter) => Promise<boolean>;
   cloudPushing?: boolean;
   cloudBackupConfigured?: boolean;
   lastPushedAt?: number;
@@ -64,6 +64,8 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
   const [pushMessage, setPushMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [confirmPushAll, setConfirmPushAll] = useState(false);
   const [confirmPushCategory, setConfirmPushCategory] = useState<IOCType | null>(null);
+  const [filterStatuses, setFilterStatuses] = useState<string[]>([]);
+  const [filterConfidences, setFilterConfidences] = useState<ConfidenceLevel[]>([]);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const categoryExportRef = useRef<HTMLDivElement>(null);
   const pushMsgTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -102,11 +104,19 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
     }
   };
 
+  const activeExportFilter: IOCExportFilter | undefined = useMemo(() => {
+    if (filterStatuses.length === 0 && filterConfidences.length === 0) return undefined;
+    return {
+      statuses: filterStatuses.length > 0 ? filterStatuses : undefined,
+      confidences: filterConfidences.length > 0 ? filterConfidences : undefined,
+    };
+  }, [filterStatuses, filterConfidences]);
+
   const doPushAll = async () => {
     if (!onPushIOCs || !analysis) return;
     const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: analysis.iocs, entityClsLevel: item.clsLevel }];
     const slug = slugify(item.title) || 'item';
-    const ok = await onPushIOCs(entries, slug);
+    const ok = await onPushIOCs(entries, slug, undefined, activeExportFilter);
     if (ok) {
       showPushMessage('success', 'Pushed to cloud');
       onPushComplete?.();
@@ -122,7 +132,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
     const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: typeIOCs, entityClsLevel: item.clsLevel }];
     const slug = slugify(item.title) || 'item';
     const typeSlug = type.replace(/[^a-z0-9]/g, '-');
-    const ok = await onPushIOCs(entries, slug, typeSlug);
+    const ok = await onPushIOCs(entries, slug, typeSlug, activeExportFilter);
     if (ok) {
       showPushMessage('success', 'Pushed to cloud');
       onPushComplete?.();
@@ -158,15 +168,15 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
     const slug = slugify(item.title) || 'item';
     const typeSlug = type.replace(/[^a-z0-9]/g, '-');
     if (format === 'stix') {
-      downloadFile(formatIOCsSTIX(entries, tiExportConfig), `iocs-${slug}-${typeSlug}-stix.json`, 'application/json');
+      downloadFile(formatIOCsSTIX(entries, tiExportConfig, activeExportFilter), `iocs-${slug}-${typeSlug}-stix.json`, 'application/json');
     } else if (format === 'flat-json') {
-      downloadFile(formatIOCsFlatJSON(entries, tiExportConfig), `iocs-${slug}-${typeSlug}-flat.json`, 'application/json');
+      downloadFile(formatIOCsFlatJSON(entries, tiExportConfig, activeExportFilter), `iocs-${slug}-${typeSlug}-flat.json`, 'application/json');
     } else if (format === 'flat-csv') {
-      downloadFile(formatIOCsFlatCSV(entries, tiExportConfig), `iocs-${slug}-${typeSlug}-flat.csv`, 'text/csv');
+      downloadFile(formatIOCsFlatCSV(entries, tiExportConfig, activeExportFilter), `iocs-${slug}-${typeSlug}-flat.csv`, 'text/csv');
     } else if (format === 'json') {
-      downloadFile(formatIOCsJSON(entries), `iocs-${slug}-${typeSlug}.json`, 'application/json');
+      downloadFile(formatIOCsJSON(entries, tiExportConfig, activeExportFilter), `iocs-${slug}-${typeSlug}.json`, 'application/json');
     } else {
-      downloadFile(formatIOCsCSV(entries), `iocs-${slug}-${typeSlug}.csv`, 'text/csv');
+      downloadFile(formatIOCsCSV(entries, tiExportConfig, activeExportFilter), `iocs-${slug}-${typeSlug}.csv`, 'text/csv');
     }
   };
 
@@ -177,21 +187,40 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
     setAttributionInput('');
   };
 
+  const handleCopyToClipboard = async () => {
+    setShowExportMenu(false);
+    if (!analysis || activeIOCs.length === 0) return;
+    // Apply filters if active
+    let iocsToExport = activeIOCs;
+    if (activeExportFilter) {
+      const entries = [{ clipTitle: '', sourceUrl: '', iocs: activeIOCs }];
+      const filtered = applyExportFilter(entries, activeExportFilter);
+      iocsToExport = filtered[0]?.iocs || [];
+    }
+    const text = iocsToExport.map((ioc) => ioc.value).join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      showPushMessage('success', `Copied ${iocsToExport.length} IOC${iocsToExport.length !== 1 ? 's' : ''} to clipboard`);
+    } catch {
+      showPushMessage('error', 'Failed to copy to clipboard');
+    }
+  };
+
   const handleExport = (format: 'json' | 'csv' | 'flat-json' | 'flat-csv' | 'stix') => {
     setShowExportMenu(false);
     if (!analysis || activeIOCs.length === 0) return;
     const entries = [{ clipTitle: item.title, sourceUrl: item.sourceUrl, iocs: analysis.iocs, entityClsLevel: item.clsLevel }];
     const slug = slugify(item.title) || 'item';
     if (format === 'stix') {
-      downloadFile(formatIOCsSTIX(entries, tiExportConfig), `iocs-${slug}-stix.json`, 'application/json');
+      downloadFile(formatIOCsSTIX(entries, tiExportConfig, activeExportFilter), `iocs-${slug}-stix.json`, 'application/json');
     } else if (format === 'flat-json') {
-      downloadFile(formatIOCsFlatJSON(entries, tiExportConfig), `iocs-${slug}-flat.json`, 'application/json');
+      downloadFile(formatIOCsFlatJSON(entries, tiExportConfig, activeExportFilter), `iocs-${slug}-flat.json`, 'application/json');
     } else if (format === 'flat-csv') {
-      downloadFile(formatIOCsFlatCSV(entries, tiExportConfig), `iocs-${slug}-flat.csv`, 'text/csv');
+      downloadFile(formatIOCsFlatCSV(entries, tiExportConfig, activeExportFilter), `iocs-${slug}-flat.csv`, 'text/csv');
     } else if (format === 'json') {
-      downloadFile(formatIOCsJSON(entries), `iocs-${slug}.json`, 'application/json');
+      downloadFile(formatIOCsJSON(entries, tiExportConfig, activeExportFilter), `iocs-${slug}.json`, 'application/json');
     } else {
-      downloadFile(formatIOCsCSV(entries), `iocs-${slug}.csv`, 'text/csv');
+      downloadFile(formatIOCsCSV(entries, tiExportConfig, activeExportFilter), `iocs-${slug}.csv`, 'text/csv');
     }
   };
 
@@ -247,8 +276,75 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                 <Download size={14} />
               </button>
               {showExportMenu && (
-                <div className="absolute right-0 top-full mt-1 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
-                  <button onClick={() => handleExport('flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">Export JSON (flat)</button>
+                <div className="absolute right-0 top-full mt-1 w-52 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
+                  {/* Export filters */}
+                  <div className="px-3 py-2 border-b border-gray-700">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">Filters</span>
+                    <div className="mt-1.5 space-y-1.5">
+                      <div>
+                        <span className="text-[10px] text-gray-400">Status</span>
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {['active', 'resolved', 'false-positive', 'under-investigation'].map((s) => (
+                            <button
+                              key={s}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFilterStatuses((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
+                              }}
+                              className={cn(
+                                'px-1.5 py-0.5 rounded text-[10px] border transition-colors',
+                                filterStatuses.includes(s)
+                                  ? 'bg-accent/20 text-accent border-accent/40'
+                                  : 'bg-gray-900 text-gray-500 border-gray-700',
+                              )}
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-gray-400">Confidence</span>
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {(Object.keys(CONFIDENCE_LEVELS) as ConfidenceLevel[]).map((c) => (
+                            <button
+                              key={c}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFilterConfidences((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]);
+                              }}
+                              className={cn(
+                                'px-1.5 py-0.5 rounded text-[10px] border transition-colors',
+                                filterConfidences.includes(c)
+                                  ? 'bg-accent/20 text-accent border-accent/40'
+                                  : 'bg-gray-900 text-gray-500 border-gray-700',
+                              )}
+                            >
+                              {CONFIDENCE_LEVELS[c].label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {(filterStatuses.length > 0 || filterConfidences.length > 0) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFilterStatuses([]);
+                            setFilterConfidences([]);
+                          }}
+                          className="text-[10px] text-gray-500 hover:text-gray-300"
+                        >
+                          Clear filters
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <button onClick={handleCopyToClipboard} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 flex items-center gap-1.5">
+                    <Clipboard size={11} />
+                    Copy to Clipboard
+                  </button>
+                  <div className="border-t border-gray-700" />
+                  <button onClick={() => handleExport('flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export JSON (flat)</button>
                   <button onClick={() => handleExport('flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export CSV (flat)</button>
                   <button onClick={() => handleExport('json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export JSON (grouped)</button>
                   <button onClick={() => handleExport('csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export CSV (grouped)</button>

@@ -13,6 +13,34 @@ export interface ThreatIntelExportConfig {
   defaultReportSource?: string;
 }
 
+/** Optional filters applied before exporting/pushing IOCs. */
+export interface IOCExportFilter {
+  /** Include only IOCs whose iocStatus is in this set (empty = no filter). */
+  statuses?: string[];
+  /** Include only IOCs whose confidence is in this set (empty = no filter). */
+  confidences?: ConfidenceLevel[];
+  /** Include only IOCs created/updated after this timestamp (epoch ms). */
+  afterDate?: number;
+}
+
+/** Apply export filters to a list of IOC entries. */
+export function applyExportFilter(entries: IOCExportEntry[], filter?: IOCExportFilter): IOCExportEntry[] {
+  if (!filter) return entries;
+  const { statuses, confidences, afterDate } = filter;
+  const hasStatuses = statuses && statuses.length > 0;
+  const hasConfidences = confidences && confidences.length > 0;
+
+  return entries.map((e) => ({
+    ...e,
+    iocs: e.iocs.filter((ioc) => {
+      if (hasStatuses && !statuses.includes(ioc.iocStatus || '')) return false;
+      if (hasConfidences && !confidences.includes(ioc.confidence)) return false;
+      if (afterDate && ioc.firstSeen < afterDate) return false;
+      return true;
+    }),
+  }));
+}
+
 interface ExportedIOC {
   type: string;
   value: string;
@@ -45,8 +73,8 @@ function filterActive(entries: IOCExportEntry[]): IOCExportEntry[] {
   }));
 }
 
-export function formatIOCsJSON(entries: IOCExportEntry[]): string {
-  const active = filterActive(entries);
+export function formatIOCsJSON(entries: IOCExportEntry[], _config?: ThreatIntelExportConfig, filter?: IOCExportFilter): string {
+  const active = filterActive(applyExportFilter(entries, filter));
   const totalIOCs = active.reduce((sum, e) => sum + e.iocs.length, 0);
 
   return JSON.stringify(
@@ -73,8 +101,8 @@ function escapeCSVField(value: string): string {
 
 const CSV_HEADERS = ['type', 'value', 'confidence', 'analystNotes', 'attribution', 'firstSeen', 'dismissed', 'clsLevel', 'clipTitle', 'sourceUrl'];
 
-export function formatIOCsCSV(entries: IOCExportEntry[]): string {
-  const active = filterActive(entries);
+export function formatIOCsCSV(entries: IOCExportEntry[], _config?: ThreatIntelExportConfig, filter?: IOCExportFilter): string {
+  const active = filterActive(applyExportFilter(entries, filter));
   const rows: string[] = [CSV_HEADERS.join(',')];
 
   for (const entry of active) {
@@ -124,8 +152,8 @@ interface FlatIOC {
   tags: string;
 }
 
-function buildFlatIOCs(entries: IOCExportEntry[], config: ThreatIntelExportConfig = {}): FlatIOC[] {
-  const active = filterActive(entries);
+function buildFlatIOCs(entries: IOCExportEntry[], config: ThreatIntelExportConfig = {}, filter?: IOCExportFilter): FlatIOC[] {
+  const active = filterActive(applyExportFilter(entries, filter));
   const reportDate = new Date().toISOString();
   const result: FlatIOC[] = [];
   let seq = 1;
@@ -157,8 +185,8 @@ function buildFlatIOCs(entries: IOCExportEntry[], config: ThreatIntelExportConfi
   return result;
 }
 
-export function formatIOCsFlatJSON(entries: IOCExportEntry[], config: ThreatIntelExportConfig = {}): string {
-  const iocs = buildFlatIOCs(entries, config);
+export function formatIOCsFlatJSON(entries: IOCExportEntry[], config: ThreatIntelExportConfig = {}, filter?: IOCExportFilter): string {
+  const iocs = buildFlatIOCs(entries, config, filter);
   return JSON.stringify({ iocs }, null, 2);
 }
 
@@ -168,8 +196,8 @@ const FLAT_CSV_HEADERS: (keyof FlatIOC)[] = [
   'related_id', 'relationship_type', 'ioc_status', 'tags',
 ];
 
-export function formatIOCsFlatCSV(entries: IOCExportEntry[], config: ThreatIntelExportConfig = {}): string {
-  const iocs = buildFlatIOCs(entries, config);
+export function formatIOCsFlatCSV(entries: IOCExportEntry[], config: ThreatIntelExportConfig = {}, filter?: IOCExportFilter): string {
+  const iocs = buildFlatIOCs(entries, config, filter);
   const rows: string[] = [FLAT_CSV_HEADERS.join(',')];
 
   for (const ioc of iocs) {

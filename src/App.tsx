@@ -1346,6 +1346,7 @@ function AppInner() {
                 iocs={filteredStandaloneIOCs}
                 folders={folders}
                 allTags={tags}
+                allIOCs={standaloneIOCsHook.iocs}
                 onCreate={loggedCreateIOC}
                 onUpdate={standaloneIOCsHook.updateIOC}
                 onDelete={loggedDeleteIOC}

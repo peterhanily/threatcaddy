@@ -968,12 +968,12 @@ export function NoteEditor({
                 defaultClsLevel: externalSettings.tiDefaultClsLevel,
                 defaultReportSource: externalSettings.tiDefaultReportSource,
               } : undefined}
-              onPushIOCs={(entries, slug, typeSlug) => {
+              onPushIOCs={(entries, slug, typeSlug, exportFilter) => {
                 logActivity('ioc', 'push-iocs', `Pushed ${entries.length} IOCs from "${note.title}"`, note.id, note.title);
                 return cloud.pushIOCs(entries, slug, typeSlug, externalSettings ? {
                   defaultClsLevel: externalSettings.tiDefaultClsLevel,
                   defaultReportSource: externalSettings.tiDefaultReportSource,
-                } : undefined);
+                } : undefined, exportFilter);
               }}
               cloudBackupConfigured={cloud.hasDestinations}
               cloudPushing={cloud.syncing}
