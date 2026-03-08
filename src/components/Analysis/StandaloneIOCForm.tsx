@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import type { StandaloneIOC, IOCType, ConfidenceLevel, Folder, Tag, IOCRelationship } from '../../types';
+import type { StandaloneIOC, IOCType, ConfidenceLevel, Folder, Tag, IOCRelationship, InvestigationMember, EntityComment } from '../../types';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, DEFAULT_CLS_LEVELS, DEFAULT_RELATIONSHIP_TYPES } from '../../types';
+import { EntityComments } from '../Common/EntityComments';
 
 interface StandaloneIOCFormProps {
   open: boolean;
@@ -11,6 +12,8 @@ interface StandaloneIOCFormProps {
   defaultFolderId?: string;
   editingIOC?: StandaloneIOC;
   allTags?: Tag[];
+  onUpdateIOC?: (id: string, updates: Partial<StandaloneIOC>) => void;
+  investigationMembers?: InvestigationMember[];
 }
 
 const IOC_TYPES = Object.keys(IOC_TYPE_LABELS) as IOCType[];
@@ -24,7 +27,7 @@ const IOC_STATUS_OPTIONS: { value: string; label: string }[] = [
 ];
 const RELATIONSHIP_TYPE_KEYS = Object.keys(DEFAULT_RELATIONSHIP_TYPES);
 
-export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFolderId, editingIOC, allTags = [] }: StandaloneIOCFormProps) {
+export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFolderId, editingIOC, allTags = [], onUpdateIOC, investigationMembers }: StandaloneIOCFormProps) {
   const [type, setType] = useState<IOCType>('ipv4');
   const [value, setValue] = useState('');
   const [confidence, setConfidence] = useState<ConfidenceLevel>('medium');
@@ -40,6 +43,10 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
   const [showAddRel, setShowAddRel] = useState(false);
   const [newRelType, setNewRelType] = useState(RELATIONSHIP_TYPE_KEYS[0]);
   const [newRelTarget, setNewRelTarget] = useState('');
+  const [assigneeId, setAssigneeId] = useState('');
+
+  const isEditMode = !!editingIOC;
+  const comments = editingIOC?.comments ?? [];
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
@@ -56,6 +63,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
         setClsLevel(editingIOC.clsLevel || '');
         setTags(editingIOC.tags || []);
         setRelationships(editingIOC.relationships || []);
+        setAssigneeId(editingIOC.assigneeId || '');
       } else {
         setType('ipv4');
         setValue('');
@@ -68,6 +76,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
         setClsLevel('');
         setTags([]);
         setRelationships([]);
+        setAssigneeId('');
       }
       setTagInput('');
       setShowAddRel(false);
@@ -93,6 +102,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!value.trim()) return;
+    const selectedMember = investigationMembers?.find((m) => m.userId === assigneeId);
     onSubmit({
       ...editingIOC,
       type,
@@ -106,6 +116,8 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
       clsLevel: clsLevel || undefined,
       tags,
       relationships: relationships.length > 0 ? relationships : undefined,
+      assigneeId: assigneeId || undefined,
+      assigneeName: selectedMember?.displayName || undefined,
     });
     onClose();
   };
@@ -230,15 +242,28 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
           </div>
         </div>
 
-        {/* Investigation */}
-        <div>
-          <label className="block text-xs text-gray-400 mb-1">Investigation</label>
-          <select value={folderId} onChange={(e) => setFolderId(e.target.value)} className={selectCls}>
-            <option value="">No investigation</option>
-            {folders.map((f) => (
-              <option key={f.id} value={f.id}>{f.name}</option>
-            ))}
-          </select>
+        {/* Investigation + Assignee */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">Investigation</label>
+            <select value={folderId} onChange={(e) => setFolderId(e.target.value)} className={selectCls}>
+              <option value="">No investigation</option>
+              {folders.map((f) => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+          </div>
+          {investigationMembers && investigationMembers.length > 0 && (
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Assignee</label>
+              <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} className={selectCls}>
+                <option value="">Unassigned</option>
+                {investigationMembers.map((m) => (
+                  <option key={m.userId} value={m.userId}>{m.displayName}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Tags */}
@@ -342,6 +367,14 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
             className={`${inputCls} resize-none`}
           />
         </div>
+
+        {/* Comments section (edit mode only) */}
+        {isEditMode && editingIOC && onUpdateIOC && (
+          <EntityComments
+            comments={comments}
+            onUpdate={(updated: EntityComment[]) => onUpdateIOC(editingIOC.id, { comments: updated })}
+          />
+        )}
 
         <div className="flex justify-end gap-2 pt-1">
           <button

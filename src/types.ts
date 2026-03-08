@@ -50,6 +50,15 @@ export interface NoteAnnotation {
   createdAt: number;
 }
 
+export interface EntityComment {
+  id: string;
+  userId?: string;
+  userName?: string;
+  content: string;
+  createdAt: number;
+  updatedAt?: number;
+}
+
 export type Priority = 'none' | 'low' | 'medium' | 'high';
 export type TaskStatus = 'todo' | 'in-progress' | 'done';
 
@@ -422,6 +431,7 @@ export interface TimelineEvent {
   iocTypes?: IOCType[];
   latitude?: number;   // WGS84 (-90 to 90)
   longitude?: number;  // WGS84 (-180 to 180)
+  comments?: EntityComment[];
   trashed: boolean;
   trashedAt?: number;
   archived: boolean;
@@ -476,6 +486,9 @@ export interface StandaloneIOC {
   linkedNoteIds?: string[];
   linkedTaskIds?: string[];
   linkedTimelineEventIds?: string[];
+  comments?: EntityComment[];
+  assigneeId?: string;
+  assigneeName?: string;
   trashed: boolean;
   trashedAt?: number;
   archived: boolean;

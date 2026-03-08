@@ -22,6 +22,7 @@ import notificationRoutes from './routes/notifications.js';
 import userRoutes from './routes/users.js';
 import botRoutes from './routes/bots.js';
 import integrationRoutes from './routes/integrations.js';
+import savedSearchRoutes from './routes/saved-searches.js';
 import adminRoutes from './routes/admin/index.js';
 import { botManager } from './bots/bot-manager.js';
 import { prePullSandboxImages } from './bots/sandbox.js';
@@ -152,6 +153,7 @@ app.route('/api/notifications', notificationRoutes);
 app.route('/api/users', userRoutes);
 app.route('/api/bots', botRoutes);
 app.route('/api/integrations', integrationRoutes);
+app.route('/api/saved-searches', savedSearchRoutes);
 
 // WebSocket endpoint — token sent as first message, not in URL
 app.get('/ws', upgradeWebSocket(() => {

@@ -477,3 +477,55 @@ export async function deleteTeamTemplate(id: string): Promise<void> {
   const resp = await apiFetch(`/api/integrations/templates/${id}`, { method: 'DELETE' });
   if (!resp.ok) throw new Error('Failed to delete template');
 }
+
+// ─── Saved Searches (Team Sharing) ────────────────────────────────
+
+export interface ServerSavedSearch {
+  id: string;
+  userId: string;
+  name: string;
+  query: string;
+  filters: Record<string, unknown>;
+  isShared: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchSavedSearches(): Promise<{ searches: ServerSavedSearch[] }> {
+  const resp = await apiFetch('/api/saved-searches');
+  if (!resp.ok) throw new Error('Failed to fetch saved searches');
+  return resp.json();
+}
+
+export async function createSavedSearch(data: {
+  name: string;
+  query: string;
+  filters?: Record<string, unknown>;
+  isShared?: boolean;
+}): Promise<{ search: ServerSavedSearch }> {
+  const resp = await apiFetch('/api/saved-searches', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  if (!resp.ok) throw new Error('Failed to create saved search');
+  return resp.json();
+}
+
+export async function updateSavedSearch(id: string, data: {
+  name: string;
+  query: string;
+  filters?: Record<string, unknown>;
+  isShared?: boolean;
+}): Promise<{ search: ServerSavedSearch }> {
+  const resp = await apiFetch(`/api/saved-searches/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  if (!resp.ok) throw new Error('Failed to update saved search');
+  return resp.json();
+}
+
+export async function deleteSavedSearch(id: string): Promise<void> {
+  const resp = await apiFetch(`/api/saved-searches/${id}`, { method: 'DELETE' });
+  if (!resp.ok) throw new Error('Failed to delete saved search');
+}

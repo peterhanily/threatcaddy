@@ -1355,6 +1355,7 @@ function AppInner() {
             onRestoreIOC={loggedRestoreIOC}
             onToggleArchiveIOC={loggedToggleArchiveIOC}
             onOpenSettings={() => { setSettingsInitialTab('integrations'); setShowSettings(true); }}
+            investigationMembers={investigationMembers}
             iocTableColumns={settings.iocTableColumns}
             onUpdateTableColumns={(columns) => updateSettings({ iocTableColumns: columns })}
           />

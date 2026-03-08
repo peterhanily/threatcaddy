@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState, forwardRef } from 'react';
 import { ChevronDown, ChevronRight, Search, BarChart3, List, Plus, ListPlus, Clipboard, X, ChevronUp, Pencil, Trash2, Archive, RotateCcw, ExternalLink, Columns, GitMerge, Tag as TagIcon } from 'lucide-react';
-import type { Note, Task, TimelineEvent, StandaloneIOC, Settings, IOCEntry, IOCType, ConfidenceLevel, Folder, Tag } from '../../types';
+import type { Note, Task, TimelineEvent, StandaloneIOC, Settings, IOCEntry, IOCType, ConfidenceLevel, Folder, Tag, InvestigationMember } from '../../types';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, ALL_IOC_TABLE_COLUMNS, DEFAULT_IOC_TABLE_COLUMNS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { StandaloneIOCForm } from './StandaloneIOCForm';
 import { BulkIOCImportModal } from './BulkIOCImportModal';
+import { STIXImportModal } from './STIXImportModal';
+import { MISPImportModal } from './MISPImportModal';
 import { IOCDeduplicator } from './IOCDeduplicator';
 import { RunIntegrationMenu } from '../Integrations/RunIntegrationMenu';
 import { useIntegrations } from '../../hooks/useIntegrations';
@@ -63,6 +65,7 @@ interface IOCStatsViewProps {
   onToggleArchiveIOC?: (id: string) => void;
   onOpenSettings?: () => void;
   onNavigateToSource?: (sourceType: 'note' | 'task' | 'event', sourceId: string) => void;
+  investigationMembers?: InvestigationMember[];
   iocTableColumns?: string[];
   onUpdateTableColumns?: (columns: string[]) => void;
 }
@@ -104,7 +107,7 @@ export function IOCStatsView({
   filteredStandaloneIOCs = [],
   onCreateIOC, onUpdateIOC, onDeleteIOC,
   onTrashIOC, onRestoreIOC, onToggleArchiveIOC,
-  onOpenSettings, onNavigateToSource,
+  onOpenSettings, onNavigateToSource, investigationMembers,
   iocTableColumns, onUpdateTableColumns,
 }: IOCStatsViewProps) {
   const [actorsExpanded, setActorsExpanded] = useState(false);
@@ -541,6 +544,7 @@ export function IOCStatsView({
           currentFolderName={selectedFolderName}
           onOpenSettings={onOpenSettings}
           onNavigateToSource={onNavigateToSource}
+          investigationMembers={investigationMembers}
           iocTableColumns={iocTableColumns}
           onUpdateTableColumns={onUpdateTableColumns}
         />
@@ -638,7 +642,7 @@ function AllIOCsTab({
   onCreateIOC, onUpdateIOC, onDeleteIOC,
   onTrashIOC, onRestoreIOC, onToggleArchiveIOC,
   defaultFolderId, currentFolderId, currentFolderName,
-  onOpenSettings, onNavigateToSource,
+  onOpenSettings, onNavigateToSource, investigationMembers,
   iocTableColumns, onUpdateTableColumns,
 }: {
   rows: UnifiedIOCRow[];
@@ -656,6 +660,7 @@ function AllIOCsTab({
   currentFolderName?: string;
   onOpenSettings?: () => void;
   onNavigateToSource?: (sourceType: 'note' | 'task' | 'event', sourceId: string) => void;
+  investigationMembers?: InvestigationMember[];
   iocTableColumns?: string[];
   onUpdateTableColumns?: (columns: string[]) => void;
 }) {
@@ -664,6 +669,8 @@ function AllIOCsTab({
 
   const [showForm, setShowForm] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showSTIXImport, setShowSTIXImport] = useState(false);
+  const [showMISPImport, setShowMISPImport] = useState(false);
   const [editingIOC, setEditingIOC] = useState<StandaloneIOC | undefined>();
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -932,6 +939,22 @@ function AllIOCsTab({
               >
                 <ListPlus size={14} />
                 Bulk Import
+              </button>
+              <button
+                onClick={() => setShowSTIXImport(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs font-medium transition-colors"
+                title="Import STIX 2.1 bundle"
+              >
+                <ListPlus size={14} />
+                Import STIX
+              </button>
+              <button
+                onClick={() => setShowMISPImport(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs font-medium transition-colors"
+                title="Import MISP event"
+              >
+                <ListPlus size={14} />
+                Import MISP
               </button>
               <button
                 onClick={() => { setEditingIOC(undefined); setShowForm(true); }}
@@ -1431,10 +1454,30 @@ function AllIOCsTab({
             defaultFolderId={defaultFolderId}
             editingIOC={editingIOC}
             allTags={allTags}
+            onUpdateIOC={onUpdateIOC}
+            investigationMembers={investigationMembers}
           />
           <BulkIOCImportModal
             open={showBulkImport}
             onClose={() => setShowBulkImport(false)}
+            onCreate={onCreateIOC}
+            existingIOCs={allStandaloneIOCs ?? []}
+            folders={folders}
+            allTags={allTags}
+            defaultFolderId={defaultFolderId}
+          />
+          <STIXImportModal
+            open={showSTIXImport}
+            onClose={() => setShowSTIXImport(false)}
+            onCreate={onCreateIOC}
+            existingIOCs={allStandaloneIOCs ?? []}
+            folders={folders}
+            allTags={allTags}
+            defaultFolderId={defaultFolderId}
+          />
+          <MISPImportModal
+            open={showMISPImport}
+            onClose={() => setShowMISPImport(false)}
             onCreate={onCreateIOC}
             existingIOCs={allStandaloneIOCs ?? []}
             folders={folders}

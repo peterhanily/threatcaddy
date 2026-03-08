@@ -178,6 +178,7 @@ export const timelineEvents = pgTable('timeline_events', {
   iocTypes: jsonb('ioc_types').default([]),
   latitude: text('latitude'),
   longitude: text('longitude'),
+  comments: jsonb('comments').default([]),
   trashed: boolean('trashed').notNull().default(false),
   trashedAt: timestamp('trashed_at', { withTimezone: true }),
   archived: boolean('archived').notNull().default(false),
@@ -250,6 +251,9 @@ export const standaloneIOCs = pgTable('standalone_iocs', {
   linkedNoteIds: jsonb('linked_note_ids').default([]),
   linkedTaskIds: jsonb('linked_task_ids').default([]),
   linkedTimelineEventIds: jsonb('linked_timeline_event_ids').default([]),
+  comments: jsonb('comments').default([]),
+  assigneeId: text('assignee_id').references(() => users.id, { onDelete: 'set null' }),
+  assigneeName: text('assignee_name'),
   trashed: boolean('trashed').notNull().default(false),
   trashedAt: timestamp('trashed_at', { withTimezone: true }),
   archived: boolean('archived').notNull().default(false),
@@ -263,6 +267,7 @@ export const standaloneIOCs = pgTable('standalone_iocs', {
   idxStandaloneIOCsFolderId: index('idx_standalone_iocs_folder_id').on(t.folderId),
   idxStandaloneIOCsUpdatedAt: index('idx_standalone_iocs_updated_at').on(t.updatedAt),
   idxStandaloneIOCsCreatedBy: index('idx_standalone_iocs_created_by').on(t.createdBy),
+  idxStandaloneIOCsAssigneeId: index('idx_standalone_iocs_assignee_id').on(t.assigneeId),
 }));
 
 export const chatThreads = pgTable('chat_threads', {
@@ -451,6 +456,23 @@ export const files = pgTable('files', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   idxFilesFolderId: index('idx_files_folder_id').on(t.folderId),
+}));
+
+// ─── Saved Searches ─────────────────────────────────────────────
+
+export const savedSearches = pgTable('saved_searches', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  query: text('query').notNull(),
+  filters: jsonb('filters').notNull().default({}),
+  isShared: boolean('is_shared').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  idxSavedSearchesUserId: index('idx_saved_searches_user_id').on(t.userId),
+  idxSavedSearchesIsShared: index('idx_saved_searches_is_shared').on(t.isShared),
+  idxSavedSearchesCreatedAt: index('idx_saved_searches_created_at').on(t.createdAt),
 }));
 
 // ─── Integration Templates ──────────────────────────────────────

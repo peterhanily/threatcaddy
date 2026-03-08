@@ -160,6 +160,11 @@ db.version(20).stores({
   timelineEvents: 'id, timestamp, eventType, source, starred, trashed, archived, folderId, timelineId, createdAt, updatedAt, *tags, *iocTypes, createdBy, [folderId+timestamp]',
 });
 
+// Version 21: IOC assignee index
+db.version(21).stores({
+  standaloneIOCs: 'id, type, value, folderId, trashed, archived, createdAt, updatedAt, *tags, createdBy, assigneeId',
+});
+
 // Encryption-at-rest middleware (transparent to all CRUD hooks)
 installEncryptionMiddleware(db);
 

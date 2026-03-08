@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Search } from 'lucide-react';
-import type { TimelineEvent, TimelineEventType, ConfidenceLevel, Folder, Tag, IOCTarget, IOCAnalysis, IOCType } from '../../types';
+import type { TimelineEvent, TimelineEventType, ConfidenceLevel, Folder, Tag, IOCTarget, IOCAnalysis, IOCType, EntityComment } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 import { TagInput } from '../Common/TagInput';
 import { AttributionComboInput } from '../Analysis/AttributionComboInput';
 import { IOCPanel } from '../Analysis/IOCPanel';
 import { MitreComboInput } from './MitreComboInput';
+import { EntityComments } from '../Common/EntityComments';
 import { extractIOCs, mergeIOCAnalysis } from '../../lib/ioc-extractor';
 import { getEffectiveClsLevels } from '../../lib/classification';
 import { useSettings } from '../../hooks/useSettings';
@@ -66,6 +67,7 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
 
   const isEditMode = !!event;
   const iocCount = event?.iocAnalysis?.iocs.filter((i) => !i.dismissed).length ?? 0;
+  const eventComments = event?.comments ?? [];
 
   // Auto-extract IOCs on description changes (edit mode only)
   useAutoIOCExtraction({
@@ -380,6 +382,14 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
           />
         )}
       </div>
+
+      {/* Comments section (edit mode only) */}
+      {isEditMode && event && onUpdateEvent && (
+        <EntityComments
+          comments={eventComments}
+          onUpdate={(updated: EntityComment[]) => onUpdateEvent(event.id, { comments: updated })}
+        />
+      )}
 
       <div className="flex justify-end gap-3 pt-2">
         <button

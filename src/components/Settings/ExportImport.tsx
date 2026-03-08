@@ -2,8 +2,11 @@ import { useState, useRef } from 'react';
 import { Download, Upload, FileText, AlertCircle } from 'lucide-react';
 import { exportJSON, importJSON, exportNotesMarkdown, downloadFile } from '../../lib/export';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
+import { MarkdownImportModal } from './MarkdownImportModal';
 import { useLogActivity } from '../../hooks/ActivityLogContext';
 import { useToast } from '../../contexts/ToastContext';
+import { db } from '../../db';
+import { nanoid } from 'nanoid';
 import type { Note } from '../../types';
 
 interface ExportImportProps {
@@ -18,6 +21,7 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [showMdImport, setShowMdImport] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const msgTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -70,6 +74,28 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
     }
   };
 
+  const handleMarkdownImport = async (importedNotes: Array<{ title: string; content: string; tags: string[] }>): Promise<number> => {
+    const now = Date.now();
+    const notesToAdd: Note[] = importedNotes.map((n) => ({
+      id: nanoid(),
+      title: n.title,
+      content: n.content,
+      tags: n.tags,
+      pinned: false,
+      archived: false,
+      trashed: false,
+      createdAt: now,
+      updatedAt: now,
+    }));
+
+    await db.notes.bulkAdd(notesToAdd);
+    showMessage(`Imported ${notesToAdd.length} notes from Markdown`);
+    addToast('success', `Imported ${notesToAdd.length} notes from Markdown`);
+    logActivity('data', 'import', `Imported ${notesToAdd.length} notes from Markdown`);
+    onImportComplete();
+    return notesToAdd.length;
+  };
+
   const btnClass = 'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors';
 
   return (
@@ -84,6 +110,10 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
         <button onClick={handleExportMarkdown} className={`${btnClass} bg-gray-700 hover:bg-gray-600 text-gray-200`}>
           <FileText size={16} />
           Export Markdown
+        </button>
+        <button onClick={() => setShowMdImport(true)} className={`${btnClass} bg-gray-700 hover:bg-gray-600 text-gray-200`}>
+          <Upload size={16} />
+          Import Markdown
         </button>
         <label className={`${btnClass} bg-accent hover:bg-accent-hover text-white cursor-pointer ${importing ? 'opacity-50 pointer-events-none' : ''}`}>
           <Upload size={16} />
@@ -110,6 +140,12 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
         message="This will replace all your current notes, tasks, folders, and tags with the imported data. This cannot be undone."
         confirmLabel="Import & Replace"
         danger
+      />
+
+      <MarkdownImportModal
+        open={showMdImport}
+        onClose={() => setShowMdImport(false)}
+        onImport={handleMarkdownImport}
       />
     </div>
   );

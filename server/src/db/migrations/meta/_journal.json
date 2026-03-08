@@ -120,6 +120,13 @@
       "when": 1742400000000,
       "tag": "0016_add_performance_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1742500000000,
+      "tag": "0017_collaboration_features",
+      "breakpoints": true
     }
   ]
 }
