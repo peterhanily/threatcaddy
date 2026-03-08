@@ -33,7 +33,7 @@ import { clipBuffer } from './lib/clipBuffer';
 import type { ViewMode, SortOption, EditorMode, Note, Task, TimelineEvent, TaskViewMode, IOCType, ChatThread } from './types';
 import { DEFAULT_QUICK_LINKS } from './types';
 const DashboardView = lazy(() => import('./components/Dashboard/DashboardView').then(m => ({ default: m.DashboardView })));
-import { FileText } from 'lucide-react';
+import { FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from './lib/utils';
 import { exportJSON, importJSON, downloadFile, exportInvestigationJSON } from './lib/export';
 import { ConfirmDialog } from './components/Common/ConfirmDialog';
@@ -249,6 +249,10 @@ function AppInner() {
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [shareLinkPayload, setShareLinkPayload] = useState<SharePayload | null>(null);
   const [selectedIOCTypes, setSelectedIOCTypes] = useState<IOCType[]>([]);
+  const [noteListWidth, setNoteListWidth] = useState(288); // md:w-72 = 288px
+  const [noteListCollapsed, setNoteListCollapsed] = useState(false);
+  const [noteListDragging, setNoteListDragging] = useState(false);
+  const notesContainerRef = useRef<HTMLDivElement>(null);
   const [selectedTimelineId, setSelectedTimelineId] = useState<string | undefined>(savedNavState?.selectedTimelineId);
   const [selectedWhiteboardId, setSelectedWhiteboardId] = useState<string | undefined>(savedNavState?.selectedWhiteboardId);
   const [selectedChatThreadId, setSelectedChatThreadId] = useState<string | undefined>(() => {
@@ -736,6 +740,36 @@ function AppInner() {
 
   const handleShareNoteLink = useCallback((note: Note) => {
     setShareLinkPayload({ v: 1, s: 'note', t: Date.now(), d: note });
+  }, []);
+
+  // ─── Note list resize ────────────────────────────────────────
+  const handleNoteListDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setNoteListDragging(true);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMove = (ev: MouseEvent) => {
+      const container = notesContainerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const w = Math.min(480, Math.max(180, ev.clientX - rect.left));
+      setNoteListWidth(w);
+      setNoteListCollapsed(false);
+    };
+    const onUp = () => {
+      setNoteListDragging(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, []);
+
+  const toggleNoteListCollapse = useCallback(() => {
+    setNoteListCollapsed(prev => !prev);
   }, []);
 
   const handleShareInvestigationLink = useCallback((folderId: string) => {
@@ -1421,11 +1455,15 @@ function AppInner() {
           />
         ) : (
           /* Notes view — responsive: list OR editor on mobile */
-          <div data-tour="notes-editor" className="flex flex-1 overflow-hidden">
-            <div className={cn(
-              'shrink-0 h-full',
-              selectedNote ? 'hidden md:block md:w-72' : 'w-full md:w-72'
-            )}>
+          <div data-tour="notes-editor" ref={notesContainerRef} className="flex flex-1 overflow-hidden">
+            <div
+              className={cn(
+                'shrink-0 h-full overflow-hidden',
+                !noteListDragging && 'transition-[width] duration-150',
+                selectedNote ? 'hidden md:block' : 'w-full md:block'
+              )}
+              style={selectedNote ? { width: noteListCollapsed ? 0 : noteListWidth } : undefined}
+            >
               <NoteList
                 notes={ssFilteredNotes}
                 selectedId={selectedNoteId}
@@ -1442,6 +1480,25 @@ function AppInner() {
                 }}
                 onTrash={loggedTrashNote}
               />
+            </div>
+            {/* Resize handle with collapse/expand toggle — desktop only */}
+            <div
+              className={cn(
+                'hidden md:flex shrink-0 relative items-center',
+                noteListDragging ? 'bg-accent/50' : 'bg-gray-700 hover:bg-accent/30',
+                noteListCollapsed ? 'w-2 cursor-pointer' : 'w-1 cursor-col-resize'
+              )}
+              onMouseDown={noteListCollapsed ? undefined : handleNoteListDragStart}
+              onClick={noteListCollapsed ? toggleNoteListCollapse : undefined}
+            >
+              {!noteListCollapsed && <div className="absolute inset-y-0 -left-1 -right-1" />}
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleNoteListCollapse(); }}
+                className="absolute top-1/2 -translate-y-1/2 -right-3 z-10 w-6 h-6 rounded-full bg-gray-800 border border-gray-600 flex items-center justify-center hover:bg-gray-700 hover:border-accent/50 transition-colors"
+                title={noteListCollapsed ? 'Expand note list' : 'Collapse note list'}
+              >
+                {noteListCollapsed ? <PanelLeftOpen size={12} /> : <PanelLeftClose size={12} />}
+              </button>
             </div>
             <div className={cn('flex-1 min-w-0 overflow-hidden', !selectedNote && 'hidden md:block')}>
               {selectedNote ? (
