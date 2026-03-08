@@ -70,7 +70,7 @@ export function StandaloneIOCList({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col" style={{ minHeight: iocs.length > 0 ? Math.min(400, 56 + iocs.length * 40) : 200 }}>
       <div className="flex items-center justify-between p-4 border-b border-gray-800">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold text-gray-200">Standalone IOCs</h2>
