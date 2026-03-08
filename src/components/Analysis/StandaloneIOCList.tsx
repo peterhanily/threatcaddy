@@ -5,6 +5,7 @@ import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { StandaloneIOCForm } from './StandaloneIOCForm';
 import { RunIntegrationMenu } from '../Integrations/RunIntegrationMenu';
+import { useIntegrations } from '../../hooks/useIntegrations';
 import { formatDate } from '../../lib/utils';
 import { TableVirtuoso } from 'react-virtuoso';
 
@@ -36,6 +37,7 @@ interface StandaloneIOCListProps {
   defaultFolderId?: string;
   currentFolderId?: string;
   currentFolderName?: string;
+  onOpenSettings?: () => void;
 }
 
 export function StandaloneIOCList({
@@ -51,7 +53,9 @@ export function StandaloneIOCList({
   defaultFolderId,
   currentFolderId,
   currentFolderName,
+  onOpenSettings,
 }: StandaloneIOCListProps) {
+  const { getInstallationsForIOCType, addRun } = useIntegrations();
   const [showForm, setShowForm] = useState(false);
   const [editingIOC, setEditingIOC] = useState<StandaloneIOC | undefined>();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -186,6 +190,9 @@ export function StandaloneIOCList({
                             <RunIntegrationMenu
                               ioc={{ id: ioc.id, value: ioc.value, type: ioc.type, confidence: ioc.confidence }}
                               investigation={currentFolderId ? { id: currentFolderId, name: currentFolderName || '' } : undefined}
+                              matching={getInstallationsForIOCType(ioc.type)}
+                              addRun={addRun}
+                              onOpenSettings={onOpenSettings}
                             />
                             <button
                               onClick={() => { setEditingIOC(ioc); setShowForm(true); }}

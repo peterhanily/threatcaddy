@@ -201,51 +201,53 @@ export function Sidebar({
   if (collapsed) {
     return (
       <aside
-        className="w-12 border-r border-border-subtle sidebar-glass flex flex-col items-center py-2 gap-0.5 h-full shrink-0 overflow-y-auto overflow-x-hidden"
+        className="w-12 border-r border-border-subtle sidebar-glass flex flex-col items-center h-full shrink-0 overflow-hidden"
         role="navigation"
         aria-label="Main navigation"
         data-tour="sidebar-nav"
       >
-        {collapsedViewItems.map((item) => (
+        {/* Scrollable view icons */}
+        <div className="flex-1 flex flex-col items-center py-2 gap-0.5 overflow-y-auto overflow-x-hidden w-full">
+          {collapsedViewItems.map((item) => (
+            <CollapsedIcon
+              key={item.view}
+              icon={item.icon}
+              label={item.label}
+              active={activeView === item.view && !showTrash && !showArchive}
+              badge={item.badge}
+              onClick={() => nav(() => navToView(item.view))}
+              dataTour={item.dataTour}
+            />
+          ))}
+        </div>
+
+        {/* Fixed footer — always visible */}
+        <div className="shrink-0 flex flex-col items-center py-1.5 gap-0.5 border-t border-border-subtle w-full">
           <CollapsedIcon
-            key={item.view}
-            icon={item.icon}
-            label={item.label}
-            active={activeView === item.view && !showTrash && !showArchive}
-            badge={item.badge}
-            onClick={() => nav(() => navToView(item.view))}
-            dataTour={item.dataTour}
+            icon={SettingsIcon}
+            label="Settings"
+            onClick={() => nav(onOpenSettings)}
           />
-        ))}
-
-        <div className="flex-1" />
-        <div className="w-6 border-t border-border-subtle my-1" />
-
-        <CollapsedIcon
-          icon={SettingsIcon}
-          label="Settings"
-          onClick={() => nav(onOpenSettings)}
-        />
-
-        <CollapsedIcon
-          icon={Archive}
-          label="Archive"
-          active={showArchive}
-          badge={noteCounts.archived}
-          onClick={() => nav(() => { onShowArchive(!showArchive); onShowTrash(false); onFolderSelect(undefined); onTagSelect(undefined); })}
-        />
-        <CollapsedIcon
-          icon={Trash2}
-          label="Trash"
-          active={showTrash}
-          badge={noteCounts.trashed}
-          onClick={() => nav(() => { onShowTrash(!showTrash); onShowArchive(false); onFolderSelect(undefined); onTagSelect(undefined); })}
-        />
-        <CollapsedIcon
-          icon={PanelLeft}
-          label="Expand sidebar"
-          onClick={onToggleCollapsed}
-        />
+          <CollapsedIcon
+            icon={Archive}
+            label="Archive"
+            active={showArchive}
+            badge={noteCounts.archived}
+            onClick={() => nav(() => { onShowArchive(!showArchive); onShowTrash(false); onFolderSelect(undefined); onTagSelect(undefined); })}
+          />
+          <CollapsedIcon
+            icon={Trash2}
+            label="Trash"
+            active={showTrash}
+            badge={noteCounts.trashed}
+            onClick={() => nav(() => { onShowTrash(!showTrash); onShowArchive(false); onFolderSelect(undefined); onTagSelect(undefined); })}
+          />
+          <CollapsedIcon
+            icon={PanelLeft}
+            label="Expand sidebar"
+            onClick={onToggleCollapsed}
+          />
+        </div>
       </aside>
     );
   }

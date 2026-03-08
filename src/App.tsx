@@ -1353,6 +1353,9 @@ function AppInner() {
                 onRestore={loggedRestoreIOC}
                 onToggleArchive={loggedToggleArchiveIOC}
                 defaultFolderId={selectedFolderId}
+                currentFolderId={selectedFolderId}
+                currentFolderName={selectedFolder?.name}
+                onOpenSettings={() => setShowSettings(true)}
               />
             </div>
           </div>

@@ -1,29 +1,28 @@
 import { useState, useRef, useEffect } from 'react';
 import { Zap, Loader2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
-import { useIntegrations } from '../../hooks/useIntegrations';
 import { useToast } from '../../contexts/ToastContext';
 import { IntegrationExecutor } from '../../lib/integration-executor';
 import { IntegrationResultModal } from './IntegrationResultModal';
 import { db } from '../../db';
-import type { IntegrationRun } from '../../types/integration-types';
+import type { IntegrationRun, InstalledIntegration, IntegrationTemplate } from '../../types/integration-types';
 
 interface RunIntegrationMenuProps {
   ioc: { id: string; value: string; type: string; confidence: string };
   investigation?: { id: string; name: string };
+  matching: Array<{ installation: InstalledIntegration; template: IntegrationTemplate }>;
+  addRun: (run: IntegrationRun) => Promise<void>;
   onComplete?: (run: IntegrationRun) => void;
+  onOpenSettings?: () => void;
 }
 
-export function RunIntegrationMenu({ ioc, investigation, onComplete }: RunIntegrationMenuProps) {
-  const { getInstallationsForIOCType, addRun } = useIntegrations();
+export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onComplete, onOpenSettings }: RunIntegrationMenuProps) {
   const { addToast } = useToast();
   const [open, setOpen] = useState(false);
   const [running, setRunning] = useState(false);
   const [resultRun, setResultRun] = useState<IntegrationRun | null>(null);
   const [showResults, setShowResults] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  const matching = getInstallationsForIOCType(ioc.type);
 
   // Close menu on outside click
   useEffect(() => {
@@ -36,8 +35,6 @@ export function RunIntegrationMenu({ ioc, investigation, onComplete }: RunIntegr
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
-
-  if (matching.length === 0) return null;
 
   const handleRun = async (installationId: string, templateId: string) => {
     setOpen(false);
@@ -145,8 +142,12 @@ export function RunIntegrationMenu({ ioc, investigation, onComplete }: RunIntegr
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={running}
-        className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-amber-400 transition-colors disabled:opacity-50"
-        title="Run Integration"
+        className={`p-1 rounded hover:bg-gray-700 transition-colors disabled:opacity-50 ${
+          matching.length > 0
+            ? 'text-amber-500/70 hover:text-amber-400'
+            : 'text-gray-600 hover:text-gray-400'
+        }`}
+        title={matching.length > 0 ? 'Run Integration' : 'No integrations installed — set up in Settings > Integrations'}
       >
         {running ? (
           <Loader2 size={14} className="animate-spin" />
@@ -160,24 +161,34 @@ export function RunIntegrationMenu({ ioc, investigation, onComplete }: RunIntegr
           <div className="px-3 py-1.5 text-[10px] text-gray-500 uppercase tracking-wider font-semibold border-b border-gray-700">
             Run Integration
           </div>
-          {matching.map(({ installation, template }) => (
+          {matching.length === 0 ? (
             <button
-              key={installation.id}
-              onClick={() => handleRun(installation.id, template.id)}
-              className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-700 hover:text-gray-100 transition-colors flex items-center gap-2"
+              onClick={() => { setOpen(false); onOpenSettings?.(); }}
+              className="w-full text-left px-3 py-3 text-xs text-gray-400 hover:bg-gray-700 transition-colors"
             >
-              <div
-                className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                style={{ backgroundColor: template.color || '#6b7280' }}
-              >
-                {template.name.charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <div className="truncate">{template.name}</div>
-                <div className="text-[10px] text-gray-500 truncate">{template.description}</div>
-              </div>
+              <p>No integrations for this IOC type.</p>
+              <p className="text-amber-500/80 mt-1">Set up integrations →</p>
             </button>
-          ))}
+          ) : (
+            matching.map(({ installation, template }) => (
+              <button
+                key={installation.id}
+                onClick={() => handleRun(installation.id, template.id)}
+                className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-700 hover:text-gray-100 transition-colors flex items-center gap-2"
+              >
+                <div
+                  className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                  style={{ backgroundColor: template.color || '#6b7280' }}
+                >
+                  {template.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate">{template.name}</div>
+                  <div className="text-[10px] text-gray-500 truncate">{template.description}</div>
+                </div>
+              </button>
+            ))
+          )}
         </div>
       )}
 
