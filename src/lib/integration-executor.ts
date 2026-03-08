@@ -800,6 +800,22 @@ export class IntegrationExecutor {
         case 'create-timeline-event': {
           if (callbacks.onCreateEntity) {
             const entityType = output.type.replace('create-', '') as string;
+            // For notes, attach raw API responses and transform results for rich formatting
+            if (output.type === 'create-note') {
+              const httpResponses: Record<string, unknown> = {};
+              const transformResults: Record<string, unknown> = {};
+              for (const [stepId, stepData] of Object.entries(context.steps)) {
+                const data = stepData as Record<string, unknown>;
+                if (data?.response) {
+                  httpResponses[stepId] = (data.response as Record<string, unknown>).data;
+                } else if (!data?._apiCalls && !data?.branch) {
+                  // Transform step results (no _apiCalls or branch property)
+                  transformResults[stepId] = data;
+                }
+              }
+              resolved._rawResponses = httpResponses;
+              resolved._transformResults = transformResults;
+            }
             await callbacks.onCreateEntity(entityType, resolved);
             entitiesCreated++;
             addLog({

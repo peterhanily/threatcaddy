@@ -51,6 +51,7 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
         return;
       }
 
+      let pendingNoteId: string | null = null;
       const executor = new IntegrationExecutor();
       const run = await executor.run(
         match.template,
@@ -62,10 +63,53 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
             const now = Date.now();
             switch (type) {
               case 'note': {
-                const noteContent = (fields.body as string) || (fields.content as string) || '';
+                // Format note body: flattened enrichment list + raw JSON code block
+                const transformResults = fields._transformResults as Record<string, Record<string, unknown>> | undefined;
+                const rawResponses = fields._rawResponses as Record<string, unknown> | undefined;
+
+                const bodyParts: string[] = [];
+
+                // Flattened key-value list from transform results
+                if (transformResults) {
+                  for (const [, stepData] of Object.entries(transformResults)) {
+                    if (stepData && typeof stepData === 'object') {
+                      for (const [key, val] of Object.entries(stepData)) {
+                        const display = val === null || val === undefined ? '--'
+                          : typeof val === 'object' ? JSON.stringify(val)
+                          : String(val);
+                        bodyParts.push(`- **${key}:** ${display}`);
+                      }
+                    }
+                  }
+                }
+
+                // Raw response JSON code block
+                if (rawResponses) {
+                  const responseValues = Object.values(rawResponses).filter(Boolean);
+                  if (responseValues.length > 0) {
+                    const jsonData = responseValues.length === 1 ? responseValues[0] : rawResponses;
+                    bodyParts.push('');
+                    bodyParts.push('### Raw Response');
+                    bodyParts.push('```json');
+                    bodyParts.push(JSON.stringify(jsonData, null, 2));
+                    bodyParts.push('```');
+                  }
+                }
+
+                const noteContent = bodyParts.length > 0
+                  ? bodyParts.join('\n')
+                  : (fields.body as string) || (fields.content as string) || '';
+
+                // Add timestamp to title
+                const timestamp = new Date().toLocaleString('en-US', {
+                  month: 'short', day: 'numeric', year: 'numeric',
+                  hour: '2-digit', minute: '2-digit',
+                });
+                const noteTitle = `${(fields.title as string) || 'Integration Note'} — ${timestamp}`;
+
                 await db.notes.add({
                   id,
-                  title: (fields.title as string) || 'Integration Note',
+                  title: noteTitle,
                   content: noteContent,
                   folderId: (fields.folderId as string) || investigation?.id,
                   tags: (fields.tags as string[]) || [],
@@ -76,8 +120,8 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
                   createdAt: now,
                   updatedAt: now,
                 });
-                // Auto-navigate to the created note
-                onNavigateToNote?.(id);
+                // Defer navigation until after run completes
+                pendingNoteId = id;
                 break;
               }
               case 'ioc':
@@ -135,6 +179,11 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
       }
 
       onComplete?.(run);
+
+      // Navigate to created note after run completes and React can pick up the DB change
+      if (pendingNoteId && run.status === 'success') {
+        setTimeout(() => onNavigateToNote?.(pendingNoteId!), 100);
+      }
     } catch (err) {
       addToast('error', `Integration error: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
