@@ -112,7 +112,6 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns) {
         wsClientRef.current.disconnect();
         wsClientRef.current = null;
       }
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPresenceUsers([]);
     }
 
@@ -126,6 +125,7 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns) {
         wsClientRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on scalar values, not object identity
   }, [auth.serverUrl, auth.connected]);
 
   const handleResolveConflict = useCallback(async (entityId: string, choice: 'mine' | 'theirs') => {
