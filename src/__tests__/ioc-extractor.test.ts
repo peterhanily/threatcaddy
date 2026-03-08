@@ -224,6 +224,38 @@ detection:
     expect(paths).toHaveLength(2);
   });
 
+  it('extracts Windows paths with lowercase drive letters', () => {
+    const result = extractIOCs('Malware found at c:\\Users\\admin\\AppData\\Local\\Temp\\evil.exe');
+    const paths = result.filter((i) => i.type === 'file-path');
+    expect(paths).toHaveLength(1);
+    expect(paths[0].value).toContain('c:\\Users');
+  });
+
+  it('extracts Windows paths with forward slashes', () => {
+    const result = extractIOCs('Payload at C:/ProgramData/malware/dropper.dll');
+    const paths = result.filter((i) => i.type === 'file-path');
+    expect(paths).toHaveLength(1);
+  });
+
+  it('extracts UNC paths', () => {
+    const result = extractIOCs('Shared at \\\\fileserver\\share\\payload.exe');
+    const paths = result.filter((i) => i.type === 'file-path');
+    expect(paths).toHaveLength(1);
+    expect(paths[0].value).toContain('\\\\fileserver');
+  });
+
+  it('extracts macOS-style paths', () => {
+    const result = extractIOCs('Found /Users/admin/Library/LaunchAgents/com.malware.plist');
+    const paths = result.filter((i) => i.type === 'file-path');
+    expect(paths).toHaveLength(1);
+  });
+
+  it('does not extract file paths that are just URL path components', () => {
+    const result = extractIOCs('Downloaded from https://evil.com/tmp/payload.bin');
+    const paths = result.filter((i) => i.type === 'file-path');
+    expect(paths).toHaveLength(0);
+  });
+
   // -- Deduplication --
   it('deduplicates identical values', () => {
     const result = extractIOCs('IP 192.168.1.1 was seen and also 192.168.1.1 again');

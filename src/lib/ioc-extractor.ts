@@ -86,10 +86,15 @@ const IOC_PATTERNS: { type: IOCType; pattern: RegExp; validate?: (match: string)
     type: 'domain',
     pattern: /\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+(?:com|net|org|io|gov|edu|mil|info|biz|co|us|uk|de|ru|cn|br|in|au|xyz|online|site|top|onion|tk|pw)\b/gi,
   },
-  // File paths (Unix and Windows)
+  // File paths (Unix, Windows with backslash or forward slash, UNC)
   {
     type: 'file-path',
-    pattern: /(?:(?:\/(?:usr|etc|var|tmp|opt|home|root|bin|sbin|dev|proc|sys|mnt|media)(?:\/[\w.@-]+)+)|(?:[A-Z]:\\(?:[\w.@-]+\\)+[\w.@-]+))/g,
+    pattern: /(?:(?:\/(?:usr|etc|var|tmp|opt|home|root|bin|sbin|dev|proc|sys|mnt|media|srv|run|lib|Library|Users|Applications|Volumes|private)(?:\/[\w.@~:+-]+)+)|(?:[a-zA-Z]:[/\\](?:[\w.@~+-]+[/\\])*[\w.@~+-]+(?:\.\w+)?)|(?:\\\\[\w.-]+\\[\w.$-]+(?:\\[\w.@~+-]+)*))/g,
+    validate: (m) => {
+      // Must have at least one path separator beyond the root
+      const separators = (m.match(/[/\\]/g) || []).length;
+      return separators >= 2;
+    },
   },
 ];
 
@@ -211,8 +216,9 @@ function extractIOCsUncached(content: string, options?: ExtractIOCsOptions): IOC
   const normalized = defang(content.length > MAX_IOC_INPUT_LEN ? content.slice(0, MAX_IOC_INPUT_LEN) : content);
   const entries: IOCEntry[] = [];
   const seen = new Set<string>();
-  // Track domains found inside URLs and emails for dedup
+  // Track domains/paths found inside URLs and emails for dedup
   const urlDomains = new Set<string>();
+  const urlPaths = new Set<string>();
   const emailDomains = new Set<string>();
   const enabledTypesSet = options?.enabledTypes ? new Set(options.enabledTypes) : undefined;
   const confidence = (options?.defaultConfidence ?? 'medium') as IOCEntry['confidence'];
@@ -243,11 +249,15 @@ function extractIOCsUncached(content: string, options?: ExtractIOCsOptions): IOC
       if (seen.has(key)) continue;
       seen.add(key);
 
-      // Track domains from URLs and emails for later dedup
+      // Track domains and paths from URLs for later dedup
       if (type === 'url') {
         try {
-          const hostname = new URL(value).hostname.toLowerCase();
-          urlDomains.add(hostname);
+          const parsed = new URL(value);
+          urlDomains.add(parsed.hostname.toLowerCase());
+          // Track the path portion so file-path extraction doesn't duplicate it
+          if (parsed.pathname && parsed.pathname !== '/') {
+            urlPaths.add(parsed.pathname.toLowerCase());
+          }
         } catch { /* ignore invalid URLs */ }
       }
       if (type === 'email') {
@@ -313,11 +323,16 @@ function extractIOCsUncached(content: string, options?: ExtractIOCsOptions): IOC
     }
   }
 
-  // Dedup: remove domains that are already part of extracted URLs or emails
+  // Dedup: remove domains/file-paths that are already part of extracted URLs or emails
   return entries.filter((entry) => {
     if (entry.type === 'domain') {
       const lower = entry.value.toLowerCase();
       if (urlDomains.has(lower) || emailDomains.has(lower)) return false;
+    }
+    // Remove file paths that are just the path component of an extracted URL
+    if (entry.type === 'file-path') {
+      const lower = entry.value.toLowerCase();
+      if (urlPaths.has(lower)) return false;
     }
     return true;
   });
