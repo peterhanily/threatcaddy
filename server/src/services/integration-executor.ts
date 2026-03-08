@@ -421,7 +421,24 @@ export class IntegrationExecutor {
     step: TransformStep,
     context: ExecutionContext,
   ): Record<string, unknown> {
-    const sourceData = resolveVariables(step.input, context);
+    // Resolve the input — if it's a single {{path}} expression, preserve the
+    // raw object so extract/map/filter can traverse its properties. When the
+    // template contains surrounding text or multiple expressions we fall back
+    // to the stringified value.
+    let sourceData: unknown;
+    const singleExprMatch = /^\{\{([^}]+)\}\}$/.exec(step.input);
+    if (singleExprMatch) {
+      const path = singleExprMatch[1].trim();
+      const segments = path.split('.');
+      let current: unknown = context;
+      for (const seg of segments) {
+        if (current == null || typeof current !== 'object') { current = undefined; break; }
+        current = (current as Record<string, unknown>)[seg];
+      }
+      sourceData = current;
+    } else {
+      sourceData = resolveVariables(step.input, context);
+    }
     const result: Record<string, unknown> = {};
 
     // Make sourceData available as a working value
@@ -430,7 +447,9 @@ export class IntegrationExecutor {
     for (const op of step.operations) {
       switch (op.op) {
         case 'extract': {
-          const value = getNestedValue(working, op.path);
+          // Extract always reads from the original sourceData so multiple
+          // independent extracts don't interfere with each other.
+          const value = getNestedValue(sourceData, op.path);
           result[op.as] = value;
           break;
         }

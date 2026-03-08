@@ -44,7 +44,7 @@ export const BUILTIN_INTEGRATIONS: IntegrationTemplate[] = [
         id: 'transform-vt',
         type: 'transform',
         label: 'Extract analysis stats',
-        input: '{{steps.fetch-vt.response}}',
+        input: '{{steps.fetch-vt.response.data}}',
         operations: [
           { op: 'extract', path: 'data.attributes.last_analysis_stats', as: 'stats' },
           { op: 'extract', path: 'data.attributes.country', as: 'country' },
@@ -137,7 +137,7 @@ export const BUILTIN_INTEGRATIONS: IntegrationTemplate[] = [
         id: 'transform-abuseipdb',
         type: 'transform',
         label: 'Extract abuse data',
-        input: '{{steps.fetch-abuseipdb.response}}',
+        input: '{{steps.fetch-abuseipdb.response.data}}',
         operations: [
           { op: 'extract', path: 'data.abuseConfidenceScore', as: 'score' },
           { op: 'extract', path: 'data.totalReports', as: 'totalReports' },
@@ -216,7 +216,7 @@ export const BUILTIN_INTEGRATIONS: IntegrationTemplate[] = [
         id: 'transform-shodan',
         type: 'transform',
         label: 'Extract host details',
-        input: '{{steps.fetch-shodan.response}}',
+        input: '{{steps.fetch-shodan.response.data}}',
         operations: [
           { op: 'extract', path: 'ports', as: 'ports' },
           { op: 'extract', path: 'vulns', as: 'vulns' },
@@ -340,23 +340,23 @@ export const BUILTIN_INTEGRATIONS: IntegrationTemplate[] = [
     requiredDomains: ['hooks.slack.com'],
   },
 
-  // ── 5. URLhaus Lookup ────────────────────────────────────────────────
+  // ── 5. URLhaus URL Lookup ────────────────────────────────────────────
   {
     id: 'urlhaus-lookup',
     schemaVersion: '1.0',
-    version: '1.0.0',
-    name: 'URLhaus Lookup',
-    description: 'Look up a URL or domain on URLhaus (abuse.ch) for known malware distribution activity.',
+    version: '1.1.0',
+    name: 'URLhaus URL Lookup',
+    description: 'Look up a URL on URLhaus (abuse.ch) for known malware distribution activity.',
     author: 'ThreatCaddy',
     icon: 'link',
     color: '#ef4444',
     category: 'enrichment',
-    tags: ['urlhaus', 'url', 'domain', 'malware', 'enrichment'],
+    tags: ['urlhaus', 'url', 'malware', 'enrichment'],
     source: 'builtin',
     createdAt: 0,
     updatedAt: 0,
     triggers: [
-      { type: 'manual', iocTypes: ['url', 'domain'] },
+      { type: 'manual', iocTypes: ['url'] },
     ],
     configSchema: [],
     steps: [
@@ -375,7 +375,7 @@ export const BUILTIN_INTEGRATIONS: IntegrationTemplate[] = [
         id: 'transform-urlhaus',
         type: 'transform',
         label: 'Extract URLhaus data',
-        input: '{{steps.fetch-urlhaus.response}}',
+        input: '{{steps.fetch-urlhaus.response.data}}',
         operations: [
           { op: 'extract', path: 'query_status', as: 'query_status' },
           { op: 'extract', path: 'urlhaus_reference', as: 'urlhaus_reference' },
@@ -406,6 +406,79 @@ export const BUILTIN_INTEGRATIONS: IntegrationTemplate[] = [
         template: {
           title: 'URLhaus: {{ioc.value}}',
           summary: 'Status: {{steps.transform-urlhaus.query_status}} | Threat: {{steps.transform-urlhaus.threat}} | Tags: {{steps.transform-urlhaus.tags}}',
+        },
+      },
+    ],
+    rateLimit: { maxPerHour: 60, maxPerDay: 500 },
+    requiredDomains: ['urlhaus-api.abuse.ch'],
+  },
+
+  // ── 6. URLhaus Domain Lookup ───────────────────────────────────────
+  {
+    id: 'urlhaus-domain-lookup',
+    schemaVersion: '1.0',
+    version: '1.0.0',
+    name: 'URLhaus Domain Lookup',
+    description: 'Look up a domain on URLhaus (abuse.ch) for known malware distribution URLs.',
+    author: 'ThreatCaddy',
+    icon: 'link',
+    color: '#ef4444',
+    category: 'enrichment',
+    tags: ['urlhaus', 'domain', 'malware', 'enrichment'],
+    source: 'builtin',
+    createdAt: 0,
+    updatedAt: 0,
+    triggers: [
+      { type: 'manual', iocTypes: ['domain'] },
+    ],
+    configSchema: [],
+    steps: [
+      {
+        id: 'fetch-urlhaus',
+        type: 'http',
+        label: 'Query URLhaus host',
+        method: 'POST',
+        url: 'https://urlhaus-api.abuse.ch/v1/host/',
+        contentType: 'form',
+        body: { host: '{{ioc.value}}' },
+        responseType: 'json',
+        retry: { maxRetries: 2, retryOn: [429, 500, 502, 503], backoffMs: 2000 },
+      },
+      {
+        id: 'transform-urlhaus',
+        type: 'transform',
+        label: 'Extract URLhaus data',
+        input: '{{steps.fetch-urlhaus.response.data}}',
+        operations: [
+          { op: 'extract', path: 'query_status', as: 'query_status' },
+          { op: 'extract', path: 'urlhaus_reference', as: 'urlhaus_reference' },
+          { op: 'extract', path: 'urls', as: 'urls' },
+          { op: 'extract', path: 'blacklists', as: 'blacklists' },
+          { op: 'extract', path: 'url_count', as: 'url_count' },
+        ],
+      },
+    ],
+    outputs: [
+      {
+        type: 'create-note',
+        template: {
+          title: 'URLhaus Report: {{ioc.value}}',
+          body: '## URLhaus Domain Report\n\n**Domain:** {{ioc.value}}\n**Status:** {{steps.transform-urlhaus.query_status}}\n**URLs Found:** {{steps.transform-urlhaus.url_count}}\n**Reference:** {{steps.transform-urlhaus.urlhaus_reference}}\n\n### Blacklists\n{{steps.transform-urlhaus.blacklists}}',
+        },
+      },
+      {
+        type: 'update-ioc',
+        condition: '{{steps.transform-urlhaus.url_count}} > 0',
+        template: {
+          iocStatus: 'malicious',
+          confidence: 'high',
+        },
+      },
+      {
+        type: 'display',
+        template: {
+          title: 'URLhaus: {{ioc.value}}',
+          summary: 'Status: {{steps.transform-urlhaus.query_status}} | URLs: {{steps.transform-urlhaus.url_count}}',
         },
       },
     ],

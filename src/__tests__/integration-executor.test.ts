@@ -242,6 +242,124 @@ describe('IntegrationExecutor', () => {
       expect(result.status).toBe('success');
       expect(result.displayResults).toBeDefined();
     });
+
+    it('preserves object input for extract operations (not stringified)', async () => {
+      mockFetch.mockResolvedValueOnce(
+        mockJsonResponse({
+          data: {
+            attributes: {
+              last_analysis_stats: { malicious: 10, suspicious: 2, harmless: 50 },
+              country: 'US',
+              reputation: -5,
+            },
+          },
+        }),
+      );
+
+      const template = makeTemplate(
+        [
+          {
+            id: 'fetch',
+            type: 'http',
+            label: 'Fetch VT',
+            method: 'GET',
+            url: 'https://api.example.com/ip/1.2.3.4',
+          },
+          {
+            id: 'transform',
+            type: 'transform',
+            label: 'Extract stats',
+            input: '{{steps.fetch.response.data}}',
+            operations: [
+              { op: 'extract', path: 'data.attributes.last_analysis_stats', as: 'stats' },
+              { op: 'extract', path: 'data.attributes.country', as: 'country' },
+              { op: 'extract', path: 'data.attributes.reputation', as: 'reputation' },
+            ],
+          },
+        ],
+        [
+          {
+            type: 'display',
+            template: {
+              malicious: '{{steps.transform.stats.malicious}}',
+              country: '{{steps.transform.country}}',
+            },
+          },
+        ],
+      );
+
+      const result = await executor.run(
+        template,
+        makeInstallation(),
+        makeInput(),
+        makeCallbacks(),
+      );
+
+      expect(result.status).toBe('success');
+      expect(result.displayResults).toEqual({
+        malicious: '10',
+        country: 'US',
+      });
+    });
+
+    it('extracts flat API response fields correctly', async () => {
+      // Simulates URLhaus-style flat response (no data wrapper)
+      mockFetch.mockResolvedValueOnce(
+        mockJsonResponse({
+          query_status: 'no_results',
+          urlhaus_reference: 'https://urlhaus.abuse.ch',
+          threat: null,
+          tags: ['phishing'],
+        }),
+      );
+
+      const template = makeTemplate(
+        [
+          {
+            id: 'fetch',
+            type: 'http',
+            label: 'Query URLhaus',
+            method: 'POST',
+            url: 'https://urlhaus-api.abuse.ch/v1/url/',
+            contentType: 'form',
+            body: { url: '{{ioc.value}}' },
+          },
+          {
+            id: 'transform',
+            type: 'transform',
+            label: 'Extract data',
+            input: '{{steps.fetch.response.data}}',
+            operations: [
+              { op: 'extract', path: 'query_status', as: 'query_status' },
+              { op: 'extract', path: 'threat', as: 'threat' },
+              { op: 'extract', path: 'tags', as: 'tags' },
+            ],
+          },
+        ],
+        [
+          {
+            type: 'display',
+            template: {
+              status: '{{steps.transform.query_status}}',
+              tags: '{{steps.transform.tags}}',
+            },
+          },
+        ],
+      );
+
+      const result = await executor.run(
+        template,
+        makeInstallation(),
+        makeInput({ ioc: { id: 'ioc-1', value: 'http://evil.com/malware', type: 'url', confidence: 'high' } }),
+        makeCallbacks(),
+      );
+
+      expect(result.status).toBe('success');
+      expect(result.displayResults).toEqual({
+        status: 'no_results',
+        tags: '["phishing"]',
+      });
+    });
   });
 
   // ─── 4. Condition step ─────────────────────────────────────────
