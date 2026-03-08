@@ -4,6 +4,7 @@ import type { StandaloneIOC, Folder, Tag } from '../../types';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { StandaloneIOCForm } from './StandaloneIOCForm';
+import { RunIntegrationMenu } from '../Integrations/RunIntegrationMenu';
 import { formatDate } from '../../lib/utils';
 import { TableVirtuoso } from 'react-virtuoso';
 
@@ -33,6 +34,8 @@ interface StandaloneIOCListProps {
   onRestore?: (id: string) => void;
   onToggleArchive?: (id: string) => void;
   defaultFolderId?: string;
+  currentFolderId?: string;
+  currentFolderName?: string;
 }
 
 export function StandaloneIOCList({
@@ -46,6 +49,8 @@ export function StandaloneIOCList({
   onRestore,
   onToggleArchive,
   defaultFolderId,
+  currentFolderId,
+  currentFolderName,
 }: StandaloneIOCListProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingIOC, setEditingIOC] = useState<StandaloneIOC | undefined>();
@@ -178,6 +183,10 @@ export function StandaloneIOCList({
                           </>
                         ) : (
                           <>
+                            <RunIntegrationMenu
+                              ioc={{ id: ioc.id, value: ioc.value, type: ioc.type, confidence: ioc.confidence }}
+                              investigation={currentFolderId ? { id: currentFolderId, name: currentFolderName || '' } : undefined}
+                            />
                             <button
                               onClick={() => { setEditingIOC(ioc); setShowForm(true); }}
                               className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
