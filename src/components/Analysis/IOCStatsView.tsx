@@ -112,7 +112,11 @@ export function IOCStatsView({
 }: IOCStatsViewProps) {
   const [actorsExpanded, setActorsExpanded] = useState(false);
   const [scopeMode, setScopeMode] = useState<'investigation' | 'global'>('investigation');
-  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [activeTab, setActiveTab] = useState<TabId>('all-iocs');
+  const [showHeaderForm, setShowHeaderForm] = useState(false);
+  const [showHeaderBulkImport, setShowHeaderBulkImport] = useState(false);
+  const [showHeaderSTIX, setShowHeaderSTIX] = useState(false);
+  const [showHeaderMISP, setShowHeaderMISP] = useState(false);
 
   // Reset scope when investigation changes
   useEffect(() => {
@@ -332,6 +336,53 @@ export function IOCStatsView({
   // ─── Empty state ──────────────────────────────────────────────
   const hasNoIOCs = uniqueIOCs.length === 0 && unifiedRows.length === 0;
 
+  const headerActionProps = {
+    onNewIOC: onCreateIOC ? () => setShowHeaderForm(true) : undefined,
+    onBulkImport: onCreateIOC ? () => setShowHeaderBulkImport(true) : undefined,
+    onSTIXImport: onCreateIOC ? () => setShowHeaderSTIX(true) : undefined,
+    onMISPImport: onCreateIOC ? () => setShowHeaderMISP(true) : undefined,
+  };
+
+  const headerModals = onCreateIOC ? (
+    <>
+      <StandaloneIOCForm
+        open={showHeaderForm}
+        onClose={() => setShowHeaderForm(false)}
+        onSubmit={async (data) => { await onCreateIOC(data); }}
+        folders={folders}
+        defaultFolderId={selectedFolderId}
+        allTags={allTags}
+        onUpdateIOC={onUpdateIOC}
+        investigationMembers={investigationMembers}
+      />
+      <BulkIOCImportModal
+        open={showHeaderBulkImport}
+        onClose={() => setShowHeaderBulkImport(false)}
+        onCreate={onCreateIOC}
+        existingIOCs={allStandaloneIOCs ?? []}
+        folders={folders}
+        allTags={allTags}
+        defaultFolderId={selectedFolderId}
+      />
+      <STIXImportModal
+        open={showHeaderSTIX}
+        onClose={() => setShowHeaderSTIX(false)}
+        onCreate={onCreateIOC}
+        existingIOCs={allStandaloneIOCs ?? []}
+        folders={folders}
+        defaultFolderId={selectedFolderId}
+      />
+      <MISPImportModal
+        open={showHeaderMISP}
+        onClose={() => setShowHeaderMISP(false)}
+        onCreate={onCreateIOC}
+        existingIOCs={allStandaloneIOCs ?? []}
+        folders={folders}
+        defaultFolderId={selectedFolderId}
+      />
+    </>
+  ) : null;
+
   if (hasNoIOCs && activeTab === 'overview') {
     return (
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -344,12 +395,23 @@ export function IOCStatsView({
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           unifiedRowCount={0}
+          {...headerActionProps}
         />
         <div className="flex flex-col items-center justify-center flex-1 text-gray-600">
           <Search size={36} className="mb-3" />
           <p className="text-lg font-medium">No IOCs found</p>
           <p className="text-sm mt-1">Analyze notes, tasks, or timeline events to extract indicators.</p>
+          {onCreateIOC && (
+            <button
+              onClick={() => setShowHeaderForm(true)}
+              className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 text-sm font-medium transition-colors"
+            >
+              <Plus size={16} />
+              New IOC
+            </button>
+          )}
         </div>
+        {headerModals}
       </div>
     );
   }
@@ -365,6 +427,7 @@ export function IOCStatsView({
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         unifiedRowCount={unifiedRows.length}
+        {...headerActionProps}
       />
 
       {activeTab === 'overview' ? (
@@ -549,6 +612,7 @@ export function IOCStatsView({
           onUpdateTableColumns={onUpdateTableColumns}
         />
       )}
+      {headerModals}
     </div>
   );
 }
@@ -558,6 +622,7 @@ export function IOCStatsView({
 function Header({
   selectedFolderId, selectedFolderName, scopeMode, setScopeMode,
   uniqueIOCCount, activeTab, setActiveTab, unifiedRowCount,
+  onNewIOC, onBulkImport, onSTIXImport, onMISPImport,
 }: {
   selectedFolderId?: string;
   selectedFolderName?: string;
@@ -567,6 +632,10 @@ function Header({
   activeTab: TabId;
   setActiveTab: (t: TabId) => void;
   unifiedRowCount: number;
+  onNewIOC?: () => void;
+  onBulkImport?: () => void;
+  onSTIXImport?: () => void;
+  onMISPImport?: () => void;
 }) {
   return (
     <div data-tour="ioc-stats-header" className="shrink-0 border-b border-gray-800">
@@ -590,6 +659,30 @@ function Header({
           </div>
         )}
         <span className="text-xs text-gray-500">({uniqueIOCCount} unique)</span>
+        <div className="ml-auto flex items-center gap-1.5">
+          {onSTIXImport && (
+            <button onClick={onSTIXImport} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs font-medium transition-colors">
+              STIX
+            </button>
+          )}
+          {onMISPImport && (
+            <button onClick={onMISPImport} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs font-medium transition-colors">
+              MISP
+            </button>
+          )}
+          {onBulkImport && (
+            <button onClick={onBulkImport} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs font-medium transition-colors">
+              <ListPlus size={14} />
+              Bulk Import
+            </button>
+          )}
+          {onNewIOC && (
+            <button onClick={onNewIOC} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 text-xs font-medium transition-colors">
+              <Plus size={14} />
+              New IOC
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tab bar */}

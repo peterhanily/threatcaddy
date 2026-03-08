@@ -1361,6 +1361,22 @@ function AppInner() {
             onRestoreIOC={loggedRestoreIOC}
             onToggleArchiveIOC={loggedToggleArchiveIOC}
             onOpenSettings={() => { setSettingsInitialTab('integrations'); setShowSettings(true); }}
+            onNavigateToSource={(sourceType, sourceId) => {
+              if (sourceType === 'note') {
+                setSelectedNoteId(sourceId);
+                navigateTo('notes', { selectedNoteId: sourceId });
+              } else if (sourceType === 'task') {
+                navigateTo('tasks');
+              } else if (sourceType === 'event') {
+                const ev = timeline.events.find((e) => e.id === sourceId);
+                if (ev?.timelineId) {
+                  setSelectedTimelineId(ev.timelineId);
+                  navigateTo('timeline', { selectedTimelineId: ev.timelineId });
+                } else {
+                  navigateTo('timeline');
+                }
+              }
+            }}
             investigationMembers={investigationMembers}
             iocTableColumns={settings.iocTableColumns}
             onUpdateTableColumns={(columns) => updateSettings({ iocTableColumns: columns })}
