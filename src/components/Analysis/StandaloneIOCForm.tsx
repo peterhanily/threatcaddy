@@ -15,7 +15,13 @@ interface StandaloneIOCFormProps {
 
 const IOC_TYPES = Object.keys(IOC_TYPE_LABELS) as IOCType[];
 const CONF_LEVELS = Object.keys(CONFIDENCE_LEVELS) as ConfidenceLevel[];
-const IOC_STATUS_OPTIONS = ['', 'active', 'resolved', 'false-positive', 'under-investigation'];
+const IOC_STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: '\u2014 None \u2014' },
+  { value: 'active', label: 'Active' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'false-positive', label: 'False Positive' },
+  { value: 'under-investigation', label: 'Under Investigation' },
+];
 const RELATIONSHIP_TYPE_KEYS = Object.keys(DEFAULT_RELATIONSHIP_TYPES);
 
 export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFolderId, editingIOC, allTags = [] }: StandaloneIOCFormProps) {
@@ -143,7 +149,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-200">{editingIOC ? 'Edit IOC' : 'New Standalone IOC'}</h3>
+          <h3 className="text-sm font-semibold text-gray-200">{editingIOC ? 'Edit IOC' : 'Create IOC'}</h3>
           <button type="button" onClick={onClose} className="p-1 rounded hover:bg-gray-800 text-gray-500">
             <X size={16} />
           </button>
@@ -196,7 +202,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
             <label className="block text-xs text-gray-400 mb-1">Status</label>
             <select value={iocStatus} onChange={(e) => setIocStatus(e.target.value)} className={selectCls}>
               {IOC_STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s || '— None —'}</option>
+                <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
           </div>

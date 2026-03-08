@@ -46,7 +46,7 @@ export function ServerProfiles({ onSelectProfile, currentUrl }: ServerProfilesPr
             <button
               onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }}
               className="p-1 rounded hover:bg-red-500/15 text-[var(--text-tertiary)] hover:text-red-400 transition-colors shrink-0"
-              title="Remove saved server"
+              title="Delete saved server"
             >
               <Trash2 size={12} />
             </button>

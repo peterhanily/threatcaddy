@@ -164,7 +164,7 @@ export function TemplateManager({
       )}
 
       {/* Create/Edit modal */}
-      <Modal open={creating || editing !== null} onClose={() => { setCreating(false); setEditing(null); resetForm(); }} title={editing ? 'Edit Template' : 'New Template'} wide>
+      <Modal open={creating || editing !== null} onClose={() => { setCreating(false); setEditing(null); resetForm(); }} title={editing ? 'Edit Template' : 'Create Template'} wide>
         <div className="space-y-3">
           <div className="flex gap-3">
             <div className="flex-1">

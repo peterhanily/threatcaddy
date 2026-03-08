@@ -180,7 +180,7 @@ export function PlaybookManager({
       )}
 
       {/* Create/Edit modal */}
-      <Modal open={creating || editing !== null} onClose={() => { setCreating(false); setEditing(null); resetForm(); }} title={editing ? 'Edit Playbook' : 'New Playbook'} wide>
+      <Modal open={creating || editing !== null} onClose={() => { setCreating(false); setEditing(null); resetForm(); }} title={editing ? 'Edit Playbook' : 'Create Playbook'} wide>
         <div className="space-y-3 max-h-[70vh] overflow-y-auto">
           <div className="flex gap-3">
             <div className="flex-1">

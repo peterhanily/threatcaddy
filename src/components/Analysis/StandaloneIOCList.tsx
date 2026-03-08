@@ -16,6 +16,13 @@ const STATUS_COLORS: Record<string, string> = {
   'under-investigation': '#3b82f6',
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  active: 'Active',
+  resolved: 'Resolved',
+  'false-positive': 'False Positive',
+  'under-investigation': 'Under Investigation',
+};
+
 const CLS_COLORS: Record<string, string> = {
   'TLP:CLEAR': '#ffffff',
   'TLP:GREEN': '#22c55e',
@@ -109,7 +116,7 @@ export function StandaloneIOCList({
                   <th className="text-left text-gray-500 font-medium py-2 px-2">Confidence</th>
                   <th className="text-left text-gray-500 font-medium py-2 px-2">Status</th>
                   <th className="text-left text-gray-500 font-medium py-2 px-2">Attribution</th>
-                  <th className="text-left text-gray-500 font-medium py-2 px-2">CLS</th>
+                  <th className="text-left text-gray-500 font-medium py-2 px-2" title="Classification">CLS</th>
                   <th className="text-left text-gray-500 font-medium py-2 px-2">Updated</th>
                   <th className="text-right text-gray-500 font-medium py-2 pl-2">Actions</th>
                 </tr>
@@ -144,7 +151,7 @@ export function StandaloneIOCList({
                           className="text-[10px] px-1.5 py-0.5 rounded"
                           style={{ backgroundColor: statusColor + '22', color: statusColor }}
                         >
-                          {ioc.iocStatus}
+                          {STATUS_LABELS[ioc.iocStatus] || ioc.iocStatus}
                         </span>
                       ) : (
                         <span className="text-gray-600">—</span>

@@ -147,7 +147,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
           {/* Preferences */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-300">Preferences</h3>
+            <h3 className="text-sm font-semibold text-gray-300">Display Preferences</h3>
 
             <div className="flex items-center justify-between">
               <label className={labelClass}>Theme</label>
@@ -369,7 +369,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                   data-lpignore="true"
                   value={settings.llmMistralApiKey || ''}
                   onChange={(e) => onUpdateSettings({ llmMistralApiKey: e.target.value.trim() || undefined })}
-                  placeholder="..."
+                  placeholder="Enter your Mistral API key"
                   className="w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent"
                 />
               </div>

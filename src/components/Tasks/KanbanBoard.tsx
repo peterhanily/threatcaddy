@@ -12,7 +12,7 @@ interface KanbanBoardProps {
 }
 
 const COLUMNS: { status: TaskStatus; label: string; color: string }[] = [
-  { status: 'todo', label: 'Todo', color: '#6b7280' },
+  { status: 'todo', label: 'To Do', color: '#6b7280' },
   { status: 'in-progress', label: 'In Progress', color: '#eab308' },
   { status: 'done', label: 'Done', color: '#22c55e' },
 ];

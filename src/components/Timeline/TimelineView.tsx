@@ -482,7 +482,7 @@ export function TimelineView({
       </Modal>
 
       {/* New Event Modal */}
-      <Modal open={showNewEvent} onClose={() => { setShowNewEvent(false); setNewEventCoords(null); }} title="New Event" wide>
+      <Modal open={showNewEvent} onClose={() => { setShowNewEvent(false); setNewEventCoords(null); }} title="Create Event" wide>
         <TimelineEventForm
           folders={folders}
           allTags={allTags}

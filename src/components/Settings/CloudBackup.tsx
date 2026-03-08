@@ -162,8 +162,8 @@ export function CloudBackup() {
                   <button
                     onClick={() => handleRemoveDestination(dest.id)}
                     className="p-1 rounded text-gray-500 hover:text-red-400"
-                    title="Remove"
-                    aria-label="Remove destination"
+                    title="Delete destination"
+                    aria-label="Delete destination"
                   >
                     <Trash2 size={14} />
                   </button>

@@ -132,7 +132,7 @@ export function TaskListView({
               aria-label="Filter by status"
             >
               <option value="">All</option>
-              <option value="todo">Todo</option>
+              <option value="todo">To Do</option>
               <option value="in-progress">In Progress</option>
               <option value="done">Done</option>
             </select>
@@ -227,7 +227,7 @@ export function TaskListView({
       </Modal>
 
       {/* New Task Modal */}
-      <Modal open={showNewTask} onClose={() => setShowNewTask(false)} title="New Task" wide>
+      <Modal open={showNewTask} onClose={() => setShowNewTask(false)} title="Create Task" wide>
         <TaskForm
           folders={folders}
           allTags={allTags}

@@ -83,8 +83,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
         <div className="flex flex-col items-center justify-center h-full p-8 text-gray-400">
           <AlertTriangle size={48} className="mb-4 text-red-400" />
           <h2 className="text-lg font-semibold text-gray-200 mb-2">Something went wrong</h2>
-          <p className="text-sm text-gray-500 mb-6 max-w-md text-center">
+          <p className="text-sm text-gray-500 mb-2 max-w-md text-center">
             {this.state.error?.message || 'An unexpected error occurred.'}
+          </p>
+          <p className="text-sm text-gray-500 mb-6 max-w-md text-center">
+            Try reloading this section or refreshing the page. If the problem persists, copy the error details and report the issue.
           </p>
           <div className="flex items-center gap-3">
             <button

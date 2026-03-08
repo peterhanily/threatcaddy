@@ -196,7 +196,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
           <div>
             <label className={labelClass}>Status</label>
             <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)} className={inputClass}>
-              <option value="todo">Todo</option>
+              <option value="todo">To Do</option>
               <option value="in-progress">In Progress</option>
               <option value="done">Done</option>
             </select>
