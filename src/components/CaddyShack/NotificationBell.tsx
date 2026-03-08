@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { Bell, CheckCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useSettings } from '../../hooks/useSettings';
 import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from '../../lib/server-api';
-import type { Notification } from '../../types';
+import type { Notification, NotificationType, Settings } from '../../types';
 
 function relativeTime(date: string | Date): string {
   const now = Date.now();
@@ -30,9 +31,16 @@ function notifColor(type: string): string {
   }
 }
 
+function isNotifTypeEnabled(type: NotificationType, prefs: Settings['notificationPrefs']): boolean {
+  if (!prefs) return true;
+  const key = type === 'entity-update' ? 'bot' : type;
+  return prefs[key as keyof typeof prefs] !== false;
+}
+
 export function NotificationBell() {
   const { connected } = useAuth();
   const { addToast } = useToast();
+  const { settings } = useSettings();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -44,13 +52,13 @@ export function NotificationBell() {
     setLoading(true);
     try {
       const data = await fetchNotifications(false, 20);
-      setNotifications(data);
+      setNotifications(data.filter((n: Notification) => isNotifTypeEnabled(n.type, settings.notificationPrefs)));
     } catch {
       addToast('error', 'Failed to load notifications');
     } finally {
       setLoading(false);
     }
-  }, [connected, addToast]);
+  }, [connected, addToast, settings.notificationPrefs]);
 
   // Initial load + listen for WS push events
   useEffect(() => {

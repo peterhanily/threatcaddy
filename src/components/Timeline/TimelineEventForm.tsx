@@ -73,7 +73,10 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
     content: description,
     existingAnalysis: event?.iocAnalysis,
     onUpdate: (id, updates) => onUpdateEvent?.(id, updates),
-    enabled: isEditMode && !!onUpdateEvent,
+    enabled: isEditMode && !!onUpdateEvent && settings.tiAutoExtractEnabled !== false,
+    enabledTypes: settings.tiEnabledIOCTypes,
+    defaultConfidence: settings.tiDefaultConfidence,
+    debounceMs: settings.tiAutoExtractDebounceMs,
   });
 
   useEffect(() => {

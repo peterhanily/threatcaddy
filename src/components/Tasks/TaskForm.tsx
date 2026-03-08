@@ -63,7 +63,10 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
     content: description,
     existingAnalysis: task?.iocAnalysis,
     onUpdate: (id, updates) => onUpdateTask?.(id, updates),
-    enabled: isEditMode && !!onUpdateTask,
+    enabled: isEditMode && !!onUpdateTask && taskFormSettings.tiAutoExtractEnabled !== false,
+    enabledTypes: taskFormSettings.tiEnabledIOCTypes,
+    defaultConfidence: taskFormSettings.tiDefaultConfidence,
+    debounceMs: taskFormSettings.tiAutoExtractDebounceMs,
   });
 
   useEffect(() => {

@@ -120,6 +120,10 @@ export function NoteEditor({
     content,
     existingAnalysis: note.iocAnalysis,
     onUpdate: (id, updates) => onUpdate(id, updates),
+    enabled: externalSettings?.tiAutoExtractEnabled !== false,
+    enabledTypes: externalSettings?.tiEnabledIOCTypes,
+    defaultConfidence: externalSettings?.tiDefaultConfidence,
+    debounceMs: externalSettings?.tiAutoExtractDebounceMs,
   });
 
   // Resizable: editor ↔ preview (split mode only)

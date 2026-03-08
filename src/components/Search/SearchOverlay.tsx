@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, X, FileText, Paperclip, ListChecks, Clock, PenTool, Save, Briefcase, ChevronDown, Shield, MessageSquare } from 'lucide-react';
+import { Search, X, FileText, Paperclip, ListChecks, Clock, PenTool, Save, Briefcase, ChevronDown, Shield, MessageSquare, Calendar, Pencil } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { formatDate } from '../../lib/utils';
-import { unifiedSearch, type SearchMode, type SearchResult, type SearchResultType, type UnifiedSearchResult } from '../../lib/search';
+import { unifiedSearch, type SearchMode, type SearchQuery, type SearchResult, type SearchResultType, type UnifiedSearchResult } from '../../lib/search';
 import { useSavedSearches } from '../../hooks/useSavedSearches';
 import type { Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ChatThread, Folder } from '../../types';
 import { TagPills } from '../Common/TagPills';
@@ -68,7 +68,8 @@ export function SearchOverlay({
   chatThreads,
   onNavigateToIOC,
   onNavigateToChat,
-  // selectedFolderId, scopedNotes, scopedTasks, scopedTimelineEvents, scopedWhiteboards — kept in interface for backwards compat
+  selectedFolderId,
+  // scopedNotes, scopedTasks, scopedTimelineEvents, scopedWhiteboards — kept in interface for backwards compat
   folders = [],
 }: SearchOverlayProps) {
   const [query, setQuery] = useState('');
@@ -79,12 +80,18 @@ export function SearchOverlay({
   const [folderQuery, setFolderQuery] = useState('');
   const [folderDropdownOpen, setFolderDropdownOpen] = useState(false);
   const [activeTypes, setActiveTypes] = useState<Set<SearchResultType>>(new Set(['note', 'clip', 'task', 'timeline', 'whiteboard', 'ioc', 'chat']));
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [dateField, setDateField] = useState<'createdAt' | 'updatedAt'>('createdAt');
+  const [dateFilterOpen, setDateFilterOpen] = useState(false);
+  const [editingSearchId, setEditingSearchId] = useState<string | null>(null);
+  const [editingSearchLabel, setEditingSearchLabel] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const folderDropdownRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(undefined);
-  const { searches, saveSearch, deleteSearch, clearAll } = useSavedSearches();
+  const { searches, saveSearch, deleteSearch, renameSearch, clearAll } = useSavedSearches();
 
   // Debounce query
   useEffect(() => {
@@ -92,11 +99,13 @@ export function SearchOverlay({
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Auto-focus input when overlay opens
+  // Auto-focus input when overlay opens; auto-scope to current investigation
   useEffect(() => {
     if (open) {
       // Small delay to ensure DOM is ready
       rafRef.current = requestAnimationFrame(() => inputRef.current?.focus());
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (selectedFolderId) setSearchFolderId(selectedFolderId);
     } else {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery('');
@@ -105,9 +114,15 @@ export function SearchOverlay({
       setSearchFolderId(undefined);
       setFolderQuery('');
       setFolderDropdownOpen(false);
+      setDateFrom('');
+      setDateTo('');
+      setDateField('createdAt');
+      setDateFilterOpen(false);
+      setEditingSearchId(null);
+      setEditingSearchLabel('');
     }
     return () => { if (rafRef.current !== undefined) cancelAnimationFrame(rafRef.current); };
-  }, [open]);
+  }, [open, selectedFolderId]);
 
   // Close folder dropdown on outside click
   useEffect(() => {
@@ -129,6 +144,16 @@ export function SearchOverlay({
   }, [folders, folderQuery]);
 
   const selectedSearchFolder = searchFolderId ? folders.find((f) => f.id === searchFolderId) : undefined;
+
+  // Build dateFilter from date inputs
+  const dateFilter = useMemo<SearchQuery['dateFilter']>(() => {
+    if (!dateFrom && !dateTo) return undefined;
+    return {
+      field: dateField,
+      from: dateFrom ? new Date(dateFrom).getTime() : undefined,
+      to: dateTo ? new Date(dateTo + 'T23:59:59.999').getTime() : undefined,
+    };
+  }, [dateFrom, dateTo, dateField]);
 
   // Worker-based search
   const workerRef = useRef<Worker | null>(null);
@@ -175,8 +200,9 @@ export function SearchOverlay({
       return;
     }
     const id = ++requestIdRef.current;
+    const searchQuery: SearchQuery = { mode, raw: debouncedQuery, dateFilter };
     if (workerRef.current && workerSupported.current) {
-      workerRef.current.postMessage({ type: 'query', id, query: { mode, raw: debouncedQuery }, folderId: searchFolderId });
+      workerRef.current.postMessage({ type: 'query', id, query: searchQuery, folderId: searchFolderId });
     } else {
       // Fallback: direct call (standalone/CSP issues) — filter inline
       const fid = searchFolderId;
@@ -186,9 +212,9 @@ export function SearchOverlay({
       const wb = fid && whiteboards ? whiteboards.filter((x) => x.folderId === fid) : whiteboards;
       const iocs = fid && standaloneIOCs ? standaloneIOCs.filter((x) => x.folderId === fid) : standaloneIOCs;
       const chats = fid && chatThreads ? chatThreads.filter((x) => x.folderId === fid) : chatThreads;
-      setSearchResult(unifiedSearch(n, t, clipsFolderId, { mode, raw: debouncedQuery }, ev, wb, iocs, chats));
+      setSearchResult(unifiedSearch(n, t, clipsFolderId, searchQuery, ev, wb, iocs, chats));
     }
-  }, [notes, tasks, clipsFolderId, mode, debouncedQuery, timelineEvents, whiteboards, standaloneIOCs, chatThreads, searchFolderId]);
+  }, [notes, tasks, clipsFolderId, mode, debouncedQuery, dateFilter, timelineEvents, whiteboards, standaloneIOCs, chatThreads, searchFolderId]);
 
   const { results, error } = searchResult;
 
@@ -256,12 +282,23 @@ export function SearchOverlay({
 
   const handleSave = useCallback(() => {
     if (!query.trim()) return;
-    saveSearch(query, { mode, raw: query });
-  }, [query, mode, saveSearch]);
+    saveSearch(query, { mode, raw: query, dateFilter });
+  }, [query, mode, dateFilter, saveSearch]);
 
-  const handleLoadSaved = useCallback((saved: { query: { mode: SearchMode; raw: string } }) => {
+  const handleLoadSaved = useCallback((saved: { query: SearchQuery }) => {
     setMode(saved.query.mode);
     setQuery(saved.query.raw);
+    if (saved.query.dateFilter) {
+      setDateField(saved.query.dateFilter.field);
+      setDateFrom(saved.query.dateFilter.from ? new Date(saved.query.dateFilter.from).toISOString().slice(0, 10) : '');
+      setDateTo(saved.query.dateFilter.to ? new Date(saved.query.dateFilter.to).toISOString().slice(0, 10) : '');
+      setDateFilterOpen(true);
+    } else {
+      setDateFrom('');
+      setDateTo('');
+      setDateField('createdAt');
+      setDateFilterOpen(false);
+    }
   }, []);
 
   const toggleType = useCallback((type: SearchResultType) => {
@@ -465,6 +502,74 @@ export function SearchOverlay({
               );
             })}
           </div>
+
+          {/* Date filter */}
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            <button
+              onClick={() => setDateFilterOpen((v) => !v)}
+              className={cn(
+                'flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium transition-colors border',
+                dateFilterOpen || dateFrom || dateTo
+                  ? 'border-accent/40 bg-accent/10 text-accent'
+                  : 'border-gray-700 text-gray-600 hover:text-gray-400 hover:border-gray-600'
+              )}
+            >
+              <Calendar size={10} />
+              Date
+            </button>
+            {dateFilterOpen && (
+              <>
+                <div className="flex rounded-lg border border-gray-700 overflow-hidden shrink-0">
+                  <button
+                    onClick={() => setDateField('createdAt')}
+                    className={cn(
+                      'px-2 py-0.5 text-[11px] font-medium transition-colors',
+                      dateField === 'createdAt'
+                        ? 'bg-accent text-white'
+                        : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                    )}
+                  >
+                    Created
+                  </button>
+                  <button
+                    onClick={() => setDateField('updatedAt')}
+                    className={cn(
+                      'px-2 py-0.5 text-[11px] font-medium transition-colors',
+                      dateField === 'updatedAt'
+                        ? 'bg-accent text-white'
+                        : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                    )}
+                  >
+                    Updated
+                  </button>
+                </div>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="px-1.5 py-0.5 bg-gray-800 border border-gray-700 rounded text-[11px] text-gray-200 focus:outline-none focus:border-accent"
+                  placeholder="From"
+                />
+                <span className="text-[10px] text-gray-600">to</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="px-1.5 py-0.5 bg-gray-800 border border-gray-700 rounded text-[11px] text-gray-200 focus:outline-none focus:border-accent"
+                  placeholder="To"
+                />
+                {(dateFrom || dateTo) && (
+                  <button
+                    onClick={() => { setDateFrom(''); setDateTo(''); }}
+                    className="text-gray-600 hover:text-gray-400"
+                    title="Clear date filter"
+                  >
+                    <X size={10} />
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         {/* Results */}
@@ -529,19 +634,52 @@ export function SearchOverlay({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-gray-500 shrink-0">Saved:</span>
               {searches.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => handleLoadSaved(s)}
-                  className="group flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
-                >
-                  <span className="truncate max-w-[120px]">{s.label}</span>
-                  <span
-                    onClick={(e) => { e.stopPropagation(); deleteSearch(s.id); }}
-                    className="text-gray-600 hover:text-red-400 ml-0.5"
+                editingSearchId === s.id ? (
+                  <input
+                    key={s.id}
+                    autoFocus
+                    value={editingSearchLabel}
+                    onChange={(e) => setEditingSearchLabel(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.stopPropagation();
+                        if (editingSearchLabel.trim()) renameSearch(s.id, editingSearchLabel.trim());
+                        setEditingSearchId(null);
+                        setEditingSearchLabel('');
+                      } else if (e.key === 'Escape') {
+                        e.stopPropagation();
+                        setEditingSearchId(null);
+                        setEditingSearchLabel('');
+                      }
+                    }}
+                    onBlur={() => {
+                      if (editingSearchLabel.trim()) renameSearch(s.id, editingSearchLabel.trim());
+                      setEditingSearchId(null);
+                      setEditingSearchLabel('');
+                    }}
+                    className="px-2 py-0.5 text-xs rounded-full bg-gray-800 text-gray-200 border border-accent focus:outline-none max-w-[140px]"
+                  />
+                ) : (
+                  <button
+                    key={s.id}
+                    onClick={() => handleLoadSaved(s)}
+                    className="group flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-gray-800 text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
                   >
-                    <X size={10} />
-                  </span>
-                </button>
+                    <span className="truncate max-w-[120px]">{s.label}</span>
+                    <span
+                      onClick={(e) => { e.stopPropagation(); setEditingSearchId(s.id); setEditingSearchLabel(s.label); }}
+                      className="text-gray-600 hover:text-accent ml-0.5 hidden group-hover:inline-flex"
+                    >
+                      <Pencil size={10} />
+                    </span>
+                    <span
+                      onClick={(e) => { e.stopPropagation(); deleteSearch(s.id); }}
+                      className="text-gray-600 hover:text-red-400 ml-0.5"
+                    >
+                      <X size={10} />
+                    </span>
+                  </button>
+                )
               ))}
               <button
                 onClick={clearAll}

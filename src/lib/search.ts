@@ -6,6 +6,7 @@ export type SearchMode = 'simple' | 'regex' | 'advanced';
 export interface SearchQuery {
   mode: SearchMode;
   raw: string;
+  dateFilter?: { field: 'createdAt' | 'updatedAt'; from?: number; to?: number };
 }
 
 export type SearchResultType = 'note' | 'clip' | 'task' | 'timeline' | 'whiteboard' | 'ioc' | 'chat';
@@ -16,6 +17,7 @@ export interface SearchResult {
   title: string;
   snippet: string;
   tags: string[];
+  createdAt: number;
   updatedAt: number;
   matchField: string;
 }
@@ -207,6 +209,19 @@ export function unifiedSearch(
     }
   }
 
+  // Date post-filter
+  if (query.dateFilter) {
+    const { field, from, to } = query.dateFilter;
+    const filtered = results.filter(r => {
+      const ts = field === 'createdAt' ? r.createdAt : r.updatedAt;
+      if (from && ts < from) return false;
+      if (to && ts > to) return false;
+      return true;
+    });
+    results.length = 0;
+    results.push(...filtered);
+  }
+
   // Sort by type group (notes, clips, tasks), then updatedAt desc
   const typeOrder: Record<SearchResultType, number> = { note: 0, clip: 1, task: 2, timeline: 3, whiteboard: 4, ioc: 5, chat: 6 };
   results.sort((a, b) => {
@@ -344,6 +359,7 @@ function noteToResult(
     title: note.title,
     snippet: generateSnippet(text, queryRaw, 120),
     tags: note.tags,
+    createdAt: note.createdAt,
     updatedAt: note.updatedAt,
     matchField,
   };
@@ -357,6 +373,7 @@ function taskToResult(task: Task, matchField: string, queryRaw: string): SearchR
     title: task.title,
     snippet: generateSnippet(text, queryRaw, 120),
     tags: task.tags,
+    createdAt: task.createdAt,
     updatedAt: task.updatedAt,
     matchField,
   };
@@ -377,6 +394,7 @@ function timelineEventToResult(ev: TimelineEvent, matchField: string, queryRaw: 
     title: ev.title,
     snippet: generateSnippet(textMap[matchField] || ev.title, queryRaw, 120),
     tags: ev.tags,
+    createdAt: ev.createdAt,
     updatedAt: ev.updatedAt,
     matchField,
   };
@@ -389,6 +407,7 @@ function whiteboardToResult(wb: Whiteboard, matchField: string, queryRaw: string
     title: wb.name,
     snippet: generateSnippet(matchField === 'tags' ? wb.tags.join(', ') : wb.name, queryRaw, 120),
     tags: wb.tags,
+    createdAt: wb.createdAt,
     updatedAt: wb.updatedAt,
     matchField,
   };
@@ -408,6 +427,7 @@ function iocToResult(ioc: StandaloneIOC, matchField: string, queryRaw: string): 
     title: ioc.value,
     snippet: generateSnippet(textMap[matchField] || ioc.value, queryRaw, 120),
     tags: ioc.tags,
+    createdAt: ioc.createdAt,
     updatedAt: ioc.updatedAt,
     matchField,
   };
@@ -423,6 +443,7 @@ function chatToResult(thread: ChatThread, matchField: string, queryRaw: string):
     title: thread.title,
     snippet: generateSnippet(text, queryRaw, 120),
     tags: thread.tags,
+    createdAt: thread.createdAt,
     updatedAt: thread.updatedAt,
     matchField,
   };

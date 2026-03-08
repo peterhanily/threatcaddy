@@ -112,6 +112,26 @@ describe('useSavedSearches', () => {
     expect(stored).toEqual([]);
   });
 
+  it('renames a search', () => {
+    const { result } = renderHook(() => useSavedSearches());
+
+    act(() => {
+      result.current.saveSearch('original', { mode: 'simple', raw: 'original' });
+    });
+
+    const id = result.current.searches[0].id;
+    act(() => {
+      result.current.renameSearch(id, 'renamed');
+    });
+
+    expect(result.current.searches).toHaveLength(1);
+    expect(result.current.searches[0].label).toBe('renamed');
+    expect(result.current.searches[0].id).toBe(id);
+    // Verify persisted
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
+    expect(stored[0].label).toBe('renamed');
+  });
+
   it('handles corrupted localStorage gracefully', () => {
     localStorage.setItem(STORAGE_KEY, 'not json');
     const { result } = renderHook(() => useSavedSearches());

@@ -8,6 +8,9 @@ interface UseAutoIOCExtractionOptions {
   existingAnalysis: IOCAnalysis | undefined;
   onUpdate: (id: string, updates: { iocAnalysis: IOCAnalysis; iocTypes: IOCType[] }) => void;
   enabled?: boolean;
+  enabledTypes?: string[];
+  defaultConfidence?: string;
+  debounceMs?: number;  // default 2000
 }
 
 /**
@@ -20,6 +23,9 @@ export function useAutoIOCExtraction({
   existingAnalysis,
   onUpdate,
   enabled = true,
+  enabledTypes,
+  defaultConfidence,
+  debounceMs,
 }: UseAutoIOCExtractionOptions) {
   const prevContentRef = useRef(content);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -51,12 +57,12 @@ export function useAutoIOCExtraction({
     timerRef.current = setTimeout(() => {
       const currentId = entityIdRef.current;
       if (!currentId) return;
-      const fresh = extractIOCs(content);
+      const fresh = extractIOCs(content, { enabledTypes, defaultConfidence });
       if (fresh.length === 0 && !existingAnalysisRef.current) return;
       const merged = mergeIOCAnalysis(existingAnalysisRef.current, fresh);
       const iocTypes = [...new Set(merged.iocs.filter((i) => !i.dismissed).map((i) => i.type))];
       onUpdateRef.current(currentId, { iocAnalysis: merged, iocTypes });
-    }, 2000);
+    }, debounceMs ?? 2000);
 
     return () => clearTimeout(timerRef.current);
   }, [content, entityId, enabled]);

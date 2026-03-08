@@ -179,7 +179,12 @@ const MAX_IOC_INPUT_LEN = 5_000_000; // 5 MB max content to scan
 const MAX_IOCS_PER_TYPE = 500;
 const MAX_TOTAL_IOCS = 5_000;
 
-export function extractIOCs(content: string): IOCEntry[] {
+export interface ExtractIOCsOptions {
+  enabledTypes?: string[];           // undefined = all
+  defaultConfidence?: string;        // default 'medium'
+}
+
+export function extractIOCs(content: string, options?: ExtractIOCsOptions): IOCEntry[] {
   // Truncate very large content to prevent excessive processing
   const normalized = defang(content.length > MAX_IOC_INPUT_LEN ? content.slice(0, MAX_IOC_INPUT_LEN) : content);
   const entries: IOCEntry[] = [];
@@ -187,8 +192,12 @@ export function extractIOCs(content: string): IOCEntry[] {
   // Track domains found inside URLs and emails for dedup
   const urlDomains = new Set<string>();
   const emailDomains = new Set<string>();
+  const enabledTypesSet = options?.enabledTypes ? new Set(options.enabledTypes) : undefined;
+  const confidence = (options?.defaultConfidence ?? 'medium') as IOCEntry['confidence'];
 
   for (const { type, pattern, validate } of IOC_PATTERNS) {
+    // Skip types not in the enabled set
+    if (enabledTypesSet && !enabledTypesSet.has(type)) continue;
     // Reset lastIndex for each pattern
     pattern.lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -236,7 +245,7 @@ export function extractIOCs(content: string): IOCEntry[] {
         id: nanoid(),
         type,
         value,
-        confidence: 'medium',
+        confidence,
         firstSeen: Date.now(),
         dismissed: false,
       });
@@ -245,37 +254,41 @@ export function extractIOCs(content: string): IOCEntry[] {
   }
 
   // Extract full YARA rule bodies
-  const yaraRules = extractYaraRules(normalized);
-  for (const body of yaraRules) {
-    if (entries.length >= MAX_TOTAL_IOCS) break;
-    const key = `yara-rule:${body.toLowerCase()}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    entries.push({
-      id: nanoid(),
-      type: 'yara-rule',
-      value: body,
-      confidence: 'medium',
-      firstSeen: Date.now(),
-      dismissed: false,
-    });
+  if (!enabledTypesSet || enabledTypesSet.has('yara-rule')) {
+    const yaraRules = extractYaraRules(normalized);
+    for (const body of yaraRules) {
+      if (entries.length >= MAX_TOTAL_IOCS) break;
+      const key = `yara-rule:${body.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      entries.push({
+        id: nanoid(),
+        type: 'yara-rule',
+        value: body,
+        confidence,
+        firstSeen: Date.now(),
+        dismissed: false,
+      });
+    }
   }
 
   // Extract full SIGMA rule YAML blocks
-  const sigmaRules = extractSigmaRules(normalized);
-  for (const block of sigmaRules) {
-    if (entries.length >= MAX_TOTAL_IOCS) break;
-    const key = `sigma-rule:${block.toLowerCase()}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    entries.push({
-      id: nanoid(),
-      type: 'sigma-rule',
-      value: block,
-      confidence: 'medium',
-      firstSeen: Date.now(),
-      dismissed: false,
-    });
+  if (!enabledTypesSet || enabledTypesSet.has('sigma-rule')) {
+    const sigmaRules = extractSigmaRules(normalized);
+    for (const block of sigmaRules) {
+      if (entries.length >= MAX_TOTAL_IOCS) break;
+      const key = `sigma-rule:${block.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      entries.push({
+        id: nanoid(),
+        type: 'sigma-rule',
+        value: block,
+        confidence,
+        firstSeen: Date.now(),
+        dismissed: false,
+      });
+    }
   }
 
   // Dedup: remove domains that are already part of extracted URLs or emails

@@ -185,6 +185,34 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
             </div>
           </div>
 
+          {/* Notifications */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-gray-300">Notifications</h3>
+            {([
+              { key: 'mention', label: 'Mentions', desc: 'When someone @mentions you' },
+              { key: 'reply', label: 'Replies', desc: 'When someone replies to your post' },
+              { key: 'reaction', label: 'Reactions', desc: 'When someone reacts to your post' },
+              { key: 'invite', label: 'Invites', desc: 'When you\'re added to an investigation' },
+              { key: 'bot', label: 'Bot alerts', desc: 'Automated bot notifications' },
+            ] as const).map(({ key, label, desc }) => {
+              const enabled = settings.notificationPrefs?.[key] !== false;
+              return (
+                <div key={key} className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm text-gray-300">{label}</span>
+                    <p className="text-xs text-gray-500">{desc}</p>
+                  </div>
+                  <button
+                    onClick={() => onUpdateSettings({ notificationPrefs: { ...settings.notificationPrefs, [key]: !enabled } })}
+                    className={`relative w-9 h-5 rounded-full transition-colors ${enabled ? 'bg-accent' : 'bg-gray-700'}`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${enabled ? 'translate-x-4' : ''}`} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
           {/* Sample Data */}
           {(onLoadSample || onDeleteSample) && (
             <div className="space-y-3">

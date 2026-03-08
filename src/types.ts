@@ -188,8 +188,19 @@ export interface Settings {
   llmDefaultModel?: string;
   llmDefaultProvider?: LLMProvider;
   llmSystemPrompt?: string;
+  tiAutoExtractEnabled?: boolean;        // default true
+  tiAutoExtractDebounceMs?: number;      // default 2000
+  tiEnabledIOCTypes?: string[];          // IOC type strings; undefined = all enabled
+  tiDefaultConfidence?: string;          // 'low' | 'medium' | 'high' | 'confirmed'; default 'medium'
   serverUrl?: string;
   serverDisplayName?: string;
+  notificationPrefs?: {
+    mention?: boolean;
+    reply?: boolean;
+    reaction?: boolean;
+    invite?: boolean;
+    bot?: boolean;
+  };
 }
 
 export const DEFAULT_SETTINGS: Settings = {

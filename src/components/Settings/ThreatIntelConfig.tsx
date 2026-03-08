@@ -2,8 +2,8 @@ import { useState, useRef } from 'react';
 import { Upload, Download, X, FileJson, Users, ChevronDown, ChevronRight, RotateCcw, Plus, Search } from 'lucide-react';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../contexts/ToastContext';
-import type { IOCType, IOCRelationshipDef } from '../../types';
-import { IOC_TYPE_LABELS, DEFAULT_IOC_SUBTYPES, DEFAULT_RELATIONSHIP_TYPES } from '../../types';
+import type { IOCType, IOCRelationshipDef, ConfidenceLevel } from '../../types';
+import { IOC_TYPE_LABELS, DEFAULT_IOC_SUBTYPES, DEFAULT_RELATIONSHIP_TYPES, CONFIDENCE_LEVELS } from '../../types';
 import { getEffectiveClsLevels } from '../../lib/classification';
 import { downloadFile } from '../../lib/export';
 
@@ -19,7 +19,7 @@ const SIMPLE_CATEGORIES: ConfigCategory[] = [
   { key: 'tiIocStatuses', label: 'IOC Statuses' },
 ];
 
-const BULK_KEY_MAP: Record<string, 'tiClsLevels' | 'tiIocStatuses' | 'attributionActors' | 'tiIocSubtypes' | 'tiRelationshipTypes' | 'tiDefaultClsLevel' | 'tiDefaultReportSource' | 'ociLabel'> = {
+const BULK_KEY_MAP: Record<string, 'tiClsLevels' | 'tiIocStatuses' | 'attributionActors' | 'tiIocSubtypes' | 'tiRelationshipTypes' | 'tiDefaultClsLevel' | 'tiDefaultReportSource' | 'ociLabel' | 'tiAutoExtractEnabled' | 'tiAutoExtractDebounceMs' | 'tiEnabledIOCTypes' | 'tiDefaultConfidence'> = {
   cls_levels: 'tiClsLevels',
   ioc_subtypes: 'tiIocSubtypes',
   relationship_types: 'tiRelationshipTypes',
@@ -28,7 +28,20 @@ const BULK_KEY_MAP: Record<string, 'tiClsLevels' | 'tiIocStatuses' | 'attributio
   default_cls_level: 'tiDefaultClsLevel',
   default_report_source: 'tiDefaultReportSource',
   oci_label: 'ociLabel',
+  auto_extract_enabled: 'tiAutoExtractEnabled',
+  auto_extract_debounce_ms: 'tiAutoExtractDebounceMs',
+  enabled_ioc_types: 'tiEnabledIOCTypes',
+  default_confidence: 'tiDefaultConfidence',
 };
+
+const DEBOUNCE_OPTIONS = [
+  { label: '1s', value: 1000 },
+  { label: '2s', value: 2000 },
+  { label: '3s', value: 3000 },
+  { label: '5s', value: 5000 },
+];
+
+const ALL_CONFIDENCE_LEVELS = Object.keys(CONFIDENCE_LEVELS) as ConfidenceLevel[];
 
 export function ThreatIntelConfig() {
   const { settings, updateSettings } = useSettings();
@@ -159,8 +172,14 @@ export function ThreatIntelConfig() {
             updates[settingsKey] = merged;
           } else if (settingsKey === 'tiRelationshipTypes' && data[jsonKey] && typeof data[jsonKey] === 'object' && !Array.isArray(data[jsonKey])) {
             updates[settingsKey] = { ...customRelTypes, ...data[jsonKey] };
-          } else if (typeof data[jsonKey] === 'string' && (settingsKey === 'tiDefaultClsLevel' || settingsKey === 'tiDefaultReportSource' || settingsKey === 'ociLabel')) {
+          } else if (typeof data[jsonKey] === 'string' && (settingsKey === 'tiDefaultClsLevel' || settingsKey === 'tiDefaultReportSource' || settingsKey === 'ociLabel' || settingsKey === 'tiDefaultConfidence')) {
             updates[settingsKey] = data[jsonKey] || undefined;
+          } else if (settingsKey === 'tiAutoExtractEnabled' && typeof data[jsonKey] === 'boolean') {
+            updates[settingsKey] = data[jsonKey];
+          } else if (settingsKey === 'tiAutoExtractDebounceMs' && typeof data[jsonKey] === 'number') {
+            updates[settingsKey] = data[jsonKey];
+          } else if (settingsKey === 'tiEnabledIOCTypes' && Array.isArray(data[jsonKey])) {
+            updates[settingsKey] = (data[jsonKey] as unknown[]).map(String).filter((s) => s.length > 0);
           } else if (Array.isArray(data[jsonKey])) {
             const parsed = (data[jsonKey] as unknown[]).map(String).filter((s) => s.length > 0);
             if (settingsKey === 'attributionActors') {
@@ -201,6 +220,10 @@ export function ThreatIntelConfig() {
     if (settings.tiDefaultClsLevel) config.default_cls_level = settings.tiDefaultClsLevel;
     if (settings.tiDefaultReportSource) config.default_report_source = settings.tiDefaultReportSource;
     if (settings.ociLabel) config.oci_label = settings.ociLabel;
+    if (settings.tiAutoExtractEnabled !== undefined) config.auto_extract_enabled = settings.tiAutoExtractEnabled;
+    if (settings.tiAutoExtractDebounceMs !== undefined) config.auto_extract_debounce_ms = settings.tiAutoExtractDebounceMs;
+    if (settings.tiEnabledIOCTypes) config.enabled_ioc_types = settings.tiEnabledIOCTypes;
+    if (settings.tiDefaultConfidence) config.default_confidence = settings.tiDefaultConfidence;
     downloadFile(JSON.stringify(config, null, 2), 'threatcaddy-config.json', 'application/json');
   };
 
@@ -213,6 +236,116 @@ export function ThreatIntelConfig() {
         <Search size={16} />
         Threat Intel Configuration
       </h3>
+
+      {/* Extraction Behavior */}
+      <div className="space-y-3">
+        <span className="text-xs font-medium text-gray-400">Extraction Behavior</span>
+
+        {/* Auto-Extraction Toggle */}
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-sm text-gray-300">Auto-extract IOCs from content</label>
+            <p className="text-[10px] text-gray-600">Automatically extract IOCs as you type in notes, tasks, and timeline events.</p>
+          </div>
+          <button
+            onClick={() => updateSettings({ tiAutoExtractEnabled: !(settings.tiAutoExtractEnabled !== false) })}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${settings.tiAutoExtractEnabled !== false ? 'bg-accent' : 'bg-gray-600'}`}
+            role="switch"
+            aria-checked={settings.tiAutoExtractEnabled !== false}
+          >
+            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${settings.tiAutoExtractEnabled !== false ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+          </button>
+        </div>
+
+        {/* Default Confidence Level */}
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-sm text-gray-400">Default Confidence Level</label>
+            <p className="text-[10px] text-gray-600">Default confidence assigned to newly extracted IOCs.</p>
+          </div>
+          <select
+            value={settings.tiDefaultConfidence || 'medium'}
+            onChange={(e) => updateSettings({ tiDefaultConfidence: e.target.value === 'medium' ? undefined : e.target.value })}
+            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
+          >
+            {ALL_CONFIDENCE_LEVELS.map((c) => (
+              <option key={c} value={c}>{CONFIDENCE_LEVELS[c].label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Extraction Delay */}
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-sm text-gray-400">Extraction Delay</label>
+            <p className="text-[10px] text-gray-600">Delay after typing before auto-extraction runs.</p>
+          </div>
+          <select
+            value={settings.tiAutoExtractDebounceMs ?? 2000}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              updateSettings({ tiAutoExtractDebounceMs: val === 2000 ? undefined : val });
+            }}
+            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
+          >
+            {DEBOUNCE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* IOC Type Toggles */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-sm text-gray-400">Enabled IOC Types</label>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => updateSettings({ tiEnabledIOCTypes: undefined })}
+                className="px-2 py-0.5 rounded text-[10px] font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-300"
+              >
+                Enable All
+              </button>
+              <button
+                onClick={() => updateSettings({ tiEnabledIOCTypes: [] })}
+                className="px-2 py-0.5 rounded text-[10px] font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-300"
+              >
+                Disable All
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {ALL_IOC_TYPES.map((type) => {
+              const { label, color } = IOC_TYPE_LABELS[type];
+              const enabledTypes = settings.tiEnabledIOCTypes;
+              const isEnabled = !enabledTypes || enabledTypes.includes(type);
+              return (
+                <button
+                  key={type}
+                  onClick={() => {
+                    if (!enabledTypes) {
+                      // Currently all enabled, switch to all-except-this
+                      updateSettings({ tiEnabledIOCTypes: ALL_IOC_TYPES.filter((t) => t !== type) });
+                    } else if (isEnabled) {
+                      const next = enabledTypes.filter((t) => t !== type);
+                      updateSettings({ tiEnabledIOCTypes: next.length === 0 ? [] : next });
+                    } else {
+                      const next = [...enabledTypes, type];
+                      // If all types are now enabled, reset to undefined
+                      updateSettings({ tiEnabledIOCTypes: next.length === ALL_IOC_TYPES.length ? undefined : next });
+                    }
+                  }}
+                  className={`px-2 py-1 rounded text-xs border transition-colors ${isEnabled ? 'border-accent/40 bg-accent/10' : 'border-gray-700 bg-gray-800 opacity-50'}`}
+                  style={isEnabled ? { color } : { color: '#6b7280' }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <hr className="border-gray-800" />
 
       {/* Bulk JSON Import / Export */}
       <div>
@@ -240,7 +373,7 @@ export function ThreatIntelConfig() {
           </button>
         </div>
         <p className="text-xs text-gray-600 mt-1">
-          Accepts {'{'} cls_levels, ioc_subtypes, relationship_types, ioc_statuses, attribution_actors, default_cls_level, default_report_source, oci_label {'}'}
+          Accepts {'{'} cls_levels, ioc_subtypes, relationship_types, ioc_statuses, attribution_actors, default_cls_level, default_report_source, oci_label, auto_extract_enabled, auto_extract_debounce_ms, enabled_ioc_types, default_confidence {'}'}
         </p>
       </div>
 

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { nanoid } from 'nanoid';
-import type { SearchMode } from '../lib/search';
+import type { SearchQuery } from '../lib/search';
 
 const STORAGE_KEY = 'threatcaddy-saved-searches';
 const MAX_SAVED = 20;
@@ -8,7 +8,7 @@ const MAX_SAVED = 20;
 export interface SavedSearch {
   id: string;
   label: string;
-  query: { mode: SearchMode; raw: string };
+  query: SearchQuery;
   createdAt: number;
 }
 
@@ -29,7 +29,7 @@ function persistSearches(searches: SavedSearch[]) {
 export function useSavedSearches() {
   const [searches, setSearches] = useState<SavedSearch[]>(loadSearches);
 
-  const saveSearch = useCallback((label: string, query: { mode: SearchMode; raw: string }) => {
+  const saveSearch = useCallback((label: string, query: SearchQuery) => {
     setSearches((prev) => {
       const next: SavedSearch[] = [
         { id: nanoid(), label, query, createdAt: Date.now() },
@@ -48,10 +48,18 @@ export function useSavedSearches() {
     });
   }, []);
 
+  const renameSearch = useCallback((id: string, newLabel: string) => {
+    setSearches((prev) => {
+      const next = prev.map((s) => (s.id === id ? { ...s, label: newLabel } : s));
+      persistSearches(next);
+      return next;
+    });
+  }, []);
+
   const clearAll = useCallback(() => {
     setSearches([]);
     persistSearches([]);
   }, []);
 
-  return { searches, saveSearch, deleteSearch, clearAll };
+  return { searches, saveSearch, deleteSearch, renameSearch, clearAll };
 }

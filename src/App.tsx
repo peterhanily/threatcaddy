@@ -395,7 +395,10 @@ function AppInner() {
 
           const timestamp = new Date(createdAt).toLocaleString();
           const content = `*Clipped ${timestamp}*\n\n${rawContent}`;
-          const freshIOCs = extractIOCs(rawContent);
+          const freshIOCs = extractIOCs(rawContent, {
+            enabledTypes: settings.tiEnabledIOCTypes,
+            defaultConfidence: settings.tiDefaultConfidence,
+          });
           const iocAnalysis = mergeIOCAnalysis(undefined, freshIOCs);
           const iocTypes = [...new Set(freshIOCs.filter((i) => !i.dismissed).map((i) => i.type))];
 
