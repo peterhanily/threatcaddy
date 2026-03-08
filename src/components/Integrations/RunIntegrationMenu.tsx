@@ -14,9 +14,10 @@ interface RunIntegrationMenuProps {
   addRun: (run: IntegrationRun) => Promise<void>;
   onComplete?: (run: IntegrationRun) => void;
   onOpenSettings?: () => void;
+  onNavigateToNote?: (noteId: string) => void;
 }
 
-export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onComplete, onOpenSettings }: RunIntegrationMenuProps) {
+export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onComplete, onOpenSettings, onNavigateToNote }: RunIntegrationMenuProps) {
   const { addToast } = useToast();
   const [open, setOpen] = useState(false);
   const [running, setRunning] = useState(false);
@@ -60,11 +61,12 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
             const id = nanoid();
             const now = Date.now();
             switch (type) {
-              case 'note':
+              case 'note': {
+                const noteContent = (fields.body as string) || (fields.content as string) || '';
                 await db.notes.add({
                   id,
                   title: (fields.title as string) || 'Integration Note',
-                  content: (fields.content as string) || '',
+                  content: noteContent,
                   folderId: (fields.folderId as string) || investigation?.id,
                   tags: (fields.tags as string[]) || [],
                   iocTypes: [],
@@ -74,7 +76,10 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
                   createdAt: now,
                   updatedAt: now,
                 });
+                // Auto-navigate to the created note
+                onNavigateToNote?.(id);
                 break;
+              }
               case 'ioc':
                 await db.standaloneIOCs.add({
                   id,
