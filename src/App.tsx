@@ -132,7 +132,7 @@ function AppInner() {
   const { whiteboards, createWhiteboard, updateWhiteboard, deleteWhiteboard, trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard, emptyTrashWhiteboards, getFilteredWhiteboards, whiteboardCounts, reload: reloadWhiteboards } = useWhiteboards();
   const standaloneIOCsHook = useStandaloneIOCs();
   const chatsHook = useChats();
-  const { folders, createFolder, findOrCreateFolder, updateFolder, deleteFolder, trashFolderContents, archiveFolder, unarchiveFolder, reload: reloadFolders } = useFolders();
+  const { folders, loading: foldersLoading, createFolder, findOrCreateFolder, updateFolder, deleteFolder, trashFolderContents, archiveFolder, unarchiveFolder, reload: reloadFolders } = useFolders();
   const { tags, createTag, updateTag, deleteTag, reload: reloadTags } = useTags();
   const noteTemplatesHook = useNoteTemplates();
   const playbooksHook = usePlaybooks();
@@ -1138,6 +1138,12 @@ function AppInner() {
         onSave={handleSaveSharedPayload}
       />
     );
+  }
+
+  // Wait for core data before rendering to prevent empty-content flash on refresh
+  const dataReady = !notes.loading && !foldersLoading && !tasks.loading;
+  if (!dataReady) {
+    return <div className="min-h-screen bg-gray-950 dark:bg-gray-950" />;
   }
 
   // Mobile exec mode — replace entire UI with executive dashboard

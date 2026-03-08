@@ -5,10 +5,12 @@ import { nanoid } from 'nanoid';
 
 export function useFolders() {
   const [folders, setFolders] = useState<Folder[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const loadFolders = useCallback(async () => {
     const all = await db.folders.toArray();
     setFolders(all.sort((a, b) => a.order - b.order));
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -206,6 +208,7 @@ export function useFolders() {
 
   return {
     folders,
+    loading,
     createFolder,
     findOrCreateFolder,
     updateFolder,
