@@ -297,7 +297,7 @@ export function BulkIOCImportModal({
               <button
                 onClick={handleParse}
                 disabled={!rawText.trim()}
-                className="px-3 py-1.5 text-sm rounded-lg bg-accent/15 text-accent hover:bg-accent/25 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-sm rounded-lg bg-accent/15 text-accent hover:bg-accent/25 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Parse & Preview
               </button>
@@ -382,7 +382,7 @@ export function BulkIOCImportModal({
               <button
                 onClick={handleImport}
                 disabled={importing || validCount === 0}
-                className="px-3 py-1.5 text-sm rounded-lg bg-accent/15 text-accent hover:bg-accent/25 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-sm rounded-lg bg-accent/15 text-accent hover:bg-accent/25 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {importing ? 'Importing...' : `Import ${validCount} IOC${validCount !== 1 ? 's' : ''}`}
               </button>

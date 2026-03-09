@@ -115,7 +115,15 @@ export async function handleWSMessage(ws: WSContext, data: string) {
   }
   client.msgCount++;
   if (client.msgCount > MSG_RATE_MAX) {
-    return; // Silently drop messages exceeding rate limit
+    logger.warn('WebSocket per-connection rate limit exceeded', {
+      userId: client.user.id,
+      displayName: client.user.displayName,
+      msgCount: client.msgCount,
+      limit: MSG_RATE_MAX,
+      windowMs: MSG_RATE_WINDOW_MS,
+    });
+    sendTo(ws, { type: 'error', code: 'RATE_LIMIT', message: 'Message rate limit exceeded' });
+    return;
   }
 
   // Per-user rate limiting (across all connections)
@@ -126,7 +134,15 @@ export async function handleWSMessage(ws: WSContext, data: string) {
   }
   userRate.count++;
   if (userRate.count > USER_MSG_RATE_MAX) {
-    return; // Silently drop
+    logger.warn('WebSocket per-user rate limit exceeded', {
+      userId: client.user.id,
+      displayName: client.user.displayName,
+      userMsgCount: userRate.count,
+      limit: USER_MSG_RATE_MAX,
+      windowMs: MSG_RATE_WINDOW_MS,
+    });
+    sendTo(ws, { type: 'error', code: 'RATE_LIMIT', message: 'Message rate limit exceeded' });
+    return;
   }
 
   try {

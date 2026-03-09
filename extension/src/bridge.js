@@ -17,7 +17,7 @@ function readyPayload() {
 if (document.documentElement.dataset.tcBridgeLoaded) {
   // Already loaded — just re-signal readiness and bail out
   if (chrome && chrome.runtime && chrome.runtime.id) {
-    window.postMessage(readyPayload(), '*');
+    window.postMessage(readyPayload(), window.location.origin);
   }
 } else {
 document.documentElement.dataset.tcBridgeLoaded = '1';
@@ -35,34 +35,36 @@ function isExtensionValid() {
 
 // Signal extension presence
 if (isExtensionValid()) {
-  window.postMessage(readyPayload(), '*');
+  window.postMessage(readyPayload(), window.location.origin);
 }
 
 // Re-signal readiness when page is restored from BFCache (back/forward navigation)
 document.addEventListener('pageshow', function (event) {
   if (event.persisted && isExtensionValid()) {
-    window.postMessage(readyPayload(), '*');
+    window.postMessage(readyPayload(), window.location.origin);
   }
 });
 
 // Re-signal when tab becomes visible again (covers additional edge cases)
 document.addEventListener('visibilitychange', function () {
   if (!document.hidden && isExtensionValid()) {
-    window.postMessage(readyPayload(), '*');
+    window.postMessage(readyPayload(), window.location.origin);
   }
 });
 
 // Respond to ping requests from the web app (handles race condition)
 window.addEventListener('message', function (event) {
+  if (event.origin !== window.location.origin) return;
   if (event.source === window && event.data && event.data.type === 'TC_EXTENSION_PING') {
     if (isExtensionValid()) {
-      window.postMessage(readyPayload(), '*');
+      window.postMessage(readyPayload(), window.location.origin);
     }
   }
 });
 
 // Listen for LLM requests from the web app
 window.addEventListener('message', function (event) {
+  if (event.origin !== window.location.origin) return;
   if (event.source !== window) return;
   if (!event.data) return;
 
@@ -75,7 +77,7 @@ window.addEventListener('message', function (event) {
         type: 'TC_LLM_ERROR',
         requestId: requestId,
         error: 'Extension context invalidated. Please reload this page.'
-      }, '*');
+      }, window.location.origin);
       return;
     }
 
@@ -85,12 +87,12 @@ window.addEventListener('message', function (event) {
 
       port.onMessage.addListener(function (msg) {
         if (msg.type === 'chunk') {
-          window.postMessage({ type: 'TC_LLM_CHUNK', requestId: requestId, content: msg.content }, '*');
+          window.postMessage({ type: 'TC_LLM_CHUNK', requestId: requestId, content: msg.content }, window.location.origin);
         } else if (msg.type === 'done') {
-          window.postMessage({ type: 'TC_LLM_DONE', requestId: requestId, stopReason: msg.stopReason, contentBlocks: msg.contentBlocks }, '*');
+          window.postMessage({ type: 'TC_LLM_DONE', requestId: requestId, stopReason: msg.stopReason, contentBlocks: msg.contentBlocks }, window.location.origin);
           ports.delete(requestId);
         } else if (msg.type === 'error') {
-          window.postMessage({ type: 'TC_LLM_ERROR', requestId: requestId, error: msg.error }, '*');
+          window.postMessage({ type: 'TC_LLM_ERROR', requestId: requestId, error: msg.error }, window.location.origin);
           ports.delete(requestId);
         }
       });
@@ -102,7 +104,7 @@ window.addEventListener('message', function (event) {
             type: 'TC_LLM_ERROR',
             requestId: requestId,
             error: lastError.message || 'Extension disconnected'
-          }, '*');
+          }, window.location.origin);
         }
         ports.delete(requestId);
       });
@@ -113,7 +115,7 @@ window.addEventListener('message', function (event) {
         type: 'TC_LLM_ERROR',
         requestId: requestId,
         error: 'Extension error: ' + (err.message || 'unknown. Try reloading the page.')
-      }, '*');
+      }, window.location.origin);
     }
   }
 
@@ -127,7 +129,7 @@ window.addEventListener('message', function (event) {
         requestId: fetchRequestId,
         success: false,
         error: 'Extension context invalidated. Please reload this page.'
-      }, '*');
+      }, window.location.origin);
       return;
     }
 
@@ -140,14 +142,14 @@ window.addEventListener('message', function (event) {
             requestId: fetchRequestId,
             success: false,
             error: lastError.message || 'Extension error'
-          }, '*');
+          }, window.location.origin);
         } else if (!response) {
           window.postMessage({
             type: 'TC_FETCH_URL_RESULT',
             requestId: fetchRequestId,
             success: false,
             error: 'No response from extension background'
-          }, '*');
+          }, window.location.origin);
         } else {
           window.postMessage({
             type: 'TC_FETCH_URL_RESULT',
@@ -157,7 +159,7 @@ window.addEventListener('message', function (event) {
             content: response.content,
             url: response.url,
             error: response.error
-          }, '*');
+          }, window.location.origin);
         }
       });
     } catch (err) {
@@ -166,7 +168,7 @@ window.addEventListener('message', function (event) {
         requestId: fetchRequestId,
         success: false,
         error: 'Extension error: ' + (err.message || 'unknown')
-      }, '*');
+      }, window.location.origin);
     }
   }
 
@@ -186,7 +188,7 @@ window.addEventListener('message', function (event) {
         requestId: proxyId,
         success: false,
         error: 'Extension context invalidated. Please reload this page.'
-      }, '*');
+      }, window.location.origin);
       return;
     }
 
@@ -199,14 +201,14 @@ window.addEventListener('message', function (event) {
             requestId: proxyId,
             success: false,
             error: lastError.message || 'Extension error'
-          }, '*');
+          }, window.location.origin);
         } else if (!response) {
           window.postMessage({
             type: 'TC_PROXY_FETCH_RESULT',
             requestId: proxyId,
             success: false,
             error: 'No response from extension background'
-          }, '*');
+          }, window.location.origin);
         } else {
           window.postMessage({
             type: 'TC_PROXY_FETCH_RESULT',
@@ -217,7 +219,7 @@ window.addEventListener('message', function (event) {
             data: response.data,
             headers: response.headers,
             error: response.error
-          }, '*');
+          }, window.location.origin);
         }
       });
     } catch (err) {
@@ -226,7 +228,7 @@ window.addEventListener('message', function (event) {
         requestId: proxyId,
         success: false,
         error: 'Extension error: ' + (err.message || 'unknown')
-      }, '*');
+      }, window.location.origin);
     }
   }
 

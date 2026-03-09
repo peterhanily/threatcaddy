@@ -107,8 +107,8 @@ export function decryptConfigSecrets(config: Record<string, unknown>): Record<st
       try {
         result[key] = decryptSecret(value);
       } catch (err) {
-        logger.error('Failed to decrypt bot secret', { key, error: String(err) });
-        result[key] = '';  // Don't crash — let the bot handle missing keys
+        logger.error('Failed to decrypt bot secret — this likely means the BOT_MASTER_KEY has changed or the value is corrupt', { key, error: String(err) });
+        throw new Error(`Decryption failed for secret field "${key}": ${String(err)}. Check that BOT_MASTER_KEY matches the key used at encryption time.`);
       }
     } else {
       result[key] = value;

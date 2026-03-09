@@ -53,10 +53,10 @@ describe('ChatInput slash command menu', () => {
     it('shows all 11 commands when only "/" is typed', async () => {
       renderInput();
       await userEvent.type(getTextarea(), '/');
-      const buttons = screen.getAllByRole('button').filter(
+      const options = screen.getAllByRole('option').filter(
         (b) => b.textContent?.startsWith('/')
       );
-      expect(buttons).toHaveLength(11);
+      expect(options).toHaveLength(11);
     });
 
     it('hides menu when text does not start with "/"', async () => {

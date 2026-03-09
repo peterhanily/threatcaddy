@@ -133,7 +133,7 @@ export function InlineNameGenerator({ onCreateInvestigation, onCancel }: InlineN
         <button
           onClick={handleRespin}
           disabled={animating}
-          className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary disabled:opacity-40 transition-colors"
+          className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary disabled:opacity-50 transition-colors"
           title="Re-spin"
           aria-label="Re-spin name"
         >
@@ -151,7 +151,7 @@ export function InlineNameGenerator({ onCreateInvestigation, onCancel }: InlineN
         <button
           onClick={handleCreate}
           disabled={animating}
-          className="flex items-center gap-1 px-2 py-1 rounded bg-purple text-white text-xs font-medium hover:brightness-110 disabled:opacity-40 transition-all"
+          className="flex items-center gap-1 px-2 py-1 rounded bg-purple text-white text-xs font-medium hover:brightness-110 disabled:opacity-50 transition-all"
           title="Create investigation"
           aria-label="Create investigation"
         >

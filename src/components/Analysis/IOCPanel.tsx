@@ -507,7 +507,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                         <button
                           onClick={() => handleBulkAttribution(type)}
                           disabled={!attributionInput.trim()}
-                          className="p-1 rounded bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-40"
+                          className="p-1 rounded bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-50"
                           title="Apply attribution"
                           aria-label="Apply attribution to all"
                         >

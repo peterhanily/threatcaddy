@@ -91,6 +91,7 @@ async function streamOpenAI(req: LLMChatRequest, cb: StreamCallbacks, signal: Ab
     model: req.model,
     messages,
     stream: true,
+    max_tokens: 4096,
   };
   if (req.tools && req.tools.length > 0) body.tools = req.tools;
 
@@ -147,7 +148,10 @@ async function streamGemini(req: LLMChatRequest, cb: StreamCallbacks, signal: Ab
     parts: [{ text: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) }],
   }));
 
-  const body: Record<string, unknown> = { contents };
+  const body: Record<string, unknown> = {
+    contents,
+    generationConfig: { maxOutputTokens: 4096 },
+  };
   if (req.systemPrompt) {
     body.systemInstruction = { parts: [{ text: req.systemPrompt }] };
   }
@@ -212,6 +216,7 @@ async function streamMistral(req: LLMChatRequest, cb: StreamCallbacks, signal: A
       model: req.model,
       messages,
       stream: true,
+      max_tokens: 4096,
     }),
     signal,
   });

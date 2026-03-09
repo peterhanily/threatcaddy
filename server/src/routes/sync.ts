@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { requireAuth } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
-import { processPush, pullChanges, getSnapshot, lookupEntityFolderId } from '../services/sync-service.js';
+import { processPush, pullChanges, getSnapshot, lookupEntityFolderId, bulkLookupEntityFolderIds } from '../services/sync-service.js';
 import { logActivity } from '../services/audit-service.js';
 import { logger } from '../lib/logger.js';
 import { broadcastToFolder } from '../ws/handler.js';
@@ -28,6 +28,14 @@ app.post('/push', async (c) => {
     return c.json({ results: [] });
   }
 
+  // Pre-fetch all needed folderId lookups in a single batch to avoid N+1 queries
+  const lookupsNeeded: Array<{ table: string; entityId: string }> = [];
+  for (const change of changes) {
+    if (TABLES_WITHOUT_FOLDER.has(change.table) || change.table === 'folders') continue;
+    lookupsNeeded.push({ table: change.table, entityId: change.entityId });
+  }
+  const folderIdCache = await bulkLookupEntityFolderIds(lookupsNeeded);
+
   // Build authorization list
   const authorized: boolean[] = [];
   for (const change of changes) {
@@ -37,21 +45,21 @@ app.post('/push', async (c) => {
     }
 
     // Extract folderId: for folders table, entityId IS the folderId.
-    // For other tables, look up the entity's actual folderId from the DB
+    // For other tables, use the pre-fetched bulk lookup result
     // (never trust the client-supplied folderId for auth decisions).
     let folderId: string | undefined;
     if (change.table === 'folders') {
       folderId = change.entityId;
     } else if (change.op === 'delete' || !change.data?.folderId) {
-      // For deletes (no data) or missing folderId: look up from DB
-      folderId = await lookupEntityFolderId(change.table, change.entityId);
+      // For deletes (no data) or missing folderId: use cached DB lookup
+      folderId = folderIdCache.get(`${change.table}:${change.entityId}`);
       // If entity doesn't exist yet and no folderId provided, use client data
       if (!folderId && change.op === 'put') {
         folderId = change.data?.folderId as string | undefined;
       }
     } else {
       // New entity with folderId in payload — verify against DB if entity exists
-      const dbFolderId = await lookupEntityFolderId(change.table, change.entityId);
+      const dbFolderId = folderIdCache.get(`${change.table}:${change.entityId}`);
       folderId = dbFolderId || (change.data?.folderId as string | undefined);
     }
 

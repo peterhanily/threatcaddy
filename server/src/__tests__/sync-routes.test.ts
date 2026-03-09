@@ -13,6 +13,7 @@ const {
   mockPullChanges,
   mockGetSnapshot,
   mockLookupEntityFolderId,
+  mockBulkLookupEntityFolderIds,
   mockLogActivity,
   mockBroadcastToFolder,
   mockLogger,
@@ -69,6 +70,7 @@ const {
     mockPullChanges: vi.fn(),
     mockGetSnapshot: vi.fn(),
     mockLookupEntityFolderId: vi.fn(),
+    mockBulkLookupEntityFolderIds: vi.fn(),
     mockLogActivity: vi.fn(),
     mockBroadcastToFolder: vi.fn(),
     mockLogger: {
@@ -150,6 +152,7 @@ vi.mock('../services/sync-service.js', () => ({
   pullChanges: mockPullChanges,
   getSnapshot: mockGetSnapshot,
   lookupEntityFolderId: mockLookupEntityFolderId,
+  bulkLookupEntityFolderIds: mockBulkLookupEntityFolderIds,
 }));
 
 // ── Mock: audit-service ───────────────────────────────────────────────────────
@@ -233,6 +236,17 @@ describe('sync routes', () => {
     mockGetSnapshot.mockResolvedValue({ changes: [] });
     mockCheckAccess.mockResolvedValue(true);
     mockLookupEntityFolderId.mockResolvedValue(null);
+    // Bulk lookup delegates to the per-entity mock by default
+    mockBulkLookupEntityFolderIds.mockImplementation(
+      async (items: Array<{ table: string; entityId: string }>) => {
+        const map = new Map<string, string>();
+        for (const item of items) {
+          const folderId = await mockLookupEntityFolderId(item.table, item.entityId);
+          if (folderId) map.set(`${item.table}:${item.entityId}`, folderId);
+        }
+        return map;
+      },
+    );
     mockLogActivity.mockResolvedValue(undefined);
     mockBroadcastToFolder.mockReturnValue(undefined);
   });

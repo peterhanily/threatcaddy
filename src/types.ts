@@ -352,6 +352,23 @@ export const IOC_TYPE_LABELS: Record<IOCType, { label: string; color: string }> 
   'file-path':   { label: 'File Path',   color: '#64748b' },
 };
 
+export const IOC_STATUS_VALUES = ['active', 'resolved', 'false-positive', 'under-investigation'] as const;
+export type IOCStatusValue = typeof IOC_STATUS_VALUES[number];
+
+export const IOC_STATUS_LABELS: Record<IOCStatusValue, string> = {
+  active: 'Active',
+  resolved: 'Resolved',
+  'false-positive': 'False Positive',
+  'under-investigation': 'Under Investigation',
+};
+
+export const IOC_STATUS_COLORS: Record<IOCStatusValue, string> = {
+  active: '#22c55e',
+  resolved: '#6b7280',
+  'false-positive': '#f97316',
+  'under-investigation': '#3b82f6',
+};
+
 export const CONFIDENCE_LEVELS: Record<ConfidenceLevel, { label: string; color: string }> = {
   low:       { label: 'Low',       color: '#6b7280' },
   medium:    { label: 'Medium',    color: '#eab308' },

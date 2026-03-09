@@ -779,7 +779,7 @@ function CatalogTab({
           <button
             onClick={onRefreshCatalog}
             disabled={catalogLoading}
-            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors disabled:opacity-40"
+            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors disabled:opacity-50"
             title="Refresh catalog"
           >
             <RefreshCw size={10} className={catalogLoading ? 'animate-spin' : ''} />
@@ -919,7 +919,7 @@ function CatalogTab({
           <button
             onClick={handlePasteImport}
             disabled={!pasteJson.trim()}
-            className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Import from Paste
           </button>

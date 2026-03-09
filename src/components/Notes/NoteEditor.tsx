@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette, ArrowLeft, Upload, Briefcase, MessageSquare, Search, Lock, LockOpen, Share2, FileText } from 'lucide-react';
+import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette, ArrowLeft, Upload, Briefcase, MessageSquare, Search, Lock, LockOpen, Share2, FileText, Download } from 'lucide-react';
 import type { Note, Task, TimelineEvent, Tag, Folder, EditorMode, Settings, NoteAnnotation } from '../../types';
 import { NOTE_COLORS } from '../../types';
 import { nanoid } from 'nanoid';
@@ -20,6 +20,7 @@ import { useResizable } from '../../hooks/useResizable';
 import { useLogActivity } from '../../hooks/ActivityLogContext';
 import { useAutoIOCExtraction } from '../../hooks/useAutoIOCExtraction';
 import { wordCount, formatFullDate, formatDate, cn, isSafeUrl } from '../../lib/utils';
+import { downloadFile } from '../../lib/export';
 
 interface NoteEditorProps {
   note: Note;
@@ -783,6 +784,19 @@ export function NoteEditor({
           </button>
         )}
 
+        <button
+          onClick={() => {
+            const mdContent = `# ${note.title || 'Untitled'}\n\n${note.content}`;
+            const safeTitle = (note.title || 'untitled').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
+            downloadFile(mdContent, `${safeTitle}.md`, 'text/markdown');
+          }}
+          className="p-1.5 rounded text-gray-500 hover:text-gray-300"
+          title="Download as Markdown"
+          aria-label="Download note as Markdown file"
+        >
+          <Download size={16} />
+        </button>
+
         {cloud.hasDestinations && (
           <div className="relative">
             <button
@@ -1034,7 +1048,7 @@ export function NoteEditor({
                   setAnnotationText('');
                 }}
                 disabled={!annotationText.trim()}
-                className="px-2 py-1 rounded bg-accent/20 text-accent text-xs hover:bg-accent/30 disabled:opacity-40"
+                className="px-2 py-1 rounded bg-accent/20 text-accent text-xs hover:bg-accent/30 disabled:opacity-50"
               >
                 Add
               </button>

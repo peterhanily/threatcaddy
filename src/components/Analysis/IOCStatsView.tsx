@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, forwardRef } from 'react';
 import { ChevronDown, ChevronRight, Search, BarChart3, List, Plus, ListPlus, Clipboard, X, ChevronUp, Pencil, Trash2, Archive, RotateCcw, ExternalLink, Columns, GitMerge, Tag as TagIcon } from 'lucide-react';
 import type { Note, Task, TimelineEvent, StandaloneIOC, Settings, IOCEntry, IOCType, ConfidenceLevel, Folder, Tag, InvestigationMember } from '../../types';
-import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, ALL_IOC_TABLE_COLUMNS, DEFAULT_IOC_TABLE_COLUMNS } from '../../types';
+import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, ALL_IOC_TABLE_COLUMNS, DEFAULT_IOC_TABLE_COLUMNS, IOC_STATUS_VALUES, IOC_STATUS_LABELS, IOC_STATUS_COLORS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { StandaloneIOCForm } from './StandaloneIOCForm';
 import { BulkIOCImportModal } from './BulkIOCImportModal';
@@ -16,21 +16,9 @@ import { TableVirtuoso } from 'react-virtuoso';
 
 // ─── Constants ─────────────────────────────────────────────────────
 
-const STATUS_COLORS: Record<string, string> = {
-  active: '#22c55e',
-  resolved: '#6b7280',
-  'false-positive': '#f97316',
-  'under-investigation': '#3b82f6',
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  active: 'Active',
-  resolved: 'Resolved',
-  'false-positive': 'False Positive',
-  'under-investigation': 'Under Investigation',
-};
-
-const STATUS_OPTIONS = ['active', 'resolved', 'false-positive', 'under-investigation'] as const;
+const STATUS_COLORS: Record<string, string> = IOC_STATUS_COLORS;
+const STATUS_LABELS: Record<string, string> = IOC_STATUS_LABELS;
+const STATUS_OPTIONS = IOC_STATUS_VALUES;
 const CONFIDENCE_OPTIONS: ConfidenceLevel[] = ['low', 'medium', 'high', 'confirmed'];
 const ALL_IOC_TYPES = Object.keys(IOC_TYPE_LABELS) as IOCType[];
 const CONFIDENCE_ORDER: Record<string, number> = { low: 0, medium: 1, high: 2, confirmed: 3 };
@@ -972,7 +960,7 @@ function AllIOCsTab({
                     key={col.key}
                     onClick={() => toggleColumn(col.key)}
                     disabled={col.alwaysVisible}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-800 disabled:opacity-40"
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-gray-800 disabled:opacity-50"
                   >
                     <span className={`w-3.5 h-3.5 rounded border ${isColVisible(col.key) ? 'bg-accent border-accent' : 'border-gray-600'} flex items-center justify-center`}>
                       {isColVisible(col.key) && <span className="text-white text-[8px]">&#10003;</span>}
@@ -1159,7 +1147,7 @@ function AllIOCsTab({
                   <button
                     onClick={handleBulkAddTags}
                     disabled={!bulkTagText.trim()}
-                    className="mt-1.5 w-full px-2 py-1 rounded bg-accent/15 text-accent text-xs font-medium hover:bg-accent/25 disabled:opacity-40"
+                    className="mt-1.5 w-full px-2 py-1 rounded bg-accent/15 text-accent text-xs font-medium hover:bg-accent/25 disabled:opacity-50"
                   >
                     Apply Tags
                   </button>

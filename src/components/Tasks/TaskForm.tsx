@@ -316,7 +316,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
                 type="button"
                 onClick={handleAddComment}
                 disabled={!commentText.trim()}
-                className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-gray-200 text-xs transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-200 text-xs transition-colors"
               >
                 Add
               </button>

@@ -69,6 +69,54 @@ export async function lookupEntityFolderId(
   }
 }
 
+/**
+ * Batch lookup folderId for multiple entities, grouped by table.
+ * Returns a Map keyed by "table:entityId" → folderId.
+ */
+export async function bulkLookupEntityFolderIds(
+  lookups: Array<{ table: string; entityId: string }>,
+): Promise<Map<string, string | undefined>> {
+  const result = new Map<string, string | undefined>();
+  if (lookups.length === 0) return result;
+
+  // Group by table to issue one query per table
+  const byTable = new Map<string, string[]>();
+  for (const { table: tableName, entityId } of lookups) {
+    const existing = byTable.get(tableName);
+    if (existing) {
+      existing.push(entityId);
+    } else {
+      byTable.set(tableName, [entityId]);
+    }
+  }
+
+  const queries: Array<{ tableName: string; promise: Promise<{ id: string; folderId: string }[]> }> = [];
+  for (const [tableName, entityIds] of byTable) {
+    const table = TABLE_MAP[tableName];
+    if (!table) continue;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const t = table as any;
+    if (!t.folderId) continue; // table has no folderId column
+    queries.push({
+      tableName,
+      promise: db
+        .select({ id: t.id, folderId: t.folderId })
+        .from(table)
+        .where(inArray(t.id, entityIds)) as Promise<{ id: string; folderId: string }[]>,
+    });
+  }
+
+  const queryResults = await Promise.all(queries.map(q => q.promise));
+  for (let i = 0; i < queries.length; i++) {
+    const tableName = queries[i].tableName;
+    for (const row of queryResults[i]) {
+      result.set(`${tableName}:${row.id}`, row.folderId);
+    }
+  }
+
+  return result;
+}
+
 export async function processPush(
   changes: SyncChange[],
   userId: string

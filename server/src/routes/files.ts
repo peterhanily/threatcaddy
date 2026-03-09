@@ -46,9 +46,9 @@ function detectMimeFromMagicBytes(buffer: Buffer): string | null {
       b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return 'image/webp';
   // PDF: %PDF
   if (b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46) return 'application/pdf';
-  // SVG: XML-like with <svg
-  if (b[0] === 0x3C) {
-    const head = buffer.subarray(0, Math.min(512, buffer.length)).toString('utf8').toLowerCase();
+  // SVG: XML-like with <svg (check up to 2048 bytes to catch SVGs with long XML prologues)
+  if (b[0] === 0x3C || b[0] === 0xEF /* UTF-8 BOM */) {
+    const head = buffer.subarray(0, Math.min(2048, buffer.length)).toString('utf8').toLowerCase();
     if (head.includes('<svg') || head.includes('<!doctype svg')) return 'image/svg+xml';
   }
   return null;
@@ -101,6 +101,19 @@ app.post('/upload', requireRole('admin', 'analyst'), async (c) => {
   const detectedAny = detectMimeFromMagicBytes(buffer);
   if (detectedAny === 'image/svg+xml') {
     return c.json({ error: 'SVG uploads are not allowed' }, 400);
+  }
+
+  // Validate that detected MIME type is consistent with file extension
+  if (detectedAny) {
+    const extMimeMap: Record<string, string[]> = {
+      jpg: ['image/jpeg'], jpeg: ['image/jpeg'],
+      png: ['image/png'], gif: ['image/gif'],
+      webp: ['image/webp'], pdf: ['application/pdf'],
+    };
+    const allowedMimes = extMimeMap[ext];
+    if (allowedMimes && !allowedMimes.includes(detectedAny)) {
+      return c.json({ error: `File extension .${ext} does not match detected content type (${detectedAny})` }, 400);
+    }
   }
 
   await writeFile(storagePath, buffer);

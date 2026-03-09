@@ -659,7 +659,7 @@ export function ThreatIntelConfig() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={addCustomRelType} disabled={!newRelLabel.trim()} className="text-xs px-2 py-0.5 rounded bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-40">Add</button>
+                  <button onClick={addCustomRelType} disabled={!newRelLabel.trim()} className="text-xs px-2 py-0.5 rounded bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-50">Add</button>
                   <button onClick={() => setAddingRelType(false)} className="text-xs px-2 py-0.5 rounded text-gray-500 hover:text-gray-300">Cancel</button>
                 </div>
               </div>

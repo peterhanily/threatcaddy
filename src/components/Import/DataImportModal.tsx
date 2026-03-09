@@ -321,7 +321,7 @@ export function DataImportModal({
             <button
               onClick={handleParse}
               disabled={!rawText.trim()}
-              className="flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium transition-colors"
+              className="flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition-colors"
             >
               Parse & Preview
               <ArrowRight size={14} />
@@ -431,7 +431,7 @@ export function DataImportModal({
                 value={timelineId}
                 onChange={(e) => setTimelineId(e.target.value)}
                 disabled={!createEvents || !hasTimestamp}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg text-sm text-gray-200 px-2 py-1.5 focus:outline-none focus:border-blue-500 disabled:opacity-40"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg text-sm text-gray-200 px-2 py-1.5 focus:outline-none focus:border-blue-500 disabled:opacity-50"
               >
                 <option value="">All Events (first available)</option>
                 <option value="__new__">+ New Timeline...</option>
@@ -500,7 +500,7 @@ export function DataImportModal({
             <button
               onClick={handleImport}
               disabled={!createEvents && !extractIOCsFlag && !createNote}
-              className="flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium transition-colors"
+              className="flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition-colors"
             >
               Import {parseResult.rows.length.toLocaleString()} rows
               <ArrowRight size={14} />

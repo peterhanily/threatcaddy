@@ -1,7 +1,7 @@
 import { useState, useMemo, forwardRef } from 'react';
 import { Plus, Pencil, Trash2, Archive, RotateCcw, Search, ChevronUp, ChevronDown, X, ListPlus, Clipboard, Tag as TagIcon, GitMerge } from 'lucide-react';
 import type { StandaloneIOC, Folder, Tag, IOCType, ConfidenceLevel } from '../../types';
-import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
+import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, IOC_STATUS_VALUES, IOC_STATUS_LABELS, IOC_STATUS_COLORS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { StandaloneIOCForm } from './StandaloneIOCForm';
 import { BulkIOCImportModal } from './BulkIOCImportModal';
@@ -12,19 +12,8 @@ import { useToast } from '../../contexts/ToastContext';
 import { formatDate } from '../../lib/utils';
 import { TableVirtuoso } from 'react-virtuoso';
 
-const STATUS_COLORS: Record<string, string> = {
-  active: '#22c55e',
-  resolved: '#6b7280',
-  'false-positive': '#f97316',
-  'under-investigation': '#3b82f6',
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  active: 'Active',
-  resolved: 'Resolved',
-  'false-positive': 'False Positive',
-  'under-investigation': 'Under Investigation',
-};
+const STATUS_COLORS: Record<string, string> = IOC_STATUS_COLORS;
+const STATUS_LABELS: Record<string, string> = IOC_STATUS_LABELS;
 
 const CLS_COLORS: Record<string, string> = {
   'TLP:CLEAR': '#ffffff',
@@ -42,7 +31,7 @@ type SortDir = 'asc' | 'desc';
 const CONFIDENCE_ORDER: Record<string, number> = { low: 0, medium: 1, high: 2, confirmed: 3 };
 
 // Filter options
-const STATUS_OPTIONS = ['active', 'resolved', 'false-positive', 'under-investigation'] as const;
+const STATUS_OPTIONS = IOC_STATUS_VALUES;
 const CONFIDENCE_OPTIONS: ConfidenceLevel[] = ['low', 'medium', 'high', 'confirmed'];
 const ALL_IOC_TYPES = Object.keys(IOC_TYPE_LABELS) as IOCType[];
 
@@ -362,7 +351,7 @@ export function StandaloneIOCList({
             {showBulkTagInput && (
               <div className="absolute top-full left-0 mt-1 z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-xl p-2 w-56">
                 <input autoFocus value={bulkTagText} onChange={e => setBulkTagText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleBulkAddTags(); }} placeholder="tag1, tag2, ..." className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-gray-600" />
-                <button onClick={handleBulkAddTags} disabled={!bulkTagText.trim()} className="mt-1.5 w-full px-2 py-1 rounded bg-accent/15 text-accent text-xs font-medium hover:bg-accent/25 disabled:opacity-40">Apply Tags</button>
+                <button onClick={handleBulkAddTags} disabled={!bulkTagText.trim()} className="mt-1.5 w-full px-2 py-1 rounded bg-accent/15 text-accent text-xs font-medium hover:bg-accent/25 disabled:opacity-50">Apply Tags</button>
               </div>
             )}
           </div>

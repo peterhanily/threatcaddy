@@ -241,7 +241,7 @@ export function GraphLinkDialog({ sourceNode, targetNode, notes, tasks, timeline
               <button
                 onClick={handleCreateIOCLink}
                 disabled={!selectedRelType || validRelTypes.length === 0}
-                className="px-3 py-1.5 text-xs rounded-lg font-medium bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-xs rounded-lg font-medium bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Create Relationship
               </button>

@@ -357,7 +357,7 @@ export function ChatView({
           <button
             onClick={handleNewChat}
             disabled={!extensionAvailable}
-            className="w-full flex items-center justify-center gap-1.5 h-8 rounded-lg bg-purple text-white text-xs font-medium hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
+            className="w-full flex items-center justify-center gap-1.5 h-8 rounded-lg bg-purple text-white text-xs font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
             title={extensionAvailable ? 'Start a new chat' : 'Extension required for new chats'}
           >
             <Plus size={14} />

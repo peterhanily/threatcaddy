@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import type { StandaloneIOC, IOCType, ConfidenceLevel, Folder, Tag, IOCRelationship, InvestigationMember, EntityComment } from '../../types';
-import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, DEFAULT_CLS_LEVELS, DEFAULT_RELATIONSHIP_TYPES } from '../../types';
+import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, DEFAULT_CLS_LEVELS, DEFAULT_RELATIONSHIP_TYPES, IOC_STATUS_VALUES, IOC_STATUS_LABELS } from '../../types';
 import { EntityComments } from '../Common/EntityComments';
 
 interface StandaloneIOCFormProps {
@@ -20,10 +20,7 @@ const IOC_TYPES = Object.keys(IOC_TYPE_LABELS) as IOCType[];
 const CONF_LEVELS = Object.keys(CONFIDENCE_LEVELS) as ConfidenceLevel[];
 const IOC_STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: '\u2014 None \u2014' },
-  { value: 'active', label: 'Active' },
-  { value: 'resolved', label: 'Resolved' },
-  { value: 'false-positive', label: 'False Positive' },
-  { value: 'under-investigation', label: 'Under Investigation' },
+  ...IOC_STATUS_VALUES.map(v => ({ value: v, label: IOC_STATUS_LABELS[v] })),
 ];
 const RELATIONSHIP_TYPE_KEYS = Object.keys(DEFAULT_RELATIONSHIP_TYPES);
 
@@ -387,7 +384,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
           <button
             type="submit"
             disabled={!value.trim()}
-            className="px-3 py-1.5 text-sm rounded-lg bg-accent/15 text-accent hover:bg-accent/25 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-3 py-1.5 text-sm rounded-lg bg-accent/15 text-accent hover:bg-accent/25 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {editingIOC ? 'Save' : 'Create IOC'}
           </button>

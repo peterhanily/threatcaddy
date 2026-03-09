@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, AtSign, X, FileText, Film, Music } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { createPost, uploadFile, searchUsers } from '../../lib/server-api';
 import type { TeamUser, PostAttachment } from '../../types';
 import { SLASH_COMMANDS, getCaretCoordinates } from '../Notes/slashCommands';
@@ -27,6 +28,7 @@ interface PostComposerProps {
 
 export function PostComposer({ folderId, parentId, replyToId, placeholder, initialContent, onPostCreated }: PostComposerProps) {
   const { user, serverUrl } = useAuth();
+  const { addToast } = useToast();
   const [content, setContent] = useState(initialContent || '');
   const [attachments, setAttachments] = useState<PostAttachment[]>([]);
   const [mentions, setMentions] = useState<string[]>([]);
@@ -167,6 +169,7 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
       onPostCreated?.();
     } catch (err) {
       console.error('Failed to create post:', err);
+      addToast('error', 'Failed to create post');
     } finally {
       setSubmitting(false);
     }
@@ -191,6 +194,7 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
         setAttachments((prev) => [...prev, att]);
       } catch (err) {
         console.error('Failed to upload file:', err);
+        addToast('error', `Failed to upload file: ${file.name}`);
       }
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -337,7 +341,7 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
         <button
           onClick={handleSubmit}
           disabled={!content.trim() || submitting}
-          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-sm font-semibold disabled:opacity-40 disabled:hover:bg-blue-600 transition-colors flex items-center gap-1.5"
+          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-sm font-semibold disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors flex items-center gap-1.5"
         >
           <Send size={14} /> Post
         </button>

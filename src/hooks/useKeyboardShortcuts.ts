@@ -26,7 +26,7 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       const tag = (e.target as HTMLElement)?.tagName;
       const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
         (e.target as HTMLElement)?.isContentEditable;
-      if (isEditable && !(ctrl && e.key === 's') && e.key !== 'Escape') return;
+      if (isEditable && !(ctrl && e.key === 's') && !(ctrl && e.key === 'e') && e.key !== 'Escape') return;
 
       if (ctrl && e.key === 'n') {
         e.preventDefault();
@@ -48,7 +48,7 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
         h.onNewTask?.();
       }
 
-      if (ctrl && e.key === '`') {
+      if (ctrl && (e.key === '`' || e.key === 'e')) {
         e.preventDefault();
         h.onTogglePreview?.();
       }

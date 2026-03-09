@@ -5,7 +5,8 @@ const SHORTCUTS = [
   { keys: 'Ctrl+Shift+T', action: 'New task' },
   { keys: 'Ctrl+B', action: 'Bold text (in editor)' },
   { keys: 'Ctrl+I', action: 'Italic text (in editor)' },
-  { keys: 'Ctrl+`', action: 'Toggle editor/preview' },
+  { keys: 'Ctrl+E', action: 'Toggle editor/preview' },
+  { keys: 'Ctrl+1/2/3/4', action: 'Switch view (Notes/Tasks/Timeline/Whiteboard)' },
   { keys: 'Esc', action: 'Close modals' },
 ];
 

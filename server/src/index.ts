@@ -44,11 +44,13 @@ const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 // Configurable CORS
 const allowedOriginsEnv = process.env.ALLOWED_ORIGINS?.trim();
 if (!allowedOriginsEnv) {
-  logger.warn('ALLOWED_ORIGINS not set — defaulting to wildcard (*). Set this in production!');
+  logger.warn('ALLOWED_ORIGINS not set — CORS will deny all cross-origin requests. Set this env var to allow origins.');
 }
-const corsOrigin = !allowedOriginsEnv || allowedOriginsEnv === '*'
+const corsOrigin: string | string[] = allowedOriginsEnv === '*'
   ? '*'
-  : allowedOriginsEnv.split(',').map((o) => o.trim());
+  : allowedOriginsEnv
+    ? allowedOriginsEnv.split(',').map((o) => o.trim())
+    : [];
 
 const redactingLogger = honoLogger((str: string, ...rest: string[]) => {
   console.log(str.replace(/token=[^\s&]+/g, 'token=[REDACTED]'), ...rest);
@@ -100,10 +102,13 @@ try {
 app.get('/health', async (c) => {
   const checks: Record<string, string> = {};
 
-  // DB check
+  // DB check with 5-second timeout
   try {
-    await db.execute(drizzleSql`SELECT 1`);
-    checks.db = 'connected';
+    const dbResult = await Promise.race([
+      db.execute(drizzleSql`SELECT 1`).then(() => 'connected' as const),
+      new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), 5000)),
+    ]);
+    checks.db = dbResult;
   } catch {
     checks.db = 'disconnected';
   }
@@ -210,6 +215,14 @@ const port = parseInt(process.env.PORT || '3001', 10);
 const adminPort = parseInt(process.env.ADMIN_PORT || '3002', 10);
 
 async function main() {
+  // Validate required environment variables
+  const requiredEnvVars = ['JWT_PRIVATE_KEY', 'JWT_PUBLIC_KEY', 'DATABASE_URL'] as const;
+  const missing = requiredEnvVars.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    logger.error(`Missing required environment variables: ${missing.join(', ')}`);
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+
   // Run database migrations
   const __dirname = dirname(fileURLToPath(import.meta.url));
   const migrationsFolder = resolve(__dirname, 'db/migrations');

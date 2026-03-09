@@ -291,7 +291,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
                   <button
                     onClick={addRelationship}
                     disabled={!newRelType || !newRelTarget}
-                    className="text-xs px-2 py-0.5 rounded bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-40"
+                    className="text-xs px-2 py-0.5 rounded bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-50"
                   >
                     Add
                   </button>

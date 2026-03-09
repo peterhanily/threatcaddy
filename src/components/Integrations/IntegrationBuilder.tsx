@@ -871,7 +871,7 @@ export function IntegrationBuilder({ onBack }: IntegrationBuilderProps) {
                   <button
                     onClick={() => moveStep(idx, -1)}
                     disabled={idx === 0}
-                    className="p-1 text-gray-500 hover:text-gray-300 disabled:opacity-30"
+                    className="p-1 text-gray-500 hover:text-gray-300 disabled:opacity-50"
                     title="Move up"
                   >
                     <ChevronUp size={12} />
@@ -879,7 +879,7 @@ export function IntegrationBuilder({ onBack }: IntegrationBuilderProps) {
                   <button
                     onClick={() => moveStep(idx, 1)}
                     disabled={idx === steps.length - 1}
-                    className="p-1 text-gray-500 hover:text-gray-300 disabled:opacity-30"
+                    className="p-1 text-gray-500 hover:text-gray-300 disabled:opacity-50"
                     title="Move down"
                   >
                     <ChevronDown size={12} />

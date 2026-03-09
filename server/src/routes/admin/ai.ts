@@ -93,7 +93,7 @@ app.patch('/api/ai/settings', requireAdminAuth, async (c) => {
 
 // ─── Provider-specific LLM call abstractions ─────────────────────
 
-interface ToolCall { id: string; name: string; input: Record<string, unknown> }
+interface ToolCall { id: string; name: string; input: Record<string, unknown>; confirmed?: boolean }
 interface LLMResult {
   textParts: string[];
   toolCalls: ToolCall[];
@@ -337,13 +337,18 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
   let body;
   try { body = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON body' }, 400); }
 
-  const { messages, provider: reqProvider, model: reqModel } = body;
+  const { messages, provider: reqProvider, model: reqModel, confirmedToolCalls: confirmedRaw } = body;
   if (!Array.isArray(messages) || messages.length === 0) {
     return c.json({ error: 'Messages array required' }, 400);
   }
   if (messages.length > 50) {
     return c.json({ error: 'Too many messages (max 50)' }, 400);
   }
+
+  // Client can pre-approve specific write tool calls by name
+  const confirmedToolCalls = new Set<string>(
+    Array.isArray(confirmedRaw) ? (confirmedRaw as string[]).filter(s => typeof s === 'string') : [],
+  );
 
   // Load AI settings for system prompt, temperature, defaults
   const aiSettings = await getAiSettings();
@@ -470,6 +475,18 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
 
         if (!tool) {
           toolResultEntries.push({ id: tc.id, name: tc.name, content: JSON.stringify({ error: `Unknown tool: ${tc.name}` }) });
+          continue;
+        }
+
+        // Enforce confirmation for write tools — block execution unless the
+        // client explicitly included the tool name in confirmedToolCalls
+        if (tool.requiresConfirm && !confirmedToolCalls.has(tc.name)) {
+          const pendingMsg = `Tool "${tc.name}" requires admin confirmation before execution. The action was NOT performed. Ask the user to confirm and resubmit with confirmedToolCalls including "${tc.name}".`;
+          toolResultEntries.push({ id: tc.id, name: tc.name, content: JSON.stringify({ error: pendingMsg }) });
+          await stream.writeSSE({ data: JSON.stringify({
+            type: 'confirmation_required', name: tc.name, input: tc.input,
+            message: `This action requires confirmation. Re-send with confirmedToolCalls: ["${tc.name}"] to proceed.`,
+          }) });
           continue;
         }
 

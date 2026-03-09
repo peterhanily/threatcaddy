@@ -197,6 +197,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
         {slashOpen && filteredCommands.length > 0 && (
           <div
             ref={menuRef}
+            role="listbox"
             className="absolute bottom-full left-0 right-0 mb-1 bg-bg-raised border border-border-medium rounded-lg shadow-lg z-20 overflow-hidden"
           >
             {filteredCommands.map((cmd, i) => {
@@ -204,6 +205,8 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
               return (
                 <button
                   key={cmd.command}
+                  role="option"
+                  aria-selected={i === slashIndex}
                   onMouseDown={(e) => { e.preventDefault(); selectSlashCommand(cmd.command); }}
                   className={cn(
                     'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors',
@@ -243,7 +246,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
           <button
             onClick={handleSend}
             disabled={!text.trim() || !extensionAvailable || disabled}
-            className="shrink-0 w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg bg-purple/20 text-purple hover:bg-purple/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="shrink-0 w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg bg-purple/20 text-purple hover:bg-purple/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Send message"
           >
             <Send size={14} />

@@ -157,7 +157,7 @@ export function MarkdownImportModal({ open, onClose, onImport }: MarkdownImportM
               <button
                 onClick={handleImport}
                 disabled={importing || parsedNotes.length === 0}
-                className="px-3 py-1.5 text-sm rounded-lg bg-accent/15 text-accent hover:bg-accent/25 font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-sm rounded-lg bg-accent/15 text-accent hover:bg-accent/25 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {importing ? 'Importing...' : `Import ${parsedNotes.length} note${parsedNotes.length !== 1 ? 's' : ''}`}
               </button>

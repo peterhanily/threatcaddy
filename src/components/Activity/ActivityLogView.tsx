@@ -92,7 +92,7 @@ export function ActivityLogView({ entries, getFiltered, onClear }: ActivityLogVi
           <button
             onClick={() => setShowConfirmClear(true)}
             disabled={entries.length === 0}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-gray-400 hover:text-red-400 hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-gray-400 hover:text-red-400 hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Trash2 size={12} />
             Clear

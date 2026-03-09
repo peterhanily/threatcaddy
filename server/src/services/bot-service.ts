@@ -60,10 +60,28 @@ export function validateBotCreate(input: BotCreateInput): string | null {
   }
 
   if (Array.isArray(allowedDomains)) {
+    if (allowedDomains.length > 50) {
+      return 'Too many allowed domains (max 50)';
+    }
     for (const domain of allowedDomains) {
       if (typeof domain !== 'string' || !DOMAIN_REGEX.test(domain)) {
         return `Invalid domain: ${domain}. Use bare hostnames (e.g., api.virustotal.com)`;
       }
+    }
+  }
+
+  if (triggers?.events) {
+    if (!Array.isArray(triggers.events)) return 'triggers.events must be an array';
+    if ((triggers.events as unknown[]).length > 100) {
+      return 'Too many trigger events (max 100)';
+    }
+  }
+
+  // Validate overall config serialized size
+  if (input.config) {
+    const configSize = JSON.stringify(input.config).length;
+    if (configSize > 100 * 1024) {
+      return 'Bot config is too large (max 100KB serialized)';
     }
   }
 
@@ -128,6 +146,12 @@ export function validateBotUpdate(body: Record<string, unknown>): { updates: Rec
 
   if (body.triggers !== undefined) {
     const triggers = body.triggers as Record<string, unknown> | null;
+    if (triggers?.events) {
+      if (!Array.isArray(triggers.events)) return { error: 'triggers.events must be an array' };
+      if ((triggers.events as unknown[]).length > 100) {
+        return { error: 'Too many trigger events (max 100)' };
+      }
+    }
     if (triggers?.schedule) {
       if (typeof triggers.schedule !== 'string') return { error: 'Schedule must be a string' };
       const cronError = validateCronExpression(triggers.schedule);
@@ -144,9 +168,15 @@ export function validateBotUpdate(body: Record<string, unknown>): { updates: Rec
   }
 
   if (body.config !== undefined) {
-    updates.config = body.config && typeof body.config === 'object'
-      ? encryptConfigSecrets(body.config as Record<string, unknown>)
-      : {};
+    if (body.config && typeof body.config === 'object') {
+      const configSize = JSON.stringify(body.config).length;
+      if (configSize > 100 * 1024) {
+        return { error: 'Bot config is too large (max 100KB serialized)' };
+      }
+      updates.config = encryptConfigSecrets(body.config as Record<string, unknown>);
+    } else {
+      updates.config = {};
+    }
   }
 
   if (body.capabilities !== undefined) {
@@ -161,6 +191,9 @@ export function validateBotUpdate(body: Record<string, unknown>): { updates: Rec
 
   if (body.allowedDomains !== undefined) {
     if (Array.isArray(body.allowedDomains)) {
+      if ((body.allowedDomains as unknown[]).length > 50) {
+        return { error: 'Too many allowed domains (max 50)' };
+      }
       for (const domain of body.allowedDomains as string[]) {
         if (typeof domain !== 'string' || !DOMAIN_REGEX.test(domain)) {
           return { error: `Invalid domain: ${domain}. Use bare hostnames (e.g., api.virustotal.com)` };

@@ -1203,7 +1203,8 @@ function AppInner() {
       {showFileEncryptionWarning && !fileEncryptionDismissed && (
         <div className="bg-yellow-900/30 border-b border-yellow-700/40 px-3 py-2 flex items-center justify-between text-xs shrink-0 gap-3">
           <span className="text-yellow-300">
-            Running standalone on file:// without encryption. Other local HTML files can access your data.{' '}
+            Running standalone on file:// without encryption. Other local HTML files can access your data.
+            Content Security Policy is not enforced in standalone mode.{' '}
             <button
               onClick={() => { setShowSettings(true); }}
               className="underline text-yellow-200 font-medium"

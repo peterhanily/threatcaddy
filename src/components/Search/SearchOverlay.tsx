@@ -457,7 +457,7 @@ export function SearchOverlay({
             <button
               onClick={handleSave}
               disabled={!query.trim()}
-              className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={12} />
               Save Search
