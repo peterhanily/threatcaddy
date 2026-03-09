@@ -65,9 +65,14 @@ export class SyncEngine {
 
     try {
       const allFolders = await dynamicDb.table('folders').toArray();
-      for (const folder of allFolders) {
-        if (folder.trashed || folder.localOnly) continue;
-        await this.syncFolder(folder.id);
+      const syncableFolders = allFolders.filter(
+        (folder: Record<string, unknown>) => !folder.trashed && !folder.localOnly
+      );
+      // Process folders in parallel with concurrency limit of 3
+      const CONCURRENCY = 3;
+      for (let i = 0; i < syncableFolders.length; i += CONCURRENCY) {
+        const chunk = syncableFolders.slice(i, i + CONCURRENCY);
+        await Promise.all(chunk.map((folder: Record<string, unknown>) => this.syncFolder(folder.id as string)));
       }
 
       // Also push global tables (tags, timelines)
@@ -197,28 +202,45 @@ export class SyncEngine {
       if (changes && changes.length > 0) {
         const affectedTables = new Set<string>();
 
+        // Group changes by table for batched writes
+        const putsByTable = new Map<string, Record<string, unknown>[]>();
+        const deletesByTable = new Map<string, string[]>();
+
+        for (const change of changes) {
+          const { table: tableName, op, ...entityData } = change;
+          const id = entityData.id as string;
+          affectedTables.add(tableName);
+
+          if (op === 'delete') {
+            const arr = deletesByTable.get(tableName) || [];
+            arr.push(id);
+            deletesByTable.set(tableName, arr);
+          } else {
+            // Convert server timestamps to milliseconds for Dexie
+            const localData = { ...entityData };
+            if (localData.createdAt && typeof localData.createdAt === 'string') {
+              localData.createdAt = new Date(localData.createdAt as string).getTime();
+            }
+            if (localData.updatedAt && typeof localData.updatedAt === 'string') {
+              localData.updatedAt = new Date(localData.updatedAt as string).getTime();
+            }
+
+            const arr = putsByTable.get(tableName) || [];
+            arr.push(localData);
+            putsByTable.set(tableName, arr);
+          }
+        }
+
         // Disable sync hooks so pulled data doesn't re-enqueue for push
         disableSync();
         try {
-          for (const change of changes) {
-            const { table: tableName, op, ...entityData } = change;
-            const id = entityData.id as string;
-            affectedTables.add(tableName);
-
-            if (op === 'delete') {
-              await dynamicDb.table(tableName).delete(id);
-            } else {
-              // Convert server timestamps to milliseconds for Dexie
-              const localData = { ...entityData };
-              if (localData.createdAt && typeof localData.createdAt === 'string') {
-                localData.createdAt = new Date(localData.createdAt as string).getTime();
-              }
-              if (localData.updatedAt && typeof localData.updatedAt === 'string') {
-                localData.updatedAt = new Date(localData.updatedAt as string).getTime();
-              }
-
-              await dynamicDb.table(tableName).put(localData);
-            }
+          // Batch puts per table
+          for (const [tableName, rows] of putsByTable) {
+            await dynamicDb.table(tableName).bulkPut(rows);
+          }
+          // Batch deletes per table
+          for (const [tableName, ids] of deletesByTable) {
+            await dynamicDb.table(tableName).bulkDelete(ids);
           }
         } finally {
           enableSync();
@@ -338,15 +360,17 @@ export class SyncEngine {
         for (const [tableName, rows] of Object.entries(snapshot)) {
           if (!Array.isArray(rows) || rows.length === 0) continue;
           affectedTables.add(tableName);
-          for (const row of rows) {
+          // Normalize timestamps and batch all rows with bulkPut
+          const normalizedRows = rows.map((row) => {
             const localData = { ...(row as Record<string, unknown>) };
             for (const key of ['createdAt', 'updatedAt', 'trashedAt', 'completedAt', 'closedAt'] as const) {
               if (localData[key] && typeof localData[key] === 'string') {
                 localData[key] = new Date(localData[key] as string).getTime();
               }
             }
-            await dynamicDb.table(tableName).put(localData);
-          }
+            return localData;
+          });
+          await dynamicDb.table(tableName).bulkPut(normalizedRows);
         }
       } finally {
         enableSync();

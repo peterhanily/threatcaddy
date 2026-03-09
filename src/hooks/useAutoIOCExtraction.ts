@@ -51,7 +51,12 @@ export function useAutoIOCExtraction({
 
     // Skip if content hasn't actually changed (e.g. iocAnalysis update re-rendered parent, or initial mount)
     if (content === prevContentRef.current) return;
+
+    // Quick check: skip re-extraction if content changed by fewer than 20 characters
+    // (e.g., cursor movement or minor whitespace edits that won't introduce new IOCs)
+    const lengthDiff = Math.abs(content.length - prevContentRef.current.length);
     prevContentRef.current = content;
+    if (lengthDiff < 20) return;
 
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {

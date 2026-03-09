@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { db } from '../db';
 import type { Note, SortOption, SortDirection, IOCType } from '../types';
 import { nanoid } from 'nanoid';
@@ -7,10 +7,20 @@ import { purgeOldTrash } from '../lib/trash-purge';
 export function useNotes() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
+  // Cache of full note content keyed by note id
+  const contentCacheRef = useRef<Map<string, string>>(new Map());
 
   const loadNotes = useCallback(async () => {
     const allNotes = await db.notes.toArray();
     const remaining = await purgeOldTrash(allNotes, db.notes);
+    // Cache all content, then strip from in-memory list to save memory
+    const cache = contentCacheRef.current;
+    cache.clear();
+    for (const note of remaining) {
+      cache.set(note.id, note.content);
+      // Replace content with empty string for initial list (metadata only)
+      note.content = '';
+    }
     setNotes(remaining);
     setLoading(false);
   }, []);
@@ -19,6 +29,23 @@ export function useNotes() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadNotes();
   }, [loadNotes]);
+
+  /**
+   * Load a single note's content from IndexedDB on demand.
+   * Returns the content string and updates the in-memory cache + notes state.
+   */
+  const loadNoteContent = useCallback(async (id: string): Promise<string> => {
+    // Return from cache if already loaded
+    const cached = contentCacheRef.current.get(id);
+    if (cached !== undefined && cached !== '') return cached;
+
+    const note = await db.notes.get(id);
+    if (!note) return '';
+    contentCacheRef.current.set(id, note.content);
+    // Update the in-memory note with full content
+    setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, content: note.content } : n)));
+    return note.content;
+  }, []);
 
   const createNote = useCallback(async (partial?: Partial<Note>): Promise<Note> => {
     const note: Note = {
@@ -39,6 +66,7 @@ export function useNotes() {
       console.error('Failed to create note:', err);
       throw err;
     }
+    contentCacheRef.current.set(note.id, note.content);
     setNotes((prev) => [note, ...prev]);
     return note;
   }, []);
@@ -51,26 +79,37 @@ export function useNotes() {
       console.error('Failed to update note:', err);
       throw err;
     }
+    if (patched.content !== undefined) {
+      contentCacheRef.current.set(id, patched.content);
+    }
     setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...patched } : n)));
   }, []);
 
   const deleteNote = useCallback(async (id: string) => {
     try {
       await db.notes.delete(id);
-      // Clean orphaned links from other entities
-      await db.notes.filter(n => n.linkedNoteIds?.includes(id) ?? false).modify(n => {
-        n.linkedNoteIds = (n.linkedNoteIds ?? []).filter(nid => nid !== id);
-      });
-      await db.tasks.filter(t => t.linkedNoteIds?.includes(id) ?? false).modify(t => {
-        t.linkedNoteIds = (t.linkedNoteIds ?? []).filter(nid => nid !== id);
-      });
-      await db.timelineEvents.filter(e => e.linkedNoteIds.includes(id)).modify(e => {
-        e.linkedNoteIds = e.linkedNoteIds.filter(nid => nid !== id);
-      });
+      // Batch orphan link cleanup: collect IDs from affected tables then modify in bulk
+      const [linkedNotes, linkedTasks, linkedEvents] = await Promise.all([
+        db.notes.toArray().then(items => items.filter(n => n.linkedNoteIds?.includes(id))),
+        db.tasks.toArray().then(items => items.filter(t => t.linkedNoteIds?.includes(id))),
+        db.timelineEvents.toArray().then(items => items.filter(e => e.linkedNoteIds.includes(id))),
+      ]);
+      const ops: Promise<unknown>[] = [];
+      for (const n of linkedNotes) {
+        ops.push(db.notes.update(n.id, { linkedNoteIds: (n.linkedNoteIds ?? []).filter(nid => nid !== id) }));
+      }
+      for (const t of linkedTasks) {
+        ops.push(db.tasks.update(t.id, { linkedNoteIds: (t.linkedNoteIds ?? []).filter(nid => nid !== id) }));
+      }
+      for (const e of linkedEvents) {
+        ops.push(db.timelineEvents.update(e.id, { linkedNoteIds: e.linkedNoteIds.filter(nid => nid !== id) }));
+      }
+      await Promise.all(ops);
     } catch (err) {
       console.error('Failed to delete note:', err);
       throw err;
     }
+    contentCacheRef.current.delete(id);
     setNotes((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
@@ -129,9 +168,12 @@ export function useNotes() {
       if (opts.search) {
         const lower = opts.search.toLowerCase();
         filtered = filtered.filter(
-          (n) =>
-            n.title.toLowerCase().includes(lower) ||
-            n.content.toLowerCase().includes(lower)
+          (n) => {
+            if (n.title.toLowerCase().includes(lower)) return true;
+            // Use cached content for search if the note's content is stripped
+            const content = n.content || contentCacheRef.current.get(n.id) || '';
+            return content.toLowerCase().includes(lower);
+          }
         );
       }
 
@@ -174,17 +216,31 @@ export function useNotes() {
     if (trashedIds.length === 0) return;
     try {
       await db.notes.bulkDelete(trashedIds);
-      // Clean orphaned links from other entities
+      // Batch orphan link cleanup in a single pass per table
       const idSet = new Set(trashedIds);
-      await db.notes.filter(n => n.linkedNoteIds?.some(nid => idSet.has(nid)) ?? false).modify(n => {
-        n.linkedNoteIds = (n.linkedNoteIds ?? []).filter(nid => !idSet.has(nid));
-      });
-      await db.tasks.filter(t => t.linkedNoteIds?.some(nid => idSet.has(nid)) ?? false).modify(t => {
-        t.linkedNoteIds = (t.linkedNoteIds ?? []).filter(nid => !idSet.has(nid));
-      });
-      await db.timelineEvents.filter(e => e.linkedNoteIds.some(nid => idSet.has(nid))).modify(e => {
-        e.linkedNoteIds = e.linkedNoteIds.filter(nid => !idSet.has(nid));
-      });
+      const [allNotes, allTasks, allEvents] = await Promise.all([
+        db.notes.toArray(),
+        db.tasks.toArray(),
+        db.timelineEvents.toArray(),
+      ]);
+      const ops: Promise<unknown>[] = [];
+      for (const n of allNotes) {
+        if (n.linkedNoteIds?.some(nid => idSet.has(nid))) {
+          ops.push(db.notes.update(n.id, { linkedNoteIds: n.linkedNoteIds.filter(nid => !idSet.has(nid)) }));
+        }
+      }
+      for (const t of allTasks) {
+        if (t.linkedNoteIds?.some(nid => idSet.has(nid))) {
+          ops.push(db.tasks.update(t.id, { linkedNoteIds: (t.linkedNoteIds ?? []).filter(nid => !idSet.has(nid)) }));
+        }
+      }
+      for (const e of allEvents) {
+        if (e.linkedNoteIds.some(nid => idSet.has(nid))) {
+          ops.push(db.timelineEvents.update(e.id, { linkedNoteIds: e.linkedNoteIds.filter(nid => !idSet.has(nid)) }));
+        }
+      }
+      await Promise.all(ops);
+      for (const id of trashedIds) contentCacheRef.current.delete(id);
     } catch (err) {
       console.error('Failed to empty trash:', err);
       throw err;
@@ -204,6 +260,7 @@ export function useNotes() {
     toggleArchive,
     getFilteredNotes,
     emptyTrash,
+    loadNoteContent,
     reload: loadNotes,
   };
 }

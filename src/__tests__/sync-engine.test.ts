@@ -69,10 +69,18 @@ function createMockTable(tableName: string) {
       const idx = arr.findIndex((r) => r.id === key);
       if (idx >= 0) arr.splice(idx, 1);
     }),
-    bulkDelete: vi.fn(async (keys: number[]) => {
+    bulkPut: vi.fn(async (entries: Record<string, unknown>[]) => {
+      const arr = getTableData(tableName);
+      for (const entry of entries) {
+        const idx = arr.findIndex((r) => r.id === entry.id || r.key === entry.key);
+        if (idx >= 0) arr[idx] = entry;
+        else arr.push(entry);
+      }
+    }),
+    bulkDelete: vi.fn(async (keys: (number | string)[]) => {
       const arr = getTableData(tableName);
       for (let i = arr.length - 1; i >= 0; i--) {
-        if (keys.includes(arr[i].seq as number)) arr.splice(i, 1);
+        if (keys.includes(arr[i].seq as number) || keys.includes(arr[i].id as string)) arr.splice(i, 1);
       }
     }),
     where: vi.fn((index: string) => ({
@@ -378,8 +386,8 @@ describe('SyncEngine', () => {
       expect(mockEnableSync).toHaveBeenCalled();
 
       const notesTable = getMockTable('notes');
-      expect(notesTable.put).toHaveBeenCalled();
-      const putCall = notesTable.put.mock.calls[0][0];
+      expect(notesTable.bulkPut).toHaveBeenCalled();
+      const putCall = notesTable.bulkPut.mock.calls[0][0][0];
       expect(putCall.id).toBe('n1');
       expect(putCall.title).toBe('Remote Note');
       expect(typeof putCall.createdAt).toBe('number');
@@ -397,7 +405,7 @@ describe('SyncEngine', () => {
       await engine.sync();
 
       const notesTable = getMockTable('notes');
-      expect(notesTable.delete).toHaveBeenCalledWith('n1');
+      expect(notesTable.bulkDelete).toHaveBeenCalledWith(['n1']);
     });
 
     it('updates _syncMeta with server timestamp after pull', async () => {
@@ -495,9 +503,9 @@ describe('SyncEngine', () => {
         serverTimestamp: '2025-06-15T12:00:00.000Z',
       });
 
-      // Make the notes table's put throw
+      // Make the notes table's bulkPut throw
       const notesTable = getMockTable('notes');
-      notesTable.put.mockRejectedValueOnce(new Error('DB Error'));
+      notesTable.bulkPut.mockRejectedValueOnce(new Error('DB Error'));
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -697,8 +705,8 @@ describe('SyncEngine', () => {
       await engine.pullFolder('folder-1');
 
       const notesTable = getMockTable('notes');
-      expect(notesTable.put).toHaveBeenCalled();
-      const putData = notesTable.put.mock.calls[0][0];
+      expect(notesTable.bulkPut).toHaveBeenCalled();
+      const putData = notesTable.bulkPut.mock.calls[0][0][0];
       expect(typeof putData.createdAt).toBe('number');
       expect(typeof putData.updatedAt).toBe('number');
       expect(typeof putData.trashedAt).toBe('number');

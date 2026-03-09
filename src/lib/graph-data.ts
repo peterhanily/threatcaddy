@@ -325,3 +325,48 @@ export function buildGraphData(
 
   return { nodes, edges };
 }
+
+/**
+ * Compute a lightweight hash string from entity IDs and updatedAt timestamps.
+ * Used for memoization — only rebuild the graph when this hash changes.
+ */
+export function computeGraphHash(
+  notes: Note[],
+  tasks: Task[],
+  timelineEvents: TimelineEvent[],
+  settings?: Settings,
+): string {
+  // Build a compact fingerprint: id:updatedAt pairs joined by ','
+  const parts: string[] = [];
+  for (const n of notes) parts.push(`n:${n.id}:${n.updatedAt}`);
+  for (const t of tasks) parts.push(`t:${t.id}:${t.updatedAt}`);
+  for (const e of timelineEvents) parts.push(`e:${e.id}:${e.updatedAt}`);
+  // Include custom relationship types in hash so graph updates when they change
+  if (settings?.tiRelationshipTypes) {
+    parts.push(`rel:${Object.keys(settings.tiRelationshipTypes).sort().join(',')}`);
+  }
+  return parts.join('|');
+}
+
+// Cached state for memoized graph building
+let _cachedHash = '';
+let _cachedGraph: GraphData = { nodes: [], edges: [] };
+
+/**
+ * Memoized graph builder — only rebuilds when entity data actually changes.
+ * Can be called outside useMemo (e.g., in callbacks or effects).
+ */
+export function buildGraphDataMemoized(
+  notes: Note[],
+  tasks: Task[],
+  timelineEvents: TimelineEvent[],
+  settings?: Settings,
+): GraphData {
+  const hash = computeGraphHash(notes, tasks, timelineEvents, settings);
+  if (hash === _cachedHash && _cachedGraph.nodes.length > 0) {
+    return _cachedGraph;
+  }
+  _cachedHash = hash;
+  _cachedGraph = buildGraphData(notes, tasks, timelineEvents, settings);
+  return _cachedGraph;
+}

@@ -53,12 +53,14 @@ export function unifiedSearch(
   if (query.mode === 'simple') {
     const lower = query.raw.toLowerCase();
     for (const note of activeNotes) {
+      if (results.length >= MAX_RESULTS) break;
       const matchField = findSimpleMatchField(note, lower);
       if (matchField) {
         results.push(noteToResult(note, clipsFolderId, matchField, query.raw));
       }
     }
     for (const task of activeTasks) {
+      if (results.length >= MAX_RESULTS) break;
       const matchField = findSimpleTaskMatchField(task, lower);
       if (matchField) {
         results.push(taskToResult(task, matchField, query.raw));
@@ -66,24 +68,28 @@ export function unifiedSearch(
     }
     if (timelineEvents) {
       for (const ev of timelineEvents) {
+        if (results.length >= MAX_RESULTS) break;
         const matchField = findSimpleTimelineMatchField(ev, lower);
         if (matchField) results.push(timelineEventToResult(ev, matchField, query.raw));
       }
     }
     if (whiteboards) {
       for (const wb of whiteboards) {
+        if (results.length >= MAX_RESULTS) break;
         const matchField = findSimpleWhiteboardMatchField(wb, lower);
         if (matchField) results.push(whiteboardToResult(wb, matchField, query.raw));
       }
     }
     if (standaloneIOCs) {
       for (const ioc of standaloneIOCs) {
+        if (results.length >= MAX_RESULTS) break;
         const matchField = findSimpleIOCMatchField(ioc, lower);
         if (matchField) results.push(iocToResult(ioc, matchField, query.raw));
       }
     }
     if (chatThreads) {
       for (const thread of chatThreads) {
+        if (results.length >= MAX_RESULTS) break;
         const matchField = findSimpleChatMatchField(thread, lower);
         if (matchField) results.push(chatToResult(thread, matchField, query.raw));
       }
@@ -101,12 +107,14 @@ export function unifiedSearch(
       return { results: [], error: 'Invalid regular expression' };
     }
     for (const note of activeNotes) {
+      if (results.length >= MAX_RESULTS) break;
       const matchField = findRegexMatchField(note, regex);
       if (matchField) {
         results.push(noteToResult(note, clipsFolderId, matchField, query.raw));
       }
     }
     for (const task of activeTasks) {
+      if (results.length >= MAX_RESULTS) break;
       const matchField = findRegexTaskMatchField(task, regex);
       if (matchField) {
         results.push(taskToResult(task, matchField, query.raw));
@@ -114,24 +122,28 @@ export function unifiedSearch(
     }
     if (timelineEvents) {
       for (const ev of timelineEvents) {
+        if (results.length >= MAX_RESULTS) break;
         const matchField = findRegexTimelineMatchField(ev, regex);
         if (matchField) results.push(timelineEventToResult(ev, matchField, query.raw));
       }
     }
     if (whiteboards) {
       for (const wb of whiteboards) {
+        if (results.length >= MAX_RESULTS) break;
         const matchField = findRegexWhiteboardMatchField(wb, regex);
         if (matchField) results.push(whiteboardToResult(wb, matchField, query.raw));
       }
     }
     if (standaloneIOCs) {
       for (const ioc of standaloneIOCs) {
+        if (results.length >= MAX_RESULTS) break;
         const matchField = findRegexIOCMatchField(ioc, regex);
         if (matchField) results.push(iocToResult(ioc, matchField, query.raw));
       }
     }
     if (chatThreads) {
       for (const thread of chatThreads) {
+        if (results.length >= MAX_RESULTS) break;
         const matchField = findRegexChatMatchField(thread, regex);
         if (matchField) results.push(chatToResult(thread, matchField, query.raw));
       }
@@ -148,6 +160,7 @@ export function unifiedSearch(
       return unifiedSearch(notes, tasks, clipsFolderId, { mode: 'simple', raw: query.raw }, timelineEvents, whiteboards, standaloneIOCs, chatThreads);
     }
     for (const note of activeNotes) {
+      if (results.length >= MAX_RESULTS) break;
       const fields: FieldSet = {
         title: note.title,
         content: note.content,
@@ -158,6 +171,7 @@ export function unifiedSearch(
       }
     }
     for (const task of activeTasks) {
+      if (results.length >= MAX_RESULTS) break;
       const fields: FieldSet = {
         title: task.title,
         content: task.description || '',
@@ -169,6 +183,7 @@ export function unifiedSearch(
     }
     if (timelineEvents) {
       for (const ev of timelineEvents) {
+        if (results.length >= MAX_RESULTS) break;
         const fields: FieldSet = {
           title: ev.title,
           content: [ev.description || '', ev.source, ev.actor || '', TIMELINE_EVENT_TYPE_LABELS[ev.eventType]?.label || ''].join(' '),
@@ -179,6 +194,7 @@ export function unifiedSearch(
     }
     if (whiteboards) {
       for (const wb of whiteboards) {
+        if (results.length >= MAX_RESULTS) break;
         const fields: FieldSet = {
           title: wb.name,
           content: '',
@@ -189,6 +205,7 @@ export function unifiedSearch(
     }
     if (standaloneIOCs) {
       for (const ioc of standaloneIOCs) {
+        if (results.length >= MAX_RESULTS) break;
         const fields: FieldSet = {
           title: ioc.value,
           content: [ioc.type, ioc.analystNotes || '', ioc.attribution || ''].join(' '),
@@ -199,6 +216,7 @@ export function unifiedSearch(
     }
     if (chatThreads) {
       for (const thread of chatThreads) {
+        if (results.length >= MAX_RESULTS) break;
         const fields: FieldSet = {
           title: thread.title,
           content: thread.messages.map((m) => m.content).join(' '),

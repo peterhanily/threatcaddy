@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { db } from '../db';
 import type { ChatThread, ChatMessage } from '../types';
 import { nanoid } from 'nanoid';
@@ -14,12 +14,23 @@ async function ensureDB() {
 export function useChats() {
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [loading, setLoading] = useState(true);
+  // Cache of thread messages keyed by thread id
+  const messagesCacheRef = useRef<Map<string, ChatMessage[]>>(new Map());
 
   const loadThreads = useCallback(async () => {
     try {
       await ensureDB();
       const all = await db.chatThreads.toArray();
       const remaining = await purgeOldTrash(all, db.chatThreads);
+      // Cache messages and strip from in-memory list to save memory
+      const cache = messagesCacheRef.current;
+      cache.clear();
+      for (const thread of remaining) {
+        cache.set(thread.id, thread.messages);
+        // Store metadata only — keep messageCount for display
+        (thread as ChatThread & { messageCount?: number }).messageCount = thread.messages.length;
+        thread.messages = [];
+      }
       setThreads(remaining.sort((a, b) => b.updatedAt - a.updatedAt));
     } catch (err) {
       console.warn('useChats: failed to load threads', err);
@@ -31,6 +42,27 @@ export function useChats() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadThreads();
   }, [loadThreads]);
+
+  /**
+   * Load a thread's messages from IndexedDB on demand.
+   * Returns the messages array and updates in-memory state.
+   */
+  const loadThreadMessages = useCallback(async (id: string): Promise<ChatMessage[]> => {
+    // Return from cache if already loaded and non-empty
+    const cached = messagesCacheRef.current.get(id);
+    if (cached && cached.length > 0) {
+      // Ensure in-memory state also has them
+      setThreads((prev) => prev.map((t) => (t.id === id && t.messages.length === 0 ? { ...t, messages: cached } : t)));
+      return cached;
+    }
+
+    await ensureDB();
+    const thread = await db.chatThreads.get(id);
+    if (!thread) return [];
+    messagesCacheRef.current.set(id, thread.messages);
+    setThreads((prev) => prev.map((t) => (t.id === id ? { ...t, messages: thread.messages } : t)));
+    return thread.messages;
+  }, []);
 
   const createThread = useCallback(async (partial?: Partial<ChatThread>): Promise<ChatThread> => {
     await ensureDB();
@@ -49,6 +81,7 @@ export function useChats() {
       ...partial,
     };
     await db.chatThreads.add(thread);
+    messagesCacheRef.current.set(thread.id, thread.messages);
     setThreads((prev) => [thread, ...prev]);
     return thread;
   }, []);
@@ -65,15 +98,30 @@ export function useChats() {
 
   const addMessage = useCallback(async (threadId: string, message: ChatMessage) => {
     await ensureDB();
-    const thread = await db.chatThreads.get(threadId);
-    if (!thread) return;
-    const messages = [...thread.messages, message];
-    const updates: Partial<ChatThread> = { messages, updatedAt: Date.now() };
+    const now = Date.now();
+
+    // Read current thread to determine auto-title
+    const currentThread = await db.chatThreads.get(threadId);
+    if (!currentThread) return;
+
+    const newMessages = [...currentThread.messages, message];
+    const updates: Partial<ChatThread> = { messages: newMessages, updatedAt: now };
     // Auto-title from first user message
-    if (thread.title === 'New Chat' && message.role === 'user') {
+    if (currentThread.title === 'New Chat' && message.role === 'user') {
       updates.title = message.content.substring(0, 60).replace(/\n/g, ' ') || 'New Chat';
     }
-    await db.chatThreads.update(threadId, updates);
+
+    // Write to DB using modify() to avoid full clone-and-replace
+    await db.chatThreads.where('id').equals(threadId).modify((t: ChatThread) => {
+      t.messages.push(message);
+      t.updatedAt = now;
+      if (updates.title) t.title = updates.title!;
+    });
+
+    // Update messages cache
+    messagesCacheRef.current.set(threadId, newMessages);
+
+    // Optimistic update React state
     setThreads((prev) =>
       prev.map((t) => (t.id === threadId ? { ...t, ...updates } : t))
         .sort((a, b) => b.updatedAt - a.updatedAt)
@@ -83,6 +131,7 @@ export function useChats() {
   const deleteThread = useCallback(async (id: string) => {
     await ensureDB();
     await db.chatThreads.delete(id);
+    messagesCacheRef.current.delete(id);
     setThreads((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
@@ -144,6 +193,7 @@ export function useChats() {
     emptyTrashThreads,
     getFilteredThreads,
     threadCounts,
+    loadThreadMessages,
     reload: loadThreads,
   };
 }

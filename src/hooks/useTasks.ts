@@ -68,16 +68,23 @@ export function useTasks() {
   const deleteTask = useCallback(async (id: string) => {
     try {
       await db.tasks.delete(id);
-      // Clean orphaned links from other entities
-      await db.notes.filter(n => n.linkedTaskIds?.includes(id) ?? false).modify(n => {
-        n.linkedTaskIds = (n.linkedTaskIds ?? []).filter(tid => tid !== id);
-      });
-      await db.tasks.filter(t => t.linkedTaskIds?.includes(id) ?? false).modify(t => {
-        t.linkedTaskIds = (t.linkedTaskIds ?? []).filter(tid => tid !== id);
-      });
-      await db.timelineEvents.filter(e => e.linkedTaskIds.includes(id)).modify(e => {
-        e.linkedTaskIds = e.linkedTaskIds.filter(tid => tid !== id);
-      });
+      // Batch orphan link cleanup: collect affected entities then update in bulk
+      const [linkedNotes, linkedTasks, linkedEvents] = await Promise.all([
+        db.notes.toArray().then(items => items.filter(n => n.linkedTaskIds?.includes(id))),
+        db.tasks.toArray().then(items => items.filter(t => t.linkedTaskIds?.includes(id))),
+        db.timelineEvents.toArray().then(items => items.filter(e => e.linkedTaskIds.includes(id))),
+      ]);
+      const ops: Promise<unknown>[] = [];
+      for (const n of linkedNotes) {
+        ops.push(db.notes.update(n.id, { linkedTaskIds: (n.linkedTaskIds ?? []).filter(tid => tid !== id) }));
+      }
+      for (const t of linkedTasks) {
+        ops.push(db.tasks.update(t.id, { linkedTaskIds: (t.linkedTaskIds ?? []).filter(tid => tid !== id) }));
+      }
+      for (const e of linkedEvents) {
+        ops.push(db.timelineEvents.update(e.id, { linkedTaskIds: e.linkedTaskIds.filter(tid => tid !== id) }));
+      }
+      await Promise.all(ops);
     } catch (err) {
       console.error('Failed to delete task:', err);
       throw err;
@@ -103,13 +110,24 @@ export function useTasks() {
     if (trashedIds.length === 0) return;
     try {
       await db.tasks.bulkDelete(trashedIds);
+      // Batch orphan link cleanup in a single pass per table
       const idSet = new Set(trashedIds);
-      await db.notes.filter(n => n.linkedTaskIds?.some(tid => idSet.has(tid)) ?? false).modify(n => {
-        n.linkedTaskIds = (n.linkedTaskIds ?? []).filter(tid => !idSet.has(tid));
-      });
-      await db.timelineEvents.filter(e => e.linkedTaskIds.some(tid => idSet.has(tid))).modify(e => {
-        e.linkedTaskIds = e.linkedTaskIds.filter(tid => !idSet.has(tid));
-      });
+      const [allNotes, allEvents] = await Promise.all([
+        db.notes.toArray(),
+        db.timelineEvents.toArray(),
+      ]);
+      const ops: Promise<unknown>[] = [];
+      for (const n of allNotes) {
+        if (n.linkedTaskIds?.some(tid => idSet.has(tid))) {
+          ops.push(db.notes.update(n.id, { linkedTaskIds: (n.linkedTaskIds ?? []).filter(tid => !idSet.has(tid)) }));
+        }
+      }
+      for (const e of allEvents) {
+        if (e.linkedTaskIds.some(tid => idSet.has(tid))) {
+          ops.push(db.timelineEvents.update(e.id, { linkedTaskIds: e.linkedTaskIds.filter(tid => !idSet.has(tid)) }));
+        }
+      }
+      await Promise.all(ops);
     } catch (err) {
       console.error('Failed to empty task trash:', err);
       throw err;
