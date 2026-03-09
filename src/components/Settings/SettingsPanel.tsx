@@ -466,6 +466,25 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 </select>
               </div>
 
+              <div className="flex items-center justify-between">
+                <label className={labelClass}>Max Context Messages</label>
+                <input
+                  type="number"
+                  min={6}
+                  max={200}
+                  step={2}
+                  value={settings.llmMaxContextMessages || 40}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val) && val >= 6) onUpdateSettings({ llmMaxContextMessages: val });
+                  }}
+                  className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent text-right"
+                />
+              </div>
+              <p className="text-[10px] text-gray-600">
+                Conversations longer than this will be truncated (keeping the first 2 and most recent messages) before sending to the LLM.
+              </p>
+
               <SystemPromptEditor
                 value={settings.llmSystemPrompt}
                 onChange={(v) => onUpdateSettings({ llmSystemPrompt: v })}

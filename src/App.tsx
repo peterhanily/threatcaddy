@@ -37,7 +37,7 @@ import { DEFAULT_QUICK_LINKS } from './types';
 const DashboardView = lazy(() => import('./components/Dashboard/DashboardView').then(m => ({ default: m.DashboardView })));
 import { FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from './lib/utils';
-import { exportJSON, importJSON, downloadFile, exportInvestigationJSON } from './lib/export';
+import { exportJSON, importJSON, mergeImportJSON, downloadFile, exportInvestigationJSON } from './lib/export';
 import { ConfirmDialog } from './components/Common/ConfirmDialog';
 import { SearchOverlay } from './components/Search/SearchOverlay';
 import { extractIOCs, mergeIOCAnalysis } from './lib/ioc-extractor';
@@ -66,7 +66,7 @@ import { DataImportModal } from './components/Import/DataImportModal';
 import type { ImportResult } from './lib/data-import';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import { ToastContainer } from './components/Common/Toast';
-import { generateInvestigationReport } from './lib/report';
+import { generateInvestigationReport, printReport } from './lib/report';
 import { useIsMobile } from './hooks/useIsMobile';
 const ExecDashboard = lazy(() => import('./components/ExecMode/ExecDashboard').then(m => ({ default: m.ExecDashboard })));
 import { ShareReceiver } from './components/ExecMode/ShareReceiver';
@@ -1026,6 +1026,15 @@ function AppInner() {
     handleImportComplete();
   }, [pendingImportFile, handleImportComplete]);
 
+  const handleMergeImport = useCallback(async () => {
+    if (!pendingImportFile) return;
+    const text = await pendingImportFile.text();
+    const result = await mergeImportJSON(text);
+    setPendingImportFile(null);
+    handleImportComplete();
+    addToast('success', `Merge complete: ${result.added} added, ${result.updated} updated, ${result.skipped} skipped`);
+  }, [pendingImportFile, handleImportComplete, addToast]);
+
   // Sample investigation
   const sampleLoaded = useMemo(() => folders.some((f) => f.id === 'sample-investigation'), [folders]);
 
@@ -1814,9 +1823,11 @@ function AppInner() {
         onClose={() => setPendingImportFile(null)}
         onConfirm={handleConfirmImport}
         title="Load Backup"
-        message="This will replace all your current notes, tasks, folders, and tags with the backup data. This cannot be undone."
-        confirmLabel="Replace All Data"
+        message="Choose how to import this backup. 'Replace All' will clear existing data. 'Merge' will add new items and update older ones without removing anything."
+        confirmLabel="Replace All"
         danger
+        secondaryAction={handleMergeImport}
+        secondaryLabel="Merge"
       />
 
       <ConfirmDialog
@@ -1910,6 +1921,17 @@ function AppInner() {
             setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
             activityLog.log('data', 'export', `Generated report for "${folder.name}"`, folderId, folder.name);
             addToast('success', `Report generated for "${folder.name}"`);
+          }}
+          onPrintReport={(folderId) => {
+            const folder = folders.find((f) => f.id === folderId);
+            if (!folder) return;
+            const folderNotes = notes.notes.filter((n) => n.folderId === folderId && !n.trashed && !n.archived);
+            const folderTasks = tasks.tasks.filter((t) => t.folderId === folderId && !t.trashed && !t.archived);
+            const folderEvents = timeline.events.filter((e) => e.folderId === folderId && !e.trashed && !e.archived);
+            const folderIOCs = standaloneIOCsHook.iocs.filter((i) => i.folderId === folderId && !i.trashed && !i.archived);
+            const html = generateInvestigationReport({ folder, notes: folderNotes, tasks: folderTasks, events: folderEvents, standaloneIOCs: folderIOCs });
+            printReport(html);
+            activityLog.log('data', 'export', `Print report for "${folder.name}"`, folderId, folder.name);
           }}
           onShareLink={handleShareInvestigationLink}
           serverConnected={auth.connected}

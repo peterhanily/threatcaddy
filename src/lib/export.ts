@@ -753,6 +753,209 @@ export async function mergeTimelineInto(parsed: TimelineExportData, targetTimeli
   return { added, updated, skipped };
 }
 
+// --- Merge / Investigation import ---
+
+export async function importInvestigationJSON(json: string): Promise<{ folderId: string; notes: number; tasks: number; timelineEvents: number; standaloneIOCs: number }> {
+  if (json.length > MAX_IMPORT_SIZE) {
+    throw new Error(`File too large (max ${MAX_IMPORT_SIZE / 1024 / 1024} MB)`);
+  }
+
+  const data = JSON.parse(json);
+  if (!data || typeof data !== 'object' || !Array.isArray(data.folders) || data.folders.length === 0) {
+    throw new Error('Invalid investigation export format');
+  }
+
+  // Sanitize and prepare data
+  const oldFolder = sanitizeFolder(data.folders[0]);
+  if (!oldFolder) throw new Error('Invalid folder data');
+
+  const newFolderId = nanoid();
+  const oldFolderId = oldFolder.id;
+
+  // Build ID remap: old ID -> new ID
+  const idMap = new Map<string, string>();
+  idMap.set(oldFolderId, newFolderId);
+
+  function remapId(oldId: string): string {
+    if (!idMap.has(oldId)) idMap.set(oldId, nanoid());
+    return idMap.get(oldId)!;
+  }
+
+  // Create folder with new ID
+  const newFolder: Folder = { ...oldFolder, id: newFolderId, name: `${oldFolder.name} (imported)` };
+  if (newFolder.timelineId) newFolder.timelineId = remapId(newFolder.timelineId);
+
+  // Sanitize entities and remap IDs
+  const notes = (data.notes || []).map(sanitizeNote).filter((n: Note | null): n is Note => n !== null && !!n.id)
+    .map((n: Note) => {
+      const newId = remapId(n.id);
+      return {
+        ...n,
+        id: newId,
+        folderId: newFolderId,
+        linkedNoteIds: n.linkedNoteIds?.map(remapId),
+        linkedTaskIds: n.linkedTaskIds?.map(remapId),
+        linkedTimelineEventIds: n.linkedTimelineEventIds?.map(remapId),
+      };
+    });
+
+  const tasks = (data.tasks || []).map(sanitizeTask).filter((t: Task | null): t is Task => t !== null && !!t.id)
+    .map((t: Task) => {
+      const newId = remapId(t.id);
+      return {
+        ...t,
+        id: newId,
+        folderId: newFolderId,
+        linkedNoteIds: t.linkedNoteIds?.map(remapId),
+        linkedTaskIds: t.linkedTaskIds?.map(remapId),
+        linkedTimelineEventIds: t.linkedTimelineEventIds?.map(remapId),
+      };
+    });
+
+  const timelineEvents = (Array.isArray(data.timelineEvents) ? data.timelineEvents : [])
+    .map(sanitizeTimelineEvent)
+    .filter((e: TimelineEvent | null): e is TimelineEvent => e !== null && !!e.id)
+    .map((e: TimelineEvent) => ({
+      ...e,
+      id: remapId(e.id),
+      folderId: newFolderId,
+      timelineId: e.timelineId ? remapId(e.timelineId) : e.timelineId,
+      linkedNoteIds: e.linkedNoteIds?.map(remapId),
+      linkedTaskIds: e.linkedTaskIds?.map(remapId),
+    }));
+
+  let timelines = (Array.isArray(data.timelines) ? data.timelines : [])
+    .map(sanitizeTimeline)
+    .filter((t: Timeline | null): t is Timeline => t !== null && !!t.id)
+    .map((t: Timeline) => ({ ...t, id: remapId(t.id) }));
+
+  if (timelineEvents.length > 0 && timelines.length === 0) {
+    const defaultId = nanoid();
+    timelines = [{ id: defaultId, name: 'Default', order: 0, createdAt: Date.now(), updatedAt: Date.now() }];
+    for (const ev of timelineEvents) {
+      if (!ev.timelineId) ev.timelineId = defaultId;
+    }
+  }
+
+  const standaloneIOCs = (Array.isArray(data.standaloneIOCs) ? data.standaloneIOCs : [])
+    .map(sanitizeStandaloneIOC)
+    .filter((i: StandaloneIOC | null): i is StandaloneIOC => i !== null && !!i.id)
+    .map((i: StandaloneIOC) => ({
+      ...i,
+      id: remapId(i.id),
+      folderId: newFolderId,
+      linkedNoteIds: i.linkedNoteIds?.map(remapId),
+      linkedTaskIds: i.linkedTaskIds?.map(remapId),
+      linkedTimelineEventIds: i.linkedTimelineEventIds?.map(remapId),
+    }));
+
+  const whiteboards = (Array.isArray(data.whiteboards) ? data.whiteboards : [])
+    .map(sanitizeWhiteboard)
+    .filter((w: Whiteboard | null): w is Whiteboard => w !== null && !!w.id)
+    .map((w: Whiteboard) => ({ ...w, id: remapId(w.id), folderId: newFolderId }));
+
+  const chatThreads = (Array.isArray(data.chatThreads) ? data.chatThreads : [])
+    .map(sanitizeChatThread)
+    .filter((c: ChatThread | null): c is ChatThread => c !== null && !!c.id)
+    .map((c: ChatThread) => ({ ...c, id: remapId(c.id), folderId: newFolderId }));
+
+  const tags = (data.tags || []).map(sanitizeTag).filter((t: Tag | null): t is Tag => t !== null && !!t.id);
+
+  await db.transaction('rw', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents, db.timelines, db.whiteboards, db.standaloneIOCs, db.chatThreads], async () => {
+    await db.folders.add(newFolder);
+    if (notes.length > 0) await db.notes.bulkAdd(notes);
+    if (tasks.length > 0) await db.tasks.bulkAdd(tasks);
+    if (timelineEvents.length > 0) await db.timelineEvents.bulkAdd(timelineEvents);
+    if (timelines.length > 0) await db.timelines.bulkAdd(timelines);
+    if (whiteboards.length > 0) await db.whiteboards.bulkAdd(whiteboards);
+    if (standaloneIOCs.length > 0) await db.standaloneIOCs.bulkAdd(standaloneIOCs);
+    if (chatThreads.length > 0) await db.chatThreads.bulkAdd(chatThreads);
+    // Merge tags: only add new ones
+    for (const tag of tags) {
+      const existing = await db.tags.where('name').equals(tag.name).first();
+      if (!existing) await db.tags.add(tag);
+    }
+  });
+
+  return {
+    folderId: newFolderId,
+    notes: notes.length,
+    tasks: tasks.length,
+    timelineEvents: timelineEvents.length,
+    standaloneIOCs: standaloneIOCs.length,
+  };
+}
+
+export async function mergeImportJSON(json: string): Promise<{ added: number; skipped: number; updated: number }> {
+  if (json.length > MAX_IMPORT_SIZE) {
+    throw new Error(`Backup file too large (max ${MAX_IMPORT_SIZE / 1024 / 1024} MB)`);
+  }
+
+  const data = JSON.parse(json);
+  if (!data || typeof data !== 'object' || !Array.isArray(data.notes) || !Array.isArray(data.tasks)) {
+    throw new Error('Invalid backup file format');
+  }
+
+  let added = 0;
+  let skipped = 0;
+  let updated = 0;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async function mergeTable(
+    table: { get: (id: string) => Promise<any>; add: (item: any) => Promise<unknown>; update: (id: string, changes: any) => Promise<number> },
+    items: { id: string; updatedAt?: number }[],
+  ) {
+    for (const item of items) {
+      if (!item.id) { skipped++; continue; }
+      const existing = await table.get(item.id);
+      if (existing) {
+        if (item.updatedAt && existing.updatedAt && item.updatedAt > existing.updatedAt) {
+          await table.update(item.id, item);
+          updated++;
+        } else {
+          skipped++;
+        }
+      } else {
+        try {
+          await table.add(item);
+          added++;
+        } catch {
+          skipped++;
+        }
+      }
+    }
+  }
+
+  const notes = data.notes.map(sanitizeNote).filter((n: Note | null): n is Note => n !== null && !!n.id);
+  const tasks = data.tasks.map(sanitizeTask).filter((t: Task | null): t is Task => t !== null && !!t.id);
+  const folders = data.folders.map(sanitizeFolder).filter((f: Folder | null): f is Folder => f !== null && !!f.id);
+  const tags = (data.tags || []).map(sanitizeTag).filter((t: Tag | null): t is Tag => t !== null && !!t.id);
+  const timelineEvents = (Array.isArray(data.timelineEvents) ? data.timelineEvents : [])
+    .map(sanitizeTimelineEvent).filter((e: TimelineEvent | null): e is TimelineEvent => e !== null && !!e.id);
+  const timelines = (Array.isArray(data.timelines) ? data.timelines : [])
+    .map(sanitizeTimeline).filter((t: Timeline | null): t is Timeline => t !== null && !!t.id);
+  const whiteboards = (Array.isArray(data.whiteboards) ? data.whiteboards : [])
+    .map(sanitizeWhiteboard).filter((w: Whiteboard | null): w is Whiteboard => w !== null && !!w.id);
+  const standaloneIOCs = (Array.isArray(data.standaloneIOCs) ? data.standaloneIOCs : [])
+    .map(sanitizeStandaloneIOC).filter((i: StandaloneIOC | null): i is StandaloneIOC => i !== null && !!i.id);
+  const chatThreads = (Array.isArray(data.chatThreads) ? data.chatThreads : [])
+    .map(sanitizeChatThread).filter((c: ChatThread | null): c is ChatThread => c !== null && !!c.id);
+
+  await db.transaction('rw', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents, db.timelines, db.whiteboards, db.standaloneIOCs, db.chatThreads], async () => {
+    await mergeTable(db.folders, folders);
+    await mergeTable(db.tags, tags);
+    await mergeTable(db.notes, notes);
+    await mergeTable(db.tasks, tasks);
+    await mergeTable(db.timelineEvents, timelineEvents);
+    await mergeTable(db.timelines, timelines);
+    await mergeTable(db.whiteboards, whiteboards);
+    await mergeTable(db.standaloneIOCs, standaloneIOCs);
+    await mergeTable(db.chatThreads, chatThreads);
+  });
+
+  return { added, skipped, updated };
+}
+
 export function downloadFile(content: string, filename: string, type: string) {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);

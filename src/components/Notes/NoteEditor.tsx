@@ -80,6 +80,7 @@ export function NoteEditor({
   const [showAnnotations, setShowAnnotations] = useState(false);
   const [annotationText, setAnnotationText] = useState('');
   const [scrollLocked, setScrollLocked] = useState(true);
+  const [showBacklinks, setShowBacklinks] = useState(false);
   const cloud = useCloudSync(externalSettings?.backupDestinations);
   const logActivity = useLogActivity();
   const titleRef = useRef<HTMLInputElement>(null);
@@ -1056,6 +1057,38 @@ export function NoteEditor({
           </div>
         </div>
       )}
+
+      {/* Backlinks panel */}
+      {(() => {
+        const backlinks = allNotes.filter(
+          (n) => n.id !== note.id && !n.trashed && n.content.includes(`[[${note.title}]]`)
+        );
+        if (backlinks.length === 0 && !showBacklinks) return null;
+        return (
+          <div className="border-t border-gray-800 shrink-0">
+            <button
+              onClick={() => setShowBacklinks(!showBacklinks)}
+              className="w-full px-4 py-1.5 flex items-center gap-2 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+            >
+              <span>{showBacklinks ? '\u25BE' : '\u25B8'}</span>
+              <span>Backlinks ({backlinks.length})</span>
+            </button>
+            {showBacklinks && backlinks.length > 0 && (
+              <div className="px-4 pb-2 space-y-1">
+                {backlinks.map((bl) => (
+                  <button
+                    key={bl.id}
+                    onClick={() => onNavigateToNote?.(bl.id)}
+                    className="block w-full text-left text-xs text-accent hover:text-accent-hover hover:bg-gray-800/50 px-2 py-1 rounded truncate"
+                  >
+                    {bl.title || 'Untitled'}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Footer */}
       <div className="px-2 sm:px-4 py-1.5 sm:py-2 border-t border-gray-800 flex items-center gap-2 sm:gap-4 text-xs text-gray-500 shrink-0 flex-wrap">

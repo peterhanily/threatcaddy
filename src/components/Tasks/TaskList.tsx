@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ListChecks, LayoutGrid, Plus, Filter } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { ListChecks, LayoutGrid, Plus, Filter, ArrowUpDown } from 'lucide-react';
 import type { Task, Note, TimelineEvent, TaskStatus, TaskViewMode, Tag, Folder, InvestigationMember } from '../../types';
 import { TaskItem } from './TaskItem';
 import { TaskForm } from './TaskForm';
@@ -69,13 +69,35 @@ export function TaskListView({
   }, [openNewForm, onNewFormOpened]);
   const [statusFilter, setStatusFilter] = useState<TaskStatus | ''>('');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'order' | 'dueDate' | 'priority' | 'updatedAt'>('order');
 
-  const filteredTasks = tasks.filter((t) => {
-    if (statusFilter && t.status !== statusFilter) return false;
-    if (assigneeFilter === '__me__' && t.assigneeId !== currentUserId) return false;
-    if (assigneeFilter && assigneeFilter !== '__me__' && t.assigneeId !== assigneeFilter) return false;
-    return true;
-  });
+  const filteredTasks = useMemo(() => {
+    const filtered = tasks.filter((t) => {
+      if (statusFilter && t.status !== statusFilter) return false;
+      if (assigneeFilter === '__me__' && t.assigneeId !== currentUserId) return false;
+      if (assigneeFilter && assigneeFilter !== '__me__' && t.assigneeId !== assigneeFilter) return false;
+      return true;
+    });
+
+    if (sortBy === 'order') return filtered;
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'dueDate') {
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      }
+      if (sortBy === 'priority') {
+        const order = { high: 0, medium: 1, low: 2, none: 3 };
+        return (order[a.priority] ?? 3) - (order[b.priority] ?? 3);
+      }
+      if (sortBy === 'updatedAt') {
+        return b.updatedAt - a.updatedAt;
+      }
+      return 0;
+    });
+  }, [tasks, statusFilter, assigneeFilter, currentUserId, sortBy]);
 
   const handleSelect = (id: string) => {
     const task = tasks.find((t) => t.id === id);
@@ -135,6 +157,18 @@ export function TaskListView({
               <option value="todo">To Do</option>
               <option value="in-progress">In Progress</option>
               <option value="done">Done</option>
+            </select>
+            <ArrowUpDown size={14} className="text-gray-500 hidden sm:block ml-1" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+              className="bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-xs text-gray-300 focus:outline-none"
+              aria-label="Sort by"
+            >
+              <option value="order">Default</option>
+              <option value="dueDate">Due Date</option>
+              <option value="priority">Priority</option>
+              <option value="updatedAt">Last Updated</option>
             </select>
             {members && members.length > 0 && (
               <select

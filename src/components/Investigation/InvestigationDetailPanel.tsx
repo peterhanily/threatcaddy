@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Briefcase, FileBarChart, Share2, Cloud, CloudOff, Archive, Trash2 } from 'lucide-react';
+import { X, Briefcase, FileBarChart, Share2, Cloud, CloudOff, Archive, Trash2, Printer } from 'lucide-react';
 import type { Folder, InvestigationStatus, ClosureResolution, PlaybookStep } from '../../types';
 import { NOTE_COLORS, CLOSURE_RESOLUTION_LABELS } from '../../types';
 import { TagInput } from '../Common/TagInput';
@@ -20,6 +20,7 @@ interface InvestigationDetailPanelProps {
   onNavigateToTimeline?: (timelineId: string) => void;
   onExport?: (folderId: string) => void;
   onGenerateReport?: (folderId: string) => void;
+  onPrintReport?: (folderId: string) => void;
   onShareLink?: (folderId: string) => void;
   serverConnected?: boolean;
   onToggleSync?: (folderId: string, syncEnabled: boolean) => void;
@@ -47,6 +48,7 @@ export function InvestigationDetailPanel({
   onNavigateToTimeline,
   onExport,
   onGenerateReport,
+  onPrintReport,
   onShareLink,
   serverConnected,
   onToggleSync,
@@ -366,7 +368,7 @@ export function InvestigationDetailPanel({
           )}
 
           {/* Export, Report & Share */}
-          {(onExport || onGenerateReport || onShareLink) && (
+          {(onExport || onGenerateReport || onPrintReport || onShareLink) && (
             <div className="flex gap-2 flex-wrap">
               {onExport && (
                 <button
@@ -383,6 +385,15 @@ export function InvestigationDetailPanel({
                 >
                   <FileBarChart size={14} />
                   Generate Report
+                </button>
+              )}
+              {onPrintReport && (
+                <button
+                  onClick={() => onPrintReport(folder.id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 transition-colors"
+                >
+                  <Printer size={14} />
+                  Print / Save as PDF
                 </button>
               )}
               {onShareLink && (

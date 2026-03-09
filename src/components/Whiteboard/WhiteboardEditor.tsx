@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Excalidraw, MainMenu } from '@excalidraw/excalidraw';
+import { Excalidraw, MainMenu, exportToBlob } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 
 // Self-host fonts — prevent CDN fallback to esm.sh
 if (typeof window !== 'undefined') {
   (window as unknown as Record<string, unknown>).EXCALIDRAW_ASSET_PATH = '/';
 }
-import { ArrowLeft, Briefcase, Trash2 } from 'lucide-react';
+import { ArrowLeft, Briefcase, Trash2, Image } from 'lucide-react';
 import type { Whiteboard, Tag, Folder } from '../../types';
+import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { TagInput } from '../Common/TagInput';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { cn } from '../../lib/utils';
@@ -35,6 +36,7 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const savedTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const excalidrawSaveRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const excalidrawApiRef = useRef<ExcalidrawImperativeAPI | null>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -85,6 +87,28 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
     setShowFolderSelect(false);
     flashSaved();
   }, [whiteboard.id, onUpdate, flashSaved]);
+
+  const handleExportPNG = useCallback(async () => {
+    const api = excalidrawApiRef.current;
+    if (!api) return;
+    try {
+      const elements = api.getSceneElements();
+      const appState = api.getAppState();
+      const blob = await exportToBlob({
+        elements,
+        appState: { ...appState, exportWithDarkMode: appState.theme === 'dark' },
+        files: api.getFiles(),
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${whiteboard.name || 'whiteboard'}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to export whiteboard as PNG:', err);
+    }
+  }, [whiteboard.name]);
 
   // Parse initial data
   let initialElements: unknown[] = [];
@@ -149,6 +173,13 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
             </div>
           )}
         </div>
+        <button
+          onClick={handleExportPNG}
+          className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
+          title="Export as PNG"
+        >
+          <Image size={16} />
+        </button>
         {saved && <span className="text-xs text-green-500 shrink-0">Saved</span>}
         {onDelete && (
           <button
@@ -177,6 +208,7 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
         <div className="absolute inset-0">
           <Excalidraw
             key={whiteboard.id}
+            excalidrawAPI={(api) => { excalidrawApiRef.current = api; }}
             initialData={{
               elements: initialElements as never,
               appState: {
@@ -189,7 +221,7 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
               canvasActions: {
                 loadScene: false,
                 saveToActiveFile: false,
-                export: false,
+                export: { saveFileToDisk: true },
               },
             }}
           >

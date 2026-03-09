@@ -1,7 +1,35 @@
 import { nanoid } from 'nanoid';
 import type { LLMProvider, ContentBlock } from '../types';
 
+export const MAX_CONTEXT_MESSAGES = 40;
+
 const TITLE_TIMEOUT_MS = 5000;
+
+/**
+ * Truncate conversation messages to fit within context window limits.
+ * Always keeps the first 2 messages (for context) and the most recent messages.
+ * Inserts a separator when truncation occurs.
+ */
+export function truncateConversation(
+  messages: { role: 'user' | 'assistant'; content: string }[],
+  maxMessages: number = MAX_CONTEXT_MESSAGES,
+): { role: 'user' | 'assistant'; content: string }[] {
+  if (messages.length <= maxMessages) {
+    return messages;
+  }
+
+  const keepFromStart = 2;
+  const keepFromEnd = maxMessages - keepFromStart;
+
+  const firstMessages = messages.slice(0, keepFromStart);
+  const recentMessages = messages.slice(-keepFromEnd);
+
+  return [
+    ...firstMessages,
+    { role: 'user' as const, content: '[System: Earlier conversation truncated for context window]' },
+    ...recentMessages,
+  ];
+}
 
 /**
  * Generate a concise chat title via a one-shot LLM request through the extension bridge.

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
-import { X, MessageSquare, Trash2, Search } from 'lucide-react';
-import type { Task, Note, TimelineEvent, Priority, TaskStatus, Tag, Folder, IOCTarget, IOCAnalysis, IOCType, TaskComment, InvestigationMember } from '../../types';
+import { X, MessageSquare, Trash2, Search, Plus, CheckSquare, Square } from 'lucide-react';
+import type { Task, Note, TimelineEvent, Priority, TaskStatus, Tag, Folder, IOCTarget, IOCAnalysis, IOCType, TaskComment, ChecklistItem, InvestigationMember } from '../../types';
 import { TagInput } from '../Common/TagInput';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { IOCPanel } from '../Analysis/IOCPanel';
@@ -53,6 +53,8 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [titleError, setTitleError] = useState('');
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>(task?.checklist || []);
+  const [newChecklistText, setNewChecklistText] = useState('');
 
   const isEditMode = !!task;
   const iocCount = task?.iocAnalysis?.iocs.filter((i) => !i.dismissed).length ?? 0;
@@ -82,6 +84,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
       setTags(task.tags);
       setClsLevel(task.clsLevel || '');
       setAssigneeId(task.assigneeId || '');
+      setChecklistItems(task.checklist || []);
     }
   }, [task]);
 
@@ -102,6 +105,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
       tags,
       clsLevel: clsLevel || undefined,
       assigneeId: assigneeId || undefined,
+      checklist: checklistItems.length > 0 ? checklistItems : undefined,
     });
   };
 
@@ -267,6 +271,82 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
             onChange={setTags}
             onCreateTag={onCreateTag}
           />
+        </div>
+
+        {/* Checklist */}
+        <div>
+          <label className="flex items-center gap-1.5 text-xs font-medium text-gray-400 mb-2">
+            <CheckSquare size={12} />
+            Checklist {checklistItems.length > 0 && `(${checklistItems.filter(c => c.done).length}/${checklistItems.length})`}
+          </label>
+
+          {checklistItems.length > 0 && (
+            <div className="space-y-1 mb-2">
+              {checklistItems.map((item) => (
+                <div key={item.id} className="flex items-center gap-2 bg-gray-800/50 rounded-lg px-3 py-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = checklistItems.map(c => c.id === item.id ? { ...c, done: !c.done } : c);
+                      setChecklistItems(updated);
+                      if (isEditMode && task && onUpdateTask) onUpdateTask(task.id, { checklist: updated });
+                    }}
+                    className={cn('shrink-0', item.done ? 'text-green-400' : 'text-gray-500 hover:text-gray-300')}
+                  >
+                    {item.done ? <CheckSquare size={14} /> : <Square size={14} />}
+                  </button>
+                  <span className={cn('text-xs flex-1', item.done && 'line-through text-gray-500')}>{item.text}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = checklistItems.filter(c => c.id !== item.id);
+                      setChecklistItems(updated);
+                      if (isEditMode && task && onUpdateTask) onUpdateTask(task.id, { checklist: updated.length > 0 ? updated : undefined });
+                    }}
+                    className="p-0.5 rounded text-gray-600 hover:text-red-400 shrink-0"
+                    title="Remove item"
+                    aria-label="Remove checklist item"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <input
+              value={newChecklistText}
+              onChange={(e) => setNewChecklistText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && newChecklistText.trim()) {
+                  e.preventDefault();
+                  const newItem: ChecklistItem = { id: nanoid(), text: newChecklistText.trim(), done: false };
+                  const updated = [...checklistItems, newItem];
+                  setChecklistItems(updated);
+                  setNewChecklistText('');
+                  if (isEditMode && task && onUpdateTask) onUpdateTask(task.id, { checklist: updated });
+                }
+              }}
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-accent"
+              placeholder="Add checklist item..."
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (!newChecklistText.trim()) return;
+                const newItem: ChecklistItem = { id: nanoid(), text: newChecklistText.trim(), done: false };
+                const updated = [...checklistItems, newItem];
+                setChecklistItems(updated);
+                setNewChecklistText('');
+                if (isEditMode && task && onUpdateTask) onUpdateTask(task.id, { checklist: updated });
+              }}
+              disabled={!newChecklistText.trim()}
+              className="px-2 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-200 transition-colors"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
         </div>
 
         {/* Entity linking (edit mode only) */}

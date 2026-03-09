@@ -8,6 +8,7 @@ import { cn, formatDate } from '../../lib/utils';
 import { nanoid } from 'nanoid';
 import { TOOL_DEFINITIONS, buildSystemPrompt, executeTool, isWriteTool, fetchViaExtensionBridge } from '../../lib/llm-tools';
 import { generateChatTitle } from '../../lib/chat-utils';
+import { truncateConversation, MAX_CONTEXT_MESSAGES } from '../../lib/chat-utils';
 import { db } from '../../db';
 
 interface ChatViewProps {
@@ -262,10 +263,14 @@ export function ChatView({
 
     // Build conversation messages (string content for history)
     // Use transformed text for the last user message so the LLM gets natural language
-    const conversationMessages = [...activeThread.messages, userMsg].map((m) => ({
+    const rawConversationMessages = [...activeThread.messages, userMsg].map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m === userMsg ? llmText : m.content,
     }));
+
+    // Truncate conversation to fit context window
+    const maxMessages = settings.llmMaxContextMessages || MAX_CONTEXT_MESSAGES;
+    const conversationMessages = truncateConversation(rawConversationMessages, maxMessages);
 
     // Track whether any write tools were used
     let usedWriteTool = false;

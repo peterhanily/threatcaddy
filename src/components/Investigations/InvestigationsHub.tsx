@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Plus, WifiOff, Loader2, Briefcase } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Plus, WifiOff, Briefcase, Search } from 'lucide-react';
 import type { Folder, InvestigationSummary, InvestigationDataMode, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ChatThread } from '../../types';
 import { cn } from '../../lib/utils';
 import { InvestigationCard } from './InvestigationCard';
@@ -110,10 +110,23 @@ export function InvestigationsHub({
   allChats,
   syncingFolderId,
 }: InvestigationsHubProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'closed' | 'archived'>('all');
+
+  const matchesSearch = (name: string) => {
+    if (!searchQuery.trim()) return true;
+    return name.toLowerCase().includes(searchQuery.toLowerCase());
+  };
+
+  const matchesStatus = (status?: string) => {
+    if (statusFilter === 'all') return true;
+    return (status || 'active') === statusFilter;
+  };
+
   // Partition local folders
-  const pureLocalFolders = localFolders.filter((f) => !syncedFolderIds.has(f.id) && f.status !== 'archived');
-  const archivedLocalFolders = localFolders.filter((f) => !syncedFolderIds.has(f.id) && f.status === 'archived');
-  const syncedLocalFolders = localFolders.filter((f) => syncedFolderIds.has(f.id) && f.status !== 'archived');
+  const pureLocalFolders = localFolders.filter((f) => !syncedFolderIds.has(f.id) && f.status !== 'archived' && matchesSearch(f.name) && matchesStatus(f.status));
+  const archivedLocalFolders = localFolders.filter((f) => !syncedFolderIds.has(f.id) && f.status === 'archived' && matchesSearch(f.name) && matchesStatus(f.status));
+  const syncedLocalFolders = localFolders.filter((f) => syncedFolderIds.has(f.id) && f.status !== 'archived' && matchesSearch(f.name) && matchesStatus(f.status));
 
   // Compute entity counts for local folders
   const localCountsMap = useMemo(() => {
@@ -129,7 +142,7 @@ export function InvestigationsHub({
   }, [localFolders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, allChats]);
 
   // Remote-only investigations (not synced locally)
-  const remoteOnlyInvestigations = remoteInvestigations.filter((r) => !syncedFolderIds.has(r.folderId));
+  const remoteOnlyInvestigations = remoteInvestigations.filter((r) => !syncedFolderIds.has(r.folderId) && matchesSearch(r.folder.name) && matchesStatus(r.folder.status));
 
   // Build a lookup for remote data to merge with synced local folders
   const remoteByFolderId = new Map<string, InvestigationSummary>();
@@ -141,7 +154,7 @@ export function InvestigationsHub({
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-6xl mx-auto px-6 py-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-text-primary">Investigations</h1>
           <button
             onClick={onCreateInvestigation}
@@ -150,6 +163,36 @@ export function InvestigationsHub({
             <Plus size={16} />
             New Investigation
           </button>
+        </div>
+
+        {/* Search & Filter Bar */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="relative flex-1 max-w-sm">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search investigations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-border-subtle bg-bg-deep text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-purple/50"
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            {(['all', 'active', 'closed', 'archived'] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={cn(
+                  'px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
+                  statusFilter === s
+                    ? 'bg-purple/20 text-purple'
+                    : 'text-text-muted hover:bg-bg-deep hover:text-text-secondary'
+                )}
+              >
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Section 1: My Investigations (purely local) */}
@@ -302,19 +345,8 @@ export function InvestigationsHub({
           )}
         </section>
 
-        {/* Section 4: Intake Queue (placeholder) */}
-        <section className="mb-8">
-          <SectionHeading title="Intake Queue" />
-          <div className={cn(
-            'flex items-center justify-center py-10 rounded-lg',
-            'border border-dashed border-border-subtle bg-bg-deep/30',
-          )}>
-            <div className="flex items-center gap-2 text-text-muted text-sm">
-              {remoteLoading && <Loader2 size={14} className="animate-spin" />}
-              <span>Coming soon</span>
-            </div>
-          </div>
-        </section>
+
+
       </div>
     </div>
   );

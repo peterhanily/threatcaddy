@@ -74,6 +74,25 @@ function collectIOCs(data: ReportData): DeduplicatedIOC[] {
   return Array.from(seen.values());
 }
 
+/**
+ * Opens the browser print dialog with the given HTML content.
+ * The user can then choose "Save as PDF" from the print dialog.
+ */
+export function printReport(html: string): void {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+  printWindow.document.write(html);
+  printWindow.document.close();
+  // Wait for content to render before triggering print
+  printWindow.addEventListener('load', () => {
+    printWindow.print();
+  });
+  // Fallback in case load already fired
+  setTimeout(() => {
+    printWindow.print();
+  }, 500);
+}
+
 export function generateInvestigationReport(data: ReportData): string {
   const { folder, notes, tasks, events, standaloneIOCs } = data;
   const iocs = collectIOCs(data);

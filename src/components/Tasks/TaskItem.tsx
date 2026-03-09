@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Circle, CheckCircle2, Calendar, Trash2, GripVertical, MessageSquare, Archive, RotateCcw, Search } from 'lucide-react';
+import { Circle, CheckCircle2, Calendar, Trash2, GripVertical, MessageSquare, Archive, RotateCcw, Search, CheckSquare, AlertTriangle } from 'lucide-react';
 import type { Task, Priority, InvestigationMember } from '../../types';
 import { PRIORITY_COLORS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
@@ -67,6 +67,12 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
       </button>
 
       <div className="flex items-center gap-2 shrink-0">
+        {(task.checklist?.length ?? 0) > 0 && (
+          <span className="flex items-center gap-0.5 text-[10px] text-gray-400 bg-gray-700/50 px-1.5 py-0.5 rounded">
+            <CheckSquare size={10} />
+            {task.checklist!.filter(c => c.done).length}/{task.checklist!.length}
+          </span>
+        )}
         {(task.iocAnalysis?.iocs.filter((i) => !i.dismissed).length ?? 0) > 0 && (
           <span className="flex items-center gap-0.5 text-[10px] text-accent bg-accent/10 px-1.5 py-0.5 rounded">
             <Search size={9} />
@@ -97,8 +103,8 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
         )}
         {task.clsLevel && <ClsBadge level={task.clsLevel} />}
         {task.dueDate && (
-          <span className={cn('flex items-center gap-1 text-[10px]', overdue ? 'text-red-400' : 'text-gray-500')}>
-            <Calendar size={10} />
+          <span className={cn('flex items-center gap-1 text-[10px]', overdue ? 'text-red-400 font-medium' : 'text-gray-500')}>
+            {overdue ? <AlertTriangle size={10} /> : <Calendar size={10} />}
             {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
         )}
