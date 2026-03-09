@@ -47,7 +47,22 @@ export async function fetchCatalog(): Promise<CatalogEntry[]> {
 export async function fetchTemplate(entry: CatalogEntry): Promise<IntegrationTemplate> {
   const resp = await fetch(entry.templateUrl);
   if (!resp.ok) throw new Error(`Failed to fetch template: HTTP ${resp.status}`);
-  const template: IntegrationTemplate = await resp.json();
+  const body = await resp.text();
+
+  // Verify SHA-256 integrity when the catalog entry declares a hash
+  if (entry.sha256) {
+    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body));
+    const hashHex = Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    if (hashHex !== entry.sha256.toLowerCase()) {
+      throw new Error(
+        `Template integrity check failed: expected SHA-256 ${entry.sha256}, got ${hashHex}`,
+      );
+    }
+  }
+
+  const template: IntegrationTemplate = JSON.parse(body);
 
   // Validate required fields
   if (!template.id || !template.name || !template.steps) {

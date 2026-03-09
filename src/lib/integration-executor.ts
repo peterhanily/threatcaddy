@@ -88,6 +88,53 @@ interface ExecutionContext {
 const MAX_EXECUTION_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
+ * Collect secret values from the installation config based on the template's
+ * configSchema.  Used to redact secrets from log entries.
+ */
+function collectSecretValues(
+  template: IntegrationTemplate,
+  config: Record<string, unknown>,
+): string[] {
+  const secrets: string[] = [];
+  for (const field of template.configSchema) {
+    if ((field.secret || field.type === 'password') && config[field.key]) {
+      const val = String(config[field.key]);
+      if (val.length > 0) secrets.push(val);
+    }
+  }
+  return secrets;
+}
+
+/** Replace known secret values in a string with [REDACTED]. */
+function redactSecrets(text: string, secrets: string[]): string {
+  let result = text;
+  for (const secret of secrets) {
+    // Only redact secrets that are at least 4 chars to avoid false positives
+    if (secret.length >= 4) {
+      result = result.replaceAll(secret, '[REDACTED]');
+    }
+  }
+  return result;
+}
+
+/**
+ * Enforce that a resolved URL's hostname matches the template's requiredDomains.
+ * Prevents a tampered template from exfiltrating secrets to arbitrary domains.
+ */
+function enforceRequiredDomains(url: URL, requiredDomains: string[]): void {
+  if (!requiredDomains || requiredDomains.length === 0) return;
+  const host = url.hostname;
+  const allowed = requiredDomains.some(
+    (domain) => host === domain || host.endsWith(`.${domain}`),
+  );
+  if (!allowed) {
+    throw new Error(
+      `Blocked request to ${host} — not in allowed domains: ${requiredDomains.join(', ')}`,
+    );
+  }
+}
+
+/**
  * Validate that a URL is safe to fetch (SSRF mitigation).
  *
  * Limitation: this is a client-side check on the literal hostname string.
@@ -203,9 +250,15 @@ export class IntegrationExecutor {
       vars: {},
     };
 
+    const secrets = collectSecretValues(template, installation.config);
+
     const addLog = (entry: IntegrationRunLogEntry) => {
-      log.push(entry);
-      callbacks.onLog?.(entry);
+      // Redact any secret values that leaked into log detail strings
+      const redacted = entry.detail
+        ? { ...entry, detail: redactSecrets(entry.detail, secrets) }
+        : entry;
+      log.push(redacted);
+      callbacks.onLog?.(redacted);
     };
 
     const timeoutController = new AbortController();
@@ -265,7 +318,7 @@ export class IntegrationExecutor {
         error = 'Execution exceeded 5 minute timeout';
       } else {
         status = 'error';
-        error = err instanceof Error ? err.message : String(err);
+        error = redactSecrets(err instanceof Error ? err.message : String(err), secrets);
       }
     } finally {
       clearTimeout(timeoutId);
@@ -336,7 +389,7 @@ export class IntegrationExecutor {
     try {
       switch (step.type) {
         case 'http': {
-          const result = await this.executeHttpStep(step, context, addLog, signal, timeoutSignal, options);
+          const result = await this.executeHttpStep(step, template, context, addLog, signal, timeoutSignal, options);
           context.steps[step.id] = result;
           apiCalls += (result._apiCalls as number) ?? 1;
           break;
@@ -430,6 +483,7 @@ export class IntegrationExecutor {
 
   private async executeHttpStep(
     step: HttpStep,
+    template: IntegrationTemplate,
     context: ExecutionContext,
     addLog: (entry: IntegrationRunLogEntry) => void,
     signal?: AbortSignal,
@@ -450,6 +504,9 @@ export class IntegrationExecutor {
     for (const [key, value] of Object.entries(resolvedParams)) {
       url.searchParams.set(key, String(value));
     }
+
+    // Enforce required domains — prevents templates from exfiltrating secrets
+    enforceRequiredDomains(url, template.requiredDomains);
 
     const maxRetries = step.retry?.maxRetries ?? 0;
     const retryOn = step.retry?.retryOn ?? [];

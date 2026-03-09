@@ -75,6 +75,23 @@ export function useIntegrations() {
       throw new Error('Invalid integration template: missing required fields (id, name, steps, outputs)');
     }
 
+    // Validate step structure
+    const validStepTypes = new Set(['http', 'transform', 'condition', 'loop', 'create-entity', 'update-entity', 'delay', 'set-variable']);
+    for (const step of parsed.steps) {
+      if (!step.id || !step.type || !step.label) {
+        throw new Error(`Invalid step: missing id, type, or label`);
+      }
+      if (!validStepTypes.has(step.type)) {
+        throw new Error(`Invalid step type: ${step.type}`);
+      }
+    }
+
+    // Validate requiredDomains is present and non-empty for templates with HTTP steps
+    const hasHttpSteps = parsed.steps.some((s) => s.type === 'http');
+    if (hasHttpSteps && (!parsed.requiredDomains || parsed.requiredDomains.length === 0)) {
+      throw new Error('Templates with HTTP steps must declare requiredDomains');
+    }
+
     const template: IntegrationTemplate = {
       ...parsed,
       source: 'user',

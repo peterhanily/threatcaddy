@@ -59,13 +59,61 @@ function validateHttpUrl(urlStr: string): URL {
   const host = url.hostname;
   if (
     ['169.254.169.254', 'localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(host) ||
+    host === '::ffff:127.0.0.1' ||
     /^10\./.test(host) ||
     /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
-    /^192\.168\./.test(host)
+    /^192\.168\./.test(host) ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal')
   ) {
     throw new Error(`Blocked request to private/internal address: ${host}`);
   }
   return url;
+}
+
+/**
+ * Collect secret values from the installation config based on the template's
+ * configSchema.  Used to redact secrets from log entries.
+ */
+function collectSecretValues(
+  template: IntegrationTemplate,
+  config: Record<string, unknown>,
+): string[] {
+  const secrets: string[] = [];
+  for (const field of template.configSchema) {
+    if ((field.secret || field.type === 'password') && config[field.key]) {
+      const val = String(config[field.key]);
+      if (val.length > 0) secrets.push(val);
+    }
+  }
+  return secrets;
+}
+
+/** Replace known secret values in a string with [REDACTED]. */
+function redactSecrets(text: string, secrets: string[]): string {
+  let result = text;
+  for (const secret of secrets) {
+    if (secret.length >= 4) {
+      result = result.replaceAll(secret, '[REDACTED]');
+    }
+  }
+  return result;
+}
+
+/**
+ * Enforce that a resolved URL's hostname matches the template's requiredDomains.
+ */
+function enforceRequiredDomains(url: URL, requiredDomains: string[]): void {
+  if (!requiredDomains || requiredDomains.length === 0) return;
+  const host = url.hostname;
+  const allowed = requiredDomains.some(
+    (domain) => host === domain || host.endsWith(`.${domain}`),
+  );
+  if (!allowed) {
+    throw new Error(
+      `Blocked request to ${host} — not in allowed domains: ${requiredDomains.join(', ')}`,
+    );
+  }
 }
 
 export class IntegrationExecutor {
@@ -95,12 +143,18 @@ export class IntegrationExecutor {
       vars: {},
     };
 
+    const secrets = collectSecretValues(template, installation.config);
+
     const addLog = (entry: IntegrationRunLogEntry) => {
+      // Redact any secret values that leaked into log detail strings
+      const redacted = entry.detail
+        ? { ...entry, detail: redactSecrets(entry.detail, secrets) }
+        : entry;
       // Cap at 500 entries to prevent unbounded growth on the server
       if (log.length < 500) {
-        log.push(entry);
+        log.push(redacted);
       }
-      callbacks.onLog?.(entry);
+      callbacks.onLog?.(redacted);
     };
 
     const timeoutController = new AbortController();
@@ -159,7 +213,7 @@ export class IntegrationExecutor {
         error = 'Execution exceeded 5 minute timeout';
       } else {
         status = 'error';
-        error = err instanceof Error ? err.message : String(err);
+        error = redactSecrets(err instanceof Error ? err.message : String(err), secrets);
       }
     } finally {
       clearTimeout(timeoutId);
@@ -229,7 +283,7 @@ export class IntegrationExecutor {
     try {
       switch (step.type) {
         case 'http': {
-          const result = await this.executeHttpStep(step, context, callbacks, addLog, signal, timeoutSignal);
+          const result = await this.executeHttpStep(step, template, context, callbacks, addLog, signal, timeoutSignal);
           context.steps[step.id] = result;
           apiCalls += (result._apiCalls as number) ?? 1;
           break;
@@ -309,6 +363,7 @@ export class IntegrationExecutor {
 
   private async executeHttpStep(
     step: HttpStep,
+    template: IntegrationTemplate,
     context: ExecutionContext,
     callbacks: ExecutionCallbacks,
     addLog: (entry: IntegrationRunLogEntry) => void,
@@ -329,6 +384,9 @@ export class IntegrationExecutor {
     for (const [key, value] of Object.entries(resolvedParams)) {
       url.searchParams.set(key, String(value));
     }
+
+    // Enforce required domains — prevents templates from exfiltrating secrets
+    enforceRequiredDomains(url, template.requiredDomains);
 
     const maxRetries = step.retry?.maxRetries ?? 0;
     const retryOn = step.retry?.retryOn ?? [];
