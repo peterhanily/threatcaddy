@@ -109,8 +109,9 @@ export function InvestigationsHub({
   allChats,
 }: InvestigationsHubProps) {
   // Partition local folders
-  const pureLocalFolders = localFolders.filter((f) => !syncedFolderIds.has(f.id));
-  const syncedLocalFolders = localFolders.filter((f) => syncedFolderIds.has(f.id));
+  const pureLocalFolders = localFolders.filter((f) => !syncedFolderIds.has(f.id) && f.status !== 'archived');
+  const archivedLocalFolders = localFolders.filter((f) => !syncedFolderIds.has(f.id) && f.status === 'archived');
+  const syncedLocalFolders = localFolders.filter((f) => syncedFolderIds.has(f.id) && f.status !== 'archived');
 
   // Compute entity counts for local folders
   const localCountsMap = useMemo(() => {
@@ -189,6 +190,34 @@ export function InvestigationsHub({
           )}
         </section>
 
+        {/* Section: Archived (local-only) */}
+        {archivedLocalFolders.length > 0 && (
+          <section className="mb-8">
+            <SectionHeading title="Archived" count={archivedLocalFolders.length} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {archivedLocalFolders.map((f) => (
+                <InvestigationCard
+                  key={f.id}
+                  folderId={f.id}
+                  name={f.name}
+                  status="archived"
+                  color={f.color}
+                  icon={f.icon}
+                  description={f.description}
+                  clsLevel={f.clsLevel}
+                  entityCounts={localCountsMap.get(f.id) ?? ZERO_COUNTS}
+                  dataMode="local"
+                  updatedAt={f.updatedAt ?? f.createdAt}
+                  onOpen={(id) => onOpenInvestigation(id, 'local')}
+                  onSettings={onEditInvestigation ? (id) => onEditInvestigation(id) : undefined}
+                  onUnarchive={onUnarchiveInvestigation}
+                  onDelete={onDeleteInvestigation}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Section 2: Synced Investigations */}
         <section className="mb-8">
           <SectionHeading title="Synced Investigations" count={syncedLocalFolders.length} />
@@ -226,7 +255,7 @@ export function InvestigationsHub({
               })}
             </div>
           ) : (
-            <EmptyState message="No synced investigations" />
+            <EmptyState message="No synced investigations — sync a remote investigation to work offline" />
           )}
         </section>
 
@@ -265,7 +294,7 @@ export function InvestigationsHub({
               ))}
             </div>
           ) : (
-            <EmptyState message="No shared investigations" />
+            <EmptyState message="No shared investigations — ask a team member to invite you" />
           )}
         </section>
 

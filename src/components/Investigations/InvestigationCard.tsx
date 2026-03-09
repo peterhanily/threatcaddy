@@ -53,7 +53,7 @@ const ENTITY_STATS = [
   { key: 'tasks'       as const, label: 'Tasks',   icon: CheckSquare,   color: 'text-accent-amber', bg: 'bg-accent-amber/10' },
   { key: 'iocs'        as const, label: 'IOCs',    icon: Search,        color: 'text-accent-green', bg: 'bg-accent-green/10' },
   { key: 'events'      as const, label: 'Events',  icon: Clock,         color: 'text-purple',       bg: 'bg-purple/10' },
-  { key: 'whiteboards' as const, label: 'Boards',  icon: Layout,        color: 'text-accent-pink',  bg: 'bg-accent-pink/10' },
+  { key: 'whiteboards' as const, label: 'Whiteboards',  icon: Layout,        color: 'text-accent-pink',  bg: 'bg-accent-pink/10' },
   { key: 'chats'       as const, label: 'Chats',   icon: MessageSquare, color: 'text-purple',       bg: 'bg-purple/10' },
 ];
 

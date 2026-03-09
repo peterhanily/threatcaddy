@@ -18,7 +18,6 @@ export function useRemoteInvestigations(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fetchingRef = useRef(false);
-  const prevConnectedRef = useRef(false);
 
   const doFetch = useCallback(async () => {
     if (fetchingRef.current) return;
@@ -26,8 +25,9 @@ export function useRemoteInvestigations(
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchInvestigations();
-      setRemoteInvestigations(data as InvestigationSummary[]);
+      const response = await fetchInvestigations();
+      const investigations = (response as { data: InvestigationSummary[] }).data ?? [];
+      setRemoteInvestigations(investigations);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch investigations');
     } finally {
@@ -44,7 +44,15 @@ export function useRemoteInvestigations(
       setRemoteInvestigations([]);
       setError(null);
     }
-    prevConnectedRef.current = serverConnected;
+  }, [serverConnected, doFetch]);
+
+  // Periodic refresh every 60s
+  useEffect(() => {
+    if (!serverConnected) return;
+    const interval = setInterval(() => {
+      doFetch();
+    }, 60_000);
+    return () => clearInterval(interval);
   }, [serverConnected, doFetch]);
 
   const refresh = useCallback(async () => {
