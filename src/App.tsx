@@ -1437,14 +1437,7 @@ function AppInner() {
             allNotes={notes.notes}
             allTasks={tasks.tasks}
             allEvents={timeline.events}
-            allWhiteboards={whiteboards}
             allIOCs={standaloneIOCsHook.iocs}
-            onFolderSelect={(id) => {
-              setSelectedFolderId(id);
-              setShowTrash(false);
-              setShowArchive(false);
-              setSelectedTag(undefined);
-            }}
             dashboardKPIs={settings.dashboardKPIs as import('./types').KPIMetricId[] | undefined}
             onUpdateKPIs={(kpis) => updateSettings({ dashboardKPIs: kpis })}
           />

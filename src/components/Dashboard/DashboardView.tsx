@@ -1,10 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Plus, Pencil, Trash2, FileText, ListChecks, Clock, PenTool, Search, Network, Activity, MessageSquare } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import type { QuickLink, ViewMode, Folder, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, KPIMetricId } from '../../types';
 import { QuickLinkForm } from './QuickLinkForm';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
-import { InvestigationCard } from '../Layout/InvestigationCard';
 import { KPIWidgets } from './KPIWidgets';
 
 const INTERNAL_TOOLS: { view: ViewMode; label: string; description: string; icon: typeof FileText; color: string }[] = [
@@ -28,32 +27,14 @@ interface DashboardViewProps {
   allEvents?: TimelineEvent[];
   allWhiteboards?: Whiteboard[];
   allIOCs?: StandaloneIOC[];
-  onFolderSelect?: (id: string) => void;
   dashboardKPIs?: KPIMetricId[];
   onUpdateKPIs?: (kpis: KPIMetricId[]) => void;
 }
 
-export function DashboardView({ links, onUpdateLinks, onViewChange, folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, onFolderSelect, dashboardKPIs, onUpdateKPIs }: DashboardViewProps) {
+export function DashboardView({ links, onUpdateLinks, onViewChange, folders, allNotes, allTasks, allEvents, allIOCs, dashboardKPIs, onUpdateKPIs }: DashboardViewProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<QuickLink | undefined>();
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const activeFolders = useMemo(
-    () => (folders ?? []).filter((f) => (f.status || 'active') === 'active'),
-    [folders],
-  );
-
-  const folderCountsMap = useMemo(() => {
-    const activeIds = new Set(activeFolders.map((f) => f.id));
-    const counts = new Map<string, { notes: number; tasks: number; events: number; whiteboards: number; iocs: number }>();
-    for (const id of activeIds) counts.set(id, { notes: 0, tasks: 0, events: 0, whiteboards: 0, iocs: 0 });
-    for (const n of allNotes ?? []) { const c = counts.get(n.folderId ?? ''); if (c) c.notes++; }
-    for (const t of allTasks ?? []) { const c = counts.get(t.folderId ?? ''); if (c) c.tasks++; }
-    for (const e of allEvents ?? []) { const c = counts.get(e.folderId ?? ''); if (c) c.events++; }
-    for (const w of allWhiteboards ?? []) { const c = counts.get(w.folderId ?? ''); if (c) c.whiteboards++; }
-    for (const i of allIOCs ?? []) { const c = counts.get(i.folderId ?? ''); if (c) c.iocs++; }
-    return counts;
-  }, [activeFolders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs]);
 
   const handleAdd = (data: Partial<QuickLink>) => {
     const newLink: QuickLink = {
@@ -211,26 +192,6 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
           </div>
         )}
 
-        {/* Active Investigations */}
-        {folders && onViewChange && onFolderSelect && (
-          <div className="mt-8">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Active Investigations</h3>
-            {activeFolders.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {activeFolders.map((f) => (
-                  <InvestigationCard
-                    key={f.id}
-                    folder={f}
-                    counts={folderCountsMap.get(f.id) ?? { notes: 0, tasks: 0, events: 0, whiteboards: 0, iocs: 0 }}
-                    onEditFolder={(id) => { onFolderSelect(id); onViewChange('notes'); }}
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">No investigations yet</p>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Add form */}
