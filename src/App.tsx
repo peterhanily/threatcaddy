@@ -1898,6 +1898,9 @@ function AppInner() {
             }
           }}
           playbookSteps={editingFolder?.playbookExecution ? playbooksHook.playbooks.find(p => p.id === editingFolder.playbookExecution?.templateId)?.steps : undefined}
+          onArchive={(id) => { loggedArchiveFolder(id); setEditingFolderId(undefined); }}
+          onUnarchive={(id) => { loggedUnarchiveFolder(id); setEditingFolderId(undefined); }}
+          onDelete={(id) => { loggedDeleteFolder(id); if (selectedFolderId === id) setSelectedFolderId(undefined); setEditingFolderId(undefined); }}
         />
       )}
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Briefcase, FileBarChart, Share2, Cloud, CloudOff } from 'lucide-react';
+import { X, Briefcase, FileBarChart, Share2, Cloud, CloudOff, Archive, Trash2 } from 'lucide-react';
 import type { Folder, InvestigationStatus, ClosureResolution, PlaybookStep } from '../../types';
 import { NOTE_COLORS, CLOSURE_RESOLUTION_LABELS } from '../../types';
 import { TagInput } from '../Common/TagInput';
@@ -23,6 +23,9 @@ interface InvestigationDetailPanelProps {
   serverConnected?: boolean;
   onToggleSync?: (folderId: string, syncEnabled: boolean) => void;
   playbookSteps?: PlaybookStep[];
+  onArchive?: (folderId: string) => void;
+  onUnarchive?: (folderId: string) => void;
+  onDelete?: (folderId: string) => void;
 }
 
 const STATUS_OPTIONS: { value: InvestigationStatus; label: string }[] = [
@@ -47,6 +50,9 @@ export function InvestigationDetailPanel({
   serverConnected,
   onToggleSync,
   playbookSteps,
+  onArchive,
+  onUnarchive,
+  onDelete,
 }: InvestigationDetailPanelProps) {
   const [name, setName] = useState(folder.name);
   const [description, setDescription] = useState(folder.description || '');
@@ -384,6 +390,39 @@ export function InvestigationDetailPanel({
                 >
                   <Share2 size={14} />
                   Share Link
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Archive & Delete */}
+          {(onArchive || onUnarchive || onDelete) && (
+            <div className="flex gap-2 pt-2 border-t border-gray-800">
+              {status !== 'archived' && onArchive && (
+                <button
+                  onClick={() => { onArchive(folder.id); onClose(); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-sm text-amber-400 transition-colors"
+                >
+                  <Archive size={14} />
+                  Archive
+                </button>
+              )}
+              {status === 'archived' && onUnarchive && (
+                <button
+                  onClick={() => { onUnarchive(folder.id); onClose(); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-sm text-green-400 transition-colors"
+                >
+                  <Archive size={14} />
+                  Unarchive
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={() => { if (confirm(`Delete "${folder.name}" and all its contents? This cannot be undone.`)) { onDelete(folder.id); onClose(); } }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-sm text-red-400 transition-colors ml-auto"
+                >
+                  <Trash2 size={14} />
+                  Delete
                 </button>
               )}
             </div>
