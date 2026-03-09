@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ThreatCaddy — Quick Capture",
   "version": "1.0.0",
-  "description": "Quick-capture web content and proxy AI requests for ThreatCaddy threat intelligence. All data stays local on your device.",
+  "description": "Quick-capture web content and proxy AI requests for ThreatCaddy threat intelligence. Data stays local on your device by default.",
 
   "permissions": [
     "contextMenus",

@@ -242,9 +242,13 @@ window.addEventListener('message', function (event) {
   }
 });
 
-// Handle clip injection from background script (works on both Chrome and Firefox)
+// Handle messages from background script (works on both Chrome and Firefox)
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   if (sender.id !== chrome.runtime.id) return;
+  if (message.type === 'THREATCADDY_PING') {
+    sendResponse({ pong: true });
+    return;
+  }
   if (message.type === 'INJECT_CLIPS_TO_PAGE') {
     var origin = window.location.protocol === 'file:' ? '*' : window.location.origin;
     window.postMessage({ type: 'THREATCADDY_IMPORT_CLIPS', clips: message.clips }, origin);

@@ -283,6 +283,18 @@
       display: block;
     }
 
+    .save-error {
+      color: #ef4444;
+      font-size: 12px;
+      text-align: center;
+      padding: 6px;
+      display: none;
+    }
+
+    .save-error.show {
+      display: block;
+    }
+
     .options-toggle {
       background: none;
       border: none;
@@ -422,6 +434,7 @@
       </div>
       <button id="save-btn">Save Note</button>
       <div class="save-success" id="save-success">Saved!</div>
+      <div class="save-error" id="save-error">Failed to save. Please try again.</div>
     </div>
   </section>
 
@@ -471,7 +484,7 @@
       Or use keyboard shortcut: <span class="kbd" id="shortcut-kbd"></span> (clips selection, or full page if nothing selected)<br>
       <br>
       <strong>Privacy:</strong><br>
-      All data stays local on your device. API keys are sent only to your chosen provider. No tracking, no servers.
+      All data stays local on your device. API keys are sent only to your chosen provider. No tracking.
     </div>
   </section>
 
@@ -506,7 +519,7 @@
       <div class="help-text" style="display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:8px;">
         <div>
           <strong>Allow CaddyAI</strong><br>
-          <span style="font-size:11px;color:#9ca3af;">Grants access to AI provider APIs.</span>
+          <span style="font-size:11px;color:#9ca3af;">Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral).</span>
         </div>
         <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
           <input type="checkbox" id="settings-ai-toggle" style="opacity:0;width:0;height:0;">
@@ -516,7 +529,7 @@
       <div class="help-text" style="display:flex;align-items:center;gap:8px;justify-content:space-between;">
         <div>
           <strong>Allow URL fetching</strong><br>
-          <span style="font-size:11px;color:#9ca3af;">Required for the /fetch command.</span>
+          <span style="font-size:11px;color:#9ca3af;">Required for the /fetch command and non-localhost local LLMs.</span>
         </div>
         <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
           <input type="checkbox" id="settings-url-toggle" style="opacity:0;width:0;height:0;">

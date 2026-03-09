@@ -115,6 +115,9 @@ document.getElementById('save-btn').addEventListener('click', async () => {
     loadStats();
   } catch (error) {
     console.error('Failed to save note:', error);
+    const errorEl = document.getElementById('save-error');
+    errorEl.classList.add('show');
+    setTimeout(() => { errorEl.classList.remove('show'); }, 4000);
   }
 });
 
@@ -132,9 +135,6 @@ document.getElementById('review-btn').addEventListener('click', () => {
 
 // Load stats when popup opens
 loadStats();
-
-// Refresh stats every 2 seconds while popup is open
-setInterval(loadStats, 2000);
 
 // Show platform-appropriate shortcut
 const isMac = /Mac/i.test(navigator.platform);

@@ -895,7 +895,7 @@ async function streamGemini(send, payload, signal) {
 
   const model = payload.model;
   const apiKey = payload.apiKey;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
 
   // Convert messages: user/assistant → user/model, content → parts[{text}]
   const contents = [];
@@ -939,7 +939,7 @@ async function streamGemini(send, payload, signal) {
   const resp = await fetch(url, {
     method: 'POST',
     signal,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify(body),
   });
 
@@ -1052,16 +1052,44 @@ async function sendToTarget(targetUrl, captures) {
     });
   });
 
-  // Wait for the web app's React to mount and register its message listener
-  await new Promise(resolve => setTimeout(resolve, 2500));
-
   // Proactively inject bridge.js — static content_scripts only cover threatcaddy.com,
   // so for custom targets (self-hosted, localhost, file://) we must inject explicitly.
   // bridge.js has a duplicate-injection guard so re-injection on threatcaddy.com is safe.
   try {
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['bridge.js'] });
-    await new Promise(r => setTimeout(r, 200));
   } catch { /* restricted page or missing host permission */ }
+
+  // Poll for bridge readiness with exponential backoff instead of a fixed delay.
+  // Send THREATCADDY_PING and wait for THREATCADDY_PONG from the content script.
+  await new Promise(resolve => {
+    const delays = [100, 200, 400, 800, 1600];
+    let attempt = 0;
+    let settled = false;
+    const fallback = setTimeout(() => {
+      if (!settled) { settled = true; resolve(); }
+    }, 3000);
+
+    function poll() {
+      if (settled) return;
+      chrome.tabs.sendMessage(tab.id, { type: 'THREATCADDY_PING' }, (resp) => {
+        if (chrome.runtime.lastError) { /* ignore */ }
+        if (settled) return;
+        if (resp && resp.pong) {
+          settled = true;
+          clearTimeout(fallback);
+          resolve();
+          return;
+        }
+        attempt++;
+        if (attempt < delays.length) {
+          setTimeout(poll, delays[attempt]);
+        }
+        // else: fallback timer will resolve
+      });
+    }
+
+    setTimeout(poll, delays[0]);
+  });
 
   try {
     await chrome.tabs.sendMessage(tab.id, { type: 'INJECT_CLIPS_TO_PAGE', clips: captures });
