@@ -449,6 +449,24 @@ function AppInner() {
     return () => window.removeEventListener('notification-navigate', handler);
   }, [navigateTo, setSelectedFolderId]);
 
+  // Reload hooks and navigate after integration creates entities in Dexie
+  useEffect(() => {
+    const handler = async (e: Event) => {
+      const { noteId } = (e as CustomEvent).detail ?? {};
+      if (noteId) {
+        await notes.reload();
+        setSelectedNoteId(noteId);
+        setSelectedFolderId(undefined);
+        setSelectedTag(undefined);
+        setShowTrash(false);
+        setShowArchive(false);
+        navigateTo('notes', { selectedNoteId: noteId });
+      }
+    };
+    window.addEventListener('integration-entity-created', handler);
+    return () => window.removeEventListener('integration-entity-created', handler);
+  }, [notes, navigateTo, setSelectedFolderId]);
+
   // Listen for clip imports from the Chrome extension via postMessage
   useEffect(() => {
     const handler = async (event: MessageEvent) => {

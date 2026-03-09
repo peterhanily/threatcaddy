@@ -1459,7 +1459,6 @@ function AllIOCsTab({
                               matching={getInstallationsForIOCType(row.standaloneIOC.type)}
                               addRun={addRun}
                               onOpenSettings={onOpenSettings}
-                              onNavigateToNote={onNavigateToSource ? (noteId) => onNavigateToSource('note', noteId) : undefined}
                             />
                             {onUpdateIOC && (
                               <button
@@ -1512,7 +1511,6 @@ function AllIOCsTab({
                               matching={getInstallationsForIOCType(row.type)}
                               addRun={addRun}
                               onOpenSettings={onOpenSettings}
-                              onNavigateToNote={onNavigateToSource ? (noteId) => onNavigateToSource('note', noteId) : undefined}
                             />
                             {onNavigateToSource && (
                               <button

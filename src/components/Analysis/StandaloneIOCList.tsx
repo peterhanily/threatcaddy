@@ -50,7 +50,6 @@ interface StandaloneIOCListProps {
   currentFolderId?: string;
   currentFolderName?: string;
   onOpenSettings?: () => void;
-  onNavigateToNote?: (noteId: string) => void;
 }
 
 export function StandaloneIOCList({
@@ -68,7 +67,6 @@ export function StandaloneIOCList({
   currentFolderId,
   currentFolderName,
   onOpenSettings,
-  onNavigateToNote,
 }: StandaloneIOCListProps) {
   const { getInstallationsForIOCType, addRun } = useIntegrations();
   const { addToast } = useToast();
@@ -609,7 +607,6 @@ export function StandaloneIOCList({
                               matching={getInstallationsForIOCType(ioc.type)}
                               addRun={addRun}
                               onOpenSettings={onOpenSettings}
-                              onNavigateToNote={onNavigateToNote}
                             />
                             <button
                               onClick={() => { setEditingIOC(ioc); setShowForm(true); }}

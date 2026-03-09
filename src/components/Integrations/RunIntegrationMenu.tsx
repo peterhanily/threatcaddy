@@ -14,10 +14,9 @@ interface RunIntegrationMenuProps {
   addRun: (run: IntegrationRun) => Promise<void>;
   onComplete?: (run: IntegrationRun) => void;
   onOpenSettings?: () => void;
-  onNavigateToNote?: (noteId: string) => void;
 }
 
-export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onComplete, onOpenSettings, onNavigateToNote }: RunIntegrationMenuProps) {
+export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onComplete, onOpenSettings }: RunIntegrationMenuProps) {
   const { addToast } = useToast();
   const [open, setOpen] = useState(false);
   const [running, setRunning] = useState(false);
@@ -181,9 +180,11 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
 
       onComplete?.(run);
 
-      // Navigate to created note after run completes and React can pick up the DB change
+      // Signal App to reload hooks and navigate to the created note
       if (pendingNoteId && run.status === 'success') {
-        setTimeout(() => onNavigateToNote?.(pendingNoteId!), 100);
+        window.dispatchEvent(new CustomEvent('integration-entity-created', {
+          detail: { noteId: pendingNoteId },
+        }));
       }
     } catch (err) {
       addToast('error', `Integration error: ${err instanceof Error ? err.message : String(err)}`);
