@@ -48,6 +48,7 @@ function loadSettings(): Settings {
   return DEFAULT_SETTINGS;
 }
 
+/** Reads and persists user settings from localStorage. Returns the current settings object and an update function. */
 export function useSettings() {
   const [settings, setSettingsState] = useState<Settings>(loadSettings);
 

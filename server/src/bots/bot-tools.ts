@@ -53,7 +53,7 @@ const listIOCsTool: BotTool = {
     type: 'object',
     properties: {
       folderId: { type: 'string', description: 'Investigation folder ID' },
-      typeFilter: { type: 'string', description: 'IOC type filter (e.g., "ip", "domain", "hash")' },
+      typeFilter: { type: 'string', description: 'IOC type filter (e.g., "ipv4", "domain", "sha256")' },
       limit: { type: 'number', description: 'Max results (default 500)' },
     },
     required: ['folderId'],

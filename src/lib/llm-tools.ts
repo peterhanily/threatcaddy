@@ -80,7 +80,7 @@ You have 24 tools organized into five categories:
 
 **Analysis** (2 tools): extract_iocs (from arbitrary text), analyze_graph (entity relationship graph — node/edge counts, most connected entities, shortest path between entities).
 
-**Web** (1 tool): fetch_url (extract readable content from any URL — threat reports, blog posts, advisories, and search engines). You can search the internet by fetching search engine URLs like \`https://www.google.com/search?q=your+query\` or \`https://duckduckgo.com/?q=your+query\`. This is how you perform online research when asked.
+**Web** (1 tool): fetch_url (extract readable content from any URL — threat reports, blog posts, advisories, and search engines; requires browser extension with URL-fetching permission enabled). You can search the internet by fetching search engine URLs like \`https://www.google.com/search?q=your+query\` or \`https://duckduckgo.com/?q=your+query\`. This is how you perform online research when asked.
 
 **Global Investigation** (5 tools): list_investigations, get_investigation_details, search_across_investigations, create_in_investigation (create entities in any investigation), compare_investigations (find shared IOCs and TTPs).
 

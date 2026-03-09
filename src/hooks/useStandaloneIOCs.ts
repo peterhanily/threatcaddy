@@ -4,6 +4,7 @@ import type { StandaloneIOC } from '../types';
 import { nanoid } from 'nanoid';
 import { purgeOldTrash } from '../lib/trash-purge';
 
+/** Manages standalone IOCs stored in IndexedDB -- create, update, bulk import, trash, and tag operations. */
 export function useStandaloneIOCs() {
   const [iocs, setIOCs] = useState<StandaloneIOC[]>([]);
   const [loading, setLoading] = useState(true);

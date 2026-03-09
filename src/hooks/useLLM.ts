@@ -38,6 +38,7 @@ export interface ExtensionInfo {
   capabilities: string[];
 }
 
+/** Provides LLM chat capabilities -- streaming requests, multi-turn agentic tool loops, and extension bridge detection. */
 export function useLLM() {
   const [extensionAvailable, setExtensionAvailable] = useState(false);
   const [extensionInfo, setExtensionInfo] = useState<ExtensionInfo | null>(null);

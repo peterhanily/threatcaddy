@@ -7,6 +7,7 @@ interface UseIOCAnalysisOptions {
   onUpdate: (id: string, updates: { iocAnalysis?: IOCAnalysis; iocTypes?: IOCType[] }) => void;
 }
 
+/** Runs IOC extraction on an entity's content and manages the resulting IOC entries (update, dismiss, push to standalone). */
 export function useIOCAnalysis({ item, onUpdate }: UseIOCAnalysisOptions) {
   const [analyzing, setAnalyzing] = useState(false);
 

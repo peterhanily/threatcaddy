@@ -4,6 +4,7 @@ import type { TimelineEvent, TimelineEventType } from '../types';
 import { nanoid } from 'nanoid';
 import { purgeOldTrash } from '../lib/trash-purge';
 
+/** Manages CRUD operations and state for timeline events, with filtering by type, date range, and folder. */
 export function useTimeline() {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);

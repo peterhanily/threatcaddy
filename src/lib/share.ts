@@ -51,7 +51,8 @@ function fromBase64Url(str: string): Uint8Array {
 
 // --- Encryption (Web Crypto API) ---
 
-const PBKDF2_ITERATIONS = 100_000;
+// 600k iterations per OWASP guidelines for PBKDF2-SHA256 (matches main crypto module)
+const PBKDF2_ITERATIONS = 600_000;
 
 async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
   const enc = new TextEncoder();

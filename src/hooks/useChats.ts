@@ -11,6 +11,7 @@ async function ensureDB() {
   }
 }
 
+/** Manages CaddyAI chat threads -- create, rename, add messages, trash/restore. Returns threads array and mutation helpers. */
 export function useChats() {
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [loading, setLoading] = useState(true);

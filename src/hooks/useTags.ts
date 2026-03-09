@@ -4,6 +4,7 @@ import type { Tag } from '../types';
 import { TAG_COLORS } from '../types';
 import { nanoid } from 'nanoid';
 
+/** Manages investigation tags (create, update, delete). Propagates renames across all entity types that reference the tag. */
 export function useTags() {
   const [tags, setTags] = useState<Tag[]>([]);
 

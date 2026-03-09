@@ -135,7 +135,7 @@ export function fetchViaExtensionBridge(url: string): Promise<{ success: boolean
     }
 
     window.addEventListener('message', handler);
-    window.postMessage({ type: 'TC_FETCH_URL', requestId, url }, '*');
+    window.postMessage({ type: 'TC_FETCH_URL', requestId, url }, window.location.origin);
   });
 }
 

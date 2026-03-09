@@ -1,3 +1,4 @@
+/** An investigation note with markdown content, tags, and optional IOC analysis. */
 export interface Note {
   id: string;
   title: string;
@@ -59,9 +60,12 @@ export interface EntityComment {
   updatedAt?: number;
 }
 
+/** Task priority level, from none (unset) to high. */
 export type Priority = 'none' | 'low' | 'medium' | 'high';
+/** Kanban-style task status. */
 export type TaskStatus = 'todo' | 'in-progress' | 'done';
 
+/** An actionable task within an investigation, with status tracking and kanban support. */
 export interface Task {
   id: string;
   title: string;
@@ -118,6 +122,7 @@ export interface PlaybookExecution {
   steps: PlaybookExecutionStep[];
 }
 
+/** An investigation folder that groups notes, tasks, IOCs, timelines, and whiteboards. */
 export interface Folder {
   id: string;
   name: string;
@@ -159,10 +164,12 @@ export interface BackupDestination {
   enabled: boolean;
 }
 
+/** Top-level view/page the user can navigate to. */
 export type ViewMode = 'dashboard' | 'notes' | 'tasks' | 'timeline' | 'whiteboard' | 'activity' | 'graph' | 'ioc-stats' | 'chat' | 'caddyshack' | 'investigations';
 export type EditorMode = 'edit' | 'preview' | 'split';
 export type TaskViewMode = 'list' | 'kanban';
 
+/** A user-configurable bookmark shown in the dashboard quick-links section. */
 export interface QuickLink {
   id: string;
   title: string;
@@ -290,11 +297,13 @@ export const ALL_IOC_TABLE_COLUMNS: { key: string; label: string; alwaysVisible?
 ];
 
 // IOC Analysis types
+/** Indicator of Compromise type, matching standard CTI taxonomy. */
 export type IOCType =
   | 'ipv4' | 'ipv6' | 'domain' | 'url' | 'email'
   | 'md5' | 'sha1' | 'sha256'
   | 'cve' | 'mitre-attack' | 'yara-rule' | 'sigma-rule' | 'file-path';
 
+/** Analyst-assigned confidence in an IOC or event, from low to confirmed. */
 export type ConfidenceLevel = 'low' | 'medium' | 'high' | 'confirmed';
 
 export interface IOCRelationship {
@@ -415,6 +424,7 @@ export const DEFAULT_RELATIONSHIP_TYPES: Record<string, IOCRelationshipDef> = {
 };
 
 // Timeline types
+/** Event category aligned with MITRE ATT&CK tactics plus IR phases. */
 export type TimelineEventType =
   | 'initial-access' | 'execution' | 'persistence' | 'privilege-escalation'
   | 'defense-evasion' | 'credential-access' | 'discovery' | 'lateral-movement'
@@ -423,6 +433,7 @@ export type TimelineEventType =
   | 'communication' | 'evidence'
   | 'other';
 
+/** A timestamped event on an investigation timeline, with ATT&CK mappings and linked entities. */
 export interface TimelineEvent {
   id: string;
   timestamp: number;
@@ -470,6 +481,7 @@ export interface Timeline {
   updatedAt: number;
 }
 
+/** An Excalidraw-backed whiteboard for visual analysis within an investigation. */
 export interface Whiteboard {
   id: string;
   name: string;
@@ -487,6 +499,7 @@ export interface Whiteboard {
   updatedAt: number;
 }
 
+/** A standalone Indicator of Compromise tracked independently in an investigation. */
 export interface StandaloneIOC {
   id: string;
   type: IOCType;
@@ -557,6 +570,7 @@ export interface ChatMessage {
   createdAt: number;
 }
 
+/** A conversation thread with CaddyAI, stored per-investigation or globally. */
 export interface ChatThread {
   id: string;
   title: string;
@@ -641,6 +655,7 @@ export interface SharedItemEnvelope {
 
 export type TemplateSource = 'builtin' | 'user' | 'team';
 
+/** A reusable template for creating pre-structured notes (e.g., triage forms, IR reports). */
 export interface NoteTemplate {
   id: string;
   name: string;
@@ -673,6 +688,7 @@ export interface PlaybookStep {
   phase?: string;
 }
 
+/** A step-by-step playbook template that scaffolds tasks and notes for a new investigation. */
 export interface PlaybookTemplate {
   id: string;
   name: string;

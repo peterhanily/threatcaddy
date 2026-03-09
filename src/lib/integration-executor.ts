@@ -28,6 +28,52 @@ export interface ExecutionCallbacks {
   onLog?: (entry: IntegrationRunLogEntry) => void;
 }
 
+export interface ExecutionOptions {
+  /**
+   * When set, HTTP requests are routed through `POST <serverUrl>/api/proxy-fetch`
+   * instead of going directly from the browser. This lets the server enforce
+   * DNS-level SSRF checks that the client cannot perform.
+   */
+  useServerProxy?: {
+    serverUrl: string;
+    getAccessToken: () => Promise<string | null>;
+  };
+}
+
+/**
+ * Proxy fetch via the team server (`POST /api/proxy-fetch`).
+ * The server can perform DNS resolution to block private IPs.
+ */
+async function serverProxyFetch(
+  serverUrl: string,
+  getAccessToken: () => Promise<string | null>,
+  url: string,
+  method: string,
+  headers: Record<string, string>,
+  body: string | null,
+): Promise<{ ok: boolean; status: number; statusText: string; data: unknown; headers: Record<string, string> }> {
+  const token = await getAccessToken();
+  const resp = await fetch(`${serverUrl}/api/proxy-fetch`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ url, method, headers, body }),
+  });
+  const result = await resp.json();
+  if (!resp.ok) {
+    throw new Error(result.error || `Server proxy error: ${resp.status}`);
+  }
+  return {
+    ok: result.status >= 200 && result.status < 300,
+    status: result.status,
+    statusText: result.statusText || '',
+    data: result.data,
+    headers: result.headers || {},
+  };
+}
+
 interface ExecutionContext {
   [key: string]: unknown;
   ioc?: ExecutionInput['ioc'];
@@ -41,7 +87,15 @@ interface ExecutionContext {
 
 const MAX_EXECUTION_MS = 5 * 60 * 1000; // 5 minutes
 
-/** Validate that a URL is safe to fetch (no SSRF) */
+/**
+ * Validate that a URL is safe to fetch (SSRF mitigation).
+ *
+ * Limitation: this is a client-side check on the literal hostname string.
+ * It cannot perform DNS resolution, so a public hostname that resolves to
+ * a private IP (DNS rebinding) will bypass this filter. When a team server
+ * is available, callers should route requests through `POST /api/proxy-fetch`
+ * which can enforce server-side DNS checks.
+ */
 function validateHttpUrl(urlStr: string): URL {
   const url = new URL(urlStr);
   if (!['http:', 'https:'].includes(url.protocol)) {
@@ -50,9 +104,12 @@ function validateHttpUrl(urlStr: string): URL {
   const host = url.hostname;
   if (
     ['169.254.169.254', 'localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(host) ||
+    host === '::ffff:127.0.0.1' ||
     /^10\./.test(host) ||
     /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
-    /^192\.168\./.test(host)
+    /^192\.168\./.test(host) ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal')
   ) {
     throw new Error(`Blocked request to private/internal address: ${host}`);
   }
@@ -104,7 +161,7 @@ function bridgeProxyFetch(
       method,
       headers,
       body,
-    }, '*');
+    }, window.location.origin);
   });
 }
 
@@ -125,6 +182,7 @@ export class IntegrationExecutor {
     input: ExecutionInput,
     callbacks: ExecutionCallbacks,
     signal?: AbortSignal,
+    options?: ExecutionOptions,
   ): Promise<IntegrationRun> {
     const runId = nanoid();
     const startTime = Date.now();
@@ -163,6 +221,7 @@ export class IntegrationExecutor {
           addLog,
           signal,
           timeoutController.signal,
+          options,
         );
 
         if (stepResult.skipped) continue;
@@ -241,6 +300,7 @@ export class IntegrationExecutor {
     addLog: (entry: IntegrationRunLogEntry) => void,
     signal?: AbortSignal,
     timeoutSignal?: AbortSignal,
+    options?: ExecutionOptions,
   ): Promise<{
     skipped: boolean;
     error?: string;
@@ -276,7 +336,7 @@ export class IntegrationExecutor {
     try {
       switch (step.type) {
         case 'http': {
-          const result = await this.executeHttpStep(step, context, addLog, signal, timeoutSignal);
+          const result = await this.executeHttpStep(step, context, addLog, signal, timeoutSignal, options);
           context.steps[step.id] = result;
           apiCalls += (result._apiCalls as number) ?? 1;
           break;
@@ -295,6 +355,7 @@ export class IntegrationExecutor {
             addLog,
             signal,
             timeoutSignal,
+            options,
           );
           context.steps[step.id] = { branch: result.branch };
           apiCalls += result.apiCalls;
@@ -311,6 +372,7 @@ export class IntegrationExecutor {
             addLog,
             signal,
             timeoutSignal,
+            options,
           );
           context.steps[step.id] = { iterations: result.iterations };
           apiCalls += result.apiCalls;
@@ -372,6 +434,7 @@ export class IntegrationExecutor {
     addLog: (entry: IntegrationRunLogEntry) => void,
     signal?: AbortSignal,
     timeoutSignal?: AbortSignal,
+    options?: ExecutionOptions,
   ): Promise<Record<string, unknown>> {
     const resolvedUrl = resolveVariables(step.url, context);
     const resolvedHeaders = step.headers
@@ -436,25 +499,42 @@ export class IntegrationExecutor {
       let responseData: unknown;
       let responseHeaders: Record<string, string> = {};
 
-      if (hasBridgeProxyFetch()) {
-        // Route through extension background script to bypass CSP/CORS
-        const bodyStr = fetchOptions.body instanceof URLSearchParams
+      // Serialize body for proxy transports
+      const serializeBody = () =>
+        fetchOptions.body instanceof URLSearchParams
           ? fetchOptions.body.toString()
           : typeof fetchOptions.body === 'string'
             ? fetchOptions.body
             : fetchOptions.body != null ? String(fetchOptions.body) : null;
-        // For form-encoded, set Content-Type header
+
+      if (options?.useServerProxy) {
+        // Route through team server — server can enforce DNS-level SSRF checks
         const proxyHeaders = { ...(fetchOptions.headers as Record<string, string>) };
         if (fetchOptions.body instanceof URLSearchParams && !proxyHeaders['Content-Type'] && !proxyHeaders['content-type']) {
           proxyHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
         }
-        const proxyResult = await bridgeProxyFetch(url.toString(), step.method, proxyHeaders, bodyStr);
+        const proxyResult = await serverProxyFetch(
+          options.useServerProxy.serverUrl,
+          options.useServerProxy.getAccessToken,
+          url.toString(), step.method, proxyHeaders, serializeBody(),
+        );
+        responseStatus = proxyResult.status;
+        responseStatusText = proxyResult.statusText;
+        responseData = step.responseType === 'text' ? String(proxyResult.data) : proxyResult.data;
+        responseHeaders = proxyResult.headers;
+      } else if (hasBridgeProxyFetch()) {
+        // Route through extension background script to bypass CSP/CORS
+        const proxyHeaders = { ...(fetchOptions.headers as Record<string, string>) };
+        if (fetchOptions.body instanceof URLSearchParams && !proxyHeaders['Content-Type'] && !proxyHeaders['content-type']) {
+          proxyHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
+        }
+        const proxyResult = await bridgeProxyFetch(url.toString(), step.method, proxyHeaders, serializeBody());
         responseStatus = proxyResult.status;
         responseStatusText = proxyResult.statusText;
         responseData = step.responseType === 'text' ? String(proxyResult.data) : proxyResult.data;
         responseHeaders = proxyResult.headers;
       } else {
-        // Direct fetch (standalone/team-server mode)
+        // Direct fetch (standalone mode)
         const response = await fetch(url.toString(), fetchOptions);
         responseStatus = response.status;
         responseStatusText = response.statusText;
@@ -596,6 +676,7 @@ export class IntegrationExecutor {
     addLog: (entry: IntegrationRunLogEntry) => void,
     signal?: AbortSignal,
     timeoutSignal?: AbortSignal,
+    options?: ExecutionOptions,
   ): Promise<{
     branch: 'then' | 'else';
     apiCalls: number;
@@ -620,6 +701,7 @@ export class IntegrationExecutor {
         addLog,
         signal,
         timeoutSignal,
+        options,
       );
       apiCalls += result.apiCalls;
       entitiesCreated += result.entitiesCreated;
@@ -646,6 +728,7 @@ export class IntegrationExecutor {
     addLog: (entry: IntegrationRunLogEntry) => void,
     signal?: AbortSignal,
     timeoutSignal?: AbortSignal,
+    options?: ExecutionOptions,
   ): Promise<{ iterations: number; apiCalls: number; entitiesCreated: number; entitiesUpdated: number }> {
     const items = resolveVariables(step.items, context);
     if (!Array.isArray(items)) {
@@ -680,6 +763,7 @@ export class IntegrationExecutor {
           addLog,
           signal,
           timeoutSignal,
+          options,
         );
         apiCalls += result.apiCalls;
         entitiesCreated += result.entitiesCreated;

@@ -3,6 +3,7 @@ import { db } from '../db';
 import type { Folder } from '../types';
 import { nanoid } from 'nanoid';
 
+/** Manages investigation folders (create, update, reorder, close). Returns sorted folders array and mutation helpers. */
 export function useFolders() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);

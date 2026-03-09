@@ -55,7 +55,7 @@ export function TimelineFeed({ events, selectedId, onSelect, onToggleStar, onDel
       <div className="flex flex-col items-center justify-center py-16 text-gray-600">
         <Clock size={32} className="mb-2" />
         <p className="text-sm">No timeline events yet</p>
-        <p className="text-xs mt-1">Click "New Event" to add an incident timeline entry</p>
+        <p className="text-xs mt-1">Click "New Event" to add a timeline event</p>
       </div>
     );
   }

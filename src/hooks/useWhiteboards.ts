@@ -4,6 +4,7 @@ import type { Whiteboard } from '../types';
 import { nanoid } from 'nanoid';
 import { purgeOldTrash } from '../lib/trash-purge';
 
+/** Manages Excalidraw whiteboards -- create, update, reorder, trash, and restore. Returns whiteboards array and helpers. */
 export function useWhiteboards() {
   const [whiteboards, setWhiteboards] = useState<Whiteboard[]>([]);
   const [loading, setLoading] = useState(true);

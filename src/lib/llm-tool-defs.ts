@@ -262,7 +262,7 @@ export const TOOL_DEFINITIONS = [
   // ── Web tools ────────────────────────────────────────────────
   {
     name: 'fetch_url',
-    description: 'Fetch and extract readable text content from a URL. Returns the page title and content converted to markdown. Use this when the user provides a URL and wants you to read, summarize, or extract information from it.',
+    description: 'Fetch and extract readable text content from a URL (requires browser extension with URL-fetching permission enabled). Returns the page title and content converted to markdown. Use this when the user provides a URL and wants you to read, summarize, or extract information from it.',
     input_schema: {
       type: 'object' as const,
       properties: {

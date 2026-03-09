@@ -27,7 +27,7 @@ export function InvestigationCard({ folder, counts, onEditFolder, synced }: Inve
     { label: 'Notes', value: counts.notes, color: 'text-accent-blue', bgColor: 'bg-accent-blue/10', icon: FileText },
     { label: 'Tasks', value: counts.tasks, color: 'text-accent-amber', bgColor: 'bg-accent-amber/10', icon: ListChecks },
     { label: 'Events', value: counts.events, color: 'text-accent-green', bgColor: 'bg-accent-green/10', icon: Clock },
-    { label: 'Boards', value: counts.whiteboards, color: 'text-accent-pink', bgColor: 'bg-accent-pink/10', icon: PenTool },
+    { label: 'Whiteboards', value: counts.whiteboards, color: 'text-accent-pink', bgColor: 'bg-accent-pink/10', icon: PenTool },
     { label: 'IOCs', value: counts.iocs, color: 'text-accent-green', bgColor: 'bg-accent-green/10', icon: Shield },
   ];
 

@@ -4,6 +4,7 @@ import type { Task, TaskStatus } from '../types';
 import { nanoid } from 'nanoid';
 import { purgeOldTrash } from '../lib/trash-purge';
 
+/** Manages CRUD operations and state for investigation tasks, including status transitions and kanban ordering. */
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);

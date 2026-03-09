@@ -11,6 +11,7 @@ interface ShortcutHandlers {
   onSwitchView?: (view: ViewMode) => void;
 }
 
+/** Registers global keyboard shortcuts (Ctrl+N, Ctrl+K, Ctrl+S, etc.) and dispatches to the provided handler callbacks. */
 export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
   const handlersRef = useRef(handlers);
   useEffect(() => {

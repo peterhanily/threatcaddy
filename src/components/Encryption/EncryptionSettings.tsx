@@ -232,7 +232,7 @@ export function EncryptionSettings() {
       ) : (
         <>
           <p className="text-sm text-gray-400">
-            Encrypt your data at rest using AES-256-GCM. You'll need to enter a passphrase each time you open ThreatCaddy.
+            Encrypt your data at rest using AES-256-GCM. You'll set a passphrase to unlock your data (session duration is configurable after setup).
           </p>
           <button
             onClick={() => setShowSetup(true)}
