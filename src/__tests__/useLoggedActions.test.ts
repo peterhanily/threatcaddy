@@ -120,12 +120,14 @@ function buildMocks() {
 
   const chats = {
     createThread: vi.fn().mockResolvedValue(sampleThread),
+    reload: vi.fn(),
   };
 
   const foldersOps = {
     folders: [sampleFolder],
     createFolder: vi.fn().mockResolvedValue(sampleFolder),
     deleteFolder: vi.fn().mockResolvedValue(undefined),
+    deleteFolderWithContents: vi.fn().mockResolvedValue(undefined),
     trashFolderContents: vi.fn().mockResolvedValue(undefined),
     archiveFolder: vi.fn().mockResolvedValue(undefined),
     unarchiveFolder: vi.fn().mockResolvedValue(undefined),
@@ -819,13 +821,19 @@ describe('useLoggedActions', () => {
       );
     });
 
-    it('loggedDeleteFolder calls deleteFolder and logs', async () => {
+    it('loggedDeleteFolder calls deleteFolderWithContents, reloads hooks, and logs', async () => {
       const { result } = renderLoggedActions();
       await act(async () => {
         await result.current.loggedDeleteFolder('f1');
       });
 
-      expect(mocks.foldersOps.deleteFolder).toHaveBeenCalledWith('f1');
+      expect(mocks.foldersOps.deleteFolderWithContents).toHaveBeenCalledWith('f1');
+      expect(mocks.notes.reload).toHaveBeenCalled();
+      expect(mocks.tasks.reload).toHaveBeenCalled();
+      expect(mocks.timeline.reload).toHaveBeenCalled();
+      expect(mocks.whiteboardOps.reload).toHaveBeenCalled();
+      expect(mocks.standaloneIOCs.reload).toHaveBeenCalled();
+      expect(mocks.chats.reload).toHaveBeenCalled();
       expect(mocks.log).toHaveBeenCalledWith(
         'folder', 'delete',
         expect.stringContaining('Test Folder'),

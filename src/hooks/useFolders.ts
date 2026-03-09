@@ -77,13 +77,14 @@ export function useFolders() {
     const taskIdSet = new Set(tasksInFolder as string[]);
     const eventIdSet = new Set(eventsInFolder as string[]);
 
-    // Bulk-delete all entities in the folder
+    // Bulk-delete all entities in the folder (including chat threads)
     await Promise.all([
       db.notes.where('folderId').equals(id).delete(),
       db.tasks.where('folderId').equals(id).delete(),
       db.timelineEvents.where('folderId').equals(id).delete(),
       db.whiteboards.where('folderId').equals(id).delete(),
       db.standaloneIOCs.where('folderId').equals(id).delete(),
+      db.chatThreads.where('folderId').equals(id).delete(),
     ]);
 
     // Clean orphaned cross-entity links in parallel batches

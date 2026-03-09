@@ -138,7 +138,7 @@ function AppInner() {
   const { whiteboards, createWhiteboard, updateWhiteboard, deleteWhiteboard, trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard, emptyTrashWhiteboards, getFilteredWhiteboards, whiteboardCounts, reload: reloadWhiteboards } = useWhiteboards();
   const standaloneIOCsHook = useStandaloneIOCs();
   const chatsHook = useChats();
-  const { folders, loading: foldersLoading, createFolder, findOrCreateFolder, updateFolder, deleteFolder, trashFolderContents, archiveFolder, unarchiveFolder, reload: reloadFolders } = useFolders();
+  const { folders, loading: foldersLoading, createFolder, findOrCreateFolder, updateFolder, deleteFolder, deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder, reload: reloadFolders } = useFolders();
   const { tags, createTag, updateTag, deleteTag, reload: reloadTags } = useTags();
   const noteTemplatesHook = useNoteTemplates();
   const playbooksHook = usePlaybooks();
@@ -237,8 +237,8 @@ function AppInner() {
     { timelines, createTimeline, deleteTimeline },
     { whiteboards, createWhiteboard, deleteWhiteboard, trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard, emptyTrashWhiteboards, reload: reloadWhiteboards },
     standaloneIOCsHook,
-    { createThread: chatsHook.createThread },
-    { folders, createFolder, deleteFolder, trashFolderContents, archiveFolder, unarchiveFolder },
+    { createThread: chatsHook.createThread, reload: chatsHook.reload },
+    { folders, createFolder, deleteFolder, deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder },
     { tags, createTag, deleteTag },
   );
 

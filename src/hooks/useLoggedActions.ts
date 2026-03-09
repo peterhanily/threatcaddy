@@ -70,11 +70,13 @@ export function useLoggedActions(
   },
   chats: {
     createThread(p?: Partial<ChatThread>): Promise<ChatThread>;
+    reload(): void;
   },
   foldersOps: {
     folders: Folder[];
     createFolder(name: string): Promise<Folder>;
     deleteFolder(id: string): Promise<void>;
+    deleteFolderWithContents(id: string): Promise<void>;
     trashFolderContents(id: string): Promise<void>;
     archiveFolder(id: string): Promise<void>;
     unarchiveFolder(id: string): Promise<void>;
@@ -319,9 +321,16 @@ export function useLoggedActions(
 
   const loggedDeleteFolder = useCallback(async (id: string) => {
     const folder = foldersOps.folders.find((f) => f.id === id);
-    await foldersOps.deleteFolder(id);
+    await foldersOps.deleteFolderWithContents(id);
+    // Reload all hooks so React state reflects the DB deletions
+    notes.reload();
+    tasks.reload();
+    timeline.reload();
+    whiteboardOps.reload();
+    standaloneIOCs.reload();
+    chats.reload();
     log('folder', 'delete', `Deleted investigation "${folder?.name || 'Untitled'}"`, id, folder?.name);
-  }, [foldersOps, log]);
+  }, [foldersOps, notes, tasks, timeline, whiteboardOps, standaloneIOCs, chats, log]);
 
   const loggedTrashFolderContents = useCallback(async (id: string) => {
     const folder = foldersOps.folders.find((f) => f.id === id);
@@ -332,7 +341,8 @@ export function useLoggedActions(
     timeline.reload();
     whiteboardOps.reload();
     standaloneIOCs.reload();
-  }, [foldersOps, log, notes, tasks, timeline, whiteboardOps, standaloneIOCs]);
+    chats.reload();
+  }, [foldersOps, log, notes, tasks, timeline, whiteboardOps, standaloneIOCs, chats]);
 
   const loggedArchiveFolder = useCallback(async (id: string) => {
     const folder = foldersOps.folders.find((f) => f.id === id);
@@ -343,7 +353,8 @@ export function useLoggedActions(
     timeline.reload();
     whiteboardOps.reload();
     standaloneIOCs.reload();
-  }, [foldersOps, log, notes, tasks, timeline, whiteboardOps, standaloneIOCs]);
+    chats.reload();
+  }, [foldersOps, log, notes, tasks, timeline, whiteboardOps, standaloneIOCs, chats]);
 
   const loggedUnarchiveFolder = useCallback(async (id: string) => {
     const folder = foldersOps.folders.find((f) => f.id === id);
@@ -354,7 +365,8 @@ export function useLoggedActions(
     timeline.reload();
     whiteboardOps.reload();
     standaloneIOCs.reload();
-  }, [foldersOps, log, notes, tasks, timeline, whiteboardOps, standaloneIOCs]);
+    chats.reload();
+  }, [foldersOps, log, notes, tasks, timeline, whiteboardOps, standaloneIOCs, chats]);
 
   // ─── Tags ─────────────────────────────────────────────────────
 
