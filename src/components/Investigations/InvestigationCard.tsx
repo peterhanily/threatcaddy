@@ -1,6 +1,7 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   FileText, CheckSquare, Search, Clock, Layout, MessageSquare,
-  Download, CloudOff,
+  Download, CloudOff, MoreVertical, Settings, Archive, Trash2,
 } from 'lucide-react';
 import type { InvestigationDataMode } from '../../types';
 import { formatDate, cn } from '../../lib/utils';
@@ -29,6 +30,10 @@ export interface InvestigationCardProps {
   onOpen: (folderId: string) => void;
   onSync?: (folderId: string) => void;
   onUnsync?: (folderId: string) => void;
+  onSettings?: (folderId: string) => void;
+  onArchive?: (folderId: string) => void;
+  onUnarchive?: (folderId: string) => void;
+  onDelete?: (folderId: string) => void;
 }
 
 const STATUS_STYLES: Record<string, { dot: string; text: string }> = {
@@ -69,6 +74,10 @@ export function InvestigationCard({
   onOpen,
   onSync,
   onUnsync,
+  onSettings,
+  onArchive,
+  onUnarchive,
+  onDelete,
 }: InvestigationCardProps) {
   const sty = STATUS_STYLES[status] ?? STATUS_STYLES.active;
   const modeBadge = DATA_MODE_BADGE[dataMode];
@@ -84,6 +93,31 @@ export function InvestigationCard({
     e.stopPropagation();
     if (dataMode === 'remote' && onSync) onSync(folderId);
     if (dataMode === 'synced' && onUnsync) onUnsync(folderId);
+  };
+
+  // Context menu (three-dot)
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) closeMenu();
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuOpen, closeMenu]);
+
+  const isLocal = dataMode === 'local';
+  const isSynced = dataMode === 'synced';
+  const isRemote = dataMode === 'remote';
+  const showMenuButton = isLocal || isSynced || (isRemote && !!onSettings);
+
+  const handleMenuItemClick = (e: React.MouseEvent, action: () => void) => {
+    e.stopPropagation();
+    action();
+    closeMenu();
   };
 
   return (
@@ -123,6 +157,62 @@ export function InvestigationCard({
           <span className={cn('text-[10px] font-medium uppercase tracking-wide shrink-0', sty.text)}>
             {statusLabel}
           </span>
+
+          {/* Context menu */}
+          {showMenuButton && (
+            <div ref={menuRef} className="relative shrink-0">
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setMenuOpen((v) => !v); } }}
+                className="p-0.5 rounded hover:bg-bg-deep transition-colors text-text-muted hover:text-text-secondary"
+                title="Actions"
+              >
+                <MoreVertical size={14} />
+              </span>
+              {menuOpen && (
+                <div className="absolute right-0 top-full mt-1 z-50 w-40 rounded-lg border border-border-subtle bg-bg-raised shadow-xl py-1">
+                  {onSettings && (
+                    <button
+                      onClick={(e) => handleMenuItemClick(e, () => onSettings(folderId))}
+                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-deep hover:text-text-primary transition-colors"
+                    >
+                      <Settings size={12} />
+                      Settings
+                    </button>
+                  )}
+                  {(isLocal || isSynced) && status !== 'archived' && onArchive && (
+                    <button
+                      onClick={(e) => handleMenuItemClick(e, () => onArchive(folderId))}
+                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-deep hover:text-text-primary transition-colors"
+                    >
+                      <Archive size={12} />
+                      Archive
+                    </button>
+                  )}
+                  {(isLocal || isSynced) && status === 'archived' && onUnarchive && (
+                    <button
+                      onClick={(e) => handleMenuItemClick(e, () => onUnarchive(folderId))}
+                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-deep hover:text-text-primary transition-colors"
+                    >
+                      <Archive size={12} />
+                      Unarchive
+                    </button>
+                  )}
+                  {(isLocal || isSynced) && onDelete && (
+                    <button
+                      onClick={(e) => handleMenuItemClick(e, () => onDelete(folderId))}
+                      className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+                    >
+                      <Trash2 size={12} />
+                      Delete
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Description */}

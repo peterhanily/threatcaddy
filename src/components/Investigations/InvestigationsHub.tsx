@@ -14,6 +14,10 @@ export interface InvestigationsHubProps {
   onSyncLocally: (folderId: string) => void;
   onUnsync: (folderId: string) => void;
   onCreateInvestigation: () => void;
+  onEditInvestigation?: (folderId: string) => void;
+  onArchiveInvestigation?: (folderId: string) => void;
+  onUnarchiveInvestigation?: (folderId: string) => void;
+  onDeleteInvestigation?: (folderId: string) => void;
 }
 
 function SkeletonCard() {
@@ -84,6 +88,10 @@ export function InvestigationsHub({
   onSyncLocally,
   onUnsync,
   onCreateInvestigation,
+  onEditInvestigation,
+  onArchiveInvestigation,
+  onUnarchiveInvestigation,
+  onDeleteInvestigation,
 }: InvestigationsHubProps) {
   // Partition local folders
   const pureLocalFolders = localFolders.filter((f) => !syncedFolderIds.has(f.id));
@@ -137,6 +145,10 @@ export function InvestigationsHub({
                   dataMode="local"
                   updatedAt={f.updatedAt ?? f.createdAt}
                   onOpen={(id) => onOpenInvestigation(id, 'local')}
+                  onSettings={onEditInvestigation}
+                  onArchive={onArchiveInvestigation}
+                  onUnarchive={onUnarchiveInvestigation}
+                  onDelete={onDeleteInvestigation}
                 />
               ))}
             </div>
@@ -177,6 +189,10 @@ export function InvestigationsHub({
                     updatedAt={f.updatedAt ?? f.createdAt}
                     onOpen={(id) => onOpenInvestigation(id, 'synced')}
                     onUnsync={onUnsync}
+                    onSettings={onEditInvestigation}
+                    onArchive={onArchiveInvestigation}
+                    onUnarchive={onUnarchiveInvestigation}
+                    onDelete={onDeleteInvestigation}
                   />
                 );
               })}
@@ -216,6 +232,7 @@ export function InvestigationsHub({
                   updatedAt={r.folder.updatedAt}
                   onOpen={(id) => onOpenInvestigation(id, 'remote')}
                   onSync={onSyncLocally}
+                  onSettings={onEditInvestigation}
                 />
               ))}
             </div>

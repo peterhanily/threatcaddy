@@ -24,6 +24,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useNoteTemplates } from './hooks/useNoteTemplates';
 import { usePlaybooks } from './hooks/usePlaybooks';
 import { PlaybookPicker } from './components/Playbooks/PlaybookPicker';
+import { OperationNameGenerator } from './components/Common/OperationNameGenerator';
 import { useActivityLog } from './hooks/useActivityLog';
 import { ActivityLogContext } from './hooks/ActivityLogContext';
 import { ScreenshareContext } from './hooks/ScreenshareContext';
@@ -290,6 +291,7 @@ function AppInner() {
   const [folderStatusFilter, setFolderStatusFilter] = useState<InvestigationStatus[]>(['active']);
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [showCreateInvestigationModal, setShowCreateInvestigationModal] = useState(false);
+  const [showNameGenerator, setShowNameGenerator] = useState(false);
   const demoProcessedRef = useRef(false);
 
   // Fetch investigation members for task assignee support
@@ -1572,6 +1574,10 @@ function AppInner() {
             onSyncLocally={handleSyncLocally}
             onUnsync={handleUnsync}
             onCreateInvestigation={() => setShowCreateInvestigationModal(true)}
+            onEditInvestigation={(id) => setEditingFolderId(id)}
+            onArchiveInvestigation={(id) => loggedArchiveFolder(id)}
+            onUnarchiveInvestigation={(id) => loggedUnarchiveFolder(id)}
+            onDeleteInvestigation={(id) => { loggedDeleteFolder(id); if (selectedFolderId === id) { setSelectedFolderId(undefined); setSelectedNoteId(undefined); } }}
           />
         ) : activeView === 'caddyshack' ? (
           <CaddyShackView
@@ -1917,6 +1923,16 @@ function AppInner() {
         onCreate={(name) => {
           loggedCreateFolder(name);
           setShowCreateInvestigationModal(false);
+        }}
+        onOpenNameGenerator={() => setShowNameGenerator(true)}
+        onOpenPlaybookPicker={() => setShowPlaybookPicker(true)}
+      />
+      <OperationNameGenerator
+        open={showNameGenerator}
+        onClose={() => setShowNameGenerator(false)}
+        onCreateInvestigation={(name) => {
+          loggedCreateFolder(name);
+          setShowNameGenerator(false);
         }}
       />
     </ActivityLogContext.Provider>

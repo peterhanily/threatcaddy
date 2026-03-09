@@ -175,22 +175,18 @@ export function Sidebar({
             />
           ))}
 
-          {selectedFolderId && (
-            <>
-              <div className="w-6 h-px bg-border-subtle my-1" />
-              {collapsedInvestigationItems.map((item) => (
-                <CollapsedIcon
-                  key={item.view}
-                  icon={item.icon}
-                  label={item.label}
-                  active={activeView === item.view && !showTrash && !showArchive}
-                  badge={item.badge}
-                  onClick={() => nav(() => navToView(item.view))}
-                  dataTour={item.dataTour}
-                />
-              ))}
-            </>
-          )}
+          <div className="w-6 h-px bg-border-subtle my-1" />
+          {collapsedInvestigationItems.map((item) => (
+            <CollapsedIcon
+              key={item.view}
+              icon={item.icon}
+              label={item.label}
+              active={activeView === item.view && !showTrash && !showArchive}
+              badge={item.badge}
+              onClick={() => nav(() => navToView(item.view))}
+              dataTour={item.dataTour}
+            />
+          ))}
 
           <div className="w-6 h-px bg-border-subtle my-1" />
 
@@ -304,75 +300,71 @@ export function Sidebar({
           onClick={() => nav(() => navToView('investigations'))}
         />
 
-        {/* Investigation-scoped items — only when inside an investigation */}
-        {selectedFolderId && (
-          <>
-            <div className="h-px bg-border-subtle mx-1 my-1.5" />
+        {/* Entity views — always visible */}
+        <div className="h-px bg-border-subtle mx-1 my-1.5" />
 
-            <NavItem
-              icon={<FileText size={16} />}
-              label="Notes"
-              badge={investigationScopedCounts ? investigationScopedCounts.notes : noteCounts.total}
-              badgeColor="bg-accent-blue/15 text-accent-blue"
-              active={activeView === 'notes' && !showTrash && !showArchive}
-              onClick={() => nav(() => navToView('notes'))}
-            />
-            <div data-tour="tasks">
-              <NavItem
-                icon={<ListChecks size={16} />}
-                label="Tasks"
-                badge={investigationScopedCounts ? investigationScopedCounts.tasks : taskCounts.total}
-                badgeColor="bg-accent-amber/15 text-accent-amber"
-                active={activeView === 'tasks'}
-                onClick={() => nav(() => navToView('tasks'))}
-              />
-            </div>
-            <div data-tour="timeline">
-              <NavItem
-                icon={<Clock size={16} />}
-                label="Timeline"
-                badge={investigationScopedCounts ? investigationScopedCounts.events : timelineCounts?.total}
-                badgeColor="bg-accent-green/15 text-accent-green"
-                active={activeView === 'timeline'}
-                onClick={() => nav(() => navToView('timeline'))}
-              />
-            </div>
-            <div data-tour="whiteboards">
-              <NavItem
-                icon={<PenTool size={16} />}
-                label="Whiteboards"
-                badge={investigationScopedCounts ? investigationScopedCounts.whiteboards : whiteboardCount}
-                active={activeView === 'whiteboard'}
-                onClick={() => nav(() => navToView('whiteboard'))}
-              />
-            </div>
+        <NavItem
+          icon={<FileText size={16} />}
+          label="Notes"
+          badge={investigationScopedCounts ? investigationScopedCounts.notes : noteCounts.total}
+          badgeColor="bg-accent-blue/15 text-accent-blue"
+          active={activeView === 'notes' && !showTrash && !showArchive}
+          onClick={() => nav(() => navToView('notes'))}
+        />
+        <div data-tour="tasks">
+          <NavItem
+            icon={<ListChecks size={16} />}
+            label="Tasks"
+            badge={investigationScopedCounts ? investigationScopedCounts.tasks : taskCounts.total}
+            badgeColor="bg-accent-amber/15 text-accent-amber"
+            active={activeView === 'tasks'}
+            onClick={() => nav(() => navToView('tasks'))}
+          />
+        </div>
+        <div data-tour="timeline">
+          <NavItem
+            icon={<Clock size={16} />}
+            label="Timeline"
+            badge={investigationScopedCounts ? investigationScopedCounts.events : timelineCounts?.total}
+            badgeColor="bg-accent-green/15 text-accent-green"
+            active={activeView === 'timeline'}
+            onClick={() => nav(() => navToView('timeline'))}
+          />
+        </div>
+        <div data-tour="whiteboards">
+          <NavItem
+            icon={<PenTool size={16} />}
+            label="Whiteboards"
+            badge={investigationScopedCounts ? investigationScopedCounts.whiteboards : whiteboardCount}
+            active={activeView === 'whiteboard'}
+            onClick={() => nav(() => navToView('whiteboard'))}
+          />
+        </div>
 
-            <div className="h-1.5" />
+        <div className="h-1.5" />
 
-            <NavItem
-              icon={<Search size={16} />}
-              label="IOCs"
-              badge={investigationScopedCounts ? investigationScopedCounts.iocs : undefined}
-              badgeColor="bg-accent-green/15 text-accent-green"
-              active={activeView === 'ioc-stats'}
-              onClick={() => nav(() => navToView('ioc-stats'))}
-            />
-            <NavItem
-              icon={<Network size={16} />}
-              label="Graph"
-              active={activeView === 'graph'}
-              onClick={() => nav(() => navToView('graph'))}
-            />
-            <div data-tour="activity">
-              <NavItem
-                icon={<Activity size={16} />}
-                label="Activity"
-                active={activeView === 'activity'}
-                onClick={() => nav(() => navToView('activity'))}
-              />
-            </div>
-          </>
-        )}
+        <NavItem
+          icon={<Search size={16} />}
+          label="IOCs"
+          badge={investigationScopedCounts ? investigationScopedCounts.iocs : undefined}
+          badgeColor="bg-accent-green/15 text-accent-green"
+          active={activeView === 'ioc-stats'}
+          onClick={() => nav(() => navToView('ioc-stats'))}
+        />
+        <NavItem
+          icon={<Network size={16} />}
+          label="Graph"
+          active={activeView === 'graph'}
+          onClick={() => nav(() => navToView('graph'))}
+        />
+        <div data-tour="activity">
+          <NavItem
+            icon={<Activity size={16} />}
+            label="Activity"
+            active={activeView === 'activity'}
+            onClick={() => nav(() => navToView('activity'))}
+          />
+        </div>
 
         <div className="h-px bg-border-subtle mx-1 my-1.5" />
 
@@ -426,20 +418,18 @@ export function Sidebar({
           />
         )}
 
-        {/* TAGS — only when inside an investigation */}
-        {selectedFolderId && (
-          <TagSubList
-            tags={tags}
-            selectedTag={selectedTag}
-            onTagSelect={onTagSelect}
-            onFolderSelect={onFolderSelect}
-            onShowTrash={onShowTrash}
-            onShowArchive={onShowArchive}
-            onRenameTag={onRenameTag}
-            onDeleteTag={onDeleteTag}
-            onNavigate={onNavigate}
-          />
-        )}
+        {/* TAGS */}
+        <TagSubList
+          tags={tags}
+          selectedTag={selectedTag}
+          onTagSelect={onTagSelect}
+          onFolderSelect={onFolderSelect}
+          onShowTrash={onShowTrash}
+          onShowArchive={onShowArchive}
+          onRenameTag={onRenameTag}
+          onDeleteTag={onDeleteTag}
+          onNavigate={onNavigate}
+        />
       </nav>
 
       {/* FOOTER */}

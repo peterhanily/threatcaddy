@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Dices, BookOpen } from 'lucide-react';
 import { Modal } from '../Common/Modal';
 import { cn } from '../../lib/utils';
 
@@ -7,6 +7,8 @@ export interface CreateInvestigationModalProps {
   open: boolean;
   onClose: () => void;
   onCreate: (name: string, options?: { playbook?: string; color?: string; icon?: string }) => void;
+  onOpenNameGenerator?: () => void;
+  onOpenPlaybookPicker?: () => void;
 }
 
 type TabId = 'quick' | 'name-gen' | 'playbook';
@@ -17,7 +19,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'playbook', label: 'From Playbook' },
 ];
 
-export function CreateInvestigationModal({ open, onClose, onCreate }: CreateInvestigationModalProps) {
+export function CreateInvestigationModal({ open, onClose, onCreate, onOpenNameGenerator, onOpenPlaybookPicker }: CreateInvestigationModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('quick');
   const [name, setName] = useState('');
 
@@ -87,14 +89,30 @@ export function CreateInvestigationModal({ open, onClose, onCreate }: CreateInve
       )}
 
       {activeTab === 'name-gen' && (
-        <div className="flex items-center justify-center py-10 rounded-lg border border-dashed border-border-subtle bg-bg-deep/30">
-          <p className="text-sm text-text-muted">Operation name generator will be moved here</p>
+        <div className="flex flex-col items-center justify-center py-8 rounded-lg border border-border-subtle bg-bg-deep/30 gap-3">
+          <Dices size={32} className="text-text-muted" />
+          <p className="text-sm text-text-secondary">Generate a random operation name with the slot machine</p>
+          <button
+            onClick={() => { onClose(); onOpenNameGenerator?.(); }}
+            className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:brightness-110 transition-all flex items-center gap-2"
+          >
+            <Dices size={16} />
+            Open Name Generator
+          </button>
         </div>
       )}
 
       {activeTab === 'playbook' && (
-        <div className="flex items-center justify-center py-10 rounded-lg border border-dashed border-border-subtle bg-bg-deep/30">
-          <p className="text-sm text-text-muted">Playbook templates will be moved here</p>
+        <div className="flex flex-col items-center justify-center py-8 rounded-lg border border-border-subtle bg-bg-deep/30 gap-3">
+          <BookOpen size={32} className="text-text-muted" />
+          <p className="text-sm text-text-secondary">Start from a playbook template with pre-configured tasks and notes</p>
+          <button
+            onClick={() => { onClose(); onOpenPlaybookPicker?.(); }}
+            className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:brightness-110 transition-all flex items-center gap-2"
+          >
+            <BookOpen size={16} />
+            Browse Playbooks
+          </button>
         </div>
       )}
     </Modal>
