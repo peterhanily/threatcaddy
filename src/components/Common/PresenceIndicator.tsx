@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Pencil } from 'lucide-react';
 import type { PresenceUser } from '../../types';
 
 interface PresenceIndicatorProps {
@@ -27,7 +28,7 @@ export function PresenceIndicator({ users, maxDisplay = 5 }: PresenceIndicatorPr
               key={user.id}
               className="w-6 h-6 rounded-full border-2 border-[var(--bg-primary)] flex items-center justify-center text-white text-[9px] font-medium shrink-0 relative"
               style={{ backgroundColor: stringToColor(user.displayName) }}
-              title={`${user.displayName} — ${user.view}`}
+              title={`${user.displayName} — ${viewLabel(user.view, user.entityId)}`}
             >
               {user.displayName[0]?.toUpperCase() || '?'}
               <div className="absolute w-1.5 h-1.5 bg-green-500 rounded-full -bottom-0 -right-0 border border-[var(--bg-primary)]" />
@@ -70,8 +71,11 @@ export function PresenceIndicator({ users, maxDisplay = 5 }: PresenceIndicatorPr
                     <div className="text-sm font-medium text-[var(--text-primary)] truncate">
                       {user.displayName}
                     </div>
-                    <div className="text-[10px] text-[var(--text-tertiary)] truncate">
-                      {viewLabel(user.view)}
+                    <div className="text-[10px] text-[var(--text-tertiary)] truncate flex items-center gap-1">
+                      {user.entityId && isEditingView(user.view) && (
+                        <Pencil size={9} className="text-yellow-500 shrink-0" />
+                      )}
+                      {viewLabel(user.view, user.entityId)}
                     </div>
                   </div>
                 </div>
@@ -84,7 +88,12 @@ export function PresenceIndicator({ users, maxDisplay = 5 }: PresenceIndicatorPr
   );
 }
 
-function viewLabel(view: string): string {
+/** Views that imply active editing when an entityId is present */
+function isEditingView(view: string): boolean {
+  return view === 'editor' || view === 'whiteboard';
+}
+
+function viewLabel(view: string, entityId?: string): string {
   const labels: Record<string, string> = {
     notes: 'Viewing notes',
     editor: 'Editing a note',
@@ -98,7 +107,11 @@ function viewLabel(view: string): string {
     caddyshack: 'On CaddyShack',
     dashboard: 'On dashboard',
   };
-  return labels[view] || `Viewing ${view}`;
+  const base = labels[view] || `Viewing ${view}`;
+  if (entityId && isEditingView(view)) {
+    return `Currently editing`;
+  }
+  return base;
 }
 
 function stringToColor(str: string): string {

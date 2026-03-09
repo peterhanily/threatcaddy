@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal } from '../Common/Modal';
 import { Shield, Copy, Check, Loader2 } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 import {
   generateMasterKey,
   deriveWrappingKey,
@@ -23,6 +24,7 @@ interface EncryptionSetupProps {
 }
 
 export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupProps) {
+  const { addToast } = useToast();
   const [step, setStep] = useState(1);
   const [passphrase, setPassphrase] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -115,10 +117,12 @@ export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupPro
       // Encrypt all existing records
       await encryptAllExistingData(db, setProgress);
 
+      addToast('success', 'Encryption enabled');
       onEnabled();
       reset();
     } catch (err) {
       setError('Failed to enable encryption: ' + (err instanceof Error ? err.message : String(err)));
+      addToast('error', 'Failed to enable encryption');
       setEncrypting(false);
     }
   };

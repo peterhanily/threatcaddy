@@ -878,4 +878,5 @@ export interface PresenceUser {
   displayName: string;
   avatarUrl: string | null;
   view: string;
+  entityId?: string;
 }

@@ -342,6 +342,16 @@ export async function fetchAuditLog(opts: { folderId?: string; userId?: string; 
   return resp.json();
 }
 
+export async function fetchTeamActivity(opts: { since?: string; category?: string; limit?: number } = {}) {
+  const params = new URLSearchParams();
+  if (opts.since) params.set('since', opts.since);
+  if (opts.category) params.set('category', opts.category);
+  if (opts.limit) params.set('limit', String(opts.limit));
+  const resp = await apiFetch(`/api/audit/team?${params}`);
+  if (!resp.ok) throw new Error('Failed to fetch team activity');
+  return resp.json();
+}
+
 // ─── Notifications ──────────────────────────────────────────────
 
 export async function fetchNotifications(unread = false, limit = 50) {

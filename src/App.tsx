@@ -77,7 +77,8 @@ const CaddyShackView = lazy(() => import('./components/CaddyShack/CaddyShackView
 import { ConflictDialog } from './components/Common/ConflictDialog';
 import { KeyboardShortcutsPanel } from './components/Common/KeyboardShortcutsPanel';
 import type { InvestigationMember } from './types';
-import { fetchInvestigationMembers } from './lib/server-api';
+import { fetchInvestigationMembers, fetchServerInfo } from './lib/server-api';
+const ServerOnboardingModal = lazy(() => import('./components/Settings/ServerOnboardingModal').then(m => ({ default: m.ServerOnboardingModal })));
 import { installSyncHooks, initLocalOnlyFlags } from './lib/sync-middleware';
 
 // Install Dexie hooks once at module load so every write is captured
@@ -175,6 +176,33 @@ function AppInner() {
     const localIds = new Set(folders.map(f => f.id));
     return new Set(remoteInvestigations.filter(r => localIds.has(r.folderId)).map(r => r.folderId));
   }, [folders, remoteInvestigations]);
+
+  // Server onboarding modal — show once per server URL on first connection
+  const [showServerOnboarding, setShowServerOnboarding] = useState(false);
+  const [serverOnboardingName, setServerOnboardingName] = useState('your team server');
+  const serverOnboardingCheckedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!auth.connected || !auth.serverUrl) return;
+    // Already checked this URL during this session
+    if (serverOnboardingCheckedRef.current === auth.serverUrl) return;
+    serverOnboardingCheckedRef.current = auth.serverUrl;
+    const key = `tc-server-onboarded-${auth.serverUrl}`;
+    if (localStorage.getItem(key)) return;
+    // Fetch server name then show the modal
+    const url = auth.serverUrl;
+    fetchServerInfo()
+      .then((info) => setServerOnboardingName(info.serverName || url))
+      .catch(() => setServerOnboardingName(url))
+      .finally(() => setShowServerOnboarding(true));
+  }, [auth.connected, auth.serverUrl]);
+
+  const handleDismissServerOnboarding = useCallback(() => {
+    if (auth.serverUrl) {
+      localStorage.setItem(`tc-server-onboarded-${auth.serverUrl}`, '1');
+    }
+    setShowServerOnboarding(false);
+  }, [auth.serverUrl]);
 
   // Share receiver state — listen for hash changes to support re-navigation
   const [shareData, setShareData] = useState<string | null>(initialShareData);
@@ -1030,7 +1058,8 @@ function AppInner() {
     const json = await exportJSON();
     const date = new Date().toISOString().slice(0, 10);
     downloadFile(json, `threatcaddy-backup-${date}.json`, 'application/json');
-  }, []);
+    addToast('success', 'Backup exported');
+  }, [addToast]);
 
   const handleQuickLoad = useCallback((file: File) => {
     setPendingImportFile(file);
@@ -1038,11 +1067,17 @@ function AppInner() {
 
   const handleConfirmImport = useCallback(async () => {
     if (!pendingImportFile) return;
-    const text = await pendingImportFile.text();
-    await importJSON(text);
-    setPendingImportFile(null);
-    handleImportComplete();
-  }, [pendingImportFile, handleImportComplete]);
+    try {
+      const text = await pendingImportFile.text();
+      await importJSON(text);
+      setPendingImportFile(null);
+      handleImportComplete();
+      addToast('success', 'Backup restored');
+    } catch {
+      addToast('error', 'Failed to restore backup');
+      setPendingImportFile(null);
+    }
+  }, [pendingImportFile, handleImportComplete, addToast]);
 
   const handleMergeImport = useCallback(async () => {
     if (!pendingImportFile) return;
@@ -1075,7 +1110,8 @@ function AppInner() {
     navigateTo('notes');
     setSelectedNoteId(data.notes[0]?.id);
     activityLog.log('data', 'import', 'Loaded sample investigation "Operation DARK GLACIER"');
-  }, [handleImportComplete, navigateTo, activityLog, setSelectedFolderId]);
+    addToast('success', 'Sample investigation loaded');
+  }, [handleImportComplete, navigateTo, activityLog, setSelectedFolderId, addToast]);
 
   const handleDeleteSample = useCallback(async () => {
     // Delete all entities with sample- prefix
@@ -1103,7 +1139,8 @@ function AppInner() {
       setSelectedFolderId(undefined);
     }
     activityLog.log('data', 'delete', 'Removed sample investigation "Operation DARK GLACIER"');
-  }, [handleImportComplete, selectedFolderId, activityLog, setSelectedFolderId]);
+    addToast('success', 'Sample investigation removed');
+  }, [handleImportComplete, selectedFolderId, activityLog, setSelectedFolderId, addToast]);
 
   // ?demo URL parameter handling
   useEffect(() => {
@@ -1471,7 +1508,7 @@ function AppInner() {
             onDeleteIOCPermanently={loggedDeleteIOC}
             onTrashIOC={loggedTrashIOC}
             onUnarchiveIOC={loggedToggleArchiveIOC}
-            onEmptyAllTrash={emptyAllTrash}
+            onEmptyAllTrash={async () => { await emptyAllTrash(); addToast('success', 'Trash emptied'); }}
           />
         ) : activeView === 'dashboard' ? (
           <DashboardView
@@ -2022,6 +2059,13 @@ function AppInner() {
           }
         }}
       />
+      <Suspense fallback={null}>
+        <ServerOnboardingModal
+          open={showServerOnboarding}
+          onClose={handleDismissServerOnboarding}
+          serverName={serverOnboardingName}
+        />
+      </Suspense>
     </ActivityLogContext.Provider>
     <ToastContainer />
 

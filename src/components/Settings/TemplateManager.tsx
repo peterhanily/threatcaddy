@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Trash2, Edit3, Copy, ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 import type { NoteTemplate } from '../../types';
 import { Modal } from '../Common/Modal';
 
@@ -22,6 +23,7 @@ export function TemplateManager({
   onDeleteTemplate,
   onDuplicateBuiltin,
 }: TemplateManagerProps) {
+  const { addToast } = useToast();
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState<NoteTemplate | null>(null);
   const [creating, setCreating] = useState(false);
@@ -59,26 +61,32 @@ export function TemplateManager({
 
   const handleSave = async () => {
     if (!formName.trim() || !formContent.trim()) return;
-    if (editing) {
-      await onUpdateTemplate(editing.id, {
-        name: formName.trim(),
-        content: formContent.trim(),
-        category: formCategory.trim() || 'Custom',
-        icon: formIcon.trim() || undefined,
-        description: formDescription.trim() || undefined,
-      });
-      setEditing(null);
-    } else {
-      await onCreateTemplate({
-        name: formName.trim(),
-        content: formContent.trim(),
-        category: formCategory.trim() || 'Custom',
-        icon: formIcon.trim() || undefined,
-        description: formDescription.trim() || undefined,
-      });
-      setCreating(false);
+    try {
+      if (editing) {
+        await onUpdateTemplate(editing.id, {
+          name: formName.trim(),
+          content: formContent.trim(),
+          category: formCategory.trim() || 'Custom',
+          icon: formIcon.trim() || undefined,
+          description: formDescription.trim() || undefined,
+        });
+        setEditing(null);
+        addToast('success', `Template "${formName.trim()}" updated`);
+      } else {
+        await onCreateTemplate({
+          name: formName.trim(),
+          content: formContent.trim(),
+          category: formCategory.trim() || 'Custom',
+          icon: formIcon.trim() || undefined,
+          description: formDescription.trim() || undefined,
+        });
+        setCreating(false);
+        addToast('success', `Template "${formName.trim()}" created`);
+      }
+      resetForm();
+    } catch {
+      addToast('error', 'Failed to save template');
     }
-    resetForm();
   };
 
   const inputClass = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent';
@@ -122,7 +130,7 @@ export function TemplateManager({
                     <button onClick={() => openEdit(tpl)} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300" title="Edit">
                       <Edit3 size={13} />
                     </button>
-                    <button onClick={() => onDeleteTemplate(tpl.id)} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400" title="Delete">
+                    <button onClick={async () => { await onDeleteTemplate(tpl.id); addToast('success', `Template "${tpl.name}" deleted`); }} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400" title="Delete">
                       <Trash2 size={13} />
                     </button>
                   </div>

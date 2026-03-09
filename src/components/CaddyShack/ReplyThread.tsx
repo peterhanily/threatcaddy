@@ -52,6 +52,7 @@ export function ReplyThread({ postId, currentUserId, onBack, onUserClick }: Repl
   const handleDelete = async (targetId: string) => {
     try {
       await deletePost(targetId);
+      addToast('success', 'Post deleted');
       await loadPost();
     } catch { addToast('error', 'Failed to delete post'); }
   };

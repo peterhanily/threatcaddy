@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Trash2, Edit3, ChevronDown, ChevronRight, BookOpen, X } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 import type { PlaybookTemplate, PlaybookStep, Priority } from '../../types';
 import { Modal } from '../Common/Modal';
 
@@ -21,6 +22,7 @@ export function PlaybookManager({
   onUpdatePlaybook,
   onDeletePlaybook,
 }: PlaybookManagerProps) {
+  const { addToast } = useToast();
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState<PlaybookTemplate | null>(null);
   const [creating, setCreating] = useState(false);
@@ -81,30 +83,36 @@ export function PlaybookManager({
     const steps = formSteps.map((s, i) => ({ ...s, order: i + 1, title: s.title.trim(), content: s.content.trim(), phase: s.phase?.trim() || undefined, tags: s.tags }));
     const defaultTags = formDefaultTags.split(',').map((t) => t.trim()).filter(Boolean);
 
-    if (editing) {
-      await onUpdatePlaybook(editing.id, {
-        name: formName.trim(),
-        description: formDescription.trim() || undefined,
-        icon: formIcon.trim() || undefined,
-        investigationType: formType.trim() || 'custom',
-        defaultClsLevel: formClsLevel.trim() || undefined,
-        defaultTags: defaultTags.length > 0 ? defaultTags : undefined,
-        steps,
-      });
-      setEditing(null);
-    } else {
-      await onCreatePlaybook({
-        name: formName.trim(),
-        description: formDescription.trim() || undefined,
-        icon: formIcon.trim() || undefined,
-        investigationType: formType.trim() || 'custom',
-        defaultClsLevel: formClsLevel.trim() || undefined,
-        defaultTags: defaultTags.length > 0 ? defaultTags : undefined,
-        steps,
-      });
-      setCreating(false);
+    try {
+      if (editing) {
+        await onUpdatePlaybook(editing.id, {
+          name: formName.trim(),
+          description: formDescription.trim() || undefined,
+          icon: formIcon.trim() || undefined,
+          investigationType: formType.trim() || 'custom',
+          defaultClsLevel: formClsLevel.trim() || undefined,
+          defaultTags: defaultTags.length > 0 ? defaultTags : undefined,
+          steps,
+        });
+        setEditing(null);
+        addToast('success', `Playbook "${formName.trim()}" updated`);
+      } else {
+        await onCreatePlaybook({
+          name: formName.trim(),
+          description: formDescription.trim() || undefined,
+          icon: formIcon.trim() || undefined,
+          investigationType: formType.trim() || 'custom',
+          defaultClsLevel: formClsLevel.trim() || undefined,
+          defaultTags: defaultTags.length > 0 ? defaultTags : undefined,
+          steps,
+        });
+        setCreating(false);
+        addToast('success', `Playbook "${formName.trim()}" created`);
+      }
+      resetForm();
+    } catch {
+      addToast('error', 'Failed to save playbook');
     }
-    resetForm();
   };
 
   const inputClass = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent';
@@ -146,7 +154,7 @@ export function PlaybookManager({
                     <button onClick={() => openEdit(pb)} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300" title="Edit">
                       <Edit3 size={13} />
                     </button>
-                    <button onClick={() => onDeletePlaybook(pb.id)} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400" title="Delete">
+                    <button onClick={async () => { await onDeletePlaybook(pb.id); addToast('success', `Playbook "${pb.name}" deleted`); }} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400" title="Delete">
                       <Trash2 size={13} />
                     </button>
                   </div>

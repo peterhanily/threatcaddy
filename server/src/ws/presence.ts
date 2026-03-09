@@ -55,12 +55,13 @@ export function getPresence(folderId: string): Array<{
   displayName: string;
   avatarUrl: string | null;
   view: string;
+  entityId?: string;
 }> {
   const folder = folderPresence.get(folderId);
   if (!folder) return [];
 
   const now = Date.now();
-  const result: Array<{ id: string; displayName: string; avatarUrl: string | null; view: string }> = [];
+  const result: Array<{ id: string; displayName: string; avatarUrl: string | null; view: string; entityId?: string }> = [];
 
   for (const [userId, entry] of folder) {
     if (now - entry.lastSeen > STALE_TIMEOUT) {
@@ -72,6 +73,7 @@ export function getPresence(folderId: string): Array<{
       displayName: entry.displayName,
       avatarUrl: entry.avatarUrl,
       view: entry.view,
+      entityId: entry.entityId,
     });
   }
 

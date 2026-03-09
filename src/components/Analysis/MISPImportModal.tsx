@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Upload } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 import type { StandaloneIOC, Folder, Tag } from '../../types';
 import { parseMISPEvent } from '../../lib/misp-import';
 
@@ -27,6 +28,7 @@ export function MISPImportModal({
   folders,
   defaultFolderId,
 }: MISPImportModalProps) {
+  const { addToast } = useToast();
   const [step, setStep] = useState<'upload' | 'preview' | 'results'>('upload');
   const [folderId, setFolderId] = useState(defaultFolderId || '');
   const [importing, setImporting] = useState(false);
@@ -107,6 +109,13 @@ export function MISPImportModal({
     setResults({ created, skipped, failed });
     setStep('results');
     setImporting(false);
+    if (created > 0) {
+      addToast('success', `Imported ${created} IOC${created !== 1 ? 's' : ''} from MISP event`);
+    } else if (failed > 0) {
+      addToast('error', `MISP import failed for ${failed} IOC${failed !== 1 ? 's' : ''}`);
+    } else {
+      addToast('info', 'No new IOCs imported (all duplicates)');
+    }
   };
 
   const selectCls = 'bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent';

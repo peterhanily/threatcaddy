@@ -166,6 +166,7 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
       setContent('');
       setAttachments([]);
       setMentions([]);
+      addToast('success', parentId ? 'Reply posted' : 'Post created');
       onPostCreated?.();
     } catch (err) {
       console.error('Failed to create post:', err);

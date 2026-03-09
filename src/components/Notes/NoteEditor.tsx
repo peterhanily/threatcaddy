@@ -21,6 +21,8 @@ import { useLogActivity } from '../../hooks/ActivityLogContext';
 import { useAutoIOCExtraction } from '../../hooks/useAutoIOCExtraction';
 import { wordCount, formatFullDate, formatDate, cn, isSafeUrl } from '../../lib/utils';
 import { downloadFile } from '../../lib/export';
+import { InlineConflictBanner } from '../Common/InlineConflictBanner';
+import type { ConflictInfo } from '../Common/InlineConflictBanner';
 
 interface NoteEditorProps {
   note: Note;
@@ -72,7 +74,10 @@ export function NoteEditor({
   const [content, setContent] = useState(note.content);
   const [showColors, setShowColors] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [mergeIndicator, setMergeIndicator] = useState<'merged' | 'conflict' | null>(null);
+  const [mergeIndicator, setMergeIndicator] = useState<'merged' | null>(null);
+  const [inlineConflict, setInlineConflict] = useState<ConflictInfo | null>(null);
+  /** Stashed local content so user can recover it after accepting remote */
+  const stashedLocalRef = useRef<string | null>(null);
   const [showIOCPanel, setShowIOCPanel] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [shareMessage, setShareMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -159,6 +164,8 @@ export function NoteEditor({
       lastSavedTitleRef.current = note.title;
       setTitle(note.title);
       setContent(note.content);
+      setInlineConflict(null);
+      stashedLocalRef.current = null;
       return;
     }
 
@@ -180,11 +187,15 @@ export function NoteEditor({
         // Merge remote changes with local edits
         const result = mergeText(baseContentRef.current, local, note.content);
         if (!result.ok) {
-          // Patch conflict — accept remote to avoid garbage, show indicator
+          // Patch conflict — stash local, accept remote, show inline conflict banner
+          stashedLocalRef.current = local;
           setContent(note.content);
-          setMergeIndicator('conflict');
-          clearTimeout(mergeTimeoutRef.current);
-          mergeTimeoutRef.current = setTimeout(() => setMergeIndicator(null), 3000);
+          setInlineConflict({
+            entityId: note.id,
+            table: 'notes',
+            localContent: local,
+            remoteContent: note.content,
+          });
         } else if (result.merged !== local) {
           // Successful merge — adjust cursor and auto-save
           const textarea = textareaRef.current;
@@ -845,7 +856,6 @@ export function NoteEditor({
             </span>
           )}
           {mergeIndicator === 'merged' && !shareMessage && <span className="text-xs text-blue-400" role="status">Merged</span>}
-          {mergeIndicator === 'conflict' && !shareMessage && <span className="text-xs text-amber-400" role="status">Conflict — accepted remote</span>}
           {saved && !shareMessage && !mergeIndicator && <span className="text-xs text-green-400" role="status">Saved</span>}
           {note.trashed ? (
             <button
@@ -868,6 +878,37 @@ export function NoteEditor({
           )}
         </div>
       </div>
+
+      {/* Inline conflict banner — shown when 3-way merge fails */}
+      {inlineConflict && (
+        <InlineConflictBanner
+          conflict={inlineConflict}
+          onAcceptTheirs={() => {
+            // Already showing remote content — just dismiss
+            setInlineConflict(null);
+            stashedLocalRef.current = null;
+            // Persist by saving
+            save({ content });
+          }}
+          onKeepMine={() => {
+            if (stashedLocalRef.current != null) {
+              setContent(stashedLocalRef.current);
+              save({ content: stashedLocalRef.current });
+            }
+            setInlineConflict(null);
+            stashedLocalRef.current = null;
+          }}
+          onManualMerge={() => {
+            // Insert both versions into the editor with conflict markers
+            if (stashedLocalRef.current != null) {
+              const merged = `<<<<<<< YOUR VERSION\n${stashedLocalRef.current}\n=======\n${content}\n>>>>>>> REMOTE VERSION`;
+              setContent(merged);
+            }
+            setInlineConflict(null);
+            stashedLocalRef.current = null;
+          }}
+        />
+      )}
 
       {/* Title */}
       <div className="px-2 sm:px-4 pt-2 sm:pt-3 shrink-0">
