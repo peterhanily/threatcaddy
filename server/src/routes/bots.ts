@@ -66,7 +66,7 @@ app.patch('/:id', requireRole('admin'), async (c) => {
 
   await auditBotAction(user.id, 'update', bot.name, `Updated bot "${bot.name}"`, c.req.param('id'));
 
-  return c.json({ ok: true });
+  return c.json({ bot });
 });
 
 // ─── Enable/disable a bot ───────────────────────────────────────

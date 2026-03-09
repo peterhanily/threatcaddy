@@ -261,10 +261,10 @@ describe('Bot Implementations', () => {
 
       // Mock listing investigations — return one folder
       selectQueue.push([{ id: 'folder-1', name: 'Test Investigation', deletedAt: null }]);
-      // Mock listing IOCs
-      selectQueue.push([{ id: 'ioc-1' }]);
-      // Mock listing tasks
-      selectQueue.push([{ id: 'task-1' }, { id: 'task-2' }]);
+      // Mock batch-listing IOCs (includes folderId for in-memory grouping)
+      selectQueue.push([{ id: 'ioc-1', folderId: 'folder-1' }]);
+      // Mock batch-listing tasks (includes folderId for in-memory grouping)
+      selectQueue.push([{ id: 'task-1', folderId: 'folder-1' }, { id: 'task-2', folderId: 'folder-1' }]);
 
       await bot.onSchedule(ctx);
 

@@ -118,7 +118,7 @@ export function encryptConfigSecrets(config: Record<string, unknown>): Record<st
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       // Recurse into nested objects
       result[key] = encryptConfigSecrets(value as Record<string, unknown>);
-    } else if (isSecretField(key) && typeof value === 'string' && value && !value.startsWith('enc:')) {
+    } else if (isSecretField(key) && typeof value === 'string' && value && !isEncrypted(value)) {
       // Don't re-encrypt redacted sentinel values — these come from the admin UI
       // when editing a bot without changing the secret fields
       if (value === '***configured***' || value === '***not set***') {
@@ -144,7 +144,7 @@ export function decryptConfigSecrets(config: Record<string, unknown>): Record<st
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       // Recurse into nested objects
       result[key] = decryptConfigSecrets(value as Record<string, unknown>);
-    } else if (typeof value === 'string' && value.startsWith('enc:')) {
+    } else if (typeof value === 'string' && isEncrypted(value)) {
       try {
         result[key] = decryptSecret(value);
       } catch (err) {
@@ -175,6 +175,11 @@ export function redactConfigSecrets(config: Record<string, unknown>): Record<str
     }
   }
   return result;
+}
+
+/** Returns true if value is already encrypted (enc: or enc2: prefix). */
+function isEncrypted(value: string): boolean {
+  return value.startsWith('enc:') || value.startsWith('enc2:');
 }
 
 const SECRET_SUFFIXES = ['secret', 'password', 'token', 'apikey', 'api_key', 'auth_key', 'private_key', 'encryption_key'];

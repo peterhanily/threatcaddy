@@ -16,7 +16,7 @@ import type { BotContext, BotCapability, BotRunLogEntry } from './types.js';
 const BOT_WRITABLE_TABLES = new Set(['notes', 'tasks', 'standaloneIOCs', 'timelineEvents']);
 
 /** Escape LIKE/ILIKE wildcard characters so user input is treated as literals */
-function escapeLikePattern(s: string): string {
+export function escapeLikePattern(s: string): string {
   return s.replace(/[%_\\]/g, '\\$&');
 }
 
@@ -186,6 +186,34 @@ export class BotExecutionContext {
       .limit(limit);
   }
 
+  /**
+   * Batch-fetch IOCs for multiple folder IDs in a single query.
+   * Returns a Map from folderId to the array of IOC rows for that folder.
+   */
+  async listIOCsBatch(folderIds: string[]): Promise<Map<string, Record<string, unknown>[]>> {
+    this.checkAborted();
+    this.requireCapability('read_entities');
+    for (const fid of folderIds) this.requireScope(fid);
+
+    const result = new Map<string, Record<string, unknown>[]>();
+    if (folderIds.length === 0) return result;
+
+    const rows = await db.select().from(schema.standaloneIOCs)
+      .where(and(
+        inArray(schema.standaloneIOCs.folderId, folderIds),
+        eq(schema.standaloneIOCs.trashed, false),
+        isNull(schema.standaloneIOCs.deletedAt),
+      ));
+
+    for (const row of rows) {
+      const fid = (row as Record<string, unknown>).folderId as string;
+      let arr = result.get(fid);
+      if (!arr) { arr = []; result.set(fid, arr); }
+      arr.push(row as Record<string, unknown>);
+    }
+    return result;
+  }
+
   async listTasks(folderId: string, statusFilter?: string, limit = 500): Promise<Record<string, unknown>[]> {
     limit = Math.min(limit, 500);
     this.checkAborted();
@@ -204,6 +232,34 @@ export class BotExecutionContext {
     return db.select().from(schema.tasks)
       .where(and(...conditions))
       .limit(limit);
+  }
+
+  /**
+   * Batch-fetch tasks for multiple folder IDs in a single query.
+   * Returns a Map from folderId to the array of task rows for that folder.
+   */
+  async listTasksBatch(folderIds: string[]): Promise<Map<string, Record<string, unknown>[]>> {
+    this.checkAborted();
+    this.requireCapability('read_entities');
+    for (const fid of folderIds) this.requireScope(fid);
+
+    const result = new Map<string, Record<string, unknown>[]>();
+    if (folderIds.length === 0) return result;
+
+    const rows = await db.select().from(schema.tasks)
+      .where(and(
+        inArray(schema.tasks.folderId, folderIds),
+        eq(schema.tasks.trashed, false),
+        isNull(schema.tasks.deletedAt),
+      ));
+
+    for (const row of rows) {
+      const fid = (row as Record<string, unknown>).folderId as string;
+      let arr = result.get(fid);
+      if (!arr) { arr = []; result.set(fid, arr); }
+      arr.push(row as Record<string, unknown>);
+    }
+    return result;
   }
 
   async listTimelineEvents(folderId: string, limit = 500): Promise<Record<string, unknown>[]> {

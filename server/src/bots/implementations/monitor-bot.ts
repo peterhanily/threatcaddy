@@ -17,28 +17,28 @@ export class MonitorBot extends GenericBot {
       return;
     }
 
+    const folderIds = investigations.map((inv) => inv.id as string);
+
+    // Batch-fetch IOCs and tasks for all investigations in just 2 queries
+    let iocsByFolder = new Map<string, Record<string, unknown>[]>();
+    let tasksByFolder = new Map<string, Record<string, unknown>[]>();
+    try {
+      [iocsByFolder, tasksByFolder] = await Promise.all([
+        execCtx.listIOCsBatch(folderIds),
+        execCtx.listTasksBatch(folderIds),
+      ]);
+    } catch {
+      // Bot may lack scope — fall back to empty maps
+    }
+
     const lines: string[] = [`**Investigation Summary** (${new Date().toISOString()})`, ''];
 
     for (const inv of investigations) {
       const folderId = inv.id as string;
       const folderName = (inv.name as string) || 'Unnamed';
 
-      let iocCount = 0;
-      let taskCount = 0;
-
-      try {
-        const iocs = await execCtx.listIOCs(folderId, undefined, 500);
-        iocCount = iocs.length;
-      } catch {
-        // Bot may lack scope for some folders
-      }
-
-      try {
-        const tasks = await execCtx.listTasks(folderId, undefined, 500);
-        taskCount = tasks.length;
-      } catch {
-        // Bot may lack scope for some folders
-      }
+      const iocCount = (iocsByFolder.get(folderId) ?? []).length;
+      const taskCount = (tasksByFolder.get(folderId) ?? []).length;
 
       lines.push(`- **${folderName}**: ${iocCount} IOC(s), ${taskCount} task(s)`);
     }

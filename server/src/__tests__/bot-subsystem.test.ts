@@ -750,3 +750,163 @@ describe('bot-tools', () => {
     expect(tools.length).toBe(19);
   });
 });
+
+// ──────────────────────────────────────────────────────────────────────────────
+// 6. mergeSentinelSecrets — sentinel replacement logic
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe('mergeSentinelSecrets', () => {
+  let mergeSentinelSecrets: typeof import('../services/bot-service.js').mergeSentinelSecrets;
+
+  beforeEach(async () => {
+    const mod = await import('../services/bot-service.js');
+    mergeSentinelSecrets = mod.mergeSentinelSecrets;
+  });
+
+  it('new values overwrite old values (normal merge)', () => {
+    const newConfig = { apiKey: 'new-key-123', url: 'https://new.example.com' };
+    const existingConfig = { apiKey: 'enc2:old-encrypted', url: 'https://old.example.com' };
+
+    const result = mergeSentinelSecrets(newConfig, existingConfig);
+
+    expect(result.apiKey).toBe('new-key-123');
+    expect(result.url).toBe('https://new.example.com');
+  });
+
+  it('***configured*** sentinel preserves existing encrypted value', () => {
+    const newConfig = { apiKey: '***configured***', name: 'Bot' };
+    const existingConfig = { apiKey: 'enc2:iv:tag:cipher', name: 'Old Bot' };
+
+    const result = mergeSentinelSecrets(newConfig, existingConfig);
+
+    expect(result.apiKey).toBe('enc2:iv:tag:cipher');
+    expect(result.name).toBe('Bot');
+  });
+
+  it('***configured*** sentinel with missing existing key falls back to empty string', () => {
+    const newConfig = { apiKey: '***configured***' };
+    const existingConfig = {};
+
+    const result = mergeSentinelSecrets(newConfig, existingConfig);
+
+    expect(result.apiKey).toBe('');
+  });
+
+  it('***not set*** sentinel clears to empty string', () => {
+    const newConfig = { apiKey: '***not set***', token: '***not set***' };
+    const existingConfig = { apiKey: 'enc2:iv:tag:cipher', token: 'enc2:iv:tag:cipher2' };
+
+    const result = mergeSentinelSecrets(newConfig, existingConfig);
+
+    expect(result.apiKey).toBe('');
+    expect(result.token).toBe('');
+  });
+
+  it('handles nested object by recursing', () => {
+    const newConfig = {
+      slack: {
+        token: '***configured***',
+        channel: '#new-channel',
+        webhook: '***not set***',
+      },
+    };
+    const existingConfig = {
+      slack: {
+        token: 'enc2:slack-token-encrypted',
+        channel: '#old-channel',
+        webhook: 'enc2:old-webhook',
+      },
+    };
+
+    const result = mergeSentinelSecrets(newConfig, existingConfig);
+
+    const nested = result.slack as Record<string, unknown>;
+    expect(nested.token).toBe('enc2:slack-token-encrypted');
+    expect(nested.channel).toBe('#new-channel');
+    expect(nested.webhook).toBe('');
+  });
+
+  it('handles nested object when existing key is not an object', () => {
+    const newConfig = {
+      slack: {
+        token: '***configured***',
+      },
+    };
+    const existingConfig = {
+      slack: 'not-an-object',
+    };
+
+    const result = mergeSentinelSecrets(newConfig, existingConfig);
+
+    const nested = result.slack as Record<string, unknown>;
+    // Since existing is not an object, fallback to empty object; ***configured*** → ''
+    expect(nested.token).toBe('');
+  });
+
+  it('non-secret fields pass through unchanged', () => {
+    const newConfig = {
+      name: 'My Bot',
+      enabled: true,
+      count: 42,
+      tags: ['a', 'b'],
+    };
+    const existingConfig = {};
+
+    const result = mergeSentinelSecrets(newConfig, existingConfig);
+
+    expect(result.name).toBe('My Bot');
+    expect(result.enabled).toBe(true);
+    expect(result.count).toBe(42);
+    expect(result.tags).toEqual(['a', 'b']);
+  });
+
+  it('arrays pass through without recursion', () => {
+    const newConfig = { items: [1, 2, 3] };
+    const existingConfig = { items: [4, 5, 6] };
+
+    const result = mergeSentinelSecrets(newConfig, existingConfig);
+
+    expect(result.items).toEqual([1, 2, 3]);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// 7. escapeLikePattern — LIKE/ILIKE wildcard escaping
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe('escapeLikePattern', () => {
+  let escapeLikePattern: typeof import('../bots/bot-context.js').escapeLikePattern;
+
+  beforeEach(async () => {
+    const mod = await import('../bots/bot-context.js');
+    escapeLikePattern = mod.escapeLikePattern;
+  });
+
+  it('escapes % characters', () => {
+    expect(escapeLikePattern('100%')).toBe('100\\%');
+    expect(escapeLikePattern('%foo%')).toBe('\\%foo\\%');
+  });
+
+  it('escapes _ characters', () => {
+    expect(escapeLikePattern('foo_bar')).toBe('foo\\_bar');
+    expect(escapeLikePattern('__init__')).toBe('\\_\\_init\\_\\_');
+  });
+
+  it('escapes \\ characters', () => {
+    expect(escapeLikePattern('path\\to\\file')).toBe('path\\\\to\\\\file');
+  });
+
+  it('escapes multiple special characters together', () => {
+    expect(escapeLikePattern('50%_off\\deal')).toBe('50\\%\\_off\\\\deal');
+  });
+
+  it('passes normal strings through unchanged', () => {
+    expect(escapeLikePattern('hello world')).toBe('hello world');
+    expect(escapeLikePattern('simple-query')).toBe('simple-query');
+    expect(escapeLikePattern('abc123')).toBe('abc123');
+  });
+
+  it('handles empty string', () => {
+    expect(escapeLikePattern('')).toBe('');
+  });
+});

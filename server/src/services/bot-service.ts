@@ -331,14 +331,17 @@ export async function updateBot(id: string, updates: Record<string, unknown>): P
     updates.config = mergeSentinelSecrets(updates.config as Record<string, unknown>, existingConfig);
   }
 
-  await db.update(schema.botConfigs).set(updates).where(eq(schema.botConfigs.id, id));
-  await botManager.reloadBot(id);
+  // Use returning() to get the full updated row, avoiding a re-SELECT in reloadBot
+  const updatedRows = await db.update(schema.botConfigs).set(updates).where(eq(schema.botConfigs.id, id)).returning();
+  if (updatedRows.length > 0) {
+    await botManager.reloadBot(id, updatedRows[0] as unknown as import('../bots/types.js').BotConfig);
+  }
 
   return { name: rows[0].name };
 }
 
 /** Replace sentinel redacted values with existing encrypted values from DB */
-function mergeSentinelSecrets(newConfig: Record<string, unknown>, existingConfig: Record<string, unknown>): Record<string, unknown> {
+export function mergeSentinelSecrets(newConfig: Record<string, unknown>, existingConfig: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(newConfig)) {
     if (value === '***configured***') {

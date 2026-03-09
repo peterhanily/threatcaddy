@@ -276,7 +276,7 @@ describe('Bot routes — /api/bots', () => {
       mockBotService.updateBot.mockResolvedValue({ id: 'b1', name: 'Updated' });
       const res = await req('PATCH', '/api/bots/b1', { name: 'Updated' });
       expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ ok: true });
+      expect(await res.json()).toEqual({ bot: { id: 'b1', name: 'Updated' } });
     });
 
     it('should 404 when bot not found', async () => {

@@ -217,13 +217,20 @@ export class BotManager {
     this.decryptedConfigs.delete(botId);
   }
 
-  /** Reload a bot (disable then re-enable with updated config) */
-  async reloadBot(botId: string): Promise<void> {
+  /** Reload a bot (disable then re-enable with updated config).
+   *  If a pre-fetched config is provided, skip the DB SELECT. */
+  async reloadBot(botId: string, prefetchedConfig?: BotConfig): Promise<void> {
     await this.unloadBot(botId);
 
-    const rows = await db.select().from(schema.botConfigs).where(eq(schema.botConfigs.id, botId));
-    if (rows.length > 0 && rows[0].enabled) {
-      await this.loadBot(rows[0] as unknown as BotConfig);
+    if (prefetchedConfig) {
+      if (prefetchedConfig.enabled) {
+        await this.loadBot(prefetchedConfig);
+      }
+    } else {
+      const rows = await db.select().from(schema.botConfigs).where(eq(schema.botConfigs.id, botId));
+      if (rows.length > 0 && rows[0].enabled) {
+        await this.loadBot(rows[0] as unknown as BotConfig);
+      }
     }
   }
 
