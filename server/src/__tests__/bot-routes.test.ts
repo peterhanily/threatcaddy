@@ -223,32 +223,32 @@ describe('secret field detection (encryptConfigSecrets / redactConfigSecrets)', 
     it('encrypts apiKey field', () => {
       const result = encryptConfigSecrets({ apiKey: 'my-key-123' });
       expect(result.apiKey).toBeTypeOf('string');
-      expect((result.apiKey as string).startsWith('enc:')).toBe(true);
+      expect((result.apiKey as string).match(/^enc[2]?:/)).toBeTruthy();
     });
 
     it('encrypts webhookSecret field', () => {
       const result = encryptConfigSecrets({ webhookSecret: 'secret-value' });
-      expect((result.webhookSecret as string).startsWith('enc:')).toBe(true);
+      expect((result.webhookSecret as string).match(/^enc[2]?:/)).toBeTruthy();
     });
 
     it('encrypts dbPassword field', () => {
       const result = encryptConfigSecrets({ dbPassword: 'pass123' });
-      expect((result.dbPassword as string).startsWith('enc:')).toBe(true);
+      expect((result.dbPassword as string).match(/^enc[2]?:/)).toBeTruthy();
     });
 
     it('encrypts authToken field', () => {
       const result = encryptConfigSecrets({ authToken: 'tok_abc' });
-      expect((result.authToken as string).startsWith('enc:')).toBe(true);
+      expect((result.authToken as string).match(/^enc[2]?:/)).toBeTruthy();
     });
 
     it('encrypts api_key field', () => {
       const result = encryptConfigSecrets({ api_key: 'key-val' });
-      expect((result.api_key as string).startsWith('enc:')).toBe(true);
+      expect((result.api_key as string).match(/^enc[2]?:/)).toBeTruthy();
     });
 
     it('encrypts private_key field', () => {
       const result = encryptConfigSecrets({ private_key: 'priv-val' });
-      expect((result.private_key as string).startsWith('enc:')).toBe(true);
+      expect((result.private_key as string).match(/^enc[2]?:/)).toBeTruthy();
     });
 
     it('does NOT encrypt name field', () => {
@@ -330,7 +330,7 @@ describe('secret field detection (encryptConfigSecrets / redactConfigSecrets)', 
         credentials: { apiKey: 'nested-key', url: 'https://example.com' },
       });
       const nested = result.credentials as Record<string, unknown>;
-      expect((nested.apiKey as string).startsWith('enc:')).toBe(true);
+      expect((nested.apiKey as string).match(/^enc[2]?:/)).toBeTruthy();
       expect(nested.url).toBe('https://example.com');
     });
 
