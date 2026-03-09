@@ -43,15 +43,19 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
       enableSync();
       syncEngine.setConflictHandler((conflicts) => setSyncConflicts(conflicts));
       syncEngine.setRemoteChangeHandler((_changes, tables) => {
-        if (tables.has('notes')) reloadFns.notes();
-        if (tables.has('tasks')) reloadFns.tasks();
-        if (tables.has('timelineEvents')) reloadFns.timeline();
-        if (tables.has('timelines')) reloadFns.timelines();
-        if (tables.has('whiteboards')) reloadFns.whiteboards();
-        if (tables.has('standaloneIOCs')) reloadFns.standaloneIOCs();
-        if (tables.has('chatThreads')) reloadFns.chats();
-        if (tables.has('folders')) reloadFns.folders();
-        if (tables.has('tags')) reloadFns.tags();
+        // Batch all reloads in a single microtask to coalesce React renders
+        // and reduce the jarring state cascade from sync pull
+        queueMicrotask(() => {
+          if (tables.has('notes')) reloadFns.notes();
+          if (tables.has('tasks')) reloadFns.tasks();
+          if (tables.has('timelineEvents')) reloadFns.timeline();
+          if (tables.has('timelines')) reloadFns.timelines();
+          if (tables.has('whiteboards')) reloadFns.whiteboards();
+          if (tables.has('standaloneIOCs')) reloadFns.standaloneIOCs();
+          if (tables.has('chatThreads')) reloadFns.chats();
+          if (tables.has('folders')) reloadFns.folders();
+          if (tables.has('tags')) reloadFns.tags();
+        });
       });
       syncEngine.start();
 

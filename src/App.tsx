@@ -1986,8 +1986,8 @@ function AppInner() {
             handleOpenInvestigation(folder.id, 'local');
           }
         }}
-        onOpenNameGenerator={() => setShowNameGenerator(true)}
-        onOpenPlaybookPicker={() => setShowPlaybookPicker(true)}
+        onOpenNameGenerator={() => { setShowCreateInvestigationModal(false); setShowNameGenerator(true); }}
+        onOpenPlaybookPicker={() => { setShowCreateInvestigationModal(false); setShowPlaybookPicker(true); }}
       />
       <KeyboardShortcutsPanel
         open={showShortcutsPanel}

@@ -8,19 +8,20 @@ import { purgeOldTrash } from '../lib/trash-purge';
 export function useNotes() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
-  // Cache of full note content keyed by note id
+  // Cache of full note content keyed by note id (used by search when content isn't in state)
   const contentCacheRef = useRef<Map<string, string>>(new Map());
 
   const loadNotes = useCallback(async () => {
     const allNotes = await db.notes.toArray();
     const remaining = await purgeOldTrash(allNotes, db.notes);
-    // Cache all content, then strip from in-memory list to save memory
     const cache = contentCacheRef.current;
-    cache.clear();
     for (const note of remaining) {
       cache.set(note.id, note.content);
-      // Replace content with empty string for initial list (metadata only)
-      note.content = '';
+    }
+    // Clean up cache entries for deleted/purged notes
+    const activeIds = new Set(remaining.map(n => n.id));
+    for (const id of cache.keys()) {
+      if (!activeIds.has(id)) cache.delete(id);
     }
     setNotes(remaining);
     setLoading(false);
@@ -30,23 +31,6 @@ export function useNotes() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadNotes();
   }, [loadNotes]);
-
-  /**
-   * Load a single note's content from IndexedDB on demand.
-   * Returns the content string and updates the in-memory cache + notes state.
-   */
-  const loadNoteContent = useCallback(async (id: string): Promise<string> => {
-    // Return from cache if already loaded
-    const cached = contentCacheRef.current.get(id);
-    if (cached !== undefined && cached !== '') return cached;
-
-    const note = await db.notes.get(id);
-    if (!note) return '';
-    contentCacheRef.current.set(id, note.content);
-    // Update the in-memory note with full content
-    setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, content: note.content } : n)));
-    return note.content;
-  }, []);
 
   const createNote = useCallback(async (partial?: Partial<Note>): Promise<Note> => {
     const note: Note = {
@@ -261,7 +245,6 @@ export function useNotes() {
     toggleArchive,
     getFilteredNotes,
     emptyTrash,
-    loadNoteContent,
     reload: loadNotes,
   };
 }

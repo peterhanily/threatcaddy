@@ -15,7 +15,7 @@ async function ensureDB() {
 export function useChats() {
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [loading, setLoading] = useState(true);
-  // Cache of thread messages keyed by thread id
+  // Cache of thread messages keyed by thread id (used for search)
   const messagesCacheRef = useRef<Map<string, ChatMessage[]>>(new Map());
 
   const loadThreads = useCallback(async () => {
@@ -23,14 +23,14 @@ export function useChats() {
       await ensureDB();
       const all = await db.chatThreads.toArray();
       const remaining = await purgeOldTrash(all, db.chatThreads);
-      // Cache messages and strip from in-memory list to save memory
       const cache = messagesCacheRef.current;
-      cache.clear();
       for (const thread of remaining) {
         cache.set(thread.id, thread.messages);
-        // Store metadata only — keep messageCount for display
-        (thread as ChatThread & { messageCount?: number }).messageCount = thread.messages.length;
-        thread.messages = [];
+      }
+      // Clean up stale cache entries
+      const activeIds = new Set(remaining.map(t => t.id));
+      for (const id of cache.keys()) {
+        if (!activeIds.has(id)) cache.delete(id);
       }
       setThreads(remaining.sort((a, b) => b.updatedAt - a.updatedAt));
     } catch (err) {
@@ -43,27 +43,6 @@ export function useChats() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadThreads();
   }, [loadThreads]);
-
-  /**
-   * Load a thread's messages from IndexedDB on demand.
-   * Returns the messages array and updates in-memory state.
-   */
-  const loadThreadMessages = useCallback(async (id: string): Promise<ChatMessage[]> => {
-    // Return from cache if already loaded and non-empty
-    const cached = messagesCacheRef.current.get(id);
-    if (cached && cached.length > 0) {
-      // Ensure in-memory state also has them
-      setThreads((prev) => prev.map((t) => (t.id === id && t.messages.length === 0 ? { ...t, messages: cached } : t)));
-      return cached;
-    }
-
-    await ensureDB();
-    const thread = await db.chatThreads.get(id);
-    if (!thread) return [];
-    messagesCacheRef.current.set(id, thread.messages);
-    setThreads((prev) => prev.map((t) => (t.id === id ? { ...t, messages: thread.messages } : t)));
-    return thread.messages;
-  }, []);
 
   const createThread = useCallback(async (partial?: Partial<ChatThread>): Promise<ChatThread> => {
     await ensureDB();
@@ -194,7 +173,6 @@ export function useChats() {
     emptyTrashThreads,
     getFilteredThreads,
     threadCounts,
-    loadThreadMessages,
     reload: loadThreads,
   };
 }
