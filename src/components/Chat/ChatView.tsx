@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft } from 'lucide-react';
 import type { ChatThread, ChatMessage, LLMProvider, Settings, Folder, ToolUseBlock } from '../../types';
 import { ClsSelect } from '../Common/ClsSelect';
+import { ClsBadge } from '../Common/ClsBadge';
 import { ChatMessageBubble } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { useLLM } from '../../hooks/useLLM';
@@ -408,7 +409,10 @@ export function ChatView({
                 <MessageSquare size={14} className="shrink-0 text-text-muted" />
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-medium truncate">{thread.title}</div>
-                  <div className="text-[10px] text-text-muted font-mono">{formatDate(thread.updatedAt)}</div>
+                  <div className="flex items-center gap-1.5 text-[10px] text-text-muted font-mono">
+                    <span>{formatDate(thread.updatedAt)}</span>
+                    {thread.clsLevel && <ClsBadge level={thread.clsLevel} />}
+                  </div>
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); onTrashThread(thread.id); }}

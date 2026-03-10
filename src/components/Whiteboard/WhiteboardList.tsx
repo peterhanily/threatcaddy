@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { PenTool, Plus, Pencil, Trash2, Archive, RotateCcw } from 'lucide-react';
 import type { Whiteboard, Folder } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
+import { ClsBadge } from '../Common/ClsBadge';
 import { formatDate, cn } from '../../lib/utils';
 
 interface WhiteboardListProps {
@@ -162,6 +163,7 @@ export function WhiteboardList({ whiteboards, folders, onSelect, onCreate, onDel
                   {getFolderName(wb.folderId) && (
                     <span className="px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">{getFolderName(wb.folderId)}</span>
                   )}
+                  {wb.clsLevel && <ClsBadge level={wb.clsLevel} />}
                 </div>
                 {wb.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
