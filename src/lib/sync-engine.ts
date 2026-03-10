@@ -29,6 +29,8 @@ export class SyncEngine {
   private wsClient: WSClient | null = null;
   private onConflict: ((conflicts: SyncResult[]) => void) | null = null;
   private onRemoteChange: ((changes: Record<string, unknown>[], tables: Set<string>) => void) | null = null;
+  private onReady: (() => void) | null = null;
+  private readyFired = false;
 
   setConflictHandler(handler: (conflicts: SyncResult[]) => void) {
     this.onConflict = handler;
@@ -42,14 +44,25 @@ export class SyncEngine {
     this.wsClient = ws;
   }
 
+  /** Called once after the first full sync cycle (initial push + pull) completes. */
+  setReadyHandler(handler: () => void) {
+    this.onReady = handler;
+  }
+
   start() {
     if (this.running) return;
     this.running = true;
+    this.readyFired = false;
     // Initial sync — push existing local data if this is the first sync
     this.initialSync().then(() => {
-      this.sync();
+      return this.sync();
     }).catch(() => {
-      this.sync();
+      return this.sync();
+    }).finally(() => {
+      if (!this.readyFired) {
+        this.readyFired = true;
+        this.onReady?.();
+      }
     });
     // Periodic full sync as safety net
     this.intervalId = setInterval(() => this.sync(), SYNC_INTERVAL);

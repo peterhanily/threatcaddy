@@ -44,6 +44,21 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
       configureServerApi(auth.serverUrl, auth.getAccessToken, auth.invalidateAccessToken);
       enableSync();
       syncEngine.setConflictHandler((conflicts) => setSyncConflicts(conflicts));
+      syncEngine.setReadyHandler(() => {
+        // First sync cycle done — reload everything so the UI reflects server state
+        queueMicrotask(() => {
+          reloadFns.folders();
+          reloadFns.notes();
+          reloadFns.tasks();
+          reloadFns.timeline();
+          reloadFns.timelines();
+          reloadFns.whiteboards();
+          reloadFns.standaloneIOCs();
+          reloadFns.chats();
+          reloadFns.tags();
+          reloadFns.onSyncPullComplete?.();
+        });
+      });
       syncEngine.setRemoteChangeHandler((_changes, tables) => {
         // Batch all reloads in a single microtask to coalesce React renders
         // and reduce the jarring state cascade from sync pull
