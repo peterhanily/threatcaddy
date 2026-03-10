@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { MessageCircle, Smile, Pin, Trash2, Edit3, MoreHorizontal } from 'lucide-react';
 import type { Post } from '../../types';
 import { MediaGrid } from './MediaGrid';
+import { ClsBadge } from '../Common/ClsBadge';
 
 const QUICK_EMOJIS = ['👍', '❤️', '🔥', '👀', '🎯', '✅'];
 
@@ -90,6 +91,7 @@ export function PostCard({
             </button>
             <span className="text-[var(--text-tertiary)] text-xs shrink-0">·</span>
             <span className="text-xs text-[var(--text-tertiary)] shrink-0">{timeAgo}</span>
+            {post.clsLevel && <ClsBadge level={post.clsLevel} />}
             {post.pinned && (
               <Pin size={12} className="text-yellow-500 shrink-0" />
             )}

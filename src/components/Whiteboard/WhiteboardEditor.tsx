@@ -7,9 +7,10 @@ if (typeof window !== 'undefined') {
   (window as unknown as Record<string, unknown>).EXCALIDRAW_ASSET_PATH = '/';
 }
 import { ArrowLeft, Briefcase, Trash2, Image } from 'lucide-react';
-import type { Whiteboard, Tag, Folder } from '../../types';
+import type { Whiteboard, Tag, Folder, Settings } from '../../types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { TagInput } from '../Common/TagInput';
+import { ClsSelect } from '../Common/ClsSelect';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { cn } from '../../lib/utils';
 
@@ -21,6 +22,7 @@ interface WhiteboardEditorProps {
   onCreateTag: (name: string) => Promise<Tag>;
   onBack: () => void;
   onDelete?: (id: string) => void;
+  settings?: Settings;
 }
 
 function pickAppState(appState: Record<string, unknown>): Record<string, unknown> {
@@ -28,7 +30,7 @@ function pickAppState(appState: Record<string, unknown>): Record<string, unknown
   return { zoom, scrollX, scrollY, theme };
 }
 
-export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdate, onCreateTag, onBack, onDelete }: WhiteboardEditorProps) {
+export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdate, onCreateTag, onBack, onDelete, settings }: WhiteboardEditorProps) {
   const [name, setName] = useState(whiteboard.name);
   const [saved, setSaved] = useState(false);
   const [showFolderSelect, setShowFolderSelect] = useState(false);
@@ -173,6 +175,11 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
             </div>
           )}
         </div>
+        <ClsSelect
+          value={whiteboard.clsLevel}
+          onChange={(clsLevel) => { onUpdate(whiteboard.id, { clsLevel }); flashSaved(); }}
+          clsLevels={settings?.tiClsLevels}
+        />
         <button
           onClick={handleExportPNG}
           className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"

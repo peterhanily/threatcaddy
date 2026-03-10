@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect } from 'react';
-import type { Whiteboard, Folder, Tag } from '../../types';
+import type { Whiteboard, Folder, Tag, Settings } from '../../types';
 import { WhiteboardList } from './WhiteboardList';
 import { Loader2 } from 'lucide-react';
 
@@ -18,6 +18,7 @@ interface WhiteboardViewProps {
   onCreateTag: (name: string) => Promise<Tag>;
   selectedWhiteboardId?: string | null;
   onWhiteboardSelect?: (id: string | null) => void;
+  settings?: Settings;
 }
 
 export function WhiteboardView({
@@ -33,6 +34,7 @@ export function WhiteboardView({
   onCreateTag,
   selectedWhiteboardId = null,
   onWhiteboardSelect,
+  settings,
 }: WhiteboardViewProps) {
   const selectedWhiteboard = selectedWhiteboardId ? whiteboards.find((w) => w.id === selectedWhiteboardId) : null;
 
@@ -72,6 +74,7 @@ export function WhiteboardView({
             onCreateTag={onCreateTag}
             onBack={() => onWhiteboardSelect?.(null)}
             onDelete={handleDelete}
+            settings={settings}
           />
         </Suspense>
       </div>

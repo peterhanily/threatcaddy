@@ -3,7 +3,8 @@ import { Send, Paperclip, AtSign, X, FileText, Film, Music } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { createPost, uploadFile, searchUsers } from '../../lib/server-api';
-import type { TeamUser, PostAttachment } from '../../types';
+import type { TeamUser, PostAttachment, Settings } from '../../types';
+import { ClsSelect } from '../Common/ClsSelect';
 import { SLASH_COMMANDS, getCaretCoordinates } from '../Notes/slashCommands';
 import type { SlashCommand } from '../Notes/slashCommands';
 import { SlashCommandMenu } from '../Notes/SlashCommandMenu';
@@ -24,14 +25,16 @@ interface PostComposerProps {
   placeholder?: string;
   initialContent?: string;
   onPostCreated?: () => void;
+  settings?: Settings;
 }
 
-export function PostComposer({ folderId, parentId, replyToId, placeholder, initialContent, onPostCreated }: PostComposerProps) {
+export function PostComposer({ folderId, parentId, replyToId, placeholder, initialContent, onPostCreated, settings }: PostComposerProps) {
   const { user, serverUrl } = useAuth();
   const { addToast } = useToast();
   const [content, setContent] = useState(initialContent || '');
   const [attachments, setAttachments] = useState<PostAttachment[]>([]);
   const [mentions, setMentions] = useState<string[]>([]);
+  const [clsLevel, setClsLevel] = useState<string | undefined>(undefined);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionSearch, setMentionSearch] = useState('');
   const [mentionResults, setMentionResults] = useState<TeamUser[]>([]);
@@ -162,10 +165,12 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
         folderId: folderId || null,
         parentId: parentId || null,
         replyToId: replyToId || null,
+        clsLevel: clsLevel || null,
       });
       setContent('');
       setAttachments([]);
       setMentions([]);
+      setClsLevel(undefined);
       addToast('success', parentId ? 'Reply posted' : 'Post created');
       onPostCreated?.();
     } catch (err) {
@@ -335,6 +340,11 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
         >
           <AtSign size={18} />
         </button>
+        <ClsSelect
+          value={clsLevel}
+          onChange={setClsLevel}
+          clsLevels={settings?.tiClsLevels}
+        />
         <div className="flex-1" />
         <span className="text-[11px] text-[var(--text-tertiary)] mr-2 select-none">
           Type <kbd className="px-1 py-0.5 rounded bg-[var(--bg-tertiary)] text-[10px] font-mono">/</kbd> for commands

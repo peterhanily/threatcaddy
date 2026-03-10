@@ -499,6 +499,7 @@ export interface Whiteboard {
   folderId?: string;
   tags: string[];
   order: number;
+  clsLevel?: string;
   trashed: boolean;
   trashedAt?: number;
   archived: boolean;
@@ -588,6 +589,7 @@ export interface ChatThread {
   provider: LLMProvider;
   folderId?: string;
   tags: string[];
+  clsLevel?: string;
   trashed: boolean;
   trashedAt?: number;
   archived: boolean;
@@ -799,6 +801,7 @@ export interface Post {
   replyToId?: string | null;
   replyToAuthorName?: string;
   mentions: string[];
+  clsLevel?: string | null;
   pinned: boolean;
   deleted: boolean;
   createdAt: string;

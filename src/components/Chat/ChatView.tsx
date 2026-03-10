@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft } from 'lucide-react';
 import type { ChatThread, ChatMessage, LLMProvider, Settings, Folder, ToolUseBlock } from '../../types';
+import { ClsSelect } from '../Common/ClsSelect';
 import { ChatMessageBubble } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { useLLM } from '../../hooks/useLLM';
@@ -475,6 +476,11 @@ export function ChatView({
                 </button>
               )}
               <div className="flex items-center gap-1 ml-auto shrink-0">
+                <ClsSelect
+                  value={activeThread.clsLevel}
+                  onChange={(clsLevel) => onUpdateThread(activeThread.id, { clsLevel })}
+                  clsLevels={settings?.tiClsLevels}
+                />
                 {activeThread.messages.length > 0 && (
                   <button
                     onClick={handleExportAsNote}

@@ -110,7 +110,7 @@ app.get('/', async (c) => {
 app.post('/posts', async (c) => {
   const user = c.get('user');
   const body = await c.req.json();
-  const { content, attachments = [], mentions = [], folderId = null, parentId = null, replyToId = null } = body;
+  const { content, attachments = [], mentions = [], folderId = null, parentId = null, replyToId = null, clsLevel = null } = body;
 
   // Input validation
   if (typeof content !== 'string' || !content.trim()) {
@@ -212,6 +212,7 @@ app.post('/posts', async (c) => {
     parentId: rootParentId,
     replyToId: directReplyToId,
     mentions,
+    clsLevel: typeof clsLevel === 'string' && clsLevel.length > 0 && clsLevel.length <= 50 ? clsLevel : null,
     pinned: false,
     deleted: false,
     createdAt: now,

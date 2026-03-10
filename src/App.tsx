@@ -1619,6 +1619,7 @@ function AppInner() {
             onCreateTag={loggedCreateTag}
             selectedWhiteboardId={selectedWhiteboardId ?? null}
             onWhiteboardSelect={(id) => setSelectedWhiteboardId(id ?? undefined)}
+            settings={settings}
           />
         ) : activeView === 'chat' ? (
           <ChatView
@@ -1675,6 +1676,7 @@ function AppInner() {
           <CaddyShackView
             folderId={selectedFolderId}
             folderName={selectedFolder?.name}
+            settings={settings}
           />
         ) : activeView === 'tasks' ? (
           <TaskListView

@@ -4,16 +4,17 @@ import { useToast } from '../../contexts/ToastContext';
 import { fetchPost, addReaction, removeReaction, deletePost, editPost } from '../../lib/server-api';
 import { PostCard } from './PostCard';
 import { PostComposer } from './PostComposer';
-import type { Post } from '../../types';
+import type { Post, Settings } from '../../types';
 
 interface ReplyThreadProps {
   postId: string;
   currentUserId?: string;
   onBack: () => void;
   onUserClick?: (userId: string) => void;
+  settings?: Settings;
 }
 
-export function ReplyThread({ postId, currentUserId, onBack, onUserClick }: ReplyThreadProps) {
+export function ReplyThread({ postId, currentUserId, onBack, onUserClick, settings }: ReplyThreadProps) {
   const { addToast } = useToast();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
@@ -134,6 +135,7 @@ export function ReplyThread({ postId, currentUserId, onBack, onUserClick }: Repl
         placeholder={composerPlaceholder}
         initialContent={composerInitialContent}
         onPostCreated={() => { setReplyTo(null); loadPost(); }}
+        settings={settings}
       />
 
       {/* Replies — flat list */}

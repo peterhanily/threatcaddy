@@ -5,7 +5,7 @@ import { NOTE_COLORS } from '../../types';
 import { nanoid } from 'nanoid';
 import { extractIOCs, mergeIOCAnalysis } from '../../lib/ioc-extractor';
 import { mergeText, adjustCursor } from '../../lib/text-merge';
-import { getEffectiveClsLevels } from '../../lib/classification';
+import { ClsSelect } from '../Common/ClsSelect';
 import { MarkdownPreview } from './MarkdownPreview';
 import { TagInput } from '../Common/TagInput';
 import { IOCPanel } from '../Analysis/IOCPanel';
@@ -718,6 +718,12 @@ export function NoteEditor({
           </select>
         </div>
 
+        <ClsSelect
+          value={note.clsLevel}
+          onChange={(clsLevel) => onUpdate(note.id, { clsLevel })}
+          clsLevels={externalSettings?.tiClsLevels}
+        />
+
         <EntityLinker
           currentEntityId={note.id}
           linkedNoteIds={note.linkedNoteIds || []}
@@ -1140,17 +1146,6 @@ export function NoteEditor({
             onChange={(tags) => onUpdate(note.id, { tags })}
             onCreateTag={onCreateTag}
           />
-          <select
-            value={note.clsLevel || ''}
-            onChange={(e) => onUpdate(note.id, { clsLevel: e.target.value || undefined })}
-            className="bg-transparent text-xs text-gray-300 border border-gray-700 rounded px-1.5 py-0.5 focus:outline-none focus:border-accent cursor-pointer"
-            aria-label="Classification level"
-          >
-            <option value="">No classification</option>
-            {getEffectiveClsLevels(externalSettings?.tiClsLevels).map((v) => (
-              <option key={v} value={v}>{v}</option>
-            ))}
-          </select>
         </div>
         {isSafeUrl(note.sourceUrl) && (
           <a href={note.sourceUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-accent hover:text-accent-hover">

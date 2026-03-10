@@ -199,6 +199,7 @@ export async function createPost(data: {
   folderId?: string | null;
   parentId?: string | null;
   replyToId?: string | null;
+  clsLevel?: string | null;
 }) {
   const resp = await apiFetch('/api/caddyshack/posts', {
     method: 'POST',

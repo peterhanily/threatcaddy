@@ -16,9 +16,10 @@ type FeedTab = 'all' | 'posts' | 'activity';
 interface CaddyShackViewProps {
   folderId?: string;
   folderName?: string;
+  settings?: import('../../types').Settings;
 }
 
-export function CaddyShackView({ folderId, folderName }: CaddyShackViewProps) {
+export function CaddyShackView({ folderId, folderName, settings }: CaddyShackViewProps) {
   const { user, connected } = useAuth();
   const { addToast } = useToast();
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('caddyshack-onboarded'));
@@ -236,6 +237,7 @@ export function CaddyShackView({ folderId, folderName }: CaddyShackViewProps) {
         currentUserId={user?.id}
         onBack={() => setSelectedPostId(null)}
         onUserClick={setProfileUserId}
+        settings={settings}
       />
     );
   }
@@ -303,6 +305,7 @@ export function CaddyShackView({ folderId, folderName }: CaddyShackViewProps) {
         <PostComposer
           folderId={feedScope === 'investigation' ? folderId : null}
           onPostCreated={handleRefresh}
+          settings={settings}
         />
       )}
 
