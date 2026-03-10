@@ -243,6 +243,7 @@ export interface Settings {
   };
   dashboardKPIs?: string[];
   iocTableColumns?: string[];
+  noteListCollapsed?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {

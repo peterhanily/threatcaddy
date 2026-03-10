@@ -307,7 +307,7 @@ function AppInner() {
   const [shareLinkPayload, setShareLinkPayload] = useState<SharePayload | null>(null);
   const [selectedIOCTypes, setSelectedIOCTypes] = useState<IOCType[]>([]);
   const [noteListWidth, setNoteListWidth] = useState(288); // md:w-72 = 288px
-  const [noteListCollapsed, setNoteListCollapsed] = useState(false);
+  const [noteListCollapsed, setNoteListCollapsed] = useState(settings.noteListCollapsed ?? false);
   const [noteListDragging, setNoteListDragging] = useState(false);
   const notesContainerRef = useRef<HTMLDivElement>(null);
   const [selectedTimelineId, setSelectedTimelineId] = useState<string | undefined>(savedNavState?.selectedTimelineId);
@@ -930,8 +930,11 @@ function AppInner() {
   }, []);
 
   const toggleNoteListCollapse = useCallback(() => {
-    setNoteListCollapsed(prev => !prev);
-  }, []);
+    setNoteListCollapsed(prev => {
+      updateSettings({ noteListCollapsed: !prev });
+      return !prev;
+    });
+  }, [updateSettings]);
 
   const handleShareInvestigationLink = useCallback((folderId: string) => {
     const folder = folders.find((f) => f.id === folderId);

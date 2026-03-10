@@ -71,36 +71,70 @@ export class SyncEngine {
   /**
    * On first connection, push all local folders and their content to the server.
    * This ensures locally-created data that predates the server connection gets synced.
+   *
+   * Batched approach: reads each table once (not per-folder), filters in memory,
+   * and sends a single syncPush call to minimise DB queries and network round-trips.
    */
   private async initialSync() {
     const meta = await dynamicDb.table('_syncMeta').get(META_KEY_LAST_SYNC);
     if (meta?.value) return; // Not first sync — skip
 
+    const FOLDER_SCOPED_TABLES = ['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'chatThreads'];
+    const GLOBAL_TABLES = ['tags', 'timelines'];
+
     try {
-      const allFolders = await dynamicDb.table('folders').toArray();
+      // Single query to get all syncable folder IDs
+      const allFolders: Record<string, unknown>[] = await dynamicDb.table('folders').toArray();
       const syncableFolders = allFolders.filter(
-        (folder: Record<string, unknown>) => !folder.trashed && !folder.localOnly
+        (folder) => !folder.trashed && !folder.localOnly
       );
-      // Process folders in parallel with concurrency limit of 3
-      const CONCURRENCY = 3;
-      for (let i = 0; i < syncableFolders.length; i += CONCURRENCY) {
-        const chunk = syncableFolders.slice(i, i + CONCURRENCY);
-        await Promise.all(chunk.map((folder: Record<string, unknown>) => this.syncFolder(folder.id as string)));
+      const syncableFolderIds = new Set(syncableFolders.map((f) => f.id as string));
+
+      if (syncableFolderIds.size === 0 && GLOBAL_TABLES.length === 0) return;
+
+      const changes: SyncChange[] = [];
+
+      // Add folder records themselves
+      for (const folder of syncableFolders) {
+        changes.push({ table: 'folders', op: 'put', entityId: folder.id as string, data: folder });
       }
 
-      // Also push global tables (tags, timelines)
-      for (const tableName of ['tags', 'timelines']) {
+      // Read each scoped table once, filter by folder ID in memory
+      const scopedReads = FOLDER_SCOPED_TABLES.map(async (tableName) => {
         try {
-          const rows = await dynamicDb.table(tableName).toArray();
-          if (rows.length === 0) continue;
-          const changes: SyncChange[] = rows.map((row: Record<string, unknown>) => ({
-            table: tableName,
-            op: 'put' as const,
-            entityId: row.id as string,
-            data: row,
+          const rows: Record<string, unknown>[] = await dynamicDb.table(tableName).toArray();
+          const tableChanges: SyncChange[] = [];
+          for (const row of rows) {
+            if (row.trashed) continue;
+            if (row.folderId && !syncableFolderIds.has(row.folderId as string)) continue;
+            tableChanges.push({ table: tableName, op: 'put', entityId: row.id as string, data: row });
+          }
+          return tableChanges;
+        } catch { return []; }
+      });
+
+      // Read global tables in parallel with scoped tables
+      const globalReads = GLOBAL_TABLES.map(async (tableName) => {
+        try {
+          const rows: Record<string, unknown>[] = await dynamicDb.table(tableName).toArray();
+          return rows.map((row): SyncChange => ({
+            table: tableName, op: 'put', entityId: row.id as string, data: row,
           }));
-          await syncPush(changes);
-        } catch { /* table may not exist */ }
+        } catch { return []; }
+      });
+
+      const allResults = await Promise.all([...scopedReads, ...globalReads]);
+      for (const batch of allResults) {
+        changes.push(...batch);
+      }
+
+      if (changes.length === 0) return;
+
+      // Single network call for all data
+      const { results } = await syncPush(changes);
+      const conflicts = results.filter((r) => r.status === 'conflict');
+      if (conflicts.length > 0 && this.onConflict) {
+        this.onConflict(conflicts);
       }
     } catch (err) {
       console.warn('SyncEngine: initial sync failed', err);
