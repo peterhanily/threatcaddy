@@ -131,7 +131,7 @@ docker compose up -d   # Starts Hono server + PostgreSQL
 - **Guided tour** — Interactive onboarding walkthrough
 - **Browser navigation** — Back/forward with persistent state across refresh
 - **Standalone HTML** — Single-file offline version
-- **Browser extension** — Chrome and Firefox extension to clip web content into ThreatCaddy
+- **Browser extension** — [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) + Firefox extension to clip web content into ThreatCaddy
 - **Keyboard shortcuts** — `Ctrl+N` (new note), `Ctrl+K` (search), `Ctrl+S` (backup), `Ctrl+E` (toggle preview), and more
 
 ---
@@ -185,7 +185,7 @@ pnpm build:single     # Standalone HTML -> dist-single/index.html
 
 ## Browser Extension
 
-See [extension/README.md](extension/README.md) for build and install instructions.
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) or see [extension/README.md](extension/README.md) for Firefox and manual install instructions.
 
 ## Deploy
 

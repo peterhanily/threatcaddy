@@ -224,14 +224,14 @@ export function Header({
             )}
             <a
               data-tour="extension"
-              href="https://github.com/peterhanily/threatcaddy/tree/main/extension#readme"
+              href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors no-underline"
               onClick={() => setHelpMenuOpen(false)}
             >
               <Chrome size={14} />
-              Extension
+              Chrome Extension
             </a>
             <a
               href="https://threatcaddy.com/privacy.html"

@@ -620,7 +620,7 @@ export function ChatView({
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[var(--text-primary)]">2. Install the browser extension</p>
-                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">CaddyAI requires the ThreatCaddy <a href="https://github.com/peterhanily/threatcaddy/tree/main/extension" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">browser extension</a> to proxy API requests.</p>
+                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">CaddyAI requires the ThreatCaddy <a href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">browser extension</a> to proxy API requests.</p>
                 </div>
               </div>
               <div className="flex gap-3">

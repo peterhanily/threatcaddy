@@ -517,13 +517,13 @@ export function Sidebar({
           <span>Download Standalone</span>
         </a>
         <a
-          href="https://github.com/peterhanily/threatcaddy/tree/main/extension#readme"
+          href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
         >
           <Chrome size={16} />
-          <span>Extension</span>
+          <span>Chrome Extension</span>
         </a>
         <a
           href="https://threatcaddy.com/privacy.html"

@@ -4,12 +4,19 @@ Clip text, images, and selections from any web page directly into ThreatCaddy. W
 
 ## Install — Chrome
 
+**[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh)**
+
+<details>
+<summary>Manual install (developer mode)</summary>
+
 1. **[Download threatcaddy-chrome.zip](./threatcaddy-chrome.zip)**
 2. Unzip the file
 3. Open `chrome://extensions` in Chrome
 4. Enable **Developer mode** (toggle in top-right)
 5. Click **Load unpacked**
 6. Select the unzipped folder
+
+</details>
 
 ## Install — Firefox
 

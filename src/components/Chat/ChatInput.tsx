@@ -178,7 +178,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
           <div className="text-xs space-y-1">
             <p className="font-medium">Browser extension required</p>
             <p className="text-amber-400/80">The ThreatCaddy browser extension is required for CaddyAI to make API calls. Install it from the{' '}
-              <a href="https://github.com/peterhanily/threatcaddy/tree/main/extension#readme" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">Chrome Web Store or Firefox Add-ons</a>.
+              <a href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">Chrome Web Store</a>.
             </p>
             {onOpenSettings && (
               <button onClick={onOpenSettings} className="text-accent hover:text-accent-hover underline">
