@@ -48,9 +48,8 @@ export async function initAdminSecret(): Promise<void> {
       await writeFile(secretFilePath, secret, { mode: 0o600 });
       logger.info(`Generated new admin bootstrap secret — written to ${secretFilePath} (read and delete it)`);
     } catch {
-      // Fall back to logger if file write fails (e.g. read-only FS)
-      logger.warn('Generated new admin bootstrap secret — could not write to file, check structured logs');
-      logger.info('Admin bootstrap secret value', { adminSecret: secret, _onetime: true });
+      // Fall back to stderr if file write fails (e.g. read-only FS) — never log the secret to structured logs
+      logger.warn('Generated new admin bootstrap secret — could not write to file. Set ADMIN_SECRET env var or mount a writable volume at FILE_STORAGE_PATH');
     }
   } else {
     logger.info('Another instance set the admin bootstrap secret first, using that');

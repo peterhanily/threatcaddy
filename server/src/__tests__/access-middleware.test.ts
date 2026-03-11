@@ -147,7 +147,7 @@ describe('requireInvestigationAccess() middleware', () => {
     expect(body.ok).toBe(true);
   });
 
-  it('skips check when no folderId is provided', async () => {
+  it('returns 400 when no folderId is provided', async () => {
     const app = new Hono<{ Variables: { user: AuthUser } }>();
     app.use('*', async (c, next) => {
       c.set('user', {
@@ -164,6 +164,8 @@ describe('requireInvestigationAccess() middleware', () => {
     });
 
     const res = await app.request('/test');
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('Missing folderId');
   });
 });

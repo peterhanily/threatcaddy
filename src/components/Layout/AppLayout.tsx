@@ -15,6 +15,12 @@ interface AppLayoutProps {
 export function AppLayout({ header, sidebar, children, bgImageEnabled, bgImageOpacity, bgImagePosX, bgImagePosY, theme }: AppLayoutProps) {
   return (
     <div className="h-screen flex flex-col overflow-hidden relative">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-accent focus:text-white focus:rounded-lg focus:text-sm focus:font-medium"
+      >
+        Skip to main content
+      </a>
       <BgImageLayer
         enabled={bgImageEnabled ?? false}
         opacity={bgImageOpacity ?? 85}
@@ -27,7 +33,7 @@ export function AppLayout({ header, sidebar, children, bgImageEnabled, bgImageOp
         <div className="hidden md:block shrink-0">
           {sidebar}
         </div>
-        <main className="flex flex-1 overflow-hidden">
+        <main id="main-content" className="flex flex-1 overflow-hidden">
           {children}
         </main>
       </div>

@@ -6,7 +6,7 @@ import { db } from '../db/index.js';
 import { backups } from '../db/schema.js';
 import type { AuthUser } from '../types.js';
 import { mkdir, writeFile, readFile, unlink } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { logger } from '../lib/logger.js';
 
 const STORAGE_PATH = process.env.FILE_STORAGE_PATH || '/data/files';
@@ -147,6 +147,13 @@ app.get('/:id', async (c) => {
   const backup = result[0];
   const filePath = join(STORAGE_PATH, backup.storagePath);
 
+  // Path traversal protection
+  const resolvedPath = resolve(filePath);
+  const basePath = resolve(STORAGE_PATH);
+  if (!resolvedPath.startsWith(basePath + '/') && resolvedPath !== basePath) {
+    return c.json({ error: 'Invalid backup path' }, 403);
+  }
+
   try {
     const data = await readFile(filePath);
     return new Response(data, {
@@ -178,6 +185,13 @@ app.delete('/:id', async (c) => {
 
   const backup = result[0];
   const filePath = join(STORAGE_PATH, backup.storagePath);
+
+  // Path traversal protection
+  const resolvedDeletePath = resolve(filePath);
+  const deleteBasePath = resolve(STORAGE_PATH);
+  if (!resolvedDeletePath.startsWith(deleteBasePath + '/') && resolvedDeletePath !== deleteBasePath) {
+    return c.json({ error: 'Invalid backup path' }, 403);
+  }
 
   // Delete from disk
   try {

@@ -216,7 +216,13 @@ app.patch('/:id', requireRole('admin'), async (c) => {
   const body = await c.req.json();
   const updates: Record<string, unknown> = { updatedAt: new Date() };
 
-  if (body.role) updates.role = body.role;
+  const VALID_ROLES = ['admin', 'analyst', 'viewer'] as const;
+  if (body.role) {
+    if (!VALID_ROLES.includes(body.role)) {
+      return c.json({ error: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}` }, 400);
+    }
+    updates.role = body.role;
+  }
   if (body.active !== undefined) updates.active = body.active;
   if (body.displayName) updates.displayName = body.displayName;
 

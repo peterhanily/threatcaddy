@@ -118,6 +118,16 @@ app.post('/upload', requireRole('admin', 'analyst'), async (c) => {
     }
   }
 
+  const folderId = (body['folderId'] as string) || null;
+
+  // Verify the uploader has editor access to the target folder BEFORE writing to disk
+  if (folderId) {
+    const hasAccess = await checkInvestigationAccess(user.id, folderId, 'editor');
+    if (!hasAccess) {
+      return c.json({ error: 'No access to this investigation' }, 403);
+    }
+  }
+
   await writeFile(storagePath, buffer);
 
   // Generate thumbnail for images
@@ -132,16 +142,6 @@ app.post('/upload', requireRole('admin', 'analyst'), async (c) => {
     } catch (err) {
       logger.error('Thumbnail generation failed', { error: String(err) });
       thumbnailPath = null;
-    }
-  }
-
-  const folderId = (body['folderId'] as string) || null;
-
-  // Verify the uploader has editor access to the target folder
-  if (folderId) {
-    const hasAccess = await checkInvestigationAccess(user.id, folderId, 'editor');
-    if (!hasAccess) {
-      return c.json({ error: 'No access to this investigation' }, 403);
     }
   }
 

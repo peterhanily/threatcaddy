@@ -40,12 +40,17 @@ function createUpdateChain(returningRows: Record<string, unknown>[] = [{ id: 'te
   return chain;
 }
 
+const mockTxDb = {
+  select: (...args: unknown[]) => mockSelect(...args),
+  insert: (...args: unknown[]) => mockInsert(...args),
+  update: (...args: unknown[]) => mockUpdate(...args),
+  delete: (...args: unknown[]) => mockDelete(...args),
+};
+
 vi.mock('../db/index.js', () => ({
   db: {
-    select: (...args: unknown[]) => mockSelect(...args),
-    insert: (...args: unknown[]) => mockInsert(...args),
-    update: (...args: unknown[]) => mockUpdate(...args),
-    delete: (...args: unknown[]) => mockDelete(...args),
+    ...mockTxDb,
+    transaction: vi.fn(async (fn: (tx: typeof mockTxDb) => Promise<unknown>) => fn(mockTxDb)),
   },
 }));
 

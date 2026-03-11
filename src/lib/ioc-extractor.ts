@@ -104,7 +104,7 @@ const IOC_PATTERNS: { type: IOCType; pattern: RegExp; validate?: (match: string)
  */
 export function extractYaraRules(text: string): string[] {
   const results: string[] = [];
-  const ruleStart = /\brule\s+[a-zA-Z_][a-zA-Z0-9_]*\s*(:[\s\S]*?)?\{/g;
+  const ruleStart = /\brule\s+[a-zA-Z_][a-zA-Z0-9_]*\s*(?::\s*[a-zA-Z_][a-zA-Z0-9_ ]*?)?\s*\{/g;
   let startMatch: RegExpExecArray | null;
 
   while ((startMatch = ruleStart.exec(text)) !== null) {

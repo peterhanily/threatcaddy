@@ -291,7 +291,7 @@ export function useLLM() {
         tools: opts.tools,
         endpoint: opts.endpoint,
       },
-    }, '*');
+    }, window.location.origin);
 
     return requestId;
   }, []);
@@ -299,7 +299,7 @@ export function useLLM() {
   const abort = useCallback(() => {
     const rid = requestIdRef.current;
     if (rid) {
-      window.postMessage({ type: 'TC_LLM_ABORT', requestId: rid }, '*');
+      window.postMessage({ type: 'TC_LLM_ABORT', requestId: rid }, window.location.origin);
       if (agentStateRef.current) {
         agentStateRef.current.aborted = true;
       }

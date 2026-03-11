@@ -37,8 +37,7 @@ export function requireInvestigationAccess(minRole: InvestigationRole = 'viewer'
 
     const folderId = c.req.param('folderId') || c.req.query('folderId');
     if (!folderId) {
-      await next();
-      return;
+      return c.json({ error: 'Missing folderId' }, 400);
     }
 
     const hasAccess = await checkInvestigationAccess(user.id, folderId, minRole);
