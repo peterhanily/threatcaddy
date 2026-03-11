@@ -32,7 +32,7 @@ export const NoteCard = React.memo(function NoteCard({ note, active, onSelect, o
         'w-full text-left p-3 rounded-lg border transition-colors cursor-pointer group relative',
         active
           ? 'bg-accent/10 border-accent/30'
-          : 'bg-gray-800/50 border-gray-800 hover:bg-gray-800 hover:border-gray-700'
+          : 'bg-bg-raised border-border-subtle hover:bg-bg-hover hover:border-border-medium'
       )}
       style={folderColor && !active ? { borderLeftColor: folderColor, borderLeftWidth: 3 } : undefined}
     >

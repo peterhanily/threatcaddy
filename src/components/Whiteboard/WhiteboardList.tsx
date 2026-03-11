@@ -77,8 +77,8 @@ export function WhiteboardList({ whiteboards, folders, onSelect, onCreate, onDel
               <div
                 key={wb.id}
                 className={cn(
-                  'group relative border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors',
-                  'hover:border-gray-600 hover:bg-gray-800/50'
+                  'group relative border border-border-subtle rounded-lg p-4 cursor-pointer transition-colors',
+                  'hover:border-border-medium hover:bg-bg-hover'
                 )}
                 onClick={() => editingId !== wb.id && onSelect(wb.id)}
               >

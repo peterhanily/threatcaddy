@@ -111,7 +111,7 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
               tabIndex={0}
               onClick={() => handlePanelClick(link.url)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handlePanelClick(link.url); } }}
-              className="group relative rounded-lg border border-gray-800 bg-gray-900/50 p-4 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-gray-700"
+              className="group relative rounded-lg border border-border-subtle bg-bg-raised p-4 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-border-medium"
               style={{
                 borderLeftWidth: '4px',
                 borderLeftColor: link.color || '#3b82f6',
@@ -175,7 +175,7 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
                   <button
                     key={tool.view}
                     onClick={() => onViewChange(tool.view)}
-                    className="group rounded-lg border border-gray-800 bg-gray-900/50 p-3 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-gray-700 text-left"
+                    className="group rounded-lg border border-border-subtle bg-bg-raised p-3 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-border-medium text-left"
                     style={{
                       borderLeftWidth: '3px',
                       borderLeftColor: tool.color,

@@ -39,7 +39,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
         'flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors group',
         active
           ? 'bg-accent/10 border-accent/30'
-          : 'bg-gray-800/50 border-gray-800 hover:bg-gray-800 hover:border-gray-700',
+          : 'bg-bg-raised border-border-subtle hover:bg-bg-hover hover:border-border-medium',
         overdue && 'border-red-500/30'
       )}
       draggable={draggable}

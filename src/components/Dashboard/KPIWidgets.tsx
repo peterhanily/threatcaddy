@@ -121,7 +121,7 @@ export function KPIWidgets({ folders, allNotes, allTasks, allEvents, allIOCs, se
         {kpiData.map(kpi => (
           <div
             key={kpi.metric}
-            className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/40"
+            className="bg-bg-raised rounded-lg p-3 border border-border-subtle"
             style={{ borderLeftColor: kpi.color + '60', borderLeftWidth: 3 }}
           >
             <div className="text-[10px] text-gray-500 uppercase tracking-wider">{kpi.label}</div>
