@@ -3,6 +3,7 @@ import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shi
 import type { ChatThread, ChatMessage, LLMProvider, Settings, Folder, ToolUseBlock } from '../../types';
 import { ClsSelect } from '../Common/ClsSelect';
 import { ClsBadge } from '../Common/ClsBadge';
+import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { ChatMessageBubble } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { useLLM } from '../../hooks/useLLM';
@@ -59,6 +60,7 @@ export function ChatView({
     localStorage.setItem('caddyai-onboarded', '1');
     setShowOnboarding(false);
   }, []);
+  const [trashConfirmId, setTrashConfirmId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [editingTitleValue, setEditingTitleValue] = useState('');
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -415,7 +417,7 @@ export function ChatView({
                   </div>
                 </div>
                 <button
-                  onClick={(e) => { e.stopPropagation(); onTrashThread(thread.id); }}
+                  onClick={(e) => { e.stopPropagation(); setTrashConfirmId(thread.id); }}
                   className="opacity-40 group-hover:opacity-100 p-0.5 rounded hover:bg-bg-hover text-text-muted hover:text-red-400 transition-all shrink-0"
                   title="Delete thread"
                 >
@@ -461,6 +463,7 @@ export function ChatView({
                     setEditingTitle(false);
                   }}
                   className="flex-1 min-w-0 bg-bg-raised border border-border-subtle rounded px-2 py-1 text-sm font-medium text-text-primary focus:outline-none focus:border-purple"
+                  aria-label="Chat thread title"
                 />
               ) : (
                 <button
@@ -602,6 +605,16 @@ export function ChatView({
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={trashConfirmId !== null}
+        onClose={() => setTrashConfirmId(null)}
+        onConfirm={() => { if (trashConfirmId) onTrashThread(trashConfirmId); setTrashConfirmId(null); }}
+        title="Delete Chat Thread"
+        message="This chat thread will be moved to trash. Are you sure?"
+        confirmLabel="Delete"
+        danger
+      />
 
       {/* First-use onboarding overlay */}
       {showOnboarding && (

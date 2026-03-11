@@ -17,7 +17,7 @@
   --color-border-medium: rgba(255,255,255,0.1);
   --color-text-primary: #e4e0f0;
   --color-text-secondary: #9590a8;
-  --color-text-muted: #5f5878;
+  --color-text-muted: #7e7896;
   --color-purple: #7c6bf0;
   --color-accent-blue: #38bdf8;
   --color-accent-green: #4ade80;
@@ -39,7 +39,7 @@
   --color-border-medium: rgba(0,0,0,0.1);
   --color-text-primary: #1a1726;
   --color-text-secondary: #5f5878;
-  --color-text-muted: #9590a8;
+  --color-text-muted: #716b88;
   --color-purple: #6d5ce0;
 }
 
@@ -80,6 +80,16 @@
 /* Focus ring */
 .light .focus\:border-accent:focus { border-color: #4f46e5; }
 .light .focus\:ring-accent:focus { --tw-ring-color: #4f46e5; }
+
+/* ─── Global focus-visible outline ─── */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
 
 /* ─── Background image mode: make deep surfaces transparent ─── */
 .has-bg-image body,

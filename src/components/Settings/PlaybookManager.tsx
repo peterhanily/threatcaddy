@@ -3,6 +3,7 @@ import { Plus, Trash2, Edit3, ChevronDown, ChevronRight, BookOpen, X } from 'luc
 import { useToast } from '../../contexts/ToastContext';
 import type { PlaybookTemplate, PlaybookStep, Priority } from '../../types';
 import { Modal } from '../Common/Modal';
+import { ConfirmDialog } from '../Common/ConfirmDialog';
 
 
 interface PlaybookManagerProps {
@@ -26,6 +27,7 @@ export function PlaybookManager({
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState<PlaybookTemplate | null>(null);
   const [creating, setCreating] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -154,7 +156,7 @@ export function PlaybookManager({
                     <button onClick={() => openEdit(pb)} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300" title="Edit">
                       <Edit3 size={13} />
                     </button>
-                    <button onClick={async () => { await onDeletePlaybook(pb.id); addToast('success', `Playbook "${pb.name}" deleted`); }} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400" title="Delete">
+                    <button onClick={() => setDeleteConfirmId(pb.id)} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400" title="Delete">
                       <Trash2 size={13} />
                     </button>
                   </div>
@@ -187,33 +189,50 @@ export function PlaybookManager({
         </div>
       )}
 
+      <ConfirmDialog
+        open={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={async () => {
+          if (deleteConfirmId) {
+            const pb = userPlaybooks.find(p => p.id === deleteConfirmId);
+            await onDeletePlaybook(deleteConfirmId);
+            addToast('success', `Playbook "${pb?.name}" deleted`);
+          }
+          setDeleteConfirmId(null);
+        }}
+        title="Delete Playbook"
+        message="This playbook will be permanently deleted. This cannot be undone."
+        confirmLabel="Delete Playbook"
+        danger
+      />
+
       {/* Create/Edit modal */}
       <Modal open={creating || editing !== null} onClose={() => { setCreating(false); setEditing(null); resetForm(); }} title={editing ? 'Edit Playbook' : 'Create Playbook'} wide>
         <div className="space-y-3 max-h-[70vh] overflow-y-auto">
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-400 mb-1">Name</label>
-              <input value={formName} onChange={(e) => setFormName(e.target.value)} className={inputClass} placeholder="Playbook name..." />
+              <label htmlFor="pb-name" className="block text-xs font-medium text-gray-400 mb-1">Name</label>
+              <input id="pb-name" value={formName} onChange={(e) => setFormName(e.target.value)} className={inputClass} placeholder="Playbook name..." />
             </div>
             <div className="w-20">
-              <label className="block text-xs font-medium text-gray-400 mb-1">Icon</label>
-              <input value={formIcon} onChange={(e) => setFormIcon(e.target.value)} className={inputClass} placeholder="emoji" />
+              <label htmlFor="pb-icon" className="block text-xs font-medium text-gray-400 mb-1">Icon</label>
+              <input id="pb-icon" value={formIcon} onChange={(e) => setFormIcon(e.target.value)} className={inputClass} placeholder="emoji" />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
-            <input value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className={inputClass} placeholder="Short description..." />
+            <label htmlFor="pb-description" className="block text-xs font-medium text-gray-400 mb-1">Description</label>
+            <input id="pb-description" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className={inputClass} placeholder="Short description..." />
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-400 mb-1">Investigation Type</label>
-              <input value={formType} onChange={(e) => setFormType(e.target.value)} className={inputClass} placeholder="custom" />
+              <label htmlFor="pb-type" className="block text-xs font-medium text-gray-400 mb-1">Investigation Type</label>
+              <input id="pb-type" value={formType} onChange={(e) => setFormType(e.target.value)} className={inputClass} placeholder="custom" />
             </div>
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-400 mb-1">Default Classification</label>
-              <select value={formClsLevel} onChange={(e) => setFormClsLevel(e.target.value)} className={inputClass}>
+              <label htmlFor="pb-cls" className="block text-xs font-medium text-gray-400 mb-1">Default Classification</label>
+              <select id="pb-cls" value={formClsLevel} onChange={(e) => setFormClsLevel(e.target.value)} className={inputClass}>
                 <option value="">None</option>
                 <option value="TLP:CLEAR">TLP:CLEAR</option>
                 <option value="TLP:GREEN">TLP:GREEN</option>
@@ -225,8 +244,8 @@ export function PlaybookManager({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Default Tags (comma-separated)</label>
-            <input value={formDefaultTags} onChange={(e) => setFormDefaultTags(e.target.value)} className={inputClass} placeholder="incident-response, malware" />
+            <label htmlFor="pb-tags" className="block text-xs font-medium text-gray-400 mb-1">Default Tags (comma-separated)</label>
+            <input id="pb-tags" value={formDefaultTags} onChange={(e) => setFormDefaultTags(e.target.value)} className={inputClass} placeholder="incident-response, malware" />
           </div>
 
           {/* Steps */}
@@ -246,6 +265,7 @@ export function PlaybookManager({
                     value={step.entityType}
                     onChange={(e) => updateStep(idx, { entityType: e.target.value as 'task' | 'note' })}
                     className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200"
+                    aria-label={`Step ${idx + 1} type`}
                   >
                     <option value="task">Task</option>
                     <option value="note">Note</option>
@@ -255,6 +275,7 @@ export function PlaybookManager({
                     onChange={(e) => updateStep(idx, { title: e.target.value })}
                     className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
                     placeholder="Step title..."
+                    aria-label={`Step ${idx + 1} title`}
                   />
                   <button onClick={() => removeStep(idx)} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400">
                     <X size={12} />
@@ -266,12 +287,14 @@ export function PlaybookManager({
                     onChange={(e) => updateStep(idx, { phase: e.target.value })}
                     className="w-32 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
                     placeholder="Phase..."
+                    aria-label={`Step ${idx + 1} phase`}
                   />
                   {step.entityType === 'task' && (
                     <select
                       value={step.priority || 'none'}
                       onChange={(e) => updateStep(idx, { priority: e.target.value as Priority })}
                       className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200"
+                      aria-label={`Step ${idx + 1} priority`}
                     >
                       <option value="none">No priority</option>
                       <option value="low">Low</option>
@@ -285,6 +308,7 @@ export function PlaybookManager({
                   onChange={(e) => updateStep(idx, { content: e.target.value })}
                   className="w-full pl-6 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent h-16 resize-y"
                   placeholder={step.entityType === 'task' ? 'Task description...' : 'Note content (markdown)...'}
+                  aria-label={`Step ${idx + 1} content`}
                 />
               </div>
             ))}
