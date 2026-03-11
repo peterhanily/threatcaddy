@@ -566,18 +566,29 @@ describe('SyncEngine', () => {
       );
     });
 
-    it('normalizes all ISO timestamp fields (trashedAt, completedAt, closedAt)', async () => {
+    it('normalizes ISO timestamp fields (trashedAt, completedAt) on tasks', async () => {
       await engine.applyRemoteChange('tasks', 'put', 't1', {
         id: 't1',
         trashedAt: '2025-01-01T00:00:00.000Z',
         completedAt: '2025-06-01T00:00:00.000Z',
-        closedAt: '2025-06-15T00:00:00.000Z',
       });
 
       const tasksTable = getMockTable('tasks');
       const putData = tasksTable.put.mock.calls[0][0];
       expect(typeof putData.trashedAt).toBe('number');
       expect(typeof putData.completedAt).toBe('number');
+    });
+
+    it('normalizes ISO timestamp fields (closedAt) on folders', async () => {
+      await engine.applyRemoteChange('folders', 'put', 'f1', {
+        id: 'f1',
+        name: 'Test Folder',
+        order: 0,
+        closedAt: '2025-06-15T00:00:00.000Z',
+      });
+
+      const foldersTable = getMockTable('folders');
+      const putData = foldersTable.put.mock.calls[0][0];
       expect(typeof putData.closedAt).toBe('number');
     });
 
