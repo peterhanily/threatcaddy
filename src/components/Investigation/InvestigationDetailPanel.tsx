@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Briefcase, FileBarChart, Share2, Cloud, CloudOff, Archive, Trash2, Printer } from 'lucide-react';
+import { X, Briefcase, FileBarChart, Share2, Cloud, CloudOff, Archive, Trash2, Printer, BookOpen } from 'lucide-react';
 import type { Folder, InvestigationStatus, ClosureResolution, PlaybookStep } from '../../types';
 import { NOTE_COLORS, CLOSURE_RESOLUTION_LABELS } from '../../types';
 import { TagInput } from '../Common/TagInput';
@@ -25,6 +25,7 @@ interface InvestigationDetailPanelProps {
   serverConnected?: boolean;
   onToggleSync?: (folderId: string, syncEnabled: boolean) => void;
   playbookSteps?: PlaybookStep[];
+  onRunPlaybook?: () => void;
   onArchive?: (folderId: string) => void;
   onUnarchive?: (folderId: string) => void;
   onDelete?: (folderId: string) => void;
@@ -53,6 +54,7 @@ export function InvestigationDetailPanel({
   serverConnected,
   onToggleSync,
   playbookSteps,
+  onRunPlaybook,
   onArchive,
   onUnarchive,
   onDelete,
@@ -302,6 +304,23 @@ export function InvestigationDetailPanel({
                   });
                 }}
               />
+            </div>
+          )}
+
+          {/* Run Playbook */}
+          {onRunPlaybook && (
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-1">Playbook</label>
+              <button
+                onClick={onRunPlaybook}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 hover:text-gray-100 transition-colors border border-gray-700"
+              >
+                <BookOpen size={14} className="text-accent" />
+                {folder.playbookExecution ? 'Run Another Playbook' : 'Run Playbook'}
+              </button>
+              {!folder.playbookExecution && (
+                <p className="text-[11px] text-gray-500 mt-1">Add tasks, notes, and templates from a playbook</p>
+              )}
             </div>
           )}
 

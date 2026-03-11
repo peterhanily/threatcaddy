@@ -75,16 +75,20 @@ export function usePlaybooks() {
     for (const t of BUILTIN_NOTE_TEMPLATES) templateMap.set(t.id, t);
     for (const t of allNoteTemplates) templateMap.set(t.id, t);
 
-    // Create a timeline for this investigation
-    const timelineId = nanoid();
-    const maxTimelineOrder = (await db.timelines.toArray()).reduce((max, t) => Math.max(max, t.order), 0);
-    const timeline: Timeline = {
-      id: timelineId,
-      name: folder.name,
-      order: maxTimelineOrder + 1,
-      createdAt: now,
-      updatedAt: now,
-    };
+    // Create a timeline for this investigation (skip if folder already has one)
+    let timelineId = folder.timelineId;
+    let timeline: Timeline | undefined;
+    if (!timelineId) {
+      timelineId = nanoid();
+      const maxTimelineOrder = (await db.timelines.toArray()).reduce((max, t) => Math.max(max, t.order), 0);
+      timeline = {
+        id: timelineId,
+        name: folder.name,
+        order: maxTimelineOrder + 1,
+        createdAt: now,
+        updatedAt: now,
+      };
+    }
 
     for (const step of playbook.steps) {
       if (step.entityType === 'note') {
@@ -136,13 +140,14 @@ export function usePlaybooks() {
     };
 
     // Update folder with playbook metadata
-    const folderUpdates: Partial<Folder> = { timelineId, updatedAt: now, playbookExecution };
-    if (playbook.defaultClsLevel) folderUpdates.clsLevel = playbook.defaultClsLevel;
-    if (playbook.defaultPapLevel) folderUpdates.papLevel = playbook.defaultPapLevel;
-    if (playbook.defaultTags) folderUpdates.tags = [...(folder.tags || []), ...playbook.defaultTags];
+    const folderUpdates: Partial<Folder> = { updatedAt: now, playbookExecution };
+    if (!folder.timelineId) folderUpdates.timelineId = timelineId;
+    if (playbook.defaultClsLevel && !folder.clsLevel) folderUpdates.clsLevel = playbook.defaultClsLevel;
+    if (playbook.defaultPapLevel && !folder.papLevel) folderUpdates.papLevel = playbook.defaultPapLevel;
+    if (playbook.defaultTags) folderUpdates.tags = [...new Set([...(folder.tags || []), ...playbook.defaultTags])];
 
     await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelines], async () => {
-      await db.timelines.add(timeline);
+      if (timeline) await db.timelines.add(timeline);
       await db.folders.update(folder.id, folderUpdates);
       if (notes.length > 0) await db.notes.bulkAdd(notes);
       if (tasks.length > 0) await db.tasks.bulkAdd(tasks);

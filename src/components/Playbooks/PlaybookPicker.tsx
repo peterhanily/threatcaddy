@@ -9,14 +9,23 @@ interface PlaybookPickerProps {
   onClose: () => void;
   playbooks: PlaybookTemplate[];
   onSelect: (playbookId: string, investigationName: string) => void;
+  /** When set, applies playbook to an existing investigation (no name prompt). */
+  applyToExisting?: string;
 }
 
-export function PlaybookPicker({ open, onClose, playbooks, onSelect }: PlaybookPickerProps) {
+export function PlaybookPicker({ open, onClose, playbooks, onSelect, applyToExisting }: PlaybookPickerProps) {
   const [selectedPlaybook, setSelectedPlaybook] = useState<PlaybookTemplate | null>(null);
   const [investigationName, setInvestigationName] = useState('');
 
   const handleSelect = () => {
-    if (!selectedPlaybook || !investigationName.trim()) return;
+    if (!selectedPlaybook) return;
+    if (applyToExisting) {
+      onSelect(selectedPlaybook.id, applyToExisting);
+      setSelectedPlaybook(null);
+      onClose();
+      return;
+    }
+    if (!investigationName.trim()) return;
     onSelect(selectedPlaybook.id, investigationName.trim());
     setSelectedPlaybook(null);
     setInvestigationName('');
@@ -78,17 +87,19 @@ export function PlaybookPicker({ open, onClose, playbooks, onSelect }: PlaybookP
             ))}
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Investigation Name</label>
-            <input
-              autoFocus
-              value={investigationName}
-              onChange={(e) => setInvestigationName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSelect(); }}
-              placeholder="Enter investigation name..."
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
-            />
-          </div>
+          {!applyToExisting && (
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-1">Investigation Name</label>
+              <input
+                autoFocus
+                value={investigationName}
+                onChange={(e) => setInvestigationName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSelect(); }}
+                placeholder="Enter investigation name..."
+                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
+              />
+            </div>
+          )}
 
           <div className="flex justify-between pt-2">
             <button
@@ -101,10 +112,10 @@ export function PlaybookPicker({ open, onClose, playbooks, onSelect }: PlaybookP
             <button
               type="button"
               onClick={handleSelect}
-              disabled={!investigationName.trim()}
+              disabled={!applyToExisting && !investigationName.trim()}
               className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors disabled:opacity-50"
             >
-              Create Investigation
+              {applyToExisting ? 'Run Playbook' : 'Create Investigation'}
             </button>
           </div>
         </div>
@@ -113,9 +124,13 @@ export function PlaybookPicker({ open, onClose, playbooks, onSelect }: PlaybookP
   }
 
   return (
-    <Modal open={open} onClose={handleClose} title="Start from Playbook">
+    <Modal open={open} onClose={handleClose} title={applyToExisting ? 'Run Playbook' : 'Start from Playbook'}>
       <div className="space-y-3">
-        <p className="text-xs text-gray-400">Choose a playbook to auto-populate your investigation with tasks, notes, and templates.</p>
+        <p className="text-xs text-gray-400">
+          {applyToExisting
+            ? 'Choose a playbook to add its tasks, notes, and templates to this investigation.'
+            : 'Choose a playbook to auto-populate your investigation with tasks, notes, and templates.'}
+        </p>
         <div className="space-y-2 max-h-80 overflow-y-auto">
           {playbooks.map((pb) => {
             const taskCount = pb.steps.filter((s) => s.entityType === 'task').length;

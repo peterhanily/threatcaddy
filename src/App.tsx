@@ -300,6 +300,7 @@ function AppInner() {
   const [taskViewMode, setTaskViewMode] = useState<TaskViewMode>(settings.taskViewMode);
   const [showQuickCapture, setShowQuickCapture] = useState(false);
   const [showPlaybookPicker, setShowPlaybookPicker] = useState(false);
+  const [playbookApplyFolderId, setPlaybookApplyFolderId] = useState<string | undefined>();
   const [showSettings, setShowSettings] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<string | undefined>(undefined);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -1881,20 +1882,36 @@ function AppInner() {
 
       <PlaybookPicker
         open={showPlaybookPicker}
-        onClose={() => setShowPlaybookPicker(false)}
+        onClose={() => { setShowPlaybookPicker(false); setPlaybookApplyFolderId(undefined); }}
         playbooks={playbooksHook.playbooks}
+        applyToExisting={playbookApplyFolderId ? folders.find(f => f.id === playbookApplyFolderId)?.name : undefined}
         onSelect={async (playbookId, name) => {
-          const folder = await loggedCreateFolder(name);
-          await playbooksHook.instantiate(playbookId, folder, noteTemplatesHook.templates);
-          notes.reload();
-          tasks.reload();
-          reloadTimelines();
-          reloadFolders();
-          setSelectedFolderId(folder.id);
-          setSelectedTag(undefined);
-          setShowTrash(false);
-          setShowArchive(false);
-          addToast('success', `Created "${name}" from playbook`);
+          if (playbookApplyFolderId) {
+            // Apply playbook to existing investigation
+            const folder = folders.find(f => f.id === playbookApplyFolderId);
+            if (!folder) return;
+            await playbooksHook.instantiate(playbookId, folder, noteTemplatesHook.templates);
+            notes.reload();
+            tasks.reload();
+            reloadTimelines();
+            reloadFolders();
+            setPlaybookApplyFolderId(undefined);
+            const pb = playbooksHook.playbooks.find(p => p.id === playbookId);
+            addToast('success', `Ran "${pb?.name}" playbook on "${folder.name}"`);
+          } else {
+            // Create new investigation from playbook
+            const folder = await loggedCreateFolder(name);
+            await playbooksHook.instantiate(playbookId, folder, noteTemplatesHook.templates);
+            notes.reload();
+            tasks.reload();
+            reloadTimelines();
+            reloadFolders();
+            setSelectedFolderId(folder.id);
+            setSelectedTag(undefined);
+            setShowTrash(false);
+            setShowArchive(false);
+            addToast('success', `Created "${name}" from playbook`);
+          }
         }}
       />
 
@@ -2057,6 +2074,10 @@ function AppInner() {
             }
           }}
           playbookSteps={editingFolder?.playbookExecution ? playbooksHook.playbooks.find(p => p.id === editingFolder.playbookExecution?.templateId)?.steps : undefined}
+          onRunPlaybook={() => {
+            setPlaybookApplyFolderId(editingFolderId);
+            setShowPlaybookPicker(true);
+          }}
           onArchive={(id) => { loggedArchiveFolder(id); setEditingFolderId(undefined); }}
           onUnarchive={(id) => { loggedUnarchiveFolder(id); setEditingFolderId(undefined); }}
           onDelete={(id) => { loggedDeleteFolder(id); if (selectedFolderId === id) setSelectedFolderId(undefined); setEditingFolderId(undefined); }}
