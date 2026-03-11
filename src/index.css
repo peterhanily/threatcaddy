@@ -409,6 +409,10 @@
   }
 }
 
+/* ─── Hidden scrollbar (for horizontal tab bars) ─── */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 /* ─── Global mobile utilities ─── */
 @media (max-width: 768px) {
   .hide-mobile { display: none !important; }

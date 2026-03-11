@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, RotateCcw } from 'lucide-react';
 import type { Settings } from '../../types';
 import { COLOR_SCHEMES } from '../../lib/theme-schemes';
 import { saveBgImage, loadBgImage, removeBgImage } from '../../lib/theme-bg';
@@ -20,6 +20,8 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
 
   const scheme = settings.colorScheme ?? 'indigo';
   const opacity = settings.bgImageOpacity ?? 85;
+  const posX = settings.bgImagePosX ?? 50;
+  const posY = settings.bgImagePosY ?? 50;
   const bgEnabled = settings.bgImageEnabled ?? false;
 
   // Load existing background image preview
@@ -70,6 +72,8 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
     }
   };
 
+  const resetPosition = () => onUpdateSettings({ bgImagePosX: 50, bgImagePosY: 50 });
+
   return (
     <div className="space-y-6">
       {/* Color Scheme */}
@@ -102,8 +106,14 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
 
         {bgPreview ? (
           <div className="space-y-3">
-            <div className="relative rounded-lg overflow-hidden border border-gray-700 h-32">
-              <img src={bgPreview} alt="Background preview" className="w-full h-full object-cover" />
+            {/* Preview */}
+            <div className="relative rounded-lg overflow-hidden border border-gray-700 h-36">
+              <img
+                src={bgPreview}
+                alt="Background preview"
+                className="w-full h-full object-cover"
+                style={{ objectPosition: `${posX}% ${posY}%` }}
+              />
               <div
                 className="absolute inset-0"
                 style={{ backgroundColor: settings.theme === 'dark' ? `rgba(0,0,0,${opacity / 100})` : `rgba(255,255,255,${opacity / 100})` }}
@@ -117,34 +127,88 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
               </button>
             </div>
 
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={bgEnabled}
-                  onChange={(e) => onUpdateSettings({ bgImageEnabled: e.target.checked })}
-                  className="rounded border-gray-600"
-                />
-                <span className="text-sm text-gray-300">Enable</span>
-              </label>
-            </div>
+            {/* Enable toggle */}
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={bgEnabled}
+                onChange={(e) => onUpdateSettings({ bgImageEnabled: e.target.checked })}
+                className="rounded border-gray-600"
+              />
+              <span className="text-sm text-gray-300">Enable background</span>
+            </label>
 
+            {/* Transparency */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Overlay opacity</span>
-                <span className="text-xs text-gray-500 tabular-nums">{opacity}%</span>
+                <span className="text-xs text-gray-400">Transparency</span>
+                <span className="text-xs text-gray-500 tabular-nums">{100 - opacity}%</span>
               </div>
               <input
                 type="range"
-                min={40}
-                max={95}
-                value={opacity}
-                onChange={(e) => onUpdateSettings({ bgImageOpacity: Number(e.target.value) })}
+                min={5}
+                max={60}
+                value={100 - opacity}
+                onChange={(e) => onUpdateSettings({ bgImageOpacity: 100 - Number(e.target.value) })}
                 className="w-full accent-accent h-1.5"
               />
               <div className="flex justify-between text-[10px] text-gray-600">
-                <span>More visible</span>
-                <span>More subtle</span>
+                <span>Subtle</span>
+                <span>Vivid</span>
+              </div>
+            </div>
+
+            {/* Position */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">Position</span>
+                {(posX !== 50 || posY !== 50) && (
+                  <button
+                    onClick={resetPosition}
+                    className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
+                  >
+                    <RotateCcw size={10} />
+                    Center
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-gray-500">Horizontal</span>
+                    <span className="text-[10px] text-gray-600 tabular-nums">{posX}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={posX}
+                    onChange={(e) => onUpdateSettings({ bgImagePosX: Number(e.target.value) })}
+                    className="w-full accent-accent h-1.5"
+                  />
+                  <div className="flex justify-between text-[10px] text-gray-600">
+                    <span>Left</span>
+                    <span>Right</span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-gray-500">Vertical</span>
+                    <span className="text-[10px] text-gray-600 tabular-nums">{posY}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={posY}
+                    onChange={(e) => onUpdateSettings({ bgImagePosY: Number(e.target.value) })}
+                    className="w-full accent-accent h-1.5"
+                  />
+                  <div className="flex justify-between text-[10px] text-gray-600">
+                    <span>Top</span>
+                    <span>Bottom</span>
+                  </div>
+                </div>
               </div>
             </div>
 

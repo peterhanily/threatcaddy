@@ -247,6 +247,8 @@ export interface Settings {
   colorScheme?: string;          // color scheme id; default 'indigo'
   bgImageEnabled?: boolean;      // whether background image is active
   bgImageOpacity?: number;       // overlay opacity 0–100; default 85
+  bgImagePosX?: number;          // horizontal position 0–100; default 50
+  bgImagePosY?: number;          // vertical position 0–100; default 50
 }
 
 export const DEFAULT_SETTINGS: Settings = {

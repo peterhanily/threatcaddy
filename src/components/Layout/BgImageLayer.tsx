@@ -5,9 +5,11 @@ interface BgImageLayerProps {
   enabled: boolean;
   opacity: number;
   theme: 'dark' | 'light';
+  posX: number;
+  posY: number;
 }
 
-export function BgImageLayer({ enabled, opacity, theme }: BgImageLayerProps) {
+export function BgImageLayer({ enabled, opacity, theme, posX, posY }: BgImageLayerProps) {
   const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,6 +34,7 @@ export function BgImageLayer({ enabled, opacity, theme }: BgImageLayerProps) {
         src={url}
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
+        style={{ objectPosition: `${posX}% ${posY}%` }}
       />
       <div
         className="absolute inset-0"

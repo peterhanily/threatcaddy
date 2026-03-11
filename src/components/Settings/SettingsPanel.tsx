@@ -102,7 +102,7 @@ const TABS: { key: SettingsTab; label: string }[] = [
   { key: 'ai', label: 'AI' },
   { key: 'data', label: 'Data' },
   { key: 'templates', label: 'Templates' },
-  { key: 'intel', label: 'Threat Intel' },
+  { key: 'intel', label: 'Intel' },
   { key: 'integrations', label: 'Integrations' },
   { key: 'shortcuts', label: 'Shortcuts' },
 ];
@@ -126,12 +126,12 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
       </div>
 
       {/* Tab Bar */}
-      <div className="flex gap-1">
+      <div className="flex gap-1 overflow-x-auto no-scrollbar">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 ${
               activeTab === tab.key
                 ? 'bg-accent text-white'
                 : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'

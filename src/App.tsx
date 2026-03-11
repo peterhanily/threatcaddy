@@ -1439,6 +1439,8 @@ function AppInner() {
       <AppLayout
         bgImageEnabled={settings.bgImageEnabled}
         bgImageOpacity={settings.bgImageOpacity}
+        bgImagePosX={settings.bgImagePosX}
+        bgImagePosY={settings.bgImagePosY}
         theme={settings.theme}
         header={
           <Header
