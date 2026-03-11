@@ -9,6 +9,7 @@ import {
   multiCloudPut,
   type DestinationPutResult,
 } from '../lib/cloud-sync';
+import { encryptBackup, type BackupPayload } from '../lib/backup-crypto';
 import { formatIOCsFlatJSON, slugify } from '../lib/ioc-export';
 import type { IOCExportEntry, ThreatIntelExportConfig, IOCExportFilter } from '../lib/ioc-export';
 
@@ -36,7 +37,7 @@ export function useCloudSync(backupDestinations?: BackupDestination[]) {
   const enabledDestinations = useMemo(() => destinations.filter((d) => d.enabled), [destinations]);
   const hasDestinations = enabledDestinations.length > 0;
 
-  const pushFullBackup = useCallback(async () => {
+  const pushFullBackup = useCallback(async (encryptionPassword?: string) => {
     setSyncing(true);
     setError(null);
     setProgress('Exporting data...');
@@ -53,10 +54,28 @@ export function useCloudSync(backupDestinations?: BackupDestination[]) {
         throw new Error('Failed to parse export data — backup may be corrupted');
       }
 
-      setProgress('Building envelope...');
-      const envelope = buildFullBackupEnvelope(exportData, label);
-      const objectKey = buildObjectKey('full-backup', '', label);
-      const data = JSON.stringify(envelope, null, 2);
+      let data: string;
+      let objectKey: string;
+
+      if (encryptionPassword) {
+        setProgress('Encrypting backup...');
+        const payload: BackupPayload = {
+          version: 1,
+          type: 'full',
+          scope: 'all',
+          createdAt: Date.now(),
+          data: exportData as unknown as BackupPayload['data'],
+        };
+        const encrypted = await encryptBackup(encryptionPassword, payload);
+        data = JSON.stringify(encrypted);
+        const safeLabel = (label || 'default').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50);
+        objectKey = `threatcaddy/backups/${safeLabel}-${Date.now()}.enc.json`;
+      } else {
+        setProgress('Building envelope...');
+        const envelope = buildFullBackupEnvelope(exportData, label);
+        objectKey = buildObjectKey('full-backup', '', label);
+        data = JSON.stringify(envelope, null, 2);
+      }
 
       const results = await multiCloudPut(dests, objectKey, data, 'application/json', setProgress);
       setLastResults(results);
@@ -64,7 +83,7 @@ export function useCloudSync(backupDestinations?: BackupDestination[]) {
       const { allOk, errorMsg } = summarizeResults(results);
       if (allOk) {
         setLastSyncAt(Date.now());
-        setProgress('Backup uploaded successfully');
+        setProgress(encryptionPassword ? 'Encrypted backup uploaded successfully' : 'Backup uploaded successfully');
       } else {
         const successCount = results.filter((r) => r.ok).length;
         if (successCount > 0) {

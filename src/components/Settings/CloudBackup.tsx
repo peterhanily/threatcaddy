@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { AlertCircle, CheckCircle, Cloud, Upload, Loader2, Trash2, Plus, ToggleLeft, ToggleRight } from 'lucide-react';
+import { AlertCircle, CheckCircle, Cloud, Upload, Loader2, Trash2, Plus, ToggleLeft, ToggleRight, Lock } from 'lucide-react';
 import { useSettings } from '../../hooks/useSettings';
 import { useCloudSync } from '../../hooks/useCloudSync';
 import { testDestination } from '../../lib/cloud-sync';
@@ -35,6 +35,8 @@ export function CloudBackup() {
 
   const [message, setMessage] = useState('');
   const [confirmPush, setConfirmPush] = useState(false);
+  const [encryptEnabled, setEncryptEnabled] = useState(false);
+  const [encryptPassword, setEncryptPassword] = useState('');
 
   const msgTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -99,11 +101,13 @@ export function CloudBackup() {
 
   const handlePushBackup = async () => {
     setConfirmPush(false);
-    await cloud.pushFullBackup();
+    const password = encryptEnabled && encryptPassword ? encryptPassword : undefined;
+    await cloud.pushFullBackup(password);
     if (!cloud.error) {
-      showMessage('Backup pushed successfully');
-      addToast('success', 'Cloud backup pushed');
-      logActivity('sync', 'backup', `Pushed full backup to ${cloud.lastResults.length} destination(s)`);
+      showMessage(password ? 'Encrypted backup pushed successfully' : 'Backup pushed successfully');
+      addToast('success', password ? 'Encrypted cloud backup pushed' : 'Cloud backup pushed');
+      logActivity('sync', 'backup', `Pushed ${password ? 'encrypted ' : ''}full backup to ${cloud.lastResults.length} destination(s)`);
+      if (password) setEncryptPassword('');
     } else {
       addToast('error', 'Cloud backup failed');
     }
@@ -242,14 +246,37 @@ export function CloudBackup() {
       {/* Full Backup */}
       <div className="pt-2 border-t border-gray-800 space-y-3">
         <h4 className="text-sm font-semibold text-gray-400">Full Backup</h4>
+
+        {/* Encryption toggle */}
+        <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
+          <input
+            type="checkbox"
+            checked={encryptEnabled}
+            onChange={(e) => setEncryptEnabled(e.target.checked)}
+            className="rounded"
+          />
+          <Lock size={14} />
+          Encrypt before upload
+        </label>
+        {encryptEnabled && (
+          <input
+            type="password"
+            value={encryptPassword}
+            onChange={(e) => setEncryptPassword(e.target.value)}
+            className={inputClass}
+            placeholder="Encryption password"
+            autoComplete="new-password"
+          />
+        )}
+
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => setConfirmPush(true)}
-            disabled={!cloud.hasDestinations || cloud.syncing}
+            disabled={!cloud.hasDestinations || cloud.syncing || (encryptEnabled && !encryptPassword)}
             className={`${btnClass} bg-gray-700 hover:bg-gray-600 text-gray-200 disabled:opacity-50`}
           >
             {cloud.syncing ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-            Push Backup
+            {encryptEnabled ? 'Push Encrypted Backup' : 'Push Backup'}
           </button>
         </div>
         {cloud.lastSyncAt && (

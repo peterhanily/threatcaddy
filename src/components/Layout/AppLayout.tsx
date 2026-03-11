@@ -27,7 +27,9 @@ export function AppLayout({ header, sidebar, children, bgImageEnabled, bgImageOp
         <div className="hidden md:block shrink-0">
           {sidebar}
         </div>
-        {children}
+        <main className="flex flex-1 overflow-hidden">
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -378,5 +378,5 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
     if (cy) cy.fit(undefined, 40);
   }, [fitTrigger]);
 
-  return <div ref={containerRef} className="w-full h-full" />;
+  return <div ref={containerRef} className="w-full h-full" role="img" aria-label="Investigation graph visualization" tabIndex={0} />;
 }

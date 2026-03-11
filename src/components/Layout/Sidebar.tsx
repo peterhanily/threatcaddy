@@ -147,9 +147,8 @@ export function Sidebar({
   // --- Collapsed: icon-only rail ---
   if (collapsed) {
     return (
-      <aside
+      <nav
         className="w-12 border-r border-border-subtle sidebar-glass flex flex-col items-center h-full shrink-0 overflow-hidden"
-        role="navigation"
         aria-label="Main navigation"
         data-tour="sidebar-nav"
       >
@@ -231,7 +230,7 @@ export function Sidebar({
             onClick={onToggleCollapsed}
           />
         </div>
-      </aside>
+      </nav>
     );
   }
 
@@ -250,7 +249,7 @@ export function Sidebar({
 
   // --- Expanded: full sidebar ---
   return (
-    <aside className="w-[260px] border-r border-border-subtle sidebar-glass flex flex-col h-full shrink-0 overflow-hidden" role="navigation" aria-label="Main navigation">
+    <nav className="w-[260px] border-r border-border-subtle sidebar-glass flex flex-col h-full shrink-0 overflow-hidden" aria-label="Main navigation">
       {/* 1. HEADER */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle">
         <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">ThreatCaddy</span>
@@ -535,6 +534,6 @@ export function Sidebar({
           <span>Privacy</span>
         </a>
       </div>
-    </aside>
+    </nav>
   );
 }
