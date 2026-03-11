@@ -52,10 +52,13 @@
       try {
         var s = localStorage.getItem('threatcaddy-settings');
         if (s) {
-          var t = JSON.parse(s).theme;
-          if (t === 'light') {
+          var p = JSON.parse(s);
+          if (p.theme === 'light') {
             document.documentElement.classList.remove('dark');
             document.documentElement.classList.add('light');
+          }
+          if (p.bgImageEnabled) {
+            document.documentElement.classList.add('has-bg-image');
           }
         }
       } catch (e) {}
@@ -65,9 +68,12 @@
     <script>
       try {
         var s = localStorage.getItem('threatcaddy-settings');
-        if (s && JSON.parse(s).theme === 'light') {
-          document.body.classList.remove('bg-gray-950', 'text-gray-100');
-          document.body.classList.add('bg-white', 'text-gray-900');
+        if (s) {
+          var p = JSON.parse(s);
+          if (p.theme === 'light') {
+            document.body.classList.remove('bg-gray-950', 'text-gray-100');
+            document.body.classList.add('bg-white', 'text-gray-900');
+          }
         }
       } catch (e) {}
     </script>

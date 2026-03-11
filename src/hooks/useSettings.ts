@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Settings } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
+import { applyColorScheme } from '../lib/theme-schemes';
 
 const SETTINGS_KEY = 'threatcaddy-settings';
 
@@ -66,6 +67,16 @@ export function useSettings() {
       document.body.classList.add('bg-white', 'text-gray-900');
     }
   }, [settings.theme]);
+
+  // Apply color scheme whenever theme or scheme changes
+  useEffect(() => {
+    applyColorScheme(settings.colorScheme ?? 'indigo', settings.theme);
+  }, [settings.colorScheme, settings.theme]);
+
+  // Toggle background-image mode class on root
+  useEffect(() => {
+    document.documentElement.classList.toggle('has-bg-image', !!(settings.bgImageEnabled));
+  }, [settings.bgImageEnabled]);
 
   const updateSettings = useCallback((updates: Partial<Settings>) => {
     setSettingsState((prev) => {

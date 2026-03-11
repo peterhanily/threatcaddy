@@ -81,6 +81,43 @@
 .light .focus\:border-accent:focus { border-color: #4f46e5; }
 .light .focus\:ring-accent:focus { --tw-ring-color: #4f46e5; }
 
+/* ─── Background image mode: make deep surfaces transparent ─── */
+.has-bg-image body,
+.has-bg-image .bg-gray-950 {
+  background-color: transparent !important;
+}
+
+.has-bg-image .bg-gray-900 {
+  background-color: rgba(17, 24, 39, 0.65) !important;
+}
+
+.has-bg-image .bg-gray-900\/50 {
+  background-color: rgba(17, 24, 39, 0.45) !important;
+}
+
+.has-bg-image .sidebar-glass {
+  background: rgba(19, 17, 28, 0.75) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+.has-bg-image.light body,
+.has-bg-image.light .bg-gray-950 {
+  background-color: transparent !important;
+}
+
+.has-bg-image.light .bg-gray-900 {
+  background-color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.has-bg-image.light .bg-gray-900\/50 {
+  background-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.has-bg-image.light .sidebar-glass {
+  background: rgba(240, 238, 248, 0.75) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
 /* ─── Custom scrollbar ─── */
 ::-webkit-scrollbar {
   width: 6px;

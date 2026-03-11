@@ -1437,6 +1437,9 @@ function AppInner() {
         </div>
       )}
       <AppLayout
+        bgImageEnabled={settings.bgImageEnabled}
+        bgImageOpacity={settings.bgImageOpacity}
+        theme={settings.theme}
         header={
           <Header
             onOpenSearch={() => setSearchOverlayOpen(true)}

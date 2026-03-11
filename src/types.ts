@@ -244,6 +244,9 @@ export interface Settings {
   dashboardKPIs?: string[];
   iocTableColumns?: string[];
   noteListCollapsed?: boolean;
+  colorScheme?: string;          // color scheme id; default 'indigo'
+  bgImageEnabled?: boolean;      // whether background image is active
+  bgImageOpacity?: number;       // overlay opacity 0–100; default 85
 }
 
 export const DEFAULT_SETTINGS: Settings = {

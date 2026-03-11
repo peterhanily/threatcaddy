@@ -14,6 +14,7 @@ import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { EncryptionSettings } from '../Encryption/EncryptionSettings';
 import { ServerConnection } from './ServerConnection';
 import { IntegrationPanel } from '../Integrations/IntegrationPanel';
+import { AppearanceSettings } from './AppearanceSettings';
 
 function SystemPromptEditor({ value, onChange }: { value?: string; onChange: (v: string | undefined) => void }) {
   const [expanded, setExpanded] = useState(false);
@@ -93,10 +94,11 @@ interface SettingsPanelProps {
   };
 }
 
-type SettingsTab = 'general' | 'ai' | 'data' | 'templates' | 'intel' | 'integrations' | 'shortcuts';
+type SettingsTab = 'general' | 'appearance' | 'ai' | 'data' | 'templates' | 'intel' | 'integrations' | 'shortcuts';
 
 const TABS: { key: SettingsTab; label: string }[] = [
   { key: 'general', label: 'General' },
+  { key: 'appearance', label: 'Appearance' },
   { key: 'ai', label: 'AI' },
   { key: 'data', label: 'Data' },
   { key: 'templates', label: 'Templates' },
@@ -152,18 +154,6 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
           {/* Preferences */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-300">Display Preferences</h3>
-
-            <div className="flex items-center justify-between">
-              <label className={labelClass}>Theme</label>
-              <select
-                value={settings.theme}
-                onChange={(e) => onUpdateSettings({ theme: e.target.value as 'dark' | 'light' })}
-                className={selectClass}
-              >
-                <option value="dark">Dark</option>
-                <option value="light">Light</option>
-              </select>
-            </div>
 
             <div className="flex items-center justify-between">
               <label className={labelClass}>Default Editor Mode</label>
@@ -309,6 +299,28 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               </a>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Appearance Tab */}
+      {activeTab === 'appearance' && (
+        <div className="space-y-6">
+          {/* Theme toggle — moved from General */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-300">Theme</h3>
+            <div className="flex items-center justify-between">
+              <label className={labelClass}>Mode</label>
+              <select
+                value={settings.theme}
+                onChange={(e) => onUpdateSettings({ theme: e.target.value as 'dark' | 'light' })}
+                className={selectClass}
+              >
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </div>
+          </div>
+          <AppearanceSettings settings={settings} onUpdateSettings={onUpdateSettings} />
         </div>
       )}
 
