@@ -13,6 +13,7 @@ interface TagInputProps {
 export function TagInput({ selectedTags, allTags, onChange, onCreateTag }: TagInputProps) {
   const [input, setInput] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [highlightIdx, setHighlightIdx] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const { addToast } = useToast();
 
@@ -38,10 +39,46 @@ export function TagInput({ selectedTags, allTags, onChange, onCreateTag }: TagIn
     onChange([...selectedTags, trimmed]);
     setInput('');
     setShowDropdown(false);
+    setHighlightIdx(-1);
   };
 
   const removeTag = (name: string) => {
     onChange(selectedTags.filter((t) => t !== name));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setShowDropdown(false);
+      setHighlightIdx(-1);
+      return;
+    }
+
+    if (!showDropdown || filteredTags.length === 0) {
+      if (e.key === 'Enter' && input.trim()) {
+        e.preventDefault();
+        addTag(input);
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightIdx((prev) => (prev + 1) % filteredTags.length);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightIdx((prev) => (prev <= 0 ? filteredTags.length - 1 : prev - 1));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightIdx >= 0 && highlightIdx < filteredTags.length) {
+          addTag(filteredTags[highlightIdx].name);
+        } else if (input.trim()) {
+          addTag(input);
+        }
+        break;
+    }
   };
 
   return (
@@ -68,17 +105,16 @@ export function TagInput({ selectedTags, allTags, onChange, onCreateTag }: TagIn
               ref={inputRef}
               type="text"
               value={input}
-              onChange={(e) => { setInput(e.target.value); setShowDropdown(true); }}
+              onChange={(e) => { setInput(e.target.value); setShowDropdown(true); setHighlightIdx(-1); }}
               onFocus={() => setShowDropdown(true)}
-              onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && input.trim()) {
-                  e.preventDefault();
-                  addTag(input);
-                }
-              }}
+              onBlur={() => setTimeout(() => { setShowDropdown(false); setHighlightIdx(-1); }, 200)}
+              onKeyDown={handleKeyDown}
               placeholder="Add tag..."
               className="w-20 bg-transparent border-none text-xs text-gray-300 placeholder-gray-500 focus:outline-none"
+              aria-label="Add tag"
+              role="combobox"
+              aria-expanded={showDropdown && filteredTags.length > 0}
+              aria-autocomplete="list"
             />
             {input.trim() && (
               <button
@@ -90,13 +126,16 @@ export function TagInput({ selectedTags, allTags, onChange, onCreateTag }: TagIn
             )}
           </div>
           {showDropdown && filteredTags.length > 0 && (
-            <div className="absolute top-full left-0 mt-1 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 max-h-32 overflow-y-auto">
-              {filteredTags.map((tag) => (
+            <div role="listbox" className="absolute top-full left-0 mt-1 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 max-h-32 overflow-y-auto">
+              {filteredTags.map((tag, idx) => (
                 <button
                   key={tag.id}
+                  role="option"
+                  aria-selected={idx === highlightIdx}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => addTag(tag.name)}
-                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 text-gray-300 flex items-center gap-2"
+                  onMouseEnter={() => setHighlightIdx(idx)}
+                  className={`w-full text-left px-3 py-1.5 text-xs text-gray-300 flex items-center gap-2 ${idx === highlightIdx ? 'bg-gray-700' : 'hover:bg-gray-700'}`}
                 >
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
                   {tag.name}

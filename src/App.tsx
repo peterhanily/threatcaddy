@@ -23,8 +23,8 @@ import { useSettings } from './hooks/useSettings';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useNoteTemplates } from './hooks/useNoteTemplates';
 import { usePlaybooks } from './hooks/usePlaybooks';
-import { PlaybookPicker } from './components/Playbooks/PlaybookPicker';
-import { OperationNameGenerator } from './components/Common/OperationNameGenerator';
+const PlaybookPicker = lazy(() => import('./components/Playbooks/PlaybookPicker').then(m => ({ default: m.PlaybookPicker })));
+const OperationNameGenerator = lazy(() => import('./components/Common/OperationNameGenerator').then(m => ({ default: m.OperationNameGenerator })));
 import { useActivityLog } from './hooks/useActivityLog';
 import { ActivityLogContext } from './hooks/ActivityLogContext';
 import { ScreenshareContext } from './hooks/ScreenshareContext';
@@ -40,13 +40,13 @@ import { FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from './lib/utils';
 import { exportJSON, importJSON, mergeImportJSON, downloadFile, exportInvestigationJSON } from './lib/export';
 import { ConfirmDialog } from './components/Common/ConfirmDialog';
-import { SearchOverlay } from './components/Search/SearchOverlay';
+const SearchOverlay = lazy(() => import('./components/Search/SearchOverlay').then(m => ({ default: m.SearchOverlay })));
 import { extractIOCs, mergeIOCAnalysis } from './lib/ioc-extractor';
 import { generateSampleInvestigation, isSampleEntity } from './lib/sample-investigation';
 import { db } from './db';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { ActiveFilterBar } from './components/Common/ActiveFilterBar';
-import { InvestigationDetailPanel } from './components/Investigation/InvestigationDetailPanel';
+const InvestigationDetailPanel = lazy(() => import('./components/Investigation/InvestigationDetailPanel').then(m => ({ default: m.InvestigationDetailPanel })));
 import type { InvestigationStatus } from './types';
 const GraphView = lazy(() => import('./components/Graph/GraphView').then(m => ({ default: m.GraphView })));
 const ChatView = lazy(() => import('./components/Chat/ChatView').then(m => ({ default: m.ChatView })));
@@ -62,8 +62,8 @@ import type { NavState } from './hooks/useNavigationHistory';
 import { useTour } from './hooks/useTour';
 import { TourOverlay, TourGlow } from './components/Tour/TourOverlay';
 import { TourTooltip } from './components/Tour/TourTooltip';
-import { DemoWelcomeModal } from './components/Common/DemoWelcomeModal';
-import { DataImportModal } from './components/Import/DataImportModal';
+const DemoWelcomeModal = lazy(() => import('./components/Common/DemoWelcomeModal').then(m => ({ default: m.DemoWelcomeModal })));
+const DataImportModal = lazy(() => import('./components/Import/DataImportModal').then(m => ({ default: m.DataImportModal })));
 import type { ImportResult } from './lib/data-import';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import { ToastContainer } from './components/Common/Toast';
@@ -71,12 +71,12 @@ import { generateInvestigationReport, printReport } from './lib/report';
 import { useIsMobile } from './hooks/useIsMobile';
 const ExecDashboard = lazy(() => import('./components/ExecMode/ExecDashboard').then(m => ({ default: m.ExecDashboard })));
 import { ShareReceiver } from './components/ExecMode/ShareReceiver';
-import { ShareDialog } from './components/ExecMode/ShareDialog';
+const ShareDialog = lazy(() => import('./components/ExecMode/ShareDialog').then(m => ({ default: m.ShareDialog })));
 import type { SharePayload, InvestigationBundle } from './lib/share';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 const CaddyShackView = lazy(() => import('./components/CaddyShack/CaddyShackView').then(m => ({ default: m.CaddyShackView })));
-import { ConflictDialog } from './components/Common/ConflictDialog';
-import { KeyboardShortcutsPanel } from './components/Common/KeyboardShortcutsPanel';
+const ConflictDialog = lazy(() => import('./components/Common/ConflictDialog').then(m => ({ default: m.ConflictDialog })));
+const KeyboardShortcutsPanel = lazy(() => import('./components/Common/KeyboardShortcutsPanel').then(m => ({ default: m.KeyboardShortcutsPanel })));
 import type { InvestigationMember } from './types';
 import { fetchInvestigationMembers, fetchServerInfo } from './lib/server-api';
 const ServerOnboardingModal = lazy(() => import('./components/Settings/ServerOnboardingModal').then(m => ({ default: m.ServerOnboardingModal })));
@@ -1892,7 +1892,7 @@ function AppInner() {
         />
       </Suspense>
 
-      <PlaybookPicker
+      <Suspense fallback={null}><PlaybookPicker
         open={showPlaybookPicker}
         onClose={() => { setShowPlaybookPicker(false); setPlaybookApplyFolderId(undefined); }}
         playbooks={playbooksHook.playbooks}
@@ -1925,7 +1925,7 @@ function AppInner() {
             addToast('success', `Created "${name}" from playbook`);
           }
         }}
-      />
+      /></Suspense>
 
       <Suspense fallback={null}>
 
@@ -1941,7 +1941,7 @@ function AppInner() {
         />
       </Suspense>
 
-      <DataImportModal
+      <Suspense fallback={null}><DataImportModal
         open={showDataImport}
         onClose={() => setShowDataImport(false)}
         folders={folders}
@@ -1949,7 +1949,7 @@ function AppInner() {
         defaultFolderId={selectedFolderId}
         onCreateTimeline={loggedCreateTimeline}
         onImportComplete={handleDataImportComplete}
-      />
+      /></Suspense>
 
       <ConfirmDialog
         open={!!pendingImportFile}
@@ -1973,23 +1973,23 @@ function AppInner() {
         danger
       />
 
-      <ShareDialog
+      <Suspense fallback={null}><ShareDialog
         open={shareLinkPayload !== null}
         onClose={() => setShareLinkPayload(null)}
         payload={shareLinkPayload}
         folderId={shareLinkPayload?.s === 'investigation'
           ? (shareLinkPayload.d as InvestigationBundle).folder.id
           : undefined}
-      />
+      /></Suspense>
 
-      <DemoWelcomeModal
+      <Suspense fallback={null}><DemoWelcomeModal
         open={showDemoModal}
         onClose={() => setShowDemoModal(false)}
         onStartTour={() => tour.start(activeView)}
         onDeleteDemo={handleDeleteSample}
-      />
+      /></Suspense>
 
-      <SearchOverlay
+      <Suspense fallback={null}><SearchOverlay
         open={searchOverlayOpen}
         onClose={() => setSearchOverlayOpen(false)}
         notes={screensafeNotes}
@@ -2011,10 +2011,10 @@ function AppInner() {
         scopedTimelineEvents={investigationTimelineEvents}
         scopedWhiteboards={investigationWhiteboards}
         folders={folders}
-      />
+      /></Suspense>
 
       {editingFolder && (
-        <InvestigationDetailPanel
+        <Suspense fallback={null}><InvestigationDetailPanel
           folder={editingFolder}
           onUpdate={updateFolder}
           onClose={() => setEditingFolderId(undefined)}
@@ -2093,7 +2093,7 @@ function AppInner() {
           onArchive={(id) => { loggedArchiveFolder(id); setEditingFolderId(undefined); }}
           onUnarchive={(id) => { loggedUnarchiveFolder(id); setEditingFolderId(undefined); }}
           onDelete={(id) => { loggedDeleteFolder(id); if (selectedFolderId === id) setSelectedFolderId(undefined); setEditingFolderId(undefined); }}
-        />
+        /></Suspense>
       )}
 
       {tour.isActive && tour.currentStep && (
@@ -2125,11 +2125,11 @@ function AppInner() {
         onOpenNameGenerator={() => { setShowCreateInvestigationModal(false); setShowNameGenerator(true); }}
         onOpenPlaybookPicker={() => { setShowCreateInvestigationModal(false); setShowPlaybookPicker(true); }}
       />
-      <KeyboardShortcutsPanel
+      <Suspense fallback={null}><KeyboardShortcutsPanel
         open={showShortcutsPanel}
         onClose={() => setShowShortcutsPanel(false)}
-      />
-      <OperationNameGenerator
+      /></Suspense>
+      <Suspense fallback={null}><OperationNameGenerator
         open={showNameGenerator}
         onClose={() => setShowNameGenerator(false)}
         onCreateInvestigation={async (name) => {
@@ -2139,7 +2139,7 @@ function AppInner() {
             handleOpenInvestigation(folder.id, 'local');
           }
         }}
-      />
+      /></Suspense>
       <Suspense fallback={null}>
         <ServerOnboardingModal
           open={showServerOnboarding}
@@ -2152,12 +2152,12 @@ function AppInner() {
 
     {/* Sync Conflict Dialog */}
     {syncConflicts.length > 0 && (
-      <ConflictDialog
+      <Suspense fallback={null}><ConflictDialog
         conflicts={syncConflicts}
         onResolve={handleResolveConflict}
         onResolveAll={handleResolveAllConflicts}
         onClose={() => setSyncConflicts([])}
-      />
+      /></Suspense>
     )}
     </ScreenshareContext.Provider>
   );

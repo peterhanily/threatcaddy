@@ -553,6 +553,22 @@
   .tour-tooltip {
     animation: none;
   }
+  .notif-dropdown-enter {
+    animation: none;
+  }
+  .notif-badge-pulse {
+    animation: none;
+  }
+  .transition-panel {
+    transition: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ─── Leaflet dark theme overrides ─── */

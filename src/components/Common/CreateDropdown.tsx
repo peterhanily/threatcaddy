@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Plus, ChevronDown, FileText, FilePlus, ListChecks, Clock, PenTool, Shield, Database } from 'lucide-react';
 
 interface CreateDropdownProps {
@@ -13,7 +13,9 @@ interface CreateDropdownProps {
 
 export function CreateDropdown({ onQuickNote, onNewNote, onNewTask, onNewTimelineEvent, onNewWhiteboard, onNewIOC, onImportData }: CreateDropdownProps) {
   const [open, setOpen] = useState(false);
+  const [highlightIdx, setHighlightIdx] = useState(-1);
   const ref = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -22,6 +24,10 @@ export function CreateDropdown({ onQuickNote, onNewNote, onNewTask, onNewTimelin
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (open) setHighlightIdx(-1);
   }, [open]);
 
   const items = [
@@ -34,14 +40,52 @@ export function CreateDropdown({ onQuickNote, onNewNote, onNewTask, onNewTimelin
     ...(onImportData ? [{ icon: Database, label: 'Import Data', action: onImportData }] : []),
   ];
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!open) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        setOpen(true);
+      }
+      return;
+    }
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightIdx((prev) => (prev + 1) % items.length);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightIdx((prev) => (prev <= 0 ? items.length - 1 : prev - 1));
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        if (highlightIdx >= 0) {
+          items[highlightIdx].action();
+          setOpen(false);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setOpen(false);
+        break;
+      case 'Tab':
+        setOpen(false);
+        break;
+    }
+  }, [open, highlightIdx, items]);
+
   return (
     <div className="relative" ref={ref}>
       <button
         data-tour="new-note"
         onClick={() => setOpen(!open)}
+        onKeyDown={handleKeyDown}
         className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-sm font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-200"
         title="Create new..."
         aria-label="Create new"
+        aria-haspopup="menu"
+        aria-expanded={open}
       >
         <Plus size={16} />
         <span className="hidden sm:inline">New</span>
@@ -49,14 +93,15 @@ export function CreateDropdown({ onQuickNote, onNewNote, onNewTask, onNewTimelin
       </button>
 
       {open && (
-        <div role="menu" className="absolute right-0 top-full mt-1 w-44 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 py-1">
-          {items.map((item) => (
+        <div ref={menuRef} role="menu" className="absolute right-0 top-full mt-1 w-44 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 py-1" onKeyDown={handleKeyDown}>
+          {items.map((item, idx) => (
             <button
               key={item.label}
               role="menuitem"
               aria-label={`Create ${item.label}`}
               onClick={() => { item.action(); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 sm:py-1.5 text-xs text-gray-300 hover:bg-gray-700 min-h-[44px] sm:min-h-0"
+              onMouseEnter={() => setHighlightIdx(idx)}
+              className={`w-full flex items-center gap-2 px-3 py-2 sm:py-1.5 text-xs text-gray-300 min-h-[44px] sm:min-h-0 ${idx === highlightIdx ? 'bg-gray-700' : 'hover:bg-gray-700'}`}
             >
               <item.icon size={14} />
               {item.label}
