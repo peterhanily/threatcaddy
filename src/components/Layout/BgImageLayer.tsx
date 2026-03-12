@@ -31,11 +31,17 @@ export function BgImageLayer({ enabled, opacity, theme, posX, posY, zoom }: BgIm
 
   return (
     <div className="fixed inset-0 -z-10 pointer-events-none" aria-hidden>
-      <img
-        src={url}
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{ objectPosition: `${posX}% ${posY}%`, transform: zoom !== 100 ? `scale(${zoom / 100})` : undefined }}
+      <div
+        role="img"
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `url(${url})`,
+          backgroundSize: 'cover',
+          backgroundPosition: `${posX}% ${posY}%`,
+          backgroundRepeat: 'no-repeat',
+          transform: zoom !== 100 ? `scale(${zoom / 100})` : undefined,
+        }}
       />
       <div
         className="absolute inset-0"

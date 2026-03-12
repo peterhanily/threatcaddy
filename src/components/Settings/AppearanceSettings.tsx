@@ -109,11 +109,15 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
           <div className="space-y-3">
             {/* Preview */}
             <div className="relative rounded-lg overflow-hidden border border-gray-700 h-36">
-              <img
-                src={bgPreview}
-                alt="Background preview"
-                className="w-full h-full object-cover"
-                style={{ objectPosition: `${posX}% ${posY}%`, transform: zoom !== 100 ? `scale(${zoom / 100})` : undefined }}
+              <div
+                className="w-full h-full"
+                style={{
+                  backgroundImage: `url(${bgPreview})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: `${posX}% ${posY}%`,
+                  backgroundRepeat: 'no-repeat',
+                  transform: zoom !== 100 ? `scale(${zoom / 100})` : undefined,
+                }}
               />
               <div
                 className="absolute inset-0"
