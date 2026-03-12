@@ -10,6 +10,7 @@ import { RunIntegrationMenu } from '../Integrations/RunIntegrationMenu';
 import { useIntegrations } from '../../hooks/useIntegrations';
 import { useToast } from '../../contexts/ToastContext';
 import { formatDate } from '../../lib/utils';
+import { EnrichmentLabels } from './EnrichmentLabels';
 import { TableVirtuoso } from 'react-virtuoso';
 
 const STATUS_COLORS: Record<string, string> = IOC_STATUS_COLORS;
@@ -156,6 +157,7 @@ export function StandaloneIOCList({
   }, [iocs, searchText, statusFilter, confidenceFilter, typeFilter, sortField, sortDir]);
 
   const hasActiveFilters = searchText.trim() !== '' || statusFilter !== null || confidenceFilter !== null || typeFilter.length > 0;
+  const hasAnyEnrichment = useMemo(() => iocs.some(i => i.enrichment && Object.keys(i.enrichment).length > 0), [iocs]);
 
   const handleSubmit = async (data: Partial<StandaloneIOC>) => {
     if (editingIOC) {
@@ -521,6 +523,7 @@ export function StandaloneIOCList({
                   <SortHeader field="iocStatus" label="Status" className="text-left text-gray-500 font-medium py-2 px-2" />
                   <SortHeader field="attribution" label="Attribution" className="text-left text-gray-500 font-medium py-2 px-2" />
                   <th className="text-left text-gray-500 font-medium py-2 px-2" title="Classification">CLS</th>
+                  {hasAnyEnrichment && <th className="text-left text-gray-500 font-medium py-2 px-2">Labels</th>}
                   <SortHeader field="updatedAt" label="Updated" className="text-left text-gray-500 font-medium py-2 px-2" />
                   <th className="text-right text-gray-500 font-medium py-2 pl-2">Actions</th>
                 </tr>
@@ -577,6 +580,11 @@ export function StandaloneIOCList({
                         <span className="text-gray-600">—</span>
                       )}
                     </td>
+                    {hasAnyEnrichment && (
+                      <td className="py-2 px-2">
+                        <EnrichmentLabels enrichment={ioc.enrichment} maxVisible={4} compact />
+                      </td>
+                    )}
                     <td className="py-2 px-2 text-gray-500">{formatDate(ioc.updatedAt)}</td>
                     <td className="py-2 pl-2">
                       <div className="flex items-center justify-end gap-1 opacity-40 group-hover:opacity-100 transition-opacity">

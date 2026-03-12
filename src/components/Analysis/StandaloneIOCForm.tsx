@@ -3,6 +3,7 @@ import { X, Plus, Trash2 } from 'lucide-react';
 import type { StandaloneIOC, IOCType, ConfidenceLevel, Folder, Tag, IOCRelationship, InvestigationMember, EntityComment } from '../../types';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, DEFAULT_CLS_LEVELS, DEFAULT_RELATIONSHIP_TYPES, IOC_STATUS_VALUES, IOC_STATUS_LABELS } from '../../types';
 import { EntityComments } from '../Common/EntityComments';
+import { EnrichmentLabels } from './EnrichmentLabels';
 
 interface StandaloneIOCFormProps {
   open: boolean;
@@ -364,6 +365,17 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
             className={`${inputCls} resize-none`}
           />
         </div>
+
+        {/* Enrichment Labels (edit mode only) */}
+        {isEditMode && editingIOC?.enrichment && Object.keys(editingIOC.enrichment).length > 0 && (
+          <div>
+            <label className="block text-xs text-gray-400 mb-1">
+              Enrichment Labels
+              <span className="ml-1 text-[9px] text-gray-600 font-normal">(experimental)</span>
+            </label>
+            <EnrichmentLabels enrichment={editingIOC.enrichment} compact={false} />
+          </div>
+        )}
 
         {/* Enrichment History (edit mode only) */}
         {isEditMode && editingIOC?.enrichment && Object.keys(editingIOC.enrichment).length > 0 && (

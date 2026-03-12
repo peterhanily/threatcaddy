@@ -12,6 +12,7 @@ import { RunIntegrationMenu } from '../Integrations/RunIntegrationMenu';
 import { useIntegrations } from '../../hooks/useIntegrations';
 import { useToast } from '../../contexts/ToastContext';
 import { formatDate } from '../../lib/utils';
+import { EnrichmentLabels } from './EnrichmentLabels';
 import { TableVirtuoso } from 'react-virtuoso';
 
 // ─── Constants ─────────────────────────────────────────────────────
@@ -1462,6 +1463,7 @@ function AllIOCsTab({
                   {isColVisible('analystNotes') && <th className="text-left text-gray-500 font-medium py-2 px-2">Notes</th>}
                   {isColVisible('tags') && <th className="text-left text-gray-500 font-medium py-2 px-2">Tags</th>}
                   {isColVisible('firstSeen') && <th className="text-left text-gray-500 font-medium py-2 px-2">First Seen</th>}
+                  {isColVisible('labels') && <th className="text-left text-gray-500 font-medium py-2 px-2">Labels</th>}
                   <th className="text-right text-gray-500 font-medium py-2 pl-2">Actions</th>
                 </tr>
               )}
@@ -1559,6 +1561,11 @@ function AllIOCsTab({
                     {isColVisible('firstSeen') && (
                       <td className="py-2 px-2 text-gray-500">
                         {si ? formatDate(si.createdAt) : '--'}
+                      </td>
+                    )}
+                    {isColVisible('labels') && (
+                      <td className="py-2 px-2">
+                        <EnrichmentLabels enrichment={si?.enrichment} maxVisible={4} compact />
                       </td>
                     )}
                     <td className="py-2 pl-2">

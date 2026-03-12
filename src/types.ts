@@ -308,6 +308,7 @@ export const ALL_IOC_TABLE_COLUMNS: { key: string; label: string; alwaysVisible?
   { key: 'analystNotes', label: 'Notes', hiddenByDefault: true },
   { key: 'tags', label: 'Tags', hiddenByDefault: true },
   { key: 'firstSeen', label: 'First Seen', hiddenByDefault: true },
+  { key: 'labels', label: 'Labels', hiddenByDefault: true },
   { key: 'assignee', label: 'Assignee', hiddenByDefault: true, teamOnly: true },
 ];
 
