@@ -737,8 +737,46 @@ async function streamAnthropic(send, payload, signal) {
   send({ type: 'done', stopReason: stopReason || 'end_turn', contentBlocks });
 }
 
+// Parse tool calls from model text output (fallback for local LLMs that don't use structured tool_calls).
+// Supports: <tool_call>{"name":"...","arguments":{...}}</tool_call>, <function_call>...</function_call>,
+// and ```json blocks with name+arguments/parameters.
+function parseToolCallsFromText(text, toolNames) {
+  const calls = [];
+  const nameSet = new Set(toolNames || []);
+
+  // Pattern 1: <tool_call>JSON</tool_call> or <function_call>JSON</function_call>
+  const tagPattern = /<(?:tool_call|function_call)>\s*([\s\S]*?)\s*<\/(?:tool_call|function_call)>/gi;
+  let match;
+  while ((match = tagPattern.exec(text)) !== null) {
+    try {
+      const obj = JSON.parse(match[1]);
+      const name = obj.name || obj.function;
+      const args = obj.arguments || obj.parameters || obj.input || {};
+      if (name && nameSet.has(name)) {
+        calls.push({ name, arguments: typeof args === 'string' ? JSON.parse(args) : args });
+      }
+    } catch {}
+  }
+  if (calls.length > 0) return calls;
+
+  // Pattern 2: JSON blocks (```json or bare) containing {name, arguments/parameters}
+  const jsonBlockPattern = /```(?:json)?\s*\n?([\s\S]*?)\n?```/gi;
+  while ((match = jsonBlockPattern.exec(text)) !== null) {
+    try {
+      const obj = JSON.parse(match[1]);
+      const name = obj.name || obj.function;
+      const args = obj.arguments || obj.parameters || obj.input || {};
+      if (name && nameSet.has(name)) {
+        calls.push({ name, arguments: typeof args === 'string' ? JSON.parse(args) : args });
+      }
+    } catch {}
+  }
+
+  return calls;
+}
+
 // Shared streamer for OpenAI-compatible APIs (OpenAI, Mistral, Local/Ollama/vLLM)
-async function streamOpenAICompatible(send, payload, signal, endpoint, headers, providerLabel) {
+async function streamOpenAICompatible(send, payload, signal, endpoint, headers, providerLabel, options = {}) {
   await ensureLLMPermission(endpoint);
 
   const messages = [];
@@ -801,6 +839,7 @@ async function streamOpenAICompatible(send, payload, signal, endpoint, headers, 
   const reader = resp.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let fullText = '';
   let stopReason = null;
   const toolCallAccum = {};
 
@@ -823,6 +862,7 @@ async function streamOpenAICompatible(send, payload, signal, endpoint, headers, 
 
         const content = choice.delta?.content;
         if (content) {
+          fullText += content;
           send({ type: 'chunk', content });
         }
 
@@ -850,6 +890,26 @@ async function streamOpenAICompatible(send, payload, signal, endpoint, headers, 
       let parsedArgs = {};
       try { parsedArgs = JSON.parse(tc.arguments); } catch {}
       contentBlocks.push({ type: 'tool_use', id: tc.id, name: tc.name, input: parsedArgs });
+    }
+  }
+
+  // Fallback: if no structured tool calls were found and text-based parsing is enabled,
+  // try to extract tool calls from the model's text output. Many local LLMs output
+  // tool calls as <tool_call>JSON</tool_call> or ```json blocks instead of using
+  // the OpenAI tool_calls streaming protocol.
+  if (contentBlocks.length === 0 && options.textToolParsing && fullText) {
+    const toolNames = (payload.tools || []).map(t => t.name);
+    const textCalls = parseToolCallsFromText(fullText, toolNames);
+    if (textCalls.length > 0) {
+      for (let i = 0; i < textCalls.length; i++) {
+        contentBlocks.push({
+          type: 'tool_use',
+          id: `text_tc_${Date.now()}_${i}`,
+          name: textCalls[i].name,
+          input: textCalls[i].arguments,
+        });
+      }
+      stopReason = 'tool_calls';
     }
   }
 
@@ -902,7 +962,8 @@ async function streamLocal(send, payload, signal) {
     send, payload, signal,
     endpoint,
     headers,
-    'Local LLM'
+    'Local LLM',
+    { textToolParsing: true }
   );
 }
 

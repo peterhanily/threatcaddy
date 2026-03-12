@@ -71,13 +71,14 @@ export function ChatView({
   const systemPromptRef = useRef<string>('');
   const systemPromptKeyRef = useRef<string>('');
   useEffect(() => {
-    const key = `${selectedFolder?.id ?? ''}:${selectedFolder?.updatedAt ?? ''}:${settings.llmSystemPrompt ?? ''}`;
+    const provider = activeThread?.provider ?? 'anthropic';
+    const key = `${selectedFolder?.id ?? ''}:${selectedFolder?.updatedAt ?? ''}:${settings.llmSystemPrompt ?? ''}:${provider}`;
     if (key === systemPromptKeyRef.current) return;
     systemPromptKeyRef.current = key;
-    buildSystemPrompt(selectedFolder, settings.llmSystemPrompt).then((prompt) => {
+    buildSystemPrompt(selectedFolder, settings.llmSystemPrompt, provider).then((prompt) => {
       systemPromptRef.current = prompt;
     });
-  }, [selectedFolder, settings.llmSystemPrompt]);
+  }, [selectedFolder, settings.llmSystemPrompt, activeThread?.provider]);
 
   // Auto-select first thread when none selected (or stale selection) and threads exist
   useEffect(() => {
@@ -260,7 +261,7 @@ export function ChatView({
     }
 
     // Use memoized system prompt — only rebuilt when folder context changes
-    const systemPrompt = systemPromptRef.current || await buildSystemPrompt(selectedFolder, settings.llmSystemPrompt);
+    const systemPrompt = systemPromptRef.current || await buildSystemPrompt(selectedFolder, settings.llmSystemPrompt, activeThread.provider);
 
     // Build conversation messages (string content for history)
     // Use transformed text for the last user message so the LLM gets natural language

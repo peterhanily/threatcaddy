@@ -114,8 +114,44 @@ When you reference entities in your response, use this format so they become cli
 - At the end of responses where you used search or analysis tools, suggest 2-3 follow-up questions the user might want to ask. Format them as:
 <!-- suggestions: Question 1 | Question 2 | Question 3 -->`;
 
-export async function buildSystemPrompt(folder?: Folder, customPrompt?: string): Promise<string> {
+const LOCAL_TOOL_CALLING_INSTRUCTIONS = `
+
+## Tool Calling Format
+
+CRITICAL: To use your tools, you MUST output tool calls using the exact XML format below. Do NOT just describe what you would do — you must actually call the tool. The system will parse these tags and execute the tool for you.
+
+When you want to call a tool, output:
+
+<tool_call>
+{"name": "tool_name", "arguments": {"param1": "value1", "param2": "value2"}}
+</tool_call>
+
+For example, to create a note:
+
+<tool_call>
+{"name": "create_note", "arguments": {"title": "My Note", "content": "Note content here"}}
+</tool_call>
+
+To search notes:
+
+<tool_call>
+{"name": "search_notes", "arguments": {"query": "malware"}}
+</tool_call>
+
+Rules:
+- You can include text before or after the <tool_call> tags
+- You can make multiple tool calls in a single response — use separate <tool_call> tags for each
+- The JSON inside must have "name" (the tool name) and "arguments" (the tool parameters)
+- After you call a tool, the system will execute it and provide the result in the next message, then you can respond based on the result`;
+
+export async function buildSystemPrompt(folder?: Folder, customPrompt?: string, provider?: string): Promise<string> {
   let prompt = customPrompt?.trim() || DEFAULT_SYSTEM_PROMPT;
+
+  // Local LLMs need explicit tool-calling format instructions since they don't
+  // support the OpenAI function-calling protocol natively
+  if (provider === 'local') {
+    prompt += LOCAL_TOOL_CALLING_INSTRUCTIONS;
+  }
 
   if (folder) {
     prompt += `\n\n## Current Investigation Context\n\nInvestigation: "${folder.name}"`;
