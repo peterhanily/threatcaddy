@@ -112,23 +112,29 @@ export function installEncryptionMiddleware(db: Dexie): void {
             async get(req: DBCoreGetRequest) {
               const result = await downlevelTable.get(req);
               if (!sessionKey || !result) return result;
-              return decryptRow(tableName, result as Record<string, unknown>);
+              return Dexie.waitFor(
+                decryptRow(tableName, result as Record<string, unknown>),
+              );
             },
 
             async getMany(req: DBCoreGetManyRequest) {
               const results = await downlevelTable.getMany(req);
               if (!sessionKey) return results;
-              return Promise.all(
-                results.map((r) => (r ? decryptRow(tableName, r as Record<string, unknown>) : r)),
+              return Dexie.waitFor(
+                Promise.all(
+                  results.map((r) => (r ? decryptRow(tableName, r as Record<string, unknown>) : r)),
+                ),
               );
             },
 
             async query(req: DBCoreQueryRequest) {
               const result = await downlevelTable.query(req);
               if (!sessionKey || !req.values) return result;
-              const decryptedRows = await Promise.all(
-                result.result.map((r: unknown) =>
-                  r ? decryptRow(tableName, r as Record<string, unknown>) : r,
+              const decryptedRows = await Dexie.waitFor(
+                Promise.all(
+                  result.result.map((r: unknown) =>
+                    r ? decryptRow(tableName, r as Record<string, unknown>) : r,
+                  ),
                 ),
               );
               return { ...result, result: decryptedRows };
