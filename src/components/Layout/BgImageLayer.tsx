@@ -7,9 +7,10 @@ interface BgImageLayerProps {
   theme: 'dark' | 'light';
   posX: number;
   posY: number;
+  zoom: number;
 }
 
-export function BgImageLayer({ enabled, opacity, theme, posX, posY }: BgImageLayerProps) {
+export function BgImageLayer({ enabled, opacity, theme, posX, posY, zoom }: BgImageLayerProps) {
   const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export function BgImageLayer({ enabled, opacity, theme, posX, posY }: BgImageLay
         src={url}
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
-        style={{ objectPosition: `${posX}% ${posY}%` }}
+        style={{ objectPosition: `${posX}% ${posY}%`, transform: zoom !== 100 ? `scale(${zoom / 100})` : undefined }}
       />
       <div
         className="absolute inset-0"

@@ -249,6 +249,7 @@ export interface Settings {
   bgImageOpacity?: number;       // overlay opacity 0–100; default 85
   bgImagePosX?: number;          // horizontal position 0–100; default 50
   bgImagePosY?: number;          // vertical position 0–100; default 50
+  bgImageZoom?: number;          // zoom scale 50–200; default 100
 }
 
 export const DEFAULT_SETTINGS: Settings = {

@@ -9,10 +9,11 @@ interface AppLayoutProps {
   bgImageOpacity?: number;
   bgImagePosX?: number;
   bgImagePosY?: number;
+  bgImageZoom?: number;
   theme?: 'dark' | 'light';
 }
 
-export function AppLayout({ header, sidebar, children, bgImageEnabled, bgImageOpacity, bgImagePosX, bgImagePosY, theme }: AppLayoutProps) {
+export function AppLayout({ header, sidebar, children, bgImageEnabled, bgImageOpacity, bgImagePosX, bgImagePosY, bgImageZoom, theme }: AppLayoutProps) {
   return (
     <div className="h-screen flex flex-col overflow-hidden relative">
       <a
@@ -26,6 +27,7 @@ export function AppLayout({ header, sidebar, children, bgImageEnabled, bgImageOp
         opacity={bgImageOpacity ?? 85}
         posX={bgImagePosX ?? 50}
         posY={bgImagePosY ?? 50}
+        zoom={bgImageZoom ?? 100}
         theme={theme ?? 'dark'}
       />
       {header}

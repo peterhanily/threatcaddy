@@ -1439,6 +1439,7 @@ function AppInner() {
         bgImageOpacity={settings.bgImageOpacity}
         bgImagePosX={settings.bgImagePosX}
         bgImagePosY={settings.bgImagePosY}
+        bgImageZoom={settings.bgImageZoom}
         theme={settings.theme}
         header={
           <Header

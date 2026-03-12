@@ -20,6 +20,7 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
 
   const scheme = settings.colorScheme ?? 'indigo';
   const opacity = settings.bgImageOpacity ?? 85;
+  const zoom = settings.bgImageZoom ?? 100;
   const posX = settings.bgImagePosX ?? 50;
   const posY = settings.bgImagePosY ?? 50;
   const bgEnabled = settings.bgImageEnabled ?? false;
@@ -72,7 +73,7 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
     }
   };
 
-  const resetPosition = () => onUpdateSettings({ bgImagePosX: 50, bgImagePosY: 50 });
+  const resetPosition = () => onUpdateSettings({ bgImagePosX: 50, bgImagePosY: 50, bgImageZoom: 100 });
 
   return (
     <div className="space-y-6">
@@ -112,7 +113,7 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
                 src={bgPreview}
                 alt="Background preview"
                 className="w-full h-full object-cover"
-                style={{ objectPosition: `${posX}% ${posY}%` }}
+                style={{ objectPosition: `${posX}% ${posY}%`, transform: zoom !== 100 ? `scale(${zoom / 100})` : undefined }}
               />
               <div
                 className="absolute inset-0"
@@ -158,17 +159,38 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
               </div>
             </div>
 
+            {/* Zoom */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">Zoom</span>
+                <span className="text-xs text-gray-500 tabular-nums">{zoom}%</span>
+              </div>
+              <input
+                type="range"
+                min={50}
+                max={200}
+                step={5}
+                value={zoom}
+                onChange={(e) => onUpdateSettings({ bgImageZoom: Number(e.target.value) })}
+                className="w-full accent-accent h-1.5"
+              />
+              <div className="flex justify-between text-[10px] text-gray-600">
+                <span>Out</span>
+                <span>In</span>
+              </div>
+            </div>
+
             {/* Position */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">Position</span>
-                {(posX !== 50 || posY !== 50) && (
+                {(posX !== 50 || posY !== 50 || zoom !== 100) && (
                   <button
                     onClick={resetPosition}
                     className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
                   >
                     <RotateCcw size={10} />
-                    Center
+                    Reset
                   </button>
                 )}
               </div>
