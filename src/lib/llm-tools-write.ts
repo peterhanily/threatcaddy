@@ -1,7 +1,8 @@
 import { nanoid } from 'nanoid';
 import { db } from '../db';
 import type {
-  IOCType, ConfidenceLevel, TimelineEventType, Priority, TaskStatus, Note, Task,
+  IOCType, ConfidenceLevel, TimelineEventType, Priority, TaskStatus,
+  Note, Task, StandaloneIOC, TimelineEvent,
 } from '../types';
 
 const MAX_SNIPPET = 200;
@@ -112,6 +113,26 @@ export async function executeCreateIOC(input: Record<string, unknown>, folderId?
   return JSON.stringify({ success: true, id: ioc.id, type: ioc.type, value: ioc.value });
 }
 
+export async function executeUpdateIOC(input: Record<string, unknown>): Promise<string> {
+  const id = String(input.id || '');
+  if (!id) return JSON.stringify({ error: 'id is required' });
+
+  const ioc = await db.standaloneIOCs.get(id);
+  if (!ioc) return JSON.stringify({ error: 'IOC not found' });
+
+  const updates: Partial<StandaloneIOC> = { updatedAt: Date.now() };
+  if (input.type !== undefined) updates.type = input.type as IOCType;
+  if (input.value !== undefined) updates.value = String(input.value);
+  if (input.confidence !== undefined) updates.confidence = input.confidence as ConfidenceLevel;
+  if (input.analystNotes !== undefined) updates.analystNotes = String(input.analystNotes);
+  if (input.attribution !== undefined) updates.attribution = String(input.attribution);
+  if (input.iocSubtype !== undefined) updates.iocSubtype = String(input.iocSubtype);
+  if (input.iocStatus !== undefined) updates.iocStatus = String(input.iocStatus);
+
+  await db.standaloneIOCs.update(id, updates);
+  return JSON.stringify({ success: true, id, type: updates.type || ioc.type, value: updates.value || ioc.value });
+}
+
 export async function executeBulkCreateIOCs(input: Record<string, unknown>, folderId?: string): Promise<string> {
   const iocInputs = input.iocs as Array<Record<string, unknown>>;
   if (!Array.isArray(iocInputs) || iocInputs.length === 0) {
@@ -196,6 +217,36 @@ export async function executeCreateTimelineEvent(input: Record<string, unknown>,
   };
   await db.timelineEvents.add(event);
   return JSON.stringify({ success: true, id: event.id, title: event.title, timestamp: new Date(timestamp).toISOString() });
+}
+
+export async function executeUpdateTimelineEvent(input: Record<string, unknown>): Promise<string> {
+  const id = String(input.id || '');
+  if (!id) return JSON.stringify({ error: 'id is required' });
+
+  const event = await db.timelineEvents.get(id);
+  if (!event) return JSON.stringify({ error: 'Timeline event not found' });
+
+  const updates: Partial<TimelineEvent> = { updatedAt: Date.now() };
+  if (input.title !== undefined) updates.title = String(input.title);
+  if (input.description !== undefined) updates.description = String(input.description);
+  if (input.timestamp !== undefined) {
+    const parsed = new Date(String(input.timestamp)).getTime();
+    if (!isNaN(parsed)) updates.timestamp = parsed;
+  }
+  if (input.eventType !== undefined) updates.eventType = input.eventType as TimelineEventType;
+  if (input.source !== undefined) updates.source = String(input.source);
+  if (input.actor !== undefined) updates.actor = String(input.actor);
+  if (input.confidence !== undefined) updates.confidence = input.confidence as ConfidenceLevel;
+
+  const lat = typeof input.latitude === 'number' ? input.latitude : undefined;
+  const lng = typeof input.longitude === 'number' ? input.longitude : undefined;
+  if (lat !== undefined && lng !== undefined && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+    updates.latitude = lat;
+    updates.longitude = lng;
+  }
+
+  await db.timelineEvents.update(id, updates);
+  return JSON.stringify({ success: true, id, title: updates.title || event.title });
 }
 
 export async function executeLinkEntities(input: Record<string, unknown>): Promise<string> {

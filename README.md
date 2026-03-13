@@ -74,7 +74,7 @@ docker compose up -d   # Starts Hono server + PostgreSQL
 ### CaddyAI
 
 - **Multi-provider** — Anthropic (Claude Opus 4, Sonnet 4, Haiku 3.5), OpenAI (GPT-5.4, GPT-5.4 Pro, GPT-5.2, GPT-5 Mini, o3, o4-mini, GPT-4.1, GPT-4.1 Mini, GPT-4o), Google Gemini (2.5 Pro, 2.5 Flash), Mistral (Large, Small, Codestral), and local models (Ollama / LM Studio / vLLM)
-- **Tool calling** — Agentic loop with 24 tools to search notes, read notes, list tasks/IOCs/timeline events, create and update entities, extract IOCs, fetch URLs, generate reports, and cross-investigation analysis
+- **Tool calling** — Agentic loop with 26 tools to search notes, read notes, list tasks/IOCs/timeline events, create and update entities, extract IOCs, fetch URLs, generate reports, and cross-investigation analysis
 - **Slash commands** — `/fetch`, `/search`, `/note`, `/task`, `/iocs`, `/summary`, `/timeline`, `/report`, `/triage`, `/graph`, `/link`
 - **Persistent threads** with auto-generated titles
 

@@ -19,7 +19,8 @@ import {
 // Write tools
 import {
   executeCreateNote, executeUpdateNote, executeCreateTask, executeUpdateTask,
-  executeCreateIOC, executeBulkCreateIOCs, executeCreateTimelineEvent,
+  executeCreateIOC, executeUpdateIOC, executeBulkCreateIOCs,
+  executeCreateTimelineEvent, executeUpdateTimelineEvent,
   executeLinkEntities, executeGenerateReport, executeCreateInInvestigation,
 } from './llm-tools-write';
 
@@ -72,11 +73,11 @@ Understand the IR lifecycle (NIST SP 800-61): Preparation, Detection & Analysis,
 
 ## Available Tools
 
-You have 24 tools organized into five categories:
+You have 26 tools organized into five categories:
 
 **Search & Read** (7 tools): search_notes, search_all (cross-entity search), read_note, list_tasks, list_iocs, list_timeline_events, get_investigation_summary.
 
-**Create & Update** (9 tools): create_note, update_note, create_task, update_task, create_ioc, bulk_create_iocs, create_timeline_event, link_entities (bidirectional cross-references between notes, tasks, and timeline events), generate_report (structured investigation report with executive summary, findings, IOC table, timeline, and recommendations).
+**Create & Update** (11 tools): create_note, update_note, create_task, update_task, create_ioc, update_ioc, bulk_create_iocs, create_timeline_event, update_timeline_event, link_entities (bidirectional cross-references between notes, tasks, and timeline events), generate_report (structured investigation report with executive summary, findings, IOC table, timeline, and recommendations).
 
 **Analysis** (2 tools): extract_iocs (from arbitrary text), analyze_graph (entity relationship graph — node/edge counts, most connected entities, shortest path between entities).
 
@@ -199,8 +200,10 @@ export async function executeTool(
       case 'create_task':             result = await executeCreateTask(inp, folderId); break;
       case 'update_task':             result = await executeUpdateTask(inp); break;
       case 'create_ioc':              result = await executeCreateIOC(inp, folderId); break;
+      case 'update_ioc':              result = await executeUpdateIOC(inp); break;
       case 'bulk_create_iocs':        result = await executeBulkCreateIOCs(inp, folderId); break;
       case 'create_timeline_event':   result = await executeCreateTimelineEvent(inp, folderId); break;
+      case 'update_timeline_event':   result = await executeUpdateTimelineEvent(inp); break;
       case 'link_entities':           result = await executeLinkEntities(inp); break;
       case 'generate_report':         result = await executeGenerateReport(inp, folderId); break;
       case 'extract_iocs':            result = executeExtractIOCs(inp); break;

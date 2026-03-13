@@ -171,6 +171,24 @@ export const TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'update_ioc',
+    description: 'Update an existing standalone IOC by ID. Only the provided fields are modified.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        id: { type: 'string', description: 'IOC ID to update' },
+        type: { type: 'string', enum: ['ipv4','ipv6','domain','url','email','md5','sha1','sha256','cve','mitre-attack','yara-rule','sigma-rule','file-path'], description: 'New IOC type (optional)' },
+        value: { type: 'string', description: 'New IOC value (optional)' },
+        confidence: { type: 'string', enum: ['low', 'medium', 'high', 'confirmed'], description: 'New confidence level (optional)' },
+        analystNotes: { type: 'string', description: 'New analyst notes (optional)' },
+        attribution: { type: 'string', description: 'Threat actor or campaign attribution (optional)' },
+        iocSubtype: { type: 'string', description: 'IOC subtype e.g. C2 Server, Phishing URL (optional)' },
+        iocStatus: { type: 'string', description: 'IOC status e.g. active, resolved, false-positive (optional)' },
+      },
+      required: ['id'],
+    },
+  },
+  {
     name: 'bulk_create_iocs',
     description: 'Create multiple standalone IOCs at once. Useful when processing threat reports or bulk indicator lists.',
     input_schema: {
@@ -215,6 +233,32 @@ export const TOOL_DEFINITIONS = [
         longitude: { type: 'number', description: 'WGS84 longitude (-180 to 180)' },
       },
       required: ['title', 'timestamp'],
+    },
+  },
+  {
+    name: 'update_timeline_event',
+    description: 'Update an existing timeline event by ID. Only the provided fields are modified.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        id: { type: 'string', description: 'Timeline event ID to update' },
+        title: { type: 'string', description: 'New title (optional)' },
+        description: { type: 'string', description: 'New description (optional)' },
+        timestamp: { type: 'string', description: 'New ISO 8601 timestamp (optional)' },
+        eventType: { type: 'string', enum: [
+          'initial-access','execution','persistence','privilege-escalation',
+          'defense-evasion','credential-access','discovery','lateral-movement',
+          'collection','exfiltration','command-and-control','impact',
+          'detection','containment','eradication','recovery',
+          'communication','evidence','other'
+        ], description: 'New event type (optional)' },
+        source: { type: 'string', description: 'New source (optional)' },
+        actor: { type: 'string', description: 'Threat actor name (optional)' },
+        confidence: { type: 'string', enum: ['low', 'medium', 'high', 'confirmed'], description: 'New confidence level (optional)' },
+        latitude: { type: 'number', description: 'WGS84 latitude -90 to 90 (optional)' },
+        longitude: { type: 'number', description: 'WGS84 longitude -180 to 180 (optional)' },
+      },
+      required: ['id'],
     },
   },
   {
@@ -358,8 +402,8 @@ export const TOOL_DEFINITIONS = [
 const WRITE_TOOLS = new Set([
   'create_note', 'update_note',
   'create_task', 'update_task',
-  'create_ioc', 'bulk_create_iocs',
-  'create_timeline_event',
+  'create_ioc', 'update_ioc', 'bulk_create_iocs',
+  'create_timeline_event', 'update_timeline_event',
   'link_entities',
   'generate_report',
   'create_in_investigation',

@@ -12,7 +12,7 @@ First stable release of ThreatCaddy — a local-first threat investigation works
 - **MITRE ATT&CK integration** — technique mapping on timeline events, Navigator layer export, CSV export
 - **STIX 2.1 export** — indicators, vulnerabilities, relationships, reports with TLP marking definitions
 - **Timeline view** — chronological event tracking with 19 event types aligned to ATT&CK tactics and IR phases
-- **CaddyAI** — LLM-powered investigation assistant with 24 tools (search, create, update, link, analyze, fetch, report generation, cross-investigation analysis). Supports Anthropic, OpenAI, Google Gemini, Mistral, and local LLMs
+- **CaddyAI** — LLM-powered investigation assistant with 26 tools (search, create, update, link, analyze, fetch, report generation, cross-investigation analysis). Supports Anthropic, OpenAI, Google Gemini, Mistral, and local LLMs
 - **Customizable CaddyAI system prompt** — editable in settings with CTI/IR tradecraft baked into the default (MITRE ATT&CK, Diamond Model, Kill Chain, Pyramid of Pain, estimative language, TLP/PAP)
 - **Classification system** — TLP and PAP markings on all entities, screenshare mode to hide sensitive data
 - **Browser extension** — clip text, selections, and full pages from any site. Right-click context menu and keyboard shortcuts. Chrome and Firefox support (Manifest V3)
