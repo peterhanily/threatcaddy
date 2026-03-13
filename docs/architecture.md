@@ -60,7 +60,7 @@ graph TB
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
 | **Browser Client** | React, Vite, TypeScript, Dexie.js | Investigation workspace -- notes, tasks, timelines, IOCs, whiteboards, chat |
-| **IndexedDB** | Dexie.js (18 schema versions) | Local-first storage. All data persists in the browser first. |
+| **IndexedDB** | Dexie.js (21 schema versions) | Local-first storage. All data persists in the browser first. |
 | **Encryption Middleware** | Web Crypto API (AES-256-GCM) | Transparent field-level encryption at rest in IndexedDB |
 | **Extension** | Chrome MV3 / Firefox WebExtension | Web clipping, LLM API proxy (bypasses CORS), URL fetching |
 | **Team Server** | Hono framework, Node.js 22 | REST API, WebSocket server, bot runtime, admin panel |
