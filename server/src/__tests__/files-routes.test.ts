@@ -60,12 +60,14 @@ const mockWriteFile = vi.fn().mockResolvedValue(undefined);
 const mockReadFile = vi.fn();
 const mockStat = vi.fn();
 const mockMkdir = vi.fn().mockResolvedValue(undefined);
+const mockRealpath = vi.fn().mockImplementation((p: string) => Promise.resolve(p));
 
 vi.mock('node:fs/promises', () => ({
   writeFile: (...args: unknown[]) => mockWriteFile(...args),
   readFile: (...args: unknown[]) => mockReadFile(...args),
   stat: (...args: unknown[]) => mockStat(...args),
   mkdir: (...args: unknown[]) => mockMkdir(...args),
+  realpath: (...args: unknown[]) => mockRealpath(...args),
 }));
 
 // Mock createReadStream and Readable.toWeb for streaming file downloads
@@ -139,6 +141,7 @@ let app: Hono;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockRealpath.mockImplementation((p: string) => Promise.resolve(p));
   app = buildApp();
   chainSelect();
   chainInsert();
