@@ -12,7 +12,7 @@ ThreatCaddy is a local-first, team-capable threat intelligence workbench. Users 
 
 | Component | Technology | Purpose |
 |---|---|---|
-| **Browser Client** | React, Vite, TypeScript, Dexie.js | Investigation workspace -- notes, tasks, timelines, IOCs, whiteboards, chat |
+| **Browser Client** | React, Vite, TypeScript, Dexie.js, PWA | Investigation workspace -- notes, tasks, timelines, IOCs, whiteboards, chat |
 | **IndexedDB** | Dexie.js (21 schema versions) | Local-first storage. All data persists in the browser first. |
 | **Encryption Middleware** | Web Crypto API (AES-256-GCM) | Transparent field-level encryption at rest in IndexedDB |
 | **Chrome Extension** | Chrome MV3 | Web clipping, LLM API proxy (bypasses CORS), URL fetching |
@@ -30,14 +30,19 @@ ThreatCaddy is a local-first, team-capable threat intelligence workbench. Users 
 ```
 src/                    Chrome extension source
   components/           React components
+  contexts/             React context providers
   hooks/                React hooks (data layer)
   lib/                  Business logic, tools, export/import
   types.ts              TypeScript interfaces
+  types/                Additional type modules (integrations, etc.)
+  workers/              Web Workers
   db.ts                 Dexie database schema
+
+extension/              Chrome extension packaging (manifest, build scripts)
 
 server/                 Team server
   src/
-    routes/             API route handlers
+    routes/             API route handlers (+ admin/ sub-routes)
     middleware/          Auth, rate limiting, RBAC
     services/           Business logic services
     db/                 Drizzle schema + migrations
@@ -46,6 +51,8 @@ server/                 Team server
 
 agents/                 External agent integrations
   claude-code/          Claude Code skill + CDP daemon
+  claude-desktop/       Claude Desktop MCP integration
+  codex/                OpenAI Codex integration
 
 docs/                   Documentation
 ```
@@ -80,7 +87,7 @@ The client database has evolved through 21 schema versions. Tables include: note
 
 ### 3.4 Server-Side Storage (PostgreSQL via Drizzle ORM)
 
-The server schema has 18 migrations and includes all client-side entities plus server-specific tables: users, sessions, investigation_members, server_settings, allowed_emails, bot_configs, bot_runs, admin_users, activity_log, posts, reactions, notifications, files, saved_searches, integration_templates, and backups.
+The server schema has 19 migrations and includes all client-side entities plus server-specific tables: users, sessions, investigation_members, server_settings, allowed_emails, bot_configs, bot_runs, admin_users, activity_log, posts, reactions, notifications, files, saved_searches, integration_templates, and backups.
 
 Drizzle ORM with the `postgres.js` driver manages the connection pool (max 20 connections). The schema is defined in TypeScript with type-safe queries. Migration files live in `server/src/db/migrations/`.
 
@@ -173,7 +180,7 @@ All sensitive fields in IndexedDB can be encrypted at rest using AES-256-GCM. Th
 
 Each encrypted field gets its own random 96-bit IV. The encryption middleware is installed as a Dexie DBCore middleware, transparently encrypting on mutate (add/put) and decrypting on get/getMany/query. It uses `Dexie.waitFor()` to keep IDB transactions alive during async Web Crypto operations.
 
-Encrypted tables and fields include: notes (title, content, sourceUrl, iocAnalysis), tasks (title, description, comments), folders (name, description), timelineEvents (title, description, source, actor), whiteboards (name, elements, appState), chatThreads (title, messages), and standaloneIOCs (value, analystNotes).
+Encrypted tables and fields include: notes (title, content, sourceUrl, sourceTitle, color, clsLevel, iocAnalysis), tasks (title, description, clsLevel, iocAnalysis, comments), folders (name, description, clsLevel, papLevel), timelineEvents (title, description, source, actor, rawData, clsLevel, iocAnalysis), whiteboards (name, elements, appState), chatThreads (title, messages), standaloneIOCs (value, analystNotes), timelines (name, description), tags (name), activityLog (detail, itemTitle), installedIntegrations (config, lastError), and integrationRuns (log, error, displayResults).
 
 ### 5.4 Security Headers
 
@@ -198,13 +205,14 @@ Real-time collaboration is powered by WebSocket connections between the client a
 **Authentication**: The first message on a new connection must contain a valid JWT (5-second timeout to authenticate).
 
 **Message types**:
-- auth -- JWT authentication on connect.
+- auth -- JWT authentication on connect. Server responds with auth-ok or error.
 - subscribe / unsubscribe -- Join or leave folder channels (verified against investigation_members).
-- presence-update -- Report current view and entity being edited.
+- presence-update -- Report current view and entity being edited. Server broadcasts presence to other subscribers.
 - entity-change-preview -- Optimistic relay from sender to other subscribers (verified for editor access).
 - entity-change -- Server-authoritative entity changes broadcast after sync push acceptance.
 - ping / pong -- Keep-alive (25-second interval).
 - access-revoked -- Sent when a user is removed from an investigation.
+- error -- Sent on malformed messages or unauthorized actions.
 
 **Rate limits**:
 - 30 messages per second per connection.
@@ -226,7 +234,7 @@ ThreatCaddy supports multiple interchange formats for interoperability with othe
 | CSV | Export | IOC export with configurable column selection |
 | STIX 2.1 | Import/Export | Full bundle with Indicator SDOs, Vulnerability SDOs, Relationship SROs, and TLP markings using official OASIS UUIDs |
 | MISP | Import/Export | Event-level export and import with attribute type mapping |
-| Markdown | Export | Individual note export |
+| Markdown | Import/Export | Individual note export; import from Markdown files |
 | HTML Report | Export | Print-friendly, styled investigation report |
 
 Export formats respect TLP classification levels, redacting or omitting data as appropriate.
@@ -239,7 +247,7 @@ The Agent Bridge exposes a `window.threatcaddy` API surface that AI agents can i
 
 ### 8.1 Capabilities
 
-The bridge provides 29 tools organized into four categories:
+The bridge provides 29 tools organized into five categories:
 
 - **Search and Read** (10 tools) -- Query and retrieve investigation data.
 - **Create and Update** (11 tools) -- Mutate notes, tasks, IOCs, timeline events, and other entities.
@@ -272,6 +280,7 @@ Bots extend ThreatCaddy with automated workflows for enrichment, monitoring, and
 | report | Generate reports |
 | correlation | Find relationships across investigations |
 | ai-agent | LLM-powered autonomous agent with tool calling |
+| integration | Execute integration templates |
 | custom | User-defined logic |
 
 ### 9.2 Trigger Types
@@ -342,7 +351,7 @@ Bots making outbound HTTP requests are subject to:
 
 ### 9.7 Bot Secret Storage
 
-Bot API keys and secrets are encrypted at rest in the database using AES-256-GCM with 12-byte IV and 16-byte auth tag. The encryption key is derived via scrypt from the `BOT_MASTER_KEY` environment variable. Fields ending in Key, Secret, Token, or Password are auto-detected as secrets. API responses show redacted placeholders.
+Bot API keys and secrets are encrypted at rest in the database using AES-256-GCM with 12-byte IV and 16-byte auth tag. The encryption key is derived via scrypt from the `BOT_MASTER_KEY` environment variable. Fields with names ending in secret, password, token, apikey, api_key, auth_key, private_key, or encryption_key are auto-detected as secrets. API responses show redacted placeholders.
 
 ---
 

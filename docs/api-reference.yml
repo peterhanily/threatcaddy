@@ -262,6 +262,7 @@ paths:
       operationId: listUsers
       tags: [users]
       summary: List users
+      description: "With a search parameter, any authenticated user can search by display name or email. Without search, the full user list requires admin role (returns 403 for non-admins)."
       parameters:
         - name: search
           in: query
@@ -311,6 +312,7 @@ paths:
       operationId: updateUser
       tags: [users]
       summary: Update user (admin only)
+      description: "Requires admin role. Can update role, active status, and displayName."
       parameters:
         - $ref: "#/components/parameters/UserId"
       requestBody:
@@ -342,7 +344,8 @@ paths:
     delete:
       operationId: deleteUser
       tags: [users]
-      summary: Delete user (admin only)
+      summary: Deactivate user (admin only)
+      description: "Requires admin role. Deactivates the user, invalidates all sessions, and disconnects WebSocket connections. Cannot deactivate yourself."
       parameters:
         - $ref: "#/components/parameters/UserId"
       responses:
@@ -733,7 +736,8 @@ paths:
                   description: File to upload (max 50 MB)
                 folderId:
                   type: string
-              required: [file, folderId]
+                  description: Optional investigation folder ID to scope the file to
+              required: [file]
       responses:
         "201":
           description: File uploaded
@@ -853,7 +857,6 @@ paths:
       operationId: getBackup
       tags: [backups]
       summary: Download an encrypted backup
-      description: "Rate limit: 5 requests per minute."
       parameters:
         - name: id
           in: path
@@ -876,7 +879,6 @@ paths:
       operationId: deleteBackup
       tags: [backups]
       summary: Delete a backup
-      description: "Rate limit: 5 requests per minute."
       parameters:
         - name: id
           in: path
@@ -2120,42 +2122,86 @@ components:
       properties:
         id:
           type: string
-        userId:
+        category:
           type: string
         action:
           type: string
-        target:
+        detail:
           type: string
-        targetId:
-          type: string
-        metadata:
-          type: object
+        itemId:
+          type:
+            - string
+            - "null"
+        itemTitle:
+          type:
+            - string
+            - "null"
+        folderId:
+          type:
+            - string
+            - "null"
         timestamp:
           type: string
           format: date-time
-      required: [id, userId, action, timestamp]
+      required: [id, category, action, timestamp]
 
     # ── Investigations ──────────────────────────────────────────────
-    Investigation:
+    InvestigationMembership:
       type: object
       properties:
-        id:
+        folderId:
           type: string
-        name:
+        role:
           type: string
-        description:
-          type: string
-        ownerId:
-          type: string
-        status:
-          type: string
-        createdAt:
+          enum: [owner, editor, viewer]
+        joinedAt:
           type: string
           format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-      required: [id, name, ownerId, createdAt]
+        folder:
+          type: object
+          properties:
+            name:
+              type: string
+            status:
+              type: string
+            color:
+              type: string
+            icon:
+              type: string
+            description:
+              type: string
+            clsLevel:
+              type: string
+            papLevel:
+              type: string
+            tags:
+              type: array
+              items:
+                type: string
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+        entityCounts:
+          type: object
+          properties:
+            notes:
+              type: integer
+            tasks:
+              type: integer
+            iocs:
+              type: integer
+            events:
+              type: integer
+            whiteboards:
+              type: integer
+            chats:
+              type: integer
+        memberCount:
+          type: integer
+      required: [folderId, role, folder, entityCounts, memberCount]
 
     PaginatedInvestigations:
       type: object
@@ -2163,7 +2209,7 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/Investigation"
+            $ref: "#/components/schemas/InvestigationMembership"
         total:
           type: integer
         limit:
@@ -2175,20 +2221,34 @@ components:
     InvestigationSummary:
       type: object
       properties:
-        id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        ownerId:
-          type: string
-        status:
-          type: string
-        members:
-          type: array
-          items:
-            $ref: "#/components/schemas/Member"
+        folder:
+          type: object
+          properties:
+            name:
+              type: string
+            status:
+              type: string
+            color:
+              type: string
+            icon:
+              type: string
+            description:
+              type: string
+            clsLevel:
+              type: string
+            papLevel:
+              type: string
+            tags:
+              type: array
+              items:
+                type: string
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+          required: [name]
         entityCounts:
           type: object
           properties:
@@ -2198,38 +2258,46 @@ components:
               type: integer
             iocs:
               type: integer
-            timelineEvents:
+            events:
               type: integer
-            files:
+            whiteboards:
               type: integer
-        createdAt:
-          type: string
+            chats:
+              type: integer
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/Member"
+        lastActivity:
+          type:
+            - string
+            - "null"
           format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-      required: [id, name, ownerId, members, entityCounts, createdAt]
+      required: [folder, entityCounts, members]
 
     Member:
       type: object
       properties:
+        id:
+          type: string
         userId:
           type: string
+        role:
+          type: string
+          enum: [owner, editor, viewer]
+        joinedAt:
+          type: string
+          format: date-time
         displayName:
           type: string
         email:
           type: string
           format: email
-        role:
-          type: string
         avatarUrl:
           type:
             - string
             - "null"
-        joinedAt:
-          type: string
-          format: date-time
-      required: [userId, displayName, role]
+      required: [id, userId, role, displayName, email]
 
     # ── Entities (Notes, Tasks, IOCs, Timeline) ─────────────────────
     Note:
@@ -2345,68 +2413,44 @@ components:
     SyncChange:
       type: object
       properties:
-        id:
-          type: string
         table:
           type: string
-        rowId:
+        op:
           type: string
-        folderId:
+          enum: [put, delete]
+        entityId:
           type: string
-        operation:
-          type: string
-          enum: [insert, update, delete]
         data:
           type: object
-        timestamp:
-          type: string
-          format: date-time
-        userId:
-          type: string
-      required: [table, rowId, operation, timestamp]
+        clientVersion:
+          type: integer
+      required: [table, op, entityId]
 
     SyncResult:
       type: object
       properties:
-        rowId:
+        table:
+          type: string
+        entityId:
           type: string
         status:
           type: string
-          enum: [ok, conflict, error]
-        error:
-          type: string
+          enum: [accepted, conflict, rejected]
         serverVersion:
+          type: integer
+        serverData:
           type: object
-      required: [rowId, status]
+        serverRecord:
+          type: object
+      required: [table, entityId, status]
 
     InvestigationSnapshot:
       type: object
-      properties:
-        folderId:
-          type: string
-        investigation:
-          $ref: "#/components/schemas/Investigation"
-        notes:
-          type: array
-          items:
-            $ref: "#/components/schemas/Note"
-        tasks:
-          type: array
-          items:
-            $ref: "#/components/schemas/Task"
-        iocs:
-          type: array
-          items:
-            $ref: "#/components/schemas/IOC"
-        timelineEvents:
-          type: array
-          items:
-            $ref: "#/components/schemas/TimelineEvent"
-        members:
-          type: array
-          items:
-            $ref: "#/components/schemas/Member"
-      required: [folderId, investigation]
+      description: "Map of table names to arrays of entity rows. Keys include: folders, notes, tasks, standaloneIOCs, timelineEvents, whiteboards, chatThreads, etc."
+      additionalProperties:
+        type: array
+        items:
+          type: object
 
     # ── Files ───────────────────────────────────────────────────────
     FileMetadata:
@@ -2414,26 +2458,19 @@ components:
       properties:
         id:
           type: string
-        folderId:
-          type: string
-        filename:
-          type: string
-        mimeType:
-          type: string
-        size:
-          type: integer
         url:
           type: string
         thumbnailUrl:
           type:
             - string
             - "null"
-        uploadedBy:
+        mimeType:
           type: string
-        createdAt:
+        size:
+          type: integer
+        filename:
           type: string
-          format: date-time
-      required: [id, folderId, filename, mimeType, size, url, uploadedBy, createdAt]
+      required: [id, url, mimeType, size, filename]
 
     # ── Backups ─────────────────────────────────────────────────────
     Backup:
@@ -2441,18 +2478,30 @@ components:
       properties:
         id:
           type: string
-        userId:
+        name:
           type: string
-        filename:
+        type:
           type: string
-        size:
+          enum: [full, differential]
+        scope:
+          type: string
+          enum: [all, investigation, entity]
+        scopeId:
+          type:
+            - string
+            - "null"
+        entityCount:
           type: integer
-        metadata:
-          type: object
+        sizeBytes:
+          type: integer
+        parentBackupId:
+          type:
+            - string
+            - "null"
         createdAt:
           type: string
           format: date-time
-      required: [id, userId, filename, size, createdAt]
+      required: [id, name, type, scope, entityCount, sizeBytes, createdAt]
 
     # ── Audit ───────────────────────────────────────────────────────
     AuditEntry:
@@ -2462,18 +2511,34 @@ components:
           type: string
         userId:
           type: string
-        folderId:
+        category:
           type: string
         action:
           type: string
-        category:
+        detail:
           type: string
-        details:
-          type: object
+        itemId:
+          type:
+            - string
+            - "null"
+        itemTitle:
+          type:
+            - string
+            - "null"
+        folderId:
+          type:
+            - string
+            - "null"
         timestamp:
           type: string
           format: date-time
-      required: [id, userId, action, timestamp]
+        userDisplayName:
+          type: string
+        userAvatarUrl:
+          type:
+            - string
+            - "null"
+      required: [id, userId, category, action, timestamp]
 
     # ── Bots ────────────────────────────────────────────────────────
     BotConfig:
@@ -2561,11 +2626,10 @@ components:
           type: string
         description:
           type: string
-        type:
-          type: string
-        config:
+        template:
           type: object
-        createdBy:
+          description: "The integration template definition containing name, version, description, category, steps, outputs, triggers"
+        sharedBy:
           type: string
         createdAt:
           type: string
@@ -2573,20 +2637,39 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required: [id, name, type]
+      required: [id, name, template, sharedBy]
 
     IntegrationTemplateInput:
       type: object
       properties:
-        name:
-          type: string
-        description:
-          type: string
-        type:
-          type: string
-        config:
+        template:
           type: object
-      required: [name, type]
+          description: "Integration template object with required fields: name (string), steps (array), outputs (array or object). Optional: version, description, category, triggers."
+          properties:
+            name:
+              type: string
+            version:
+              type: string
+            description:
+              type: string
+            category:
+              type: string
+            steps:
+              type: array
+              items:
+                type: object
+            outputs:
+              oneOf:
+                - type: array
+                  items:
+                    type: object
+                - type: object
+            triggers:
+              type: array
+              items:
+                type: object
+          required: [name, steps, outputs]
+      required: [template]
 
     # ── LLM ─────────────────────────────────────────────────────────
     LLMChatRequest:
@@ -2615,25 +2698,15 @@ components:
     LLMProvider:
       type: object
       properties:
-        id:
+        provider:
           type: string
-        name:
-          type: string
+          description: "Provider identifier (e.g., anthropic, openai, gemini, mistral)"
         models:
           type: array
           items:
-            type: object
-            properties:
-              id:
-                type: string
-              name:
-                type: string
-              contextWindow:
-                type: integer
-            required: [id, name]
-        enabled:
-          type: boolean
-      required: [id, name, models, enabled]
+            type: string
+          description: "List of available model identifiers"
+      required: [provider, models]
 
     # ── Notifications ───────────────────────────────────────────────
     Notification:
@@ -2641,22 +2714,36 @@ components:
       properties:
         id:
           type: string
-        userId:
-          type: string
         type:
           type: string
-        title:
-          type: string
-        body:
+        sourceUserId:
+          type:
+            - string
+            - "null"
+        postId:
+          type:
+            - string
+            - "null"
+        folderId:
+          type:
+            - string
+            - "null"
+        message:
           type: string
         read:
           type: boolean
-        metadata:
-          type: object
         createdAt:
           type: string
           format: date-time
-      required: [id, userId, type, title, read, createdAt]
+        sourceUserDisplayName:
+          type:
+            - string
+            - "null"
+        sourceUserAvatarUrl:
+          type:
+            - string
+            - "null"
+      required: [id, type, message, read, createdAt]
 
     # ── CaddyShack (Social Feed) ───────────────────────────────────
     Post:
@@ -2666,8 +2753,12 @@ components:
           type: string
         authorId:
           type: string
-        author:
-          $ref: "#/components/schemas/AuthUser"
+        authorDisplayName:
+          type: string
+        authorAvatarUrl:
+          type:
+            - string
+            - "null"
         content:
           type: string
         attachments:
@@ -2675,13 +2766,18 @@ components:
           items:
             type: object
             properties:
-              type:
+              id:
                 type: string
               url:
                 type: string
-              name:
+              type:
                 type: string
-            required: [type, url]
+                enum: [image, video, audio, document]
+              mimeType:
+                type: string
+              filename:
+                type: string
+            required: [id, url, type, mimeType, filename]
         mentions:
           type: array
           items:
@@ -2703,9 +2799,20 @@ components:
         pinned:
           type: boolean
         reactions:
-          type: array
-          items:
-            $ref: "#/components/schemas/Reaction"
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              count:
+                type: integer
+              userIds:
+                type: array
+                items:
+                  type: string
+            required: [count, userIds]
+          description: "Record keyed by emoji string, e.g. { \"thumbsup\": { count: 2, userIds: [...] } }"
+        replyCount:
+          type: integer
         replies:
           type: array
           items:
@@ -2728,13 +2835,18 @@ components:
           items:
             type: object
             properties:
-              type:
+              id:
                 type: string
               url:
                 type: string
-              name:
+              type:
                 type: string
-            required: [type, url]
+                enum: [image, video, audio, document]
+              mimeType:
+                type: string
+              filename:
+                type: string
+            required: [id, url, type, mimeType, filename]
         mentions:
           type: array
           items:
@@ -2749,24 +2861,13 @@ components:
           type: string
       required: [content]
 
-    Reaction:
-      type: object
-      properties:
-        emoji:
-          type: string
-        count:
-          type: integer
-        users:
-          type: array
-          items:
-            type: string
-      required: [emoji, count]
-
     # ── Saved Searches ──────────────────────────────────────────────
     SavedSearch:
       type: object
       properties:
         id:
+          type: string
+        userId:
           type: string
         name:
           type: string
@@ -2776,15 +2877,13 @@ components:
           type: object
         isShared:
           type: boolean
-        createdBy:
-          type: string
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-      required: [id, name, query, createdBy, createdAt]
+      required: [id, userId, name, query, createdAt]
 
     SavedSearchInput:
       type: object
