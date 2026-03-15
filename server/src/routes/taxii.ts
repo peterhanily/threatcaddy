@@ -69,17 +69,34 @@ function deterministicUUID(namespace: string, value: string): string {
 
 // ── STIX pattern builder ──
 
+/** Escape a value for safe inclusion in a STIX pattern single-quoted string. */
+function escapeStixValue(v: string): string {
+  return v.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+/** IOC type format validators — reject values that don't match expected patterns. */
+const IOC_FORMAT_RE: Record<string, RegExp> = {
+  ipv4:         /^\d{1,3}(?:\.\d{1,3}){3}(?:\/\d{1,2})?$/,
+  ipv6:         /^[0-9a-fA-F:]+(?:\/\d{1,3})?$/,
+  domain:       /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*$/,
+  email:        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  md5:          /^[0-9a-fA-F]{32}$/,
+  sha1:         /^[0-9a-fA-F]{40}$/,
+  sha256:       /^[0-9a-fA-F]{64}$/,
+  'mitre-attack': /^[A-Z]{1,2}\d{4}(\.\d{3})?$/,
+};
+
 const IOC_PATTERN_MAP: Record<string, (v: string) => { pattern: string; pattern_type: string } | null> = {
-  ipv4:         (v) => ({ pattern: `[ipv4-addr:value = '${v}']`, pattern_type: 'stix' }),
-  ipv6:         (v) => ({ pattern: `[ipv6-addr:value = '${v}']`, pattern_type: 'stix' }),
-  domain:       (v) => ({ pattern: `[domain-name:value = '${v}']`, pattern_type: 'stix' }),
-  url:          (v) => ({ pattern: `[url:value = '${v}']`, pattern_type: 'stix' }),
-  email:        (v) => ({ pattern: `[email-addr:value = '${v}']`, pattern_type: 'stix' }),
-  'file-path':  (v) => ({ pattern: `[file:name = '${v}']`, pattern_type: 'stix' }),
-  md5:          (v) => ({ pattern: `[file:hashes.'MD5' = '${v}']`, pattern_type: 'stix' }),
-  sha1:         (v) => ({ pattern: `[file:hashes.'SHA-1' = '${v}']`, pattern_type: 'stix' }),
-  sha256:       (v) => ({ pattern: `[file:hashes.'SHA-256' = '${v}']`, pattern_type: 'stix' }),
-  'mitre-attack': (v) => ({ pattern: `[attack-pattern:external_references[*].external_id = '${v}']`, pattern_type: 'stix' }),
+  ipv4:         (v) => ({ pattern: `[ipv4-addr:value = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
+  ipv6:         (v) => ({ pattern: `[ipv6-addr:value = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
+  domain:       (v) => ({ pattern: `[domain-name:value = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
+  url:          (v) => ({ pattern: `[url:value = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
+  email:        (v) => ({ pattern: `[email-addr:value = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
+  'file-path':  (v) => ({ pattern: `[file:name = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
+  md5:          (v) => ({ pattern: `[file:hashes.'MD5' = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
+  sha1:         (v) => ({ pattern: `[file:hashes.'SHA-1' = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
+  sha256:       (v) => ({ pattern: `[file:hashes.'SHA-256' = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
+  'mitre-attack': (v) => ({ pattern: `[attack-pattern:external_references[*].external_id = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
   'yara-rule':  (v) => ({ pattern: v, pattern_type: 'yara' }),
   'sigma-rule': (v) => ({ pattern: v, pattern_type: 'sigma' }),
   cve:          () => null,
@@ -129,7 +146,9 @@ function buildSTIXBundle(iocs: typeof standaloneIOCs.$inferSelect[], investigati
   for (const ioc of iocs) {
     if (ioc.trashed || ioc.archived) continue;
 
-    const escaped = ioc.value.replace(/'/g, "\\'");
+    // Validate IOC value format — skip malformed values to prevent pattern injection
+    const formatRe = IOC_FORMAT_RE[ioc.type];
+    if (formatRe && !formatRe.test(ioc.value)) continue;
     const tlpKey = (ioc.clsLevel || '').toUpperCase();
     const markingDef = TLP_MARKING_DEFS[tlpKey];
     const markingRefs = markingDef ? [markingDef.id] : undefined;
@@ -156,7 +175,7 @@ function buildSTIXBundle(iocs: typeof standaloneIOCs.$inferSelect[], investigati
 
     // Other IOCs → Indicator SDO
     const patternFn = IOC_PATTERN_MAP[ioc.type];
-    const patternInfo = patternFn ? patternFn(escaped) : null;
+    const patternInfo = patternFn ? patternFn(ioc.value) : null;
     if (!patternInfo) continue;
 
     const indicatorId = `indicator--${deterministicUUID('indicator', `${ioc.type}:${ioc.value}`)}`;

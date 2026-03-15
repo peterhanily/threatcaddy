@@ -213,6 +213,19 @@ function bridgeProxyFetch(
   });
 }
 
+/** Sync allowed proxy domains to the extension so the background script can enforce an allowlist. */
+export function syncProxyAllowedDomains(templates: IntegrationTemplate[]): void {
+  const domains = new Set<string>();
+  for (const t of templates) {
+    for (const d of t.requiredDomains ?? []) {
+      domains.add(d);
+    }
+  }
+  try {
+    window.postMessage({ type: 'TC_SET_PROXY_DOMAINS', domains: [...domains] }, postMessageOrigin());
+  } catch { /* extension not present */ }
+}
+
 /** Check if the extension bridge supports proxy_fetch */
 function hasBridgeProxyFetch(): boolean {
   try {

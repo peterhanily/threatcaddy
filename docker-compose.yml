@@ -5,7 +5,7 @@ services:
       - "3001:3001"
       - "3002:3002"
     environment:
-      DATABASE_URL: postgres://tc:tc@db:5432/threatcaddy
+      DATABASE_URL: postgres://tc:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/threatcaddy
       PORT: "3001"
       ADMIN_PORT: "3002"
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
@@ -29,7 +29,7 @@ services:
     image: postgres:17-alpine
     environment:
       POSTGRES_USER: tc
-      POSTGRES_PASSWORD: tc
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: threatcaddy
     volumes:
       - pg-data:/var/lib/postgresql/data

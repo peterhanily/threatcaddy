@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import { db } from '../db';
 import type { IntegrationTemplate, InstalledIntegration, IntegrationRun } from '../types/integration-types';
 import { BUILTIN_INTEGRATIONS } from '../lib/builtin-integrations';
+import { syncProxyAllowedDomains } from '../lib/integration-executor';
 
 export function useIntegrations() {
   const [templates, setTemplates] = useState<IntegrationTemplate[]>([]);
@@ -21,7 +22,11 @@ export function useIntegrations() {
     const templateMap = new Map<string, IntegrationTemplate>();
     for (const t of BUILTIN_INTEGRATIONS) templateMap.set(t.id, t);
     for (const t of dbTemplates) templateMap.set(t.id, t);
-    setTemplates(Array.from(templateMap.values()));
+    const allTemplates = Array.from(templateMap.values());
+    setTemplates(allTemplates);
+
+    // Sync allowed proxy domains to extension for defense-in-depth
+    syncProxyAllowedDomains(allTemplates);
 
     setInstallations(dbInstallations);
     setRuns(dbRuns);

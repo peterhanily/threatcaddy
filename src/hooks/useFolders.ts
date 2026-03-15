@@ -53,15 +53,16 @@ export function useFolders() {
   }, [folders, createFolder]);
 
   const deleteFolder = useCallback(async (id: string) => {
-    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs], async () => {
+    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs, db.chatThreads], async () => {
       await db.folders.delete(id);
-      // Unset folderId on notes, tasks, timeline events, whiteboards, and IOCs in this folder
+      // Unset folderId on notes, tasks, timeline events, whiteboards, IOCs, and chat threads in this folder
       await Promise.all([
         db.notes.where('folderId').equals(id).modify({ folderId: undefined }),
         db.tasks.where('folderId').equals(id).modify({ folderId: undefined }),
         db.timelineEvents.where('folderId').equals(id).modify({ folderId: undefined }),
         db.whiteboards.where('folderId').equals(id).modify({ folderId: undefined }),
         db.standaloneIOCs.where('folderId').equals(id).modify({ folderId: undefined }),
+        db.chatThreads.where('folderId').equals(id).modify({ folderId: undefined }),
       ]);
     });
     setFolders((prev) => prev.filter((f) => f.id !== id));
@@ -153,13 +154,14 @@ export function useFolders() {
 
   const trashFolderContents = useCallback(async (id: string) => {
     const now = Date.now();
-    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs], async () => {
+    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs, db.chatThreads], async () => {
       await Promise.all([
         db.notes.where('folderId').equals(id).filter((n) => !n.trashed).modify({ trashed: true, trashedAt: now }),
         db.tasks.where('folderId').equals(id).filter((t) => !t.trashed).modify({ trashed: true, trashedAt: now }),
         db.timelineEvents.where('folderId').equals(id).filter((e) => !e.trashed).modify({ trashed: true, trashedAt: now }),
         db.whiteboards.where('folderId').equals(id).filter((w) => !w.trashed).modify({ trashed: true, trashedAt: now }),
         db.standaloneIOCs.where('folderId').equals(id).filter((i) => !i.trashed).modify({ trashed: true, trashedAt: now }),
+        db.chatThreads.where('folderId').equals(id).filter((c) => !c.trashed).modify({ trashed: true, trashedAt: now }),
       ]);
       await db.folders.delete(id);
     });
@@ -167,7 +169,7 @@ export function useFolders() {
   }, []);
 
   const archiveFolder = useCallback(async (id: string) => {
-    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs], async () => {
+    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs, db.chatThreads], async () => {
       await db.folders.update(id, { status: 'archived', updatedAt: Date.now() });
       await Promise.all([
         db.notes.where('folderId').equals(id).filter((n) => !n.trashed).modify({ archived: true }),
@@ -175,6 +177,7 @@ export function useFolders() {
         db.timelineEvents.where('folderId').equals(id).filter((e) => !e.trashed).modify({ archived: true }),
         db.whiteboards.where('folderId').equals(id).filter((w) => !w.trashed).modify({ archived: true }),
         db.standaloneIOCs.where('folderId').equals(id).filter((i) => !i.trashed).modify({ archived: true }),
+        db.chatThreads.where('folderId').equals(id).filter((c) => !c.trashed).modify({ archived: true }),
       ]);
     });
     setFolders((prev) =>
@@ -183,7 +186,7 @@ export function useFolders() {
   }, []);
 
   const unarchiveFolder = useCallback(async (id: string) => {
-    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs], async () => {
+    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs, db.chatThreads], async () => {
       await db.folders.update(id, { status: 'active', updatedAt: Date.now() });
       await Promise.all([
         db.notes.where('folderId').equals(id).filter((n) => n.archived && !n.trashed).modify({ archived: false }),
@@ -191,6 +194,7 @@ export function useFolders() {
         db.timelineEvents.where('folderId').equals(id).filter((e) => e.archived && !e.trashed).modify({ archived: false }),
         db.whiteboards.where('folderId').equals(id).filter((w) => w.archived && !w.trashed).modify({ archived: false }),
         db.standaloneIOCs.where('folderId').equals(id).filter((i) => i.archived && !i.trashed).modify({ archived: false }),
+        db.chatThreads.where('folderId').equals(id).filter((c) => c.archived && !c.trashed).modify({ archived: false }),
       ]);
     });
     setFolders((prev) =>

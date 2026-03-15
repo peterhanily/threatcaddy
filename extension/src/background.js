@@ -441,6 +441,14 @@ function htmlToText(html) {
 // Handle messages from popup and content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return;
+  if (message.type === 'SET_PROXY_DOMAINS') {
+    // Store allowed domains for proxy fetch validation
+    const domains = Array.isArray(message.domains)
+      ? message.domains.filter((d) => typeof d === 'string' && d.length > 0 && d.length < 256)
+      : [];
+    chrome.storage.local.set({ proxyAllowedDomains: domains });
+    return;
+  }
   if (message.type === 'PING') {
     sendResponse({ loaded: true });
   } else if (message.type === 'FETCH_URL') {
@@ -496,7 +504,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })();
     return true;
   } else if (message.type === 'PROXY_FETCH') {
-    // Generic fetch proxy for integration API calls (bypasses CSP/CORS)
+    // Fetch proxy for integration API calls (bypasses CSP/CORS).
+    // Defense-in-depth: block private/internal IPs and validate against stored allowed domains.
     let parsed;
     try {
       parsed = new URL(message.url);
@@ -508,8 +517,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: false, error: 'Only HTTP and HTTPS URLs are supported' });
       return;
     }
+    // Block requests to private/internal hostnames (SSRF protection)
+    const hostname = parsed.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+        || hostname === '0.0.0.0' || hostname.endsWith('.local')
+        || hostname === 'metadata.google.internal'
+        || hostname === '169.254.169.254') {
+      sendResponse({ success: false, error: 'Blocked: requests to internal/private addresses are not allowed' });
+      return;
+    }
     (async () => {
       try {
+        // Validate hostname against stored allowed proxy domains
+        const { proxyAllowedDomains = [] } = await chrome.storage.local.get(['proxyAllowedDomains']);
+        if (proxyAllowedDomains.length > 0) {
+          const allowed = proxyAllowedDomains.some(
+            (d) => hostname === d || hostname.endsWith('.' + d)
+          );
+          if (!allowed) {
+            sendResponse({ success: false, error: 'Blocked: ' + hostname + ' is not in the allowed proxy domains list' });
+            return;
+          }
+        }
         // Ensure we have host permission
         const origin = parsed.origin + '/*';
         const hasPermission = await chrome.permissions.contains({ origins: [origin] });

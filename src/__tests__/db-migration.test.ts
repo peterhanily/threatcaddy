@@ -16,10 +16,11 @@ function deleteDB(name: string): Promise<void> {
 
 function createOldDB(data?: Record<string, unknown[]>): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
+    // Create old DB at version 12 (the version it would have been at before rename)
     const req = indexedDB.open(OLD_DB_NAME, 12);
     req.onupgradeneeded = () => {
       const db = req.result;
-      // Create stores matching the schema the migration expects
+      // Create the 8 stores that existed at v12
       db.createObjectStore('notes', { keyPath: 'id' });
       db.createObjectStore('tasks', { keyPath: 'id' });
       db.createObjectStore('folders', { keyPath: 'id' });
@@ -169,7 +170,7 @@ describe('migrateIndexedDB', () => {
     expect(await dbExists(OLD_DB_NAME)).toBe(true);
   });
 
-  it('migrates all 8 tables', async () => {
+  it('migrates all 8 tables from old DB', async () => {
     const data: Record<string, unknown[]> = {
       notes: [{ id: 'n1', title: 'N' }],
       tasks: [{ id: 't1', title: 'T' }],
@@ -234,11 +235,12 @@ describe('migrateIndexedDB', () => {
     const tx = newDb.transaction('notes', 'readonly');
     const store = tx.objectStore('notes');
 
-    // Verify some key indexes exist
+    // Verify some key indexes exist on the new DB (created at v21 schema)
     expect(store.indexNames.contains('folderId')).toBe(true);
     expect(store.indexNames.contains('tags')).toBe(true);
     expect(store.indexNames.contains('createdAt')).toBe(true);
     expect(store.indexNames.contains('updatedAt')).toBe(true);
+    expect(store.indexNames.contains('createdBy')).toBe(true);
 
     tx.abort();
     newDb.close();

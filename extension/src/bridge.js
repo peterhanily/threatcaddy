@@ -247,6 +247,15 @@ window.addEventListener('message', function (event) {
     }
   }
 
+  if (event.data.type === 'TC_SET_PROXY_DOMAINS') {
+    // Web app sends its configured integration domains so the proxy can enforce an allowlist
+    if (!isExtensionValid()) return;
+    var domains = Array.isArray(event.data.domains) ? event.data.domains : [];
+    try {
+      chrome.runtime.sendMessage({ type: 'SET_PROXY_DOMAINS', domains: domains });
+    } catch (e) { /* ignore */ }
+  }
+
   if (event.data.type === 'TC_LLM_ABORT') {
     var abortId = event.data.requestId;
     var abortPort = ports.get(abortId);

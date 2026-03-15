@@ -9,18 +9,27 @@ const NEW_DB_NAME = 'ThreatCaddyDB';
 const TABLE_NAMES = [
   'notes', 'tasks', 'folders', 'tags',
   'timelineEvents', 'timelines', 'whiteboards', 'activityLog',
+  'standaloneIOCs', 'chatThreads',
 ] as const;
 
-// Version 12 schema (matches src/db.ts)
+// Schema version must match current src/db.ts version so Dexie doesn't
+// trigger an upgrade when it opens the migrated DB.
+const MIGRATION_VERSION = 21;
+
+// Simplified schema for migration — only primary keys and basic indexes.
+// Compound indexes ([a+b]) are not supported by raw IDB and are not needed
+// for data transfer. Dexie will reconcile indexes when it opens the DB.
 const SCHEMA: Record<string, string> = {
-  notes: 'id, title, folderId, pinned, archived, trashed, createdAt, updatedAt, *tags, *iocTypes',
-  tasks: 'id, title, folderId, status, priority, completed, order, createdAt, updatedAt, *tags, *iocTypes',
-  folders: 'id, name, order',
-  tags: 'id, name',
-  timelineEvents: 'id, timestamp, eventType, source, starred, folderId, timelineId, createdAt, updatedAt, *tags, *iocTypes',
-  timelines: 'id, name, order, createdAt',
-  whiteboards: 'id, name, folderId, order, createdAt, updatedAt, *tags',
+  notes: 'id, title, folderId, pinned, archived, trashed, createdAt, updatedAt, *tags, *iocTypes, createdBy',
+  tasks: 'id, title, folderId, status, priority, completed, trashed, archived, order, createdAt, updatedAt, *tags, *iocTypes, createdBy, assigneeId',
+  folders: 'id, name, order, createdBy',
+  tags: 'id, name, createdBy',
+  timelineEvents: 'id, timestamp, eventType, source, starred, trashed, archived, folderId, timelineId, createdAt, updatedAt, *tags, *iocTypes, createdBy',
+  timelines: 'id, name, order, createdAt, createdBy',
+  whiteboards: 'id, name, folderId, trashed, archived, order, createdAt, updatedAt, *tags, createdBy',
   activityLog: 'id, category, action, timestamp',
+  standaloneIOCs: 'id, type, value, folderId, trashed, archived, createdAt, updatedAt, *tags, createdBy, assigneeId',
+  chatThreads: 'id, title, folderId, trashed, archived, createdAt, updatedAt, *tags, createdBy',
 };
 
 function dbExists(name: string): Promise<boolean> {
@@ -41,6 +50,14 @@ function dbExists(name: string): Promise<boolean> {
       resolve(existed);
     };
     req.onerror = () => resolve(false);
+  });
+}
+
+function openDBReadonly(name: string): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(name);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
   });
 }
 
@@ -104,9 +121,10 @@ export async function migrateIndexedDB(): Promise<void> {
     const newExists = await dbExists(NEW_DB_NAME);
     if (newExists) return; // New DB already exists, skip migration
 
-    // Open old DB at version 12 (current schema)
-    const oldDb = await openDB(OLD_DB_NAME, 12);
-    const newDb = await openDB(NEW_DB_NAME, 12);
+    // Open old DB at whatever version it has (don't force an upgrade).
+    // Create new DB at current schema version so Dexie won't need to upgrade it.
+    const oldDb = await openDBReadonly(OLD_DB_NAME);
+    const newDb = await openDB(NEW_DB_NAME, MIGRATION_VERSION);
 
     // Copy all rows from each table
     for (const table of TABLE_NAMES) {
