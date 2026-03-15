@@ -1,11 +1,12 @@
 import { useState, useMemo, forwardRef } from 'react';
-import { Plus, Pencil, Trash2, Archive, RotateCcw, Search, ChevronUp, ChevronDown, X, ListPlus, Clipboard, Tag as TagIcon, GitMerge } from 'lucide-react';
+import { Plus, Pencil, Trash2, Archive, RotateCcw, Search, ChevronUp, ChevronDown, X, ListPlus, Clipboard, Tag as TagIcon, GitMerge, Zap } from 'lucide-react';
 import type { StandaloneIOC, Folder, Tag, IOCType, ConfidenceLevel } from '../../types';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, IOC_STATUS_VALUES, IOC_STATUS_LABELS, IOC_STATUS_COLORS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { StandaloneIOCForm } from './StandaloneIOCForm';
 import { BulkIOCImportModal } from './BulkIOCImportModal';
 import { IOCDeduplicator } from './IOCDeduplicator';
+import { BulkEnrichModal } from './BulkEnrichModal';
 import { RunIntegrationMenu } from '../Integrations/RunIntegrationMenu';
 import { useIntegrations } from '../../hooks/useIntegrations';
 import { useToast } from '../../contexts/ToastContext';
@@ -84,6 +85,7 @@ export function StandaloneIOCList({
   const [showBulkTagInput, setShowBulkTagInput] = useState(false);
   const [bulkTagText, setBulkTagText] = useState('');
   const [showDeduplicator, setShowDeduplicator] = useState(false);
+  const [showBulkEnrich, setShowBulkEnrich] = useState(false);
 
   // Sort state
   const [sortField, setSortField] = useState<SortField>('updatedAt');
@@ -355,6 +357,9 @@ export function StandaloneIOCList({
               </div>
             )}
           </div>
+          <button onClick={() => setShowBulkEnrich(true)} className="flex items-center gap-1 px-2 py-1 rounded bg-amber-900/20 text-amber-400 hover:bg-amber-900/40 text-xs">
+            <Zap size={12} /> Enrich
+          </button>
           <button onClick={() => setSelectedIds(new Set())} className="ml-auto text-xs text-gray-500 hover:text-gray-300 px-2 py-1">Clear selection</button>
         </div>
       )}
@@ -707,6 +712,25 @@ export function StandaloneIOCList({
         iocs={allIOCs ?? iocs}
         onUpdate={onUpdate}
         onDelete={onDelete}
+      />
+
+      <BulkEnrichModal
+        open={showBulkEnrich}
+        onClose={() => setShowBulkEnrich(false)}
+        iocs={filteredSortedIOCs.filter((i) => selectedIds.has(i.id))}
+        getInstallationsForIOCType={getInstallationsForIOCType}
+        addRun={addRun}
+        investigation={currentFolderId ? { id: currentFolderId, name: currentFolderName || '' } : undefined}
+        onCompleted={(stats) => {
+          // Phase 4a: toast notification
+          const parts: string[] = [];
+          if (stats.success) parts.push(`${stats.success} enriched`);
+          if (stats.error) parts.push(`${stats.error} errors`);
+          if (stats.skipped) parts.push(`${stats.skipped} skipped`);
+          addToast(stats.error > 0 ? 'warning' : 'success', `Bulk enrich done: ${parts.join(', ') || 'no results'}`);
+          // Phase 4c: clear selection after completed run
+          setSelectedIds(new Set());
+        }}
       />
 
     </div>
