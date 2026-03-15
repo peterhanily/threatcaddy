@@ -1,9 +1,75 @@
+import type { Post, Notification, InvestigationMember } from '../types';
+import type { ActivityEntry } from '../components/CaddyShack/ActivityCard';
+
 type GetTokenFn = () => Promise<string | null>;
 type InvalidateTokenFn = () => void;
 
 let _getToken: GetTokenFn = async () => null;
 let _invalidateToken: InvalidateTokenFn = () => {};
 let _serverUrl: string | null = null;
+
+// ─── API Response Types ──────────────────────────────────────────
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  displayName: string;
+  role: string;
+  avatarUrl: string | null;
+  createdAt: string;
+}
+
+export interface InvestigationListItem {
+  folderId: string;
+  role: string;
+  joinedAt: string;
+  folder: {
+    name: string;
+    status: string;
+    color: string;
+    icon: string;
+    description: string;
+    clsLevel: string | null;
+    papLevel: string | null;
+    tags: string[];
+    createdAt: string;
+    updatedAt: string;
+  };
+  entityCounts: {
+    notes: number;
+    tasks: number;
+    iocs: number;
+    events: number;
+    whiteboards: number;
+    chats: number;
+  };
+  memberCount: number;
+}
+
+export interface UserListItem {
+  id: string;
+  email: string;
+  displayName: string;
+  avatarUrl: string | null;
+  role: string;
+  active?: boolean;
+  lastLoginAt?: string | null;
+  createdAt?: string;
+}
+
+export interface LLMConfig {
+  providers: Array<{ id: string; name: string; models: Array<{ id: string; name: string }> }>;
+}
+
+export interface SyncPullResult {
+  changes: Array<Record<string, unknown> & { table: string; op: 'put' | 'delete'; id: string }>;
+  serverTimestamp: string;
+}
+
+// Snapshot returns entity arrays keyed by table name
+export interface SyncSnapshotResult {
+  [table: string]: unknown[];
+}
 
 export function configureServerApi(
   serverUrl: string | null,
@@ -61,13 +127,13 @@ async function apiFetch(path: string, opts: RequestInit = {}, _retry = false): P
 
 // ─── Auth ───────────────────────────────────────────────────────
 
-export async function fetchMe() {
+export async function fetchMe(): Promise<UserProfile> {
   const resp = await apiFetch('/api/auth/me');
   if (!resp.ok) throw new Error('Failed to fetch profile');
   return resp.json();
 }
 
-export async function updateProfile(updates: { displayName?: string; avatarUrl?: string }) {
+export async function updateProfile(updates: { displayName?: string; avatarUrl?: string }): Promise<{ ok: true }> {
   const resp = await apiFetch('/api/auth/me', {
     method: 'PATCH',
     body: JSON.stringify(updates),
@@ -122,7 +188,7 @@ export async function syncPush(changes: SyncChange[]): Promise<{ results: SyncRe
   return resp.json();
 }
 
-export async function syncPull(since: string, folderId?: string) {
+export async function syncPull(since: string, folderId?: string): Promise<SyncPullResult> {
   const params = new URLSearchParams({ since });
   if (folderId) params.set('folderId', folderId);
   const resp = await apiFetch(`/api/sync/pull?${params}`);
@@ -130,7 +196,7 @@ export async function syncPull(since: string, folderId?: string) {
   return resp.json();
 }
 
-export async function syncSnapshot(folderId: string) {
+export async function syncSnapshot(folderId: string): Promise<SyncSnapshotResult> {
   const resp = await apiFetch(`/api/sync/snapshot/${folderId}`);
   if (!resp.ok) throw new Error('Sync snapshot failed');
   return resp.json();
@@ -138,13 +204,13 @@ export async function syncSnapshot(folderId: string) {
 
 // ─── Investigations ─────────────────────────────────────────────
 
-export async function fetchInvestigations() {
+export async function fetchInvestigations(): Promise<{ data: InvestigationListItem[]; total: number; limit: number; offset: number }> {
   const resp = await apiFetch('/api/investigations');
   if (!resp.ok) throw new Error('Failed to fetch investigations');
   return resp.json();
 }
 
-export async function fetchInvestigationMembers(folderId: string) {
+export async function fetchInvestigationMembers(folderId: string): Promise<InvestigationMember[]> {
   const resp = await apiFetch(`/api/investigations/${folderId}/members`);
   if (!resp.ok) {
     if (resp.status === 403) throw new Error('not_synced');
@@ -192,7 +258,7 @@ export async function updateMemberRole(folderId: string, userId: string, role: s
 
 // ─── CaddyShack ─────────────────────────────────────────────────
 
-export async function fetchFeed(opts: { cursor?: string; limit?: number; folderId?: string }) {
+export async function fetchFeed(opts: { cursor?: string; limit?: number; folderId?: string }): Promise<Post[]> {
   const params = new URLSearchParams();
   if (opts.cursor) params.set('cursor', opts.cursor);
   if (opts.limit) params.set('limit', String(opts.limit));
@@ -210,7 +276,7 @@ export async function createPost(data: {
   parentId?: string | null;
   replyToId?: string | null;
   clsLevel?: string | null;
-}) {
+}): Promise<Post> {
   const resp = await apiFetch('/api/caddyshack/posts', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -219,7 +285,7 @@ export async function createPost(data: {
   return resp.json();
 }
 
-export async function fetchPost(postId: string) {
+export async function fetchPost(postId: string): Promise<Post> {
   const resp = await apiFetch(`/api/caddyshack/posts/${postId}`);
   if (!resp.ok) throw new Error('Failed to fetch post');
   return resp.json();
@@ -282,7 +348,7 @@ export function getFileUrl(fileId: string): string {
 
 // ─── LLM ────────────────────────────────────────────────────────
 
-export async function fetchLLMConfig() {
+export async function fetchLLMConfig(): Promise<LLMConfig> {
   const resp = await apiFetch('/api/llm/config');
   if (!resp.ok) throw new Error('Failed to fetch LLM config');
   return resp.json();
@@ -341,7 +407,7 @@ export async function streamLLMChat(
 
 // ─── Audit ──────────────────────────────────────────────────────
 
-export async function fetchAuditLog(opts: { folderId?: string; userId?: string; since?: string; category?: string; limit?: number }) {
+export async function fetchAuditLog(opts: { folderId?: string; userId?: string; since?: string; category?: string; limit?: number }): Promise<ActivityEntry[]> {
   const params = new URLSearchParams();
   if (opts.folderId) params.set('folderId', opts.folderId);
   if (opts.userId) params.set('userId', opts.userId);
@@ -353,7 +419,7 @@ export async function fetchAuditLog(opts: { folderId?: string; userId?: string; 
   return resp.json();
 }
 
-export async function fetchTeamActivity(opts: { since?: string; category?: string; limit?: number } = {}) {
+export async function fetchTeamActivity(opts: { since?: string; category?: string; limit?: number } = {}): Promise<ActivityEntry[]> {
   const params = new URLSearchParams();
   if (opts.since) params.set('since', opts.since);
   if (opts.category) params.set('category', opts.category);
@@ -365,7 +431,7 @@ export async function fetchTeamActivity(opts: { since?: string; category?: strin
 
 // ─── Notifications ──────────────────────────────────────────────
 
-export async function fetchNotifications(unread = false, limit = 50) {
+export async function fetchNotifications(unread = false, limit = 50): Promise<Notification[]> {
   const params = new URLSearchParams();
   if (unread) params.set('unread', 'true');
   params.set('limit', String(limit));
@@ -386,37 +452,37 @@ export async function markAllNotificationsRead() {
 
 // ─── Users ──────────────────────────────────────────────────────
 
-export async function searchUsers(query: string) {
+export async function searchUsers(query: string): Promise<UserListItem[]> {
   const resp = await apiFetch(`/api/users?search=${encodeURIComponent(query)}`);
   if (!resp.ok) throw new Error('Failed to search users');
   return resp.json();
 }
 
-export async function fetchAllUsers() {
+export async function fetchAllUsers(): Promise<{ data: UserListItem[]; total: number; limit: number; offset: number }> {
   const resp = await apiFetch('/api/users');
   if (!resp.ok) throw new Error('Failed to fetch users');
   return resp.json();
 }
 
-export async function fetchUserProfile(userId: string) {
+export async function fetchUserProfile(userId: string): Promise<UserProfile> {
   const resp = await apiFetch(`/api/users/${userId}`);
   if (!resp.ok) throw new Error('Failed to fetch user');
   return resp.json();
 }
 
-export async function fetchUserFeed(userId: string) {
+export async function fetchUserFeed(userId: string): Promise<Post[]> {
   const resp = await apiFetch(`/api/users/${userId}/feed`);
   if (!resp.ok) throw new Error('Failed to fetch user feed');
   return resp.json();
 }
 
-export async function fetchUserLikes(userId: string) {
+export async function fetchUserLikes(userId: string): Promise<Post[]> {
   const resp = await apiFetch(`/api/users/${userId}/likes`);
   if (!resp.ok) throw new Error('Failed to fetch user likes');
   return resp.json();
 }
 
-export async function fetchUserActivity(userId: string) {
+export async function fetchUserActivity(userId: string): Promise<ActivityEntry[]> {
   const resp = await apiFetch(`/api/users/${userId}/activity`);
   if (!resp.ok) throw new Error('Failed to fetch user activity');
   return resp.json();

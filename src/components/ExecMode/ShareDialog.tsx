@@ -4,6 +4,7 @@ import { Modal } from '../Common/Modal';
 import type { SharePayload } from '../../lib/share';
 import { encodeSharePayload, buildShareUrl, MAX_URL_LENGTH } from '../../lib/share';
 import { useAuth } from '../../contexts/AuthContext';
+import type { InvestigationMember } from '../../types';
 import {
   fetchInvestigationMembers,
   inviteByEmail,
@@ -24,16 +25,6 @@ type ShareState =
   | { step: 'generating' }
   | { step: 'result'; url?: string; code?: string }
   | { step: 'error'; message: string };
-
-interface Member {
-  id: string;
-  userId: string;
-  role: string;
-  joinedAt: string;
-  displayName: string;
-  email: string;
-  avatarUrl: string | null;
-}
 
 function getPayloadTitle(payload: SharePayload): string {
   const d = payload.d;
@@ -169,7 +160,7 @@ function ShareLinkTab({
 
 function TeamTab({ folderId }: { folderId: string }) {
   const { user } = useAuth();
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<InvestigationMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('editor');
@@ -237,7 +228,7 @@ function TeamTab({ folderId }: { folderId: string }) {
     }
   }, [folderId]);
 
-  const handleRoleChange = useCallback(async (userId: string, role: string) => {
+  const handleRoleChange = useCallback(async (userId: string, role: InvestigationMember['role']) => {
     try {
       await updateMemberRole(folderId, userId, role);
       setMembers((prev) => prev.map((m) => m.userId === userId ? { ...m, role } : m));
@@ -326,7 +317,7 @@ function TeamTab({ folderId }: { folderId: string }) {
                 <>
                   <select
                     value={m.role}
-                    onChange={(e) => handleRoleChange(m.userId, e.target.value)}
+                    onChange={(e) => handleRoleChange(m.userId, e.target.value as InvestigationMember['role'])}
                     className="bg-gray-800 border border-gray-600 rounded px-1.5 py-0.5 text-xs text-gray-200 focus:outline-none focus:border-accent"
                   >
                     <option value="viewer">Viewer</option>

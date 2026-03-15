@@ -363,7 +363,7 @@ function AppInner() {
       return;
     }
     fetchInvestigationMembers(selectedFolderId)
-      .then((data) => setInvestigationMembers(data.members || []))
+      .then((data) => setInvestigationMembers(data))
       .catch(() => setInvestigationMembers([]));
   }, [auth.connected, selectedFolderId]);
 

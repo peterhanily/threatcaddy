@@ -95,12 +95,12 @@ export function useInvestigationData(
     const filterActive = <T extends { trashed?: boolean; archived?: boolean }>(arr: T[]): T[] =>
       arr.filter((item) => !item.trashed && !item.archived);
 
-    setNotes(filterActive(snapshot.notes ?? []));
-    setTasks(filterActive(snapshot.tasks ?? []));
-    setEvents(filterActive(snapshot.timelineEvents ?? []));
-    setWhiteboards(filterActive(snapshot.whiteboards ?? []));
-    setIOCs(filterActive(snapshot.standaloneIOCs ?? []));
-    setChats(filterActive(snapshot.chatThreads ?? []));
+    setNotes(filterActive((snapshot.notes ?? []) as Note[]));
+    setTasks(filterActive((snapshot.tasks ?? []) as Task[]));
+    setEvents(filterActive((snapshot.timelineEvents ?? []) as TimelineEvent[]));
+    setWhiteboards(filterActive((snapshot.whiteboards ?? []) as Whiteboard[]));
+    setIOCs(filterActive((snapshot.standaloneIOCs ?? []) as StandaloneIOC[]));
+    setChats(filterActive((snapshot.chatThreads ?? []) as ChatThread[]));
   }, []);
 
   const load = useCallback(async () => {

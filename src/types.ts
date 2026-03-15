@@ -850,6 +850,7 @@ export interface TeamUser {
 }
 
 export interface InvestigationMember {
+  id: string;
   userId: string;
   role: 'owner' | 'editor' | 'viewer';
   joinedAt: string;
