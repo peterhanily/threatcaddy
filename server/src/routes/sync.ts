@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { requireAuth } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
 import { processPush, pullChanges, getSnapshot, lookupEntityFolderId, bulkLookupEntityFolderIds } from '../services/sync-service.js';
-import { logActivity, logActivityBatch } from '../services/audit-service.js';
+import { logActivityBatch } from '../services/audit-service.js';
 import { logger } from '../lib/logger.js';
 import { broadcastToFolder } from '../ws/handler.js';
 import { db } from '../db/index.js';

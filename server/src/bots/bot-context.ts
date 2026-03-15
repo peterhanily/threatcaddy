@@ -627,6 +627,7 @@ export class BotExecutionContext {
     const MAX_OUTPUT = 50 * 1024; // 50KB per stream
 
     // Validate host: must be non-empty, no control chars, no whitespace, no colons (IPv6 literals), no slashes
+    // eslint-disable-next-line no-control-regex, no-useless-escape -- intentional: blocking control chars and special chars in SSH hostnames
     if (!host || typeof host !== 'string' || /[\s\x00-\x1f:\/\\@]/.test(host)) {
       throw new Error(`Bot "${config.name}": invalid SSH host — must be a plain hostname or IPv4 address`);
     }

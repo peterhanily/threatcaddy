@@ -15,6 +15,16 @@ export function configureServerApi(
   _invalidateToken = invalidateToken || (() => {});
 }
 
+/** Extract an error message from a failed API response, falling back to the provided default. */
+async function apiError(resp: Response, fallback: string): Promise<Error> {
+  try {
+    const body = await resp.json();
+    return new Error(body.error || body.message || fallback);
+  } catch {
+    return new Error(fallback);
+  }
+}
+
 async function apiFetch(path: string, opts: RequestInit = {}, _retry = false): Promise<Response> {
   if (!_serverUrl) throw new Error('Not connected to server');
 
@@ -62,7 +72,7 @@ export async function updateProfile(updates: { displayName?: string; avatarUrl?:
     method: 'PATCH',
     body: JSON.stringify(updates),
   });
-  if (!resp.ok) throw new Error('Failed to update profile');
+  if (!resp.ok) throw await apiError(resp, 'Failed to update profile');
   return resp.json();
 }
 
@@ -108,7 +118,7 @@ export async function syncPush(changes: SyncChange[]): Promise<{ results: SyncRe
     method: 'POST',
     body: JSON.stringify({ changes }),
   });
-  if (!resp.ok) throw new Error('Sync push failed');
+  if (!resp.ok) throw await apiError(resp, 'Sync push failed');
   return resp.json();
 }
 
@@ -169,7 +179,7 @@ export async function removeInvestigationMember(folderId: string, userId: string
   const resp = await apiFetch(`/api/investigations/${folderId}/members/${userId}`, {
     method: 'DELETE',
   });
-  if (!resp.ok) throw new Error('Failed to remove member');
+  if (!resp.ok) throw await apiError(resp, 'Failed to remove member');
 }
 
 export async function updateMemberRole(folderId: string, userId: string, role: string) {
@@ -177,7 +187,7 @@ export async function updateMemberRole(folderId: string, userId: string, role: s
     method: 'PATCH',
     body: JSON.stringify({ role }),
   });
-  if (!resp.ok) throw new Error('Failed to update role');
+  if (!resp.ok) throw await apiError(resp, 'Failed to update role');
 }
 
 // ─── CaddyShack ─────────────────────────────────────────────────
@@ -205,7 +215,7 @@ export async function createPost(data: {
     method: 'POST',
     body: JSON.stringify(data),
   });
-  if (!resp.ok) throw new Error('Failed to create post');
+  if (!resp.ok) throw await apiError(resp, 'Failed to create post');
   return resp.json();
 }
 
@@ -220,12 +230,12 @@ export async function editPost(postId: string, updates: { content?: string; pinn
     method: 'PATCH',
     body: JSON.stringify(updates),
   });
-  if (!resp.ok) throw new Error('Failed to edit post');
+  if (!resp.ok) throw await apiError(resp, 'Failed to edit post');
 }
 
 export async function deletePost(postId: string) {
   const resp = await apiFetch(`/api/caddyshack/posts/${postId}`, { method: 'DELETE' });
-  if (!resp.ok) throw new Error('Failed to delete post');
+  if (!resp.ok) throw await apiError(resp, 'Failed to delete post');
 }
 
 export async function addReaction(postId: string, emoji: string) {
@@ -262,7 +272,7 @@ export async function uploadFile(file: File, folderId?: string): Promise<{
     body: formData,
     headers: {}, // Let browser set content-type for FormData
   });
-  if (!resp.ok) throw new Error('Failed to upload file');
+  if (!resp.ok) throw await apiError(resp, 'Failed to upload file');
   return resp.json();
 }
 
@@ -365,11 +375,13 @@ export async function fetchNotifications(unread = false, limit = 50) {
 }
 
 export async function markNotificationRead(id: string) {
-  await apiFetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
+  const resp = await apiFetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
+  if (!resp.ok) throw await apiError(resp, 'Failed to mark notification as read');
 }
 
 export async function markAllNotificationsRead() {
-  await apiFetch('/api/notifications/mark-all-read', { method: 'POST' });
+  const resp = await apiFetch('/api/notifications/mark-all-read', { method: 'POST' });
+  if (!resp.ok) throw await apiError(resp, 'Failed to mark notifications as read');
 }
 
 // ─── Users ──────────────────────────────────────────────────────

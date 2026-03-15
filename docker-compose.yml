@@ -13,6 +13,7 @@ services:
       FILE_STORAGE_PATH: /data/files
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?Set ALLOWED_ORIGINS in .env (e.g. https://your-domain.com)}
       ADMIN_SECRET: ${ADMIN_SECRET:-}
+      BOT_MASTER_KEY: ${BOT_MASTER_KEY:-}
       # LLM API keys (optional)
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}

@@ -6,9 +6,10 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'e2e', 'server', 'coverage']),
+  globalIgnores(['dist', 'e2e', 'server/dist', 'coverage']),
+  // Client (React + TypeScript)
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}'],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
@@ -26,6 +27,24 @@ export default defineConfig([
       // in hooks (setState in effects, manual memoization) trigger these
       'react-hooks/preserve-manual-memoization': 'warn',
       'react-hooks/set-state-in-effect': 'warn',
+    },
+  },
+  // Server (TypeScript, no React)
+  {
+    files: ['server/src/**/*.ts'],
+    ignores: ['server/src/__tests__/**'],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+    ],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: globals.node,
+    },
+    rules: {
+      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      'no-console': 'off',
     },
   },
 ])

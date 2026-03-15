@@ -1,4 +1,4 @@
-import { eq, and, gt, inArray, isNull, count, sql } from 'drizzle-orm';
+import { eq, and, gt, inArray, isNull, count } from 'drizzle-orm';
 import type { PgTable } from 'drizzle-orm/pg-core';
 import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';

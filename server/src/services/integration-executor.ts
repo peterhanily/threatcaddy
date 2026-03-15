@@ -50,8 +50,22 @@ interface ExecutionContext {
 
 const MAX_EXECUTION_MS = 5 * 60 * 1000; // 5 minutes
 
-/** Validate that a URL is safe to fetch (no SSRF) */
-function validateHttpUrl(urlStr: string): URL {
+/** Check if an IP address is private/internal */
+function isPrivateIP(ip: string): boolean {
+  const normalized = ip.replace(/^::ffff:/, '');
+  return (
+    /^127\./.test(normalized) || normalized === '::1' || normalized === '0.0.0.0' ||
+    /^10\./.test(normalized) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(normalized) ||
+    /^192\.168\./.test(normalized) ||
+    /^0\./.test(normalized) ||
+    /^169\.254\./.test(normalized) ||
+    /^fe80:/i.test(ip) || /^fc00:/i.test(ip) || /^fd/i.test(ip)
+  );
+}
+
+/** Validate that a URL is safe to fetch (no SSRF), with DNS resolution check */
+async function validateHttpUrl(urlStr: string): Promise<URL> {
   const url = new URL(urlStr);
   if (!['http:', 'https:'].includes(url.protocol)) {
     throw new Error(`Blocked URL scheme: ${url.protocol} — only HTTP/HTTPS allowed`);
@@ -64,10 +78,29 @@ function validateHttpUrl(urlStr: string): URL {
     /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
     /^192\.168\./.test(host) ||
     host.endsWith('.local') ||
-    host.endsWith('.internal')
+    host.endsWith('.internal') ||
+    host === 'metadata.google.internal'
   ) {
     throw new Error(`Blocked request to private/internal address: ${host}`);
   }
+
+  // DNS resolution check — prevents DNS rebinding attacks
+  try {
+    const dns = await import('node:dns');
+    const [ipv4s, ipv6s] = await Promise.all([
+      dns.promises.resolve4(host).catch(() => [] as string[]),
+      dns.promises.resolve6(host).catch(() => [] as string[]),
+    ]);
+    for (const ip of [...ipv4s, ...ipv6s]) {
+      if (isPrivateIP(ip)) {
+        throw new Error(`Blocked request to ${host} — resolves to private IP: ${ip}`);
+      }
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Blocked request')) throw err;
+    // Ignore DNS failures in test environments
+  }
+
   return url;
 }
 
@@ -379,8 +412,8 @@ export class IntegrationExecutor {
       : {};
     const resolvedBody = step.body != null ? resolveDeep(step.body, context) : undefined;
 
-    // Validate URL before fetching (SSRF protection)
-    const url = validateHttpUrl(resolvedUrl);
+    // Validate URL before fetching (SSRF protection, including DNS resolution)
+    const url = await validateHttpUrl(resolvedUrl);
     for (const [key, value] of Object.entries(resolvedParams)) {
       url.searchParams.set(key, String(value));
     }
