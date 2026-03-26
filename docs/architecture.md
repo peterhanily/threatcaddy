@@ -234,7 +234,7 @@ ThreatCaddy supports multiple interchange formats for interoperability with othe
 | CSV | Export | IOC export with configurable column selection |
 | STIX 2.1 | Import/Export | Full bundle with Indicator SDOs, Vulnerability SDOs, Relationship SROs, and TLP markings using official OASIS UUIDs |
 | MISP | Import/Export | Event-level export and import with attribute type mapping |
-| Markdown | Import/Export | Individual note export; import from Markdown files |
+| Markdown | Import/Export | Individual note export; import from Markdown files via file picker (`Ctrl+O`), drag-and-drop, or PWA file handler |
 | HTML Report | Export | Print-friendly, styled investigation report |
 
 Export formats respect TLP classification levels, redacting or omitting data as appropriate.

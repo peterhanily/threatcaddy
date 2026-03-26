@@ -10,8 +10,19 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/peterhanily/threatcaddy/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
+  <img src="https://img.shields.io/badge/version-1.0.0-green.svg" alt="Version 1.0.0" />
+  <img src="https://img.shields.io/badge/TypeScript-5.9-blue.svg?logo=typescript&logoColor=white" alt="TypeScript 5.9" />
+  <img src="https://img.shields.io/badge/React-19-61dafb.svg?logo=react&logoColor=white" alt="React 19" />
+  <img src="https://img.shields.io/badge/Vite-7-646cff.svg?logo=vite&logoColor=white" alt="Vite 7" />
+  <img src="https://img.shields.io/badge/PWA-ready-5a0fc8.svg?logo=pwa&logoColor=white" alt="PWA Ready" />
+  <a href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh"><img src="https://img.shields.io/badge/Chrome_Web_Store-Extension-4285F4.svg?logo=googlechrome&logoColor=white" alt="Chrome Web Store" /></a>
+</p>
+
+<p align="center">
   <a href="https://threatcaddy.com">threatcaddy.com</a> &nbsp;|&nbsp;
-  <a href="https://threatcaddy.com/?demo=1">Live Demo</a>
+  <a href="https://threatcaddy.com/?demo=1">Live Demo</a> &nbsp;|&nbsp;
+  <a href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh">Chrome Extension</a>
 </p>
 
 ---
@@ -56,6 +67,7 @@ docker compose up -d   # Starts Hono server + PostgreSQL
 - **Slash commands** — `/` menu with formatting, threat intel templates (IOC tables, MITRE references, TLP headers), and quick inserts
 - **Note annotations** — Timestamped comments on any note
 - **Defang/Refang toggle** — Preview network IOCs in defanged form (`hxxps://`, `example[.]com`)
+- **Open markdown files** — Open `.md` or `.txt` files as notes via `Ctrl+O` / `Cmd+O`, drag-and-drop, or the New menu. File name, size, and creation date are captured in the title. IOCs are auto-extracted on import
 - **Quick capture** — Clip articles, bookmarks, code snippets, and meeting notes with 15+ built-in templates
 - **Note templates** — 15 built-in templates (host details, malware analysis, phishing reports, threat actor profiles, and more). Create, edit, and save your own custom templates. Save any note as a reusable template.
 
@@ -132,7 +144,7 @@ docker compose up -d   # Starts Hono server + PostgreSQL
 - **Browser navigation** — Back/forward with persistent state across refresh
 - **Standalone HTML** — Single-file offline version
 - **Browser extension** — [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) + Firefox extension to clip web content into ThreatCaddy
-- **Keyboard shortcuts** — `Ctrl+N` (new note), `Ctrl+K` (search), `Ctrl+S` (backup), `Ctrl+E` (toggle preview), and more
+- **Keyboard shortcuts** — `Ctrl+N` (new note), `Ctrl+O` (open file), `Ctrl+K` (search), `Ctrl+S` (backup), `Ctrl+E` (toggle preview), and more
 
 ---
 
