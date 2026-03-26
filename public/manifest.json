@@ -15,5 +15,14 @@
       "sizes": "any",
       "type": "image/svg+xml"
     }
+  ],
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "text/markdown": [".md", ".markdown", ".mdown", ".mkd"],
+        "text/plain": [".txt"]
+      }
+    }
   ]
 }

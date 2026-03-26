@@ -31,6 +31,7 @@ import { ScreenshareContext } from './hooks/ScreenshareContext';
 import { getEffectiveClsLevels, isAboveClsThreshold } from './lib/classification';
 import { isEncryptionEnabled } from './lib/encryptionStore';
 import { clipBuffer } from './lib/clipBuffer';
+import { formatBytes, openFilePicker, getDroppedFiles, dispatchFile, type FileOpenDetail } from './lib/file-handler';
 import { hasPendingChanges } from './lib/pending-changes';
 import { useInvestigationData } from './hooks/useInvestigationData';
 import type { ViewMode, SortOption, EditorMode, Note, Task, TimelineEvent, TaskViewMode, IOCType, ChatThread, InvestigationDataMode } from './types';
@@ -654,6 +655,63 @@ function AppInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- setSelectedFolderId is stable; settings deps intentionally omitted to avoid re-registering handler
   }, [findOrCreateFolder, loggedCreateNote, loggedCreateTask, loggedCreateEvent, timelines, navigateTo, addToast, setSelectedFolderId]);
 
+  // Handle files opened via PWA File Handling API (double-click .md on desktop)
+  useEffect(() => {
+    const handler = async (e: Event) => {
+      const { name, content, size, lastModified } = (e as CustomEvent<FileOpenDetail>).detail;
+      try {
+        const created = new Date(lastModified).toLocaleDateString(undefined, {
+          year: 'numeric', month: 'short', day: 'numeric',
+        });
+        const title = `${name} — ${formatBytes(size)} — Created ${created}`;
+        const freshIOCs = extractIOCs(content, {
+          enabledTypes: settings.tiEnabledIOCTypes,
+          defaultConfidence: settings.tiDefaultConfidence,
+        });
+        const iocAnalysis = mergeIOCAnalysis(undefined, freshIOCs);
+        const iocTypes = [...new Set(freshIOCs.filter((i) => !i.dismissed).map((i) => i.type))];
+        const note = await loggedCreateNote({
+          title,
+          content,
+          folderId: selectedFolderId,
+          sourceTitle: name,
+          iocAnalysis,
+          iocTypes,
+        });
+        setSelectedNoteId(note.id);
+        navigateTo('notes', { selectedNoteId: note.id });
+        addToast('success', `Opened "${name}" as a new note`);
+      } catch (err) {
+        console.error('Failed to import file as note:', err);
+        addToast('error', `Failed to open "${name}"`);
+      }
+    };
+    window.addEventListener('threatcaddy:file-open', handler);
+    return () => window.removeEventListener('threatcaddy:file-open', handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- settings deps intentionally omitted
+  }, [loggedCreateNote, selectedFolderId, navigateTo, addToast]);
+
+  // Global drag-and-drop for markdown/text files
+  useEffect(() => {
+    const onDragOver = (e: DragEvent) => {
+      if (e.dataTransfer?.types.includes('Files')) e.preventDefault();
+    };
+    const onDrop = async (e: DragEvent) => {
+      const files = getDroppedFiles(e);
+      if (files.length === 0) return;
+      e.preventDefault();
+      for (const file of files) {
+        await dispatchFile(file);
+      }
+    };
+    window.addEventListener('dragover', onDragOver);
+    window.addEventListener('drop', onDrop);
+    return () => {
+      window.removeEventListener('dragover', onDragOver);
+      window.removeEventListener('drop', onDrop);
+    };
+  }, []);
+
   // Track Clips folder ID for OCI envelope type detection
   const clipsFolderId = useMemo(
     () => folders.find((f) => f.name === 'Clips')?.id,
@@ -1254,6 +1312,7 @@ function AppInner() {
     onNewTask: handleNewTask,
     onSearch: () => setSearchOverlayOpen(true),
     onSave: handleQuickSave,
+    onOpenFile: openFilePicker,
     onTogglePreview: handleToggleEditorMode,
     onSwitchView: (view) => { navigateTo(view); },
     onEscape: () => {
@@ -1462,6 +1521,7 @@ function AppInner() {
             onNewTimelineEvent={handleNewTimelineEvent}
             onNewWhiteboard={handleNewWhiteboard}
             onNewIOC={handleNewIOC}
+            onOpenFile={openFilePicker}
             onImportData={() => setShowDataImport(true)}
             onToggleSidebar={() => updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })}
             onMobileMenuToggle={() => setMobileSidebarOpen((prev) => !prev)}

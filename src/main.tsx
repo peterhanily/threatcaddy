@@ -6,10 +6,14 @@ import { migrateStorageKeys } from './lib/storage-migration'
 import { migrateIndexedDB } from './lib/db-migration'
 import { clipBuffer } from './lib/clipBuffer'
 import { installAgentBridge } from './lib/agent-bridge'
+import { installFileHandler } from './lib/file-handler'
 
 // Start buffering clip messages immediately — before React mounts and before
 // the encryption lock screen is dismissed — so no postMessage events are lost.
 clipBuffer.startListening();
+
+// Register PWA file handler so double-clicking a .md file opens it in ThreatCaddy
+installFileHandler();
 
 // Expose window.threatcaddy for external AI agents (Claude Code, Codex, etc.)
 installAgentBridge();

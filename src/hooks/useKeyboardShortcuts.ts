@@ -6,6 +6,7 @@ interface ShortcutHandlers {
   onNewTask?: () => void;
   onSearch?: () => void;
   onSave?: () => void;
+  onOpenFile?: () => void;
   onTogglePreview?: () => void;
   onEscape?: () => void;
   onSwitchView?: (view: ViewMode) => void;
@@ -43,6 +44,11 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       if (ctrl && e.key === 's') {
         e.preventDefault();
         h.onSave?.();
+      }
+
+      if (ctrl && e.key === 'o') {
+        e.preventDefault();
+        h.onOpenFile?.();
       }
 
       if (ctrl && e.shiftKey && (e.key === 'T' || e.key === 't')) {
