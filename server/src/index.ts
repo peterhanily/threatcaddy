@@ -239,12 +239,13 @@ async function main() {
     );
   }
 
-  // Run database migrations
+  // Run database migrations automatically on startup
   const __dirname = dirname(fileURLToPath(import.meta.url));
   const migrationsFolder = resolve(__dirname, 'db/migrations');
+  logger.info(`Starting ThreatCaddy server v${serverVersion}`);
   logger.info('Running database migrations...', { migrationsFolder });
   await migrate(db, { migrationsFolder });
-  logger.info('Database migrations complete');
+  logger.info('Database migrations complete — schema is up to date');
 
   initAdminKey();
   await initAdminSecret();
