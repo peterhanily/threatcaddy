@@ -715,6 +715,7 @@ describe('POST /admin/api/users/bulk', () => {
 
   it('bulk disable users', async () => {
     const token = await getAdminToken();
+    selectQueue.push([{ id: 'admin-safe' }]); // admin count check — one admin outside target set
     updateQueue.push([{ id: 'u1' }, { id: 'u2' }]);
 
     const res = await app.request('/admin/api/users/bulk', {
@@ -730,6 +731,7 @@ describe('POST /admin/api/users/bulk', () => {
 
   it('bulk change role', async () => {
     const token = await getAdminToken();
+    selectQueue.push([{ id: 'admin-safe' }]); // admin count check
     updateQueue.push([{ id: 'u1' }, { id: 'u2' }]);
 
     const res = await app.request('/admin/api/users/bulk', {
