@@ -129,10 +129,6 @@ export function ExecInvestigationDetail({
         <span>Created {new Date(folder.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
       </div>
 
-      {folder.description && (
-        <p className="text-sm text-text-secondary leading-relaxed">{folder.description}</p>
-      )}
-
       {/* Metrics row — clickable */}
       <div className="grid grid-cols-5 gap-1 bg-bg-raised rounded-xl p-3">
         {metricItems.map((m) => (
@@ -147,6 +143,10 @@ export function ExecInvestigationDetail({
           </button>
         ))}
       </div>
+
+      {folder.description && (
+        <p className="text-sm text-text-secondary leading-relaxed">{folder.description}</p>
+      )}
 
       {/* Task breakdown */}
       {taskBreakdown.total > 0 && (
