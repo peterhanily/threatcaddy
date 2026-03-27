@@ -10,6 +10,15 @@ interface RateLimitOptions {
   max: number;
 }
 
+function normalizeIP(ip: string): string {
+  // Strip ::ffff: prefix for IPv4-mapped IPv6 addresses
+  if (ip.startsWith('::ffff:')) {
+    return ip.slice(7);
+  }
+  // Lowercase IPv6 addresses for consistent matching
+  return ip.toLowerCase();
+}
+
 function getClientIp(c: Context): string {
   // Only trust proxy headers behind a reverse proxy (opt-in via TRUST_PROXY)
   if (process.env.TRUST_PROXY === '1') {
@@ -46,12 +55,13 @@ export function rateLimiter(options: RateLimitOptions) {
 
   return async (c: Context, next: Next) => {
     const ip = getClientIp(c);
+    const key = normalizeIP(ip);
     const now = Date.now();
-    let entry = store.get(ip);
+    let entry = store.get(key);
 
     if (!entry || entry.resetAt <= now) {
       entry = { count: 0, resetAt: now + windowMs };
-      store.set(ip, entry);
+      store.set(key, entry);
     }
 
     entry.count++;

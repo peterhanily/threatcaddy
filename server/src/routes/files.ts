@@ -253,10 +253,16 @@ app.get('/:id/thumbnail', async (c) => {
 
   const thumbPath = join(STORAGE_PATH, file.thumbnailPath!);
 
-  // Path traversal protection
-  const resolvedThumbPath = resolve(thumbPath);
+  // Path traversal protection (use realpath to follow symlinks)
   const thumbBasePath = resolve(STORAGE_PATH);
-  if (!resolvedThumbPath.startsWith(thumbBasePath + '/') && resolvedThumbPath !== thumbBasePath) {
+  let resolvedThumbPath: string;
+  try {
+    resolvedThumbPath = await realpath(thumbPath);
+  } catch {
+    return c.json({ error: 'Thumbnail not found' }, 404);
+  }
+  const resolvedThumbBase = await realpath(thumbBasePath).catch(() => thumbBasePath);
+  if (!resolvedThumbPath.startsWith(resolvedThumbBase + '/')) {
     return c.json({ error: 'Invalid file path' }, 403);
   }
 

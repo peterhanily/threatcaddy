@@ -199,12 +199,11 @@ adminApp.use('*', requestId);
 
 // Admin CORS: reject all cross-origin requests (admin UI is same-origin)
 adminApp.use('*', cors({
-  origin: (origin, c) => {
-    // Only allow requests from the admin panel's own origin
-    const host = c.req.header('host');
-    if (host && origin === `http://${host}`) return origin;
-    if (host && origin === `https://${host}`) return origin;
-    return '';  // Deny cross-origin
+  origin: (origin) => {
+    const allowed = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+    const adminPort = process.env.ADMIN_PORT || '3002';
+    allowed.push(`http://localhost:${adminPort}`, `http://127.0.0.1:${adminPort}`);
+    return allowed.includes(origin) ? origin : '';
   },
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

@@ -52,16 +52,30 @@ const MAX_EXECUTION_MS = 5 * 60 * 1000; // 5 minutes
 
 /** Check if an IP address is private/internal */
 function isPrivateIP(ip: string): boolean {
-  const normalized = ip.replace(/^::ffff:/, '');
-  return (
-    /^127\./.test(normalized) || normalized === '::1' || normalized === '0.0.0.0' ||
-    /^10\./.test(normalized) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(normalized) ||
-    /^192\.168\./.test(normalized) ||
-    /^0\./.test(normalized) ||
-    /^169\.254\./.test(normalized) ||
-    /^fe80:/i.test(ip) || /^fc00:/i.test(ip) || /^fd/i.test(ip)
-  );
+  if (ip === '::1' || ip === '::' || ip === '0:0:0:0:0:0:0:0') return true;
+  const lowerIp = ip.toLowerCase();
+  if (lowerIp.startsWith('fc') || lowerIp.startsWith('fd')) return true;
+  if (/^fe[89ab]/i.test(lowerIp)) return true;
+  if (lowerIp.startsWith('ff')) return true;
+
+  if (lowerIp.startsWith('::ffff:')) {
+    const mapped = lowerIp.replace(/^::ffff:/, '');
+    return isPrivateIP(mapped);
+  }
+
+  const parts = ip.split('.').map(Number);
+  if (parts.length !== 4) return false;
+  const [a, b] = parts;
+  if (a === 127) return true;
+  if (a === 10) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 0) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true;
+  if (a === 198 && (b === 18 || b === 19)) return true;
+  if (a >= 240) return true;
+  return false;
 }
 
 /** Validate that a URL is safe to fetch (no SSRF), with DNS resolution check */
@@ -72,7 +86,7 @@ async function validateHttpUrl(urlStr: string): Promise<URL> {
   }
   const host = url.hostname;
   if (
-    ['169.254.169.254', 'localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(host) ||
+    ['169.254.169.254', 'localhost', '127.0.0.1', '::1', '::', '0.0.0.0'].includes(host) ||
     host === '::ffff:127.0.0.1' ||
     /^10\./.test(host) ||
     /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||

@@ -25,11 +25,12 @@ export function isPrivateIP(ip: string): boolean {
   if (ip === '::1' || ip === '::' || ip === '0:0:0:0:0:0:0:0') return true;
   const lowerIp = ip.toLowerCase();
   if (lowerIp.startsWith('fc') || lowerIp.startsWith('fd')) return true; // fc00::/7
-  if (lowerIp.startsWith('fe8') || lowerIp.startsWith('fe9') || lowerIp.startsWith('fea') || lowerIp.startsWith('feb')) return true; // fe80::/10
+  if (/^fe[89ab]/i.test(lowerIp)) return true;
+  if (lowerIp.startsWith('ff')) return true;
 
   // IPv4-mapped IPv6 (e.g. ::ffff:127.0.0.1) — strip prefix and check as IPv4
   if (lowerIp.startsWith('::ffff:')) {
-    const mapped = ip.slice(7); // strip '::ffff:'
+    const mapped = lowerIp.replace(/^::ffff:/, '');
     return isPrivateIP(mapped);
   }
 
