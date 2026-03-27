@@ -1445,15 +1445,15 @@ function AppInner() {
           allIOCs={screensafeStandaloneIOCs}
           allTimelines={timelines}
           allTags={tags}
+          allChatThreads={chatsHook.threads}
           activityEntries={activityLog.entries}
           theme={settings.theme}
           onToggleTheme={toggleTheme}
-          onSwitchToAnalystMode={(folderId) => {
+          onSwitchToAnalystMode={(folderId, view) => {
             setForceAnalystMode(true);
-            if (folderId) {
-              setSelectedFolderId(folderId);
-              setActiveView('notes');
-            }
+            if (folderId) setSelectedFolderId(folderId);
+            if (view) setActiveView(view);
+            else if (folderId) setActiveView('notes');
           }}
         />
         </Suspense>

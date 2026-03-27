@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { LayoutDashboard, FolderOpen, Activity, Sun, Moon, Monitor, Shield } from 'lucide-react';
-import type { Folder, Note, Task, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, Tag, ActivityLogEntry } from '../../types';
+import type { Folder, Note, Task, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, Tag, ActivityLogEntry, ChatThread, ViewMode } from '../../types';
 import { cn } from '../../lib/utils';
 import { ExecMetricsBar } from './ExecMetricsBar';
 import { ExecInvestigationList } from './ExecInvestigationList';
@@ -14,6 +14,7 @@ import { ExecIOCView } from './ExecIOCView';
 import { ExecBreadcrumb, type BreadcrumbSegment } from './ExecBreadcrumb';
 import { ExecEntityNav } from './ExecEntityNav';
 import { ExecSearchBar } from './ExecSearchBar';
+import { ExecGlobalList } from './ExecGlobalList';
 import { ShareDialog } from './ShareDialog';
 import type { SharePayload, InvestigationBundle } from '../../lib/share';
 
@@ -30,7 +31,11 @@ type ExecDrillDown =
   | { screen: 'eventDetail'; folderId: string; eventId: string }
   | { screen: 'whiteboardList'; folderId: string }
   | { screen: 'iocList'; folderId: string }
-  | { screen: 'iocDetail'; folderId: string; iocId: string };
+  | { screen: 'iocDetail'; folderId: string; iocId: string }
+  | { screen: 'globalNotes' }
+  | { screen: 'globalTasks' }
+  | { screen: 'globalIOCs' }
+  | { screen: 'globalEvents' };
 
 interface ExecDashboardProps {
   folders: Folder[];
@@ -41,10 +46,11 @@ interface ExecDashboardProps {
   allIOCs: StandaloneIOC[];
   allTimelines: Timeline[];
   allTags: Tag[];
+  allChatThreads: ChatThread[];
   activityEntries: ActivityLogEntry[];
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
-  onSwitchToAnalystMode: (folderId?: string) => void;
+  onSwitchToAnalystMode: (folderId?: string, view?: ViewMode) => void;
 }
 
 export function ExecDashboard({
@@ -56,6 +62,7 @@ export function ExecDashboard({
   allIOCs,
   allTimelines,
   allTags,
+  allChatThreads,
   activityEntries,
   theme,
   onToggleTheme,
@@ -92,19 +99,24 @@ export function ExecDashboard({
           return { screen: 'eventList', folderId: prev.folderId };
         case 'iocDetail':
           return { screen: 'iocList', folderId: prev.folderId };
+        case 'globalNotes':
+        case 'globalTasks':
+        case 'globalIOCs':
+        case 'globalEvents':
+          return null;
         default: return null;
       }
     });
   }, []);
 
   const handleOpenAnalystMode = useCallback(() => {
-    const folderId = drillDown?.folderId;
-    onSwitchToAnalystMode(folderId ?? undefined);
+    const folderId = drillDown && 'folderId' in drillDown ? drillDown.folderId : undefined;
+    onSwitchToAnalystMode(folderId);
   }, [drillDown, onSwitchToAnalystMode]);
 
   // Share handlers
   const handleShareInvestigation = useCallback(() => {
-    if (!drillDown) return;
+    if (!drillDown || !('folderId' in drillDown)) return;
     const folderId = drillDown.folderId;
     const folder = folders.find((f) => f.id === folderId);
     if (!folder) return;
@@ -148,14 +160,14 @@ export function ExecDashboard({
   const activeFolders = folders.filter((f) => (f.status || 'active') === 'active');
 
   const drillFolder = useMemo(
-    () => drillDown ? folders.find((f) => f.id === drillDown.folderId) : null,
+    () => drillDown && 'folderId' in drillDown ? folders.find((f) => f.id === drillDown.folderId) : null,
     [drillDown, folders],
   );
   const drillFolderName = drillFolder?.name ?? 'Investigation';
 
   // Entity counts for the current investigation
   const drillEntityCounts = useMemo(() => {
-    if (!drillDown) return { notes: 0, tasks: 0, events: 0, whiteboards: 0, iocs: 0 };
+    if (!drillDown || !('folderId' in drillDown)) return { notes: 0, tasks: 0, events: 0, whiteboards: 0, iocs: 0 };
     const fid = drillDown.folderId;
     return {
       notes: allNotes.filter((n) => n.folderId === fid && !n.trashed).length,
@@ -180,7 +192,7 @@ export function ExecDashboard({
   }, [drillDown]);
 
   const handleEntityNavTap = useCallback((tab: 'notes' | 'tasks' | 'events' | 'whiteboards' | 'iocs') => {
-    if (!drillDown) return;
+    if (!drillDown || !('folderId' in drillDown)) return;
     const fid = drillDown.folderId;
     const screenMap = {
       notes: 'noteList' as const,
@@ -196,7 +208,8 @@ export function ExecDashboard({
   const breadcrumbs = useMemo((): BreadcrumbSegment[] => {
     if (!drillDown) return [];
     const casesRoot: BreadcrumbSegment = { label: 'Investigations', onTap: () => { setDrillDown(null); setNav('investigations'); } };
-    const invDetail: BreadcrumbSegment = { label: drillFolderName, onTap: () => setDrillDown({ screen: 'investigation', folderId: drillDown.folderId }) };
+    const fid = 'folderId' in drillDown ? drillDown.folderId : '';
+    const invDetail: BreadcrumbSegment = { label: drillFolderName, onTap: () => setDrillDown({ screen: 'investigation', folderId: fid }) };
 
     switch (drillDown.screen) {
       case 'investigation':
@@ -235,6 +248,22 @@ export function ExecDashboard({
           { label: 'IOCs', onTap: () => setDrillDown({ screen: 'iocList', folderId: drillDown.folderId }) },
           { label: ioc?.value || 'IOC' }];
       }
+      case 'globalNotes': {
+        const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
+        return [home, { label: 'All Notes' }];
+      }
+      case 'globalTasks': {
+        const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
+        return [home, { label: 'Open Tasks' }];
+      }
+      case 'globalIOCs': {
+        const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
+        return [home, { label: 'All IOCs' }];
+      }
+      case 'globalEvents': {
+        const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
+        return [home, { label: 'Events This Week' }];
+      }
       default: return [];
     }
   }, [drillDown, drillFolderName, allNotes, allTasks, allEvents, allIOCs]);
@@ -242,6 +271,7 @@ export function ExecDashboard({
   // Show search bar on list views and investigations tab
   const showSearch = nav === 'investigations' || (drillDown && [
     'noteList', 'taskList', 'eventList', 'whiteboardList', 'iocList',
+    'globalNotes', 'globalTasks', 'globalIOCs', 'globalEvents',
   ].includes(drillDown.screen));
 
   const tabs: { key: ExecNav; label: string; icon: typeof LayoutDashboard }[] = [
@@ -251,18 +281,19 @@ export function ExecDashboard({
   ];
 
   // Helper: compute sorted entity list and nav handler for detail views
-  const notesList = useMemo(() => drillDown
-    ? allNotes.filter((n) => n.folderId === drillDown.folderId && !n.trashed).sort((a, b) => b.updatedAt - a.updatedAt)
-    : [], [allNotes, drillDown]);
-  const tasksList = useMemo(() => drillDown
-    ? allTasks.filter((t) => t.folderId === drillDown.folderId && !t.trashed).sort((a, b) => a.order - b.order)
-    : [], [allTasks, drillDown]);
-  const eventsList = useMemo(() => drillDown
-    ? allEvents.filter((e) => e.folderId === drillDown.folderId && !e.trashed).sort((a, b) => a.timestamp - b.timestamp)
-    : [], [allEvents, drillDown]);
-  const iocsList = useMemo(() => drillDown
-    ? allIOCs.filter((i) => i.folderId === drillDown.folderId && !i.trashed).sort((a, b) => b.createdAt - a.createdAt)
-    : [], [allIOCs, drillDown]);
+  const drillFolderId = drillDown && 'folderId' in drillDown ? drillDown.folderId : undefined;
+  const notesList = useMemo(() => drillFolderId
+    ? allNotes.filter((n) => n.folderId === drillFolderId && !n.trashed).sort((a, b) => b.updatedAt - a.updatedAt)
+    : [], [allNotes, drillFolderId]);
+  const tasksList = useMemo(() => drillFolderId
+    ? allTasks.filter((t) => t.folderId === drillFolderId && !t.trashed).sort((a, b) => a.order - b.order)
+    : [], [allTasks, drillFolderId]);
+  const eventsList = useMemo(() => drillFolderId
+    ? allEvents.filter((e) => e.folderId === drillFolderId && !e.trashed).sort((a, b) => a.timestamp - b.timestamp)
+    : [], [allEvents, drillFolderId]);
+  const iocsList = useMemo(() => drillFolderId
+    ? allIOCs.filter((i) => i.folderId === drillFolderId && !i.trashed).sort((a, b) => b.createdAt - a.createdAt)
+    : [], [allIOCs, drillFolderId]);
 
   // Render drill-down content
   const renderDrillDown = () => {
@@ -391,6 +422,34 @@ export function ExecDashboard({
         ) : null;
       }
 
+      case 'globalNotes':
+        return (
+          <ExecGlobalList mode="notes" folders={folders} allNotes={allNotes} allTasks={allTasks} allEvents={allEvents} allIOCs={allIOCs}
+            filterText={searchQuery}
+            onSelectNote={(id, fid) => setDrillDown({ screen: 'noteDetail', folderId: fid, noteId: id })} />
+        );
+
+      case 'globalTasks':
+        return (
+          <ExecGlobalList mode="tasks" folders={folders} allNotes={allNotes} allTasks={allTasks} allEvents={allEvents} allIOCs={allIOCs}
+            filterText={searchQuery}
+            onSelectTask={(id, fid) => setDrillDown({ screen: 'taskDetail', folderId: fid, taskId: id })} />
+        );
+
+      case 'globalEvents':
+        return (
+          <ExecGlobalList mode="events" folders={folders} allNotes={allNotes} allTasks={allTasks} allEvents={allEvents} allIOCs={allIOCs}
+            filterText={searchQuery}
+            onSelectEvent={(id, fid) => setDrillDown({ screen: 'eventDetail', folderId: fid, eventId: id })} />
+        );
+
+      case 'globalIOCs':
+        return (
+          <ExecGlobalList mode="iocs" folders={folders} allNotes={allNotes} allTasks={allTasks} allEvents={allEvents} allIOCs={allIOCs}
+            filterText={searchQuery}
+            onSelectIOC={(id, fid) => setDrillDown({ screen: 'iocDetail', folderId: fid, iocId: id })} />
+        );
+
       default: return null;
     }
   };
@@ -445,11 +504,17 @@ export function ExecDashboard({
         ) : nav === 'overview' ? (
           <div className="flex flex-col gap-5">
             <ExecMetricsBar
-              folders={folders}
               allNotes={allNotes}
               allTasks={allTasks}
               allEvents={allEvents}
               allIOCs={allIOCs}
+              allChatThreads={allChatThreads}
+              onTapNotes={() => setDrillDown({ screen: 'globalNotes' })}
+              onTapTasks={() => setDrillDown({ screen: 'globalTasks' })}
+              onTapIOCs={() => setDrillDown({ screen: 'globalIOCs' })}
+              onTapEvents={() => setDrillDown({ screen: 'globalEvents' })}
+              onTapChats={() => onSwitchToAnalystMode(undefined, 'chat')}
+              onTapGraph={() => onSwitchToAnalystMode(undefined, 'graph')}
             />
 
             {/* Active investigations preview */}
