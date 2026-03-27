@@ -35,7 +35,9 @@ type ExecDrillDown =
   | { screen: 'globalNotes' }
   | { screen: 'globalTasks' }
   | { screen: 'globalIOCs' }
-  | { screen: 'globalEvents' };
+  | { screen: 'globalEvents' }
+  | { screen: 'globalChats' }
+  | { screen: 'globalGraph' };
 
 interface ExecDashboardProps {
   folders: Folder[];
@@ -103,6 +105,8 @@ export function ExecDashboard({
         case 'globalTasks':
         case 'globalIOCs':
         case 'globalEvents':
+        case 'globalChats':
+        case 'globalGraph':
           return null;
         default: return null;
       }
@@ -158,6 +162,11 @@ export function ExecDashboard({
   }, [allIOCs]);
 
   const activeFolders = folders.filter((f) => (f.status || 'active') === 'active');
+  const folderNames = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const f of folders) map.set(f.id, f.name);
+    return map;
+  }, [folders]);
 
   const drillFolder = useMemo(
     () => drillDown && 'folderId' in drillDown ? folders.find((f) => f.id === drillDown.folderId) : null,
@@ -264,6 +273,14 @@ export function ExecDashboard({
         const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
         return [home, { label: 'Events This Week' }];
       }
+      case 'globalChats': {
+        const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
+        return [home, { label: 'AI Chats' }];
+      }
+      case 'globalGraph': {
+        const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
+        return [home, { label: 'Entity Graph' }];
+      }
       default: return [];
     }
   }, [drillDown, drillFolderName, allNotes, allTasks, allEvents, allIOCs]);
@@ -271,7 +288,7 @@ export function ExecDashboard({
   // Show search bar on list views and investigations tab
   const showSearch = nav === 'investigations' || (drillDown && [
     'noteList', 'taskList', 'eventList', 'whiteboardList', 'iocList',
-    'globalNotes', 'globalTasks', 'globalIOCs', 'globalEvents',
+    'globalNotes', 'globalTasks', 'globalIOCs', 'globalEvents', 'globalChats',
   ].includes(drillDown.screen));
 
   const tabs: { key: ExecNav; label: string; icon: typeof LayoutDashboard }[] = [
@@ -450,6 +467,62 @@ export function ExecDashboard({
             onSelectIOC={(id, fid) => setDrillDown({ screen: 'iocDetail', folderId: fid, iocId: id })} />
         );
 
+      case 'globalChats': {
+        const q = searchQuery.toLowerCase();
+        const threads = allChatThreads
+          .filter((c) => !c.trashed)
+          .sort((a, b) => b.updatedAt - a.updatedAt)
+          .filter((c) => !q || (c.title || '').toLowerCase().includes(q));
+        return (
+          <div className="flex flex-col gap-1.5">
+            {threads.length === 0 && <p className="text-sm text-text-muted text-center py-8">No chat threads</p>}
+            {threads.map((chat) => (
+              <div key={chat.id} className="bg-bg-raised rounded-xl px-4 py-3">
+                <p className="text-sm font-medium text-text-primary truncate">{chat.title || 'Untitled Chat'}</p>
+                <p className="text-[10px] text-text-muted mt-0.5">
+                  {folderNames.get(chat.folderId || '') || 'General'} · {chat.messages?.length ?? 0} messages · {new Date(chat.updatedAt).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      case 'globalGraph': {
+        const totalNotes = allNotes.filter((n) => !n.trashed && !n.archived).length;
+        const totalIOCs = allIOCs.filter((i) => !i.trashed && !i.archived).length;
+        const totalTasks = allTasks.filter((t) => !t.trashed && !t.archived).length;
+        const totalEvents = allEvents.filter((e) => !e.trashed).length;
+        const stats = [
+          { label: 'Notes', count: totalNotes, color: 'text-accent-blue' },
+          { label: 'IOCs', count: totalIOCs, color: 'text-red-400' },
+          { label: 'Tasks', count: totalTasks, color: 'text-accent-amber' },
+          { label: 'Events', count: totalEvents, color: 'text-accent-green' },
+        ];
+        return (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-text-secondary">Entity graph nodes across all investigations.</p>
+            <div className="grid grid-cols-2 gap-3">
+              {stats.map((s) => (
+                <div key={s.label} className="bg-bg-raised rounded-xl p-4 flex flex-col items-center">
+                  <span className={`text-3xl font-bold ${s.color}`}>{s.count}</span>
+                  <span className="text-xs text-text-muted mt-1">{s.label}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-text-muted text-center">
+              {totalNotes + totalIOCs + totalTasks + totalEvents} total nodes · Open full graph in Analyst Mode
+            </p>
+            <button
+              onClick={() => onSwitchToAnalystMode(undefined, 'graph')}
+              className="flex items-center justify-center gap-2 bg-accent text-white rounded-xl py-3 font-medium text-sm active:bg-accent-dim transition-colors"
+            >
+              Open Interactive Graph
+            </button>
+          </div>
+        );
+      }
+
       default: return null;
     }
   };
@@ -513,8 +586,8 @@ export function ExecDashboard({
               onTapTasks={() => setDrillDown({ screen: 'globalTasks' })}
               onTapIOCs={() => setDrillDown({ screen: 'globalIOCs' })}
               onTapEvents={() => setDrillDown({ screen: 'globalEvents' })}
-              onTapChats={() => onSwitchToAnalystMode(undefined, 'chat')}
-              onTapGraph={() => onSwitchToAnalystMode(undefined, 'graph')}
+              onTapChats={() => setDrillDown({ screen: 'globalChats' })}
+              onTapGraph={() => setDrillDown({ screen: 'globalGraph' })}
             />
 
             {/* Active investigations preview */}

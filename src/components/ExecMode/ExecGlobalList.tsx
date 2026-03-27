@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import type { Note, Task, TimelineEvent, StandaloneIOC, Folder } from '../../types';
 import { PRIORITY_COLORS, TIMELINE_EVENT_TYPE_LABELS, IOC_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
@@ -43,7 +43,7 @@ export function ExecGlobalList({
     return list;
   }, [allTasks, q]);
 
-  const now = useMemo(() => Date.now(), []);
+  const [now] = useState(() => Date.now());
   const events = useMemo(() => {
     const weekAgo = now - 7 * 86400000;
     let list = allEvents.filter((e) => !e.trashed && e.createdAt >= weekAgo).sort((a, b) => b.timestamp - a.timestamp);
