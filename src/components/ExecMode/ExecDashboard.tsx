@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { LayoutDashboard, FolderOpen, Activity, Sun, Moon, Monitor, Shield } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, Activity, Sun, Moon, Monitor, Shield, ChevronRight } from 'lucide-react';
 import type { Folder, Note, Task, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, Tag, ActivityLogEntry, ChatThread, ViewMode } from '../../types';
 import { cn } from '../../lib/utils';
 import { ExecMetricsBar } from './ExecMetricsBar';
@@ -11,6 +11,7 @@ import { ExecNoteView } from './ExecNoteView';
 import { ExecTaskView } from './ExecTaskView';
 import { ExecEventView } from './ExecEventView';
 import { ExecIOCView } from './ExecIOCView';
+import { ExecChatView } from './ExecChatView';
 import { ExecBreadcrumb, type BreadcrumbSegment } from './ExecBreadcrumb';
 import { ExecEntityNav } from './ExecEntityNav';
 import { ExecSearchBar } from './ExecSearchBar';
@@ -37,6 +38,7 @@ type ExecDrillDown =
   | { screen: 'globalIOCs' }
   | { screen: 'globalEvents' }
   | { screen: 'globalChats' }
+  | { screen: 'chatDetail'; chatId: string }
   | { screen: 'globalGraph' };
 
 interface ExecDashboardProps {
@@ -108,6 +110,8 @@ export function ExecDashboard({
         case 'globalChats':
         case 'globalGraph':
           return null;
+        case 'chatDetail':
+          return { screen: 'globalChats' };
         default: return null;
       }
     });
@@ -276,6 +280,12 @@ export function ExecDashboard({
       case 'globalChats': {
         const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
         return [home, { label: 'AI Chats' }];
+      }
+      case 'chatDetail': {
+        const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
+        const chatsRoot: BreadcrumbSegment = { label: 'AI Chats', onTap: () => setDrillDown({ screen: 'globalChats' }) };
+        const chat = allChatThreads.find((c) => c.id === drillDown.chatId);
+        return [home, chatsRoot, { label: chat?.title || 'Chat' }];
       }
       case 'globalGraph': {
         const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
@@ -477,15 +487,33 @@ export function ExecDashboard({
           <div className="flex flex-col gap-1.5">
             {threads.length === 0 && <p className="text-sm text-text-muted text-center py-8">No chat threads</p>}
             {threads.map((chat) => (
-              <div key={chat.id} className="bg-bg-raised rounded-xl px-4 py-3">
-                <p className="text-sm font-medium text-text-primary truncate">{chat.title || 'Untitled Chat'}</p>
-                <p className="text-[10px] text-text-muted mt-0.5">
-                  {folderNames.get(chat.folderId || '') || 'General'} · {chat.messages?.length ?? 0} messages · {new Date(chat.updatedAt).toLocaleDateString()}
-                </p>
-              </div>
+              <button key={chat.id} onClick={() => setDrillDown({ screen: 'chatDetail', chatId: chat.id })}
+                className="bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-left flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-text-primary truncate">{chat.title || 'Untitled Chat'}</p>
+                  <p className="text-[10px] text-text-muted mt-0.5">
+                    {folderNames.get(chat.folderId || '') || 'General'} · {chat.messages?.length ?? 0} messages · {new Date(chat.updatedAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <ChevronRight size={14} className="text-text-muted shrink-0" />
+              </button>
             ))}
           </div>
         );
+      }
+
+      case 'chatDetail': {
+        const chat = allChatThreads.find((c) => c.id === drillDown.chatId);
+        const chatsList = allChatThreads.filter((c) => !c.trashed).sort((a, b) => b.updatedAt - a.updatedAt);
+        const idx = chatsList.findIndex((c) => c.id === drillDown.chatId);
+        const handleNav = (dir: 'prev' | 'next') => {
+          const i = dir === 'prev' ? idx - 1 : idx + 1;
+          if (i >= 0 && i < chatsList.length) setDrillDown({ screen: 'chatDetail', chatId: chatsList[i].id });
+        };
+        return chat ? (
+          <ExecChatView chat={chat} onBack={handleBack}
+            currentIndex={idx} totalCount={chatsList.length} onNavigate={handleNav} />
+        ) : null;
       }
 
       case 'globalGraph': {
