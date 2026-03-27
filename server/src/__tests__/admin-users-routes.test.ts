@@ -700,8 +700,7 @@ describe('POST /admin/api/users', () => {
 describe('POST /admin/api/users/bulk', () => {
   it('bulk enable users', async () => {
     const token = await getAdminToken();
-    updateQueue.push([{ id: 'u1' }]);
-    updateQueue.push([{ id: 'u2' }]);
+    updateQueue.push([{ id: 'u1' }, { id: 'u2' }]);
 
     const res = await app.request('/admin/api/users/bulk', {
       method: 'POST',
@@ -716,8 +715,7 @@ describe('POST /admin/api/users/bulk', () => {
 
   it('bulk disable users', async () => {
     const token = await getAdminToken();
-    updateQueue.push([{ id: 'u1' }]);
-    updateQueue.push([{ id: 'u2' }]);
+    updateQueue.push([{ id: 'u1' }, { id: 'u2' }]);
 
     const res = await app.request('/admin/api/users/bulk', {
       method: 'POST',
@@ -732,8 +730,7 @@ describe('POST /admin/api/users/bulk', () => {
 
   it('bulk change role', async () => {
     const token = await getAdminToken();
-    updateQueue.push([{ id: 'u1' }]);
-    updateQueue.push([{ id: 'u2' }]);
+    updateQueue.push([{ id: 'u1' }, { id: 'u2' }]);
 
     const res = await app.request('/admin/api/users/bulk', {
       method: 'POST',

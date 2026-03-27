@@ -415,8 +415,7 @@ describe('POST /admin/api/users/:id/reset-password', () => {
 describe('POST /admin/api/users/bulk', () => {
   it('changes roles for multiple users', async () => {
     const token = await getAdminToken();
-    updateQueue.push([{ id: 'u1' }]);
-    updateQueue.push([{ id: 'u2' }]);
+    updateQueue.push([{ id: 'u1' }, { id: 'u2' }]);
 
     const res = await app.request(jsonReq('POST', '/admin/api/users/bulk', {
       userIds: ['u1', 'u2'],

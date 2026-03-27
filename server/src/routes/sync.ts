@@ -3,7 +3,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { requireAuth } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
-import { processPush, pullChanges, getSnapshot, lookupEntityFolderId, bulkLookupEntityFolderIds } from '../services/sync-service.js';
+import { processPush, pullChanges, getSnapshot, bulkLookupEntityFolderIds } from '../services/sync-service.js';
 import { logActivityBatch } from '../services/audit-service.js';
 import { logger } from '../lib/logger.js';
 import { broadcastToFolder } from '../ws/handler.js';
@@ -155,24 +155,32 @@ app.post('/push', async (c) => {
     }
   }
 
-  // Auto-create owner membership for newly created folders
-  for (let i = 0; i < changes.length; i++) {
-    const change = changes[i];
-    const result = results[i];
-    if (
-      change.table === 'folders' &&
-      change.op === 'put' &&
-      result.status === 'accepted' &&
-      result.serverVersion === 1
-    ) {
-      await db.insert(investigationMembers).values({
-        id: nanoid(),
-        folderId: change.entityId,
-        userId: user.id,
-        role: 'owner',
-      }).onConflictDoNothing();
-    }
+  // Auto-create owner membership for newly created folders (batched)
+  const newFolderMemberships = changes
+    .map((change, i) => ({ change, result: results[i] }))
+    .filter(({ change, result }) =>
+      change.table === 'folders' && change.op === 'put' &&
+      result.status === 'accepted' && result.serverVersion === 1)
+    .map(({ change }) => ({
+      id: nanoid(),
+      folderId: change.entityId,
+      userId: user.id,
+      role: 'owner' as const,
+    }));
+  if (newFolderMemberships.length > 0) {
+    await db.insert(investigationMembers).values(newFolderMemberships).onConflictDoNothing();
   }
+
+  // Batch-lookup folderIds for accepted deletes that lack folderId in data/serverRecord
+  const deleteLookups = changes
+    .map((change, i) => ({ change, result: results[i], idx: i }))
+    .filter(({ change, result }) =>
+      result.status === 'accepted' && change.op === 'delete' &&
+      !(change.data?.folderId as string) && !(result.serverRecord?.folderId as string | undefined))
+    .map(({ change }) => ({ table: change.table, entityId: change.entityId }));
+  const deleteFolderIds = deleteLookups.length > 0
+    ? await bulkLookupEntityFolderIds(deleteLookups)
+    : new Map<string, string | undefined>();
 
   // Broadcast accepted changes via WebSocket and collect activity log entries
   const activityEntries: Array<{
@@ -189,10 +197,9 @@ app.post('/push', async (c) => {
     const change = changes[i];
     const result = results[i];
     if (result.status === 'accepted') {
-      // For deletes, client sends no data, so look up folderId from the DB record
       const folderId = (change.data?.folderId as string)
         || (result.serverRecord?.folderId as string | undefined)
-        || (change.op === 'delete' ? await lookupEntityFolderId(change.table, change.entityId) : undefined);
+        || deleteFolderIds.get(`${change.table}:${change.entityId}`);
       if (folderId) {
         broadcastToFolder(folderId, {
           type: 'entity-change',

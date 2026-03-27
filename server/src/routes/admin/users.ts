@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq, desc, and, gte, not, ilike } from 'drizzle-orm';
+import { eq, desc, and, gte, not, ilike, inArray } from 'drizzle-orm';
 import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
 import {
@@ -135,22 +135,21 @@ app.post('/api/users/bulk', requireAdminAuth, async (c) => {
     return c.json({ error: 'Invalid action' }, 400);
   }
 
-  let affected = 0;
-  for (const uid of userIds) {
-    if (typeof uid !== 'string') continue;
-    const updates: Record<string, unknown> = { updatedAt: new Date() };
-    if (action === 'changeRole') {
-      const validRoles = ['admin', 'analyst', 'viewer'];
-      if (!validRoles.includes(role)) return c.json({ error: 'Invalid role' }, 400);
-      updates.role = role;
-    } else if (action === 'enable') {
-      updates.active = true;
-    } else {
-      updates.active = false;
-    }
-    const result = await db.update(users).set(updates).where(eq(users.id, uid)).returning({ id: users.id });
-    if (result.length > 0) affected++;
+  const validIds = userIds.filter((uid): uid is string => typeof uid === 'string');
+  if (validIds.length === 0) return c.json({ error: 'No valid userIds' }, 400);
+
+  const updates: Record<string, unknown> = { updatedAt: new Date() };
+  if (action === 'changeRole') {
+    const validRoles = ['admin', 'analyst', 'viewer'];
+    if (!validRoles.includes(role)) return c.json({ error: 'Invalid role' }, 400);
+    updates.role = role;
+  } else if (action === 'enable') {
+    updates.active = true;
+  } else {
+    updates.active = false;
   }
+  const result = await db.update(users).set(updates).where(inArray(users.id, validIds)).returning({ id: users.id });
+  const affected = result.length;
 
   await logAdminAction(getAdminId(c), 'user.bulk', `Bulk ${action} on ${affected} user(s)${action === 'changeRole' ? ` to ${role}` : ''}`);
 
