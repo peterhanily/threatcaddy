@@ -13,6 +13,7 @@ interface ExecInvestigationListProps {
   allWhiteboards: Whiteboard[];
   allIOCs: StandaloneIOC[];
   onSelect: (folderId: string) => void;
+  filterText?: string;
 }
 
 const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
@@ -28,13 +29,17 @@ const STATUS_COLORS: Record<string, string> = {
   archived: 'bg-text-muted',
 };
 
-export function ExecInvestigationList({ folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, onSelect }: ExecInvestigationListProps) {
+export function ExecInvestigationList({ folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, onSelect, filterText }: ExecInvestigationListProps) {
   const [filter, setFilter] = useState<FilterStatus>('all');
 
-  const filtered = useMemo(
-    () => folders.filter((f) => filter === 'all' || (f.status || 'active') === filter),
-    [folders, filter],
-  );
+  const filtered = useMemo(() => {
+    let result = folders.filter((f) => filter === 'all' || (f.status || 'active') === filter);
+    if (filterText) {
+      const q = filterText.toLowerCase();
+      result = result.filter((f) => f.name.toLowerCase().includes(q) || (f.description || '').toLowerCase().includes(q));
+    }
+    return result;
+  }, [folders, filter, filterText]);
 
   const countsMap = useMemo(() => {
     const ids = new Set(folders.map((f) => f.id));

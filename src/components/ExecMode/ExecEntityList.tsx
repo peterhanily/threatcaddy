@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ArrowLeft, ChevronRight, FileText, ListChecks, Clock, PenTool, Shield } from 'lucide-react';
+import { ChevronRight, FileText, ListChecks, Clock, PenTool, Shield } from 'lucide-react';
 import type { Note, Task, TimelineEvent, Whiteboard, StandaloneIOC } from '../../types';
 import { PRIORITY_COLORS, TIMELINE_EVENT_TYPE_LABELS, IOC_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 import { cn, formatDate } from '../../lib/utils';
@@ -19,7 +19,9 @@ interface ExecEntityListProps {
   onSelectNote?: (id: string) => void;
   onSelectTask?: (id: string) => void;
   onSelectEvent?: (id: string) => void;
+  onSelectIOC?: (id: string) => void;
   onSwitchToAnalystMode?: () => void;
+  filterText?: string;
 }
 
 const MODE_META: Record<EntityMode, { label: string; icon: typeof FileText; color: string }> = {
@@ -33,24 +35,41 @@ const MODE_META: Record<EntityMode, { label: string; icon: typeof FileText; colo
 export function ExecEntityList({
   mode, folderId, folderName,
   allNotes, allTasks, allEvents, allWhiteboards, allIOCs,
-  onBack, onSelectNote, onSelectTask, onSelectEvent, onSwitchToAnalystMode,
+  onSelectNote, onSelectTask, onSelectEvent, onSelectIOC, onSwitchToAnalystMode,
+  filterText,
 }: ExecEntityListProps) {
   const meta = MODE_META[mode];
   const Icon = meta.icon;
+  const q = (filterText || '').toLowerCase();
 
-  const notes = useMemo(() => allNotes.filter((n) => n.folderId === folderId && !n.trashed).sort((a, b) => b.updatedAt - a.updatedAt), [allNotes, folderId]);
-  const tasks = useMemo(() => allTasks.filter((t) => t.folderId === folderId && !t.trashed).sort((a, b) => a.order - b.order), [allTasks, folderId]);
-  const events = useMemo(() => allEvents.filter((e) => e.folderId === folderId && !e.trashed).sort((a, b) => a.timestamp - b.timestamp), [allEvents, folderId]);
-  const whiteboards = useMemo(() => allWhiteboards.filter((w) => w.folderId === folderId && !w.trashed).sort((a, b) => a.order - b.order), [allWhiteboards, folderId]);
-  const iocs = useMemo(() => allIOCs.filter((i) => i.folderId === folderId && !i.trashed).sort((a, b) => b.createdAt - a.createdAt), [allIOCs, folderId]);
+  const notes = useMemo(() => {
+    let list = allNotes.filter((n) => n.folderId === folderId && !n.trashed).sort((a, b) => b.updatedAt - a.updatedAt);
+    if (q) list = list.filter((n) => (n.title || '').toLowerCase().includes(q) || (n.content || '').toLowerCase().includes(q));
+    return list;
+  }, [allNotes, folderId, q]);
+  const tasks = useMemo(() => {
+    let list = allTasks.filter((t) => t.folderId === folderId && !t.trashed).sort((a, b) => a.order - b.order);
+    if (q) list = list.filter((t) => (t.title || '').toLowerCase().includes(q) || (t.description || '').toLowerCase().includes(q));
+    return list;
+  }, [allTasks, folderId, q]);
+  const events = useMemo(() => {
+    let list = allEvents.filter((e) => e.folderId === folderId && !e.trashed).sort((a, b) => a.timestamp - b.timestamp);
+    if (q) list = list.filter((e) => (e.title || '').toLowerCase().includes(q) || (e.description || '').toLowerCase().includes(q));
+    return list;
+  }, [allEvents, folderId, q]);
+  const whiteboards = useMemo(() => {
+    let list = allWhiteboards.filter((w) => w.folderId === folderId && !w.trashed).sort((a, b) => a.order - b.order);
+    if (q) list = list.filter((w) => (w.name || '').toLowerCase().includes(q));
+    return list;
+  }, [allWhiteboards, folderId, q]);
+  const iocs = useMemo(() => {
+    let list = allIOCs.filter((i) => i.folderId === folderId && !i.trashed).sort((a, b) => b.createdAt - a.createdAt);
+    if (q) list = list.filter((i) => i.value.toLowerCase().includes(q) || (i.analystNotes || '').toLowerCase().includes(q) || (i.attribution || '').toLowerCase().includes(q));
+    return list;
+  }, [allIOCs, folderId, q]);
 
   return (
     <div className="flex flex-col gap-3">
-      <button onClick={onBack} className="flex items-center gap-2 text-text-secondary active:text-text-primary -ml-1">
-        <ArrowLeft size={18} />
-        <span className="text-sm">Back</span>
-      </button>
-
       <div className="flex items-center gap-2">
         <Icon size={18} className={meta.color} />
         <h2 className="text-lg font-bold text-text-primary">{meta.label}</h2>
@@ -116,12 +135,13 @@ export function ExecEntityList({
           const typeInfo = IOC_TYPE_LABELS[ioc.type];
           const confInfo = CONFIDENCE_LEVELS[ioc.confidence];
           return (
-            <div key={ioc.id} className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3">
+            <button key={ioc.id} onClick={() => onSelectIOC?.(ioc.id)} className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-left">
               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: typeInfo?.color + '22', color: typeInfo?.color }}>{typeInfo?.label}</span>
               <p className="text-xs font-mono text-text-primary flex-1 min-w-0 truncate">{ioc.value}</p>
               <span className="text-[9px] px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: confInfo?.color + '22', color: confInfo?.color }}>{confInfo?.label}</span>
               {ioc.iocStatus && <span className={cn('text-[9px] px-1.5 py-0.5 rounded bg-bg-deep text-text-muted shrink-0')}>{ioc.iocStatus}</span>}
-            </div>
+              <ChevronRight size={14} className="text-text-muted shrink-0" />
+            </button>
           );
         })}
 

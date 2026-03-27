@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ArrowLeft, FileText, ListChecks, Clock, PenTool, Shield, ExternalLink, Share2 } from 'lucide-react';
+import { FileText, ListChecks, Clock, PenTool, Shield, ExternalLink, Share2 } from 'lucide-react';
 import type { Folder, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ActivityLogEntry } from '../../types';
 import { ACTIVITY_CATEGORY_LABELS } from '../../types';
 import { cn } from '../../lib/utils';
@@ -45,7 +45,6 @@ export function ExecInvestigationDetail({
   allWhiteboards,
   allIOCs,
   activityEntries,
-  onBack,
   onOpenAnalystMode,
   onTapNotes,
   onTapTasks,
@@ -103,19 +102,14 @@ export function ExecInvestigationDetail({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Back button + title */}
-      <div className="flex items-center justify-between">
-        <button onClick={onBack} className="flex items-center gap-2 text-text-secondary active:text-text-primary -ml-1">
-          <ArrowLeft size={18} />
-          <span className="text-sm">Back</span>
-        </button>
-        {onShare && (
+      {onShare && (
+        <div className="flex justify-end">
           <button onClick={onShare} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-accent bg-accent/10 active:bg-accent/20 text-xs font-medium">
             <Share2 size={14} />
             Share
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-2.5">
         <span

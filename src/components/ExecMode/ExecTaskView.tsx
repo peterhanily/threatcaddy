@@ -1,14 +1,18 @@
 import { useMemo } from 'react';
-import { ArrowLeft, Share2 } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import type { Task } from '../../types';
 import { PRIORITY_COLORS } from '../../types';
 import { renderMarkdown } from '../../lib/markdown';
 import { formatFullDate, isOverdue, cn } from '../../lib/utils';
+import { ExecDetailNav } from './ExecDetailNav';
 
 interface ExecTaskViewProps {
   task: Task;
   onBack: () => void;
   onShare?: () => void;
+  currentIndex?: number;
+  totalCount?: number;
+  onNavigate?: (direction: 'prev' | 'next') => void;
 }
 
 const STATUS_BADGE: Record<string, { label: string; bg: string; text: string }> = {
@@ -17,7 +21,7 @@ const STATUS_BADGE: Record<string, { label: string; bg: string; text: string }> 
   'done':        { label: 'Done',        bg: 'bg-accent-green/20', text: 'text-accent-green' },
 };
 
-export function ExecTaskView({ task, onBack, onShare }: ExecTaskViewProps) {
+export function ExecTaskView({ task, onShare, currentIndex, totalCount, onNavigate }: ExecTaskViewProps) {
   const descHtml = useMemo(
     () => task.description ? renderMarkdown(task.description) : null,
     [task.description],
@@ -28,18 +32,14 @@ export function ExecTaskView({ task, onBack, onShare }: ExecTaskViewProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <button onClick={onBack} className="flex items-center gap-2 text-text-secondary active:text-text-primary -ml-1">
-          <ArrowLeft size={18} />
-          <span className="text-sm">Back</span>
-        </button>
-        {onShare && (
+      {onShare && (
+        <div className="flex justify-end">
           <button onClick={onShare} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-accent bg-accent/10 active:bg-accent/20 text-xs font-medium">
             <Share2 size={14} />
             Share
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <h2 className="text-lg font-bold text-text-primary">{task.title || 'Untitled'}</h2>
 
@@ -88,6 +88,10 @@ export function ExecTaskView({ task, onBack, onShare }: ExecTaskViewProps) {
             ))}
           </div>
         </div>
+      )}
+
+      {onNavigate && totalCount != null && currentIndex != null && (
+        <ExecDetailNav currentIndex={currentIndex} totalCount={totalCount} onPrev={() => onNavigate('prev')} onNext={() => onNavigate('next')} />
       )}
     </div>
   );

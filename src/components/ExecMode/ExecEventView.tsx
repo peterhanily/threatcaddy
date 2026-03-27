@@ -1,17 +1,21 @@
 import { useMemo } from 'react';
-import { ArrowLeft, Share2 } from 'lucide-react';
+import { Share2 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import type { TimelineEvent } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 import { renderMarkdown } from '../../lib/markdown';
 import { formatFullDate } from '../../lib/utils';
+import { ExecDetailNav } from './ExecDetailNav';
 import 'leaflet/dist/leaflet.css';
 
 interface ExecEventViewProps {
   event: TimelineEvent;
   onBack: () => void;
   onShare?: () => void;
+  currentIndex?: number;
+  totalCount?: number;
+  onNavigate?: (direction: 'prev' | 'next') => void;
 }
 
 const iconCache = new Map<string, L.Icon>();
@@ -32,7 +36,7 @@ function getMarkerIcon(color: string): L.Icon {
   return icon;
 }
 
-export function ExecEventView({ event, onBack, onShare }: ExecEventViewProps) {
+export function ExecEventView({ event, onShare, currentIndex, totalCount, onNavigate }: ExecEventViewProps) {
   const typeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType];
   const confInfo = CONFIDENCE_LEVELS[event.confidence];
 
@@ -43,18 +47,14 @@ export function ExecEventView({ event, onBack, onShare }: ExecEventViewProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <button onClick={onBack} className="flex items-center gap-2 text-text-secondary active:text-text-primary -ml-1">
-          <ArrowLeft size={18} />
-          <span className="text-sm">Back</span>
-        </button>
-        {onShare && (
+      {onShare && (
+        <div className="flex justify-end">
           <button onClick={onShare} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-accent bg-accent/10 active:bg-accent/20 text-xs font-medium">
             <Share2 size={14} />
             Share
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <h2 className="text-lg font-bold text-text-primary">{event.title || 'Untitled'}</h2>
 
@@ -120,6 +120,10 @@ export function ExecEventView({ event, onBack, onShare }: ExecEventViewProps) {
             />
           </MapContainer>
         </div>
+      )}
+
+      {onNavigate && totalCount != null && currentIndex != null && (
+        <ExecDetailNav currentIndex={currentIndex} totalCount={totalCount} onPrev={() => onNavigate('prev')} onNext={() => onNavigate('next')} />
       )}
     </div>
   );
