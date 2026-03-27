@@ -651,7 +651,7 @@ export class BotExecutionContext {
 
     // Block shell metacharacters to prevent command injection via prefix bypass
     // e.g. allowedPrefixes=["ls"] must NOT allow "ls; rm -rf /" or "ls|cat /etc/passwd"
-    const SHELL_METACHARACTERS = /[;|&`$(){}[\]<>!\n\r]/;
+    const SHELL_METACHARACTERS = /[;|&`$(){}[\]<>!\n\r\t*?~#]/;
     if (SHELL_METACHARACTERS.test(command)) {
       throw new Error(`Bot "${config.name}": command contains disallowed shell metacharacters (;|&\`$(){}[]<>!). Use simple commands without pipes or chaining.`);
     }

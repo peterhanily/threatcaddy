@@ -93,6 +93,9 @@ app.use('/api/llm/chat', rateLimiter({ windowMs: 60_000, max: 20 }));
 app.use('/api/caddyshack/posts', rateLimiter({ windowMs: 60_000, max: 30 }));
 app.use('/api/backups', rateLimiter({ windowMs: 60_000, max: 5 }));
 app.use('/api/bots/*/webhook', rateLimiter({ windowMs: 60_000, max: 30 }));
+app.use('/api/auth/change-password', rateLimiter({ windowMs: 60_000, max: 5 }));
+app.use('/api/files/*', rateLimiter({ windowMs: 60_000, max: 30 }));
+app.use('/api/investigations/*', rateLimiter({ windowMs: 60_000, max: 60 }));
 
 // Read version once at startup
 let serverVersion = 'unknown';

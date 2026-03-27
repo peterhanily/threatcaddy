@@ -105,6 +105,18 @@ app.post('/upload', requireRole('admin', 'analyst'), async (c) => {
     return c.json({ error: 'SVG uploads are not allowed' }, 400);
   }
 
+  // Block MIME types that could contain active/executable content
+  const DANGEROUS_MIMES = new Set([
+    'text/html', 'application/javascript', 'text/javascript',
+    'application/x-httpd-php', 'image/svg+xml', 'application/xhtml+xml',
+  ]);
+  if (DANGEROUS_MIMES.has(claimedMime)) {
+    return c.json({ error: 'File MIME type not allowed (active content)' }, 400);
+  }
+  if (detectedAny && DANGEROUS_MIMES.has(detectedAny)) {
+    return c.json({ error: 'Detected file content type not allowed (active content)' }, 400);
+  }
+
   // Validate that detected MIME type is consistent with file extension
   if (detectedAny) {
     const extMimeMap: Record<string, string[]> = {
