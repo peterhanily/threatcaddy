@@ -112,7 +112,10 @@ async function validateHttpUrl(urlStr: string): Promise<URL> {
     }
   } catch (err) {
     if (err instanceof Error && err.message.startsWith('Blocked request')) throw err;
-    // Ignore DNS failures in test environments
+    // DNS module unavailable — fail closed (block the request)
+    if (process.env.NODE_ENV !== 'test') {
+      throw new Error(`Blocked request to ${host} — DNS resolution unavailable`);
+    }
   }
 
   return url;
@@ -440,8 +443,10 @@ export class IntegrationExecutor {
     const backoffMs = step.retry?.backoffMs ?? 1000;
     let apiCalls = 0;
 
-    // Choose the fetch function: prefer the domain-restricted one from callbacks
-    const fetchFn = callbacks.fetchFn ?? globalThis.fetch;
+    // Choose the fetch function: prefer the domain-restricted one from callbacks.
+    // Wrap globalThis.fetch to block redirects (prevents SSRF via open redirect).
+    const fetchFn = callbacks.fetchFn ?? ((input: RequestInfo | URL, init?: RequestInit) =>
+      globalThis.fetch(input, { ...init, redirect: 'error' }));
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       // Build fetch options

@@ -148,6 +148,17 @@ app.post('/api/users/bulk', requireAdminAuth, async (c) => {
   } else {
     updates.active = false;
   }
+
+  // Prevent disabling or demoting every admin — ensure at least one admin remains
+  if (action === 'disable' || (action === 'changeRole' && role !== 'admin')) {
+    const adminCount = await db.select({ id: users.id }).from(users)
+      .where(and(eq(users.role, 'admin'), eq(users.active, true)));
+    const remainingAdmins = adminCount.filter((u) => !validIds.includes(u.id));
+    if (remainingAdmins.length === 0) {
+      return c.json({ error: 'Cannot disable or demote all admin users — at least one must remain' }, 400);
+    }
+  }
+
   const result = await db.update(users).set(updates).where(inArray(users.id, validIds)).returning({ id: users.id });
   const affected = result.length;
 
