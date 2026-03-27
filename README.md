@@ -144,7 +144,7 @@ docker compose up -d   # Starts Hono server + PostgreSQL
 - **Browser navigation** — Back/forward with persistent state across refresh
 - **Standalone HTML** — Single-file offline version
 - **Browser extension** — [Chrome Web Store](https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh) + Firefox extension to clip web content into ThreatCaddy
-- **Keyboard shortcuts** — `Ctrl+N` (new note), `Ctrl+O` (open file), `Ctrl+K` (search), `Ctrl+S` (backup), `Ctrl+E` (toggle preview), and more
+- **Keyboard shortcuts** — `Ctrl+N` (new note), `Ctrl+O` (open file), `Ctrl+K` (search), `Ctrl+S` (backup), `Ctrl+Shift+T` (new task), `Ctrl+E` (toggle editor mode), `` Ctrl+` `` (toggle preview), `Ctrl+1-4` (switch view), `Ctrl+/` (show shortcuts), `Ctrl+B/I` (bold/italic)
 
 ---
 

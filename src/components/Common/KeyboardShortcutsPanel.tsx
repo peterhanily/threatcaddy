@@ -16,6 +16,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     shortcuts: [
       { keys: 'Ctrl+K', description: 'Open search' },
       { keys: 'Ctrl+S', description: 'Save backup' },
+      { keys: 'Ctrl+O', description: 'Open markdown / text file' },
       { keys: 'Ctrl+/', description: 'Show keyboard shortcuts' },
       { keys: 'Escape', description: 'Close dialog / overlay' },
     ],
@@ -32,6 +33,8 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     shortcuts: [
       { keys: 'Ctrl+E', description: 'Toggle editor mode (edit/split/preview)' },
       { keys: 'Ctrl+`', description: 'Toggle preview' },
+      { keys: 'Ctrl+B', description: 'Bold text' },
+      { keys: 'Ctrl+I', description: 'Italic text' },
     ],
   },
   {

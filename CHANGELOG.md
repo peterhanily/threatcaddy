@@ -6,6 +6,10 @@
 
 - **Open markdown files as notes** — Open `.md` and `.txt` files directly in the browser via `Ctrl+O` / `Cmd+O` file picker, drag-and-drop anywhere on the app, or the "Open File" item in the New dropdown menu. File name, size, and creation date are captured in the note title. IOCs are auto-extracted on import. Also registers as a PWA file handler for OS-level "Open with" support when installed.
 
+### Fixes
+
+- **Keyboard shortcuts** — Synced shortcuts across both UI panels (Ctrl+/ modal and Settings), added missing entries (`Ctrl+O`, `Ctrl+\``, `Ctrl+/`, `Ctrl+B/I`)
+
 ---
 
 ## v1.0.0 — 2026-03-05

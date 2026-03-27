@@ -1,11 +1,14 @@
 const SHORTCUTS = [
   { keys: 'Ctrl+N', action: 'New note / Quick capture' },
   { keys: 'Ctrl+K', action: 'Focus search' },
-  { keys: 'Ctrl+S', action: 'Save current note' },
+  { keys: 'Ctrl+S', action: 'Save backup' },
+  { keys: 'Ctrl+O', action: 'Open markdown / text file' },
   { keys: 'Ctrl+Shift+T', action: 'New task' },
   { keys: 'Ctrl+B', action: 'Bold text (in editor)' },
   { keys: 'Ctrl+I', action: 'Italic text (in editor)' },
-  { keys: 'Ctrl+E', action: 'Toggle editor/preview' },
+  { keys: 'Ctrl+E', action: 'Toggle editor mode (edit/split/preview)' },
+  { keys: 'Ctrl+`', action: 'Toggle preview' },
+  { keys: 'Ctrl+/', action: 'Show keyboard shortcuts' },
   { keys: 'Ctrl+1/2/3/4', action: 'Switch view (Notes/Tasks/Timeline/Whiteboard)' },
   { keys: 'Esc', action: 'Close modals' },
 ];
