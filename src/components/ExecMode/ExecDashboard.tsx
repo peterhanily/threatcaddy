@@ -12,6 +12,7 @@ import { ExecTaskView } from './ExecTaskView';
 import { ExecEventView } from './ExecEventView';
 import { ExecIOCView } from './ExecIOCView';
 import { ExecBreadcrumb, type BreadcrumbSegment } from './ExecBreadcrumb';
+import { ExecEntityNav } from './ExecEntityNav';
 import { ExecSearchBar } from './ExecSearchBar';
 import { ShareDialog } from './ShareDialog';
 import type { SharePayload, InvestigationBundle } from '../../lib/share';
@@ -151,6 +152,45 @@ export function ExecDashboard({
     [drillDown, folders],
   );
   const drillFolderName = drillFolder?.name ?? 'Investigation';
+
+  // Entity counts for the current investigation
+  const drillEntityCounts = useMemo(() => {
+    if (!drillDown) return { notes: 0, tasks: 0, events: 0, whiteboards: 0, iocs: 0 };
+    const fid = drillDown.folderId;
+    return {
+      notes: allNotes.filter((n) => n.folderId === fid && !n.trashed).length,
+      tasks: allTasks.filter((t) => t.folderId === fid && !t.trashed).length,
+      events: allEvents.filter((e) => e.folderId === fid && !e.trashed).length,
+      whiteboards: allWhiteboards.filter((w) => w.folderId === fid && !w.trashed).length,
+      iocs: allIOCs.filter((i) => i.folderId === fid && !i.trashed).length,
+    };
+  }, [drillDown, allNotes, allTasks, allEvents, allWhiteboards, allIOCs]);
+
+  // Active entity tab derived from current drill-down screen
+  const activeEntityTab = useMemo(() => {
+    if (!drillDown) return undefined;
+    const map: Record<string, 'notes' | 'tasks' | 'events' | 'whiteboards' | 'iocs'> = {
+      noteList: 'notes', noteDetail: 'notes',
+      taskList: 'tasks', taskDetail: 'tasks',
+      eventList: 'events', eventDetail: 'events',
+      whiteboardList: 'whiteboards',
+      iocList: 'iocs', iocDetail: 'iocs',
+    };
+    return map[drillDown.screen];
+  }, [drillDown]);
+
+  const handleEntityNavTap = useCallback((tab: 'notes' | 'tasks' | 'events' | 'whiteboards' | 'iocs') => {
+    if (!drillDown) return;
+    const fid = drillDown.folderId;
+    const screenMap = {
+      notes: 'noteList' as const,
+      tasks: 'taskList' as const,
+      events: 'eventList' as const,
+      whiteboards: 'whiteboardList' as const,
+      iocs: 'iocList' as const,
+    };
+    setDrillDown({ screen: screenMap[tab], folderId: fid });
+  }, [drillDown]);
 
   // Breadcrumb segments computed from drill-down state
   const breadcrumbs = useMemo((): BreadcrumbSegment[] => {
@@ -382,6 +422,11 @@ export function ExecDashboard({
           </button>
         </div>
       </div>
+
+      {/* Entity nav bar — persistent when inside an investigation */}
+      {drillDown && (
+        <ExecEntityNav counts={drillEntityCounts} activeTab={activeEntityTab} onTap={handleEntityNavTap} />
+      )}
 
       {/* Search bar — shown on list views */}
       {showSearch && (
