@@ -77,6 +77,7 @@ export const notes = pgTable('notes', {
   idxNotesArchived: index('idx_notes_archived').on(t.archived),
   idxNotesPinned: index('idx_notes_pinned').on(t.pinned),
   idxNotesFolderIdUpdatedAt: index('idx_notes_folder_id_updated_at').on(t.folderId, t.updatedAt),
+  idxNotesTrashedArchived: index('idx_notes_trashed_archived').on(t.trashed, t.archived),
 }));
 
 export const tasks = pgTable('tasks', {
@@ -115,6 +116,8 @@ export const tasks = pgTable('tasks', {
   idxTasksCreatedBy: index('idx_tasks_created_by').on(t.createdBy),
   idxTasksStatus: index('idx_tasks_status').on(t.status),
   idxTasksFolderIdUpdatedAt: index('idx_tasks_folder_id_updated_at').on(t.folderId, t.updatedAt),
+  idxTasksFolderIdStatus: index('idx_tasks_folder_id_status').on(t.folderId, t.status),
+  idxTasksTrashedArchived: index('idx_tasks_trashed_archived').on(t.trashed, t.archived),
 }));
 
 export const folders = pgTable('folders', {
@@ -199,6 +202,7 @@ export const timelineEvents = pgTable('timeline_events', {
   idxTimelineEventsTimelineId: index('idx_timeline_events_timeline_id').on(t.timelineId),
   idxTimelineEventsCreatedBy: index('idx_timeline_events_created_by').on(t.createdBy),
   idxTimelineEventsFolderIdUpdatedAt: index('idx_timeline_events_folder_id_updated_at').on(t.folderId, t.updatedAt),
+  idxTimelineEventsTrashedArchived: index('idx_timeline_events_trashed_archived').on(t.trashed, t.archived),
 }));
 
 export const timelines = pgTable('timelines', {

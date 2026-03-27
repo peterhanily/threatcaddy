@@ -7,7 +7,7 @@ if (!connectionString && process.env.NODE_ENV !== 'test') {
   throw new Error('DATABASE_URL environment variable is required. Set it in your .env file.');
 }
 
-const sql = postgres(connectionString || 'postgres://localhost:5432/test', { max: 20 });
+const sql = postgres(connectionString || 'postgres://localhost:5432/test', { max: parseInt(process.env.DB_POOL_MAX || '50', 10) });
 export const db = drizzle(sql, { schema });
 
 export { schema, sql };
