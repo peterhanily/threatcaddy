@@ -195,7 +195,7 @@ export function ExecDashboard({
   // Breadcrumb segments computed from drill-down state
   const breadcrumbs = useMemo((): BreadcrumbSegment[] => {
     if (!drillDown) return [];
-    const casesRoot: BreadcrumbSegment = { label: 'Cases', onTap: () => { setDrillDown(null); setNav('investigations'); } };
+    const casesRoot: BreadcrumbSegment = { label: 'Investigations', onTap: () => { setDrillDown(null); setNav('investigations'); } };
     const invDetail: BreadcrumbSegment = { label: drillFolderName, onTap: () => setDrillDown({ screen: 'investigation', folderId: drillDown.folderId }) };
 
     switch (drillDown.screen) {
