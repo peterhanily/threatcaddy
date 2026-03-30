@@ -453,8 +453,8 @@ export function ChatView({
       updatedAt: now,
     });
     onEntitiesChanged?.();
-    // Navigate to the newly created note
-    onNavigateToEntity?.('note', noteId);
+    // Navigate to the newly created note — delay slightly to let the notes list reload
+    setTimeout(() => onNavigateToEntity?.('note', noteId), 100);
   }, [activeThread, selectedFolderId, onEntitiesChanged, onNavigateToEntity]);
 
   const handleSuggestionClick = useCallback((text: string) => {
@@ -541,8 +541,16 @@ export function ChatView({
       tags: [...activeThread.tags],
       clsLevel: activeThread.clsLevel,
     });
+    // Add a system message to the new branch so it's clear what happened
+    const branchNotice: ChatMessage = {
+      id: nanoid(),
+      role: 'assistant',
+      content: `Branched from **${activeThread.title}** at message ${messageIndex + 1} of ${activeThread.messages.length}. You can continue this conversation independently.`,
+      createdAt: Date.now(),
+    };
+    await onAddMessage(branched.id, branchNotice);
     onSelectThread(branched.id);
-  }, [activeThread, onCreateThread, onSelectThread]);
+  }, [activeThread, onCreateThread, onSelectThread, onAddMessage]);
 
   return (
     <div className="relative flex flex-1 overflow-hidden">
