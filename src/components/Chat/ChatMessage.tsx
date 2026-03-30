@@ -2,11 +2,12 @@ import { useState, useMemo } from 'react';
 import { ChevronRight, FileText, ListChecks, Shield, Clock, GitBranch, RotateCcw } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { renderMarkdown, sanitizeHtml } from '../../lib/markdown';
-import type { ToolCallRecord } from '../../types';
+import type { ToolCallRecord, ChatAttachment } from '../../types';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
+  attachments?: ChatAttachment[];
   isStreaming?: boolean;
   toolCalls?: ToolCallRecord[];
   onEntityClick?: (type: string, id: string) => void;
@@ -227,7 +228,7 @@ function SuggestionChips({ suggestions, onSuggestionClick }: { suggestions: stri
 
 // ── Main Component ─────────────────────────────────────────────────
 
-export function ChatMessageBubble({ role, content, isStreaming, toolCalls, onEntityClick, onSuggestionClick, isLastAssistant, messageIndex, onBranchFromHere, onRewindToHere, tokenCount, messageId, onRestoreCheckpoint, hasCheckpoint }: ChatMessageProps) {
+export function ChatMessageBubble({ role, content, attachments, isStreaming, toolCalls, onEntityClick, onSuggestionClick, isLastAssistant, messageIndex, onBranchFromHere, onRewindToHere, tokenCount, messageId, onRestoreCheckpoint, hasCheckpoint }: ChatMessageProps) {
   const isUser = role === 'user';
 
   const suggestions = useMemo(() => {
@@ -287,7 +288,21 @@ export function ChatMessageBubble({ role, content, isStreaming, toolCalls, onEnt
           </div>
         )}
         {isUser ? (
-          <p className="whitespace-pre-wrap">{content}</p>
+          <>
+            {attachments && attachments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {attachments.map((att, i) => (
+                  <img
+                    key={i}
+                    src={`data:${att.mimeType};base64,${att.data}`}
+                    alt={att.name || `Attachment ${i + 1}`}
+                    className="max-w-[200px] max-h-[150px] rounded-lg border border-border-subtle object-cover"
+                  />
+                ))}
+              </div>
+            )}
+            <p className="whitespace-pre-wrap">{content}</p>
+          </>
         ) : (
           <>
             {/* Tool calls rendered before/between text */}

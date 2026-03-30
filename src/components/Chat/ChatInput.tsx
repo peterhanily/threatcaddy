@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Send, Square, Wifi, WifiOff, Globe, Search, FileText, CheckSquare, Shield, BarChart3, Clock, Network, ClipboardList, Zap, Link2, AlertTriangle, Terminal, RefreshCw, StopCircle } from 'lucide-react';
+import { Send, Square, Wifi, WifiOff, Globe, Search, FileText, CheckSquare, Shield, BarChart3, Clock, Network, ClipboardList, Zap, Link2, AlertTriangle, Terminal, RefreshCw, StopCircle, Wrench, ImagePlus } from 'lucide-react';
 import type { LLMProvider } from '../../types';
 import { MODELS as STATIC_MODELS } from '../../lib/models';
 import { cn } from '../../lib/utils';
@@ -34,9 +34,13 @@ interface ChatInputProps {
   configuredProviders?: Set<string>;
   onOpenSettings?: () => void;
   folderId?: string;
+  customCommands?: { command: string; description: string }[];
+  onImageAttach?: (files: File[]) => void;
+  attachedImages?: { name: string }[];
+  onClearImages?: () => void;
 }
 
-export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, model, onModelChange, disabled, localModelName, configuredProviders, onOpenSettings, folderId }: ChatInputProps) {
+export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, model, onModelChange, disabled, localModelName, configuredProviders, onOpenSettings, folderId, customCommands, onImageAttach, attachedImages, onClearImages }: ChatInputProps) {
   const MODELS = useMemo(() => {
     let models = [...STATIC_MODELS];
     if (localModelName) {
@@ -69,12 +73,23 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
     }
   }, [text]);
 
+  // Merge built-in + custom slash commands
+  const allCommands = useMemo(() => {
+    const custom = (customCommands || []).map(c => ({
+      command: c.command.startsWith('/') ? c.command : `/${c.command}`,
+      description: c.description,
+      placeholder: '<input>' as string,
+      icon: Wrench,
+    }));
+    return [...SLASH_COMMANDS, ...custom];
+  }, [customCommands]);
+
   // Show/hide slash menu based on text content
   const filteredCommands = useMemo(() => {
     if (!text.startsWith('/') || text.includes(' ')) return [];
     const filter = text.toLowerCase();
-    return SLASH_COMMANDS.filter((c) => c.command.startsWith(filter));
-  }, [text]);
+    return allCommands.filter((c) => c.command.startsWith(filter));
+  }, [text, allCommands]);
 
   useEffect(() => {
     const shouldOpen = filteredCommands.length > 0;
@@ -179,6 +194,25 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
+  };
+
+  // ── Image paste/drop handling ─────────────────────────────────────
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    if (!onImageAttach) return;
+    const files = Array.from(e.clipboardData.files).filter(f => f.type.startsWith('image/'));
+    if (files.length > 0) {
+      e.preventDefault();
+      onImageAttach(files);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (!onImageAttach) return;
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (files.length > 0) onImageAttach(files);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -369,16 +403,47 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
         >
           <Terminal size={14} />
         </button>
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={extensionAvailable ? 'Send a message... (type / for commands)' : 'Extension required for CaddyAI'}
-          disabled={!extensionAvailable || disabled}
-          rows={1}
-          className="flex-1 bg-bg-deep border border-border-medium rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted resize-none focus:outline-none focus:border-purple disabled:opacity-50"
-        />
+        <div className="flex-1 flex flex-col gap-1">
+          {/* Image attachment preview */}
+          {attachedImages && attachedImages.length > 0 && (
+            <div className="flex items-center gap-1 px-1">
+              {attachedImages.map((img, i) => (
+                <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple/10 border border-purple/20 text-[10px] text-purple">
+                  <ImagePlus size={10} />
+                  {img.name || `Image ${i + 1}`}
+                </span>
+              ))}
+              <button onClick={onClearImages} className="text-[10px] text-text-muted hover:text-red-400 ml-1">clear</button>
+            </div>
+          )}
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            onDrop={handleDrop}
+            onDragOver={(e) => e.preventDefault()}
+            placeholder={extensionAvailable ? 'Send a message... (type / for commands, paste images)' : 'Extension required for CaddyAI'}
+            disabled={!extensionAvailable || disabled}
+            rows={1}
+            className="w-full bg-bg-deep border border-border-medium rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted resize-none focus:outline-none focus:border-purple disabled:opacity-50"
+          />
+        </div>
+        {/* Image attach button */}
+        {onImageAttach && (
+          <>
+            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { if (e.target.files) onImageAttach(Array.from(e.target.files)); e.target.value = ''; }} />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={!extensionAvailable || disabled}
+              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Attach image"
+            >
+              <ImagePlus size={14} />
+            </button>
+          </>
+        )}
         {isStreaming ? (
           <button
             onClick={onStop}

@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, ActivityLogEntry, StandaloneIOC, ChatThread, NoteTemplate, PlaybookTemplate, Checkpoint } from './types';
+import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, ActivityLogEntry, StandaloneIOC, ChatThread, NoteTemplate, PlaybookTemplate, Checkpoint, CustomSlashCommand } from './types';
 import type { IntegrationTemplate, InstalledIntegration, IntegrationRun } from './types/integration-types';
 import { installEncryptionMiddleware } from './lib/encryptionMiddleware';
 
@@ -20,6 +20,7 @@ const db = new Dexie('ThreatCaddyDB') as Dexie & {
   installedIntegrations: EntityTable<InstalledIntegration, 'id'>;
   integrationRuns: EntityTable<IntegrationRun, 'id'>;
   checkpoints: EntityTable<Checkpoint, 'id'>;
+  customSlashCommands: EntityTable<CustomSlashCommand, 'id'>;
 };
 
 db.version(1).stores({
@@ -169,6 +170,11 @@ db.version(21).stores({
 // Version 22: Checkpoints table for CaddyAI undo/restore
 db.version(22).stores({
   checkpoints: 'id, threadId, messageId, createdAt',
+});
+
+// Version 23: Custom slash commands for CaddyAI
+db.version(23).stores({
+  customSlashCommands: 'id, name, createdAt',
 });
 
 // Encryption-at-rest middleware (transparent to all CRUD hooks)

@@ -589,6 +589,17 @@ export interface ChatMessage {
   createdAt: number;
   /** Token usage reported by the LLM provider for this message exchange */
   tokenCount?: { input: number; output: number };
+  /** Image attachments sent with this message */
+  attachments?: ChatAttachment[];
+}
+
+export interface ChatAttachment {
+  type: 'image';
+  /** base64-encoded image data */
+  data: string;
+  mimeType: string;
+  /** File name if available */
+  name?: string;
 }
 
 /** A conversation thread with CaddyAI, stored per-investigation or globally. */
@@ -603,6 +614,8 @@ export interface ChatThread {
   clsLevel?: string;
   /** Plan mode proposes actions without executing write tools; Act mode executes normally */
   mode?: 'plan' | 'act';
+  /** Cached summary of truncated conversation context */
+  contextSummary?: string;
   trashed: boolean;
   trashedAt?: number;
   archived: boolean;
@@ -632,6 +645,18 @@ export interface CheckpointEntity {
   entityId: string;
   /** null means the entity didn't exist before (was created by the tool) */
   data: Record<string, unknown> | null;
+}
+
+/** A user-defined slash command template for CaddyAI chat. */
+export interface CustomSlashCommand {
+  id: string;
+  /** Command name without the leading / (e.g. 'mytriage') */
+  name: string;
+  description: string;
+  /** Markdown template with optional {{input}} placeholder */
+  template: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface TimelineExportData {

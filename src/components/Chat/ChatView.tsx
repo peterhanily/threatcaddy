@@ -12,12 +12,14 @@ import { cn, formatDate } from '../../lib/utils';
 import { nanoid } from 'nanoid';
 import { TOOL_DEFINITIONS, buildSystemPrompt, executeTool, isWriteTool, fetchViaExtensionBridge } from '../../lib/llm-tools';
 import { generateChatTitle } from '../../lib/chat-utils';
-import { truncateConversation, MAX_CONTEXT_MESSAGES } from '../../lib/chat-utils';
+import { truncateConversation, summarizeConversation, MAX_CONTEXT_MESSAGES } from '../../lib/chat-utils';
 import { db } from '../../db';
 import { useChatLoops } from '../../hooks/useChatLoops';
 import { hasLoopsForThread } from '../../lib/chat-loop';
 import { resolveMentions } from '../../lib/chat-mentions';
 import { createCheckpoint, restoreCheckpoint } from '../../lib/checkpoints';
+import { useCustomSlashCommands, interpolateTemplate } from '../../hooks/useCustomSlashCommands';
+import type { ChatAttachment } from '../../types';
 
 interface ChatViewProps {
   threads: ChatThread[];
@@ -71,6 +73,20 @@ export function ChatView({
 
   const activeThread = threads.find((t) => t.id === selectedThreadId);
   const { loops: activeLoops, startLoop, stopAllForThread } = useChatLoops(activeThread?.id);
+  const { commands: customCommands } = useCustomSlashCommands();
+
+  // ── Image attachments ──────────────────────────────────────────────
+  const [pendingImages, setPendingImages] = useState<ChatAttachment[]>([]);
+
+  const handleImageAttach = useCallback(async (files: File[]) => {
+    const attachments: ChatAttachment[] = [];
+    for (const file of files) {
+      const buffer = await file.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+      attachments.push({ type: 'image', data: base64, mimeType: file.type, name: file.name });
+    }
+    setPendingImages(prev => [...prev, ...attachments]);
+  }, []);
 
   // ── Write tool approval flow (state declared early so handleSend can reference it)
   const [pendingApproval, setPendingApproval] = useState<{
@@ -192,11 +208,16 @@ export function ChatView({
     // Resolve @-mentions: replace tokens with labels for display, inject entity data for LLM
     const { displayText: mentionDisplayText, contextBlock: mentionContext } = await resolveMentions(text);
 
+    // Capture and clear pending images
+    const images = pendingImages.length > 0 ? [...pendingImages] : undefined;
+    if (images) setPendingImages([]);
+
     // Add user message (with readable @-mention labels)
     const userMsg: ChatMessage = {
       id: nanoid(),
       role: 'user',
       content: mentionDisplayText,
+      attachments: images,
       createdAt: Date.now(),
     };
     await onAddMessage(activeThread.id, userMsg);
@@ -222,6 +243,13 @@ export function ChatView({
       const transform = SLASH_TRANSFORMS[cmd.toLowerCase()];
       if (transform) {
         llmText = transform(arg.trim());
+      } else {
+        // Check custom slash commands
+        const cmdName = cmd.slice(1).toLowerCase();
+        const custom = customCommands.find(c => c.name === cmdName);
+        if (custom) {
+          llmText = interpolateTemplate(custom.template, arg.trim());
+        }
       }
     }
 
@@ -318,16 +346,43 @@ export function ChatView({
     // Use memoized system prompt — only rebuilt when folder context changes
     const systemPrompt = systemPromptRef.current || await buildSystemPrompt(selectedFolder, settings.llmSystemPrompt, activeThread.provider);
 
-    // Build conversation messages (string content for history)
-    // Use transformed text for the last user message so the LLM gets natural language
-    const rawConversationMessages = [...activeThread.messages, userMsg].map((m) => ({
+    // Build text-only messages for truncation, then overlay multimodal content
+    const allMessages = [...activeThread.messages, userMsg];
+    const textMessages = allMessages.map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m === userMsg ? llmText : m.content,
     }));
 
-    // Truncate conversation to fit context window
+    // Truncate conversation to fit context window (use cached summary if available)
     const maxMessages = settings.llmMaxContextMessages || MAX_CONTEXT_MESSAGES;
-    const conversationMessages = truncateConversation(rawConversationMessages, maxMessages);
+    const truncatedTextMessages = truncateConversation(textMessages, maxMessages, activeThread.contextSummary);
+
+    // Trigger async summarization of truncated messages for future use
+    if (textMessages.length > maxMessages && !activeThread.contextSummary) {
+      const truncatedPortion = textMessages.slice(2, -(maxMessages - 2));
+      summarizeConversation(truncatedPortion, activeThread.provider, activeThread.model, apiKey!, activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined)
+        .then((summary) => {
+          if (summary) onUpdateThread(activeThread.id, { contextSummary: summary });
+        })
+        .catch(() => { /* ignore summarization failures */ });
+    }
+
+    // Build final messages with multimodal content blocks for images
+    const conversationMessages = truncatedTextMessages.map((m) => {
+      // Find the original message to check for attachments
+      const original = allMessages.find(om => om.content === m.content || (om === userMsg && m.content === llmText));
+      if (original?.attachments && original.attachments.length > 0) {
+        const blocks = [
+          ...original.attachments.map(att => ({
+            type: 'image' as const,
+            source: { type: 'base64' as const, media_type: att.mimeType, data: att.data },
+          })),
+          { type: 'text' as const, text: m.content },
+        ];
+        return { role: m.role, content: blocks as unknown as string };
+      }
+      return m;
+    });
 
     // Track whether any write tools were used
     let usedWriteTool = false;
@@ -743,6 +798,7 @@ export function ChatView({
                   key={msg.id}
                   role={msg.role}
                   content={msg.content}
+                  attachments={msg.attachments}
                   toolCalls={msg.toolCalls}
                   onEntityClick={onNavigateToEntity}
                   onSuggestionClick={handleSuggestionClick}
@@ -843,6 +899,10 @@ export function ChatView({
               configuredProviders={configuredProviders}
               onOpenSettings={onOpenSettings ? () => onOpenSettings('ai') : undefined}
               folderId={selectedFolderId}
+              customCommands={customCommands.map(c => ({ command: `/${c.name}`, description: c.description }))}
+              onImageAttach={handleImageAttach}
+              attachedImages={pendingImages.map(a => ({ name: a.name || 'Image' }))}
+              onClearImages={() => setPendingImages([])}
             />
           </>
         ) : (

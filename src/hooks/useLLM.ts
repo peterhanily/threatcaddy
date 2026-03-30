@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { LLMProvider, ContentBlock, ToolUseBlock, ToolCallRecord } from '../types';
+import { isWriteTool } from '../lib/llm-tool-defs';
 import { nanoid } from 'nanoid';
 import { postMessageOrigin } from '../lib/utils';
 
@@ -111,12 +112,10 @@ export function useLLM() {
         return;
       }
 
-      // Execute tool calls
+      // Execute tool calls — read tools in parallel, write tools sequentially
       const toolResults: ContentBlock[] = [];
-      for (const toolUse of toolUseBlocks) {
-        if (state.aborted) return;
 
-        // Update tool activity UI
+      const executeSingleTool = async (toolUse: ToolUseBlock): Promise<ContentBlock> => {
         const activity: ToolActivity = {
           id: toolUse.id,
           name: toolUse.name,
@@ -132,7 +131,6 @@ export function useLLM() {
           result = { result: JSON.stringify({ error: 'No tool executor configured' }), isError: true };
         }
 
-        // Record the tool call
         state.allToolCalls.push({
           id: toolUse.id,
           name: toolUse.name,
@@ -141,17 +139,43 @@ export function useLLM() {
           isError: result.isError,
         });
 
-        // Update activity status
         setToolActivity(prev =>
           prev.map(a => a.id === toolUse.id ? { ...a, status: result.isError ? 'error' : 'done', result: result.result } : a)
         );
 
-        toolResults.push({
+        return {
           type: 'tool_result',
           tool_use_id: toolUse.id,
           content: result.result,
           is_error: result.isError,
-        });
+        };
+      };
+
+      // Partition into read and write tool batches (preserving order for writes)
+      let i = 0;
+      while (i < toolUseBlocks.length) {
+        if (state.aborted) return;
+
+        // Collect consecutive read tools into a parallel batch
+        const readBatch: ToolUseBlock[] = [];
+        while (i < toolUseBlocks.length && !isWriteTool(toolUseBlocks[i].name)) {
+          readBatch.push(toolUseBlocks[i]);
+          i++;
+        }
+
+        // Execute read batch in parallel
+        if (readBatch.length > 0) {
+          const results = await Promise.all(readBatch.map(executeSingleTool));
+          toolResults.push(...results);
+        }
+
+        // Execute next write tool sequentially (if any)
+        if (i < toolUseBlocks.length && isWriteTool(toolUseBlocks[i].name)) {
+          if (state.aborted) return;
+          const result = await executeSingleTool(toolUseBlocks[i]);
+          toolResults.push(result);
+          i++;
+        }
       }
 
       if (state.aborted) return;
