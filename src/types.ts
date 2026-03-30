@@ -601,6 +601,8 @@ export interface ChatThread {
   folderId?: string;
   tags: string[];
   clsLevel?: string;
+  /** Plan mode proposes actions without executing write tools; Act mode executes normally */
+  mode?: 'plan' | 'act';
   trashed: boolean;
   trashedAt?: number;
   archived: boolean;
@@ -608,6 +610,28 @@ export interface ChatThread {
   updatedBy?: string;
   createdAt: number;
   updatedAt: number;
+}
+
+/** A snapshot of entities before a write tool action, enabling undo. */
+export interface Checkpoint {
+  id: string;
+  threadId: string;
+  /** ID of the assistant message that triggered the checkpoint */
+  messageId: string;
+  /** Tool names that were executed */
+  toolNames: string[];
+  /** Snapshot of entities that were created or modified */
+  snapshot: CheckpointEntity[];
+  /** Whether this checkpoint has been restored */
+  restored: boolean;
+  createdAt: number;
+}
+
+export interface CheckpointEntity {
+  table: string;
+  entityId: string;
+  /** null means the entity didn't exist before (was created by the tool) */
+  data: Record<string, unknown> | null;
 }
 
 export interface TimelineExportData {

@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, ActivityLogEntry, StandaloneIOC, ChatThread, NoteTemplate, PlaybookTemplate } from './types';
+import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, ActivityLogEntry, StandaloneIOC, ChatThread, NoteTemplate, PlaybookTemplate, Checkpoint } from './types';
 import type { IntegrationTemplate, InstalledIntegration, IntegrationRun } from './types/integration-types';
 import { installEncryptionMiddleware } from './lib/encryptionMiddleware';
 
@@ -19,6 +19,7 @@ const db = new Dexie('ThreatCaddyDB') as Dexie & {
   integrationTemplates: EntityTable<IntegrationTemplate, 'id'>;
   installedIntegrations: EntityTable<InstalledIntegration, 'id'>;
   integrationRuns: EntityTable<IntegrationRun, 'id'>;
+  checkpoints: EntityTable<Checkpoint, 'id'>;
 };
 
 db.version(1).stores({
@@ -163,6 +164,11 @@ db.version(20).stores({
 // Version 21: IOC assignee index
 db.version(21).stores({
   standaloneIOCs: 'id, type, value, folderId, trashed, archived, createdAt, updatedAt, *tags, createdBy, assigneeId',
+});
+
+// Version 22: Checkpoints table for CaddyAI undo/restore
+db.version(22).stores({
+  checkpoints: 'id, threadId, messageId, createdAt',
 });
 
 // Encryption-at-rest middleware (transparent to all CRUD hooks)

@@ -16,6 +16,9 @@ interface ChatMessageProps {
   onBranchFromHere?: (messageIndex: number) => void;
   onRewindToHere?: (messageIndex: number) => void;
   tokenCount?: { input: number; output: number };
+  messageId?: string;
+  onRestoreCheckpoint?: (messageId: string) => void;
+  hasCheckpoint?: boolean;
 }
 
 function formatTokens(n: number): string {
@@ -224,7 +227,7 @@ function SuggestionChips({ suggestions, onSuggestionClick }: { suggestions: stri
 
 // ── Main Component ─────────────────────────────────────────────────
 
-export function ChatMessageBubble({ role, content, isStreaming, toolCalls, onEntityClick, onSuggestionClick, isLastAssistant, messageIndex, onBranchFromHere, onRewindToHere, tokenCount }: ChatMessageProps) {
+export function ChatMessageBubble({ role, content, isStreaming, toolCalls, onEntityClick, onSuggestionClick, isLastAssistant, messageIndex, onBranchFromHere, onRewindToHere, tokenCount, messageId, onRestoreCheckpoint, hasCheckpoint }: ChatMessageProps) {
   const isUser = role === 'user';
 
   const suggestions = useMemo(() => {
@@ -270,6 +273,15 @@ export function ChatMessageBubble({ role, content, isStreaming, toolCalls, onEnt
                 title="Rewind to this message"
               >
                 <RotateCcw size={12} />
+              </button>
+            )}
+            {hasCheckpoint && onRestoreCheckpoint && messageId && (
+              <button
+                onClick={() => onRestoreCheckpoint(messageId)}
+                className="p-1 text-text-muted hover:text-red-400 transition-colors"
+                title="Undo: restore entities to before this action"
+              >
+                <RotateCcw size={12} className="scale-x-[-1]" />
               </button>
             )}
           </div>

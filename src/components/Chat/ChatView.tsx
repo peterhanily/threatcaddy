@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, Check, X } from 'lucide-react';
 import type { ChatThread, ChatMessage, LLMProvider, Settings, Folder, ToolUseBlock } from '../../types';
 import { ClsSelect } from '../Common/ClsSelect';
 import { ClsBadge } from '../Common/ClsBadge';
@@ -17,6 +17,7 @@ import { db } from '../../db';
 import { useChatLoops } from '../../hooks/useChatLoops';
 import { hasLoopsForThread } from '../../lib/chat-loop';
 import { resolveMentions } from '../../lib/chat-mentions';
+import { createCheckpoint, restoreCheckpoint } from '../../lib/checkpoints';
 
 interface ChatViewProps {
   threads: ChatThread[];
@@ -70,6 +71,13 @@ export function ChatView({
 
   const activeThread = threads.find((t) => t.id === selectedThreadId);
   const { loops: activeLoops, startLoop, stopAllForThread } = useChatLoops(activeThread?.id);
+
+  // ── Write tool approval flow (state declared early so handleSend can reference it)
+  const [pendingApproval, setPendingApproval] = useState<{
+    toolName: string;
+    input: Record<string, unknown>;
+    resolve: (approved: boolean) => void;
+  } | null>(null);
 
   // Memoize system prompt — only rebuild when folder context changes
   const systemPromptRef = useRef<string>('');
@@ -324,6 +332,17 @@ export function ChatView({
     // Track whether any write tools were used
     let usedWriteTool = false;
 
+    // In plan mode, filter out write tools so the LLM can only read/analyze
+    const currentMode = activeThread.mode || 'act';
+    const tools = currentMode === 'plan'
+      ? TOOL_DEFINITIONS.filter(t => !isWriteTool(t.name))
+      : TOOL_DEFINITIONS;
+
+    // In plan mode, append instructions to the system prompt
+    const finalSystemPrompt = currentMode === 'plan'
+      ? systemPrompt + '\n\nYou are in PLAN MODE. Do NOT create, update, or modify any entities. Instead, describe what you WOULD do: list the tools you would call, what data you would create, and what your analysis plan is. Present this as a structured plan the analyst can review before switching to Act mode.'
+      : systemPrompt;
+
     // Send with agentic loop
     sendAgentRequest(
       {
@@ -331,11 +350,29 @@ export function ChatView({
         model: activeThread.model,
         messages: conversationMessages,
         apiKey,
-        systemPrompt,
-        tools: TOOL_DEFINITIONS,
+        systemPrompt: finalSystemPrompt,
+        tools,
         endpoint: activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined,
       },
       async (toolUse: ToolUseBlock) => {
+        // Approval gate for write tools in Act mode
+        if (isWriteTool(toolUse.name)) {
+          const approved = await new Promise<boolean>((resolve) => {
+            setPendingApproval({
+              toolName: toolUse.name,
+              input: toolUse.input as Record<string, unknown>,
+              resolve,
+            });
+          });
+
+          if (!approved) {
+            return {
+              result: JSON.stringify({ error: 'Tool execution rejected by analyst' }),
+              isError: true,
+            };
+          }
+        }
+
         const result = await executeTool(toolUse, selectedFolderId);
         if (isWriteTool(toolUse.name) && !result.isError) {
           usedWriteTool = true;
@@ -343,8 +380,9 @@ export function ChatView({
         return result;
       },
       async ({ content, toolCalls, usage }) => {
+        const msgId = nanoid();
         const assistantMsg: ChatMessage = {
-          id: nanoid(),
+          id: msgId,
           role: 'assistant',
           content,
           model: activeThread.model,
@@ -354,13 +392,17 @@ export function ChatView({
         };
         await onAddMessage(activeThread.id, assistantMsg);
 
+        // Create checkpoint for write tool actions (enables undo)
+        if (usedWriteTool && toolCalls.length > 0) {
+          createCheckpoint(activeThread.id, msgId, toolCalls).catch(() => { /* ignore checkpoint failures */ });
+        }
+
         // Trigger entity reload if any write tools were used
         if (usedWriteTool && onEntitiesChanged) {
           onEntitiesChanged();
         }
 
         // Auto-generate a contextual title after first exchange
-        // The initial auto-title is the truncated first user message — improve it with LLM
         if (activeThread.messages.length <= 1 && content) {
           const titleApiKey = getApiKeyForProvider(activeThread.provider, settings);
           if (titleApiKey) {
@@ -419,6 +461,26 @@ export function ChatView({
     handleSend(text);
   }, [handleSend]);
 
+  // ── Write tool approval handlers ────────────────────────────────────
+  const handleApprove = useCallback(() => {
+    pendingApproval?.resolve(true);
+    setPendingApproval(null);
+  }, [pendingApproval]);
+
+  const handleReject = useCallback(() => {
+    pendingApproval?.resolve(false);
+    setPendingApproval(null);
+  }, [pendingApproval]);
+
+  // ── Plan/Act mode ──────────────────────────────────────────────────
+  const threadMode = activeThread?.mode || 'act';
+
+  const toggleMode = useCallback(() => {
+    if (!activeThread) return;
+    const newMode = threadMode === 'act' ? 'plan' : 'act';
+    onUpdateThread(activeThread.id, { mode: newMode });
+  }, [activeThread, threadMode, onUpdateThread]);
+
   // ── Thread token totals ─────────────────────────────────────────────
   const threadTokenTotal = useMemo(() => {
     if (!activeThread) return 0;
@@ -437,6 +499,34 @@ export function ChatView({
     onUpdateThread(activeThread.id, { messages: trimmedMessages });
     setRewindConfirmIndex(null);
   }, [activeThread, rewindConfirmIndex, onUpdateThread]);
+
+  // ── Checkpoint restore ──────────────────────────────────────────────
+  const [checkpointMessageIds, setCheckpointMessageIds] = useState<Set<string>>(new Set());
+
+  // Load checkpoint message IDs for the active thread
+  useEffect(() => {
+    if (!activeThread || !db.checkpoints) return;
+    db.checkpoints.where('threadId').equals(activeThread.id).toArray().then((cps) => {
+      setCheckpointMessageIds(new Set(cps.filter(cp => !cp.restored).map(cp => cp.messageId)));
+    });
+  }, [activeThread?.id, activeThread?.messages?.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleRestoreCheckpoint = useCallback(async (messageId: string) => {
+    // Find checkpoint by messageId
+    const cps = await db.checkpoints.where('messageId').equals(messageId).toArray();
+    const cp = cps.find(c => !c.restored);
+    if (!cp) return;
+
+    const restored = await restoreCheckpoint(cp.id);
+    if (restored) {
+      setCheckpointMessageIds(prev => {
+        const next = new Set(prev);
+        next.delete(messageId);
+        return next;
+      });
+      onEntitiesChanged?.();
+    }
+  }, [onEntitiesChanged]);
 
   // ── Session branching ──────────────────────────────────────────────
   const handleBranchFromHere = useCallback(async (messageIndex: number) => {
@@ -569,6 +659,19 @@ export function ChatView({
                 </button>
               )}
               <div className="flex items-center gap-1 ml-auto shrink-0">
+                <button
+                  onClick={toggleMode}
+                  className={cn(
+                    'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors mr-1',
+                    threadMode === 'plan'
+                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
+                      : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
+                  )}
+                  title={threadMode === 'plan' ? 'Plan mode: AI proposes but does not execute write actions' : 'Act mode: AI executes actions with approval'}
+                >
+                  {threadMode === 'plan' ? <Eye size={10} /> : <Play size={10} />}
+                  {threadMode === 'plan' ? 'Plan' : 'Act'}
+                </button>
                 {threadTokenTotal > 0 && (
                   <span className="text-[10px] text-text-muted font-mono px-1.5 py-0.5 rounded bg-bg-deep border border-border-subtle mr-1" title={`Total tokens used in this thread: ${threadTokenTotal.toLocaleString()}`}>
                     {threadTokenTotal >= 1000 ? `${(threadTokenTotal / 1000).toFixed(1)}k` : threadTokenTotal} tok
@@ -640,6 +743,9 @@ export function ChatView({
                   onBranchFromHere={handleBranchFromHere}
                   onRewindToHere={setRewindConfirmIndex}
                   tokenCount={msg.tokenCount}
+                  messageId={msg.id}
+                  onRestoreCheckpoint={handleRestoreCheckpoint}
+                  hasCheckpoint={checkpointMessageIds.has(msg.id)}
                 />
               ))}
               {isStreaming && streamingContent && (
@@ -664,6 +770,37 @@ export function ChatView({
                       {ta.name}
                     </span>
                   ))}
+                </div>
+              )}
+              {/* Write tool approval card */}
+              {pendingApproval && (
+                <div className="mx-auto max-w-md my-3 rounded-xl border border-amber-500/30 bg-amber-500/5 overflow-hidden">
+                  <div className="px-4 py-2.5 border-b border-amber-500/20 flex items-center gap-2">
+                    <Shield size={14} className="text-amber-400" />
+                    <span className="text-xs font-medium text-amber-400">Approve write action?</span>
+                  </div>
+                  <div className="px-4 py-2.5 space-y-1.5">
+                    <div className="text-xs">
+                      <span className="font-mono font-medium text-purple">{pendingApproval.toolName}</span>
+                    </div>
+                    <pre className="text-[10px] font-mono text-text-secondary bg-bg-deep rounded p-2 max-h-32 overflow-y-auto whitespace-pre-wrap">
+                      {JSON.stringify(pendingApproval.input, null, 2)}
+                    </pre>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={handleApprove}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors"
+                      >
+                        <Check size={12} /> Approve
+                      </button>
+                      <button
+                        onClick={handleReject}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors"
+                      >
+                        <X size={12} /> Reject
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
               {localError && (

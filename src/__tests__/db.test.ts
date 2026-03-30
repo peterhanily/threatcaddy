@@ -64,8 +64,8 @@ describe('Database schema', () => {
     expect(db.integrationRuns).toBeDefined();
   });
 
-  it('is at version 21', () => {
-    expect(db.verno).toBe(21);
+  it('is at version 22', () => {
+    expect(db.verno).toBe(22);
   });
 });
 

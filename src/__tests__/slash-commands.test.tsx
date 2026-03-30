@@ -50,13 +50,13 @@ describe('ChatInput slash command menu', () => {
       expect(screen.getByText('/timeline')).toBeInTheDocument();
     });
 
-    it('shows all 11 commands when only "/" is typed', async () => {
+    it('shows all 13 commands when only "/" is typed', async () => {
       renderInput();
       await userEvent.type(getTextarea(), '/');
       const options = screen.getAllByRole('option').filter(
         (b) => b.textContent?.startsWith('/')
       );
-      expect(options).toHaveLength(11);
+      expect(options).toHaveLength(13);
     });
 
     it('hides menu when text does not start with "/"', async () => {
@@ -84,11 +84,12 @@ describe('ChatInput slash command menu', () => {
       expect(screen.queryByText('/note')).not.toBeInTheDocument();
     });
 
-    it('filters to /search and /summary for "/s"', async () => {
+    it('filters to /search, /summary, and /stoploop for "/s"', async () => {
       renderInput();
       await userEvent.type(getTextarea(), '/s');
       expect(screen.getByText('/search')).toBeInTheDocument();
       expect(screen.getByText('/summary')).toBeInTheDocument();
+      expect(screen.getByText('/stoploop')).toBeInTheDocument();
       expect(screen.queryByText('/fetch')).not.toBeInTheDocument();
     });
 
@@ -152,18 +153,18 @@ describe('ChatInput slash command menu', () => {
       renderInput();
       const textarea = getTextarea();
       await userEvent.type(textarea, '/');
-      // ArrowUp from index 0 wraps to last item (/link)
+      // ArrowUp from index 0 wraps to last item (/stoploop)
       fireEvent.keyDown(textarea, { key: 'ArrowUp' });
       fireEvent.keyDown(textarea, { key: 'Enter' });
-      expect(textarea.value).toBe('/link ');
+      expect(textarea.value).toBe('/stoploop ');
     });
 
     it('wraps around when ArrowDown goes past last item', async () => {
       renderInput();
       const textarea = getTextarea();
       await userEvent.type(textarea, '/');
-      // Press ArrowDown 11 times to wrap back to first
-      for (let i = 0; i < 11; i++) {
+      // Press ArrowDown 13 times to wrap back to first
+      for (let i = 0; i < 13; i++) {
         fireEvent.keyDown(textarea, { key: 'ArrowDown' });
       }
       fireEvent.keyDown(textarea, { key: 'Enter' });
