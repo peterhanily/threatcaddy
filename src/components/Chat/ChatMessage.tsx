@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronRight, FileText, ListChecks, Shield, Clock } from 'lucide-react';
+import { ChevronRight, FileText, ListChecks, Shield, Clock, GitBranch, RotateCcw } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { renderMarkdown, sanitizeHtml } from '../../lib/markdown';
 import type { ToolCallRecord } from '../../types';
@@ -12,6 +12,15 @@ interface ChatMessageProps {
   onEntityClick?: (type: string, id: string) => void;
   onSuggestionClick?: (text: string) => void;
   isLastAssistant?: boolean;
+  messageIndex?: number;
+  onBranchFromHere?: (messageIndex: number) => void;
+  onRewindToHere?: (messageIndex: number) => void;
+  tokenCount?: { input: number; output: number };
+}
+
+function formatTokens(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
 }
 
 function summarizeInput(input: Record<string, unknown>): string {
@@ -215,7 +224,7 @@ function SuggestionChips({ suggestions, onSuggestionClick }: { suggestions: stri
 
 // ── Main Component ─────────────────────────────────────────────────
 
-export function ChatMessageBubble({ role, content, isStreaming, toolCalls, onEntityClick, onSuggestionClick, isLastAssistant }: ChatMessageProps) {
+export function ChatMessageBubble({ role, content, isStreaming, toolCalls, onEntityClick, onSuggestionClick, isLastAssistant, messageIndex, onBranchFromHere, onRewindToHere, tokenCount }: ChatMessageProps) {
   const isUser = role === 'user';
 
   const suggestions = useMemo(() => {
@@ -233,15 +242,38 @@ export function ChatMessageBubble({ role, content, isStreaming, toolCalls, onEnt
   );
 
   return (
-    <div className={cn('flex w-full mb-3', isUser ? 'justify-end' : 'justify-start')}>
+    <div className={cn('group/msg flex w-full mb-3', isUser ? 'justify-end' : 'justify-start')}>
       <div
         className={cn(
-          'max-w-[85%] rounded-xl px-4 py-2.5 text-sm leading-relaxed',
+          'relative max-w-[85%] rounded-xl px-4 py-2.5 text-sm leading-relaxed',
           isUser
             ? 'bg-purple/20 text-text-primary rounded-br-sm'
             : 'bg-bg-raised text-text-primary rounded-bl-sm border border-border-subtle'
         )}
       >
+        {/* Message actions (branch, rewind) */}
+        {messageIndex !== undefined && !isStreaming && (onBranchFromHere || onRewindToHere) && (
+          <div className="absolute -top-2 right-2 opacity-0 group-hover/msg:opacity-100 flex items-center gap-0.5 rounded bg-bg-raised border border-border-subtle shadow-sm z-10">
+            {onBranchFromHere && (
+              <button
+                onClick={() => onBranchFromHere(messageIndex)}
+                className="p-1 text-text-muted hover:text-purple transition-colors"
+                title="Branch conversation from here"
+              >
+                <GitBranch size={12} />
+              </button>
+            )}
+            {onRewindToHere && (
+              <button
+                onClick={() => onRewindToHere(messageIndex)}
+                className="p-1 text-text-muted hover:text-amber-400 transition-colors"
+                title="Rewind to this message"
+              >
+                <RotateCcw size={12} />
+              </button>
+            )}
+          </div>
+        )}
         {isUser ? (
           <p className="whitespace-pre-wrap">{content}</p>
         ) : (
@@ -277,6 +309,12 @@ export function ChatMessageBubble({ role, content, isStreaming, toolCalls, onEnt
         )}
         {isStreaming && (
           <span className="inline-block w-1.5 h-4 bg-purple/60 rounded-sm animate-pulse ml-0.5 align-text-bottom" />
+        )}
+        {/* Token count badge */}
+        {tokenCount && !isStreaming && (
+          <div className="mt-1.5 text-[9px] text-text-muted font-mono opacity-60" title={`Input: ${tokenCount.input.toLocaleString()} tokens, Output: ${tokenCount.output.toLocaleString()} tokens`}>
+            {formatTokens(tokenCount.input + tokenCount.output)} tokens
+          </div>
         )}
       </div>
     </div>

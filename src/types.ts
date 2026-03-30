@@ -587,6 +587,8 @@ export interface ChatMessage {
   toolCalls?: ToolCallRecord[];
   userId?: string;
   createdAt: number;
+  /** Token usage reported by the LLM provider for this message exchange */
+  tokenCount?: { input: number; output: number };
 }
 
 /** A conversation thread with CaddyAI, stored per-investigation or globally. */

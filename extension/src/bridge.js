@@ -104,7 +104,7 @@ window.addEventListener('message', function (event) {
         if (msg.type === 'chunk') {
           window.postMessage({ type: 'TC_LLM_CHUNK', requestId: requestId, content: msg.content }, postOrigin());
         } else if (msg.type === 'done') {
-          window.postMessage({ type: 'TC_LLM_DONE', requestId: requestId, stopReason: msg.stopReason, contentBlocks: msg.contentBlocks }, postOrigin());
+          window.postMessage({ type: 'TC_LLM_DONE', requestId: requestId, stopReason: msg.stopReason, contentBlocks: msg.contentBlocks, usage: msg.usage || null }, postOrigin());
           ports.delete(requestId);
         } else if (msg.type === 'error') {
           window.postMessage({ type: 'TC_LLM_ERROR', requestId: requestId, error: msg.error }, postOrigin());

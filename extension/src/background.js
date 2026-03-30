@@ -713,6 +713,7 @@ async function streamAnthropic(send, payload, signal) {
   const contentBlocks = [];
   let currentBlockIndex = -1;
   let stopReason = null;
+  let usage = null;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -756,14 +757,19 @@ async function streamAnthropic(send, payload, signal) {
           }
         }
 
-        if (parsed.type === 'message_delta' && parsed.delta?.stop_reason) {
-          stopReason = parsed.delta.stop_reason;
+        if (parsed.type === 'message_start' && parsed.message?.usage) {
+          usage = { input: parsed.message.usage.input_tokens || 0, output: 0 };
+        }
+
+        if (parsed.type === 'message_delta') {
+          if (parsed.delta?.stop_reason) stopReason = parsed.delta.stop_reason;
+          if (parsed.usage?.output_tokens && usage) usage.output = parsed.usage.output_tokens;
         }
       } catch {}
     }
   }
 
-  send({ type: 'done', stopReason: stopReason || 'end_turn', contentBlocks });
+  send({ type: 'done', stopReason: stopReason || 'end_turn', contentBlocks, usage });
 }
 
 // Parse tool calls from model text output (fallback for local LLMs that don't use structured tool_calls).
@@ -870,6 +876,7 @@ async function streamOpenAICompatible(send, payload, signal, endpoint, headers, 
   let buffer = '';
   let fullText = '';
   let stopReason = null;
+  let usage = null;
   const toolCallAccum = {};
 
   while (true) {
@@ -907,6 +914,11 @@ async function streamOpenAICompatible(send, payload, signal, endpoint, headers, 
 
         if (choice.finish_reason) {
           stopReason = choice.finish_reason;
+        }
+
+        // OpenAI reports usage in the final chunk (with stream_options.include_usage)
+        if (parsed.usage) {
+          usage = { input: parsed.usage.prompt_tokens || 0, output: parsed.usage.completion_tokens || 0 };
         }
       } catch {}
     }
@@ -946,7 +958,7 @@ async function streamOpenAICompatible(send, payload, signal, endpoint, headers, 
     : stopReason === 'stop' ? 'end_turn'
     : stopReason || 'end_turn';
 
-  send({ type: 'done', stopReason: normalizedStop, contentBlocks });
+  send({ type: 'done', stopReason: normalizedStop, contentBlocks, usage });
 }
 
 async function streamOpenAI(send, payload, signal) {
@@ -1060,6 +1072,7 @@ async function streamGemini(send, payload, signal) {
   let buffer = '';
   const contentBlocks = [];
   let stopReason = null;
+  let usage = null;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -1106,6 +1119,11 @@ async function streamGemini(send, payload, signal) {
           else if (candidate.finishReason === 'MAX_TOKENS') stopReason = 'max_tokens';
           else stopReason = candidate.finishReason;
         }
+
+        // Gemini reports usage in usageMetadata
+        if (parsed.usageMetadata) {
+          usage = { input: parsed.usageMetadata.promptTokenCount || 0, output: parsed.usageMetadata.candidatesTokenCount || 0 };
+        }
       } catch {}
     }
   }
@@ -1114,7 +1132,7 @@ async function streamGemini(send, payload, signal) {
   const hasToolUse = contentBlocks.some(b => b.type === 'tool_use');
   if (hasToolUse && stopReason !== 'max_tokens') stopReason = 'tool_use';
 
-  send({ type: 'done', stopReason: stopReason || 'end_turn', contentBlocks });
+  send({ type: 'done', stopReason: stopReason || 'end_turn', contentBlocks, usage });
 }
 
 async function sendToTarget(targetUrl, captures) {

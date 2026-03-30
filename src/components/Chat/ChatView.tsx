@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw } from 'lucide-react';
 import type { ChatThread, ChatMessage, LLMProvider, Settings, Folder, ToolUseBlock } from '../../types';
 import { ClsSelect } from '../Common/ClsSelect';
 import { ClsBadge } from '../Common/ClsBadge';
@@ -14,6 +14,9 @@ import { TOOL_DEFINITIONS, buildSystemPrompt, executeTool, isWriteTool, fetchVia
 import { generateChatTitle } from '../../lib/chat-utils';
 import { truncateConversation, MAX_CONTEXT_MESSAGES } from '../../lib/chat-utils';
 import { db } from '../../db';
+import { useChatLoops } from '../../hooks/useChatLoops';
+import { hasLoopsForThread } from '../../lib/chat-loop';
+import { resolveMentions } from '../../lib/chat-mentions';
 
 interface ChatViewProps {
   threads: ChatThread[];
@@ -66,6 +69,7 @@ export function ChatView({
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   const activeThread = threads.find((t) => t.id === selectedThreadId);
+  const { loops: activeLoops, startLoop, stopAllForThread } = useChatLoops(activeThread?.id);
 
   // Memoize system prompt — only rebuild when folder context changes
   const systemPromptRef = useRef<string>('');
@@ -177,11 +181,14 @@ export function ChatView({
       return;
     }
 
-    // Add user message
+    // Resolve @-mentions: replace tokens with labels for display, inject entity data for LLM
+    const { displayText: mentionDisplayText, contextBlock: mentionContext } = await resolveMentions(text);
+
+    // Add user message (with readable @-mention labels)
     const userMsg: ChatMessage = {
       id: nanoid(),
       role: 'user',
-      content: text,
+      content: mentionDisplayText,
       createdAt: Date.now(),
     };
     await onAddMessage(activeThread.id, userMsg);
@@ -201,7 +208,7 @@ export function ChatView({
     };
 
     const slashMatch = text.match(/^(\/\w+)\s*([\s\S]*)$/);
-    let llmText = text;
+    let llmText = text + mentionContext;
     if (slashMatch) {
       const [, cmd, arg] = slashMatch;
       const transform = SLASH_TRANSFORMS[cmd.toLowerCase()];
@@ -260,6 +267,46 @@ export function ChatView({
       return;
     }
 
+    // Intercept /loop <interval> <prompt> — start a background scheduling loop
+    const loopMatch = text.match(/^\/loop\s+(\d+[smh])\s+([\s\S]+)$/i);
+    if (loopMatch) {
+      const [, intervalStr, prompt] = loopMatch;
+      const { id: loopId, formattedInterval } = startLoop({
+        threadId: activeThread.id,
+        prompt,
+        intervalStr,
+        model: activeThread.model,
+        provider: activeThread.provider,
+        apiKey: apiKey!,
+        systemPrompt: systemPromptRef.current || await buildSystemPrompt(selectedFolder, settings.llmSystemPrompt, activeThread.provider),
+        endpoint: activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined,
+        onMessage: onAddMessage,
+      });
+      const confirmMsg: ChatMessage = {
+        id: nanoid(),
+        role: 'assistant',
+        content: `Started background loop \`${loopId}\`. Running every ${formattedInterval}:\n\n> ${prompt}\n\nUse \`/stoploop\` to stop.`,
+        createdAt: Date.now(),
+      };
+      await onAddMessage(activeThread.id, confirmMsg);
+      return;
+    }
+
+    // Intercept /stoploop — stop all loops for this thread
+    if (text.match(/^\/stoploop$/i)) {
+      const count = stopAllForThread(activeThread.id);
+      const confirmMsg: ChatMessage = {
+        id: nanoid(),
+        role: 'assistant',
+        content: count > 0
+          ? `Stopped ${count} background loop${count > 1 ? 's' : ''}.`
+          : 'No active loops to stop.',
+        createdAt: Date.now(),
+      };
+      await onAddMessage(activeThread.id, confirmMsg);
+      return;
+    }
+
     // Use memoized system prompt — only rebuilt when folder context changes
     const systemPrompt = systemPromptRef.current || await buildSystemPrompt(selectedFolder, settings.llmSystemPrompt, activeThread.provider);
 
@@ -295,13 +342,14 @@ export function ChatView({
         }
         return result;
       },
-      async ({ content, toolCalls }) => {
+      async ({ content, toolCalls, usage }) => {
         const assistantMsg: ChatMessage = {
           id: nanoid(),
           role: 'assistant',
           content,
           model: activeThread.model,
           toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+          tokenCount: usage,
           createdAt: Date.now(),
         };
         await onAddMessage(activeThread.id, assistantMsg);
@@ -326,7 +374,7 @@ export function ChatView({
         }
       }
     );
-  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, getProviderLabel]);
+  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, getProviderLabel, startLoop, stopAllForThread]);
 
   const handleModelChange = useCallback((model: string, provider: LLMProvider) => {
     if (activeThread) {
@@ -371,6 +419,41 @@ export function ChatView({
     handleSend(text);
   }, [handleSend]);
 
+  // ── Thread token totals ─────────────────────────────────────────────
+  const threadTokenTotal = useMemo(() => {
+    if (!activeThread) return 0;
+    return activeThread.messages.reduce((sum, m) => {
+      if (m.tokenCount) return sum + m.tokenCount.input + m.tokenCount.output;
+      return sum;
+    }, 0);
+  }, [activeThread]);
+
+  // ── Session rewind ──────────────────────────────────────────────────
+  const [rewindConfirmIndex, setRewindConfirmIndex] = useState<number | null>(null);
+
+  const handleRewindConfirmed = useCallback(async () => {
+    if (!activeThread || rewindConfirmIndex === null) return;
+    const trimmedMessages = activeThread.messages.slice(0, rewindConfirmIndex + 1);
+    onUpdateThread(activeThread.id, { messages: trimmedMessages });
+    setRewindConfirmIndex(null);
+  }, [activeThread, rewindConfirmIndex, onUpdateThread]);
+
+  // ── Session branching ──────────────────────────────────────────────
+  const handleBranchFromHere = useCallback(async (messageIndex: number) => {
+    if (!activeThread) return;
+    const branchedMessages = activeThread.messages.slice(0, messageIndex + 1);
+    const branched = await onCreateThread({
+      title: `Branch: ${activeThread.title}`,
+      messages: branchedMessages,
+      model: activeThread.model,
+      provider: activeThread.provider,
+      folderId: activeThread.folderId,
+      tags: [...activeThread.tags],
+      clsLevel: activeThread.clsLevel,
+    });
+    onSelectThread(branched.id);
+  }, [activeThread, onCreateThread, onSelectThread]);
+
   return (
     <div className="relative flex flex-1 overflow-hidden">
       {/* Thread list — hidden on mobile when a thread is selected */}
@@ -411,7 +494,12 @@ export function ChatView({
               >
                 <MessageSquare size={14} className="shrink-0 text-text-muted" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium truncate">{thread.title}</div>
+                  <div className="flex items-center gap-1 text-xs font-medium truncate">
+                    {thread.title}
+                    {hasLoopsForThread(thread.id) && (
+                      <RefreshCw size={10} className="shrink-0 text-purple animate-spin" style={{ animationDuration: '3s' }} />
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5 text-[10px] text-text-muted font-mono">
                     <span>{formatDate(thread.updatedAt)}</span>
                     {thread.clsLevel && <ClsBadge level={thread.clsLevel} />}
@@ -481,6 +569,24 @@ export function ChatView({
                 </button>
               )}
               <div className="flex items-center gap-1 ml-auto shrink-0">
+                {threadTokenTotal > 0 && (
+                  <span className="text-[10px] text-text-muted font-mono px-1.5 py-0.5 rounded bg-bg-deep border border-border-subtle mr-1" title={`Total tokens used in this thread: ${threadTokenTotal.toLocaleString()}`}>
+                    {threadTokenTotal >= 1000 ? `${(threadTokenTotal / 1000).toFixed(1)}k` : threadTokenTotal} tok
+                  </span>
+                )}
+                {activeLoops.length > 0 && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple/10 border border-purple/20 text-[10px] text-purple mr-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple animate-pulse" />
+                    {activeLoops.length} loop{activeLoops.length > 1 ? 's' : ''}
+                    <button
+                      onClick={() => stopAllForThread(activeThread.id)}
+                      className="ml-0.5 hover:text-red-400 transition-colors"
+                      title="Stop all loops"
+                    >
+                      <Square size={10} />
+                    </button>
+                  </div>
+                )}
                 <ClsSelect
                   value={activeThread.clsLevel}
                   onChange={(clsLevel) => onUpdateThread(activeThread.id, { clsLevel })}
@@ -530,6 +636,10 @@ export function ChatView({
                   onEntityClick={onNavigateToEntity}
                   onSuggestionClick={handleSuggestionClick}
                   isLastAssistant={msg.role === 'assistant' && idx === activeThread.messages.length - 1}
+                  messageIndex={idx}
+                  onBranchFromHere={handleBranchFromHere}
+                  onRewindToHere={setRewindConfirmIndex}
+                  tokenCount={msg.tokenCount}
                 />
               ))}
               {isStreaming && streamingContent && (
@@ -587,6 +697,7 @@ export function ChatView({
               localModelName={settings.llmLocalModelName}
               configuredProviders={configuredProviders}
               onOpenSettings={onOpenSettings ? () => onOpenSettings('ai') : undefined}
+              folderId={selectedFolderId}
             />
           </>
         ) : (
@@ -614,6 +725,16 @@ export function ChatView({
         title="Delete Chat Thread"
         message="This chat thread will be moved to trash. Are you sure?"
         confirmLabel="Delete"
+        danger
+      />
+
+      <ConfirmDialog
+        open={rewindConfirmIndex !== null}
+        onClose={() => setRewindConfirmIndex(null)}
+        onConfirm={handleRewindConfirmed}
+        title="Rewind Conversation"
+        message={`This will delete ${activeThread ? activeThread.messages.length - (rewindConfirmIndex ?? 0) - 1 : 0} message(s) after this point. This cannot be undone. Use Branch instead to preserve the full history.`}
+        confirmLabel="Rewind"
         danger
       />
 

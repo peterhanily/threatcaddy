@@ -27,9 +27,15 @@ export interface ToolActivity {
   result?: string;
 }
 
+export interface TokenUsage {
+  input: number;
+  output: number;
+}
+
 interface AgentResult {
   content: string;
   toolCalls: ToolCallRecord[];
+  usage?: TokenUsage;
 }
 
 const MAX_TOOL_TURNS = 8;
@@ -57,16 +63,17 @@ export function useLLM() {
     opts: SendRequestOptions;
     messages: SendRequestOptions['messages'];
     allToolCalls: ToolCallRecord[];
+    totalUsage: TokenUsage;
     turn: number;
     aborted: boolean;
     toolExecutor?: (toolUse: ToolUseBlock) => Promise<{ result: string; isError: boolean }>;
   } | null>(null);
 
   // Keep handleDone in a ref so the event listener always calls the latest version
-  const handleDoneRef = useRef<((stopReason: string, contentBlocks: ContentBlock[]) => void) | undefined>(undefined);
+  const handleDoneRef = useRef<((stopReason: string, contentBlocks: ContentBlock[], eventUsage?: TokenUsage) => void) | undefined>(undefined);
 
   // eslint-disable-next-line react-hooks/refs -- intentional: keep latest closure for event listener
-  handleDoneRef.current = async (stopReason: string, contentBlocks: ContentBlock[]) => {
+  handleDoneRef.current = async (stopReason: string, contentBlocks: ContentBlock[], eventUsage?: TokenUsage) => {
     try {
       const state = agentStateRef.current;
       if (!state) {
@@ -74,9 +81,15 @@ export function useLLM() {
         const finalContent = accumulatedRef.current;
         setActiveRequestId(null);
         requestIdRef.current = null;
-        onCompleteRef.current?.({ content: finalContent, toolCalls: [] });
+        onCompleteRef.current?.({ content: finalContent, toolCalls: [], usage: eventUsage });
         onCompleteRef.current = null;
         return;
+      }
+
+      // Accumulate token usage across turns
+      if (eventUsage) {
+        state.totalUsage.input += eventUsage.input;
+        state.totalUsage.output += eventUsage.output;
       }
 
       // Check if there are tool_use blocks to handle
@@ -91,7 +104,7 @@ export function useLLM() {
         const finalContent = accumulatedRef.current;
         setActiveRequestId(null);
         requestIdRef.current = null;
-        const result = { content: finalContent, toolCalls: [...state.allToolCalls] };
+        const result = { content: finalContent, toolCalls: [...state.allToolCalls], usage: state.totalUsage.input > 0 ? { ...state.totalUsage } : undefined };
         agentStateRef.current = null;
         onCompleteRef.current?.(result);
         onCompleteRef.current = null;
@@ -192,7 +205,7 @@ export function useLLM() {
       const finalContent = accumulatedRef.current;
       agentStateRef.current = null;
       // Deliver whatever we have
-      onCompleteRef.current?.({ content: finalContent, toolCalls: state?.allToolCalls || [] });
+      onCompleteRef.current?.({ content: finalContent, toolCalls: state?.allToolCalls || [], usage: state?.totalUsage.input ? { ...state.totalUsage } : undefined });
       onCompleteRef.current = null;
     }
   };
@@ -233,7 +246,8 @@ export function useLLM() {
         }
         const stopReason: string = event.data.stopReason || 'end_turn';
         const contentBlocks: ContentBlock[] = event.data.contentBlocks || [];
-        handleDoneRef.current?.(stopReason, contentBlocks);
+        const eventUsage: TokenUsage | undefined = event.data.usage ? { input: event.data.usage.input || 0, output: event.data.usage.output || 0 } : undefined;
+        handleDoneRef.current?.(stopReason, contentBlocks, eventUsage);
         return;
       }
 
@@ -275,6 +289,7 @@ export function useLLM() {
       opts,
       messages: [...opts.messages],
       allToolCalls: [],
+      totalUsage: { input: 0, output: 0 },
       turn: 0,
       aborted: false,
       toolExecutor,

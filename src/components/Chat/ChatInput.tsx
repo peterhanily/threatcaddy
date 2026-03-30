@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Send, Square, Wifi, WifiOff, Globe, Search, FileText, CheckSquare, Shield, BarChart3, Clock, Network, ClipboardList, Zap, Link2, AlertTriangle, Terminal } from 'lucide-react';
+import { Send, Square, Wifi, WifiOff, Globe, Search, FileText, CheckSquare, Shield, BarChart3, Clock, Network, ClipboardList, Zap, Link2, AlertTriangle, Terminal, RefreshCw, StopCircle } from 'lucide-react';
 import type { LLMProvider } from '../../types';
 import { MODELS as STATIC_MODELS } from '../../lib/models';
 import { cn } from '../../lib/utils';
+import { searchMentions, MENTION_CATEGORIES, type MentionSuggestion } from '../../lib/chat-mentions';
 
 const SLASH_COMMANDS = [
   { command: '/fetch', description: 'Fetch URL into a note', placeholder: '<url>', icon: Globe },
@@ -16,6 +17,8 @@ const SLASH_COMMANDS = [
   { command: '/triage', description: 'Auto-triage an alert or email', placeholder: '<paste alert>', icon: Zap },
   { command: '/graph', description: 'Analyze entity relationships', placeholder: '', icon: Network },
   { command: '/link', description: 'Find and link related entities', placeholder: '<description>', icon: Link2 },
+  { command: '/loop', description: 'Schedule a recurring prompt', placeholder: '<interval> <prompt>', icon: RefreshCw },
+  { command: '/stoploop', description: 'Stop background loops', placeholder: '', icon: StopCircle },
 ];
 
 interface ChatInputProps {
@@ -30,9 +33,10 @@ interface ChatInputProps {
   /** Set of providers that have an API key configured */
   configuredProviders?: Set<string>;
   onOpenSettings?: () => void;
+  folderId?: string;
 }
 
-export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, model, onModelChange, disabled, localModelName, configuredProviders, onOpenSettings }: ChatInputProps) {
+export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, model, onModelChange, disabled, localModelName, configuredProviders, onOpenSettings, folderId }: ChatInputProps) {
   const MODELS = useMemo(() => {
     let models = [...STATIC_MODELS];
     if (localModelName) {
@@ -79,18 +83,87 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
     if (shouldOpen) setSlashIndex(0);
   }, [filteredCommands]);
 
+  // ── @-mention autocomplete ──────────────────────────────────────────
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionResults, setMentionResults] = useState<MentionSuggestion[]>([]);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const [mentionPhase, setMentionPhase] = useState<'category' | 'search'>('category');
+  const mentionMenuRef = useRef<HTMLDivElement>(null);
+
+  // Detect @-mention trigger
+  useEffect(() => {
+    // Find the last @ in the text
+    const lastAt = text.lastIndexOf('@');
+    if (lastAt === -1 || slashOpen) {
+      if (mentionOpen) setMentionOpen(false);
+      return;
+    }
+
+    const afterAt = text.slice(lastAt + 1);
+
+    // Check if we're in a typed mention (e.g. @note:query)
+    const typedMatch = afterAt.match(/^(note|ioc|investigation):(.*)$/i);
+    if (typedMatch) {
+      const type = typedMatch[1].toLowerCase() as 'note' | 'ioc' | 'investigation';
+      const query = typedMatch[2];
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMentionPhase('search');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMentionOpen(true);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMentionIndex(0);
+      searchMentions(type, query, folderId).then(setMentionResults);
+      return;
+    }
+
+    // Just '@' or '@<partial category>' — show categories
+    if (afterAt === '' || MENTION_CATEGORIES.some(c => c.type.startsWith(afterAt.toLowerCase()))) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMentionPhase('category');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMentionOpen(true);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMentionIndex(0);
+      return;
+    }
+
+    if (mentionOpen) setMentionOpen(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text, slashOpen, folderId]);
+
+  const selectMentionCategory = (type: 'note' | 'ioc' | 'investigation') => {
+    const lastAt = text.lastIndexOf('@');
+    const before = text.slice(0, lastAt);
+    setText(before + `@${type}:`);
+    setMentionPhase('search');
+    setMentionIndex(0);
+    textareaRef.current?.focus();
+  };
+
+  const selectMentionItem = (item: MentionSuggestion) => {
+    const lastAt = text.lastIndexOf('@');
+    const before = text.slice(0, lastAt);
+    setText(before + `@${item.type}:${item.id} `);
+    setMentionOpen(false);
+    textareaRef.current?.focus();
+  };
+
   // Close on click outside
   useEffect(() => {
-    if (!slashOpen) return;
+    if (!slashOpen && !mentionOpen) return;
     const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node) &&
-          textareaRef.current && !textareaRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const isOutside = textareaRef.current && !textareaRef.current.contains(target);
+      if (slashOpen && menuRef.current && !menuRef.current.contains(target) && isOutside) {
         setSlashOpen(false);
+      }
+      if (mentionOpen && mentionMenuRef.current && !mentionMenuRef.current.contains(target) && isOutside) {
+        setMentionOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [slashOpen]);
+  }, [slashOpen, mentionOpen]);
 
   const selectSlashCommand = (command: string) => {
     setText(command + ' ');
@@ -131,6 +204,25 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
         return;
       }
     }
+    // @-mention keyboard navigation
+    if (mentionOpen) {
+      const items = mentionPhase === 'category' ? MENTION_CATEGORIES : mentionResults;
+      if (items.length > 0) {
+        if (e.key === 'ArrowDown') { e.preventDefault(); setMentionIndex(i => (i + 1) % items.length); return; }
+        if (e.key === 'ArrowUp') { e.preventDefault(); setMentionIndex(i => (i - 1 + items.length) % items.length); return; }
+        if (e.key === 'Enter' || e.key === 'Tab') {
+          e.preventDefault();
+          if (mentionPhase === 'category') {
+            selectMentionCategory(MENTION_CATEGORIES[mentionIndex].type);
+          } else {
+            selectMentionItem(mentionResults[mentionIndex]);
+          }
+          return;
+        }
+      }
+      if (e.key === 'Escape') { e.preventDefault(); setMentionOpen(false); return; }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -220,6 +312,52 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
                 </button>
               );
             })}
+          </div>
+        )}
+        {/* @-mention menu */}
+        {mentionOpen && (
+          <div
+            ref={mentionMenuRef}
+            role="listbox"
+            className="absolute bottom-full left-0 right-0 mb-1 bg-bg-raised border border-border-medium rounded-lg shadow-lg z-20 overflow-hidden max-h-64 overflow-y-auto"
+          >
+            {mentionPhase === 'category' ? (
+              MENTION_CATEGORIES.map((cat, i) => (
+                <button
+                  key={cat.type}
+                  role="option"
+                  aria-selected={i === mentionIndex}
+                  onMouseDown={(e) => { e.preventDefault(); selectMentionCategory(cat.type); }}
+                  className={cn(
+                    'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors',
+                    i === mentionIndex ? 'bg-purple/20' : 'hover:bg-bg-hover'
+                  )}
+                >
+                  <span className="text-xs font-mono text-purple">{cat.prefix}</span>
+                  <span className="text-xs text-text-secondary">{cat.label}</span>
+                </button>
+              ))
+            ) : mentionResults.length > 0 ? (
+              mentionResults.map((item, i) => (
+                <button
+                  key={item.id}
+                  role="option"
+                  aria-selected={i === mentionIndex}
+                  onMouseDown={(e) => { e.preventDefault(); selectMentionItem(item); }}
+                  className={cn(
+                    'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors',
+                    i === mentionIndex ? 'bg-purple/20' : 'hover:bg-bg-hover'
+                  )}
+                >
+                  <span className="text-xs font-medium text-text-primary truncate">{item.label}</span>
+                  {item.preview && (
+                    <span className="text-[10px] text-text-muted truncate flex-1">{item.preview}</span>
+                  )}
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-xs text-text-muted">No matches found</div>
+            )}
           </div>
         )}
         <button
