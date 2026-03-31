@@ -1,8 +1,13 @@
 import type { LLMChatRequest } from '../types.js';
 
+export interface LLMUsageData {
+  inputTokens: number;
+  outputTokens: number;
+}
+
 interface StreamCallbacks {
   onChunk: (text: string) => void;
-  onDone: (stopReason: string) => void;
+  onDone: (stopReason: string, contentBlocks?: unknown[], usage?: LLMUsageData) => void;
   onError: (error: string) => void;
 }
 
@@ -51,6 +56,9 @@ async function streamAnthropic(req: LLMChatRequest, cb: StreamCallbacks, signal:
   const decoder = new TextDecoder();
   let buffer = '';
   let stopReason = 'end_turn';
+  const contentBlocks: unknown[] = [];
+  let currentBlockIndex = -1;
+  const usage: LLMUsageData = { inputTokens: 0, outputTokens: 0 };
 
   while (true) {
     const { done, value } = await reader.read();
@@ -66,17 +74,39 @@ async function streamAnthropic(req: LLMChatRequest, cb: StreamCallbacks, signal:
       if (data === '[DONE]') continue;
       try {
         const event = JSON.parse(data);
-        if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
-          cb.onChunk(event.delta.text);
+        if (event.type === 'message_start' && event.message?.usage) {
+          usage.inputTokens = event.message.usage.input_tokens || 0;
         }
-        if (event.type === 'message_delta' && event.delta?.stop_reason) {
-          stopReason = event.delta.stop_reason;
+        if (event.type === 'content_block_start') {
+          currentBlockIndex = event.index;
+          const block = event.content_block;
+          if (block.type === 'text') contentBlocks[currentBlockIndex] = { type: 'text', text: '' };
+          else if (block.type === 'tool_use') contentBlocks[currentBlockIndex] = { type: 'tool_use', id: block.id, name: block.name, input: '' };
+        }
+        if (event.type === 'content_block_delta') {
+          const block = contentBlocks[event.index] as Record<string, unknown> | undefined;
+          if (event.delta?.type === 'text_delta' && event.delta.text) {
+            if (block) (block as { text: string }).text += event.delta.text;
+            cb.onChunk(event.delta.text);
+          } else if (event.delta?.type === 'input_json_delta' && event.delta.partial_json) {
+            if (block) (block as { input: string }).input += event.delta.partial_json;
+          }
+        }
+        if (event.type === 'content_block_stop') {
+          const block = contentBlocks[event.index] as Record<string, unknown> | undefined;
+          if (block && block.type === 'tool_use' && typeof block.input === 'string') {
+            try { block.input = JSON.parse(block.input as string); } catch { block.input = {}; }
+          }
+        }
+        if (event.type === 'message_delta') {
+          if (event.delta?.stop_reason) stopReason = event.delta.stop_reason;
+          if (event.usage?.output_tokens) usage.outputTokens = event.usage.output_tokens;
         }
       } catch { /* skip malformed JSON */ }
     }
   }
 
-  cb.onDone(stopReason);
+  cb.onDone(stopReason, contentBlocks, usage.inputTokens > 0 ? usage : undefined);
 }
 
 async function streamOpenAI(req: LLMChatRequest, cb: StreamCallbacks, signal: AbortSignal) {
@@ -127,7 +157,7 @@ async function streamOpenAI(req: LLMChatRequest, cb: StreamCallbacks, signal: Ab
     for (const line of lines) {
       if (!line.startsWith('data: ')) continue;
       const data = line.slice(6).trim();
-      if (data === '[DONE]') { cb.onDone('end_turn'); return; }
+      if (data === '[DONE]') { cb.onDone('end_turn', [], undefined); return; }
       try {
         const event = JSON.parse(data);
         const delta = event.choices?.[0]?.delta;
@@ -136,7 +166,7 @@ async function streamOpenAI(req: LLMChatRequest, cb: StreamCallbacks, signal: Ab
     }
   }
 
-  cb.onDone('end_turn');
+  cb.onDone('end_turn', [], undefined);
 }
 
 async function streamGemini(req: LLMChatRequest, cb: StreamCallbacks, signal: AbortSignal) {
@@ -195,7 +225,7 @@ async function streamGemini(req: LLMChatRequest, cb: StreamCallbacks, signal: Ab
     }
   }
 
-  cb.onDone('end_turn');
+  cb.onDone('end_turn', [], undefined);
 }
 
 async function streamMistral(req: LLMChatRequest, cb: StreamCallbacks, signal: AbortSignal) {
@@ -243,7 +273,7 @@ async function streamMistral(req: LLMChatRequest, cb: StreamCallbacks, signal: A
     for (const line of lines) {
       if (!line.startsWith('data: ')) continue;
       const data = line.slice(6).trim();
-      if (data === '[DONE]') { cb.onDone('end_turn'); return; }
+      if (data === '[DONE]') { cb.onDone('end_turn', [], undefined); return; }
       try {
         const event = JSON.parse(data);
         const delta = event.choices?.[0]?.delta;
@@ -252,7 +282,7 @@ async function streamMistral(req: LLMChatRequest, cb: StreamCallbacks, signal: A
     }
   }
 
-  cb.onDone('end_turn');
+  cb.onDone('end_turn', [], undefined);
 }
 
 export async function streamLLM(

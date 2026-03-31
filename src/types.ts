@@ -230,6 +230,8 @@ export interface Settings {
   llmMaxContextMessages?: number;
   /** Token budget warning threshold per thread (e.g. 100000) */
   llmTokenBudget?: number;
+  /** LLM routing mode: extension (browser ext), server (team server proxy), auto (server if connected, else extension) */
+  llmRoutingMode?: 'extension' | 'server' | 'auto';
   tiAutoExtractEnabled?: boolean;        // default true
   tiAutoExtractDebounceMs?: number;      // default 2000
   tiEnabledIOCTypes?: string[];          // IOC type strings; undefined = all enabled

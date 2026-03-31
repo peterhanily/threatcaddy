@@ -592,6 +592,22 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 Token usage badge turns amber at 80% and red when exceeded. Leave empty for no limit.
               </p>
 
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-gray-400">LLM request routing</label>
+                <select
+                  value={settings.llmRoutingMode || 'extension'}
+                  onChange={(e) => onUpdateSettings({ llmRoutingMode: e.target.value as 'extension' | 'server' | 'auto' })}
+                  className={selectClass}
+                >
+                  <option value="extension">Browser Extension</option>
+                  <option value="server">Team Server Proxy</option>
+                  <option value="auto">Auto (server when connected)</option>
+                </select>
+              </div>
+              <p className="text-[10px] text-gray-600">
+                Extension: routes through the browser extension (requires API keys locally). Server: routes through the team server (uses server API keys). Auto: prefers server when connected.
+              </p>
+
               <SystemPromptEditor
                 value={settings.llmSystemPrompt}
                 onChange={(v) => onUpdateSettings({ llmSystemPrompt: v })}

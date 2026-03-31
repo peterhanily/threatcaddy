@@ -357,7 +357,7 @@ export async function fetchLLMConfig(): Promise<LLMConfig> {
 export async function streamLLMChat(
   data: { provider: string; model: string; messages: unknown[]; systemPrompt?: string; tools?: unknown[] },
   onChunk: (text: string) => void,
-  onDone: (stopReason: string) => void,
+  onDone: (stopReason: string, contentBlocks?: unknown[], usage?: { input: number; output: number }) => void,
   onError: (error: string) => void,
   signal?: AbortSignal
 ) {
@@ -398,7 +398,7 @@ export async function streamLLMChat(
       try {
         const event = JSON.parse(data);
         if (event.type === 'chunk') onChunk(event.content);
-        else if (event.type === 'done') onDone(event.stopReason);
+        else if (event.type === 'done') onDone(event.stopReason, event.contentBlocks, event.usage);
         else if (event.type === 'error') onError(event.error);
       } catch (e) { console.warn('Failed to parse SSE event:', e); }
     }

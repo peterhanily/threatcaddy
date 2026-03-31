@@ -21,7 +21,9 @@ import { createCheckpoint, restoreCheckpoint } from '../../lib/checkpoints';
 import { useCustomSlashCommands, interpolateTemplate } from '../../hooks/useCustomSlashCommands';
 import { useToast } from '../../contexts/ToastContext';
 import { supportsVision, describeImage } from '../../lib/image-ocr';
+import { resolveRoutingMode } from '../../lib/llm-router';
 import type { ChatAttachment } from '../../types';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ChatViewProps {
   threads: ChatThread[];
@@ -58,6 +60,10 @@ export function ChatView({
 }: ChatViewProps) {
   const { extensionAvailable, streamingContent, isStreaming, error, toolActivity, sendAgentRequest, abort } = useLLM();
   const { addToast } = useToast();
+  const { serverUrl } = useAuth();
+  const serverConnected = !!serverUrl;
+  const effectiveRoute = resolveRoutingMode(settings.llmRoutingMode, extensionAvailable, serverConnected);
+  const canChat = extensionAvailable || serverConnected;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [errorHasSettingsLink, setErrorHasSettingsLink] = useState(false);
@@ -191,22 +197,23 @@ export function ChatView({
     setErrorHasSettingsLink(false);
 
     const provider = activeThread.provider;
+    const useServerProxy = effectiveRoute === 'server';
 
-    // Local provider: validate endpoint is set
-    if (provider === 'local' && !settings.llmLocalEndpoint) {
-      setLocalError('No Local LLM endpoint configured. Add it in Settings \u2192 AI/LLM.');
-      setErrorHasSettingsLink(true);
-      return;
+    // Validate API key (skip when routing through server — server has its own keys)
+    if (!useServerProxy) {
+      if (provider === 'local' && !settings.llmLocalEndpoint) {
+        setLocalError('No Local LLM endpoint configured. Add it in Settings \u2192 AI/LLM.');
+        setErrorHasSettingsLink(true);
+        return;
+      }
+      const apiKey = getApiKeyForProvider(provider, settings);
+      if (!apiKey) {
+        setLocalError(`No ${getProviderLabel(provider)} API key configured. Add an API key or local LLM endpoint in Settings \u2192 AI/LLM.`);
+        setErrorHasSettingsLink(true);
+        return;
+      }
     }
-
-    // Get API key (trim whitespace from copy-paste)
-    const apiKey = getApiKeyForProvider(provider, settings);
-
-    if (!apiKey) {
-      setLocalError(`No ${getProviderLabel(provider)} API key configured. Add an API key or local LLM endpoint in Settings \u2192 AI/LLM.`);
-      setErrorHasSettingsLink(true);
-      return;
-    }
+    const apiKey = useServerProxy ? 'server-proxy' : getApiKeyForProvider(provider, settings);
 
     // Resolve @-mentions: replace tokens with labels for display, inject entity data for LLM
     const { displayText: mentionDisplayText, contextBlock: mentionContext } = await resolveMentions(text);
@@ -415,10 +422,11 @@ export function ChatView({
         provider: activeThread.provider,
         model: activeThread.model,
         messages: conversationMessages,
-        apiKey,
+        apiKey: apiKey!,
         systemPrompt: finalSystemPrompt,
         tools,
         endpoint: activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined,
+        useServerProxy: effectiveRoute === 'server',
       },
       async (toolUse: ToolUseBlock) => {
         // Approval gate for write tools in Act mode
@@ -649,9 +657,9 @@ export function ChatView({
         <div className="p-2 border-b border-border-subtle">
           <button
             onClick={handleNewChat}
-            disabled={!extensionAvailable}
+            disabled={!canChat}
             className="w-full flex items-center justify-center gap-1.5 h-8 rounded-lg bg-purple text-white text-xs font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
-            title={extensionAvailable ? 'Start a new chat' : 'Extension required for new chats'}
+            title={canChat ? 'Start a new chat' : 'Extension or server connection required'}
           >
             <Plus size={14} />
             New Chat
@@ -953,9 +961,9 @@ export function ChatView({
                 ? 'Select a thread to view the conversation'
                 : 'AI-powered investigation assistant'}
             </p>
-            {!extensionAvailable && (
+            {!canChat && (
               <p className="text-xs mt-3 px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
-                Browser extension required to send new messages
+                Browser extension or team server connection required
               </p>
             )}
           </div>

@@ -525,3 +525,35 @@ export const backups = pgTable('backups', {
   idxBackupsUserId: index('idx_backups_user_id').on(t.userId),
   idxBackupsCreatedAt: index('idx_backups_created_at').on(t.createdAt),
 }));
+
+// ─── LLM Usage Tracking ─────────────────────────────────────────
+
+export const llmUsage = pgTable('llm_usage', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  provider: text('provider').notNull(),
+  model: text('model').notNull(),
+  inputTokens: integer('input_tokens').notNull().default(0),
+  outputTokens: integer('output_tokens').notNull().default(0),
+  estimatedCost: integer('estimated_cost_micros').notNull().default(0), // cost in microdollars (1/1,000,000)
+  latencyMs: integer('latency_ms'),
+  threadId: text('thread_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  idxLlmUsageUserId: index('idx_llm_usage_user_id').on(t.userId),
+  idxLlmUsageCreatedAt: index('idx_llm_usage_created_at').on(t.createdAt),
+  idxLlmUsageProvider: index('idx_llm_usage_provider').on(t.provider),
+}));
+
+export const userLlmKeys = pgTable('user_llm_keys', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  provider: text('provider').notNull(),
+  /** Encrypted API key */
+  encryptedKey: text('encrypted_key').notNull(),
+  label: text('label'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  uniqueUserProvider: unique('unique_user_provider').on(t.userId, t.provider),
+}));

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { LLMProvider, ContentBlock, ToolUseBlock, ToolCallRecord } from '../types';
 import { isWriteTool } from '../lib/llm-tool-defs';
+import { sendViaServer } from '../lib/llm-router';
 import { nanoid } from 'nanoid';
 import { postMessageOrigin } from '../lib/utils';
 
@@ -18,6 +19,8 @@ interface SendRequestOptions {
   systemPrompt?: string;
   tools?: ToolDef[];
   endpoint?: string;
+  /** Route through team server instead of extension bridge */
+  useServerProxy?: boolean;
 }
 
 export interface ToolActivity {
@@ -44,6 +47,41 @@ const MAX_TOOL_TURNS = 8;
 export interface ExtensionInfo {
   protocolVersion: number;
   capabilities: string[];
+}
+
+/** Dispatch an LLM request via extension bridge or server proxy */
+function dispatchLLMRequest(
+  requestId: string,
+  opts: SendRequestOptions,
+  messages: SendRequestOptions['messages'],
+) {
+  if (opts.useServerProxy) {
+    // Route through server — the server response events will be picked up by
+    // the existing message listener because sendViaServer posts TC_LLM_* events
+    sendViaServer(
+      { provider: opts.provider, model: opts.model, messages, systemPrompt: opts.systemPrompt, tools: opts.tools },
+      {
+        onChunk: (content) => window.postMessage({ type: 'TC_LLM_CHUNK', requestId, content }, postMessageOrigin()),
+        onDone: (stopReason, contentBlocks, usage) =>
+          window.postMessage({ type: 'TC_LLM_DONE', requestId, stopReason, contentBlocks, usage: usage || null }, postMessageOrigin()),
+        onError: (error) => window.postMessage({ type: 'TC_LLM_ERROR', requestId, error }, postMessageOrigin()),
+      },
+    );
+  } else {
+    window.postMessage({
+      type: 'TC_LLM_REQUEST',
+      requestId,
+      payload: {
+        provider: opts.provider,
+        model: opts.model,
+        messages,
+        apiKey: opts.apiKey,
+        systemPrompt: opts.systemPrompt,
+        tools: opts.tools,
+        endpoint: opts.endpoint,
+      },
+    }, postMessageOrigin());
+  }
 }
 
 /** Provides LLM chat capabilities -- streaming requests, multi-turn agentic tool loops, and extension bridge detection. */
@@ -206,19 +244,7 @@ export function useLLM() {
       requestIdRef.current = requestId;
       setActiveRequestId(requestId);
 
-      window.postMessage({
-        type: 'TC_LLM_REQUEST',
-        requestId,
-        payload: {
-          provider: state.opts.provider,
-          model: state.opts.model,
-          messages: state.messages,
-          apiKey: state.opts.apiKey,
-          systemPrompt: state.opts.systemPrompt,
-          tools: state.opts.tools,
-          endpoint: state.opts.endpoint,
-        },
-      }, postMessageOrigin());
+      dispatchLLMRequest(requestId, state.opts, state.messages);
     } catch (err) {
       console.error('useLLM: handleDone error', err);
       // Ensure we always clean up on error so the UI doesn't freeze
@@ -319,19 +345,7 @@ export function useLLM() {
       toolExecutor,
     };
 
-    window.postMessage({
-      type: 'TC_LLM_REQUEST',
-      requestId,
-      payload: {
-        provider: opts.provider,
-        model: opts.model,
-        messages: opts.messages,
-        apiKey: opts.apiKey,
-        systemPrompt: opts.systemPrompt,
-        tools: opts.tools,
-        endpoint: opts.endpoint,
-      },
-    }, postMessageOrigin());
+    dispatchLLMRequest(requestId, opts, opts.messages);
 
     return requestId;
   }, []);
