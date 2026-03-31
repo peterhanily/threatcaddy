@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Github, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw } from 'lucide-react';
+import { Github, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw, Plus, Pencil, Wrench } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
-import type { Settings, Note, NoteTemplate, PlaybookTemplate, PlaybookStep } from '../../types';
+import type { Settings, Note, NoteTemplate, PlaybookTemplate, PlaybookStep, CustomSlashCommand } from '../../types';
+import { useCustomSlashCommands } from '../../hooks/useCustomSlashCommands';
 import { TemplateManager } from './TemplateManager';
 import { PlaybookManager } from './PlaybookManager';
 import { DEFAULT_SYSTEM_PROMPT } from '../../lib/llm-tools';
@@ -95,6 +96,102 @@ interface SettingsPanelProps {
 }
 
 type SettingsTab = 'general' | 'appearance' | 'ai' | 'data' | 'templates' | 'intel' | 'integrations' | 'shortcuts';
+
+// ── Custom Slash Commands Editor ────────────────────────────────────
+
+function CustomSlashCommandsEditor() {
+  const { commands, createCommand, updateCommand, deleteCommand } = useCustomSlashCommands();
+  const { addToast } = useToast();
+  const [editing, setEditing] = useState<CustomSlashCommand | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [formName, setFormName] = useState('');
+  const [formDesc, setFormDesc] = useState('');
+  const [formTemplate, setFormTemplate] = useState('');
+
+  const resetForm = () => { setFormName(''); setFormDesc(''); setFormTemplate(''); setEditing(null); setCreating(false); };
+
+  const handleSave = async () => {
+    const name = formName.replace(/^\//, '').trim();
+    if (!name || !formTemplate.trim()) return;
+    if (editing) {
+      await updateCommand(editing.id, { name, description: formDesc, template: formTemplate });
+      addToast('success', `Updated /${name}`);
+    } else {
+      await createCommand(name, formDesc, formTemplate);
+      addToast('success', `Created /${name}`);
+    }
+    resetForm();
+  };
+
+  const startEdit = (cmd: CustomSlashCommand) => {
+    setEditing(cmd);
+    setCreating(true);
+    setFormName(cmd.name);
+    setFormDesc(cmd.description);
+    setFormTemplate(cmd.template);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-1.5">
+          <Wrench size={14} /> Custom Slash Commands
+        </h3>
+        {!creating && (
+          <button onClick={() => setCreating(true)} className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover">
+            <Plus size={12} /> Add
+          </button>
+        )}
+      </div>
+
+      {commands.length === 0 && !creating && (
+        <p className="text-xs text-gray-500">No custom commands yet. Create reusable prompt templates accessible via /commands in CaddyAI.</p>
+      )}
+
+      {commands.map(cmd => (
+        <div key={cmd.id} className="flex items-start gap-2 p-2.5 rounded-lg bg-gray-800/50 border border-gray-700/50">
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-mono text-purple font-medium">/{cmd.name}</div>
+            <div className="text-[11px] text-gray-400 mt-0.5">{cmd.description || 'No description'}</div>
+            <div className="text-[10px] text-gray-600 mt-0.5 truncate font-mono">{cmd.template.slice(0, 80)}</div>
+          </div>
+          <button onClick={() => startEdit(cmd)} className="p-1 text-gray-500 hover:text-gray-300"><Pencil size={12} /></button>
+          <button onClick={async () => { await deleteCommand(cmd.id); addToast('success', `Deleted /${cmd.name}`); }} className="p-1 text-gray-500 hover:text-red-400"><Trash2 size={12} /></button>
+        </div>
+      ))}
+
+      {creating && (
+        <div className="space-y-2 p-3 rounded-lg bg-gray-800/50 border border-gray-700">
+          <input
+            value={formName}
+            onChange={e => setFormName(e.target.value)}
+            placeholder="Command name (e.g. mytriage)"
+            className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent font-mono"
+          />
+          <input
+            value={formDesc}
+            onChange={e => setFormDesc(e.target.value)}
+            placeholder="Description (shown in slash menu)"
+            className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent"
+          />
+          <textarea
+            value={formTemplate}
+            onChange={e => setFormTemplate(e.target.value)}
+            placeholder="Prompt template. Use {{input}} for user arguments.&#10;&#10;Example: Analyze this alert for IOCs and create a triage report:&#10;&#10;{{input}}"
+            rows={4}
+            className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent resize-none font-mono"
+          />
+          <div className="flex gap-2">
+            <button onClick={handleSave} disabled={!formName.trim() || !formTemplate.trim()} className="px-3 py-1.5 rounded bg-accent text-white text-xs font-medium hover:brightness-110 disabled:opacity-50">
+              {editing ? 'Update' : 'Create'}
+            </button>
+            <button onClick={resetForm} className="px-3 py-1.5 rounded bg-gray-700 text-gray-300 text-xs hover:bg-gray-600">Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const TABS: { key: SettingsTab; label: string }[] = [
   { key: 'general', label: 'General' },
@@ -476,6 +573,25 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 Conversations longer than this will be truncated (keeping the first 2 and most recent messages) before sending to the LLM.
               </p>
 
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-gray-400">Token budget per thread</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={10000}
+                  value={settings.llmTokenBudget || ''}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    onUpdateSettings({ llmTokenBudget: isNaN(val) || val <= 0 ? undefined : val });
+                  }}
+                  placeholder="No limit"
+                  className="w-28 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent text-right"
+                />
+              </div>
+              <p className="text-[10px] text-gray-600">
+                Token usage badge turns amber at 80% and red when exceeded. Leave empty for no limit.
+              </p>
+
               <SystemPromptEditor
                 value={settings.llmSystemPrompt}
                 onChange={(v) => onUpdateSettings({ llmSystemPrompt: v })}
@@ -489,6 +605,9 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               )}
             </div>
           </div>
+
+          {/* Custom Slash Commands */}
+          <CustomSlashCommandsEditor />
         </div>
       )}
 

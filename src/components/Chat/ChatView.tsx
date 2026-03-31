@@ -19,6 +19,8 @@ import { hasLoopsForThread } from '../../lib/chat-loop';
 import { resolveMentions } from '../../lib/chat-mentions';
 import { createCheckpoint, restoreCheckpoint } from '../../lib/checkpoints';
 import { useCustomSlashCommands, interpolateTemplate } from '../../hooks/useCustomSlashCommands';
+import { useToast } from '../../contexts/ToastContext';
+import { supportsVision, describeImage } from '../../lib/image-ocr';
 import type { ChatAttachment } from '../../types';
 
 interface ChatViewProps {
@@ -55,6 +57,7 @@ export function ChatView({
   onOpenSettings,
 }: ChatViewProps) {
   const { extensionAvailable, streamingContent, isStreaming, error, toolActivity, sendAgentRequest, abort } = useLLM();
+  const { addToast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [errorHasSettingsLink, setErrorHasSettingsLink] = useState(false);
@@ -368,21 +371,29 @@ export function ChatView({
     }
 
     // Build final messages with multimodal content blocks for images
-    const conversationMessages = truncatedTextMessages.map((m) => {
-      // Find the original message to check for attachments
+    const isVisionCapable = supportsVision(activeThread.provider);
+    const conversationMessagesPromises = truncatedTextMessages.map(async (m) => {
       const original = allMessages.find(om => om.content === m.content || (om === userMsg && m.content === llmText));
       if (original?.attachments && original.attachments.length > 0) {
-        const blocks = [
-          ...original.attachments.map(att => ({
-            type: 'image' as const,
-            source: { type: 'base64' as const, media_type: att.mimeType, data: att.data },
-          })),
-          { type: 'text' as const, text: m.content },
-        ];
-        return { role: m.role, content: blocks as unknown as string };
+        if (isVisionCapable) {
+          const blocks = [
+            ...original.attachments.map(att => ({
+              type: 'image' as const,
+              source: { type: 'base64' as const, media_type: att.mimeType, data: att.data },
+            })),
+            { type: 'text' as const, text: m.content },
+          ];
+          return { role: m.role, content: blocks as unknown as string };
+        }
+        // Fallback: describe images as text for non-vision providers
+        const descriptions = await Promise.all(
+          original.attachments.map(att => describeImage(att.data, att.mimeType, att.name))
+        );
+        return { role: m.role, content: m.content + '\n\n' + descriptions.join('\n') };
       }
       return m;
     });
+    const conversationMessages = await Promise.all(conversationMessagesPromises);
 
     // Track whether any write tools were used
     let usedWriteTool = false;
@@ -534,7 +545,24 @@ export function ChatView({
     if (!activeThread) return;
     const newMode = threadMode === 'act' ? 'plan' : 'act';
     onUpdateThread(activeThread.id, { mode: newMode });
-  }, [activeThread, threadMode, onUpdateThread]);
+    addToast('success', newMode === 'plan' ? 'Switched to Plan mode — AI will propose without executing' : 'Switched to Act mode — AI will execute with approval');
+
+    // When switching from Plan to Act, if the last assistant message exists,
+    // prompt the user to execute the plan
+    if (newMode === 'act' && activeThread.messages.length > 0) {
+      const lastMsg = activeThread.messages[activeThread.messages.length - 1];
+      if (lastMsg.role === 'assistant' && lastMsg.content.length > 100) {
+        // Auto-send a prompt to execute the plan
+        const executeMsg: ChatMessage = {
+          id: nanoid(),
+          role: 'assistant',
+          content: 'Switched to **Act mode**. Send "execute the plan" to run the proposed actions with approval gating, or continue the conversation.',
+          createdAt: Date.now(),
+        };
+        onAddMessage(activeThread.id, executeMsg);
+      }
+    }
+  }, [activeThread, threadMode, onUpdateThread, addToast, onAddMessage]);
 
   // ── Thread token totals ─────────────────────────────────────────────
   const threadTokenTotal = useMemo(() => {
@@ -557,6 +585,7 @@ export function ChatView({
 
   // ── Checkpoint restore ──────────────────────────────────────────────
   const [checkpointMessageIds, setCheckpointMessageIds] = useState<Set<string>>(new Set());
+  const [restoreConfirmMsgId, setRestoreConfirmMsgId] = useState<string | null>(null);
 
   // Load checkpoint message IDs for the active thread
   useEffect(() => {
@@ -566,9 +595,9 @@ export function ChatView({
     });
   }, [activeThread?.id, activeThread?.messages?.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleRestoreCheckpoint = useCallback(async (messageId: string) => {
-    // Find checkpoint by messageId
-    const cps = await db.checkpoints.where('messageId').equals(messageId).toArray();
+  const handleRestoreCheckpointConfirmed = useCallback(async () => {
+    if (!restoreConfirmMsgId) return;
+    const cps = await db.checkpoints.where('messageId').equals(restoreConfirmMsgId).toArray();
     const cp = cps.find(c => !c.restored);
     if (!cp) return;
 
@@ -576,12 +605,14 @@ export function ChatView({
     if (restored) {
       setCheckpointMessageIds(prev => {
         const next = new Set(prev);
-        next.delete(messageId);
+        next.delete(restoreConfirmMsgId);
         return next;
       });
       onEntitiesChanged?.();
+      addToast('success', `Restored checkpoint: ${cp.snapshot.length} entity(s) reverted`);
     }
-  }, [onEntitiesChanged]);
+    setRestoreConfirmMsgId(null);
+  }, [restoreConfirmMsgId, onEntitiesChanged, addToast]);
 
   // ── Session branching ──────────────────────────────────────────────
   const handleBranchFromHere = useCallback(async (messageIndex: number) => {
@@ -605,7 +636,8 @@ export function ChatView({
     };
     await onAddMessage(branched.id, branchNotice);
     onSelectThread(branched.id);
-  }, [activeThread, onCreateThread, onSelectThread, onAddMessage]);
+    addToast('success', `Branched conversation at message ${messageIndex + 1}`);
+  }, [activeThread, onCreateThread, onSelectThread, onAddMessage, addToast]);
 
   return (
     <div className="relative flex flex-1 overflow-hidden">
@@ -736,7 +768,14 @@ export function ChatView({
                   {threadMode === 'plan' ? 'Plan' : 'Act'}
                 </button>
                 {threadTokenTotal > 0 && (
-                  <span className="text-[10px] text-text-muted font-mono px-1.5 py-0.5 rounded bg-bg-deep border border-border-subtle mr-1" title={`Total tokens used in this thread: ${threadTokenTotal.toLocaleString()}`}>
+                  <span className={cn(
+                    'text-[10px] font-mono px-1.5 py-0.5 rounded border mr-1',
+                    settings.llmTokenBudget && threadTokenTotal > settings.llmTokenBudget
+                      ? 'text-red-400 bg-red-500/10 border-red-500/20'
+                      : settings.llmTokenBudget && threadTokenTotal > settings.llmTokenBudget * 0.8
+                      ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                      : 'text-text-muted bg-bg-deep border-border-subtle'
+                  )} title={`Total tokens: ${threadTokenTotal.toLocaleString()}${settings.llmTokenBudget ? ` / ${settings.llmTokenBudget.toLocaleString()} budget` : ''}`}>
                     {threadTokenTotal >= 1000 ? `${(threadTokenTotal / 1000).toFixed(1)}k` : threadTokenTotal} tok
                   </span>
                 )}
@@ -808,7 +847,7 @@ export function ChatView({
                   onRewindToHere={setRewindConfirmIndex}
                   tokenCount={msg.tokenCount}
                   messageId={msg.id}
-                  onRestoreCheckpoint={handleRestoreCheckpoint}
+                  onRestoreCheckpoint={setRestoreConfirmMsgId}
                   hasCheckpoint={checkpointMessageIds.has(msg.id)}
                 />
               ))}
@@ -940,6 +979,16 @@ export function ChatView({
         title="Rewind Conversation"
         message={`This will delete ${activeThread ? activeThread.messages.length - (rewindConfirmIndex ?? 0) - 1 : 0} message(s) after this point. This cannot be undone. Use Branch instead to preserve the full history.`}
         confirmLabel="Rewind"
+        danger
+      />
+
+      <ConfirmDialog
+        open={restoreConfirmMsgId !== null}
+        onClose={() => setRestoreConfirmMsgId(null)}
+        onConfirm={handleRestoreCheckpointConfirmed}
+        title="Restore Checkpoint"
+        message="This will undo the AI's changes — created entities will be deleted and modified entities will be reverted to their previous state. This cannot be undone."
+        confirmLabel="Restore"
         danger
       />
 

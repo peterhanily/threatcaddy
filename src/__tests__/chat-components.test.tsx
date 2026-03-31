@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ChatMessageBubble } from '../components/Chat/ChatMessage';
+import { ToastProvider } from '../contexts/ToastContext';
 import type { ChatThread, Settings, ToolCallRecord } from '../types';
 
 // ── Mocks ────────────────────────────────────────────────────────────
@@ -280,7 +281,7 @@ describe('ChatView', () => {
     ];
 
     render(
-      <ChatView
+      <ToastProvider><ChatView
         threads={threads}
         selectedThreadId="t1"
         onSelectThread={vi.fn()}
@@ -289,7 +290,7 @@ describe('ChatView', () => {
         onAddMessage={vi.fn(async () => {})}
         onTrashThread={vi.fn()}
         settings={makeSettings()}
-      />,
+      /></ToastProvider>,
     );
 
     // Thread titles appear in the sidebar list (and possibly header for selected thread)
@@ -300,7 +301,7 @@ describe('ChatView', () => {
   it('shows New Chat button', async () => {
     const ChatView = await importChatView();
     render(
-      <ChatView
+      <ToastProvider><ChatView
         threads={[]}
         onSelectThread={vi.fn()}
         onCreateThread={vi.fn(async () => makeThread())}
@@ -308,7 +309,7 @@ describe('ChatView', () => {
         onAddMessage={vi.fn(async () => {})}
         onTrashThread={vi.fn()}
         settings={makeSettings()}
-      />,
+      /></ToastProvider>,
     );
 
     expect(screen.getByText('New Chat')).toBeInTheDocument();
@@ -317,7 +318,7 @@ describe('ChatView', () => {
   it('shows empty state text when no threads', async () => {
     const ChatView = await importChatView();
     render(
-      <ChatView
+      <ToastProvider><ChatView
         threads={[]}
         onSelectThread={vi.fn()}
         onCreateThread={vi.fn(async () => makeThread())}
@@ -325,7 +326,7 @@ describe('ChatView', () => {
         onAddMessage={vi.fn(async () => {})}
         onTrashThread={vi.fn()}
         settings={makeSettings()}
-      />,
+      /></ToastProvider>,
     );
 
     expect(screen.getByText('No chat threads yet')).toBeInTheDocument();

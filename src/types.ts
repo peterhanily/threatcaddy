@@ -228,6 +228,8 @@ export interface Settings {
   llmDefaultProvider?: LLMProvider;
   llmSystemPrompt?: string;
   llmMaxContextMessages?: number;
+  /** Token budget warning threshold per thread (e.g. 100000) */
+  llmTokenBudget?: number;
   tiAutoExtractEnabled?: boolean;        // default true
   tiAutoExtractDebounceMs?: number;      // default 2000
   tiEnabledIOCTypes?: string[];          // IOC type strings; undefined = all enabled
