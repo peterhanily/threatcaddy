@@ -66,6 +66,16 @@ export function ChatView({
   const canChat = extensionAvailable || serverConnected;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [threadSourceFilter, setThreadSourceFilter] = useState<'all' | 'human' | 'agent' | 'meeting'>('all');
+
+  const filteredThreads = threadSourceFilter === 'all'
+    ? threads
+    : threads.filter(t => {
+        if (threadSourceFilter === 'human') return !t.source || t.source === 'user';
+        if (threadSourceFilter === 'agent') return t.source === 'agent';
+        if (threadSourceFilter === 'meeting') return t.source === 'agent-meeting';
+        return true;
+      });
   const [errorHasSettingsLink, setErrorHasSettingsLink] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return !localStorage.getItem('caddyai-onboarded');
@@ -676,13 +686,30 @@ export function ChatView({
             New Chat
           </button>
         </div>
+        {/* Thread source filter */}
+        <div className="flex gap-1 px-3 py-1.5 border-b border-border-subtle">
+          {(['all', 'human', 'agent', 'meeting'] as const).map(f => (
+            <button
+              key={f}
+              onClick={() => setThreadSourceFilter(f)}
+              className={cn(
+                'text-[10px] px-1.5 py-0.5 rounded capitalize transition-colors',
+                threadSourceFilter === f
+                  ? 'bg-surface-raised text-text-primary font-medium'
+                  : 'text-text-muted hover:text-text-secondary',
+              )}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
         <div className="flex-1 overflow-y-auto">
-          {threads.length === 0 ? (
+          {filteredThreads.length === 0 ? (
             <div className="p-4 text-center text-text-muted text-xs">
-              No chat threads yet
+              {threads.length === 0 ? 'No chat threads yet' : `No ${threadSourceFilter} threads`}
             </div>
           ) : (
-            threads.map((thread) => (
+            filteredThreads.map((thread) => (
               <div
                 key={thread.id}
                 role="button"
@@ -700,6 +727,12 @@ export function ChatView({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1 text-xs font-medium truncate">
                     {thread.title}
+                    {thread.source === 'agent' && (
+                      <span className="shrink-0 text-[8px] px-1 py-px rounded bg-accent-blue/10 text-accent-blue font-normal">agent</span>
+                    )}
+                    {thread.source === 'agent-meeting' && (
+                      <span className="shrink-0 text-[8px] px-1 py-px rounded bg-purple/10 text-purple font-normal">meeting</span>
+                    )}
                     {hasLoopsForThread(thread.id) && (
                       <RefreshCw size={10} className="shrink-0 text-purple animate-spin" style={{ animationDuration: '3s' }} />
                     )}

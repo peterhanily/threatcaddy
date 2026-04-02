@@ -1060,6 +1060,8 @@ export interface AgentDeployment {
   id: string;
   investigationId: string;
   profileId: string;
+  /** ID of another deployment that supervises this agent */
+  supervisorDeploymentId?: string;
   /** Runtime policy overrides for this deployment */
   policyOverrides?: Partial<AgentPolicy>;
   /** Per-agent audit trail ChatThread */

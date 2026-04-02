@@ -350,6 +350,7 @@ export function AgentPanel({
           profiles={profiles.length > 0 ? profiles : BUILTIN_AGENT_PROFILES}
           deployments={deployments}
           onDeploy={(profile) => { onDeployProfile(profile); setShowProfilePicker(false); }}
+          onCreateProfile={() => { setShowProfilePicker(false); onOpenSettings?.('templates'); }}
           onClose={() => setShowProfilePicker(false)}
         />
       )}
@@ -381,18 +382,8 @@ export function AgentPanel({
           {confirmBulk ? (
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-text-muted">Execute {pendingCount} actions?</span>
-              <button
-                onClick={handleBulkApprove}
-                className="text-[10px] text-accent-green hover:bg-accent-green/10 px-1.5 py-0.5 rounded"
-              >
-                Yes
-              </button>
-              <button
-                onClick={() => setConfirmBulk(false)}
-                className="text-[10px] text-text-muted hover:bg-surface-raised px-1.5 py-0.5 rounded"
-              >
-                Cancel
-              </button>
+              <button onClick={handleBulkApprove} className="text-[10px] text-accent-green hover:bg-accent-green/10 px-1.5 py-0.5 rounded">Yes</button>
+              <button onClick={() => setConfirmBulk(false)} className="text-[10px] text-text-muted hover:bg-surface-raised px-1.5 py-0.5 rounded">Cancel</button>
             </div>
           ) : (
             <button
@@ -407,62 +398,123 @@ export function AgentPanel({
         </div>
       )}
 
-      {/* Filter tabs */}
-      <div className="flex gap-1 px-4 py-2 border-b border-border-subtle" role="tablist">
-        {(['all', 'pending', 'executed', 'rejected'] as const).map((f) => (
-          <button
-            key={f}
-            role="tab"
-            aria-selected={filter === f}
-            onClick={() => setFilter(f)}
-            className={cn(
-              'text-[11px] px-2 py-1 rounded transition-colors capitalize',
-              filter === f
-                ? 'bg-surface-raised text-text-primary font-medium'
-                : 'text-text-muted hover:text-text-secondary hover:bg-surface-raised/50',
-            )}
-          >
-            {f}
-            {f === 'pending' && pendingCount > 0 && (
-              <span className="ml-1 text-accent-amber">({pendingCount})</span>
-            )}
-          </button>
-        ))}
-      </div>
+      {/* Two-column layout: left = agents & meetings, right = actions */}
+      <div className="flex-1 flex min-h-0">
+        {/* Left column — agents + meetings */}
+        {deployments.length > 0 && (
+          <div className="w-64 shrink-0 border-r border-border-subtle overflow-y-auto">
+            {/* Deployed agents */}
+            <div className="px-3 py-2 space-y-1">
+              <span className="text-[10px] text-text-muted uppercase tracking-wide">Agents</span>
+              {deployments.map(d => {
+                const p = profiles.find(pr => pr.id === d.profileId) || BUILTIN_AGENT_PROFILES.find(pr => pr.id === d.profileId);
+                if (!p) return null;
+                const supervisor = d.supervisorDeploymentId
+                  ? deployments.find(s => s.id === d.supervisorDeploymentId)
+                  : undefined;
+                return (
+                  <div key={d.id} className="flex items-center gap-1.5 py-1 group text-[11px]">
+                    <span>{p.icon || '🤖'}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-text-primary truncate">{p.name}</div>
+                      {supervisor && (
+                        <div className="text-[9px] text-text-muted">supervised</div>
+                      )}
+                    </div>
+                    <span className={cn('text-[8px] px-1 py-px rounded',
+                      d.status === 'running' && 'bg-accent-blue/10 text-accent-blue',
+                      d.status === 'idle' && 'bg-surface-raised text-text-muted',
+                      d.status === 'waiting' && 'bg-accent-amber/10 text-accent-amber',
+                      d.status === 'error' && 'bg-red-400/10 text-red-400',
+                    )}>{d.status}</span>
+                    {onRemoveDeployment && (
+                      <button onClick={() => onRemoveDeployment(d.id)} className="text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100" title="Remove">
+                        <X size={9} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              <button onClick={() => setShowProfilePicker(true)} className="text-[10px] text-accent-blue hover:underline mt-1">+ Deploy</button>
+            </div>
 
-      {/* Actions list */}
-      <div className="flex-1 overflow-auto px-4 py-3 space-y-2" role="tabpanel">
-        {filteredActions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-text-muted">
-            <Bot size={32} className="mb-2 opacity-30" />
-            <p className="text-sm">
-              {actions.length === 0
-                ? 'No agent activity yet. Click "Run Agent" to start.'
-                : `No ${filter} actions.`
-              }
-            </p>
-            {actions.length === 0 && folder.agentLastRunAt && (
-              <p className="text-xs mt-1">Last run: {formatDate(folder.agentLastRunAt)}</p>
+            {/* Meetings */}
+            {deployments.length >= 2 && (
+              <div className="px-3 py-2 border-t border-border-subtle">
+                <AgentMeetingPanel
+                  folder={folder}
+                  deployments={deployments}
+                  settings={settings}
+                  extensionAvailable={extensionAvailable}
+                  onNavigateToChat={onNavigateToChat}
+                  onNavigateToNote={onNavigateToNote}
+                  onEntitiesChanged={onEntitiesChanged}
+                />
+              </div>
             )}
           </div>
-        ) : (
-          <>
-            {filteredActions.map((action) => (
-              <AgentActionCard
-                key={action.id}
-                action={action}
-                onApprove={action.status === 'pending' ? handleApprove : undefined}
-                onReject={action.status === 'pending' ? handleReject : undefined}
-                onViewReasoning={handleViewReasoning}
-              />
-            ))}
-            {hasMore && (
-              <p className="text-center text-[10px] text-text-muted py-2">
-                Showing latest {ACTION_PAGE_SIZE} actions
-              </p>
-            )}
-          </>
         )}
+
+        {/* Right column — actions */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Filter tabs */}
+          <div className="flex gap-1 px-4 py-2 border-b border-border-subtle shrink-0" role="tablist">
+            {(['all', 'pending', 'executed', 'rejected'] as const).map((f) => (
+              <button
+                key={f}
+                role="tab"
+                aria-selected={filter === f}
+                onClick={() => setFilter(f)}
+                className={cn(
+                  'text-[11px] px-2 py-1 rounded transition-colors capitalize',
+                  filter === f
+                    ? 'bg-surface-raised text-text-primary font-medium'
+                    : 'text-text-muted hover:text-text-secondary hover:bg-surface-raised/50',
+                )}
+              >
+                {f}
+                {f === 'pending' && pendingCount > 0 && (
+                  <span className="ml-1 text-accent-amber">({pendingCount})</span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Actions list */}
+          <div className="flex-1 overflow-auto px-4 py-3 space-y-2" role="tabpanel">
+            {filteredActions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-text-muted">
+                <Bot size={32} className="mb-2 opacity-30" />
+                <p className="text-sm">
+                  {actions.length === 0
+                    ? 'No agent activity yet. Click "Run Agent" to start.'
+                    : `No ${filter} actions.`
+                  }
+                </p>
+                {actions.length === 0 && folder.agentLastRunAt && (
+                  <p className="text-xs mt-1">Last run: {formatDate(folder.agentLastRunAt)}</p>
+                )}
+              </div>
+            ) : (
+              <>
+                {filteredActions.map((action) => (
+                  <AgentActionCard
+                    key={action.id}
+                    action={action}
+                    onApprove={action.status === 'pending' ? handleApprove : undefined}
+                    onReject={action.status === 'pending' ? handleReject : undefined}
+                    onViewReasoning={handleViewReasoning}
+                  />
+                ))}
+                {hasMore && (
+                  <p className="text-center text-[10px] text-text-muted py-2">
+                    Showing latest {ACTION_PAGE_SIZE} actions
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

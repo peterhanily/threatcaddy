@@ -102,12 +102,30 @@ export async function runAgentMeeting(
 ): Promise<AgentMeetingResult> {
   const rounds = maxRounds || DEFAULT_MAX_ROUNDS;
 
-  const provider = (settings.llmDefaultProvider || 'anthropic') as LLMProvider;
-  const model = settings.llmDefaultModel || 'claude-sonnet-4-6';
+  // Resolve provider (same fallback as agent cycle)
   const serverConnected = !!settings.serverUrl;
   const routingMode = resolveRoutingMode(settings.llmRoutingMode, extensionAvailable, serverConnected);
   const useServerProxy = routingMode === 'server';
+
+  let provider = (settings.llmDefaultProvider || 'anthropic') as LLMProvider;
+  let model = settings.llmDefaultModel || 'claude-sonnet-4-6';
+
+  // Fallback to first provider with a key
+  if (!useServerProxy && !getApiKeyForProvider(provider, settings)) {
+    const providers: { p: LLMProvider; key: keyof Settings }[] = [
+      { p: 'anthropic', key: 'llmAnthropicApiKey' }, { p: 'openai', key: 'llmOpenAIApiKey' },
+      { p: 'gemini', key: 'llmGeminiApiKey' }, { p: 'mistral', key: 'llmMistralApiKey' },
+    ];
+    for (const { p, key } of providers) {
+      if ((settings[key] as string | undefined)?.trim()) { provider = p; model = settings.llmDefaultModel || 'claude-sonnet-4-6'; break; }
+    }
+    if (settings.llmLocalEndpoint?.trim()) { provider = 'local'; model = settings.llmLocalModelName || 'llama3'; }
+  }
+
   const apiKey = useServerProxy ? 'server-proxy' : (getApiKeyForProvider(provider, settings) || '');
+  if (!useServerProxy && !apiKey) {
+    return { meetingId: '', threadId: '', roundsCompleted: 0, error: `No API key configured for ${provider}` };
+  }
   const endpoint = provider === 'local' ? settings.llmLocalEndpoint : undefined;
 
   // Resolve profiles for each deployment
