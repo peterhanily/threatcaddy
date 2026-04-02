@@ -8,6 +8,7 @@ import { cn, formatDate, postMessageOrigin } from '../../lib/utils';
 import { db } from '../../db';
 import { executeApprovedAction, rejectAction, bulkApproveActions } from '../../lib/caddy-agent';
 import { AgentActionCard } from './AgentActionCard';
+import { MODELS } from '../../lib/models';
 
 const ACTION_PAGE_SIZE = 100;
 
@@ -256,7 +257,7 @@ export function AgentPanel({
 
       {/* Policy editor (collapsible) */}
       {showSettings && (
-        <PolicyEditor folder={folder} onFolderChanged={onFolderChanged} />
+        <PolicyEditor folder={folder} settings={settings} onFolderChanged={onFolderChanged} />
       )}
 
       {/* Error banner */}
@@ -368,7 +369,7 @@ export function AgentPanel({
 
 // ── Policy Editor ────────────────────────────────────────────────────────
 
-function PolicyEditor({ folder, onFolderChanged }: { folder: Folder; onFolderChanged?: () => void }) {
+function PolicyEditor({ folder, settings, onFolderChanged }: { folder: Folder; settings: Settings; onFolderChanged?: () => void }) {
   // Local state for immediate visual feedback
   const [localPolicy, setLocalPolicy] = useState<AgentPolicy>(folder.agentPolicy ?? DEFAULT_AGENT_POLICY);
   const [focusText, setFocusText] = useState(localPolicy.focusAreas?.join(', ') ?? '');
@@ -444,6 +445,9 @@ function PolicyEditor({ folder, onFolderChanged }: { folder: Folder; onFolderCha
         ))}
       </div>
 
+      {/* Model selector */}
+      <AgentModelSelector settings={settings} policy={localPolicy} onModelChange={(model) => updatePolicy({ model })} />
+
       {/* Interval */}
       <div className="flex items-center gap-3">
         <label htmlFor="agent-interval" className="text-xs text-text-muted shrink-0">Interval</label>
@@ -484,6 +488,51 @@ function PolicyEditor({ folder, onFolderChanged }: { folder: Folder; onFolderCha
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── Model Selector ──────────────────────────────────────────────────────
+
+function AgentModelSelector({ settings, policy, onModelChange }: {
+  settings: Settings;
+  policy: AgentPolicy;
+  onModelChange: (model: string | undefined) => void;
+}) {
+  // Build list of available models from configured providers
+  const configuredProviders = new Set<string>();
+  if (settings.llmAnthropicApiKey?.trim()) configuredProviders.add('anthropic');
+  if (settings.llmOpenAIApiKey?.trim()) configuredProviders.add('openai');
+  if (settings.llmGeminiApiKey?.trim()) configuredProviders.add('gemini');
+  if (settings.llmMistralApiKey?.trim()) configuredProviders.add('mistral');
+  if (settings.llmLocalEndpoint?.trim()) configuredProviders.add('local');
+
+  const availableModels = MODELS.filter(m => configuredProviders.has(m.provider));
+  const hasLocal = configuredProviders.has('local');
+
+  return (
+    <div className="flex items-center gap-3">
+      <label htmlFor="agent-model" className="text-xs text-text-muted shrink-0">Model</label>
+      <select
+        id="agent-model"
+        value={policy.model || ''}
+        onChange={(e) => onModelChange(e.target.value || undefined)}
+        className="flex-1 text-xs bg-surface border border-border-subtle rounded px-2 py-1.5 text-text-primary focus:outline-none focus:border-accent-blue/50"
+      >
+        <option value="">Auto (use default)</option>
+        {Array.from(new Set(availableModels.map(m => m.group))).map(group => (
+          <optgroup key={group} label={group}>
+            {availableModels.filter(m => m.group === group).map(m => (
+              <option key={m.value} value={m.value}>{m.label}</option>
+            ))}
+          </optgroup>
+        ))}
+        {hasLocal && settings.llmLocalModelName && (
+          <optgroup label="Local">
+            <option value={settings.llmLocalModelName}>Local: {settings.llmLocalModelName}</option>
+          </optgroup>
+        )}
+      </select>
     </div>
   );
 }

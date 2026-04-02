@@ -18,6 +18,57 @@ import { TOOL_DEFINITIONS } from './llm-tool-defs';
 import { executeTool, buildSystemPrompt } from './llm-tools';
 import { shouldAutoApprove, getToolActionClass } from './caddy-agent-policy';
 import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-router';
+import { DEFAULT_MODEL_PER_PROVIDER, MODEL_PROVIDER_MAP } from './models';
+
+// ── Provider Resolution ─────────────────────────────────────────────────
+
+const PROVIDER_KEY_MAP: { provider: LLMProvider; keyField: keyof Settings }[] = [
+  { provider: 'anthropic', keyField: 'llmAnthropicApiKey' },
+  { provider: 'openai', keyField: 'llmOpenAIApiKey' },
+  { provider: 'gemini', keyField: 'llmGeminiApiKey' },
+  { provider: 'mistral', keyField: 'llmMistralApiKey' },
+];
+
+function getConfiguredProviderNames(settings: Settings): string[] {
+  const names: string[] = [];
+  for (const { provider, keyField } of PROVIDER_KEY_MAP) {
+    if ((settings[keyField] as string | undefined)?.trim()) names.push(provider);
+  }
+  if (settings.llmLocalEndpoint?.trim()) names.push('local');
+  return names;
+}
+
+function resolveConfiguredProvider(settings: Settings): { resolvedProvider: LLMProvider; resolvedModel: string } {
+  // Try the user's default first
+  const defaultProvider = (settings.llmDefaultProvider || 'anthropic') as LLMProvider;
+  if (getApiKeyForProvider(defaultProvider, settings)) {
+    return {
+      resolvedProvider: defaultProvider,
+      resolvedModel: settings.llmDefaultModel || DEFAULT_MODEL_PER_PROVIDER[defaultProvider] || 'claude-sonnet-4-6',
+    };
+  }
+
+  // Fallback to first provider that has a key
+  for (const { provider } of PROVIDER_KEY_MAP) {
+    if (getApiKeyForProvider(provider, settings)) {
+      return {
+        resolvedProvider: provider,
+        resolvedModel: DEFAULT_MODEL_PER_PROVIDER[provider] || 'claude-sonnet-4-6',
+      };
+    }
+  }
+
+  // Try local
+  if (settings.llmLocalEndpoint?.trim()) {
+    return {
+      resolvedProvider: 'local',
+      resolvedModel: settings.llmLocalModelName || 'llama3',
+    };
+  }
+
+  // Nothing configured — will fail with helpful error downstream
+  return { resolvedProvider: defaultProvider, resolvedModel: settings.llmDefaultModel || 'claude-sonnet-4-6' };
+}
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -146,16 +197,34 @@ export async function runAgentCycle(
   onProgress?: (status: string) => void,
 ): Promise<AgentCycleResult> {
   const policy: AgentPolicy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
-  const provider = (policy.model?.includes('/') ? policy.model.split('/')[0] : settings.llmDefaultProvider || 'anthropic') as LLMProvider;
-  const model = policy.model || settings.llmDefaultModel || 'claude-sonnet-4-6';
   const serverConnected = !!settings.serverUrl;
   const routingMode = resolveRoutingMode(settings.llmRoutingMode, extensionAvailable, serverConnected);
   const useServerProxy = routingMode === 'server';
 
+  // Resolve provider + model: policy override > global default > first configured
+  let provider: LLMProvider;
+  let model: string;
+
+  if (policy.model) {
+    // Policy has an explicit model set
+    const entry = MODEL_PROVIDER_MAP[policy.model];
+    provider = entry ? entry : (policy.model === settings.llmLocalModelName ? 'local' : (settings.llmDefaultProvider || 'anthropic')) as LLMProvider;
+    model = policy.model;
+  } else {
+    // Find first configured provider
+    const { resolvedProvider, resolvedModel } = resolveConfiguredProvider(settings);
+    provider = resolvedProvider;
+    model = resolvedModel;
+  }
+
   if (!useServerProxy) {
     const apiKey = getApiKeyForProvider(provider, settings);
     if (!apiKey) {
-      return { autoExecuted: [], proposed: [], threadId: '', error: `No API key configured for ${provider}` };
+      const configured = getConfiguredProviderNames(settings);
+      const hint = configured.length > 0
+        ? `Configured providers: ${configured.join(', ')}. Set the agent model in AgentCaddy settings.`
+        : 'Add an API key in Settings > AI/LLM.';
+      return { autoExecuted: [], proposed: [], threadId: '', error: `No API key for ${provider}. ${hint}` };
     }
   }
 
