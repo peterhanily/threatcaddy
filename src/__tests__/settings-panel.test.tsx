@@ -109,7 +109,7 @@ describe('SettingsPanel', () => {
     clickTab('AI');
     expect(screen.getByText('Local LLM (Ollama / LM Studio / vLLM)')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('http://localhost:11434/v1')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('llama3, mistral-nemo, etc.')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('llama3.1, qwen2.5, mistral-nemo, etc.')).toBeInTheDocument();
   });
 
   it('renders Default Model selector on AI tab', () => {

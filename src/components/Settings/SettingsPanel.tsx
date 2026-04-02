@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Github, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw, Plus, Pencil, Wrench } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Github, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw, Plus, Pencil, Wrench, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import type { Settings, Note, NoteTemplate, PlaybookTemplate, PlaybookStep, CustomSlashCommand } from '../../types';
 import { useCustomSlashCommands } from '../../hooks/useCustomSlashCommands';
@@ -491,42 +491,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 />
               </div>
 
-              <div className="border border-gray-700 rounded-lg p-3 space-y-3">
-                <label className="text-sm text-gray-300 font-medium">Local LLM (Ollama / LM Studio / vLLM)</label>
-                <div>
-                  <label className={labelClass}>Endpoint URL</label>
-                  <input
-                    type="text"
-                    value={settings.llmLocalEndpoint || ''}
-                    onChange={(e) => onUpdateSettings({ llmLocalEndpoint: e.target.value.trim() || undefined })}
-                    placeholder="http://localhost:11434/v1"
-                    className="w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent"
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>API Key (optional)</label>
-                  <input
-                    type="password"
-                    autoComplete="off"
-                    data-1p-ignore
-                    data-lpignore="true"
-                    value={settings.llmLocalApiKey || ''}
-                    onChange={(e) => onUpdateSettings({ llmLocalApiKey: e.target.value.trim() || undefined })}
-                    placeholder="Optional — some servers require one"
-                    className="w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent"
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Model Name</label>
-                  <input
-                    type="text"
-                    value={settings.llmLocalModelName || ''}
-                    onChange={(e) => onUpdateSettings({ llmLocalModelName: e.target.value.trim() || undefined })}
-                    placeholder="llama3, mistral-nemo, etc."
-                    className="w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent"
-                  />
-                </div>
-              </div>
+              <LocalLLMConfig settings={settings} onUpdateSettings={onUpdateSettings} />
 
               <div className="flex items-center justify-between">
                 <label className={labelClass}>Default Model</label>
@@ -707,6 +672,205 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
         </div>
       )}
     </div>
+    </div>
+  );
+}
+
+// ── Local LLM Configuration ─────────────────────────────────────────────
+
+interface LocalLLMConfigProps {
+  settings: Settings;
+  onUpdateSettings: (updates: Partial<Settings>) => void;
+}
+
+function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
+  const [fetchingModels, setFetchingModels] = useState(false);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [testError, setTestError] = useState('');
+
+  const labelClass = 'text-xs text-gray-400 font-medium';
+  const inputClass = 'w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent';
+
+  const getBaseUrl = useCallback(() => {
+    return (settings.llmLocalEndpoint || 'http://localhost:11434/v1').replace(/\/+$/, '');
+  }, [settings.llmLocalEndpoint]);
+
+  const fetchModels = useCallback(async () => {
+    setFetchingModels(true);
+    setAvailableModels([]);
+    try {
+      const base = getBaseUrl();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (settings.llmLocalApiKey) headers['Authorization'] = `Bearer ${settings.llmLocalApiKey}`;
+
+      // Try OpenAI-compatible /v1/models endpoint
+      const resp = await fetch(`${base}/models`, { headers });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+
+      const models: string[] = [];
+      if (Array.isArray(data.data)) {
+        for (const m of data.data) {
+          if (m.id && typeof m.id === 'string') models.push(m.id);
+        }
+      } else if (Array.isArray(data.models)) {
+        // Ollama native /api/tags format
+        for (const m of data.models) {
+          if (m.name && typeof m.name === 'string') models.push(m.name);
+        }
+      }
+
+      models.sort();
+      setAvailableModels(models);
+
+      // Auto-select first model if none set
+      if (models.length > 0 && !settings.llmLocalModelName) {
+        onUpdateSettings({ llmLocalModelName: models[0] });
+      }
+    } catch (err) {
+      // Try Ollama's native API as fallback
+      try {
+        const ollamaBase = (settings.llmLocalEndpoint || 'http://localhost:11434').replace(/\/v1\/?$/, '').replace(/\/+$/, '');
+        const resp = await fetch(`${ollamaBase}/api/tags`);
+        if (resp.ok) {
+          const data = await resp.json();
+          const models = (data.models || [])
+            .map((m: { name?: string }) => m.name)
+            .filter((n: unknown): n is string => typeof n === 'string')
+            .sort();
+          setAvailableModels(models);
+          if (models.length > 0 && !settings.llmLocalModelName) {
+            onUpdateSettings({ llmLocalModelName: models[0] });
+          }
+          setFetchingModels(false);
+          return;
+        }
+      } catch { /* ignore fallback error */ }
+
+      setAvailableModels([]);
+      console.warn('Failed to fetch models:', err);
+    } finally {
+      setFetchingModels(false);
+    }
+  }, [getBaseUrl, settings.llmLocalApiKey, settings.llmLocalModelName, onUpdateSettings, settings.llmLocalEndpoint]);
+
+  const testConnection = useCallback(async () => {
+    setTestStatus('testing');
+    setTestError('');
+    try {
+      const base = getBaseUrl();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (settings.llmLocalApiKey) headers['Authorization'] = `Bearer ${settings.llmLocalApiKey}`;
+
+      const model = settings.llmLocalModelName || 'test';
+      const resp = await fetch(`${base}/chat/completions`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: 'Say "hello" and nothing else.' }],
+          max_tokens: 10,
+          stream: false,
+        }),
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        throw new Error(`HTTP ${resp.status}: ${text.substring(0, 200)}`);
+      }
+
+      const data = await resp.json();
+      if (data.choices?.[0]?.message?.content) {
+        setTestStatus('success');
+      } else {
+        throw new Error('Unexpected response format');
+      }
+    } catch (err) {
+      setTestStatus('error');
+      setTestError((err as Error).message || 'Connection failed');
+    }
+  }, [getBaseUrl, settings.llmLocalApiKey, settings.llmLocalModelName]);
+
+  return (
+    <div className="border border-gray-700 rounded-lg p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <label className="text-sm text-gray-300 font-medium">Local LLM (Ollama / LM Studio / vLLM)</label>
+        <div className="flex items-center gap-1.5">
+          {testStatus === 'success' && <CheckCircle2 size={12} className="text-green-400" />}
+          {testStatus === 'error' && <AlertTriangle size={12} className="text-red-400" />}
+          <button
+            onClick={testConnection}
+            disabled={testStatus === 'testing'}
+            className="text-[10px] text-accent-blue hover:underline disabled:opacity-50"
+          >
+            {testStatus === 'testing' ? 'Testing...' : 'Test Connection'}
+          </button>
+        </div>
+      </div>
+      {testStatus === 'error' && testError && (
+        <p className="text-[10px] text-red-400">{testError}</p>
+      )}
+      <div>
+        <label className={labelClass}>Endpoint URL</label>
+        <input
+          type="text"
+          value={settings.llmLocalEndpoint || ''}
+          onChange={(e) => { onUpdateSettings({ llmLocalEndpoint: e.target.value.trim() || undefined }); setTestStatus('idle'); }}
+          placeholder="http://localhost:11434/v1"
+          className={inputClass}
+        />
+        <p className="text-[10px] text-gray-600 mt-0.5">Any OpenAI-compatible endpoint. Ollama: localhost:11434/v1, vLLM: localhost:8000/v1</p>
+      </div>
+      <div>
+        <label className={labelClass}>API Key (optional)</label>
+        <input
+          type="password"
+          autoComplete="off"
+          data-1p-ignore
+          data-lpignore="true"
+          value={settings.llmLocalApiKey || ''}
+          onChange={(e) => onUpdateSettings({ llmLocalApiKey: e.target.value.trim() || undefined })}
+          placeholder="Optional — some servers require one"
+          className={inputClass}
+        />
+      </div>
+      <div>
+        <div className="flex items-center justify-between">
+          <label className={labelClass}>Model</label>
+          <button
+            onClick={fetchModels}
+            disabled={fetchingModels}
+            className="flex items-center gap-1 text-[10px] text-accent-blue hover:underline disabled:opacity-50"
+          >
+            {fetchingModels ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
+            {fetchingModels ? 'Fetching...' : 'Fetch Models'}
+          </button>
+        </div>
+        {availableModels.length > 0 ? (
+          <select
+            value={settings.llmLocalModelName || ''}
+            onChange={(e) => onUpdateSettings({ llmLocalModelName: e.target.value || undefined })}
+            className="w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
+          >
+            <option value="">Select a model...</option>
+            {availableModels.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            value={settings.llmLocalModelName || ''}
+            onChange={(e) => onUpdateSettings({ llmLocalModelName: e.target.value.trim() || undefined })}
+            placeholder="llama3.1, qwen2.5, mistral-nemo, etc."
+            className={inputClass}
+          />
+        )}
+        {availableModels.length > 0 && (
+          <p className="text-[10px] text-green-400/70 mt-0.5">{availableModels.length} model{availableModels.length !== 1 ? 's' : ''} available</p>
+        )}
+      </div>
     </div>
   );
 }
