@@ -218,6 +218,8 @@ export async function executeTool(
       case 'search_across_investigations':  result = await executeSearchAcrossInvestigations(inp); break;
       case 'create_in_investigation':       result = await executeCreateInInvestigation(inp); break;
       case 'compare_investigations':        result = await executeCompareInvestigations(inp); break;
+      case 'enrich_ioc':                    result = await executeEnrichIOC(inp, folderId); break;
+      case 'list_integrations':             result = await executeListIntegrations(inp); break;
       case 'delegate_task':                 result = await executeDelegateTask(inp, folderId); break;
       case 'list_agent_activity':           result = await executeListAgentActivity(inp, folderId); break;
       default: result = JSON.stringify({ error: `Unknown tool: ${name}` });
@@ -343,4 +345,156 @@ async function executeListAgentActivity(inp: Record<string, unknown>, folderId?:
   }));
 
   return JSON.stringify({ count: results.length, actions: results });
+}
+
+// ── Integration / Enrichment Tools ────────────────────────────────────
+
+async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const iocId = String(inp.iocId || '');
+  if (!iocId) return JSON.stringify({ error: 'iocId is required' });
+
+  const ioc = await db.standaloneIOCs.get(iocId);
+  if (!ioc) return JSON.stringify({ error: `IOC not found: ${iocId}` });
+
+  // Find matching installed integrations for this IOC type
+  const installations = await db.installedIntegrations.filter(i => i.enabled).toArray();
+  const templates = await db.integrationTemplates.toArray();
+  const { BUILTIN_INTEGRATIONS } = await import('./builtin-integrations');
+  const allTemplates = [...templates, ...BUILTIN_INTEGRATIONS];
+  const templateMap = new Map(allTemplates.map(t => [t.id, t]));
+
+  const matching: { installation: typeof installations[0]; template: typeof allTemplates[0] }[] = [];
+  for (const inst of installations) {
+    const tmpl = templateMap.get(inst.templateId);
+    if (!tmpl) continue;
+    // Check if any trigger matches this IOC type
+    const hasMatch = tmpl.triggers.some(t =>
+      (t.type === 'manual' || t.type === 'on-entity-create') &&
+      (!t.iocTypes?.length || t.iocTypes.includes(ioc.type))
+    );
+    if (hasMatch) matching.push({ installation: inst, template: tmpl });
+  }
+
+  if (matching.length === 0) {
+    return JSON.stringify({
+      iocId,
+      iocValue: ioc.value,
+      iocType: ioc.type,
+      integrationsRun: 0,
+      message: `No enabled integrations match IOC type "${ioc.type}". Use fetch_url for manual enrichment, or configure integrations in Settings > Integrations.`,
+    });
+  }
+
+  // Run each matching integration
+  const { IntegrationExecutor } = await import('./integration-executor');
+  const folder = folderId ? await db.folders.get(folderId) : undefined;
+  const results: { name: string; status: string; summary: string }[] = [];
+
+  for (const { installation, template } of matching) {
+    try {
+      const executor = new IntegrationExecutor();
+      const run = await executor.run(
+        template,
+        installation,
+        {
+          ioc: { id: ioc.id, value: ioc.value, type: ioc.type, confidence: ioc.confidence || 'medium' },
+          investigation: folder ? { id: folder.id, name: folder.name } : undefined,
+        },
+        {
+          onCreateEntity: async (type, fields) => {
+            const entityId = nanoid();
+            if (type === 'note') {
+              await db.notes.add({
+                id: entityId,
+                title: String(fields.title || `Enrichment: ${ioc.value}`),
+                content: String(fields.content || ''),
+                folderId,
+                tags: ['agent-enrichment', ...(Array.isArray(fields.tags) ? fields.tags : [])],
+                pinned: false, archived: false, trashed: false,
+                createdBy: 'agent:enrichment',
+                createdAt: Date.now(), updatedAt: Date.now(),
+              });
+            } else if (type === 'ioc' || type === 'standaloneIOC') {
+              await db.standaloneIOCs.add({
+                id: entityId,
+                type: String(fields.type || 'unknown') as import('../types').IOCType,
+                value: String(fields.value || ''),
+                confidence: String(fields.confidence || 'medium') as import('../types').ConfidenceLevel,
+                folderId,
+                tags: ['agent-enrichment'],
+                trashed: false, archived: false,
+                createdAt: Date.now(), updatedAt: Date.now(),
+              });
+            }
+            return entityId;
+          },
+          onUpdateEntity: async (type, id, fields) => {
+            if (type === 'ioc' || type === 'standaloneIOC') {
+              await db.standaloneIOCs.update(id, { ...fields, updatedAt: Date.now() });
+            }
+          },
+        },
+      );
+
+      await db.integrationRuns.add(run);
+
+      results.push({
+        name: template.name,
+        status: run.status,
+        summary: run.outputSummary || `${run.entitiesCreated} created, ${run.entitiesUpdated} updated`,
+      });
+    } catch (err) {
+      results.push({
+        name: template.name,
+        status: 'error',
+        summary: String((err as Error).message || err),
+      });
+    }
+  }
+
+  return JSON.stringify({
+    iocId,
+    iocValue: ioc.value,
+    iocType: ioc.type,
+    integrationsRun: results.length,
+    results,
+  });
+}
+
+async function executeListIntegrations(inp: Record<string, unknown>): Promise<string> {
+  const iocType = inp.iocType ? String(inp.iocType) : undefined;
+
+  const installations = await db.installedIntegrations.toArray();
+  const templates = await db.integrationTemplates.toArray();
+  const { BUILTIN_INTEGRATIONS } = await import('./builtin-integrations');
+  const allTemplates = [...templates, ...BUILTIN_INTEGRATIONS];
+  const templateMap = new Map(allTemplates.map(t => [t.id, t]));
+
+  const integrations = installations.map(inst => {
+    const tmpl = templateMap.get(inst.templateId);
+    const triggers = tmpl?.triggers || [];
+    const supportedTypes = triggers.flatMap(t => t.iocTypes || []);
+
+    return {
+      id: inst.id,
+      name: inst.name || tmpl?.name || 'Unknown',
+      description: tmpl?.description?.substring(0, 100),
+      enabled: inst.enabled,
+      supportedIOCTypes: supportedTypes.length > 0 ? supportedTypes : ['all'],
+      lastRunAt: inst.lastRunAt ? new Date(inst.lastRunAt).toISOString() : null,
+      runCount: inst.runCount,
+      errorCount: inst.errorCount,
+    };
+  });
+
+  // Filter by IOC type if specified
+  const filtered = iocType
+    ? integrations.filter(i => i.supportedIOCTypes.includes(iocType) || i.supportedIOCTypes.includes('all'))
+    : integrations;
+
+  return JSON.stringify({
+    total: filtered.length,
+    enabled: filtered.filter(i => i.enabled).length,
+    integrations: filtered,
+  });
 }

@@ -431,6 +431,29 @@ export const TOOL_DEFINITIONS = [
       required: ['investigationIds'],
     },
   },
+  // ── Integration / Enrichment tools ──────────────────────────────────
+  {
+    name: 'enrich_ioc',
+    description: 'Run configured vendor integrations (VirusTotal, AbuseIPDB, Shodan, etc.) to enrich an IOC. Automatically finds matching integrations for the IOC type and runs them. Returns enrichment results. This is preferred over manual fetch_url for IOCs when integrations are configured.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        iocId: { type: 'string', description: 'ID of the IOC to enrich (from list_iocs or read_ioc)' },
+      },
+      required: ['iocId'],
+    },
+  },
+  {
+    name: 'list_integrations',
+    description: 'List available vendor integrations and their status (enabled/disabled, last run, etc.). Shows what enrichment sources are configured.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        iocType: { type: 'string', description: 'Filter by IOC type (ipv4, domain, url, md5, sha256, etc.)' },
+      },
+      required: [],
+    },
+  },
 ];
 
 // ── Delegation tools (Lead agent only) ─────────────────────────────────
@@ -475,6 +498,7 @@ const WRITE_TOOLS = new Set([
   'generate_report',
   'create_in_investigation',
   'delegate_task',
+  'enrich_ioc',
 ]);
 
 export function isWriteTool(name: string): boolean {

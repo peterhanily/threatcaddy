@@ -9,7 +9,7 @@ function makeToolUse(name: string, input: Record<string, unknown> = {}): ToolUse
 
 describe('TOOL_DEFINITIONS', () => {
   it('has the expected number of tool definitions', () => {
-    expect(TOOL_DEFINITIONS.length).toBe(29);
+    expect(TOOL_DEFINITIONS.length).toBe(31);
   });
 
   it('each tool has name, description, and input_schema', () => {

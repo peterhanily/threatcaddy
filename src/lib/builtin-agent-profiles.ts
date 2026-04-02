@@ -62,12 +62,16 @@ Your responsibilities:
 5. Create detailed notes documenting enrichment results and sources.
 6. If the case has no IOCs yet, use fetch_url to research the investigation topic and extract indicators.
 
-Key principle: ALWAYS use fetch_url. You are a researcher — go find information.
-Do NOT just list IOCs and say "needs enrichment." Actively fetch and research them.`,
+Key principle: ALWAYS enrich IOCs. Use enrich_ioc first (runs configured vendor integrations like VirusTotal, AbuseIPDB, Shodan automatically), then use fetch_url for additional OSINT.
+- Use list_integrations to see what vendor integrations are available.
+- Use enrich_ioc for each IOC — it auto-runs all matching integrations.
+- Use fetch_url for manual research beyond what integrations provide.
+Do NOT just list IOCs and say "needs enrichment." Actively enrich and research them.`,
     allowedTools: [
       'list_iocs', 'read_ioc', 'create_ioc', 'update_ioc', 'bulk_create_iocs',
       'fetch_url', 'extract_iocs', 'create_note', 'search_notes', 'search_all',
       'get_investigation_summary', 'link_entities', 'read_note',
+      'enrich_ioc', 'list_integrations',
     ],
     policy: {
       ...DEFAULT_AGENT_POLICY,
