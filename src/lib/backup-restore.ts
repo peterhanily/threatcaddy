@@ -18,7 +18,7 @@ function isQuotaError(err: unknown): boolean {
   return msg.includes('QuotaExceeded') || msg.includes('storage quota');
 }
 
-const SYNCED_TABLES = ['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'agentActions'] as const;
+const SYNCED_TABLES = ['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'agentActions', 'agentProfiles', 'agentDeployments', 'agentMeetings'] as const;
 
 // Helper: get a Dexie table by name, returning an untyped handle for dynamic access
 /* eslint-disable @typescript-eslint/no-explicit-any */

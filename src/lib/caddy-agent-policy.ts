@@ -43,6 +43,10 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
   update_task: 'modify',
   update_ioc: 'modify',
   update_timeline_event: 'modify',
+
+  // Delegation tools (lead agent only)
+  delegate_task: 'create',
+  list_agent_activity: 'read',
 };
 
 /** Get the action class for a tool name. Defaults to 'modify' for unknown tools. */

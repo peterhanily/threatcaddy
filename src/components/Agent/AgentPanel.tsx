@@ -2,13 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Bot, Play, CheckCheck, Loader2, AlertTriangle, X, Settings as SettingsIcon, ChevronDown, ChevronRight, Key, Puzzle,
 } from 'lucide-react';
-import type { AgentAction, AgentPolicy, Folder, AgentStatus, Settings } from '../../types';
+import type { AgentAction, AgentPolicy, AgentProfile, AgentDeployment, Folder, AgentStatus, Settings } from '../../types';
 import { DEFAULT_AGENT_POLICY } from '../../types';
 import { cn, formatDate, postMessageOrigin } from '../../lib/utils';
 import { db } from '../../db';
 import { executeApprovedAction, rejectAction, bulkApproveActions } from '../../lib/caddy-agent';
 import { AgentActionCard } from './AgentActionCard';
+import { AgentProfilePicker } from './AgentProfilePicker';
+import { AgentMeetingPanel } from './AgentMeetingPanel';
 import { MODELS } from '../../lib/models';
+import { BUILTIN_AGENT_PROFILES } from '../../lib/builtin-agent-profiles';
 
 const ACTION_PAGE_SIZE = 100;
 
@@ -22,15 +25,22 @@ interface AgentPanelProps {
   agentStatus?: AgentStatus;
   onRunOnce?: () => Promise<void>;
   onNavigateToChat?: (threadId: string) => void;
+  onNavigateToNote?: (noteId: string) => void;
   onEntitiesChanged?: () => void;
   onOpenSettings?: (tab?: string) => void;
   onFolderChanged?: () => void;
+  /** Multi-agent support */
+  profiles?: AgentProfile[];
+  deployments?: AgentDeployment[];
+  onDeployProfile?: (profile: AgentProfile) => void;
+  onRemoveDeployment?: (deploymentId: string) => void;
 }
 
 export function AgentPanel({
   folder, settings,
   agentRunning = false, agentProgress = '', agentError = null, agentStatus,
-  onRunOnce, onNavigateToChat, onEntitiesChanged, onOpenSettings, onFolderChanged,
+  onRunOnce, onNavigateToChat, onNavigateToNote, onEntitiesChanged, onOpenSettings, onFolderChanged,
+  profiles = [], deployments = [], onDeployProfile, onRemoveDeployment,
 }: AgentPanelProps) {
   const [actions, setActions] = useState<AgentAction[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -38,6 +48,7 @@ export function AgentPanel({
   const [filter, setFilter] = useState<'all' | 'pending' | 'executed' | 'rejected'>('all');
   const [showSettings, setShowSettings] = useState(false);
   const [confirmBulk, setConfirmBulk] = useState(false);
+  const [showProfilePicker, setShowProfilePicker] = useState(false);
 
   // Detect extension availability
   const [extensionAvailable, setExtensionAvailable] = useState(false);
@@ -258,6 +269,89 @@ export function AgentPanel({
       {/* Policy editor (collapsible) */}
       {showSettings && (
         <PolicyEditor folder={folder} settings={settings} onFolderChanged={onFolderChanged} />
+      )}
+
+      {/* Deployed agents section */}
+      {deployments.length > 0 && (
+        <div className="px-4 py-2 border-b border-border-subtle space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-text-muted uppercase tracking-wide">Deployed Agents</span>
+            <button
+              onClick={() => setShowProfilePicker(true)}
+              className="text-[10px] text-accent-blue hover:underline"
+            >
+              + Add
+            </button>
+          </div>
+          {deployments.map(d => {
+            const p = profiles.find(pr => pr.id === d.profileId) || BUILTIN_AGENT_PROFILES.find(pr => pr.id === d.profileId);
+            if (!p) return null;
+            return (
+              <div key={d.id} className="flex items-center gap-2 py-1 group">
+                <span className="text-xs">{p.icon || '🤖'}</span>
+                <span className="text-[11px] text-text-primary flex-1 truncate">{p.name}</span>
+                <span className={cn('text-[9px] px-1 py-px rounded',
+                  d.status === 'running' && 'bg-accent-blue/10 text-accent-blue',
+                  d.status === 'idle' && 'bg-surface-raised text-text-muted',
+                  d.status === 'waiting' && 'bg-accent-amber/10 text-accent-amber',
+                  d.status === 'error' && 'bg-red-400/10 text-red-400',
+                )}>
+                  {d.status}
+                </span>
+                {onRemoveDeployment && (
+                  <button
+                    onClick={() => onRemoveDeployment(d.id)}
+                    className="text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove deployment"
+                  >
+                    <X size={10} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Deploy profiles button (when no deployments yet) */}
+      {deployments.length === 0 && onDeployProfile && (
+        <div className="px-4 py-2 border-b border-border-subtle">
+          <button
+            onClick={() => setShowProfilePicker(true)}
+            className="flex items-center gap-1.5 text-xs text-accent-blue hover:underline"
+          >
+            <Bot size={12} />
+            Deploy Agent Profiles
+          </button>
+          <p className="text-[10px] text-text-muted mt-0.5">
+            Assign specialized agents (IOC Enricher, Timeline Builder, etc.) to work this case in parallel.
+          </p>
+        </div>
+      )}
+
+      {/* Meeting panel (when 2+ agents deployed) */}
+      {deployments.length >= 2 && (
+        <div className="px-4 py-2 border-b border-border-subtle">
+          <AgentMeetingPanel
+            folder={folder}
+            deployments={deployments}
+            settings={settings}
+            extensionAvailable={extensionAvailable}
+            onNavigateToChat={onNavigateToChat}
+            onNavigateToNote={onNavigateToNote}
+            onEntitiesChanged={onEntitiesChanged}
+          />
+        </div>
+      )}
+
+      {/* Profile picker modal */}
+      {showProfilePicker && onDeployProfile && (
+        <AgentProfilePicker
+          profiles={profiles.length > 0 ? profiles : BUILTIN_AGENT_PROFILES}
+          deployments={deployments}
+          onDeploy={(profile) => { onDeployProfile(profile); setShowProfilePicker(false); }}
+          onClose={() => setShowProfilePicker(false)}
+        />
       )}
 
       {/* Error banner */}

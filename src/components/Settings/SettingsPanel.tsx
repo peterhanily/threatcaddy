@@ -8,6 +8,8 @@ import { PlaybookManager } from './PlaybookManager';
 import { DEFAULT_SYSTEM_PROMPT } from '../../lib/llm-tools';
 import { MODELS, MODEL_PROVIDER_MAP } from '../../lib/models';
 import { ExportImport } from './ExportImport';
+import { useAgentProfiles } from '../../hooks/useAgentProfiles';
+import { AgentProfileManager } from '../Agent/AgentProfileManager';
 import { ThreatIntelConfig } from './ThreatIntelConfig';
 import { CloudBackup } from './CloudBackup';
 import { ServerBackup } from './ServerBackup';
@@ -98,6 +100,21 @@ interface SettingsPanelProps {
 type SettingsTab = 'general' | 'appearance' | 'ai' | 'data' | 'templates' | 'intel' | 'integrations' | 'shortcuts';
 
 // ── Custom Slash Commands Editor ────────────────────────────────────
+
+function AgentProfileSection() {
+  const { profiles, userProfiles, builtinProfiles, createProfile, updateProfile, deleteProfile, duplicateBuiltin } = useAgentProfiles();
+  return (
+    <AgentProfileManager
+      profiles={profiles}
+      userProfiles={userProfiles}
+      builtinProfiles={builtinProfiles}
+      onCreateProfile={createProfile}
+      onUpdateProfile={updateProfile}
+      onDeleteProfile={deleteProfile}
+      onDuplicateBuiltin={duplicateBuiltin}
+    />
+  );
+}
 
 function CustomSlashCommandsEditor() {
   const { commands, createCommand, updateCommand, deleteCommand } = useCustomSlashCommands();
@@ -648,6 +665,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
         <div className="space-y-6">
           {templateProps && <TemplateManager {...templateProps} />}
           {playbookProps && <PlaybookManager {...playbookProps} />}
+          <AgentProfileSection />
         </div>
       )}
 

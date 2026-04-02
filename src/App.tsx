@@ -59,6 +59,8 @@ const InvestigationsHub = lazy(() => import('./components/Investigations/Investi
 const CreateInvestigationModal = lazy(() => import('./components/Investigations/CreateInvestigationModal').then(m => ({ default: m.CreateInvestigationModal })));
 import type { LayoutName } from './components/Graph/GraphCanvas';
 import { useCaddyAgent } from './hooks/useCaddyAgent';
+import { useAgentProfiles } from './hooks/useAgentProfiles';
+import { useAgentDeployments } from './hooks/useAgentDeployments';
 import { useNavigationHistory } from './hooks/useNavigationHistory';
 import type { NavState } from './hooks/useNavigationHistory';
 import { useTour } from './hooks/useTour';
@@ -1404,6 +1406,9 @@ function AppInner() {
     onEntitiesChanged: () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); },
   });
 
+  const agentProfilesHook = useAgentProfiles();
+  const agentDeploymentsHook = useAgentDeployments(selectedFolderId);
+
   const selectedTagObj = useMemo(() => tags.find((t) => t.name === selectedTag), [tags, selectedTag]);
   const editingFolder = useMemo(() => folders.find((f) => f.id === editingFolderId), [folders, editingFolderId]);
   const investigationEntityCounts = useMemo(() => {
@@ -1822,9 +1827,18 @@ function AppInner() {
                 setSelectedChatThreadId(threadId);
                 setActiveView('chat');
               }}
+              onNavigateToNote={(noteId) => {
+                // Navigate to the note
+                setSelectedNoteId(noteId);
+                setActiveView('notes');
+              }}
               onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); }}
               onOpenSettings={(tab) => { setSettingsInitialTab(tab); setShowSettings(true); }}
               onFolderChanged={reloadFolders}
+              profiles={agentProfilesHook.profiles}
+              deployments={agentDeploymentsHook.deployments}
+              onDeployProfile={(profile) => agentDeploymentsHook.deployProfile(profile)}
+              onRemoveDeployment={agentDeploymentsHook.removeDeployment}
             />
           ) : (
             <AgentDashboard

@@ -12,9 +12,9 @@
 
 import { db } from '../db';
 import { nanoid } from 'nanoid';
-import type { AgentAction, AgentPolicy, ChatThread, ChatMessage, Folder, Settings, ContentBlock, ToolUseBlock, LLMProvider } from '../types';
+import type { AgentAction, AgentPolicy, AgentProfile, AgentDeployment, ChatThread, ChatMessage, Folder, Settings, ContentBlock, ToolUseBlock, LLMProvider } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
-import { TOOL_DEFINITIONS } from './llm-tool-defs';
+import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS } from './llm-tool-defs';
 import { executeTool, buildSystemPrompt } from './llm-tools';
 import { shouldAutoApprove, getToolActionClass } from './caddy-agent-policy';
 import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-router';
@@ -98,7 +98,7 @@ function getApiKeyForProvider(provider: LLMProvider, settings: Settings): string
 }
 
 /** Build the agent-specific system prompt wrapping the base investigation prompt. */
-async function buildAgentSystemPrompt(folder: Folder, settings: Settings, provider?: string): Promise<string> {
+async function buildAgentSystemPrompt(folder: Folder, settings: Settings, provider?: string, profile?: AgentProfile): Promise<string> {
   const basePrompt = await buildSystemPrompt(folder, settings.llmSystemPrompt, provider);
 
   const policy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
@@ -106,6 +106,23 @@ async function buildAgentSystemPrompt(folder: Folder, settings: Settings, provid
     ? `\n\nFocus areas for this investigation: ${policy.focusAreas.join(', ')}`
     : '';
 
+  // If a profile is provided, use its specialized prompt
+  if (profile) {
+    return `${basePrompt}
+
+## Agent Profile: ${profile.name}
+
+${profile.systemPrompt}
+
+${profile.role === 'lead' ? `
+You have access to delegation tools:
+- delegate_task: Create a task assigned to a specific specialist agent
+- list_agent_activity: View what other agents have done recently
+` : ''}
+${focusAreas}`;
+  }
+
+  // Default generic agent prompt (backward compat)
   return `${basePrompt}
 
 ## CaddyAgent Instructions
@@ -195,8 +212,14 @@ export async function runAgentCycle(
   settings: Settings,
   extensionAvailable: boolean,
   onProgress?: (status: string) => void,
+  profile?: AgentProfile,
+  deployment?: AgentDeployment,
 ): Promise<AgentCycleResult> {
-  const policy: AgentPolicy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
+  // Merge policies: profile policy > deployment overrides > folder policy > defaults
+  const basePolicy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
+  const profilePolicy = profile?.policy;
+  const deployOverrides = deployment?.policyOverrides;
+  const policy: AgentPolicy = { ...basePolicy, ...profilePolicy, ...deployOverrides };
   const serverConnected = !!settings.serverUrl;
   const routingMode = resolveRoutingMode(settings.llmRoutingMode, extensionAvailable, serverConnected);
   const useServerProxy = routingMode === 'server';
@@ -231,8 +254,8 @@ export async function runAgentCycle(
   const apiKey = useServerProxy ? 'server-proxy' : (getApiKeyForProvider(provider, settings) || '');
   const endpoint = provider === 'local' ? settings.llmLocalEndpoint : undefined;
 
-  // Ensure agent has an audit trail thread
-  let threadId = folder.agentThreadId;
+  // Ensure agent has an audit trail thread (deployment thread > folder thread)
+  let threadId = deployment?.threadId || folder.agentThreadId;
   if (!threadId) {
     threadId = nanoid();
     const agentThread: ChatThread = {
@@ -255,9 +278,10 @@ export async function runAgentCycle(
     await db.folders.update(folder.id, { agentStatus: 'running', agentLastRunAt: Date.now() });
   }
 
-  onProgress?.(`Using ${provider}/${model}...`);
+  const agentName = profile?.name || 'CaddyAgent';
+  onProgress?.(`${agentName}: ${provider}/${model}...`);
 
-  const systemPrompt = await buildAgentSystemPrompt(folder, settings, provider);
+  const systemPrompt = await buildAgentSystemPrompt(folder, settings, provider, profile);
 
   // Load working memory from previous cycles
   let workingMemoryContext = '';
@@ -279,9 +303,24 @@ export async function runAgentCycle(
   const autoExecuted: AgentAction[] = [];
   const proposed: AgentAction[] = [];
 
+  // Filter tools by profile's allowedTools (if set), add delegation tools for lead agents
+  let availableTools = profile?.allowedTools?.length
+    ? TOOL_DEFINITIONS.filter(t => profile.allowedTools!.includes(t.name))
+    : [...TOOL_DEFINITIONS];
+
+  if (profile?.role === 'lead') {
+    availableTools = [...availableTools, ...DELEGATION_TOOL_DEFINITIONS] as typeof TOOL_DEFINITIONS;
+  } else if (profile?.role === 'observer') {
+    // Observer agents only get read tools
+    availableTools = availableTools.filter(t => {
+      const cls = getToolActionClass(t.name);
+      return cls === 'read';
+    });
+  }
+
   try {
     for (let turn = 0; turn < MAX_AGENT_TURNS; turn++) {
-      onProgress?.(`Agent thinking (turn ${turn + 1})...`);
+      onProgress?.(`${agentName} thinking (turn ${turn + 1})...`);
 
       const response = await callLLM({
         provider,
@@ -289,7 +328,7 @@ export async function runAgentCycle(
         messages,
         apiKey,
         systemPrompt,
-        tools: TOOL_DEFINITIONS,
+        tools: availableTools,
         useServerProxy,
         endpoint,
       });
@@ -340,6 +379,7 @@ export async function runAgentCycle(
             id: nanoid(),
             investigationId: folder.id,
             threadId,
+            agentConfigId: profile?.id,
             toolName: toolCall.name,
             toolInput: toolCall.input as Record<string, unknown>,
             rationale: response.content || 'Auto-approved by policy',
@@ -383,6 +423,7 @@ export async function runAgentCycle(
             id: nanoid(),
             investigationId: folder.id,
             threadId,
+            agentConfigId: profile?.id,
             toolName: toolCall.name,
             toolInput: toolCall.input as Record<string, unknown>,
             rationale: response.content || 'Agent proposed action',

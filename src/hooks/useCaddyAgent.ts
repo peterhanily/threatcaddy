@@ -13,6 +13,7 @@ import type { Folder, Settings, AgentStatus } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
 import { db } from '../db';
 import { runAgentCycle } from '../lib/caddy-agent';
+import { runMultiAgentCycle } from '../lib/caddy-agent-manager';
 import { runSupervisorCycle, sendEscalationNotification } from '../lib/caddy-agent-supervisor';
 import { postMessageOrigin } from '../lib/utils';
 
@@ -109,28 +110,59 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
         return;
       }
 
-      const result = await runAgentCycle(freshFolder, settingsRef.current, extensionAvailable, (status) => {
-        if (mountedRef.current) setProgress(status);
-      });
+      // Check if multi-agent mode (deployments exist)
+      const deploymentCount = await db.agentDeployments
+        .where('investigationId')
+        .equals(freshFolder.id)
+        .count();
 
-      if (!mountedRef.current) return;
+      if (deploymentCount > 0) {
+        // Multi-agent mode
+        const multiResult = await runMultiAgentCycle(freshFolder, settingsRef.current, extensionAvailable, (agentName, status) => {
+          if (mountedRef.current) setProgress(`${agentName}: ${status}`);
+        });
 
-      if (result.error) {
-        setError(result.error);
-        updateAgentStatus('error');
-      } else {
-        // Reset error retry count on success
-        errorRetryCount.current = 0;
-        if (result.proposed.length > 0) {
-          updateAgentStatus('waiting');
+        if (!mountedRef.current) return;
+
+        if (multiResult.errors.length > 0) {
+          setError(multiResult.errors.join('; '));
+          updateAgentStatus('error');
         } else {
-          updateAgentStatus('idle');
+          errorRetryCount.current = 0;
+          // Check if any deployment is waiting
+          const anyWaiting = Array.from(multiResult.deploymentResults.values()).some(r => r.proposed.length > 0);
+          updateAgentStatus(anyWaiting ? 'waiting' : 'idle');
         }
-      }
 
-      // Generate working memory summary if we had any activity
-      if (result.autoExecuted.length > 0 || result.proposed.length > 0) {
-        await updateWorkingMemory(result.threadId, result.autoExecuted.length, result.proposed.length);
+        // Update working memory for each deployment that had activity
+        for (const [, result] of multiResult.deploymentResults) {
+          if ((result.autoExecuted.length > 0 || result.proposed.length > 0) && result.threadId) {
+            await updateWorkingMemory(result.threadId, result.autoExecuted.length, result.proposed.length);
+          }
+        }
+      } else {
+        // Legacy single-agent mode
+        const result = await runAgentCycle(freshFolder, settingsRef.current, extensionAvailable, (status) => {
+          if (mountedRef.current) setProgress(status);
+        });
+
+        if (!mountedRef.current) return;
+
+        if (result.error) {
+          setError(result.error);
+          updateAgentStatus('error');
+        } else {
+          errorRetryCount.current = 0;
+          if (result.proposed.length > 0) {
+            updateAgentStatus('waiting');
+          } else {
+            updateAgentStatus('idle');
+          }
+        }
+
+        if (result.autoExecuted.length > 0 || result.proposed.length > 0) {
+          await updateWorkingMemory(result.threadId, result.autoExecuted.length, result.proposed.length);
+        }
       }
 
       onEntitiesChanged?.();

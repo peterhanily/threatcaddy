@@ -34,6 +34,9 @@ export interface BackupPayload {
     standaloneIOCs?: unknown[];
     chatThreads?: unknown[];
     agentActions?: unknown[];
+    agentProfiles?: unknown[];
+    agentDeployments?: unknown[];
+    agentMeetings?: unknown[];
   };
   deletedIds?: Record<string, string[]>;
 }

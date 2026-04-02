@@ -433,6 +433,37 @@ export const TOOL_DEFINITIONS = [
   },
 ];
 
+// ── Delegation tools (Lead agent only) ─────────────────────────────────
+
+export const DELEGATION_TOOL_DEFINITIONS = [
+  {
+    name: 'delegate_task',
+    description: 'Create a task delegated to a specific specialist agent. Only available to Lead Analyst agents. The specialist will see this task on their next cycle.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        title: { type: 'string', description: 'Task title describing what needs to be done' },
+        description: { type: 'string', description: 'Detailed instructions for the specialist agent' },
+        assignToProfile: { type: 'string', description: 'Name of the agent profile to assign to (e.g. "IOC Enricher", "Timeline Builder")' },
+        priority: { type: 'string', enum: ['low', 'medium', 'high'], description: 'Task priority (default medium)' },
+      },
+      required: ['title', 'description', 'assignToProfile'],
+    },
+  },
+  {
+    name: 'list_agent_activity',
+    description: 'List recent actions taken by other agents in this investigation. Use to review what specialists have done before delegating new work.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        agentName: { type: 'string', description: 'Filter by agent profile name (optional)' },
+        limit: { type: 'number', description: 'Max results to return (default 20)' },
+      },
+      required: [],
+    },
+  },
+];
+
 // ── Write tool classification ──────────────────────────────────────────
 
 const WRITE_TOOLS = new Set([
@@ -443,6 +474,7 @@ const WRITE_TOOLS = new Set([
   'link_entities',
   'generate_report',
   'create_in_investigation',
+  'delegate_task',
 ]);
 
 export function isWriteTool(name: string): boolean {

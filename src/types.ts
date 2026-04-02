@@ -632,8 +632,8 @@ export interface ChatThread {
   clsLevel?: string;
   /** Plan mode proposes actions without executing write tools; Act mode executes normally */
   mode?: 'plan' | 'act';
-  /** Source of this thread: 'user' (default), 'agent' (CaddyAgent audit trail), or 'caddyshack' */
-  source?: 'user' | 'agent' | 'caddyshack';
+  /** Source of this thread: 'user' (default), 'agent' (CaddyAgent audit trail), 'agent-meeting', or 'caddyshack' */
+  source?: 'user' | 'agent' | 'agent-meeting' | 'caddyshack';
   /** Cached summary of truncated conversation context */
   contextSummary?: string;
   trashed: boolean;
@@ -810,6 +810,9 @@ export interface ExportData {
   standaloneIOCs?: StandaloneIOC[];
   chatThreads?: ChatThread[];
   agentActions?: AgentAction[];
+  agentProfiles?: AgentProfile[];
+  agentDeployments?: AgentDeployment[];
+  agentMeetings?: AgentMeeting[];
   quickLinks?: QuickLink[];
   noteTemplates?: NoteTemplate[];
   playbookTemplates?: PlaybookTemplate[];
@@ -1020,3 +1023,66 @@ export interface AgentAction {
 
 /** Runtime status of an agent for an investigation. */
 export type AgentStatus = 'idle' | 'running' | 'waiting' | 'paused' | 'error';
+
+// ─── Agent Profile System ──────────────────────────────────────────
+
+/** Role determines what an agent profile can do: lead can delegate, observer is read-only. */
+export type AgentProfileRole = 'lead' | 'specialist' | 'observer';
+
+/** A reusable agent profile defining persona, tools, and policy. */
+export interface AgentProfile {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  role: AgentProfileRole;
+  /** Role-specific system prompt injected after base CaddyAgent instructions */
+  systemPrompt: string;
+  /** Subset of tool names this profile can use (undefined = all tools) */
+  allowedTools?: string[];
+  policy: AgentPolicy;
+  /** LLM model override */
+  model?: string;
+  /** Priority in meetings — lower speaks first */
+  priority?: number;
+  source: TemplateSource;
+  createdBy?: string;
+  updatedBy?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** An agent profile deployed to a specific investigation. */
+export interface AgentDeployment {
+  id: string;
+  investigationId: string;
+  profileId: string;
+  /** Runtime policy overrides for this deployment */
+  policyOverrides?: Partial<AgentPolicy>;
+  /** Per-agent audit trail ChatThread */
+  threadId?: string;
+  status: AgentStatus;
+  lastRunAt?: number;
+  /** Execution order within the investigation */
+  order: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** A collaborative meeting between deployed agents. */
+export interface AgentMeeting {
+  id: string;
+  investigationId: string;
+  /** Participating AgentDeployment IDs */
+  participantDeploymentIds: string[];
+  /** ChatThread with source='agent-meeting' */
+  threadId: string;
+  /** Note ID with meeting minutes (produced at conclusion) */
+  minutesNoteId?: string;
+  agenda: string;
+  status: 'in-progress' | 'completed' | 'failed';
+  roundsCompleted: number;
+  maxRounds: number;
+  createdAt: number;
+  completedAt?: number;
+}

@@ -4,7 +4,7 @@ import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS, IOC_TYPE_LABELS } from '
 import { nanoid } from 'nanoid';
 
 export async function exportJSON(): Promise<string> {
-  const [notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, noteTemplates, playbookTemplates, agentActions] = await Promise.all([
+  const [notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, noteTemplates, playbookTemplates, agentActions, agentProfiles, agentDeployments, agentMeetings] = await Promise.all([
     db.notes.toArray(),
     db.tasks.toArray(),
     db.folders.toArray(),
@@ -17,6 +17,9 @@ export async function exportJSON(): Promise<string> {
     db.noteTemplates.toArray(),
     db.playbookTemplates.toArray(),
     db.agentActions.toArray(),
+    db.agentProfiles.toArray(),
+    db.agentDeployments.toArray(),
+    db.agentMeetings.toArray(),
   ]);
 
   // Include quick links from settings if user has customized them
@@ -42,6 +45,9 @@ export async function exportJSON(): Promise<string> {
     standaloneIOCs,
     chatThreads,
     agentActions: agentActions.length > 0 ? agentActions : undefined,
+    agentProfiles: agentProfiles.length > 0 ? agentProfiles : undefined,
+    agentDeployments: agentDeployments.length > 0 ? agentDeployments : undefined,
+    agentMeetings: agentMeetings.length > 0 ? agentMeetings : undefined,
     quickLinks,
     noteTemplates: noteTemplates.length > 0 ? noteTemplates : undefined,
     playbookTemplates: playbookTemplates.length > 0 ? playbookTemplates : undefined,
@@ -487,7 +493,7 @@ function sanitizeQuickLink(raw: unknown): QuickLink | null {
   };
 }
 
-export async function importJSON(json: string): Promise<{ notes: number; tasks: number; folders: number; tags: number; timelineEvents: number; timelines: number; whiteboards: number; standaloneIOCs: number; chatThreads: number; noteTemplates: number; playbookTemplates: number; agentActions: number }> {
+export async function importJSON(json: string): Promise<{ notes: number; tasks: number; folders: number; tags: number; timelineEvents: number; timelines: number; whiteboards: number; standaloneIOCs: number; chatThreads: number; noteTemplates: number; playbookTemplates: number; agentActions: number; agentProfiles: number; agentDeployments: number; agentMeetings: number }> {
   if (json.length > MAX_IMPORT_SIZE) {
     throw new Error(`Backup file too large (max ${MAX_IMPORT_SIZE / 1024 / 1024} MB)`);
   }
@@ -553,7 +559,12 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
     .map(sanitizeQuickLink)
     .filter((l: QuickLink | null): l is QuickLink => l !== null && !!l.id);
 
-  await db.transaction('rw', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents, db.timelines, db.whiteboards, db.standaloneIOCs, db.chatThreads, db.noteTemplates, db.playbookTemplates, db.agentActions], async () => {
+  // Agent profiles/deployments/meetings are imported with basic ID validation
+  const importedProfiles = (Array.isArray(data.agentProfiles) ? data.agentProfiles : []).filter((p: unknown) => p && typeof p === 'object' && typeof (p as Record<string,unknown>).id === 'string');
+  const importedDeployments = (Array.isArray(data.agentDeployments) ? data.agentDeployments : []).filter((d: unknown) => d && typeof d === 'object' && typeof (d as Record<string,unknown>).id === 'string');
+  const importedMeetings = (Array.isArray(data.agentMeetings) ? data.agentMeetings : []).filter((m: unknown) => m && typeof m === 'object' && typeof (m as Record<string,unknown>).id === 'string');
+
+  await db.transaction('rw', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents, db.timelines, db.whiteboards, db.standaloneIOCs, db.chatThreads, db.noteTemplates, db.playbookTemplates, db.agentActions, db.agentProfiles, db.agentDeployments, db.agentMeetings], async () => {
     await db.notes.clear();
     await db.tasks.clear();
     await db.folders.clear();
@@ -566,6 +577,9 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
     await db.noteTemplates.clear();
     await db.playbookTemplates.clear();
     await db.agentActions.clear();
+    await db.agentProfiles.clear();
+    await db.agentDeployments.clear();
+    await db.agentMeetings.clear();
 
     await db.notes.bulkAdd(notes);
     await db.tasks.bulkAdd(tasks);
@@ -579,6 +593,9 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
     if (noteTemplatesRaw.length > 0) await db.noteTemplates.bulkAdd(noteTemplatesRaw);
     if (playbookTemplatesRaw.length > 0) await db.playbookTemplates.bulkAdd(playbookTemplatesRaw);
     if (agentActions.length > 0) await db.agentActions.bulkAdd(agentActions);
+    if (importedProfiles.length > 0) await db.agentProfiles.bulkAdd(importedProfiles);
+    if (importedDeployments.length > 0) await db.agentDeployments.bulkAdd(importedDeployments);
+    if (importedMeetings.length > 0) await db.agentMeetings.bulkAdd(importedMeetings);
   });
 
   // Restore quick links to settings if present in backup
@@ -604,6 +621,9 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
     noteTemplates: noteTemplatesRaw.length,
     playbookTemplates: playbookTemplatesRaw.length,
     agentActions: agentActions.length,
+    agentProfiles: importedProfiles.length,
+    agentDeployments: importedDeployments.length,
+    agentMeetings: importedMeetings.length,
   };
 }
 

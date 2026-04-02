@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, ActivityLogEntry, StandaloneIOC, ChatThread, NoteTemplate, PlaybookTemplate, Checkpoint, CustomSlashCommand, AgentAction } from './types';
+import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, ActivityLogEntry, StandaloneIOC, ChatThread, NoteTemplate, PlaybookTemplate, Checkpoint, CustomSlashCommand, AgentAction, AgentProfile, AgentDeployment, AgentMeeting } from './types';
 import type { IntegrationTemplate, InstalledIntegration, IntegrationRun } from './types/integration-types';
 import { installEncryptionMiddleware } from './lib/encryptionMiddleware';
 
@@ -22,6 +22,9 @@ const db = new Dexie('ThreatCaddyDB') as Dexie & {
   checkpoints: EntityTable<Checkpoint, 'id'>;
   customSlashCommands: EntityTable<CustomSlashCommand, 'id'>;
   agentActions: EntityTable<AgentAction, 'id'>;
+  agentProfiles: EntityTable<AgentProfile, 'id'>;
+  agentDeployments: EntityTable<AgentDeployment, 'id'>;
+  agentMeetings: EntityTable<AgentMeeting, 'id'>;
 };
 
 db.version(1).stores({
@@ -181,6 +184,13 @@ db.version(23).stores({
 // Version 24: CaddyAgent — agent actions approval queue
 db.version(24).stores({
   agentActions: 'id, investigationId, threadId, status, createdAt, [investigationId+status], [investigationId+createdAt]',
+});
+
+// Version 25: Agent profiles, deployments, and meetings
+db.version(25).stores({
+  agentProfiles: 'id, name, role, source, createdAt',
+  agentDeployments: 'id, investigationId, profileId, status, createdAt, [investigationId+status], [investigationId+order]',
+  agentMeetings: 'id, investigationId, status, createdAt, [investigationId+createdAt]',
 });
 
 // Encryption-at-rest middleware (transparent to all CRUD hooks)

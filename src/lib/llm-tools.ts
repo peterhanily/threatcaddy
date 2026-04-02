@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { nanoid } from 'nanoid';
 import type { Folder, ToolUseBlock } from '../types';
 
 // Re-export definitions so existing consumers don't break
@@ -217,10 +218,129 @@ export async function executeTool(
       case 'search_across_investigations':  result = await executeSearchAcrossInvestigations(inp); break;
       case 'create_in_investigation':       result = await executeCreateInInvestigation(inp); break;
       case 'compare_investigations':        result = await executeCompareInvestigations(inp); break;
+      case 'delegate_task':                 result = await executeDelegateTask(inp, folderId); break;
+      case 'list_agent_activity':           result = await executeListAgentActivity(inp, folderId); break;
       default: result = JSON.stringify({ error: `Unknown tool: ${name}` });
     }
     return { result, isError: false };
   } catch (err) {
     return { result: JSON.stringify({ error: String((err as Error).message || err) }), isError: true };
   }
+}
+
+// ── Delegation Tools ──────────────────────────────────────────────────
+
+async function executeDelegateTask(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  if (!folderId) return JSON.stringify({ error: 'No investigation context' });
+
+  const title = String(inp.title || '');
+  const description = String(inp.description || '');
+  const assignToProfile = String(inp.assignToProfile || '');
+  const priority = String(inp.priority || 'medium');
+
+  if (!title || !description || !assignToProfile) {
+    return JSON.stringify({ error: 'title, description, and assignToProfile are required' });
+  }
+
+  // Find the target deployment by profile name
+  const deployments = await db.agentDeployments
+    .where('investigationId')
+    .equals(folderId)
+    .toArray();
+
+  let targetDeploymentId: string | undefined;
+  for (const d of deployments) {
+    const profile = await db.agentProfiles.get(d.profileId);
+    // Also check builtin profiles
+    if (profile?.name.toLowerCase() === assignToProfile.toLowerCase()) {
+      targetDeploymentId = d.id;
+      break;
+    }
+  }
+
+  // Check builtin profiles if not found in user profiles
+  if (!targetDeploymentId) {
+    const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
+    for (const d of deployments) {
+      const builtin = BUILTIN_AGENT_PROFILES.find(p => p.id === d.profileId);
+      if (builtin?.name.toLowerCase() === assignToProfile.toLowerCase()) {
+        targetDeploymentId = d.id;
+        break;
+      }
+    }
+  }
+
+  const now = Date.now();
+  const task = {
+    id: nanoid(),
+    title,
+    content: `[Delegated by Lead Analyst]\n\n${description}`,
+    folderId,
+    status: 'todo' as const,
+    priority: priority as 'low' | 'medium' | 'high',
+    completed: false,
+    tags: ['agent-delegated'],
+    assigneeId: targetDeploymentId,
+    createdBy: 'agent:lead',
+    trashed: false,
+    archived: false,
+    order: 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await db.tasks.add(task);
+
+  return JSON.stringify({
+    success: true,
+    taskId: task.id,
+    assignedTo: assignToProfile,
+    found: !!targetDeploymentId,
+    message: targetDeploymentId
+      ? `Task delegated to ${assignToProfile}`
+      : `Task created but ${assignToProfile} is not deployed to this investigation. The task will appear in the task list for manual assignment.`,
+  });
+}
+
+async function executeListAgentActivity(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  if (!folderId) return JSON.stringify({ error: 'No investigation context' });
+
+  const agentName = inp.agentName ? String(inp.agentName) : undefined;
+  const limit = Math.min(Number(inp.limit) || 20, 50);
+
+  let actions = await db.agentActions
+    .where('[investigationId+createdAt]')
+    .between([folderId, -Infinity], [folderId, Infinity])
+    .reverse()
+    .limit(limit * 2) // fetch extra to filter
+    .toArray();
+
+  // Filter by agent name if specified
+  if (agentName) {
+    const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
+    const allProfiles = [...BUILTIN_AGENT_PROFILES, ...await db.agentProfiles.toArray()];
+    const matchingIds = new Set(
+      allProfiles
+        .filter(p => p.name.toLowerCase().includes(agentName.toLowerCase()))
+        .map(p => p.id)
+    );
+    actions = actions.filter(a => a.agentConfigId && matchingIds.has(a.agentConfigId));
+  }
+
+  actions = actions.slice(0, limit);
+
+  // Resolve profile names for display
+  const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
+  const allProfiles = [...BUILTIN_AGENT_PROFILES, ...await db.agentProfiles.toArray()];
+  const profileMap = new Map(allProfiles.map(p => [p.id, p.name]));
+
+  const results = actions.map(a => ({
+    agentName: a.agentConfigId ? profileMap.get(a.agentConfigId) || 'Unknown' : 'Default Agent',
+    tool: a.toolName,
+    status: a.status,
+    rationale: a.rationale.substring(0, 100),
+    createdAt: new Date(a.createdAt).toISOString(),
+  }));
+
+  return JSON.stringify({ count: results.length, actions: results });
 }
