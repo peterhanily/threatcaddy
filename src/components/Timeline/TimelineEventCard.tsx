@@ -26,8 +26,8 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
   onToggleStar,
   onDelete,
 }: TimelineEventCardProps) {
-  const typeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType];
-  const confidenceInfo = CONFIDENCE_LEVELS[event.confidence];
+  const typeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType] ?? { label: event.eventType || 'Unknown', color: '#6b7280' };
+  const confidenceInfo = CONFIDENCE_LEVELS[event.confidence] ?? { label: event.confidence || 'unknown', color: '#6b7280', description: '' };
   const preview = event.description?.replace(/[#*`_[\]()>-]/g, '').trim() || '';
 
   return (

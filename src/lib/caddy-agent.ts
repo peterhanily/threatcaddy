@@ -15,7 +15,7 @@ import { nanoid } from 'nanoid';
 import type { AgentAction, AgentPolicy, AgentProfile, AgentDeployment, ChatThread, ChatMessage, Folder, Settings, ContentBlock, ToolUseBlock, LLMProvider } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
 import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS } from './llm-tool-defs';
-import { executeTool, buildSystemPrompt } from './llm-tools';
+import { executeTool } from './llm-tools';
 import { shouldAutoApprove, getToolActionClass } from './caddy-agent-policy';
 import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-router';
 import { DEFAULT_MODEL_PER_PROVIDER, MODEL_PROVIDER_MAP } from './models';
@@ -97,72 +97,55 @@ function getApiKeyForProvider(provider: LLMProvider, settings: Settings): string
   }
 }
 
-/** Build the agent-specific system prompt wrapping the base investigation prompt. */
-async function buildAgentSystemPrompt(folder: Folder, settings: Settings, provider?: string, profile?: AgentProfile): Promise<string> {
-  const basePrompt = await buildSystemPrompt(folder, settings.llmSystemPrompt, provider);
+/** Build a lean agent system prompt — NOT the full CaddyAI prompt (which is too large). */
+async function buildAgentSystemPrompt(folder: Folder, _settings: Settings, provider?: string, profile?: AgentProfile): Promise<string> {
+  // Build lean investigation context (skip the massive CaddyAI base prompt)
+  let context = 'You are a threat intelligence agent in ThreatCaddy.';
+
+  // Add local tool format instructions for local LLMs
+  if (provider === 'local') {
+    context += `\n\nTo call tools, use: <tool_call>{"name":"tool_name","arguments":{"param":"value"}}</tool_call>`;
+  }
+
+  // Add investigation context
+  if (folder) {
+    context += `\n\nInvestigation: "${folder.name}"`;
+    if (folder.description) context += `\nDescription: ${folder.description}`;
+    if (folder.status) context += ` | Status: ${folder.status}`;
+
+    // Quick entity counts
+    const [noteCount, taskCount, iocCount, eventCount] = await Promise.all([
+      db.notes.where('folderId').equals(folder.id).and(n => !n.trashed).count(),
+      db.tasks.where('folderId').equals(folder.id).and(t => !t.trashed).count(),
+      db.standaloneIOCs.where('folderId').equals(folder.id).and(i => !i.trashed).count(),
+      db.timelineEvents.where('folderId').equals(folder.id).and(e => !e.trashed).count(),
+    ]);
+    context += `\nEntities: ${noteCount} notes, ${taskCount} tasks, ${iocCount} IOCs, ${eventCount} timeline events`;
+  }
 
   const policy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
-  const focusAreas = policy.focusAreas?.length
-    ? `\n\nFocus areas for this investigation: ${policy.focusAreas.join(', ')}`
-    : '';
+  const focusAreas = policy.focusAreas?.length ? `\nFocus: ${policy.focusAreas.join(', ')}` : '';
 
-  const proactiveBlock = `
-## Being Proactive
-
-You are an ACTIVE researcher, not a passive reader. On every cycle:
-- If the case is EMPTY or NEW: immediately start working. Use fetch_url to research the investigation topic. Create IOCs from any indicators you find. Create notes with your findings. Create tasks for follow-up. Build a timeline of known events.
-- If the case has data: look for gaps. Enrich unenriched IOCs via fetch_url. Research related threats. Build out the timeline. Create analysis notes.
-- ALWAYS take concrete actions. Reading and reporting "nothing to do" is NOT acceptable.
-- For IOCs: use enrich_ioc first (auto-runs VirusTotal, AbuseIPDB, Shodan, etc. if configured). Use list_integrations to see available vendor enrichment sources.
-- Use fetch_url proactively for additional OSINT research, threat intelligence, and manual lookups.
-- Create notes documenting what you found, what you searched for, and what your analysis suggests.
-- Create tasks for work that requires human access or judgment.
-- You have ${MAX_AGENT_TURNS} turns — use them productively.`;
-
-  // If a profile is provided, use its specialized prompt
   if (profile) {
-    return `${basePrompt}
+    return `${context}
 
-## Agent Profile: ${profile.name}
+## ${profile.name} (${profile.role})
 
 ${profile.systemPrompt}
 
-${proactiveBlock}
-
-${profile.role === 'lead' ? `
-You have access to delegation tools:
-- delegate_task: Create a task assigned to a specific specialist agent
-- list_agent_activity: View what other agents have done recently
-Use these proactively — don't wait to be asked. Assess the case and immediately delegate work.
-` : ''}
-${focusAreas}`;
+Be PROACTIVE. Empty case = research via fetch_url/enrich_ioc. Always produce output. ${MAX_AGENT_TURNS} turns max.${profile.role === 'lead' ? ' Use delegate_task and list_agent_activity.' : ''}${focusAreas}`;
   }
 
-  // Default generic agent prompt (backward compat)
-  return `${basePrompt}
+  return `${context}
 
-## CaddyAgent Instructions
+## CaddyAgent
 
-You are CaddyAgent, an autonomous threat intelligence analyst assistant. You are running a single analysis cycle on the investigation described above.
-
-Your job:
-1. Quickly assess the current state — read the investigation summary.
-2. If the case is new/empty: start researching immediately. Use fetch_url to gather intelligence on the investigation topic.
-3. If the case has data: identify gaps — unenriched IOCs, missing timeline events, unlinked entities, open questions.
-4. Take action every cycle: enrich IOCs via fetch_url, create notes with findings, create tasks for follow-up, build timeline entries, link related entities.
-5. Be thorough and PROACTIVE. Each cycle MUST produce tangible output.
-
-${proactiveBlock}
-
-Guidelines:
-- Start with get_investigation_summary for a quick overview, then ACT.
-- For IOCs: use fetch_url to query reputation services, WHOIS, threat intel feeds.
-- Create notes summarizing your analysis, findings, and sources.
-- Create tasks for work that requires human judgment or access you don't have.
-- Always explain your reasoning when creating or modifying entities.
-- Do NOT just read and report — take concrete actions.
-- Do NOT repeat work that has already been done — check existing notes first.
-${focusAreas}`;
+Autonomous threat analyst. Be PROACTIVE:
+- get_investigation_summary first, then ACT.
+- Empty case? Research via fetch_url. Create notes, IOCs, tasks, timeline events.
+- Has data? Enrich IOCs (enrich_ioc or fetch_url). Fill gaps. Create analysis notes.
+- Every cycle MUST produce output. Never just read and report.
+- enrich_ioc for vendor integrations, fetch_url for OSINT. Don't repeat work.${focusAreas}`;
 }
 
 /**
@@ -371,13 +354,11 @@ export async function runAgentCycle(
     }
   }
 
-  const investigationHint = folder.description
-    ? `\n\nInvestigation: "${folder.name}"\nDescription: ${folder.description}`
-    : `\n\nInvestigation: "${folder.name}"`;
+  const desc = folder.description ? ` — ${folder.description}` : '';
 
   const userPrompt = workingMemoryContext
-    ? `Begin your analysis cycle.${investigationHint}\n\nWorking memory from previous cycles:${workingMemoryContext}\n\nContinue your analysis. Check what has changed, avoid repeating completed work, and make NEW progress. Use fetch_url to research and create notes with your findings.`
-    : `Begin your analysis cycle.${investigationHint}\n\nStart by quickly checking the investigation summary (get_investigation_summary), then IMMEDIATELY start working:\n- If the case is empty: use fetch_url to research the topic, create notes with findings, extract IOCs, build timeline events.\n- If the case has data: identify gaps, enrich IOCs via fetch_url, create analysis notes, build the timeline.\n\nBe proactive — don't just read, ACT.`;
+    ? `Cycle for "${folder.name}"${desc}. Memory:${workingMemoryContext}\n\nContinue — make new progress, don't repeat.`
+    : `Cycle for "${folder.name}"${desc}. Start with get_investigation_summary, then act immediately.`;
 
   const messages: { role: 'user' | 'assistant'; content: string | ContentBlock[] }[] = [
     { role: 'user', content: userPrompt },

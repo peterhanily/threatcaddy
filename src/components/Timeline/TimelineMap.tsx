@@ -206,8 +206,8 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
             }}
           >
             {mappedEvents.map((event) => {
-              const typeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType];
-              const confidenceInfo = CONFIDENCE_LEVELS[event.confidence];
+              const typeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType] ?? { label: event.eventType || 'Unknown', color: '#6b7280' };
+              const confidenceInfo = CONFIDENCE_LEVELS[event.confidence] ?? { label: event.confidence || 'unknown', color: '#6b7280', description: '' };
               return (
                 <Marker
                   key={event.id}
