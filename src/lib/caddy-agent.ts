@@ -165,6 +165,56 @@ Guidelines:
 ${focusAreas}`;
 }
 
+/**
+ * Parse tool calls from LLM text output when structured tool_use blocks aren't returned.
+ * Supports: <tool_call>JSON</tool_call>, ```json blocks, and bare JSON with name+arguments.
+ */
+export function parseToolCallsFromText(text: string, toolNames: string[]): ToolUseBlock[] {
+  const calls: ToolUseBlock[] = [];
+  const nameSet = new Set(toolNames);
+  let idx = 0;
+
+  // Pattern 1: <tool_call>JSON</tool_call>
+  const tagPattern = /<(?:tool_call|function_call)>\s*([\s\S]*?)\s*<\/(?:tool_call|function_call)>/gi;
+  let match;
+  while ((match = tagPattern.exec(text)) !== null) {
+    try {
+      const obj = JSON.parse(match[1]);
+      const name = obj.name || obj.function;
+      const args = obj.arguments || obj.parameters || obj.input || {};
+      if (name && nameSet.has(name)) {
+        calls.push({
+          type: 'tool_use',
+          id: `text_tc_${Date.now()}_${idx++}`,
+          name,
+          input: typeof args === 'string' ? JSON.parse(args) : args,
+        });
+      }
+    } catch { /* skip malformed */ }
+  }
+  if (calls.length > 0) return calls;
+
+  // Pattern 2: ```json blocks with name+arguments
+  const jsonBlockPattern = /```(?:json)?\s*\n?([\s\S]*?)\n?```/gi;
+  while ((match = jsonBlockPattern.exec(text)) !== null) {
+    try {
+      const obj = JSON.parse(match[1]);
+      const name = obj.name || obj.function;
+      const args = obj.arguments || obj.parameters || obj.input || {};
+      if (name && nameSet.has(name)) {
+        calls.push({
+          type: 'tool_use',
+          id: `text_tc_${Date.now()}_${idx++}`,
+          name,
+          input: typeof args === 'string' ? JSON.parse(args) : args,
+        });
+      }
+    } catch { /* skip malformed */ }
+  }
+
+  return calls;
+}
+
 const LLM_TIMEOUT_MS = 120_000; // 2 minutes per LLM call
 
 /** Send an LLM request and wait for the complete response (non-streaming). */
@@ -195,9 +245,18 @@ function callLLM(opts: {
       onChunk: (content: string) => { accumulated += content; },
       onDone: (_stopReason: string, contentBlocks: unknown[]) => {
         const blocks = contentBlocks as ContentBlock[];
-        const toolCalls = blocks.filter(
+        let toolCalls = blocks.filter(
           (b): b is ToolUseBlock => b.type === 'tool_use' && !!b.id && !!b.name && typeof b.input === 'object'
         );
+
+        // Fallback: if no structured tool calls but text contains tool_call patterns, parse them
+        if (toolCalls.length === 0 && accumulated) {
+          const parsed = parseToolCallsFromText(accumulated, opts.tools.map(t => t.name));
+          if (parsed.length > 0) {
+            toolCalls = parsed;
+          }
+        }
+
         resolve({ content: accumulated, toolCalls });
       },
       onError: (error: string) => {
@@ -371,8 +430,11 @@ export async function runAgentCycle(
 
       if (response.toolCalls.length === 0) {
         // No tool calls — agent is done
+        onProgress?.(`${agentName}: finished (${response.content ? response.content.substring(0, 60) + '...' : 'no output'})`);
         break;
       }
+
+      onProgress?.(`${agentName}: ${response.toolCalls.length} tool call(s)...`);
 
       // Process tool calls
       const toolResults: ContentBlock[] = [];

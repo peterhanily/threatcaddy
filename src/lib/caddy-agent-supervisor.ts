@@ -13,6 +13,7 @@ import { TOOL_DEFINITIONS } from './llm-tool-defs';
 import { executeTool, buildSystemPrompt } from './llm-tools';
 import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-router';
 import { postMessageOrigin } from './utils';
+import { parseToolCallsFromText } from './caddy-agent';
 
 // ── Constants ───────────────────────────────────────────────────────────
 
@@ -86,13 +87,18 @@ function callLLM(opts: {
       tools: opts.tools,
       endpoint: opts.endpoint,
     };
+    const toolNames = (opts.tools || []).map(t => t.name);
     const callbacks = {
       onChunk: (content: string) => { accumulated += content; },
       onDone: (_stopReason: string, contentBlocks: unknown[]) => {
         const blocks = contentBlocks as ContentBlock[];
-        const toolCalls = blocks.filter(
+        let toolCalls = blocks.filter(
           (b): b is ToolUseBlock => b.type === 'tool_use' && !!b.id && !!b.name && typeof b.input === 'object'
         );
+        // Fallback text parsing
+        if (toolCalls.length === 0 && accumulated) {
+          toolCalls = parseToolCallsFromText(accumulated, toolNames);
+        }
         resolve({ content: accumulated, toolCalls });
       },
       onError: (error: string) => reject(new Error(`Supervisor LLM failed (${opts.provider}/${opts.model}): ${error || 'unknown'}`)),
