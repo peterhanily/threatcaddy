@@ -78,6 +78,7 @@ import type { SharePayload, InvestigationBundle } from './lib/share';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 const CaddyShackView = lazy(() => import('./components/CaddyShack/CaddyShackView').then(m => ({ default: m.CaddyShackView })));
 const AgentPanel = lazy(() => import('./components/Agent/AgentPanel').then(m => ({ default: m.AgentPanel })));
+const AgentDashboard = lazy(() => import('./components/Agent/AgentDashboard').then(m => ({ default: m.AgentDashboard })));
 const ConflictDialog = lazy(() => import('./components/Common/ConflictDialog').then(m => ({ default: m.ConflictDialog })));
 const KeyboardShortcutsPanel = lazy(() => import('./components/Common/KeyboardShortcutsPanel').then(m => ({ default: m.KeyboardShortcutsPanel })));
 import type { InvestigationMember } from './types';
@@ -1826,9 +1827,14 @@ function AppInner() {
               onFolderChanged={reloadFolders}
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-text-muted text-sm">
-              Select an investigation to use CaddyAgent
-            </div>
+            <AgentDashboard
+              folders={folders}
+              onOpenInvestigation={(folderId) => {
+                setSelectedFolderId(folderId);
+                setActiveView('agent');
+              }}
+              onOpenSettings={(tab) => { setSettingsInitialTab(tab); setShowSettings(true); }}
+            />
           )
         ) : activeView === 'tasks' ? (
           <TaskListView
