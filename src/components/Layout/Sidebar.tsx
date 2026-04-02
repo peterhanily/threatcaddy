@@ -2,7 +2,7 @@ import {
   FileText, ListChecks, Clock, Trash2, Briefcase,
   Archive, Settings as SettingsIcon,
   PanelLeftClose, PanelLeft, Github, Download, Chrome, PenTool, Activity, Network, Search, Shield,
-  LayoutDashboard, MessageSquare, MessagesSquare, ChevronLeft,
+  LayoutDashboard, MessageSquare, MessagesSquare, ChevronLeft, Bot,
 } from 'lucide-react';
 import type { Folder, Tag as TagType, Timeline, Whiteboard, ViewMode, InvestigationStatus } from '../../types';
 import { cn } from '../../lib/utils';
@@ -59,6 +59,9 @@ interface SidebarProps {
   onFolderStatusFilterChange?: (filter: InvestigationStatus[]) => void;
   investigationScopedCounts?: { notes: number; tasks: number; events: number; whiteboards: number; iocs: number } | null;
   chatCount?: number;
+  agentActionCount?: number;
+  agentStatus?: 'idle' | 'running' | 'waiting' | 'paused' | 'error';
+  onToggleAgent?: () => void;
   serverConnected?: boolean;
   onNewFromPlaybook?: () => void;
 }
@@ -102,6 +105,9 @@ export function Sidebar({
   onEditFolder,
   investigationScopedCounts,
   chatCount,
+  agentActionCount,
+  agentStatus,
+  onToggleAgent,
 }: SidebarProps) {
   // Derived state
   const selectedFolder = folders.find((f) => f.id === selectedFolderId);
@@ -142,6 +148,7 @@ export function Sidebar({
   const collapsedBottomItems: { view: ViewMode; icon: typeof FileText; label: string; badge?: number; badgeColor?: string; dataTour?: string }[] = [
     { view: 'chat', icon: MessageSquare, label: 'CaddyAI', badge: chatCount },
     { view: 'caddyshack', icon: MessagesSquare, label: 'CaddyShack' },
+    { view: 'agent', icon: Bot, label: 'Agent', badge: agentActionCount, badgeColor: 'bg-accent-amber/15 text-accent-amber' },
   ];
 
   // --- Collapsed: icon-only rail ---
@@ -298,6 +305,39 @@ export function Sidebar({
               </span>
             </div>
           </button>
+          {/* Agent toggle + status */}
+          <div className="flex items-center justify-between mt-1.5 px-0.5">
+            <div className="flex items-center gap-1.5">
+              <Bot size={12} className={selectedFolder.agentEnabled ? 'text-accent-blue' : 'text-text-muted'} />
+              <span className="text-[10px] text-text-muted">Agent</span>
+              {agentStatus && agentStatus !== 'idle' && (
+                <span className={cn(
+                  'text-[9px] px-1 py-px rounded',
+                  agentStatus === 'running' && 'bg-accent-blue/10 text-accent-blue',
+                  agentStatus === 'waiting' && 'bg-accent-amber/10 text-accent-amber',
+                  agentStatus === 'error' && 'bg-red-400/10 text-red-400',
+                  agentStatus === 'paused' && 'bg-surface-raised text-text-muted',
+                )}>
+                  {agentStatus}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleAgent?.(); }}
+              className={cn(
+                'relative inline-flex h-4 w-7 items-center rounded-full transition-colors',
+                selectedFolder.agentEnabled ? 'bg-accent-blue' : 'bg-gray-600',
+              )}
+              role="switch"
+              aria-checked={!!selectedFolder.agentEnabled}
+              title={selectedFolder.agentEnabled ? 'Disable agent' : 'Enable agent'}
+            >
+              <span className={cn(
+                'inline-block h-3 w-3 rounded-full bg-white transition-transform',
+                selectedFolder.agentEnabled ? 'translate-x-[13px]' : 'translate-x-[2px]',
+              )} />
+            </button>
+          </div>
         </div>
       )}
 
@@ -409,6 +449,16 @@ export function Sidebar({
             label="CaddyShack"
             active={activeView === 'caddyshack'}
             onClick={() => nav(() => navToView('caddyshack'))}
+          />
+        </div>
+        <div data-tour="agent">
+          <NavItem
+            icon={<Bot size={16} />}
+            label="Agent"
+            badge={agentActionCount}
+            badgeColor="bg-accent-amber/15 text-accent-amber"
+            active={activeView === 'agent'}
+            onClick={() => nav(() => navToView('agent'))}
           />
         </div>
 

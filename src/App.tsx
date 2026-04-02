@@ -58,6 +58,7 @@ const TrashArchiveView = lazy(() => import('./components/TrashArchive/TrashArchi
 const InvestigationsHub = lazy(() => import('./components/Investigations/InvestigationsHub').then(m => ({ default: m.InvestigationsHub })));
 const CreateInvestigationModal = lazy(() => import('./components/Investigations/CreateInvestigationModal').then(m => ({ default: m.CreateInvestigationModal })));
 import type { LayoutName } from './components/Graph/GraphCanvas';
+import { useCaddyAgent } from './hooks/useCaddyAgent';
 import { useNavigationHistory } from './hooks/useNavigationHistory';
 import type { NavState } from './hooks/useNavigationHistory';
 import { useTour } from './hooks/useTour';
@@ -76,6 +77,7 @@ const ShareDialog = lazy(() => import('./components/ExecMode/ShareDialog').then(
 import type { SharePayload, InvestigationBundle } from './lib/share';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 const CaddyShackView = lazy(() => import('./components/CaddyShack/CaddyShackView').then(m => ({ default: m.CaddyShackView })));
+const AgentPanel = lazy(() => import('./components/Agent/AgentPanel').then(m => ({ default: m.AgentPanel })));
 const ConflictDialog = lazy(() => import('./components/Common/ConflictDialog').then(m => ({ default: m.ConflictDialog })));
 const KeyboardShortcutsPanel = lazy(() => import('./components/Common/KeyboardShortcutsPanel').then(m => ({ default: m.KeyboardShortcutsPanel })));
 import type { InvestigationMember } from './types';
@@ -199,6 +201,7 @@ function AppInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notes.reload, tasks.reload, timeline.reload, standaloneIOCsHook.reload]);
 
+
   const syncedFolderIds = useMemo(() => {
     const localIds = new Set(folders.map(f => f.id));
     return new Set(remoteInvestigations.filter(r => localIds.has(r.folderId)).map(r => r.folderId));
@@ -318,6 +321,14 @@ function AppInner() {
     // Keep agent bridge in sync with the selected investigation
     import('./lib/agent-bridge').then(m => m.syncBridgeFolderId(id)).catch(() => {});
   }, []);
+
+  // Agent pending action count for sidebar badge
+  const [agentPendingCount, setAgentPendingCount] = useState(0);
+  useEffect(() => {
+    if (!selectedFolderId) { setAgentPendingCount(0); return; }
+    db.agentActions.where('[investigationId+status]').equals([selectedFolderId, 'pending']).count()
+      .then(setAgentPendingCount).catch(() => setAgentPendingCount(0));
+  }, [selectedFolderId, activeView]);
 
   const [selectedTag, setSelectedTag] = useState<string>();
   const [showTrash, setShowTrash] = useState(false);
@@ -1378,11 +1389,20 @@ function AppInner() {
     onFolderStatusFilterChange: setFolderStatusFilter,
     investigationScopedCounts,
     chatCount: chatsHook.threadCounts.total,
+    agentActionCount: agentPendingCount || undefined,
     serverConnected: auth.connected,
     onNewFromPlaybook: () => setShowPlaybookPicker(true),
-  }), [activeView, folders, tags, auth.connected, selectedFolderId, setSelectedFolderId, selectedTag, showTrash, showArchive, loggedCreateFolder, loggedDeleteFolder, loggedTrashFolderContents, loggedArchiveFolder, loggedUnarchiveFolder, updateFolder, noteCounts, combinedTrashedCount, combinedArchivedCount, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, loggedCreateTimeline, loggedDeleteTimeline, updateTimeline, timelineEventCounts, whiteboards, selectedWhiteboardId, loggedCreateWhiteboard, loggedDeleteWhiteboard, updateWhiteboard, whiteboardCounts, handleMoveNoteToFolder, updateTag, loggedDeleteTag, navigateTo, folderStatusFilter, investigationScopedCounts, chatsHook.threadCounts.total]);
+  }), [activeView, folders, tags, auth.connected, selectedFolderId, setSelectedFolderId, selectedTag, showTrash, showArchive, loggedCreateFolder, loggedDeleteFolder, loggedTrashFolderContents, loggedArchiveFolder, loggedUnarchiveFolder, updateFolder, noteCounts, combinedTrashedCount, combinedArchivedCount, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, loggedCreateTimeline, loggedDeleteTimeline, updateTimeline, timelineEventCounts, whiteboards, selectedWhiteboardId, loggedCreateWhiteboard, loggedDeleteWhiteboard, updateWhiteboard, whiteboardCounts, handleMoveNoteToFolder, updateTag, loggedDeleteTag, navigateTo, folderStatusFilter, investigationScopedCounts, chatsHook.threadCounts.total, agentPendingCount]);
 
   const selectedFolder = useMemo(() => folders.find((f) => f.id === selectedFolderId), [folders, selectedFolderId]);
+
+  // CaddyAgent hook — manages auto-repeating loop
+  const caddyAgent = useCaddyAgent({
+    folder: selectedFolder,
+    settings,
+    onEntitiesChanged: () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); },
+  });
+
   const selectedTagObj = useMemo(() => tags.find((t) => t.name === selectedTag), [tags, selectedTag]);
   const editingFolder = useMemo(() => folders.find((f) => f.id === editingFolderId), [folders, editingFolderId]);
   const investigationEntityCounts = useMemo(() => {
@@ -1541,6 +1561,8 @@ function AppInner() {
         sidebar={
           <Sidebar
             {...sidebarProps}
+            agentStatus={caddyAgent.agentStatus}
+            onToggleAgent={caddyAgent.toggleAgent}
             collapsed={settings.sidebarCollapsed}
             onToggleCollapsed={() => updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })}
             onNavigate={() => setSelectedNoteId(undefined)}
@@ -1785,6 +1807,26 @@ function AppInner() {
             folderName={selectedFolder?.name}
             settings={settings}
           />
+        ) : activeView === 'agent' ? (
+          selectedFolder ? (
+            <AgentPanel
+              folder={selectedFolder}
+              agentRunning={caddyAgent.running}
+              agentProgress={caddyAgent.progress}
+              agentError={caddyAgent.error}
+              agentStatus={caddyAgent.agentStatus}
+              onRunOnce={caddyAgent.runOnce}
+              onNavigateToChat={(threadId) => {
+                setSelectedChatThreadId(threadId);
+                setActiveView('chat');
+              }}
+              onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); }}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-text-muted text-sm">
+              Select an investigation to use CaddyAgent
+            </div>
+          )
         ) : activeView === 'tasks' ? (
           <TaskListView
             tasks={ssFilteredTasks}
@@ -1929,6 +1971,8 @@ function AppInner() {
           <div className="relative h-full w-[280px] max-w-[85vw] shrink-0 animate-[slideInLeft_200ms_ease-out]" onClick={(e) => e.stopPropagation()}>
             <Sidebar
               {...sidebarProps}
+              agentStatus={caddyAgent.agentStatus}
+              onToggleAgent={caddyAgent.toggleAgent}
               collapsed={false}
               onToggleCollapsed={() => setMobileSidebarOpen(false)}
               onNavigate={() => { setMobileSidebarOpen(false); setSelectedNoteId(undefined); }}

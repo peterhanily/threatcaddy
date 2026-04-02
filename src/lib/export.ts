@@ -1,10 +1,10 @@
 import { db } from '../db';
-import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, ChatThread, ChatMessage, NoteTemplate, PlaybookTemplate, PlaybookStep, ExportData, TimelineExportData, TimelineEventType, ConfidenceLevel, IOCAnalysis, IOCEntry, IOCRelationship, TaskComment, NoteAnnotation, QuickLink, LLMProvider, IOCType, TemplateSource, PlaybookStepEntity } from '../types';
+import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, ChatThread, ChatMessage, NoteTemplate, PlaybookTemplate, PlaybookStep, ExportData, TimelineExportData, TimelineEventType, ConfidenceLevel, IOCAnalysis, IOCEntry, IOCRelationship, TaskComment, NoteAnnotation, QuickLink, LLMProvider, IOCType, TemplateSource, PlaybookStepEntity, AgentAction } from '../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS, IOC_TYPE_LABELS } from '../types';
 import { nanoid } from 'nanoid';
 
 export async function exportJSON(): Promise<string> {
-  const [notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, noteTemplates, playbookTemplates] = await Promise.all([
+  const [notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, noteTemplates, playbookTemplates, agentActions] = await Promise.all([
     db.notes.toArray(),
     db.tasks.toArray(),
     db.folders.toArray(),
@@ -16,6 +16,7 @@ export async function exportJSON(): Promise<string> {
     db.chatThreads.toArray(),
     db.noteTemplates.toArray(),
     db.playbookTemplates.toArray(),
+    db.agentActions.toArray(),
   ]);
 
   // Include quick links from settings if user has customized them
@@ -40,6 +41,7 @@ export async function exportJSON(): Promise<string> {
     whiteboards,
     standaloneIOCs,
     chatThreads,
+    agentActions: agentActions.length > 0 ? agentActions : undefined,
     quickLinks,
     noteTemplates: noteTemplates.length > 0 ? noteTemplates : undefined,
     playbookTemplates: playbookTemplates.length > 0 ? playbookTemplates : undefined,
@@ -384,6 +386,30 @@ export function sanitizeChatThread(raw: unknown): ChatThread | null {
   };
 }
 
+const VALID_AGENT_ACTION_STATUSES = ['pending', 'approved', 'rejected', 'executed', 'failed'];
+
+function sanitizeAgentAction(raw: unknown): AgentAction | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const status = str(r.status, 'pending');
+  return {
+    id: str(r.id),
+    investigationId: str(r.investigationId),
+    threadId: str(r.threadId),
+    agentConfigId: r.agentConfigId != null ? str(r.agentConfigId) : undefined,
+    toolName: str(r.toolName),
+    toolInput: (r.toolInput && typeof r.toolInput === 'object' ? r.toolInput : {}) as Record<string, unknown>,
+    rationale: str(r.rationale),
+    status: (VALID_AGENT_ACTION_STATUSES.includes(status) ? status : 'pending') as AgentAction['status'],
+    resultSummary: r.resultSummary != null ? str(r.resultSummary) : undefined,
+    severity: r.severity != null ? str(r.severity) as AgentAction['severity'] : undefined,
+    createdAt: num(r.createdAt, Date.now()),
+    executedAt: r.executedAt != null ? num(r.executedAt) : undefined,
+    reviewedAt: r.reviewedAt != null ? num(r.reviewedAt) : undefined,
+    reviewedBy: r.reviewedBy != null ? str(r.reviewedBy) : undefined,
+  };
+}
+
 const VALID_TEMPLATE_SOURCES = ['builtin', 'user', 'team'];
 const VALID_PLAYBOOK_STEP_ENTITIES = ['task', 'note'];
 
@@ -460,7 +486,7 @@ function sanitizeQuickLink(raw: unknown): QuickLink | null {
   };
 }
 
-export async function importJSON(json: string): Promise<{ notes: number; tasks: number; folders: number; tags: number; timelineEvents: number; timelines: number; whiteboards: number; standaloneIOCs: number; chatThreads: number; noteTemplates: number; playbookTemplates: number }> {
+export async function importJSON(json: string): Promise<{ notes: number; tasks: number; folders: number; tags: number; timelineEvents: number; timelines: number; whiteboards: number; standaloneIOCs: number; chatThreads: number; noteTemplates: number; playbookTemplates: number; agentActions: number }> {
   if (json.length > MAX_IMPORT_SIZE) {
     throw new Error(`Backup file too large (max ${MAX_IMPORT_SIZE / 1024 / 1024} MB)`);
   }
@@ -499,6 +525,10 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
     .map(sanitizeChatThread)
     .filter((c: ChatThread | null): c is ChatThread => c !== null && !!c.id);
 
+  const agentActions = (Array.isArray(data.agentActions) ? data.agentActions : [])
+    .map(sanitizeAgentAction)
+    .filter((a: AgentAction | null): a is AgentAction => a !== null && !!a.id);
+
   const noteTemplatesRaw = (Array.isArray(data.noteTemplates) ? data.noteTemplates : [])
     .map(sanitizeNoteTemplate)
     .filter((t: NoteTemplate | null): t is NoteTemplate => t !== null && !!t.id);
@@ -522,7 +552,7 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
     .map(sanitizeQuickLink)
     .filter((l: QuickLink | null): l is QuickLink => l !== null && !!l.id);
 
-  await db.transaction('rw', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents, db.timelines, db.whiteboards, db.standaloneIOCs, db.chatThreads, db.noteTemplates, db.playbookTemplates], async () => {
+  await db.transaction('rw', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents, db.timelines, db.whiteboards, db.standaloneIOCs, db.chatThreads, db.noteTemplates, db.playbookTemplates, db.agentActions], async () => {
     await db.notes.clear();
     await db.tasks.clear();
     await db.folders.clear();
@@ -534,6 +564,7 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
     await db.chatThreads.clear();
     await db.noteTemplates.clear();
     await db.playbookTemplates.clear();
+    await db.agentActions.clear();
 
     await db.notes.bulkAdd(notes);
     await db.tasks.bulkAdd(tasks);
@@ -546,6 +577,7 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
     await db.chatThreads.bulkAdd(chatThreads);
     if (noteTemplatesRaw.length > 0) await db.noteTemplates.bulkAdd(noteTemplatesRaw);
     if (playbookTemplatesRaw.length > 0) await db.playbookTemplates.bulkAdd(playbookTemplatesRaw);
+    if (agentActions.length > 0) await db.agentActions.bulkAdd(agentActions);
   });
 
   // Restore quick links to settings if present in backup
@@ -570,11 +602,12 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
     chatThreads: chatThreads.length,
     noteTemplates: noteTemplatesRaw.length,
     playbookTemplates: playbookTemplatesRaw.length,
+    agentActions: agentActions.length,
   };
 }
 
 export async function exportInvestigationJSON(folderId: string): Promise<string> {
-  const [folder, allNotes, allTasks, allTags, allEvents, allTimelines, allWhiteboards, allIOCs, allChats] = await Promise.all([
+  const [folder, allNotes, allTasks, allTags, allEvents, allTimelines, allWhiteboards, allIOCs, allChats, allAgentActions] = await Promise.all([
     db.folders.get(folderId),
     db.notes.where('folderId').equals(folderId).toArray(),
     db.tasks.where('folderId').equals(folderId).toArray(),
@@ -584,6 +617,7 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
     db.whiteboards.where('folderId').equals(folderId).toArray(),
     db.standaloneIOCs.where('folderId').equals(folderId).toArray(),
     db.chatThreads.where('folderId').equals(folderId).toArray(),
+    db.agentActions.where('investigationId').equals(folderId).toArray(),
   ]);
 
   if (!folder) throw new Error('Investigation not found');
@@ -617,6 +651,7 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
     whiteboards: allWhiteboards,
     standaloneIOCs: allIOCs,
     chatThreads: allChats,
+    agentActions: allAgentActions.length > 0 ? allAgentActions : undefined,
   };
 
   return JSON.stringify(data, null, 2);

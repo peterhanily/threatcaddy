@@ -151,6 +151,16 @@ export interface Folder {
   updatedBy?: string;
   localOnly?: boolean;
   playbookExecution?: PlaybookExecution;
+  /** CaddyAgent: is the agent enabled for this investigation? */
+  agentEnabled?: boolean;
+  /** CaddyAgent: per-investigation policy overrides */
+  agentPolicy?: AgentPolicy;
+  /** CaddyAgent: ID of the agent's audit trail chat thread */
+  agentThreadId?: string;
+  /** CaddyAgent: last time the agent ran a cycle */
+  agentLastRunAt?: number;
+  /** CaddyAgent: current runtime status */
+  agentStatus?: AgentStatus;
 }
 
 export interface Tag {
@@ -172,7 +182,7 @@ export interface BackupDestination {
 }
 
 /** Top-level view/page the user can navigate to. */
-export type ViewMode = 'dashboard' | 'notes' | 'tasks' | 'timeline' | 'whiteboard' | 'activity' | 'graph' | 'ioc-stats' | 'chat' | 'caddyshack' | 'investigations';
+export type ViewMode = 'dashboard' | 'notes' | 'tasks' | 'timeline' | 'whiteboard' | 'activity' | 'graph' | 'ioc-stats' | 'chat' | 'caddyshack' | 'agent' | 'investigations';
 export type EditorMode = 'edit' | 'preview' | 'split';
 export type TaskViewMode = 'list' | 'kanban';
 
@@ -618,6 +628,8 @@ export interface ChatThread {
   clsLevel?: string;
   /** Plan mode proposes actions without executing write tools; Act mode executes normally */
   mode?: 'plan' | 'act';
+  /** Source of this thread: 'user' (default), 'agent' (CaddyAgent audit trail), or 'caddyshack' */
+  source?: 'user' | 'agent' | 'caddyshack';
   /** Cached summary of truncated conversation context */
   contextSummary?: string;
   trashed: boolean;
@@ -793,6 +805,7 @@ export interface ExportData {
   whiteboards?: Whiteboard[];
   standaloneIOCs?: StandaloneIOC[];
   chatThreads?: ChatThread[];
+  agentActions?: AgentAction[];
   quickLinks?: QuickLink[];
   noteTemplates?: NoteTemplate[];
   playbookTemplates?: PlaybookTemplate[];
@@ -952,3 +965,54 @@ export interface PresenceUser {
   view: string;
   entityId?: string;
 }
+
+// ─── CaddyAgent Types ─────────────────────────────────────────
+
+/** Action class for policy decisions — maps tools to approval categories. */
+export type AgentActionClass = 'read' | 'enrich' | 'create' | 'modify';
+
+/** Per-investigation agent policy controlling what requires human approval. */
+export interface AgentPolicy {
+  autoApproveReads: boolean;
+  autoApproveEnrich: boolean;
+  autoApproveCreate: boolean;
+  autoApproveModify: boolean;
+  intervalMinutes: number;
+  model?: string;
+  focusAreas?: string[];
+}
+
+export const DEFAULT_AGENT_POLICY: AgentPolicy = {
+  autoApproveReads: true,
+  autoApproveEnrich: true,
+  autoApproveCreate: false,
+  autoApproveModify: false,
+  intervalMinutes: 5,
+};
+
+/** Severity level for agent escalations. */
+export type AgentActionSeverity = 'info' | 'warning' | 'critical';
+
+/** Status of a proposed or executed agent action. */
+export type AgentActionStatus = 'pending' | 'approved' | 'rejected' | 'executed' | 'failed';
+
+/** A proposed or executed action by CaddyAgent, stored in the approval queue. */
+export interface AgentAction {
+  id: string;
+  investigationId: string;
+  threadId: string;
+  agentConfigId?: string;
+  toolName: string;
+  toolInput: Record<string, unknown>;
+  rationale: string;
+  status: AgentActionStatus;
+  resultSummary?: string;
+  severity?: AgentActionSeverity;
+  createdAt: number;
+  executedAt?: number;
+  reviewedAt?: number;
+  reviewedBy?: string;
+}
+
+/** Runtime status of an agent for an investigation. */
+export type AgentStatus = 'idle' | 'running' | 'waiting' | 'paused' | 'error';

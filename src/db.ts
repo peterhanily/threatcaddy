@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, ActivityLogEntry, StandaloneIOC, ChatThread, NoteTemplate, PlaybookTemplate, Checkpoint, CustomSlashCommand } from './types';
+import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, ActivityLogEntry, StandaloneIOC, ChatThread, NoteTemplate, PlaybookTemplate, Checkpoint, CustomSlashCommand, AgentAction } from './types';
 import type { IntegrationTemplate, InstalledIntegration, IntegrationRun } from './types/integration-types';
 import { installEncryptionMiddleware } from './lib/encryptionMiddleware';
 
@@ -21,6 +21,7 @@ const db = new Dexie('ThreatCaddyDB') as Dexie & {
   integrationRuns: EntityTable<IntegrationRun, 'id'>;
   checkpoints: EntityTable<Checkpoint, 'id'>;
   customSlashCommands: EntityTable<CustomSlashCommand, 'id'>;
+  agentActions: EntityTable<AgentAction, 'id'>;
 };
 
 db.version(1).stores({
@@ -175,6 +176,11 @@ db.version(22).stores({
 // Version 23: Custom slash commands for CaddyAI
 db.version(23).stores({
   customSlashCommands: 'id, name, createdAt',
+});
+
+// Version 24: CaddyAgent — agent actions approval queue
+db.version(24).stores({
+  agentActions: 'id, investigationId, threadId, status, createdAt, [investigationId+status], [investigationId+createdAt]',
 });
 
 // Encryption-at-rest middleware (transparent to all CRUD hooks)

@@ -45,3 +45,6 @@ coverage
 # Claude / AI
 .claude/
 CLAUDE.md
+
+# Plans (local only)
+plans/

@@ -33,6 +33,7 @@ export interface BackupPayload {
     whiteboards?: unknown[];
     standaloneIOCs?: unknown[];
     chatThreads?: unknown[];
+    agentActions?: unknown[];
   };
   deletedIds?: Record<string, string[]>;
 }

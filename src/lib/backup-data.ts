@@ -19,7 +19,7 @@ export async function buildFullBackupPayload(
   const data: BackupPayload['data'] = {};
 
   if (scope === 'all') {
-    const [notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads] =
+    const [notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, agentActions] =
       await Promise.all([
         db.notes.toArray(),
         db.tasks.toArray(),
@@ -30,11 +30,12 @@ export async function buildFullBackupPayload(
         db.whiteboards.toArray(),
         db.standaloneIOCs.toArray(),
         db.chatThreads.toArray(),
+        db.agentActions.toArray(),
       ]);
-    Object.assign(data, { notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads });
+    Object.assign(data, { notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, agentActions });
   } else if (scope === 'investigation') {
     if (!scopeId) throw new Error('scopeId required for investigation scope');
-    const [folder, notes, tasks, allTags, events, allTimelines, whiteboards, iocs, chats] = await Promise.all([
+    const [folder, notes, tasks, allTags, events, allTimelines, whiteboards, iocs, chats, agentActions] = await Promise.all([
       db.folders.get(scopeId),
       db.notes.where('folderId').equals(scopeId).toArray(),
       db.tasks.where('folderId').equals(scopeId).toArray(),
@@ -44,6 +45,7 @@ export async function buildFullBackupPayload(
       db.whiteboards.where('folderId').equals(scopeId).toArray(),
       db.standaloneIOCs.where('folderId').equals(scopeId).toArray(),
       db.chatThreads.where('folderId').equals(scopeId).toArray(),
+      db.agentActions.where('investigationId').equals(scopeId).toArray(),
     ]);
     if (!folder) throw new Error('Investigation not found');
 
@@ -63,7 +65,7 @@ export async function buildFullBackupPayload(
 
     Object.assign(data, {
       notes, tasks, folders: [folder], tags, timelineEvents: events, timelines, whiteboards,
-      standaloneIOCs: iocs, chatThreads: chats,
+      standaloneIOCs: iocs, chatThreads: chats, agentActions,
     });
   } else if (scope === 'entity') {
     if (!scopeId) throw new Error('scopeId required for entity scope');
@@ -95,7 +97,7 @@ export async function buildDifferentialPayload(
   const data: BackupPayload['data'] = {};
   const deletedIds: Record<string, string[]> = {};
 
-  const tableNames = ['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads'] as const;
+  const tableNames = ['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'agentActions'] as const;
 
   for (const tableName of tableNames) {
     const table = getTable(tableName);
@@ -154,5 +156,6 @@ export function countPayloadEntities(payload: BackupPayload): number {
   if (data.whiteboards) count += data.whiteboards.length;
   if (data.standaloneIOCs) count += data.standaloneIOCs.length;
   if (data.chatThreads) count += data.chatThreads.length;
+  if (data.agentActions) count += data.agentActions.length;
   return count;
 }
