@@ -624,6 +624,46 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
           {/* Custom Slash Commands */}
           <CustomSlashCommandsEditor />
+
+          {/* CaddyAgent Supervisor */}
+          <div className="border-t border-gray-700 pt-6 mt-6">
+            <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2 mb-3">
+              <Bot size={16} />
+              Supervisor Agent
+            </h3>
+            <p className="text-xs text-gray-500 mb-3">
+              Cross-investigation analysis — detects shared IOCs, stale cases, and patterns across your caseload.
+            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs text-gray-300">Enable Supervisor</span>
+                <p className="text-[10px] text-gray-500">Runs every {settings.agentSupervisorIntervalMinutes || 30} minutes</p>
+              </div>
+              <button
+                onClick={() => onUpdateSettings({ agentSupervisorEnabled: !settings.agentSupervisorEnabled })}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${settings.agentSupervisorEnabled ? 'bg-accent-blue' : 'bg-gray-600'}`}
+                role="switch"
+                aria-checked={!!settings.agentSupervisorEnabled}
+              >
+                <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${settings.agentSupervisorEnabled ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+              </button>
+            </div>
+            {settings.agentSupervisorEnabled && (
+              <div className="flex items-center gap-3 mt-3">
+                <label className="text-xs text-gray-400 shrink-0">Interval</label>
+                <input
+                  type="range"
+                  min={10}
+                  max={120}
+                  step={10}
+                  value={settings.agentSupervisorIntervalMinutes || 30}
+                  onChange={(e) => onUpdateSettings({ agentSupervisorIntervalMinutes: parseInt(e.target.value) })}
+                  className="flex-1 h-1 accent-accent-blue"
+                />
+                <span className="text-xs text-gray-400 w-12 text-right">{settings.agentSupervisorIntervalMinutes || 30}m</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

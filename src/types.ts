@@ -242,6 +242,10 @@ export interface Settings {
   llmTokenBudget?: number;
   /** LLM routing mode: extension (browser ext), server (team server proxy), auto (server if connected, else extension) */
   llmRoutingMode?: 'extension' | 'server' | 'auto';
+  /** Enable CaddyAgent Supervisor for cross-investigation analysis */
+  agentSupervisorEnabled?: boolean;
+  /** Supervisor interval in minutes (default 30) */
+  agentSupervisorIntervalMinutes?: number;
   tiAutoExtractEnabled?: boolean;        // default true
   tiAutoExtractDebounceMs?: number;      // default 2000
   tiEnabledIOCTypes?: string[];          // IOC type strings; undefined = all enabled

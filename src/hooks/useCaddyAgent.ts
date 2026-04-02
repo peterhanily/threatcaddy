@@ -13,6 +13,7 @@ import type { Folder, Settings, AgentStatus } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
 import { db } from '../db';
 import { runAgentCycle } from '../lib/caddy-agent';
+import { runSupervisorCycle, sendEscalationNotification } from '../lib/caddy-agent-supervisor';
 import { postMessageOrigin } from '../lib/utils';
 
 interface UseCaddyAgentOptions {
@@ -187,6 +188,60 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
   // Only re-run when folder id or enabled state changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [folder?.id, folder?.agentEnabled]);
+
+  // ── Supervisor loop (global, not per-investigation) ──────────────────
+
+  const supervisorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const supervisorRunningRef = useRef(false);
+
+  useEffect(() => {
+    if (!settings.agentSupervisorEnabled) {
+      if (supervisorRef.current) {
+        clearTimeout(supervisorRef.current);
+        supervisorRef.current = null;
+      }
+      return;
+    }
+
+    const intervalMs = (settings.agentSupervisorIntervalMinutes || 30) * 60 * 1000;
+
+    const runSupervisor = async () => {
+      if (supervisorRunningRef.current) return;
+      supervisorRunningRef.current = true;
+      try {
+        const result = await runSupervisorCycle(settingsRef.current, extensionAvailable);
+        // Fire desktop notifications for escalations
+        for (const escalation of result.escalations) {
+          sendEscalationNotification(escalation);
+        }
+      } catch {
+        // Supervisor errors are non-fatal
+      } finally {
+        supervisorRunningRef.current = false;
+      }
+    };
+
+    const scheduleNext = () => {
+      supervisorRef.current = setTimeout(async () => {
+        await runSupervisor();
+        scheduleNext();
+      }, intervalMs);
+    };
+
+    // First run after 10s delay
+    const initialTimer = setTimeout(() => {
+      runSupervisor().then(scheduleNext);
+    }, 10000);
+
+    return () => {
+      clearTimeout(initialTimer);
+      if (supervisorRef.current) {
+        clearTimeout(supervisorRef.current);
+        supervisorRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.agentSupervisorEnabled]);
 
   return {
     running,

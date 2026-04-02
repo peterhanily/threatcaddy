@@ -3,6 +3,7 @@ import { Plus, WifiOff, Briefcase, Search } from 'lucide-react';
 import type { Folder, InvestigationSummary, InvestigationDataMode, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ChatThread } from '../../types';
 import { cn } from '../../lib/utils';
 import { InvestigationCard } from './InvestigationCard';
+import { SupervisorSummary } from '../Agent/SupervisorSummary';
 
 const ZERO_COUNTS = { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0 };
 
@@ -194,6 +195,9 @@ export function InvestigationsHub({
             ))}
           </div>
         </div>
+
+        {/* Supervisor summary */}
+        <SupervisorSummary onOpenSupervisor={(folderId) => onOpenInvestigation(folderId, 'local')} />
 
         {/* Section 1: My Investigations (purely local) */}
         <section className="mb-8">

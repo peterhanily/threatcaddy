@@ -264,6 +264,19 @@ window.addEventListener('message', function (event) {
       ports.delete(abortId);
     }
   }
+
+  if (event.data.type === 'TC_SEND_NOTIFICATION') {
+    if (!isExtensionValid()) return;
+    var notifPayload = event.data.payload || {};
+    try {
+      chrome.runtime.sendMessage({
+        type: 'SEND_NOTIFICATION',
+        title: notifPayload.title || 'CaddyAgent',
+        message: notifPayload.message || '',
+        severity: notifPayload.severity || 'warning',
+      });
+    } catch (e) { /* ignore */ }
+  }
 });
 
 // Handle messages from background script (works on both Chrome and Firefox)

@@ -605,6 +605,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: false, error: error.message });
     });
     return true;
+  } else if (message.type === 'SEND_NOTIFICATION') {
+    const iconPath = message.severity === 'critical'
+      ? 'icons/icon128.png'
+      : 'icons/icon128.png';
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: iconPath,
+      title: message.title || 'CaddyAgent',
+      message: message.message || '',
+      priority: message.severity === 'critical' ? 2 : 1,
+    });
+    sendResponse({ success: true });
   }
 });
 
