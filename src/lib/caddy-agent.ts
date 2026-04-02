@@ -98,8 +98,8 @@ function getApiKeyForProvider(provider: LLMProvider, settings: Settings): string
 }
 
 /** Build the agent-specific system prompt wrapping the base investigation prompt. */
-async function buildAgentSystemPrompt(folder: Folder, settings: Settings): Promise<string> {
-  const basePrompt = await buildSystemPrompt(folder, settings.llmSystemPrompt);
+async function buildAgentSystemPrompt(folder: Folder, settings: Settings, provider?: string): Promise<string> {
+  const basePrompt = await buildSystemPrompt(folder, settings.llmSystemPrompt, provider);
 
   const policy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
   const focusAreas = policy.focusAreas?.length
@@ -255,9 +255,9 @@ export async function runAgentCycle(
     await db.folders.update(folder.id, { agentStatus: 'running', agentLastRunAt: Date.now() });
   }
 
-  onProgress?.('Building context...');
+  onProgress?.(`Using ${provider}/${model}...`);
 
-  const systemPrompt = await buildAgentSystemPrompt(folder, settings);
+  const systemPrompt = await buildAgentSystemPrompt(folder, settings, provider);
 
   // Load working memory from previous cycles
   let workingMemoryContext = '';
@@ -329,7 +329,12 @@ export async function runAgentCycle(
         if (autoApprove) {
           // Auto-execute
           onProgress?.(`Executing ${toolCall.name}...`);
-          const result = await executeTool(toolCall, folder.id);
+          let result: { result: string; isError: boolean };
+          try {
+            result = await executeTool(toolCall, folder.id);
+          } catch (toolErr) {
+            result = { result: JSON.stringify({ error: String((toolErr as Error).message || toolErr) }), isError: true };
+          }
 
           const action: AgentAction = {
             id: nanoid(),
