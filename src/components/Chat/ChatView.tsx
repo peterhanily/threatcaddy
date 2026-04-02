@@ -148,6 +148,17 @@ export function ChatView({
 
   const handleNewChat = useCallback(async () => {
     try {
+      // If there's already an empty (no messages) thread in scope, just select it
+      const existingEmpty = threads.find(t =>
+        !t.trashed && t.messages.length === 0 &&
+        (selectedFolderId ? t.folderId === selectedFolderId : true) &&
+        t.source !== 'agent'
+      );
+      if (existingEmpty) {
+        onSelectThread(existingEmpty.id);
+        return;
+      }
+
       let defaultModel = settings.llmDefaultModel || 'claude-sonnet-4-6';
       let defaultProvider: LLMProvider = (settings.llmDefaultProvider as LLMProvider) || 'anthropic';
       // If the default provider has no API key, pick the first configured provider
@@ -167,7 +178,7 @@ export function ChatView({
       console.error('Failed to create chat thread:', err);
       setLocalError('Failed to create chat thread. Try refreshing the page.');
     }
-  }, [onCreateThread, onSelectThread, settings, selectedFolderId, configuredProviders]);
+  }, [onCreateThread, onSelectThread, settings, selectedFolderId, configuredProviders, threads]);
 
   const getApiKeyForProvider = useCallback((provider: LLMProvider, s: Settings): string | undefined => {
     switch (provider) {
