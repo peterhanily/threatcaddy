@@ -322,13 +322,13 @@ function AppInner() {
     import('./lib/agent-bridge').then(m => m.syncBridgeFolderId(id)).catch(() => {});
   }, []);
 
-  // Agent pending action count for sidebar badge
+  // Agent pending action count for sidebar badge — only re-query on folder change or agent view
   const [agentPendingCount, setAgentPendingCount] = useState(0);
   useEffect(() => {
     if (!selectedFolderId) { setAgentPendingCount(0); return; }
     db.agentActions.where('[investigationId+status]').equals([selectedFolderId, 'pending']).count()
       .then(setAgentPendingCount).catch(() => setAgentPendingCount(0));
-  }, [selectedFolderId, activeView]);
+  }, [selectedFolderId]);
 
   const [selectedTag, setSelectedTag] = useState<string>();
   const [showTrash, setShowTrash] = useState(false);

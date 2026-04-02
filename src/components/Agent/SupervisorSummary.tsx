@@ -25,21 +25,25 @@ export function SupervisorSummary({ onOpenSupervisor }: { onOpenSupervisor?: (fo
       if (!folder) return;
       setSupervisorFolderId(folder.id);
 
-      // Get latest note
-      const notes = await db.notes
-        .where('folderId')
-        .equals(folder.id)
+      // Get latest 3 notes (limit at query level)
+      const recent = await db.notes
+        .where('[folderId+updatedAt]')
+        .between([folder.id, -Infinity], [folder.id, Infinity])
         .reverse()
-        .sortBy('createdAt');
+        .limit(3)
+        .toArray();
 
-      if (notes.length > 0) {
-        setLatestNote(notes[0]);
-        // Count mentions of "shared IOC" in recent notes
-        const recent = notes.slice(0, 3);
+      if (recent.length > 0) {
+        setLatestNote(recent[0]);
+        // Count mentions of "shared IOC" using indexOf (no regex)
         let count = 0;
         for (const n of recent) {
-          const matches = n.content.match(/shared IOC/gi);
-          if (matches) count += matches.length;
+          const lower = n.content.toLowerCase();
+          let idx = 0;
+          while ((idx = lower.indexOf('shared ioc', idx)) !== -1) {
+            count++;
+            idx += 10;
+          }
         }
         setSharedIocCount(count);
       }

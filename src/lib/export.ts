@@ -387,6 +387,7 @@ export function sanitizeChatThread(raw: unknown): ChatThread | null {
 }
 
 const VALID_AGENT_ACTION_STATUSES = ['pending', 'approved', 'rejected', 'executed', 'failed'];
+const VALID_AGENT_SEVERITIES = ['info', 'warning', 'critical'];
 
 function sanitizeAgentAction(raw: unknown): AgentAction | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -402,7 +403,7 @@ function sanitizeAgentAction(raw: unknown): AgentAction | null {
     rationale: str(r.rationale),
     status: (VALID_AGENT_ACTION_STATUSES.includes(status) ? status : 'pending') as AgentAction['status'],
     resultSummary: r.resultSummary != null ? str(r.resultSummary) : undefined,
-    severity: r.severity != null ? str(r.severity) as AgentAction['severity'] : undefined,
+    severity: r.severity != null && VALID_AGENT_SEVERITIES.includes(str(r.severity)) ? str(r.severity) as AgentAction['severity'] : undefined,
     createdAt: num(r.createdAt, Date.now()),
     executedAt: r.executedAt != null ? num(r.executedAt) : undefined,
     reviewedAt: r.reviewedAt != null ? num(r.reviewedAt) : undefined,

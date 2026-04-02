@@ -644,6 +644,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${settings.agentSupervisorEnabled ? 'bg-accent-blue' : 'bg-gray-600'}`}
                 role="switch"
                 aria-checked={!!settings.agentSupervisorEnabled}
+                aria-label="Enable supervisor agent for cross-investigation analysis"
               >
                 <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${settings.agentSupervisorEnabled ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
               </button>

@@ -9,6 +9,8 @@ import { db } from '../../db';
 import { executeApprovedAction, rejectAction, bulkApproveActions } from '../../lib/caddy-agent';
 import { AgentActionCard } from './AgentActionCard';
 
+const ACTION_PAGE_SIZE = 100;
+
 interface AgentPanelProps {
   folder: Folder;
   /** From useCaddyAgent hook */
@@ -27,20 +29,25 @@ export function AgentPanel({
   onRunOnce, onNavigateToChat, onEntitiesChanged,
 }: AgentPanelProps) {
   const [actions, setActions] = useState<AgentAction[]>([]);
+  const [hasMore, setHasMore] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'executed' | 'rejected'>('all');
   const [showSettings, setShowSettings] = useState(false);
+  const [confirmBulk, setConfirmBulk] = useState(false);
 
   const error = agentError || localError;
 
-  // Load actions for this investigation
+  // Load actions for this investigation (paginated)
   const loadActions = useCallback(async () => {
     const results = await db.agentActions
-      .where('investigationId')
-      .equals(folder.id)
+      .where('[investigationId+createdAt]')
+      .between([folder.id, -Infinity], [folder.id, Infinity])
       .reverse()
-      .sortBy('createdAt');
-    setActions(results);
+      .limit(ACTION_PAGE_SIZE + 1)
+      .toArray();
+
+    setHasMore(results.length > ACTION_PAGE_SIZE);
+    setActions(results.slice(0, ACTION_PAGE_SIZE));
   }, [folder.id]);
 
   useEffect(() => {
@@ -62,23 +69,36 @@ export function AgentPanel({
   };
 
   const handleApprove = async (action: AgentAction) => {
-    await executeApprovedAction(action);
-    await loadActions();
-    onEntitiesChanged?.();
+    try {
+      await executeApprovedAction(action);
+      await loadActions();
+      onEntitiesChanged?.();
+    } catch (err) {
+      setLocalError(`Approve failed: ${(err as Error).message}`);
+    }
   };
 
   const handleReject = async (action: AgentAction) => {
-    await rejectAction(action.id);
-    await loadActions();
+    try {
+      await rejectAction(action.id);
+      await loadActions();
+    } catch (err) {
+      setLocalError(`Reject failed: ${(err as Error).message}`);
+    }
   };
 
   const handleBulkApprove = async () => {
-    const result = await bulkApproveActions(folder.id);
-    if (result.failed > 0) {
-      setLocalError(`Approved ${result.executed}, failed ${result.failed}`);
+    setConfirmBulk(false);
+    try {
+      const result = await bulkApproveActions(folder.id);
+      if (result.failed > 0) {
+        setLocalError(`Approved ${result.executed}, failed ${result.failed}`);
+      }
+      await loadActions();
+      onEntitiesChanged?.();
+    } catch (err) {
+      setLocalError(`Bulk approve failed: ${(err as Error).message}`);
     }
-    await loadActions();
-    onEntitiesChanged?.();
   };
 
   const handleViewReasoning = (threadId: string) => {
@@ -126,12 +146,14 @@ export function AgentPanel({
             onClick={() => setShowSettings(!showSettings)}
             className="text-text-muted hover:text-text-secondary p-1 rounded transition-colors"
             title="Agent settings"
+            aria-label="Toggle agent settings"
           >
             <SettingsIcon size={14} />
           </button>
           <button
             onClick={handleRunAgent}
             disabled={agentRunning}
+            aria-label={agentRunning ? 'Agent is running' : 'Run agent cycle'}
             className={cn(
               'flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md transition-colors',
               agentRunning
@@ -147,7 +169,7 @@ export function AgentPanel({
             ) : (
               <>
                 <Play size={12} />
-                Run
+                Run Agent
               </>
             )}
           </button>
@@ -161,10 +183,10 @@ export function AgentPanel({
 
       {/* Error banner */}
       {error && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-red-400/10 text-red-400 text-xs border-b border-red-400/20">
+        <div className="flex items-center gap-2 px-4 py-2 bg-red-400/10 text-red-400 text-xs border-b border-red-400/20" role="alert">
           <AlertTriangle size={12} />
           <span className="flex-1">{error}</span>
-          <button onClick={() => setLocalError(null)} className="hover:text-red-300">
+          <button onClick={() => setLocalError(null)} className="hover:text-red-300" aria-label="Dismiss error">
             <X size={12} />
           </button>
         </div>
@@ -176,21 +198,42 @@ export function AgentPanel({
           <span className="text-xs text-accent-amber">
             {pendingCount} action{pendingCount !== 1 ? 's' : ''} pending review
           </span>
-          <button
-            onClick={handleBulkApprove}
-            className="flex items-center gap-1 text-xs text-accent-green hover:bg-accent-green/10 px-2 py-1 rounded transition-colors"
-          >
-            <CheckCheck size={12} />
-            Approve All
-          </button>
+          {confirmBulk ? (
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-text-muted">Execute {pendingCount} actions?</span>
+              <button
+                onClick={handleBulkApprove}
+                className="text-[10px] text-accent-green hover:bg-accent-green/10 px-1.5 py-0.5 rounded"
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => setConfirmBulk(false)}
+                className="text-[10px] text-text-muted hover:bg-surface-raised px-1.5 py-0.5 rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmBulk(true)}
+              className="flex items-center gap-1 text-xs text-accent-green hover:bg-accent-green/10 px-2 py-1 rounded transition-colors"
+              aria-label={`Approve all ${pendingCount} pending actions`}
+            >
+              <CheckCheck size={12} />
+              Approve All
+            </button>
+          )}
         </div>
       )}
 
       {/* Filter tabs */}
-      <div className="flex gap-1 px-4 py-2 border-b border-border-subtle">
+      <div className="flex gap-1 px-4 py-2 border-b border-border-subtle" role="tablist">
         {(['all', 'pending', 'executed', 'rejected'] as const).map((f) => (
           <button
             key={f}
+            role="tab"
+            aria-selected={filter === f}
             onClick={() => setFilter(f)}
             className={cn(
               'text-[11px] px-2 py-1 rounded transition-colors capitalize',
@@ -208,13 +251,13 @@ export function AgentPanel({
       </div>
 
       {/* Actions list */}
-      <div className="flex-1 overflow-auto px-4 py-3 space-y-2">
+      <div className="flex-1 overflow-auto px-4 py-3 space-y-2" role="tabpanel">
         {filteredActions.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-text-muted">
             <Bot size={32} className="mb-2 opacity-30" />
             <p className="text-sm">
               {actions.length === 0
-                ? 'No agent activity yet. Click "Run" to start.'
+                ? 'No agent activity yet. Click "Run Agent" to start.'
                 : `No ${filter} actions.`
               }
             </p>
@@ -223,15 +266,22 @@ export function AgentPanel({
             )}
           </div>
         ) : (
-          filteredActions.map((action) => (
-            <AgentActionCard
-              key={action.id}
-              action={action}
-              onApprove={action.status === 'pending' ? handleApprove : undefined}
-              onReject={action.status === 'pending' ? handleReject : undefined}
-              onViewReasoning={handleViewReasoning}
-            />
-          ))
+          <>
+            {filteredActions.map((action) => (
+              <AgentActionCard
+                key={action.id}
+                action={action}
+                onApprove={action.status === 'pending' ? handleApprove : undefined}
+                onReject={action.status === 'pending' ? handleReject : undefined}
+                onViewReasoning={handleViewReasoning}
+              />
+            ))}
+            {hasMore && (
+              <p className="text-center text-[10px] text-text-muted py-2">
+                Showing latest {ACTION_PAGE_SIZE} actions
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -241,13 +291,25 @@ export function AgentPanel({
 // ── Policy Editor ────────────────────────────────────────────────────────
 
 function PolicyEditor({ folder }: { folder: Folder }) {
+  // Re-derive policy from folder prop on each render to avoid stale state
   const policy: AgentPolicy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
   const [focusText, setFocusText] = useState(policy.focusAreas?.join(', ') ?? '');
   const [showFocus, setShowFocus] = useState(!!policy.focusAreas?.length);
 
+  // Sync focus text when folder prop changes
+  useEffect(() => {
+    setFocusText((folder.agentPolicy ?? DEFAULT_AGENT_POLICY).focusAreas?.join(', ') ?? '');
+  }, [folder.agentPolicy]);
+
   const updatePolicy = async (updates: Partial<AgentPolicy>) => {
-    const newPolicy = { ...policy, ...updates };
-    await db.folders.update(folder.id, { agentPolicy: newPolicy });
+    // Read fresh policy from folder prop to avoid stale merges
+    const current = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
+    const newPolicy = { ...current, ...updates };
+    try {
+      await db.folders.update(folder.id, { agentPolicy: newPolicy });
+    } catch (err) {
+      console.error('Failed to save agent policy:', err);
+    }
   };
 
   const saveFocusAreas = async () => {
@@ -266,10 +328,13 @@ function PolicyEditor({ folder }: { folder: Folder }) {
     <div className="px-4 py-3 border-b border-border-subtle bg-surface-raised/50 space-y-3">
       <div className="text-[11px] font-medium text-text-secondary uppercase tracking-wide">Auto-approve Policy</div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2" role="group" aria-label="Auto-approve settings">
         {toggles.map(({ key, label, description }) => (
           <button
             key={key}
+            role="checkbox"
+            aria-checked={!!policy[key]}
+            aria-label={`Auto-approve ${label}: ${description}`}
             onClick={() => updatePolicy({ [key]: !policy[key] })}
             className={cn(
               'flex items-center gap-2 text-left px-2 py-1.5 rounded border transition-colors',
@@ -296,8 +361,9 @@ function PolicyEditor({ folder }: { folder: Folder }) {
 
       {/* Interval */}
       <div className="flex items-center gap-3">
-        <label className="text-xs text-text-muted shrink-0">Interval</label>
+        <label htmlFor="agent-interval" className="text-xs text-text-muted shrink-0">Interval</label>
         <input
+          id="agent-interval"
           type="range"
           min={1}
           max={30}
@@ -313,6 +379,7 @@ function PolicyEditor({ folder }: { folder: Folder }) {
         <button
           onClick={() => setShowFocus(!showFocus)}
           className="flex items-center gap-1 text-xs text-text-muted hover:text-text-secondary transition-colors"
+          aria-expanded={showFocus}
         >
           {showFocus ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           Focus areas
@@ -325,6 +392,7 @@ function PolicyEditor({ folder }: { folder: Folder }) {
               onBlur={saveFocusAreas}
               placeholder="e.g. enrich IOCs, build timeline, look for lateral movement"
               rows={2}
+              aria-label="Agent focus areas (comma-separated)"
               className="w-full text-xs bg-surface border border-border-subtle rounded px-2 py-1.5 text-text-primary placeholder:text-text-muted/50 resize-none focus:outline-none focus:border-accent-blue/50"
             />
             <p className="text-[10px] text-text-muted mt-0.5">Comma-separated areas the agent should focus on</p>

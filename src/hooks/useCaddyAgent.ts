@@ -37,6 +37,12 @@ interface UseCaddyAgentResult {
   agentStatus: AgentStatus | undefined;
 }
 
+/** Max character length for working memory to prevent unbounded growth. */
+const MAX_WORKING_MEMORY_CHARS = 10_000;
+/** After an error, wait this many ms before retrying (doubles each retry, max 3 retries). */
+const ERROR_RETRY_BASE_MS = 60_000;
+const MAX_ERROR_RETRIES = 3;
+
 export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyAgentOptions): UseCaddyAgentResult {
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState('');
@@ -58,13 +64,21 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
 
   // Refs for the interval loop
   const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const runningRef = useRef(false);
+  const cycleMutex = useRef(false);  // Atomic-ish guard for concurrent cycles
   const folderRef = useRef(folder);
   const settingsRef = useRef(settings);
+  const mountedRef = useRef(true);
+  const errorRetryCount = useRef(0);
 
   // Keep refs current
   folderRef.current = folder;
   settingsRef.current = settings;
+
+  // Track mount state
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   // Sync agentStatus from folder prop
   useEffect(() => {
@@ -73,32 +87,39 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
 
   const executeCycle = useCallback(async () => {
     const currentFolder = folderRef.current;
-    if (!currentFolder || runningRef.current) return;
+    // Mutex guard — if already running, skip
+    if (!currentFolder || cycleMutex.current) return;
+    cycleMutex.current = true;
 
-    runningRef.current = true;
-    setRunning(true);
-    setError(null);
+    if (mountedRef.current) {
+      setRunning(true);
+      setError(null);
+    }
 
     try {
       // Re-read the folder to get latest state
       const freshFolder = await db.folders.get(currentFolder.id);
       if (!freshFolder) {
-        runningRef.current = false;
-        setRunning(false);
         return;
       }
 
       const result = await runAgentCycle(freshFolder, settingsRef.current, extensionAvailable, (status) => {
-        setProgress(status);
+        if (mountedRef.current) setProgress(status);
       });
+
+      if (!mountedRef.current) return;
 
       if (result.error) {
         setError(result.error);
         setAgentStatus('error');
-      } else if (result.proposed.length > 0) {
-        setAgentStatus('waiting');
       } else {
-        setAgentStatus('idle');
+        // Reset error retry count on success
+        errorRetryCount.current = 0;
+        if (result.proposed.length > 0) {
+          setAgentStatus('waiting');
+        } else {
+          setAgentStatus('idle');
+        }
       }
 
       // Generate working memory summary if we had any activity
@@ -108,12 +129,16 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
 
       onEntitiesChanged?.();
     } catch (err) {
-      setError(String((err as Error).message || err));
-      setAgentStatus('error');
+      if (mountedRef.current) {
+        setError(String((err as Error).message || err));
+        setAgentStatus('error');
+      }
     } finally {
-      runningRef.current = false;
-      setRunning(false);
-      setProgress('');
+      cycleMutex.current = false;
+      if (mountedRef.current) {
+        setRunning(false);
+        setProgress('');
+      }
     }
   }, [extensionAvailable, onEntitiesChanged]);
 
@@ -129,6 +154,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
       agentStatus: newEnabled ? 'idle' : undefined,
     });
     setAgentStatus(newEnabled ? 'idle' : undefined);
+    errorRetryCount.current = 0;
   }, [folder]);
 
   // Auto-repeat loop: schedule next cycle after completion
@@ -149,9 +175,21 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
       // Adaptive: double interval when waiting for approvals
       const currentStatus = agentStatus;
       const multiplier = currentStatus === 'waiting' ? 2 : 1;
-      const intervalMs = baseIntervalMs * multiplier;
+      let intervalMs = baseIntervalMs * multiplier;
+
+      // Error backoff: double interval for each consecutive error, up to max retries
+      if (currentStatus === 'error') {
+        if (errorRetryCount.current >= MAX_ERROR_RETRIES) {
+          // Stop retrying — user must manually trigger
+          return;
+        }
+        errorRetryCount.current++;
+        intervalMs = ERROR_RETRY_BASE_MS * Math.pow(2, errorRetryCount.current - 1);
+      }
 
       intervalRef.current = setTimeout(async () => {
+        if (!mountedRef.current) return;
+
         // Re-check that agent is still enabled
         const freshFolder = await db.folders.get(folder.id);
         if (!freshFolder?.agentEnabled) return;
@@ -175,6 +213,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
 
     // Run first cycle after a short delay (3s) to let UI settle
     const initialTimer = setTimeout(() => {
+      if (!mountedRef.current) return;
       executeCycle().then(scheduleNext);
     }, 3000);
 
@@ -192,7 +231,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
   // ── Supervisor loop (global, not per-investigation) ──────────────────
 
   const supervisorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const supervisorRunningRef = useRef(false);
+  const supervisorMutex = useRef(false);
 
   useEffect(() => {
     if (!settings.agentSupervisorEnabled) {
@@ -206,23 +245,24 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     const intervalMs = (settings.agentSupervisorIntervalMinutes || 30) * 60 * 1000;
 
     const runSupervisor = async () => {
-      if (supervisorRunningRef.current) return;
-      supervisorRunningRef.current = true;
+      if (supervisorMutex.current) return;
+      supervisorMutex.current = true;
       try {
         const result = await runSupervisorCycle(settingsRef.current, extensionAvailable);
         // Fire desktop notifications for escalations
         for (const escalation of result.escalations) {
           sendEscalationNotification(escalation);
         }
-      } catch {
-        // Supervisor errors are non-fatal
+      } catch (err) {
+        console.error('Supervisor cycle error:', err);
       } finally {
-        supervisorRunningRef.current = false;
+        supervisorMutex.current = false;
       }
     };
 
     const scheduleNext = () => {
       supervisorRef.current = setTimeout(async () => {
+        if (!mountedRef.current) return;
         await runSupervisor();
         scheduleNext();
       }, intervalMs);
@@ -230,6 +270,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
 
     // First run after 10s delay
     const initialTimer = setTimeout(() => {
+      if (!mountedRef.current) return;
       runSupervisor().then(scheduleNext);
     }, 10000);
 
@@ -255,17 +296,25 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
 
 /**
  * Update the working memory on the agent's audit trail thread.
- * Stores a brief summary of the cycle's activity.
+ * Stores a brief summary of the cycle's activity, capped to prevent unbounded growth.
  */
 async function updateWorkingMemory(threadId: string, executed: number, proposed: number): Promise<void> {
   const now = new Date().toISOString();
   const summary = `[Cycle ${now}] Executed: ${executed} actions, Proposed: ${proposed} actions for review.`;
 
-  await db.chatThreads.where('id').equals(threadId).modify((thread: { contextSummary?: string }) => {
-    const existing = thread.contextSummary || '';
-    // Keep last 5 cycle summaries to avoid unbounded growth
-    const lines = existing.split('\n').filter(Boolean);
-    lines.push(summary);
-    thread.contextSummary = lines.slice(-5).join('\n');
-  });
+  try {
+    await db.chatThreads.where('id').equals(threadId).modify((thread: { contextSummary?: string }) => {
+      const existing = thread.contextSummary || '';
+      // Keep last 5 cycle summaries and cap total length
+      const lines = existing.split('\n').filter(Boolean);
+      lines.push(summary);
+      let result = lines.slice(-5).join('\n');
+      if (result.length > MAX_WORKING_MEMORY_CHARS) {
+        result = result.slice(-MAX_WORKING_MEMORY_CHARS);
+      }
+      thread.contextSummary = result;
+    });
+  } catch (err) {
+    console.error('Failed to update working memory:', err);
+  }
 }

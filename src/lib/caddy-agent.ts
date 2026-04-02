@@ -111,7 +111,7 @@ function callLLM(opts: {
         resolve({ content: accumulated, toolCalls });
       },
       onError: (error: string) => {
-        reject(new Error(error || 'LLM request failed'));
+        reject(new Error(`LLM request failed (${opts.provider}/${opts.model}${opts.useServerProxy ? ' via server' : ''}): ${error || 'unknown error'}`));
       },
     };
 
@@ -277,6 +277,25 @@ export async function runAgentCycle(
             is_error: result.isError,
           });
         } else {
+          // Check for duplicate pending action (same tool + same input)
+          const inputJson = JSON.stringify(toolCall.input);
+          const existingDup = await db.agentActions
+            .where('[investigationId+status]')
+            .equals([folder.id, 'pending'])
+            .filter(a => a.toolName === toolCall.name && JSON.stringify(a.toolInput) === inputJson)
+            .first();
+
+          if (existingDup) {
+            // Skip duplicate — tell the LLM it's already pending
+            toolResults.push({
+              type: 'tool_result',
+              tool_use_id: toolCall.id,
+              content: JSON.stringify({ status: 'already_pending', message: 'An identical action is already pending review.' }),
+              is_error: false,
+            });
+            continue;
+          }
+
           // Propose for human approval
           const action: AgentAction = {
             id: nanoid(),
@@ -374,8 +393,8 @@ export async function bulkApproveActions(investigationId: string): Promise<{ exe
     else executed++;
   }
 
-  // Update agent status
-  await db.folders.update(investigationId, { agentStatus: 'idle' });
+  // Update agent status — reflect failures
+  await db.folders.update(investigationId, { agentStatus: failed > 0 ? 'error' : 'idle' });
 
   return { executed, failed };
 }

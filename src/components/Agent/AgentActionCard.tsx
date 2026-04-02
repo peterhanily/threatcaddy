@@ -46,6 +46,8 @@ export function AgentActionCard({ action, onApprove, onReject, onViewReasoning }
           <button
             onClick={() => setExpanded(!expanded)}
             className="text-text-muted hover:text-text-primary transition-colors"
+            aria-expanded={expanded}
+            aria-label={`${expanded ? 'Collapse' : 'Expand'} ${action.toolName} action details`}
           >
             {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
@@ -123,6 +125,7 @@ export function AgentActionCard({ action, onApprove, onReject, onViewReasoning }
             <button
               onClick={() => onApprove(action)}
               className="flex items-center gap-1 text-xs text-accent-green hover:bg-accent-green/10 px-2 py-1 rounded transition-colors"
+              aria-label={`Approve ${action.toolName} action`}
             >
               <Check size={12} />
               Approve
@@ -132,6 +135,7 @@ export function AgentActionCard({ action, onApprove, onReject, onViewReasoning }
             <button
               onClick={() => onReject(action)}
               className="flex items-center gap-1 text-xs text-text-muted hover:bg-surface-raised px-2 py-1 rounded transition-colors"
+              aria-label={`Reject ${action.toolName} action`}
             >
               <X size={12} />
               Reject

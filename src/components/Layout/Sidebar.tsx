@@ -330,6 +330,7 @@ export function Sidebar({
               )}
               role="switch"
               aria-checked={!!selectedFolder.agentEnabled}
+              aria-label={selectedFolder.agentEnabled ? 'Disable agent for this investigation' : 'Enable agent for this investigation'}
               title={selectedFolder.agentEnabled ? 'Disable agent' : 'Enable agent'}
             >
               <span className={cn(

@@ -12,6 +12,7 @@ import type { Folder, Settings, ChatThread, ChatMessage, ContentBlock, ToolUseBl
 import { TOOL_DEFINITIONS } from './llm-tool-defs';
 import { executeTool, buildSystemPrompt } from './llm-tools';
 import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-router';
+import { postMessageOrigin } from './utils';
 
 // ── Constants ───────────────────────────────────────────────────────────
 
@@ -155,7 +156,7 @@ export async function runSupervisorCycle(
   const routingMode = resolveRoutingMode(settings.llmRoutingMode, extensionAvailable, serverConnected);
   const useServerProxy = routingMode === 'server';
 
-  const apiKey = useServerProxy ? 'server-proxy' : (getApiKeyForProvider(provider, settings) || '');
+  const apiKey = useServerProxy ? 'server-proxy' : getApiKeyForProvider(provider, settings);
   if (!useServerProxy && !apiKey) {
     return { findings: [], escalations: [], error: `No API key configured for ${provider}` };
   }
@@ -212,7 +213,7 @@ export async function runSupervisorCycle(
       onProgress?.(`Supervisor thinking (turn ${turn + 1})...`);
 
       const response = await callLLM({
-        provider, model, messages, apiKey,
+        provider, model, messages, apiKey: apiKey || '',
         systemPrompt,
         tools: SUPERVISOR_TOOL_DEFS,
         useServerProxy,
@@ -267,7 +268,9 @@ export async function runSupervisorCycle(
                 severity: data.overlap.sharedIOCCount >= 3 ? 'critical' : 'warning',
               });
             }
-          } catch { /* ignore parse errors */ }
+          } catch (parseErr) {
+            console.warn('Supervisor: failed to parse compare_investigations result:', parseErr);
+          }
         }
       }
 
@@ -300,11 +303,11 @@ export function sendEscalationNotification(escalation: EscalationEvent): void {
     window.postMessage({
       type: 'TC_SEND_NOTIFICATION',
       payload: {
-        title: `CaddyAgent: ${escalation.title}`,
-        message: escalation.detail,
+        title: `CaddyAgent: ${escalation.title}`.substring(0, 200),
+        message: escalation.detail.substring(0, 500),
         severity: escalation.severity,
       },
-    }, window.location.origin);
+    }, postMessageOrigin());
   } catch {
     // Extension not available — silently fail
   }
