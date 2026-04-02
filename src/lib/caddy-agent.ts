@@ -106,6 +106,18 @@ async function buildAgentSystemPrompt(folder: Folder, settings: Settings, provid
     ? `\n\nFocus areas for this investigation: ${policy.focusAreas.join(', ')}`
     : '';
 
+  const proactiveBlock = `
+## Being Proactive
+
+You are an ACTIVE researcher, not a passive reader. On every cycle:
+- If the case is EMPTY or NEW: immediately start working. Use fetch_url to research the investigation topic. Create IOCs from any indicators you find. Create notes with your findings. Create tasks for follow-up. Build a timeline of known events.
+- If the case has data: look for gaps. Enrich unenriched IOCs via fetch_url. Research related threats. Build out the timeline. Create analysis notes.
+- ALWAYS take concrete actions. Reading and reporting "nothing to do" is NOT acceptable.
+- Use fetch_url proactively to research threat intelligence, look up IOC reputation, find related indicators, and gather OSINT.
+- Create notes documenting what you found, what you searched for, and what your analysis suggests.
+- Create tasks for work that requires human access or judgment.
+- You have ${MAX_AGENT_TURNS} turns — use them productively.`;
+
   // If a profile is provided, use its specialized prompt
   if (profile) {
     return `${basePrompt}
@@ -114,10 +126,13 @@ async function buildAgentSystemPrompt(folder: Folder, settings: Settings, provid
 
 ${profile.systemPrompt}
 
+${proactiveBlock}
+
 ${profile.role === 'lead' ? `
 You have access to delegation tools:
 - delegate_task: Create a task assigned to a specific specialist agent
 - list_agent_activity: View what other agents have done recently
+Use these proactively — don't wait to be asked. Assess the case and immediately delegate work.
 ` : ''}
 ${focusAreas}`;
   }
@@ -130,18 +145,22 @@ ${focusAreas}`;
 You are CaddyAgent, an autonomous threat intelligence analyst assistant. You are running a single analysis cycle on the investigation described above.
 
 Your job:
-1. Assess the current state of the investigation by reading existing data (notes, tasks, IOCs, timeline events).
-2. Identify gaps: unenriched IOCs, missing timeline events, unlinked entities, open questions.
-3. Take action: enrich IOCs, create notes with findings, create tasks for follow-up, build timeline entries, link related entities.
-4. Be thorough but focused. Each cycle should make meaningful progress.
+1. Quickly assess the current state — read the investigation summary.
+2. If the case is new/empty: start researching immediately. Use fetch_url to gather intelligence on the investigation topic.
+3. If the case has data: identify gaps — unenriched IOCs, missing timeline events, unlinked entities, open questions.
+4. Take action every cycle: enrich IOCs via fetch_url, create notes with findings, create tasks for follow-up, build timeline entries, link related entities.
+5. Be thorough and PROACTIVE. Each cycle MUST produce tangible output.
+
+${proactiveBlock}
 
 Guidelines:
-- Start by reading the investigation summary and listing existing entities.
-- For each unenriched IOC, attempt enrichment via fetch_url or note your findings.
-- Create notes summarizing your analysis and findings.
+- Start with get_investigation_summary for a quick overview, then ACT.
+- For IOCs: use fetch_url to query reputation services, WHOIS, threat intel feeds.
+- Create notes summarizing your analysis, findings, and sources.
 - Create tasks for work that requires human judgment or access you don't have.
 - Always explain your reasoning when creating or modifying entities.
-- Do NOT repeat work that has already been done — check existing notes and IOCs first.
+- Do NOT just read and report — take concrete actions.
+- Do NOT repeat work that has already been done — check existing notes first.
 ${focusAreas}`;
 }
 
@@ -292,9 +311,13 @@ export async function runAgentCycle(
     }
   }
 
+  const investigationHint = folder.description
+    ? `\n\nInvestigation: "${folder.name}"\nDescription: ${folder.description}`
+    : `\n\nInvestigation: "${folder.name}"`;
+
   const userPrompt = workingMemoryContext
-    ? `Begin your analysis cycle. Here is your working memory from previous cycles:${workingMemoryContext}\n\nContinue your analysis. Check what has changed since your last cycle, avoid repeating completed work, and make new progress.`
-    : 'Begin your analysis cycle. Start by reading the investigation summary and listing existing entities, then identify gaps and take action.';
+    ? `Begin your analysis cycle.${investigationHint}\n\nWorking memory from previous cycles:${workingMemoryContext}\n\nContinue your analysis. Check what has changed, avoid repeating completed work, and make NEW progress. Use fetch_url to research and create notes with your findings.`
+    : `Begin your analysis cycle.${investigationHint}\n\nStart by quickly checking the investigation summary (get_investigation_summary), then IMMEDIATELY start working:\n- If the case is empty: use fetch_url to research the topic, create notes with findings, extract IOCs, build timeline events.\n- If the case has data: identify gaps, enrich IOCs via fetch_url, create analysis notes, build the timeline.\n\nBe proactive — don't just read, ACT.`;
 
   const messages: { role: 'user' | 'assistant'; content: string | ContentBlock[] }[] = [
     { role: 'user', content: userPrompt },

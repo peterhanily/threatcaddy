@@ -506,7 +506,8 @@ function PolicyEditor({ folder, settings, onFolderChanged }: { folder: Folder; s
 
   const toggles: { key: keyof AgentPolicy; label: string; description: string }[] = [
     { key: 'autoApproveReads', label: 'Reads', description: 'Search, list, read entities' },
-    { key: 'autoApproveEnrich', label: 'Enrich', description: 'Fetch URLs, extract IOCs' },
+    { key: 'autoApproveEnrich', label: 'Enrich', description: 'Extract IOCs, analyze data' },
+    { key: 'autoApproveFetch', label: 'Fetch', description: 'Web requests, OSINT lookups' },
     { key: 'autoApproveCreate', label: 'Create', description: 'New notes, tasks, IOCs' },
     { key: 'autoApproveModify', label: 'Modify', description: 'Update existing entities' },
   ];

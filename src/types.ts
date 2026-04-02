@@ -976,12 +976,14 @@ export interface PresenceUser {
 // ─── CaddyAgent Types ─────────────────────────────────────────
 
 /** Action class for policy decisions — maps tools to approval categories. */
-export type AgentActionClass = 'read' | 'enrich' | 'create' | 'modify';
+export type AgentActionClass = 'read' | 'enrich' | 'fetch' | 'create' | 'modify';
 
 /** Per-investigation agent policy controlling what requires human approval. */
 export interface AgentPolicy {
   autoApproveReads: boolean;
   autoApproveEnrich: boolean;
+  /** Auto-approve web fetching (fetch_url) — enables proactive OSINT research */
+  autoApproveFetch: boolean;
   autoApproveCreate: boolean;
   autoApproveModify: boolean;
   intervalMinutes: number;
@@ -992,6 +994,7 @@ export interface AgentPolicy {
 export const DEFAULT_AGENT_POLICY: AgentPolicy = {
   autoApproveReads: true,
   autoApproveEnrich: true,
+  autoApproveFetch: true,
   autoApproveCreate: false,
   autoApproveModify: false,
   intervalMinutes: 5,

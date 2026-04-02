@@ -24,9 +24,11 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
   search_across_investigations: 'read',
   compare_investigations: 'read',
 
-  // Enrich tools — typically safe, just fetching external data
-  fetch_url: 'enrich',
+  // Enrich tools — extract/analyze data without external calls
   extract_iocs: 'enrich',
+
+  // Fetch tools — make external HTTP requests for OSINT/research
+  fetch_url: 'fetch',
 
   // Create tools — produce new entities
   create_note: 'create',
@@ -60,6 +62,7 @@ export function shouldAutoApprove(toolName: string, policy: AgentPolicy): boolea
   switch (actionClass) {
     case 'read':    return policy.autoApproveReads;
     case 'enrich':  return policy.autoApproveEnrich;
+    case 'fetch':   return policy.autoApproveFetch ?? policy.autoApproveEnrich;
     case 'create':  return policy.autoApproveCreate;
     case 'modify':  return policy.autoApproveModify;
     default:        return false;

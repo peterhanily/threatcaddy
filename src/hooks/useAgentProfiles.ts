@@ -38,6 +38,7 @@ export function useAgentProfiles() {
       policy: partial.policy || {
         autoApproveReads: true,
         autoApproveEnrich: true,
+        autoApproveFetch: true,
         autoApproveCreate: false,
         autoApproveModify: false,
         intervalMinutes: 5,
