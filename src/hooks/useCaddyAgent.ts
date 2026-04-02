@@ -65,6 +65,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
   // Refs for the interval loop
   const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cycleMutex = useRef(false);  // Atomic-ish guard for concurrent cycles
+  const agentStatusRef = useRef(agentStatus);
   const folderRef = useRef(folder);
   const settingsRef = useRef(settings);
   const mountedRef = useRef(true);
@@ -80,10 +81,15 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     return () => { mountedRef.current = false; };
   }, []);
 
+  const updateAgentStatus = useCallback((status: AgentStatus | undefined) => {
+    setAgentStatus(status);
+    agentStatusRef.current = status;
+  }, []);
+
   // Sync agentStatus from folder prop
   useEffect(() => {
-    setAgentStatus(folder?.agentStatus);
-  }, [folder?.agentStatus]);
+    updateAgentStatus(folder?.agentStatus);
+  }, [folder?.agentStatus, updateAgentStatus]);
 
   const executeCycle = useCallback(async () => {
     const currentFolder = folderRef.current;
@@ -111,14 +117,14 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
 
       if (result.error) {
         setError(result.error);
-        setAgentStatus('error');
+        updateAgentStatus('error');
       } else {
         // Reset error retry count on success
         errorRetryCount.current = 0;
         if (result.proposed.length > 0) {
-          setAgentStatus('waiting');
+          updateAgentStatus('waiting');
         } else {
-          setAgentStatus('idle');
+          updateAgentStatus('idle');
         }
       }
 
@@ -131,7 +137,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     } catch (err) {
       if (mountedRef.current) {
         setError(String((err as Error).message || err));
-        setAgentStatus('error');
+        updateAgentStatus('error');
       }
     } finally {
       cycleMutex.current = false;
@@ -153,7 +159,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
       agentEnabled: newEnabled,
       agentStatus: newEnabled ? 'idle' : undefined,
     });
-    setAgentStatus(newEnabled ? 'idle' : undefined);
+    updateAgentStatus(newEnabled ? 'idle' : undefined);
     errorRetryCount.current = 0;
   }, [folder]);
 
@@ -172,8 +178,8 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     const baseIntervalMs = (policy.intervalMinutes || 5) * 60 * 1000;
 
     const scheduleNext = () => {
-      // Adaptive: double interval when waiting for approvals
-      const currentStatus = agentStatus;
+      // Adaptive: double interval when waiting for approvals (use ref to avoid stale closure)
+      const currentStatus = agentStatusRef.current;
       const multiplier = currentStatus === 'waiting' ? 2 : 1;
       let intervalMs = baseIntervalMs * multiplier;
 
@@ -214,7 +220,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     // Run first cycle after a short delay (3s) to let UI settle
     const initialTimer = setTimeout(() => {
       if (!mountedRef.current) return;
-      executeCycle().then(scheduleNext);
+      executeCycle().then(scheduleNext).catch(() => {});
     }, 3000);
 
     return () => {
@@ -271,7 +277,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     // First run after 10s delay
     const initialTimer = setTimeout(() => {
       if (!mountedRef.current) return;
-      runSupervisor().then(scheduleNext);
+      runSupervisor().then(scheduleNext).catch(() => {});
     }, 10000);
 
     return () => {

@@ -77,6 +77,8 @@ Guidelines:
 ${focusAreas}`;
 }
 
+const LLM_TIMEOUT_MS = 120_000; // 2 minutes per LLM call
+
 /** Send an LLM request and wait for the complete response (non-streaming). */
 function callLLM(opts: {
   provider: LLMProvider;
@@ -88,7 +90,7 @@ function callLLM(opts: {
   useServerProxy: boolean;
   endpoint?: string;
 }): Promise<LLMResponse> {
-  return new Promise((resolve, reject) => {
+  const llmPromise = new Promise<LLMResponse>((resolve, reject) => {
     let accumulated = '';
 
     const request = {
@@ -121,6 +123,12 @@ function callLLM(opts: {
       sendViaExtension(request, callbacks);
     }
   });
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error(`LLM request timed out after ${LLM_TIMEOUT_MS / 1000}s (${opts.provider}/${opts.model})`)), LLM_TIMEOUT_MS);
+  });
+
+  return Promise.race([llmPromise, timeoutPromise]);
 }
 
 // ── Main Cycle ──────────────────────────────────────────────────────────
@@ -388,9 +396,13 @@ export async function bulkApproveActions(investigationId: string): Promise<{ exe
   let failed = 0;
 
   for (const action of pending) {
-    const result = await executeApprovedAction(action);
-    if (result.isError) failed++;
-    else executed++;
+    try {
+      const result = await executeApprovedAction(action);
+      if (result.isError) failed++;
+      else executed++;
+    } catch {
+      failed++;
+    }
   }
 
   // Update agent status — reflect failures

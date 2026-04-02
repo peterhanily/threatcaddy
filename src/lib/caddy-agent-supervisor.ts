@@ -73,7 +73,9 @@ function callLLM(opts: {
   useServerProxy: boolean;
   endpoint?: string;
 }): Promise<{ content: string; toolCalls: ToolUseBlock[] }> {
-  return new Promise((resolve, reject) => {
+  const LLM_TIMEOUT_MS = 120_000;
+
+  const llmPromise = new Promise<{ content: string; toolCalls: ToolUseBlock[] }>((resolve, reject) => {
     let accumulated = '';
     const request = {
       provider: opts.provider,
@@ -93,11 +95,17 @@ function callLLM(opts: {
         );
         resolve({ content: accumulated, toolCalls });
       },
-      onError: (error: string) => reject(new Error(error || 'LLM request failed')),
+      onError: (error: string) => reject(new Error(`Supervisor LLM failed (${opts.provider}/${opts.model}): ${error || 'unknown'}`)),
     };
     if (opts.useServerProxy) sendViaServer(request, callbacks);
     else sendViaExtension(request, callbacks);
   });
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error(`Supervisor LLM timed out after ${LLM_TIMEOUT_MS / 1000}s`)), LLM_TIMEOUT_MS);
+  });
+
+  return Promise.race([llmPromise, timeoutPromise]);
 }
 
 const SUPERVISOR_SYSTEM_PROMPT = `You are the CaddyAgent Supervisor — a cross-investigation analyst that monitors all active investigations in a threat intelligence platform.
