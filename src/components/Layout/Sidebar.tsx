@@ -148,7 +148,7 @@ export function Sidebar({
   const collapsedBottomItems: { view: ViewMode; icon: typeof FileText; label: string; badge?: number; badgeColor?: string; dataTour?: string }[] = [
     { view: 'chat', icon: MessageSquare, label: 'CaddyAI', badge: chatCount },
     { view: 'caddyshack', icon: MessagesSquare, label: 'CaddyShack' },
-    { view: 'agent', icon: Bot, label: 'Agent', badge: agentActionCount, badgeColor: 'bg-accent-amber/15 text-accent-amber' },
+    { view: 'agent', icon: Bot, label: 'AgentCaddy', badge: agentActionCount, badgeColor: 'bg-accent-amber/15 text-accent-amber' },
   ];
 
   // --- Collapsed: icon-only rail ---
@@ -309,7 +309,7 @@ export function Sidebar({
           <div className="flex items-center justify-between mt-1.5 px-0.5">
             <div className="flex items-center gap-1.5">
               <Bot size={12} className={selectedFolder.agentEnabled ? 'text-accent-blue' : 'text-text-muted'} />
-              <span className="text-[10px] text-text-muted">Agent</span>
+              <span className="text-[10px] text-text-muted">AgentCaddy</span>
               {agentStatus && agentStatus !== 'idle' && (
                 <span className={cn(
                   'text-[9px] px-1 py-px rounded',
@@ -455,7 +455,7 @@ export function Sidebar({
         <div data-tour="agent">
           <NavItem
             icon={<Bot size={16} />}
-            label="Agent"
+            label="AgentCaddy"
             badge={agentActionCount}
             badgeColor="bg-accent-amber/15 text-accent-amber"
             active={activeView === 'agent'}

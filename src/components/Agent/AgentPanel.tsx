@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Bot, Play, CheckCheck, Loader2, AlertTriangle, X, Settings as SettingsIcon, ChevronDown, ChevronRight,
+  Bot, Play, CheckCheck, Loader2, AlertTriangle, X, Settings as SettingsIcon, ChevronDown, ChevronRight, Key, Puzzle,
 } from 'lucide-react';
-import type { AgentAction, AgentPolicy, Folder, AgentStatus } from '../../types';
+import type { AgentAction, AgentPolicy, Folder, AgentStatus, Settings } from '../../types';
 import { DEFAULT_AGENT_POLICY } from '../../types';
-import { cn, formatDate } from '../../lib/utils';
+import { cn, formatDate, postMessageOrigin } from '../../lib/utils';
 import { db } from '../../db';
 import { executeApprovedAction, rejectAction, bulkApproveActions } from '../../lib/caddy-agent';
 import { AgentActionCard } from './AgentActionCard';
@@ -13,6 +13,7 @@ const ACTION_PAGE_SIZE = 100;
 
 interface AgentPanelProps {
   folder: Folder;
+  settings: Settings;
   /** From useCaddyAgent hook */
   agentRunning?: boolean;
   agentProgress?: string;
@@ -21,12 +22,14 @@ interface AgentPanelProps {
   onRunOnce?: () => Promise<void>;
   onNavigateToChat?: (threadId: string) => void;
   onEntitiesChanged?: () => void;
+  onOpenSettings?: (tab?: string) => void;
+  onFolderChanged?: () => void;
 }
 
 export function AgentPanel({
-  folder,
+  folder, settings,
   agentRunning = false, agentProgress = '', agentError = null, agentStatus,
-  onRunOnce, onNavigateToChat, onEntitiesChanged,
+  onRunOnce, onNavigateToChat, onEntitiesChanged, onOpenSettings, onFolderChanged,
 }: AgentPanelProps) {
   const [actions, setActions] = useState<AgentAction[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -35,7 +38,31 @@ export function AgentPanel({
   const [showSettings, setShowSettings] = useState(false);
   const [confirmBulk, setConfirmBulk] = useState(false);
 
+  // Detect extension availability
+  const [extensionAvailable, setExtensionAvailable] = useState(false);
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      if (event.source === window && event.data?.type === 'TC_EXTENSION_READY') {
+        setExtensionAvailable(true);
+      }
+    };
+    window.addEventListener('message', handler);
+    window.postMessage({ type: 'TC_EXTENSION_PING' }, postMessageOrigin());
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
   const error = agentError || localError;
+
+  // Check if LLM is configured
+  const hasApiKey = !!(
+    settings.llmAnthropicApiKey?.trim() ||
+    settings.llmOpenAIApiKey?.trim() ||
+    settings.llmGeminiApiKey?.trim() ||
+    settings.llmMistralApiKey?.trim() ||
+    settings.llmLocalEndpoint?.trim()
+  );
+  const hasServerProxy = !!settings.serverUrl;
+  const isReady = (extensionAvailable || hasServerProxy) && (hasApiKey || hasServerProxy);
 
   // Load actions for this investigation (paginated)
   const loadActions = useCallback(async () => {
@@ -116,13 +143,64 @@ export function AgentPanel({
         return a.status === filter;
       });
 
+  // ── Setup banner (no extension / no API key) ──
+  if (!isReady) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border-subtle">
+          <Bot size={18} className="text-accent-blue" />
+          <h2 className="font-semibold text-sm">AgentCaddy</h2>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="max-w-sm space-y-4">
+            <h3 className="text-sm font-semibold text-text-primary">Set up AgentCaddy</h3>
+            {!hasApiKey && !hasServerProxy && (
+              <div className="flex gap-3">
+                <div className="w-7 h-7 rounded-full bg-accent-blue/15 flex items-center justify-center shrink-0 mt-0.5">
+                  <Key size={14} className="text-accent-blue" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-text-primary">Configure an API key</p>
+                  <p className="text-[11px] text-text-muted mt-0.5">
+                    Add an API key in Settings &gt; AI/LLM for Anthropic, OpenAI, Gemini, Mistral, or a local LLM.
+                  </p>
+                  {onOpenSettings && (
+                    <button
+                      onClick={() => onOpenSettings('ai')}
+                      className="text-[11px] text-accent-blue hover:underline mt-1"
+                    >
+                      Open AI Settings
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+            {!extensionAvailable && !hasServerProxy && (
+              <div className="flex gap-3">
+                <div className="w-7 h-7 rounded-full bg-accent-blue/15 flex items-center justify-center shrink-0 mt-0.5">
+                  <Puzzle size={14} className="text-accent-blue" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-text-primary">Install the browser extension</p>
+                  <p className="text-[11px] text-text-muted mt-0.5">
+                    AgentCaddy requires the ThreatCaddy browser extension to proxy API requests, or a connected team server.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
         <div className="flex items-center gap-2">
           <Bot size={18} className="text-accent-blue" />
-          <h2 className="font-semibold text-sm">CaddyAgent</h2>
+          <h2 className="font-semibold text-sm">AgentCaddy</h2>
           {displayStatus && displayStatus !== 'idle' && (
             <span className={cn(
               'text-[10px] px-1.5 py-0.5 rounded',
@@ -178,7 +256,7 @@ export function AgentPanel({
 
       {/* Policy editor (collapsible) */}
       {showSettings && (
-        <PolicyEditor folder={folder} />
+        <PolicyEditor folder={folder} onFolderChanged={onFolderChanged} />
       )}
 
       {/* Error banner */}
@@ -290,25 +368,32 @@ export function AgentPanel({
 
 // ── Policy Editor ────────────────────────────────────────────────────────
 
-function PolicyEditor({ folder }: { folder: Folder }) {
-  // Re-derive policy from folder prop on each render to avoid stale state
-  const policy: AgentPolicy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
-  const [focusText, setFocusText] = useState(policy.focusAreas?.join(', ') ?? '');
-  const [showFocus, setShowFocus] = useState(!!policy.focusAreas?.length);
+function PolicyEditor({ folder, onFolderChanged }: { folder: Folder; onFolderChanged?: () => void }) {
+  // Local state for immediate visual feedback
+  const [localPolicy, setLocalPolicy] = useState<AgentPolicy>(folder.agentPolicy ?? DEFAULT_AGENT_POLICY);
+  const [focusText, setFocusText] = useState(localPolicy.focusAreas?.join(', ') ?? '');
+  const [showFocus, setShowFocus] = useState(!!localPolicy.focusAreas?.length);
 
-  // Sync focus text when folder prop changes
+  // Sync from folder prop when it changes externally
+  useEffect(() => {
+    setLocalPolicy(folder.agentPolicy ?? DEFAULT_AGENT_POLICY);
+  }, [folder.agentPolicy]);
+
   useEffect(() => {
     setFocusText((folder.agentPolicy ?? DEFAULT_AGENT_POLICY).focusAreas?.join(', ') ?? '');
   }, [folder.agentPolicy]);
 
   const updatePolicy = async (updates: Partial<AgentPolicy>) => {
-    // Read fresh policy from folder prop to avoid stale merges
-    const current = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
-    const newPolicy = { ...current, ...updates };
+    const newPolicy = { ...localPolicy, ...updates };
+    // Update local state immediately for visual feedback
+    setLocalPolicy(newPolicy);
     try {
       await db.folders.update(folder.id, { agentPolicy: newPolicy });
+      onFolderChanged?.();
     } catch (err) {
       console.error('Failed to save agent policy:', err);
+      // Revert on failure
+      setLocalPolicy(folder.agentPolicy ?? DEFAULT_AGENT_POLICY);
     }
   };
 
@@ -333,23 +418,23 @@ function PolicyEditor({ folder }: { folder: Folder }) {
           <button
             key={key}
             role="checkbox"
-            aria-checked={!!policy[key]}
+            aria-checked={!!localPolicy[key]}
             aria-label={`Auto-approve ${label}: ${description}`}
-            onClick={() => updatePolicy({ [key]: !policy[key] })}
+            onClick={() => updatePolicy({ [key]: !localPolicy[key] })}
             className={cn(
               'flex items-center gap-2 text-left px-2 py-1.5 rounded border transition-colors',
-              policy[key]
+              localPolicy[key]
                 ? 'border-accent-green/30 bg-accent-green/5'
                 : 'border-border-subtle bg-surface',
             )}
           >
             <div className={cn(
               'w-3 h-3 rounded-sm border flex items-center justify-center shrink-0',
-              policy[key]
+              localPolicy[key]
                 ? 'bg-accent-green border-accent-green text-white'
                 : 'border-border-medium',
             )}>
-              {policy[key] && <span className="text-[8px]">✓</span>}
+              {localPolicy[key] && <span className="text-[8px]">✓</span>}
             </div>
             <div>
               <div className="text-xs text-text-primary">{label}</div>
@@ -367,11 +452,11 @@ function PolicyEditor({ folder }: { folder: Folder }) {
           type="range"
           min={1}
           max={30}
-          value={policy.intervalMinutes || 5}
+          value={localPolicy.intervalMinutes || 5}
           onChange={(e) => updatePolicy({ intervalMinutes: parseInt(e.target.value) })}
           className="flex-1 h-1 accent-accent-blue"
         />
-        <span className="text-xs text-text-secondary w-12 text-right">{policy.intervalMinutes || 5}m</span>
+        <span className="text-xs text-text-secondary w-12 text-right">{localPolicy.intervalMinutes || 5}m</span>
       </div>
 
       {/* Focus areas */}

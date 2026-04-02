@@ -1562,7 +1562,7 @@ function AppInner() {
           <Sidebar
             {...sidebarProps}
             agentStatus={caddyAgent.agentStatus}
-            onToggleAgent={caddyAgent.toggleAgent}
+            onToggleAgent={async () => { await caddyAgent.toggleAgent(); reloadFolders(); }}
             collapsed={settings.sidebarCollapsed}
             onToggleCollapsed={() => updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })}
             onNavigate={() => setSelectedNoteId(undefined)}
@@ -1811,6 +1811,7 @@ function AppInner() {
           selectedFolder ? (
             <AgentPanel
               folder={selectedFolder}
+              settings={settings}
               agentRunning={caddyAgent.running}
               agentProgress={caddyAgent.progress}
               agentError={caddyAgent.error}
@@ -1821,6 +1822,8 @@ function AppInner() {
                 setActiveView('chat');
               }}
               onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); }}
+              onOpenSettings={(tab) => { setSettingsInitialTab(tab); setShowSettings(true); }}
+              onFolderChanged={reloadFolders}
             />
           ) : (
             <div className="flex items-center justify-center h-full text-text-muted text-sm">
@@ -1972,7 +1975,7 @@ function AppInner() {
             <Sidebar
               {...sidebarProps}
               agentStatus={caddyAgent.agentStatus}
-              onToggleAgent={caddyAgent.toggleAgent}
+              onToggleAgent={async () => { await caddyAgent.toggleAgent(); reloadFolders(); }}
               collapsed={false}
               onToggleCollapsed={() => setMobileSidebarOpen(false)}
               onNavigate={() => { setMobileSidebarOpen(false); setSelectedNoteId(undefined); }}
