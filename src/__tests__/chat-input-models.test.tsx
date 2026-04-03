@@ -107,7 +107,7 @@ describe('ChatInput', () => {
 
   it('shows no extension indicator', () => {
     render(<ChatInput {...defaultProps} extensionAvailable={false} />);
-    expect(screen.getByText('No extension')).toBeInTheDocument();
+    expect(screen.getByText('No connection')).toBeInTheDocument();
   });
 
   it('calls onSend with trimmed text on Enter', () => {

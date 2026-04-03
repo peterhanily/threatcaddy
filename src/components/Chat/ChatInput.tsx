@@ -41,6 +41,8 @@ interface ChatInputProps {
 }
 
 export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, model, onModelChange, disabled, localModelName, configuredProviders, onOpenSettings, folderId, customCommands, onImageAttach, attachedImages, onClearImages }: ChatInputProps) {
+  // Can send if extension is available OR a local LLM is configured (direct fetch, no extension needed)
+  const canSend = extensionAvailable || !!localModelName;
   const MODELS = useMemo(() => {
     let models = [...STATIC_MODELS];
     if (localModelName) {
@@ -290,15 +292,15 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
         <div className="flex-1" />
         <div className={cn(
           'flex items-center gap-1 text-[10px]',
-          extensionAvailable ? 'text-accent-green' : 'text-text-muted'
+          canSend ? 'text-accent-green' : 'text-text-muted'
         )}>
-          {extensionAvailable ? <Wifi size={10} /> : <WifiOff size={10} />}
-          {extensionAvailable ? 'Extension' : 'No extension'}
+          {canSend ? <Wifi size={10} /> : <WifiOff size={10} />}
+          {extensionAvailable ? 'Extension' : localModelName ? 'Local LLM' : 'No connection'}
         </div>
       </div>
 
-      {/* Extension required banner */}
-      {!extensionAvailable && (
+      {/* Connection required banner */}
+      {!canSend && (
         <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <div className="text-xs space-y-1">
@@ -396,7 +398,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
         )}
         <button
           onClick={() => { setText('/'); textareaRef.current?.focus(); }}
-          disabled={!extensionAvailable || disabled}
+          disabled={!canSend || disabled}
           className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           title="Type / for commands"
           aria-label="Insert slash command"
@@ -424,8 +426,8 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
             onPaste={handlePaste}
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
-            placeholder={extensionAvailable ? 'Send a message... (type / for commands, paste images)' : 'Extension required for CaddyAI'}
-            disabled={!extensionAvailable || disabled}
+            placeholder={canSend ? 'Send a message... (type / for commands, paste images)' : 'Extension or local LLM required'}
+            disabled={!canSend || disabled}
             rows={1}
             className="w-full bg-bg-deep border border-border-medium rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted resize-none focus:outline-none focus:border-purple disabled:opacity-50"
           />
@@ -436,7 +438,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
             <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { if (e.target.files) onImageAttach(Array.from(e.target.files)); e.target.value = ''; }} />
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={!extensionAvailable || disabled}
+              disabled={!canSend || disabled}
               className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title="Attach image"
             >
@@ -455,7 +457,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
         ) : (
           <button
             onClick={handleSend}
-            disabled={!text.trim() || !extensionAvailable || disabled}
+            disabled={!text.trim() || !canSend || disabled}
             className="shrink-0 w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg bg-purple/20 text-purple hover:bg-purple/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Send message"
           >
