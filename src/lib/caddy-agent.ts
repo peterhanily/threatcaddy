@@ -126,14 +126,24 @@ async function buildAgentSystemPrompt(folder: Folder, _settings: Settings, provi
   const policy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
   const focusAreas = policy.focusAreas?.length ? `\nFocus: ${policy.focusAreas.join(', ')}` : '';
 
+  // Task consumption instructions
+  const taskInstructions = `
+TASK WORKFLOW: Check list_tasks for todo/in-progress tasks. Claim a todo task by updating it to in-progress, do the work described, then mark it done. Prioritize tasks assigned to you or tagged agent-delegated.`;
+
+  // Read-only entity constraints
+  const readOnlyNote = profile?.readOnlyEntityTypes?.length
+    ? `\nRESTRICTION: You CANNOT modify these entity types: ${profile.readOnlyEntityTypes.join(', ')}. Only read them.`
+    : '';
+
   if (profile) {
     return `${context}
 
 ## ${profile.name} (${profile.role})
 
 ${profile.systemPrompt}
+${taskInstructions}${readOnlyNote}
 
-Be PROACTIVE. Empty case = research via fetch_url/enrich_ioc. Always produce output. ${MAX_AGENT_TURNS} turns max.${profile.role === 'lead' ? ' Use delegate_task and list_agent_activity.' : ''}${focusAreas}`;
+Be PROACTIVE. Always produce output. ${MAX_AGENT_TURNS} turns max.${profile.role === 'lead' ? ' Use delegate_task and list_agent_activity. Review completed tasks for quality.' : ''}${focusAreas}`;
   }
 
   return `${context}
@@ -141,6 +151,7 @@ Be PROACTIVE. Empty case = research via fetch_url/enrich_ioc. Always produce out
 ## CaddyAgent
 
 Autonomous threat analyst. Be PROACTIVE:
+- Check list_tasks for todo tasks — claim them (update to in-progress), do the work, mark done.
 - get_investigation_summary first, then ACT.
 - Empty case? Research via fetch_url. Create notes, IOCs, tasks, timeline events.
 - Has data? Enrich IOCs (enrich_ioc or fetch_url). Fill gaps. Create analysis notes.

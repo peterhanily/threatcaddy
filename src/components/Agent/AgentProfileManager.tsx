@@ -163,7 +163,7 @@ function ProfileForm({ profile, onSave, onCancel }: {
         <button onClick={onCancel} className="text-gray-500 hover:text-gray-300"><X size={12} /></button>
       </div>
       <div className="flex gap-2">
-        <input value={icon} onChange={e => setIcon(e.target.value)} className={cn(inputClass, 'w-10 text-center')} maxLength={2} />
+        <input value={icon} onChange={e => setIcon(e.target.value)} className="w-10 bg-gray-800 border border-gray-700 rounded px-1 py-1.5 text-xs text-center text-gray-200 focus:outline-none focus:border-accent-blue/50" maxLength={2} title="Icon emoji" />
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Profile name" className={cn(inputClass, 'flex-1')} />
       </div>
       <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Brief description" className={inputClass} />

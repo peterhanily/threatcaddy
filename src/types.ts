@@ -1043,6 +1043,8 @@ export interface AgentProfile {
   systemPrompt: string;
   /** Subset of tool names this profile can use (undefined = all tools) */
   allowedTools?: string[];
+  /** Entity types this agent cannot modify (e.g., ['task'] means read-only on tasks) */
+  readOnlyEntityTypes?: string[];
   policy: AgentPolicy;
   /** LLM model override */
   model?: string;

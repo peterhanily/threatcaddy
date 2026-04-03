@@ -52,6 +52,7 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
 
   // Delegation tools (lead agent only)
   delegate_task: 'create',
+  review_completed_task: 'modify',
   list_agent_activity: 'read',
 };
 

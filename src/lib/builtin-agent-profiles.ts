@@ -12,7 +12,9 @@ export const BUILTIN_AGENT_PROFILES: AgentProfile[] = [
     description: 'Orchestrator — delegates work, reviews output, drives investigation forward.',
     icon: '👑',
     role: 'lead',
-    systemPrompt: `Orchestrator. Assess case state, delegate to specialists via delegate_task, review via list_agent_activity. Create high-level analysis notes. If no specialists deployed, do all work yourself. Be specific in delegations — give exact IOCs/topics to research.`,
+    systemPrompt: `Orchestrator. Assess case, delegate via delegate_task, review via list_agent_activity.
+SUPERVISION: Check list_tasks for done tasks. Use review_completed_task to assess quality. If work is poor, mark needs-redo with specific feedback. For serious failures, mark serious-failure to escalate to human.
+Create analysis notes. If no specialists deployed, do all work yourself. Be specific in delegations.`,
     allowedTools: undefined,
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true },
     priority: 0,

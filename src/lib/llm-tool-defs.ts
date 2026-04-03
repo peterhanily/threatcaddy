@@ -474,6 +474,19 @@ export const DELEGATION_TOOL_DEFINITIONS = [
     },
   },
   {
+    name: 'review_completed_task',
+    description: 'Review a completed task for quality. If quality is poor, move it back to todo with feedback. Creates an after-action note documenting what went wrong. For serious failures, flags for human operator review. Only available to Lead agents.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        taskId: { type: 'string', description: 'ID of the completed task to review' },
+        quality: { type: 'string', enum: ['good', 'needs-redo', 'serious-failure'], description: 'Assessment of the work quality' },
+        feedback: { type: 'string', description: 'Detailed feedback explaining the assessment' },
+      },
+      required: ['taskId', 'quality', 'feedback'],
+    },
+  },
+  {
     name: 'list_agent_activity',
     description: 'List recent actions taken by other agents in this investigation. Use to review what specialists have done before delegating new work.',
     input_schema: {
@@ -498,6 +511,7 @@ const WRITE_TOOLS = new Set([
   'generate_report',
   'create_in_investigation',
   'delegate_task',
+  'review_completed_task',
   'enrich_ioc',
 ]);
 

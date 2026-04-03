@@ -220,6 +220,7 @@ export async function executeTool(
       case 'compare_investigations':        result = await executeCompareInvestigations(inp); break;
       case 'enrich_ioc':                    result = await executeEnrichIOC(inp, folderId); break;
       case 'list_integrations':             result = await executeListIntegrations(inp); break;
+      case 'review_completed_task':          result = await executeReviewCompletedTask(inp, folderId); break;
       case 'delegate_task':                 result = await executeDelegateTask(inp, folderId); break;
       case 'list_agent_activity':           result = await executeListAgentActivity(inp, folderId); break;
       default: result = JSON.stringify({ error: `Unknown tool: ${name}` });
@@ -228,6 +229,79 @@ export async function executeTool(
   } catch (err) {
     return { result: JSON.stringify({ error: String((err as Error).message || err) }), isError: true };
   }
+}
+
+// ── Review Tool ──────────────────────────────────────────────────────
+
+async function executeReviewCompletedTask(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const taskId = String(inp.taskId || '');
+  const quality = String(inp.quality || '');
+  const feedback = String(inp.feedback || '');
+
+  if (!taskId || !quality || !feedback) {
+    return JSON.stringify({ error: 'taskId, quality, and feedback are required' });
+  }
+
+  const task = await db.tasks.get(taskId);
+  if (!task) return JSON.stringify({ error: `Task not found: ${taskId}` });
+
+  if (quality === 'good') {
+    // Task passes review — no action needed
+    return JSON.stringify({ success: true, taskId, quality: 'good', message: 'Task approved. Good work.' });
+  }
+
+  if (quality === 'needs-redo') {
+    // Move task back to todo with feedback
+    await db.tasks.update(taskId, {
+      status: 'todo',
+      description: `${task.description || ''}\n\n---\n**Review Feedback (needs redo):** ${feedback}`,
+      updatedAt: Date.now(),
+      updatedBy: 'agent:lead-reviewer',
+    });
+
+    // Create after-action note
+    const noteId = nanoid();
+    await db.notes.add({
+      id: noteId,
+      title: `After-Action: ${task.title}`,
+      content: `## After-Action Review\n\n**Task:** ${task.title}\n**Verdict:** Needs Redo\n**Feedback:** ${feedback}\n\nThe task has been moved back to todo for rework.`,
+      folderId,
+      tags: ['agent-review', 'after-action'],
+      pinned: false, archived: false, trashed: false,
+      createdBy: 'agent:lead-reviewer',
+      createdAt: Date.now(), updatedAt: Date.now(),
+    });
+
+    return JSON.stringify({ success: true, taskId, quality: 'needs-redo', noteId, message: 'Task returned to todo with feedback. After-action note created.' });
+  }
+
+  if (quality === 'serious-failure') {
+    // Move task back, create escalation note, flag for human
+    await db.tasks.update(taskId, {
+      status: 'todo',
+      priority: 'high',
+      description: `${task.description || ''}\n\n---\n**⚠️ SERIOUS FAILURE — Flagged for Human Review**\n${feedback}`,
+      tags: [...(task.tags || []), 'escalated', 'needs-human-review'],
+      updatedAt: Date.now(),
+      updatedBy: 'agent:lead-reviewer',
+    });
+
+    const noteId = nanoid();
+    await db.notes.add({
+      id: noteId,
+      title: `⚠️ Escalation: ${task.title}`,
+      content: `## Serious Failure — Human Review Required\n\n**Task:** ${task.title}\n**Feedback:** ${feedback}\n\nThis task has been flagged for human operator review due to serious quality issues. The task has been returned to todo with high priority.`,
+      folderId,
+      tags: ['agent-review', 'escalation', 'needs-human-review'],
+      pinned: true, archived: false, trashed: false,
+      createdBy: 'agent:lead-reviewer',
+      createdAt: Date.now(), updatedAt: Date.now(),
+    });
+
+    return JSON.stringify({ success: true, taskId, quality: 'serious-failure', noteId, message: 'Task escalated. Pinned escalation note created for human review.' });
+  }
+
+  return JSON.stringify({ error: `Invalid quality value: ${quality}. Use: good, needs-redo, serious-failure` });
 }
 
 // ── Delegation Tools ──────────────────────────────────────────────────
@@ -276,7 +350,7 @@ async function executeDelegateTask(inp: Record<string, unknown>, folderId?: stri
   const task = {
     id: nanoid(),
     title,
-    content: `[Delegated by Lead Analyst]\n\n${description}`,
+    description: `[Delegated by Lead Analyst]\n\n${description}`,
     folderId,
     status: 'todo' as const,
     priority: priority as 'low' | 'medium' | 'high',
