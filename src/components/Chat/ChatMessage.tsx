@@ -238,12 +238,25 @@ export function ChatMessageBubble({ role, content, attachments, isStreaming, too
 
   const displayContent = useMemo(() => {
     if (isUser) return content;
-    return stripSuggestions(content);
+    let text = stripSuggestions(content);
+    // Strip tool_call XML tags that leak into display (from text-based tool parsing)
+    text = text.replace(/<(?:tool_call|function_call)>\s*[\s\S]*?\s*<\/(?:tool_call|function_call)>/gi, '').trim();
+    // Strip bare JSON tool call blocks that look like {"name":"tool_name","arguments":{...}}
+    text = text.replace(/```json\s*\n?\s*\{\s*"name"\s*:\s*"[^"]+"\s*,\s*"arguments"\s*:[\s\S]*?\}\s*\n?\s*```/gi, '').trim();
+    return text;
   }, [content, isUser]);
 
   const hasReadTools = toolCalls?.some(tc =>
     !tc.isError && ['search_notes', 'search_all', 'read_note', 'list_tasks', 'list_iocs', 'list_timeline_events', 'analyze_graph'].includes(tc.name)
   );
+
+  // Parse meeting speaker from **icon Name:** prefix
+  const meetingSpeaker = useMemo(() => {
+    if (isUser || !displayContent) return null;
+    const match = displayContent.match(/^\*\*(.{0,4})\s*([^:*]+):\*\*\s*/);
+    if (!match) return null;
+    return { icon: match[1].trim(), name: match[2].trim(), contentWithout: displayContent.replace(/^\*\*(.{0,4})\s*[^:*]+:\*\*\s*/, '') };
+  }, [isUser, displayContent]);
 
   return (
     <div className={cn('group/msg flex w-full mb-3', isUser ? 'justify-end' : 'justify-start')}>
@@ -313,10 +326,16 @@ export function ChatMessageBubble({ role, content, attachments, isStreaming, too
                 ))}
               </div>
             )}
+            {meetingSpeaker && (
+              <div className="flex items-center gap-1.5 mb-1.5 pb-1.5 border-b border-border-subtle">
+                <span className="text-sm">{meetingSpeaker.icon || '🤖'}</span>
+                <span className="text-xs font-semibold text-accent-blue">{meetingSpeaker.name}</span>
+              </div>
+            )}
             {displayContent && (
               <div
                 className="markdown-preview text-sm"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(processEntityLinks(renderMarkdown(displayContent), onEntityClick)) }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(processEntityLinks(renderMarkdown(meetingSpeaker ? meetingSpeaker.contentWithout : displayContent), onEntityClick)) }}
                 onClick={(e) => {
                   const target = (e.target as HTMLElement).closest('.tc-entity-link') as HTMLElement;
                   if (target && onEntityClick) {

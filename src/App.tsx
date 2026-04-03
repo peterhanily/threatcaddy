@@ -1077,7 +1077,19 @@ function AppInner() {
   }, [folders, notes.notes, tasks.tasks, timeline.events, timelines, whiteboards, standaloneIOCsHook.iocs, chatsHook.threads, tags]);
 
   const handleShareChatThread = useCallback((thread: ChatThread) => {
-    setShareLinkPayload({ v: 1, s: 'chat', t: Date.now(), d: thread });
+    // Trim thread for sharing — strip large tool call results to reduce payload size
+    const trimmedThread: ChatThread = {
+      ...thread,
+      messages: thread.messages.map(msg => ({
+        ...msg,
+        toolCalls: msg.toolCalls?.map(tc => ({
+          ...tc,
+          result: tc.result.length > 500 ? tc.result.substring(0, 500) + '... [truncated for sharing]' : tc.result,
+        })),
+      })),
+      contextSummary: undefined, // Not needed for share
+    };
+    setShareLinkPayload({ v: 1, s: 'chat', t: Date.now(), d: trimmedThread });
   }, []);
 
   const handleSaveSharedPayload = useCallback(async (payload: SharePayload) => {
