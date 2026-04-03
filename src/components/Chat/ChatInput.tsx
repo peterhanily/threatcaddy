@@ -418,6 +418,17 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
               <button onClick={onClearImages} className="text-[10px] text-text-muted hover:text-red-400 ml-1">clear</button>
             </div>
           )}
+          {/* Thinking indicator */}
+          {isStreaming && (
+            <div className="flex items-center gap-2 px-3 py-1.5 text-[10px] text-purple">
+              <div className="flex gap-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-purple animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-purple animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+              <span>Thinking...</span>
+            </div>
+          )}
           <textarea
             ref={textareaRef}
             value={text}
@@ -426,10 +437,10 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
             onPaste={handlePaste}
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
-            placeholder={canSend ? 'Send a message... (type / for commands, paste images)' : 'Extension or local LLM required'}
+            placeholder={canSend ? 'Ask CaddyAI anything... (/ for commands, @ to mention, paste images)' : 'Configure a local LLM or install the extension'}
             disabled={!canSend || disabled}
             rows={1}
-            className="w-full bg-bg-deep border border-border-medium rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted resize-none focus:outline-none focus:border-purple disabled:opacity-50"
+            className="w-full bg-bg-deep border border-border-medium rounded-xl px-4 py-3 text-sm text-text-primary placeholder-text-muted resize-none focus:outline-none focus:ring-2 focus:ring-purple/30 focus:border-purple disabled:opacity-50 transition-all"
           />
         </div>
         {/* Image attach button */}
@@ -449,19 +460,19 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
         {isStreaming ? (
           <button
             onClick={onStop}
-            className="shrink-0 w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+            className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all"
             title="Stop generating"
           >
-            <Square size={14} />
+            <Square size={16} />
           </button>
         ) : (
           <button
             onClick={handleSend}
             disabled={!text.trim() || !canSend || disabled}
-            className="shrink-0 w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg bg-purple/20 text-purple hover:bg-purple/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Send message"
+            className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-purple text-white hover:bg-purple/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Send message (Enter)"
           >
-            <Send size={14} />
+            <Send size={16} />
           </button>
         )}
       </div>

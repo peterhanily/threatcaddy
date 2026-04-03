@@ -73,6 +73,8 @@ export function sendDirectToLocal(
       const decoder = new TextDecoder();
       let buffer = '';
       let fullText = '';
+      let stopReason: string | null = null;
+      const toolCallAccum: Record<number, { id: string; name: string; arguments: string }> = {};
 
       while (true) {
         const { done, value } = await reader.read();
@@ -87,13 +89,45 @@ export function sendDirectToLocal(
           if (data === '[DONE]') continue;
           try {
             const parsed = JSON.parse(data);
-            const content = parsed.choices?.[0]?.delta?.content;
+            const choice = parsed.choices?.[0];
+            if (!choice) continue;
+
+            // Stream text chunks
+            const content = choice.delta?.content;
             if (content) { fullText += content; callbacks.onChunk(content); }
-          } catch { /* skip */ }
+
+            // Accumulate tool_calls across deltas
+            if (choice.delta?.tool_calls) {
+              for (const tc of choice.delta.tool_calls) {
+                const idx = tc.index ?? 0;
+                if (!toolCallAccum[idx]) toolCallAccum[idx] = { id: '', name: '', arguments: '' };
+                if (tc.id) toolCallAccum[idx].id = tc.id;
+                if (tc.function?.name) toolCallAccum[idx].name = tc.function.name;
+                if (tc.function?.arguments) toolCallAccum[idx].arguments += tc.function.arguments;
+              }
+            }
+
+            if (choice.finish_reason) stopReason = choice.finish_reason;
+          } catch { /* skip malformed SSE */ }
         }
       }
 
-      callbacks.onDone('end_turn', fullText ? [{ type: 'text', text: fullText }] : []);
+      // Build content blocks
+      const contentBlocks: unknown[] = [];
+      if (fullText) contentBlocks.push({ type: 'text', text: fullText });
+
+      // Add tool_use blocks from accumulated tool calls
+      for (const tc of Object.values(toolCallAccum)) {
+        let parsedArgs = {};
+        try { parsedArgs = JSON.parse(tc.arguments); } catch { /* empty */ }
+        contentBlocks.push({ type: 'tool_use', id: tc.id || `tc_${Date.now()}`, name: tc.name, input: parsedArgs });
+      }
+
+      const normalizedStop = stopReason === 'tool_calls' ? 'tool_use'
+        : stopReason === 'stop' ? 'end_turn'
+        : stopReason || 'end_turn';
+
+      callbacks.onDone(normalizedStop, contentBlocks);
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
       callbacks.onError((err as Error).message || 'Local LLM request failed');

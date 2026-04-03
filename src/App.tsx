@@ -1769,27 +1769,7 @@ function AppInner() {
             settings={settings}
           />
         ) : activeView === 'chat' ? (
-          <ChatView
-            threads={ssFilteredChatThreads}
-            selectedThreadId={selectedChatThreadId}
-            onSelectThread={setSelectedChatThreadId}
-            onCreateThread={loggedCreateChatThread}
-            onUpdateThread={chatsHook.updateThread}
-            onAddMessage={chatsHook.addMessage}
-            onTrashThread={loggedTrashChatThread}
-            onShareThread={handleShareChatThread}
-            settings={settings}
-            selectedFolderId={selectedFolderId}
-            selectedFolder={selectedFolder}
-            onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); }}
-            onNavigateToEntity={(type, id) => {
-              if (type === 'note') { setSelectedNoteId(id); navigateTo('notes', { selectedNoteId: id }); }
-              else if (type === 'task') { navigateTo('tasks'); }
-              else if (type === 'event') { const ev = timeline.events.find((e) => e.id === id); setSelectedTimelineId(ev?.timelineId); navigateTo('timeline', { selectedTimelineId: ev?.timelineId }); }
-              else if (type === 'ioc') { navigateTo('graph'); }
-            }}
-            onOpenSettings={(tab) => { setShowSettings(true); if (tab) setSettingsInitialTab(tab); }}
-          />
+          null /* ChatView rendered persistently below */
         ) : activeView === 'investigations' ? (
           <InvestigationsHub
             localFolders={folders}
@@ -1994,6 +1974,30 @@ function AppInner() {
             onUpdateNote={notes.updateNote}
             onUpdateTask={tasks.updateTask}
             onUpdateEvent={timeline.updateEvent}
+          />
+        </div>
+        {/* Always-mounted ChatView — stays alive in background to preserve streaming state */}
+        <div className={activeView === 'chat' ? 'flex flex-1 overflow-hidden' : 'hidden'}>
+          <ChatView
+            threads={ssFilteredChatThreads}
+            selectedThreadId={selectedChatThreadId}
+            onSelectThread={setSelectedChatThreadId}
+            onCreateThread={loggedCreateChatThread}
+            onUpdateThread={chatsHook.updateThread}
+            onAddMessage={chatsHook.addMessage}
+            onTrashThread={loggedTrashChatThread}
+            onShareThread={handleShareChatThread}
+            settings={settings}
+            selectedFolderId={selectedFolderId}
+            selectedFolder={selectedFolder}
+            onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); }}
+            onNavigateToEntity={(type, id) => {
+              if (type === 'note') { setSelectedNoteId(id); navigateTo('notes', { selectedNoteId: id }); }
+              else if (type === 'task') { navigateTo('tasks'); }
+              else if (type === 'event') { const ev = timeline.events.find((e) => e.id === id); setSelectedTimelineId(ev?.timelineId); navigateTo('timeline', { selectedTimelineId: ev?.timelineId }); }
+              else if (type === 'ioc') { navigateTo('graph'); }
+            }}
+            onOpenSettings={(tab) => { setShowSettings(true); if (tab) setSettingsInitialTab(tab); }}
           />
         </div>
         </Suspense>

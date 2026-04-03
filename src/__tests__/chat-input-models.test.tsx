@@ -84,7 +84,7 @@ describe('ChatInput', () => {
 
   it('shows Send button when not streaming', () => {
     render(<ChatInput {...defaultProps} isStreaming={false} />);
-    const sendButton = screen.getByTitle('Send message');
+    const sendButton = screen.getByTitle('Send message (Enter)');
     expect(sendButton).toBeInTheDocument();
   });
 
