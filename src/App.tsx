@@ -1832,6 +1832,7 @@ function AppInner() {
               settings={settings}
               agentRunning={caddyAgent.running}
               agentProgress={caddyAgent.progress}
+              agentStreamingContent={caddyAgent.streamingContent}
               agentError={caddyAgent.error}
               agentStatus={caddyAgent.agentStatus}
               onRunOnce={caddyAgent.runOnce}

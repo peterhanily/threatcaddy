@@ -30,6 +30,8 @@ interface UseCaddyAgentResult {
   progress: string;
   /** Last error message, if any */
   error: string | null;
+  /** Live streaming text from the agent's current LLM call */
+  streamingContent: string;
   /** Manually trigger a single agent cycle */
   runOnce: () => Promise<void>;
   /** Toggle agent on/off for the current investigation */
@@ -47,6 +49,7 @@ const MAX_ERROR_RETRIES = 3;
 export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyAgentOptions): UseCaddyAgentResult {
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState('');
+  const [streamingContent, setStreamingContent] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [agentStatus, setAgentStatus] = useState<AgentStatus | undefined>(folder?.agentStatus);
 
@@ -142,8 +145,11 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
         }
       } else {
         // Legacy single-agent mode
+        setStreamingContent('');
         const result = await runAgentCycle(freshFolder, settingsRef.current, extensionAvailable, (status) => {
           if (mountedRef.current) setProgress(status);
+        }, undefined, undefined, (text) => {
+          if (mountedRef.current) setStreamingContent(prev => prev + text);
         });
 
         if (!mountedRef.current) return;
@@ -209,7 +215,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     const policy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
     const baseIntervalMs = (policy.intervalMinutes || 5) * 60 * 1000;
 
-    const scheduleNext = () => {
+    const scheduleNext = async () => {
       // Adaptive: double interval when waiting for approvals (use ref to avoid stale closure)
       const currentStatus = agentStatusRef.current;
       const multiplier = currentStatus === 'waiting' ? 2 : 1;
@@ -218,12 +224,26 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
       // Error backoff: double interval for each consecutive error, up to max retries
       if (currentStatus === 'error') {
         if (errorRetryCount.current >= MAX_ERROR_RETRIES) {
-          // Stop retrying — user must manually trigger
           return;
         }
         errorRetryCount.current++;
         intervalMs = ERROR_RETRY_BASE_MS * Math.pow(2, errorRetryCount.current - 1);
       }
+
+      // Adaptive scheduling based on agent metrics (multi-agent mode)
+      try {
+        const deployments = await db.agentDeployments.where('investigationId').equals(folder.id).toArray();
+        if (deployments.length > 0) {
+          const totalProposed = deployments.reduce((s, d) => s + (d.metrics?.toolCallsProposed || 0), 0);
+          const totalExecuted = deployments.reduce((s, d) => s + (d.metrics?.toolCallsExecuted || 0), 0);
+          const total = totalProposed + totalExecuted;
+          if (total > 10) {
+            const successRate = totalExecuted / total;
+            if (successRate > 0.9) intervalMs = Math.max(60_000, intervalMs * 0.5); // boost
+            else if (successRate < 0.5) intervalMs *= 2; // throttle
+          }
+        }
+      } catch { /* non-critical */ }
 
       intervalRef.current = setTimeout(async () => {
         if (!mountedRef.current) return;
@@ -326,6 +346,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     running,
     progress,
     error,
+    streamingContent,
     runOnce,
     toggleAgent,
     agentStatus,

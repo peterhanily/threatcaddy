@@ -272,6 +272,9 @@ async function executeReviewCompletedTask(inp: Record<string, unknown>, folderId
       createdAt: Date.now(), updatedAt: Date.now(),
     });
 
+    // Inject feedback into the responsible agent's working memory
+    await injectAgentFeedback(task, folderId, feedback, 'needs-redo');
+
     return JSON.stringify({ success: true, taskId, quality: 'needs-redo', noteId, message: 'Task returned to todo with feedback. After-action note created.' });
   }
 
@@ -298,10 +301,35 @@ async function executeReviewCompletedTask(inp: Record<string, unknown>, folderId
       createdAt: Date.now(), updatedAt: Date.now(),
     });
 
+    await injectAgentFeedback(task, folderId, feedback, 'serious-failure');
+
     return JSON.stringify({ success: true, taskId, quality: 'serious-failure', noteId, message: 'Task escalated. Pinned escalation note created for human review.' });
   }
 
   return JSON.stringify({ error: `Invalid quality value: ${quality}. Use: good, needs-redo, serious-failure` });
+}
+
+/** Inject review feedback into the responsible agent's working memory so it learns from mistakes. */
+async function injectAgentFeedback(task: { title: string; createdBy?: string }, folderId: string | undefined, feedback: string, quality: string): Promise<void> {
+  if (!folderId || !task.createdBy?.startsWith('agent:')) return;
+  try {
+    const profileId = task.createdBy.replace('agent:', '');
+    const deployment = await db.agentDeployments
+      .where('investigationId')
+      .equals(folderId)
+      .filter(d => d.profileId === profileId)
+      .first();
+
+    if (deployment?.threadId) {
+      await db.chatThreads.where('id').equals(deployment.threadId).modify((thread: { contextSummary?: string }) => {
+        const existing = thread.contextSummary || '';
+        const feedbackLine = `[FEEDBACK/${quality}] Task "${task.title}": ${feedback}`;
+        const lines = existing.split('\n').filter(Boolean);
+        lines.push(feedbackLine);
+        thread.contextSummary = lines.slice(-10).join('\n');
+      });
+    }
+  } catch { /* non-critical */ }
 }
 
 // ── Delegation Tools ──────────────────────────────────────────────────

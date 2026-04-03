@@ -21,6 +21,7 @@ interface AgentPanelProps {
   /** From useCaddyAgent hook */
   agentRunning?: boolean;
   agentProgress?: string;
+  agentStreamingContent?: string;
   agentError?: string | null;
   agentStatus?: AgentStatus;
   onRunOnce?: () => Promise<void>;
@@ -38,7 +39,7 @@ interface AgentPanelProps {
 
 export function AgentPanel({
   folder, settings,
-  agentRunning = false, agentProgress = '', agentError = null, agentStatus,
+  agentRunning = false, agentProgress = '', agentStreamingContent = '', agentError = null, agentStatus,
   onRunOnce, onNavigateToChat, onNavigateToNote, onEntitiesChanged, onOpenSettings, onFolderChanged,
   profiles = [], deployments = [], onDeployProfile, onRemoveDeployment,
 }: AgentPanelProps) {
@@ -126,6 +127,18 @@ export function AgentPanel({
       onEntitiesChanged?.();
     } catch (err) {
       setLocalError(`Approve failed: ${(err as Error).message}`);
+    }
+  };
+
+  const handleEditApprove = async (action: AgentAction, modifiedInput: Record<string, unknown>) => {
+    try {
+      // Update the action's toolInput, then execute
+      await db.agentActions.update(action.id, { toolInput: modifiedInput });
+      await executeApprovedAction({ ...action, toolInput: modifiedInput });
+      await loadActions();
+      onEntitiesChanged?.();
+    } catch (err) {
+      setLocalError(`Execute with edits failed: ${(err as Error).message}`);
     }
   };
 
@@ -329,6 +342,18 @@ export function AgentPanel({
       {/* ═══ TAB: Inbox ═══ */}
       {activeTab === 'inbox' && (
         <div className="flex-1 flex flex-col min-h-0">
+          {/* Live streaming display */}
+          {agentRunning && agentStreamingContent && (
+            <div className="px-4 py-2 border-b border-accent-blue/20 bg-accent-blue/5 max-h-32 overflow-auto shrink-0">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Loader2 size={10} className="animate-spin text-accent-blue" />
+                <span className="text-[10px] text-accent-blue font-medium">Live</span>
+              </div>
+              <pre className="text-[10px] text-text-secondary font-mono whitespace-pre-wrap leading-relaxed">
+                {agentStreamingContent.length > 2000 ? '...' + agentStreamingContent.slice(-2000) : agentStreamingContent}
+              </pre>
+            </div>
+          )}
           <div className="flex items-center justify-between px-4 py-1.5 border-b border-border-subtle shrink-0">
             <div className="flex gap-1" role="tablist">
               {(['all', 'pending', 'executed', 'rejected'] as const).map(f => (
@@ -358,6 +383,7 @@ export function AgentPanel({
             ) : filteredActions.map(action => (
               <AgentActionCard key={action.id} action={action}
                 onApprove={action.status === 'pending' ? handleApprove : undefined}
+                onEditApprove={action.status === 'pending' ? handleEditApprove : undefined}
                 onReject={action.status === 'pending' ? handleReject : undefined}
                 onViewReasoning={handleViewReasoning} />
             ))}
@@ -387,6 +413,13 @@ export function AgentPanel({
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium text-text-primary">{p.name}</div>
                         <div className="text-[10px] text-text-muted">{p.role}{d.supervisorDeploymentId ? ' · supervised' : ''}</div>
+                        {d.metrics && d.metrics.cyclesRun > 0 && (
+                          <div className="text-[9px] text-text-muted flex gap-2 mt-0.5">
+                            <span>{d.metrics.cyclesRun} cycles</span>
+                            <span>{d.metrics.toolCallsExecuted} exec</span>
+                            <span>{d.metrics.toolCallsProposed} proposed</span>
+                          </div>
+                        )}
                       </div>
                       <span className={cn('text-[9px] px-1.5 py-0.5 rounded',
                         d.status === 'running' && 'bg-accent-blue/10 text-accent-blue',

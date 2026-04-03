@@ -1,4 +1,4 @@
-import { Check, X, Clock, AlertTriangle, Info, ChevronDown, ChevronRight } from 'lucide-react';
+import { Check, X, Clock, AlertTriangle, Info, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import type { AgentAction } from '../../types';
 import { cn, formatDate } from '../../lib/utils';
@@ -7,6 +7,7 @@ import { getToolActionClass } from '../../lib/caddy-agent-policy';
 interface AgentActionCardProps {
   action: AgentAction;
   onApprove?: (action: AgentAction) => void;
+  onEditApprove?: (action: AgentAction, modifiedInput: Record<string, unknown>) => void;
   onReject?: (action: AgentAction) => void;
   onViewReasoning?: (threadId: string) => void;
 }
@@ -26,8 +27,11 @@ const STATUS_CONFIG: Record<string, { icon: typeof Check; label: string; color: 
   failed: { icon: AlertTriangle, label: 'Failed', color: 'text-red-400', bg: 'bg-red-400/10' },
 };
 
-export function AgentActionCard({ action, onApprove, onReject, onViewReasoning }: AgentActionCardProps) {
+export function AgentActionCard({ action, onApprove, onEditApprove, onReject, onViewReasoning }: AgentActionCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editJson, setEditJson] = useState('');
+  const [editError, setEditError] = useState('');
 
   const actionClass = getToolActionClass(action.toolName);
   const classInfo = ACTION_CLASS_LABELS[actionClass] || ACTION_CLASS_LABELS.read;
@@ -118,8 +122,34 @@ export function AgentActionCard({ action, onApprove, onReject, onViewReasoning }
         </div>
       )}
 
+      {/* Edit mode for modifying tool input before approve */}
+      {editing && isPending && (
+        <div className="mt-2 pl-6 space-y-1.5">
+          <textarea
+            value={editJson}
+            onChange={e => { setEditJson(e.target.value); setEditError(''); }}
+            rows={4}
+            className="w-full text-xs font-mono bg-surface-raised border border-border-subtle rounded p-2 text-text-primary resize-none focus:outline-none focus:border-accent-blue/50"
+          />
+          {editError && <p className="text-[10px] text-red-400">{editError}</p>}
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                try {
+                  const parsed = JSON.parse(editJson);
+                  onEditApprove?.(action, parsed);
+                  setEditing(false);
+                } catch { setEditError('Invalid JSON'); }
+              }}
+              className="text-[10px] text-accent-green hover:bg-accent-green/10 px-2 py-0.5 rounded"
+            >Execute with edits</button>
+            <button onClick={() => setEditing(false)} className="text-[10px] text-text-muted hover:bg-surface-raised px-2 py-0.5 rounded">Cancel</button>
+          </div>
+        </div>
+      )}
+
       {/* Action buttons for pending items */}
-      {isPending && (onApprove || onReject) && (
+      {isPending && !editing && (onApprove || onReject) && (
         <div className="flex items-center gap-2 mt-2 pl-6">
           {onApprove && (
             <button
@@ -129,6 +159,16 @@ export function AgentActionCard({ action, onApprove, onReject, onViewReasoning }
             >
               <Check size={12} />
               Approve
+            </button>
+          )}
+          {onEditApprove && (
+            <button
+              onClick={() => { setEditJson(JSON.stringify(action.toolInput, null, 2)); setEditing(true); }}
+              className="flex items-center gap-1 text-xs text-accent-blue hover:bg-accent-blue/10 px-2 py-1 rounded transition-colors"
+              aria-label={`Edit ${action.toolName} input`}
+            >
+              <Pencil size={12} />
+              Edit
             </button>
           )}
           {onReject && (

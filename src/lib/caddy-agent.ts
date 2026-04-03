@@ -135,13 +135,28 @@ TASK WORKFLOW: Check list_tasks for todo/in-progress tasks. Claim a todo task by
     ? `\nRESTRICTION: You CANNOT modify these entity types: ${profile.readOnlyEntityTypes.join(', ')}. Only read them.`
     : '';
 
+  // Playbook steps (if investigation has an active playbook)
+  let playbookInstructions = '';
+  if (folder.playbookExecution) {
+    const exec = folder.playbookExecution;
+    const template = await db.playbookTemplates.get(exec.templateId);
+    if (template) {
+      const pendingSteps = template.steps
+        .filter((_, i) => !exec.steps.find(s => s.stepIndex === i)?.completed)
+        .map(s => `- [${s.entityType}] ${s.title}: ${s.content.substring(0, 100)}`);
+      if (pendingSteps.length > 0) {
+        playbookInstructions = `\nPLAYBOOK "${exec.templateName}" — ${pendingSteps.length} pending steps:\n${pendingSteps.join('\n')}\nPrioritize completing these playbook steps.`;
+      }
+    }
+  }
+
   if (profile) {
     return `${context}
 
 ## ${profile.name} (${profile.role})
 
 ${profile.systemPrompt}
-${taskInstructions}${readOnlyNote}
+${taskInstructions}${readOnlyNote}${playbookInstructions}
 
 Be PROACTIVE. Always produce output. ${MAX_AGENT_TURNS} turns max.${profile.role === 'lead' ? ' Use delegate_task and list_agent_activity. Review completed tasks for quality.' : ''}${focusAreas}`;
   }
@@ -156,7 +171,7 @@ Autonomous threat analyst. Be PROACTIVE:
 - Empty case? Research via fetch_url. Create notes, IOCs, tasks, timeline events.
 - Has data? Enrich IOCs (enrich_ioc or fetch_url). Fill gaps. Create analysis notes.
 - Every cycle MUST produce output. Never just read and report.
-- enrich_ioc for vendor integrations, fetch_url for OSINT. Don't repeat work.${focusAreas}`;
+- enrich_ioc for vendor integrations, fetch_url for OSINT. Don't repeat work.${playbookInstructions}${focusAreas}`;
 }
 
 /**
@@ -211,7 +226,7 @@ export function parseToolCallsFromText(text: string, toolNames: string[]): ToolU
 
 const LLM_TIMEOUT_MS = 120_000; // 2 minutes per LLM call
 
-/** Send an LLM request and wait for the complete response (non-streaming). */
+/** Send an LLM request and wait for the complete response. Optionally streams text chunks. */
 function callLLM(opts: {
   provider: LLMProvider;
   model: string;
@@ -221,6 +236,7 @@ function callLLM(opts: {
   tools: typeof TOOL_DEFINITIONS;
   useServerProxy: boolean;
   endpoint?: string;
+  onStream?: (text: string) => void;
 }): Promise<LLMResponse> {
   const llmPromise = new Promise<LLMResponse>((resolve, reject) => {
     let accumulated = '';
@@ -236,7 +252,7 @@ function callLLM(opts: {
     };
 
     const callbacks = {
-      onChunk: (content: string) => { accumulated += content; },
+      onChunk: (content: string) => { accumulated += content; opts.onStream?.(content); },
       onDone: (_stopReason: string, contentBlocks: unknown[]) => {
         const blocks = contentBlocks as ContentBlock[];
         let toolCalls = blocks.filter(
@@ -287,6 +303,7 @@ export async function runAgentCycle(
   onProgress?: (status: string) => void,
   profile?: AgentProfile,
   deployment?: AgentDeployment,
+  onStream?: (text: string) => void,
 ): Promise<AgentCycleResult> {
   // Merge policies: profile policy > deployment overrides > folder policy > defaults
   const basePolicy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
@@ -406,6 +423,7 @@ export async function runAgentCycle(
         tools: availableTools,
         useServerProxy,
         endpoint,
+        onStream,
       });
 
       // Log the assistant's response to the audit thread

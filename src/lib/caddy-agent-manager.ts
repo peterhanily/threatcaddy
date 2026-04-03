@@ -4,7 +4,7 @@
  */
 
 import { db } from '../db';
-import type { AgentDeployment, AgentProfile, Folder, Settings } from '../types';
+import type { AgentDeployment, AgentMetrics, AgentProfile, Folder, Settings } from '../types';
 import { runAgentCycle, type AgentCycleResult } from './caddy-agent';
 import { BUILTIN_AGENT_PROFILES } from './builtin-agent-profiles';
 
@@ -68,13 +68,24 @@ export async function runMultiAgentCycle(
         deployment,
       );
 
-      // Update deployment status
+      // Update deployment status + metrics
       const newStatus = result.error ? 'error'
         : result.proposed.length > 0 ? 'waiting'
         : 'idle';
+      const prev = deployment.metrics || { cyclesRun: 0, toolCallsExecuted: 0, toolCallsProposed: 0, tasksCompleted: 0, tasksRejected: 0, tokensUsed: { input: 0, output: 0 }, lastCycleAt: 0 };
+      const metrics: AgentMetrics = {
+        cyclesRun: prev.cyclesRun + 1,
+        toolCallsExecuted: prev.toolCallsExecuted + result.autoExecuted.length,
+        toolCallsProposed: prev.toolCallsProposed + result.proposed.length,
+        tasksCompleted: prev.tasksCompleted,
+        tasksRejected: prev.tasksRejected,
+        tokensUsed: prev.tokensUsed, // TODO: add token tracking from LLM response
+        lastCycleAt: Date.now(),
+      };
       await db.agentDeployments.update(deployment.id, {
         status: newStatus,
         lastRunAt: Date.now(),
+        metrics,
       });
 
       return { deploymentId: deployment.id, result };

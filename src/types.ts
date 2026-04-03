@@ -1057,6 +1057,17 @@ export interface AgentProfile {
   updatedAt: number;
 }
 
+/** Performance metrics tracked per agent deployment. */
+export interface AgentMetrics {
+  cyclesRun: number;
+  toolCallsExecuted: number;
+  toolCallsProposed: number;
+  tasksCompleted: number;
+  tasksRejected: number;
+  tokensUsed: { input: number; output: number };
+  lastCycleAt: number;
+}
+
 /** An agent profile deployed to a specific investigation. */
 export interface AgentDeployment {
   id: string;
@@ -1070,6 +1081,8 @@ export interface AgentDeployment {
   threadId?: string;
   status: AgentStatus;
   lastRunAt?: number;
+  /** Performance metrics */
+  metrics?: AgentMetrics;
   /** Execution order within the investigation */
   order: number;
   createdAt: number;
