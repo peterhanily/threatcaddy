@@ -114,13 +114,34 @@ export function sendDirectToLocal(
 
       // Build content blocks
       const contentBlocks: unknown[] = [];
-      if (fullText) contentBlocks.push({ type: 'text', text: fullText });
+      const toolEntries = Object.values(toolCallAccum);
 
-      // Add tool_use blocks from accumulated tool calls
-      for (const tc of Object.values(toolCallAccum)) {
-        let parsedArgs = {};
-        try { parsedArgs = JSON.parse(tc.arguments); } catch { /* empty */ }
-        contentBlocks.push({ type: 'tool_use', id: tc.id || `tc_${Date.now()}`, name: tc.name, input: parsedArgs });
+      // Add tool_use blocks from structured tool_calls
+      if (toolEntries.length > 0) {
+        if (fullText) contentBlocks.push({ type: 'text', text: fullText });
+        for (const tc of toolEntries) {
+          let parsedArgs = {};
+          try { parsedArgs = JSON.parse(tc.arguments); } catch { /* empty */ }
+          contentBlocks.push({ type: 'tool_use', id: tc.id || `tc_${Date.now()}`, name: tc.name, input: parsedArgs });
+        }
+      } else if (fullText) {
+        // Fallback: parse tool calls from text output (for models that don't support function calling)
+        const toolNames = ((request.tools || []) as { name: string }[]).map(t => t.name);
+        const textCalls = parseTextToolCalls(fullText, toolNames);
+        if (textCalls.length > 0) {
+          // Strip tool_call tags from displayed text
+          const cleanText = fullText
+            .replace(/<(?:tool_call|function_call)>\s*[\s\S]*?\s*<\/(?:tool_call|function_call)>/gi, '')
+            .replace(/```json\s*\n?\s*\{\s*"name"\s*:\s*"[^"]+"\s*,\s*"arguments"\s*:[\s\S]*?\}\s*\n?\s*```/gi, '')
+            .trim();
+          if (cleanText) contentBlocks.push({ type: 'text', text: cleanText });
+          for (const tc of textCalls) {
+            contentBlocks.push(tc);
+          }
+          stopReason = 'tool_calls';
+        } else {
+          contentBlocks.push({ type: 'text', text: fullText });
+        }
       }
 
       const normalizedStop = stopReason === 'tool_calls' ? 'tool_use'
@@ -135,6 +156,42 @@ export function sendDirectToLocal(
   })();
 
   return requestId;
+}
+
+/** Parse tool calls from text output for local LLMs that don't support structured function calling. */
+function parseTextToolCalls(text: string, toolNames: string[]): { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }[] {
+  const calls: { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }[] = [];
+  const nameSet = new Set(toolNames);
+  let idx = 0;
+
+  // Pattern 1: <tool_call>JSON</tool_call>
+  const tagPattern = /<(?:tool_call|function_call)>\s*([\s\S]*?)\s*<\/(?:tool_call|function_call)>/gi;
+  let match;
+  while ((match = tagPattern.exec(text)) !== null) {
+    try {
+      const obj = JSON.parse(match[1]);
+      const name = obj.name || obj.function;
+      const args = obj.arguments || obj.parameters || obj.input || {};
+      if (name && nameSet.has(name)) {
+        calls.push({ type: 'tool_use', id: `dtc_${Date.now()}_${idx++}`, name, input: typeof args === 'string' ? JSON.parse(args) : args });
+      }
+    } catch { /* skip */ }
+  }
+  if (calls.length > 0) return calls;
+
+  // Pattern 2: ```json blocks
+  const jsonPattern = /```(?:json)?\s*\n?([\s\S]*?)\n?```/gi;
+  while ((match = jsonPattern.exec(text)) !== null) {
+    try {
+      const obj = JSON.parse(match[1]);
+      const name = obj.name || obj.function;
+      const args = obj.arguments || obj.parameters || obj.input || {};
+      if (name && nameSet.has(name)) {
+        calls.push({ type: 'tool_use', id: `dtc_${Date.now()}_${idx++}`, name, input: typeof args === 'string' ? JSON.parse(args) : args });
+      }
+    } catch { /* skip */ }
+  }
+  return calls;
 }
 
 export function resolveRoutingMode(
