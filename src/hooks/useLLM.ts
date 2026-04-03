@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { LLMProvider, ContentBlock, ToolUseBlock, ToolCallRecord } from '../types';
 import { isWriteTool } from '../lib/llm-tool-defs';
-import { sendViaServer } from '../lib/llm-router';
+import { sendViaServer, sendDirectToLocal } from '../lib/llm-router';
 import { nanoid } from 'nanoid';
 import { postMessageOrigin } from '../lib/utils';
 
@@ -60,6 +60,17 @@ function dispatchLLMRequest(
     // the existing message listener because sendViaServer posts TC_LLM_* events
     sendViaServer(
       { provider: opts.provider, model: opts.model, messages, systemPrompt: opts.systemPrompt, tools: opts.tools },
+      {
+        onChunk: (content) => window.postMessage({ type: 'TC_LLM_CHUNK', requestId, content }, postMessageOrigin()),
+        onDone: (stopReason, contentBlocks, usage) =>
+          window.postMessage({ type: 'TC_LLM_DONE', requestId, stopReason, contentBlocks, usage: usage || null }, postMessageOrigin()),
+        onError: (error) => window.postMessage({ type: 'TC_LLM_ERROR', requestId, error }, postMessageOrigin()),
+      },
+    );
+  } else if (opts.provider === 'local' && opts.endpoint) {
+    // Local LLMs can be called directly without the extension
+    sendDirectToLocal(
+      { provider: opts.provider, model: opts.model, messages, systemPrompt: opts.systemPrompt, tools: opts.tools, endpoint: opts.endpoint, apiKey: opts.apiKey },
       {
         onChunk: (content) => window.postMessage({ type: 'TC_LLM_CHUNK', requestId, content }, postMessageOrigin()),
         onDone: (stopReason, contentBlocks, usage) =>

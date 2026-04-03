@@ -76,7 +76,8 @@ export function AgentPanel({
     settings.llmLocalEndpoint?.trim()
   );
   const hasServerProxy = !!settings.serverUrl;
-  const isReady = (extensionAvailable || hasServerProxy) && (hasApiKey || hasServerProxy);
+  const hasLocalLLM = !!settings.llmLocalEndpoint?.trim();
+  const isReady = (extensionAvailable || hasServerProxy || hasLocalLLM) && (hasApiKey || hasServerProxy);
 
   // Load actions for this investigation (paginated)
   const [agentTasks, setAgentTasks] = useState<Task[]>([]);

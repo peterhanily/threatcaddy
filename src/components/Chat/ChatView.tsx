@@ -63,7 +63,8 @@ export function ChatView({
   const { serverUrl } = useAuth();
   const serverConnected = !!serverUrl;
   const effectiveRoute = resolveRoutingMode(settings.llmRoutingMode, extensionAvailable, serverConnected);
-  const canChat = extensionAvailable || serverConnected;
+  const hasLocalLLM = !!settings.llmLocalEndpoint?.trim();
+  const canChat = extensionAvailable || serverConnected || hasLocalLLM;
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [threadSourceFilter, setThreadSourceFilter] = useState<'all' | 'human' | 'agent' | 'meeting'>('all');
