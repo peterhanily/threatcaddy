@@ -52,7 +52,11 @@
   "content_scripts": [{
     "matches": [
       "https://threatcaddy.com/*",
-      "https://www.threatcaddy.com/*"
+      "https://www.threatcaddy.com/*",
+      "http://localhost/*",
+      "http://localhost:*/*",
+      "http://127.0.0.1/*",
+      "http://127.0.0.1:*/*"
     ],
     "js": ["bridge.js"],
     "run_at": "document_idle"
