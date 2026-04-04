@@ -617,14 +617,18 @@ async function executeCallMeeting(inp: Record<string, unknown>, folderId?: strin
   if (!agenda) return JSON.stringify({ error: 'agenda is required' });
 
   // Rate limit: check how many meetings today
-  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-  const recentMeetings = await db.agentMeetings
-    .where('investigationId').equals(folderId)
-    .filter(m => m.createdAt > todayStart.getTime())
-    .count();
-  const maxPerDay = 5; // configurable in future via policy
-  if (recentMeetings >= maxPerDay) {
-    return JSON.stringify({ error: `Meeting limit reached (${maxPerDay}/day). Wait until tomorrow.`, meetingsToday: recentMeetings });
+  // Check rate limit from investigation policy (0 or undefined = unlimited)
+  const folder = await db.folders.get(folderId);
+  const maxPerDay = folder?.agentPolicy?.maxMeetingsPerDay;
+  if (maxPerDay && maxPerDay > 0) {
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const recentMeetings = await db.agentMeetings
+      .where('investigationId').equals(folderId)
+      .filter(m => m.createdAt > todayStart.getTime())
+      .count();
+    if (recentMeetings >= maxPerDay) {
+      return JSON.stringify({ error: `Meeting limit reached (${maxPerDay}/day). Wait until tomorrow.`, meetingsToday: recentMeetings });
+    }
   }
 
   // Meeting will be triggered by the agent manager on next cycle — store as a pending meeting request
@@ -793,13 +797,18 @@ async function executeAskHuman(inp: Record<string, unknown>, folderId?: string):
 
   // Check if there's already a pending question for this investigation
   if (folderId) {
-    const pendingQuestions = await db.agentActions
-      .where('[investigationId+status]')
-      .equals([folderId, 'pending'])
-      .filter(a => a.toolName === 'ask_human')
-      .count();
-    if (pendingQuestions > 0) {
-      return JSON.stringify({ error: 'There is already a pending question awaiting human response. Wait for them to answer before asking again.' });
+    const folderData = await db.folders.get(folderId);
+    const maxPending = folderData?.agentPolicy?.maxPendingQuestions;
+    if (maxPending === undefined || maxPending > 0) {
+      const limit = maxPending || 3; // default 3 if not set
+      const pendingQuestions = await db.agentActions
+        .where('[investigationId+status]')
+        .equals([folderId, 'pending'])
+        .filter(a => a.toolName === 'ask_human')
+        .count();
+      if (pendingQuestions >= limit) {
+        return JSON.stringify({ error: `${pendingQuestions} questions already pending. Wait for human responses.` });
+      }
     }
   }
 

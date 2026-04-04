@@ -265,7 +265,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                           <span className="absolute -top-1.5 -right-2.5 text-[9px] font-bold text-accent-blue bg-accent-blue/15 px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{childCount}</span>
                         )}
                       </div>
-                      <span className={cn('text-[10px] transition-transform', expandedFolders.has(note.id) ? 'rotate-90' : '')} style={{ color: 'var(--text-muted)' }}>▶</span>
+                      <span className={cn('text-xs transition-transform', expandedFolders.has(note.id) ? 'rotate-90 text-accent-blue' : 'text-accent-amber')}>▶</span>
                       <span className="text-sm font-medium text-text-primary flex-1 truncate">{note.title}</span>
                       {isSubNote && onMoveToFolder && (
                         <button onClick={(e) => { e.stopPropagation(); onMoveToFolder(note.id, null); }}

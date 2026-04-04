@@ -1001,6 +1001,10 @@ export interface AgentPolicy {
   verbosity?: number;
   /** Agent personality: risk tolerance 0-100 (0=conservative/cautious, 100=aggressive/bold) */
   riskTolerance?: number;
+  /** Max agent-initiated meetings per day (0 = unlimited, default unlimited) */
+  maxMeetingsPerDay?: number;
+  /** Max pending human questions at once (0 = unlimited, default unlimited) */
+  maxPendingQuestions?: number;
 }
 
 export const DEFAULT_AGENT_POLICY: AgentPolicy = {
