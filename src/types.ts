@@ -272,6 +272,35 @@ export interface Settings {
   bgImagePosX?: number;          // horizontal position 0–100; default 50
   bgImagePosY?: number;          // vertical position 0–100; default 50
   bgImageZoom?: number;          // zoom scale 50–200; default 100
+  /** Configured external agent hosts for skill execution */
+  agentHosts?: AgentHost[];
+}
+
+// ── Agent Host Types ─────────────────────────────────────────────────
+
+export interface AgentHostSkill {
+  name: string;
+  description: string;
+  parameters: { type: 'object'; properties: Record<string, unknown>; required?: string[] };
+  /** Hint for agent policy auto-approval. Default: 'fetch' */
+  actionClass?: AgentActionClass;
+}
+
+export interface AgentHost {
+  id: string;
+  /** Short slug used in tool names (e.g. "soc1") — alphanumeric + hyphens, max 20 chars */
+  name: string;
+  /** Human-readable label (e.g. "SOC Workstation") */
+  displayName: string;
+  /** Base URL (e.g. "http://192.168.1.50:8080") */
+  url: string;
+  /** Optional bearer token for authentication */
+  apiKey?: string;
+  enabled: boolean;
+  /** Cached skills from last GET /skills discovery */
+  skills: AgentHostSkill[];
+  /** Timestamp of last skill discovery */
+  skillsFetchedAt?: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {

@@ -19,6 +19,7 @@ import { executeTool } from './llm-tools';
 import { shouldAutoApprove, getToolActionClass } from './caddy-agent-policy';
 import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-router';
 import { DEFAULT_MODEL_PER_PROVIDER, MODEL_PROVIDER_MAP } from './models';
+import { getHostToolDefinitions } from './agent-hosts';
 
 // ── Provider Resolution ─────────────────────────────────────────────────
 
@@ -180,13 +181,19 @@ KNOWLEDGE: Use recall_knowledge at cycle start to load persistent findings. Use 
     }
   }
 
+  // Agent host skill summary
+  const hosts = (_settings.agentHosts || []).filter(h => h.enabled && h.skills.length > 0);
+  const hostBlock = hosts.length > 0
+    ? `\nAGENT HOSTS: ${hosts.map(h => `${h.displayName} (${h.skills.map(s => s.name).join(', ')})`).join('; ')}. Call via host:<name>:<skill> tools for live system queries.`
+    : '';
+
   if (profile) {
     return `${context}
 
 ## ${profile.name} (${profile.role})
 
 ${profile.systemPrompt}
-${taskInstructions}${compInstructions}${personalityBlock}${readOnlyNote}${playbookInstructions}
+${taskInstructions}${compInstructions}${personalityBlock}${readOnlyNote}${playbookInstructions}${hostBlock}
 
 Be PROACTIVE. Always produce output. ${MAX_AGENT_TURNS} turns max.${profile.role === 'lead' ? ' Use delegate_task and list_agent_activity. Review completed tasks for quality.' : ''}${focusAreas}`;
   }
@@ -201,7 +208,7 @@ Autonomous threat analyst. Be PROACTIVE:
 - Empty case? Research via fetch_url. Create notes, IOCs, tasks, timeline events.
 - Has data? Enrich IOCs (enrich_ioc or fetch_url). Fill gaps. Create analysis notes.
 - Every cycle MUST produce output. Never just read and report.
-- enrich_ioc for vendor integrations, fetch_url for OSINT. Don't repeat work.${playbookInstructions}${focusAreas}`;
+- enrich_ioc for vendor integrations, fetch_url for OSINT. Don't repeat work.${playbookInstructions}${hostBlock}${focusAreas}`;
 }
 
 /**
@@ -438,6 +445,19 @@ export async function runAgentCycle(
       const cls = getToolActionClass(t.name);
       return cls === 'read';
     });
+  }
+
+  // Append dynamic host skill tools
+  const hostTools = getHostToolDefinitions(settings);
+  if (hostTools.length > 0) {
+    if (!profile?.allowedTools?.length) {
+      availableTools = [...availableTools, ...hostTools] as typeof TOOL_DEFINITIONS;
+    } else {
+      const matching = hostTools.filter(t => profile.allowedTools!.includes(t.name));
+      if (matching.length > 0) {
+        availableTools = [...availableTools, ...matching] as typeof TOOL_DEFINITIONS;
+      }
+    }
   }
 
   try {

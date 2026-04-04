@@ -17,6 +17,7 @@ import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { EncryptionSettings } from '../Encryption/EncryptionSettings';
 import { ServerConnection } from './ServerConnection';
 import { IntegrationPanel } from '../Integrations/IntegrationPanel';
+import { AgentHostsConfig } from './AgentHostsConfig';
 import { AppearanceSettings } from './AppearanceSettings';
 
 function SystemPromptEditor({ value, onChange }: { value?: string; onChange: (v: string | undefined) => void }) {
@@ -647,6 +648,9 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               </div>
             )}
           </div>
+
+          {/* Agent Hosts */}
+          <AgentHostsConfig settings={settings} onUpdateSettings={onUpdateSettings} />
         </div>
       )}
 

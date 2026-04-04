@@ -236,7 +236,15 @@ export async function executeTool(
       case 'notify_human':                   result = await executeNotifyHuman(inp, folderId); break;
       case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId); break;
       case 'forensicate_scan':              result = await executeForensicateScan({ text: String(inp.text || ''), threshold: inp.threshold ? Number(inp.threshold) : undefined }); break;
-      default: result = JSON.stringify({ error: `Unknown tool: ${name}` });
+      default: {
+        // Dynamic host skill tools (host:<name>:<skill>)
+        if (name.startsWith('host:')) {
+          const { executeHostSkill } = await import('./agent-hosts');
+          result = await executeHostSkill(name, inp);
+        } else {
+          result = JSON.stringify({ error: `Unknown tool: ${name}` });
+        }
+      }
     }
     return { result, isError: false };
   } catch (err) {

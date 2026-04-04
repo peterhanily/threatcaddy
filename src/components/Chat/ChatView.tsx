@@ -11,6 +11,7 @@ import { DEFAULT_MODEL_PER_PROVIDER } from '../../lib/models';
 import { cn, formatDate } from '../../lib/utils';
 import { nanoid } from 'nanoid';
 import { TOOL_DEFINITIONS, buildSystemPrompt, executeTool, isWriteTool, fetchViaExtensionBridge } from '../../lib/llm-tools';
+import { getHostToolDefinitions } from '../../lib/agent-hosts';
 import { generateChatTitle } from '../../lib/chat-utils';
 import { truncateConversation, summarizeConversation, MAX_CONTEXT_MESSAGES } from '../../lib/chat-utils';
 import { db } from '../../db';
@@ -429,9 +430,11 @@ export function ChatView({
 
     // In plan mode, filter out write tools so the LLM can only read/analyze
     const currentMode = activeThread.mode || 'act';
+    const hostTools = getHostToolDefinitions(settings);
+    const allTools = hostTools.length > 0 ? [...TOOL_DEFINITIONS, ...hostTools] : TOOL_DEFINITIONS;
     const tools = currentMode === 'plan'
-      ? TOOL_DEFINITIONS.filter(t => !isWriteTool(t.name))
-      : TOOL_DEFINITIONS;
+      ? allTools.filter(t => !isWriteTool(t.name))
+      : allTools;
 
     // In plan mode, append instructions to the system prompt
     const finalSystemPrompt = currentMode === 'plan'

@@ -76,7 +76,25 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
 
 /** Get the action class for a tool name. Defaults to 'modify' for unknown tools. */
 export function getToolActionClass(toolName: string): AgentActionClass {
-  return TOOL_ACTION_CLASS[toolName] ?? 'modify';
+  if (TOOL_ACTION_CLASS[toolName]) return TOOL_ACTION_CLASS[toolName];
+
+  // Dynamic host skill tools — resolve from cached skill metadata in Settings
+  if (toolName.startsWith('host:')) {
+    try {
+      const parts = toolName.split(':');
+      if (parts.length >= 3) {
+        const hostName = parts[1];
+        const skillName = parts.slice(2).join(':');
+        const settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+        const host = (settings.agentHosts || []).find((h: { name: string }) => h.name === hostName);
+        const skill = host?.skills?.find((s: { name: string }) => s.name === skillName);
+        return (skill?.actionClass as AgentActionClass) || 'fetch';
+      }
+    } catch { /* fall through */ }
+    return 'fetch';
+  }
+
+  return 'modify';
 }
 
 /** Check if a tool call should be auto-approved given the investigation's agent policy. */

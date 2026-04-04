@@ -34,6 +34,7 @@ ThreatCaddy is a client-side threat intelligence and incident response platform.
 - **Policy**: 5 action classes (read/enrich/fetch/create/modify) with per-class auto-approve toggles. Runtime enforcement of allowedTools and readOnlyEntityTypes in caddy-agent.ts.
 - **Metrics**: `AgentMetrics` on deployments tracks cycles, tool calls, tokens.
 - **Adaptive Scheduling**: High success rate = shorter intervals, low success = throttled.
+- **Agent Hosts**: `src/lib/agent-hosts.ts` — external REST API endpoints exposing skills. Config in `Settings.agentHosts`. Skills discovered via `GET /skills`, executed via `POST /execute`. Dynamic tool names: `host:<name>:<skill>`. Policy integration via `getHostSkillActionClass`. UI in `Settings > AI > Agent Hosts`.
 
 ### Agent Prompts
 Agent prompts must be lean (~500-800 chars). Do NOT use the full CaddyAI system prompt (6K+ chars). Agent-specific context is built in `buildAgentSystemPrompt` with investigation name/description and entity counts only.

@@ -650,5 +650,20 @@ const WRITE_TOOLS = new Set([
 ]);
 
 export function isWriteTool(name: string): boolean {
-  return WRITE_TOOLS.has(name);
+  if (WRITE_TOOLS.has(name)) return true;
+  // Host skills with 'modify' or 'create' action class are write tools
+  if (name.startsWith('host:')) {
+    try {
+      const parts = name.split(':');
+      if (parts.length >= 3) {
+        const hostName = parts[1];
+        const skillName = parts.slice(2).join(':');
+        const settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+        const host = (settings.agentHosts || []).find((h: { name: string }) => h.name === hostName);
+        const skill = host?.skills?.find((s: { name: string }) => s.name === skillName);
+        return skill?.actionClass === 'modify' || skill?.actionClass === 'create';
+      }
+    } catch { /* fall through */ }
+  }
+  return false;
 }
