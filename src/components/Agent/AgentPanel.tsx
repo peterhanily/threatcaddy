@@ -321,8 +321,8 @@ export function AgentPanel({
         </div>
       )}
 
-      {/* Tab bar — fixed */}
-      <div className="flex items-center gap-1 px-4 py-1.5 border-b border-border-subtle shrink-0">
+      {/* Tab bar — fixed, scrollable on small screens */}
+      <div className="flex items-center gap-1 px-3 sm:px-4 py-1.5 border-b border-border-subtle shrink-0 overflow-x-auto">
         {([
           { key: 'inbox' as const, label: 'Inbox', badge: pendingCount },
           { key: 'agents' as const, label: 'Agents', badge: deployments.length },

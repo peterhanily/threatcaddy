@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { LayoutDashboard, FolderOpen, Activity, Sun, Moon, Monitor, Shield, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, Activity, Sun, Moon, Monitor, Shield, ChevronRight, Bot } from 'lucide-react';
 import type { Folder, Note, Task, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, Tag, ActivityLogEntry, ChatThread, ViewMode } from '../../types';
 import { cn } from '../../lib/utils';
 import { ExecMetricsBar } from './ExecMetricsBar';
@@ -18,6 +18,8 @@ import { ExecSearchBar } from './ExecSearchBar';
 import { ExecGlobalList } from './ExecGlobalList';
 import { ShareDialog } from './ShareDialog';
 import type { SharePayload, InvestigationBundle } from '../../lib/share';
+import { db } from '../../db';
+// Agent types used for DB queries in useEffect
 
 type ExecNav = 'overview' | 'investigations' | 'activity';
 
@@ -79,6 +81,22 @@ export function ExecDashboard({
 
   // Clear search when navigation changes
   useEffect(() => { setSearchQuery(''); }, [drillDown, nav]);
+
+  // Agent activity summary for exec overview
+  const [agentStats, setAgentStats] = useState({ total: 0, pending: 0, executed: 0, failed: 0, activeAgents: 0 });
+  useEffect(() => {
+    (async () => {
+      const actions = await db.agentActions.orderBy('createdAt').reverse().limit(100).toArray();
+      const deployments = await db.agentDeployments.toArray();
+      setAgentStats({
+        total: actions.length,
+        pending: actions.filter(a => a.status === 'pending').length,
+        executed: actions.filter(a => a.status === 'executed').length,
+        failed: actions.filter(a => a.status === 'failed').length,
+        activeAgents: deployments.filter(d => d.status !== 'paused' && d.shift !== 'resting').length,
+      });
+    })();
+  }, []);
 
   const handleSelectInvestigation = useCallback((id: string) => {
     setDrillDown({ screen: 'investigation', folderId: id });
@@ -639,6 +657,37 @@ export function ExecDashboard({
                   allIOCs={allIOCs}
                   onSelect={handleSelectInvestigation}
                 />
+              </div>
+            )}
+
+            {/* Agent activity */}
+            {agentStats.total > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Bot size={14} className="text-accent-blue" />
+                  <h2 className="text-sm font-semibold text-text-primary">AgentCaddy</h2>
+                  {agentStats.activeAgents > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-green/10 text-accent-green">{agentStats.activeAgents} active</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="bg-surface-raised rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-text-primary">{agentStats.executed}</div>
+                    <div className="text-[10px] text-accent-green">Executed</div>
+                  </div>
+                  <div className="bg-surface-raised rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-text-primary">{agentStats.pending}</div>
+                    <div className="text-[10px] text-accent-amber">Pending Review</div>
+                  </div>
+                  <div className="bg-surface-raised rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-text-primary">{agentStats.failed}</div>
+                    <div className="text-[10px] text-red-400">Failed</div>
+                  </div>
+                  <div className="bg-surface-raised rounded-lg p-3 text-center">
+                    <div className="text-lg font-bold text-text-primary">{agentStats.activeAgents}</div>
+                    <div className="text-[10px] text-accent-blue">Active Agents</div>
+                  </div>
+                </div>
               </div>
             )}
 
