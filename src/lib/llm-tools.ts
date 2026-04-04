@@ -237,8 +237,8 @@ export async function executeTool(
       case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId); break;
       case 'forensicate_scan':              result = await executeForensicateScan({ text: String(inp.text || ''), threshold: inp.threshold ? Number(inp.threshold) : undefined }); break;
       default: {
-        // Dynamic host skill tools (host:<name>:<skill>)
-        if (name.startsWith('host:')) {
+        // Dynamic skill tools: local:<skill> or host:<name>:<skill>
+        if (name.startsWith('host:') || name.startsWith('local:')) {
           const { executeHostSkill } = await import('./agent-hosts');
           result = await executeHostSkill(name, inp);
         } else {

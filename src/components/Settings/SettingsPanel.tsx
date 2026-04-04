@@ -17,7 +17,6 @@ import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { EncryptionSettings } from '../Encryption/EncryptionSettings';
 import { ServerConnection } from './ServerConnection';
 import { IntegrationPanel } from '../Integrations/IntegrationPanel';
-import { AgentHostsConfig } from './AgentHostsConfig';
 import { AppearanceSettings } from './AppearanceSettings';
 
 function SystemPromptEditor({ value, onChange }: { value?: string; onChange: (v: string | undefined) => void }) {
@@ -649,8 +648,6 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
             )}
           </div>
 
-          {/* Agent Hosts */}
-          <AgentHostsConfig settings={settings} onUpdateSettings={onUpdateSettings} />
         </div>
       )}
 
@@ -710,6 +707,9 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [testError, setTestError] = useState('');
+  const [fetchingSkills, setFetchingSkills] = useState(false);
+  const [skillsError, setSkillsError] = useState('');
+  const [showSkills, setShowSkills] = useState(false);
 
   const labelClass = 'text-xs text-gray-400 font-medium';
   const inputClass = 'w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent';
@@ -891,6 +891,71 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
         )}
         {availableModels.length > 0 && (
           <p className="text-[10px] text-green-400/70 mt-0.5">{availableModels.length} model{availableModels.length !== 1 ? 's' : ''} available</p>
+        )}
+      </div>
+
+      {/* Agent Skills Discovery */}
+      <div className="border-t border-gray-700 pt-3 mt-1">
+        <div className="flex items-center justify-between">
+          <label className="text-xs text-gray-400 font-medium">Agent Skills</label>
+          <button
+            onClick={async () => {
+              setFetchingSkills(true);
+              setSkillsError('');
+              try {
+                const { fetchHostSkills } = await import('../../lib/agent-hosts');
+                const baseUrl = (settings.llmLocalEndpoint || 'http://localhost:11434/v1').replace(/\/+$/, '').replace(/\/v1\/?$/, '');
+                const skills = await fetchHostSkills({
+                  id: 'local', name: 'local', displayName: 'Local Agent',
+                  url: baseUrl, apiKey: settings.llmLocalApiKey, enabled: true, skills: [],
+                });
+                onUpdateSettings({ llmLocalSkills: skills, llmLocalSkillsFetchedAt: Date.now() });
+                setShowSkills(true);
+              } catch (err) {
+                setSkillsError((err as Error).message);
+                onUpdateSettings({ llmLocalSkills: [], llmLocalSkillsFetchedAt: undefined });
+              } finally {
+                setFetchingSkills(false);
+              }
+            }}
+            disabled={fetchingSkills || !settings.llmLocalEndpoint}
+            className="flex items-center gap-1 text-[10px] text-accent-blue hover:underline disabled:opacity-50"
+          >
+            {fetchingSkills ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
+            {fetchingSkills ? 'Discovering...' : 'Discover Skills'}
+          </button>
+        </div>
+        <p className="text-[10px] text-gray-600 mt-0.5">
+          If your endpoint exposes <code className="text-gray-500">GET /skills</code>, discovered skills become LLM tools for CaddyAI and agents.
+        </p>
+        {skillsError && <p className="text-[10px] text-gray-500 mt-1">No skills endpoint found — this is optional.</p>}
+        {(settings.llmLocalSkills || []).length > 0 && (
+          <div className="mt-2">
+            <button
+              onClick={() => setShowSkills(!showSkills)}
+              className="text-[10px] text-green-400/70 hover:text-green-400"
+            >
+              {settings.llmLocalSkills!.length} skill{settings.llmLocalSkills!.length !== 1 ? 's' : ''} available {showSkills ? '▾' : '▸'}
+            </button>
+            {showSkills && (
+              <div className="mt-1.5 space-y-1">
+                {settings.llmLocalSkills!.map(skill => (
+                  <div key={skill.name} className="flex items-start gap-2 py-1 border-b border-gray-800 last:border-0">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-mono text-gray-200">{skill.name}</span>
+                        <span className={`text-[9px] px-1 rounded ${skill.actionClass === 'modify' ? 'text-amber-400' : skill.actionClass === 'read' ? 'text-green-400' : 'text-blue-400'} bg-gray-800`}>
+                          {skill.actionClass || 'fetch'}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-gray-500">{skill.description}</p>
+                    </div>
+                    <span className="text-[9px] text-gray-600 font-mono shrink-0">local:{skill.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

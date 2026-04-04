@@ -181,10 +181,14 @@ KNOWLEDGE: Use recall_knowledge at cycle start to load persistent findings. Use 
     }
   }
 
-  // Agent host skill summary
+  // Agent skill summary (local + remote hosts)
+  const localSkills = (_settings.llmLocalSkills || []);
   const hosts = (_settings.agentHosts || []).filter(h => h.enabled && h.skills.length > 0);
-  const hostBlock = hosts.length > 0
-    ? `\nAGENT HOSTS: ${hosts.map(h => `${h.displayName} (${h.skills.map(s => s.name).join(', ')})`).join('; ')}. Call via host:<name>:<skill> tools for live system queries.`
+  const skillParts: string[] = [];
+  if (localSkills.length > 0) skillParts.push(`Local Agent (${localSkills.map(s => s.name).join(', ')})`);
+  for (const h of hosts) skillParts.push(`${h.displayName} (${h.skills.map(s => s.name).join(', ')})`);
+  const hostBlock = skillParts.length > 0
+    ? `\nAGENT SKILLS: ${skillParts.join('; ')}. Use local:<skill> or host:<name>:<skill> tools for live system queries.`
     : '';
 
   if (profile) {

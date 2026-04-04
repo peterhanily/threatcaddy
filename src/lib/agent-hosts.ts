@@ -53,24 +53,38 @@ export async function fetchHostSkills(host: AgentHost): Promise<AgentHostSkill[]
 
 // ── Dynamic Tool Definitions ─────────────────────────────────────────
 
-/**
- * Generate LLM tool definitions from all enabled agent hosts' cached skills.
- * Tool names follow the pattern: host:<hostName>:<skillName>
- */
-export function getHostToolDefinitions(settings: Settings): {
+type ToolDef = {
   name: string;
   description: string;
   input_schema: { type: 'object'; properties: Record<string, unknown>; required: string[] };
-}[] {
+};
+
+/**
+ * Generate LLM tool definitions from:
+ * 1. Local LLM endpoint skills (prefix: local:<skill>)
+ * 2. Additional agent hosts' cached skills (prefix: host:<hostName>:<skill>)
+ */
+export function getHostToolDefinitions(settings: Settings): ToolDef[] {
+  const tools: ToolDef[] = [];
+
+  // Local LLM skills — discovered from the same endpoint used for chat
+  const localSkills = settings.llmLocalSkills || [];
+  if (settings.llmLocalEndpoint && localSkills.length > 0) {
+    for (const skill of localSkills) {
+      tools.push({
+        name: `local:${skill.name}`,
+        description: `[Local Agent] ${skill.description}`,
+        input_schema: {
+          type: 'object' as const,
+          properties: skill.parameters?.properties || {},
+          required: (skill.parameters?.required || []) as string[],
+        },
+      });
+    }
+  }
+
+  // Additional agent hosts
   const hosts = (settings.agentHosts || []).filter(h => h.enabled && h.skills.length > 0);
-  if (hosts.length === 0) return [];
-
-  const tools: {
-    name: string;
-    description: string;
-    input_schema: { type: 'object'; properties: Record<string, unknown>; required: string[] };
-  }[] = [];
-
   for (const host of hosts) {
     for (const skill of host.skills) {
       tools.push({
@@ -91,14 +105,26 @@ export function getHostToolDefinitions(settings: Settings): {
 // ── Skill Execution ──────────────────────────────────────────────────
 
 /**
- * Execute a host skill. Tool name format: host:<hostName>:<skillName>
- * Sends POST to the host's /execute endpoint and returns the result string.
+ * Execute a host skill. Supports two formats:
+ *   local:<skillName>         — uses the local LLM endpoint
+ *   host:<hostName>:<skill>   — uses a named agent host
  */
 export async function executeHostSkill(
   toolName: string,
   input: Record<string, unknown>,
 ): Promise<string> {
-  // Parse host:name:skill from tool name
+  const settings: Settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+
+  // local:<skill> — route to the local LLM endpoint
+  if (toolName.startsWith('local:')) {
+    const skillName = toolName.slice(6);
+    if (!settings.llmLocalEndpoint) return JSON.stringify({ error: 'No local LLM endpoint configured. Set it in Settings > AI.' });
+
+    const baseUrl = settings.llmLocalEndpoint.replace(/\/+$/, '').replace(/\/v1\/?$/, '');
+    return await callHostExecute(baseUrl, settings.llmLocalApiKey, skillName, input, 'Local Agent');
+  }
+
+  // host:<name>:<skill> — route to a named agent host
   const parts = toolName.split(':');
   if (parts.length < 3 || parts[0] !== 'host') {
     return JSON.stringify({ error: `Invalid host tool name: ${toolName}` });
@@ -106,17 +132,26 @@ export async function executeHostSkill(
   const hostName = parts[1];
   const skillName = parts.slice(2).join(':');
 
-  // Look up host config
-  const settings: Settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
   const hosts: AgentHost[] = settings.agentHosts || [];
   const host = hosts.find(h => h.name === hostName);
 
   if (!host) return JSON.stringify({ error: `Agent host not found: ${hostName}. Configure in Settings > AI > Agent Hosts.` });
   if (!host.enabled) return JSON.stringify({ error: `Agent host "${host.displayName}" is disabled.` });
 
-  const url = `${host.url.replace(/\/+$/, '')}/execute`;
+  return await callHostExecute(host.url, host.apiKey, skillName, input, host.displayName);
+}
+
+/** Shared POST /execute call for both local and named hosts. */
+async function callHostExecute(
+  baseUrl: string,
+  apiKey: string | undefined,
+  skillName: string,
+  input: Record<string, unknown>,
+  displayName: string,
+): Promise<string> {
+  const url = `${baseUrl.replace(/\/+$/, '')}/execute`;
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (host.apiKey) headers['Authorization'] = `Bearer ${host.apiKey}`;
+  if (apiKey && apiKey !== 'local') headers['Authorization'] = `Bearer ${apiKey}`;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), EXECUTE_TIMEOUT_MS);
@@ -131,15 +166,15 @@ export async function executeHostSkill(
 
     if (!resp.ok) {
       const errorBody = await resp.text().catch(() => '');
-      return JSON.stringify({ error: `Host ${host.displayName} returned ${resp.status}: ${errorBody.substring(0, 500)}` });
+      return JSON.stringify({ error: `${displayName} returned ${resp.status}: ${errorBody.substring(0, 500)}` });
     }
 
     return await resp.text();
   } catch (err) {
     if ((err as Error).name === 'AbortError') {
-      return JSON.stringify({ error: `Host ${host.displayName} timed out after ${EXECUTE_TIMEOUT_MS / 1000}s` });
+      return JSON.stringify({ error: `${displayName} timed out after ${EXECUTE_TIMEOUT_MS / 1000}s` });
     }
-    return JSON.stringify({ error: `Host ${host.displayName} execution failed: ${(err as Error).message}` });
+    return JSON.stringify({ error: `${displayName} execution failed: ${(err as Error).message}` });
   } finally {
     clearTimeout(timer);
   }
@@ -148,18 +183,29 @@ export async function executeHostSkill(
 // ── Action Class Resolution ──────────────────────────────────────────
 
 /**
- * Look up the action class for a host skill tool from cached settings.
+ * Look up the action class for a host/local skill tool from cached settings.
  * Returns the skill's declared actionClass, or 'fetch' as default.
  */
-export function getHostSkillActionClass(toolName: string): string | undefined {
-  const parts = toolName.split(':');
-  if (parts.length < 3) return undefined;
-  const hostName = parts[1];
-  const skillName = parts.slice(2).join(':');
-
+export function getHostSkillActionClass(toolName: string): string {
   const settings: Settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
-  const hosts: AgentHost[] = settings.agentHosts || [];
-  const host = hosts.find(h => h.name === hostName);
-  const skill = host?.skills.find(s => s.name === skillName);
-  return skill?.actionClass || 'fetch';
+
+  // local:<skill>
+  if (toolName.startsWith('local:')) {
+    const skillName = toolName.slice(6);
+    const skill = (settings.llmLocalSkills || []).find(s => s.name === skillName);
+    return skill?.actionClass || 'fetch';
+  }
+
+  // host:<name>:<skill>
+  const parts = toolName.split(':');
+  if (parts.length >= 3) {
+    const hostName = parts[1];
+    const skillName = parts.slice(2).join(':');
+    const hosts: AgentHost[] = settings.agentHosts || [];
+    const host = hosts.find(h => h.name === hostName);
+    const skill = host?.skills.find(s => s.name === skillName);
+    return skill?.actionClass || 'fetch';
+  }
+
+  return 'fetch';
 }

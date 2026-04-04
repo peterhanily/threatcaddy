@@ -274,6 +274,10 @@ export interface Settings {
   bgImageZoom?: number;          // zoom scale 50–200; default 100
   /** Configured external agent hosts for skill execution */
   agentHosts?: AgentHost[];
+  /** Skills discovered from the local LLM endpoint (GET /skills) */
+  llmLocalSkills?: AgentHostSkill[];
+  /** Timestamp of last local skill discovery */
+  llmLocalSkillsFetchedAt?: number;
 }
 
 // ── Agent Host Types ─────────────────────────────────────────────────
