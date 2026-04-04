@@ -23,15 +23,19 @@ interface NoteListProps {
   onTrash?: (id: string) => void;
   onCreateFolder?: (name: string, icon?: string) => void;
   onMoveToFolder?: (noteId: string, parentNoteId: string | null) => void;
+  onRenameFolder?: (noteId: string, newName: string) => void;
 }
 
-export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, title, selectedIOCTypes, onIOCTypesChange, folders, tiExportConfig, onTrash, onCreateFolder, onMoveToFolder }: NoteListProps) {
+export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, title, selectedIOCTypes, onIOCTypesChange, folders, tiExportConfig, onTrash, onCreateFolder, onMoveToFolder, onRenameFolder }: NoteListProps) {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newFolderIcon, setNewFolderIcon] = useState('📁');
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const sortMenuRef = useRef<HTMLDivElement>(null);
 
@@ -266,7 +270,43 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                         )}
                       </div>
                       <span className={cn('text-xs transition-transform', expandedFolders.has(note.id) ? 'rotate-90 text-accent-blue' : 'text-accent-amber')}>▶</span>
-                      <span className="text-sm font-medium text-text-primary flex-1 truncate">{note.title}</span>
+                      {renamingId === note.id ? (
+                        <input
+                          ref={renameInputRef}
+                          className="text-sm font-medium text-text-primary flex-1 bg-surface-raised border border-accent-blue rounded px-1.5 py-0.5 outline-none"
+                          value={renameValue}
+                          onChange={e => setRenameValue(e.target.value)}
+                          onClick={e => e.stopPropagation()}
+                          onKeyDown={e => {
+                            e.stopPropagation();
+                            if (e.key === 'Enter' && renameValue.trim()) {
+                              onRenameFolder?.(note.id, renameValue.trim());
+                              setRenamingId(null);
+                            } else if (e.key === 'Escape') {
+                              setRenamingId(null);
+                            }
+                          }}
+                          onBlur={() => {
+                            if (renameValue.trim() && renameValue.trim() !== note.title) {
+                              onRenameFolder?.(note.id, renameValue.trim());
+                            }
+                            setRenamingId(null);
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          className="text-sm font-medium text-text-primary flex-1 truncate"
+                          onDoubleClick={(e) => {
+                            if (onRenameFolder) {
+                              e.stopPropagation();
+                              setRenamingId(note.id);
+                              setRenameValue(note.title);
+                            }
+                          }}
+                          title="Double-click to rename"
+                        >{note.title}</span>
+                      )}
                       {isSubNote && onMoveToFolder && (
                         <button onClick={(e) => { e.stopPropagation(); onMoveToFolder(note.id, null); }}
                           className="text-[9px] text-text-muted hover:text-text-secondary opacity-0 group-hover:opacity-100" title="Move to top level">↑</button>

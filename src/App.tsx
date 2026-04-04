@@ -1919,6 +1919,10 @@ function AppInner() {
                   await db.notes.update(noteId, { parentNoteId: parentNoteId || undefined, updatedAt: Date.now() });
                   notes.reload();
                 }}
+                onRenameFolder={async (noteId, newName) => {
+                  await db.notes.update(noteId, { title: newName, updatedAt: Date.now() });
+                  notes.reload();
+                }}
               />
             </div>
             {/* Resize handle with collapse/expand toggle — desktop only */}
