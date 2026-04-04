@@ -148,14 +148,30 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
         {!hasAnyActivity ? (
           <div className="text-center py-16 text-text-muted">
             <Bot size={48} className="mx-auto mb-4 opacity-20" />
-            <p className="text-sm mb-2">No agent activity yet</p>
-            <p className="text-xs">Select an investigation and click "Run Agent" to get started, or enable the supervisor in{' '}
-              {onOpenSettings ? (
-                <button onClick={() => onOpenSettings('ai')} className="text-accent-blue hover:underline">
-                  Settings &gt; AI
-                </button>
-              ) : 'Settings > AI'}.
-            </p>
+            <p className="text-sm mb-3">Get started with AgentCaddy</p>
+            <div className="text-xs text-left space-y-2 max-w-xs">
+              <div className="flex gap-2">
+                <span className="text-accent-blue font-bold shrink-0">1.</span>
+                <span>Open an investigation and go to the <strong>AgentCaddy</strong> tab</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-accent-blue font-bold shrink-0">2.</span>
+                <span><strong>Deploy agents</strong> — choose from 17 specialist profiles (CISO, IOC Enricher, Legal Counsel, etc.)</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-accent-blue font-bold shrink-0">3.</span>
+                <span>Click <strong>Run Agent</strong> or enable auto-mode — agents research, create notes, enrich IOCs, and build timelines</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-accent-blue font-bold shrink-0">4.</span>
+                <span>Start <strong>meetings</strong> for agents to discuss findings, or use <strong>shift handoffs</strong> for continuity</span>
+              </div>
+            </div>
+            {onOpenSettings && (
+              <button onClick={() => onOpenSettings('ai')} className="text-xs text-accent-blue hover:underline mt-3">
+                Configure AI Settings
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-6">

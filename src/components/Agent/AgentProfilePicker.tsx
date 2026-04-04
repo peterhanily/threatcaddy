@@ -91,9 +91,10 @@ export function AgentProfilePicker({ profiles, deployments, onDeployMultiple, on
                   const existing = deployedCounts.get(profile.id) || 0;
                   return (
                     <div key={profile.id} className={cn(
-                      'flex items-center gap-2 p-2 rounded-lg border transition-colors cursor-pointer',
+                      'flex items-center gap-2 p-2 rounded-lg border transition-colors cursor-pointer group',
                       selected ? 'border-accent-blue/40 bg-accent-blue/5' : 'border-border-subtle bg-surface hover:bg-surface-raised',
-                    )} onClick={() => toggleProfile(profile.id)}>
+                    )} onClick={() => toggleProfile(profile.id)}
+                    title={`${profile.name} (${profile.role}): ${profile.description || profile.systemPrompt.substring(0, 120)}`}>
                       <span className="text-lg shrink-0">{profile.icon || '🤖'}</span>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium text-text-primary">{profile.name}</div>

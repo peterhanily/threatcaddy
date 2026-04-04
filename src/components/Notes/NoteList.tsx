@@ -1,4 +1,4 @@
-import { ArrowUpDown, FileText, Download } from 'lucide-react';
+import { ArrowUpDown, FileText, Download, FolderPlus } from 'lucide-react';
 import type { Note, SortOption, IOCType, Folder } from '../../types';
 import { cn } from '../../lib/utils';
 import { NoteCard } from './NoteCard';
@@ -21,9 +21,11 @@ interface NoteListProps {
   folders?: Folder[];
   tiExportConfig?: ThreatIntelExportConfig;
   onTrash?: (id: string) => void;
+  onCreateFolder?: (name: string) => void;
+  onMoveToFolder?: (noteId: string, parentNoteId: string | null) => void;
 }
 
-export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, title, selectedIOCTypes, onIOCTypesChange, folders, tiExportConfig, onTrash }: NoteListProps) {
+export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, title, selectedIOCTypes, onIOCTypesChange, folders, tiExportConfig, onTrash, onCreateFolder, onMoveToFolder }: NoteListProps) {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -91,6 +93,19 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800 shrink-0">
         <span className="text-sm font-medium text-gray-300">{title || 'Notes'} ({notes.length})</span>
         <div className="flex items-center gap-1">
+          {onCreateFolder && (
+            <button
+              onClick={() => {
+                const name = prompt('Folder name:');
+                if (name?.trim()) onCreateFolder(name.trim());
+              }}
+              className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300"
+              title="New folder"
+              aria-label="Create note folder"
+            >
+              <FolderPlus size={14} />
+            </button>
+          )}
           {notesWithIOCs.length > 0 && (
             <div className="relative" ref={exportMenuRef}>
               <button
@@ -170,22 +185,36 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
               return (
                 <div className={cn('pb-1.5', isSubNote && 'ml-4')}>
                   {note.isFolder ? (
-                    <button
+                    <div
                       onClick={() => {
                         const next = new Set(expandedFolders);
                         if (next.has(note.id)) next.delete(note.id);
                         else next.add(note.id);
                         setExpandedFolders(next);
                       }}
+                      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('ring-2', 'ring-accent-blue'); }}
+                      onDragLeave={(e) => { e.currentTarget.classList.remove('ring-2', 'ring-accent-blue'); }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.currentTarget.classList.remove('ring-2', 'ring-accent-blue');
+                        const draggedId = e.dataTransfer.getData('text/plain');
+                        if (draggedId && draggedId !== note.id && onMoveToFolder) {
+                          onMoveToFolder(draggedId, note.id);
+                        }
+                      }}
                       className={cn(
-                        'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors',
+                        'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer',
                         selectedId === note.id ? 'bg-purple/10 border border-purple/30' : 'hover:bg-bg-hover border border-transparent',
                       )}
                     >
                       <span className="text-text-muted">{expandedFolders.has(note.id) ? '📂' : '📁'}</span>
                       <span className="text-xs font-medium text-text-primary flex-1 truncate">{note.title}</span>
                       <span className="text-[10px] text-text-muted">{childCount}</span>
-                    </button>
+                      {isSubNote && onMoveToFolder && (
+                        <button onClick={(e) => { e.stopPropagation(); onMoveToFolder(note.id, null); }}
+                          className="text-[9px] text-text-muted hover:text-text-secondary opacity-0 group-hover:opacity-100" title="Move to top level">↑</button>
+                      )}
+                    </div>
                   ) : (
                     <NoteCard
                       note={note}

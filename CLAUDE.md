@@ -9,35 +9,53 @@ ThreatCaddy is a client-side threat intelligence and incident response platform.
 - **SPA**: React + TypeScript + Vite + Tailwind. Entry: `src/App.tsx`
 - **Database**: Dexie (IndexedDB). Schema: `src/db.ts`. Currently version 25.
 - **Extension**: `extension/src/` — `background.js` (LLM streaming, fetch proxy, notifications), `bridge.js` (page↔extension message relay), `content.js` (capture UI)
-- **Team Server**: `server/` — Fastify + SQLite. Syncs investigations across users.
-- **CaddyAI Chat**: `src/components/Chat/ChatView.tsx` + `src/hooks/useLLM.ts`. Human-driven conversational AI.
-- **AgentCaddy**: `src/components/Agent/` + `src/lib/caddy-agent*.ts` + `src/hooks/useCaddyAgent.ts`. Autonomous multi-agent system with profiles, parallel execution, delegation, and meetings.
-
-## Key Patterns
-
-- **Entity types**: Note, Task, Folder (investigation), Tag, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, ChatThread, AgentAction, AgentProfile, AgentDeployment, AgentMeeting. All defined in `src/types.ts`.
-- **Hooks**: Each entity type has a `useX()` hook (e.g., `useNotes`, `useTasks`, `useFolders`). Hooks own CRUD + reload logic.
-- **Tools**: 31 LLM tools in `src/lib/llm-tool-defs.ts`. Executor in `src/lib/llm-tools.ts`. Read tools in `llm-tools-read.ts`, write tools in `llm-tools-write.ts`.
-- **Backup/Export**: Every new Dexie table must be added to `backup-data.ts`, `backup-restore.ts`, `backup-crypto.ts`, and `export.ts` (including sanitizer + import).
-- **Templates**: NoteTemplate, PlaybookTemplate, AgentProfile all follow the same pattern: builtin (source='builtin', read-only) + user (source='user', full CRUD). See `src/lib/builtin-agent-profiles.ts`.
-- **Activity logging**: `useActivityLog` hook. Category + action + detail + optional entity reference.
-- **Extension messaging**: Page posts `TC_*` messages → bridge.js relays to background.js via ports → background.js makes API calls → results flow back.
+- **Team Server**: `server/` — Hono + Drizzle + PostgreSQL. Syncs investigations, runs server-side agents, manages bots.
+- **CaddyAI Chat**: `src/components/Chat/ChatView.tsx` + `src/hooks/useLLM.ts`. Human-driven conversational AI. Stays mounted in background when switching tabs.
+- **AgentCaddy**: `src/components/Agent/` + `src/lib/caddy-agent*.ts` + `src/hooks/useCaddyAgent.ts`. Autonomous multi-agent system.
 
 ## Agent System
 
-- **Profiles**: `AgentProfile` with role (lead/specialist/observer), systemPrompt, allowedTools, policy. 5 builtins.
-- **Deployments**: `AgentDeployment` assigns a profile to an investigation. Each deployment gets its own audit ChatThread.
-- **Execution**: `caddy-agent-manager.ts` runs all deployments in parallel via `Promise.allSettled`. Falls back to legacy single-agent mode when no deployments exist.
-- **Delegation**: Lead agents get `delegate_task` + `list_agent_activity` tools.
+### 17 Builtin Profiles (`src/lib/builtin-agent-profiles.ts`)
+**Leadership:** CISO, Chief of Staff, Lead Analyst
+**Security Specialists:** IOC Enricher, Timeline Builder, Case Analyst, Threat Hunter, Malware Analyst, Network Forensics, Digital Forensics, Vulnerability Analyst
+**Business Stakeholders (observer):** Legal Counsel, Compliance Officer, Communications Lead, Business Continuity
+**Cross-Case:** Pattern Hunter, Reporter
+**Security:** Forensicate Scanner
+
+### Key Concepts
+- **Profiles** (`AgentProfile`): Reusable config with role (lead/specialist/observer), systemPrompt, allowedTools, policy, readOnlyEntityTypes
+- **Deployments** (`AgentDeployment`): Profile assigned to an investigation. Each gets its own audit ChatThread. Supports competitiveness (cooperative/competitive/independent) and shift state (active/resting).
+- **Execution**: `caddy-agent-manager.ts` runs deployments in parallel (max 5 concurrent) via `Promise.allSettled`. Falls back to legacy single-agent mode when no deployments exist.
+- **Delegation**: Lead agents get `delegate_task` + `list_agent_activity` + `review_completed_task` tools.
 - **Meetings**: `caddy-agent-meeting.ts` — round-robin discussion, produces meeting minutes Note.
+- **Handoffs**: `runHandoffCall` — outgoing agents brief incoming agents, shift states swap.
 - **Supervisor**: `caddy-agent-supervisor.ts` — global cross-investigation analysis on a timer.
-- **Policy**: 5 action classes (read/enrich/fetch/create/modify) with per-class auto-approve toggles.
-- **Tool parsing**: Agents parse tool calls from both structured `tool_use` blocks AND text fallback (`<tool_call>` tags, JSON blocks).
-- **Prompt size**: Agent prompts must be lean (~500-800 chars). Do NOT use the full CaddyAI system prompt — it's 6K+ chars and blows the context with 31 tool schemas.
+- **Server-Side**: `server/src/bots/caddy-agent-bridge.ts` converts profiles to BotConfig. `heartbeat-manager.ts` manages client→server handoff (30s heartbeat, 90s grace).
+- **Policy**: 5 action classes (read/enrich/fetch/create/modify) with per-class auto-approve toggles. Runtime enforcement of allowedTools and readOnlyEntityTypes in caddy-agent.ts.
+- **Metrics**: `AgentMetrics` on deployments tracks cycles, tool calls, tokens.
+- **Adaptive Scheduling**: High success rate = shorter intervals, low success = throttled.
+
+### Agent Prompts
+Agent prompts must be lean (~500-800 chars). Do NOT use the full CaddyAI system prompt (6K+ chars). Agent-specific context is built in `buildAgentSystemPrompt` with investigation name/description and entity counts only.
+
+## Notes
+- Notes support sub-folders: `parentNoteId` (parent folder-note ID) and `isFolder` (marks as folder container)
+- NoteList renders folders as expandable sections with drag-to-folder support
+
+## Key Patterns
+
+- **Entity types**: Note, Task, Folder (investigation), Tag, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, ChatThread, AgentAction, AgentProfile, AgentDeployment, AgentMeeting
+- **Hooks**: Each entity type has a `useX()` hook. Hooks own CRUD + reload logic.
+- **Tools**: 32 LLM tools in `src/lib/llm-tool-defs.ts` + 3 delegation tools in `DELEGATION_TOOL_DEFINITIONS`. Executor in `src/lib/llm-tools.ts`.
+- **Backup/Export**: Every new Dexie table must be added to `backup-data.ts`, `backup-restore.ts`, `backup-crypto.ts`, and `export.ts` (including sanitizer + import).
+- **Templates**: NoteTemplate, PlaybookTemplate, AgentProfile all follow the same pattern: builtin (source='builtin', read-only) + user (source='user', full CRUD).
+- **Extension messaging**: Page posts `TC_*` messages → bridge.js relays to background.js via ports → background.js makes API calls → results flow back.
+- **Local LLM**: `sendDirectToLocal` in `llm-router.ts` bypasses extension entirely for local endpoints (Ollama, vLLM, etc.). Handles SSE streaming + text-based tool parsing fallback.
+- **ChatView persistence**: Always mounted (CSS hidden when not active) so streaming continues in background.
 
 ## Pre-Commit Checks
 
-Always run `pnpm lint` and `pnpm build` before committing. Fix lint errors (especially unused imports). Run `pnpm test:run` if touching tests, exports, DB schema, or tool definitions.
+Always run `pnpm lint` and `pnpm build` before committing. Fix lint errors (especially unused imports). Run `pnpm test:run` if touching tests, exports, DB schema, or tool definitions. Server builds via `tsc` in the workspace build.
 
 ## When Adding New Dexie Tables
 
@@ -47,9 +65,10 @@ Always run `pnpm lint` and `pnpm build` before committing. Fix lint errors (espe
 4. Add to `backup-data.ts` (full, investigation, differential, count)
 5. Add to `backup-restore.ts` (`SYNCED_TABLES`)
 6. Add to `backup-crypto.ts` (`BackupPayload.data`)
-7. Add to `export.ts` (`exportJSON`, `importJSON`, `ExportData` type)
+7. Add to `export.ts` (`exportJSON`, `importJSON`, sanitizer, `ExportData` type)
 8. Update `db.test.ts` version assertion
 9. Update `export.test.ts` import count assertions
+10. Add cascade cleanup in `useFolders.ts` `deleteFolderWithContents`
 
 ## When Adding New Tools
 

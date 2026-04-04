@@ -1906,6 +1906,19 @@ function AppInner() {
                   defaultReportSource: settings.tiDefaultReportSource,
                 }}
                 onTrash={loggedTrashNote}
+                onCreateFolder={async (name) => {
+                  const { nanoid } = await import('nanoid');
+                  await db.notes.add({
+                    id: nanoid(), title: name, content: '', folderId: selectedFolderId,
+                    tags: [], pinned: false, archived: false, trashed: false, isFolder: true,
+                    createdAt: Date.now(), updatedAt: Date.now(),
+                  });
+                  notes.reload();
+                }}
+                onMoveToFolder={async (noteId, parentNoteId) => {
+                  await db.notes.update(noteId, { parentNoteId: parentNoteId || undefined, updatedAt: Date.now() });
+                  notes.reload();
+                }}
               />
             </div>
             {/* Resize handle with collapse/expand toggle — desktop only */}

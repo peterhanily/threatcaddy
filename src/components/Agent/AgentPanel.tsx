@@ -295,7 +295,7 @@ export function AgentPanel({
             ) : (
               <>
                 <Play size={12} />
-                Run Agent
+                <span className="hidden sm:inline">Run Agent</span><span className="sm:hidden">Run</span>
               </>
             )}
           </button>
@@ -413,7 +413,8 @@ export function AgentPanel({
             {deployments.length === 0 ? (
               <div className="text-center py-8 text-text-muted">
                 <Bot size={24} className="mx-auto mb-2 opacity-30" />
-                <p className="text-xs mb-2">No agents deployed</p>
+                <p className="text-xs mb-1">No agents deployed</p>
+                <p className="text-[10px] text-text-muted mb-2">Deploy specialist agents to automate research, enrichment, reporting, and more.</p>
                 <button onClick={() => setShowProfilePicker(true)} className="text-xs text-accent-blue hover:underline">Deploy Agent Profiles</button>
               </div>
             ) : (
