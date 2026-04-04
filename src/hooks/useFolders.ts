@@ -69,7 +69,7 @@ export function useFolders() {
   }, []);
 
   const deleteFolderWithContents = useCallback(async (id: string) => {
-    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs, db.chatThreads], async () => {
+    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs, db.chatThreads, db.agentActions, db.agentDeployments, db.agentMeetings], async () => {
       // Collect IDs of entities in this folder (needed for orphan link cleanup)
       const [notesInFolder, tasksInFolder, eventsInFolder] = await Promise.all([
         db.notes.where('folderId').equals(id).primaryKeys(),
@@ -81,7 +81,7 @@ export function useFolders() {
       const taskIdSet = new Set(tasksInFolder as string[]);
       const eventIdSet = new Set(eventsInFolder as string[]);
 
-      // Bulk-delete all entities in the folder (including chat threads)
+      // Bulk-delete all entities in the folder (including chat threads and agent data)
       await Promise.all([
         db.notes.where('folderId').equals(id).delete(),
         db.tasks.where('folderId').equals(id).delete(),
@@ -89,6 +89,9 @@ export function useFolders() {
         db.whiteboards.where('folderId').equals(id).delete(),
         db.standaloneIOCs.where('folderId').equals(id).delete(),
         db.chatThreads.where('folderId').equals(id).delete(),
+        db.agentActions.where('investigationId').equals(id).delete(),
+        db.agentDeployments.where('investigationId').equals(id).delete(),
+        db.agentMeetings.where('investigationId').equals(id).delete(),
       ]);
 
       // Clean orphaned cross-entity links in parallel batches

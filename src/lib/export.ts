@@ -417,6 +417,62 @@ function sanitizeAgentAction(raw: unknown): AgentAction | null {
   };
 }
 
+const VALID_PROFILE_ROLES = ['lead', 'specialist', 'observer'];
+const VALID_AGENT_STATUSES = ['idle', 'running', 'waiting', 'paused', 'error'];
+const VALID_MEETING_STATUSES = ['in-progress', 'completed', 'failed'];
+
+function sanitizeAgentProfile(raw: unknown): Record<string, unknown> | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.id !== 'string' || typeof r.name !== 'string') return null;
+  const role = str(r.role, 'specialist');
+  return {
+    id: str(r.id), name: str(r.name), description: r.description != null ? str(r.description) : undefined,
+    icon: r.icon != null ? str(r.icon) : undefined,
+    role: VALID_PROFILE_ROLES.includes(role) ? role : 'specialist',
+    systemPrompt: str(r.systemPrompt, ''),
+    allowedTools: Array.isArray(r.allowedTools) ? r.allowedTools.filter((t: unknown) => typeof t === 'string') : undefined,
+    readOnlyEntityTypes: Array.isArray(r.readOnlyEntityTypes) ? r.readOnlyEntityTypes.filter((t: unknown) => typeof t === 'string') : undefined,
+    policy: r.policy && typeof r.policy === 'object' ? r.policy : { autoApproveReads: true, autoApproveEnrich: true, autoApproveFetch: true, autoApproveCreate: false, autoApproveModify: false, intervalMinutes: 5 },
+    model: r.model != null ? str(r.model) : undefined,
+    priority: r.priority != null ? num(r.priority, 10) : undefined,
+    source: str(r.source, 'user'),
+    createdAt: num(r.createdAt, Date.now()), updatedAt: num(r.updatedAt, Date.now()),
+  };
+}
+
+function sanitizeAgentDeployment(raw: unknown): Record<string, unknown> | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.id !== 'string' || typeof r.investigationId !== 'string' || typeof r.profileId !== 'string') return null;
+  const status = str(r.status, 'idle');
+  return {
+    id: str(r.id), investigationId: str(r.investigationId), profileId: str(r.profileId),
+    supervisorDeploymentId: r.supervisorDeploymentId != null ? str(r.supervisorDeploymentId) : undefined,
+    threadId: r.threadId != null ? str(r.threadId) : undefined,
+    status: VALID_AGENT_STATUSES.includes(status) ? status : 'idle',
+    lastRunAt: r.lastRunAt != null ? num(r.lastRunAt) : undefined,
+    order: num(r.order, 0),
+    createdAt: num(r.createdAt, Date.now()), updatedAt: num(r.updatedAt, Date.now()),
+  };
+}
+
+function sanitizeAgentMeeting(raw: unknown): Record<string, unknown> | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.id !== 'string' || typeof r.investigationId !== 'string') return null;
+  const status = str(r.status, 'completed');
+  return {
+    id: str(r.id), investigationId: str(r.investigationId),
+    participantDeploymentIds: Array.isArray(r.participantDeploymentIds) ? r.participantDeploymentIds.filter((d: unknown) => typeof d === 'string') : [],
+    threadId: str(r.threadId, ''), agenda: str(r.agenda, ''),
+    minutesNoteId: r.minutesNoteId != null ? str(r.minutesNoteId) : undefined,
+    status: VALID_MEETING_STATUSES.includes(status) ? status : 'completed',
+    roundsCompleted: num(r.roundsCompleted, 0), maxRounds: num(r.maxRounds, 3),
+    createdAt: num(r.createdAt, Date.now()), completedAt: r.completedAt != null ? num(r.completedAt) : undefined,
+  };
+}
+
 const VALID_TEMPLATE_SOURCES = ['builtin', 'user', 'team'];
 const VALID_PLAYBOOK_STEP_ENTITIES = ['task', 'note'];
 
@@ -560,9 +616,9 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
     .filter((l: QuickLink | null): l is QuickLink => l !== null && !!l.id);
 
   // Agent profiles/deployments/meetings are imported with basic ID validation
-  const importedProfiles = (Array.isArray(data.agentProfiles) ? data.agentProfiles : []).filter((p: unknown) => p && typeof p === 'object' && typeof (p as Record<string,unknown>).id === 'string');
-  const importedDeployments = (Array.isArray(data.agentDeployments) ? data.agentDeployments : []).filter((d: unknown) => d && typeof d === 'object' && typeof (d as Record<string,unknown>).id === 'string');
-  const importedMeetings = (Array.isArray(data.agentMeetings) ? data.agentMeetings : []).filter((m: unknown) => m && typeof m === 'object' && typeof (m as Record<string,unknown>).id === 'string');
+  const importedProfiles = (Array.isArray(data.agentProfiles) ? data.agentProfiles : []).map(sanitizeAgentProfile).filter(Boolean);
+  const importedDeployments = (Array.isArray(data.agentDeployments) ? data.agentDeployments : []).map(sanitizeAgentDeployment).filter(Boolean);
+  const importedMeetings = (Array.isArray(data.agentMeetings) ? data.agentMeetings : []).map(sanitizeAgentMeeting).filter(Boolean);
 
   await db.transaction('rw', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents, db.timelines, db.whiteboards, db.standaloneIOCs, db.chatThreads, db.noteTemplates, db.playbookTemplates, db.agentActions, db.agentProfiles, db.agentDeployments, db.agentMeetings], async () => {
     await db.notes.clear();
@@ -628,7 +684,7 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
 }
 
 export async function exportInvestigationJSON(folderId: string): Promise<string> {
-  const [folder, allNotes, allTasks, allTags, allEvents, allTimelines, allWhiteboards, allIOCs, allChats, allAgentActions] = await Promise.all([
+  const [folder, allNotes, allTasks, allTags, allEvents, allTimelines, allWhiteboards, allIOCs, allChats, allAgentActions, allAgentDeployments, allAgentMeetings] = await Promise.all([
     db.folders.get(folderId),
     db.notes.where('folderId').equals(folderId).toArray(),
     db.tasks.where('folderId').equals(folderId).toArray(),
@@ -639,6 +695,8 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
     db.standaloneIOCs.where('folderId').equals(folderId).toArray(),
     db.chatThreads.where('folderId').equals(folderId).toArray(),
     db.agentActions.where('investigationId').equals(folderId).toArray(),
+    db.agentDeployments.where('investigationId').equals(folderId).toArray(),
+    db.agentMeetings.where('investigationId').equals(folderId).toArray(),
   ]);
 
   if (!folder) throw new Error('Investigation not found');
@@ -673,6 +731,8 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
     standaloneIOCs: allIOCs,
     chatThreads: allChats,
     agentActions: allAgentActions.length > 0 ? allAgentActions : undefined,
+    agentDeployments: allAgentDeployments.length > 0 ? allAgentDeployments : undefined,
+    agentMeetings: allAgentMeetings.length > 0 ? allAgentMeetings : undefined,
   };
 
   return JSON.stringify(data, null, 2);

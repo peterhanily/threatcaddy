@@ -3,7 +3,7 @@
  * Merges builtin profiles with user-created ones.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { nanoid } from 'nanoid';
 import { db } from '../db';
 import type { AgentProfile } from '../types';
@@ -23,8 +23,8 @@ export function useAgentProfiles() {
     reload();
   }, [reload]);
 
-  /** All profiles: builtins first, then user-created. */
-  const profiles = [...BUILTIN_AGENT_PROFILES, ...userProfiles];
+  /** All profiles: builtins first, then user-created (memoized). */
+  const profiles = useMemo(() => [...BUILTIN_AGENT_PROFILES, ...userProfiles], [userProfiles]);
 
   const createProfile = useCallback(async (partial: Partial<AgentProfile> & { name: string; systemPrompt: string }) => {
     const profile: AgentProfile = {
@@ -60,6 +60,11 @@ export function useAgentProfiles() {
   }, [reload]);
 
   const deleteProfile = useCallback(async (id: string) => {
+    // Guard: check for active deployments referencing this profile
+    const activeDeployments = await db.agentDeployments.where('profileId').equals(id).count();
+    if (activeDeployments > 0) {
+      throw new Error(`Cannot delete: ${activeDeployments} active deployment(s) use this profile. Remove them first.`);
+    }
     await db.agentProfiles.delete(id);
     await reload();
   }, [reload]);

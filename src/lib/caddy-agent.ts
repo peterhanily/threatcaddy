@@ -458,6 +458,32 @@ export async function runAgentCycle(
       for (const toolCall of response.toolCalls) {
         assistantContent.push(toolCall);
 
+        // Runtime authorization: enforce allowedTools restriction
+        if (profile?.allowedTools?.length && !profile.allowedTools.includes(toolCall.name)) {
+          toolResults.push({
+            type: 'tool_result', tool_use_id: toolCall.id,
+            content: JSON.stringify({ error: `Tool "${toolCall.name}" is not in this agent's allowed tools.` }),
+            is_error: true,
+          });
+          continue;
+        }
+
+        // Runtime authorization: enforce readOnlyEntityTypes
+        const ENTITY_WRITE_TOOLS: Record<string, string> = {
+          create_note: 'note', update_note: 'note', create_task: 'task', update_task: 'task',
+          create_ioc: 'ioc', update_ioc: 'ioc', bulk_create_iocs: 'ioc',
+          create_timeline_event: 'timeline', update_timeline_event: 'timeline',
+        };
+        const entityType = ENTITY_WRITE_TOOLS[toolCall.name];
+        if (entityType && profile?.readOnlyEntityTypes?.includes(entityType)) {
+          toolResults.push({
+            type: 'tool_result', tool_use_id: toolCall.id,
+            content: JSON.stringify({ error: `Cannot modify "${entityType}" entities — read-only restriction.` }),
+            is_error: true,
+          });
+          continue;
+        }
+
         const actionClass = getToolActionClass(toolCall.name);
         const autoApprove = shouldAutoApprove(toolCall.name, policy);
 

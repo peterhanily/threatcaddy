@@ -34,8 +34,8 @@ export function AgentProfileManager({
       >
         {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <Bot size={16} className="text-accent-blue" />
-        <span className="text-sm font-semibold text-gray-300">Agent Profiles</span>
-        <span className="text-xs text-gray-500 ml-auto">{userProfiles.length} custom, {builtinProfiles.length} built-in</span>
+        <span className="text-sm font-semibold text-text-secondary">Agent Profiles</span>
+        <span className="text-xs text-text-muted ml-auto">{userProfiles.length} custom, {builtinProfiles.length} built-in</span>
       </button>
 
       {expanded && (
@@ -43,7 +43,7 @@ export function AgentProfileManager({
           {/* User profiles */}
           {userProfiles.length > 0 && (
             <div>
-              <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Your Profiles</div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wide mb-1">Your Profiles</div>
               {userProfiles.map(p => (
                 editingId === p.id ? (
                   <ProfileForm
@@ -85,7 +85,7 @@ export function AgentProfileManager({
 
           {/* Built-in profiles */}
           <div>
-            <div className="text-[10px] text-gray-500 uppercase tracking-wide mb-1 mt-3">Built-in Profiles</div>
+            <div className="text-[10px] text-text-muted uppercase tracking-wide mb-1 mt-3">Built-in Profiles</div>
             {builtinProfiles.map(p => (
               <ProfileRow
                 key={p.id}
@@ -109,23 +109,23 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
   onDuplicate?: () => void;
 }) {
   return (
-    <div className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-gray-800/50 group">
+    <div className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-surface-raised/50 group">
       <span className="text-sm">{profile.icon || '🤖'}</span>
       <div className="flex-1 min-w-0">
-        <div className="text-xs text-gray-200 truncate">{profile.name}</div>
-        <div className="text-[10px] text-gray-500 truncate">{profile.role} — {profile.description?.substring(0, 60) || 'No description'}</div>
+        <div className="text-xs text-text-primary truncate">{profile.name}</div>
+        <div className="text-[10px] text-text-muted truncate">{profile.role} — {profile.description?.substring(0, 60) || 'No description'}</div>
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {isBuiltin ? (
-          <button onClick={onDuplicate} className="text-gray-500 hover:text-gray-300 p-0.5" title="Duplicate to customize">
+          <button onClick={onDuplicate} className="text-text-muted hover:text-text-secondary p-0.5" title="Duplicate to customize">
             <Copy size={12} />
           </button>
         ) : (
           <>
-            <button onClick={onEdit} className="text-gray-500 hover:text-gray-300 p-0.5" title="Edit">
+            <button onClick={onEdit} className="text-text-muted hover:text-text-secondary p-0.5" title="Edit">
               <Pencil size={12} />
             </button>
-            <button onClick={onDelete} className="text-gray-500 hover:text-red-400 p-0.5" title="Delete">
+            <button onClick={onDelete} className="text-text-muted hover:text-red-400 p-0.5" title="Delete">
               <Trash2 size={12} />
             </button>
           </>
@@ -154,16 +154,16 @@ function ProfileForm({ profile, onSave, onCancel }: {
     setSaving(false);
   };
 
-  const inputClass = 'w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-accent-blue/50';
+  const inputClass = 'w-full bg-surface-raised border border-border-subtle rounded px-2 py-1.5 text-xs text-text-primary focus:outline-none focus:border-accent-blue/50';
 
   return (
-    <div className="border border-gray-700 rounded-lg p-3 space-y-2 bg-gray-800/30">
+    <div className="border border-border-subtle rounded-lg p-3 space-y-2 bg-surface-raised/30">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-gray-300">{profile ? 'Edit' : 'New'} Profile</span>
-        <button onClick={onCancel} className="text-gray-500 hover:text-gray-300"><X size={12} /></button>
+        <span className="text-xs font-medium text-text-secondary">{profile ? 'Edit' : 'New'} Profile</span>
+        <button onClick={onCancel} className="text-text-muted hover:text-text-secondary"><X size={12} /></button>
       </div>
       <div className="flex gap-2">
-        <input value={icon} onChange={e => setIcon(e.target.value)} className="w-10 bg-gray-800 border border-gray-700 rounded px-1 py-1.5 text-xs text-center text-gray-200 focus:outline-none focus:border-accent-blue/50" maxLength={2} title="Icon emoji" />
+        <input value={icon} onChange={e => setIcon(e.target.value)} className="w-10 bg-surface-raised border border-border-subtle rounded px-1 py-1.5 text-xs text-center text-text-primary focus:outline-none focus:border-accent-blue/50" maxLength={2} title="Icon emoji" />
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Profile name" className={cn(inputClass, 'flex-1')} />
       </div>
       <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Brief description" className={inputClass} />
@@ -180,7 +180,7 @@ function ProfileForm({ profile, onSave, onCancel }: {
         className={cn(inputClass, 'resize-none')}
       />
       <div className="flex justify-end gap-2">
-        <button onClick={onCancel} className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1">Cancel</button>
+        <button onClick={onCancel} className="text-xs text-text-muted hover:text-text-secondary px-2 py-1">Cancel</button>
         <button
           onClick={handleSave}
           disabled={!name.trim() || !systemPrompt.trim() || saving}

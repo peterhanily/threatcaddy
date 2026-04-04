@@ -412,31 +412,26 @@ async function executeListAgentActivity(inp: Record<string, unknown>, folderId?:
   const agentName = inp.agentName ? String(inp.agentName) : undefined;
   const limit = Math.min(Number(inp.limit) || 20, 50);
 
+  // Load profiles once (avoid N+1)
+  const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
+  const allProfiles = [...BUILTIN_AGENT_PROFILES, ...await db.agentProfiles.toArray()];
+  const profileMap = new Map(allProfiles.map(p => [p.id, p.name]));
+
   let actions = await db.agentActions
     .where('[investigationId+createdAt]')
     .between([folderId, -Infinity], [folderId, Infinity])
     .reverse()
-    .limit(limit * 2) // fetch extra to filter
+    .limit(limit * 2)
     .toArray();
 
-  // Filter by agent name if specified
   if (agentName) {
-    const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
-    const allProfiles = [...BUILTIN_AGENT_PROFILES, ...await db.agentProfiles.toArray()];
     const matchingIds = new Set(
-      allProfiles
-        .filter(p => p.name.toLowerCase().includes(agentName.toLowerCase()))
-        .map(p => p.id)
+      allProfiles.filter(p => p.name.toLowerCase().includes(agentName.toLowerCase())).map(p => p.id)
     );
     actions = actions.filter(a => a.agentConfigId && matchingIds.has(a.agentConfigId));
   }
 
   actions = actions.slice(0, limit);
-
-  // Resolve profile names for display
-  const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
-  const allProfiles = [...BUILTIN_AGENT_PROFILES, ...await db.agentProfiles.toArray()];
-  const profileMap = new Map(allProfiles.map(p => [p.id, p.name]));
 
   const results = actions.map(a => ({
     agentName: a.agentConfigId ? profileMap.get(a.agentConfigId) || 'Unknown' : 'Default Agent',

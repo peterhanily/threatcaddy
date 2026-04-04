@@ -38,7 +38,7 @@ export async function buildFullBackupPayload(
     Object.assign(data, { notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, agentActions, agentProfiles, agentDeployments, agentMeetings });
   } else if (scope === 'investigation') {
     if (!scopeId) throw new Error('scopeId required for investigation scope');
-    const [folder, notes, tasks, allTags, events, allTimelines, whiteboards, iocs, chats, agentActions] = await Promise.all([
+    const [folder, notes, tasks, allTags, events, allTimelines, whiteboards, iocs, chats, agentActions, agentDeployments, agentMeetings] = await Promise.all([
       db.folders.get(scopeId),
       db.notes.where('folderId').equals(scopeId).toArray(),
       db.tasks.where('folderId').equals(scopeId).toArray(),
@@ -49,6 +49,8 @@ export async function buildFullBackupPayload(
       db.standaloneIOCs.where('folderId').equals(scopeId).toArray(),
       db.chatThreads.where('folderId').equals(scopeId).toArray(),
       db.agentActions.where('investigationId').equals(scopeId).toArray(),
+      db.agentDeployments.where('investigationId').equals(scopeId).toArray(),
+      db.agentMeetings.where('investigationId').equals(scopeId).toArray(),
     ]);
     if (!folder) throw new Error('Investigation not found');
 
@@ -68,7 +70,7 @@ export async function buildFullBackupPayload(
 
     Object.assign(data, {
       notes, tasks, folders: [folder], tags, timelineEvents: events, timelines, whiteboards,
-      standaloneIOCs: iocs, chatThreads: chats, agentActions,
+      standaloneIOCs: iocs, chatThreads: chats, agentActions, agentDeployments, agentMeetings,
     });
   } else if (scope === 'entity') {
     if (!scopeId) throw new Error('scopeId required for entity scope');

@@ -3,6 +3,7 @@
  * Allows multiple deployments of the same profile (for competition/redundancy).
  */
 
+import { useEffect } from 'react';
 import { X, Plus, Wrench } from 'lucide-react';
 import type { AgentProfile, AgentDeployment } from '../../types';
 
@@ -15,6 +16,12 @@ interface AgentProfilePickerProps {
 }
 
 export function AgentProfilePicker({ profiles, deployments, onDeploy, onCreateProfile, onClose }: AgentProfilePickerProps) {
+  // Escape key closes modal
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
   // Count how many of each profile are deployed (allow multiples)
   const deployedCounts = new Map<string, number>();
   for (const d of deployments) {

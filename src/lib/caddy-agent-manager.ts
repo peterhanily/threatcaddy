@@ -56,9 +56,14 @@ export async function runMultiAgentCycle(
     await db.agentDeployments.update(deployment.id, { status: 'running' });
   }
 
-  // Run all agents concurrently
-  const results = await Promise.allSettled(
-    deploymentProfiles.map(async ({ deployment, profile }) => {
+  // Run agents with concurrency limit (max 5 parallel to avoid overwhelming LLM providers)
+  const MAX_CONCURRENT = 5;
+  const allResults: PromiseSettledResult<{ deploymentId: string; result: AgentCycleResult }>[] = [];
+
+  for (let i = 0; i < deploymentProfiles.length; i += MAX_CONCURRENT) {
+    const chunk = deploymentProfiles.slice(i, i + MAX_CONCURRENT);
+    const chunkResults = await Promise.allSettled(
+      chunk.map(async ({ deployment, profile }) => {
       const result = await runAgentCycle(
         folder,
         settings,
@@ -90,7 +95,11 @@ export async function runMultiAgentCycle(
 
       return { deploymentId: deployment.id, result };
     })
-  );
+    );
+    allResults.push(...chunkResults);
+  }
+
+  const results = allResults;
 
   // Collect results
   const deploymentResults = new Map<string, AgentCycleResult>();
