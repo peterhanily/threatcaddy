@@ -21,7 +21,7 @@ interface NoteListProps {
   folders?: Folder[];
   tiExportConfig?: ThreatIntelExportConfig;
   onTrash?: (id: string) => void;
-  onCreateFolder?: (name: string) => void;
+  onCreateFolder?: (name: string, icon?: string) => void;
   onMoveToFolder?: (noteId: string, parentNoteId: string | null) => void;
 }
 
@@ -29,6 +29,9 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderIcon, setNewFolderIcon] = useState('📁');
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const sortMenuRef = useRef<HTMLDivElement>(null);
 
@@ -95,11 +98,8 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
         <div className="flex items-center gap-1">
           {onCreateFolder && (
             <button
-              onClick={() => {
-                const name = prompt('Folder name:');
-                if (name?.trim()) onCreateFolder(name.trim());
-              }}
-              className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300"
+              onClick={() => setShowNewFolder(!showNewFolder)}
+              className={cn('p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300', showNewFolder && 'bg-gray-800 text-gray-300')}
               title="New folder"
               aria-label="Create note folder"
             >
@@ -152,6 +152,55 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
         </div>
       </div>
 
+      {/* New folder form */}
+      {showNewFolder && onCreateFolder && (
+        <div className="px-3 py-2 border-b border-gray-800 bg-bg-raised/50">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const icons = ['📁', '📂', '🗂️', '📋', '🔒', '⭐', '🔍', '📊', '🎯', '🛡️', '📝', '💡'];
+                const idx = icons.indexOf(newFolderIcon);
+                setNewFolderIcon(icons[(idx + 1) % icons.length]);
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-lg border border-border-subtle bg-surface hover:bg-surface-raised text-base"
+              title="Click to change icon"
+            >
+              {newFolderIcon}
+            </button>
+            <input
+              autoFocus
+              value={newFolderName}
+              onChange={e => setNewFolderName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && newFolderName.trim()) {
+                  onCreateFolder(newFolderName.trim(), newFolderIcon);
+                  setNewFolderName('');
+                  setNewFolderIcon('📁');
+                  setShowNewFolder(false);
+                }
+                if (e.key === 'Escape') setShowNewFolder(false);
+              }}
+              placeholder="Folder name..."
+              className="flex-1 bg-surface border border-border-subtle rounded-lg px-3 py-1.5 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-blue/50"
+            />
+            <button
+              onClick={() => {
+                if (newFolderName.trim()) {
+                  onCreateFolder(newFolderName.trim(), newFolderIcon);
+                  setNewFolderName('');
+                  setNewFolderIcon('📁');
+                  setShowNewFolder(false);
+                }
+              }}
+              disabled={!newFolderName.trim()}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent-blue text-white hover:bg-accent-blue/90 disabled:opacity-40 transition-colors"
+            >
+              Create
+            </button>
+          </div>
+        </div>
+      )}
+
       {(notesWithIOCs.length > 0 || (selectedIOCTypes && selectedIOCTypes.length > 0)) && selectedIOCTypes && onIOCTypesChange && (
         <IOCFilterBar selectedTypes={selectedIOCTypes} onChange={onIOCTypesChange} />
       )}
@@ -184,7 +233,10 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
               const childCount = note.isFolder ? notes.filter(n => n.parentNoteId === note.id).length : 0;
               return (
                 <div className={cn('pb-1.5', isSubNote && 'ml-4')}>
-                  {note.isFolder ? (
+                  {note.isFolder ? (() => {
+                    const iconTag = note.tags?.find(t => t.startsWith('icon:'));
+                    const folderIcon = iconTag ? iconTag.replace('icon:', '') : (expandedFolders.has(note.id) ? '📂' : '📁');
+                    return (
                     <div
                       onClick={() => {
                         const next = new Set(expandedFolders);
@@ -203,19 +255,19 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                         }
                       }}
                       className={cn(
-                        'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer',
+                        'w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-colors cursor-pointer',
                         selectedId === note.id ? 'bg-purple/10 border border-purple/30' : 'hover:bg-bg-hover border border-transparent',
                       )}
                     >
-                      <span className="text-text-muted">{expandedFolders.has(note.id) ? '📂' : '📁'}</span>
-                      <span className="text-xs font-medium text-text-primary flex-1 truncate">{note.title}</span>
-                      <span className="text-[10px] text-text-muted">{childCount}</span>
+                      <span className="text-lg">{folderIcon}</span>
+                      <span className="text-sm font-medium text-text-primary flex-1 truncate">{note.title}</span>
+                      {childCount > 0 && <span className="text-[10px] text-text-muted bg-surface-raised px-1.5 py-0.5 rounded-full">{childCount}</span>}
                       {isSubNote && onMoveToFolder && (
                         <button onClick={(e) => { e.stopPropagation(); onMoveToFolder(note.id, null); }}
                           className="text-[9px] text-text-muted hover:text-text-secondary opacity-0 group-hover:opacity-100" title="Move to top level">↑</button>
                       )}
                     </div>
-                  ) : (
+                  ); })() : (
                     <NoteCard
                       note={note}
                       active={note.id === selectedId}

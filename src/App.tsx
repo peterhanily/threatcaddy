@@ -1906,11 +1906,11 @@ function AppInner() {
                   defaultReportSource: settings.tiDefaultReportSource,
                 }}
                 onTrash={loggedTrashNote}
-                onCreateFolder={async (name) => {
+                onCreateFolder={async (name, icon) => {
                   const { nanoid } = await import('nanoid');
                   await db.notes.add({
                     id: nanoid(), title: name, content: '', folderId: selectedFolderId,
-                    tags: [], pinned: false, archived: false, trashed: false, isFolder: true,
+                    tags: icon ? [`icon:${icon}`] : [], pinned: false, archived: false, trashed: false, isFolder: true,
                     createdAt: Date.now(), updatedAt: Date.now(),
                   });
                   notes.reload();
