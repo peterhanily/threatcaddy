@@ -454,6 +454,18 @@ export const TOOL_DEFINITIONS = [
       required: [],
     },
   },
+  {
+    name: 'forensicate_scan',
+    description: 'Scan text for prompt injection patterns using Forensicate.ai detection rules (keyword, regex, heuristic, NLP). Returns confidence score, matched rules, and attack complexity.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        text: { type: 'string', description: 'Text to scan for prompt injection, jailbreak attempts, or adversarial inputs' },
+        threshold: { type: 'number', description: 'Confidence threshold 0-100. Only rules at or above are reported. Default: 0' },
+      },
+      required: ['text'],
+    },
+  },
 ];
 
 // ── Delegation tools (Lead agent only) ─────────────────────────────────

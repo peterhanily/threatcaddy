@@ -8,6 +8,9 @@ export { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
 // Re-export for ChatView.tsx
 export { fetchViaExtensionBridge } from './llm-tools-analysis';
 
+// Forensicate.ai
+import { executeForensicateScan } from './forensicate-tool';
+
 // Read tools
 import {
   executeSearchNotes, executeSearchAll, executeReadNote,
@@ -223,6 +226,7 @@ export async function executeTool(
       case 'review_completed_task':          result = await executeReviewCompletedTask(inp, folderId); break;
       case 'delegate_task':                 result = await executeDelegateTask(inp, folderId); break;
       case 'list_agent_activity':           result = await executeListAgentActivity(inp, folderId); break;
+      case 'forensicate_scan':              result = await executeForensicateScan({ text: String(inp.text || ''), threshold: inp.threshold ? Number(inp.threshold) : undefined }); break;
       default: result = JSON.stringify({ error: `Unknown tool: ${name}` });
     }
     return { result, isError: false };

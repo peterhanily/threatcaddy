@@ -4,6 +4,7 @@
 
 import type { AgentProfile } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
+import { FORENSICATE_AGENT_PROFILE } from './forensicate-tool';
 
 export const BUILTIN_AGENT_PROFILES: AgentProfile[] = [
   {
@@ -92,4 +93,6 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
     createdAt: 0,
     updatedAt: 0,
   },
+  // Forensicate.ai Scanner
+  FORENSICATE_AGENT_PROFILE,
 ];

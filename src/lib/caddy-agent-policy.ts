@@ -50,6 +50,9 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
   enrich_ioc: 'enrich',
   list_integrations: 'read',
 
+  // Forensicate.ai
+  forensicate_scan: 'read',
+
   // Delegation tools (lead agent only)
   delegate_task: 'create',
   review_completed_task: 'modify',

@@ -61,6 +61,7 @@ import type { LayoutName } from './components/Graph/GraphCanvas';
 import { useCaddyAgent } from './hooks/useCaddyAgent';
 import { useAgentProfiles } from './hooks/useAgentProfiles';
 import { useAgentDeployments } from './hooks/useAgentDeployments';
+import { useServerAgents } from './hooks/useServerAgents';
 import { useNavigationHistory } from './hooks/useNavigationHistory';
 import type { NavState } from './hooks/useNavigationHistory';
 import { useTour } from './hooks/useTour';
@@ -1420,6 +1421,12 @@ function AppInner() {
 
   const agentProfilesHook = useAgentProfiles();
   const agentDeploymentsHook = useAgentDeployments(selectedFolderId);
+  const serverAgents = useServerAgents({
+    investigationId: selectedFolderId,
+    deployments: agentDeploymentsHook.deployments,
+    profiles: agentProfilesHook.profiles,
+    enabled: agentDeploymentsHook.deployments.some(d => d.serverSideEnabled),
+  });
 
   const selectedTagObj = useMemo(() => tags.find((t) => t.name === selectedTag), [tags, selectedTag]);
   const editingFolder = useMemo(() => folders.find((f) => f.id === editingFolderId), [folders, editingFolderId]);
@@ -1832,6 +1839,11 @@ function AppInner() {
               deployments={agentDeploymentsHook.deployments}
               onDeployProfile={(profile) => agentDeploymentsHook.deployProfile(profile)}
               onRemoveDeployment={agentDeploymentsHook.removeDeployment}
+              serverConnected={!!auth.connected}
+              serverRegistered={serverAgents.serverRegistered}
+              serverRunning={serverAgents.serverRunning}
+              onRegisterServer={serverAgents.registerServerAgents}
+              onUnregisterServer={serverAgents.unregisterServerAgents}
             />
           ) : (
             <AgentDashboard

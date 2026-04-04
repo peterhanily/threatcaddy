@@ -342,6 +342,10 @@ export const botConfigs = pgTable('bot_configs', {
   lastError: text('last_error'),
   runCount: integer('run_count').notNull().default(0),
   errorCount: integer('error_count').notNull().default(0),
+  /** Source type: 'manual' (admin-created) or 'caddy-agent' (auto-created from client AgentProfile) */
+  sourceType: text('source_type').notNull().default('manual'),
+  /** Client-side AgentDeployment ID this bot was created from (null for manual bots) */
+  sourceDeploymentId: text('source_deployment_id'),
   createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -349,6 +353,7 @@ export const botConfigs = pgTable('bot_configs', {
   idxBotConfigsUserId: index('idx_bot_configs_user_id').on(t.userId),
   idxBotConfigsEnabled: index('idx_bot_configs_enabled').on(t.enabled),
   idxBotConfigsType: index('idx_bot_configs_type').on(t.type),
+  idxBotConfigsSourceType: index('idx_bot_configs_source_type').on(t.sourceType),
 }));
 
 export const botRuns = pgTable('bot_runs', {
@@ -556,4 +561,39 @@ export const userLlmKeys = pgTable('user_llm_keys', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   uniqueUserProvider: unique('unique_user_provider').on(t.userId, t.provider),
+}));
+
+// ─── AgentCaddy Server-Side Handoff ─────────────────────────────
+
+/** Heartbeat tracking for client→server agent handoff */
+export const agentHeartbeats = pgTable('agent_heartbeats', {
+  folderId: text('folder_id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  lastBeat: timestamp('last_beat', { withTimezone: true }).notNull().defaultNow(),
+  serverTakeoverAt: timestamp('server_takeover_at', { withTimezone: true }).notNull(),
+});
+
+/** Server-side agent actions (approval queue) — mirrors client's agentActions Dexie table */
+export const agentActions = pgTable('agent_actions', {
+  id: text('id').primaryKey(),
+  investigationId: text('investigation_id').notNull(),
+  botConfigId: text('bot_config_id').references(() => botConfigs.id, { onDelete: 'set null' }),
+  deploymentSourceId: text('deployment_source_id'),
+  threadId: text('thread_id'),
+  toolName: text('tool_name').notNull(),
+  toolInput: jsonb('tool_input').notNull().default({}),
+  rationale: text('rationale').notNull().default(''),
+  status: text('status', { enum: ['pending', 'approved', 'rejected', 'executed', 'failed'] }).notNull().default('pending'),
+  resultSummary: text('result_summary'),
+  severity: text('severity', { enum: ['info', 'warning', 'critical'] }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  executedAt: timestamp('executed_at', { withTimezone: true }),
+  reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+  reviewedBy: text('reviewed_by'),
+  version: integer('version').notNull().default(1),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  idxAgentActionsInvestigation: index('idx_agent_actions_investigation').on(t.investigationId),
+  idxAgentActionsStatus: index('idx_agent_actions_status').on(t.status),
+  idxAgentActionsInvestigationStatus: index('idx_agent_actions_inv_status').on(t.investigationId, t.status),
 }));

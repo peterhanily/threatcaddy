@@ -35,6 +35,12 @@ interface AgentPanelProps {
   deployments?: AgentDeployment[];
   onDeployProfile?: (profile: AgentProfile) => void;
   onRemoveDeployment?: (deploymentId: string) => void;
+  /** Server-side agent support */
+  serverConnected?: boolean;
+  serverRegistered?: boolean;
+  serverRunning?: boolean;
+  onRegisterServer?: () => Promise<void>;
+  onUnregisterServer?: () => Promise<void>;
 }
 
 export function AgentPanel({
@@ -42,6 +48,7 @@ export function AgentPanel({
   agentRunning = false, agentProgress = '', agentStreamingContent = '', agentError = null, agentStatus,
   onRunOnce, onNavigateToChat, onNavigateToNote, onEntitiesChanged, onOpenSettings, onFolderChanged,
   profiles = [], deployments = [], onDeployProfile, onRemoveDeployment,
+  serverConnected, serverRegistered, serverRunning, onRegisterServer, onUnregisterServer,
 }: AgentPanelProps) {
   const [actions, setActions] = useState<AgentAction[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -442,6 +449,30 @@ export function AgentPanel({
             <div className="px-4 py-3 border-t border-border-subtle">
               <AgentMeetingPanel folder={folder} deployments={deployments} settings={settings} extensionAvailable={extensionAvailable}
                 onNavigateToChat={onNavigateToChat} onNavigateToNote={onNavigateToNote} onEntitiesChanged={onEntitiesChanged} />
+            </div>
+          )}
+
+          {/* Server-side mode */}
+          {serverConnected && deployments.length > 0 && (
+            <div className="px-4 py-3 border-t border-border-subtle">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-medium text-text-primary">Server-Side Mode</span>
+                  <p className="text-[10px] text-text-muted">Agents continue on the server when your browser is closed</p>
+                </div>
+                {serverRegistered ? (
+                  <div className="flex items-center gap-2">
+                    <span className={cn('text-[9px] px-1.5 py-0.5 rounded',
+                      serverRunning ? 'bg-accent-green/10 text-accent-green' : 'bg-surface-raised text-text-muted',
+                    )}>
+                      {serverRunning ? 'Server active' : 'Registered'}
+                    </span>
+                    <button onClick={onUnregisterServer} className="text-[10px] text-text-muted hover:text-red-400">Disable</button>
+                  </div>
+                ) : (
+                  <button onClick={onRegisterServer} className="text-[10px] text-accent-blue hover:underline">Enable</button>
+                )}
+              </div>
             </div>
           )}
         </div>

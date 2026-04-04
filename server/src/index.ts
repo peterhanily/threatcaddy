@@ -25,6 +25,7 @@ import botRoutes from './routes/bots.js';
 import integrationRoutes from './routes/integrations.js';
 import savedSearchRoutes from './routes/saved-searches.js';
 import taxiiRoutes from './routes/taxii.js';
+import caddyAgentRoutes, { heartbeatManager } from './routes/caddy-agents.js';
 import adminRoutes from './routes/admin/index.js';
 import { botManager } from './bots/bot-manager.js';
 import { prePullSandboxImages } from './bots/sandbox.js';
@@ -167,6 +168,7 @@ app.route('/api/bots', botRoutes);
 app.route('/api/integrations', integrationRoutes);
 app.route('/api/saved-searches', savedSearchRoutes);
 app.route('/api/taxii', taxiiRoutes);
+app.route('/api/caddy-agents', caddyAgentRoutes);
 
 // WebSocket endpoint — token sent as first message, not in URL
 app.get('/ws', upgradeWebSocket(() => {
@@ -273,6 +275,10 @@ async function main() {
   // Initialize bot runtime
   await botManager.init();
 
+  // Start AgentCaddy heartbeat manager for server-side agent handoff
+  heartbeatManager.setBotManager(botManager as never);
+  heartbeatManager.start();
+
   // Pre-pull Docker sandbox images (fire-and-forget — don't block startup)
   prePullSandboxImages().catch(() => {});
 
@@ -304,6 +310,7 @@ async function main() {
     logger.info('Shutting down...');
     clearInterval(sessionCleanup);
     clearInterval(dataPruning);
+    heartbeatManager.stop();
     await botManager.shutdown();
     server.close();
     adminServer.close();

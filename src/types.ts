@@ -1083,6 +1083,10 @@ export interface AgentDeployment {
   lastRunAt?: number;
   /** Performance metrics */
   metrics?: AgentMetrics;
+  /** Server-side bot config ID (when registered with team server) */
+  serverBotConfigId?: string;
+  /** Whether server-side mode is enabled for this deployment */
+  serverSideEnabled?: boolean;
   /** Execution order within the investigation */
   order: number;
   createdAt: number;
