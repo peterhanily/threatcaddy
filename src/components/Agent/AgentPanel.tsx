@@ -57,7 +57,7 @@ export function AgentPanel({
   const [showSettings, setShowSettings] = useState(false);
   const [confirmBulk, setConfirmBulk] = useState(false);
   const [showProfilePicker, setShowProfilePicker] = useState(false);
-  const [activeTab, setActiveTab] = useState<'inbox' | 'agents' | 'tasks'>('inbox');
+  const [activeTab, setActiveTab] = useState<'inbox' | 'agents' | 'tasks' | 'logs'>('inbox');
 
   // Detect extension availability
   const [extensionAvailable, setExtensionAvailable] = useState(false);
@@ -327,6 +327,7 @@ export function AgentPanel({
           { key: 'inbox' as const, label: 'Inbox', badge: pendingCount },
           { key: 'agents' as const, label: 'Agents', badge: deployments.length },
           { key: 'tasks' as const, label: 'Tasks', badge: todoCount + inProgressCount },
+          { key: 'logs' as const, label: 'Logs', badge: 0 },
         ]).map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className={cn('text-xs px-3 py-1.5 rounded-md transition-colors',
@@ -342,7 +343,12 @@ export function AgentPanel({
       {/* Profile picker modal */}
       {showProfilePicker && onDeployProfile && (
         <AgentProfilePicker profiles={profiles.length > 0 ? profiles : BUILTIN_AGENT_PROFILES} deployments={deployments}
-          onDeploy={(profile) => { onDeployProfile(profile); setShowProfilePicker(false); }}
+          onDeployMultiple={(selections) => {
+            for (const { profile, count } of selections) {
+              for (let i = 0; i < count; i++) onDeployProfile?.(profile);
+            }
+            setShowProfilePicker(false);
+          }}
           onCreateProfile={() => { setShowProfilePicker(false); onOpenSettings?.('templates'); }}
           onClose={() => setShowProfilePicker(false)} />
       )}
@@ -502,6 +508,44 @@ export function AgentPanel({
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ═══ TAB: Logs ═══ */}
+      {activeTab === 'logs' && (
+        <div className="flex-1 overflow-auto px-4 py-3 space-y-1">
+          {actions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-32 text-text-muted">
+              <p className="text-xs">No agent activity logs yet.</p>
+            </div>
+          ) : (
+            <>
+              {/* Aggregate stats */}
+              <div className="flex gap-4 mb-3 text-[10px] text-text-muted">
+                <span>Total: {actions.length} actions</span>
+                <span className="text-accent-green">{actions.filter(a => a.status === 'executed').length} executed</span>
+                <span className="text-accent-amber">{actions.filter(a => a.status === 'pending').length} pending</span>
+                <span className="text-red-400">{actions.filter(a => a.status === 'failed').length} failed</span>
+              </div>
+              {/* Chronological log */}
+              {actions.map(action => {
+                const profile = action.agentConfigId
+                  ? profiles.find(p => p.id === action.agentConfigId) || BUILTIN_AGENT_PROFILES.find(p => p.id === action.agentConfigId)
+                  : null;
+                return (
+                  <div key={action.id} className="flex items-center gap-2 py-1 text-[10px] border-b border-border-subtle/50">
+                    <span className="text-text-muted w-20 shrink-0 font-mono">{formatDate(action.createdAt)}</span>
+                    {profile && <span className="shrink-0">{profile.icon || '🤖'}</span>}
+                    <code className="text-text-primary shrink-0">{action.toolName}</code>
+                    <span className={cn('shrink-0',
+                      action.status === 'executed' ? 'text-accent-green' : action.status === 'pending' ? 'text-accent-amber' : action.status === 'failed' ? 'text-red-400' : 'text-text-muted',
+                    )}>{action.status}</span>
+                    <span className="text-text-muted truncate flex-1">{action.rationale.substring(0, 60)}</span>
+                  </div>
+                );
+              })}
+            </>
+          )}
         </div>
       )}
     </div>

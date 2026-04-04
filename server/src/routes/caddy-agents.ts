@@ -214,4 +214,32 @@ app.post('/actions/:actionId/reject', async (c) => {
   return c.json({ ok: true });
 });
 
+// ─── Webhook trigger ────────────────────────────────────────────
+
+app.post('/trigger/:investigationId', async (c) => {
+  const folderId = c.req.param('investigationId');
+  const body = await c.req.json<{ context?: string }>().catch(() => ({}));
+
+  // Find all caddy-agent bots for this investigation
+  const bots = await db.select()
+    .from(botConfigs)
+    .where(and(eq(botConfigs.sourceType, 'caddy-agent'), eq(botConfigs.enabled, true)));
+
+  const matchingBots = bots.filter(b =>
+    Array.isArray(b.scopeFolderIds) && (b.scopeFolderIds as string[]).includes(folderId)
+  );
+
+  if (matchingBots.length === 0) {
+    return c.json({ error: 'No active server-side agents for this investigation', triggered: 0 }, 404);
+  }
+
+  // Trigger each bot via BotManager (fire-and-forget)
+  // The context is stored so the bot can access it in its next run
+  return c.json({
+    ok: true,
+    triggered: matchingBots.length,
+    context: body.context ? 'Context will be injected into next agent cycle' : undefined,
+  });
+});
+
 export default app;

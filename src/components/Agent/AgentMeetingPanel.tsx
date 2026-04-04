@@ -7,7 +7,7 @@ import { MessageSquare, Play, Loader2, FileText, ChevronRight } from 'lucide-rea
 import type { AgentDeployment, AgentMeeting, Folder, Settings } from '../../types';
 import { cn, formatDate } from '../../lib/utils';
 import { db } from '../../db';
-import { runAgentMeeting } from '../../lib/caddy-agent-meeting';
+import { runAgentMeeting, runHandoffCall } from '../../lib/caddy-agent-meeting';
 
 interface AgentMeetingPanelProps {
   folder: Folder;
@@ -68,12 +68,30 @@ export function AgentMeetingPanel({
           <span className="text-xs font-semibold text-text-primary">Agent Meetings</span>
         </div>
         {canMeet && !running && (
-          <button
-            onClick={() => setShowNewMeeting(!showNewMeeting)}
-            className="text-[10px] text-accent-blue hover:underline"
-          >
-            {showNewMeeting ? 'Cancel' : 'Start Meeting'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                setRunning(true);
+                const active = deployments.filter(d => d.shift !== 'resting');
+                const resting = deployments.filter(d => d.shift === 'resting');
+                if (active.length > 0 && resting.length > 0) {
+                  await runHandoffCall(folder, active, resting, settings, extensionAvailable, (s, st) => setProgress(`${s}: ${st}`));
+                  setRunning(false);
+                  onEntitiesChanged?.();
+                } else {
+                  setRunning(false);
+                }
+              }}
+              className="text-[10px] text-accent-amber hover:underline"
+              title="Outgoing agents brief incoming agents, then swap shift states"
+            >Shift Handoff</button>
+            <button
+              onClick={() => setShowNewMeeting(!showNewMeeting)}
+              className="text-[10px] text-accent-blue hover:underline"
+            >
+              {showNewMeeting ? 'Cancel' : 'Meeting'}
+            </button>
+          </div>
         )}
       </div>
 

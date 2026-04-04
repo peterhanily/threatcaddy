@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { Bot, Plus, Pencil, Trash2, Copy, ChevronDown, ChevronRight, X } from 'lucide-react';
+import { Bot, Plus, Pencil, Trash2, Copy, ChevronDown, ChevronRight, X, Download, Upload } from 'lucide-react';
 import type { AgentProfile } from '../../types';
 import { cn } from '../../lib/utils';
 
@@ -82,6 +82,41 @@ export function AgentProfileManager({
               Create Profile
             </button>
           )}
+
+          {/* Export/Import */}
+          <div className="flex gap-2 mt-1">
+            {userProfiles.length > 0 && (
+              <button onClick={() => {
+                const json = JSON.stringify(userProfiles, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = 'agent-profiles.json'; a.click();
+                URL.revokeObjectURL(url);
+              }} className="flex items-center gap-1 text-[10px] text-text-muted hover:text-text-secondary">
+                <Download size={10} /> Export
+              </button>
+            )}
+            <button onClick={() => {
+              const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
+              input.onchange = async (e) => {
+                const file = (e.target as HTMLInputElement).files?.[0];
+                if (!file) return;
+                try {
+                  const text = await file.text();
+                  const profiles = JSON.parse(text);
+                  if (!Array.isArray(profiles)) return;
+                  for (const p of profiles) {
+                    if (p.name && p.systemPrompt) {
+                      await onCreateProfile({ ...p, id: undefined, source: 'user' } as Partial<AgentProfile> & { name: string; systemPrompt: string });
+                    }
+                  }
+                } catch { /* invalid file */ }
+              };
+              input.click();
+            }} className="flex items-center gap-1 text-[10px] text-text-muted hover:text-text-secondary">
+              <Upload size={10} /> Import
+            </button>
+          </div>
 
           {/* Built-in profiles */}
           <div>

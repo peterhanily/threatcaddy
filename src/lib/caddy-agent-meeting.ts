@@ -324,3 +324,36 @@ Rules:
     return { meetingId, threadId, roundsCompleted: 0, error: String((err as Error).message || err) };
   }
 }
+
+/**
+ * Run a shift handoff call — outgoing agents brief incoming agents.
+ * After the call, outgoing agents are set to 'resting' and incoming to 'active'.
+ */
+export async function runHandoffCall(
+  folder: Folder,
+  outgoing: AgentDeployment[],
+  incoming: AgentDeployment[],
+  settings: Settings,
+  extensionAvailable: boolean,
+  onProgress?: (speaker: string, status: string) => void,
+): Promise<AgentMeetingResult> {
+  const allDeployments = [...outgoing, ...incoming];
+  const agenda = `Shift handoff: ${outgoing.length} agent(s) going off-shift brief ${incoming.length} agent(s) coming on-shift.`;
+
+  // Run the meeting with a handoff-specific agenda
+  const result = await runAgentMeeting(
+    folder, allDeployments, settings, extensionAvailable,
+    agenda, 2, // 2 rounds: outgoing briefs, incoming asks questions
+    onProgress,
+  );
+
+  // After meeting completes, toggle shift states
+  for (const d of outgoing) {
+    await db.agentDeployments.update(d.id, { shift: 'resting', updatedAt: Date.now() });
+  }
+  for (const d of incoming) {
+    await db.agentDeployments.update(d.id, { shift: 'active', shiftStartedAt: Date.now(), updatedAt: Date.now() });
+  }
+
+  return result;
+}

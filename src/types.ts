@@ -1087,6 +1087,11 @@ export interface AgentDeployment {
   serverBotConfigId?: string;
   /** Whether server-side mode is enabled for this deployment */
   serverSideEnabled?: boolean;
+  /** Competitive mode: cooperative (share work), competitive (independent analysis), independent (assigned tasks only) */
+  competitiveness?: 'cooperative' | 'competitive' | 'independent';
+  /** Shift state: active agents run cycles, resting agents don't */
+  shift?: 'active' | 'resting';
+  shiftStartedAt?: number;
   /** Execution order within the investigation */
   order: number;
   createdAt: number;

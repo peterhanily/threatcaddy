@@ -36,7 +36,7 @@ export async function runMultiAgentCycle(
     .between([folder.id, -Infinity], [folder.id, Infinity])
     .toArray();
 
-  const activeDeployments = deployments.filter(d => d.status !== 'paused');
+  const activeDeployments = deployments.filter(d => d.status !== 'paused' && d.shift !== 'resting');
 
   if (activeDeployments.length === 0) {
     return { deploymentResults: new Map(), errors: ['No active agent deployments'] };

@@ -98,7 +98,7 @@ function getApiKeyForProvider(provider: LLMProvider, settings: Settings): string
 }
 
 /** Build a lean agent system prompt — NOT the full CaddyAI prompt (which is too large). */
-async function buildAgentSystemPrompt(folder: Folder, _settings: Settings, provider?: string, profile?: AgentProfile): Promise<string> {
+async function buildAgentSystemPrompt(folder: Folder, _settings: Settings, provider?: string, profile?: AgentProfile, deployment?: AgentDeployment): Promise<string> {
   // Build lean investigation context (skip the massive CaddyAI base prompt)
   let context = 'You are a threat intelligence agent in ThreatCaddy.';
 
@@ -130,6 +130,14 @@ async function buildAgentSystemPrompt(folder: Folder, _settings: Settings, provi
   const taskInstructions = `
 TASK WORKFLOW: Check list_tasks for todo/in-progress tasks. Claim a todo task by updating it to in-progress, do the work described, then mark it done. Prioritize tasks assigned to you or tagged agent-delegated.`;
 
+  // Competitiveness mode
+  const compMode = deployment?.competitiveness || 'cooperative';
+  const compInstructions = compMode === 'competitive'
+    ? '\nMODE: COMPETITIVE. Work independently. Do NOT read other agents\' notes. Produce your own original analysis.'
+    : compMode === 'independent'
+    ? '\nMODE: INDEPENDENT. Focus only on tasks assigned to you. Do not look at other agents\' work.'
+    : ''; // cooperative is default — no special instruction needed
+
   // Read-only entity constraints
   const readOnlyNote = profile?.readOnlyEntityTypes?.length
     ? `\nRESTRICTION: You CANNOT modify these entity types: ${profile.readOnlyEntityTypes.join(', ')}. Only read them.`
@@ -156,7 +164,7 @@ TASK WORKFLOW: Check list_tasks for todo/in-progress tasks. Claim a todo task by
 ## ${profile.name} (${profile.role})
 
 ${profile.systemPrompt}
-${taskInstructions}${readOnlyNote}${playbookInstructions}
+${taskInstructions}${compInstructions}${readOnlyNote}${playbookInstructions}
 
 Be PROACTIVE. Always produce output. ${MAX_AGENT_TURNS} turns max.${profile.role === 'lead' ? ' Use delegate_task and list_agent_activity. Review completed tasks for quality.' : ''}${focusAreas}`;
   }
@@ -371,7 +379,7 @@ export async function runAgentCycle(
   const agentName = profile?.name || 'CaddyAgent';
   onProgress?.(`${agentName}: ${provider}/${model}...`);
 
-  const systemPrompt = await buildAgentSystemPrompt(folder, settings, provider, profile);
+  const systemPrompt = await buildAgentSystemPrompt(folder, settings, provider, profile, deployment);
 
   // Load working memory from previous cycles
   let workingMemoryContext = '';
