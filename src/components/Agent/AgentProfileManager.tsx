@@ -143,29 +143,91 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
   onDelete?: () => void;
   onDuplicate?: () => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
   return (
-    <div className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-surface-raised/50 group">
-      <span className="text-sm">{profile.icon || '🤖'}</span>
-      <div className="flex-1 min-w-0">
-        <div className="text-xs text-text-primary truncate">{profile.name}</div>
-        <div className="text-[10px] text-text-muted truncate">{profile.role} — {profile.description?.substring(0, 60) || 'No description'}</div>
+    <div className="rounded border border-border-subtle/50 mb-1">
+      {/* Header row */}
+      <div className="flex items-center gap-2 py-1.5 px-2 cursor-pointer hover:bg-surface-raised/50 group" onClick={() => setExpanded(!expanded)}>
+        <span className="text-sm">{profile.icon || '🤖'}</span>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs text-text-primary truncate">{profile.name}</div>
+          <div className="text-[10px] text-text-muted truncate">{profile.role} — {profile.description?.substring(0, 60) || 'No description'}</div>
+        </div>
+        <div className="flex items-center gap-1">
+          <ChevronDown size={12} className={cn('text-text-muted transition-transform', !expanded && '-rotate-90')} />
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+            {isBuiltin ? (
+              <button onClick={onDuplicate} className="text-text-muted hover:text-text-secondary p-0.5" title="Duplicate to customize">
+                <Copy size={12} />
+              </button>
+            ) : (
+              <>
+                <button onClick={onEdit} className="text-text-muted hover:text-text-secondary p-0.5" title="Edit">
+                  <Pencil size={12} />
+                </button>
+                <button onClick={onDelete} className="text-text-muted hover:text-red-400 p-0.5" title="Delete">
+                  <Trash2 size={12} />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        {isBuiltin ? (
-          <button onClick={onDuplicate} className="text-text-muted hover:text-text-secondary p-0.5" title="Duplicate to customize">
-            <Copy size={12} />
-          </button>
-        ) : (
-          <>
-            <button onClick={onEdit} className="text-text-muted hover:text-text-secondary p-0.5" title="Edit">
-              <Pencil size={12} />
+
+      {/* Expanded details */}
+      {expanded && (
+        <div className="px-3 pb-2 space-y-2 border-t border-border-subtle/50">
+          <div className="mt-2">
+            <span className="text-[9px] text-text-muted uppercase tracking-wide">System Prompt</span>
+            <pre className="text-[10px] text-text-secondary bg-surface-raised rounded p-2 mt-0.5 whitespace-pre-wrap max-h-24 overflow-auto font-mono">{profile.systemPrompt}</pre>
+          </div>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <span className="text-[9px] text-text-muted uppercase tracking-wide">Role</span>
+              <p className="text-[10px] text-text-primary mt-0.5">{profile.role}</p>
+            </div>
+            <div className="flex-1">
+              <span className="text-[9px] text-text-muted uppercase tracking-wide">Priority</span>
+              <p className="text-[10px] text-text-primary mt-0.5">{profile.priority ?? 'default'}</p>
+            </div>
+            <div className="flex-1">
+              <span className="text-[9px] text-text-muted uppercase tracking-wide">Model</span>
+              <p className="text-[10px] text-text-primary mt-0.5">{profile.model || 'auto'}</p>
+            </div>
+          </div>
+          {profile.allowedTools && (
+            <div>
+              <span className="text-[9px] text-text-muted uppercase tracking-wide">Allowed Tools ({profile.allowedTools.length})</span>
+              <p className="text-[10px] text-text-muted mt-0.5 font-mono">{profile.allowedTools.join(', ')}</p>
+            </div>
+          )}
+          {!profile.allowedTools && (
+            <p className="text-[10px] text-text-muted">All tools available</p>
+          )}
+          {profile.readOnlyEntityTypes?.length ? (
+            <div>
+              <span className="text-[9px] text-text-muted uppercase tracking-wide">Read-only entities</span>
+              <p className="text-[10px] text-text-muted mt-0.5">{profile.readOnlyEntityTypes.join(', ')}</p>
+            </div>
+          ) : null}
+          <div>
+            <span className="text-[9px] text-text-muted uppercase tracking-wide">Auto-approve Policy</span>
+            <div className="flex gap-2 mt-0.5 text-[10px]">
+              <span className={profile.policy.autoApproveReads ? 'text-accent-green' : 'text-text-muted'}>Reads {profile.policy.autoApproveReads ? '✓' : '✗'}</span>
+              <span className={profile.policy.autoApproveEnrich ? 'text-accent-green' : 'text-text-muted'}>Enrich {profile.policy.autoApproveEnrich ? '✓' : '✗'}</span>
+              <span className={profile.policy.autoApproveFetch ? 'text-accent-green' : 'text-text-muted'}>Fetch {profile.policy.autoApproveFetch ? '✓' : '✗'}</span>
+              <span className={profile.policy.autoApproveCreate ? 'text-accent-green' : 'text-text-muted'}>Create {profile.policy.autoApproveCreate ? '✓' : '✗'}</span>
+              <span className={profile.policy.autoApproveModify ? 'text-accent-green' : 'text-text-muted'}>Modify {profile.policy.autoApproveModify ? '✓' : '✗'}</span>
+            </div>
+          </div>
+          {isBuiltin && (
+            <button onClick={onDuplicate} className="text-[10px] text-accent-blue hover:underline">
+              Customize (creates editable copy)
             </button>
-            <button onClick={onDelete} className="text-text-muted hover:text-red-400 p-0.5" title="Delete">
-              <Trash2 size={12} />
-            </button>
-          </>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
