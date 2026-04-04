@@ -2,7 +2,7 @@ import {
   FileText, ListChecks, Clock, Trash2, Briefcase,
   Archive, Settings as SettingsIcon,
   PanelLeftClose, PanelLeft, Github, Download, Chrome, PenTool, Activity, Network, Search, Shield,
-  LayoutDashboard, MessageSquare, MessagesSquare, ChevronLeft, Bot, Book,
+  LayoutDashboard, MessageSquare, MessagesSquare, ChevronLeft, Bot,
 } from 'lucide-react';
 import type { Folder, Tag as TagType, Timeline, Whiteboard, ViewMode, InvestigationStatus } from '../../types';
 import { cn } from '../../lib/utils';
@@ -143,7 +143,6 @@ export function Sidebar({
     { view: 'ioc-stats', icon: Search, label: 'IOCs', badge: investigationScopedCounts ? investigationScopedCounts.iocs : undefined, badgeColor: 'bg-accent-green' },
     { view: 'graph', icon: Network, label: 'Graph' },
     { view: 'activity', icon: Activity, label: 'Activity', dataTour: 'activity' },
-    { view: 'wiki', icon: Book, label: 'Wiki' },
   ];
 
   const collapsedBottomItems: { view: ViewMode; icon: typeof FileText; label: string; badge?: number; badgeColor?: string; dataTour?: string }[] = [
@@ -431,13 +430,6 @@ export function Sidebar({
             onClick={() => nav(() => navToView('activity'))}
           />
         </div>
-        <NavItem
-          icon={<Book size={16} />}
-          label="Wiki"
-          active={activeView === 'wiki'}
-          onClick={() => nav(() => navToView('wiki'))}
-        />
-
         <div className="h-px bg-border-subtle mx-1 my-1.5" />
 
         {/* Bottom global items — always visible */}

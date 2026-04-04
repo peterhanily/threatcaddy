@@ -1,5 +1,6 @@
 import { ArrowUpDown, FileText, Download } from 'lucide-react';
 import type { Note, SortOption, IOCType, Folder } from '../../types';
+import { cn } from '../../lib/utils';
 import { NoteCard } from './NoteCard';
 import { IOCFilterBar } from '../Clips/IOCFilterBar';
 import { useState, useRef, useEffect, useMemo } from 'react';
@@ -25,6 +26,7 @@ interface NoteListProps {
 export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, title, selectedIOCTypes, onIOCTypesChange, folders, tiExportConfig, onTrash }: NoteListProps) {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const sortMenuRef = useRef<HTMLDivElement>(null);
 
@@ -148,21 +150,54 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
           </div>
         ) : (
           <Virtuoso
-            data={notes}
+            data={(() => {
+              // Build display list: top-level notes + expanded folder children
+              const topLevel = notes.filter(n => !n.parentNoteId);
+              const result: Note[] = [];
+              for (const note of topLevel) {
+                result.push(note);
+                if (note.isFolder && expandedFolders.has(note.id)) {
+                  const children = notes.filter(n => n.parentNoteId === note.id);
+                  result.push(...children);
+                }
+              }
+              return result;
+            })()}
             itemContent={(_index, note) => {
               const folder = note.folderId ? folderMap.get(note.folderId) : undefined;
+              const isSubNote = !!note.parentNoteId;
+              const childCount = note.isFolder ? notes.filter(n => n.parentNoteId === note.id).length : 0;
               return (
-                <div className="pb-1.5">
-                  <NoteCard
-                    note={note}
-                    active={note.id === selectedId}
-                    onSelect={onSelect}
-                    onTrash={onTrash}
-                    folderColor={folder?.color}
-                    folderName={folder?.name}
-                    draggable
-                    onDragStart={(e) => e.dataTransfer.setData('text/plain', note.id)}
-                  />
+                <div className={cn('pb-1.5', isSubNote && 'ml-4')}>
+                  {note.isFolder ? (
+                    <button
+                      onClick={() => {
+                        const next = new Set(expandedFolders);
+                        if (next.has(note.id)) next.delete(note.id);
+                        else next.add(note.id);
+                        setExpandedFolders(next);
+                      }}
+                      className={cn(
+                        'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors',
+                        selectedId === note.id ? 'bg-purple/10 border border-purple/30' : 'hover:bg-bg-hover border border-transparent',
+                      )}
+                    >
+                      <span className="text-text-muted">{expandedFolders.has(note.id) ? '📂' : '📁'}</span>
+                      <span className="text-xs font-medium text-text-primary flex-1 truncate">{note.title}</span>
+                      <span className="text-[10px] text-text-muted">{childCount}</span>
+                    </button>
+                  ) : (
+                    <NoteCard
+                      note={note}
+                      active={note.id === selectedId}
+                      onSelect={onSelect}
+                      onTrash={onTrash}
+                      folderColor={folder?.color}
+                      folderName={folder?.name}
+                      draggable
+                      onDragStart={(e) => e.dataTransfer.setData('text/plain', note.id)}
+                    />
+                  )}
                 </div>
               );
             }}

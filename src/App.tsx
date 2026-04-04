@@ -80,7 +80,6 @@ const ShareDialog = lazy(() => import('./components/ExecMode/ShareDialog').then(
 import type { SharePayload, InvestigationBundle } from './lib/share';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 const CaddyShackView = lazy(() => import('./components/CaddyShack/CaddyShackView').then(m => ({ default: m.CaddyShackView })));
-const WikiView = lazy(() => import('./components/Wiki/WikiView'));
 const AgentPanel = lazy(() => import('./components/Agent/AgentPanel').then(m => ({ default: m.AgentPanel })));
 const AgentDashboard = lazy(() => import('./components/Agent/AgentDashboard').then(m => ({ default: m.AgentDashboard })));
 const ConflictDialog = lazy(() => import('./components/Common/ConflictDialog').then(m => ({ default: m.ConflictDialog })));
@@ -1219,14 +1218,6 @@ function AppInner() {
     }
   }, [pendingImportFile, handleImportComplete, addToast]);
 
-  const handleWikiImport = useCallback(async (file: File): Promise<number> => {
-    const text = await file.text();
-    const result = await mergeImportJSON(text);
-    handleImportComplete();
-    addToast('success', `Wiki imported: ${result.added} added, ${result.updated} updated`);
-    return result.added + result.updated;
-  }, [handleImportComplete, addToast]);
-
   // Sample investigation
   const sampleLoaded = useMemo(() => folders.some((f) => f.id === 'sample-investigation'), [folders]);
 
@@ -1814,11 +1805,6 @@ function AppInner() {
             allWhiteboards={screensafeWhiteboards}
             allIOCs={screensafeStandaloneIOCs}
             allChats={screensafeChatThreads}
-          />
-        ) : activeView === 'wiki' ? (
-          <WikiView
-            notes={screensafeNotes}
-            onImportWiki={handleWikiImport}
           />
         ) : activeView === 'caddyshack' ? (
           <CaddyShackView

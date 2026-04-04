@@ -19,6 +19,10 @@ export interface Note {
   linkedTaskIds?: string[];
   linkedTimelineEventIds?: string[];
   annotations?: NoteAnnotation[];
+  /** Parent note ID for sub-folder nesting (null = top-level) */
+  parentNoteId?: string;
+  /** If true, this note acts as a folder/container for child notes */
+  isFolder?: boolean;
   createdBy?: string;
   updatedBy?: string;
   createdAt: number;
@@ -182,7 +186,7 @@ export interface BackupDestination {
 }
 
 /** Top-level view/page the user can navigate to. */
-export type ViewMode = 'dashboard' | 'notes' | 'tasks' | 'timeline' | 'whiteboard' | 'activity' | 'graph' | 'ioc-stats' | 'chat' | 'caddyshack' | 'agent' | 'investigations' | 'wiki';
+export type ViewMode = 'dashboard' | 'notes' | 'tasks' | 'timeline' | 'whiteboard' | 'activity' | 'graph' | 'ioc-stats' | 'chat' | 'caddyshack' | 'agent' | 'investigations';
 export type EditorMode = 'edit' | 'preview' | 'split';
 export type TaskViewMode = 'list' | 'kanban';
 
