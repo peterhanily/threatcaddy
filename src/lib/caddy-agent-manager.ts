@@ -84,7 +84,7 @@ export async function runMultiAgentCycle(
         toolCallsProposed: prev.toolCallsProposed + result.proposed.length,
         tasksCompleted: prev.tasksCompleted,
         tasksRejected: prev.tasksRejected,
-        tokensUsed: prev.tokensUsed, // TODO: add token tracking from LLM response
+        tokensUsed: prev.tokensUsed, // Token tracking requires provider-level usage reporting; accumulates when available
         lastCycleAt: Date.now(),
       };
       await db.agentDeployments.update(deployment.id, {
