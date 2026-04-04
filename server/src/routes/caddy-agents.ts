@@ -218,7 +218,7 @@ app.post('/actions/:actionId/reject', async (c) => {
 
 app.post('/trigger/:investigationId', async (c) => {
   const folderId = c.req.param('investigationId');
-  const body = await c.req.json<{ context?: string }>().catch(() => ({}));
+  const body = await c.req.json<{ context?: string }>().catch(() => ({ context: undefined }));
 
   // Find all caddy-agent bots for this investigation
   const bots = await db.select()
