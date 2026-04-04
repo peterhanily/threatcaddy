@@ -53,6 +53,11 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
   // Forensicate.ai
   forensicate_scan: 'read',
 
+  // Autonomy tools (lead agent only)
+  call_meeting: 'create',
+  notify_human: 'create',
+  declare_war_bridge: 'create',
+
   // Delegation tools (lead agent only)
   delegate_task: 'create',
   review_completed_task: 'modify',

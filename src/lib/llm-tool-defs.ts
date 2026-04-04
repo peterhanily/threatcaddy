@@ -510,6 +510,42 @@ export const DELEGATION_TOOL_DEFINITIONS = [
       required: [],
     },
   },
+  {
+    name: 'call_meeting',
+    description: 'Schedule and run an agent meeting with a specific agenda. All deployed agents participate. Rate-limited by investigation policy. Only available to Lead agents.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        agenda: { type: 'string', description: 'Meeting agenda — what should agents discuss?' },
+        maxRounds: { type: 'number', description: 'Number of discussion rounds (default 2)' },
+      },
+      required: ['agenda'],
+    },
+  },
+  {
+    name: 'notify_human',
+    description: 'Send a notification to the human operator via the CaddyShack feed. Use for major findings, critical updates, or decisions requiring human judgment. Creates a pinned post visible to all team members.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        message: { type: 'string', description: 'Notification message — be clear and concise about what needs human attention' },
+        severity: { type: 'string', enum: ['info', 'warning', 'critical'], description: 'Severity level (default warning)' },
+      },
+      required: ['message'],
+    },
+  },
+  {
+    name: 'declare_war_bridge',
+    description: 'Declare a war bridge — emergency all-hands meeting triggered by a critical finding (confirmed breach, active C2, data exfiltration, etc.). Creates an emergency meeting, pinned escalation note, and desktop notification. Use only for genuinely critical situations.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        situation: { type: 'string', description: 'Description of the critical situation that triggered the war bridge' },
+        immediateActions: { type: 'string', description: 'Recommended immediate containment/response actions' },
+      },
+      required: ['situation'],
+    },
+  },
 ];
 
 // ── Write tool classification ──────────────────────────────────────────
@@ -524,6 +560,9 @@ const WRITE_TOOLS = new Set([
   'create_in_investigation',
   'delegate_task',
   'review_completed_task',
+  'call_meeting',
+  'notify_human',
+  'declare_war_bridge',
   'enrich_ioc',
 ]);
 

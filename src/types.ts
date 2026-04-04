@@ -993,6 +993,14 @@ export interface AgentPolicy {
   intervalMinutes: number;
   model?: string;
   focusAreas?: string[];
+  /** Agent personality: creativity level 0-100 (0=strictly analytical, 100=highly creative/speculative) */
+  creativity?: number;
+  /** Agent personality: seriousness level 0-100 (0=casual/conversational, 100=formal/professional) */
+  seriousness?: number;
+  /** Agent personality: verbosity 0-100 (0=terse bullet points, 100=detailed prose) */
+  verbosity?: number;
+  /** Agent personality: risk tolerance 0-100 (0=conservative/cautious, 100=aggressive/bold) */
+  riskTolerance?: number;
 }
 
 export const DEFAULT_AGENT_POLICY: AgentPolicy = {

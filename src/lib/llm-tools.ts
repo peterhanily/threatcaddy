@@ -226,6 +226,9 @@ export async function executeTool(
       case 'review_completed_task':          result = await executeReviewCompletedTask(inp, folderId); break;
       case 'delegate_task':                 result = await executeDelegateTask(inp, folderId); break;
       case 'list_agent_activity':           result = await executeListAgentActivity(inp, folderId); break;
+      case 'call_meeting':                  result = await executeCallMeeting(inp, folderId); break;
+      case 'notify_human':                   result = await executeNotifyHuman(inp, folderId); break;
+      case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId); break;
       case 'forensicate_scan':              result = await executeForensicateScan({ text: String(inp.text || ''), threshold: inp.threshold ? Number(inp.threshold) : undefined }); break;
       default: result = JSON.stringify({ error: `Unknown tool: ${name}` });
     }
@@ -597,5 +600,105 @@ async function executeListIntegrations(inp: Record<string, unknown>): Promise<st
     total: filtered.length,
     enabled: filtered.filter(i => i.enabled).length,
     integrations: filtered,
+  });
+}
+
+// ── Autonomy Tools (call_meeting, notify_human, declare_war_bridge) ──
+
+async function executeCallMeeting(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  if (!folderId) return JSON.stringify({ error: 'No investigation context' });
+  const agenda = String(inp.agenda || '');
+  if (!agenda) return JSON.stringify({ error: 'agenda is required' });
+
+  // Rate limit: check how many meetings today
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const recentMeetings = await db.agentMeetings
+    .where('investigationId').equals(folderId)
+    .filter(m => m.createdAt > todayStart.getTime())
+    .count();
+  const maxPerDay = 5; // configurable in future via policy
+  if (recentMeetings >= maxPerDay) {
+    return JSON.stringify({ error: `Meeting limit reached (${maxPerDay}/day). Wait until tomorrow.`, meetingsToday: recentMeetings });
+  }
+
+  // Meeting will be triggered by the agent manager on next cycle — store as a pending meeting request
+  const noteId = nanoid();
+  await db.notes.add({
+    id: noteId,
+    title: `Meeting Request: ${agenda.substring(0, 60)}`,
+    content: `## Agent Meeting Requested\n\n**Agenda:** ${agenda}\n**Requested at:** ${new Date().toISOString()}\n\nThis meeting was requested by an agent and will be facilitated during the next agent cycle.`,
+    folderId,
+    tags: ['agent-meeting', 'meeting-request'],
+    pinned: false, archived: false, trashed: false,
+    createdBy: 'agent:lead',
+    createdAt: Date.now(), updatedAt: Date.now(),
+  });
+
+  return JSON.stringify({ success: true, noteId, message: `Meeting requested with agenda: ${agenda}. Will be scheduled on next cycle.` });
+}
+
+async function executeNotifyHuman(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const message = String(inp.message || '');
+  const severity = String(inp.severity || 'warning');
+  if (!message) return JSON.stringify({ error: 'message is required' });
+
+  // Create a pinned note as notification (visible in investigation)
+  const noteId = nanoid();
+  const severityEmoji = severity === 'critical' ? '🚨' : severity === 'warning' ? '⚠️' : 'ℹ️';
+  await db.notes.add({
+    id: noteId,
+    title: `${severityEmoji} Agent Alert: ${message.substring(0, 60)}`,
+    content: `## Agent Notification\n\n**Severity:** ${severity}\n**Time:** ${new Date().toISOString()}\n\n${message}`,
+    folderId,
+    tags: ['agent-notification', `severity:${severity}`],
+    pinned: severity !== 'info',
+    archived: false, trashed: false,
+    createdBy: 'agent:notification',
+    createdAt: Date.now(), updatedAt: Date.now(),
+  });
+
+  // Also trigger desktop notification via extension
+  try {
+    const { postMessageOrigin } = await import('./utils');
+    window.postMessage({
+      type: 'TC_SEND_NOTIFICATION',
+      payload: { title: `AgentCaddy: ${severity.toUpperCase()}`, message: message.substring(0, 200), severity },
+    }, postMessageOrigin());
+  } catch { /* extension may not be available */ }
+
+  return JSON.stringify({ success: true, noteId, severity, message: 'Human notified. Pinned alert note created.' });
+}
+
+async function executeDeclareWarBridge(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  if (!folderId) return JSON.stringify({ error: 'No investigation context' });
+  const situation = String(inp.situation || '');
+  const immediateActions = String(inp.immediateActions || '');
+  if (!situation) return JSON.stringify({ error: 'situation is required' });
+
+  // Create critical escalation note
+  const noteId = nanoid();
+  await db.notes.add({
+    id: noteId,
+    title: `🚨 WAR BRIDGE: ${situation.substring(0, 60)}`,
+    content: `## WAR BRIDGE DECLARED\n\n**Situation:** ${situation}\n\n**Immediate Actions Required:**\n${immediateActions || 'Pending assessment'}\n\n**Declared at:** ${new Date().toISOString()}\n\n---\n\nAll agents should focus on this critical situation. Human operator review required immediately.`,
+    folderId,
+    tags: ['war-bridge', 'escalation', 'critical', 'needs-human-review'],
+    pinned: true, archived: false, trashed: false,
+    createdBy: 'agent:war-bridge',
+    createdAt: Date.now(), updatedAt: Date.now(),
+  });
+
+  // Desktop notification
+  try {
+    const { postMessageOrigin } = await import('./utils');
+    window.postMessage({
+      type: 'TC_SEND_NOTIFICATION',
+      payload: { title: '🚨 WAR BRIDGE DECLARED', message: situation.substring(0, 200), severity: 'critical' },
+    }, postMessageOrigin());
+  } catch { /* extension may not be available */ }
+
+  return JSON.stringify({
+    success: true, noteId,
+    message: 'War bridge declared. Critical escalation note pinned. Human operator notified. All agents should prioritize this situation.',
   });
 }

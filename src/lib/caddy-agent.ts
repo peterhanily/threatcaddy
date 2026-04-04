@@ -130,6 +130,27 @@ async function buildAgentSystemPrompt(folder: Folder, _settings: Settings, provi
   const taskInstructions = `
 TASK WORKFLOW: Check list_tasks for todo/in-progress tasks. Claim a todo task by updating it to in-progress, do the work described, then mark it done. Prioritize tasks assigned to you or tagged agent-delegated.`;
 
+  // Personality modifiers
+  const personality: string[] = [];
+  const mergedPolicy = { ...policy, ...deployment?.policyOverrides };
+  if (mergedPolicy.creativity !== undefined) {
+    const c = mergedPolicy.creativity;
+    personality.push(c < 30 ? 'Be strictly analytical and evidence-based.' : c > 70 ? 'Be creative and explore speculative hypotheses.' : '');
+  }
+  if (mergedPolicy.seriousness !== undefined) {
+    const s = mergedPolicy.seriousness;
+    personality.push(s < 30 ? 'Use a casual, conversational tone.' : s > 70 ? 'Use a formal, professional tone suitable for executive reporting.' : '');
+  }
+  if (mergedPolicy.verbosity !== undefined) {
+    const v = mergedPolicy.verbosity;
+    personality.push(v < 30 ? 'Be extremely concise — bullet points and short sentences only.' : v > 70 ? 'Provide detailed, thorough explanations with full context.' : '');
+  }
+  if (mergedPolicy.riskTolerance !== undefined) {
+    const r = mergedPolicy.riskTolerance;
+    personality.push(r < 30 ? 'Be conservative — only act on high-confidence findings.' : r > 70 ? 'Be aggressive — pursue leads even with low confidence, cast a wide net.' : '');
+  }
+  const personalityBlock = personality.filter(Boolean).length > 0 ? '\nSTYLE: ' + personality.filter(Boolean).join(' ') : '';
+
   // Competitiveness mode
   const compMode = deployment?.competitiveness || 'cooperative';
   const compInstructions = compMode === 'competitive'
@@ -164,7 +185,7 @@ TASK WORKFLOW: Check list_tasks for todo/in-progress tasks. Claim a todo task by
 ## ${profile.name} (${profile.role})
 
 ${profile.systemPrompt}
-${taskInstructions}${compInstructions}${readOnlyNote}${playbookInstructions}
+${taskInstructions}${compInstructions}${personalityBlock}${readOnlyNote}${playbookInstructions}
 
 Be PROACTIVE. Always produce output. ${MAX_AGENT_TURNS} turns max.${profile.role === 'lead' ? ' Use delegate_task and list_agent_activity. Review completed tasks for quality.' : ''}${focusAreas}`;
   }
