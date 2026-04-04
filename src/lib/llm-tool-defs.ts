@@ -466,6 +466,74 @@ export const TOOL_DEFINITIONS = [
       required: ['text'],
     },
   },
+  // ── Agent knowledge / long-term memory ─────────────────────────────
+  {
+    name: 'update_knowledge',
+    description: 'Store a key-value entry in the investigation knowledge base. Use to record persistent findings, hypotheses, confirmed facts, or important context that should be available in future cycles. Knowledge persists across all agent cycles.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        key: { type: 'string', description: 'Knowledge key — descriptive name (e.g. "confirmed_c2_servers", "attacker_attribution", "timeline_gaps")' },
+        value: { type: 'string', description: 'Knowledge value — the information to store' },
+        category: { type: 'string', enum: ['finding', 'hypothesis', 'fact', 'context', 'decision'], description: 'Category of knowledge (default finding)' },
+      },
+      required: ['key', 'value'],
+    },
+  },
+  {
+    name: 'recall_knowledge',
+    description: 'Retrieve entries from the investigation knowledge base. Returns all stored knowledge or filtered by key/category. Use at the start of each cycle to refresh your understanding.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        key: { type: 'string', description: 'Specific key to recall (optional — omit for all knowledge)' },
+        category: { type: 'string', description: 'Filter by category (optional)' },
+      },
+      required: [],
+    },
+  },
+  // ── External system integration ───────────────────────────────────
+  {
+    name: 'run_remote_command',
+    description: 'Execute a command on a remote host via SSH through the team server. Requires server connection and host to be in the allowed hosts list. Use for live forensics, log collection, containment actions.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        host: { type: 'string', description: 'Hostname or IP address of the target system' },
+        command: { type: 'string', description: 'Shell command to execute (read-only commands preferred for safety)' },
+        reason: { type: 'string', description: 'Why this command needs to run — logged for audit trail' },
+      },
+      required: ['host', 'command', 'reason'],
+    },
+  },
+  {
+    name: 'query_siem',
+    description: 'Query a SIEM or log management system (Splunk, Elastic, Sentinel) via its API. Searches for events matching a query within a time range. Configure SIEM endpoint in Settings > Integrations.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        query: { type: 'string', description: 'Search query in the SIEM\'s query language (SPL, KQL, Lucene)' },
+        timeRange: { type: 'string', description: 'Time range: "1h", "24h", "7d", or ISO date range "2024-01-01/2024-01-02"' },
+        maxResults: { type: 'number', description: 'Maximum results to return (default 50)' },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'create_ticket',
+    description: 'Create a ticket in an external system (Jira, ServiceNow, etc.) for tracking remediation, escalation, or follow-up actions. Configure ticketing endpoint in Settings > Integrations.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        title: { type: 'string', description: 'Ticket title/summary' },
+        description: { type: 'string', description: 'Detailed description of the issue and required action' },
+        priority: { type: 'string', enum: ['low', 'medium', 'high', 'critical'], description: 'Ticket priority' },
+        assignee: { type: 'string', description: 'Who to assign the ticket to (optional)' },
+        labels: { type: 'string', description: 'Comma-separated labels/tags for the ticket' },
+      },
+      required: ['title', 'description'],
+    },
+  },
 ];
 
 // ── Delegation tools (Lead agent only) ─────────────────────────────────
@@ -508,6 +576,19 @@ export const DELEGATION_TOOL_DEFINITIONS = [
         limit: { type: 'number', description: 'Max results to return (default 20)' },
       },
       required: [],
+    },
+  },
+  {
+    name: 'ask_human',
+    description: 'Ask the human operator a question and wait for their response. Use when you need human judgment, authorization, or information that cannot be found through tools. The question appears in the agent inbox for the human to answer.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        question: { type: 'string', description: 'The question to ask the human operator' },
+        context: { type: 'string', description: 'Background context to help the human understand why you are asking' },
+        options: { type: 'string', description: 'Suggested response options (comma-separated) if applicable' },
+      },
+      required: ['question'],
     },
   },
   {
@@ -564,6 +645,8 @@ const WRITE_TOOLS = new Set([
   'notify_human',
   'declare_war_bridge',
   'enrich_ioc',
+  'run_remote_command',
+  'create_ticket',
 ]);
 
 export function isWriteTool(name: string): boolean {

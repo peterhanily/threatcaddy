@@ -226,6 +226,12 @@ export async function executeTool(
       case 'review_completed_task':          result = await executeReviewCompletedTask(inp, folderId); break;
       case 'delegate_task':                 result = await executeDelegateTask(inp, folderId); break;
       case 'list_agent_activity':           result = await executeListAgentActivity(inp, folderId); break;
+      case 'update_knowledge':               result = await executeUpdateKnowledge(inp, folderId); break;
+      case 'recall_knowledge':               result = await executeRecallKnowledge(inp, folderId); break;
+      case 'ask_human':                     result = await executeAskHuman(inp, folderId); break;
+      case 'run_remote_command':            result = await executeRunRemoteCommand(inp, folderId); break;
+      case 'query_siem':                    result = await executeQuerySiem(inp); break;
+      case 'create_ticket':                 result = await executeCreateTicket(inp, folderId); break;
       case 'call_meeting':                  result = await executeCallMeeting(inp, folderId); break;
       case 'notify_human':                   result = await executeNotifyHuman(inp, folderId); break;
       case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId); break;
@@ -701,4 +707,220 @@ async function executeDeclareWarBridge(inp: Record<string, unknown>, folderId?: 
     success: true, noteId,
     message: 'War bridge declared. Critical escalation note pinned. Human operator notified. All agents should prioritize this situation.',
   });
+}
+
+// ── Knowledge / Long-term Memory ──────────────────────────────────────
+
+const KNOWLEDGE_TAG = 'agent-knowledge-base';
+
+async function executeUpdateKnowledge(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const key = String(inp.key || '');
+  const value = String(inp.value || '');
+  const category = String(inp.category || 'finding');
+  if (!key || !value) return JSON.stringify({ error: 'key and value are required' });
+
+  // Find or create the knowledge base note for this investigation
+  const kbNotes = folderId
+    ? await db.notes.where('folderId').equals(folderId).filter(n => n.tags.includes(KNOWLEDGE_TAG) && !n.trashed).toArray()
+    : [];
+
+  const kbNote = kbNotes[0];
+  let knowledge: Record<string, { value: string; category: string; updatedAt: string }> = {};
+
+  if (kbNote) {
+    try { knowledge = JSON.parse(kbNote.content); } catch { knowledge = {}; }
+  }
+
+  // Update the entry
+  knowledge[key] = { value, category, updatedAt: new Date().toISOString() };
+
+  // Cap at 100 entries — remove oldest if over
+  const entries = Object.entries(knowledge);
+  if (entries.length > 100) {
+    entries.sort((a, b) => a[1].updatedAt.localeCompare(b[1].updatedAt));
+    for (let i = 0; i < entries.length - 100; i++) delete knowledge[entries[i][0]];
+  }
+
+  const content = JSON.stringify(knowledge, null, 2);
+
+  if (kbNote) {
+    await db.notes.update(kbNote.id, { content, updatedAt: Date.now() });
+  } else {
+    await db.notes.add({
+      id: nanoid(),
+      title: 'Investigation Knowledge Base',
+      content,
+      folderId,
+      tags: [KNOWLEDGE_TAG],
+      pinned: false, archived: false, trashed: false,
+      createdBy: 'agent:knowledge',
+      createdAt: Date.now(), updatedAt: Date.now(),
+    });
+  }
+
+  return JSON.stringify({ success: true, key, category, entries: Object.keys(knowledge).length });
+}
+
+async function executeRecallKnowledge(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const keyFilter = inp.key ? String(inp.key) : undefined;
+  const categoryFilter = inp.category ? String(inp.category) : undefined;
+
+  const kbNotes = folderId
+    ? await db.notes.where('folderId').equals(folderId).filter(n => n.tags.includes(KNOWLEDGE_TAG) && !n.trashed).toArray()
+    : [];
+
+  if (kbNotes.length === 0) return JSON.stringify({ entries: 0, knowledge: {}, message: 'No knowledge base exists yet. Use update_knowledge to store findings.' });
+
+  let knowledge: Record<string, { value: string; category: string; updatedAt: string }> = {};
+  try { knowledge = JSON.parse(kbNotes[0].content); } catch { return JSON.stringify({ entries: 0, knowledge: {}, error: 'Knowledge base corrupted' }); }
+
+  // Filter
+  let filtered = Object.entries(knowledge);
+  if (keyFilter) filtered = filtered.filter(([k]) => k.toLowerCase().includes(keyFilter.toLowerCase()));
+  if (categoryFilter) filtered = filtered.filter(([, v]) => v.category === categoryFilter);
+
+  const result = Object.fromEntries(filtered);
+  return JSON.stringify({ entries: filtered.length, knowledge: result });
+}
+
+// ── Agent-Human Collaboration ─────────────────────────────────────────
+
+async function executeAskHuman(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const question = String(inp.question || '');
+  const context = String(inp.context || '');
+  const options = String(inp.options || '');
+  if (!question) return JSON.stringify({ error: 'question is required' });
+
+  // Check if there's already a pending question for this investigation
+  if (folderId) {
+    const pendingQuestions = await db.agentActions
+      .where('[investigationId+status]')
+      .equals([folderId, 'pending'])
+      .filter(a => a.toolName === 'ask_human')
+      .count();
+    if (pendingQuestions > 0) {
+      return JSON.stringify({ error: 'There is already a pending question awaiting human response. Wait for them to answer before asking again.' });
+    }
+  }
+
+  // Create a pending action that the human will see and respond to
+  const actionId = nanoid();
+  await db.agentActions.add({
+    id: actionId,
+    investigationId: folderId || '',
+    threadId: '',
+    toolName: 'ask_human',
+    toolInput: { question, context, options },
+    rationale: `Agent needs human input: ${question}`,
+    status: 'pending',
+    severity: 'warning',
+    createdAt: Date.now(),
+  });
+
+  // Also create a notification note
+  await db.notes.add({
+    id: nanoid(),
+    title: `❓ Agent Question: ${question.substring(0, 50)}`,
+    content: `## Agent Needs Your Input\n\n**Question:** ${question}\n\n${context ? `**Context:** ${context}\n\n` : ''}${options ? `**Suggested options:** ${options}\n\n` : ''}Please respond in the AgentCaddy inbox.`,
+    folderId,
+    tags: ['agent-question'],
+    pinned: true, archived: false, trashed: false,
+    createdBy: 'agent:question',
+    createdAt: Date.now(), updatedAt: Date.now(),
+  });
+
+  // Desktop notification
+  try {
+    const { postMessageOrigin } = await import('./utils');
+    window.postMessage({
+      type: 'TC_SEND_NOTIFICATION',
+      payload: { title: 'Agent needs your input', message: question.substring(0, 200), severity: 'warning' },
+    }, postMessageOrigin());
+  } catch { /* ignore */ }
+
+  return JSON.stringify({
+    status: 'question_pending',
+    actionId,
+    message: 'Question sent to human operator. The response will be available in your next cycle via working memory.',
+  });
+}
+
+// ── External System Tools ─────────────────────────────────────────────
+
+async function executeRunRemoteCommand(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const host = String(inp.host || '');
+  const command = String(inp.command || '');
+  const reason = String(inp.reason || '');
+  if (!host || !command) return JSON.stringify({ error: 'host and command are required' });
+
+  try {
+    const settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+    if (!settings.serverUrl) return JSON.stringify({ error: 'Team server required for remote command execution. Configure in Settings > Team Server.' });
+
+    const resp = await fetch(`${settings.serverUrl}/api/caddy-agents/exec`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ host, command, reason, folderId }),
+    });
+    if (!resp.ok) return JSON.stringify({ error: `Server ${resp.status}: ${(await resp.text().catch(() => '')).substring(0, 300)}` });
+    return await resp.text();
+  } catch (err) {
+    return JSON.stringify({ error: `Remote execution failed: ${(err as Error).message}` });
+  }
+}
+
+async function executeQuerySiem(inp: Record<string, unknown>): Promise<string> {
+  const query = String(inp.query || '');
+  const timeRange = String(inp.timeRange || '24h');
+  const maxResults = Math.min(Number(inp.maxResults) || 50, 200);
+  if (!query) return JSON.stringify({ error: 'query is required' });
+
+  try {
+    const settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+    if (!settings.siemEndpoint) {
+      return JSON.stringify({ error: 'No SIEM configured. Add siemEndpoint in Settings > Integrations.', query, timeRange });
+    }
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (settings.siemApiKey) headers['Authorization'] = `Bearer ${settings.siemApiKey}`;
+
+    const resp = await fetch(settings.siemEndpoint, { method: 'POST', headers, body: JSON.stringify({ query, timeRange, maxResults }) });
+    if (!resp.ok) return JSON.stringify({ error: `SIEM ${resp.status}`, query });
+    return await resp.text();
+  } catch (err) {
+    return JSON.stringify({ error: `SIEM query failed: ${(err as Error).message}`, query });
+  }
+}
+
+async function executeCreateTicket(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const title = String(inp.title || '');
+  const description = String(inp.description || '');
+  const priority = String(inp.priority || 'medium');
+  if (!title || !description) return JSON.stringify({ error: 'title and description are required' });
+
+  try {
+    const settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+    if (!settings.ticketEndpoint) {
+      // Fallback: create local task
+      const taskId = nanoid();
+      await db.tasks.add({
+        id: taskId, title: `[TICKET] ${title}`, description,
+        folderId, status: 'todo' as const, priority: priority as 'low' | 'medium' | 'high',
+        completed: false, tags: ['external-ticket'], order: 0, trashed: false, archived: false,
+        createdBy: 'agent:ticket', createdAt: Date.now(), updatedAt: Date.now(),
+      });
+      return JSON.stringify({ success: true, taskId, external: false, message: 'No ticketing system configured — created as local task.' });
+    }
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (settings.ticketApiKey) headers['Authorization'] = `Bearer ${settings.ticketApiKey}`;
+
+    const resp = await fetch(settings.ticketEndpoint, {
+      method: 'POST', headers,
+      body: JSON.stringify({ title, description, priority, assignee: inp.assignee ? String(inp.assignee) : undefined }),
+    });
+    if (!resp.ok) return JSON.stringify({ error: `Ticketing system ${resp.status}` });
+    const result = await resp.json();
+    return JSON.stringify({ success: true, external: true, ticketId: result.id || result.key, message: 'External ticket created.' });
+  } catch (err) {
+    return JSON.stringify({ error: `Ticket creation failed: ${(err as Error).message}` });
+  }
 }

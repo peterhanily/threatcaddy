@@ -259,9 +259,13 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                         selectedId === note.id ? 'bg-purple/10 border border-purple/30' : 'hover:bg-bg-hover border border-transparent',
                       )}
                     >
-                      <span className="text-lg">{folderIcon}</span>
+                      <div className="relative shrink-0">
+                        <span className="text-lg">{folderIcon}</span>
+                        {childCount > 0 && (
+                          <span className="absolute -top-1 -right-2 text-[9px] font-bold text-accent-blue bg-accent-blue/10 px-1 py-px rounded-full min-w-[16px] text-center">{childCount}</span>
+                        )}
+                      </div>
                       <span className="text-sm font-medium text-text-primary flex-1 truncate">{note.title}</span>
-                      {childCount > 0 && <span className="text-[10px] text-text-muted bg-surface-raised px-1.5 py-0.5 rounded-full">{childCount}</span>}
                       {isSubNote && onMoveToFolder && (
                         <button onClick={(e) => { e.stopPropagation(); onMoveToFolder(note.id, null); }}
                           className="text-[9px] text-text-muted hover:text-text-secondary opacity-0 group-hover:opacity-100" title="Move to top level">↑</button>

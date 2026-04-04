@@ -126,9 +126,10 @@ async function buildAgentSystemPrompt(folder: Folder, _settings: Settings, provi
   const policy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
   const focusAreas = policy.focusAreas?.length ? `\nFocus: ${policy.focusAreas.join(', ')}` : '';
 
-  // Task consumption instructions
+  // Task + knowledge instructions
   const taskInstructions = `
-TASK WORKFLOW: Check list_tasks for todo/in-progress tasks. Claim a todo task by updating it to in-progress, do the work described, then mark it done. Prioritize tasks assigned to you or tagged agent-delegated.`;
+TASK WORKFLOW: Check list_tasks for todo tasks. Claim by updating to in-progress, do the work, mark done.
+KNOWLEDGE: Use recall_knowledge at cycle start to load persistent findings. Use update_knowledge to store important discoveries, confirmed facts, and hypotheses that should persist across cycles.`;
 
   // Personality modifiers
   const personality: string[] = [];

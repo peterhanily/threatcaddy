@@ -50,10 +50,20 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
   enrich_ioc: 'enrich',
   list_integrations: 'read',
 
+  // Knowledge / memory
+  update_knowledge: 'create',
+  recall_knowledge: 'read',
+
+  // External systems
+  run_remote_command: 'modify',   // high-impact — requires approval by default
+  query_siem: 'fetch',
+  create_ticket: 'create',
+
   // Forensicate.ai
   forensicate_scan: 'read',
 
   // Autonomy tools (lead agent only)
+  ask_human: 'create',
   call_meeting: 'create',
   notify_human: 'create',
   declare_war_bridge: 'create',
