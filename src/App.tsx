@@ -1423,7 +1423,7 @@ function AppInner() {
   const caddyAgent = useCaddyAgent({
     folder: selectedFolder,
     settings,
-    onEntitiesChanged: () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); },
+    onEntitiesChanged: () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); chatsHook.reload(); },
   });
 
   const agentProfilesHook = useAgentProfiles();
@@ -1839,7 +1839,7 @@ function AppInner() {
                 setSelectedNoteId(noteId);
                 setActiveView('notes');
               }}
-              onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); }}
+              onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); chatsHook.reload(); }}
               onOpenSettings={(tab) => { setSettingsInitialTab(tab); setShowSettings(true); }}
               onFolderChanged={reloadFolders}
               profiles={agentProfilesHook.profiles}
@@ -2041,7 +2041,7 @@ function AppInner() {
             settings={settings}
             selectedFolderId={selectedFolderId}
             selectedFolder={selectedFolder}
-            onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); }}
+            onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); chatsHook.reload(); }}
             onNavigateToEntity={(type, id) => {
               if (type === 'note') { setSelectedNoteId(id); navigateTo('notes', { selectedNoteId: id }); }
               else if (type === 'task') { navigateTo('tasks'); }
