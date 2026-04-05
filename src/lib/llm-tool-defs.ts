@@ -550,6 +550,52 @@ export const TOOL_DEFINITIONS = [
       required: ['source', 'title'],
     },
   },
+  // ── Folder Management ───────────────────────────────────────────
+  {
+    name: 'create_note_folder',
+    description: 'Create a folder to organize notes in the current investigation. Returns the folder note ID.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        name: { type: 'string', description: 'Folder name' },
+        icon: { type: 'string', description: 'Emoji icon for the folder (default: 📁)' },
+      },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'delete_note_folder',
+    description: 'Delete a note folder. Choose whether to trash all notes inside it or move them out to the top level.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        folderId: { type: 'string', description: 'ID of the folder note to delete' },
+        action: { type: 'string', enum: ['trash_contents', 'move_out'], description: 'What to do with notes inside: trash_contents = trash them all, move_out = move to top level (default: move_out)' },
+      },
+      required: ['folderId'],
+    },
+  },
+  {
+    name: 'move_to_folder',
+    description: 'Move a note into a folder, or out to the top level. Use parentFolderId: null to move a note out of its folder.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        noteId: { type: 'string', description: 'ID of the note to move' },
+        parentFolderId: { type: 'string', description: 'ID of the target folder note, or null/empty to move to top level' },
+      },
+      required: ['noteId'],
+    },
+  },
+  {
+    name: 'list_folders',
+    description: 'List all note folders in the current investigation with their names and child note counts.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
 ];
 
 // ── Delegation tools (Lead agent only) ─────────────────────────────────
@@ -666,6 +712,9 @@ const WRITE_TOOLS = new Set([
   'ingest_alert',
   'update_knowledge',
   'ask_human',
+  'create_note_folder',
+  'delete_note_folder',
+  'move_to_folder',
 ]);
 
 export function isWriteTool(name: string): boolean {

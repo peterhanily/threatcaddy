@@ -62,6 +62,12 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
   // Alert ingestion
   ingest_alert: 'create',
 
+  // Folder management
+  create_note_folder: 'create',
+  delete_note_folder: 'modify',
+  move_to_folder: 'modify',
+  list_folders: 'read',
+
   // Forensicate.ai
   forensicate_scan: 'read',
 

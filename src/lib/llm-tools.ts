@@ -236,6 +236,10 @@ export async function executeTool(
       case 'notify_human':                   result = await executeNotifyHuman(inp, folderId); break;
       case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId); break;
       case 'ingest_alert':                   result = await executeIngestAlert(inp, folderId); break;
+      case 'create_note_folder':             result = await executeCreateNoteFolder(inp, folderId); break;
+      case 'delete_note_folder':             result = await executeDeleteNoteFolder(inp); break;
+      case 'move_to_folder':                 result = await executeMoveToFolder(inp); break;
+      case 'list_folders':                   result = await executeListFolders(inp, folderId); break;
       case 'forensicate_scan':              result = await executeForensicateScan({ text: String(inp.text || ''), threshold: inp.threshold ? Number(inp.threshold) : undefined }); break;
       default: {
         // Dynamic skill tools: local:<skill> or host:<name>:<skill>
@@ -984,4 +988,106 @@ async function executeIngestAlert(inp: Record<string, unknown>, folderId?: strin
     noteId,
     message: `Alert ingested as pinned note. Source: ${source}, Severity: ${severity}. Use extract_iocs on the note content to pull IOCs.`,
   });
+}
+
+// ── Folder Management ────────────────────────────────────────────────
+
+async function executeCreateNoteFolder(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const name = String(inp.name || '').trim();
+  if (!name) return JSON.stringify({ error: 'name is required' });
+  if (!folderId) return JSON.stringify({ error: 'No active investigation' });
+
+  const icon = String(inp.icon || '📁');
+  const id = nanoid();
+  await db.notes.add({
+    id,
+    folderId,
+    title: name,
+    content: '',
+    tags: ['chat-folder', `icon:${icon}`],
+    isFolder: true,
+    pinned: false,
+    trashed: false,
+    archived: false,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  });
+
+  return JSON.stringify({ success: true, folderId: id, name, icon });
+}
+
+async function executeDeleteNoteFolder(inp: Record<string, unknown>): Promise<string> {
+  const targetId = String(inp.folderId || '');
+  const action = String(inp.action || 'move_out');
+  if (!targetId) return JSON.stringify({ error: 'folderId is required' });
+
+  const folder = await db.notes.get(targetId);
+  if (!folder) return JSON.stringify({ error: 'Folder not found' });
+  if (!folder.isFolder) return JSON.stringify({ error: 'That note is not a folder' });
+
+  // Find all children
+  const children = await db.notes.where('parentNoteId').equals(targetId).toArray();
+
+  if (action === 'trash_contents') {
+    // Trash all children
+    const now = Date.now();
+    for (const child of children) {
+      await db.notes.update(child.id, { trashed: true, trashedAt: now, updatedAt: now });
+    }
+  } else {
+    // Move children to top level (remove parentNoteId)
+    for (const child of children) {
+      await db.notes.update(child.id, { parentNoteId: undefined, updatedAt: Date.now() });
+    }
+  }
+
+  // Trash the folder itself
+  await db.notes.update(targetId, { trashed: true, trashedAt: Date.now(), updatedAt: Date.now() });
+
+  return JSON.stringify({
+    success: true,
+    deleted: folder.title,
+    childrenCount: children.length,
+    action: action === 'trash_contents' ? 'Contents trashed' : 'Contents moved to top level',
+  });
+}
+
+async function executeMoveToFolder(inp: Record<string, unknown>): Promise<string> {
+  const noteId = String(inp.noteId || '');
+  const parentFolderId = inp.parentFolderId ? String(inp.parentFolderId) : undefined;
+  if (!noteId) return JSON.stringify({ error: 'noteId is required' });
+
+  const note = await db.notes.get(noteId);
+  if (!note) return JSON.stringify({ error: 'Note not found' });
+
+  if (parentFolderId) {
+    const target = await db.notes.get(parentFolderId);
+    if (!target) return JSON.stringify({ error: 'Target folder not found' });
+    if (!target.isFolder) return JSON.stringify({ error: 'Target is not a folder' });
+  }
+
+  await db.notes.update(noteId, { parentNoteId: parentFolderId || undefined, updatedAt: Date.now() });
+
+  return JSON.stringify({
+    success: true,
+    noteId,
+    movedTo: parentFolderId || 'top level',
+    message: parentFolderId ? `Moved "${note.title}" into folder` : `Moved "${note.title}" to top level`,
+  });
+}
+
+async function executeListFolders(_inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  if (!folderId) return JSON.stringify({ error: 'No active investigation' });
+
+  const allNotes = await db.notes.where('folderId').equals(folderId).and(n => !n.trashed).toArray();
+  const folders = allNotes.filter(n => n.isFolder);
+
+  const result = folders.map(f => {
+    const childCount = allNotes.filter(n => n.parentNoteId === f.id).length;
+    const iconTag = f.tags?.find(t => t.startsWith('icon:'));
+    const icon = iconTag ? iconTag.replace('icon:', '') : '📁';
+    return { id: f.id, name: f.title, icon, childCount };
+  });
+
+  return JSON.stringify({ folders: result, total: result.length });
 }
