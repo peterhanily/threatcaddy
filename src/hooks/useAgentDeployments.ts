@@ -31,10 +31,17 @@ export function useAgentDeployments(investigationId?: string) {
 
   // Reload when deployments change from tool calls (deploy_agent, stop_agent, etc.)
   useEffect(() => {
-    const handler = () => reload();
+    const handler = () => { setTimeout(reload, 200); }; // slight delay for Dexie write to commit
     window.addEventListener('tc-folders-changed', handler);
     return () => window.removeEventListener('tc-folders-changed', handler);
   }, [reload]);
+
+  // Periodic poll as fallback — catches deployments created by agents or other tabs
+  useEffect(() => {
+    if (!investigationId) return;
+    const timer = setInterval(reload, 10_000);
+    return () => clearInterval(timer);
+  }, [investigationId, reload]);
 
   const deployProfile = useCallback(async (profile: AgentProfile, settings?: { model?: string; provider?: LLMProvider }) => {
     if (!investigationId) return null;

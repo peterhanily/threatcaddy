@@ -119,6 +119,13 @@ export function AgentPanel({
     if (!agentRunning) loadActions();
   }, [agentRunning, loadActions]);
 
+  // Periodic refresh while agents are running
+  useEffect(() => {
+    if (!agentRunning) return;
+    const timer = setInterval(loadActions, 5_000);
+    return () => clearInterval(timer);
+  }, [agentRunning, loadActions]);
+
   const handleRunAgent = async () => {
     setLocalError(null);
     if (onRunOnce) {
