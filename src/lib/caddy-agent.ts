@@ -23,7 +23,7 @@ import { getHostToolDefinitions } from './agent-hosts';
 
 // ── Global Concurrency Limit ───────────────────────────────────────────
 
-const MAX_CONCURRENT_CYCLES = 3;
+const MAX_CONCURRENT_CYCLES = 5;
 let activeCycleCount = 0;
 const cycleWaiters: { resolve: () => void }[] = [];
 
@@ -520,8 +520,10 @@ async function _runAgentCycleInner(
   }
 
   try {
+    onProgress?.(`${agentName} starting (${provider}/${model}, ${availableTools.length} tools)...`);
+
     for (let turn = 0; turn < MAX_AGENT_TURNS; turn++) {
-      onProgress?.(`${agentName} thinking (turn ${turn + 1})...`);
+      onProgress?.(`${agentName} thinking (turn ${turn + 1}/${MAX_AGENT_TURNS}, ${provider}/${model})...`);
 
       const response = await callLLM({
         provider,

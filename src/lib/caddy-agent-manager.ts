@@ -56,8 +56,9 @@ export async function runMultiAgentCycle(
     await db.agentDeployments.update(deployment.id, { status: 'running' });
   }
 
-  // Run agents with concurrency limit (max 5 parallel to avoid overwhelming LLM providers)
-  const MAX_CONCURRENT = 5;
+  // Run agents with concurrency limit — use 1 for local LLMs (serial), 5 for cloud
+  const isLocal = (settings.llmDefaultProvider === 'local') || (!settings.llmAnthropicApiKey && !settings.llmOpenAIApiKey && !settings.llmGeminiApiKey && !settings.llmMistralApiKey && settings.llmLocalEndpoint);
+  const MAX_CONCURRENT = isLocal ? 1 : 5;
   const allResults: PromiseSettledResult<{ deploymentId: string; result: AgentCycleResult }>[] = [];
 
   for (let i = 0; i < deploymentProfiles.length; i += MAX_CONCURRENT) {
