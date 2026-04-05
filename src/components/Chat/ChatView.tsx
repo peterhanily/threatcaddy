@@ -585,6 +585,15 @@ export function ChatView({
     setPendingApproval(null);
   }, [pendingApproval]);
 
+  // Clear pending approval when thread changes (prevents ghost from trashed threads)
+  useEffect(() => {
+    if (pendingApproval) {
+      pendingApproval.resolve(false);
+      setPendingApproval(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedThreadId]);
+
   // ── Plan/Act mode ──────────────────────────────────────────────────
   const threadMode = activeThread?.mode || 'act';
 
