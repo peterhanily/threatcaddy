@@ -235,6 +235,7 @@ export async function executeTool(
       case 'call_meeting':                  result = await executeCallMeeting(inp, folderId); break;
       case 'notify_human':                   result = await executeNotifyHuman(inp, folderId); break;
       case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId); break;
+      case 'ingest_alert':                   result = await executeIngestAlert(inp, folderId); break;
       case 'forensicate_scan':              result = await executeForensicateScan({ text: String(inp.text || ''), threshold: inp.threshold ? Number(inp.threshold) : undefined }); break;
       default: {
         // Dynamic skill tools: local:<skill> or host:<name>:<skill>
@@ -940,4 +941,46 @@ async function executeCreateTicket(inp: Record<string, unknown>, folderId?: stri
   } catch (err) {
     return JSON.stringify({ error: `Ticket creation failed: ${(err as Error).message}` });
   }
+}
+
+// ── Alert Ingestion ──────────────────────────────────────────────────
+
+async function executeIngestAlert(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const source = String(inp.source || '');
+  const title = String(inp.title || '');
+  const description = String(inp.description || '');
+  const severity = String(inp.severity || 'medium');
+  const rawData = String(inp.raw_data || '');
+
+  if (!source || !title) return JSON.stringify({ error: 'source and title are required' });
+  if (!folderId) return JSON.stringify({ error: 'No active investigation — open or create one first' });
+
+  const noteId = nanoid();
+  const content = [
+    `# Alert: ${title}`,
+    '',
+    `**Source:** ${source}`,
+    `**Severity:** ${severity}`,
+    description ? `\n${description}` : '',
+    rawData ? `\n## Raw Data\n\`\`\`json\n${rawData.substring(0, 5000)}\n\`\`\`` : '',
+  ].filter(Boolean).join('\n');
+
+  await db.notes.add({
+    id: noteId,
+    folderId,
+    title: `[${source.toUpperCase()}] ${title}`,
+    content,
+    tags: ['alert', `source:${source}`, `severity:${severity}`],
+    pinned: severity === 'critical' || severity === 'high',
+    trashed: false,
+    archived: false,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  });
+
+  return JSON.stringify({
+    success: true,
+    noteId,
+    message: `Alert ingested as pinned note. Source: ${source}, Severity: ${severity}. Use extract_iocs on the note content to pull IOCs.`,
+  });
 }

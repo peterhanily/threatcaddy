@@ -534,6 +534,22 @@ export const TOOL_DEFINITIONS = [
       required: ['title', 'description'],
     },
   },
+  // ── Alert Ingestion ──────────────────────────────────────────────
+  {
+    name: 'ingest_alert',
+    description: 'Ingest an external alert into the current investigation. Creates a pinned alert note and optionally extracts IOCs. Use when processing alerts from SIEM, email, or other sources.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        source: { type: 'string', description: 'Alert source system (e.g. splunk, elastic, sentinel, email)' },
+        title: { type: 'string', description: 'Alert title/summary' },
+        description: { type: 'string', description: 'Full alert description or body text' },
+        severity: { type: 'string', enum: ['low', 'medium', 'high', 'critical'], description: 'Alert severity' },
+        raw_data: { type: 'string', description: 'Raw alert payload as JSON string (optional)' },
+      },
+      required: ['source', 'title'],
+    },
+  },
 ];
 
 // ── Delegation tools (Lead agent only) ─────────────────────────────────

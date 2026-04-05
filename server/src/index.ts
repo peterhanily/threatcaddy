@@ -26,6 +26,7 @@ import integrationRoutes from './routes/integrations.js';
 import savedSearchRoutes from './routes/saved-searches.js';
 import taxiiRoutes from './routes/taxii.js';
 import caddyAgentRoutes, { heartbeatManager } from './routes/caddy-agents.js';
+import webhookRoutes from './routes/webhooks.js';
 import adminRoutes from './routes/admin/index.js';
 import { botManager } from './bots/bot-manager.js';
 import { prePullSandboxImages } from './bots/sandbox.js';
@@ -169,6 +170,7 @@ app.route('/api/integrations', integrationRoutes);
 app.route('/api/saved-searches', savedSearchRoutes);
 app.route('/api/taxii', taxiiRoutes);
 app.route('/api/caddy-agents', caddyAgentRoutes);
+app.route('/api/webhooks', webhookRoutes);
 
 // WebSocket endpoint — token sent as first message, not in URL
 app.get('/ws', upgradeWebSocket(() => {

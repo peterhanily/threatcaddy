@@ -59,6 +59,9 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
   query_siem: 'fetch',
   create_ticket: 'create',
 
+  // Alert ingestion
+  ingest_alert: 'create',
+
   // Forensicate.ai
   forensicate_scan: 'read',
 
