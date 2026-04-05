@@ -1924,7 +1924,7 @@ function AppInner() {
                   notes.reload();
                 }}
                 onDeleteFolder={async (noteId, action) => {
-                  const children = await db.notes.where('parentNoteId').equals(noteId).toArray();
+                  const children = await db.notes.filter(n => n.parentNoteId === noteId).toArray();
                   const now = Date.now();
                   if (action === 'trash_contents') {
                     for (const child of children) {
