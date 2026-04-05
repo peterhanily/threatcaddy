@@ -197,6 +197,13 @@ function AppInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reloadFolders, notes.reload, tasks.reload, timeline.reload, reloadTimelines, reloadWhiteboards, standaloneIOCsHook.reload, chatsHook.reload, reloadTags, noteTemplatesHook.reload, playbooksHook.reload]);
 
+  // Reload folders when agent tools modify folder state (e.g. deploy_agent enables agentEnabled)
+  useEffect(() => {
+    const handler = () => reloadFolders();
+    window.addEventListener('tc-folders-changed', handler);
+    return () => window.removeEventListener('tc-folders-changed', handler);
+  }, [reloadFolders]);
+
   // Reload UI when external agents write data via the agent bridge
   useEffect(() => {
     const handler = () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); };

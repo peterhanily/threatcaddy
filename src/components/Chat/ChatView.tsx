@@ -115,6 +115,9 @@ export function ChatView({
     setPendingImages(prev => [...prev, ...attachments]);
   }, []);
 
+  // ── YOLO mode — auto-approve all write tools without prompting
+  const [yoloMode, setYoloMode] = useState(false);
+
   // ── Write tool approval flow (state declared early so handleSend can reference it)
   const [pendingApproval, setPendingApproval] = useState<{
     toolName: string;
@@ -461,8 +464,8 @@ export function ChatView({
         useServerProxy: effectiveRoute === 'server',
       },
       async (toolUse: ToolUseBlock) => {
-        // Approval gate for write tools in Act mode
-        if (isWriteTool(toolUse.name)) {
+        // Approval gate for write tools in Act mode (skip if yolo mode)
+        if (isWriteTool(toolUse.name) && !yoloMode) {
           const approved = await new Promise<boolean>((resolve) => {
             setPendingApproval({
               toolName: toolUse.name,
@@ -964,6 +967,19 @@ export function ChatView({
                 >
                   {threadMode === 'plan' ? <Eye size={10} /> : <Play size={10} />}
                   {threadMode === 'plan' ? 'Plan' : 'Act'}
+                </button>
+                <button
+                  onClick={() => setYoloMode(!yoloMode)}
+                  className={cn(
+                    'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors mr-1',
+                    yoloMode
+                      ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
+                      : 'bg-surface-raised border-border-subtle text-text-muted hover:text-text-secondary'
+                  )}
+                  title={yoloMode ? 'YOLO mode ON — all tool calls auto-approved' : 'Click to enable YOLO mode (auto-approve all actions)'}
+                >
+                  <Shield size={10} />
+                  {yoloMode ? 'YOLO' : 'Safe'}
                 </button>
                 {threadTokenTotal > 0 && (
                   <span className={cn(

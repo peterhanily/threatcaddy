@@ -1156,6 +1156,8 @@ async function executeDeployAgent(inp: Record<string, unknown>, folderId?: strin
 
   // Enable agent on the folder if not already
   await db.folders.update(folderId, { agentEnabled: true, updatedAt: Date.now() });
+  // Notify the app to reload folders so useCaddyAgent picks up the change
+  window.dispatchEvent(new CustomEvent('tc-folders-changed'));
 
   return JSON.stringify({
     success: true,

@@ -45,12 +45,19 @@ function ToolCallBlock({ tc }: { tc: ToolCallRecord }) {
     const parsed = JSON.parse(tc.result);
     if (parsed.error) {
       resultPreview = `Error: ${parsed.error}`;
+    } else if (parsed.message) {
+      resultPreview = String(parsed.message);
     } else if (parsed.count !== undefined) {
       resultPreview = `${parsed.count} result${parsed.count !== 1 ? 's' : ''}`;
     } else if (parsed.success) {
-      resultPreview = `Created: ${parsed.title || parsed.value || parsed.id}`;
+      const label = parsed.title || parsed.name || parsed.value || parsed.profile || parsed.noteId || parsed.id || '';
+      resultPreview = label ? `Done: ${label}` : 'Done';
     } else if (parsed.title) {
       resultPreview = parsed.title;
+    } else if (Array.isArray(parsed)) {
+      resultPreview = parsed.length === 0 ? 'No results' : `${parsed.length} item${parsed.length !== 1 ? 's' : ''}`;
+    } else if (typeof parsed === 'object' && Object.keys(parsed).length === 0) {
+      resultPreview = 'Done (empty result)';
     } else {
       resultPreview = tc.result.length > 80 ? tc.result.slice(0, 80) + '...' : tc.result;
     }

@@ -17,7 +17,7 @@ import { DEFAULT_AGENT_POLICY } from '../types';
 import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from './llm-tool-defs';
 import { executeTool } from './llm-tools';
 import { shouldAutoApprove, getToolActionClass } from './caddy-agent-policy';
-import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-router';
+import { resolveRoutingMode, sendViaExtension, sendViaServer, sendDirectToLocal } from './llm-router';
 import { DEFAULT_MODEL_PER_PROVIDER, MODEL_PROVIDER_MAP } from './models';
 import { getHostToolDefinitions } from './agent-hosts';
 
@@ -348,7 +348,10 @@ function callLLM(opts: {
       },
     };
 
-    if (opts.useServerProxy) {
+    if (opts.provider === 'local' && opts.endpoint) {
+      // Local LLM: direct fetch, bypass extension/server entirely
+      sendDirectToLocal(request, callbacks);
+    } else if (opts.useServerProxy) {
       sendViaServer(request, callbacks);
     } else {
       sendViaExtension(request, callbacks);
