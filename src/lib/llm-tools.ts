@@ -1196,6 +1196,7 @@ async function executeStopAgent(inp: Record<string, unknown>, folderId?: string)
     await db.agentDeployments.update(d.id, { shift: 'resting', status: 'idle', updatedAt: now });
   }
 
+  window.dispatchEvent(new CustomEvent('tc-folders-changed'));
   return JSON.stringify({
     success: true,
     stopped: targetProfile.name,
@@ -1283,6 +1284,7 @@ async function executeSpawnAgent(inp: Record<string, unknown>, folderId?: string
     updatedAt: Date.now(),
   });
 
+  window.dispatchEvent(new CustomEvent('tc-folders-changed'));
   return JSON.stringify({
     success: true,
     deploymentId,
@@ -1335,6 +1337,7 @@ async function executeDefineSpecialist(inp: Record<string, unknown>, folderId?: 
     updatedAt: now,
   });
 
+  window.dispatchEvent(new CustomEvent('tc-folders-changed'));
   return JSON.stringify({
     success: true,
     profileId,
@@ -1436,6 +1439,7 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
     }
   }
 
+  window.dispatchEvent(new CustomEvent('tc-folders-changed'));
   return JSON.stringify({
     success: true,
     dismissed: targetProfile.name,

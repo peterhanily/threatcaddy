@@ -29,6 +29,13 @@ export function useAgentDeployments(investigationId?: string) {
     reload();
   }, [reload]);
 
+  // Reload when deployments change from tool calls (deploy_agent, stop_agent, etc.)
+  useEffect(() => {
+    const handler = () => reload();
+    window.addEventListener('tc-folders-changed', handler);
+    return () => window.removeEventListener('tc-folders-changed', handler);
+  }, [reload]);
+
   const deployProfile = useCallback(async (profile: AgentProfile, settings?: { model?: string; provider?: LLMProvider }) => {
     if (!investigationId) return null;
 
