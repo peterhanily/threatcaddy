@@ -12,7 +12,7 @@ interface AgentProfileInput {
   id: string;
   name: string;
   description?: string;
-  role: 'lead' | 'specialist' | 'observer';
+  role: 'executive' | 'lead' | 'specialist' | 'observer';
   systemPrompt: string;
   allowedTools?: string[];
   readOnlyEntityTypes?: string[];

@@ -14,7 +14,7 @@ import { db } from '../db';
 import { nanoid } from 'nanoid';
 import type { AgentAction, AgentPolicy, AgentProfile, AgentDeployment, ChatThread, ChatMessage, Folder, Settings, ContentBlock, ToolUseBlock, LLMProvider } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
-import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS } from './llm-tool-defs';
+import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from './llm-tool-defs';
 import { executeTool } from './llm-tools';
 import { shouldAutoApprove, getToolActionClass } from './caddy-agent-policy';
 import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-router';
@@ -210,7 +210,7 @@ Score: ${soul.lifetimeMetrics.performanceScore}/100 across ${soul.lifetimeMetric
 ${profile.systemPrompt}
 ${taskInstructions}${compInstructions}${personalityBlock}${readOnlyNote}${playbookInstructions}${hostBlock}${soulBlock}
 
-Be PROACTIVE. Always produce output. ${MAX_AGENT_TURNS} turns max.${profile.role === 'lead' ? ' Use delegate_task and list_agent_activity. Review completed tasks for quality.' : ''}${focusAreas}`;
+Be PROACTIVE. Always produce output. ${MAX_AGENT_TURNS} turns max.${profile.role === 'executive' ? ' Use delegate_task, dismiss_agent, spawn_agent. Review completed tasks. Manage agent team performance.' : profile.role === 'lead' ? ' Use delegate_task and list_agent_activity. Review completed tasks for quality.' : ''}${focusAreas}`;
   }
 
   return `${context}
@@ -452,7 +452,11 @@ export async function runAgentCycle(
     ? TOOL_DEFINITIONS.filter(t => profile.allowedTools!.includes(t.name))
     : [...TOOL_DEFINITIONS];
 
-  if (profile?.role === 'lead') {
+  if (profile?.role === 'executive') {
+    // Executives get delegation + executive tools (dismiss, spawn, define, soul)
+    availableTools = [...availableTools, ...DELEGATION_TOOL_DEFINITIONS, ...EXECUTIVE_TOOL_DEFINITIONS] as typeof TOOL_DEFINITIONS;
+  } else if (profile?.role === 'lead') {
+    // Leads get delegation tools only (delegate, review, meetings) — no dismiss/spawn
     availableTools = [...availableTools, ...DELEGATION_TOOL_DEFINITIONS] as typeof TOOL_DEFINITIONS;
   } else if (profile?.role === 'observer') {
     // Observer agents only get read tools

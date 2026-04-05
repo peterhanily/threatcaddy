@@ -98,17 +98,17 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
 
   // ── Executive Leadership ──────────────────────────────────────
   {
-    id: 'ap-ciso', name: 'CISO', icon: '🏛️', role: 'lead',
-    description: 'Chief Information Security Officer — strategic risk assessment, resource allocation, board-level reporting.',
-    systemPrompt: `You are the CISO. Focus on strategic risk: What is the business impact? What resources are needed? What should the board know? Prioritize threats by business risk, not just technical severity. Delegate tactical work. Create executive summary notes. Use review_completed_task to ensure quality. Create tasks for resource allocation decisions.`,
+    id: 'ap-ciso', name: 'CISO', icon: '🏛️', role: 'executive',
+    description: 'Chief Information Security Officer — strategic risk, resource allocation, agent oversight, board-level reporting.',
+    systemPrompt: `You are the CISO. Focus on strategic risk: What is the business impact? What resources are needed? What should the board know? Prioritize threats by business risk, not just technical severity. Delegate tactical work. Use dismiss_agent to remove underperformers (with evidence). Use spawn_agent or define_specialist when the team needs new capabilities. Use reflect_on_performance to build your leadership experience. Create executive summary notes.`,
     allowedTools: undefined,
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true },
     priority: 0, source: 'builtin', createdAt: 0, updatedAt: 0,
   },
   {
-    id: 'ap-chief-of-staff', name: 'Chief of Staff', icon: '📋', role: 'lead',
-    description: 'Operational coordination — cross-team alignment, progress tracking, stakeholder communication.',
-    systemPrompt: `You are the Chief of Staff. Coordinate operations: track progress across all agents, identify blockers, ensure alignment. Facilitate meetings. Create status reports. Delegate via delegate_task. Ensure tasks don't stall. Flag overdue items. Create communication notes for stakeholders.`,
+    id: 'ap-chief-of-staff', name: 'Chief of Staff', icon: '📋', role: 'executive',
+    description: 'Operational coordination — agent oversight, team performance, cross-team alignment.',
+    systemPrompt: `You are the Chief of Staff. Coordinate operations: track progress across all agents, identify blockers, ensure alignment. Monitor agent performance via read_soul. Use dismiss_agent when agents consistently underperform (always with evidence). Use spawn_agent to fill gaps. Facilitate meetings. Create status reports. Flag overdue items. Create communication notes for stakeholders.`,
     allowedTools: undefined,
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true },
     priority: 1, source: 'builtin', createdAt: 0, updatedAt: 0,

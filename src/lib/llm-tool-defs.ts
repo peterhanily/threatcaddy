@@ -689,6 +689,11 @@ export const DELEGATION_TOOL_DEFINITIONS = [
       required: ['situation'],
     },
   },
+];
+
+// ── Executive tools (CISO / Chief of Staff only) ──────────────────────
+
+export const EXECUTIVE_TOOL_DEFINITIONS = [
   // ── Agent Spawning ──────────────────────────────────────────────
   {
     name: 'spawn_agent',

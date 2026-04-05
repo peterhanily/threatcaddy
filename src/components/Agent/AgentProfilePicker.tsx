@@ -58,7 +58,7 @@ export function AgentProfilePicker({ profiles, deployments, onDeployMultiple, on
   // Group profiles by category
   const groups = useMemo(() => {
     const g: { label: string; profiles: AgentProfile[] }[] = [];
-    const exec = profiles.filter(p => p.role === 'lead');
+    const exec = profiles.filter(p => p.role === 'executive' || p.role === 'lead');
     const spec = profiles.filter(p => p.role === 'specialist');
     const obs = profiles.filter(p => p.role === 'observer');
     if (exec.length) g.push({ label: 'Leadership', profiles: exec });

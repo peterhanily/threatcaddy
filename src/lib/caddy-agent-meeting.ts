@@ -262,7 +262,7 @@ Rules:
     // Generate meeting minutes using the lead agent (or first participant)
     onProgress?.('Meeting', 'Generating minutes...');
 
-    const leadProfile = participants.find(p => p.profile.role === 'lead')?.profile || participants[0].profile;
+    const leadProfile = participants.find(p => p.profile.role === 'executive' || p.profile.role === 'lead')?.profile || participants[0].profile;
 
     const minutesPrompt = `The meeting has concluded after ${completedRounds} round(s). As ${leadProfile.name}, write concise meeting minutes in markdown format:
 

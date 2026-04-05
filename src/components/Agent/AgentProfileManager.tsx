@@ -240,7 +240,7 @@ function ProfileForm({ profile, onSave, onCancel }: {
   const [name, setName] = useState(profile?.name || '');
   const [description, setDescription] = useState(profile?.description || '');
   const [icon, setIcon] = useState(profile?.icon || '🤖');
-  const [role, setRole] = useState<'lead' | 'specialist' | 'observer'>(profile?.role || 'specialist');
+  const [role, setRole] = useState<'executive' | 'lead' | 'specialist' | 'observer'>(profile?.role || 'specialist');
   const [systemPrompt, setSystemPrompt] = useState(profile?.systemPrompt || '');
   const [saving, setSaving] = useState(false);
 
@@ -264,8 +264,9 @@ function ProfileForm({ profile, onSave, onCancel }: {
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Profile name" className={cn(inputClass, 'flex-1')} />
       </div>
       <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Brief description" className={inputClass} />
-      <select value={role} onChange={e => setRole(e.target.value as 'lead' | 'specialist' | 'observer')} className={inputClass}>
-        <option value="lead">Lead — can delegate to other agents</option>
+      <select value={role} onChange={e => setRole(e.target.value as 'executive' | 'lead' | 'specialist' | 'observer')} className={inputClass}>
+        <option value="executive">Executive �� can dismiss, spawn, and manage agents</option>
+        <option value="lead">Lead — can delegate tasks and review work</option>
         <option value="specialist">Specialist — focused on specific tasks</option>
         <option value="observer">Observer — read-only analysis</option>
       </select>

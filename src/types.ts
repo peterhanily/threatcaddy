@@ -1082,8 +1082,12 @@ export type AgentStatus = 'idle' | 'running' | 'waiting' | 'paused' | 'error';
 
 // ─── Agent Profile System ──────────────────────────────────────────
 
-/** Role determines what an agent profile can do: lead can delegate, observer is read-only. */
-export type AgentProfileRole = 'lead' | 'specialist' | 'observer';
+/** Role determines what an agent profile can do:
+ * - executive: CISO/Chief of Staff — can delegate, dismiss agents, spawn/define new agents
+ * - lead: Lead Analyst — can delegate tasks, review work, call meetings
+ * - specialist: domain expert — works assigned tasks and focus areas
+ * - observer: read-only — monitors without modifying */
+export type AgentProfileRole = 'executive' | 'lead' | 'specialist' | 'observer';
 
 /** A reusable agent profile defining persona, tools, and policy. */
 export interface AgentProfile {
