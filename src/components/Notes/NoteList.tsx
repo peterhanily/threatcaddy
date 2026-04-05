@@ -252,6 +252,10 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                     const folderIcon = iconTag ? iconTag.replace('icon:', '') : (expandedFolders.has(note.id) ? '📂' : '📁');
                     return (<>
                     <div
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={expandedFolders.has(note.id)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const next = new Set(expandedFolders); if (next.has(note.id)) next.delete(note.id); else next.add(note.id); setExpandedFolders(next); } }}
                       onClick={() => {
                         const next = new Set(expandedFolders);
                         if (next.has(note.id)) next.delete(note.id);

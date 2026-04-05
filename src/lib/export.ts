@@ -279,7 +279,7 @@ export function sanitizeTimelineEvent(raw: unknown): TimelineEvent | null {
     iocTypes: Array.isArray(r.iocTypes) ? strArr(r.iocTypes).filter((t) => VALID_IOC_TYPES.includes(t)) as TimelineEvent['iocTypes'] : undefined,
     latitude: typeof r.latitude === 'number' && isFinite(r.latitude) && r.latitude >= -90 && r.latitude <= 90 ? r.latitude : undefined,
     longitude: typeof r.longitude === 'number' && isFinite(r.longitude) && r.longitude >= -180 && r.longitude <= 180 ? r.longitude : undefined,
-    comments: Array.isArray(r.comments) ? r.comments as TimelineEvent['comments'] : undefined,
+    comments: Array.isArray(r.comments) ? (r.comments as unknown[]).map(sanitizeComment).filter((c): c is TaskComment => c !== null) as unknown as TimelineEvent['comments'] : undefined,
     trashed: bool(r.trashed),
     trashedAt: r.trashedAt != null ? num(r.trashedAt) : undefined,
     archived: bool(r.archived),
@@ -347,7 +347,7 @@ export function sanitizeStandaloneIOC(raw: unknown): StandaloneIOC | null {
     linkedNoteIds: Array.isArray(r.linkedNoteIds) ? strArr(r.linkedNoteIds) : undefined,
     linkedTaskIds: Array.isArray(r.linkedTaskIds) ? strArr(r.linkedTaskIds) : undefined,
     linkedTimelineEventIds: Array.isArray(r.linkedTimelineEventIds) ? strArr(r.linkedTimelineEventIds) : undefined,
-    comments: Array.isArray(r.comments) ? r.comments as StandaloneIOC['comments'] : undefined,
+    comments: Array.isArray(r.comments) ? (r.comments as unknown[]).map(sanitizeComment).filter((c): c is TaskComment => c !== null) as unknown as StandaloneIOC['comments'] : undefined,
     assigneeId: r.assigneeId != null ? str(r.assigneeId) : undefined,
     assigneeName: r.assigneeName != null ? str(r.assigneeName) : undefined,
     trashed: bool(r.trashed),
@@ -421,9 +421,28 @@ function sanitizeAgentAction(raw: unknown): AgentAction | null {
   };
 }
 
-const VALID_PROFILE_ROLES = ['lead', 'specialist', 'observer'];
+const VALID_PROFILE_ROLES = ['executive', 'lead', 'specialist', 'observer'];
 const VALID_AGENT_STATUSES = ['idle', 'running', 'waiting', 'paused', 'error'];
 const VALID_MEETING_STATUSES = ['in-progress', 'completed', 'failed'];
+
+function sanitizeAgentSoul(r: Record<string, unknown>): Record<string, unknown> {
+  return {
+    identity: typeof r.identity === 'string' ? r.identity.substring(0, 500) : '',
+    lessons: Array.isArray(r.lessons) ? r.lessons.filter((l: unknown) => typeof l === 'string').slice(0, 50).map((l: string) => l.substring(0, 500)) : [],
+    strengths: Array.isArray(r.strengths) ? r.strengths.filter((s: unknown) => typeof s === 'string').slice(0, 20) : [],
+    weaknesses: Array.isArray(r.weaknesses) ? r.weaknesses.filter((w: unknown) => typeof w === 'string').slice(0, 20) : [],
+    lifetimeMetrics: r.lifetimeMetrics && typeof r.lifetimeMetrics === 'object' ? {
+      investigationsWorked: typeof (r.lifetimeMetrics as Record<string, unknown>).investigationsWorked === 'number' ? (r.lifetimeMetrics as Record<string, unknown>).investigationsWorked : 0,
+      totalCycles: typeof (r.lifetimeMetrics as Record<string, unknown>).totalCycles === 'number' ? (r.lifetimeMetrics as Record<string, unknown>).totalCycles : 0,
+      totalToolCalls: typeof (r.lifetimeMetrics as Record<string, unknown>).totalToolCalls === 'number' ? (r.lifetimeMetrics as Record<string, unknown>).totalToolCalls : 0,
+      tasksCompleted: typeof (r.lifetimeMetrics as Record<string, unknown>).tasksCompleted === 'number' ? (r.lifetimeMetrics as Record<string, unknown>).tasksCompleted : 0,
+      tasksRejected: typeof (r.lifetimeMetrics as Record<string, unknown>).tasksRejected === 'number' ? (r.lifetimeMetrics as Record<string, unknown>).tasksRejected : 0,
+      meetingsAttended: typeof (r.lifetimeMetrics as Record<string, unknown>).meetingsAttended === 'number' ? (r.lifetimeMetrics as Record<string, unknown>).meetingsAttended : 0,
+      performanceScore: typeof (r.lifetimeMetrics as Record<string, unknown>).performanceScore === 'number' ? (r.lifetimeMetrics as Record<string, unknown>).performanceScore : 50,
+    } : { investigationsWorked: 0, totalCycles: 0, totalToolCalls: 0, tasksCompleted: 0, tasksRejected: 0, meetingsAttended: 0, performanceScore: 50 },
+    updatedAt: typeof r.updatedAt === 'number' ? r.updatedAt : Date.now(),
+  };
+}
 
 function sanitizeAgentProfile(raw: unknown): Record<string, unknown> | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -440,6 +459,7 @@ function sanitizeAgentProfile(raw: unknown): Record<string, unknown> | null {
     policy: r.policy && typeof r.policy === 'object' ? r.policy : { autoApproveReads: true, autoApproveEnrich: true, autoApproveFetch: true, autoApproveCreate: false, autoApproveModify: false, intervalMinutes: 5 },
     model: r.model != null ? str(r.model) : undefined,
     priority: r.priority != null ? num(r.priority, 10) : undefined,
+    soul: r.soul && typeof r.soul === 'object' ? sanitizeAgentSoul(r.soul as Record<string, unknown>) : undefined,
     source: str(r.source, 'user'),
     createdAt: num(r.createdAt, Date.now()), updatedAt: num(r.updatedAt, Date.now()),
   };

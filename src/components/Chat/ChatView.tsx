@@ -738,10 +738,12 @@ export function ChatView({
           </div>
         )}
         {/* Thread source filter */}
-        <div className="flex gap-1 px-3 py-1.5 border-b border-border-subtle">
+        <div className="flex gap-1 px-3 py-1.5 border-b border-border-subtle" role="tablist" aria-label="Filter threads by source">
           {(['all', 'human', 'agent', 'meeting'] as const).map(f => (
             <button
               key={f}
+              role="tab"
+              aria-selected={threadSourceFilter === f}
               onClick={() => setThreadSourceFilter(f)}
               className={cn(
                 'text-[10px] px-1.5 py-0.5 rounded capitalize transition-colors',
@@ -820,10 +822,14 @@ export function ChatView({
                   return (
                     <div key={folder.id}>
                       <div
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={expandedChatFolders.has(folder.id)}
                         className={cn(
-                          'flex items-center gap-1.5 px-3 py-2 cursor-pointer transition-colors border-b border-border-subtle',
+                          'group flex items-center gap-1.5 px-3 py-2 cursor-pointer transition-colors border-b border-border-subtle',
                           'text-text-secondary hover:bg-bg-hover',
                         )}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const next = new Set(expandedChatFolders); if (next.has(folder.id)) next.delete(folder.id); else next.add(folder.id); setExpandedChatFolders(next); } }}
                         onClick={() => {
                           const next = new Set(expandedChatFolders);
                           if (next.has(folder.id)) next.delete(folder.id); else next.add(folder.id);

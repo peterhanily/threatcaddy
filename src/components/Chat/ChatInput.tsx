@@ -431,6 +431,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
           )}
           <textarea
             ref={textareaRef}
+            aria-label="Message to CaddyAI"
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
