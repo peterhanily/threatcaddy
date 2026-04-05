@@ -190,6 +190,18 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     await executeCycle();
   }, [executeCycle]);
 
+  // Listen for run_agent_cycle tool calls from CaddyAI chat
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.folderId === folder?.id) {
+        executeCycle().catch(() => {});
+      }
+    };
+    window.addEventListener('tc-run-agent-cycle', handler);
+    return () => window.removeEventListener('tc-run-agent-cycle', handler);
+  }, [folder?.id, executeCycle]);
+
   const toggleAgent = useCallback(async () => {
     if (!folder) return;
     const newEnabled = !folder.agentEnabled;

@@ -1101,6 +1101,13 @@ async function executeListFolders(_inp: Record<string, unknown>, folderId?: stri
   return JSON.stringify({ folders: result, total: result.length });
 }
 
+/** Get all agent profiles (builtin + user-created). */
+async function getAllAgentProfiles() {
+  const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
+  const userProfiles = await db.agentProfiles.toArray();
+  return [...BUILTIN_AGENT_PROFILES, ...userProfiles];
+}
+
 // ── Agent Management (from CaddyAI chat) ─────────────────────────────
 
 async function executeDeployAgent(inp: Record<string, unknown>, folderId?: string): Promise<string> {
@@ -1108,7 +1115,7 @@ async function executeDeployAgent(inp: Record<string, unknown>, folderId?: strin
   if (!profileName) return JSON.stringify({ error: 'profileName is required' });
   if (!folderId) return JSON.stringify({ error: 'No active investigation — select one first' });
 
-  const profiles = await db.agentProfiles.toArray();
+  const profiles = await getAllAgentProfiles();
   const profile = profiles.find(p => p.name.toLowerCase() === profileName.toLowerCase());
   if (!profile) {
     const available = profiles.map(p => `${p.name} (${p.role})`).join(', ');
@@ -1149,7 +1156,7 @@ async function executeStopAgent(inp: Record<string, unknown>, folderId?: string)
   if (!folderId) return JSON.stringify({ error: 'No active investigation' });
 
   const deployments = await db.agentDeployments.filter(d => d.investigationId === folderId).toArray();
-  const profiles = await db.agentProfiles.toArray();
+  const profiles = await getAllAgentProfiles();
   const targetProfile = profiles.find(p => p.name.toLowerCase() === profileName.toLowerCase());
   if (!targetProfile) return JSON.stringify({ error: `Profile "${profileName}" not found` });
 
@@ -1173,7 +1180,7 @@ async function executeListDeployedAgents(folderId?: string): Promise<string> {
   if (!folderId) return JSON.stringify({ error: 'No active investigation' });
 
   const deployments = await db.agentDeployments.filter(d => d.investigationId === folderId).toArray();
-  const profiles = await db.agentProfiles.toArray();
+  const profiles = await getAllAgentProfiles();
   const profileMap = new Map(profiles.map(p => [p.id, p]));
 
   const agents = deployments.map(d => {
@@ -1222,8 +1229,8 @@ async function executeSpawnAgent(inp: Record<string, unknown>, folderId?: string
   if (!profileName || !reason) return JSON.stringify({ error: 'profileName and reason are required' });
   if (!folderId) return JSON.stringify({ error: 'No active investigation' });
 
-  // Find matching profile
-  const profiles = await db.agentProfiles.toArray();
+  // Find matching profile (builtin + user)
+  const profiles = await getAllAgentProfiles();
   const profile = profiles.find(p => p.name.toLowerCase() === profileName.toLowerCase());
   if (!profile) {
     const available = profiles.map(p => p.name).join(', ');
@@ -1322,7 +1329,7 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
 
   // Find the deployment
   const deployments = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
-  const profiles = await db.agentProfiles.toArray();
+  const profiles = await getAllAgentProfiles();
 
   const targetProfile = profiles.find(p => p.name.toLowerCase() === agentName.toLowerCase());
   if (!targetProfile) return JSON.stringify({ error: `No profile named "${agentName}" found` });

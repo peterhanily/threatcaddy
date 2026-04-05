@@ -16,7 +16,8 @@ ThreatCaddy is a client-side threat intelligence and incident response platform.
 ## Agent System
 
 ### 17 Builtin Profiles (`src/lib/builtin-agent-profiles.ts`)
-**Leadership:** CISO, Chief of Staff, Lead Analyst
+**Executive (can dismiss/spawn agents):** CISO, Chief of Staff
+**Leadership:** Lead Analyst
 **Security Specialists:** IOC Enricher, Timeline Builder, Case Analyst, Threat Hunter, Malware Analyst, Network Forensics, Digital Forensics, Vulnerability Analyst
 **Business Stakeholders (observer):** Legal Counsel, Compliance Officer, Communications Lead, Business Continuity
 **Cross-Case:** Pattern Hunter, Reporter
@@ -47,7 +48,7 @@ Agent prompts must be lean (~500-800 chars). Do NOT use the full CaddyAI system 
 
 - **Entity types**: Note, Task, Folder (investigation), Tag, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, ChatThread, AgentAction, AgentProfile, AgentDeployment, AgentMeeting
 - **Hooks**: Each entity type has a `useX()` hook. Hooks own CRUD + reload logic.
-- **Tools**: 32 LLM tools in `src/lib/llm-tool-defs.ts` + 3 delegation tools in `DELEGATION_TOOL_DEFINITIONS`. Executor in `src/lib/llm-tools.ts`.
+- **Tools**: 46 LLM tools in `TOOL_DEFINITIONS` + 7 delegation tools in `DELEGATION_TOOL_DEFINITIONS` + 5 executive tools in `EXECUTIVE_TOOL_DEFINITIONS` = 58 total. Executor in `src/lib/llm-tools.ts`.
 - **Backup/Export**: Every new Dexie table must be added to `backup-data.ts`, `backup-restore.ts`, `backup-crypto.ts`, and `export.ts` (including sanitizer + import).
 - **Templates**: NoteTemplate, PlaybookTemplate, AgentProfile all follow the same pattern: builtin (source='builtin', read-only) + user (source='user', full CRUD).
 - **Extension messaging**: Page posts `TC_*` messages → bridge.js relays to background.js via ports → background.js makes API calls → results flow back.
@@ -73,7 +74,7 @@ Always run `pnpm lint` and `pnpm build` before committing. Fix lint errors (espe
 
 ## When Adding New Tools
 
-1. Add definition to `src/lib/llm-tool-defs.ts` (`TOOL_DEFINITIONS` or `DELEGATION_TOOL_DEFINITIONS`)
+1. Add definition to `src/lib/llm-tool-defs.ts` (`TOOL_DEFINITIONS`, `DELEGATION_TOOL_DEFINITIONS`, or `EXECUTIVE_TOOL_DEFINITIONS`)
 2. Add action class mapping to `src/lib/caddy-agent-policy.ts`
 3. Add executor case to `src/lib/llm-tools.ts` switch statement
 4. Add to `WRITE_TOOLS` set if it modifies data

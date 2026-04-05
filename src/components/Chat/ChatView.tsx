@@ -1153,9 +1153,19 @@ export function ChatView({
       <ConfirmDialog
         open={trashConfirmId !== null}
         onClose={() => setTrashConfirmId(null)}
-        onConfirm={() => { if (trashConfirmId) onTrashThread(trashConfirmId); setTrashConfirmId(null); }}
+        onConfirm={() => {
+          if (trashConfirmId) {
+            // If deleting a folder, move children to top level first
+            const folder = threads.find(t => t.id === trashConfirmId && t.isFolder);
+            if (folder) {
+              threads.filter(t => t.parentThreadId === folder.id).forEach(t => onUpdateThread(t.id, { parentThreadId: undefined }));
+            }
+            onTrashThread(trashConfirmId);
+          }
+          setTrashConfirmId(null);
+        }}
         title="Delete Chat Thread"
-        message="This chat thread will be moved to trash. Are you sure?"
+        message={threads.find(t => t.id === trashConfirmId)?.isFolder ? "This folder and its organization will be removed. Threads inside will be moved to the top level." : "This chat thread will be moved to trash. Are you sure?"}
         confirmLabel="Delete"
         danger
       />

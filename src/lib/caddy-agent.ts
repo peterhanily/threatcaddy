@@ -333,11 +333,12 @@ function callLLM(opts: {
     }
   });
 
+  let timeoutId: ReturnType<typeof setTimeout>;
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error(`LLM request timed out after ${LLM_TIMEOUT_MS / 1000}s (${opts.provider}/${opts.model})`)), LLM_TIMEOUT_MS);
+    timeoutId = setTimeout(() => reject(new Error(`LLM request timed out after ${LLM_TIMEOUT_MS / 1000}s (${opts.provider}/${opts.model})`)), LLM_TIMEOUT_MS);
   });
 
-  return Promise.race([llmPromise, timeoutPromise]);
+  return Promise.race([llmPromise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
 }
 
 // ── Main Cycle ──────────────────────────────────────────────────────────
