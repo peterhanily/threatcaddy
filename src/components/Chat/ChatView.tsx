@@ -117,6 +117,8 @@ export function ChatView({
 
   // ── YOLO mode — auto-approve all write tools without prompting
   const [yoloMode, setYoloMode] = useState(false);
+  // Track which thread is streaming so we don't show stale content on thread switch
+  const streamingThreadRef = useRef<string | undefined>(undefined);
   const yoloModeRef = useRef(false);
   useEffect(() => { yoloModeRef.current = yoloMode; }, [yoloMode]);
 
@@ -454,6 +456,9 @@ export function ChatView({
     const finalSystemPrompt = currentMode === 'plan'
       ? systemPrompt + '\n\nYou are in PLAN MODE. Do NOT create, update, or modify any entities. Instead, describe what you WOULD do: list the tools you would call, what data you would create, and what your analysis plan is. Present this as a structured plan the analyst can review before switching to Act mode.'
       : systemPrompt;
+
+    // Track which thread is streaming
+    streamingThreadRef.current = activeThread.id;
 
     // Send with agentic loop
     sendAgentRequest(
@@ -1078,26 +1083,35 @@ export function ChatView({
                   hasCheckpoint={checkpointMessageIds.has(msg.id)}
                 />
               ))}
-              {isStreaming && streamingContent && (
+              {isStreaming && streamingContent && streamingThreadRef.current === selectedThreadId && (
                 <ChatMessageBubble role="assistant" content={streamingContent} isStreaming />
               )}
               {/* Tool activity indicators during streaming */}
-              {isStreaming && toolActivity.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 ml-2 mb-2">
-                  {toolActivity.map((ta) => (
+              {isStreaming && toolActivity.length > 0 && streamingThreadRef.current === selectedThreadId && (
+                <div className="ml-2 mb-2 space-y-1">
+                  {/* Completed tools — stable log */}
+                  {toolActivity.filter(ta => ta.status !== 'running').length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {toolActivity.filter(ta => ta.status !== 'running').map((ta) => (
+                        <span
+                          key={ta.id}
+                          className={cn(
+                            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono',
+                            ta.status === 'error' ? 'text-red-400' : 'text-emerald-400/70'
+                          )}
+                        >
+                          {ta.status === 'error' ? '✗' : '✓'} {ta.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {/* Currently running tool */}
+                  {toolActivity.filter(ta => ta.status === 'running').map((ta) => (
                     <span
                       key={ta.id}
-                      className={cn(
-                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono border',
-                        ta.status === 'running'
-                          ? 'border-purple/30 text-purple bg-purple/10 animate-pulse'
-                          : ta.status === 'error'
-                          ? 'border-red-500/30 text-red-400 bg-red-500/10'
-                          : 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10'
-                      )}
+                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-mono border border-purple/30 text-purple bg-purple/10 animate-pulse"
                     >
-                      {ta.status === 'running' ? '...' : ta.status === 'error' ? '!' : '\u2713'}{' '}
-                      {ta.name}
+                      Running: {ta.name}
                     </span>
                   ))}
                 </div>
