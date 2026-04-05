@@ -563,6 +563,8 @@ function sanitizeQuickLink(raw: unknown): QuickLink | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   if (typeof r.id !== 'string' || typeof r.title !== 'string' || typeof r.url !== 'string') return null;
+  // Reject non-http(s) URLs to prevent javascript: injection from malicious imports
+  try { const u = new URL(str(r.url)); if (u.protocol !== 'http:' && u.protocol !== 'https:') return null; } catch { return null; }
   return {
     id: str(r.id),
     title: str(r.title),

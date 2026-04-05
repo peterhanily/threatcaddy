@@ -148,7 +148,7 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
   return (
     <div className="rounded border border-border-subtle/50 mb-1">
       {/* Header row */}
-      <div className="flex items-center gap-2 py-1.5 px-2 cursor-pointer hover:bg-surface-raised/50 group" onClick={() => setExpanded(!expanded)}>
+      <div className="flex items-center gap-2 py-1.5 px-2 cursor-pointer hover:bg-surface-raised/50 group" role="button" tabIndex={0} aria-expanded={expanded} onClick={() => setExpanded(!expanded)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(!expanded); } }}>
         <span className="text-sm">{profile.icon || '🤖'}</span>
         <div className="flex-1 min-w-0">
           <div className="text-xs text-text-primary truncate">{profile.name}</div>
