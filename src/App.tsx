@@ -1923,6 +1923,21 @@ function AppInner() {
                   await db.notes.update(noteId, { title: newName, updatedAt: Date.now() });
                   notes.reload();
                 }}
+                onDeleteFolder={async (noteId, action) => {
+                  const children = await db.notes.where('parentNoteId').equals(noteId).toArray();
+                  const now = Date.now();
+                  if (action === 'trash_contents') {
+                    for (const child of children) {
+                      await db.notes.update(child.id, { trashed: true, trashedAt: now, updatedAt: now });
+                    }
+                  } else {
+                    for (const child of children) {
+                      await db.notes.update(child.id, { parentNoteId: undefined, updatedAt: now });
+                    }
+                  }
+                  await db.notes.update(noteId, { trashed: true, trashedAt: now, updatedAt: now });
+                  notes.reload();
+                }}
               />
             </div>
             {/* Resize handle with collapse/expand toggle — desktop only */}
