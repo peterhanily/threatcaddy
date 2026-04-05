@@ -221,6 +221,46 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
               <span className={profile.policy.autoApproveModify ? 'text-accent-green' : 'text-text-muted'}>Modify {profile.policy.autoApproveModify ? '✓' : '✗'}</span>
             </div>
           </div>
+          {/* Soul */}
+          {profile.soul ? (
+            <div className="border border-border-subtle rounded-lg p-2.5 space-y-2 bg-surface-base/50">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] text-text-muted uppercase tracking-wide">Soul</span>
+                <span className="text-[10px] font-mono text-accent-blue">{profile.soul.lifetimeMetrics.performanceScore}/100</span>
+              </div>
+              <p className="text-[10px] text-text-secondary italic">{profile.soul.identity}</p>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+                <div><span className="text-text-muted">Investigations:</span> <span className="text-text-primary">{profile.soul.lifetimeMetrics.investigationsWorked}</span></div>
+                <div><span className="text-text-muted">Cycles:</span> <span className="text-text-primary">{profile.soul.lifetimeMetrics.totalCycles}</span></div>
+                <div><span className="text-text-muted">Tasks done:</span> <span className="text-text-primary">{profile.soul.lifetimeMetrics.tasksCompleted}</span></div>
+                <div><span className="text-text-muted">Rejected:</span> <span className="text-text-primary">{profile.soul.lifetimeMetrics.tasksRejected}</span></div>
+              </div>
+              {profile.soul.strengths.length > 0 && (
+                <div>
+                  <span className="text-[9px] text-accent-green">Strengths:</span>
+                  <span className="text-[10px] text-text-muted ml-1">{profile.soul.strengths.slice(0, 5).join(', ')}</span>
+                </div>
+              )}
+              {profile.soul.weaknesses.length > 0 && (
+                <div>
+                  <span className="text-[9px] text-accent-amber">Improve:</span>
+                  <span className="text-[10px] text-text-muted ml-1">{profile.soul.weaknesses.slice(0, 5).join(', ')}</span>
+                </div>
+              )}
+              {profile.soul.lessons.length > 0 && (
+                <div>
+                  <span className="text-[9px] text-text-muted">Recent lessons ({profile.soul.lessons.length}):</span>
+                  <ul className="mt-0.5 space-y-0.5">
+                    {profile.soul.lessons.slice(0, 3).map((l, i) => (
+                      <li key={i} className="text-[10px] text-text-muted pl-2 border-l border-border-subtle">{l.substring(0, 150)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-[10px] text-text-muted italic">No soul yet — deploy this agent and it will build its identity over time.</p>
+          )}
           {isBuiltin && (
             <button onClick={onDuplicate} className="text-[10px] text-accent-blue hover:underline">
               Customize (creates editable copy)
