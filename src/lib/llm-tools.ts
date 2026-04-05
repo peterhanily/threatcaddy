@@ -891,9 +891,14 @@ async function executeRunRemoteCommand(inp: Record<string, unknown>, folderId?: 
     const s = settings || JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
     if (!s.serverUrl) return JSON.stringify({ error: 'Team server required for remote command execution. Configure in Settings > Team Server.' });
 
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    // Add auth token if server connection has one stored
+    const token = localStorage.getItem('threatcaddy-server-token');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     const resp = await fetch(`${s.serverUrl}/api/caddy-agents/exec`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ host, command, reason, folderId }),
     });
     if (!resp.ok) return JSON.stringify({ error: `Server ${resp.status}: ${(await resp.text().catch(() => '')).substring(0, 300)}` });

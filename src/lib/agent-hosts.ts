@@ -166,8 +166,7 @@ async function callHostExecute(
     });
 
     if (!resp.ok) {
-      const errorBody = await resp.text().catch(() => '');
-      return JSON.stringify({ error: `${displayName} returned ${resp.status}: ${errorBody.substring(0, 500)}` });
+      return JSON.stringify({ error: `${displayName} returned HTTP ${resp.status}` });
     }
 
     return await resp.text();
@@ -194,7 +193,7 @@ export function getHostSkillActionClass(toolName: string): string {
   if (toolName.startsWith('local:')) {
     const skillName = toolName.slice(6);
     const skill = (settings.llmLocalSkills || []).find(s => s.name === skillName);
-    return skill?.actionClass || 'fetch';
+    return skill?.actionClass || 'modify';
   }
 
   // host:<name>:<skill>
@@ -205,8 +204,8 @@ export function getHostSkillActionClass(toolName: string): string {
     const hosts: AgentHost[] = settings.agentHosts || [];
     const host = hosts.find(h => h.name === hostName);
     const skill = host?.skills.find(s => s.name === skillName);
-    return skill?.actionClass || 'fetch';
+    return skill?.actionClass || 'modify';
   }
 
-  return 'fetch';
+  return 'modify';
 }

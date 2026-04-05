@@ -105,7 +105,7 @@ export function getToolActionClass(toolName: string): AgentActionClass {
       if (toolName.startsWith('local:')) {
         const skillName = toolName.slice(6);
         const skill = (settings.llmLocalSkills || []).find((s: { name: string }) => s.name === skillName);
-        return (skill?.actionClass as AgentActionClass) || 'fetch';
+        return (skill?.actionClass as AgentActionClass) || 'modify';
       }
       const parts = toolName.split(':');
       if (parts.length >= 3) {
@@ -113,10 +113,10 @@ export function getToolActionClass(toolName: string): AgentActionClass {
         const skillName = parts.slice(2).join(':');
         const host = (settings.agentHosts || []).find((h: { name: string }) => h.name === hostName);
         const skill = host?.skills?.find((s: { name: string }) => s.name === skillName);
-        return (skill?.actionClass as AgentActionClass) || 'fetch';
+        return (skill?.actionClass as AgentActionClass) || 'modify';
       }
     } catch { /* fall through */ }
-    return 'fetch';
+    return 'modify';
   }
 
   return 'modify';
