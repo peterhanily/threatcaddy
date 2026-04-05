@@ -173,10 +173,12 @@ export function ChatView({
   const handleNewChat = useCallback(async () => {
     try {
       // If there's already an empty (no messages) non-folder thread in scope, just select it
+      // Also check source !== 'agent-meeting' and that it's not the currently selected (possibly just-trashed) thread
       const existingEmpty = threads.find(t =>
         !t.trashed && !t.isFolder && t.messages.length === 0 &&
+        t.id !== selectedThreadId &&
         (selectedFolderId ? t.folderId === selectedFolderId : true) &&
-        t.source !== 'agent'
+        t.source !== 'agent' && t.source !== 'agent-meeting'
       );
       if (existingEmpty) {
         onSelectThread(existingEmpty.id);

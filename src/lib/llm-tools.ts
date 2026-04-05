@@ -1117,6 +1117,11 @@ async function executeListFolders(_inp: Record<string, unknown>, folderId?: stri
   return JSON.stringify({ folders: result, total: result.length });
 }
 
+/** Normalize a name for fuzzy matching — lowercase, strip spaces/underscores/hyphens. */
+function normalizeName(s: string): string {
+  return s.toLowerCase().replace(/[\s_-]+/g, '');
+}
+
 /** Get all agent profiles (builtin + user-created). */
 async function getAllAgentProfiles() {
   const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
@@ -1132,7 +1137,7 @@ async function executeDeployAgent(inp: Record<string, unknown>, folderId?: strin
   if (!folderId) return JSON.stringify({ error: 'No active investigation — select one first' });
 
   const profiles = await getAllAgentProfiles();
-  const profile = profiles.find(p => p.name.toLowerCase() === profileName.toLowerCase());
+  const profile = profiles.find(p => normalizeName(p.name) === normalizeName(profileName));
   if (!profile) {
     const available = profiles.map(p => `${p.name} (${p.role})`).join(', ');
     return JSON.stringify({ error: `Profile "${profileName}" not found. Available: ${available}` });
@@ -1180,7 +1185,7 @@ async function executeStopAgent(inp: Record<string, unknown>, folderId?: string)
 
   const deployments = await db.agentDeployments.filter(d => d.investigationId === folderId).toArray();
   const profiles = await getAllAgentProfiles();
-  const targetProfile = profiles.find(p => p.name.toLowerCase() === profileName.toLowerCase());
+  const targetProfile = profiles.find(p => normalizeName(p.name) === normalizeName(profileName));
   if (!targetProfile) return JSON.stringify({ error: `Profile "${profileName}" not found` });
 
   const active = deployments.filter(d => d.profileId === targetProfile.id && d.shift === 'active');
@@ -1254,7 +1259,7 @@ async function executeSpawnAgent(inp: Record<string, unknown>, folderId?: string
 
   // Find matching profile (builtin + user)
   const profiles = await getAllAgentProfiles();
-  const profile = profiles.find(p => p.name.toLowerCase() === profileName.toLowerCase());
+  const profile = profiles.find(p => normalizeName(p.name) === normalizeName(profileName));
   if (!profile) {
     const available = profiles.map(p => p.name).join(', ');
     return JSON.stringify({ error: `Profile "${profileName}" not found. Available: ${available}` });
@@ -1354,7 +1359,7 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
   const deployments = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
   const profiles = await getAllAgentProfiles();
 
-  const targetProfile = profiles.find(p => p.name.toLowerCase() === agentName.toLowerCase());
+  const targetProfile = profiles.find(p => normalizeName(p.name) === normalizeName(agentName));
   if (!targetProfile) return JSON.stringify({ error: `No profile named "${agentName}" found` });
 
   const targetDeployments = deployments.filter(d => d.profileId === targetProfile.id && d.shift === 'active');
@@ -1411,7 +1416,7 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
   // Spawn replacement if requested
   let replacementResult = '';
   if (replacementProfile) {
-    const replacement = profiles.find(p => p.name.toLowerCase() === replacementProfile.toLowerCase());
+    const replacement = profiles.find(p => normalizeName(p.name) === normalizeName(replacementProfile));
     if (replacement) {
       const deploymentId = nanoid();
       await db.agentDeployments.add({
