@@ -19,7 +19,7 @@ export async function buildFullBackupPayload(
   const data: BackupPayload['data'] = {};
 
   if (scope === 'all') {
-    const [notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, agentActions, agentProfiles, agentDeployments, agentMeetings] =
+    const [notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, agentActions, agentProfiles, agentDeployments, agentMeetings, noteTemplates, playbookTemplates, integrationTemplates, installedIntegrations, customSlashCommands] =
       await Promise.all([
         db.notes.toArray(),
         db.tasks.toArray(),
@@ -34,8 +34,13 @@ export async function buildFullBackupPayload(
         db.agentProfiles.toArray(),
         db.agentDeployments.toArray(),
         db.agentMeetings.toArray(),
+        db.noteTemplates.toArray(),
+        db.playbookTemplates.toArray(),
+        db.integrationTemplates.toArray(),
+        db.installedIntegrations.toArray(),
+        db.customSlashCommands.toArray(),
       ]);
-    Object.assign(data, { notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, agentActions, agentProfiles, agentDeployments, agentMeetings });
+    Object.assign(data, { notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, agentActions, agentProfiles, agentDeployments, agentMeetings, noteTemplates, playbookTemplates, integrationTemplates, installedIntegrations, customSlashCommands });
   } else if (scope === 'investigation') {
     if (!scopeId) throw new Error('scopeId required for investigation scope');
     const [folder, notes, tasks, allTags, events, allTimelines, whiteboards, iocs, chats, agentActions, agentDeployments, agentMeetings] = await Promise.all([
@@ -102,7 +107,7 @@ export async function buildDifferentialPayload(
   const data: BackupPayload['data'] = {};
   const deletedIds: Record<string, string[]> = {};
 
-  const tableNames = ['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'agentActions', 'agentProfiles', 'agentDeployments', 'agentMeetings'] as const;
+  const tableNames = ['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'agentActions', 'agentProfiles', 'agentDeployments', 'agentMeetings', 'noteTemplates', 'playbookTemplates', 'integrationTemplates', 'installedIntegrations', 'customSlashCommands'] as const;
 
   for (const tableName of tableNames) {
     const table = getTable(tableName);
@@ -165,5 +170,10 @@ export function countPayloadEntities(payload: BackupPayload): number {
   if (data.agentProfiles) count += data.agentProfiles.length;
   if (data.agentDeployments) count += data.agentDeployments.length;
   if (data.agentMeetings) count += data.agentMeetings.length;
+  if (data.noteTemplates) count += data.noteTemplates.length;
+  if (data.playbookTemplates) count += data.playbookTemplates.length;
+  if (data.integrationTemplates) count += data.integrationTemplates.length;
+  if (data.installedIntegrations) count += data.installedIntegrations.length;
+  if (data.customSlashCommands) count += data.customSlashCommands.length;
   return count;
 }

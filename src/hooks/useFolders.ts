@@ -157,7 +157,7 @@ export function useFolders() {
 
   const trashFolderContents = useCallback(async (id: string) => {
     const now = Date.now();
-    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs, db.chatThreads], async () => {
+    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs, db.chatThreads, db.agentDeployments], async () => {
       await Promise.all([
         db.notes.where('folderId').equals(id).filter((n) => !n.trashed).modify({ trashed: true, trashedAt: now }),
         db.tasks.where('folderId').equals(id).filter((t) => !t.trashed).modify({ trashed: true, trashedAt: now }),
@@ -165,15 +165,19 @@ export function useFolders() {
         db.whiteboards.where('folderId').equals(id).filter((w) => !w.trashed).modify({ trashed: true, trashedAt: now }),
         db.standaloneIOCs.where('folderId').equals(id).filter((i) => !i.trashed).modify({ trashed: true, trashedAt: now }),
         db.chatThreads.where('folderId').equals(id).filter((c) => !c.trashed).modify({ trashed: true, trashedAt: now }),
+        // Stop agent deployments for this investigation
+        db.agentDeployments.where('investigationId').equals(id).modify({ shift: 'resting', status: 'idle', updatedAt: now }),
       ]);
+      await db.folders.update(id, { agentEnabled: false });
       await db.folders.delete(id);
     });
     setFolders((prev) => prev.filter((f) => f.id !== id));
   }, []);
 
   const archiveFolder = useCallback(async (id: string) => {
-    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs, db.chatThreads], async () => {
-      await db.folders.update(id, { status: 'archived', updatedAt: Date.now() });
+    const now = Date.now();
+    await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs, db.chatThreads, db.agentDeployments], async () => {
+      await db.folders.update(id, { status: 'archived', agentEnabled: false, updatedAt: now });
       await Promise.all([
         db.notes.where('folderId').equals(id).filter((n) => !n.trashed).modify({ archived: true }),
         db.tasks.where('folderId').equals(id).filter((t) => !t.trashed).modify({ archived: true }),
@@ -181,6 +185,8 @@ export function useFolders() {
         db.whiteboards.where('folderId').equals(id).filter((w) => !w.trashed).modify({ archived: true }),
         db.standaloneIOCs.where('folderId').equals(id).filter((i) => !i.trashed).modify({ archived: true }),
         db.chatThreads.where('folderId').equals(id).filter((c) => !c.trashed).modify({ archived: true }),
+        // Pause agents on archive
+        db.agentDeployments.where('investigationId').equals(id).modify({ shift: 'resting', status: 'idle', updatedAt: now }),
       ]);
     });
     setFolders((prev) =>

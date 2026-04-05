@@ -386,6 +386,8 @@ export function sanitizeChatThread(raw: unknown): ChatThread | null {
     provider: (VALID_LLM_PROVIDERS.includes(provider) ? provider : 'anthropic') as LLMProvider,
     folderId: r.folderId != null ? str(r.folderId) : undefined,
     tags: strArr(r.tags),
+    parentThreadId: r.parentThreadId != null ? str(r.parentThreadId) : undefined,
+    isFolder: r.isFolder === true ? true : undefined,
     trashed: bool(r.trashed),
     trashedAt: r.trashedAt != null ? num(r.trashedAt) : undefined,
     archived: bool(r.archived),

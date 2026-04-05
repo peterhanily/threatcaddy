@@ -37,6 +37,11 @@ export interface BackupPayload {
     agentProfiles?: unknown[];
     agentDeployments?: unknown[];
     agentMeetings?: unknown[];
+    noteTemplates?: unknown[];
+    playbookTemplates?: unknown[];
+    integrationTemplates?: unknown[];
+    installedIntegrations?: unknown[];
+    customSlashCommands?: unknown[];
   };
   deletedIds?: Record<string, string[]>;
 }
