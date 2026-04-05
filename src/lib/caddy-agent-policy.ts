@@ -62,6 +62,12 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
   // Alert ingestion
   ingest_alert: 'create',
 
+  // Agent management (from CaddyAI chat)
+  deploy_agent: 'create',
+  stop_agent: 'modify',
+  list_deployed_agents: 'read',
+  run_agent_cycle: 'modify',
+
   // Folder management
   create_note_folder: 'create',
   delete_note_folder: 'modify',

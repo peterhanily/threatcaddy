@@ -236,6 +236,10 @@ export async function executeTool(
       case 'notify_human':                   result = await executeNotifyHuman(inp, folderId); break;
       case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId); break;
       case 'ingest_alert':                   result = await executeIngestAlert(inp, folderId); break;
+      case 'deploy_agent':                   result = await executeDeployAgent(inp, folderId); break;
+      case 'stop_agent':                     result = await executeStopAgent(inp, folderId); break;
+      case 'list_deployed_agents':           result = await executeListDeployedAgents(folderId); break;
+      case 'run_agent_cycle':                result = await executeRunAgentCycle(folderId); break;
       case 'create_note_folder':             result = await executeCreateNoteFolder(inp, folderId); break;
       case 'delete_note_folder':             result = await executeDeleteNoteFolder(inp); break;
       case 'move_to_folder':                 result = await executeMoveToFolder(inp); break;
@@ -1095,6 +1099,118 @@ async function executeListFolders(_inp: Record<string, unknown>, folderId?: stri
   });
 
   return JSON.stringify({ folders: result, total: result.length });
+}
+
+// ── Agent Management (from CaddyAI chat) ─────────────────────────────
+
+async function executeDeployAgent(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const profileName = String(inp.profileName || '');
+  if (!profileName) return JSON.stringify({ error: 'profileName is required' });
+  if (!folderId) return JSON.stringify({ error: 'No active investigation — select one first' });
+
+  const profiles = await db.agentProfiles.toArray();
+  const profile = profiles.find(p => p.name.toLowerCase() === profileName.toLowerCase());
+  if (!profile) {
+    const available = profiles.map(p => `${p.name} (${p.role})`).join(', ');
+    return JSON.stringify({ error: `Profile "${profileName}" not found. Available: ${available}` });
+  }
+
+  const existing = await db.agentDeployments.filter(d => d.investigationId === folderId).toArray();
+  const competitiveness = String(inp.competitiveness || 'cooperative') as 'cooperative' | 'competitive' | 'independent';
+
+  const deploymentId = nanoid();
+  await db.agentDeployments.add({
+    id: deploymentId,
+    investigationId: folderId,
+    profileId: profile.id,
+    status: 'idle',
+    competitiveness,
+    shift: 'active',
+    order: existing.length,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  });
+
+  // Enable agent on the folder if not already
+  await db.folders.update(folderId, { agentEnabled: true, updatedAt: Date.now() });
+
+  return JSON.stringify({
+    success: true,
+    deploymentId,
+    profile: profile.name,
+    role: profile.role,
+    message: `Deployed "${profile.name}" (${profile.role}) to this investigation. Agent is active and will start on the next cycle. Use run_agent_cycle to trigger immediately.`,
+  });
+}
+
+async function executeStopAgent(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const profileName = String(inp.profileName || '');
+  if (!profileName) return JSON.stringify({ error: 'profileName is required' });
+  if (!folderId) return JSON.stringify({ error: 'No active investigation' });
+
+  const deployments = await db.agentDeployments.filter(d => d.investigationId === folderId).toArray();
+  const profiles = await db.agentProfiles.toArray();
+  const targetProfile = profiles.find(p => p.name.toLowerCase() === profileName.toLowerCase());
+  if (!targetProfile) return JSON.stringify({ error: `Profile "${profileName}" not found` });
+
+  const active = deployments.filter(d => d.profileId === targetProfile.id && d.shift === 'active');
+  if (active.length === 0) return JSON.stringify({ error: `"${targetProfile.name}" is not actively deployed` });
+
+  const now = Date.now();
+  for (const d of active) {
+    await db.agentDeployments.update(d.id, { shift: 'resting', status: 'idle', updatedAt: now });
+  }
+
+  return JSON.stringify({
+    success: true,
+    stopped: targetProfile.name,
+    count: active.length,
+    message: `Stopped ${active.length} "${targetProfile.name}" deployment(s). Set to resting.`,
+  });
+}
+
+async function executeListDeployedAgents(folderId?: string): Promise<string> {
+  if (!folderId) return JSON.stringify({ error: 'No active investigation' });
+
+  const deployments = await db.agentDeployments.filter(d => d.investigationId === folderId).toArray();
+  const profiles = await db.agentProfiles.toArray();
+  const profileMap = new Map(profiles.map(p => [p.id, p]));
+
+  const agents = deployments.map(d => {
+    const p = profileMap.get(d.profileId);
+    return {
+      name: p?.name || 'Unknown',
+      role: p?.role || 'unknown',
+      status: d.status,
+      shift: d.shift || 'active',
+      competitiveness: d.competitiveness || 'cooperative',
+      lastRun: d.lastRunAt ? new Date(d.lastRunAt).toISOString() : 'never',
+      metrics: d.metrics ? {
+        cycles: d.metrics.cyclesRun,
+        toolCalls: d.metrics.toolCallsExecuted,
+        tasksCompleted: d.metrics.tasksCompleted,
+        tasksRejected: d.metrics.tasksRejected,
+      } : null,
+      soul: p?.soul ? { score: p.soul.lifetimeMetrics.performanceScore, lessons: p.soul.lessons.length } : null,
+    };
+  });
+
+  return JSON.stringify({ agents, total: agents.length, active: agents.filter(a => a.shift === 'active').length });
+}
+
+async function executeRunAgentCycle(folderId?: string): Promise<string> {
+  if (!folderId) return JSON.stringify({ error: 'No active investigation' });
+
+  // Dispatch a custom event that the useCaddyAgent hook listens for
+  window.dispatchEvent(new CustomEvent('tc-run-agent-cycle', { detail: { folderId } }));
+
+  const deployments = await db.agentDeployments.filter(d => d.investigationId === folderId && d.shift === 'active').toArray();
+
+  return JSON.stringify({
+    success: true,
+    message: `Triggered agent cycle for ${deployments.length} active agent(s). Check the AgentCaddy tab for progress.`,
+    activeAgents: deployments.length,
+  });
 }
 
 // ── Agent Spawning ───────────────────────────────────────────────────

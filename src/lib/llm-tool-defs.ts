@@ -596,6 +596,48 @@ export const TOOL_DEFINITIONS = [
       required: [],
     },
   },
+  // ── Agent Management (from CaddyAI chat) ──────────────────────────
+  {
+    name: 'deploy_agent',
+    description: 'Deploy an agent profile to the current investigation. Use to start agents working on a case. The agent begins on the next cycle.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        profileName: { type: 'string', description: 'Name of the agent profile to deploy (e.g. "CISO", "IOC Enricher", "Lead Analyst")' },
+        competitiveness: { type: 'string', enum: ['cooperative', 'competitive', 'independent'], description: 'Work mode (default: cooperative)' },
+      },
+      required: ['profileName'],
+    },
+  },
+  {
+    name: 'stop_agent',
+    description: 'Stop a deployed agent in the current investigation. Sets the agent to resting so it no longer runs cycles.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        profileName: { type: 'string', description: 'Name of the agent profile to stop' },
+      },
+      required: ['profileName'],
+    },
+  },
+  {
+    name: 'list_deployed_agents',
+    description: 'List all agents currently deployed to this investigation with their status, profile, and metrics.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: 'run_agent_cycle',
+    description: 'Trigger an immediate one-shot agent cycle for all active agents in this investigation. Agents run their next cycle now instead of waiting for the timer.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
 ];
 
 // ── Delegation tools (Lead agent only) ─────────────────────────────────
@@ -792,6 +834,9 @@ const WRITE_TOOLS = new Set([
   'define_specialist',
   'dismiss_agent',
   'reflect_on_performance',
+  'deploy_agent',
+  'stop_agent',
+  'run_agent_cycle',
 ]);
 
 export function isWriteTool(name: string): boolean {
