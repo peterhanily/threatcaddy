@@ -156,7 +156,7 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
         </div>
         <div className="flex items-center gap-1">
           <ChevronDown size={12} className={cn('text-text-muted transition-transform', !expanded && '-rotate-90')} />
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
             {isBuiltin ? (
               <button onClick={onDuplicate} className="text-text-muted hover:text-text-secondary p-0.5" title="Duplicate to customize">
                 <Copy size={12} />

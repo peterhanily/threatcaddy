@@ -79,7 +79,7 @@ export function SupervisorSummary({ onOpenSupervisor }: { onOpenSupervisor?: (fo
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-text-muted">{formatDate(latestNote.createdAt)}</span>
-            <ChevronRight size={12} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+            <ChevronRight size={12} className="text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" />
           </div>
         </div>
         <p className="text-xs text-text-secondary line-clamp-2">{summary}</p>

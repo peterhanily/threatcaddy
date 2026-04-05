@@ -289,7 +289,7 @@ export function Sidebar({
                 <div className={cn('w-2 h-2 rounded-full shrink-0', statusColor)} />
               )}
               <span className="text-sm font-medium text-text-primary truncate flex-1">{selectedFolder.name}</span>
-              <SettingsIcon size={12} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              <SettingsIcon size={12} className="text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0" />
             </div>
             {investigationScopedCounts && (
               <div className="flex items-center gap-3 mt-1.5 text-[10px] text-text-muted">

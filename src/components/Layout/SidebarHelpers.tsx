@@ -129,7 +129,7 @@ export const InvestigationListItem = React.memo(function InvestigationListItem({
         {onInfo && (
           <button
             onClick={(e) => { e.stopPropagation(); onInfo(); }}
-            className="opacity-40 group-hover:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-all"
+            className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-all"
             aria-label={`Edit investigation ${folder.name}`}
             title="Edit investigation"
           >
@@ -139,7 +139,7 @@ export const InvestigationListItem = React.memo(function InvestigationListItem({
         {onArchive && (
           <button
             onClick={(e) => { e.stopPropagation(); onArchive(); }}
-            className="opacity-40 group-hover:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-amber-400 transition-all"
+            className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-amber-400 transition-all"
             aria-label={`Archive investigation ${folder.name}`}
             title="Archive investigation"
           >
@@ -149,7 +149,7 @@ export const InvestigationListItem = React.memo(function InvestigationListItem({
         {onUnarchive && (
           <button
             onClick={(e) => { e.stopPropagation(); onUnarchive(); }}
-            className="opacity-40 group-hover:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-green-400 transition-all"
+            className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-green-400 transition-all"
             aria-label={`Unarchive investigation ${folder.name}`}
             title="Unarchive investigation"
           >
@@ -158,7 +158,7 @@ export const InvestigationListItem = React.memo(function InvestigationListItem({
         )}
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="opacity-40 group-hover:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-red-400 transition-all"
+          className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 p-px rounded hover:bg-bg-hover text-text-muted hover:text-red-400 transition-all"
           aria-label={`Delete investigation ${folder.name}`}
           title="Delete investigation"
         >
@@ -210,7 +210,7 @@ export const CollapsedIcon = React.memo(function CollapsedIcon({
           </span>
         )}
       </button>
-      <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 rounded bg-bg-raised border border-border-medium text-xs text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
+      <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 rounded bg-bg-raised border border-border-medium text-xs text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-50 shadow-lg">
         {label}
       </div>
     </div>

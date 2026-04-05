@@ -193,7 +193,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
                         <span className="text-xs font-medium text-text-primary truncate flex-1">{note.title}</span>
                         <div className="flex items-center gap-1.5 shrink-0">
                           <span className="text-[10px] text-text-muted">{formatDate(note.createdAt)}</span>
-                          <ChevronRight size={12} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ChevronRight size={12} className="text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" />
                         </div>
                       </div>
                       <p className="text-[11px] text-text-muted line-clamp-2">
@@ -232,7 +232,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
                               {pendingCount} pending
                             </span>
                           )}
-                          <ChevronRight size={12} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ChevronRight size={12} className="text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" />
                         </div>
                       </div>
                       {/* Recent actions mini-feed */}
@@ -276,7 +276,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
                         <code className="text-[10px] text-text-primary font-mono shrink-0">{action.toolName}</code>
                         <span className="text-[10px] text-text-muted truncate flex-1">{action.folderName}</span>
                         <span className="text-[10px] text-text-muted shrink-0">{formatDate(action.createdAt)}</span>
-                        <ChevronRight size={10} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                        <ChevronRight size={10} className="text-text-muted opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shrink-0" />
                       </button>
                     );
                   })}

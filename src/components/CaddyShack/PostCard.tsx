@@ -100,7 +100,7 @@ export function PostCard({
               <div className="relative">
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                  className="p-1 rounded-full hover:bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] opacity-40 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                  className="p-1 rounded-full hover:bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 transition-opacity"
                 >
                   <MoreHorizontal size={15} />
                 </button>

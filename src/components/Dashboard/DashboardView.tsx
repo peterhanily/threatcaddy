@@ -119,7 +119,7 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
               }}
             >
               {/* Hover actions */}
-              <div className="absolute top-2 right-2 flex gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-2 right-2 flex gap-1 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                 <button
                   onClick={(e) => { e.stopPropagation(); setEditingLink(link); }}
                   className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"

@@ -593,7 +593,7 @@ export function StandaloneIOCList({
                     )}
                     <td className="py-2 px-2 text-gray-500">{formatDate(ioc.updatedAt)}</td>
                     <td className="py-2 pl-2">
-                      <div className="flex items-center justify-end gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                         {ioc.trashed ? (
                           <>
                             {onRestore && (

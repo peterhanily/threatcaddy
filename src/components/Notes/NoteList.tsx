@@ -320,7 +320,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                       {onDeleteFolder && (
                         <button
                           onClick={(e) => { e.stopPropagation(); setDeletingFolderId(note.id); }}
-                          className="text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                          className="text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all shrink-0"
                           title="Delete folder"
                         >
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -328,7 +328,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                       )}
                       {isSubNote && onMoveToFolder && (
                         <button onClick={(e) => { e.stopPropagation(); onMoveToFolder(note.id, null); }}
-                          className="text-[9px] text-text-muted hover:text-text-secondary opacity-0 group-hover:opacity-100" title="Move to top level">↑</button>
+                          className="text-[9px] text-text-muted hover:text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" title="Move to top level">↑</button>
                       )}
                     </div>
                     {/* Delete folder confirmation */}

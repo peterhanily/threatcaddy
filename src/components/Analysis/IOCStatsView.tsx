@@ -1569,7 +1569,7 @@ function AllIOCsTab({
                       </td>
                     )}
                     <td className="py-2 pl-2">
-                      <div className="flex items-center justify-end gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                         {row.sourceType === 'standalone' && row.standaloneIOC ? (
                           <>
                             <RunIntegrationMenu

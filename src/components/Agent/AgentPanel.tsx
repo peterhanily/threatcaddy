@@ -443,7 +443,7 @@ export function AgentPanel({
                         d.status === 'error' && 'bg-red-400/10 text-red-400',
                       )}>{d.status}</span>
                       {onRemoveDeployment && (
-                        <button onClick={() => onRemoveDeployment(d.id)} className="text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100" title="Remove"><X size={12} /></button>
+                        <button onClick={() => onRemoveDeployment(d.id)} className="text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" title="Remove"><X size={12} /></button>
                       )}
                     </div>
                   );

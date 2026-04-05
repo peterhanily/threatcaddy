@@ -132,7 +132,7 @@ export function PlaybookProgress({ execution, steps, onToggleStep, onUpdateStepN
                     ) : (
                       <button
                         onClick={() => startEditingNotes(i)}
-                        className="text-[10px] text-gray-600 hover:text-gray-400 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="text-[10px] text-gray-600 hover:text-gray-400 mt-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
                       >
                         + Add note
                       </button>

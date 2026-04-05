@@ -360,7 +360,7 @@ export function BulkIOCImportModal({
                         <td className="py-1.5 px-2 text-right">
                           <button
                             onClick={() => removeParsed(i)}
-                            className="p-0.5 rounded text-gray-600 hover:text-red-400 opacity-40 group-hover:opacity-100"
+                            className="p-0.5 rounded text-gray-600 hover:text-red-400 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100"
                           >
                             <X size={12} />
                           </button>

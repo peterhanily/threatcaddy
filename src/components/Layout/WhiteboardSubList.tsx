@@ -114,7 +114,7 @@ export function WhiteboardSubList({
                   actions={
                     <button
                       onClick={(e) => { e.stopPropagation(); setDeletingId(wb.id); }}
-                      className="opacity-40 group-hover:opacity-100 p-0.5 rounded hover:bg-bg-hover text-text-muted hover:text-red-400 transition-all"
+                      className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 p-0.5 rounded hover:bg-bg-hover text-text-muted hover:text-red-400 transition-all"
                       aria-label={`Delete whiteboard ${wb.name}`}
                       title="Delete whiteboard"
                     >
