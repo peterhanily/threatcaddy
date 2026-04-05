@@ -714,7 +714,7 @@ export function ChatView({
               onChange={e => setNewChatFolderName(e.target.value)}
               onKeyDown={e => {
                 if (e.key === 'Enter' && newChatFolderName.trim()) {
-                  onCreateThread({ title: newChatFolderName.trim(), isFolder: true, messages: [], tags: ['chat-folder'] } as Partial<ChatThread>);
+                  onCreateThread({ title: newChatFolderName.trim(), isFolder: true, folderId: selectedFolderId, messages: [], tags: ['chat-folder'] } as Partial<ChatThread>);
                   setNewChatFolderName('');
                   setShowNewChatFolder(false);
                 } else if (e.key === 'Escape') {
@@ -725,7 +725,7 @@ export function ChatView({
             <button
               onClick={() => {
                 if (newChatFolderName.trim()) {
-                  onCreateThread({ title: newChatFolderName.trim(), isFolder: true, messages: [], tags: ['chat-folder'] } as Partial<ChatThread>);
+                  onCreateThread({ title: newChatFolderName.trim(), isFolder: true, folderId: selectedFolderId, messages: [], tags: ['chat-folder'] } as Partial<ChatThread>);
                   setNewChatFolderName('');
                   setShowNewChatFolder(false);
                 }
