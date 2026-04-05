@@ -663,6 +663,9 @@ const WRITE_TOOLS = new Set([
   'enrich_ioc',
   'run_remote_command',
   'create_ticket',
+  'ingest_alert',
+  'update_knowledge',
+  'ask_human',
 ]);
 
 export function isWriteTool(name: string): boolean {

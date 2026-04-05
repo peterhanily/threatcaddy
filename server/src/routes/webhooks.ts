@@ -25,7 +25,7 @@
 import { Hono } from 'hono';
 import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
-import { folders, notes, standaloneIOCs } from '../db/schema.js';
+import { folders, notes, standaloneIOCs, botConfigs } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '../lib/logger.js';
 import { timingSafeEqual, createHmac } from 'node:crypto';
@@ -102,18 +102,37 @@ interface IngestPayload {
   triggerAgents?: boolean;
 }
 
+const VALID_SEVERITIES = new Set(['low', 'medium', 'high', 'critical']);
+const MAX_TITLE_LEN = 200;
+const MAX_SOURCE_LEN = 50;
+const MAX_IOC_VALUE_LEN = 500;
+
+/** Sanitize a string: trim, enforce max length, strip control chars. */
+function sanitizeStr(s: unknown, maxLen: number): string {
+  if (typeof s !== 'string') return '';
+  // eslint-disable-next-line no-control-regex
+  return s.trim().replace(/[\x00-\x1f]/g, '').substring(0, maxLen);
+}
+
 app.post('/ingest', async (c) => {
   let body: IngestPayload;
   try {
+    // Use pre-read body from HMAC auth, or parse fresh
     const rawBody = c.get('rawBody' as never) as string | undefined;
     body = rawBody ? JSON.parse(rawBody) : await c.req.json<IngestPayload>();
   } catch {
     return c.json({ error: 'Invalid JSON body' }, 400);
   }
 
-  if (!body.source || !body.title) {
-    return c.json({ error: 'source and title are required' }, 400);
+  // Strict type + length validation
+  const source = sanitizeStr(body.source, MAX_SOURCE_LEN);
+  const title = sanitizeStr(body.title, MAX_TITLE_LEN);
+  if (!source || !title) {
+    return c.json({ error: 'source (string, max 50) and title (string, max 200) are required' }, 400);
   }
+  const severity = VALID_SEVERITIES.has(String(body.severity || '')) ? String(body.severity) as 'low' | 'medium' | 'high' | 'critical' : 'medium';
+  const description = sanitizeStr(body.description, 5000);
+  const tags = Array.isArray(body.tags) ? body.tags.filter((t): t is string => typeof t === 'string' && t.length < 100).slice(0, 20) : [];
 
   const now = new Date();
   let folderId = body.investigationId;
@@ -121,35 +140,35 @@ app.post('/ingest', async (c) => {
 
   // Find or create investigation
   if (folderId) {
+    if (typeof folderId !== 'string') return c.json({ error: 'investigationId must be a string' }, 400);
     const existing = await db.select({ id: folders.id }).from(folders).where(eq(folders.id, folderId)).limit(1);
     if (existing.length === 0) {
-      return c.json({ error: `Investigation ${folderId} not found` }, 404);
+      return c.json({ error: `Investigation not found` }, 404);
     }
   } else {
-    // Auto-create investigation from alert
     folderId = nanoid();
-    const severityIcon = body.severity === 'critical' ? '🚨' : body.severity === 'high' ? '⚠️' : body.severity === 'medium' ? '🔶' : '📋';
+    const severityIcon = severity === 'critical' ? '🚨' : severity === 'high' ? '⚠️' : severity === 'medium' ? '🔶' : '📋';
     await db.insert(folders).values({
       id: folderId,
-      name: `${severityIcon} ${body.title}`,
-      description: body.description || `Auto-created from ${body.source} alert`,
+      name: `${severityIcon} ${title}`.substring(0, 200),
+      description: description || `Auto-created from ${source} alert`,
       status: 'active',
-      tags: JSON.stringify([...(body.tags || []), `source:${body.source}`, 'auto-ingested']),
+      tags: JSON.stringify([...tags, `source:${source}`, 'auto-ingested']),
       createdAt: now,
       updatedAt: now,
     });
     created = true;
-    logger.info('Webhook ingest: created investigation', { folderId, source: body.source, title: body.title });
+    logger.info('Webhook ingest: created investigation', { folderId, source, title });
   }
 
-  // Create alert note with raw payload
+  // Create alert note
   const noteId = nanoid();
   const noteContent = [
-    `# Alert: ${body.title}`,
+    `# Alert: ${title}`,
     '',
-    `**Source:** ${body.source}`,
-    body.severity ? `**Severity:** ${body.severity}` : '',
-    body.description ? `\n${body.description}` : '',
+    `**Source:** ${source}`,
+    `**Severity:** ${severity}`,
+    description ? `\n${description}` : '',
     '',
     body.raw ? `## Raw Alert Data\n\`\`\`json\n${JSON.stringify(body.raw, null, 2).substring(0, 5000)}\n\`\`\`` : '',
   ].filter(Boolean).join('\n');
@@ -157,10 +176,10 @@ app.post('/ingest', async (c) => {
   await db.insert(notes).values({
     id: noteId,
     folderId,
-    title: `[${body.source.toUpperCase()}] ${body.title}`,
+    title: `[${source.toUpperCase()}] ${title}`.substring(0, 200),
     content: noteContent,
-    tags: JSON.stringify(['alert', `source:${body.source}`, ...(body.severity ? [`severity:${body.severity}`] : [])]),
-    pinned: body.severity === 'critical' || body.severity === 'high',
+    tags: JSON.stringify(['alert', `source:${source}`, `severity:${severity}`]),
+    pinned: severity === 'critical' || severity === 'high',
     trashed: false,
     archived: false,
     version: 1,
@@ -168,48 +187,65 @@ app.post('/ingest', async (c) => {
     updatedAt: now,
   });
 
-  // Auto-create IOCs if provided
+  // Batch-insert IOCs
   let iocCount = 0;
   if (body.iocs?.length) {
-    for (const ioc of body.iocs.slice(0, 100)) {
-      if (!ioc.type || !ioc.value) continue;
-      await db.insert(standaloneIOCs).values({
+    const VALID_CONFIDENCES = new Set(['low', 'medium', 'high', 'confirmed']);
+    const iocValues = body.iocs.slice(0, 100)
+      .filter(ioc => typeof ioc.type === 'string' && typeof ioc.value === 'string' && ioc.type && ioc.value)
+      .map(ioc => ({
         id: nanoid(),
-        folderId,
-        type: ioc.type,
-        value: ioc.value,
-        confidence: (ioc.confidence || 'medium') as 'low' | 'medium' | 'high' | 'confirmed',
-        analystNotes: `Auto-extracted from ${body.source} alert`,
-        tags: JSON.stringify(['auto-ingested', `source:${body.source}`]),
+        folderId: folderId!,
+        type: sanitizeStr(ioc.type, 50),
+        value: sanitizeStr(ioc.value, MAX_IOC_VALUE_LEN),
+        confidence: (VALID_CONFIDENCES.has(ioc.confidence || '') ? ioc.confidence : 'medium') as 'low' | 'medium' | 'high' | 'confirmed',
+        analystNotes: `Auto-extracted from ${source} alert`,
+        tags: JSON.stringify(['auto-ingested', `source:${source}`]),
         iocStatus: 'new',
         trashed: false,
         archived: false,
         version: 1,
         createdAt: now,
         updatedAt: now,
-      });
-      iocCount++;
+      }));
+
+    if (iocValues.length > 0) {
+      await db.insert(standaloneIOCs).values(iocValues);
+      iocCount = iocValues.length;
     }
   }
 
-  // Trigger agents if requested (default: true)
+  // Trigger agents — find bots scoped to this investigation OR with global scope
   const triggerAgents = body.triggerAgents !== false;
   let agentsTriggered = 0;
   if (triggerAgents) {
     try {
-      // Import caddy-agents trigger logic
-      const { botConfigs: botConfigsTable } = await import('../db/schema.js');
+      const { botManager } = await import('../bots/bot-manager.js');
       const bots = await db.select()
-        .from(botConfigsTable)
-        .where(and(eq(botConfigsTable.sourceType, 'caddy-agent'), eq(botConfigsTable.enabled, true)));
+        .from(botConfigs)
+        .where(and(eq(botConfigs.sourceType, 'caddy-agent'), eq(botConfigs.enabled, true)));
 
       const matchingBots = bots.filter(b =>
-        Array.isArray(b.scopeFolderIds) && (b.scopeFolderIds as string[]).includes(folderId!)
+        b.scopeType === 'global' ||
+        (Array.isArray(b.scopeFolderIds) && (b.scopeFolderIds as string[]).includes(folderId!))
       );
+
+      // Actually trigger each matching bot
+      for (const bot of matchingBots) {
+        botManager.executeBot(bot.id, 'webhook', undefined, {
+          source,
+          title,
+          severity,
+          investigationId: folderId,
+          alertNoteId: noteId,
+        }).catch(err => {
+          logger.error('Webhook ingest: bot execution failed', { botId: bot.id, error: String(err) });
+        });
+      }
       agentsTriggered = matchingBots.length;
 
       if (agentsTriggered > 0) {
-        logger.info('Webhook ingest: triggering agents', { folderId, agents: agentsTriggered });
+        logger.info('Webhook ingest: triggered agents', { folderId, agents: agentsTriggered });
       }
     } catch (err) {
       logger.warn('Webhook ingest: failed to trigger agents', { error: String(err) });

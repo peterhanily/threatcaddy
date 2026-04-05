@@ -451,9 +451,9 @@ export async function runAgentCycle(
     });
   }
 
-  // Append dynamic host skill tools
+  // Append dynamic host skill tools (respect observer read-only restriction)
   const hostTools = getHostToolDefinitions(settings);
-  if (hostTools.length > 0) {
+  if (hostTools.length > 0 && profile?.role !== 'observer') {
     if (!profile?.allowedTools?.length) {
       availableTools = [...availableTools, ...hostTools] as typeof TOOL_DEFINITIONS;
     } else {

@@ -949,7 +949,8 @@ async function executeIngestAlert(inp: Record<string, unknown>, folderId?: strin
   const source = String(inp.source || '');
   const title = String(inp.title || '');
   const description = String(inp.description || '');
-  const severity = String(inp.severity || 'medium');
+  const VALID_SEVERITIES = ['low', 'medium', 'high', 'critical'];
+  const severity = VALID_SEVERITIES.includes(String(inp.severity || '')) ? String(inp.severity) : 'medium';
   const rawData = String(inp.raw_data || '');
 
   if (!source || !title) return JSON.stringify({ error: 'source and title are required' });

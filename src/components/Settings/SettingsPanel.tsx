@@ -913,7 +913,7 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
                 setShowSkills(true);
               } catch (err) {
                 setSkillsError((err as Error).message);
-                onUpdateSettings({ llmLocalSkills: [], llmLocalSkillsFetchedAt: undefined });
+                // Don't clear existing skills on failure
               } finally {
                 setFetchingSkills(false);
               }
@@ -928,7 +928,7 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
         <p className="text-[10px] text-gray-600 mt-0.5">
           If your endpoint exposes <code className="text-gray-500">GET /skills</code>, discovered skills become LLM tools for CaddyAI and agents.
         </p>
-        {skillsError && <p className="text-[10px] text-gray-500 mt-1">No skills endpoint found — this is optional.</p>}
+        {skillsError && <p className="text-[10px] text-gray-500 mt-1">Skill discovery failed: {skillsError.substring(0, 100)}. This feature is optional — your endpoint works fine for chat without it.</p>}
         {(settings.llmLocalSkills || []).length > 0 && (
           <div className="mt-2">
             <button
