@@ -78,6 +78,7 @@ export function ChatView({
   const filteredThreads = threadSourceFilter === 'all'
     ? threads
     : threads.filter(t => {
+        if (t.isFolder) return true; // folders always visible
         if (threadSourceFilter === 'human') return !t.source || t.source === 'user';
         if (threadSourceFilter === 'agent') return t.source === 'agent';
         if (threadSourceFilter === 'meeting') return t.source === 'agent-meeting';
@@ -134,10 +135,11 @@ export function ChatView({
     });
   }, [selectedFolder, settings.llmSystemPrompt, activeThread?.provider]);
 
-  // Auto-select first thread when none selected (or stale selection) and threads exist
+  // Auto-select first non-folder thread when none selected (or stale selection)
   useEffect(() => {
     if (threads.length > 0 && (!selectedThreadId || !threads.some(t => t.id === selectedThreadId))) {
-      onSelectThread(threads[0].id);
+      const first = threads.find(t => !t.isFolder);
+      if (first) onSelectThread(first.id);
     }
   }, [selectedThreadId, threads, onSelectThread]);
 
@@ -165,9 +167,9 @@ export function ChatView({
 
   const handleNewChat = useCallback(async () => {
     try {
-      // If there's already an empty (no messages) thread in scope, just select it
+      // If there's already an empty (no messages) non-folder thread in scope, just select it
       const existingEmpty = threads.find(t =>
-        !t.trashed && t.messages.length === 0 &&
+        !t.trashed && !t.isFolder && t.messages.length === 0 &&
         (selectedFolderId ? t.folderId === selectedFolderId : true) &&
         t.source !== 'agent'
       );
