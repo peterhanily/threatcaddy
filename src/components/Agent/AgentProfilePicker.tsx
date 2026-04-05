@@ -68,7 +68,7 @@ export function AgentProfilePicker({ profiles, deployments, onDeployMultiple, on
   }, [profiles]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Deploy Agents">
       <div className="bg-surface border border-border-subtle rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden flex flex-col max-h-[80vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle shrink-0">
@@ -76,7 +76,7 @@ export function AgentProfilePicker({ profiles, deployments, onDeployMultiple, on
             <h3 className="text-sm font-semibold text-text-primary">Deploy Agents</h3>
             <p className="text-[10px] text-text-muted">Select profiles and quantities to deploy</p>
           </div>
-          <button onClick={onClose} className="text-text-muted hover:text-text-secondary"><X size={16} /></button>
+          <button onClick={onClose} className="text-text-muted hover:text-text-secondary" aria-label="Close"><X size={16} /></button>
         </div>
 
         {/* Profile list */}

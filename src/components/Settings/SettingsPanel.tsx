@@ -263,7 +263,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       {/* General Tab */}
       {activeTab === 'general' && (
-        <div className="space-y-6">
+        <div className="space-y-6" role="tabpanel" id="settings-panel-general" aria-labelledby="settings-tab-general">
           {/* Team Server */}
           <ServerConnection
             settings={settings}
@@ -423,7 +423,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       {/* Appearance Tab */}
       {activeTab === 'appearance' && (
-        <div className="space-y-6">
+        <div className="space-y-6" role="tabpanel" id="settings-panel-appearance" aria-labelledby="settings-tab-appearance">
           {/* Theme toggle — moved from General */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-300">Theme</h3>
@@ -445,7 +445,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       {/* AI Tab */}
       {activeTab === 'ai' && (
-        <div className="space-y-6">
+        <div className="space-y-6" role="tabpanel" id="settings-panel-ai" aria-labelledby="settings-tab-ai">
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
               <Bot size={16} />
@@ -613,7 +613,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       {/* Agents Tab */}
       {activeTab === 'agents' && (
-        <div className="space-y-6">
+        <div className="space-y-6" role="tabpanel" id="settings-panel-agents" aria-labelledby="settings-tab-agents">
           {/* Agent Profiles */}
           <AgentProfileSection />
 
@@ -662,7 +662,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       {/* Data Tab */}
       {activeTab === 'data' && (
-        <div className="space-y-6">
+        <div className="space-y-6" role="tabpanel" id="settings-panel-data" aria-labelledby="settings-tab-data">
           <ExportImport notes={notes} onImportComplete={onImportComplete} />
           <EncryptionSettings />
           <CloudBackup />
@@ -672,7 +672,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       {/* Templates Tab */}
       {activeTab === 'templates' && (
-        <div className="space-y-6">
+        <div className="space-y-6" role="tabpanel" id="settings-panel-templates" aria-labelledby="settings-tab-templates">
           {templateProps && <TemplateManager {...templateProps} />}
           {playbookProps && <PlaybookManager {...playbookProps} />}
         </div>
@@ -680,21 +680,21 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       {/* Threat Intel Tab */}
       {activeTab === 'intel' && (
-        <div className="space-y-6">
+        <div className="space-y-6" role="tabpanel" id="settings-panel-intel" aria-labelledby="settings-tab-intel">
           <ThreatIntelConfig />
         </div>
       )}
 
       {/* Integrations Tab */}
       {activeTab === 'integrations' && (
-        <div className="space-y-6">
+        <div className="space-y-6" role="tabpanel" id="settings-panel-integrations" aria-labelledby="settings-tab-integrations">
           <IntegrationPanel />
         </div>
       )}
 
       {/* Shortcuts Tab */}
       {activeTab === 'shortcuts' && (
-        <div className="space-y-6">
+        <div className="space-y-6" role="tabpanel" id="settings-panel-shortcuts" aria-labelledby="settings-tab-shortcuts">
           <KeyboardShortcuts />
         </div>
       )}

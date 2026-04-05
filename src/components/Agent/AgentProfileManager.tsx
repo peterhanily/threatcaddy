@@ -166,7 +166,7 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
                 <button onClick={onEdit} className="text-text-muted hover:text-text-secondary p-0.5" title="Edit">
                   <Pencil size={12} />
                 </button>
-                <button onClick={onDelete} className="text-text-muted hover:text-red-400 p-0.5" title="Delete">
+                <button onClick={() => { if (onDelete && confirm(`Delete "${profile.name}"? This cannot be undone.`)) onDelete(); }} className="text-text-muted hover:text-red-400 p-0.5" title="Delete" aria-label={`Delete ${profile.name}`}>
                   <Trash2 size={12} />
                 </button>
               </>
