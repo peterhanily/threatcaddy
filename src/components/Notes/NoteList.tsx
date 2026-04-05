@@ -1,4 +1,4 @@
-import { ArrowUpDown, FileText, Download, FolderPlus } from 'lucide-react';
+import { ArrowUpDown, FileText, Download, FolderPlus, Pencil } from 'lucide-react';
 import type { Note, SortOption, IOCType, Folder } from '../../types';
 import { cn } from '../../lib/utils';
 import { NoteCard } from './NoteCard';
@@ -309,17 +309,19 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                           autoFocus
                         />
                       ) : (
-                        <span
-                          className="text-sm font-medium text-text-primary flex-1 truncate"
-                          onDoubleClick={(e) => {
-                            if (onRenameFolder) {
-                              e.stopPropagation();
-                              setRenamingId(note.id);
-                              setRenameValue(note.title);
-                            }
-                          }}
-                          title="Double-click to rename"
-                        >{note.title}</span>
+                        <>
+                          <span className="text-sm font-medium text-text-primary flex-1 truncate">{note.title}</span>
+                          {onRenameFolder && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setRenamingId(note.id); setRenameValue(note.title); }}
+                              className="text-text-muted hover:text-text-primary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all shrink-0"
+                              title="Rename folder"
+                              aria-label={`Rename ${note.title}`}
+                            >
+                              <Pencil size={10} />
+                            </button>
+                          )}
+                        </>
                       )}
                       {onDeleteFolder && (
                         <button

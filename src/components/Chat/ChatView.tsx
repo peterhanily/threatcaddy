@@ -869,13 +869,17 @@ export function ChatView({
                               setRenamingChatFolderId(null);
                             }}
                           />
-                        ) : (
-                          <span
-                            className="flex-1 text-xs font-medium truncate"
-                            onDoubleClick={(e) => { e.stopPropagation(); setRenamingChatFolderId(folder.id); setRenamingChatFolderValue(folder.title); }}
-                            title="Double-click to rename"
-                          >{folder.title}</span>
-                        )}
+                        ) : (<>
+                          <span className="flex-1 text-xs font-medium truncate">{folder.title}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setRenamingChatFolderId(folder.id); setRenamingChatFolderValue(folder.title); }}
+                            className="text-text-muted hover:text-text-primary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all shrink-0"
+                            title="Rename folder"
+                            aria-label={`Rename ${folder.title}`}
+                          >
+                            <Pencil size={10} />
+                          </button>
+                        </>)}
                         <span className="text-[9px] text-text-muted">{children.length}</span>
                         <button
                           onClick={(e) => { e.stopPropagation(); setTrashConfirmId(folder.id); }}
