@@ -81,6 +81,10 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
   delegate_task: 'create',
   review_completed_task: 'modify',
   list_agent_activity: 'read',
+  spawn_agent: 'create',
+  define_specialist: 'create',
+  reflect_on_performance: 'create',
+  read_soul: 'read',
 };
 
 /** Get the action class for a tool name. Defaults to 'modify' for unknown tools. */

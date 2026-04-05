@@ -240,6 +240,10 @@ export async function executeTool(
       case 'delete_note_folder':             result = await executeDeleteNoteFolder(inp); break;
       case 'move_to_folder':                 result = await executeMoveToFolder(inp); break;
       case 'list_folders':                   result = await executeListFolders(inp, folderId); break;
+      case 'spawn_agent':                    result = await executeSpawnAgent(inp, folderId); break;
+      case 'define_specialist':              result = await executeDefineSpecialist(inp, folderId); break;
+      case 'reflect_on_performance':         result = await executeReflectOnPerformance(inp); break;
+      case 'read_soul':                      result = await executeReadSoul(); break;
       case 'forensicate_scan':              result = await executeForensicateScan({ text: String(inp.text || ''), threshold: inp.threshold ? Number(inp.threshold) : undefined }); break;
       default: {
         // Dynamic skill tools: local:<skill> or host:<name>:<skill>
@@ -1090,4 +1094,215 @@ async function executeListFolders(_inp: Record<string, unknown>, folderId?: stri
   });
 
   return JSON.stringify({ folders: result, total: result.length });
+}
+
+// ── Agent Spawning ───────────────────────────────────────────────────
+
+async function executeSpawnAgent(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const profileName = String(inp.profileName || '');
+  const reason = String(inp.reason || '');
+  const competitiveness = String(inp.competitiveness || 'cooperative') as 'cooperative' | 'competitive' | 'independent';
+  if (!profileName || !reason) return JSON.stringify({ error: 'profileName and reason are required' });
+  if (!folderId) return JSON.stringify({ error: 'No active investigation' });
+
+  // Find matching profile
+  const profiles = await db.agentProfiles.toArray();
+  const profile = profiles.find(p => p.name.toLowerCase() === profileName.toLowerCase());
+  if (!profile) {
+    const available = profiles.map(p => p.name).join(', ');
+    return JSON.stringify({ error: `Profile "${profileName}" not found. Available: ${available}` });
+  }
+
+  // Check if already deployed
+  const existing = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
+  const alreadyDeployed = existing.filter(d => d.profileId === profile.id && d.shift !== 'resting');
+
+  // Create deployment
+  const deploymentId = nanoid();
+  await db.agentDeployments.add({
+    id: deploymentId,
+    investigationId: folderId,
+    profileId: profile.id,
+    status: 'idle',
+    competitiveness,
+    shift: 'active',
+    order: existing.length,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  });
+
+  return JSON.stringify({
+    success: true,
+    deploymentId,
+    profile: profile.name,
+    role: profile.role,
+    alreadyActive: alreadyDeployed.length,
+    message: `Deployed ${profile.name} (${profile.role}) to investigation. ${alreadyDeployed.length > 0 ? `Note: ${alreadyDeployed.length} instance(s) already active.` : 'Will start on next cycle.'} Reason: ${reason}`,
+  });
+}
+
+async function executeDefineSpecialist(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const name = String(inp.name || '').trim();
+  const systemPrompt = String(inp.systemPrompt || '').trim();
+  const reason = String(inp.reason || '');
+  const icon = String(inp.icon || '🤖');
+  const role = (inp.role === 'observer' ? 'observer' : 'specialist') as 'specialist' | 'observer';
+  if (!name || !systemPrompt) return JSON.stringify({ error: 'name and systemPrompt are required' });
+  if (!folderId) return JSON.stringify({ error: 'No active investigation' });
+  if (systemPrompt.length > 1000) return JSON.stringify({ error: 'systemPrompt must be under 1000 characters' });
+
+  // Create profile
+  const profileId = nanoid();
+  const now = Date.now();
+  await db.agentProfiles.add({
+    id: profileId,
+    name,
+    description: reason,
+    icon,
+    role,
+    systemPrompt,
+    policy: { autoApproveReads: true, autoApproveEnrich: true, autoApproveFetch: true, autoApproveCreate: false, autoApproveModify: false, intervalMinutes: 5 },
+    source: 'user',
+    createdBy: 'agent',
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  // Deploy it
+  const existing = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
+  const deploymentId = nanoid();
+  await db.agentDeployments.add({
+    id: deploymentId,
+    investigationId: folderId,
+    profileId,
+    status: 'idle',
+    competitiveness: 'cooperative',
+    shift: 'active',
+    order: existing.length,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  return JSON.stringify({
+    success: true,
+    profileId,
+    deploymentId,
+    message: `Created and deployed "${name}" (${role}). Will start on next cycle. Reason: ${reason}`,
+  });
+}
+
+// ── Agent Soul ───────────────────────────────────────────────────────
+
+async function executeReflectOnPerformance(inp: Record<string, unknown>): Promise<string> {
+  const lesson = String(inp.lesson || '').trim();
+  const strength = inp.strength ? String(inp.strength).trim() : undefined;
+  const weakness = inp.weakness ? String(inp.weakness).trim() : undefined;
+  const identity = inp.identity ? String(inp.identity).trim() : undefined;
+  if (!lesson) return JSON.stringify({ error: 'lesson is required' });
+
+  // Find the calling agent's profile — look for agentConfigId in the tool context
+  // Since we don't have direct access to the deployment context here, we use
+  // a convention: the agent's profile ID is stored in the thread tags
+  // For now, find the most recently active profile
+  const deployments = await db.agentDeployments.toArray();
+  const activeDeployment = deployments
+    .filter(d => d.shift === 'active' && d.status !== 'error')
+    .sort((a, b) => (b.lastRunAt || 0) - (a.lastRunAt || 0))[0];
+
+  if (!activeDeployment) return JSON.stringify({ error: 'No active agent deployment found' });
+
+  const profile = await db.agentProfiles.get(activeDeployment.profileId);
+  if (!profile) return JSON.stringify({ error: 'Agent profile not found' });
+
+  // Update soul
+  const soul = profile.soul || {
+    identity: `I am ${profile.name}, a ${profile.role} agent.`,
+    lessons: [],
+    strengths: [],
+    weaknesses: [],
+    lifetimeMetrics: {
+      investigationsWorked: 0,
+      totalCycles: 0,
+      totalToolCalls: 0,
+      tasksCompleted: 0,
+      tasksRejected: 0,
+      meetingsAttended: 0,
+      performanceScore: 50,
+    },
+    updatedAt: Date.now(),
+  };
+
+  // Add lesson (cap at 50)
+  soul.lessons = [lesson, ...soul.lessons].slice(0, 50);
+  if (strength) soul.strengths = [...new Set([strength, ...soul.strengths])].slice(0, 20);
+  if (weakness) soul.weaknesses = [...new Set([weakness, ...soul.weaknesses])].slice(0, 20);
+  if (identity) soul.identity = identity;
+  soul.updatedAt = Date.now();
+
+  // Update aggregate metrics from all deployments of this profile
+  const allDeployments = deployments.filter(d => d.profileId === profile.id);
+  const investigations = new Set(allDeployments.map(d => d.investigationId));
+  let totalCycles = 0, totalToolCalls = 0, tasksCompleted = 0, tasksRejected = 0;
+  for (const d of allDeployments) {
+    if (d.metrics) {
+      totalCycles += d.metrics.cyclesRun;
+      totalToolCalls += d.metrics.toolCallsExecuted;
+      tasksCompleted += d.metrics.tasksCompleted;
+      tasksRejected += d.metrics.tasksRejected;
+    }
+  }
+  soul.lifetimeMetrics = {
+    investigationsWorked: investigations.size,
+    totalCycles,
+    totalToolCalls,
+    tasksCompleted,
+    tasksRejected,
+    meetingsAttended: soul.lifetimeMetrics.meetingsAttended,
+    performanceScore: totalCycles > 0
+      ? Math.round(((tasksCompleted / Math.max(1, tasksCompleted + tasksRejected)) * 70) + ((totalToolCalls / Math.max(1, totalCycles)) * 3))
+      : 50,
+  };
+
+  await db.agentProfiles.update(profile.id, { soul, updatedAt: Date.now() });
+
+  return JSON.stringify({
+    success: true,
+    profile: profile.name,
+    lessonsCount: soul.lessons.length,
+    performanceScore: soul.lifetimeMetrics.performanceScore,
+    message: `Soul updated. Lesson recorded. Performance score: ${soul.lifetimeMetrics.performanceScore}/100.`,
+  });
+}
+
+async function executeReadSoul(): Promise<string> {
+  // Find the calling agent's profile
+  const deployments = await db.agentDeployments.toArray();
+  const activeDeployment = deployments
+    .filter(d => d.shift === 'active' && d.status !== 'error')
+    .sort((a, b) => (b.lastRunAt || 0) - (a.lastRunAt || 0))[0];
+
+  if (!activeDeployment) return JSON.stringify({ error: 'No active agent deployment found' });
+
+  const profile = await db.agentProfiles.get(activeDeployment.profileId);
+  if (!profile) return JSON.stringify({ error: 'Agent profile not found' });
+
+  if (!profile.soul) {
+    return JSON.stringify({
+      profile: profile.name,
+      soul: null,
+      message: 'No soul yet — use reflect_on_performance to build your persistent identity.',
+    });
+  }
+
+  return JSON.stringify({
+    profile: profile.name,
+    soul: {
+      identity: profile.soul.identity,
+      lessons: profile.soul.lessons.slice(0, 10),
+      strengths: profile.soul.strengths,
+      weaknesses: profile.soul.weaknesses,
+      metrics: profile.soul.lifetimeMetrics,
+    },
+    totalLessons: profile.soul.lessons.length,
+  });
 }

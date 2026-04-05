@@ -130,7 +130,18 @@ async function buildAgentSystemPrompt(folder: Folder, _settings: Settings, provi
   // Task + knowledge instructions
   const taskInstructions = `
 TASK WORKFLOW: Check list_tasks for todo tasks. Claim by updating to in-progress, do the work, mark done.
-KNOWLEDGE: Use recall_knowledge at cycle start to load persistent findings. Use update_knowledge to store important discoveries, confirmed facts, and hypotheses that should persist across cycles.`;
+KNOWLEDGE: Use recall_knowledge at cycle start to load persistent findings. Use update_knowledge to store important discoveries, confirmed facts, and hypotheses that should persist across cycles.
+SOUL: Use read_soul at the start of each investigation to remember your identity. Use reflect_on_performance after significant work to record lessons learned.`;
+
+  // Soul injection — persistent cross-investigation identity
+  const soul = profile?.soul;
+  const soulBlock = soul ? `
+YOUR SOUL (persistent identity):
+${soul.identity}
+${soul.lessons.length > 0 ? `Recent lessons: ${soul.lessons.slice(0, 5).join('; ')}` : ''}
+${soul.strengths.length > 0 ? `Strengths: ${soul.strengths.join(', ')}` : ''}
+${soul.weaknesses.length > 0 ? `Improve: ${soul.weaknesses.join(', ')}` : ''}
+Score: ${soul.lifetimeMetrics.performanceScore}/100 across ${soul.lifetimeMetrics.investigationsWorked} investigations.` : '';
 
   // Personality modifiers
   const personality: string[] = [];
@@ -197,7 +208,7 @@ KNOWLEDGE: Use recall_knowledge at cycle start to load persistent findings. Use 
 ## ${profile.name} (${profile.role})
 
 ${profile.systemPrompt}
-${taskInstructions}${compInstructions}${personalityBlock}${readOnlyNote}${playbookInstructions}${hostBlock}
+${taskInstructions}${compInstructions}${personalityBlock}${readOnlyNote}${playbookInstructions}${hostBlock}${soulBlock}
 
 Be PROACTIVE. Always produce output. ${MAX_AGENT_TURNS} turns max.${profile.role === 'lead' ? ' Use delegate_task and list_agent_activity. Review completed tasks for quality.' : ''}${focusAreas}`;
   }

@@ -1103,10 +1103,37 @@ export interface AgentProfile {
   model?: string;
   /** Priority in meetings — lower speaks first */
   priority?: number;
+  /** Persistent "soul" — cross-investigation memory, lessons, and self-identity */
+  soul?: AgentSoul;
   source: TemplateSource;
   createdBy?: string;
   updatedBy?: string;
   createdAt: number;
+  updatedAt: number;
+}
+
+/** Persistent agent identity that transcends individual investigations. */
+export interface AgentSoul {
+  /** Self-description — how the agent sees itself, updated by the agent over time */
+  identity: string;
+  /** Lessons learned from past investigations — what worked, what didn't */
+  lessons: string[];
+  /** Strengths the agent has identified in itself */
+  strengths: string[];
+  /** Weaknesses or areas for improvement */
+  weaknesses: string[];
+  /** Aggregate performance stats across all deployments */
+  lifetimeMetrics: {
+    investigationsWorked: number;
+    totalCycles: number;
+    totalToolCalls: number;
+    tasksCompleted: number;
+    tasksRejected: number;
+    meetingsAttended: number;
+    /** 0-100 score derived from success rate and feedback */
+    performanceScore: number;
+  };
+  /** Last updated timestamp */
   updatedAt: number;
 }
 

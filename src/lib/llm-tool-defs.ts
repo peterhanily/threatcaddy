@@ -689,6 +689,59 @@ export const DELEGATION_TOOL_DEFINITIONS = [
       required: ['situation'],
     },
   },
+  // ── Agent Spawning ──────────────────────────────────────────────
+  {
+    name: 'spawn_agent',
+    description: 'Deploy an existing agent profile to this investigation. Use when you need additional specialist help. The new agent will start working on the next cycle.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        profileName: { type: 'string', description: 'Name of the agent profile to deploy (e.g. "IOC Enricher", "Timeline Builder", "Malware Analyst")' },
+        reason: { type: 'string', description: 'Why this agent is needed — what gap does it fill?' },
+        competitiveness: { type: 'string', enum: ['cooperative', 'competitive', 'independent'], description: 'Work mode (default: cooperative)' },
+      },
+      required: ['profileName', 'reason'],
+    },
+  },
+  {
+    name: 'define_specialist',
+    description: 'Create a new custom agent profile and deploy it to this investigation. Use when no existing profile fits the need. The new agent starts immediately.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        name: { type: 'string', description: 'Profile name (e.g. "Cloud Infrastructure Analyst")' },
+        icon: { type: 'string', description: 'Emoji icon' },
+        role: { type: 'string', enum: ['specialist', 'observer'], description: 'Role (default: specialist)' },
+        systemPrompt: { type: 'string', description: 'What this agent does — its expertise, approach, and focus areas (keep under 500 chars)' },
+        reason: { type: 'string', description: 'Why this specialist is needed' },
+      },
+      required: ['name', 'systemPrompt', 'reason'],
+    },
+  },
+  // ── Soul / Self-Reflection ──────────────────────────────────────
+  {
+    name: 'reflect_on_performance',
+    description: 'Update your soul — record lessons learned, strengths, weaknesses, and self-identity. Called at the end of significant work to build persistent cross-investigation memory. Your soul persists across all investigations.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        lesson: { type: 'string', description: 'A lesson learned from this investigation (what worked or what to avoid next time)' },
+        strength: { type: 'string', description: 'A strength you demonstrated (optional)' },
+        weakness: { type: 'string', description: 'An area for improvement you identified (optional)' },
+        identity: { type: 'string', description: 'Updated self-description — how you see your role and approach (optional, replaces previous)' },
+      },
+      required: ['lesson'],
+    },
+  },
+  {
+    name: 'read_soul',
+    description: 'Read your persistent soul — your identity, lessons, strengths, weaknesses, and lifetime performance metrics. Use at the start of each investigation to remember who you are.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
+    },
+  },
 ];
 
 // ── Write tool classification ──────────────────────────────────────────
@@ -715,6 +768,9 @@ const WRITE_TOOLS = new Set([
   'create_note_folder',
   'delete_note_folder',
   'move_to_folder',
+  'spawn_agent',
+  'define_specialist',
+  'reflect_on_performance',
 ]);
 
 export function isWriteTool(name: string): boolean {
