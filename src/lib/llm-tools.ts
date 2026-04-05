@@ -1154,8 +1154,13 @@ async function executeDeployAgent(inp: Record<string, unknown>, folderId?: strin
     updatedAt: Date.now(),
   });
 
-  // Enable agent on the folder if not already
-  await db.folders.update(folderId, { agentEnabled: true, updatedAt: Date.now() });
+  // Enable agent on the folder + set autonomous policy if not already configured
+  const folder = await db.folders.get(folderId);
+  const currentPolicy = folder?.agentPolicy;
+  const policyUpdate = currentPolicy ? {} : {
+    agentPolicy: { autoApproveReads: true, autoApproveEnrich: true, autoApproveFetch: true, autoApproveCreate: true, autoApproveModify: false, intervalMinutes: 5 },
+  };
+  await db.folders.update(folderId, { agentEnabled: true, ...policyUpdate, updatedAt: Date.now() });
   // Notify the app to reload folders so useCaddyAgent picks up the change
   window.dispatchEvent(new CustomEvent('tc-folders-changed'));
 

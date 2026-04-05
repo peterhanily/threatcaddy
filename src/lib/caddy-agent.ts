@@ -298,7 +298,7 @@ export function parseToolCallsFromText(text: string, toolNames: string[]): ToolU
   return calls;
 }
 
-const LLM_TIMEOUT_MS = 120_000; // 2 minutes per LLM call
+const LLM_TIMEOUT_MS = 300_000; // 5 minutes per LLM call (local models can be slow with 46+ tools)
 
 /** Send an LLM request and wait for the complete response. Optionally streams text chunks. */
 function callLLM(opts: {

@@ -78,10 +78,10 @@ function ToolCallBlock({ tc }: { tc: ToolCallRecord }) {
           size={12}
           className={cn('shrink-0 text-text-muted transition-transform', expanded && 'rotate-90')}
         />
-        <span className="font-mono font-medium text-purple">{tc.name}</span>
-        <span className="text-text-muted truncate flex-1">{summarizeInput(tc.input)}</span>
+        <span className="font-mono font-medium text-purple shrink-0">{tc.name}</span>
+        <span className="text-text-muted truncate flex-1 min-w-0">{summarizeInput(tc.input)}</span>
         <span className={cn(
-          'shrink-0 ml-1',
+          'shrink-0 ml-1 max-w-[200px] truncate',
           tc.isError ? 'text-red-400' : 'text-emerald-400'
         )}>
           {resultPreview}

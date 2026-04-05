@@ -117,6 +117,8 @@ export function ChatView({
 
   // ── YOLO mode — auto-approve all write tools without prompting
   const [yoloMode, setYoloMode] = useState(false);
+  const yoloModeRef = useRef(false);
+  useEffect(() => { yoloModeRef.current = yoloMode; }, [yoloMode]);
 
   // ── Write tool approval flow (state declared early so handleSend can reference it)
   const [pendingApproval, setPendingApproval] = useState<{
@@ -465,7 +467,7 @@ export function ChatView({
       },
       async (toolUse: ToolUseBlock) => {
         // Approval gate for write tools in Act mode (skip if yolo mode)
-        if (isWriteTool(toolUse.name) && !yoloMode) {
+        if (isWriteTool(toolUse.name) && !yoloModeRef.current) {
           const approved = await new Promise<boolean>((resolve) => {
             setPendingApproval({
               toolName: toolUse.name,
