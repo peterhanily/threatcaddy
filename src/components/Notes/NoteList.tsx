@@ -261,7 +261,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                         }
                       }}
                       className={cn(
-                        'w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-colors cursor-pointer',
+                        'group w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-colors cursor-pointer',
                         selectedId === note.id ? 'bg-purple/10 border border-purple/30' : 'hover:bg-bg-hover border border-transparent',
                       )}
                     >
