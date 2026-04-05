@@ -265,7 +265,7 @@ function ProfileForm({ profile, onSave, onCancel }: {
       </div>
       <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Brief description" className={inputClass} />
       <select value={role} onChange={e => setRole(e.target.value as 'executive' | 'lead' | 'specialist' | 'observer')} className={inputClass}>
-        <option value="executive">Executive �� can dismiss, spawn, and manage agents</option>
+        <option value="executive">Executive — can dismiss, spawn, and manage agents</option>
         <option value="lead">Lead — can delegate tasks and review work</option>
         <option value="specialist">Specialist — focused on specific tasks</option>
         <option value="observer">Observer — read-only analysis</option>
