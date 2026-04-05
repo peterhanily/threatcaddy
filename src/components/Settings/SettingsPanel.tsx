@@ -240,7 +240,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
       </div>
 
       {/* Tab Bar */}
-      <div className="flex flex-wrap gap-1" role="tablist" aria-label="Settings sections">
+      <div className="flex gap-0.5 border-b border-gray-700 pb-0" role="tablist" aria-label="Settings sections">
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -249,10 +249,10 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
             aria-controls={`settings-panel-${tab.key}`}
             id={`settings-tab-${tab.key}`}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+            className={`flex-1 px-1 py-2 text-xs font-medium text-center transition-colors border-b-2 ${
               activeTab === tab.key
-                ? 'bg-accent text-white'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
+                ? 'border-accent text-white'
+                : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
             {tab.label}
