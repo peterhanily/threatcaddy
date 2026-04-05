@@ -562,7 +562,7 @@ export async function runAgentCycle(
           onProgress?.(`Executing ${toolCall.name}...`);
           let result: { result: string; isError: boolean };
           try {
-            result = await executeTool(toolCall, folder.id);
+            result = await executeTool(toolCall, folder.id, profile ? { profileId: profile.id, deploymentId: deployment?.id } : undefined);
           } catch (toolErr) {
             result = { result: JSON.stringify({ error: String((toolErr as Error).message || toolErr) }), isError: true };
           }

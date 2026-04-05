@@ -71,11 +71,12 @@ function callLLM(opts: {
     else sendViaExtension(request, callbacks);
   });
 
+  let timeoutId: ReturnType<typeof setTimeout>;
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error('Meeting LLM call timed out')), LLM_TIMEOUT_MS);
+    timeoutId = setTimeout(() => reject(new Error('Meeting LLM call timed out')), LLM_TIMEOUT_MS);
   });
 
-  return Promise.race([llmPromise, timeoutPromise]);
+  return Promise.race([llmPromise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
 }
 
 async function resolveProfile(profileId: string): Promise<AgentProfile | undefined> {

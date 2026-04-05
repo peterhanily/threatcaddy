@@ -112,16 +112,17 @@ export function getHostToolDefinitions(settings: Settings): ToolDef[] {
 export async function executeHostSkill(
   toolName: string,
   input: Record<string, unknown>,
+  settings?: Settings,
 ): Promise<string> {
-  const settings: Settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+  const s: Settings = settings || JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
 
   // local:<skill> — route to the local LLM endpoint
   if (toolName.startsWith('local:')) {
     const skillName = toolName.slice(6);
-    if (!settings.llmLocalEndpoint) return JSON.stringify({ error: 'No local LLM endpoint configured. Set it in Settings > AI.' });
+    if (!s.llmLocalEndpoint) return JSON.stringify({ error: 'No local LLM endpoint configured. Set it in Settings > AI.' });
 
-    const baseUrl = settings.llmLocalEndpoint.replace(/\/+$/, '').replace(/\/v1\/?$/, '');
-    return await callHostExecute(baseUrl, settings.llmLocalApiKey, skillName, input, 'Local Agent');
+    const baseUrl = s.llmLocalEndpoint.replace(/\/+$/, '').replace(/\/v1\/?$/, '');
+    return await callHostExecute(baseUrl, s.llmLocalApiKey, skillName, input, 'Local Agent');
   }
 
   // host:<name>:<skill> — route to a named agent host
@@ -132,7 +133,7 @@ export async function executeHostSkill(
   const hostName = parts[1];
   const skillName = parts.slice(2).join(':');
 
-  const hosts: AgentHost[] = settings.agentHosts || [];
+  const hosts: AgentHost[] = s.agentHosts || [];
   const host = hosts.find(h => h.name === hostName);
 
   if (!host) return JSON.stringify({ error: `Agent host not found: ${hostName}. Configure in Settings > AI > Agent Hosts.` });

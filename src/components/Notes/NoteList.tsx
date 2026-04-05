@@ -46,6 +46,14 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
     [notes]
   );
 
+  const childCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const n of notes) {
+      if (n.parentNoteId) map.set(n.parentNoteId, (map.get(n.parentNoteId) || 0) + 1);
+    }
+    return map;
+  }, [notes]);
+
   const folderMap = useMemo(() => {
     const map = new Map<string, Folder>();
     if (folders) {
@@ -236,7 +244,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
             itemContent={(_index, note) => {
               const folder = note.folderId ? folderMap.get(note.folderId) : undefined;
               const isSubNote = !!note.parentNoteId;
-              const childCount = note.isFolder ? notes.filter(n => n.parentNoteId === note.id).length : 0;
+              const childCount = note.isFolder ? (childCountMap.get(note.id) || 0) : 0;
               return (
                 <div className={cn('pb-1.5', isSubNote && 'ml-4')}>
                   {note.isFolder ? (() => {

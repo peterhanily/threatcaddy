@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { nanoid } from 'nanoid';
-import type { Folder, ToolUseBlock } from '../types';
+import type { Folder, ToolUseBlock, Settings } from '../types';
 
 // Re-export definitions so existing consumers don't break
 export { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
@@ -185,9 +185,12 @@ export async function buildSystemPrompt(folder?: Folder, customPrompt?: string, 
 export async function executeTool(
   toolUse: ToolUseBlock,
   folderId?: string,
+  agentContext?: { profileId?: string; deploymentId?: string },
 ): Promise<{ result: string; isError: boolean }> {
   const { name, input } = toolUse;
   const inp = input as Record<string, unknown>;
+  // Read settings once per tool call instead of per-function
+  const _settings: Settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
 
   try {
     let result: string;
@@ -229,9 +232,9 @@ export async function executeTool(
       case 'update_knowledge':               result = await executeUpdateKnowledge(inp, folderId); break;
       case 'recall_knowledge':               result = await executeRecallKnowledge(inp, folderId); break;
       case 'ask_human':                     result = await executeAskHuman(inp, folderId); break;
-      case 'run_remote_command':            result = await executeRunRemoteCommand(inp, folderId); break;
-      case 'query_siem':                    result = await executeQuerySiem(inp); break;
-      case 'create_ticket':                 result = await executeCreateTicket(inp, folderId); break;
+      case 'run_remote_command':            result = await executeRunRemoteCommand(inp, folderId, _settings); break;
+      case 'query_siem':                    result = await executeQuerySiem(inp, _settings); break;
+      case 'create_ticket':                 result = await executeCreateTicket(inp, folderId, _settings); break;
       case 'call_meeting':                  result = await executeCallMeeting(inp, folderId); break;
       case 'notify_human':                   result = await executeNotifyHuman(inp, folderId); break;
       case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId); break;
@@ -247,14 +250,14 @@ export async function executeTool(
       case 'spawn_agent':                    result = await executeSpawnAgent(inp, folderId); break;
       case 'define_specialist':              result = await executeDefineSpecialist(inp, folderId); break;
       case 'dismiss_agent':                  result = await executeDismissAgent(inp, folderId); break;
-      case 'reflect_on_performance':         result = await executeReflectOnPerformance(inp); break;
-      case 'read_soul':                      result = await executeReadSoul(); break;
+      case 'reflect_on_performance':         result = await executeReflectOnPerformance(inp, agentContext?.profileId); break;
+      case 'read_soul':                      result = await executeReadSoul(agentContext?.profileId); break;
       case 'forensicate_scan':              result = await executeForensicateScan({ text: String(inp.text || ''), threshold: inp.threshold ? Number(inp.threshold) : undefined }); break;
       default: {
         // Dynamic skill tools: local:<skill> or host:<name>:<skill>
         if (name.startsWith('host:') || name.startsWith('local:')) {
           const { executeHostSkill } = await import('./agent-hosts');
-          result = await executeHostSkill(name, inp);
+          result = await executeHostSkill(name, inp, _settings);
         } else {
           result = JSON.stringify({ error: `Unknown tool: ${name}` });
         }
@@ -878,17 +881,17 @@ async function executeAskHuman(inp: Record<string, unknown>, folderId?: string):
 
 // ── External System Tools ─────────────────────────────────────────────
 
-async function executeRunRemoteCommand(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeRunRemoteCommand(inp: Record<string, unknown>, folderId?: string, settings?: Settings): Promise<string> {
   const host = String(inp.host || '');
   const command = String(inp.command || '');
   const reason = String(inp.reason || '');
   if (!host || !command) return JSON.stringify({ error: 'host and command are required' });
 
   try {
-    const settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
-    if (!settings.serverUrl) return JSON.stringify({ error: 'Team server required for remote command execution. Configure in Settings > Team Server.' });
+    const s = settings || JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+    if (!s.serverUrl) return JSON.stringify({ error: 'Team server required for remote command execution. Configure in Settings > Team Server.' });
 
-    const resp = await fetch(`${settings.serverUrl}/api/caddy-agents/exec`, {
+    const resp = await fetch(`${s.serverUrl}/api/caddy-agents/exec`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ host, command, reason, folderId }),
@@ -900,21 +903,21 @@ async function executeRunRemoteCommand(inp: Record<string, unknown>, folderId?: 
   }
 }
 
-async function executeQuerySiem(inp: Record<string, unknown>): Promise<string> {
+async function executeQuerySiem(inp: Record<string, unknown>, settings?: Settings): Promise<string> {
   const query = String(inp.query || '');
   const timeRange = String(inp.timeRange || '24h');
   const maxResults = Math.min(Number(inp.maxResults) || 50, 200);
   if (!query) return JSON.stringify({ error: 'query is required' });
 
   try {
-    const settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
-    if (!settings.siemEndpoint) {
+    const s = settings || JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+    if (!(s as Record<string, unknown>).siemEndpoint) {
       return JSON.stringify({ error: 'No SIEM configured. Add siemEndpoint in Settings > Integrations.', query, timeRange });
     }
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (settings.siemApiKey) headers['Authorization'] = `Bearer ${settings.siemApiKey}`;
+    if ((s as Record<string, unknown>).siemApiKey) headers['Authorization'] = `Bearer ${(s as Record<string, unknown>).siemApiKey}`;
 
-    const resp = await fetch(settings.siemEndpoint, { method: 'POST', headers, body: JSON.stringify({ query, timeRange, maxResults }) });
+    const resp = await fetch((s as Record<string, unknown>).siemEndpoint as string, { method: 'POST', headers, body: JSON.stringify({ query, timeRange, maxResults }) });
     if (!resp.ok) return JSON.stringify({ error: `SIEM ${resp.status}`, query });
     return await resp.text();
   } catch (err) {
@@ -922,15 +925,15 @@ async function executeQuerySiem(inp: Record<string, unknown>): Promise<string> {
   }
 }
 
-async function executeCreateTicket(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeCreateTicket(inp: Record<string, unknown>, folderId?: string, settings?: Settings): Promise<string> {
   const title = String(inp.title || '');
   const description = String(inp.description || '');
   const priority = String(inp.priority || 'medium');
   if (!title || !description) return JSON.stringify({ error: 'title and description are required' });
 
   try {
-    const settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
-    if (!settings.ticketEndpoint) {
+    const s = (settings || JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}')) as Record<string, unknown>;
+    if (!s.ticketEndpoint) {
       // Fallback: create local task
       const taskId = nanoid();
       await db.tasks.add({
@@ -942,9 +945,9 @@ async function executeCreateTicket(inp: Record<string, unknown>, folderId?: stri
       return JSON.stringify({ success: true, taskId, external: false, message: 'No ticketing system configured — created as local task.' });
     }
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (settings.ticketApiKey) headers['Authorization'] = `Bearer ${settings.ticketApiKey}`;
+    if (s.ticketApiKey) headers['Authorization'] = `Bearer ${s.ticketApiKey}`;
 
-    const resp = await fetch(settings.ticketEndpoint, {
+    const resp = await fetch(s.ticketEndpoint as string, {
       method: 'POST', headers,
       body: JSON.stringify({ title, description, priority, assignee: inp.assignee ? String(inp.assignee) : undefined }),
     });
@@ -1420,25 +1423,29 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
 
 // ── Agent Soul ───────────────────────────────────────────────────────
 
-async function executeReflectOnPerformance(inp: Record<string, unknown>): Promise<string> {
+async function executeReflectOnPerformance(inp: Record<string, unknown>, profileId?: string): Promise<string> {
   const lesson = String(inp.lesson || '').trim();
   const strength = inp.strength ? String(inp.strength).trim() : undefined;
   const weakness = inp.weakness ? String(inp.weakness).trim() : undefined;
   const identity = inp.identity ? String(inp.identity).trim() : undefined;
   if (!lesson) return JSON.stringify({ error: 'lesson is required' });
 
-  // Find the calling agent's profile — look for agentConfigId in the tool context
-  // Since we don't have direct access to the deployment context here, we use
-  // a convention: the agent's profile ID is stored in the thread tags
-  // For now, find the most recently active profile
-  const deployments = await db.agentDeployments.toArray();
-  const activeDeployment = deployments
-    .filter(d => d.shift === 'active' && d.status !== 'error')
-    .sort((a, b) => (b.lastRunAt || 0) - (a.lastRunAt || 0))[0];
-
-  if (!activeDeployment) return JSON.stringify({ error: 'No active agent deployment found' });
-
-  const profile = await db.agentProfiles.get(activeDeployment.profileId);
+  // Find the calling agent's profile via explicit context or fallback
+  let profile;
+  if (profileId) {
+    const allProfiles = await getAllAgentProfiles();
+    profile = allProfiles.find(p => p.id === profileId);
+  }
+  if (!profile) {
+    // Fallback: find most recently active deployment
+    const deployments = await db.agentDeployments.toArray();
+    const activeDeployment = deployments
+      .filter(d => d.shift === 'active' && d.status !== 'error')
+      .sort((a, b) => (b.lastRunAt || 0) - (a.lastRunAt || 0))[0];
+    if (!activeDeployment) return JSON.stringify({ error: 'No active agent deployment found' });
+    const allProfiles = await getAllAgentProfiles();
+    profile = allProfiles.find(p => p.id === activeDeployment.profileId);
+  }
   if (!profile) return JSON.stringify({ error: 'Agent profile not found' });
 
   // Update soul
@@ -1467,7 +1474,8 @@ async function executeReflectOnPerformance(inp: Record<string, unknown>): Promis
   soul.updatedAt = Date.now();
 
   // Update aggregate metrics from all deployments of this profile
-  const allDeployments = deployments.filter(d => d.profileId === profile.id);
+  const allDeploymentsGlobal = await db.agentDeployments.toArray();
+  const allDeployments = allDeploymentsGlobal.filter(d => d.profileId === profile.id);
   const investigations = new Set(allDeployments.map(d => d.investigationId));
   let totalCycles = 0, totalToolCalls = 0, tasksCompleted = 0, tasksRejected = 0;
   for (const d of allDeployments) {
@@ -1501,16 +1509,21 @@ async function executeReflectOnPerformance(inp: Record<string, unknown>): Promis
   });
 }
 
-async function executeReadSoul(): Promise<string> {
-  // Find the calling agent's profile
-  const deployments = await db.agentDeployments.toArray();
-  const activeDeployment = deployments
-    .filter(d => d.shift === 'active' && d.status !== 'error')
-    .sort((a, b) => (b.lastRunAt || 0) - (a.lastRunAt || 0))[0];
-
-  if (!activeDeployment) return JSON.stringify({ error: 'No active agent deployment found' });
-
-  const profile = await db.agentProfiles.get(activeDeployment.profileId);
+async function executeReadSoul(profileId?: string): Promise<string> {
+  let profile;
+  if (profileId) {
+    const allProfiles = await getAllAgentProfiles();
+    profile = allProfiles.find(p => p.id === profileId);
+  }
+  if (!profile) {
+    const deployments = await db.agentDeployments.toArray();
+    const activeDeployment = deployments
+      .filter(d => d.shift === 'active' && d.status !== 'error')
+      .sort((a, b) => (b.lastRunAt || 0) - (a.lastRunAt || 0))[0];
+    if (!activeDeployment) return JSON.stringify({ error: 'No active agent deployment found' });
+    const allProfiles = await getAllAgentProfiles();
+    profile = allProfiles.find(p => p.id === activeDeployment.profileId);
+  }
   if (!profile) return JSON.stringify({ error: 'Agent profile not found' });
 
   if (!profile.soul) {

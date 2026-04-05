@@ -107,11 +107,12 @@ function callLLM(opts: {
     else sendViaExtension(request, callbacks);
   });
 
+  let timeoutId: ReturnType<typeof setTimeout>;
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error(`Supervisor LLM timed out after ${LLM_TIMEOUT_MS / 1000}s`)), LLM_TIMEOUT_MS);
+    timeoutId = setTimeout(() => reject(new Error(`Supervisor LLM timed out after ${LLM_TIMEOUT_MS / 1000}s`)), LLM_TIMEOUT_MS);
   });
 
-  return Promise.race([llmPromise, timeoutPromise]);
+  return Promise.race([llmPromise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
 }
 
 const SUPERVISOR_SYSTEM_PROMPT = `You are the CaddyAgent Supervisor — a cross-investigation analyst that monitors all active investigations in a threat intelligence platform.

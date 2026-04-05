@@ -75,7 +75,7 @@ export function ChatView({
   const [renamingChatFolderId, setRenamingChatFolderId] = useState<string | null>(null);
   const [renamingChatFolderValue, setRenamingChatFolderValue] = useState('');
 
-  const filteredThreads = threadSourceFilter === 'all'
+  const filteredThreads = useMemo(() => threadSourceFilter === 'all'
     ? threads
     : threads.filter(t => {
         if (t.isFolder) return true; // folders always visible
@@ -83,7 +83,7 @@ export function ChatView({
         if (threadSourceFilter === 'agent') return t.source === 'agent';
         if (threadSourceFilter === 'meeting') return t.source === 'agent-meeting';
         return true;
-      });
+      }), [threads, threadSourceFilter]);
   const [errorHasSettingsLink, setErrorHasSettingsLink] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return !localStorage.getItem('caddyai-onboarded');
