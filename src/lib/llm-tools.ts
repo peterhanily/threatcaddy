@@ -1132,7 +1132,7 @@ async function getAllAgentProfiles() {
 // ── Agent Management (from CaddyAI chat) ─────────────────────────────
 
 async function executeDeployAgent(inp: Record<string, unknown>, folderId?: string): Promise<string> {
-  const profileName = String(inp.profileName || '');
+  const profileName = String(inp.profileName || inp.name || inp.agent_type || inp.profile || '');
   if (!profileName) return JSON.stringify({ error: 'profileName is required' });
   if (!folderId) return JSON.stringify({ error: 'No active investigation — select one first' });
 
@@ -1179,7 +1179,7 @@ async function executeDeployAgent(inp: Record<string, unknown>, folderId?: strin
 }
 
 async function executeStopAgent(inp: Record<string, unknown>, folderId?: string): Promise<string> {
-  const profileName = String(inp.profileName || '');
+  const profileName = String(inp.profileName || inp.name || inp.agent_type || inp.profile || '');
   if (!profileName) return JSON.stringify({ error: 'profileName is required' });
   if (!folderId) return JSON.stringify({ error: 'No active investigation' });
 

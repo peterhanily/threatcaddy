@@ -82,14 +82,14 @@ export function AgentMeetingPanel({
                   setRunning(false);
                 }
               }}
-              className="text-[10px] text-accent-amber hover:underline"
+              className="text-xs px-2 py-1 rounded bg-accent-amber/10 text-accent-amber hover:bg-accent-amber/20 transition-colors"
               title="Outgoing agents brief incoming agents, then swap shift states"
             >Shift Handoff</button>
             <button
               onClick={() => setShowNewMeeting(!showNewMeeting)}
-              className="text-[10px] text-accent-blue hover:underline"
+              className="text-xs px-2 py-1 rounded bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 transition-colors"
             >
-              {showNewMeeting ? 'Cancel' : 'Meeting'}
+              {showNewMeeting ? 'Cancel' : 'Start Meeting'}
             </button>
           </div>
         )}
@@ -141,7 +141,7 @@ export function AgentMeetingPanel({
 
       {/* Meeting history */}
       {!canMeet && (
-        <p className="text-[10px] text-text-muted">Deploy 2+ agent profiles to start a meeting.</p>
+        <p className="text-xs text-text-muted">Deploy 2+ agent profiles to start a meeting.</p>
       )}
 
       {meetings.length > 0 && (
