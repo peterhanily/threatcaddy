@@ -97,7 +97,7 @@ interface SettingsPanelProps {
   };
 }
 
-type SettingsTab = 'general' | 'appearance' | 'ai' | 'data' | 'templates' | 'intel' | 'integrations' | 'shortcuts';
+type SettingsTab = 'general' | 'appearance' | 'ai' | 'agents' | 'data' | 'templates' | 'intel' | 'integrations' | 'shortcuts';
 
 // ── Custom Slash Commands Editor ────────────────────────────────────
 
@@ -214,6 +214,7 @@ const TABS: { key: SettingsTab; label: string }[] = [
   { key: 'general', label: 'General' },
   { key: 'appearance', label: 'Appearance' },
   { key: 'ai', label: 'AI' },
+  { key: 'agents', label: 'Agents' },
   { key: 'data', label: 'Data' },
   { key: 'templates', label: 'Templates' },
   { key: 'intel', label: 'Intel' },
@@ -607,13 +608,22 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
           {/* Custom Slash Commands */}
           <CustomSlashCommandsEditor />
 
-          {/* CaddyAgent Supervisor */}
-          <div className="border-t border-gray-700 pt-6 mt-6">
-            <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2 mb-3">
+        </div>
+      )}
+
+      {/* Agents Tab */}
+      {activeTab === 'agents' && (
+        <div className="space-y-6">
+          {/* Agent Profiles */}
+          <AgentProfileSection />
+
+          {/* Supervisor Agent */}
+          <div className="border border-gray-700 rounded-lg p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
               <Bot size={16} />
               Supervisor Agent
             </h3>
-            <p className="text-xs text-gray-500 mb-3">
+            <p className="text-xs text-gray-500">
               Cross-investigation analysis — detects shared IOCs, stale cases, and patterns across your caseload.
             </p>
             <div className="flex items-center justify-between">
@@ -626,13 +636,13 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${settings.agentSupervisorEnabled ? 'bg-accent-blue' : 'bg-gray-600'}`}
                 role="switch"
                 aria-checked={!!settings.agentSupervisorEnabled}
-                aria-label="Enable supervisor agent for cross-investigation analysis"
+                aria-label="Enable supervisor agent"
               >
                 <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${settings.agentSupervisorEnabled ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
               </button>
             </div>
             {settings.agentSupervisorEnabled && (
-              <div className="flex items-center gap-3 mt-3">
+              <div className="flex items-center gap-3 mt-2">
                 <label className="text-xs text-gray-400 shrink-0">Interval</label>
                 <input
                   type="range"
@@ -647,7 +657,6 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               </div>
             )}
           </div>
-
         </div>
       )}
 
@@ -666,7 +675,6 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
         <div className="space-y-6">
           {templateProps && <TemplateManager {...templateProps} />}
           {playbookProps && <PlaybookManager {...playbookProps} />}
-          <AgentProfileSection />
         </div>
       )}
 
