@@ -206,7 +206,7 @@ function AppInner() {
 
   // Reload UI when external agents write data via the agent bridge
   useEffect(() => {
-    const handler = () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); };
+    const handler = () => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); chatsHook.reload(); reloadTags(); };
     window.addEventListener('threatcaddy:entities-changed', handler);
     return () => window.removeEventListener('threatcaddy:entities-changed', handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps

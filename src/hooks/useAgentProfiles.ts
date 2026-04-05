@@ -23,6 +23,13 @@ export function useAgentProfiles() {
     reload();
   }, [reload]);
 
+  // Reload when agent tools create/modify profiles (define_specialist, soul updates)
+  useEffect(() => {
+    const handler = () => { setTimeout(reload, 200); };
+    window.addEventListener('tc-folders-changed', handler);
+    return () => window.removeEventListener('tc-folders-changed', handler);
+  }, [reload]);
+
   /** All profiles: builtins first, then user-created (memoized). */
   const profiles = useMemo(() => [...BUILTIN_AGENT_PROFILES, ...userProfiles], [userProfiles]);
 
