@@ -326,22 +326,29 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                     {/* Delete folder confirmation */}
                     {deletingFolderId === note.id && onDeleteFolder && (
                       <div className="mx-3 mb-2 p-2 rounded-lg border border-red-500/30 bg-red-500/5 text-xs space-y-2" onClick={e => e.stopPropagation()}>
-                        <p className="text-text-secondary">Delete <strong>{note.title}</strong>? ({childCount} note{childCount !== 1 ? 's' : ''} inside)</p>
+                        <p className="text-text-secondary">Delete <strong>{note.title}</strong>{childCount > 0 ? ` (${childCount} note${childCount !== 1 ? 's' : ''} inside)` : ''}?</p>
                         <div className="flex gap-2">
-                          <button
-                            onClick={() => { onDeleteFolder(note.id, 'move_out'); setDeletingFolderId(null); }}
-                            className="px-2 py-1 rounded bg-surface-raised text-text-primary hover:bg-bg-hover transition-colors"
-                          >
-                            Move notes out
-                          </button>
-                          {childCount > 0 && (
+                          {childCount === 0 ? (
                             <button
-                              onClick={() => { onDeleteFolder(note.id, 'trash_contents'); setDeletingFolderId(null); }}
+                              onClick={() => { setDeletingFolderId(null); onDeleteFolder(note.id, 'move_out'); }}
+                              className="px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                            >
+                              Delete folder
+                            </button>
+                          ) : (<>
+                            <button
+                              onClick={() => { setDeletingFolderId(null); onDeleteFolder(note.id, 'move_out'); }}
+                              className="px-2 py-1 rounded bg-surface-raised text-text-primary hover:bg-bg-hover transition-colors"
+                            >
+                              Move notes out & delete
+                            </button>
+                            <button
+                              onClick={() => { setDeletingFolderId(null); onDeleteFolder(note.id, 'trash_contents'); }}
                               className="px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
                             >
                               Trash all
                             </button>
-                          )}
+                          </>)}
                           <button
                             onClick={() => setDeletingFolderId(null)}
                             className="px-2 py-1 rounded text-text-muted hover:text-text-secondary transition-colors"
