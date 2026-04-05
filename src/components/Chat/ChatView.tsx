@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, Check, X } from 'lucide-react';
+import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, Check, X, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
 import type { ChatThread, ChatMessage, LLMProvider, Settings, Folder, ToolUseBlock } from '../../types';
 import { ClsSelect } from '../Common/ClsSelect';
 import { ClsBadge } from '../Common/ClsBadge';
@@ -69,6 +69,11 @@ export function ChatView({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [threadSourceFilter, setThreadSourceFilter] = useState<'all' | 'human' | 'agent' | 'meeting'>('all');
+  const [expandedChatFolders, setExpandedChatFolders] = useState<Set<string>>(new Set());
+  const [showNewChatFolder, setShowNewChatFolder] = useState(false);
+  const [newChatFolderName, setNewChatFolderName] = useState('');
+  const [renamingChatFolderId, setRenamingChatFolderId] = useState<string | null>(null);
+  const [renamingChatFolderValue, setRenamingChatFolderValue] = useState('');
 
   const filteredThreads = threadSourceFilter === 'all'
     ? threads
@@ -679,17 +684,57 @@ export function ChatView({
         'w-56 border-r border-border-subtle flex flex-col shrink-0',
         activeThread ? 'hidden md:flex' : 'w-full md:w-56'
       )}>
-        <div className="p-2 border-b border-border-subtle">
+        <div className="p-2 border-b border-border-subtle flex gap-1">
           <button
             onClick={handleNewChat}
             disabled={!canChat}
-            className="w-full flex items-center justify-center gap-1.5 h-8 rounded-lg bg-purple text-white text-xs font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
+            className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg bg-purple text-white text-xs font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
             title={canChat ? 'Start a new chat' : 'Extension or server connection required'}
           >
             <Plus size={14} />
             New Chat
           </button>
+          <button
+            onClick={() => setShowNewChatFolder(!showNewChatFolder)}
+            className="h-8 w-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors"
+            title="New folder"
+          >
+            <FolderPlus size={14} />
+          </button>
         </div>
+        {showNewChatFolder && (
+          <div className="px-2 py-1.5 border-b border-border-subtle flex gap-1">
+            <input
+              autoFocus
+              className="flex-1 bg-surface-raised border border-border-default rounded px-2 py-1 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent-blue"
+              placeholder="Folder name..."
+              value={newChatFolderName}
+              onChange={e => setNewChatFolderName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && newChatFolderName.trim()) {
+                  onCreateThread({ title: newChatFolderName.trim(), isFolder: true, messages: [], tags: ['chat-folder'] } as Partial<ChatThread>);
+                  setNewChatFolderName('');
+                  setShowNewChatFolder(false);
+                } else if (e.key === 'Escape') {
+                  setShowNewChatFolder(false);
+                }
+              }}
+            />
+            <button
+              onClick={() => {
+                if (newChatFolderName.trim()) {
+                  onCreateThread({ title: newChatFolderName.trim(), isFolder: true, messages: [], tags: ['chat-folder'] } as Partial<ChatThread>);
+                  setNewChatFolderName('');
+                  setShowNewChatFolder(false);
+                }
+              }}
+              disabled={!newChatFolderName.trim()}
+              className="text-xs px-2 py-1 rounded bg-accent-blue text-white disabled:opacity-40"
+            >
+              Create
+            </button>
+          </div>
+        )}
         {/* Thread source filter */}
         <div className="flex gap-1 px-3 py-1.5 border-b border-border-subtle">
           {(['all', 'human', 'agent', 'meeting'] as const).map(f => (
@@ -712,16 +757,24 @@ export function ChatView({
             <div className="p-4 text-center text-text-muted text-xs">
               {threads.length === 0 ? 'No chat threads yet' : `No ${threadSourceFilter} threads`}
             </div>
-          ) : (
-            filteredThreads.map((thread) => (
+          ) : (() => {
+            // Separate folders and top-level threads, then build ordered list
+            const chatFolders = filteredThreads.filter(t => t.isFolder);
+            const topLevel = filteredThreads.filter(t => !t.isFolder && !t.parentThreadId);
+            const childOf = (fId: string) => filteredThreads.filter(t => !t.isFolder && t.parentThreadId === fId);
+
+            const renderThread = (thread: ChatThread, indented = false) => (
               <div
                 key={thread.id}
                 role="button"
                 tabIndex={0}
                 onClick={() => onSelectThread(thread.id)}
                 onKeyDown={(e) => { if (e.key === 'Enter') onSelectThread(thread.id); }}
+                draggable
+                onDragStart={(e) => e.dataTransfer.setData('text/plain', thread.id)}
                 className={cn(
                   'group flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors border-b border-border-subtle',
+                  indented && 'pl-7',
                   selectedThreadId === thread.id
                     ? 'bg-bg-active text-text-primary'
                     : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
@@ -754,8 +807,85 @@ export function ChatView({
                   <Trash2 size={12} />
                 </button>
               </div>
-            ))
-          )}
+            );
+
+            return (
+              <>
+                {/* Chat folders */}
+                {chatFolders.map(folder => {
+                  const children = childOf(folder.id);
+                  const expanded = expandedChatFolders.has(folder.id);
+                  return (
+                    <div key={folder.id}>
+                      <div
+                        className={cn(
+                          'flex items-center gap-1.5 px-3 py-2 cursor-pointer transition-colors border-b border-border-subtle',
+                          'text-text-secondary hover:bg-bg-hover',
+                        )}
+                        onClick={() => {
+                          const next = new Set(expandedChatFolders);
+                          if (next.has(folder.id)) next.delete(folder.id); else next.add(folder.id);
+                          setExpandedChatFolders(next);
+                        }}
+                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('ring-1', 'ring-accent-blue'); }}
+                        onDragLeave={(e) => { e.currentTarget.classList.remove('ring-1', 'ring-accent-blue'); }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.remove('ring-1', 'ring-accent-blue');
+                          const draggedId = e.dataTransfer.getData('text/plain');
+                          if (draggedId && draggedId !== folder.id) {
+                            onUpdateThread(draggedId, { parentThreadId: folder.id });
+                          }
+                        }}
+                      >
+                        {expanded ? <ChevronDown size={12} className="text-accent-blue shrink-0" /> : <ChevronRight size={12} className="text-accent-amber shrink-0" />}
+                        <span className="text-sm">📁</span>
+                        {renamingChatFolderId === folder.id ? (
+                          <input
+                            autoFocus
+                            className="flex-1 text-xs font-medium bg-surface-raised border border-accent-blue rounded px-1 py-0.5 text-text-primary outline-none"
+                            value={renamingChatFolderValue}
+                            onClick={e => e.stopPropagation()}
+                            onChange={e => setRenamingChatFolderValue(e.target.value)}
+                            onKeyDown={e => {
+                              e.stopPropagation();
+                              if (e.key === 'Enter' && renamingChatFolderValue.trim()) {
+                                onUpdateThread(folder.id, { title: renamingChatFolderValue.trim() });
+                                setRenamingChatFolderId(null);
+                              } else if (e.key === 'Escape') setRenamingChatFolderId(null);
+                            }}
+                            onBlur={() => {
+                              if (renamingChatFolderValue.trim() && renamingChatFolderValue.trim() !== folder.title) {
+                                onUpdateThread(folder.id, { title: renamingChatFolderValue.trim() });
+                              }
+                              setRenamingChatFolderId(null);
+                            }}
+                          />
+                        ) : (
+                          <span
+                            className="flex-1 text-xs font-medium truncate"
+                            onDoubleClick={(e) => { e.stopPropagation(); setRenamingChatFolderId(folder.id); setRenamingChatFolderValue(folder.title); }}
+                            title="Double-click to rename"
+                          >{folder.title}</span>
+                        )}
+                        <span className="text-[9px] text-text-muted">{children.length}</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setTrashConfirmId(folder.id); }}
+                          className="opacity-40 group-hover:opacity-100 p-0.5 rounded hover:bg-bg-hover text-text-muted hover:text-red-400 transition-all shrink-0"
+                          title="Delete folder"
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
+                      {expanded && children.map(t => renderThread(t, true))}
+                    </div>
+                  );
+                })}
+                {/* Top-level threads (no folder) */}
+                {topLevel.map(t => renderThread(t))}
+              </>
+            );
+          })()}
         </div>
       </div>
 

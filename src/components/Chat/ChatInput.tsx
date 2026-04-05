@@ -71,7 +71,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
+      textareaRef.current.style.height = Math.max(72, Math.min(textareaRef.current.scrollHeight, 300)) + 'px';
     }
   }, [text]);
 
@@ -439,8 +439,8 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
             onDragOver={(e) => e.preventDefault()}
             placeholder={canSend ? 'Ask CaddyAI anything... (/ for commands, @ to mention, paste images)' : 'Configure a local LLM or install the extension'}
             disabled={!canSend || disabled}
-            rows={1}
-            className="w-full bg-bg-deep border border-border-medium rounded-xl px-4 py-3 text-sm text-text-primary placeholder-text-muted resize-none focus:outline-none focus:ring-2 focus:ring-purple/30 focus:border-purple disabled:opacity-50 transition-all"
+            rows={3}
+            className="w-full bg-bg-deep border border-border-medium rounded-xl px-4 py-3 text-sm text-text-primary placeholder-text-muted resize-y focus:outline-none focus:ring-2 focus:ring-purple/30 focus:border-purple disabled:opacity-50 transition-all min-h-[72px] max-h-[300px]"
           />
         </div>
         {/* Image attach button */}

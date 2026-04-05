@@ -673,6 +673,10 @@ export interface ChatThread {
   source?: 'user' | 'agent' | 'agent-meeting' | 'caddyshack';
   /** Cached summary of truncated conversation context */
   contextSummary?: string;
+  /** Parent thread ID for folder grouping (thread with isFolder=true) */
+  parentThreadId?: string;
+  /** Marks this thread as a folder container for organizing chats */
+  isFolder?: boolean;
   trashed: boolean;
   trashedAt?: number;
   archived: boolean;
