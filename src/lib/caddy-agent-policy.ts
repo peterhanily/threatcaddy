@@ -83,6 +83,7 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
   list_agent_activity: 'read',
   spawn_agent: 'create',
   define_specialist: 'create',
+  dismiss_agent: 'modify',
   reflect_on_performance: 'create',
   read_soul: 'read',
 };

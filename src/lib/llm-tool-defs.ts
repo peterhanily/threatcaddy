@@ -718,6 +718,21 @@ export const DELEGATION_TOOL_DEFINITIONS = [
       required: ['name', 'systemPrompt', 'reason'],
     },
   },
+  // ── Agent Override / Dismissal ───────────────────────────────────
+  {
+    name: 'dismiss_agent',
+    description: 'Dismiss a poorly performing agent from this investigation and optionally replace them. This is a serious action — requires strong evidence of poor performance (rejected tasks, repeated mistakes, failure to follow instructions). Creates a dismissal record and after-action note. The dismissed agent\'s soul is updated with the feedback.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        agentName: { type: 'string', description: 'Name of the agent to dismiss (profile name)' },
+        reason: { type: 'string', description: 'Detailed justification — what specifically went wrong (required, must be substantive)' },
+        evidence: { type: 'string', description: 'Specific examples of poor performance (task IDs, action IDs, or descriptions of failures)' },
+        replacementProfile: { type: 'string', description: 'Name of a profile to deploy as replacement (optional — leave empty to not replace)' },
+      },
+      required: ['agentName', 'reason', 'evidence'],
+    },
+  },
   // ── Soul / Self-Reflection ──────────────────────────────────────
   {
     name: 'reflect_on_performance',
@@ -770,6 +785,7 @@ const WRITE_TOOLS = new Set([
   'move_to_folder',
   'spawn_agent',
   'define_specialist',
+  'dismiss_agent',
   'reflect_on_performance',
 ]);
 

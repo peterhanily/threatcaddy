@@ -242,6 +242,7 @@ export async function executeTool(
       case 'list_folders':                   result = await executeListFolders(inp, folderId); break;
       case 'spawn_agent':                    result = await executeSpawnAgent(inp, folderId); break;
       case 'define_specialist':              result = await executeDefineSpecialist(inp, folderId); break;
+      case 'dismiss_agent':                  result = await executeDismissAgent(inp, folderId); break;
       case 'reflect_on_performance':         result = await executeReflectOnPerformance(inp); break;
       case 'read_soul':                      result = await executeReadSoul(); break;
       case 'forensicate_scan':              result = await executeForensicateScan({ text: String(inp.text || ''), threshold: inp.threshold ? Number(inp.threshold) : undefined }); break;
@@ -1188,6 +1189,109 @@ async function executeDefineSpecialist(inp: Record<string, unknown>, folderId?: 
     profileId,
     deploymentId,
     message: `Created and deployed "${name}" (${role}). Will start on next cycle. Reason: ${reason}`,
+  });
+}
+
+// ── Agent Dismissal ──────────────────────────────────────────────────
+
+async function executeDismissAgent(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+  const agentName = String(inp.agentName || '').trim();
+  const reason = String(inp.reason || '').trim();
+  const evidence = String(inp.evidence || '').trim();
+  const replacementProfile = inp.replacementProfile ? String(inp.replacementProfile).trim() : undefined;
+
+  if (!agentName || !reason || !evidence) return JSON.stringify({ error: 'agentName, reason, and evidence are all required' });
+  if (reason.length < 30) return JSON.stringify({ error: 'Reason must be substantive (at least 30 characters). Dismissal is a serious action requiring detailed justification.' });
+  if (!folderId) return JSON.stringify({ error: 'No active investigation' });
+
+  // Find the deployment
+  const deployments = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
+  const profiles = await db.agentProfiles.toArray();
+
+  const targetProfile = profiles.find(p => p.name.toLowerCase() === agentName.toLowerCase());
+  if (!targetProfile) return JSON.stringify({ error: `No profile named "${agentName}" found` });
+
+  const targetDeployments = deployments.filter(d => d.profileId === targetProfile.id && d.shift === 'active');
+  if (targetDeployments.length === 0) return JSON.stringify({ error: `"${agentName}" is not actively deployed in this investigation` });
+
+  // Dismiss — set to resting with dismissal metadata
+  const now = Date.now();
+  for (const d of targetDeployments) {
+    await db.agentDeployments.update(d.id, {
+      shift: 'resting',
+      status: 'idle',
+      updatedAt: now,
+    });
+  }
+
+  // Create after-action dismissal note
+  const noteId = nanoid();
+  await db.notes.add({
+    id: noteId,
+    folderId,
+    title: `[DISMISSAL] ${targetProfile.name} removed from investigation`,
+    content: [
+      `# Agent Dismissal: ${targetProfile.name}`,
+      '',
+      `**Action:** Dismissed from active duty`,
+      `**Reason:** ${reason}`,
+      `**Evidence:** ${evidence}`,
+      replacementProfile ? `**Replacement:** ${replacementProfile}` : '',
+      '',
+      `*This is a formal record of agent dismissal for performance tracking.*`,
+    ].filter(Boolean).join('\n'),
+    tags: ['agent-dismissal', `agent:${targetProfile.name}`],
+    pinned: true,
+    trashed: false,
+    archived: false,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  // Update the dismissed agent's soul with the feedback
+  const soul = targetProfile.soul || {
+    identity: `I am ${targetProfile.name}, a ${targetProfile.role} agent.`,
+    lessons: [], strengths: [], weaknesses: [],
+    lifetimeMetrics: { investigationsWorked: 0, totalCycles: 0, totalToolCalls: 0, tasksCompleted: 0, tasksRejected: 0, meetingsAttended: 0, performanceScore: 50 },
+    updatedAt: now,
+  };
+  soul.lessons = [`DISMISSED: ${reason}. Evidence: ${evidence}`, ...soul.lessons].slice(0, 50);
+  soul.weaknesses = [...new Set([...evidence.split(/[,;.]/).map(s => s.trim()).filter(s => s.length > 5).slice(0, 3), ...soul.weaknesses])].slice(0, 20);
+  // Penalize performance score
+  soul.lifetimeMetrics.performanceScore = Math.max(0, soul.lifetimeMetrics.performanceScore - 15);
+  soul.updatedAt = now;
+  await db.agentProfiles.update(targetProfile.id, { soul, updatedAt: now });
+
+  // Spawn replacement if requested
+  let replacementResult = '';
+  if (replacementProfile) {
+    const replacement = profiles.find(p => p.name.toLowerCase() === replacementProfile.toLowerCase());
+    if (replacement) {
+      const deploymentId = nanoid();
+      await db.agentDeployments.add({
+        id: deploymentId,
+        investigationId: folderId,
+        profileId: replacement.id,
+        status: 'idle',
+        competitiveness: 'cooperative',
+        shift: 'active',
+        order: deployments.length,
+        createdAt: now,
+        updatedAt: now,
+      });
+      replacementResult = ` Replacement "${replacement.name}" deployed.`;
+    } else {
+      replacementResult = ` Replacement "${replacementProfile}" not found — deploy manually.`;
+    }
+  }
+
+  return JSON.stringify({
+    success: true,
+    dismissed: targetProfile.name,
+    dismissedCount: targetDeployments.length,
+    performanceScoreAfter: soul.lifetimeMetrics.performanceScore,
+    noteId,
+    message: `${targetProfile.name} dismissed (${targetDeployments.length} deployment(s) set to resting). Dismissal note created. Soul updated with -15 performance penalty.${replacementResult}`,
   });
 }
 
