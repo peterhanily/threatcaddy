@@ -136,8 +136,12 @@ export async function runAgentMeeting(
     if (profile) participants.push({ deployment: d, profile });
   }
 
-  // Sort by priority (lower = speaks first)
+  // Sort by priority (lower = speaks first), cap at 8 to limit LLM calls
   participants.sort((a, b) => (a.profile.priority ?? 99) - (b.profile.priority ?? 99));
+  const MAX_MEETING_PARTICIPANTS = 8;
+  if (participants.length > MAX_MEETING_PARTICIPANTS) {
+    participants.length = MAX_MEETING_PARTICIPANTS;
+  }
 
   if (participants.length < 2) {
     return { meetingId: '', threadId: '', roundsCompleted: 0, error: 'Need at least 2 agents for a meeting' };

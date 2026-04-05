@@ -21,6 +21,25 @@ import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-route
 import { DEFAULT_MODEL_PER_PROVIDER, MODEL_PROVIDER_MAP } from './models';
 import { getHostToolDefinitions } from './agent-hosts';
 
+// ── Global Concurrency Limit ───────────────────────────────────────────
+
+const MAX_CONCURRENT_CYCLES = 3;
+let activeCycleCount = 0;
+const cycleWaiters: { resolve: () => void }[] = [];
+
+async function acquireCycleLock(): Promise<void> {
+  if (activeCycleCount >= MAX_CONCURRENT_CYCLES) {
+    await new Promise<void>(resolve => cycleWaiters.push({ resolve }));
+  }
+  activeCycleCount++;
+}
+
+function releaseCycleLock(): void {
+  activeCycleCount--;
+  const next = cycleWaiters.shift();
+  if (next) next.resolve();
+}
+
 // ── Provider Resolution ─────────────────────────────────────────────────
 
 const PROVIDER_KEY_MAP: { provider: LLMProvider; keyField: keyof Settings }[] = [
@@ -360,6 +379,20 @@ export async function runAgentCycle(
   profile?: AgentProfile,
   deployment?: AgentDeployment,
   onStream?: (text: string) => void,
+): Promise<AgentCycleResult> {
+  // Global concurrency limit — prevent runaway cost from many agents
+  await acquireCycleLock();
+  try {
+    return await _runAgentCycleInner(folder, settings, extensionAvailable, onProgress, profile, deployment, onStream);
+  } finally {
+    releaseCycleLock();
+  }
+}
+
+async function _runAgentCycleInner(
+  folder: Folder, settings: Settings, extensionAvailable: boolean,
+  onProgress?: (status: string) => void, profile?: AgentProfile,
+  deployment?: AgentDeployment, onStream?: (text: string) => void,
 ): Promise<AgentCycleResult> {
   // Merge policies: profile policy > deployment overrides > folder policy > defaults
   const basePolicy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
