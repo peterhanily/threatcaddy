@@ -188,6 +188,13 @@ export async function buildSystemPrompt(folder?: Folder, customPrompt?: string, 
   return prompt;
 }
 
+// ── Creator Context ───────────────────────────────────────────────────
+// Set before each tool execution so entity-creating functions know who's calling
+let _currentCreator: string | undefined;
+
+/** Get the current creator label for entity attribution. */
+function getCreator(): string | undefined { return _currentCreator; }
+
 // ── Dispatcher ─────────────────────────────────────────────────────────
 
 export async function executeTool(
@@ -199,6 +206,16 @@ export async function executeTool(
   const inp = input as Record<string, unknown>;
   // Read settings once per tool call instead of per-function
   const _settings: Settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+
+  // Set creator context from agent or default to undefined (human)
+  if (agentContext?.profileId) {
+    const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
+    const profile = BUILTIN_AGENT_PROFILES.find(p => p.id === agentContext.profileId)
+      || await db.agentProfiles.get(agentContext.profileId);
+    _currentCreator = profile ? `agent:${profile.icon || '🤖'} ${profile.name}` : `agent:${agentContext.profileId}`;
+  } else {
+    _currentCreator = undefined;
+  }
 
   try {
     let result: string;
@@ -314,7 +331,7 @@ async function executeReviewCompletedTask(inp: Record<string, unknown>, folderId
       folderId,
       tags: ['agent-review', 'after-action'],
       pinned: false, archived: false, trashed: false,
-      createdBy: 'agent:lead-reviewer',
+      createdBy: getCreator() || 'agent:lead-reviewer',
       createdAt: Date.now(), updatedAt: Date.now(),
     });
 
@@ -343,7 +360,7 @@ async function executeReviewCompletedTask(inp: Record<string, unknown>, folderId
       folderId,
       tags: ['agent-review', 'escalation', 'needs-human-review'],
       pinned: true, archived: false, trashed: false,
-      createdBy: 'agent:lead-reviewer',
+      createdBy: getCreator() || 'agent:lead-reviewer',
       createdAt: Date.now(), updatedAt: Date.now(),
     });
 

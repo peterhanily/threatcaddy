@@ -60,6 +60,11 @@ export const NoteCard = React.memo(function NoteCard({ note, active, onSelect, o
       )}
       <div className="flex items-center gap-2 mt-2">
         <span className="text-[10px] text-gray-600">{formatDate(note.updatedAt)}</span>
+        {note.createdBy && (
+          <span className="text-[10px] text-text-muted/60 truncate max-w-[100px]" title={`Created by ${note.createdBy}`}>
+            {note.createdBy.startsWith('agent:') ? note.createdBy.slice(6) : note.createdBy}
+          </span>
+        )}
         {folderName && (
           <span
             className="text-[10px] px-1.5 rounded-full truncate max-w-[80px]"
