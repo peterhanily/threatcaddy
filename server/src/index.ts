@@ -45,16 +45,12 @@ const app = new Hono();
 app.onError(globalErrorHandler);
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
-// Configurable CORS
-const allowedOriginsEnv = process.env.ALLOWED_ORIGINS?.trim();
-if (!allowedOriginsEnv) {
-  logger.warn('ALLOWED_ORIGINS not set — CORS will deny all cross-origin requests. Set this env var to allow origins.');
-}
+// Configurable CORS — defaults to common ThreatCaddy origins if not set
+const DEFAULT_ORIGINS = 'https://threatcaddy.com,http://localhost:5173,http://localhost:4173,http://localhost:3000,http://localhost:8080,http://127.0.0.1:5173,http://127.0.0.1:4173';
+const allowedOriginsEnv = (process.env.ALLOWED_ORIGINS?.trim()) || DEFAULT_ORIGINS;
 const corsOrigin: string | string[] = allowedOriginsEnv === '*'
   ? '*'
-  : allowedOriginsEnv
-    ? allowedOriginsEnv.split(',').map((o) => o.trim())
-    : [];
+  : allowedOriginsEnv.split(',').map((o) => o.trim());
 
 const redactingLogger = honoLogger((str: string, ...rest: string[]) => {
   console.log(str.replace(/token=[^\s&]+/g, 'token=[REDACTED]'), ...rest);
