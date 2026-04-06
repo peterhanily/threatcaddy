@@ -271,20 +271,40 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
           />
 
           {/* Identity */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-300">Your Identity</h3>
-            <div>
-              <label className={labelClass}>Display Name</label>
-              <input
-                type="text"
-                value={settings.displayName || ''}
-                onChange={(e) => onUpdateSettings({ displayName: e.target.value.trim() || undefined })}
-                placeholder="Your name (shown on entities you create)"
-                className={selectClass}
-              />
-              <p className="text-[10px] text-gray-500 mt-1">Used for attribution on notes, IOCs, and other entities you create. Team server users get this from their account automatically.</p>
-            </div>
-          </div>
+          {(() => {
+            let teamName: string | undefined;
+            try {
+              const stored = JSON.parse(localStorage.getItem('threatcaddy-auth') || 'null');
+              teamName = stored?.user?.displayName;
+            } catch { /* ignore */ }
+            return (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-300">Your Identity</h3>
+                <div className="space-y-1.5">
+                  <label className={labelClass}>Display Name</label>
+                  {teamName ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-200">{teamName}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400">from team server</span>
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      value={settings.displayName || ''}
+                      onChange={(e) => onUpdateSettings({ displayName: e.target.value.trim() || undefined })}
+                      placeholder="Your name (shown on entities you create)"
+                      className={selectClass}
+                    />
+                  )}
+                  <p className="text-[10px] text-gray-500">
+                    {teamName
+                      ? 'Using your team server account name for attribution.'
+                      : 'Used for attribution on notes, IOCs, and other entities you create. Defaults to "Analyst" if not set.'}
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Preferences */}
           <div className="space-y-4">
