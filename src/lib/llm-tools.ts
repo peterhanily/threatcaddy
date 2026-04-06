@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { nanoid } from 'nanoid';
-import type { Folder, ToolUseBlock, Settings } from '../types';
+import type { Folder, ToolUseBlock, Settings, AgentProfile } from '../types';
 
 // Re-export definitions so existing consumers don't break
 export { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
@@ -189,11 +189,12 @@ export async function buildSystemPrompt(folder?: Folder, customPrompt?: string, 
 }
 
 // ── Creator Context ───────────────────────────────────────────────────
-// Set before each tool execution so entity-creating functions know who's calling
-let _currentCreator: string | undefined;
+// Set before each tool execution so entity-creating functions know who's calling.
+// Uses a stack to handle concurrent agent tool calls safely.
+const _creatorStack: string[] = [];
 
 /** Get the current creator label for entity attribution. */
-function getCreator(): string | undefined { return _currentCreator; }
+function getCreator(): string | undefined { return _creatorStack.length > 0 ? _creatorStack[_creatorStack.length - 1] : undefined; }
 
 // ── Dispatcher ─────────────────────────────────────────────────────────
 
@@ -214,15 +215,15 @@ export async function executeTool(
     operatorName = stored?.user?.displayName || _settings.displayName || 'Analyst';
   } catch { operatorName = _settings.displayName || 'Analyst'; }
 
-  // Set creator context — agent (tied to operator session) or human
+  // Push creator context (stack-based for concurrent agent safety)
   if (agentContext?.profileId) {
     const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
     const profile = BUILTIN_AGENT_PROFILES.find(p => p.id === agentContext.profileId)
       || await db.agentProfiles.get(agentContext.profileId);
     const agentLabel = profile ? `${profile.icon || '🤖'} ${profile.name}` : agentContext.profileId;
-    _currentCreator = `agent:${agentLabel} (${operatorName})`;
+    _creatorStack.push(`agent:${agentLabel} (${operatorName})`);
   } else {
-    _currentCreator = operatorName;
+    _creatorStack.push(operatorName);
   }
 
   try {
@@ -299,6 +300,8 @@ export async function executeTool(
     return { result, isError: false };
   } catch (err) {
     return { result: JSON.stringify({ error: String((err as Error).message || err) }), isError: true };
+  } finally {
+    _creatorStack.pop();
   }
 }
 
@@ -1147,11 +1150,15 @@ function normalizeName(s: string): string {
   return s.toLowerCase().replace(/[\s_-]+/g, '');
 }
 
-/** Get all agent profiles (builtin + user-created). */
+/** Get all agent profiles (builtin + user-created). Cached for 2s to avoid repeated DB reads. */
+let _profilesCache: { profiles: AgentProfile[]; ts: number } | null = null;
 async function getAllAgentProfiles() {
+  if (_profilesCache && Date.now() - _profilesCache.ts < 2000) return _profilesCache.profiles;
   const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
   const userProfiles = await db.agentProfiles.toArray();
-  return [...BUILTIN_AGENT_PROFILES, ...userProfiles];
+  const profiles = [...BUILTIN_AGENT_PROFILES, ...userProfiles];
+  _profilesCache = { profiles, ts: Date.now() };
+  return profiles;
 }
 
 // ── Agent Management (from CaddyAI chat) ─────────────────────────────
@@ -1329,18 +1336,21 @@ async function executeDefineSpecialist(inp: Record<string, unknown>, folderId?: 
   if (!name || !systemPrompt) return JSON.stringify({ error: 'name and systemPrompt are required' });
   if (!folderId) return JSON.stringify({ error: 'No active investigation' });
   if (systemPrompt.length > 1000) return JSON.stringify({ error: 'systemPrompt must be under 1000 characters' });
+  // Sanitize prompt to prevent injection of override instructions
+  const sanitizedPrompt = systemPrompt.replace(/\b(IGNORE|OVERRIDE|SYSTEM|INSTRUCTION|PROMPT|DISREGARD)\b/gi, '[REDACTED]');
+  const sanitizedName = name.replace(/[*_`#<>[\]]/g, '').substring(0, 50);
 
   // Create profile
   const profileId = nanoid();
   const now = Date.now();
   await db.agentProfiles.add({
     id: profileId,
-    name,
+    name: sanitizedName,
     description: reason,
     icon,
     role,
-    systemPrompt,
-    policy: { autoApproveReads: true, autoApproveEnrich: true, autoApproveFetch: true, autoApproveCreate: false, autoApproveModify: false, intervalMinutes: 5 },
+    systemPrompt: sanitizedPrompt,
+    policy: { autoApproveReads: true, autoApproveEnrich: true, autoApproveFetch: false, autoApproveCreate: false, autoApproveModify: false, intervalMinutes: 5 },
     source: 'user',
     createdBy: 'agent',
     createdAt: now,

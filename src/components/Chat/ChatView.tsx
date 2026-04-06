@@ -27,16 +27,17 @@ import type { ChatAttachment } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 
 /** Strip tool call JSON from streaming content (local LLMs output tool calls as text). */
+// Regexes hoisted to module scope — compiled once, not per render frame
+const RE_COMPLETE_TAG = new RegExp('<(?:tool_call|function_call)>[\\s\\S]*?</(?:tool_call|function_call)>', 'gi');
+const RE_OPEN_TAG = new RegExp('<(?:tool_call|function_call)>[\\s\\S]*$', 'i');
+const RE_COMPLETE_JSON = new RegExp('```json\\s*\\n?\\s*\\{\\s*"name"\\s*:[\\s\\S]*?```', 'gi');
+const RE_PARTIAL_JSON = new RegExp('```json\\s*\\n?\\s*\\{\\s*"name"\\s*:[\\s\\S]*$', 'i');
+
 function cleanStreamingContent(text: string): string {
-  // Use RegExp constructor to avoid JSX parsing issues with </tag> in regex literals
-  const completeTag = new RegExp('<(?:tool_call|function_call)>[\\s\\S]*?</(?:tool_call|function_call)>', 'gi');
-  const openTag = new RegExp('<(?:tool_call|function_call)>[\\s\\S]*$', 'i');
-  const completeJsonBlock = new RegExp('```json\\s*\\n?\\s*\\{\\s*"name"\\s*:[\\s\\S]*?```', 'gi');
-  const partialJsonBlock = new RegExp('```json\\s*\\n?\\s*\\{\\s*"name"\\s*:[\\s\\S]*$', 'i');
-  let cleaned = text.replace(completeTag, '').replace(completeJsonBlock, '');
-  const openMatch = cleaned.match(openTag);
+  let cleaned = text.replace(RE_COMPLETE_TAG, '').replace(RE_COMPLETE_JSON, '');
+  const openMatch = cleaned.match(RE_OPEN_TAG);
   if (openMatch?.index !== undefined) cleaned = cleaned.slice(0, openMatch.index);
-  const jsonMatch = cleaned.match(partialJsonBlock);
+  const jsonMatch = cleaned.match(RE_PARTIAL_JSON);
   if (jsonMatch?.index !== undefined) cleaned = cleaned.slice(0, jsonMatch.index);
   return cleaned.trim();
 }

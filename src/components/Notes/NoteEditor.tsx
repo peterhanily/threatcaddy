@@ -91,6 +91,7 @@ export function NoteEditor({
   const logActivity = useLogActivity();
   const titleRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const gutterRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const slashMenuRef = useRef<HTMLDivElement>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -106,6 +107,22 @@ export function NoteEditor({
   localContentRef.current = content;
   const localTitleRef = useRef(title);
   localTitleRef.current = title;
+
+  // Line numbers — single string instead of N divs, memoized
+  const lineNumberText = useMemo(() => {
+    const count = (content.match(/\n/g) || []).length + 1;
+    return Array.from({ length: count }, (_, i) => i + 1).join('\n');
+  }, [content]);
+
+  // Sync gutter scroll with textarea (proper useEffect, not ref callback)
+  useEffect(() => {
+    const ta = textareaRef.current;
+    const gutter = gutterRef.current;
+    if (!ta || !gutter) return;
+    const sync = () => { gutter.scrollTop = ta.scrollTop; };
+    ta.addEventListener('scroll', sync);
+    return () => ta.removeEventListener('scroll', sync);
+  }, []);
 
   // Slash command menu state
   const [slashMenuOpen, setSlashMenuOpen] = useState(false);
@@ -946,25 +963,13 @@ export function NoteEditor({
               className="relative flex overflow-hidden"
               style={editorMode === 'split' ? { width: `${editorPreview.ratio * 100}%` } : { flex: 1 }}
             >
-              {/* Line number gutter — synced with textarea scroll */}
+              {/* Line number gutter — uses CSS counters instead of N divs */}
               <div
-                ref={(el) => {
-                  // Sync gutter scroll with textarea
-                  const ta = textareaRef.current;
-                  if (el && ta) {
-                    const syncScroll = () => { el.scrollTop = ta.scrollTop; };
-                    ta.addEventListener('scroll', syncScroll);
-                    return () => ta.removeEventListener('scroll', syncScroll);
-                  }
-                }}
-                className="shrink-0 pt-2 sm:pt-4 pr-1 pl-1.5 text-right select-none overflow-hidden text-[10px] leading-relaxed text-text-muted/30 font-mono"
+                ref={gutterRef}
+                className="shrink-0 pt-2 sm:pt-4 pr-1 pl-1.5 text-right select-none overflow-hidden text-[10px] leading-relaxed text-text-muted/30 font-mono whitespace-pre"
                 style={{ width: '2.5rem' }}
                 aria-hidden="true"
-              >
-                {content.split('\n').map((_, i) => (
-                  <div key={i}>{i + 1}</div>
-                ))}
-              </div>
+              >{lineNumberText}</div>
               <textarea
                 ref={textareaRef}
                 value={content}
