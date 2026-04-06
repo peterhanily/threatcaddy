@@ -2028,7 +2028,7 @@ function AppInner() {
           />
         </div>
         {/* Always-mounted ChatView — stays alive in background to preserve streaming state */}
-        <div className={activeView === 'chat' ? 'flex flex-1 overflow-hidden' : 'hidden'}>
+        <div className={activeView === 'chat' && !showSettings ? 'flex flex-1 overflow-hidden' : 'hidden'}>
           <ChatView
             threads={ssFilteredChatThreads}
             selectedThreadId={selectedChatThreadId}
