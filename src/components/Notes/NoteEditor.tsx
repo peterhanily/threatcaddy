@@ -108,11 +108,11 @@ export function NoteEditor({
   const localTitleRef = useRef(title);
   localTitleRef.current = title;
 
-  // Line numbers — single string instead of N divs, memoized
-  const lineNumberText = useMemo(() => {
-    const count = (content.match(/\n/g) || []).length + 1;
-    return Array.from({ length: count }, (_, i) => i + 1).join('\n');
-  }, [content]);
+  // Line numbers — single string instead of N divs, memoized (used for both editor and preview gutters)
+  const lineCount = useMemo(() => (content.match(/\n/g) || []).length + 1, [content]);
+  const lineNumberText = useMemo(() => Array.from({ length: lineCount }, (_, i) => i + 1).join('\n'), [lineCount]);
+  // Preview uses the same line count but as a simple range for reference
+  const previewLineNumbers = lineNumberText;
 
   // Sync gutter scroll with textarea (proper useEffect, not ref callback)
   useEffect(() => {
@@ -1030,13 +1030,25 @@ export function NoteEditor({
           {showPreview && (
             <div
               ref={editorMode === 'split' ? previewRef : undefined}
-              className="overflow-y-auto p-2 sm:p-4"
+              className="overflow-y-auto flex"
               style={editorMode === 'split' ? { width: `${(1 - editorPreview.ratio) * 100}%` } : { flex: 1 }}
             >
+              {/* Preview line numbers — counts rendered block elements */}
               {content ? (
-                <MarkdownPreview content={content} defanged={defangPreview} allNotes={allNotes} onNavigateToNote={onNavigateToNote} iocs={note.iocAnalysis?.iocs} />
+                <>
+                  <div
+                    className="shrink-0 pt-2 sm:pt-4 pr-1 pl-1.5 text-right select-none overflow-hidden text-[10px] text-text-muted/30 font-mono preview-line-numbers"
+                    style={{ width: '2.5rem' }}
+                    aria-hidden="true"
+                  >
+                    {previewLineNumbers}
+                  </div>
+                  <div className="flex-1 p-2 sm:p-4 pl-0 overflow-x-hidden">
+                    <MarkdownPreview content={content} defanged={defangPreview} allNotes={allNotes} onNavigateToNote={onNavigateToNote} iocs={note.iocAnalysis?.iocs} />
+                  </div>
+                </>
               ) : (
-                <p className="text-gray-600 text-sm italic">Nothing to preview</p>
+                <p className="text-gray-600 text-sm italic p-2 sm:p-4">Nothing to preview</p>
               )}
             </div>
           )}
