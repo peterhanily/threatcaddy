@@ -966,8 +966,8 @@ export function NoteEditor({
               {/* Line number gutter — uses CSS counters instead of N divs */}
               <div
                 ref={gutterRef}
-                className="shrink-0 pt-2 sm:pt-4 pr-1 pl-2 text-right select-none overflow-hidden text-[11px] leading-relaxed text-text-muted/25 font-mono whitespace-pre"
-                style={{ width: '2.5rem' }}
+                className="shrink-0 pt-2 sm:pt-4 pr-1 pl-2 text-right select-none overflow-hidden text-text-muted/25 font-mono whitespace-pre"
+                style={{ width: '2.5rem', fontSize: '11px', lineHeight: 'calc(0.875rem * 1.625)' }}
                 aria-hidden="true"
               >{lineNumberText}</div>
               <textarea
@@ -1035,10 +1035,10 @@ export function NoteEditor({
             >
               {content ? (
                 <>
-                  {/* Preview line numbers */}
+                  {/* Preview line numbers — uses same line-height as editor for source-line reference */}
                   <div
-                    className="shrink-0 pt-2 sm:pt-4 pr-1 pl-1.5 text-right select-none overflow-hidden text-[11px] leading-relaxed text-text-muted/25 font-mono whitespace-pre"
-                    style={{ width: '2.5rem' }}
+                    className="shrink-0 pt-2 sm:pt-4 pr-1 pl-1.5 text-right select-none overflow-hidden text-text-muted/25 font-mono whitespace-pre"
+                    style={{ width: '2.5rem', fontSize: '11px', lineHeight: 'calc(0.875rem * 1.625)' }}
                     aria-hidden="true"
                   >{previewLineNumbers}</div>
                   <div className="flex-1 p-2 sm:p-4 pl-0 overflow-x-hidden">
