@@ -280,10 +280,10 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
             return (
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-gray-300">Your Identity</h3>
-                <div className="space-y-1.5">
-                  <label className={labelClass}>Display Name</label>
+                <div>
+                  <label className="text-sm text-gray-400 block mb-2">Display Name</label>
                   {teamName ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mb-2">
                       <span className="text-sm text-gray-200">{teamName}</span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400">from team server</span>
                     </div>
@@ -293,13 +293,13 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                       value={settings.displayName || ''}
                       onChange={(e) => onUpdateSettings({ displayName: e.target.value.trim() || undefined })}
                       placeholder="Your name (shown on entities you create)"
-                      className={selectClass}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent mb-2"
                     />
                   )}
                   <p className="text-[10px] text-gray-500">
                     {teamName
                       ? 'Using your team server account name for attribution.'
-                      : 'Used for attribution on notes, IOCs, and other entities you create. Defaults to "Analyst" if not set.'}
+                      : 'Shown on notes, IOCs, and other entities you create. Defaults to "Analyst" if not set.'}
                   </p>
                 </div>
               </div>
