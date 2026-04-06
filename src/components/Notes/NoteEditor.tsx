@@ -964,8 +964,8 @@ export function NoteEditor({
               {/* Line number gutter — uses CSS counters instead of N divs */}
               <div
                 ref={gutterRef}
-                className="shrink-0 pt-2 sm:pt-4 pr-2 pl-2 text-right select-none overflow-hidden text-gray-600 font-mono whitespace-pre border-r border-gray-800"
-                style={{ minWidth: '2.5rem', fontSize: '11px', lineHeight: 'calc(0.875rem * 1.625)' }}
+                className="shrink-0 pt-2 sm:pt-4 pr-2 pl-2 text-right select-none overflow-hidden text-gray-500 font-mono whitespace-pre border-r border-gray-800"
+                style={{ minWidth: '2.5rem', fontSize: '12px', lineHeight: 'calc(0.875rem * 1.625)' }}
                 aria-hidden="true"
               >{lineNumberText}</div>
               <textarea
@@ -1028,22 +1028,14 @@ export function NoteEditor({
           {showPreview && (
             <div
               ref={editorMode === 'split' ? previewRef : undefined}
-              className="overflow-y-auto flex"
+              className="overflow-y-auto p-2 sm:p-4"
               style={editorMode === 'split' ? { width: `${(1 - editorPreview.ratio) * 100}%` } : { flex: 1 }}
             >
-              {/* Preview line numbers */}
-              <div
-                className="shrink-0 pt-2 sm:pt-4 pr-2 pl-2 text-right select-none text-gray-600 font-mono whitespace-pre border-r border-gray-800"
-                style={{ minWidth: '2.5rem', fontSize: '11px', lineHeight: '1.7' }}
-                aria-hidden="true"
-              >{lineNumberText}</div>
-              <div className="flex-1 p-2 sm:p-4 pl-1 overflow-x-hidden">
-                {content ? (
-                  <MarkdownPreview content={content} defanged={defangPreview} allNotes={allNotes} onNavigateToNote={onNavigateToNote} iocs={note.iocAnalysis?.iocs} />
-                ) : (
-                  <p className="text-gray-600 text-sm italic">Nothing to preview</p>
-                )}
-              </div>
+              {content ? (
+                <MarkdownPreview content={content} defanged={defangPreview} allNotes={allNotes} onNavigateToNote={onNavigateToNote} iocs={note.iocAnalysis?.iocs} />
+              ) : (
+                <p className="text-gray-600 text-sm italic">Nothing to preview</p>
+              )}
             </div>
           )}
         </div>
