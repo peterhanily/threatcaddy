@@ -23,6 +23,12 @@ const STATUS_OPTIONS = IOC_STATUS_VALUES;
 const CONFIDENCE_OPTIONS: ConfidenceLevel[] = ['low', 'medium', 'high', 'confirmed'];
 const ALL_IOC_TYPES = Object.keys(IOC_TYPE_LABELS) as IOCType[];
 const CONFIDENCE_ORDER: Record<string, number> = { low: 0, medium: 1, high: 2, confirmed: 3 };
+/** Fallback for IOC types not in the IOC_TYPE_LABELS map (agent-created custom types). */
+const UNKNOWN_TYPE_INFO = { label: 'Unknown', color: '#6b7280', icon: '❓' };
+const UNKNOWN_CONF_INFO = { label: 'Unknown', color: '#6b7280' };
+/** Safe lookup for IOC type info — never returns undefined. */
+function getTypeInfo(type: string) { return IOC_TYPE_LABELS[type as IOCType] || UNKNOWN_TYPE_INFO; }
+function getConfInfo(level: string) { return CONFIDENCE_LEVELS[level as ConfidenceLevel] || UNKNOWN_CONF_INFO; }
 
 type SortField = 'value' | 'type' | 'confidence' | 'source' | 'iocStatus' | 'attribution';
 type SortDir = 'asc' | 'desc';
@@ -425,7 +431,7 @@ export function IOCStatsView({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <SummaryCard label="Unique IOCs" value={uniqueIOCs.length} color="#f59e0b" />
             <SummaryCard label="Entities with IOCs" value={entitiesWithIOCs} color="#3b82f6" />
-            <SummaryCard label="Most Common Type" value={mostCommonType ? IOC_TYPE_LABELS[mostCommonType[0]].label : '--'} sub={mostCommonType ? `${mostCommonType[1]}` : undefined} color={mostCommonType ? IOC_TYPE_LABELS[mostCommonType[0]].color : '#6b7280'} />
+            <SummaryCard label="Most Common Type" value={mostCommonType ? getTypeInfo(mostCommonType[0]).label : '--'} sub={mostCommonType ? `${mostCommonType[1]}` : undefined} color={mostCommonType ? getTypeInfo(mostCommonType[0]).color : '#6b7280'} />
             <SummaryCard label="Top Actor" value={topActor?.name ?? '--'} sub={topActor ? `${topActor.count} IOCs` : undefined} color="#a855f7" />
           </div>
 
@@ -435,7 +441,7 @@ export function IOCStatsView({
             <Section title="IOCs by Type">
               <div className="space-y-2">
                 {byType.entries.map(([type, count]) => {
-                  const info = IOC_TYPE_LABELS[type];
+                  const info = getTypeInfo(type);
                   const pct = ((count / uniqueIOCs.length) * 100).toFixed(1);
                   return (
                     <div key={type} className="flex items-center gap-2">
@@ -454,7 +460,7 @@ export function IOCStatsView({
             <Section title="Confidence Distribution">
               <div className="space-y-2">
                 {(Object.entries(byConfidence) as [ConfidenceLevel, number][]).filter(([, c]) => c > 0).map(([level, count]) => {
-                  const info = CONFIDENCE_LEVELS[level];
+                  const info = getConfInfo(level);
                   const pct = ((count / uniqueIOCs.length) * 100).toFixed(1);
                   return (
                     <div key={level} className="flex items-center gap-2">
@@ -500,8 +506,8 @@ export function IOCStatsView({
                         <td className="py-1.5 pl-4">
                           <div className="flex gap-1">
                             {actor.topTypes.map((t) => (
-                              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: IOC_TYPE_LABELS[t].color + '22', color: IOC_TYPE_LABELS[t].color }}>
-                                {IOC_TYPE_LABELS[t].label}
+                              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: getTypeInfo(t).color + '22', color: getTypeInfo(t).color }}>
+                                {getTypeInfo(t).label}
                               </span>
                             ))}
                           </div>
@@ -553,8 +559,8 @@ export function IOCStatsView({
                   </thead>
                   <tbody>
                     {topIOCs.map((ioc, i) => {
-                      const typeInfo = IOC_TYPE_LABELS[ioc.type];
-                      const confInfo = CONFIDENCE_LEVELS[ioc.confidence];
+                      const typeInfo = getTypeInfo(ioc.type);
+                      const confInfo = getConfInfo(ioc.confidence);
                       return (
                         <tr key={i} className="border-b border-gray-800/50">
                           <td className="py-1.5 pr-2 text-gray-200 font-mono max-w-[200px] truncate">{ioc.value}</td>
@@ -819,7 +825,7 @@ function AllIOCsTab({
     sorted.sort((a, b) => {
       switch (sortField) {
         case 'value': return dir * a.value.localeCompare(b.value);
-        case 'type': return dir * (IOC_TYPE_LABELS[a.type]?.label || '').localeCompare(IOC_TYPE_LABELS[b.type]?.label || '');
+        case 'type': return dir * getTypeInfo(a.type).label.localeCompare(getTypeInfo(b.type).label);
         case 'confidence': return dir * ((CONFIDENCE_ORDER[a.confidence] ?? 0) - (CONFIDENCE_ORDER[b.confidence] ?? 0));
         case 'source': return dir * a.source.localeCompare(b.source);
         case 'iocStatus': return dir * (a.iocStatus || '').localeCompare(b.iocStatus || '');
@@ -1214,7 +1220,7 @@ function AllIOCsTab({
               {showBulkConfidenceMenu && (
                 <div className="absolute top-full left-0 mt-1 z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-xl py-1 w-36">
                   {CONFIDENCE_OPTIONS.map(c => {
-                    const info = CONFIDENCE_LEVELS[c];
+                    const info = getConfInfo(c);
                     return (
                       <button
                         key={c}
@@ -1359,7 +1365,7 @@ function AllIOCsTab({
             All
           </button>
           {CONFIDENCE_OPTIONS.map(c => {
-            const info = CONFIDENCE_LEVELS[c];
+            const info = getConfInfo(c);
             const active = confidenceFilter === c;
             return (
               <button
@@ -1381,7 +1387,7 @@ function AllIOCsTab({
         <div className="flex items-center gap-1 flex-wrap">
           <span className="text-[10px] text-gray-500 uppercase tracking-wide mr-1">Type</span>
           {ALL_IOC_TYPES.map(type => {
-            const info = IOC_TYPE_LABELS[type];
+            const info = getTypeInfo(type);
             const active = typeFilter.includes(type);
             return (
               <button
@@ -1468,8 +1474,8 @@ function AllIOCsTab({
                 </tr>
               )}
               itemContent={(_index, row) => {
-                const typeInfo = IOC_TYPE_LABELS[row.type];
-                const confInfo = CONFIDENCE_LEVELS[row.confidence];
+                const typeInfo = getTypeInfo(row.type);
+                const confInfo = getConfInfo(row.confidence);
                 const statusColor = row.iocStatus ? STATUS_COLORS[row.iocStatus] || '#6b7280' : undefined;
                 const sourceColor: Record<string, string> = { note: '#3b82f6', task: '#22c55e', event: '#6366f1', standalone: '#f59e0b' };
                 const sColor = sourceColor[row.sourceType] || '#6b7280';
