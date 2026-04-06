@@ -207,18 +207,22 @@ export async function executeTool(
   // Read settings once per tool call instead of per-function
   const _settings: Settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
 
-  // Set creator context — agent name or human user
+  // Resolve the human operator's name (used for both human and agent attribution)
+  let operatorName = 'Analyst';
+  try {
+    const stored = JSON.parse(localStorage.getItem('threatcaddy-auth') || 'null');
+    operatorName = stored?.user?.displayName || _settings.displayName || 'Analyst';
+  } catch { operatorName = _settings.displayName || 'Analyst'; }
+
+  // Set creator context — agent (tied to operator session) or human
   if (agentContext?.profileId) {
     const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
     const profile = BUILTIN_AGENT_PROFILES.find(p => p.id === agentContext.profileId)
       || await db.agentProfiles.get(agentContext.profileId);
-    _currentCreator = profile ? `agent:${profile.icon || '🤖'} ${profile.name}` : `agent:${agentContext.profileId}`;
+    const agentLabel = profile ? `${profile.icon || '🤖'} ${profile.name}` : agentContext.profileId;
+    _currentCreator = `agent:${agentLabel} (${operatorName})`;
   } else {
-    // Human user — team server displayName > local settings displayName > default
-    try {
-      const stored = JSON.parse(localStorage.getItem('threatcaddy-auth') || 'null');
-      _currentCreator = stored?.user?.displayName || _settings.displayName || 'Analyst';
-    } catch { _currentCreator = _settings.displayName || 'Analyst'; }
+    _currentCreator = operatorName;
   }
 
   try {
