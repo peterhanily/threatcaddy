@@ -22,6 +22,7 @@ export function useTimeline() {
   }, [loadEvents]);
 
   const createEvent = useCallback(async (partial?: Partial<TimelineEvent>): Promise<TimelineEvent> => {
+    const { getCurrentUserName } = await import('../lib/utils');
     const event: TimelineEvent = {
       id: nanoid(),
       timestamp: Date.now(),
@@ -39,6 +40,7 @@ export function useTimeline() {
       timelineId: '',
       trashed: false,
       archived: false,
+      createdBy: partial?.createdBy || getCurrentUserName(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
       ...partial,

@@ -71,3 +71,16 @@ export function isSafeUrl(url?: string): boolean {
 export function postMessageOrigin(): string {
   return window.location.protocol === 'file:' ? '*' : window.location.origin;
 }
+
+/** Get the current user's display name for entity attribution. */
+export function getCurrentUserName(): string {
+  try {
+    const auth = JSON.parse(localStorage.getItem('threatcaddy-auth') || 'null');
+    if (auth?.user?.displayName) return auth.user.displayName;
+  } catch { /* ignore */ }
+  try {
+    const settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+    if (settings.displayName) return settings.displayName;
+  } catch { /* ignore */ }
+  return 'Analyst';
+}

@@ -22,6 +22,7 @@ export function useStandaloneIOCs() {
   }, [loadIOCs]);
 
   const createIOC = useCallback(async (partial?: Partial<StandaloneIOC>): Promise<StandaloneIOC> => {
+    const { getCurrentUserName } = await import('../lib/utils');
     const now = Date.now();
     const ioc: StandaloneIOC = {
       id: nanoid(),
@@ -31,6 +32,7 @@ export function useStandaloneIOCs() {
       tags: [],
       trashed: false,
       archived: false,
+      createdBy: partial?.createdBy || getCurrentUserName(),
       createdAt: now,
       updatedAt: now,
       ...partial,

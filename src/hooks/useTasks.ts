@@ -22,6 +22,7 @@ export function useTasks() {
   }, [loadTasks]);
 
   const createTask = useCallback(async (partial?: Partial<Task>): Promise<Task> => {
+    const { getCurrentUserName } = await import('../lib/utils');
     const maxOrder = tasks.reduce((max, t) => Math.max(max, t.order), 0);
     const task: Task = {
       id: nanoid(),
@@ -33,6 +34,7 @@ export function useTasks() {
       order: maxOrder + 1,
       trashed: false,
       archived: false,
+      createdBy: partial?.createdBy || getCurrentUserName(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
       ...partial,

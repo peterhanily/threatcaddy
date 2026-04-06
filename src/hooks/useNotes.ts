@@ -33,6 +33,7 @@ export function useNotes() {
   }, [loadNotes]);
 
   const createNote = useCallback(async (partial?: Partial<Note>): Promise<Note> => {
+    const { getCurrentUserName } = await import('../lib/utils');
     const note: Note = {
       id: nanoid(),
       title: 'Untitled Note',
@@ -41,6 +42,7 @@ export function useNotes() {
       pinned: false,
       archived: false,
       trashed: false,
+      createdBy: partial?.createdBy || getCurrentUserName(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
       ...partial,
