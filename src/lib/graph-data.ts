@@ -68,7 +68,7 @@ export function buildGraphData(
     const key = `${ioc.type}:${ioc.value.toLowerCase()}`;
     let node = iocNodeMap.get(key);
     if (!node) {
-      const typeInfo = IOC_TYPE_LABELS[ioc.type];
+      const typeInfo = IOC_TYPE_LABELS[ioc.type as IOCType] || { label: ioc.type, color: '#6b7280' };
       node = {
         id: `ioc:${key}`,
         label: ioc.value.length > 40 ? ioc.value.substring(0, 37) + '...' : ioc.value,

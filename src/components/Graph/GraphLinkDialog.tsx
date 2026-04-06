@@ -23,7 +23,7 @@ type LinkCategory = 'ioc-ioc' | 'entity-entity' | 'invalid';
 
 function getNodeBadge(node: GraphNode): { label: string; color: string } {
   if (node.type === 'ioc' && node.iocType) {
-    const info = IOC_TYPE_LABELS[node.iocType];
+    const info = (IOC_TYPE_LABELS as Record<string, { label: string; color: string }>)[node.iocType] || { label: node.iocType, color: '#6b7280' };
     return { label: info.label, color: info.color };
   }
   if (node.type === 'note') return { label: 'Note', color: '#3b82f6' };

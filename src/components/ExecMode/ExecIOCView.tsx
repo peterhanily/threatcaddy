@@ -17,8 +17,8 @@ interface ExecIOCViewProps {
 }
 
 export function ExecIOCView({ ioc, allIOCs, onShare, currentIndex, totalCount, onNavigate }: ExecIOCViewProps) {
-  const typeInfo = IOC_TYPE_LABELS[ioc.type];
-  const confInfo = CONFIDENCE_LEVELS[ioc.confidence];
+  const typeInfo = (IOC_TYPE_LABELS as Record<string, { label: string; color: string }>)[ioc.type] || { label: ioc.type, color: '#6b7280' };
+  const confInfo = (CONFIDENCE_LEVELS as Record<string, { label: string; color: string }>)[ioc.confidence] || { label: ioc.confidence, color: '#6b7280' };
   const statusLabel = ioc.iocStatus ? IOC_STATUS_LABELS[ioc.iocStatus as keyof typeof IOC_STATUS_LABELS] : null;
   const statusColor = ioc.iocStatus ? IOC_STATUS_COLORS[ioc.iocStatus as keyof typeof IOC_STATUS_COLORS] : null;
 

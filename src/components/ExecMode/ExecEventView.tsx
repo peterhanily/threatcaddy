@@ -37,8 +37,8 @@ function getMarkerIcon(color: string): L.Icon {
 }
 
 export function ExecEventView({ event, onShare, currentIndex, totalCount, onNavigate }: ExecEventViewProps) {
-  const typeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType];
-  const confInfo = CONFIDENCE_LEVELS[event.confidence];
+  const typeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType] ?? { label: event.eventType, color: '#6b7280', icon: '📌' };
+  const confInfo = (CONFIDENCE_LEVELS as Record<string, { label: string; color: string }>)[event.confidence] || { label: event.confidence, color: '#6b7280' };
 
   const descHtml = useMemo(
     () => event.description ? renderMarkdown(event.description) : null,

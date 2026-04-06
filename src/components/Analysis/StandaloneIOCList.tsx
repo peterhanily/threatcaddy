@@ -535,8 +535,8 @@ export function StandaloneIOCList({
                 </tr>
               )}
               itemContent={(_index, ioc) => {
-                const typeInfo = IOC_TYPE_LABELS[ioc.type];
-                const confInfo = CONFIDENCE_LEVELS[ioc.confidence];
+                const typeInfo = (IOC_TYPE_LABELS as Record<string, { label: string; color: string }>)[ioc.type] || { label: ioc.type, color: '#6b7280' };
+                const confInfo = CONFIDENCE_LEVELS[ioc.confidence as ConfidenceLevel] || { label: ioc.confidence, color: '#6b7280' };
                 const statusColor = ioc.iocStatus ? STATUS_COLORS[ioc.iocStatus] || '#6b7280' : undefined;
                 const clsColor = ioc.clsLevel ? CLS_COLORS[ioc.clsLevel] || '#6b7280' : undefined;
                 return (

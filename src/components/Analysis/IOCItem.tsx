@@ -120,7 +120,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
     onUpdate(ioc.id, { relationships: updated });
   };
 
-  const confidenceColor = CONFIDENCE_LEVELS[ioc.confidence].color;
+  const confidenceColor = (CONFIDENCE_LEVELS[ioc.confidence as ConfidenceLevel]?.color || '#6b7280');
 
   return (
     <div className={cn('border border-gray-800 rounded-lg', ioc.dismissed && 'opacity-50')}>
@@ -249,7 +249,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
                       <span className="text-accent truncate">{def?.label || rel.relationshipType}</span>
                       <ArrowRight size={10} className="text-gray-600 shrink-0" />
                       <span className="text-gray-300 truncate flex-1" title={target?.value}>
-                        {target ? `${IOC_TYPE_LABELS[target.type].label}: ${target.value}` : rel.targetIOCId}
+                        {target ? `${(IOC_TYPE_LABELS[target.type as IOCType]?.label || target.type)}: ${target.value}` : rel.targetIOCId}
                       </span>
                       <button
                         onClick={() => removeRelationship(idx)}
@@ -283,7 +283,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
                   >
                     <option value="">Select target IOC...</option>
                     {validTargets.map((t) => (
-                      <option key={t.id} value={t.id}>{IOC_TYPE_LABELS[t.type].label}: {t.value}</option>
+                      <option key={t.id} value={t.id}>{(IOC_TYPE_LABELS[t.type as IOCType]?.label || t.type)}: {t.value}</option>
                     ))}
                   </select>
                 )}

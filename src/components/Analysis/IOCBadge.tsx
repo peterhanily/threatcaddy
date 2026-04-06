@@ -9,7 +9,7 @@ interface IOCBadgeProps {
 }
 
 export function IOCBadge({ type, count, active, onClick }: IOCBadgeProps) {
-  const { label, color } = IOC_TYPE_LABELS[type];
+  const { label, color } = IOC_TYPE_LABELS[type as IOCType] || { label: type, color: '#6b7280' };
 
   return (
     <button

@@ -92,7 +92,7 @@ export function GraphDetailPanel({ node, edges, allNodes, onClose, onNavigate, o
           ) : (
             <div className="text-xs text-gray-300 capitalize">
               {node.type === 'ioc' && node.iocType
-                ? IOC_TYPE_LABELS[node.iocType].label
+                ? ((IOC_TYPE_LABELS as Record<string, { label: string; color: string }>)[node.iocType]?.label || node.iocType)
                 : node.type.replace('-', ' ')}
             </div>
           )}

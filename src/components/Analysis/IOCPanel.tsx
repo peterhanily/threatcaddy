@@ -428,7 +428,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
               <p className="text-xs text-gray-600 text-center py-4">No IOCs found</p>
             ) : (
               [...grouped.entries()].map(([type, iocs]) => {
-                const { label, color } = IOC_TYPE_LABELS[type];
+                const { label, color } = IOC_TYPE_LABELS[type as IOCType] || { label: type, color: '#6b7280' };
                 const isCollapsed = collapsedTypes.has(type);
 
                 return (

@@ -8,7 +8,7 @@ interface EventTypeBadgeProps {
 }
 
 export function EventTypeBadge({ type, active, onClick }: EventTypeBadgeProps) {
-  const { label, color } = TIMELINE_EVENT_TYPE_LABELS[type];
+  const { label, color } = TIMELINE_EVENT_TYPE_LABELS[type] ?? { label: type, color: '#6b7280', icon: '📌' };
 
   return (
     <button

@@ -149,7 +149,7 @@ export function getNodeIcon(
   let svg: string;
   switch (type) {
     case 'ioc': {
-      const fn = iocType ? IOC_ICON_MAP[iocType] : svgDomain;
+      const fn = iocType ? (IOC_ICON_MAP[iocType] || svgDomain) : svgDomain;
       svg = fn(color);
       break;
     }

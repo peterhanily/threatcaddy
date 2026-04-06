@@ -223,7 +223,7 @@ export function IOCDeduplicator({ open, onClose, iocs, onUpdate, onDelete }: IOC
                     {!isMerged && (
                       <div className="space-y-1">
                         {group.iocs.map(ioc => {
-                          const confInfo = CONFIDENCE_LEVELS[ioc.confidence];
+                          const confInfo = CONFIDENCE_LEVELS[ioc.confidence as ConfidenceLevel] || { label: ioc.confidence, color: '#6b7280' };
                           const isKeeper = ioc.id === keeperId;
                           return (
                             <div

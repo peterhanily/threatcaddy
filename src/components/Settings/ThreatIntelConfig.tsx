@@ -593,9 +593,9 @@ export function ThreatIntelConfig() {
                 <div key={key} className="flex items-center gap-2 px-2 py-1 bg-gray-800/50 rounded text-xs">
                   <span className="text-gray-300 font-medium flex-1">{def.label}</span>
                   <span className="text-gray-600 text-[10px]">
-                    {def.sourceTypes.length > 0 ? def.sourceTypes.map((t) => IOC_TYPE_LABELS[t].label).join(', ') : 'Any'}
+                    {def.sourceTypes.length > 0 ? def.sourceTypes.map((t) => IOC_TYPE_LABELS[t as IOCType]?.label || t).join(', ') : 'Any'}
                     {' → '}
-                    {def.targetTypes.length > 0 ? def.targetTypes.map((t) => IOC_TYPE_LABELS[t].label).join(', ') : 'Any'}
+                    {def.targetTypes.length > 0 ? def.targetTypes.map((t) => IOC_TYPE_LABELS[t as IOCType]?.label || t).join(', ') : 'Any'}
                   </span>
                 </div>
               ))}
