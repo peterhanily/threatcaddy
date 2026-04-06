@@ -943,9 +943,28 @@ export function NoteEditor({
         >
           {showEditor && (
             <div
-              className="relative flex flex-col overflow-hidden"
+              className="relative flex overflow-hidden"
               style={editorMode === 'split' ? { width: `${editorPreview.ratio * 100}%` } : { flex: 1 }}
             >
+              {/* Line number gutter — synced with textarea scroll */}
+              <div
+                ref={(el) => {
+                  // Sync gutter scroll with textarea
+                  const ta = textareaRef.current;
+                  if (el && ta) {
+                    const syncScroll = () => { el.scrollTop = ta.scrollTop; };
+                    ta.addEventListener('scroll', syncScroll);
+                    return () => ta.removeEventListener('scroll', syncScroll);
+                  }
+                }}
+                className="shrink-0 pt-2 sm:pt-4 pr-1 pl-1.5 text-right select-none overflow-hidden text-[10px] leading-relaxed text-text-muted/30 font-mono"
+                style={{ width: '2.5rem' }}
+                aria-hidden="true"
+              >
+                {content.split('\n').map((_, i) => (
+                  <div key={i}>{i + 1}</div>
+                ))}
+              </div>
               <textarea
                 ref={textareaRef}
                 value={content}
@@ -961,7 +980,7 @@ export function NoteEditor({
                   }, 0);
                 }}
                 onKeyDown={handleEditorKeyDown}
-                className="note-editor flex-1 w-full p-2 sm:p-4 bg-transparent text-gray-200 placeholder-gray-600 focus:outline-none text-sm leading-relaxed"
+                className="note-editor flex-1 w-full p-2 sm:p-4 pl-0 bg-transparent text-gray-200 placeholder-gray-600 focus:outline-none text-sm leading-relaxed"
                 placeholder="Start writing in markdown..."
                 readOnly={note.trashed}
                 aria-label="Note content editor"
