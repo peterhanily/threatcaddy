@@ -1028,14 +1028,22 @@ export function NoteEditor({
           {showPreview && (
             <div
               ref={editorMode === 'split' ? previewRef : undefined}
-              className="overflow-y-auto p-2 sm:p-4"
+              className="overflow-y-auto flex"
               style={editorMode === 'split' ? { width: `${(1 - editorPreview.ratio) * 100}%` } : { flex: 1 }}
             >
-              {content ? (
-                <MarkdownPreview content={content} defanged={defangPreview} allNotes={allNotes} onNavigateToNote={onNavigateToNote} iocs={note.iocAnalysis?.iocs} />
-              ) : (
-                <p className="text-gray-600 text-sm italic">Nothing to preview</p>
-              )}
+              {/* Preview line numbers — reference numbers for rendered content */}
+              <div
+                className="shrink-0 pt-2 sm:pt-4 pr-1 pl-2 text-right select-none text-text-muted/25 font-mono whitespace-pre"
+                style={{ width: '2.5rem', fontSize: '11px', lineHeight: '1.7' }}
+                aria-hidden="true"
+              >{lineNumberText}</div>
+              <div className="flex-1 p-2 sm:p-4 pl-1 overflow-x-hidden">
+                {content ? (
+                  <MarkdownPreview content={content} defanged={defangPreview} allNotes={allNotes} onNavigateToNote={onNavigateToNote} iocs={note.iocAnalysis?.iocs} />
+                ) : (
+                  <p className="text-gray-600 text-sm italic">Nothing to preview</p>
+                )}
+              </div>
             </div>
           )}
         </div>
