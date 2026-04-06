@@ -270,6 +270,22 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
             onUpdateSettings={onUpdateSettings}
           />
 
+          {/* Identity */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-gray-300">Your Identity</h3>
+            <div>
+              <label className={labelClass}>Display Name</label>
+              <input
+                type="text"
+                value={settings.displayName || ''}
+                onChange={(e) => onUpdateSettings({ displayName: e.target.value.trim() || undefined })}
+                placeholder="Your name (shown on entities you create)"
+                className={selectClass}
+              />
+              <p className="text-[10px] text-gray-500 mt-1">Used for attribution on notes, IOCs, and other entities you create. Team server users get this from their account automatically.</p>
+            </div>
+          </div>
+
           {/* Preferences */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-300">Display Preferences</h3>

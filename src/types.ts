@@ -218,6 +218,8 @@ export interface Settings {
   defaultView: ViewMode;
   editorMode: EditorMode;
   sidebarCollapsed: boolean;
+  /** User's display name for entity attribution (standalone mode) */
+  displayName?: string;
   taskViewMode: TaskViewMode;
   tourCompleted?: boolean;
   ociWritePAR?: string;

@@ -214,11 +214,11 @@ export async function executeTool(
       || await db.agentProfiles.get(agentContext.profileId);
     _currentCreator = profile ? `agent:${profile.icon || '🤖'} ${profile.name}` : `agent:${agentContext.profileId}`;
   } else {
-    // Human user — check for team server identity
+    // Human user — team server displayName > local settings displayName
     try {
       const stored = JSON.parse(localStorage.getItem('threatcaddy-auth') || 'null');
-      _currentCreator = stored?.user?.displayName || undefined;
-    } catch { _currentCreator = undefined; }
+      _currentCreator = stored?.user?.displayName || _settings.displayName || undefined;
+    } catch { _currentCreator = _settings.displayName || undefined; }
   }
 
   try {
