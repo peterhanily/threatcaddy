@@ -436,18 +436,21 @@ async function _runAgentCycleInner(
   const apiKey = useServerProxy ? 'server-proxy' : (getApiKeyForProvider(provider, settings) || '');
   const endpoint = provider === 'local' ? settings.llmLocalEndpoint : undefined;
 
+  const agentName = profile?.name || 'CaddyAgent';
+  const agentIcon = profile?.icon || '🤖';
+
   // Ensure agent has an audit trail thread (deployment thread > folder thread)
   let threadId = deployment?.threadId || folder.agentThreadId;
   if (!threadId) {
     threadId = nanoid();
     const agentThread: ChatThread = {
       id: threadId,
-      title: `Agent: ${folder.name}`,
+      title: `${agentIcon} ${agentName}`,
       messages: [],
       model,
       provider,
       folderId: folder.id,
-      tags: [],
+      tags: [`agent:${agentName}`],
       source: 'agent',
       trashed: false,
       archived: false,
@@ -455,12 +458,20 @@ async function _runAgentCycleInner(
       updatedAt: Date.now(),
     };
     await db.chatThreads.add(agentThread);
-    await db.folders.update(folder.id, { agentThreadId: threadId, agentStatus: 'running', agentLastRunAt: Date.now() });
+    if (deployment) {
+      await db.agentDeployments.update(deployment.id, { threadId });
+    } else {
+      await db.folders.update(folder.id, { agentThreadId: threadId });
+    }
+    await db.folders.update(folder.id, { agentStatus: 'running', agentLastRunAt: Date.now() });
   } else {
+    // Update title if it's stale (e.g. was "Agent: investigation name")
+    const existingThread = await db.chatThreads.get(threadId);
+    if (existingThread && !existingThread.title.includes(agentName)) {
+      await db.chatThreads.update(threadId, { title: `${agentIcon} ${agentName}` });
+    }
     await db.folders.update(folder.id, { agentStatus: 'running', agentLastRunAt: Date.now() });
   }
-
-  const agentName = profile?.name || 'CaddyAgent';
   onProgress?.(`${agentName}: ${provider}/${model}...`);
 
   const systemPrompt = await buildAgentSystemPrompt(folder, settings, provider, profile, deployment);
@@ -537,11 +548,11 @@ async function _runAgentCycleInner(
         onStream,
       });
 
-      // Log the assistant's response to the audit thread
+      // Log the assistant's response to the audit thread with agent identity
       const assistantMessage: ChatMessage = {
         id: nanoid(),
         role: 'assistant',
-        content: response.content,
+        content: `**${agentIcon} ${agentName}** (turn ${turn + 1})\n\n${response.content}`,
         createdAt: Date.now(),
       };
       await db.chatThreads.where('id').equals(threadId).modify((thread: ChatThread) => {
