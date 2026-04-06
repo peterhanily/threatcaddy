@@ -207,14 +207,18 @@ export async function executeTool(
   // Read settings once per tool call instead of per-function
   const _settings: Settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
 
-  // Set creator context from agent or default to undefined (human)
+  // Set creator context — agent name or human user
   if (agentContext?.profileId) {
     const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
     const profile = BUILTIN_AGENT_PROFILES.find(p => p.id === agentContext.profileId)
       || await db.agentProfiles.get(agentContext.profileId);
     _currentCreator = profile ? `agent:${profile.icon || '🤖'} ${profile.name}` : `agent:${agentContext.profileId}`;
   } else {
-    _currentCreator = undefined;
+    // Human user — check for team server identity
+    try {
+      const stored = JSON.parse(localStorage.getItem('threatcaddy-auth') || 'null');
+      _currentCreator = stored?.user?.displayName || undefined;
+    } catch { _currentCreator = undefined; }
   }
 
   try {
