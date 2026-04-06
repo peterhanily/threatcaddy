@@ -26,6 +26,21 @@ import { resolveRoutingMode } from '../../lib/llm-router';
 import type { ChatAttachment } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 
+/** Strip tool call JSON from streaming content (local LLMs output tool calls as text). */
+function cleanStreamingContent(text: string): string {
+  // Use RegExp constructor to avoid JSX parsing issues with </tag> in regex literals
+  const completeTag = new RegExp('<(?:tool_call|function_call)>[\\s\\S]*?</(?:tool_call|function_call)>', 'gi');
+  const openTag = new RegExp('<(?:tool_call|function_call)>[\\s\\S]*$', 'i');
+  const completeJsonBlock = new RegExp('```json\\s*\\n?\\s*\\{\\s*"name"\\s*:[\\s\\S]*?```', 'gi');
+  const partialJsonBlock = new RegExp('```json\\s*\\n?\\s*\\{\\s*"name"\\s*:[\\s\\S]*$', 'i');
+  let cleaned = text.replace(completeTag, '').replace(completeJsonBlock, '');
+  const openMatch = cleaned.match(openTag);
+  if (openMatch?.index !== undefined) cleaned = cleaned.slice(0, openMatch.index);
+  const jsonMatch = cleaned.match(partialJsonBlock);
+  if (jsonMatch?.index !== undefined) cleaned = cleaned.slice(0, jsonMatch.index);
+  return cleaned.trim();
+}
+
 interface ChatViewProps {
   threads: ChatThread[];
   selectedThreadId?: string;
@@ -1084,7 +1099,7 @@ export function ChatView({
                 />
               ))}
               {isStreaming && streamingContent && streamingThreadRef.current === selectedThreadId && (
-                <ChatMessageBubble role="assistant" content={streamingContent} isStreaming />
+                <ChatMessageBubble role="assistant" content={cleanStreamingContent(streamingContent)} isStreaming />
               )}
               {/* Tool activity indicators during streaming */}
               {isStreaming && toolActivity.length > 0 && streamingThreadRef.current === selectedThreadId && (
