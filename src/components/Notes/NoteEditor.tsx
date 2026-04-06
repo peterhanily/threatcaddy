@@ -1033,17 +1033,17 @@ export function NoteEditor({
               className="overflow-y-auto flex"
               style={editorMode === 'split' ? { width: `${(1 - editorPreview.ratio) * 100}%` } : { flex: 1 }}
             >
-              {/* Preview line numbers — counts rendered block elements */}
               {content ? (
                 <>
-                  <div
-                    className="shrink-0 pt-2 sm:pt-4 pr-1 pl-1.5 text-right select-none overflow-hidden text-[10px] text-text-muted/30 font-mono preview-line-numbers"
-                    style={{ width: '2.5rem' }}
-                    aria-hidden="true"
-                  >
-                    {previewLineNumbers}
-                  </div>
-                  <div className="flex-1 p-2 sm:p-4 pl-0 overflow-x-hidden">
+                  {/* Preview line numbers — only in preview-only mode (split mode has editor gutter) */}
+                  {editorMode === 'preview' && (
+                    <div
+                      className="shrink-0 pt-2 sm:pt-4 pr-1 pl-1.5 text-right select-none overflow-hidden text-[10px] leading-relaxed text-text-muted/30 font-mono whitespace-pre"
+                      style={{ width: '2.5rem' }}
+                      aria-hidden="true"
+                    >{previewLineNumbers}</div>
+                  )}
+                  <div className="flex-1 p-2 sm:p-4 overflow-x-hidden">
                     <MarkdownPreview content={content} defanged={defangPreview} allNotes={allNotes} onNavigateToNote={onNavigateToNote} iocs={note.iocAnalysis?.iocs} />
                   </div>
                 </>
