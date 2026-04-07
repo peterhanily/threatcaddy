@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
   FileText, ListChecks, Clock, Trash2, Briefcase,
   Archive, Settings as SettingsIcon,
@@ -109,6 +110,7 @@ export function Sidebar({
   agentStatus,
   onToggleAgent,
 }: SidebarProps) {
+  const { t } = useTranslation('common');
   // Derived state
   const selectedFolder = folders.find((f) => f.id === selectedFolderId);
 
@@ -131,24 +133,24 @@ export function Sidebar({
 
   // View items for collapsed icon rail — top-level items always, investigation-scoped only when inside one
   const collapsedTopItems: { view: ViewMode; icon: typeof FileText; label: string; badge?: number; badgeColor?: string; dataTour?: string }[] = [
-    { view: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { view: 'investigations', icon: Briefcase, label: 'Investigations' },
+    { view: 'dashboard', icon: LayoutDashboard, label: t('sidebar.dashboard') },
+    { view: 'investigations', icon: Briefcase, label: t('sidebar.investigations') },
   ];
 
   const collapsedInvestigationItems: { view: ViewMode; icon: typeof FileText; label: string; badge?: number; badgeColor?: string; dataTour?: string }[] = [
-    { view: 'notes', icon: FileText, label: 'Notes', badge: investigationScopedCounts ? investigationScopedCounts.notes : noteCounts.total, badgeColor: 'bg-accent-blue' },
-    { view: 'tasks', icon: ListChecks, label: 'Tasks', badge: investigationScopedCounts ? investigationScopedCounts.tasks : taskCounts.total, badgeColor: 'bg-accent-amber', dataTour: 'tasks' },
-    { view: 'timeline', icon: Clock, label: 'Timeline', badge: investigationScopedCounts ? investigationScopedCounts.events : timelineCounts?.total, badgeColor: 'bg-accent-green', dataTour: 'timeline' },
-    { view: 'whiteboard', icon: PenTool, label: 'Whiteboards', badge: investigationScopedCounts ? investigationScopedCounts.whiteboards : whiteboardCount, dataTour: 'whiteboards' },
-    { view: 'ioc-stats', icon: Search, label: 'IOCs', badge: investigationScopedCounts ? investigationScopedCounts.iocs : undefined, badgeColor: 'bg-accent-green' },
-    { view: 'graph', icon: Network, label: 'Graph' },
-    { view: 'activity', icon: Activity, label: 'Activity', dataTour: 'activity' },
+    { view: 'notes', icon: FileText, label: t('sidebar.notes'), badge: investigationScopedCounts ? investigationScopedCounts.notes : noteCounts.total, badgeColor: 'bg-accent-blue' },
+    { view: 'tasks', icon: ListChecks, label: t('sidebar.tasks'), badge: investigationScopedCounts ? investigationScopedCounts.tasks : taskCounts.total, badgeColor: 'bg-accent-amber', dataTour: 'tasks' },
+    { view: 'timeline', icon: Clock, label: t('sidebar.timeline'), badge: investigationScopedCounts ? investigationScopedCounts.events : timelineCounts?.total, badgeColor: 'bg-accent-green', dataTour: 'timeline' },
+    { view: 'whiteboard', icon: PenTool, label: t('sidebar.whiteboards'), badge: investigationScopedCounts ? investigationScopedCounts.whiteboards : whiteboardCount, dataTour: 'whiteboards' },
+    { view: 'ioc-stats', icon: Search, label: t('sidebar.iocs'), badge: investigationScopedCounts ? investigationScopedCounts.iocs : undefined, badgeColor: 'bg-accent-green' },
+    { view: 'graph', icon: Network, label: t('sidebar.graph') },
+    { view: 'activity', icon: Activity, label: t('sidebar.activity'), dataTour: 'activity' },
   ];
 
   const collapsedBottomItems: { view: ViewMode; icon: typeof FileText; label: string; badge?: number; badgeColor?: string; dataTour?: string }[] = [
-    { view: 'chat', icon: MessageSquare, label: 'CaddyAI', badge: chatCount },
-    { view: 'caddyshack', icon: MessagesSquare, label: 'CaddyShack' },
-    { view: 'agent', icon: Bot, label: 'AgentCaddy', badge: agentActionCount, badgeColor: 'bg-accent-amber/15 text-accent-amber' },
+    { view: 'chat', icon: MessageSquare, label: t('sidebar.caddyAI'), badge: chatCount },
+    { view: 'caddyshack', icon: MessagesSquare, label: t('sidebar.caddyShack') },
+    { view: 'agent', icon: Bot, label: t('sidebar.agentCaddy'), badge: agentActionCount, badgeColor: 'bg-accent-amber/15 text-accent-amber' },
   ];
 
   // --- Collapsed: icon-only rail ---
@@ -163,7 +165,7 @@ export function Sidebar({
         <div className="shrink-0 flex flex-col items-center py-1.5 border-b border-border-subtle w-full">
           <CollapsedIcon
             icon={PanelLeft}
-            label="Expand sidebar"
+            label={t('sidebar.expandSidebar')}
             onClick={onToggleCollapsed}
           />
         </div>
@@ -214,26 +216,26 @@ export function Sidebar({
         <div className="shrink-0 flex flex-col items-center py-1.5 gap-0.5 border-t border-border-subtle w-full">
           <CollapsedIcon
             icon={SettingsIcon}
-            label="Settings"
+            label={t('sidebar.settings')}
             onClick={() => nav(onOpenSettings)}
           />
           <CollapsedIcon
             icon={Archive}
-            label="Archive"
+            label={t('sidebar.archive')}
             active={showArchive}
             badge={noteCounts.archived}
             onClick={() => nav(() => { onShowArchive(!showArchive); onShowTrash(false); onFolderSelect(undefined); onTagSelect(undefined); })}
           />
           <CollapsedIcon
             icon={Trash2}
-            label="Trash"
+            label={t('sidebar.trash')}
             active={showTrash}
             badge={noteCounts.trashed}
             onClick={() => nav(() => { onShowTrash(!showTrash); onShowArchive(false); onFolderSelect(undefined); onTagSelect(undefined); })}
           />
           <CollapsedIcon
             icon={PanelLeft}
-            label="Expand sidebar"
+            label={t('sidebar.expandSidebar')}
             onClick={onToggleCollapsed}
           />
         </div>
@@ -259,8 +261,8 @@ export function Sidebar({
     <nav className="w-[260px] border-r border-border-subtle sidebar-glass flex flex-col h-full shrink-0 overflow-hidden" aria-label="Main navigation">
       {/* 1. HEADER */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle">
-        <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">ThreatCaddy</span>
-        <button onClick={onToggleCollapsed} className="p-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors" aria-label="Collapse sidebar" title="Collapse sidebar">
+        <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">{t('appName')}</span>
+        <button onClick={onToggleCollapsed} className="p-1 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors" aria-label={t('sidebar.collapseSidebar')} title={t('sidebar.collapseSidebar')}>
           <PanelLeftClose size={16} />
         </button>
       </div>
@@ -273,13 +275,13 @@ export function Sidebar({
             className="flex items-center gap-1 text-xs text-text-muted hover:text-text-secondary mb-1 transition-colors"
           >
             <ChevronLeft size={14} />
-            All Investigations
+            {t('sidebar.allInvestigations')}
           </button>
           {/* Clickable investigation card — opens settings */}
           <button
             onClick={() => onEditFolder?.(selectedFolder.id)}
             className="w-full text-left rounded-lg border border-border-subtle bg-bg-raised hover:border-border-medium hover:bg-bg-hover transition-colors p-2 group"
-            title="Investigation settings"
+            title={t('sidebar.investigationSettings')}
           >
             {selectedFolder.color && (
               <div className="h-0.5 rounded-full mb-1.5 -mx-0.5" style={{ backgroundColor: selectedFolder.color }} />
@@ -309,7 +311,7 @@ export function Sidebar({
           <div className="flex items-center justify-between mt-1.5 px-0.5">
             <div className="flex items-center gap-1.5">
               <Bot size={12} className={selectedFolder.agentEnabled ? 'text-accent-blue' : 'text-text-muted'} />
-              <span className="text-[10px] text-text-muted">AgentCaddy</span>
+              <span className="text-[10px] text-text-muted">{t('sidebar.agentCaddy')}</span>
               {agentStatus && agentStatus !== 'idle' && (
                 <span className={cn(
                   'text-[9px] px-1 py-px rounded',
@@ -330,8 +332,8 @@ export function Sidebar({
               )}
               role="switch"
               aria-checked={!!selectedFolder.agentEnabled}
-              aria-label={selectedFolder.agentEnabled ? 'Disable agent for this investigation' : 'Enable agent for this investigation'}
-              title={selectedFolder.agentEnabled ? 'Disable agent' : 'Enable agent'}
+              aria-label={selectedFolder.agentEnabled ? t('sidebar.disableAgent') : t('sidebar.enableAgent')}
+              title={selectedFolder.agentEnabled ? t('sidebar.disableAgent') : t('sidebar.enableAgent')}
             >
               <span className={cn(
                 'inline-block h-3 w-3 rounded-full bg-white transition-transform',
@@ -348,14 +350,14 @@ export function Sidebar({
         <div data-tour="dashboard">
           <NavItem
             icon={<LayoutDashboard size={16} />}
-            label="Dashboard"
+            label={t('sidebar.dashboard')}
             active={activeView === 'dashboard' && !showTrash && !showArchive}
             onClick={() => nav(() => navToView('dashboard'))}
           />
         </div>
         <NavItem
           icon={<Briefcase size={16} />}
-          label="Investigations"
+          label={t('sidebar.investigations')}
           active={activeView === 'investigations' && !showTrash && !showArchive}
           onClick={() => nav(() => navToView('investigations'))}
         />
@@ -365,7 +367,7 @@ export function Sidebar({
 
         <NavItem
           icon={<FileText size={16} />}
-          label="Notes"
+          label={t('sidebar.notes')}
           badge={investigationScopedCounts ? investigationScopedCounts.notes : noteCounts.total}
           badgeColor="bg-accent-blue/15 text-accent-blue"
           active={activeView === 'notes' && !showTrash && !showArchive}
@@ -375,7 +377,7 @@ export function Sidebar({
         <div data-tour="tasks">
           <NavItem
             icon={<ListChecks size={16} />}
-            label="Tasks"
+            label={t('sidebar.tasks')}
             badge={investigationScopedCounts ? investigationScopedCounts.tasks : taskCounts.total}
             badgeColor="bg-accent-amber/15 text-accent-amber"
             active={activeView === 'tasks'}
@@ -386,7 +388,7 @@ export function Sidebar({
         <div data-tour="timeline">
           <NavItem
             icon={<Clock size={16} />}
-            label="Timeline"
+            label={t('sidebar.timeline')}
             badge={investigationScopedCounts ? investigationScopedCounts.events : timelineCounts?.total}
             badgeColor="bg-accent-green/15 text-accent-green"
             active={activeView === 'timeline'}
@@ -397,7 +399,7 @@ export function Sidebar({
         <div data-tour="whiteboards">
           <NavItem
             icon={<PenTool size={16} />}
-            label="Whiteboards"
+            label={t('sidebar.whiteboards')}
             badge={investigationScopedCounts ? investigationScopedCounts.whiteboards : whiteboardCount}
             active={activeView === 'whiteboard'}
             onClick={() => nav(() => navToView('whiteboard'))}
@@ -409,7 +411,7 @@ export function Sidebar({
 
         <NavItem
           icon={<Search size={16} />}
-          label="IOCs"
+          label={t('sidebar.iocs')}
           badge={investigationScopedCounts ? investigationScopedCounts.iocs : undefined}
           badgeColor="bg-accent-green/15 text-accent-green"
           active={activeView === 'ioc-stats'}
@@ -418,14 +420,14 @@ export function Sidebar({
         />
         <NavItem
           icon={<Network size={16} />}
-          label="Graph"
+          label={t('sidebar.graph')}
           active={activeView === 'graph'}
           onClick={() => nav(() => navToView('graph'))}
         />
         <div data-tour="activity">
           <NavItem
             icon={<Activity size={16} />}
-            label="Activity"
+            label={t('sidebar.activity')}
             active={activeView === 'activity'}
             onClick={() => nav(() => navToView('activity'))}
           />
@@ -436,7 +438,7 @@ export function Sidebar({
         <div data-tour="chat">
           <NavItem
             icon={<MessageSquare size={16} />}
-            label="CaddyAI"
+            label={t('sidebar.caddyAI')}
             badge={chatCount}
             badgeColor="bg-purple/15 text-purple"
             active={activeView === 'chat'}
@@ -446,7 +448,7 @@ export function Sidebar({
         <div data-tour="caddyshack">
           <NavItem
             icon={<MessagesSquare size={16} />}
-            label="CaddyShack"
+            label={t('sidebar.caddyShack')}
             active={activeView === 'caddyshack'}
             onClick={() => nav(() => navToView('caddyshack'))}
           />
@@ -454,7 +456,7 @@ export function Sidebar({
         <div data-tour="agent">
           <NavItem
             icon={<Bot size={16} />}
-            label="AgentCaddy"
+            label={t('sidebar.agentCaddy')}
             badge={agentActionCount}
             badgeColor="bg-accent-amber/15 text-accent-amber"
             active={activeView === 'agent'}
@@ -513,7 +515,7 @@ export function Sidebar({
           className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
         >
           <SettingsIcon size={14} />
-          <span>Settings</span>
+          <span>{t('sidebar.settings')}</span>
         </button>
         <div className="flex-1" />
         <button
@@ -522,8 +524,8 @@ export function Sidebar({
             'flex items-center gap-1 px-1.5 py-1 rounded-lg text-xs transition-colors',
             showArchive ? 'bg-bg-active text-purple' : 'text-text-muted hover:bg-bg-hover hover:text-text-primary'
           )}
-          title="Archive"
-          aria-label="Archive"
+          title={t('sidebar.archive')}
+          aria-label={t('sidebar.archive')}
         >
           <Archive size={14} />
           {noteCounts.archived > 0 && (
@@ -536,8 +538,8 @@ export function Sidebar({
             'flex items-center gap-1 px-1.5 py-1 rounded-lg text-xs transition-colors',
             showTrash ? 'bg-bg-active text-purple' : 'text-text-muted hover:bg-bg-hover hover:text-text-primary'
           )}
-          title="Trash"
-          aria-label="Trash"
+          title={t('sidebar.trash')}
+          aria-label={t('sidebar.trash')}
         >
           <Trash2 size={14} />
           {noteCounts.trashed > 0 && (
@@ -555,7 +557,7 @@ export function Sidebar({
           className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
         >
           <Github size={16} />
-          <span>GitHub</span>
+          <span>{t('sidebar.github')}</span>
         </a>
         <a
           href="./threatcaddy-standalone.html"
@@ -563,7 +565,7 @@ export function Sidebar({
           className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
         >
           <Download size={16} />
-          <span>Download Standalone</span>
+          <span>{t('sidebar.downloadStandalone')}</span>
         </a>
         <a
           href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh"
@@ -572,7 +574,7 @@ export function Sidebar({
           className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
         >
           <Chrome size={16} />
-          <span>Chrome Extension</span>
+          <span>{t('sidebar.chromeExtension')}</span>
         </a>
         <a
           href="https://threatcaddy.com/privacy.html"
@@ -581,7 +583,7 @@ export function Sidebar({
           className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
         >
           <Shield size={16} />
-          <span>Privacy</span>
+          <span>{t('sidebar.privacy')}</span>
         </a>
       </div>
     </nav>

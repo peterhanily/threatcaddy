@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -11,6 +12,7 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children, wide, extraWide }: ModalProps) {
+  const { t } = useTranslation('common');
   const overlayRef = useRef<HTMLDivElement>(null);
   const titleId = `modal-title-${title.replace(/\s+/g, '-').toLowerCase()}`;
 
@@ -74,7 +76,7 @@ export function Modal({ open, onClose, title, children, wide, extraWide }: Modal
       <div className={`bg-gray-900 dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-700 w-full ${extraWide ? 'max-w-5xl' : wide ? 'max-w-2xl' : 'max-w-md'} max-h-[90vh] flex flex-col`}>
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <h2 id={titleId} className="text-lg font-semibold text-gray-100">{title}</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-gray-200 transition-colors" aria-label="Close">
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-gray-200 transition-colors" aria-label={t('close')}>
             <X size={20} />
           </button>
         </div>

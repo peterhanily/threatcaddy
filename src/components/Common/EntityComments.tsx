@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { nanoid } from 'nanoid';
 import { MessageSquare, X, Pencil, Check } from 'lucide-react';
 import type { EntityComment } from '../../types';
@@ -9,18 +10,19 @@ interface EntityCommentsProps {
   onUpdate: (comments: EntityComment[]) => void;
 }
 
-function formatRelativeTime(ts: number): string {
+function formatRelativeTime(ts: number, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('comments.justNow');
+  if (mins < 60) return t('comments.minutesAgo', { count: mins });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t('comments.hoursAgo', { count: hours });
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return t('comments.daysAgo', { count: days });
 }
 
 export function EntityComments({ comments, onUpdate }: EntityCommentsProps) {
+  const { t } = useTranslation('common');
   const auth = useAuth();
   const [commentText, setCommentText] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -70,7 +72,7 @@ export function EntityComments({ comments, onUpdate }: EntityCommentsProps) {
     <div>
       <label className="flex items-center gap-1.5 text-xs font-medium text-gray-400 mb-2">
         <MessageSquare size={12} />
-        Comments {comments.length > 0 && `(${comments.length})`}
+        {t('comments.label')} {comments.length > 0 && `(${comments.length})`}
       </label>
 
       {comments.length > 0 && (
@@ -93,8 +95,8 @@ export function EntityComments({ comments, onUpdate }: EntityCommentsProps) {
                     type="button"
                     onClick={handleSaveEdit}
                     className="p-0.5 rounded text-green-400 hover:text-green-300 shrink-0"
-                    title="Save edit"
-                    aria-label="Save edit"
+                    title={t('comments.saveEdit')}
+                    aria-label={t('comments.saveEdit')}
                   >
                     <Check size={12} />
                   </button>
@@ -102,8 +104,8 @@ export function EntityComments({ comments, onUpdate }: EntityCommentsProps) {
                     type="button"
                     onClick={() => { setEditingId(null); setEditText(''); }}
                     className="p-0.5 rounded text-gray-500 hover:text-gray-300 shrink-0"
-                    title="Cancel edit"
-                    aria-label="Cancel edit"
+                    title={t('comments.cancelEdit')}
+                    aria-label={t('comments.cancelEdit')}
                   >
                     <X size={12} />
                   </button>
@@ -117,8 +119,8 @@ export function EntityComments({ comments, onUpdate }: EntityCommentsProps) {
                     <p className="text-xs text-gray-300 whitespace-pre-wrap break-words">{c.content}</p>
                   </div>
                   <span className="text-[10px] text-gray-500 shrink-0">
-                    {formatRelativeTime(c.createdAt)}
-                    {c.updatedAt && ' (edited)'}
+                    {formatRelativeTime(c.createdAt, t)}
+                    {c.updatedAt && ` (${t('comments.edited')})`}
                   </span>
                   {canModify(c) && (
                     <>
@@ -126,8 +128,8 @@ export function EntityComments({ comments, onUpdate }: EntityCommentsProps) {
                         type="button"
                         onClick={() => handleStartEdit(c)}
                         className="p-0.5 rounded text-gray-600 hover:text-gray-400 shrink-0"
-                        title="Edit comment"
-                        aria-label="Edit comment"
+                        title={t('comments.editComment')}
+                        aria-label={t('comments.editComment')}
                       >
                         <Pencil size={12} />
                       </button>
@@ -135,8 +137,8 @@ export function EntityComments({ comments, onUpdate }: EntityCommentsProps) {
                         type="button"
                         onClick={() => handleDelete(c.id)}
                         className="p-0.5 rounded text-gray-600 hover:text-red-400 shrink-0"
-                        title="Delete comment"
-                        aria-label="Delete comment"
+                        title={t('comments.deleteComment')}
+                        aria-label={t('comments.deleteComment')}
                       >
                         <X size={12} />
                       </button>
@@ -160,7 +162,7 @@ export function EntityComments({ comments, onUpdate }: EntityCommentsProps) {
             }
           }}
           className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-accent"
-          placeholder="Add a comment..."
+          placeholder={t('comments.addPlaceholder')}
         />
         <button
           type="button"
@@ -168,7 +170,7 @@ export function EntityComments({ comments, onUpdate }: EntityCommentsProps) {
           disabled={!commentText.trim()}
           className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-200 text-xs transition-colors"
         >
-          Add
+          {t('add')}
         </button>
       </div>
     </div>

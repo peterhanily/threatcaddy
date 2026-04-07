@@ -1,5 +1,6 @@
 import { Menu, Search, Github, Download, Chrome, HardDriveDownload, FolderUp, HelpCircle, Shield, RefreshCw, ChevronDown, Briefcase } from 'lucide-react';
 import { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ThemeToggle } from '../Common/ThemeToggle';
 import { ScreenshareToggle } from '../Common/ScreenshareToggle';
 import { CreateDropdown } from '../Common/CreateDropdown';
@@ -62,6 +63,7 @@ export function Header({
   presenceUsers,
   addToast,
 }: HeaderProps) {
+  const { t } = useTranslation('common');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const helpMenuRef = useRef<HTMLDivElement>(null);
   const [helpMenuOpen, setHelpMenuOpen] = useState(false);
@@ -81,7 +83,7 @@ export function Header({
   const [buildAge] = useState(() => {
     if (typeof __BUILD_TIME__ !== 'number') return '';
     const d = Math.floor((Date.now() - __BUILD_TIME__) / 86_400_000);
-    return ` · Built ${d === 0 ? 'today' : d === 1 ? '1 day ago' : `${d} days ago`}`;
+    return ` · ${t('header.built', { when: d === 0 ? t('header.today') : t('header.daysAgo', { count: d }) })}`;
   });
   return (
     <header data-tour="header" className={cn("h-12 sm:h-14 border-b border-gray-800 flex items-center px-2 sm:px-4 gap-2 sm:gap-3 bg-gray-900/50 backdrop-blur-sm shrink-0 relative z-20", screenshareMaxLevel && "pt-0.5")}>
@@ -90,8 +92,8 @@ export function Header({
       <button
         onClick={onMobileMenuToggle}
         className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center"
-        aria-label="Toggle menu"
-        title="Toggle menu"
+        aria-label={t('header.toggleMenu')}
+        title={t('header.toggleMenu')}
       >
         <Menu size={20} />
       </button>
@@ -99,8 +101,8 @@ export function Header({
       <button
         onClick={onToggleSidebar}
         className="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors hidden md:block"
-        aria-label="Toggle sidebar"
-        title="Toggle sidebar"
+        aria-label={t('header.toggleSidebar')}
+        title={t('header.toggleSidebar')}
       >
         <Menu size={20} />
       </button>
@@ -112,7 +114,7 @@ export function Header({
             <span className="text-lg font-bold tracking-tight">
               <span className="text-accent">Threat</span><span className="text-gray-200">Caddy</span>
             </span>
-            <span className="text-[9px] font-medium tracking-widest uppercase text-gray-500">Local Edition{buildAge}</span>
+            <span className="text-[9px] font-medium tracking-widest uppercase text-gray-500">{t('header.localEdition')}{buildAge}</span>
           </div>
         </div>
       ) : (
@@ -140,10 +142,10 @@ export function Header({
         data-tour="search"
         onClick={onOpenSearch}
         className="flex items-center gap-2 flex-1 max-w-md pl-3 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-500 hover:text-gray-400 hover:border-gray-600 text-sm transition-colors cursor-pointer"
-        title={selectedFolderName ? `Search in ${selectedFolderName} (Ctrl+K)` : 'Search all (Ctrl+K)'}
+        title={selectedFolderName ? t('header.searchInFolder', { name: selectedFolderName }) + ' (Ctrl+K)' : t('header.searchAll') + ' (Ctrl+K)'}
       >
         <Search size={16} />
-        <span className="hidden sm:inline truncate">{selectedFolderName ? `Search in ${selectedFolderName}...` : 'Search all...'}</span>
+        <span className="hidden sm:inline truncate">{selectedFolderName ? t('header.searchInFolderEllipsis', { name: selectedFolderName }) : t('header.searchAllEllipsis')}</span>
         <kbd className="hidden sm:inline ml-auto text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-500 border border-gray-600 font-mono shrink-0">Ctrl+K</kbd>
       </button>
 
@@ -152,8 +154,8 @@ export function Header({
         <button
           onClick={() => setHelpMenuOpen(!helpMenuOpen)}
           className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800 text-xs font-medium transition-colors"
-          title="Help & Links"
-          aria-label="Help menu"
+          title={t('header.helpAndLinks')}
+          aria-label={t('header.helpMenu')}
           aria-expanded={helpMenuOpen}
         >
           <HelpCircle size={16} />
@@ -167,7 +169,7 @@ export function Header({
                 className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors"
               >
                 <HelpCircle size={14} />
-                Start Tour
+                {t('header.startTour')}
               </button>
             )}
             <a
@@ -176,7 +178,7 @@ export function Header({
               onClick={() => setHelpMenuOpen(false)}
             >
               <Search size={14} />
-              Demo Investigation
+              {t('header.demoInvestigation')}
             </a>
             <div className="h-px bg-gray-800 mx-2 my-1" />
             <a
@@ -187,7 +189,7 @@ export function Header({
               onClick={() => setHelpMenuOpen(false)}
             >
               <Github size={14} />
-              GitHub
+              {t('header.github')}
             </a>
             {typeof __STANDALONE__ !== 'undefined' && __STANDALONE__ ? (
               <button
@@ -204,13 +206,13 @@ export function Header({
                     a.click();
                     URL.revokeObjectURL(url);
                   } catch {
-                    addToast?.('error', 'Failed to download update. Visit https://threatcaddy.com to get the latest version.');
+                    addToast?.('error', t('header.updateFailed'));
                   }
                 }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors"
               >
                 <RefreshCw size={14} />
-                Update
+                {t('header.update')}
               </button>
             ) : (
               <a
@@ -221,7 +223,7 @@ export function Header({
                 onClick={() => setHelpMenuOpen(false)}
               >
                 <Download size={14} />
-                Standalone
+                {t('header.standalone')}
               </a>
             )}
             <a
@@ -233,7 +235,7 @@ export function Header({
               onClick={() => setHelpMenuOpen(false)}
             >
               <Chrome size={14} />
-              Chrome Extension
+              {t('header.chromeExtension')}
             </a>
             <a
               href="https://threatcaddy.com/privacy.html"
@@ -243,7 +245,7 @@ export function Header({
               onClick={() => setHelpMenuOpen(false)}
             >
               <Shield size={14} />
-              Privacy
+              {t('header.privacy')}
             </a>
           </div>
         )}
@@ -264,16 +266,16 @@ export function Header({
           data-tour="backup"
           onClick={onQuickSave}
           className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
-          title="Save Backup (Ctrl+S)"
-          aria-label="Save backup"
+          title={t('header.saveBackup') + ' (Ctrl+S)'}
+          aria-label={t('header.saveBackup')}
         >
           <HardDriveDownload size={16} />
         </button>
         <button
           onClick={() => fileInputRef.current?.click()}
           className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
-          title="Load Backup"
-          aria-label="Load backup"
+          title={t('header.loadBackup')}
+          aria-label={t('header.loadBackup')}
         >
           <FolderUp size={16} />
         </button>

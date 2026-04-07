@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, Search, X, FileText, CheckSquare, Clock } from 'lucide-react';
 import type { Note, Task, TimelineEvent } from '../../types';
 import { cn } from '../../lib/utils';
@@ -36,10 +37,10 @@ const TYPE_COLORS = {
   'timeline-event': 'text-purple-400 bg-purple-400/10',
 } as const;
 
-const TYPE_LABELS = {
-  note: 'Note',
-  task: 'Task',
-  'timeline-event': 'Event',
+const TYPE_LABEL_KEYS = {
+  note: 'entityLinker.note',
+  task: 'entityLinker.task',
+  'timeline-event': 'entityLinker.event',
 } as const;
 
 export function EntityLinker({
@@ -52,6 +53,7 @@ export function EntityLinker({
   allTimelineEvents,
   onUpdateLinks,
 }: EntityLinkerProps) {
+  const { t } = useTranslation('common');
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
@@ -115,19 +117,19 @@ export function EntityLinker({
     const eventResults: EntityItem[] = [];
     for (const n of allNotes) {
       if (n.id !== currentEntityId && !n.trashed && n.title.toLowerCase().includes(query)) {
-        noteResults.push({ id: n.id, title: n.title || 'Untitled', type: 'note' });
+        noteResults.push({ id: n.id, title: n.title || t('untitled'), type: 'note' });
       }
       if (noteResults.length >= PER_TYPE) break;
     }
-    for (const t of allTasks) {
-      if (t.id !== currentEntityId && t.title.toLowerCase().includes(query)) {
-        taskResults.push({ id: t.id, title: t.title || 'Untitled', type: 'task' });
+    for (const tk of allTasks) {
+      if (tk.id !== currentEntityId && tk.title.toLowerCase().includes(query)) {
+        taskResults.push({ id: tk.id, title: tk.title || t('untitled'), type: 'task' });
       }
       if (taskResults.length >= PER_TYPE) break;
     }
     for (const e of allTimelineEvents) {
       if (e.id !== currentEntityId && e.title.toLowerCase().includes(query)) {
-        eventResults.push({ id: e.id, title: e.title || 'Untitled', type: 'timeline-event' });
+        eventResults.push({ id: e.id, title: e.title || t('untitled'), type: 'timeline-event' });
       }
       if (eventResults.length >= PER_TYPE) break;
     }
@@ -138,15 +140,15 @@ export function EntityLinker({
   const linkedEntities: EntityItem[] = [];
   for (const id of linkedNoteIds) {
     const n = allNotes.find((x) => x.id === id);
-    if (n) linkedEntities.push({ id: n.id, title: n.title || 'Untitled', type: 'note' });
+    if (n) linkedEntities.push({ id: n.id, title: n.title || t('untitled'), type: 'note' });
   }
   for (const id of linkedTaskIds) {
-    const t = allTasks.find((x) => x.id === id);
-    if (t) linkedEntities.push({ id: t.id, title: t.title || 'Untitled', type: 'task' });
+    const tk = allTasks.find((x) => x.id === id);
+    if (tk) linkedEntities.push({ id: tk.id, title: tk.title || t('untitled'), type: 'task' });
   }
   for (const id of linkedTimelineEventIds) {
     const e = allTimelineEvents.find((x) => x.id === id);
-    if (e) linkedEntities.push({ id: e.id, title: e.title || 'Untitled', type: 'timeline-event' });
+    if (e) linkedEntities.push({ id: e.id, title: e.title || t('untitled'), type: 'timeline-event' });
   }
 
   return (
@@ -158,8 +160,8 @@ export function EntityLinker({
           'p-1.5 rounded flex items-center gap-1',
           open ? 'bg-gray-700 text-accent' : 'text-gray-500 hover:text-gray-300',
         )}
-        title="Link entities"
-        aria-label="Link entities"
+        title={t('entityLinker.linkEntities')}
+        aria-label={t('entityLinker.linkEntities')}
       >
         <Link size={14} />
         {linkedCount > 0 && (
@@ -177,7 +179,7 @@ export function EntityLinker({
                 ref={inputRef}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search entities to link..."
+                placeholder={t('entityLinker.searchPlaceholder')}
                 className="w-full pl-7 pr-2 py-1.5 bg-gray-900 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-accent"
               />
             </div>
@@ -187,7 +189,7 @@ export function EntityLinker({
           {query && (
             <div className="max-h-40 overflow-y-auto">
               {searchResults.length === 0 ? (
-                <p className="text-xs text-gray-500 p-2">No results</p>
+                <p className="text-xs text-gray-500 p-2">{t('noResults')}</p>
               ) : (
                 searchResults.map((item) => {
                   const Icon = TYPE_ICONS[item.type];
@@ -204,10 +206,10 @@ export function EntityLinker({
                     >
                       <Icon size={12} className={TYPE_COLORS[item.type].split(' ')[0]} />
                       <span className={cn('px-1 py-0.5 rounded text-[10px]', TYPE_COLORS[item.type])}>
-                        {TYPE_LABELS[item.type]}
+                        {t(TYPE_LABEL_KEYS[item.type])}
                       </span>
                       <span className="text-gray-300 truncate flex-1">{item.title}</span>
-                      {linked && <span className="text-accent text-[10px]">linked</span>}
+                      {linked && <span className="text-accent text-[10px]">{t('entityLinker.linked')}</span>}
                     </button>
                   );
                 })
@@ -219,7 +221,7 @@ export function EntityLinker({
           {linkedEntities.length > 0 && (
             <div className="border-t border-gray-700">
               <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold px-2 pt-2 pb-1">
-                Linked ({linkedEntities.length})
+                {t('entityLinker.linkedCount', { count: linkedEntities.length })}
               </p>
               <div className="max-h-32 overflow-y-auto pb-1">
                 {linkedEntities.map((item) => {
@@ -231,15 +233,15 @@ export function EntityLinker({
                     >
                       <Icon size={12} className={TYPE_COLORS[item.type].split(' ')[0]} />
                       <span className={cn('px-1 py-0.5 rounded text-[10px]', TYPE_COLORS[item.type])}>
-                        {TYPE_LABELS[item.type]}
+                        {t(TYPE_LABEL_KEYS[item.type])}
                       </span>
                       <span className="text-gray-300 truncate flex-1">{item.title}</span>
                       <button
                         type="button"
                         onClick={() => toggleLink(item.type, item.id)}
                         className="p-0.5 rounded text-gray-600 hover:text-red-400"
-                        title="Remove link"
-                        aria-label="Remove link"
+                        title={t('entityLinker.removeLink')}
+                        aria-label={t('entityLinker.removeLink')}
                       >
                         <X size={12} />
                       </button>

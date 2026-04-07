@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, ChevronDown, FileText, FilePlus, ListChecks, Clock, PenTool, Shield, Database, FolderOpen } from 'lucide-react';
 
 interface CreateDropdownProps {
@@ -13,6 +14,7 @@ interface CreateDropdownProps {
 }
 
 export function CreateDropdown({ onQuickNote, onNewNote, onNewTask, onNewTimelineEvent, onNewWhiteboard, onNewIOC, onOpenFile, onImportData }: CreateDropdownProps) {
+  const { t } = useTranslation('common');
   const [open, setOpen] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(-1);
   const ref = useRef<HTMLDivElement>(null);
@@ -32,14 +34,14 @@ export function CreateDropdown({ onQuickNote, onNewNote, onNewTask, onNewTimelin
   }, [open]);
 
   const items = [
-    { icon: FilePlus, label: 'Quick Note', action: onQuickNote },
-    { icon: FileText, label: 'Note Templates', action: onNewNote },
-    { icon: ListChecks, label: 'Task', action: onNewTask },
-    { icon: Clock, label: 'Timeline Event', action: onNewTimelineEvent },
-    { icon: PenTool, label: 'Whiteboard', action: onNewWhiteboard },
-    ...(onNewIOC ? [{ icon: Shield, label: 'IOC', action: onNewIOC }] : []),
-    ...(onOpenFile ? [{ icon: FolderOpen, label: 'Open File', action: onOpenFile }] : []),
-    ...(onImportData ? [{ icon: Database, label: 'Import Data', action: onImportData }] : []),
+    { icon: FilePlus, label: t('createDropdown.quickNote'), action: onQuickNote },
+    { icon: FileText, label: t('createDropdown.noteTemplates'), action: onNewNote },
+    { icon: ListChecks, label: t('createDropdown.task'), action: onNewTask },
+    { icon: Clock, label: t('createDropdown.timelineEvent'), action: onNewTimelineEvent },
+    { icon: PenTool, label: t('createDropdown.whiteboard'), action: onNewWhiteboard },
+    ...(onNewIOC ? [{ icon: Shield, label: t('createDropdown.ioc'), action: onNewIOC }] : []),
+    ...(onOpenFile ? [{ icon: FolderOpen, label: t('createDropdown.openFile'), action: onOpenFile }] : []),
+    ...(onImportData ? [{ icon: Database, label: t('createDropdown.importData'), action: onImportData }] : []),
   ];
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -84,13 +86,13 @@ export function CreateDropdown({ onQuickNote, onNewNote, onNewTask, onNewTimelin
         onClick={() => setOpen(!open)}
         onKeyDown={handleKeyDown}
         className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-sm font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-200"
-        title="Create new..."
-        aria-label="Create new"
+        title={t('createDropdown.createNew')}
+        aria-label={t('createDropdown.createNew')}
         aria-haspopup="menu"
         aria-expanded={open}
       >
         <Plus size={16} />
-        <span className="hidden sm:inline">New</span>
+        <span className="hidden sm:inline">{t('createDropdown.new')}</span>
         <ChevronDown size={12} />
       </button>
 
@@ -100,7 +102,7 @@ export function CreateDropdown({ onQuickNote, onNewNote, onNewTask, onNewTimelin
             <button
               key={item.label}
               role="menuitem"
-              aria-label={`Create ${item.label}`}
+              aria-label={t('createDropdown.createItem', { item: item.label })}
               onClick={() => { item.action(); setOpen(false); }}
               onMouseEnter={() => setHighlightIdx(idx)}
               className={`w-full flex items-center gap-2 px-3 py-2 sm:py-1.5 text-xs text-gray-300 min-h-[44px] sm:min-h-0 ${idx === highlightIdx ? 'bg-gray-700' : 'hover:bg-gray-700'}`}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Modal } from './Modal';
 
 interface ShortcutItem {
@@ -10,43 +11,46 @@ interface ShortcutGroup {
   shortcuts: ShortcutItem[];
 }
 
-const SHORTCUT_GROUPS: ShortcutGroup[] = [
-  {
-    title: 'General',
-    shortcuts: [
-      { keys: 'Ctrl+K', description: 'Open search' },
-      { keys: 'Ctrl+S', description: 'Save backup' },
-      { keys: 'Ctrl+O', description: 'Open markdown / text file' },
-      { keys: 'Ctrl+/', description: 'Show keyboard shortcuts' },
-      { keys: 'Escape', description: 'Close dialog / overlay' },
-    ],
-  },
-  {
-    title: 'Create',
-    shortcuts: [
-      { keys: 'Ctrl+N', description: 'New note' },
-      { keys: 'Ctrl+Shift+T', description: 'New task' },
-    ],
-  },
-  {
-    title: 'Editor',
-    shortcuts: [
-      { keys: 'Ctrl+E', description: 'Toggle editor mode (edit/split/preview)' },
-      { keys: 'Ctrl+`', description: 'Toggle preview' },
-      { keys: 'Ctrl+B', description: 'Bold text' },
-      { keys: 'Ctrl+I', description: 'Italic text' },
-    ],
-  },
-  {
-    title: 'Navigation',
-    shortcuts: [
-      { keys: 'Ctrl+1', description: 'Switch to Notes' },
-      { keys: 'Ctrl+2', description: 'Switch to Tasks' },
-      { keys: 'Ctrl+3', description: 'Switch to Timeline' },
-      { keys: 'Ctrl+4', description: 'Switch to Whiteboards' },
-    ],
-  },
-];
+function useShortcutGroups(): ShortcutGroup[] {
+  const { t } = useTranslation('common');
+  return [
+    {
+      title: t('shortcuts.general'),
+      shortcuts: [
+        { keys: 'Ctrl+K', description: t('shortcuts.openSearch') },
+        { keys: 'Ctrl+S', description: t('shortcuts.saveBackup') },
+        { keys: 'Ctrl+O', description: t('shortcuts.openFile') },
+        { keys: 'Ctrl+/', description: t('shortcuts.showKeyboardShortcuts') },
+        { keys: 'Escape', description: t('shortcuts.closeDialog') },
+      ],
+    },
+    {
+      title: t('create'),
+      shortcuts: [
+        { keys: 'Ctrl+N', description: t('shortcuts.newNote') },
+        { keys: 'Ctrl+Shift+T', description: t('shortcuts.newTask') },
+      ],
+    },
+    {
+      title: t('shortcuts.editor'),
+      shortcuts: [
+        { keys: 'Ctrl+E', description: t('shortcuts.toggleEditorMode') },
+        { keys: 'Ctrl+`', description: t('shortcuts.togglePreview') },
+        { keys: 'Ctrl+B', description: t('shortcuts.boldText') },
+        { keys: 'Ctrl+I', description: t('shortcuts.italicText') },
+      ],
+    },
+    {
+      title: t('shortcuts.navigation'),
+      shortcuts: [
+        { keys: 'Ctrl+1', description: t('shortcuts.switchToNotes') },
+        { keys: 'Ctrl+2', description: t('shortcuts.switchToTasks') },
+        { keys: 'Ctrl+3', description: t('shortcuts.switchToTimeline') },
+        { keys: 'Ctrl+4', description: t('shortcuts.switchToWhiteboards') },
+      ],
+    },
+  ];
+}
 
 interface KeyboardShortcutsPanelProps {
   open: boolean;
@@ -54,10 +58,12 @@ interface KeyboardShortcutsPanelProps {
 }
 
 export function KeyboardShortcutsPanel({ open, onClose }: KeyboardShortcutsPanelProps) {
+  const { t } = useTranslation('common');
+  const shortcutGroups = useShortcutGroups();
   return (
-    <Modal open={open} onClose={onClose} title="Keyboard Shortcuts">
+    <Modal open={open} onClose={onClose} title={t('shortcuts.title')}>
       <div className="space-y-5 max-h-[60vh] overflow-y-auto">
-        {SHORTCUT_GROUPS.map((group) => (
+        {shortcutGroups.map((group) => (
           <div key={group.title}>
             <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
               {group.title}
