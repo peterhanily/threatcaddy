@@ -1,0 +1,28 @@
+{
+  "name": "ThreatCaddy",
+  "short_name": "ThreatCaddy",
+  "description": "Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs. No server. No tracking.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "categories": ["productivity", "security"],
+  "theme_color": "#030712",
+  "background_color": "#030712",
+  "icons": [
+    {
+      "src": "logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "text/markdown": [".md", ".markdown", ".mdown", ".mkd"],
+        "text/plain": [".txt"]
+      }
+    }
+  ]
+}

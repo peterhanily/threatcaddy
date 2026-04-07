@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded square background -->
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#bg)"/>
+  <!-- Shield shape -->
+  <path d="M256 96 L376 152 V280 C376 352 324 408 256 432 C188 408 136 352 136 280 V152 Z" fill="#ffffff" opacity="0.95"/>
+  <!-- Crosshair circle -->
+  <circle cx="256" cy="252" r="72" fill="none" stroke="#6366f1" stroke-width="8" opacity="0.85"/>
+  <!-- Crosshair lines -->
+  <line x1="256" y1="160" x2="256" y2="210" stroke="#6366f1" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+  <line x1="256" y1="294" x2="256" y2="344" stroke="#6366f1" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+  <line x1="164" y1="252" x2="214" y2="252" stroke="#6366f1" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+  <line x1="298" y1="252" x2="348" y2="252" stroke="#6366f1" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+  <!-- Center dot -->
+  <circle cx="256" cy="252" r="6" fill="#6366f1" opacity="0.9"/>
+</svg>

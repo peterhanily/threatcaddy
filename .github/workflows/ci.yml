@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Audit root dependencies
+        run: pnpm audit --prod --audit-level=critical
+      - name: Audit server dependencies
+        run: cd server && npm audit --omit=dev --audit-level=critical
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  test-client:
+    name: Client Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:run
+
+  test-server:
+    name: Server Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install server dependencies
+        run: cd server && npm ci
+      - name: Run server tests
+        run: cd server && npm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm build:single
+
+      - name: Report bundle size
+        run: |
+          echo "### Bundle Size Report" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          du -sh dist/ >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          ls -lhS dist/assets/*.js | head -10 >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  build-server:
+    name: Build Server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install server dependencies
+        run: cd server && npm ci
+      - name: Typecheck server
+        run: cd server && npx tsc --noEmit
+
+  extension-check:
+    name: Extension Zips
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build extension and verify zips are up to date
+        run: |
+          cd extension
+          npm ci
+          npm run build
+          npm run package:chrome
+          npm run package:firefox
+
+          for browser in chrome firefox; do
+            mkdir -p /tmp/ext-committed-$browser /tmp/ext-built-$browser
+            unzip -o threatcaddy-$browser.zip -d /tmp/ext-committed-$browser > /dev/null
+            unzip -o dist/threatcaddy-$browser.zip -d /tmp/ext-built-$browser > /dev/null
+            if ! diff -rq --exclude='*.png' /tmp/ext-committed-$browser /tmp/ext-built-$browser > /dev/null 2>&1; then
+              echo "::error::extension/threatcaddy-$browser.zip is out of date. Run 'cd extension && npm run build && npm run package:$browser && cp dist/threatcaddy-$browser.zip .' and commit."
+              diff -rq --exclude='*.png' /tmp/ext-committed-$browser /tmp/ext-built-$browser || true
+              exit 1
+            fi
+            if [ ! -f /tmp/ext-committed-$browser/assets/icon.svg ] || [ ! -f /tmp/ext-built-$browser/assets/icon.svg ]; then
+              echo "::error::icon.svg missing from $browser extension zip"
+              exit 1
+            fi
+          done

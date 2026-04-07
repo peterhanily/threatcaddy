@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://static.cloudflareinsights.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.basemaps.cartocdn.com; font-src 'self' data:; connect-src 'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:* https://*.objectstorage.*.oraclecloud.com https://*.s3.*.amazonaws.com https://*.s3.amazonaws.com https://*.blob.core.windows.net https://storage.googleapis.com https://*.basemaps.cartocdn.com https://raw.githubusercontent.com https://www.virustotal.com https://api.abuseipdb.com https://api.shodan.io https://internetdb.shodan.io https://urlhaus-api.abuse.ch https://threatfox-api.abuse.ch https://mb-api.abuse.ch https://api.greynoise.io; frame-src 'none'; object-src 'none'; base-uri 'self';" />
+
+    <meta name="description" content="ThreatCaddy — Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs. Local-first. Your data is yours." />
+    <meta name="theme-color" content="#030712" />
+    <meta name="keywords" content="threat intelligence, IOC analysis, incident response, MITRE ATT&CK, graph visualization, security analysis, notes, tasks, privacy, offline, local storage, no tracking" />
+    <link rel="canonical" href="https://threatcaddy.com/" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="apple-touch-icon" href="./logo.svg" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ThreatCaddy" />
+    <meta property="og:title" content="ThreatCaddy — Threat Investigation Workspace" />
+    <meta property="og:description" content="Notes, IOCs, Timelines & Graphs. Local-first. Your data is yours." />
+    <meta property="og:url" content="https://threatcaddy.com/" />
+    <meta property="og:image" content="https://threatcaddy.com/og-image.svg" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ThreatCaddy — Threat Investigation Workspace" />
+    <meta name="twitter:description" content="Notes, IOCs, Timelines & Graphs. Local-first. Your data is yours." />
+    <meta name="twitter:image" content="https://threatcaddy.com/og-image.svg" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "ThreatCaddy",
+      "url": "https://threatcaddy.com/",
+      "description": "Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs. Local-first. Your data is yours.",
+      "applicationCategory": "SecurityApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+
+    <title>ThreatCaddy</title>
+
+    <!-- Apply theme before first paint to prevent flash -->
+    <script>
+      try {
+        var s = localStorage.getItem('threatcaddy-settings');
+        if (s) {
+          var p = JSON.parse(s);
+          if (p.theme === 'light') {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+          }
+          if (p.bgImageEnabled) {
+            document.documentElement.classList.add('has-bg-image');
+          }
+        }
+      } catch (e) {}
+    </script>
+    <script type="module" crossorigin src="./assets/index-td4dnubX.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/leaflet-DO1s_NY7.js">
+    <link rel="modulepreload" crossorigin href="./assets/excalidraw-ByK4QwB8.js">
+    <link rel="modulepreload" crossorigin href="./assets/compression-awwjIm7w.js">
+    <link rel="modulepreload" crossorigin href="./assets/markdown-CTyOmzFB.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-CWVZztMt.css">
+  <script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
+  <body class="bg-gray-950 text-gray-100">
+    <script>
+      try {
+        var s = localStorage.getItem('threatcaddy-settings');
+        if (s) {
+          var p = JSON.parse(s);
+          if (p.theme === 'light') {
+            document.body.classList.remove('bg-gray-950', 'text-gray-100');
+            document.body.classList.add('bg-white', 'text-gray-900');
+          }
+        }
+      } catch (e) {}
+    </script>
+    <div id="root">
+      <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px">
+        <style>@keyframes tc-spin{to{transform:rotate(360deg)}}</style>
+        <div style="width:36px;height:36px;border:3px solid rgba(139,92,246,.25);border-top-color:#8b5cf6;border-radius:50%;animation:tc-spin .8s linear infinite"></div>
+        <span style="color:#6b7280;font-size:13px;font-family:system-ui,sans-serif">Loading ThreatCaddy…</span>
+      </div>
+    </div>
+    <script src="./chunk-reload-guard.js"></script>
+  <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "beb9b5eaaaaf4808a367502ada8fd179"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>

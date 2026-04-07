@@ -1,0 +1,50 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+dist-single
+*.local
+
+# Extension build artifacts
+extension/dist
+extension/assets/icon-*.png
+extension/node_modules
+*.zip
+!extension/threatcaddy-*.zip
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Secrets and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# Test coverage
+coverage
+
+# Claude / AI
+.claude/
+CLAUDE.md
+
+# Plans (local only)
+plans/
