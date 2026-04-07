@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText, ListChecks, Clock, PenTool, Shield, ExternalLink, Share2 } from 'lucide-react';
 import type { Folder, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ActivityLogEntry } from '../../types';
 import { ACTIVITY_CATEGORY_LABELS } from '../../types';
@@ -53,6 +54,7 @@ export function ExecInvestigationDetail({
   onTapIOCs,
   onShare,
 }: ExecInvestigationDetailProps) {
+  const { t } = useTranslation('exec');
   const status = folder.status || 'active';
 
   const counts = useMemo(() => ({
@@ -93,11 +95,11 @@ export function ExecInvestigationDetail({
   }, [folder.id, activityEntries, allNotes, allTasks, allEvents, allIOCs]);
 
   const metricItems = [
-    { key: 'notes' as const, label: 'Notes', value: counts.notes, icon: FileText, color: 'text-accent-blue', onTap: onTapNotes },
-    { key: 'tasks' as const, label: 'Tasks', value: counts.tasks, icon: ListChecks, color: 'text-accent-amber', onTap: onTapTasks },
-    { key: 'events' as const, label: 'Events', value: counts.events, icon: Clock, color: 'text-accent-green', onTap: onTapEvents },
-    { key: 'boards' as const, label: 'Boards', value: counts.whiteboards, icon: PenTool, color: 'text-accent-pink', onTap: onTapWhiteboards },
-    { key: 'iocs' as const, label: 'IOCs', value: counts.iocs, icon: Shield, color: 'text-red-400', onTap: onTapIOCs },
+    { key: 'notes' as const, label: t('investigations.notes'), value: counts.notes, icon: FileText, color: 'text-accent-blue', onTap: onTapNotes },
+    { key: 'tasks' as const, label: t('investigations.tasks'), value: counts.tasks, icon: ListChecks, color: 'text-accent-amber', onTap: onTapTasks },
+    { key: 'events' as const, label: t('investigations.events'), value: counts.events, icon: Clock, color: 'text-accent-green', onTap: onTapEvents },
+    { key: 'boards' as const, label: t('investigations.boards'), value: counts.whiteboards, icon: PenTool, color: 'text-accent-pink', onTap: onTapWhiteboards },
+    { key: 'iocs' as const, label: t('investigations.iocs'), value: counts.iocs, icon: Shield, color: 'text-red-400', onTap: onTapIOCs },
   ];
 
   return (
@@ -106,7 +108,7 @@ export function ExecInvestigationDetail({
         <div className="flex justify-end">
           <button onClick={onShare} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-accent bg-accent/10 active:bg-accent/20 text-xs font-medium">
             <Share2 size={14} />
-            Share
+            {t('detail.share')}
           </button>
         </div>
       )}
@@ -151,7 +153,7 @@ export function ExecInvestigationDetail({
       {/* Task breakdown */}
       {taskBreakdown.total > 0 && (
         <div className="bg-bg-raised rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-text-primary mb-3">Task Progress</h3>
+          <h3 className="text-sm font-semibold text-text-primary mb-3">{t('detail.taskProgress')}</h3>
           {/* Progress bar */}
           <div className="flex rounded-full h-3 overflow-hidden bg-bg-deep">
             {taskBreakdown.done > 0 && (
@@ -165,9 +167,9 @@ export function ExecInvestigationDetail({
             )}
           </div>
           <div className="flex gap-4 mt-2 text-xs">
-            <span className="text-accent-green">{taskBreakdown.done} done</span>
-            <span className="text-accent-amber">{taskBreakdown.inProgress} in progress</span>
-            <span className="text-text-muted">{taskBreakdown.todo} todo</span>
+            <span className="text-accent-green">{t('detail.done', { count: taskBreakdown.done })}</span>
+            <span className="text-accent-amber">{t('detail.inProgress', { count: taskBreakdown.inProgress })}</span>
+            <span className="text-text-muted">{t('detail.todo', { count: taskBreakdown.todo })}</span>
           </div>
         </div>
       )}
@@ -175,7 +177,7 @@ export function ExecInvestigationDetail({
       {/* Recent activity */}
       {recentActivity.length > 0 && (
         <div className="bg-bg-raised rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-text-primary mb-3">Recent Activity</h3>
+          <h3 className="text-sm font-semibold text-text-primary mb-3">{t('detail.recentActivity')}</h3>
           <div className="flex flex-col gap-2.5">
             {recentActivity.map((entry) => {
               const cat = ACTIVITY_CATEGORY_LABELS[entry.category];
@@ -202,7 +204,7 @@ export function ExecInvestigationDetail({
         className="flex items-center justify-center gap-2 bg-accent text-white rounded-xl py-3.5 font-medium text-sm active:bg-accent-dim transition-colors"
       >
         <ExternalLink size={16} />
-        Open in Analyst Mode
+        {t('detail.openInAnalystMode')}
       </button>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Briefcase, FileBarChart, Share2, Cloud, CloudOff, Archive, Trash2, Printer, BookOpen } from 'lucide-react';
 import type { Folder, InvestigationStatus, ClosureResolution, PlaybookStep } from '../../types';
 import { NOTE_COLORS, CLOSURE_RESOLUTION_LABELS } from '../../types';
@@ -59,6 +60,7 @@ export function InvestigationDetailPanel({
   onUnarchive,
   onDelete,
 }: InvestigationDetailPanelProps) {
+  const { t } = useTranslation('investigations');
   const [name, setName] = useState(folder.name);
   const [description, setDescription] = useState(folder.description || '');
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
@@ -107,7 +109,7 @@ export function InvestigationDetailPanel({
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-gray-800">
           <Briefcase size={20} style={{ color: folder.color }} />
-          <h2 className="text-lg font-semibold text-gray-100 flex-1">Investigation Details</h2>
+          <h2 className="text-lg font-semibold text-gray-100 flex-1">{t('detail.title')}</h2>
           <button
             onClick={onClose}
             className="p-1.5 rounded hover:bg-gray-800 text-gray-400 hover:text-gray-200"

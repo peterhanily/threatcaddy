@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Mail, Shield, MessageSquare, Heart, Activity, Clock } from 'lucide-react';
 import { fetchUserProfile, fetchUserFeed, fetchUserLikes, fetchUserActivity } from '../../lib/server-api';
 import { PostCard } from './PostCard';
@@ -25,6 +26,7 @@ interface UserProfileProps {
 }
 
 export function UserProfile({ userId, currentUserId, onBack, onUserClick }: UserProfileProps) {
+  const { t } = useTranslation('caddyshack');
   const [user, setUser] = useState<TeamUser | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [likes, setLikes] = useState<Post[]>([]);
@@ -63,7 +65,7 @@ export function UserProfile({ userId, currentUserId, onBack, onUserClick }: User
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center text-[var(--text-tertiary)] text-sm">
-        Loading profile...
+        {t('profile.loadingProfile')}
       </div>
     );
   }
@@ -71,16 +73,16 @@ export function UserProfile({ userId, currentUserId, onBack, onUserClick }: User
   if (!user) {
     return (
       <div className="flex-1 flex items-center justify-center text-[var(--text-tertiary)] text-sm">
-        User not found.
+        {t('profile.userNotFound')}
       </div>
     );
   }
 
   const isOwnProfile = currentUserId === userId;
   const tabs: { key: ProfileTab; label: string; icon: typeof MessageSquare; count?: number }[] = [
-    { key: 'posts', label: 'Posts', icon: MessageSquare, count: posts.length },
-    { key: 'likes', label: 'Likes', icon: Heart },
-    { key: 'activity', label: 'Activity', icon: Activity },
+    { key: 'posts', label: t('profile.posts'), icon: MessageSquare, count: posts.length },
+    { key: 'likes', label: t('profile.likes'), icon: Heart },
+    { key: 'activity', label: t('profile.activity'), icon: Activity },
   ];
 
   return (
@@ -105,7 +107,7 @@ export function UserProfile({ userId, currentUserId, onBack, onUserClick }: User
               <span className="flex items-center gap-1.5 capitalize"><Shield size={13} /> {user.role}</span>
             </div>
             {isOwnProfile && (
-              <div className="mt-2 text-xs text-blue-400/70">This is you</div>
+              <div className="mt-2 text-xs text-blue-400/70">{t('profile.thisIsYou')}</div>
             )}
           </div>
         </div>
@@ -137,7 +139,7 @@ export function UserProfile({ userId, currentUserId, onBack, onUserClick }: User
       {/* Tab content */}
       {tab === 'posts' && (
         posts.length === 0 ? (
-          <p className="text-sm text-[var(--text-tertiary)] text-center py-8">No posts yet.</p>
+          <p className="text-sm text-[var(--text-tertiary)] text-center py-8">{t('profile.noPosts')}</p>
         ) : (
           <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--bg-secondary)] divide-y divide-[var(--border)]">
             {posts.map((post) => (
@@ -154,7 +156,7 @@ export function UserProfile({ userId, currentUserId, onBack, onUserClick }: User
 
       {tab === 'likes' && (
         likes.length === 0 ? (
-          <p className="text-sm text-[var(--text-tertiary)] text-center py-8">No liked posts yet.</p>
+          <p className="text-sm text-[var(--text-tertiary)] text-center py-8">{t('profile.noLikes')}</p>
         ) : (
           <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--bg-secondary)] divide-y divide-[var(--border)]">
             {likes.map((post) => (
@@ -171,7 +173,7 @@ export function UserProfile({ userId, currentUserId, onBack, onUserClick }: User
 
       {tab === 'activity' && (
         activity.length === 0 ? (
-          <p className="text-sm text-[var(--text-tertiary)] text-center py-8">No activity recorded.</p>
+          <p className="text-sm text-[var(--text-tertiary)] text-center py-8">{t('profile.noActivity')}</p>
         ) : (
           <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--bg-secondary)] divide-y divide-[var(--border)]">
             {activity.map((entry) => (

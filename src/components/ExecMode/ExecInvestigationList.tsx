@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText, ListChecks, Clock, PenTool, Shield } from 'lucide-react';
 import type { Folder, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, InvestigationStatus } from '../../types';
 import { cn, currentLocale } from '../../lib/utils';
@@ -16,11 +17,11 @@ interface ExecInvestigationListProps {
   filterText?: string;
 }
 
-const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'active', label: 'Active' },
-  { value: 'closed', label: 'Closed' },
-  { value: 'archived', label: 'Archived' },
+const FILTER_OPTIONS: { value: FilterStatus; labelKey: string }[] = [
+  { value: 'all', labelKey: 'investigations.all' },
+  { value: 'active', labelKey: 'investigations.active' },
+  { value: 'closed', labelKey: 'investigations.closed' },
+  { value: 'archived', labelKey: 'investigations.archived' },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -30,6 +31,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function ExecInvestigationList({ folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, onSelect, filterText }: ExecInvestigationListProps) {
+  const { t } = useTranslation('exec');
   const [filter, setFilter] = useState<FilterStatus>('all');
 
   const filtered = useMemo(() => {
@@ -54,11 +56,11 @@ export function ExecInvestigationList({ folders, allNotes, allTasks, allEvents, 
   }, [folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs]);
 
   const stats = [
-    { label: 'Notes', icon: FileText, color: 'text-accent-blue', key: 'notes' as const },
-    { label: 'Tasks', icon: ListChecks, color: 'text-accent-amber', key: 'tasks' as const },
-    { label: 'Events', icon: Clock, color: 'text-accent-green', key: 'events' as const },
-    { label: 'Boards', icon: PenTool, color: 'text-accent-pink', key: 'whiteboards' as const },
-    { label: 'IOCs', icon: Shield, color: 'text-red-400', key: 'iocs' as const },
+    { label: t('investigations.notes'), icon: FileText, color: 'text-accent-blue', key: 'notes' as const },
+    { label: t('investigations.tasks'), icon: ListChecks, color: 'text-accent-amber', key: 'tasks' as const },
+    { label: t('investigations.events'), icon: Clock, color: 'text-accent-green', key: 'events' as const },
+    { label: t('investigations.boards'), icon: PenTool, color: 'text-accent-pink', key: 'whiteboards' as const },
+    { label: t('investigations.iocs'), icon: Shield, color: 'text-red-400', key: 'iocs' as const },
   ];
 
   return (
@@ -76,7 +78,7 @@ export function ExecInvestigationList({ folders, allNotes, allTasks, allEvents, 
                 : 'bg-bg-raised text-text-secondary hover:bg-bg-hover',
             )}
           >
-            {opt.label}
+            {t(opt.labelKey)}
           </button>
         ))}
       </div>
@@ -84,7 +86,7 @@ export function ExecInvestigationList({ folders, allNotes, allTasks, allEvents, 
       {/* Investigation cards */}
       <div className="flex flex-col gap-3">
         {filtered.length === 0 && (
-          <p className="text-text-muted text-sm text-center py-8">No investigations found</p>
+          <p className="text-text-muted text-sm text-center py-8">{t('investigations.noInvestigationsFound')}</p>
         )}
         {filtered.map((folder) => {
           const status = folder.status || 'active';

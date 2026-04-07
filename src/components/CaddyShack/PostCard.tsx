@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageCircle, Smile, Pin, Trash2, Edit3, MoreHorizontal } from 'lucide-react';
 import type { Post } from '../../types';
 import { MediaGrid } from './MediaGrid';
@@ -33,6 +34,7 @@ export function PostCard({
   onClick,
   compact,
 }: PostCardProps) {
+  const { t } = useTranslation('caddyshack');
   const [showEmojis, setShowEmojis] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -87,7 +89,7 @@ export function PostCard({
               onClick={(e) => { e.stopPropagation(); onUserClick?.(post.authorId); }}
               className="font-semibold text-[13px] text-[var(--text-primary)] truncate hover:underline"
             >
-              {post.authorDisplayName || 'Unknown'}
+              {post.authorDisplayName || t('post.unknown')}
             </button>
             <span className="text-[var(--text-tertiary)] text-xs shrink-0">·</span>
             <span className="text-xs text-[var(--text-tertiary)] shrink-0">{timeAgo}</span>
@@ -110,19 +112,19 @@ export function PostCard({
                       onClick={(e) => { e.stopPropagation(); setEditing(true); setShowMenu(false); }}
                       className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--bg-secondary)] flex items-center gap-2.5 text-[var(--text-secondary)]"
                     >
-                      <Edit3 size={14} /> Edit
+                      <Edit3 size={14} /> {t('post.edit')}
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); onPin?.(post.id, !post.pinned); setShowMenu(false); }}
                       className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--bg-secondary)] flex items-center gap-2.5 text-[var(--text-secondary)]"
                     >
-                      <Pin size={14} /> {post.pinned ? 'Unpin' : 'Pin'}
+                      <Pin size={14} /> {post.pinned ? t('post.unpin') : t('post.pin')}
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); onDelete?.(post.id); setShowMenu(false); }}
                       className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--bg-secondary)] text-red-400 flex items-center gap-2.5"
                     >
-                      <Trash2 size={14} /> Delete
+                      <Trash2 size={14} /> {t('post.delete')}
                     </button>
                   </div>
                 )}
@@ -141,8 +143,8 @@ export function PostCard({
                 autoFocus
               />
               <div className="flex gap-2 mt-2">
-                <button onClick={handleSaveEdit} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors">Save</button>
-                <button onClick={() => { setEditing(false); setEditContent(post.content); }} className="px-3 py-1.5 text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] rounded-lg text-sm transition-colors">Cancel</button>
+                <button onClick={handleSaveEdit} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors">{t('post.save')}</button>
+                <button onClick={() => { setEditing(false); setEditContent(post.content); }} className="px-3 py-1.5 text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] rounded-lg text-sm transition-colors">{t('post.cancel')}</button>
               </div>
             </div>
           ) : (

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Share2 } from 'lucide-react';
 import type { Note } from '../../types';
 import { renderMarkdown } from '../../lib/markdown';
@@ -16,6 +17,7 @@ interface ExecNoteViewProps {
 }
 
 export function ExecNoteView({ note, allNotes, onShare, currentIndex, totalCount, onNavigate }: ExecNoteViewProps) {
+  const { t } = useTranslation('exec');
   const wikiLinkTargets = useMemo(
     () => allNotes.map((n) => ({ id: n.id, title: n.title })),
     [allNotes],
@@ -32,16 +34,16 @@ export function ExecNoteView({ note, allNotes, onShare, currentIndex, totalCount
         <div className="flex justify-end">
           <button onClick={onShare} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-accent bg-accent/10 active:bg-accent/20 text-xs font-medium">
             <Share2 size={14} />
-            Share
+            {t('detail.share')}
           </button>
         </div>
       )}
 
-      <h2 className="text-lg font-bold text-text-primary">{note.title || 'Untitled'}</h2>
+      <h2 className="text-lg font-bold text-text-primary">{note.title || t('notes.untitled')}</h2>
 
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-text-muted">
-        <span>Created {formatFullDate(note.createdAt)}</span>
-        <span>Updated {formatFullDate(note.updatedAt)}</span>
+        <span>{t('notes.created', { date: formatFullDate(note.createdAt) })}</span>
+        <span>{t('notes.updated', { date: formatFullDate(note.updatedAt) })}</span>
         {note.clsLevel && <span className="font-semibold text-accent-amber">{note.clsLevel}</span>}
       </div>
 
@@ -62,7 +64,7 @@ export function ExecNoteView({ note, allNotes, onShare, currentIndex, totalCount
       {note.iocAnalysis && note.iocAnalysis.iocs.filter((i) => !i.dismissed).length > 0 && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
           <p className="text-[10px] font-semibold text-red-400 mb-1">
-            {note.iocAnalysis.iocs.filter((i) => !i.dismissed).length} IOC{note.iocAnalysis.iocs.filter((i) => !i.dismissed).length !== 1 ? 's' : ''} detected
+            {note.iocAnalysis.iocs.filter((i) => !i.dismissed).length !== 1 ? t('notes.iocsDetected', { count: note.iocAnalysis.iocs.filter((i) => !i.dismissed).length }) : t('notes.iocDetected', { count: 1 })}
           </p>
         </div>
       )}

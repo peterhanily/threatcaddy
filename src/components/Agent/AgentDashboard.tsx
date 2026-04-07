@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Bot, ChevronRight, AlertTriangle, Check, Clock, X, Shield,
 } from 'lucide-react';
@@ -42,6 +43,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }: AgentDashboardProps) {
+  const { t } = useTranslation('agent');
   const [agentFolders, setAgentFolders] = useState<AgentFolderSummary[]>([]);
   const [recentGlobal, setRecentGlobal] = useState<(AgentAction & { folderName: string })[]>([]);
   const [supervisorNotes, setSupervisorNotes] = useState<Note[]>([]);
@@ -136,10 +138,10 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
           <div className="flex items-center gap-3">
             <Bot size={22} className="text-accent-blue" />
             <div>
-              <h1 className="text-lg font-bold text-text-primary">AgentCaddy</h1>
+              <h1 className="text-lg font-bold text-text-primary">{t('dashboard.agentCaddy')}</h1>
               <p className="text-xs text-text-muted">
-                {activeAgents > 0 ? `${activeAgents} active agent${activeAgents !== 1 ? 's' : ''}` : 'No active agents'}
-                {totalPending > 0 && <span className="text-accent-amber ml-2">{totalPending} pending</span>}
+                {activeAgents > 0 ? t('dashboard.activeAgents', { count: activeAgents, suffix: activeAgents !== 1 ? 's' : '' }) : t('dashboard.noActiveAgents')}
+                {totalPending > 0 && <span className="text-accent-amber ml-2">{t('dashboard.pendingCount', { count: totalPending })}</span>}
               </p>
             </div>
           </div>
@@ -148,7 +150,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
         {!hasAnyActivity ? (
           <div className="text-center py-16 text-text-muted">
             <Bot size={48} className="mx-auto mb-4 opacity-20" />
-            <p className="text-sm mb-3">Get started with AgentCaddy</p>
+            <p className="text-sm mb-3">{t('dashboard.getStarted')}</p>
             <div className="text-xs text-left space-y-2 max-w-xs">
               <div className="flex gap-2">
                 <span className="text-accent-blue font-bold shrink-0">1.</span>
@@ -169,7 +171,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
             </div>
             {onOpenSettings && (
               <button onClick={() => onOpenSettings('ai')} className="text-xs text-accent-blue hover:underline mt-3">
-                Configure AI Settings
+                {t('dashboard.configureAISettings')}
               </button>
             )}
           </div>
@@ -180,7 +182,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
               <section>
                 <div className="flex items-center gap-2 mb-3">
                   <Shield size={14} className="text-accent-blue" />
-                  <h2 className="text-sm font-semibold text-text-primary">Supervisor Briefings</h2>
+                  <h2 className="text-sm font-semibold text-text-primary">{t('dashboard.supervisorBriefings')}</h2>
                 </div>
                 <div className="space-y-2">
                   {supervisorNotes.map(note => (
@@ -208,7 +210,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
             {/* Per-Investigation Agent Cards */}
             {agentFolders.length > 0 && (
               <section>
-                <h2 className="text-sm font-semibold text-text-primary mb-3">Investigations with Agent Activity</h2>
+                <h2 className="text-sm font-semibold text-text-primary mb-3">{t('dashboard.investigationsWithAgentActivity')}</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {agentFolders.map(({ folder, pendingCount, recentActions }) => (
                     <button
@@ -261,7 +263,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
             {/* Global Activity Feed */}
             {recentGlobal.length > 0 && (
               <section>
-                <h2 className="text-sm font-semibold text-text-primary mb-3">Recent Agent Activity</h2>
+                <h2 className="text-sm font-semibold text-text-primary mb-3">{t('dashboard.recentAgentActivity')}</h2>
                 <div className="space-y-1">
                   {recentGlobal.map(action => {
                     const Icon = STATUS_ICON[action.status] || Clock;

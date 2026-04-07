@@ -1,0 +1,18 @@
+{
+  "picker.startFromPlaybook": "Start from Playbook",
+  "picker.runPlaybook": "Run Playbook",
+  "picker.choosePlaybookNew": "Choose a playbook to auto-populate your investigation with tasks, notes, and templates.",
+  "picker.choosePlaybookExisting": "Choose a playbook to add its tasks, notes, and templates to this investigation.",
+  "picker.tasks": "{{count}} tasks",
+  "picker.notes": "{{count}} notes",
+  "picker.phases": "{{count}} phases",
+  "picker.phasesLabel": "Phases",
+  "picker.stepsLabel": "Steps",
+  "picker.investigationName": "Investigation Name",
+  "picker.investigationPlaceholder": "Enter investigation name...",
+  "picker.createInvestigation": "Create Investigation",
+  "picker.custom": "custom",
+
+  "progress.addNote": "+ Add note",
+  "progress.stepNotes": "Step notes..."
+}

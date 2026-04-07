@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Bot, Play, CheckCheck, Loader2, AlertTriangle, X, Settings as SettingsIcon, ChevronDown, ChevronRight, Key, Puzzle, Plus,
 } from 'lucide-react';
@@ -50,6 +51,7 @@ export function AgentPanel({
   profiles = [], deployments = [], onDeployProfile, onRemoveDeployment,
   serverConnected, serverRegistered, serverRunning, onRegisterServer, onUnregisterServer,
 }: AgentPanelProps) {
+  const { t } = useTranslation('agent');
   const [actions, setActions] = useState<AgentAction[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -201,27 +203,27 @@ export function AgentPanel({
       <div className="flex flex-col h-full">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border-subtle">
           <Bot size={18} className="text-accent-blue" />
-          <h2 className="font-semibold text-sm">AgentCaddy</h2>
+          <h2 className="font-semibold text-sm">{t('panel.agentCaddy')}</h2>
         </div>
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="max-w-sm space-y-4">
-            <h3 className="text-sm font-semibold text-text-primary">Set up AgentCaddy</h3>
+            <h3 className="text-sm font-semibold text-text-primary">{t('panel.setupAgentCaddy')}</h3>
             {!hasApiKey && !hasServerProxy && (
               <div className="flex gap-3">
                 <div className="w-7 h-7 rounded-full bg-accent-blue/15 flex items-center justify-center shrink-0 mt-0.5">
                   <Key size={14} className="text-accent-blue" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-text-primary">Configure an API key</p>
+                  <p className="text-xs font-medium text-text-primary">{t('panel.configureApiKey')}</p>
                   <p className="text-[11px] text-text-muted mt-0.5">
-                    Add an API key in Settings &gt; AI/LLM for Anthropic, OpenAI, Gemini, Mistral, or a local LLM.
+                    {t('panel.configureApiKeyDesc')}
                   </p>
                   {onOpenSettings && (
                     <button
                       onClick={() => onOpenSettings('ai')}
                       className="text-[11px] text-accent-blue hover:underline mt-1"
                     >
-                      Open AI Settings
+                      {t('panel.openAISettings')}
                     </button>
                   )}
                 </div>
@@ -233,9 +235,9 @@ export function AgentPanel({
                   <Puzzle size={14} className="text-accent-blue" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-text-primary">Install the browser extension</p>
+                  <p className="text-xs font-medium text-text-primary">{t('panel.installExtension')}</p>
                   <p className="text-[11px] text-text-muted mt-0.5">
-                    AgentCaddy requires the ThreatCaddy browser extension to proxy API requests, or a connected team server.
+                    {t('panel.installExtensionDesc')}
                   </p>
                 </div>
               </div>
@@ -255,7 +257,7 @@ export function AgentPanel({
       <div className="flex items-center justify-between px-4 py-2 border-b border-border-subtle">
         <div className="flex items-center gap-2">
           <Bot size={18} className="text-accent-blue" />
-          <h2 className="font-semibold text-sm">AgentCaddy</h2>
+          <h2 className="font-semibold text-sm">{t('panel.agentCaddy')}</h2>
           {displayStatus && displayStatus !== 'idle' && (
             <span className={cn(
               'text-[10px] px-1.5 py-0.5 rounded',
@@ -278,15 +280,15 @@ export function AgentPanel({
           <button
             onClick={() => setShowSettings(!showSettings)}
             className="text-text-muted hover:text-text-secondary p-1 rounded transition-colors"
-            title="Agent settings"
-            aria-label="Toggle agent settings"
+            title={t('panel.agentSettings')}
+            aria-label={t('panel.toggleAgentSettings')}
           >
             <SettingsIcon size={14} />
           </button>
           <button
             onClick={handleRunAgent}
             disabled={agentRunning}
-            aria-label={agentRunning ? 'Agent is running' : 'Run agent cycle'}
+            aria-label={agentRunning ? t('panel.agentRunning') : t('panel.runAgentCycle')}
             className={cn(
               'flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md transition-colors',
               agentRunning
@@ -297,12 +299,12 @@ export function AgentPanel({
             {agentRunning ? (
               <>
                 <Loader2 size={12} className="animate-spin" />
-                {agentProgress || 'Running...'}
+                {agentProgress || t('panel.running')}
               </>
             ) : (
               <>
                 <Play size={12} />
-                <span className="hidden sm:inline">Run Agent</span><span className="sm:hidden">Run</span>
+                <span className="hidden sm:inline">{t('panel.runAgent')}</span><span className="sm:hidden">{t('panel.run')}</span>
               </>
             )}
           </button>
@@ -321,20 +323,20 @@ export function AgentPanel({
           <div className="flex-1">
             <span>{error}</span>
             {(error.includes('API key') || error.includes('timed out') || error.includes('No API key')) && onOpenSettings && (
-              <button onClick={() => onOpenSettings('ai')} className="block text-accent-blue hover:underline mt-0.5">Open AI Settings</button>
+              <button onClick={() => onOpenSettings('ai')} className="block text-accent-blue hover:underline mt-0.5">{t('panel.openAISettingsLink')}</button>
             )}
           </div>
-          <button onClick={() => setLocalError(null)} className="hover:text-red-300 shrink-0" aria-label="Dismiss error"><X size={12} /></button>
+          <button onClick={() => setLocalError(null)} className="hover:text-red-300 shrink-0" aria-label={t('panel.dismissError')}><X size={12} /></button>
         </div>
       )}
 
       {/* Tab bar — fixed, scrollable on small screens */}
       <div className="flex items-center gap-1 px-3 sm:px-4 py-1.5 border-b border-border-subtle shrink-0 overflow-x-auto">
         {([
-          { key: 'inbox' as const, label: 'Inbox', badge: pendingCount },
-          { key: 'agents' as const, label: 'Agents', badge: deployments.length },
-          { key: 'tasks' as const, label: 'Tasks', badge: todoCount + inProgressCount },
-          { key: 'logs' as const, label: 'Logs', badge: 0 },
+          { key: 'inbox' as const, label: t('panel.inbox'), badge: pendingCount },
+          { key: 'agents' as const, label: t('panel.agents'), badge: deployments.length },
+          { key: 'tasks' as const, label: t('panel.tasks'), badge: todoCount + inProgressCount },
+          { key: 'logs' as const, label: t('panel.logs'), badge: 0 },
         ]).map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className={cn('text-xs px-3 py-1.5 rounded-md transition-colors',
@@ -368,7 +370,7 @@ export function AgentPanel({
             <div className="px-4 py-2 border-b border-accent-blue/20 bg-accent-blue/5 max-h-32 overflow-auto shrink-0">
               <div className="flex items-center gap-1.5 mb-1">
                 <Loader2 size={10} className="animate-spin text-accent-blue" />
-                <span className="text-[10px] text-accent-blue font-medium">Live</span>
+                <span className="text-[10px] text-accent-blue font-medium">{t('panel.live')}</span>
               </div>
               <pre className="text-[10px] text-text-secondary font-mono whitespace-pre-wrap leading-relaxed">
                 {agentStreamingContent.length > 2000 ? '...' + agentStreamingContent.slice(-2000) : agentStreamingContent}
@@ -391,7 +393,7 @@ export function AgentPanel({
               </div>
             ) : (
               <button onClick={() => setConfirmBulk(true)} className="flex items-center gap-1 text-[10px] text-accent-green hover:bg-accent-green/10 px-1.5 py-0.5 rounded">
-                <CheckCheck size={10} /> Approve All
+                <CheckCheck size={10} /> {t('panel.approveAll')}
               </button>
             ))}
           </div>
@@ -399,7 +401,7 @@ export function AgentPanel({
             {filteredActions.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 text-text-muted">
                 <Bot size={24} className="mb-1 opacity-30" />
-                <p className="text-xs">{actions.length === 0 ? 'No agent activity yet.' : `No ${filter} actions.`}</p>
+                <p className="text-xs">{actions.length === 0 ? t('panel.noActivityYet') : t('panel.noFilteredActions', { filter })}</p>
               </div>
             ) : filteredActions.map(action => (
               <AgentActionCard key={action.id} action={action}
@@ -408,7 +410,7 @@ export function AgentPanel({
                 onReject={action.status === 'pending' ? handleReject : undefined}
                 onViewReasoning={handleViewReasoning} />
             ))}
-            {hasMore && <p className="text-center text-[10px] text-text-muted py-1">Showing latest {ACTION_PAGE_SIZE}</p>}
+            {hasMore && <p className="text-center text-[10px] text-text-muted py-1">{t('panel.showingLatest', { count: ACTION_PAGE_SIZE })}</p>}
           </div>
         </div>
       )}
@@ -420,9 +422,9 @@ export function AgentPanel({
             {deployments.length === 0 ? (
               <div className="text-center py-8 text-text-muted">
                 <Bot size={24} className="mx-auto mb-2 opacity-30" />
-                <p className="text-xs mb-1">No agents deployed</p>
-                <p className="text-[10px] text-text-muted mb-2">Deploy specialist agents to automate research, enrichment, reporting, and more.</p>
-                <button onClick={() => setShowProfilePicker(true)} className="text-xs text-accent-blue hover:underline">Deploy Agent Profiles</button>
+                <p className="text-xs mb-1">{t('panel.noAgentsDeployed')}</p>
+                <p className="text-[10px] text-text-muted mb-2">{t('panel.deployHint')}</p>
+                <button onClick={() => setShowProfilePicker(true)} className="text-xs text-accent-blue hover:underline">{t('panel.deployAgentProfiles')}</button>
               </div>
             ) : (
               <>
@@ -455,7 +457,7 @@ export function AgentPanel({
                     </div>
                   );
                 })}
-                <button onClick={() => setShowProfilePicker(true)} className="flex items-center gap-1 text-xs text-accent-blue hover:underline"><Plus size={12} /> Deploy Another</button>
+                <button onClick={() => setShowProfilePicker(true)} className="flex items-center gap-1 text-xs text-accent-blue hover:underline"><Plus size={12} /> {t('panel.deployAnother')}</button>
               </>
             )}
           </div>
@@ -471,20 +473,20 @@ export function AgentPanel({
             <div className="px-4 py-3 border-t border-border-subtle">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-medium text-text-primary">Server-Side Mode</span>
-                  <p className="text-[10px] text-text-muted">Agents continue on the server when your browser is closed</p>
+                  <span className="text-xs font-medium text-text-primary">{t('panel.serverSideMode')}</span>
+                  <p className="text-[10px] text-text-muted">{t('panel.serverSideModeDesc')}</p>
                 </div>
                 {serverRegistered ? (
                   <div className="flex items-center gap-2">
                     <span className={cn('text-[9px] px-1.5 py-0.5 rounded',
                       serverRunning ? 'bg-accent-green/10 text-accent-green' : 'bg-surface-raised text-text-muted',
                     )}>
-                      {serverRunning ? 'Server active' : 'Registered'}
+                      {serverRunning ? t('panel.serverActive') : t('panel.registered')}
                     </span>
-                    <button onClick={onUnregisterServer} className="text-[10px] text-text-muted hover:text-red-400">Disable</button>
+                    <button onClick={onUnregisterServer} className="text-[10px] text-text-muted hover:text-red-400">{t('panel.disable')}</button>
                   </div>
                 ) : (
-                  <button onClick={onRegisterServer} className="text-[10px] text-accent-blue hover:underline">Enable</button>
+                  <button onClick={onRegisterServer} className="text-[10px] text-accent-blue hover:underline">{t('panel.enable')}</button>
                 )}
               </div>
             </div>
@@ -497,7 +499,7 @@ export function AgentPanel({
         <div className="flex-1 overflow-auto px-4 py-3 space-y-2">
           {agentTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 text-text-muted">
-              <p className="text-xs">No agent tasks. Agents create and consume tasks as they work.</p>
+              <p className="text-xs">{t('panel.noAgentTasks')}</p>
             </div>
           ) : agentTasks.map(task => (
             <div key={task.id} className="border border-border-subtle rounded-lg p-2.5 bg-surface">
@@ -524,7 +526,7 @@ export function AgentPanel({
         <div className="flex-1 overflow-auto px-4 py-3 space-y-1">
           {actions.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 text-text-muted">
-              <p className="text-xs">No agent activity logs yet.</p>
+              <p className="text-xs">{t('panel.noActivityLogs')}</p>
             </div>
           ) : (
             <>
@@ -563,6 +565,7 @@ export function AgentPanel({
 // ── Policy Editor ────────────────────────────────────────────────────────
 
 function PolicyEditor({ folder, settings, onFolderChanged }: { folder: Folder; settings: Settings; onFolderChanged?: () => void }) {
+  const { t } = useTranslation('agent');
   // Local state for immediate visual feedback
   const [localPolicy, setLocalPolicy] = useState<AgentPolicy>(folder.agentPolicy ?? DEFAULT_AGENT_POLICY);
   const [focusText, setFocusText] = useState(localPolicy.focusAreas?.join(', ') ?? '');
@@ -606,7 +609,7 @@ function PolicyEditor({ folder, settings, onFolderChanged }: { folder: Folder; s
 
   return (
     <div className="px-4 py-3 border-b border-border-subtle bg-surface-raised/50 space-y-3">
-      <div className="text-[11px] font-medium text-text-secondary uppercase tracking-wide">Auto-approve Policy</div>
+      <div className="text-[11px] font-medium text-text-secondary uppercase tracking-wide">{t('panel.autoApprovePolicy')}</div>
 
       <div className="grid grid-cols-2 gap-2" role="group" aria-label="Auto-approve settings">
         {toggles.map(({ key, label, description }) => (

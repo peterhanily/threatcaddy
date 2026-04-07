@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronRight } from 'lucide-react';
 import type { Note, Task, TimelineEvent, StandaloneIOC, Folder } from '../../types';
 import { PRIORITY_COLORS, TIMELINE_EVENT_TYPE_LABELS, IOC_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
@@ -24,6 +25,7 @@ export function ExecGlobalList({
   mode, folders, allNotes, allTasks, allEvents, allIOCs, filterText,
   onSelectNote, onSelectTask, onSelectEvent, onSelectIOC,
 }: ExecGlobalListProps) {
+  const { t } = useTranslation('exec');
   const q = (filterText || '').toLowerCase();
   const folderNames = useMemo(() => {
     const map = new Map<string, string>();
@@ -62,7 +64,7 @@ export function ExecGlobalList({
   return (
     <div className="flex flex-col gap-1.5">
       {items.length === 0 && (
-        <p className="text-sm text-text-muted text-center py-8">No items found</p>
+        <p className="text-sm text-text-muted text-center py-8">{t('global.noItemsFound')}</p>
       )}
 
       {mode === 'notes' && notes.map((note) => (
@@ -71,7 +73,7 @@ export function ExecGlobalList({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-text-primary truncate">{note.title || 'Untitled'}</p>
             <p className="text-[10px] text-text-muted mt-0.5">
-              {folderNames.get(note.folderId || '') || 'Unfiled'} · {formatDate(note.updatedAt)}
+              {folderNames.get(note.folderId || '') || t('global.unfiled')} · {formatDate(note.updatedAt)}
             </p>
           </div>
           {note.clsLevel && <span className="text-[9px] font-semibold text-accent-amber bg-accent-amber/10 px-1.5 py-0.5 rounded shrink-0">{note.clsLevel}</span>}
@@ -86,7 +88,7 @@ export function ExecGlobalList({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-text-primary truncate">{task.title || 'Untitled'}</p>
             <p className="text-[10px] text-text-muted mt-0.5">
-              {folderNames.get(task.folderId || '') || 'Unfiled'} · <span className="capitalize">{task.status}</span>
+              {folderNames.get(task.folderId || '') || t('global.unfiled')} · <span className="capitalize">{task.status}</span>
             </p>
           </div>
           <ChevronRight size={14} className="text-text-muted shrink-0" />
@@ -102,7 +104,7 @@ export function ExecGlobalList({
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-text-primary truncate">{event.title || 'Untitled'}</p>
               <p className="text-[10px] text-text-muted mt-0.5">
-                {folderNames.get(event.folderId || '') || 'Unfiled'} · {typeInfo?.label ?? event.eventType}
+                {folderNames.get(event.folderId || '') || t('global.unfiled')} · {typeInfo?.label ?? event.eventType}
               </p>
             </div>
             <ChevronRight size={14} className="text-text-muted shrink-0" />
@@ -119,7 +121,7 @@ export function ExecGlobalList({
             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: typeInfo?.color + '22', color: typeInfo?.color }}>{typeInfo?.label}</span>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-mono text-text-primary truncate">{ioc.value}</p>
-              <p className="text-[10px] text-text-muted mt-0.5">{folderNames.get(ioc.folderId || '') || 'Unfiled'}</p>
+              <p className="text-[10px] text-text-muted mt-0.5">{folderNames.get(ioc.folderId || '') || t('global.unfiled')}</p>
             </div>
             <span className="text-[9px] px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: confInfo?.color + '22', color: confInfo?.color }}>{confInfo?.label}</span>
             <ChevronRight size={14} className="text-text-muted shrink-0" />

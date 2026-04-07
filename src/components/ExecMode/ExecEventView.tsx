@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Share2 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L from 'leaflet';
@@ -37,6 +38,7 @@ function getMarkerIcon(color: string): L.Icon {
 }
 
 export function ExecEventView({ event, onShare, currentIndex, totalCount, onNavigate }: ExecEventViewProps) {
+  const { t } = useTranslation('exec');
   const typeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType] ?? { label: event.eventType, color: '#6b7280', icon: '📌' };
   const confInfo = (CONFIDENCE_LEVELS as Record<string, { label: string; color: string }>)[event.confidence] || { label: event.confidence, color: '#6b7280' };
 
@@ -56,7 +58,7 @@ export function ExecEventView({ event, onShare, currentIndex, totalCount, onNavi
         </div>
       )}
 
-      <h2 className="text-lg font-bold text-text-primary">{event.title || 'Untitled'}</h2>
+      <h2 className="text-lg font-bold text-text-primary">{event.title || t('events.untitled')}</h2>
 
       <div className="flex flex-wrap gap-2">
         <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: (typeInfo?.color ?? '#6b7280') + '33', color: typeInfo?.color ?? '#6b7280' }}>
@@ -69,15 +71,15 @@ export function ExecEventView({ event, onShare, currentIndex, totalCount, onNavi
       </div>
 
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-text-muted">
-        <span>Timestamp {formatFullDate(event.timestamp)}</span>
-        {event.timestampEnd && <span>End {formatFullDate(event.timestampEnd)}</span>}
-        {event.source && <span>Source: {event.source}</span>}
+        <span>{t('events.timestamp', { date: formatFullDate(event.timestamp) })}</span>
+        {event.timestampEnd && <span>{t('events.end', { date: formatFullDate(event.timestampEnd) })}</span>}
+        {event.source && <span>{t('events.source', { source: event.source })}</span>}
       </div>
 
-      {event.actor && <p className="text-xs text-text-secondary"><span className="font-semibold">Actor:</span> {event.actor}</p>}
+      {event.actor && <p className="text-xs text-text-secondary"><span className="font-semibold">{t('events.actor')}</span> {event.actor}</p>}
 
       {event.assets.length > 0 && (
-        <p className="text-xs text-text-secondary"><span className="font-semibold">Assets:</span> {event.assets.join(', ')}</p>
+        <p className="text-xs text-text-secondary"><span className="font-semibold">{t('events.assets')}</span> {event.assets.join(', ')}</p>
       )}
 
       {event.mitreAttackIds.length > 0 && (

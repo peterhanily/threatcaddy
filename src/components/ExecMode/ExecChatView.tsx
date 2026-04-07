@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { User, Bot } from 'lucide-react';
 import type { ChatThread } from '../../types';
 import { renderMarkdown } from '../../lib/markdown';
@@ -14,16 +15,17 @@ interface ExecChatViewProps {
 }
 
 export function ExecChatView({ chat, currentIndex, totalCount, onNavigate }: ExecChatViewProps) {
+  const { t } = useTranslation('exec');
   const messages = chat.messages ?? [];
 
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-lg font-bold text-text-primary">{chat.title || 'Untitled Chat'}</h2>
+      <h2 className="text-lg font-bold text-text-primary">{chat.title || t('chat.untitledChat')}</h2>
 
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-text-muted">
         <span>{chat.provider} / {chat.model}</span>
-        <span>{messages.length} messages</span>
-        <span>Created {formatFullDate(chat.createdAt)}</span>
+        <span>{t('chat.messagesCount', { count: messages.length })}</span>
+        <span>{t('chat.created', { date: formatFullDate(chat.createdAt) })}</span>
         {chat.clsLevel && <span className="font-semibold text-accent-amber">{chat.clsLevel}</span>}
       </div>
 
@@ -41,7 +43,7 @@ export function ExecChatView({ chat, currentIndex, totalCount, onNavigate }: Exe
           <MessageBubble key={msg.id} role={msg.role} content={msg.content} createdAt={msg.createdAt} />
         ))}
         {messages.length === 0 && (
-          <p className="text-sm text-text-muted text-center py-8">No messages in this thread</p>
+          <p className="text-sm text-text-muted text-center py-8">{t('chat.noMessages')}</p>
         )}
       </div>
 

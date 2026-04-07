@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Shield, ShieldOff, KeyRound, Clock, AlertTriangle } from 'lucide-react';
 import { Modal } from '../Common/Modal';
 import { EncryptionSetup } from './EncryptionSetup';
@@ -28,6 +29,7 @@ import { decryptAllExistingData, setSessionKey, getSessionKeyRaw } from '../../l
 import { db } from '../../db';
 
 export function EncryptionSettings() {
+  const { t } = useTranslation('encryption');
   const { addToast } = useToast();
   const [enabled, setEnabled] = useState(isEncryptionEnabled);
   const [showSetup, setShowSetup] = useState(false);
@@ -87,7 +89,7 @@ export function EncryptionSettings() {
       setDisablePass('');
       addToast('info', 'Encryption disabled');
     } catch {
-      setDisableError('Wrong passphrase.');
+      setDisableError(t('settings.wrongPassphrase'));
       setDisabling(false);
     }
   };
@@ -95,11 +97,11 @@ export function EncryptionSettings() {
   const handleChangePassphrase = async () => {
     setChangeError('');
     if (newPass.length < 8) {
-      setChangeError('New passphrase must be at least 8 characters.');
+      setChangeError(t('settings.newPassMinLength'));
       return;
     }
     if (newPass !== confirmPass) {
-      setChangeError('New passphrases do not match.');
+      setChangeError(t('settings.newPassMismatch'));
       return;
     }
     setChanging(true);
@@ -151,7 +153,7 @@ export function EncryptionSettings() {
       setConfirmPass('');
       addToast('success', 'Passphrase changed');
     } catch {
-      setChangeError('Wrong current passphrase.');
+      setChangeError(t('settings.wrongCurrentPass'));
     } finally {
       setChanging(false);
     }
@@ -161,12 +163,12 @@ export function EncryptionSettings() {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-gray-300">Encryption</h3>
+      <h3 className="text-sm font-semibold text-gray-300">{t('settings.encryption')}</h3>
 
       {!isSecureContext() && (
         <div className="flex items-start gap-2 p-2 rounded bg-yellow-900/30 border border-yellow-700/50 text-yellow-400 text-xs">
           <AlertTriangle size={14} className="shrink-0 mt-0.5" />
-          <span>Encryption requires HTTPS or localhost. It is unavailable over plain HTTP.</span>
+          <span>{t('settings.httpsRequired')}</span>
         </div>
       )}
 
@@ -174,17 +176,17 @@ export function EncryptionSettings() {
         <>
           <div className="flex items-center gap-2 text-green-400 text-sm">
             <Shield size={16} />
-            <span>Encryption is enabled</span>
+            <span>{t('settings.encryptionEnabled')}</span>
           </div>
           {meta && (
             <p className="text-xs text-gray-500">
-              Enabled {new Date(meta.enabledAt).toLocaleDateString()}
+              {t('settings.enabledDate', { date: new Date(meta.enabledAt).toLocaleDateString() })}
             </p>
           )}
           <div className="space-y-2">
             <label className="flex items-center gap-1.5 text-sm text-gray-400">
               <Clock size={14} />
-              Session duration
+              {t('settings.sessionDuration')}
             </label>
             <div className="flex gap-2">
               <select
@@ -201,15 +203,15 @@ export function EncryptionSettings() {
                 disabled={!durationChanged && !durationSaved}
                 className="px-3 py-1.5 text-sm font-medium rounded-lg transition-colors bg-accent hover:bg-accent-hover disabled:opacity-50 text-white"
               >
-                {durationSaved ? 'Saved' : 'Save'}
+                {durationSaved ? t('settings.saved') : t('common:save')}
               </button>
             </div>
             <p className="text-xs text-gray-500">
               {sessionDuration === 'every-load'
-                ? 'You\'ll enter your passphrase every time you open ThreatCaddy.'
+                ? t('settings.sessionEveryLoad')
                 : sessionDuration === 'tab-close'
-                  ? 'Your session stays unlocked until you close the tab.'
-                  : `Your session stays unlocked for ${SESSION_DURATION_LABELS[sessionDuration]} after entering your passphrase.`}
+                  ? t('settings.sessionTabClose')
+                  : t('settings.sessionDuration_desc', { duration: SESSION_DURATION_LABELS[sessionDuration] })}
             </p>
           </div>
           <div className="flex gap-2">
@@ -218,28 +220,28 @@ export function EncryptionSettings() {
               className="flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover transition-colors"
             >
               <KeyRound size={14} />
-              Change Passphrase
+              {t('settings.changePassphrase')}
             </button>
             <button
               onClick={() => { setShowDisable(true); setDisablePass(''); setDisableError(''); setDisabling(false); }}
               className="flex items-center gap-1.5 text-sm text-red-400 hover:text-red-300 transition-colors"
             >
               <ShieldOff size={14} />
-              Disable Encryption
+              {t('settings.disableEncryption')}
             </button>
           </div>
         </>
       ) : (
         <>
           <p className="text-sm text-gray-400">
-            Encrypt your data at rest using AES-256-GCM. You'll set a passphrase to unlock your data (session duration is configurable after setup).
+            {t('settings.encryptionDesc')}
           </p>
           <button
             onClick={() => setShowSetup(true)}
             className="flex items-center gap-1.5 text-sm bg-accent hover:bg-accent-hover text-white font-medium py-2 px-4 rounded-lg transition-colors"
           >
             <Shield size={16} />
-            Enable Encryption
+            {t('settings.enableEncryption')}
           </button>
         </>
       )}
@@ -251,17 +253,17 @@ export function EncryptionSettings() {
       />
 
       {/* Disable encryption modal */}
-      <Modal open={showDisable} onClose={() => !disabling && setShowDisable(false)} title="Disable Encryption">
+      <Modal open={showDisable} onClose={() => !disabling && setShowDisable(false)} title={t('settings.disableTitle')}>
         <div className="space-y-4">
           <p className="text-sm text-gray-400">
-            Enter your passphrase to decrypt all data and disable encryption.
+            {t('settings.disableDesc')}
           </p>
           <input
             type="password"
             value={disablePass}
             onChange={(e) => setDisablePass(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && disablePass && handleDisable()}
-            placeholder="Enter passphrase..."
+            placeholder={t('settings.disablePassPlaceholder')}
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
             autoFocus
             disabled={disabling}
@@ -286,51 +288,51 @@ export function EncryptionSettings() {
               disabled={disabling}
               className="flex-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors"
             >
-              Cancel
+              {t('common:cancel')}
             </button>
             <button
               onClick={handleDisable}
               disabled={!disablePass || disabling}
               className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-medium py-2 px-4 rounded-lg transition-colors"
             >
-              {disabling ? 'Decrypting...' : 'Disable Encryption'}
+              {disabling ? t('settings.decrypting') : t('settings.disableEncryption')}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* Change passphrase modal */}
-      <Modal open={showChangePass} onClose={() => !changing && setShowChangePass(false)} title="Change Passphrase">
+      <Modal open={showChangePass} onClose={() => !changing && setShowChangePass(false)} title={t('settings.changeTitle')}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Current passphrase</label>
+            <label className="block text-sm text-gray-400 mb-1">{t('settings.currentPassphrase')}</label>
             <input
               type="password"
               value={currentPass}
               onChange={(e) => setCurrentPass(e.target.value)}
-              placeholder="Current passphrase..."
+              placeholder={t('settings.currentPassPlaceholder')}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">New passphrase (min 8 characters)</label>
+            <label className="block text-sm text-gray-400 mb-1">{t('settings.newPassphrase')}</label>
             <input
               type="password"
               value={newPass}
               onChange={(e) => setNewPass(e.target.value)}
-              placeholder="New passphrase..."
+              placeholder={t('settings.newPassPlaceholder')}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Confirm new passphrase</label>
+            <label className="block text-sm text-gray-400 mb-1">{t('settings.confirmNewPassphrase')}</label>
             <input
               type="password"
               value={confirmPass}
               onChange={(e) => setConfirmPass(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleChangePassphrase()}
-              placeholder="Confirm new passphrase..."
+              placeholder={t('settings.confirmNewPassPlaceholder')}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
             />
           </div>
@@ -341,14 +343,14 @@ export function EncryptionSettings() {
               disabled={changing}
               className="flex-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors"
             >
-              Cancel
+              {t('common:cancel')}
             </button>
             <button
               onClick={handleChangePassphrase}
               disabled={!currentPass || !newPass || !confirmPass || changing}
               className="flex-1 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white font-medium py-2 px-4 rounded-lg transition-colors"
             >
-              {changing ? 'Changing...' : 'Change Passphrase'}
+              {changing ? t('settings.changing') : t('settings.changePassphrase')}
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useRef, useLayoutEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 import type { TourStep } from './tourSteps';
 
@@ -23,6 +24,7 @@ export function TourTooltip({
   onPrev,
   onSkip,
 }: TourTooltipProps) {
+  const { t } = useTranslation('tour');
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [actualPlacement, setActualPlacement] = useState<Placement>(step.placement);
@@ -154,13 +156,13 @@ export function TourTooltip({
       <div className="tour-tooltip-arrow" style={arrowStyle} />
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-gray-400 tabular-nums">
-          {currentIndex + 1} / {totalSteps}
+          {t('stepCounter', { current: currentIndex + 1, total: totalSteps })}
         </span>
         <button
           onClick={onSkip}
           className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
         >
-          Skip tour
+          {t('skipTour')}
         </button>
       </div>
       <h3 className="text-sm font-semibold text-gray-100 mb-1">{step.title}</h3>
@@ -184,14 +186,14 @@ export function TourTooltip({
             onClick={onPrev}
             className="px-3 py-1.5 text-xs rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
           >
-            Back
+            {t('back')}
           </button>
         )}
         <button
           onClick={onNext}
           className="px-3 py-1.5 text-xs rounded-lg bg-accent hover:bg-accent-hover text-white transition-colors ml-auto"
         >
-          {isLast ? 'Finish' : 'Next'}
+          {isLast ? t('finish') : t('next')}
         </button>
       </div>
     </div>

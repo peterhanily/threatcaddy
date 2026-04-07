@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PenTool, Plus, Pencil, Trash2, Archive, RotateCcw } from 'lucide-react';
 import type { Whiteboard, Folder } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
@@ -18,6 +19,7 @@ interface WhiteboardListProps {
 }
 
 export function WhiteboardList({ whiteboards, folders, onSelect, onCreate, onDelete, onRename, onTrash, onRestore, onToggleArchive }: WhiteboardListProps) {
+  const { t } = useTranslation('whiteboard');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -52,7 +54,7 @@ export function WhiteboardList({ whiteboards, folders, onSelect, onCreate, onDel
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-4 border-b border-gray-800">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-gray-200">Whiteboards</h2>
+          <h2 className="text-lg font-semibold text-gray-200">{t('title')}</h2>
           <span className="text-xs text-gray-500 tabular-nums">{whiteboards.length}</span>
         </div>
         <button
@@ -60,7 +62,7 @@ export function WhiteboardList({ whiteboards, folders, onSelect, onCreate, onDel
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 text-sm font-medium transition-colors"
         >
           <Plus size={16} />
-          New
+          {t('new')}
         </button>
       </div>
 
@@ -68,8 +70,8 @@ export function WhiteboardList({ whiteboards, folders, onSelect, onCreate, onDel
         {whiteboards.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-600">
             <PenTool size={48} className="mb-3" />
-            <p className="text-lg font-medium">No whiteboards yet</p>
-            <p className="text-sm mt-1">Create one to start drawing</p>
+            <p className="text-lg font-medium">{t('noWhiteboards')}</p>
+            <p className="text-sm mt-1">{t('createHint')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

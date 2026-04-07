@@ -1,4 +1,5 @@
 import React, { Suspense, useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Search, Network, Maximize2, ChevronDown, ChevronRight, HelpCircle, X as XIcon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import type { Note, Task, TimelineEvent, Settings, IOCType } from '../../types';
 import { IOC_TYPE_LABELS } from '../../types';
@@ -38,14 +39,15 @@ interface GraphViewProps {
 type NodeTypeFilter = 'ioc' | 'note' | 'task' | 'timeline-event';
 type EdgeTypeFilter = GraphEdge['type'];
 
-const ALL_EDGE_TYPES: { key: EdgeTypeFilter; label: string; color: string }[] = [
-  { key: 'contains-ioc', label: 'Contains IOC', color: '#4b5563' },
-  { key: 'ioc-relationship', label: 'IOC Relations', color: '#f59e0b' },
-  { key: 'timeline-link', label: 'Timeline Links', color: '#6366f1' },
-  { key: 'entity-link', label: 'Entity Links', color: '#22c55e' },
+const ALL_EDGE_TYPES: { key: EdgeTypeFilter; labelKey: string; color: string }[] = [
+  { key: 'contains-ioc', labelKey: 'view.containsIOC', color: '#4b5563' },
+  { key: 'ioc-relationship', labelKey: 'view.iocRelations', color: '#f59e0b' },
+  { key: 'timeline-link', labelKey: 'view.timelineLinks', color: '#6366f1' },
+  { key: 'entity-link', labelKey: 'view.entityLinks', color: '#22c55e' },
 ];
 
 export function GraphView({ notes, tasks, timelineEvents, settings, layout: externalLayout, onLayoutChange, onNavigateToNote, onNavigateToTask, onNavigateToTimelineEvent, onUpdateNote, onUpdateTask, onUpdateEvent, scopedNotes, scopedTasks, scopedTimelineEvents, selectedFolderId, selectedFolderName, visible = true }: GraphViewProps) {
+  const { t } = useTranslation('graph');
   const [internalLayout, setInternalLayout] = useState<LayoutName>('cose-bilkent');
   const layout = externalLayout ?? internalLayout;
   const handleLayoutChange = onLayoutChange ?? setInternalLayout;
@@ -227,12 +229,12 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
         <div className="p-3 border-b border-gray-800">
           <div className="flex items-center gap-2 mb-2">
             <Network size={14} className="text-accent" />
-            <span className="text-xs font-semibold text-gray-300">Entity Graph</span>
+            <span className="text-xs font-semibold text-gray-300">{t('view.entityGraph')}</span>
             <button
               onClick={() => setSidebarCollapsed(true)}
               className="ml-auto p-0.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
-              title="Collapse sidebar"
-              aria-label="Collapse graph sidebar"
+              title={t('view.collapseSidebar')}
+              aria-label={t('view.expandSidebar')}
             >
               <PanelLeftClose size={14} />
             </button>
@@ -242,7 +244,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search nodes..."
+              placeholder={t('view.searchNodes')}
               className="w-full pl-7 pr-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-accent"
             />
           </div>
@@ -256,13 +258,13 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
                 onClick={() => setScopeMode('investigation')}
                 className={`flex-1 px-2 py-1 text-[10px] font-medium transition-colors ${scopeMode === 'investigation' ? 'bg-accent/20 text-accent' : 'text-gray-500 hover:text-gray-300'}`}
               >
-                {selectedFolderName || 'Investigation'}
+                {selectedFolderName || t('view.investigation')}
               </button>
               <button
                 onClick={() => setScopeMode('global')}
                 className={`flex-1 px-2 py-1 text-[10px] font-medium transition-colors ${scopeMode === 'global' ? 'bg-accent/20 text-accent' : 'text-gray-500 hover:text-gray-300'}`}
               >
-                Global
+                {t('view.global')}
               </button>
             </div>
           </div>
@@ -270,13 +272,13 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
 
         {/* Node type filters */}
         <div className="p-3 space-y-2">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Node Types</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{t('view.nodeTypes')}</span>
           {([
-            { key: 'note' as const, label: 'Notes', color: '#3b82f6' },
-            { key: 'task' as const, label: 'Tasks', color: '#22c55e' },
-            { key: 'ioc' as const, label: 'IOCs', color: '#f59e0b' },
-            { key: 'timeline-event' as const, label: 'Events', color: '#6366f1' },
-          ]).map(({ key, label, color }) => (
+            { key: 'note' as const, labelKey: 'view.notes', color: '#3b82f6' },
+            { key: 'task' as const, labelKey: 'view.tasks', color: '#22c55e' },
+            { key: 'ioc' as const, labelKey: 'view.iocs', color: '#f59e0b' },
+            { key: 'timeline-event' as const, labelKey: 'view.events', color: '#6366f1' },
+          ]).map(({ key, labelKey, color }) => (
             <label key={key} className="flex items-center gap-2 text-xs cursor-pointer">
               <input
                 type="checkbox"
@@ -285,7 +287,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
                 className="rounded border-gray-600 bg-gray-800 text-accent focus:ring-accent"
               />
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-              <span className="text-gray-300">{label}</span>
+              <span className="text-gray-300">{t(labelKey)}</span>
               <span className="text-gray-600 ml-auto">{nodeTypeCounts[key]}</span>
             </label>
           ))}
@@ -294,7 +296,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
         {/* IOC type filters */}
         {visibleNodeTypes.has('ioc') && (
           <div className="p-3 pt-0 space-y-1">
-            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">IOC Types</span>
+            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{t('view.iocTypes')}</span>
             {ALL_IOC_TYPES.map((type) => (
               <label key={type} className="flex items-center gap-2 text-xs cursor-pointer">
                 <input
@@ -312,8 +314,8 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
 
         {/* Edge type filters */}
         <div className="p-3 pt-0 space-y-1 border-t border-gray-800 pt-3">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Edge Types</span>
-          {ALL_EDGE_TYPES.map(({ key, label, color }) => (
+          <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{t('view.edgeTypes')}</span>
+          {ALL_EDGE_TYPES.map(({ key, labelKey, color }) => (
             <label key={key} className="flex items-center gap-2 text-xs cursor-pointer">
               <input
                 type="checkbox"
@@ -322,7 +324,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
                 className="rounded border-gray-600 bg-gray-800 text-accent focus:ring-accent"
               />
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-              <span className="text-gray-400">{label}</span>
+              <span className="text-gray-400">{t(labelKey)}</span>
             </label>
           ))}
         </div>
@@ -334,7 +336,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
             className="flex items-center gap-1 text-[10px] text-gray-500 uppercase tracking-wider font-semibold w-full hover:text-gray-300"
           >
             {legendOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            Legend
+            {t('view.legend')}
           </button>
           {legendOpen && (
             <div className="mt-2 space-y-1.5">
@@ -350,22 +352,22 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
 
         {/* Layout */}
         <div className="p-3 border-t border-gray-800 space-y-2">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Layout</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{t('view.layout')}</span>
           <div className="flex gap-1">
             <select
               value={layout}
               onChange={(e) => handleLayoutChange(e.target.value as LayoutName)}
               className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
             >
-              <option value="cose-bilkent">Force-Directed</option>
-              <option value="circle">Circle</option>
-              <option value="breadthfirst">Breadth-First</option>
+              <option value="cose-bilkent">{t('view.forceDirected')}</option>
+              <option value="circle">{t('view.circle')}</option>
+              <option value="breadthfirst">{t('view.breadthFirst')}</option>
             </select>
             <button
               onClick={() => setFitTrigger((n) => n + 1)}
               className="p-1 rounded bg-gray-800 border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-accent"
-              title="Fit to view"
-              aria-label="Fit to view"
+              title={t('view.fitToView')}
+              aria-label={t('view.fitToView')}
             >
               <Maximize2 size={14} />
             </button>
@@ -374,7 +376,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
 
         {/* Stats */}
         <div className="p-3 border-t border-gray-800 text-[10px] text-gray-600 mt-auto">
-          <div>{filteredGraphData.nodes.length} nodes, {filteredGraphData.edges.length} edges</div>
+          <div>{t('view.stats', { nodes: filteredGraphData.nodes.length, edges: filteredGraphData.edges.length })}</div>
         </div>
       </div>
 
@@ -384,8 +386,8 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
           <button
             onClick={() => setSidebarCollapsed(false)}
             className="absolute top-2 left-2 z-10 p-1.5 rounded bg-gray-800 border border-gray-700 text-gray-400 hover:text-gray-200 hover:bg-gray-700 shadow-lg"
-            title="Show filters"
-            aria-label="Expand graph sidebar"
+            title={t('view.showFilters')}
+            aria-label={t('view.expandSidebar')}
           >
             <PanelLeftOpen size={16} />
           </button>
@@ -393,14 +395,14 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
         {filteredGraphData.nodes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-600">
             <Network size={48} className="mb-3" />
-            <p className="text-lg font-medium">No entities to display</p>
-            <p className="text-sm mt-1">Add notes with IOCs or timeline events to see the graph</p>
+            <p className="text-lg font-medium">{t('view.noEntities')}</p>
+            <p className="text-sm mt-1">{t('view.noEntitiesHint')}</p>
           </div>
         ) : (
           <Suspense fallback={
             <div className="flex items-center justify-center h-full text-gray-500">
               <Loader2 size={24} className="animate-spin mr-2" />
-              <span className="text-sm">Loading graph...</span>
+              <span className="text-sm">{t('view.loadingGraph')}</span>
             </div>
           }>
             <GraphCanvas
@@ -421,25 +423,25 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
           {helpOpen ? (
             <div className="bg-gray-900/95 border border-gray-700 rounded-lg shadow-lg p-3 w-52">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-gray-300">Controls</span>
-                <button onClick={() => setHelpOpen(false)} className="p-0.5 rounded text-gray-500 hover:text-gray-300" aria-label="Close help">
+                <span className="text-xs font-semibold text-gray-300">{t('view.controls')}</span>
+                <button onClick={() => setHelpOpen(false)} className="p-0.5 rounded text-gray-500 hover:text-gray-300" aria-label={t('view.closeHelp')}>
                   <XIcon size={12} />
                 </button>
               </div>
               <div className="space-y-1.5 text-[11px]">
-                <div className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Click</kbd><span className="text-gray-500">Select &amp; inspect node</span></div>
-                <div className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Dbl-click</kbd><span className="text-gray-500">Open entity</span></div>
-                <div data-tour="graph-link-hint" className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Alt+drag</kbd><span className="text-gray-500">Link two nodes</span></div>
-                <div className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Shift+drag</kbd><span className="text-gray-500">Box-select</span></div>
-                <div className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Scroll</kbd><span className="text-gray-500">Zoom</span></div>
+                <div className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Click</kbd><span className="text-gray-500">{t('view.clickAction')}</span></div>
+                <div className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Dbl-click</kbd><span className="text-gray-500">{t('view.dblClickAction')}</span></div>
+                <div data-tour="graph-link-hint" className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Alt+drag</kbd><span className="text-gray-500">{t('view.altDragAction')}</span></div>
+                <div className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Shift+drag</kbd><span className="text-gray-500">{t('view.shiftDragAction')}</span></div>
+                <div className="flex gap-2"><kbd className="text-gray-400 font-semibold shrink-0">Scroll</kbd><span className="text-gray-500">{t('view.scrollAction')}</span></div>
               </div>
             </div>
           ) : (
             <button
               onClick={() => setHelpOpen(true)}
               className="w-7 h-7 rounded-full bg-gray-800/80 border border-gray-700 flex items-center justify-center text-gray-400 hover:text-gray-200 hover:border-gray-500 transition-colors"
-              aria-label="Show graph controls"
-              title="Graph controls"
+              aria-label={t('view.showGraphControls')}
+              title={t('view.graphControls')}
             >
               <HelpCircle size={14} />
             </button>
@@ -470,15 +472,15 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
       {multiSelectInfo && (
         <div className="w-56 border-l border-gray-800 bg-gray-900 p-4 shrink-0 overflow-y-auto">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-gray-300">Selection</span>
+            <span className="text-xs font-semibold text-gray-300">{t('view.selection')}</span>
             <button
               onClick={() => setSelectedNodeIds([])}
               className="text-[10px] text-gray-500 hover:text-gray-300"
             >
-              Clear
+              {t('view.clear')}
             </button>
           </div>
-          <p className="text-sm text-gray-200 mb-2">{multiSelectInfo.total} nodes selected</p>
+          <p className="text-sm text-gray-200 mb-2">{t('view.nodesSelected', { count: multiSelectInfo.total })}</p>
           <div className="space-y-1">
             {Object.entries(multiSelectInfo.counts).map(([label, count]) => (
               <div key={label} className="flex items-center justify-between text-xs">
@@ -487,7 +489,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
               </div>
             ))}
           </div>
-          <p className="text-[10px] text-gray-600 mt-3">Shift+drag to box-select nodes</p>
+          <p className="text-[10px] text-gray-600 mt-3">{t('view.shiftDragHint')}</p>
         </div>
       )}
 

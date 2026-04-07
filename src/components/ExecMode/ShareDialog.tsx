@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Lock, Unlock, Copy, Check, Trash2, UserPlus, Users, RefreshCw } from 'lucide-react';
 import { Modal } from '../Common/Modal';
 import type { SharePayload } from '../../lib/share';
@@ -345,6 +346,7 @@ function TeamTab({ folderId }: { folderId: string }) {
 }
 
 export function ShareDialog({ open, onClose, payload, folderId }: ShareDialogProps) {
+  const { t } = useTranslation('exec');
   const { connected } = useAuth();
   const showTeamTab = !!folderId && connected && payload?.s === 'investigation';
   const [tab, setTab] = useState<'link' | 'team'>('link');
@@ -373,7 +375,7 @@ export function ShareDialog({ open, onClose, payload, folderId }: ShareDialogPro
   const scopeLabel = SCOPE_LABELS[payload.s] ?? payload.s;
 
   return (
-    <Modal open={open} onClose={handleClose} title="Share">
+    <Modal open={open} onClose={handleClose} title={t('share.title')}>
       <div className="flex flex-col gap-4">
         {/* Preview */}
         <div className="flex items-center gap-3">

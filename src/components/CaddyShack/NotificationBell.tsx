@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Bell,
   CheckCheck,
@@ -112,6 +113,7 @@ function groupByDate(
 // ── Component ──────────────────────────────────────────────────────
 
 export function NotificationBell() {
+  const { t } = useTranslation('caddyshack');
   const { connected } = useAuth();
   const { addToast } = useToast();
   const { settings } = useSettings();
@@ -266,7 +268,7 @@ export function NotificationBell() {
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-700/60 bg-gray-900/90 backdrop-blur-sm shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-gray-100">
-                  Notifications
+                  {t('notifications.title')}
                 </span>
                 {unreadCount > 0 && (
                   <span className="text-[10px] font-medium text-blue-400 bg-blue-500/15 rounded-full px-1.5 py-0.5 leading-none">
@@ -311,10 +313,10 @@ export function NotificationBell() {
                     <Inbox size={22} className="text-gray-600" />
                   </div>
                   <p className="text-sm font-medium text-gray-400">
-                    All caught up
+                    {t('notifications.allCaughtUp')}
                   </p>
                   <p className="text-xs text-gray-600 mt-1">
-                    No notifications right now
+                    {t('notifications.noNotifications')}
                   </p>
                 </div>
               ) : (

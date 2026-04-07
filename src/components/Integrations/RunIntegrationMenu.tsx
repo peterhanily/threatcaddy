@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Zap, Loader2 } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useToast } from '../../contexts/ToastContext';
@@ -21,6 +22,7 @@ interface RunIntegrationMenuProps {
 }
 
 export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onComplete, onOpenSettings }: RunIntegrationMenuProps) {
+  const { t } = useTranslation('integrations');
   const { addToast } = useToast();
   const { connected, serverUrl, getAccessToken } = useAuth();
   const [open, setOpen] = useState(false);
@@ -235,7 +237,7 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
             ? 'text-amber-500/70 hover:text-amber-400'
             : 'text-gray-600 hover:text-gray-400'
         }`}
-        title={matching.length > 0 ? 'Run Integration' : 'No integrations installed — set up in Settings > Integrations'}
+        title={matching.length > 0 ? t('run.runIntegration') : t('run.noIntegrationsTitle')}
       >
         {running ? (
           <Loader2 size={14} className="animate-spin" />
@@ -247,15 +249,15 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
       {open && (
         <div className="absolute right-0 top-full mt-1 z-50 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1">
           <div className="px-3 py-1.5 text-[10px] text-gray-500 uppercase tracking-wider font-semibold border-b border-gray-700">
-            Run Integration
+            {t('run.runIntegration')}
           </div>
           {matching.length === 0 ? (
             <button
               onClick={() => { setOpen(false); onOpenSettings?.(); }}
               className="w-full text-left px-3 py-3 text-xs text-gray-400 hover:bg-gray-700 transition-colors"
             >
-              <p>No integrations for this IOC type.</p>
-              <p className="text-amber-500/80 mt-1">Set up integrations →</p>
+              <p>{t('run.noIntegrationsForType')}</p>
+              <p className="text-amber-500/80 mt-1">{t('run.setupIntegrations')}</p>
             </button>
           ) : (
             matching.map(({ installation, template }) => (

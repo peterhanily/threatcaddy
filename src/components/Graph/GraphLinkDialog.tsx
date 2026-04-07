@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal } from '../Common/Modal';
 import { parseIOCNodeId } from '../../lib/graph-data';
 import type { GraphNode } from '../../lib/graph-data';
@@ -38,6 +39,7 @@ function parseEntityNodeId(nodeId: string): { entityType: 'note' | 'task' | 'eve
 }
 
 export function GraphLinkDialog({ sourceNode, targetNode, notes, tasks, timelineEvents, settings, onUpdateNote, onUpdateTask, onUpdateEvent, onClose }: GraphLinkDialogProps) {
+  const { t } = useTranslation('graph');
   const [selectedRelType, setSelectedRelType] = useState<string>('');
 
   const category: LinkCategory = useMemo(() => {
@@ -178,11 +180,11 @@ export function GraphLinkDialog({ sourceNode, targetNode, notes, tasks, timeline
 
   if (category === 'invalid') {
     return (
-      <Modal open onClose={onClose} title="Cannot Link">
-        <p className="text-sm text-gray-400">IOC nodes can only be linked to other IOC nodes, and entity nodes (notes, tasks, events) can only be linked to other entities.</p>
+      <Modal open onClose={onClose} title={t('linkDialog.cannotLink')}>
+        <p className="text-sm text-gray-400">{t('linkDialog.cannotLinkMessage')}</p>
         <div className="flex justify-end mt-4">
           <button onClick={onClose} className="px-3 py-1.5 text-xs rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors">
-            Close
+            {t('common:close')}
           </button>
         </div>
       </Modal>
@@ -190,7 +192,7 @@ export function GraphLinkDialog({ sourceNode, targetNode, notes, tasks, timeline
   }
 
   return (
-    <Modal open onClose={onClose} title={category === 'ioc-ioc' ? 'Create IOC Relationship' : 'Link Entities'}>
+    <Modal open onClose={onClose} title={category === 'ioc-ioc' ? t('linkDialog.createIOCRelationship') : t('linkDialog.linkEntities')}>
       <div className="space-y-4">
         {/* Source → Target display */}
         <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-800/50">
@@ -212,9 +214,9 @@ export function GraphLinkDialog({ sourceNode, targetNode, notes, tasks, timeline
         {category === 'ioc-ioc' && (
           <>
             <div>
-              <label className="text-[10px] text-gray-500 uppercase tracking-wider">Relationship Type</label>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('linkDialog.relationshipType')}</label>
               {validRelTypes.length === 0 ? (
-                <p className="text-xs text-gray-500 mt-1">No valid relationship types for this IOC pair.</p>
+                <p className="text-xs text-gray-500 mt-1">{t('linkDialog.noValidRelTypes')}</p>
               ) : (
                 <div className="mt-1 space-y-1 max-h-48 overflow-y-auto">
                   {validRelTypes.map(([key, def]) => (
@@ -236,14 +238,14 @@ export function GraphLinkDialog({ sourceNode, targetNode, notes, tasks, timeline
 
             <div className="flex justify-end gap-2 pt-2 border-t border-gray-700">
               <button onClick={onClose} className="px-3 py-1.5 text-xs rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors">
-                Cancel
+                {t('common:cancel')}
               </button>
               <button
                 onClick={handleCreateIOCLink}
                 disabled={!selectedRelType || validRelTypes.length === 0}
                 className="px-3 py-1.5 text-xs rounded-lg font-medium bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create Relationship
+                {t('linkDialog.createRelationship')}
               </button>
             </div>
           </>
@@ -252,13 +254,13 @@ export function GraphLinkDialog({ sourceNode, targetNode, notes, tasks, timeline
         {category === 'entity-entity' && (
           <div className="flex justify-end gap-2 pt-2 border-t border-gray-700">
             <button onClick={onClose} className="px-3 py-1.5 text-xs rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors">
-              Cancel
+              {t('common:cancel')}
             </button>
             <button
               onClick={handleCreateEntityLink}
               className="px-3 py-1.5 text-xs rounded-lg font-medium bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors"
             >
-              Link Entities
+              {t('linkDialog.linkEntities')}
             </button>
           </div>
         )}

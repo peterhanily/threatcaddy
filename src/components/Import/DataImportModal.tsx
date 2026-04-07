@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, FileText, CheckCircle2, AlertTriangle, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Modal } from '../Common/Modal';
 import { db } from '../../db';
@@ -52,6 +53,7 @@ export function DataImportModal({
   onCreateTimeline,
   onImportComplete,
 }: DataImportModalProps) {
+  const { t } = useTranslation('import');
   const [step, setStep] = useState<Step>('input');
   const [rawText, setRawText] = useState('');
   const [detectedFormat, setDetectedFormat] = useState('');
@@ -267,7 +269,7 @@ export function DataImportModal({
   // ---------------------------------------------------------------------------
 
   return (
-    <Modal open={open} onClose={onClose} title="Import Data" extraWide>
+    <Modal open={open} onClose={onClose} title={t('title')} extraWide>
       {step === 'input' && (
         <div className="space-y-4">
           <div
@@ -512,7 +514,7 @@ export function DataImportModal({
       {step === 'importing' && (
         <div className="flex flex-col items-center justify-center py-12 gap-4">
           <Loader2 size={32} className="text-blue-400 animate-spin" />
-          <p className="text-sm text-gray-400">Importing data...</p>
+          <p className="text-sm text-gray-400">{t('importingData')}</p>
         </div>
       )}
 
@@ -524,7 +526,7 @@ export function DataImportModal({
             ) : (
               <AlertTriangle size={40} className="text-yellow-400" />
             )}
-            <h3 className="text-lg font-semibold text-gray-200">Import Complete</h3>
+            <h3 className="text-lg font-semibold text-gray-200">{t('importComplete')}</h3>
           </div>
 
           <div className="grid grid-cols-3 gap-3 text-center">

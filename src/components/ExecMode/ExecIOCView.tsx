@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Share2 } from 'lucide-react';
 import type { StandaloneIOC } from '../../types';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, IOC_STATUS_LABELS, IOC_STATUS_COLORS } from '../../types';
@@ -17,6 +18,7 @@ interface ExecIOCViewProps {
 }
 
 export function ExecIOCView({ ioc, allIOCs, onShare, currentIndex, totalCount, onNavigate }: ExecIOCViewProps) {
+  const { t } = useTranslation('exec');
   const typeInfo = (IOC_TYPE_LABELS as Record<string, { label: string; color: string }>)[ioc.type] || { label: ioc.type, color: '#6b7280' };
   const confInfo = (CONFIDENCE_LEVELS as Record<string, { label: string; color: string }>)[ioc.confidence] || { label: ioc.confidence, color: '#6b7280' };
   const statusLabel = ioc.iocStatus ? IOC_STATUS_LABELS[ioc.iocStatus as keyof typeof IOC_STATUS_LABELS] : null;
@@ -68,10 +70,10 @@ export function ExecIOCView({ ioc, allIOCs, onShare, currentIndex, totalCount, o
 
       {/* Metadata */}
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-text-muted">
-        <span>Created {formatFullDate(ioc.createdAt)}</span>
-        <span>Updated {formatFullDate(ioc.updatedAt)}</span>
-        {ioc.attribution && <span>Attribution: {ioc.attribution}</span>}
-        {ioc.iocSubtype && <span>Subtype: {ioc.iocSubtype}</span>}
+        <span>{t('iocs.created', { date: formatFullDate(ioc.createdAt) })}</span>
+        <span>{t('iocs.updated', { date: formatFullDate(ioc.updatedAt) })}</span>
+        {ioc.attribution && <span>{t('iocs.attribution', { value: ioc.attribution })}</span>}
+        {ioc.iocSubtype && <span>{t('iocs.subtype', { value: ioc.iocSubtype })}</span>}
       </div>
 
       {/* Tags */}
@@ -86,7 +88,7 @@ export function ExecIOCView({ ioc, allIOCs, onShare, currentIndex, totalCount, o
       {/* Analyst notes */}
       {notesHtml && (
         <div>
-          <h3 className="text-sm font-semibold text-text-primary mb-2">Analyst Notes</h3>
+          <h3 className="text-sm font-semibold text-text-primary mb-2">{t('iocs.analystNotes')}</h3>
           <div className="bg-bg-raised rounded-xl p-4 markdown-preview" dangerouslySetInnerHTML={{ __html: notesHtml }} />
         </div>
       )}
@@ -94,7 +96,7 @@ export function ExecIOCView({ ioc, allIOCs, onShare, currentIndex, totalCount, o
       {/* Relationships */}
       {resolvedRelationships.length > 0 && (
         <div className="bg-bg-raised rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-text-primary mb-2">Relationships ({resolvedRelationships.length})</h3>
+          <h3 className="text-sm font-semibold text-text-primary mb-2">{t('iocs.relationships', { count: resolvedRelationships.length })}</h3>
           <div className="flex flex-col gap-2">
             {resolvedRelationships.map((rel, i) => {
               const targetTypeInfo = rel.targetType ? IOC_TYPE_LABELS[rel.targetType] : null;
@@ -115,7 +117,7 @@ export function ExecIOCView({ ioc, allIOCs, onShare, currentIndex, totalCount, o
       {/* Comments */}
       {ioc.comments && ioc.comments.length > 0 && (
         <div className="bg-bg-raised rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-text-primary mb-2">Comments ({ioc.comments.length})</h3>
+          <h3 className="text-sm font-semibold text-text-primary mb-2">{t('iocs.comments', { count: ioc.comments.length })}</h3>
           <div className="flex flex-col gap-2">
             {ioc.comments.map((comment) => (
               <div key={comment.id} className="border-l-2 border-border-subtle pl-3">

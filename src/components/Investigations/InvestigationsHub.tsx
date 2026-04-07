@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, WifiOff, Briefcase, Search } from 'lucide-react';
 import type { Folder, InvestigationSummary, InvestigationDataMode, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ChatThread } from '../../types';
 import { cn } from '../../lib/utils';
@@ -111,6 +112,7 @@ export function InvestigationsHub({
   allChats,
   syncingFolderId,
 }: InvestigationsHubProps) {
+  const { t } = useTranslation('investigations');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'closed' | 'archived'>('all');
 
@@ -156,13 +158,13 @@ export function InvestigationsHub({
       <div className="max-w-6xl mx-auto px-6 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-bold text-text-primary">Investigations</h1>
+          <h1 className="text-xl font-bold text-text-primary">{t('hub.title')}</h1>
           <button
             onClick={onCreateInvestigation}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-purple text-white hover:brightness-110 transition-all"
           >
             <Plus size={16} />
-            New Investigation
+            {t('hub.newInvestigation')}
           </button>
         </div>
 
@@ -172,7 +174,7 @@ export function InvestigationsHub({
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
             <input
               type="text"
-              placeholder="Search investigations..."
+              placeholder={t('hub.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-border-subtle bg-bg-deep text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-purple/50"

@@ -1,0 +1,15 @@
+{
+  "title": "Activity Log",
+  "clearButton": "Clear",
+  "searchPlaceholder": "Search activity...",
+  "allFilter": "All",
+  "noActivity": "No activity yet",
+  "noActivityHint": "Actions you take will appear here",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "thisWeek": "This Week",
+  "older": "Older",
+  "clearTitle": "Clear Activity Log",
+  "clearMessage": "This will permanently delete all activity log entries. This cannot be undone.",
+  "clearConfirm": "Clear All"
+}

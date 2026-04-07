@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, ChevronDown as ChevronDownIcon, Eye, Save, X } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useIntegrations } from '../../hooks/useIntegrations';
@@ -454,6 +455,7 @@ interface IntegrationBuilderProps {
 }
 
 export function IntegrationBuilder({ onBack }: IntegrationBuilderProps) {
+  const { t } = useTranslation('integrations');
   const { installTemplate, createInstallation } = useIntegrations();
   const { addToast } = useToast();
 
@@ -672,9 +674,9 @@ export function IntegrationBuilder({ onBack }: IntegrationBuilderProps) {
             className="text-xs text-gray-500 hover:text-gray-300 transition-colors mb-1 flex items-center gap-1"
           >
             <ChevronRight size={12} className="rotate-180" />
-            Back to Catalog
+            {t('builder.backToCatalog')}
           </button>
-          <h3 className="text-sm font-semibold text-gray-200">Create Integration</h3>
+          <h3 className="text-sm font-semibold text-gray-200">{t('builder.createIntegration')}</h3>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -682,14 +684,14 @@ export function IntegrationBuilder({ onBack }: IntegrationBuilderProps) {
             className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-gray-400 text-xs font-medium hover:text-gray-200 hover:bg-gray-700 transition-colors"
           >
             <Eye size={12} />
-            Preview JSON
+            {t('builder.previewJson')}
           </button>
           <button
             onClick={handleSave}
             className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors"
           >
             <Save size={12} />
-            Save & Install
+            {t('builder.saveAndInstall')}
           </button>
         </div>
       </div>

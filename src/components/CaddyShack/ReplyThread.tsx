@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import { fetchPost, addReaction, removeReaction, deletePost, editPost } from '../../lib/server-api';
@@ -15,6 +16,7 @@ interface ReplyThreadProps {
 }
 
 export function ReplyThread({ postId, currentUserId, onBack, onUserClick, settings }: ReplyThreadProps) {
+  const { t } = useTranslation('caddyshack');
   const { addToast } = useToast();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,7 +84,7 @@ export function ReplyThread({ postId, currentUserId, onBack, onUserClick, settin
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center text-[var(--text-tertiary)] text-sm">
-        Loading thread...
+        {t('reply.loadingThread')}
       </div>
     );
   }
@@ -90,7 +92,7 @@ export function ReplyThread({ postId, currentUserId, onBack, onUserClick, settin
   if (!post) {
     return (
       <div className="flex-1 flex items-center justify-center text-[var(--text-tertiary)] text-sm">
-        Post not found.
+        {t('reply.postNotFound')}
       </div>
     );
   }
@@ -109,7 +111,7 @@ export function ReplyThread({ postId, currentUserId, onBack, onUserClick, settin
         onClick={onBack}
         className="flex items-center gap-1.5 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] w-fit transition-colors"
       >
-        <ArrowLeft size={16} /> Back to CaddyShack
+        <ArrowLeft size={16} /> {t('reply.backToCaddyShack')}
       </button>
 
       {/* Original post */}
@@ -142,7 +144,7 @@ export function ReplyThread({ postId, currentUserId, onBack, onUserClick, settin
       {post.replies && post.replies.length > 0 && (
         <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--bg-secondary)] divide-y divide-[var(--border)]">
           <div className="px-4 py-2 text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider bg-[var(--bg-primary)]/50">
-            {post.replies.length} {post.replies.length === 1 ? 'Reply' : 'Replies'}
+            {post.replies.length === 1 ? t('reply.replyCount', { count: post.replies.length }) : t('reply.replyCountPlural', { count: post.replies.length })}
           </div>
           {post.replies.map((reply) => (
             <PostCard

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Trash2, Archive, RotateCcw, ChevronDown, ChevronRight,
   FileText, ListChecks, Clock, PenTool, Search,
@@ -154,6 +155,7 @@ export function TrashArchiveView({
   onUnarchiveIOC,
   onEmptyAllTrash,
 }: TrashArchiveViewProps) {
+  const { t } = useTranslation('trash');
   const [showEmptyConfirm, setShowEmptyConfirm] = useState(false);
 
   const isTrash = mode === 'trash';
@@ -224,7 +226,7 @@ export function TrashArchiveView({
       <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-800 shrink-0">
         {isTrash ? <Trash2 size={18} className="text-gray-400" /> : <Archive size={18} className="text-gray-400" />}
         <h2 className="text-lg font-semibold text-gray-200">
-          {isTrash ? 'Trash' : 'Archive'} ({totalCount})
+          {isTrash ? t('trash') : t('archive')} ({totalCount})
         </h2>
         {isTrash && totalCount > 0 && (
           <button
@@ -232,14 +234,14 @@ export function TrashArchiveView({
             className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm font-medium transition-colors"
           >
             <Trash2 size={14} />
-            Empty All Trash
+            {t('emptyAllTrash')}
           </button>
         )}
       </div>
 
       {isTrash && totalCount > 0 && (
         <div className="px-4 py-1.5 text-xs text-gray-600 border-b border-gray-800/50">
-          Items auto-delete after 30 days
+          {t('autoDeleteHint')}
         </div>
       )}
 
@@ -248,7 +250,7 @@ export function TrashArchiveView({
         {totalCount === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-600">
             {isTrash ? <Trash2 size={48} className="mb-3" /> : <Archive size={48} className="mb-3" />}
-            <p className="text-lg font-medium">{isTrash ? 'Trash is empty' : 'Archive is empty'}</p>
+            <p className="text-lg font-medium">{isTrash ? t('trashEmpty') : t('archiveEmpty')}</p>
           </div>
         ) : (
           <>

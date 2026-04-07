@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Dices, BookOpen } from 'lucide-react';
 import { Modal } from '../Common/Modal';
 import { cn } from '../../lib/utils';
@@ -14,13 +15,14 @@ export interface CreateInvestigationModalProps {
 
 type TabId = 'quick' | 'name-gen' | 'playbook';
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'quick',    label: 'Quick Create' },
-  { id: 'name-gen', label: 'Name Generator' },
-  { id: 'playbook', label: 'From Playbook' },
+const TABS: { id: TabId; labelKey: string }[] = [
+  { id: 'quick',    labelKey: 'create.quickCreate' },
+  { id: 'name-gen', labelKey: 'create.nameGenerator' },
+  { id: 'playbook', labelKey: 'create.fromPlaybook' },
 ];
 
 export function CreateInvestigationModal({ open, onClose, onCreate, onOpenNameGenerator, onOpenPlaybookPicker, generatedName }: CreateInvestigationModalProps) {
+  const { t } = useTranslation('investigations');
   const [activeTab, setActiveTab] = useState<TabId>('quick');
   const [name, setName] = useState('');
   const [nameError, setNameError] = useState('');
@@ -37,7 +39,7 @@ export function CreateInvestigationModal({ open, onClose, onCreate, onOpenNameGe
   const handleCreate = () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      setNameError('Investigation name is required');
+      setNameError(t('create.nameRequired'));
       return;
     }
     setNameError('');
@@ -54,7 +56,7 @@ export function CreateInvestigationModal({ open, onClose, onCreate, onOpenNameGe
   };
 
   return (
-    <Modal open={open} onClose={handleClose} title="New Investigation">
+    <Modal open={open} onClose={handleClose} title={t('create.title')}>
       {/* Tabs */}
       <div className="flex gap-0.5 p-0.5 bg-bg-deep rounded-lg mb-4" role="tablist" aria-label="Investigation creation method">
         {TABS.map((tab) => (
@@ -70,7 +72,7 @@ export function CreateInvestigationModal({ open, onClose, onCreate, onOpenNameGe
                 : 'text-text-muted hover:text-text-secondary',
             )}
           >
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>

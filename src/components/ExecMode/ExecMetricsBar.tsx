@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText, ListChecks, Shield, Clock, MessageSquare, GitFork } from 'lucide-react';
 import type { Note, Task, TimelineEvent, StandaloneIOC, ChatThread } from '../../types';
 
@@ -17,6 +18,7 @@ interface ExecMetricsBarProps {
 }
 
 export function ExecMetricsBar({ allNotes, allTasks, allEvents, allIOCs, allChatThreads, onTapNotes, onTapTasks, onTapIOCs, onTapEvents, onTapChats, onTapGraph }: ExecMetricsBarProps) {
+  const { t } = useTranslation('exec');
   const [now] = useState(() => Date.now());
 
   const metrics = useMemo(() => {
@@ -29,14 +31,14 @@ export function ExecMetricsBar({ allNotes, allTasks, allEvents, allIOCs, allChat
     const graphNodes = iocCount + noteCount;
 
     return [
-      { key: 'notes', label: 'Notes', value: noteCount, icon: FileText, color: 'text-accent-blue', bg: 'bg-accent-blue/10', onTap: onTapNotes },
-      { key: 'tasks', label: 'Open Tasks', value: openTasks, icon: ListChecks, color: 'text-accent-green', bg: 'bg-accent-green/10', onTap: onTapTasks },
-      { key: 'iocs', label: 'IOCs Tracked', value: iocCount, icon: Shield, color: 'text-red-400', bg: 'bg-red-400/10', onTap: onTapIOCs },
-      { key: 'events', label: 'Events This Week', value: eventsThisWeek, icon: Clock, color: 'text-accent-amber', bg: 'bg-accent-amber/10', onTap: onTapEvents },
-      { key: 'chats', label: 'AI Chats', value: chatCount, icon: MessageSquare, color: 'text-purple-400', bg: 'bg-purple-400/10', onTap: onTapChats },
-      { key: 'graph', label: 'Graph Nodes', value: graphNodes, icon: GitFork, color: 'text-cyan-400', bg: 'bg-cyan-400/10', onTap: onTapGraph },
+      { key: 'notes', label: t('metrics.notes'), value: noteCount, icon: FileText, color: 'text-accent-blue', bg: 'bg-accent-blue/10', onTap: onTapNotes },
+      { key: 'tasks', label: t('metrics.openTasks'), value: openTasks, icon: ListChecks, color: 'text-accent-green', bg: 'bg-accent-green/10', onTap: onTapTasks },
+      { key: 'iocs', label: t('metrics.iocsTracked'), value: iocCount, icon: Shield, color: 'text-red-400', bg: 'bg-red-400/10', onTap: onTapIOCs },
+      { key: 'events', label: t('metrics.eventsThisWeek'), value: eventsThisWeek, icon: Clock, color: 'text-accent-amber', bg: 'bg-accent-amber/10', onTap: onTapEvents },
+      { key: 'chats', label: t('metrics.aiChats'), value: chatCount, icon: MessageSquare, color: 'text-purple-400', bg: 'bg-purple-400/10', onTap: onTapChats },
+      { key: 'graph', label: t('metrics.graphNodes'), value: graphNodes, icon: GitFork, color: 'text-cyan-400', bg: 'bg-cyan-400/10', onTap: onTapGraph },
     ];
-  }, [allNotes, allTasks, allEvents, allIOCs, allChatThreads, now, onTapNotes, onTapTasks, onTapIOCs, onTapEvents, onTapChats, onTapGraph]);
+  }, [allNotes, allTasks, allEvents, allIOCs, allChatThreads, now, onTapNotes, onTapTasks, onTapIOCs, onTapEvents, onTapChats, onTapGraph, t]);
 
   return (
     <div className="grid grid-cols-3 gap-2.5">

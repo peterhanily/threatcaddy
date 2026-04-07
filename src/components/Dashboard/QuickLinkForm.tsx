@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { QuickLink } from '../../types';
 import { Modal } from '../Common/Modal';
 
@@ -14,6 +15,7 @@ interface QuickLinkFormProps {
 }
 
 export function QuickLinkForm({ link, onSave, onCancel }: QuickLinkFormProps) {
+  const { t } = useTranslation('dashboard');
   const [title, setTitle] = useState(link?.title || '');
   const [url, setUrl] = useState(link?.url || '');
   const [description, setDescription] = useState(link?.description || '');
@@ -38,7 +40,7 @@ export function QuickLinkForm({ link, onSave, onCancel }: QuickLinkFormProps) {
   const handleSave = () => {
     if (!title.trim()) return;
     if (!validateUrl(url)) {
-      setUrlError('Please enter a valid URL');
+      setUrlError(t('quickLinks.invalidUrl'));
       return;
     }
     const normalizedUrl = url.match(/^https?:\/\//) ? url : `https://${url}`;
@@ -52,7 +54,7 @@ export function QuickLinkForm({ link, onSave, onCancel }: QuickLinkFormProps) {
   };
 
   return (
-    <Modal open onClose={onCancel} title={link ? 'Edit Link' : 'Add Link'}>
+    <Modal open onClose={onCancel} title={link ? t('quickLinks.editLink') : t('quickLinks.addLinkTitle')}>
       <div className="space-y-4">
         <div>
           <label className={labelClass}>Title *</label>

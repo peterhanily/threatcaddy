@@ -1,0 +1,20 @@
+{
+  "trash": "Trash",
+  "archive": "Archive",
+  "emptyAllTrash": "Empty All Trash",
+  "autoDeleteHint": "Items auto-delete after 30 days",
+  "trashEmpty": "Trash is empty",
+  "archiveEmpty": "Archive is empty",
+  "notes": "Notes",
+  "tasks": "Tasks",
+  "timelineEvents": "Timeline Events",
+  "whiteboards": "Whiteboards",
+  "iocs": "IOCs",
+  "restore": "Restore",
+  "deletePermanently": "Delete permanently",
+  "unarchive": "Unarchive",
+  "moveToTrash": "Move to trash",
+  "emptyAllTitle": "Empty All Trash",
+  "emptyAllMessage": "Permanently delete all {{count}} trashed item(s) across all entity types? This cannot be undone.",
+  "emptyAllConfirm": "Empty All Trash"
+}

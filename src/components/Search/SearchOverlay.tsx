@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, X, FileText, Paperclip, ListChecks, Clock, PenTool, Save, Briefcase, ChevronDown, Shield, MessageSquare, Calendar, Pencil } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { formatDate } from '../../lib/utils';
@@ -72,6 +73,7 @@ export function SearchOverlay({
   // scopedNotes, scopedTasks, scopedTimelineEvents, scopedWhiteboards — kept in interface for backwards compat
   folders = [],
 }: SearchOverlayProps) {
+  const { t } = useTranslation('search');
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<SearchMode>('simple');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -330,9 +332,9 @@ export function SearchOverlay({
   if (!open) return null;
 
   const modes: { value: SearchMode; label: string }[] = [
-    { value: 'simple', label: 'Simple' },
-    { value: 'regex', label: 'Regex' },
-    { value: 'advanced', label: 'Advanced' },
+    { value: 'simple', label: t('simple') },
+    { value: 'regex', label: t('regex') },
+    { value: 'advanced', label: t('advanced') },
   ];
 
   return (
@@ -460,14 +462,14 @@ export function SearchOverlay({
               className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={12} />
-              Save Search
+              {t('saveSearch')}
             </button>
             <button
               onClick={() => setQuery('')}
               className="flex items-center gap-1 px-2 py-1 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded transition-colors"
             >
               <X size={12} />
-              Clear
+              {t('clear')}
             </button>
             {error && (
               <span className="text-xs text-red-400 ml-2">{error}</span>

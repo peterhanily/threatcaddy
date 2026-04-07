@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageSquare, Play, Loader2, FileText, ChevronRight } from 'lucide-react';
 import type { AgentDeployment, AgentMeeting, Folder, Settings } from '../../types';
 import { cn, formatDate } from '../../lib/utils';
@@ -23,6 +24,7 @@ export function AgentMeetingPanel({
   folder, deployments, settings, extensionAvailable,
   onNavigateToChat, onNavigateToNote, onEntitiesChanged,
 }: AgentMeetingPanelProps) {
+  const { t } = useTranslation('agent');
   const [meetings, setMeetings] = useState<AgentMeeting[]>([]);
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState('');
@@ -65,7 +67,7 @@ export function AgentMeetingPanel({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <MessageSquare size={14} className="text-accent-blue" />
-          <span className="text-xs font-semibold text-text-primary">Agent Meetings</span>
+          <span className="text-xs font-semibold text-text-primary">{t('meeting.agentMeetings')}</span>
         </div>
         {canMeet && !running && (
           <div className="flex items-center gap-2">
@@ -83,13 +85,13 @@ export function AgentMeetingPanel({
                 }
               }}
               className="text-xs px-2 py-1 rounded bg-accent-amber/10 text-accent-amber hover:bg-accent-amber/20 transition-colors"
-              title="Outgoing agents brief incoming agents, then swap shift states"
-            >Shift Handoff</button>
+              title={t('meeting.shiftHandoffTitle')}
+            >{t('meeting.shiftHandoff')}</button>
             <button
               onClick={() => setShowNewMeeting(!showNewMeeting)}
               className="text-xs px-2 py-1 rounded bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20 transition-colors"
             >
-              {showNewMeeting ? 'Cancel' : 'Start Meeting'}
+              {showNewMeeting ? t('common:cancel') : t('meeting.startMeeting')}
             </button>
           </div>
         )}
@@ -101,13 +103,13 @@ export function AgentMeetingPanel({
           <textarea
             value={agenda}
             onChange={e => setAgenda(e.target.value)}
-            placeholder="Meeting agenda — what should the agents discuss?"
+            placeholder={t('meeting.meetingAgendaPlaceholder')}
             rows={2}
             className="w-full text-xs bg-surface border border-border-subtle rounded px-2 py-1.5 text-text-primary placeholder:text-text-muted/50 resize-none focus:outline-none focus:border-accent-blue/50"
           />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-text-muted">Rounds:</label>
+              <label className="text-[10px] text-text-muted">{t('meeting.rounds')}</label>
               <select
                 value={maxRounds}
                 onChange={e => setMaxRounds(parseInt(e.target.value))}
@@ -122,11 +124,11 @@ export function AgentMeetingPanel({
               className="flex items-center gap-1 text-xs bg-accent-blue text-white px-3 py-1 rounded disabled:opacity-50"
             >
               <Play size={10} />
-              Start
+              {t('meeting.start')}
             </button>
           </div>
           <p className="text-[10px] text-text-muted">
-            {deployments.length} agents will participate. Each gets {maxRounds} round(s) to contribute. Minutes are saved as a note.
+            {t('meeting.participationInfo', { count: deployments.length, rounds: maxRounds })}
           </p>
         </div>
       )}
@@ -135,13 +137,13 @@ export function AgentMeetingPanel({
       {running && (
         <div className="flex items-center gap-2 text-xs text-accent-blue">
           <Loader2 size={12} className="animate-spin" />
-          {progress || 'Meeting in progress...'}
+          {progress || t('meeting.meetingInProgress')}
         </div>
       )}
 
       {/* Meeting history */}
       {!canMeet && (
-        <p className="text-xs text-text-muted">Deploy 2+ agent profiles to start a meeting.</p>
+        <p className="text-xs text-text-muted">{t('meeting.deploy2Plus')}</p>
       )}
 
       {meetings.length > 0 && (
@@ -157,7 +159,7 @@ export function AgentMeetingPanel({
               <div className="flex-1 min-w-0">
                 <div className="text-[10px] text-text-primary truncate">{m.agenda.substring(0, 60)}</div>
                 <div className="text-[9px] text-text-muted">
-                  {m.roundsCompleted} round{m.roundsCompleted !== 1 ? 's' : ''} — {formatDate(m.createdAt)}
+                  {t('meeting.roundsCompleted', { count: m.roundsCompleted, suffix: m.roundsCompleted !== 1 ? 's' : '' })} — {formatDate(m.createdAt)}
                 </div>
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
@@ -165,7 +167,7 @@ export function AgentMeetingPanel({
                   <button
                     onClick={() => onNavigateToNote?.(m.minutesNoteId!)}
                     className="text-text-muted hover:text-accent-blue p-0.5"
-                    title="View minutes"
+                    title={t('meeting.viewMinutes')}
                   >
                     <FileText size={11} />
                   </button>
@@ -173,7 +175,7 @@ export function AgentMeetingPanel({
                 <button
                   onClick={() => onNavigateToChat?.(m.threadId)}
                   className="text-text-muted hover:text-accent-blue p-0.5"
-                  title="View discussion"
+                  title={t('meeting.viewDiscussion')}
                 >
                   <ChevronRight size={11} />
                 </button>

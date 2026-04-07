@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Send, Paperclip, AtSign, X, FileText, Film, Music } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -29,6 +30,7 @@ interface PostComposerProps {
 }
 
 export function PostComposer({ folderId, parentId, replyToId, placeholder, initialContent, onPostCreated, settings }: PostComposerProps) {
+  const { t } = useTranslation('caddyshack');
   const { user, serverUrl } = useAuth();
   const { addToast } = useToast();
   const [content, setContent] = useState(initialContent || '');
@@ -251,7 +253,7 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
             value={content}
             onChange={handleContentChange}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder || "What's happening?"}
+            placeholder={placeholder || t('composer.placeholder')}
             className="w-full bg-transparent border-0 resize-none text-[14px] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none min-h-[48px]"
             rows={2}
           />
@@ -354,7 +356,7 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
           disabled={!content.trim() || submitting}
           className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-sm font-semibold disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors flex items-center gap-1.5"
         >
-          <Send size={14} /> Post
+          <Send size={14} /> {t('composer.post')}
         </button>
       </div>
 

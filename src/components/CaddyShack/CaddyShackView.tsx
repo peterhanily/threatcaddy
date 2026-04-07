@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RefreshCw, Globe, FolderOpen, Server, Settings, UserPlus, MessageSquare, Activity } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -22,6 +23,7 @@ interface CaddyShackViewProps {
 }
 
 export function CaddyShackView({ folderId, folderName, settings }: CaddyShackViewProps) {
+  const { t } = useTranslation('caddyshack');
   const { user, connected } = useAuth();
   const { addToast } = useToast();
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('caddyshack-onboarded'));
@@ -221,7 +223,7 @@ export function CaddyShackView({ folderId, folderName, settings }: CaddyShackVie
     return (
       <div className="flex-1 flex items-center justify-center text-[var(--text-tertiary)] relative">
         {showOnboarding && onboardingPanel}
-        <p>Connect to a team server to use CaddyShack.</p>
+        <p>{t('view.connectToServer')}</p>
       </div>
     );
   }
@@ -257,7 +259,7 @@ export function CaddyShackView({ folderId, folderName, settings }: CaddyShackVie
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)]">CaddyShack</h2>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">{t('view.title')}</h2>
         <div className="flex items-center gap-2">
           {folderId && (
             <div className="flex bg-[var(--bg-secondary)] rounded-lg border border-[var(--border)] overflow-hidden">
@@ -320,12 +322,12 @@ export function CaddyShackView({ folderId, folderName, settings }: CaddyShackVie
 
       {/* Feed content */}
       {isLoading ? (
-        <div className="text-center py-12 text-[var(--text-tertiary)] text-sm">Loading...</div>
+        <div className="text-center py-12 text-[var(--text-tertiary)] text-sm">{t('view.loading')}</div>
       ) : feedTab === 'posts' ? (
         /* Posts-only view */
         posts.length === 0 ? (
           <div className="text-center py-12 text-[var(--text-tertiary)] text-sm">
-            No posts yet. Be the first to share an update!
+            {t('view.noPostsYet')}
           </div>
         ) : (
           <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--bg-secondary)] divide-y divide-[var(--border)]">
@@ -350,7 +352,7 @@ export function CaddyShackView({ folderId, folderName, settings }: CaddyShackVie
         /* Activity-only view */
         activityEntries.length === 0 ? (
           <div className="text-center py-12 text-[var(--text-tertiary)] text-sm">
-            No team activity yet.
+            {t('view.noTeamActivity')}
           </div>
         ) : (
           <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--bg-secondary)] divide-y divide-[var(--border)]">
@@ -367,7 +369,7 @@ export function CaddyShackView({ folderId, folderName, settings }: CaddyShackVie
         /* "All" merged timeline */
         mergedTimeline && mergedTimeline.length === 0 ? (
           <div className="text-center py-12 text-[var(--text-tertiary)] text-sm">
-            No posts or activity yet. Be the first to share an update!
+            {t('view.noPosts')}
           </div>
         ) : (
           <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--bg-secondary)] divide-y divide-[var(--border)]">

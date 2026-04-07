@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronRight } from 'lucide-react';
 import { Modal } from '../Common/Modal';
 import type { PlaybookTemplate } from '../../types';
@@ -14,6 +15,7 @@ interface PlaybookPickerProps {
 }
 
 export function PlaybookPicker({ open, onClose, playbooks, onSelect, applyToExisting }: PlaybookPickerProps) {
+  const { t } = useTranslation('playbooks');
   const [selectedPlaybook, setSelectedPlaybook] = useState<PlaybookTemplate | null>(null);
   const [investigationName, setInvestigationName] = useState('');
 
@@ -115,7 +117,7 @@ export function PlaybookPicker({ open, onClose, playbooks, onSelect, applyToExis
               disabled={!applyToExisting && !investigationName.trim()}
               className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors disabled:opacity-50"
             >
-              {applyToExisting ? 'Run Playbook' : 'Create Investigation'}
+              {applyToExisting ? t('picker.runPlaybook') : t('picker.createInvestigation')}
             </button>
           </div>
         </div>
@@ -124,7 +126,7 @@ export function PlaybookPicker({ open, onClose, playbooks, onSelect, applyToExis
   }
 
   return (
-    <Modal open={open} onClose={handleClose} title={applyToExisting ? 'Run Playbook' : 'Start from Playbook'}>
+    <Modal open={open} onClose={handleClose} title={applyToExisting ? t('picker.runPlaybook') : t('picker.startFromPlaybook')}>
       <div className="space-y-3">
         <p className="text-xs text-gray-400">
           {applyToExisting

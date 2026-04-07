@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, FileText, ListChecks, Clock, PenTool, Search, Network, Activity, MessageSquare } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import type { QuickLink, ViewMode, Folder, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, KPIMetricId } from '../../types';
@@ -32,6 +33,7 @@ interface DashboardViewProps {
 }
 
 export function DashboardView({ links, onUpdateLinks, onViewChange, folders, allNotes, allTasks, allEvents, allIOCs, dashboardKPIs, onUpdateKPIs }: DashboardViewProps) {
+  const { t } = useTranslation('dashboard');
   const [formOpen, setFormOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<QuickLink | undefined>();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -90,14 +92,14 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
       <div data-tour="quick-links" className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
         <div className="flex items-center gap-2">
           <span className="text-lg" role="img" aria-label="dashboard">{'\uD83C\uDFE0'}</span>
-          <h2 className="text-lg font-semibold text-gray-100">Quick Links</h2>
+          <h2 className="text-lg font-semibold text-gray-100">{t('view.quickLinks')}</h2>
         </div>
         <button
           onClick={() => setFormOpen(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-accent hover:bg-accent-hover text-white transition-colors"
         >
           <Plus size={16} />
-          Add Link
+          {t('view.addLink')}
         </button>
       </div>
 
@@ -159,15 +161,15 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
         {links.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-gray-600">
             <span className="text-4xl mb-3">{'\uD83D\uDD17'}</span>
-            <p className="text-lg font-medium">No quick links</p>
-            <p className="text-sm mt-1">Add links to your favorite threat intel tools</p>
+            <p className="text-lg font-medium">{t('view.noQuickLinks')}</p>
+            <p className="text-sm mt-1">{t('view.addLinksHint')}</p>
           </div>
         )}
 
         {/* Internal Tools */}
         {onViewChange && (
           <div className="mt-8">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">ThreatCaddy Tools</h3>
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('view.threatcaddyTools')}</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {INTERNAL_TOOLS.map((tool) => {
                 const Icon = tool.icon;

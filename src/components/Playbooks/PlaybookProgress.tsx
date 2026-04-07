@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, ChevronDown, ChevronRight, MessageSquare } from 'lucide-react';
 import type { PlaybookExecution, PlaybookExecutionStep } from '../../types';
 import { formatDate } from '../../lib/utils';
@@ -12,6 +13,7 @@ interface PlaybookProgressProps {
 }
 
 export function PlaybookProgress({ execution, steps, onToggleStep, onUpdateStepNotes, compact }: PlaybookProgressProps) {
+  const { t } = useTranslation('playbooks');
   const [expanded, setExpanded] = useState(!compact);
   const [editingNotes, setEditingNotes] = useState<number | null>(null);
   const [notesDraft, setNotesDraft] = useState('');
@@ -134,7 +136,7 @@ export function PlaybookProgress({ execution, steps, onToggleStep, onUpdateStepN
                         onClick={() => startEditingNotes(i)}
                         className="text-[10px] text-gray-600 hover:text-gray-400 mt-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
                       >
-                        + Add note
+                        {t('progress.addNote')}
                       </button>
                     )}
                   </div>

@@ -1,4 +1,5 @@
 import React, { Suspense, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Whiteboard, Folder, Tag, Settings } from '../../types';
 import { WhiteboardList } from './WhiteboardList';
 import { Loader2 } from 'lucide-react';
@@ -36,6 +37,7 @@ export function WhiteboardView({
   onWhiteboardSelect,
   settings,
 }: WhiteboardViewProps) {
+  const { t } = useTranslation('whiteboard');
   const selectedWhiteboard = selectedWhiteboardId ? whiteboards.find((w) => w.id === selectedWhiteboardId) : null;
 
   // Auto-deselect if whiteboard was deleted
@@ -62,7 +64,7 @@ export function WhiteboardView({
           fallback={
             <div className="flex flex-col items-center justify-center flex-1 text-gray-500 gap-3">
               <Loader2 size={32} className="animate-spin" />
-              <p className="text-sm">Loading whiteboard...</p>
+              <p className="text-sm">{t('loadingWhiteboard')}</p>
             </div>
           }
         >

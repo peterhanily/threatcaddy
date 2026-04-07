@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, FolderOpen, Activity, Sun, Moon, Monitor, Shield, ChevronRight, Bot } from 'lucide-react';
 import type { Folder, Note, Task, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, Tag, ActivityLogEntry, ChatThread, ViewMode } from '../../types';
 import { cn } from '../../lib/utils';
@@ -74,6 +75,7 @@ export function ExecDashboard({
   onToggleTheme,
   onSwitchToAnalystMode,
 }: ExecDashboardProps) {
+  const { t } = useTranslation('exec');
   const [nav, setNav] = useState<ExecNav>('overview');
   const [drillDown, setDrillDown] = useState<ExecDrillDown>(null);
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
@@ -238,7 +240,7 @@ export function ExecDashboard({
   // Breadcrumb segments computed from drill-down state
   const breadcrumbs = useMemo((): BreadcrumbSegment[] => {
     if (!drillDown) return [];
-    const casesRoot: BreadcrumbSegment = { label: 'Investigations', onTap: () => { setDrillDown(null); setNav('investigations'); } };
+    const casesRoot: BreadcrumbSegment = { label: t('breadcrumb.investigations'), onTap: () => { setDrillDown(null); setNav('investigations'); } };
     const fid = 'folderId' in drillDown ? drillDown.folderId : '';
     const invDetail: BreadcrumbSegment = { label: drillFolderName, onTap: () => setDrillDown({ screen: 'investigation', folderId: fid }) };
 
@@ -280,34 +282,34 @@ export function ExecDashboard({
           { label: ioc?.value || 'IOC' }];
       }
       case 'globalNotes': {
-        const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
-        return [home, { label: 'All Notes' }];
+        const home: BreadcrumbSegment = { label: t('breadcrumb.overview'), onTap: () => setDrillDown(null) };
+        return [home, { label: t('breadcrumb.allNotes') }];
       }
       case 'globalTasks': {
-        const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
-        return [home, { label: 'Open Tasks' }];
+        const home: BreadcrumbSegment = { label: t('breadcrumb.overview'), onTap: () => setDrillDown(null) };
+        return [home, { label: t('breadcrumb.openTasks') }];
       }
       case 'globalIOCs': {
-        const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
-        return [home, { label: 'All IOCs' }];
+        const home: BreadcrumbSegment = { label: t('breadcrumb.overview'), onTap: () => setDrillDown(null) };
+        return [home, { label: t('breadcrumb.allIOCs') }];
       }
       case 'globalEvents': {
-        const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
-        return [home, { label: 'Events This Week' }];
+        const home: BreadcrumbSegment = { label: t('breadcrumb.overview'), onTap: () => setDrillDown(null) };
+        return [home, { label: t('breadcrumb.eventsThisWeek') }];
       }
       case 'globalChats': {
-        const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
-        return [home, { label: 'AI Chats' }];
+        const home: BreadcrumbSegment = { label: t('breadcrumb.overview'), onTap: () => setDrillDown(null) };
+        return [home, { label: t('breadcrumb.aiChats') }];
       }
       case 'chatDetail': {
-        const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
-        const chatsRoot: BreadcrumbSegment = { label: 'AI Chats', onTap: () => setDrillDown({ screen: 'globalChats' }) };
+        const home: BreadcrumbSegment = { label: t('breadcrumb.overview'), onTap: () => setDrillDown(null) };
+        const chatsRoot: BreadcrumbSegment = { label: t('breadcrumb.aiChats'), onTap: () => setDrillDown({ screen: 'globalChats' }) };
         const chat = allChatThreads.find((c) => c.id === drillDown.chatId);
         return [home, chatsRoot, { label: chat?.title || 'Chat' }];
       }
       case 'globalGraph': {
-        const home: BreadcrumbSegment = { label: 'Overview', onTap: () => setDrillDown(null) };
-        return [home, { label: 'Entity Graph' }];
+        const home: BreadcrumbSegment = { label: t('breadcrumb.overview'), onTap: () => setDrillDown(null) };
+        return [home, { label: t('breadcrumb.entityGraph') }];
       }
       default: return [];
     }
@@ -320,9 +322,9 @@ export function ExecDashboard({
   ].includes(drillDown.screen));
 
   const tabs: { key: ExecNav; label: string; icon: typeof LayoutDashboard }[] = [
-    { key: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { key: 'investigations', label: 'Cases', icon: FolderOpen },
-    { key: 'activity', label: 'Activity', icon: Activity },
+    { key: 'overview', label: t('dashboard.overview'), icon: LayoutDashboard },
+    { key: 'investigations', label: t('dashboard.cases'), icon: FolderOpen },
+    { key: 'activity', label: t('dashboard.activity'), icon: Activity },
   ];
 
   // Helper: compute sorted entity list and nav handler for detail views
@@ -503,12 +505,12 @@ export function ExecDashboard({
           .filter((c) => !q || (c.title || '').toLowerCase().includes(q));
         return (
           <div className="flex flex-col gap-1.5">
-            {threads.length === 0 && <p className="text-sm text-text-muted text-center py-8">No chat threads</p>}
+            {threads.length === 0 && <p className="text-sm text-text-muted text-center py-8">{t('dashboard.noChatThreads')}</p>}
             {threads.map((chat) => (
               <button key={chat.id} onClick={() => setDrillDown({ screen: 'chatDetail', chatId: chat.id })}
                 className="bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-left flex items-center gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-text-primary truncate">{chat.title || 'Untitled Chat'}</p>
+                  <p className="text-sm font-medium text-text-primary truncate">{chat.title || t('dashboard.untitledChat')}</p>
                   <p className="text-[10px] text-text-muted mt-0.5">
                     {folderNames.get(chat.folderId || '') || 'General'} · {chat.messages?.length ?? 0} messages · {new Date(chat.updatedAt).toLocaleDateString()}
                   </p>
@@ -563,7 +565,7 @@ export function ExecDashboard({
               onClick={() => onSwitchToAnalystMode(undefined, 'graph')}
               className="flex items-center justify-center gap-2 bg-accent text-white rounded-xl py-3 font-medium text-sm active:bg-accent-dim transition-colors"
             >
-              Open Interactive Graph
+              {t('dashboard.openInteractiveGraph')}
             </button>
           </div>
         );
@@ -640,12 +642,12 @@ export function ExecDashboard({
             {activeFolders.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold text-text-primary">Active Investigations</h2>
+                  <h2 className="text-sm font-semibold text-text-primary">{t('dashboard.activeInvestigations')}</h2>
                   <button
                     onClick={() => { setNav('investigations'); }}
                     className="text-xs text-accent font-medium"
                   >
-                    View all
+                    {t('dashboard.viewAll')}
                   </button>
                 </div>
                 <ExecInvestigationList
@@ -665,7 +667,7 @@ export function ExecDashboard({
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Bot size={14} className="text-accent-blue" />
-                  <h2 className="text-sm font-semibold text-text-primary">AgentCaddy</h2>
+                  <h2 className="text-sm font-semibold text-text-primary">{t('dashboard.agentCaddy')}</h2>
                   {agentStats.activeAgents > 0 && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-green/10 text-accent-green">{agentStats.activeAgents} active</span>
                   )}
@@ -695,12 +697,12 @@ export function ExecDashboard({
             {activityEntries.length > 0 && (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold text-text-primary">Recent Activity</h2>
+                  <h2 className="text-sm font-semibold text-text-primary">{t('dashboard.recentActivity')}</h2>
                   <button
                     onClick={() => { setNav('activity'); }}
                     className="text-xs text-accent font-medium"
                   >
-                    View all
+                    {t('dashboard.viewAll')}
                   </button>
                 </div>
                 <ExecActivityFeed entries={activityEntries} limit={10} />
@@ -709,7 +711,7 @@ export function ExecDashboard({
           </div>
         ) : nav === 'investigations' ? (
           <div>
-            <h2 className="text-lg font-bold text-text-primary mb-4">Investigations</h2>
+            <h2 className="text-lg font-bold text-text-primary mb-4">{t('dashboard.investigations')}</h2>
             <ExecInvestigationList
               folders={folders}
               allNotes={allNotes}
@@ -723,7 +725,7 @@ export function ExecDashboard({
           </div>
         ) : (
           <div>
-            <h2 className="text-lg font-bold text-text-primary mb-4">Activity</h2>
+            <h2 className="text-lg font-bold text-text-primary mb-4">{t('dashboard.activity')}</h2>
             <ExecActivityFeed entries={activityEntries} limit={50} />
           </div>
         )}

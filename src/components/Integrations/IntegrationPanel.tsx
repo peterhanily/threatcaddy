@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Trash2, Settings2, Power, AlertCircle, Check, ExternalLink, Clock, Plus, Search, Upload, Download, RefreshCw, Share2, Users, Globe2, Loader2, ArrowUpCircle, Wrench } from 'lucide-react';
 import { useIntegrations } from '../../hooks/useIntegrations';
 import { useAuth } from '../../contexts/AuthContext';
@@ -131,6 +132,7 @@ function ConfigForm({
   onSave: (config: Record<string, unknown>) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation('integrations');
   const [formValues, setFormValues] = useState<Record<string, unknown>>(() => {
     const initial: Record<string, unknown> = {};
     for (const field of fields) {
@@ -203,7 +205,7 @@ function ConfigForm({
                 }
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-500 hover:text-gray-300"
               >
-                {showPasswords[field.key] ? 'Hide' : 'Show'}
+                {showPasswords[field.key] ? t('config.hide') : t('config.show')}
               </button>
             </div>
           ) : field.type === 'number' ? (
@@ -267,6 +269,7 @@ function InstalledTab({
   onShareWithTeam: (template: IntegrationTemplate) => void;
   isTeamConnected: boolean;
 }) {
+  const { t } = useTranslation('integrations');
   const [configuringId, setConfiguringId] = useState<string | null>(null);
 
   const installedTemplateIds = new Set(installations.map((i) => i.templateId));
@@ -277,7 +280,7 @@ function InstalledTab({
       {/* Installed list */}
       {installations.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-sm text-gray-500">No integrations installed. Browse the catalog to get started.</p>
+          <p className="text-sm text-gray-500">{t('panel.noInstalled')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -385,7 +388,7 @@ function InstalledTab({
                 )}
                 {isConfiguring && template && template.configSchema.length === 0 && (
                   <p className="text-xs text-gray-500 mt-2 italic">
-                    This integration has no configurable options.
+                    {t('panel.noConfigOptions')}
                   </p>
                 )}
               </div>
@@ -398,7 +401,7 @@ function InstalledTab({
       {availableTemplates.length > 0 && (
         <div className="space-y-3">
           <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Available Integrations
+            {t('panel.availableIntegrations')}
           </h4>
           <div className="space-y-2">
             {availableTemplates.map((template) => (
@@ -467,6 +470,7 @@ function CatalogTab({
   onInstallTeamTemplate: (template: IntegrationTemplate) => void;
   onDeleteTeamTemplate: (id: string) => void;
 }) {
+  const { t } = useTranslation('integrations');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [pasteJson, setPasteJson] = useState('');
@@ -576,7 +580,7 @@ function CatalogTab({
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search integrations..."
+          placeholder={t('catalog.searchIntegrations')}
           className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent"
         />
       </div>
@@ -662,7 +666,7 @@ function CatalogTab({
                       onClick={() => setExpandedId(isExpanded ? null : template.id)}
                       className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors whitespace-nowrap"
                     >
-                      {isExpanded ? 'Hide JSON' : 'View JSON'}
+                      {isExpanded ? t('catalog.hideJson') : t('catalog.viewJson')}
                     </button>
                   </div>
                 </div>
@@ -680,7 +684,7 @@ function CatalogTab({
       ))}
 
       {filtered.length === 0 && searchQuery && !catalogLoading && filteredCommunity.length === 0 && filteredTeam.length === 0 && (
-        <p className="text-sm text-gray-500 text-center py-4">No templates match your search.</p>
+        <p className="text-sm text-gray-500 text-center py-4">{t('catalog.noTemplatesMatch')}</p>
       )}
 
       {/* Team Templates Section */}
@@ -688,17 +692,17 @@ function CatalogTab({
         <div className="border-t border-gray-700 pt-4 space-y-3">
           <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
             <Users size={12} />
-            Team Templates
+            {t('catalog.teamTemplates')}
           </h4>
 
           {teamLoading ? (
             <div className="flex items-center gap-2 py-4 justify-center">
               <Loader2 size={14} className="animate-spin text-gray-500" />
-              <span className="text-xs text-gray-500">Loading team templates...</span>
+              <span className="text-xs text-gray-500">{t('catalog.loadingTeamTemplates')}</span>
             </div>
           ) : filteredTeam.length === 0 ? (
             <p className="text-xs text-gray-500 py-2">
-              No team templates shared yet. Share your custom templates from the Installed tab.
+              {t('catalog.noTeamTemplates')}
             </p>
           ) : (
             <div className="space-y-2">
@@ -774,7 +778,7 @@ function CatalogTab({
         <div className="flex items-center justify-between">
           <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
             <Globe2 size={12} />
-            Community Catalog
+            {t('catalog.communityCatalog')}
           </h4>
           <button
             onClick={onRefreshCatalog}
@@ -783,14 +787,14 @@ function CatalogTab({
             title="Refresh catalog"
           >
             <RefreshCw size={10} className={catalogLoading ? 'animate-spin' : ''} />
-            Refresh
+            {t('catalog.refresh')}
           </button>
         </div>
 
         {catalogLoading && catalogEntries.length === 0 ? (
           <div className="flex items-center gap-2 py-4 justify-center">
             <Loader2 size={14} className="animate-spin text-gray-500" />
-            <span className="text-xs text-gray-500">Loading community catalog...</span>
+            <span className="text-xs text-gray-500">{t('catalog.loadingCommunityCatalog')}</span>
           </div>
         ) : catalogError ? (
           <div className="flex items-center gap-2 text-xs text-red-400 py-2">
@@ -799,7 +803,7 @@ function CatalogTab({
           </div>
         ) : filteredCommunity.length === 0 && !catalogLoading ? (
           <p className="text-xs text-gray-500 py-2">
-            {searchQuery ? 'No community templates match your search.' : 'No community templates available yet.'}
+            {searchQuery ? t('catalog.noCommunityMatch') : t('catalog.noCommunityAvailable')}
           </p>
         ) : (
           communityGrouped.map(({ category, entries }) => (
@@ -890,7 +894,7 @@ function CatalogTab({
       {/* Import section */}
       <div className="border-t border-gray-700 pt-4 space-y-3">
         <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          Import Custom Template
+          {t('catalog.importCustomTemplate')}
         </h4>
 
         <input
@@ -905,14 +909,14 @@ function CatalogTab({
           className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-medium transition-colors"
         >
           <Upload size={14} />
-          Import JSON File
+          {t('catalog.importJsonFile')}
         </button>
 
         <div className="space-y-2">
           <textarea
             value={pasteJson}
             onChange={(e) => setPasteJson(e.target.value)}
-            placeholder="Or paste template JSON here..."
+            placeholder={t('catalog.pasteJsonPlaceholder')}
             rows={4}
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent font-mono resize-y"
           />
@@ -921,7 +925,7 @@ function CatalogTab({
             disabled={!pasteJson.trim()}
             className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Import from Paste
+            {t('catalog.importFromPaste')}
           </button>
         </div>
 
@@ -947,12 +951,13 @@ function HistoryTab({
   templates: IntegrationTemplate[];
   installations: InstalledIntegration[];
 }) {
+  const { t } = useTranslation('integrations');
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
 
   if (runs.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-sm text-gray-500">No integration runs yet.</p>
+        <p className="text-sm text-gray-500">{t('history.noRunsYet')}</p>
       </div>
     );
   }
@@ -1052,7 +1057,7 @@ function HistoryTab({
               </div>
             )}
             {isExpanded && run.log.length === 0 && (
-              <p className="text-[10px] text-gray-600 mt-2 italic">No step log recorded.</p>
+              <p className="text-[10px] text-gray-600 mt-2 italic">{t('history.noStepLog')}</p>
             )}
           </div>
         );
@@ -1064,6 +1069,7 @@ function HistoryTab({
 // --- Main Panel ---
 
 export function IntegrationPanel() {
+  const { t } = useTranslation('integrations');
   const {
     templates,
     installations,
@@ -1198,9 +1204,9 @@ export function IntegrationPanel() {
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
           <Power size={16} />
-          Integrations
+          {t('panel.integrations')}
         </h3>
-        <p className="text-sm text-gray-500">Loading integrations...</p>
+        <p className="text-sm text-gray-500">{t('panel.loadingIntegrations')}</p>
       </div>
     );
   }
@@ -1211,10 +1217,10 @@ export function IntegrationPanel() {
       <div>
         <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
           <Power size={16} />
-          Integrations
+          {t('panel.integrations')}
         </h3>
         <p className="text-xs text-gray-500 mt-1">
-          Connect to threat intelligence feeds, enrichment APIs, and export pipelines.
+          {t('panel.description')}
         </p>
       </div>
 
@@ -1222,9 +1228,9 @@ export function IntegrationPanel() {
       <div className="flex gap-1 border-b border-gray-700 pb-px">
         {(
           [
-            { key: 'installed', label: 'Installed', count: installations.length },
-            { key: 'catalog', label: 'Catalog', count: templates.length },
-            { key: 'history', label: 'History', count: runs.length },
+            { key: 'installed', label: t('panel.installed'), count: installations.length },
+            { key: 'catalog', label: t('panel.catalog'), count: templates.length },
+            { key: 'history', label: t('panel.history'), count: runs.length },
           ] as { key: SubTab; label: string; count: number }[]
         ).map((tab) => (
           <button
@@ -1270,7 +1276,7 @@ export function IntegrationPanel() {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-700 text-gray-200 text-xs font-medium hover:bg-gray-600 transition-colors"
               >
                 <Wrench size={12} />
-                Create Custom
+                {t('panel.createCustom')}
               </button>
             </div>
             <CatalogTab

@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Shield, Lock, X, AlertCircle, Download, Check } from 'lucide-react';
 import { isEncryptedShare, decodeSharePayload } from '../../lib/share';
 import type { SharePayload } from '../../lib/share';
@@ -46,6 +47,7 @@ const SCOPE_LABELS: Record<string, string> = {
 };
 
 export function ShareReceiver({ encodedData, theme, onDismiss, onSave }: ShareReceiverProps) {
+  const { t } = useTranslation('exec');
   const encrypted = useMemo(() => isEncryptedShare(encodedData), [encodedData]);
   const [password, setPassword] = useState('');
   const [state, setState] = useState<ReceiverState>(
@@ -299,8 +301,8 @@ export function ShareReceiver({ encodedData, theme, onDismiss, onSave }: ShareRe
         {state.phase === 'password-prompt' && (
           <div className="flex flex-col items-center justify-center gap-4 mt-12">
             <Lock size={32} className="text-accent-amber" />
-            <h2 className="text-lg font-bold text-text-primary">Encrypted Content</h2>
-            <p className="text-sm text-text-muted text-center">This shared content is protected with a password.</p>
+            <h2 className="text-lg font-bold text-text-primary">{t('share.encryptedContent')}</h2>
+            <p className="text-sm text-text-muted text-center">{t('share.passwordProtected')}</p>
             <input
               type="password"
               value={password}
@@ -314,7 +316,7 @@ export function ShareReceiver({ encodedData, theme, onDismiss, onSave }: ShareRe
               disabled={!password}
               className="bg-accent text-white rounded-lg px-6 py-2.5 text-sm font-medium disabled:opacity-50 transition-opacity"
             >
-              Decrypt
+              {t('share.decrypt')}
             </button>
           </div>
         )}
@@ -322,7 +324,7 @@ export function ShareReceiver({ encodedData, theme, onDismiss, onSave }: ShareRe
         {state.phase === 'decoding' && (
           <div className="flex flex-col items-center justify-center gap-3 mt-12">
             <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-text-muted">Decoding...</p>
+            <p className="text-sm text-text-muted">{t('share.decoding')}</p>
           </div>
         )}
 

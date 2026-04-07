@@ -1,0 +1,18 @@
+{
+  "title": "Whiteboards",
+  "new": "New",
+  "noWhiteboards": "No whiteboards yet",
+  "createHint": "Create one to start drawing",
+  "loadingWhiteboard": "Loading whiteboard...",
+  "deleteTitle": "Delete Whiteboard",
+  "deleteMessage": "This whiteboard will be permanently deleted. This cannot be undone.",
+  "deleteConfirm": "Delete Whiteboard",
+  "elements": "{{count}} elements",
+  "element": "{{count}} element",
+  "rename": "Rename",
+  "archive": "Archive",
+  "unarchive": "Unarchive",
+  "moveToTrash": "Move to trash",
+  "restore": "Restore",
+  "deletePermanently": "Delete permanently"
+}

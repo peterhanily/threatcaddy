@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Activity, FileText, ListChecks, Clock, PenTool,
   FolderOpen, Tag, Shield, Cloud, Database, Trash2, MessageSquare, Bot,
@@ -71,6 +72,7 @@ function groupByTimePeriod(entries: ActivityLogEntry[]): { period: string; entri
 }
 
 export function ActivityLogView({ entries, getFiltered, onClear }: ActivityLogViewProps) {
+  const { t } = useTranslation('activity');
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ActivityCategory | undefined>();
   const [showConfirmClear, setShowConfirmClear] = useState(false);
@@ -87,7 +89,7 @@ export function ActivityLogView({ entries, getFiltered, onClear }: ActivityLogVi
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-800 shrink-0">
         <Activity size={18} className="text-accent" />
-        <span className="text-sm font-medium text-gray-200">Activity Log</span>
+        <span className="text-sm font-medium text-gray-200">{t('title')}</span>
         <span className="text-xs text-gray-500">({filtered.length})</span>
         <div className="ml-auto">
           <button
@@ -96,7 +98,7 @@ export function ActivityLogView({ entries, getFiltered, onClear }: ActivityLogVi
             className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-gray-400 hover:text-red-400 hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Trash2 size={12} />
-            Clear
+            {t('clearButton')}
           </button>
         </div>
       </div>
@@ -107,7 +109,7 @@ export function ActivityLogView({ entries, getFiltered, onClear }: ActivityLogVi
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search activity..."
+          placeholder={t('searchPlaceholder')}
           className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent"
         />
         <div className="flex items-center gap-1 flex-wrap">
@@ -148,8 +150,8 @@ export function ActivityLogView({ entries, getFiltered, onClear }: ActivityLogVi
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-600">
             <Activity size={40} className="mb-3" />
-            <p className="text-sm">No activity yet</p>
-            <p className="text-xs mt-1 text-gray-700">Actions you take will appear here</p>
+            <p className="text-sm">{t('noActivity')}</p>
+            <p className="text-xs mt-1 text-gray-700">{t('noActivityHint')}</p>
           </div>
         ) : (
           grouped.map((group) => (

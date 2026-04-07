@@ -1,23 +1,42 @@
 import '@testing-library/jest-dom/vitest';
 import 'fake-indexeddb/auto';
 
-// Import the app's actual i18n instance so that all modules (including i18n-labels.ts
-// which imports src/i18n.ts directly) share the same initialized instance.
-// The src/i18n.ts init is synchronous for bundled namespaces, so by the time tests
-// run, all English strings are available. We add the feature namespaces here so
-// components using useTranslation('settings') etc. also resolve correctly.
+// Import the app's actual i18n instance so all modules share the same instance.
 import i18n from './i18n';
+
+// Add all feature namespaces for test coverage
 import settingsEn from '../public/locales/en/settings.json';
 import analysisEn from '../public/locales/en/analysis.json';
 import timelineEn from '../public/locales/en/timeline.json';
 import notesEn from '../public/locales/en/notes.json';
 import tasksEn from '../public/locales/en/tasks.json';
 import chatEn from '../public/locales/en/chat.json';
+import graphEn from '../public/locales/en/graph.json';
+import agentEn from '../public/locales/en/agent.json';
+import integrationsEn from '../public/locales/en/integrations.json';
+import encryptionEn from '../public/locales/en/encryption.json';
+import execEn from '../public/locales/en/exec.json';
+import caddyshackEn from '../public/locales/en/caddyshack.json';
+import dashboardEn from '../public/locales/en/dashboard.json';
+import searchEn from '../public/locales/en/search.json';
+import activityEn from '../public/locales/en/activity.json';
+import whiteboardEn from '../public/locales/en/whiteboard.json';
+import tourEn from '../public/locales/en/tour.json';
+import playbooksEn from '../public/locales/en/playbooks.json';
+import importEn from '../public/locales/en/import.json';
+import trashEn from '../public/locales/en/trash.json';
+import investigationsEn from '../public/locales/en/investigations.json';
 
-// Add feature namespaces to the already-initialized i18n instance
-i18n.addResourceBundle('en', 'settings', settingsEn);
-i18n.addResourceBundle('en', 'analysis', analysisEn);
-i18n.addResourceBundle('en', 'timeline', timelineEn);
-i18n.addResourceBundle('en', 'notes', notesEn);
-i18n.addResourceBundle('en', 'tasks', tasksEn);
-i18n.addResourceBundle('en', 'chat', chatEn);
+const namespaces: Record<string, Record<string, unknown>> = {
+  settings: settingsEn, analysis: analysisEn, timeline: timelineEn,
+  notes: notesEn, tasks: tasksEn, chat: chatEn, graph: graphEn,
+  agent: agentEn, integrations: integrationsEn, encryption: encryptionEn,
+  exec: execEn, caddyshack: caddyshackEn, dashboard: dashboardEn,
+  search: searchEn, activity: activityEn, whiteboard: whiteboardEn,
+  tour: tourEn, playbooks: playbooksEn, import: importEn, trash: trashEn,
+  investigations: investigationsEn,
+};
+
+for (const [ns, data] of Object.entries(namespaces)) {
+  i18n.addResourceBundle('en', ns, data);
+}

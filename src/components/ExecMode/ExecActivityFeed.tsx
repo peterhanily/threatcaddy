@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText, ListChecks, Clock, PenTool, FolderOpen, Tag, Shield, Cloud, Database, MessageSquare, Bot } from 'lucide-react';
 import type { ActivityLogEntry, ActivityCategory } from '../../types';
 import { ACTIVITY_CATEGORY_LABELS } from '../../types';
@@ -57,13 +58,14 @@ function groupByTimePeriod(entries: ActivityLogEntry[]): { period: string; entri
 }
 
 export function ExecActivityFeed({ entries, limit = 50 }: ExecActivityFeedProps) {
+  const { t } = useTranslation('exec');
   const grouped = useMemo(
     () => groupByTimePeriod(entries.slice(0, limit)),
     [entries, limit],
   );
 
   if (entries.length === 0) {
-    return <p className="text-text-muted text-sm text-center py-8">No recent activity</p>;
+    return <p className="text-text-muted text-sm text-center py-8">{t('activity.noRecentActivity')}</p>;
   }
 
   return (

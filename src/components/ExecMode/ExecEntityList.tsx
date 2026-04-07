@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronRight, FileText, ListChecks, Clock, PenTool, Shield } from 'lucide-react';
 import type { Note, Task, TimelineEvent, Whiteboard, StandaloneIOC } from '../../types';
 import { PRIORITY_COLORS, TIMELINE_EVENT_TYPE_LABELS, IOC_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
@@ -38,6 +39,7 @@ export function ExecEntityList({
   onSelectNote, onSelectTask, onSelectEvent, onSelectIOC, onSwitchToAnalystMode,
   filterText,
 }: ExecEntityListProps) {
+  const { t } = useTranslation('exec');
   const meta = MODE_META[mode];
   const Icon = meta.icon;
   const q = (filterText || '').toLowerCase();
@@ -73,7 +75,7 @@ export function ExecEntityList({
       <div className="flex items-center gap-2">
         <Icon size={18} className={meta.color} />
         <h2 className="text-lg font-bold text-text-primary">{meta.label}</h2>
-        <span className="text-xs text-text-muted">in {folderName}</span>
+        <span className="text-xs text-text-muted">{t('entities.inFolder', { name: folderName })}</span>
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -120,11 +122,11 @@ export function ExecEntityList({
             <div key={wb.id} className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-text-primary truncate">{wb.name || 'Untitled'}</p>
-                <p className="text-[10px] text-text-muted mt-0.5">{elemCount} element{elemCount !== 1 ? 's' : ''}</p>
+                <p className="text-[10px] text-text-muted mt-0.5">{elemCount !== 1 ? t('entities.elementCountPlural', { count: elemCount }) : t('entities.elementCount', { count: elemCount })}</p>
               </div>
               {onSwitchToAnalystMode && (
                 <button onClick={onSwitchToAnalystMode} className="text-[10px] text-accent font-medium bg-accent/10 px-2 py-1 rounded-lg shrink-0">
-                  Open in Analyst
+                  {t('entities.openInAnalyst')}
                 </button>
               )}
             </div>
@@ -151,7 +153,7 @@ export function ExecEntityList({
           (mode === 'events' && events.length === 0) ||
           (mode === 'whiteboards' && whiteboards.length === 0) ||
           (mode === 'iocs' && iocs.length === 0)) && (
-          <p className="text-sm text-text-muted text-center py-8">No {meta.label.toLowerCase()} in this investigation</p>
+          <p className="text-sm text-text-muted text-center py-8">{t('entities.noEntities', { type: meta.label.toLowerCase() })}</p>
         )}
       </div>
     </div>

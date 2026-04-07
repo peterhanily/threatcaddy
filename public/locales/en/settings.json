@@ -359,8 +359,6 @@
   "intel.sourceTypes": "Source Types (empty = any)",
   "intel.targetTypes": "Target Types (empty = any)",
   "intel.addCustomRelType": "Add Custom Relationship Type",
-  "intel.clsLevels": "Classification Levels",
-  "intel.iocStatuses": "IOC Statuses",
   "intel.configImported": "Config imported",
   "intel.invalidConfigFile": "Invalid JSON config file",
 

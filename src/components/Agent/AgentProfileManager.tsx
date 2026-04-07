@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bot, Plus, Pencil, Trash2, Copy, ChevronDown, ChevronRight, X, Download, Upload } from 'lucide-react';
 import type { AgentProfile } from '../../types';
 import { cn } from '../../lib/utils';
@@ -22,6 +23,7 @@ export function AgentProfileManager({
   userProfiles, builtinProfiles,
   onCreateProfile, onUpdateProfile, onDeleteProfile, onDuplicateBuiltin,
 }: AgentProfileManagerProps) {
+  const { t } = useTranslation('agent');
   const [expanded, setExpanded] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -34,8 +36,8 @@ export function AgentProfileManager({
       >
         {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <Bot size={16} className="text-accent-blue" />
-        <span className="text-sm font-semibold text-text-secondary">Agent Profiles</span>
-        <span className="text-xs text-text-muted ml-auto">{userProfiles.length} custom, {builtinProfiles.length} built-in</span>
+        <span className="text-sm font-semibold text-text-secondary">{t('profile.agentProfiles')}</span>
+        <span className="text-xs text-text-muted ml-auto">{t('profile.customAndBuiltin', { custom: userProfiles.length, builtin: builtinProfiles.length })}</span>
       </button>
 
       {expanded && (
@@ -43,7 +45,7 @@ export function AgentProfileManager({
           {/* User profiles */}
           {userProfiles.length > 0 && (
             <div>
-              <div className="text-[10px] text-text-muted uppercase tracking-wide mb-1">Your Profiles</div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wide mb-1">{t('profile.yourProfiles')}</div>
               {userProfiles.map(p => (
                 editingId === p.id ? (
                   <ProfileForm
@@ -79,7 +81,7 @@ export function AgentProfileManager({
               className="flex items-center gap-1.5 text-xs text-accent-blue hover:underline"
             >
               <Plus size={12} />
-              Create Profile
+              {t('profile.createProfile')}
             </button>
           )}
 
@@ -93,7 +95,7 @@ export function AgentProfileManager({
                 const a = document.createElement('a'); a.href = url; a.download = 'agent-profiles.json'; a.click();
                 URL.revokeObjectURL(url);
               }} className="flex items-center gap-1 text-[10px] text-text-muted hover:text-text-secondary">
-                <Download size={10} /> Export
+                <Download size={10} /> {t('profile.export')}
               </button>
             )}
             <button onClick={() => {
@@ -114,13 +116,13 @@ export function AgentProfileManager({
               };
               input.click();
             }} className="flex items-center gap-1 text-[10px] text-text-muted hover:text-text-secondary">
-              <Upload size={10} /> Import
+              <Upload size={10} /> {t('profile.import')}
             </button>
           </div>
 
           {/* Built-in profiles */}
           <div>
-            <div className="text-[10px] text-text-muted uppercase tracking-wide mb-1 mt-3">Built-in Profiles</div>
+            <div className="text-[10px] text-text-muted uppercase tracking-wide mb-1 mt-3">{t('profile.builtinProfiles')}</div>
             {builtinProfiles.map(p => (
               <ProfileRow
                 key={p.id}
@@ -143,6 +145,7 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
   onDelete?: () => void;
   onDuplicate?: () => void;
 }) {
+  const { t } = useTranslation('agent');
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -152,13 +155,13 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
         <span className="text-sm">{profile.icon || '🤖'}</span>
         <div className="flex-1 min-w-0">
           <div className="text-xs text-text-primary truncate">{profile.name}</div>
-          <div className="text-[10px] text-text-muted truncate">{profile.role} — {profile.description?.substring(0, 60) || 'No description'}</div>
+          <div className="text-[10px] text-text-muted truncate">{profile.role} — {profile.description?.substring(0, 60) || t('profile.noDescription')}</div>
         </div>
         <div className="flex items-center gap-1">
           <ChevronDown size={12} className={cn('text-text-muted transition-transform', !expanded && '-rotate-90')} />
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
             {isBuiltin ? (
-              <button onClick={onDuplicate} className="text-text-muted hover:text-text-secondary p-0.5" title="Duplicate to customize">
+              <button onClick={onDuplicate} className="text-text-muted hover:text-text-secondary p-0.5" title={t('profile.duplicateToCustomize')}>
                 <Copy size={12} />
               </button>
             ) : (
@@ -166,7 +169,7 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
                 <button onClick={onEdit} className="text-text-muted hover:text-text-secondary p-0.5" title="Edit">
                   <Pencil size={12} />
                 </button>
-                <button onClick={() => { if (onDelete && confirm(`Delete "${profile.name}"? This cannot be undone.`)) onDelete(); }} className="text-text-muted hover:text-red-400 p-0.5" title="Delete" aria-label={`Delete ${profile.name}`}>
+                <button onClick={() => { if (onDelete && confirm(t('profile.deleteConfirm', { name: profile.name }))) onDelete(); }} className="text-text-muted hover:text-red-400 p-0.5" title={t('common:delete')} aria-label={`${t('common:delete')} ${profile.name}`}>
                   <Trash2 size={12} />
                 </button>
               </>
@@ -179,31 +182,31 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
       {expanded && (
         <div className="px-3 pb-2 space-y-2 border-t border-border-subtle/50">
           <div className="mt-2">
-            <span className="text-[9px] text-text-muted uppercase tracking-wide">System Prompt</span>
+            <span className="text-[9px] text-text-muted uppercase tracking-wide">{t('profile.systemPrompt')}</span>
             <pre className="text-[10px] text-text-secondary bg-surface-raised rounded p-2 mt-0.5 whitespace-pre-wrap max-h-24 overflow-auto font-mono">{profile.systemPrompt}</pre>
           </div>
           <div className="flex gap-4">
             <div className="flex-1">
-              <span className="text-[9px] text-text-muted uppercase tracking-wide">Role</span>
+              <span className="text-[9px] text-text-muted uppercase tracking-wide">{t('profile.role')}</span>
               <p className="text-[10px] text-text-primary mt-0.5">{profile.role}</p>
             </div>
             <div className="flex-1">
-              <span className="text-[9px] text-text-muted uppercase tracking-wide">Priority</span>
-              <p className="text-[10px] text-text-primary mt-0.5">{profile.priority ?? 'default'}</p>
+              <span className="text-[9px] text-text-muted uppercase tracking-wide">{t('profile.priority')}</span>
+              <p className="text-[10px] text-text-primary mt-0.5">{profile.priority ?? t('profile.default')}</p>
             </div>
             <div className="flex-1">
-              <span className="text-[9px] text-text-muted uppercase tracking-wide">Model</span>
-              <p className="text-[10px] text-text-primary mt-0.5">{profile.model || 'auto'}</p>
+              <span className="text-[9px] text-text-muted uppercase tracking-wide">{t('profile.modelLabel')}</span>
+              <p className="text-[10px] text-text-primary mt-0.5">{profile.model || t('profile.auto')}</p>
             </div>
           </div>
           {profile.allowedTools && (
             <div>
-              <span className="text-[9px] text-text-muted uppercase tracking-wide">Allowed Tools ({profile.allowedTools.length})</span>
+              <span className="text-[9px] text-text-muted uppercase tracking-wide">{t('profile.allowedTools', { count: profile.allowedTools.length })}</span>
               <p className="text-[10px] text-text-muted mt-0.5 font-mono">{profile.allowedTools.join(', ')}</p>
             </div>
           )}
           {!profile.allowedTools && (
-            <p className="text-[10px] text-text-muted">All tools available</p>
+            <p className="text-[10px] text-text-muted">{t('profile.allToolsAvailable')}</p>
           )}
           {profile.readOnlyEntityTypes?.length ? (
             <div>
@@ -212,13 +215,13 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
             </div>
           ) : null}
           <div>
-            <span className="text-[9px] text-text-muted uppercase tracking-wide">Auto-approve Policy</span>
+            <span className="text-[9px] text-text-muted uppercase tracking-wide">{t('profile.autoApprovePolicy')}</span>
             <div className="flex gap-2 mt-0.5 text-[10px]">
-              <span className={profile.policy.autoApproveReads ? 'text-accent-green' : 'text-text-muted'}>Reads {profile.policy.autoApproveReads ? '✓' : '✗'}</span>
-              <span className={profile.policy.autoApproveEnrich ? 'text-accent-green' : 'text-text-muted'}>Enrich {profile.policy.autoApproveEnrich ? '✓' : '✗'}</span>
-              <span className={profile.policy.autoApproveFetch ? 'text-accent-green' : 'text-text-muted'}>Fetch {profile.policy.autoApproveFetch ? '✓' : '✗'}</span>
-              <span className={profile.policy.autoApproveCreate ? 'text-accent-green' : 'text-text-muted'}>Create {profile.policy.autoApproveCreate ? '✓' : '✗'}</span>
-              <span className={profile.policy.autoApproveModify ? 'text-accent-green' : 'text-text-muted'}>Modify {profile.policy.autoApproveModify ? '✓' : '✗'}</span>
+              <span className={profile.policy.autoApproveReads ? 'text-accent-green' : 'text-text-muted'}>{t('profile.reads')} {profile.policy.autoApproveReads ? '✓' : '✗'}</span>
+              <span className={profile.policy.autoApproveEnrich ? 'text-accent-green' : 'text-text-muted'}>{t('profile.enrichLabel')} {profile.policy.autoApproveEnrich ? '✓' : '✗'}</span>
+              <span className={profile.policy.autoApproveFetch ? 'text-accent-green' : 'text-text-muted'}>{t('profile.fetchLabel')} {profile.policy.autoApproveFetch ? '✓' : '✗'}</span>
+              <span className={profile.policy.autoApproveCreate ? 'text-accent-green' : 'text-text-muted'}>{t('profile.createLabel')} {profile.policy.autoApproveCreate ? '✓' : '✗'}</span>
+              <span className={profile.policy.autoApproveModify ? 'text-accent-green' : 'text-text-muted'}>{t('profile.modifyLabel')} {profile.policy.autoApproveModify ? '✓' : '✗'}</span>
             </div>
           </div>
           {/* Soul */}
@@ -259,11 +262,11 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
               )}
             </div>
           ) : (
-            <p className="text-[10px] text-text-muted italic">No soul yet — deploy this agent and it will build its identity over time.</p>
+            <p className="text-[10px] text-text-muted italic">{t('profile.noSoulYet')}</p>
           )}
           {isBuiltin && (
             <button onClick={onDuplicate} className="text-[10px] text-accent-blue hover:underline">
-              Customize (creates editable copy)
+              {t('profile.customize')}
             </button>
           )}
         </div>
@@ -277,6 +280,7 @@ function ProfileForm({ profile, onSave, onCancel }: {
   onSave: (data: Partial<AgentProfile>) => Promise<void>;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation('agent');
   const [name, setName] = useState(profile?.name || '');
   const [description, setDescription] = useState(profile?.description || '');
   const [icon, setIcon] = useState(profile?.icon || '🤖');
@@ -296,35 +300,35 @@ function ProfileForm({ profile, onSave, onCancel }: {
   return (
     <div className="border border-border-subtle rounded-lg p-3 space-y-2 bg-surface-raised/30">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-text-secondary">{profile ? 'Edit' : 'New'} Profile</span>
+        <span className="text-xs font-medium text-text-secondary">{profile ? t('profile.editProfile') : t('profile.newProfile')} {t('profile.profileLabel')}</span>
         <button onClick={onCancel} className="text-text-muted hover:text-text-secondary"><X size={12} /></button>
       </div>
       <div className="flex gap-2">
         <input value={icon} onChange={e => setIcon(e.target.value)} className="w-10 bg-surface-raised border border-border-subtle rounded px-1 py-1.5 text-xs text-center text-text-primary focus:outline-none focus:border-accent-blue/50" maxLength={2} title="Icon emoji" />
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="Profile name" className={cn(inputClass, 'flex-1')} />
+        <input value={name} onChange={e => setName(e.target.value)} placeholder={t('profile.profileName')} className={cn(inputClass, 'flex-1')} />
       </div>
-      <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Brief description" className={inputClass} />
+      <input value={description} onChange={e => setDescription(e.target.value)} placeholder={t('profile.briefDescription')} className={inputClass} />
       <select value={role} onChange={e => setRole(e.target.value as 'executive' | 'lead' | 'specialist' | 'observer')} className={inputClass}>
-        <option value="executive">Executive — can dismiss, spawn, and manage agents</option>
-        <option value="lead">Lead — can delegate tasks and review work</option>
-        <option value="specialist">Specialist — focused on specific tasks</option>
-        <option value="observer">Observer — read-only analysis</option>
+        <option value="executive">{t('profile.executiveRole')}</option>
+        <option value="lead">{t('profile.leadRole')}</option>
+        <option value="specialist">{t('profile.specialistRole')}</option>
+        <option value="observer">{t('profile.observerRole')}</option>
       </select>
       <textarea
         value={systemPrompt}
         onChange={e => setSystemPrompt(e.target.value)}
-        placeholder="System prompt — instructions for this agent's behavior..."
+        placeholder={t('profile.systemPromptPlaceholder')}
         rows={4}
         className={cn(inputClass, 'resize-none')}
       />
       <div className="flex justify-end gap-2">
-        <button onClick={onCancel} className="text-xs text-text-muted hover:text-text-secondary px-2 py-1">Cancel</button>
+        <button onClick={onCancel} className="text-xs text-text-muted hover:text-text-secondary px-2 py-1">{t('common:cancel')}</button>
         <button
           onClick={handleSave}
           disabled={!name.trim() || !systemPrompt.trim() || saving}
           className="text-xs bg-accent-blue text-white px-3 py-1 rounded disabled:opacity-50"
         >
-          {saving ? 'Saving...' : profile ? 'Update' : 'Create'}
+          {saving ? t('profile.saving') : profile ? t('profile.update') : t('common:create')}
         </button>
       </div>
     </div>

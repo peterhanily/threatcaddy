@@ -1,5 +1,6 @@
 import { Check, X, Clock, AlertTriangle, Info, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AgentAction } from '../../types';
 import { cn, formatDate } from '../../lib/utils';
 import { getToolActionClass } from '../../lib/caddy-agent-policy';
@@ -28,6 +29,7 @@ const STATUS_CONFIG: Record<string, { icon: typeof Check; label: string; color: 
 };
 
 export function AgentActionCard({ action, onApprove, onEditApprove, onReject, onViewReasoning }: AgentActionCardProps) {
+  const { t } = useTranslation('agent');
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editJson, setEditJson] = useState('');
@@ -51,7 +53,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
             onClick={() => setExpanded(!expanded)}
             className="text-text-muted hover:text-text-primary transition-colors"
             aria-expanded={expanded}
-            aria-label={`${expanded ? 'Collapse' : 'Expand'} ${action.toolName} action details`}
+            aria-label={expanded ? t('action.collapseAction', { toolName: action.toolName }) : t('action.expandAction', { toolName: action.toolName })}
           >
             {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
@@ -80,7 +82,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
       {expanded && (
         <div className="mt-2 pl-6 space-y-2">
           <div>
-            <span className="text-[10px] text-text-muted uppercase tracking-wide">Input</span>
+            <span className="text-[10px] text-text-muted uppercase tracking-wide">{t('action.input')}</span>
             <pre className="text-xs text-text-secondary bg-surface-raised rounded p-2 mt-0.5 overflow-auto max-h-32">
               {JSON.stringify(action.toolInput, null, 2)}
             </pre>
@@ -88,7 +90,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
 
           {action.resultSummary && (
             <div>
-              <span className="text-[10px] text-text-muted uppercase tracking-wide">Result</span>
+              <span className="text-[10px] text-text-muted uppercase tracking-wide">{t('action.result')}</span>
               <pre className="text-xs text-text-secondary bg-surface-raised rounded p-2 mt-0.5 overflow-auto max-h-32">
                 {action.resultSummary}
               </pre>
@@ -115,7 +117,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
                 onClick={() => onViewReasoning(action.threadId)}
                 className="text-accent-blue hover:underline"
               >
-                View reasoning
+                {t('action.viewReasoning')}
               </button>
             )}
           </div>
@@ -139,11 +141,11 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
                   const parsed = JSON.parse(editJson);
                   onEditApprove?.(action, parsed);
                   setEditing(false);
-                } catch { setEditError('Invalid JSON'); }
+                } catch { setEditError(t('action.invalidJSON')); }
               }}
               className="text-[10px] text-accent-green hover:bg-accent-green/10 px-2 py-0.5 rounded"
-            >Execute with edits</button>
-            <button onClick={() => setEditing(false)} className="text-[10px] text-text-muted hover:bg-surface-raised px-2 py-0.5 rounded">Cancel</button>
+            >{t('action.executeWithEdits')}</button>
+            <button onClick={() => setEditing(false)} className="text-[10px] text-text-muted hover:bg-surface-raised px-2 py-0.5 rounded">{t('common:cancel')}</button>
           </div>
         </div>
       )}
@@ -155,30 +157,30 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
             <button
               onClick={() => onApprove(action)}
               className="flex items-center gap-1 text-xs text-accent-green hover:bg-accent-green/10 px-2 py-1 rounded transition-colors"
-              aria-label={`Approve ${action.toolName} action`}
+              aria-label={t('action.approveAction', { toolName: action.toolName })}
             >
               <Check size={12} />
-              Approve
+              {t('action.approve')}
             </button>
           )}
           {onEditApprove && (
             <button
               onClick={() => { setEditJson(JSON.stringify(action.toolInput, null, 2)); setEditing(true); }}
               className="flex items-center gap-1 text-xs text-accent-blue hover:bg-accent-blue/10 px-2 py-1 rounded transition-colors"
-              aria-label={`Edit ${action.toolName} input`}
+              aria-label={t('action.editAction', { toolName: action.toolName })}
             >
               <Pencil size={12} />
-              Edit
+              {t('common:edit')}
             </button>
           )}
           {onReject && (
             <button
               onClick={() => onReject(action)}
               className="flex items-center gap-1 text-xs text-text-muted hover:bg-surface-raised px-2 py-1 rounded transition-colors"
-              aria-label={`Reject ${action.toolName} action`}
+              aria-label={t('action.rejectAction', { toolName: action.toolName })}
             >
               <X size={12} />
-              Reject
+              {t('action.reject')}
             </button>
           )}
         </div>

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Settings2, X, ChevronUp, ChevronDown, TrendingUp, TrendingDown } from 'lucide-react';
 import type { Folder, Note, Task, TimelineEvent, StandaloneIOC, KPIMetricId } from '../../types';
 import { AVAILABLE_KPI_METRICS, KPI_METRIC_LABELS, DEFAULT_DASHBOARD_KPIS } from '../../types';
@@ -91,6 +92,7 @@ function computeKPIValue(
 }
 
 export function KPIWidgets({ folders, allNotes, allTasks, allEvents, allIOCs, selectedKPIs, onUpdateKPIs }: KPIWidgetsProps) {
+  const { t } = useTranslation('dashboard');
   const [showConfig, setShowConfig] = useState(false);
 
   const kpis = selectedKPIs.length > 0 ? selectedKPIs : DEFAULT_DASHBOARD_KPIS;
@@ -107,7 +109,7 @@ export function KPIWidgets({ folders, allNotes, allTasks, allEvents, allIOCs, se
   return (
     <div className="px-6 pt-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Key Metrics</h3>
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('kpi.keyMetrics')}</h3>
         <button
           onClick={() => setShowConfig(true)}
           className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300 transition-colors"

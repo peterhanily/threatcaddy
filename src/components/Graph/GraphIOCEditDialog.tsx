@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Modal } from '../Common/Modal';
 import { AttributionComboInput } from '../Analysis/AttributionComboInput';
 import { parseIOCNodeId } from '../../lib/graph-data';
@@ -33,6 +34,7 @@ function getSubtypes(type: IOCType, custom?: Record<string, string[]>): string[]
 }
 
 export function GraphIOCEditDialog({ node, notes, tasks, timelineEvents, settings, onUpdateNote, onUpdateTask, onUpdateEvent, onClose }: GraphIOCEditDialogProps) {
+  const { t } = useTranslation('graph');
   const parsed = useMemo(() => parseIOCNodeId(node.id), [node.id]);
 
   // Find ALL matching IOCEntry instances across notes and tasks
@@ -151,14 +153,14 @@ export function GraphIOCEditDialog({ node, notes, tasks, timelineEvents, setting
 
   if (!parsed || matches.length === 0) {
     return (
-      <Modal open onClose={onClose} title="Edit IOC">
-        <p className="text-sm text-gray-400">No matching IOC entries found.</p>
+      <Modal open onClose={onClose} title={t('editDialog.editIOC')}>
+        <p className="text-sm text-gray-400">{t('editDialog.noMatchingIOC')}</p>
       </Modal>
     );
   }
 
   return (
-    <Modal open onClose={onClose} title="Edit IOC Attributes">
+    <Modal open onClose={onClose} title={t('editDialog.editIOCAttributes')}>
       <div className="space-y-4">
         {/* Read-only header */}
         <div className="space-y-2">
@@ -172,7 +174,7 @@ export function GraphIOCEditDialog({ node, notes, tasks, timelineEvents, setting
               </span>
             )}
             <span className="text-xs text-gray-500">
-              {matches.length} instance{matches.length !== 1 ? 's' : ''} across {new Set(matches.map((m) => m.entityId)).size} entit{new Set(matches.map((m) => m.entityId)).size === 1 ? 'y' : 'ies'}
+              {t('editDialog.instancesAcrossEntities', { instances: matches.length, instanceSuffix: matches.length !== 1 ? 's' : '', entities: new Set(matches.map((m) => m.entityId)).size, entitySuffix: new Set(matches.map((m) => m.entityId)).size === 1 ? 'y' : 'ies' })}
             </span>
           </div>
           <div className="font-mono text-sm text-gray-200 break-all bg-gray-800/50 rounded p-2">
@@ -182,7 +184,7 @@ export function GraphIOCEditDialog({ node, notes, tasks, timelineEvents, setting
 
         {/* Confidence */}
         <div>
-          <label className="text-[10px] text-gray-500 uppercase tracking-wider">Confidence</label>
+          <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('editDialog.confidence')}</label>
           <select
             value={confidence}
             onChange={(e) => setConfidence(e.target.value as ConfidenceLevel)}
@@ -196,19 +198,19 @@ export function GraphIOCEditDialog({ node, notes, tasks, timelineEvents, setting
 
         {/* Analyst Notes */}
         <div>
-          <label className="text-[10px] text-gray-500 uppercase tracking-wider">Analyst Notes</label>
+          <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('editDialog.analystNotes')}</label>
           <textarea
             value={analystNotes}
             onChange={(e) => setAnalystNotes(e.target.value)}
             className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600 resize-none"
             rows={3}
-            placeholder="Add notes..."
+            placeholder={t('editDialog.addNotes')}
           />
         </div>
 
         {/* Attribution */}
         <div>
-          <label className="text-[10px] text-gray-500 uppercase tracking-wider">Attribution</label>
+          <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('editDialog.attribution')}</label>
           <AttributionComboInput
             value={attribution}
             onChange={setAttribution}
@@ -219,7 +221,7 @@ export function GraphIOCEditDialog({ node, notes, tasks, timelineEvents, setting
         {/* IOC Subtype */}
         {subtypes.length > 0 && (
           <div>
-            <label className="text-[10px] text-gray-500 uppercase tracking-wider">IOC Subtype</label>
+            <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('editDialog.iocSubtype')}</label>
             <select
               value={iocSubtype}
               onChange={(e) => setIocSubtype(e.target.value)}
@@ -234,7 +236,7 @@ export function GraphIOCEditDialog({ node, notes, tasks, timelineEvents, setting
         {/* IOC Status */}
         {settings.tiIocStatuses && settings.tiIocStatuses.length > 0 && (
           <div>
-            <label className="text-[10px] text-gray-500 uppercase tracking-wider">IOC Status</label>
+            <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('editDialog.iocStatus')}</label>
             <select
               value={iocStatus}
               onChange={(e) => setIocStatus(e.target.value)}
@@ -248,7 +250,7 @@ export function GraphIOCEditDialog({ node, notes, tasks, timelineEvents, setting
 
         {/* Classification Level */}
         <div>
-          <label className="text-[10px] text-gray-500 uppercase tracking-wider">Classification Level</label>
+          <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('editDialog.classificationLevel')}</label>
           <select
             value={clsLevel}
             onChange={(e) => setClsLevel(e.target.value)}
@@ -265,13 +267,13 @@ export function GraphIOCEditDialog({ node, notes, tasks, timelineEvents, setting
             onClick={onClose}
             className="px-3 py-1.5 text-xs rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
           >
-            Cancel
+            {t('common:cancel')}
           </button>
           <button
             onClick={handleSave}
             className="px-3 py-1.5 text-xs rounded-lg font-medium bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors"
           >
-            Save to All Instances
+            {t('editDialog.saveToAllInstances')}
           </button>
         </div>
       </div>
