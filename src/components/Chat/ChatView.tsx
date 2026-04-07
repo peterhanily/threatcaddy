@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, Check, X, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { ChatThread, ChatMessage, LLMProvider, Settings, Folder, ToolUseBlock } from '../../types';
 import { ClsSelect } from '../Common/ClsSelect';
 import { ClsBadge } from '../Common/ClsBadge';
@@ -76,6 +77,7 @@ export function ChatView({
   onOpenSettings,
 }: ChatViewProps) {
   const { extensionAvailable, streamingContent, isStreaming, error, toolActivity, sendAgentRequest, abort } = useLLM();
+  const { t } = useTranslation('chat');
   const { addToast } = useToast();
   const { serverUrl } = useAuth();
   const serverConnected = !!serverUrl;
@@ -220,7 +222,7 @@ export function ChatView({
       onSelectThread(thread.id);
     } catch (err) {
       console.error('Failed to create chat thread:', err);
-      setLocalError('Failed to create chat thread. Try refreshing the page.');
+      setLocalError(t('view.errorCreateThread'));
     }
   }, [onCreateThread, onSelectThread, settings, selectedFolderId, configuredProviders, threads]);
 
@@ -257,13 +259,13 @@ export function ChatView({
     // Validate API key (skip when routing through server — server has its own keys)
     if (!useServerProxy) {
       if (provider === 'local' && !settings.llmLocalEndpoint) {
-        setLocalError('No Local LLM endpoint configured. Add it in Settings \u2192 AI/LLM.');
+        setLocalError(t('view.errorNoLocalEndpoint'));
         setErrorHasSettingsLink(true);
         return;
       }
       const apiKey = getApiKeyForProvider(provider, settings);
       if (!apiKey) {
-        setLocalError(`No ${getProviderLabel(provider)} API key configured. Add an API key or local LLM endpoint in Settings \u2192 AI/LLM.`);
+        setLocalError(t('view.errorNoApiKey', { provider: getProviderLabel(provider) }));
         setErrorHasSettingsLink(true);
         return;
       }
@@ -622,7 +624,7 @@ export function ChatView({
     if (!activeThread) return;
     const newMode = threadMode === 'act' ? 'plan' : 'act';
     onUpdateThread(activeThread.id, { mode: newMode });
-    addToast('success', newMode === 'plan' ? 'Switched to Plan mode — AI will propose without executing' : 'Switched to Act mode — AI will execute with approval');
+    addToast('success', newMode === 'plan' ? t('view.switchedToPlan') : t('view.switchedToAct'));
 
     // When switching from Plan to Act, if the last assistant message exists,
     // prompt the user to execute the plan
@@ -633,7 +635,7 @@ export function ChatView({
         const executeMsg: ChatMessage = {
           id: nanoid(),
           role: 'assistant',
-          content: 'Switched to **Act mode**. Send "execute the plan" to run the proposed actions with approval gating, or continue the conversation.',
+          content: t('view.switchedToActMessage'),
           createdAt: Date.now(),
         };
         onAddMessage(activeThread.id, executeMsg);
@@ -686,7 +688,7 @@ export function ChatView({
         return next;
       });
       onEntitiesChanged?.();
-      addToast('success', `Restored checkpoint: ${cp.snapshot.length} entity(s) reverted`);
+      addToast('success', t('view.restoredCheckpoint', { count: cp.snapshot.length }));
     }
     setRestoreConfirmMsgId(null);
   }, [restoreConfirmMsgId, onEntitiesChanged, addToast]);
@@ -713,7 +715,7 @@ export function ChatView({
     };
     await onAddMessage(branched.id, branchNotice);
     onSelectThread(branched.id);
-    addToast('success', `Branched conversation at message ${messageIndex + 1}`);
+    addToast('success', t('view.branchedAt', { index: messageIndex + 1 }));
   }, [activeThread, onCreateThread, onSelectThread, onAddMessage, addToast]);
 
   return (
@@ -728,15 +730,15 @@ export function ChatView({
             onClick={handleNewChat}
             disabled={!canChat}
             className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg bg-purple text-white text-xs font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
-            title={canChat ? 'Start a new chat' : 'Extension or server connection required'}
+            title={canChat ? t('view.startChatTitle') : t('view.extensionOrServerRequired')}
           >
             <Plus size={14} />
-            New Chat
+            {t('view.newChat')}
           </button>
           <button
             onClick={() => setShowNewChatFolder(!showNewChatFolder)}
             className="h-8 w-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors"
-            title="New folder"
+            title={t('view.newFolder')}
           >
             <FolderPlus size={14} />
           </button>
@@ -746,7 +748,7 @@ export function ChatView({
             <input
               autoFocus
               className="flex-1 bg-surface-raised border border-border-default rounded px-2 py-1 text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent-blue"
-              placeholder="Folder name..."
+              placeholder={t('view.folderNamePlaceholder')}
               value={newChatFolderName}
               onChange={e => setNewChatFolderName(e.target.value)}
               onKeyDown={e => {
@@ -770,12 +772,12 @@ export function ChatView({
               disabled={!newChatFolderName.trim()}
               className="text-xs px-2 py-1 rounded bg-accent-blue text-white disabled:opacity-40"
             >
-              Create
+              {t('common:create')}
             </button>
           </div>
         )}
         {/* Thread source filter */}
-        <div className="flex gap-1 px-3 py-1.5 border-b border-border-subtle" role="tablist" aria-label="Filter threads by source">
+        <div className="flex gap-1 px-3 py-1.5 border-b border-border-subtle" role="tablist" aria-label={t('view.filterThreadsAria')}>
           {(['all', 'human', 'agent', 'meeting'] as const).map(f => (
             <button
               key={f}
@@ -789,14 +791,14 @@ export function ChatView({
                   : 'text-text-muted hover:text-text-secondary',
               )}
             >
-              {f}
+              {t(`view.filter${f.charAt(0).toUpperCase() + f.slice(1)}`)}
             </button>
           ))}
         </div>
         <div className="flex-1 overflow-y-auto">
           {filteredThreads.length === 0 ? (
             <div className="p-4 text-center text-text-muted text-xs">
-              {threads.length === 0 ? 'No chat threads yet' : `No ${threadSourceFilter} threads`}
+              {threads.length === 0 ? t('view.noThreadsYet') : t('view.noFilteredThreads', { filter: threadSourceFilter })}
             </div>
           ) : (() => {
             // Separate folders and top-level threads, then build ordered list
@@ -826,10 +828,10 @@ export function ChatView({
                   <div className="flex items-center gap-1 text-xs font-medium truncate">
                     {thread.title}
                     {thread.source === 'agent' && (
-                      <span className="shrink-0 text-[8px] px-1 py-px rounded bg-accent-blue/10 text-accent-blue font-normal">agent</span>
+                      <span className="shrink-0 text-[8px] px-1 py-px rounded bg-accent-blue/10 text-accent-blue font-normal">{t('view.badgeAgent')}</span>
                     )}
                     {thread.source === 'agent-meeting' && (
-                      <span className="shrink-0 text-[8px] px-1 py-px rounded bg-purple/10 text-purple font-normal">meeting</span>
+                      <span className="shrink-0 text-[8px] px-1 py-px rounded bg-purple/10 text-purple font-normal">{t('view.badgeMeeting')}</span>
                     )}
                     {hasLoopsForThread(thread.id) && (
                       <RefreshCw size={10} className="shrink-0 text-purple animate-spin" style={{ animationDuration: '3s' }} />
@@ -843,7 +845,7 @@ export function ChatView({
                 <button
                   onClick={(e) => { e.stopPropagation(); setTrashConfirmId(thread.id); }}
                   className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 p-0.5 rounded hover:bg-bg-hover text-text-muted hover:text-red-400 transition-all shrink-0"
-                  title="Delete thread"
+                  title={t('view.deleteThread')}
                 >
                   <Trash2 size={12} />
                 </button>
@@ -911,8 +913,8 @@ export function ChatView({
                           <button
                             onClick={(e) => { e.stopPropagation(); setRenamingChatFolderId(folder.id); setRenamingChatFolderValue(folder.title); }}
                             className="text-text-muted hover:text-text-primary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all shrink-0"
-                            title="Rename folder"
-                            aria-label={`Rename ${folder.title}`}
+                            title={t('view.renameFolder')}
+                            aria-label={t('view.renameFolderAria', { name: folder.title })}
                           >
                             <Pencil size={10} />
                           </button>
@@ -921,7 +923,7 @@ export function ChatView({
                         <button
                           onClick={(e) => { e.stopPropagation(); setTrashConfirmId(folder.id); }}
                           className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 p-0.5 rounded hover:bg-bg-hover text-text-muted hover:text-red-400 transition-all shrink-0"
-                          title="Delete folder"
+                          title={t('view.deleteFolder')}
                         >
                           <Trash2 size={10} />
                         </button>
@@ -948,7 +950,7 @@ export function ChatView({
               <button
                 onClick={() => onSelectThread('')}
                 className="md:hidden p-1.5 -ml-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                aria-label="Back to threads"
+                aria-label={t('view.backToThreads')}
               >
                 <ArrowLeft size={18} />
               </button>
@@ -972,7 +974,7 @@ export function ChatView({
                     setEditingTitle(false);
                   }}
                   className="flex-1 min-w-0 bg-bg-raised border border-border-subtle rounded px-2 py-1 text-sm font-medium text-text-primary focus:outline-none focus:border-purple"
-                  aria-label="Chat thread title"
+                  aria-label={t('view.threadTitleAria')}
                 />
               ) : (
                 <button
@@ -982,7 +984,7 @@ export function ChatView({
                     setTimeout(() => titleInputRef.current?.select(), 0);
                   }}
                   className="flex items-center gap-1.5 min-w-0 group"
-                  title="Click to rename"
+                  title={t('view.clickToRename')}
                 >
                   <span className="text-sm font-medium text-text-primary truncate">{activeThread.title}</span>
                   <Pencil size={12} className="shrink-0 text-text-muted opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" />
@@ -997,10 +999,10 @@ export function ChatView({
                       ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
                       : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
                   )}
-                  title={threadMode === 'plan' ? 'Plan mode: AI proposes but does not execute write actions' : 'Act mode: AI executes actions with approval'}
+                  title={threadMode === 'plan' ? t('view.planModeTitle') : t('view.actModeTitle')}
                 >
                   {threadMode === 'plan' ? <Eye size={10} /> : <Play size={10} />}
-                  {threadMode === 'plan' ? 'Plan' : 'Act'}
+                  {threadMode === 'plan' ? t('view.planMode') : t('view.actMode')}
                 </button>
                 <button
                   onClick={() => setYoloMode(!yoloMode)}
@@ -1010,10 +1012,10 @@ export function ChatView({
                       ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
                       : 'bg-surface-raised border-border-subtle text-text-muted hover:text-text-secondary'
                   )}
-                  title={yoloMode ? 'YOLO mode ON — all tool calls auto-approved' : 'Click to enable YOLO mode (auto-approve all actions)'}
+                  title={yoloMode ? t('view.yoloOnTitle') : t('view.yoloOffTitle')}
                 >
                   <Shield size={10} />
-                  {yoloMode ? 'YOLO' : 'Safe'}
+                  {yoloMode ? t('view.yoloLabel') : t('view.safeLabel')}
                 </button>
                 {threadTokenTotal > 0 && (
                   <span className={cn(
@@ -1023,18 +1025,18 @@ export function ChatView({
                       : settings.llmTokenBudget && threadTokenTotal > settings.llmTokenBudget * 0.8
                       ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
                       : 'text-text-muted bg-bg-deep border-border-subtle'
-                  )} title={`Total tokens: ${threadTokenTotal.toLocaleString()}${settings.llmTokenBudget ? ` / ${settings.llmTokenBudget.toLocaleString()} budget` : ''}`}>
-                    {threadTokenTotal >= 1000 ? `${(threadTokenTotal / 1000).toFixed(1)}k` : threadTokenTotal} tok
+                  )} title={settings.llmTokenBudget ? t('view.tokenTotalBudget', { total: threadTokenTotal.toLocaleString(), budget: settings.llmTokenBudget.toLocaleString() }) : t('view.tokenTotal', { total: threadTokenTotal.toLocaleString() })}>
+                    {threadTokenTotal >= 1000 ? `${(threadTokenTotal / 1000).toFixed(1)}k` : threadTokenTotal} {t('view.tokSuffix')}
                   </span>
                 )}
                 {activeLoops.length > 0 && (
                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple/10 border border-purple/20 text-[10px] text-purple mr-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-purple animate-pulse" />
-                    {activeLoops.length} loop{activeLoops.length > 1 ? 's' : ''}
+                    {t('view.loopCount', { count: activeLoops.length })}
                     <button
                       onClick={() => stopAllForThread(activeThread.id)}
                       className="ml-0.5 hover:text-red-400 transition-colors"
-                      title="Stop all loops"
+                      title={t('view.stopAllLoops')}
                     >
                       <Square size={10} />
                     </button>
@@ -1049,7 +1051,7 @@ export function ChatView({
                   <button
                     onClick={handleExportAsNote}
                     className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors"
-                    title="Export as note"
+                    title={t('view.exportAsNote')}
                   >
                     <FileText size={14} />
                   </button>
@@ -1058,7 +1060,7 @@ export function ChatView({
                   <button
                     onClick={() => onShareThread(activeThread)}
                     className="p-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors"
-                    title="Share chat"
+                    title={t('view.shareChat')}
                   >
                     <Share2 size={14} />
                   </button>
@@ -1071,11 +1073,11 @@ export function ChatView({
               {activeThread.messages.length === 0 && !isStreaming && (
                 <div className="flex flex-col items-center justify-center h-full text-text-muted">
                   <MessageSquare size={40} className="mb-3 opacity-30" />
-                  <p className="text-sm font-medium">Start a conversation</p>
-                  <p className="text-xs mt-1">Messages are stored locally and encrypted at rest</p>
+                  <p className="text-sm font-medium">{t('view.emptyTitle')}</p>
+                  <p className="text-xs mt-1">{t('view.emptySubtitle')}</p>
                   {selectedFolder && (
                     <p className="text-xs mt-1 text-purple/70">
-                      AI can read and create entities in &ldquo;{selectedFolder.name}&rdquo;
+                      {t('view.emptyFolderContext', { name: selectedFolder.name })}
                     </p>
                   )}
                 </div>
@@ -1127,7 +1129,7 @@ export function ChatView({
                       key={ta.id}
                       className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-mono border border-purple/30 text-purple bg-purple/10 animate-pulse"
                     >
-                      Running: {ta.name}
+                      {t('view.toolRunning', { name: ta.name })}
                     </span>
                   ))}
                 </div>
@@ -1137,7 +1139,7 @@ export function ChatView({
                 <div className="mx-auto max-w-md my-3 rounded-xl border border-amber-500/30 bg-amber-500/5 overflow-hidden">
                   <div className="px-4 py-2.5 border-b border-amber-500/20 flex items-center gap-2">
                     <Shield size={14} className="text-amber-400" />
-                    <span className="text-xs font-medium text-amber-400">Approve write action?</span>
+                    <span className="text-xs font-medium text-amber-400">{t('view.approvalTitle')}</span>
                   </div>
                   <div className="px-4 py-2.5 space-y-1.5">
                     <div className="text-xs">
@@ -1151,13 +1153,13 @@ export function ChatView({
                         onClick={handleApprove}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors"
                       >
-                        <Check size={12} /> Approve
+                        <Check size={12} /> {t('view.approve')}
                       </button>
                       <button
                         onClick={handleReject}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors"
                       >
-                        <X size={12} /> Reject
+                        <X size={12} /> {t('view.reject')}
                       </button>
                     </div>
                   </div>
@@ -1172,7 +1174,7 @@ export function ChatView({
                         onClick={() => onOpenSettings('ai')}
                         className="underline hover:text-red-300 font-medium"
                       >
-                        Settings &rarr; AI/LLM
+                        {t('view.settingsAiLlm')}
                       </button>
                     </span>
                   ) : (
@@ -1204,15 +1206,15 @@ export function ChatView({
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-text-muted">
             <MessageSquare size={48} className="mb-3 opacity-20" />
-            <p className="text-lg font-medium">CaddyAI</p>
+            <p className="text-lg font-medium">{t('view.caddyAI')}</p>
             <p className="text-sm mt-1">
               {threads.length > 0
-                ? 'Select a thread to view the conversation'
-                : 'AI-powered investigation assistant'}
+                ? t('view.selectThread')
+                : t('view.aiAssistant')}
             </p>
             {!canChat && (
               <p className="text-xs mt-3 px-4 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
-                Browser extension or team server connection required
+                {t('view.extensionRequired')}
               </p>
             )}
           </div>
@@ -1233,9 +1235,9 @@ export function ChatView({
           }
           setTrashConfirmId(null);
         }}
-        title="Delete Chat Thread"
-        message={threads.find(t => t.id === trashConfirmId)?.isFolder ? "This folder and its organization will be removed. Threads inside will be moved to the top level." : "This chat thread will be moved to trash. Are you sure?"}
-        confirmLabel="Delete"
+        title={t('view.deleteThreadDialog')}
+        message={threads.find(th => th.id === trashConfirmId)?.isFolder ? t('view.deleteFolderMessage') : t('view.deleteThreadMessage')}
+        confirmLabel={t('common:delete')}
         danger
       />
 
@@ -1243,9 +1245,9 @@ export function ChatView({
         open={rewindConfirmIndex !== null}
         onClose={() => setRewindConfirmIndex(null)}
         onConfirm={handleRewindConfirmed}
-        title="Rewind Conversation"
-        message={`This will delete ${activeThread ? activeThread.messages.length - (rewindConfirmIndex ?? 0) - 1 : 0} message(s) after this point. This cannot be undone. Use Branch instead to preserve the full history.`}
-        confirmLabel="Rewind"
+        title={t('view.rewindDialog')}
+        message={t('view.rewindMessage', { count: activeThread ? activeThread.messages.length - (rewindConfirmIndex ?? 0) - 1 : 0 })}
+        confirmLabel={t('view.rewindLabel')}
         danger
       />
 
@@ -1253,9 +1255,9 @@ export function ChatView({
         open={restoreConfirmMsgId !== null}
         onClose={() => setRestoreConfirmMsgId(null)}
         onConfirm={handleRestoreCheckpointConfirmed}
-        title="Restore Checkpoint"
-        message="This will undo the AI's changes — created entities will be deleted and modified entities will be reverted to their previous state. This cannot be undone."
-        confirmLabel="Restore"
+        title={t('view.restoreDialog')}
+        message={t('view.restoreMessage')}
+        confirmLabel={t('view.restoreLabel')}
         danger
       />
 
@@ -1263,15 +1265,15 @@ export function ChatView({
       {showOnboarding && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-xl">
           <div className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl shadow-2xl p-6 max-w-md mx-4 w-full">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Getting Started with CaddyAI</h3>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">{t('view.onboardingTitle')}</h3>
             <div className="space-y-4">
               <div className="flex gap-3">
                 <div className="w-8 h-8 rounded-full bg-blue-500/15 flex items-center justify-center shrink-0 mt-0.5">
                   <Key size={16} className="text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-[var(--text-primary)]">1. Configure an API key</p>
-                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">Go to Settings &gt; CaddyAI / LLM and add an API key for at least one provider (<a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Anthropic</a>, <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">OpenAI</a>, <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Google Gemini</a>, <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Mistral</a>) or configure a local LLM endpoint.</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{t('view.onboardingStep1Title')}</p>
+                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{t('view.onboardingStep1Desc')} (<a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Anthropic</a>, <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">OpenAI</a>, <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Google Gemini</a>, <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Mistral</a>)</p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -1279,8 +1281,8 @@ export function ChatView({
                   <Puzzle size={16} className="text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-[var(--text-primary)]">2. Install the browser extension</p>
-                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">CaddyAI requires the ThreatCaddy <a href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">browser extension</a> to proxy API requests.</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{t('view.onboardingStep2Title')}</p>
+                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{t('view.onboardingStep2Desc')} (<a href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Chrome Web Store</a>)</p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -1288,8 +1290,8 @@ export function ChatView({
                   <Shield size={16} className="text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-[var(--text-primary)]">3. Enable permissions</p>
-                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">In the extension popup, enable &ldquo;Allow CaddyAI&rdquo; for AI provider access and &ldquo;Allow URL fetching&rdquo; for the /fetch tool.</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{t('view.onboardingStep3Title')}</p>
+                  <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{t('view.onboardingStep3Desc')}</p>
                 </div>
               </div>
             </div>
@@ -1297,7 +1299,7 @@ export function ChatView({
               onClick={dismissOnboarding}
               className="w-full mt-5 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors"
             >
-              Got it
+              {t('view.onboardingDismiss')}
             </button>
           </div>
         </div>

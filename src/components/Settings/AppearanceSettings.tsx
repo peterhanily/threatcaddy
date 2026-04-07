@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Upload, X, RotateCcw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Settings } from '../../types';
 import { COLOR_SCHEMES } from '../../lib/theme-schemes';
 import { saveBgImage, loadBgImage, removeBgImage } from '../../lib/theme-bg';
@@ -13,6 +14,7 @@ interface AppearanceSettingsProps {
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024; // 8 MB
 
 export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSettingsProps) {
+  const { t } = useTranslation('settings');
   const { addToast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [bgPreview, setBgPreview] = useState<string | null>(null);
@@ -38,11 +40,11 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      addToast('error', 'Please select an image file');
+      addToast('error', t('appearance.errorNotImage'));
       return;
     }
     if (file.size > MAX_IMAGE_SIZE) {
-      addToast('error', 'Image must be under 8 MB');
+      addToast('error', t('appearance.errorTooLarge'));
       return;
     }
     setLoading(true);
@@ -52,9 +54,9 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
       const url = URL.createObjectURL(file);
       setBgPreview(url);
       onUpdateSettings({ bgImageEnabled: true });
-      addToast('success', 'Background image set');
+      addToast('success', t('appearance.bgSet'));
     } catch {
-      addToast('error', 'Failed to save image');
+      addToast('error', t('appearance.bgSaveFailed'));
     } finally {
       setLoading(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -67,9 +69,9 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
       if (bgPreview) URL.revokeObjectURL(bgPreview);
       setBgPreview(null);
       onUpdateSettings({ bgImageEnabled: false });
-      addToast('success', 'Background image removed');
+      addToast('success', t('appearance.bgRemoved'));
     } catch {
-      addToast('error', 'Failed to remove image');
+      addToast('error', t('appearance.bgRemoveFailed'));
     }
   };
 
@@ -79,7 +81,7 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
     <div className="space-y-6">
       {/* Color Scheme */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-300">Color Scheme</h3>
+        <h3 className="text-sm font-semibold text-gray-300">{t('appearance.colorScheme')}</h3>
         <div className="grid grid-cols-3 gap-2">
           {COLOR_SCHEMES.map((s) => (
             <button
@@ -103,7 +105,7 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
 
       {/* Background Image */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-300">Background Image</h3>
+        <h3 className="text-sm font-semibold text-gray-300">{t('appearance.backgroundImage')}</h3>
 
         {bgPreview ? (
           <div className="space-y-3">
@@ -126,7 +128,7 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
               <button
                 onClick={handleRemoveImage}
                 className="absolute top-2 right-2 p-1 rounded bg-black/60 text-white hover:bg-black/80 transition-colors"
-                title="Remove image"
+                title={t('appearance.removeImage')}
               >
                 <X size={14} />
               </button>
@@ -140,13 +142,13 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
                 onChange={(e) => onUpdateSettings({ bgImageEnabled: e.target.checked })}
                 className="rounded border-gray-600"
               />
-              <span className="text-sm text-gray-300">Enable background</span>
+              <span className="text-sm text-gray-300">{t('appearance.enableBackground')}</span>
             </label>
 
             {/* Transparency */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Transparency</span>
+                <span className="text-xs text-gray-400">{t('appearance.transparency')}</span>
                 <span className="text-xs text-gray-500 tabular-nums">{100 - opacity}%</span>
               </div>
               <input
@@ -158,15 +160,15 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
                 className="w-full accent-accent h-1.5"
               />
               <div className="flex justify-between text-[10px] text-gray-600">
-                <span>Subtle</span>
-                <span>Vivid</span>
+                <span>{t('appearance.subtle')}</span>
+                <span>{t('appearance.vivid')}</span>
               </div>
             </div>
 
             {/* Zoom */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Zoom</span>
+                <span className="text-xs text-gray-400">{t('appearance.zoom')}</span>
                 <span className="text-xs text-gray-500 tabular-nums">{zoom}%</span>
               </div>
               <input
@@ -179,29 +181,29 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
                 className="w-full accent-accent h-1.5"
               />
               <div className="flex justify-between text-[10px] text-gray-600">
-                <span>Out</span>
-                <span>In</span>
+                <span>{t('appearance.zoomOut')}</span>
+                <span>{t('appearance.zoomIn')}</span>
               </div>
             </div>
 
             {/* Position */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Position</span>
+                <span className="text-xs text-gray-400">{t('appearance.position')}</span>
                 {(posX !== 50 || posY !== 50 || zoom !== 100) && (
                   <button
                     onClick={resetPosition}
                     className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-300 transition-colors"
                   >
                     <RotateCcw size={10} />
-                    Reset
+                    {t('common:reset')}
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-gray-500">Horizontal</span>
+                    <span className="text-[10px] text-gray-500">{t('appearance.horizontal')}</span>
                     <span className="text-[10px] text-gray-600 tabular-nums">{posX}%</span>
                   </div>
                   <input
@@ -213,13 +215,13 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
                     className="w-full accent-accent h-1.5"
                   />
                   <div className="flex justify-between text-[10px] text-gray-600">
-                    <span>Left</span>
-                    <span>Right</span>
+                    <span>{t('appearance.left')}</span>
+                    <span>{t('appearance.right')}</span>
                   </div>
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-gray-500">Vertical</span>
+                    <span className="text-[10px] text-gray-500">{t('appearance.vertical')}</span>
                     <span className="text-[10px] text-gray-600 tabular-nums">{posY}%</span>
                   </div>
                   <input
@@ -231,8 +233,8 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
                     className="w-full accent-accent h-1.5"
                   />
                   <div className="flex justify-between text-[10px] text-gray-600">
-                    <span>Top</span>
-                    <span>Bottom</span>
+                    <span>{t('appearance.top')}</span>
+                    <span>{t('appearance.bottom')}</span>
                   </div>
                 </div>
               </div>
@@ -242,7 +244,7 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
               onClick={() => fileRef.current?.click()}
               className="text-xs text-accent hover:text-accent-hover transition-colors"
             >
-              Change image...
+              {t('appearance.changeImage')}
             </button>
           </div>
         ) : (
@@ -252,12 +254,12 @@ export function AppearanceSettings({ settings, onUpdateSettings }: AppearanceSet
             className="w-full flex flex-col items-center gap-2 py-6 rounded-lg border border-dashed border-gray-700 hover:border-gray-500 text-gray-500 hover:text-gray-400 transition-colors"
           >
             {loading ? (
-              <span className="text-sm">Saving...</span>
+              <span className="text-sm">{t('appearance.saving')}</span>
             ) : (
               <>
                 <Upload size={20} />
-                <span className="text-sm">Upload background image</span>
-                <span className="text-xs text-gray-600">JPG, PNG, WebP (max 8 MB)</span>
+                <span className="text-sm">{t('appearance.uploadBgImage')}</span>
+                <span className="text-xs text-gray-600">{t('appearance.uploadHint')}</span>
               </>
             )}
           </button>

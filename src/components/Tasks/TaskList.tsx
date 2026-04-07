@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ListChecks, LayoutGrid, Plus, Filter, ArrowUpDown } from 'lucide-react';
 import type { Task, Note, TimelineEvent, TaskStatus, TaskViewMode, Tag, Folder, InvestigationMember } from '../../types';
 import { TaskItem } from './TaskItem';
@@ -57,6 +58,7 @@ export function TaskListView({
   members,
   currentUserId,
 }: TaskListProps) {
+  const { t } = useTranslation('tasks');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showNewTask, setShowNewTask] = useState(false);
 
@@ -121,7 +123,7 @@ export function TaskListView({
       {/* Toolbar */}
       <div className="flex items-center gap-1.5 px-3 py-2 border-b border-gray-800 shrink-0">
         <span className="text-sm font-medium text-gray-300 hidden sm:inline">
-          {scopeLabel ? `Tasks \u2014 ${scopeLabel} (${tasks.length})` : `Tasks (${tasks.length})`}
+          {scopeLabel ? t('list.titleWithScope', { scope: scopeLabel, count: tasks.length }) : t('list.titleWithCount', { count: tasks.length })}
         </span>
         <span className="text-sm font-medium text-gray-300 sm:hidden">{tasks.length}</span>
 
@@ -129,16 +131,16 @@ export function TaskListView({
           <button
             onClick={() => onViewModeChange('list')}
             className={cn('p-1 rounded', viewMode === 'list' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
-            title="List view"
-            aria-label="List view"
+            title={t('list.listView')}
+            aria-label={t('list.listView')}
           >
             <ListChecks size={16} />
           </button>
           <button
             onClick={() => onViewModeChange('kanban')}
             className={cn('p-1 rounded', viewMode === 'kanban' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
-            title="Kanban view"
-            aria-label="Kanban view"
+            title={t('list.kanbanView')}
+            aria-label={t('list.kanbanView')}
           >
             <LayoutGrid size={16} />
           </button>
@@ -151,34 +153,34 @@ export function TaskListView({
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as TaskStatus | '')}
               className="bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-xs text-gray-300 focus:outline-none"
-              aria-label="Filter by status"
+              aria-label={t('list.filterByStatus')}
             >
-              <option value="">All</option>
-              <option value="todo">To Do</option>
-              <option value="in-progress">In Progress</option>
-              <option value="done">Done</option>
+              <option value="">{t('list.filterAll')}</option>
+              <option value="todo">{t('status.todo')}</option>
+              <option value="in-progress">{t('status.inProgress')}</option>
+              <option value="done">{t('status.done')}</option>
             </select>
             <ArrowUpDown size={14} className="text-gray-500 hidden sm:block ml-1" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
               className="bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-xs text-gray-300 focus:outline-none"
-              aria-label="Sort by"
+              aria-label={t('list.sortBy')}
             >
-              <option value="order">Default</option>
-              <option value="dueDate">Due Date</option>
-              <option value="priority">Priority</option>
-              <option value="updatedAt">Last Updated</option>
+              <option value="order">{t('list.sortDefault')}</option>
+              <option value="dueDate">{t('list.sortDueDate')}</option>
+              <option value="priority">{t('list.sortPriority')}</option>
+              <option value="updatedAt">{t('list.sortLastUpdated')}</option>
             </select>
             {members && members.length > 0 && (
               <select
                 value={assigneeFilter}
                 onChange={(e) => setAssigneeFilter(e.target.value)}
                 className="bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-xs text-gray-300 focus:outline-none"
-                aria-label="Filter by assignee"
+                aria-label={t('list.filterByAssignee')}
               >
-                <option value="">All assignees</option>
-                {currentUserId && <option value="__me__">Assigned to me</option>}
+                <option value="">{t('list.allAssignees')}</option>
+                {currentUserId && <option value="__me__">{t('list.assignedToMe')}</option>}
                 {members.map((m) => (
                   <option key={m.userId} value={m.userId}>{m.displayName}</option>
                 ))}
@@ -190,10 +192,10 @@ export function TaskListView({
         <button
           onClick={() => setShowNewTask(true)}
           className="ml-auto flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
-          aria-label="New task"
+          aria-label={t('list.newTaskAria')}
         >
           <Plus size={14} />
-          <span className="hidden sm:inline">New Task</span>
+          <span className="hidden sm:inline">{t('list.newTask')}</span>
         </button>
       </div>
 
@@ -204,8 +206,8 @@ export function TaskListView({
             {filteredTasks.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-gray-600">
                 <ListChecks size={32} className="mb-2" />
-                <p className="text-sm">No tasks yet</p>
-                <p className="text-xs mt-1">Click "New Task" or press Ctrl+Shift+T</p>
+                <p className="text-sm">{t('list.emptyTitle')}</p>
+                <p className="text-xs mt-1">{t('list.emptyHint')}</p>
               </div>
             ) : (
               <Virtuoso
@@ -240,7 +242,7 @@ export function TaskListView({
       </div>
 
       {/* Edit Task Modal */}
-      <Modal open={editingTask !== null} onClose={() => setEditingTask(null)} title="Edit Task" wide>
+      <Modal open={editingTask !== null} onClose={() => setEditingTask(null)} title={t('list.editTaskModal')} wide>
         {editingTask && (
           <TaskForm
             task={editingTask}
@@ -262,7 +264,7 @@ export function TaskListView({
       </Modal>
 
       {/* New Task Modal */}
-      <Modal open={showNewTask} onClose={() => setShowNewTask(false)} title="Create Task" wide>
+      <Modal open={showNewTask} onClose={() => setShowNewTask(false)} title={t('list.createTaskModal')} wide>
         <TaskForm
           folders={folders}
           allTags={allTags}

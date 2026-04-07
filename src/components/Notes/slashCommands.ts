@@ -4,11 +4,20 @@ import {
   List, ListOrdered, ListChecks, Quote, FileCode, Minus, Table,
   Shield, Target, Lock, Clock, Calendar, CalendarClock, MessageSquare,
 } from 'lucide-react';
+import i18n from '../../i18n';
+
+const t = (key: string) => i18n.t(key, { ns: 'notes' });
 
 export interface SlashCommand {
   id: string;
-  label: string;
-  description: string;
+  /** i18n key for the label (resolved at render time via `label` getter or `getLabel()`) */
+  labelKey: string;
+  /** i18n key for the description */
+  descriptionKey: string;
+  /** Resolved label — call at render time so language switches take effect */
+  get label(): string;
+  /** Resolved description */
+  get description(): string;
   category: 'Formatting' | 'Blocks' | 'Threat Intel' | 'Insert';
   icon: LucideIcon;
   keywords: string[];
@@ -16,37 +25,56 @@ export interface SlashCommand {
   cursorOffset?: number;
 }
 
+interface SlashCommandDef {
+  id: string;
+  labelKey: string;
+  descriptionKey: string;
+  category: 'Formatting' | 'Blocks' | 'Threat Intel' | 'Insert';
+  icon: LucideIcon;
+  keywords: string[];
+  insert: string;
+  cursorOffset?: number;
+}
+
+function makeCommand(def: SlashCommandDef): SlashCommand {
+  return {
+    ...def,
+    get label() { return t(def.labelKey); },
+    get description() { return t(def.descriptionKey); },
+  };
+}
+
 export const SLASH_COMMANDS: SlashCommand[] = [
   // Formatting
-  { id: 'h1', label: 'Heading 1', description: 'Large heading', category: 'Formatting', icon: Heading1, keywords: ['title', 'header'], insert: '# ' },
-  { id: 'h2', label: 'Heading 2', description: 'Medium heading', category: 'Formatting', icon: Heading2, keywords: ['subtitle', 'header'], insert: '## ' },
-  { id: 'h3', label: 'Heading 3', description: 'Small heading', category: 'Formatting', icon: Heading3, keywords: ['header'], insert: '### ' },
-  { id: 'bold', label: 'Bold', description: 'Bold text', category: 'Formatting', icon: Bold, keywords: ['strong'], insert: '**text**', cursorOffset: -2 },
-  { id: 'italic', label: 'Italic', description: 'Italic text', category: 'Formatting', icon: Italic, keywords: ['emphasis', 'em'], insert: '_text_', cursorOffset: -1 },
-  { id: 'strikethrough', label: 'Strikethrough', description: 'Crossed out text', category: 'Formatting', icon: Strikethrough, keywords: ['strike', 'del'], insert: '~~text~~', cursorOffset: -2 },
-  { id: 'code-inline', label: 'Code', description: 'Inline code', category: 'Formatting', icon: Code, keywords: ['mono', 'inline'], insert: '`code`', cursorOffset: -1 },
-  { id: 'link', label: 'Link', description: 'Hyperlink', category: 'Formatting', icon: Link, keywords: ['url', 'href', 'anchor'], insert: '[text](url)', cursorOffset: -6 },
-  { id: 'tclink', label: 'ThreatCaddyLink', description: 'Link to another note', category: 'Formatting', icon: Link2, keywords: ['internal', 'note', 'wikilink', 'backlink', 'threatcaddy', 'tclink'], insert: '[[]]', cursorOffset: -2 },
+  makeCommand({ id: 'h1', labelKey: 'slashCommands.heading1', descriptionKey: 'slashCommands.heading1Desc', category: 'Formatting', icon: Heading1, keywords: ['title', 'header'], insert: '# ' }),
+  makeCommand({ id: 'h2', labelKey: 'slashCommands.heading2', descriptionKey: 'slashCommands.heading2Desc', category: 'Formatting', icon: Heading2, keywords: ['subtitle', 'header'], insert: '## ' }),
+  makeCommand({ id: 'h3', labelKey: 'slashCommands.heading3', descriptionKey: 'slashCommands.heading3Desc', category: 'Formatting', icon: Heading3, keywords: ['header'], insert: '### ' }),
+  makeCommand({ id: 'bold', labelKey: 'slashCommands.bold', descriptionKey: 'slashCommands.boldDesc', category: 'Formatting', icon: Bold, keywords: ['strong'], insert: '**text**', cursorOffset: -2 }),
+  makeCommand({ id: 'italic', labelKey: 'slashCommands.italic', descriptionKey: 'slashCommands.italicDesc', category: 'Formatting', icon: Italic, keywords: ['emphasis', 'em'], insert: '_text_', cursorOffset: -1 }),
+  makeCommand({ id: 'strikethrough', labelKey: 'slashCommands.strikethrough', descriptionKey: 'slashCommands.strikethroughDesc', category: 'Formatting', icon: Strikethrough, keywords: ['strike', 'del'], insert: '~~text~~', cursorOffset: -2 }),
+  makeCommand({ id: 'code-inline', labelKey: 'slashCommands.code', descriptionKey: 'slashCommands.codeDesc', category: 'Formatting', icon: Code, keywords: ['mono', 'inline'], insert: '`code`', cursorOffset: -1 }),
+  makeCommand({ id: 'link', labelKey: 'slashCommands.link', descriptionKey: 'slashCommands.linkDesc', category: 'Formatting', icon: Link, keywords: ['url', 'href', 'anchor'], insert: '[text](url)', cursorOffset: -6 }),
+  makeCommand({ id: 'tclink', labelKey: 'slashCommands.tcLink', descriptionKey: 'slashCommands.tcLinkDesc', category: 'Formatting', icon: Link2, keywords: ['internal', 'note', 'wikilink', 'backlink', 'threatcaddy', 'tclink'], insert: '[[]]', cursorOffset: -2 }),
 
   // Blocks
-  { id: 'bullet', label: 'Bullet list', description: 'Unordered list', category: 'Blocks', icon: List, keywords: ['ul', 'unordered'], insert: '- ' },
-  { id: 'numbered', label: 'Numbered list', description: 'Ordered list', category: 'Blocks', icon: ListOrdered, keywords: ['ol', 'ordered'], insert: '1. ' },
-  { id: 'task', label: 'Task list', description: 'Checkbox list', category: 'Blocks', icon: ListChecks, keywords: ['checkbox', 'todo'], insert: '- [ ] ' },
-  { id: 'quote', label: 'Blockquote', description: 'Quoted text', category: 'Blocks', icon: Quote, keywords: ['blockquote', 'citation'], insert: '> ' },
-  { id: 'code-block', label: 'Code block', description: 'Fenced code block', category: 'Blocks', icon: FileCode, keywords: ['fence', 'pre'], insert: '```\n\n```', cursorOffset: -4 },
-  { id: 'hr', label: 'Horizontal rule', description: 'Divider line', category: 'Blocks', icon: Minus, keywords: ['divider', 'separator'], insert: '---\n' },
-  { id: 'table', label: 'Table', description: '3-column table', category: 'Blocks', icon: Table, keywords: ['grid', 'columns'], insert: '| Column 1 | Column 2 | Column 3 |\n| --- | --- | --- |\n| | | |\n', cursorOffset: -7 },
+  makeCommand({ id: 'bullet', labelKey: 'slashCommands.bulletList', descriptionKey: 'slashCommands.bulletListDesc', category: 'Blocks', icon: List, keywords: ['ul', 'unordered'], insert: '- ' }),
+  makeCommand({ id: 'numbered', labelKey: 'slashCommands.numberedList', descriptionKey: 'slashCommands.numberedListDesc', category: 'Blocks', icon: ListOrdered, keywords: ['ol', 'ordered'], insert: '1. ' }),
+  makeCommand({ id: 'task', labelKey: 'slashCommands.taskList', descriptionKey: 'slashCommands.taskListDesc', category: 'Blocks', icon: ListChecks, keywords: ['checkbox', 'todo'], insert: '- [ ] ' }),
+  makeCommand({ id: 'quote', labelKey: 'slashCommands.blockquote', descriptionKey: 'slashCommands.blockquoteDesc', category: 'Blocks', icon: Quote, keywords: ['blockquote', 'citation'], insert: '> ' }),
+  makeCommand({ id: 'code-block', labelKey: 'slashCommands.codeBlock', descriptionKey: 'slashCommands.codeBlockDesc', category: 'Blocks', icon: FileCode, keywords: ['fence', 'pre'], insert: '```\n\n```', cursorOffset: -4 }),
+  makeCommand({ id: 'hr', labelKey: 'slashCommands.horizontalRule', descriptionKey: 'slashCommands.horizontalRuleDesc', category: 'Blocks', icon: Minus, keywords: ['divider', 'separator'], insert: '---\n' }),
+  makeCommand({ id: 'table', labelKey: 'slashCommands.table', descriptionKey: 'slashCommands.tableDesc', category: 'Blocks', icon: Table, keywords: ['grid', 'columns'], insert: '| Column 1 | Column 2 | Column 3 |\n| --- | --- | --- |\n| | | |\n', cursorOffset: -7 }),
 
   // Threat Intel
-  { id: 'ioc-table', label: 'IOC Table', description: 'Type / Value / Context table', category: 'Threat Intel', icon: Shield, keywords: ['indicator', 'compromise', 'ioc'], insert: '| Type | Value | Context |\n| --- | --- | --- |\n| | | |\n', cursorOffset: -7 },
-  { id: 'mitre', label: 'MITRE Reference', description: 'ATT&CK technique ID', category: 'Threat Intel', icon: Target, keywords: ['attack', 'technique', 'tactic'], insert: '**MITRE ATT&CK:** T____', cursorOffset: -4 },
-  { id: 'tlp', label: 'TLP Header', description: 'Traffic Light Protocol', category: 'Threat Intel', icon: Lock, keywords: ['traffic', 'classification', 'amber', 'red', 'green'], insert: '**TLP:AMBER**' },
-  { id: 'timeline-entry', label: 'Timeline Entry', description: 'Timestamped event', category: 'Threat Intel', icon: Clock, keywords: ['event', 'timestamp', 'incident'], insert: '**[YYYY-MM-DD HH:MM UTC]** — ' },
+  makeCommand({ id: 'ioc-table', labelKey: 'slashCommands.iocTable', descriptionKey: 'slashCommands.iocTableDesc', category: 'Threat Intel', icon: Shield, keywords: ['indicator', 'compromise', 'ioc'], insert: '| Type | Value | Context |\n| --- | --- | --- |\n| | | |\n', cursorOffset: -7 }),
+  makeCommand({ id: 'mitre', labelKey: 'slashCommands.mitreReference', descriptionKey: 'slashCommands.mitreReferenceDesc', category: 'Threat Intel', icon: Target, keywords: ['attack', 'technique', 'tactic'], insert: '**MITRE ATT&CK:** T____', cursorOffset: -4 }),
+  makeCommand({ id: 'tlp', labelKey: 'slashCommands.tlpHeader', descriptionKey: 'slashCommands.tlpHeaderDesc', category: 'Threat Intel', icon: Lock, keywords: ['traffic', 'classification', 'amber', 'red', 'green'], insert: '**TLP:AMBER**' }),
+  makeCommand({ id: 'timeline-entry', labelKey: 'slashCommands.timelineEntry', descriptionKey: 'slashCommands.timelineEntryDesc', category: 'Threat Intel', icon: Clock, keywords: ['event', 'timestamp', 'incident'], insert: '**[YYYY-MM-DD HH:MM UTC]** — ' }),
 
   // Insert
-  { id: 'date', label: 'Current date', description: 'Insert today\'s date', category: 'Insert', icon: Calendar, keywords: ['today', 'now'], insert: '__DATE__' },
-  { id: 'datetime', label: 'Current datetime', description: 'Insert date and time', category: 'Insert', icon: CalendarClock, keywords: ['now', 'timestamp'], insert: '__DATETIME__' },
-  { id: 'callout', label: 'Callout', description: 'Note admonition', category: 'Insert', icon: MessageSquare, keywords: ['admonition', 'warning', 'info', 'note'], insert: '> **Note:** ' },
+  makeCommand({ id: 'date', labelKey: 'slashCommands.currentDate', descriptionKey: 'slashCommands.currentDateDesc', category: 'Insert', icon: Calendar, keywords: ['today', 'now'], insert: '__DATE__' }),
+  makeCommand({ id: 'datetime', labelKey: 'slashCommands.currentDatetime', descriptionKey: 'slashCommands.currentDatetimeDesc', category: 'Insert', icon: CalendarClock, keywords: ['now', 'timestamp'], insert: '__DATETIME__' }),
+  makeCommand({ id: 'callout', labelKey: 'slashCommands.callout', descriptionKey: 'slashCommands.calloutDesc', category: 'Insert', icon: MessageSquare, keywords: ['admonition', 'warning', 'info', 'note'], insert: '> **Note:** ' }),
 ];
 
 /** Compute pixel coordinates of a caret position inside a textarea using the mirror-div technique. */

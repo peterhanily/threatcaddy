@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MITRE_TACTICS, MITRE_TECHNIQUES, getParentTechniqueId } from '../../lib/mitre-attack';
 import type { TimelineEvent } from '../../types';
 
@@ -7,6 +8,7 @@ interface MitreReportProps {
 }
 
 export function MitreReport({ events }: MitreReportProps) {
+  const { t } = useTranslation('timeline');
   const { tacticCounts, maxTacticCount, actorTTPs, techniqueCoverage } = useMemo(() => {
     // Count techniques per tactic
     const techByTactic = new Map<string, Set<string>>();
@@ -67,7 +69,7 @@ export function MitreReport({ events }: MitreReportProps) {
     <div className="space-y-8">
       {/* Section 1: Techniques per Tactic */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">Techniques per Tactic</h3>
+        <h3 className="text-sm font-semibold text-gray-300 mb-3">{t('mitreReport.techniquesPerTactic')}</h3>
         <div className="space-y-1.5">
           {tacticCounts.map(({ tactic, count }) => (
             <div key={tactic.id} className="flex items-center gap-2">
@@ -92,16 +94,16 @@ export function MitreReport({ events }: MitreReportProps) {
 
       {/* Section 2: Actor TTP Summary */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">Actor TTP Summary</h3>
+        <h3 className="text-sm font-semibold text-gray-300 mb-3">{t('mitreReport.actorTTPSummary')}</h3>
         {actorTTPs.length === 0 ? (
-          <p className="text-xs text-gray-500">No actors have techniques mapped.</p>
+          <p className="text-xs text-gray-500">{t('mitreReport.noActorsMapped')}</p>
         ) : (
           <div className="space-y-3">
             {actorTTPs.map((actor) => (
               <div key={actor.name}>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-medium text-purple-400">{actor.name}</span>
-                  <span className="text-[10px] text-gray-500">({actor.techniques.length} technique{actor.techniques.length !== 1 ? 's' : ''})</span>
+                  <span className="text-[10px] text-gray-500">({t('mitreReport.techniqueCount', { count: actor.techniques.length })})</span>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {actor.techniques.map((t) => (
@@ -122,7 +124,7 @@ export function MitreReport({ events }: MitreReportProps) {
 
       {/* Section 3: Coverage */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">Technique Coverage</h3>
+        <h3 className="text-sm font-semibold text-gray-300 mb-3">{t('mitreReport.techniqueCoverage')}</h3>
         <div className="flex items-baseline gap-2 mb-2">
           <span className="text-2xl font-bold text-gray-200">{techniqueCoverage}</span>
           <span className="text-sm text-gray-500">/ {MITRE_TECHNIQUES.length}</span>

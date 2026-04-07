@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileText } from 'lucide-react';
 
 const MAX_VISIBLE = 8;
@@ -19,6 +20,7 @@ interface LinkAutocompleteMenuProps {
 }
 
 export function LinkAutocompleteMenu({ items, activeIndex, position, onSelect, menuRef }: LinkAutocompleteMenuProps) {
+  const { t } = useTranslation('notes');
   const listRef = useRef<HTMLDivElement>(null);
   const [adjustedPos, setAdjustedPos] = useState<{ top: number; left: number } | null>(null);
 
@@ -70,7 +72,7 @@ export function LinkAutocompleteMenu({ items, activeIndex, position, onSelect, m
       }}
     >
       <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold sticky top-0 bg-gray-800">
-        Link to note
+        {t('linkMenu.header')}
       </div>
       <div ref={listRef}>
         {items.map((item, index) => (

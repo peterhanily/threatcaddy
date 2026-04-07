@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { nanoid } from 'nanoid';
 import { X, MessageSquare, Trash2, Search, Plus, CheckSquare, Square } from 'lucide-react';
 import type { Task, Note, TimelineEvent, Priority, TaskStatus, Tag, Folder, IOCTarget, IOCAnalysis, IOCType, TaskComment, ChecklistItem, InvestigationMember } from '../../types';
@@ -27,18 +28,19 @@ interface TaskFormProps {
   investigationMembers?: InvestigationMember[];
 }
 
-function formatRelativeTime(ts: number): string {
+function formatRelativeTime(t: (key: string, opts?: Record<string, number>) => string, ts: number): string {
   const diff = Date.now() - ts;
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('form.relativeTime.justNow');
+  if (mins < 60) return t('form.relativeTime.minutesAgo', { count: mins });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t('form.relativeTime.hoursAgo', { count: hours });
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return t('form.relativeTime.daysAgo', { count: days });
 }
 
 export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel, onUpdateTask, onDelete, allNotes = [], allTimelineEvents = [], defaultFolderId, investigationMembers }: TaskFormProps) {
+  const { t } = useTranslation('tasks');
   const { settings: taskFormSettings } = useSettings();
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
@@ -91,7 +93,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      setTitleError('Task title is required');
+      setTitleError(t('form.titleRequired'));
       return;
     }
     setTitleError('');
@@ -156,14 +158,14 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
     <div className="flex gap-0">
       <form onSubmit={handleSubmit} className="space-y-4 flex-1 min-w-0">
         <div>
-          <label className={labelClass} htmlFor="task-title">Title</label>
+          <label className={labelClass} htmlFor="task-title">{t('form.titleLabel')}</label>
           <input
             id="task-title"
             autoFocus
             value={title}
             onChange={(e) => { setTitle(e.target.value); if (titleError) setTitleError(''); }}
             className={cn(inputClass, titleError && 'border-red-500')}
-            placeholder="Task title..."
+            placeholder={t('form.titlePlaceholder')}
             aria-required="true"
             aria-invalid={!!titleError}
             aria-describedby={titleError ? 'task-title-error' : undefined}
@@ -175,14 +177,14 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
 
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <label className="text-xs font-medium text-text-muted">Description (markdown)</label>
+            <label className="text-xs font-medium text-text-muted">{t('form.descriptionLabel')}</label>
             {isEditMode && onUpdateTask && (
               <button
                 type="button"
                 onClick={handleShieldClick}
                 className={cn('p-1 rounded flex items-center gap-1', showIOCPanel ? 'bg-bg-active text-accent' : 'text-text-muted hover:text-text-secondary')}
-                title="IOC Analysis"
-                aria-label="Toggle IOC analysis"
+                title={t('form.iocAnalysis')}
+                aria-label={t('form.toggleIocAnalysis')}
               >
                 <Search size={14} />
                 {iocCount > 0 && (
@@ -195,42 +197,42 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className={`${inputClass} h-24 resize-none note-editor`}
-            placeholder="Optional description..."
+            placeholder={t('form.descriptionPlaceholder')}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelClass}>Priority</label>
+            <label className={labelClass}>{t('form.priorityLabel')}</label>
             <select value={priority} onChange={(e) => setPriority(e.target.value as Priority)} className={inputClass}>
-              <option value="none">None</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
+              <option value="none">{t('common:none')}</option>
+              <option value="low">{t('priority.lowFull')}</option>
+              <option value="medium">{t('priority.mediumFull')}</option>
+              <option value="high">{t('priority.highFull')}</option>
             </select>
           </div>
           <div>
-            <label className={labelClass}>Status</label>
+            <label className={labelClass}>{t('form.statusLabel')}</label>
             <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)} className={inputClass}>
-              <option value="todo">To Do</option>
-              <option value="in-progress">In Progress</option>
-              <option value="done">Done</option>
+              <option value="todo">{t('status.todo')}</option>
+              <option value="in-progress">{t('status.inProgress')}</option>
+              <option value="done">{t('status.done')}</option>
             </select>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelClass}>Classification</label>
+            <label className={labelClass}>{t('form.classificationLabel')}</label>
             <select value={clsLevel} onChange={(e) => setClsLevel(e.target.value)} className={inputClass}>
-              <option value="">None</option>
+              <option value="">{t('common:none')}</option>
               {getEffectiveClsLevels(taskFormSettings.tiClsLevels).map((v) => (
                 <option key={v} value={v}>{v}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className={labelClass}>Due Date</label>
+            <label className={labelClass}>{t('form.dueDateLabel')}</label>
             <input
               type="date"
               value={dueDate}
@@ -242,9 +244,9 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelClass}>Investigation</label>
+            <label className={labelClass}>{t('form.investigationLabel')}</label>
             <select value={folderId} onChange={(e) => setFolderId(e.target.value)} className={inputClass}>
-              <option value="">No investigation</option>
+              <option value="">{t('form.noInvestigation')}</option>
               {folders.map((f) => (
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
@@ -252,9 +254,9 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
           </div>
           {investigationMembers && investigationMembers.length > 0 && (
             <div>
-              <label className={labelClass}>Assignee</label>
+              <label className={labelClass}>{t('form.assigneeLabel')}</label>
               <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} className={inputClass}>
-                <option value="">Unassigned</option>
+                <option value="">{t('form.unassigned')}</option>
                 {investigationMembers.map((m) => (
                   <option key={m.userId} value={m.userId}>{m.displayName}</option>
                 ))}
@@ -264,7 +266,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
         </div>
 
         <div>
-          <label className={labelClass}>Tags</label>
+          <label className={labelClass}>{t('form.tagsLabel')}</label>
           <TagInput
             selectedTags={tags}
             allTags={allTags}
@@ -277,7 +279,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
         <div>
           <label className="flex items-center gap-1.5 text-xs font-medium text-gray-400 mb-2">
             <CheckSquare size={12} />
-            Checklist {checklistItems.length > 0 && `(${checklistItems.filter(c => c.done).length}/${checklistItems.length})`}
+            {t('form.checklistLabel')} {checklistItems.length > 0 && t('form.checklistProgress', { done: checklistItems.filter(c => c.done).length, total: checklistItems.length })}
           </label>
 
           {checklistItems.length > 0 && (
@@ -304,8 +306,8 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
                       if (isEditMode && task && onUpdateTask) onUpdateTask(task.id, { checklist: updated.length > 0 ? updated : undefined });
                     }}
                     className="p-0.5 rounded text-gray-600 hover:text-red-400 shrink-0"
-                    title="Remove item"
-                    aria-label="Remove checklist item"
+                    title={t('form.removeItem')}
+                    aria-label={t('form.removeChecklistItem')}
                   >
                     <X size={12} />
                   </button>
@@ -329,7 +331,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
                 }
               }}
               className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-accent"
-              placeholder="Add checklist item..."
+              placeholder={t('form.addChecklistPlaceholder')}
             />
             <button
               type="button"
@@ -353,7 +355,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
         {isEditMode && task && onUpdateTask && (
           <div>
             <label className="flex items-center gap-1.5 text-xs font-medium text-text-muted mb-1">
-              Linked Entities
+              {t('form.linkedEntities')}
             </label>
             <EntityLinker
               currentEntityId={task.id}
@@ -373,7 +375,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
           <div>
             <label className="flex items-center gap-1.5 text-xs font-medium text-text-muted mb-2">
               <MessageSquare size={12} />
-              Comments {comments.length > 0 && `(${comments.length})`}
+              {t('form.commentsLabel')} {comments.length > 0 && t('form.commentCount', { count: comments.length })}
             </label>
 
             {comments.length > 0 && (
@@ -381,13 +383,13 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
                 {comments.map((c) => (
                   <div key={c.id} className="flex items-start gap-2 bg-bg-deep/50 rounded-lg px-3 py-2">
                     <p className="text-xs text-text-secondary flex-1 whitespace-pre-wrap break-words">{c.text}</p>
-                    <span className="text-[10px] text-text-muted shrink-0">{formatRelativeTime(c.createdAt)}</span>
+                    <span className="text-[10px] text-text-muted shrink-0">{formatRelativeTime(t, c.createdAt)}</span>
                     <button
                       type="button"
                       onClick={() => handleDeleteComment(c.id)}
                       className="p-0.5 rounded text-text-muted hover:text-red-400 shrink-0"
-                      title="Delete comment"
-                      aria-label="Delete comment"
+                      title={t('form.deleteComment')}
+                      aria-label={t('form.deleteComment')}
                     >
                       <X size={12} />
                     </button>
@@ -402,7 +404,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
                 onChange={(e) => setCommentText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddComment(); } }}
                 className="flex-1 bg-bg-deep border border-border-medium rounded-lg px-3 py-1.5 text-xs text-text-primary focus:outline-none focus:border-accent"
-                placeholder="Add a comment..."
+                placeholder={t('form.addCommentPlaceholder')}
               />
               <button
                 type="button"
@@ -410,7 +412,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
                 disabled={!commentText.trim()}
                 className="px-3 py-1.5 rounded-lg bg-bg-active hover:bg-bg-hover disabled:opacity-50 text-text-primary text-xs transition-colors"
               >
-                Add
+                {t('common:add')}
               </button>
             </div>
           </div>
@@ -422,8 +424,8 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
               type="button"
               onClick={() => setShowConfirmDelete(true)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-red-500 hover:text-red-400 hover:bg-bg-deep text-sm"
-              title="Delete task"
-              aria-label="Delete task"
+              title={t('item.deleteTask')}
+              aria-label={t('item.deleteTask')}
             >
               <Trash2 size={16} />
             </button>
@@ -434,13 +436,13 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
               onClick={onCancel}
               className="px-4 py-2 rounded-lg bg-bg-active hover:bg-bg-hover text-text-primary text-sm transition-colors"
             >
-              Cancel
+              {t('common:cancel')}
             </button>
             <button
               type="submit"
               className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
             >
-              {task ? 'Update Task' : 'Create Task'}
+              {task ? t('form.updateTask') : t('form.createTask')}
             </button>
           </div>
         </div>
@@ -471,9 +473,9 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
           open={showConfirmDelete}
           onClose={() => setShowConfirmDelete(false)}
           onConfirm={() => onDelete(task.id)}
-          title="Delete Task"
-          message="This task will be permanently deleted. This cannot be undone."
-          confirmLabel="Delete Task"
+          title={t('form.confirmDeleteTitle')}
+          message={t('form.confirmDeleteMessage')}
+          confirmLabel={t('form.confirmDeleteLabel')}
           danger
         />
       )}

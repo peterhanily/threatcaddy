@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Download, Upload, FileText, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { exportJSON, importJSON, exportNotesMarkdown, downloadFile } from '../../lib/export';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { MarkdownImportModal } from './MarkdownImportModal';
@@ -15,6 +16,7 @@ interface ExportImportProps {
 }
 
 export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
+  const { t } = useTranslation('settings');
   const logActivity = useLogActivity();
   const { addToast } = useToast();
   const [importing, setImporting] = useState(false);
@@ -35,7 +37,7 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
     try {
       const json = await exportJSON();
       downloadFile(json, `threatcaddy-backup-${new Date().toISOString().split('T')[0]}.json`, 'application/json');
-      showMessage('Backup exported successfully');
+      showMessage(t('data.exportSuccess'));
       addToast('success', 'Backup exported');
       logActivity('data', 'export', 'Exported JSON backup');
     } catch {
@@ -47,7 +49,7 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
     const activeNotes = notes.filter((n) => !n.trashed && !n.archived);
     const md = exportNotesMarkdown(activeNotes);
     downloadFile(md, `threatcaddy-${new Date().toISOString().split('T')[0]}.md`, 'text/markdown');
-    showMessage(`Exported ${activeNotes.length} notes as Markdown`);
+    showMessage(t('data.exportedNotes', { count: activeNotes.length }));
     logActivity('data', 'export', `Exported ${activeNotes.length} notes as Markdown`);
   };
 
@@ -64,7 +66,7 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
     try {
       const text = await pendingFile.text();
       const counts = await importJSON(text);
-      showMessage(`Imported ${counts.notes} notes, ${counts.tasks} tasks, ${counts.folders} investigations, ${counts.tags} tags`);
+      showMessage(t('data.importedCounts', { notes: counts.notes, tasks: counts.tasks, folders: counts.folders, tags: counts.tags }));
       addToast('success', `Imported ${counts.notes} notes, ${counts.tasks} tasks`);
       logActivity('data', 'import', `Imported ${counts.notes} notes, ${counts.tasks} tasks, ${counts.folders} investigations, ${counts.tags} tags`);
       onImportComplete();
@@ -93,7 +95,7 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
     }));
 
     await db.notes.bulkAdd(notesToAdd);
-    showMessage(`Imported ${notesToAdd.length} notes from Markdown`);
+    showMessage(t('data.importedMarkdown', { count: notesToAdd.length }));
     addToast('success', `Imported ${notesToAdd.length} notes from Markdown`);
     logActivity('data', 'import', `Imported ${notesToAdd.length} notes from Markdown`);
     onImportComplete();
@@ -104,24 +106,24 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-gray-300">Export & Import</h3>
+      <h3 className="text-sm font-semibold text-gray-300">{t('data.exportImportTitle')}</h3>
 
       <div className="flex flex-wrap gap-3">
         <button onClick={handleExportJSON} className={`${btnClass} bg-gray-700 hover:bg-gray-600 text-gray-200`}>
           <Download size={16} />
-          Export JSON Backup
+          {t('data.exportJSON')}
         </button>
         <button onClick={handleExportMarkdown} className={`${btnClass} bg-gray-700 hover:bg-gray-600 text-gray-200`}>
           <FileText size={16} />
-          Export Markdown
+          {t('data.exportMarkdown')}
         </button>
         <button onClick={() => setShowMdImport(true)} className={`${btnClass} bg-gray-700 hover:bg-gray-600 text-gray-200`}>
           <Upload size={16} />
-          Import Markdown
+          {t('data.importMarkdown')}
         </button>
         <label className={`${btnClass} bg-accent hover:bg-accent-hover text-white cursor-pointer ${importing ? 'opacity-50 pointer-events-none' : ''}`}>
           <Upload size={16} />
-          {importing ? 'Importing...' : 'Import JSON Backup'}
+          {importing ? t('data.importing') : t('data.importJSON')}
           <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileSelect} className="hidden" disabled={importing} />
         </label>
       </div>
@@ -140,9 +142,9 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
         open={pendingFile !== null}
         onClose={() => setPendingFile(null)}
         onConfirm={handleConfirmImport}
-        title="Import Backup"
-        message="This will replace all your current notes, tasks, folders, and tags with the imported data. This cannot be undone."
-        confirmLabel="Import & Replace"
+        title={t('data.importBackupTitle')}
+        message={t('data.importBackupMessage')}
+        confirmLabel={t('data.importReplace')}
         danger
       />
 

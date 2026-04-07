@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { X, RefreshCw, ChevronDown, ChevronRight, Download, Upload, XCircle, Tag, Check, Search, Clipboard } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { IOCTarget, IOCEntry, IOCType, IOCAnalysis, ConfidenceLevel } from '../../types';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 import { useIOCAnalysis } from '../../hooks/useIOCAnalysis';
@@ -32,6 +33,7 @@ interface IOCPanelProps {
 }
 
 export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatIntelConfig, tiExportConfig, onPushIOCs, cloudPushing, cloudBackupConfigured, lastPushedAt, onPushComplete, style }: IOCPanelProps) {
+  const { t } = useTranslation('analysis');
   const {
     analysis,
     analyzing,
@@ -119,10 +121,10 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
     const slug = slugify(item.title) || 'item';
     const ok = await onPushIOCs(entries, slug, undefined, activeExportFilter);
     if (ok) {
-      showPushMessage('success', 'Pushed to cloud');
+      showPushMessage('success', t('iocPanel.pushedToCloud'));
       onPushComplete?.();
     } else {
-      showPushMessage('error', 'Push failed');
+      showPushMessage('error', t('iocPanel.pushFailed'));
     }
   };
 
@@ -135,10 +137,10 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
     const typeSlug = type.replace(/[^a-z0-9]/g, '-');
     const ok = await onPushIOCs(entries, slug, typeSlug, activeExportFilter);
     if (ok) {
-      showPushMessage('success', 'Pushed to cloud');
+      showPushMessage('success', t('iocPanel.pushedToCloud'));
       onPushComplete?.();
     } else {
-      showPushMessage('error', 'Push failed');
+      showPushMessage('error', t('iocPanel.pushFailed'));
     }
   };
 
@@ -203,9 +205,9 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
     const text = iocsToExport.map((ioc) => ioc.value).join('\n');
     try {
       await navigator.clipboard.writeText(text);
-      showPushMessage('success', `Copied ${iocsToExport.length} IOC${iocsToExport.length !== 1 ? 's' : ''} to clipboard`);
+      showPushMessage('success', t('iocPanel.copiedCount', { count: iocsToExport.length }));
     } catch {
-      showPushMessage('error', 'Failed to copy to clipboard');
+      showPushMessage('error', t('iocPanel.copyFailed'));
     }
   };
 
@@ -251,21 +253,21 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-800 shrink-0">
         <Search size={16} />
-        <span className="text-sm font-medium text-gray-200 flex-1">IOC Analysis</span>
+        <span className="text-sm font-medium text-gray-200 flex-1">{t('iocPanel.title')}</span>
         {iocCount > 0 && (
           <span className="text-[10px] bg-accent/20 text-accent px-1.5 py-0.5 rounded-full">{iocCount}</span>
         )}
-        <label className="relative inline-flex items-center cursor-pointer ml-1" title={showDefanged ? 'Show original values' : 'Defang IOC values'}>
+        <label className="relative inline-flex items-center cursor-pointer ml-1">
           <input type="checkbox" checked={showDefanged} onChange={() => setShowDefanged(!showDefanged)} className="sr-only peer" />
           <div className="w-7 h-4 bg-gray-700 peer-checked:bg-accent/60 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3" />
-          <span className="ml-1.5 text-[10px] text-gray-500 peer-checked:text-accent select-none">Defang</span>
+          <span className="ml-1.5 text-[10px] text-gray-500 peer-checked:text-accent select-none">{t('iocPanel.defangToggle')}</span>
         </label>
         <button
           onClick={analyze}
           disabled={analyzing}
           className={cn('p-1 rounded text-gray-500 hover:text-gray-300', analyzing && 'animate-spin')}
-          title="Re-analyze"
-          aria-label="Re-analyze IOCs"
+          title={t('iocPanel.reanalyze')}
+          aria-label={t('iocPanel.reanalyzeAria')}
         >
           <RefreshCw size={14} />
         </button>
@@ -275,8 +277,8 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
               <button
                 onClick={() => setShowExportMenu(!showExportMenu)}
                 className="p-1 rounded text-gray-500 hover:text-gray-300"
-                title="Download IOCs"
-                aria-label="Download IOCs"
+                title={t('iocPanel.downloadTitle')}
+                aria-label={t('iocPanel.downloadAria')}
               >
                 <Download size={14} />
               </button>
@@ -284,10 +286,10 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                 <div className="absolute right-0 top-full mt-1 w-52 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
                   {/* Export filters */}
                   <div className="px-3 py-2 border-b border-gray-700">
-                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">Filters</span>
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">{t('iocPanel.filtersLabel')}</span>
                     <div className="mt-1.5 space-y-1.5">
                       <div>
-                        <span className="text-[10px] text-gray-400">Status</span>
+                        <span className="text-[10px] text-gray-400">{t('iocPanel.statusLabel')}</span>
                         <div className="flex flex-wrap gap-1 mt-0.5">
                           {['active', 'resolved', 'false-positive', 'under-investigation'].map((s) => (
                             <button
@@ -309,7 +311,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                         </div>
                       </div>
                       <div>
-                        <span className="text-[10px] text-gray-400">Confidence</span>
+                        <span className="text-[10px] text-gray-400">{t('iocPanel.confidenceLabel')}</span>
                         <div className="flex flex-wrap gap-1 mt-0.5">
                           {(Object.keys(CONFIDENCE_LEVELS) as ConfidenceLevel[]).map((c) => (
                             <button
@@ -339,22 +341,22 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                           }}
                           className="text-[10px] text-gray-500 hover:text-gray-300"
                         >
-                          Clear filters
+                          {t('iocPanel.clearFilters')}
                         </button>
                       )}
                     </div>
                   </div>
                   <button onClick={handleCopyToClipboard} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 flex items-center gap-1.5">
                     <Clipboard size={11} />
-                    Copy to Clipboard
+                    {t('iocPanel.copyToClipboard')}
                   </button>
                   <div className="border-t border-gray-700" />
-                  <button onClick={() => handleExport('flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export JSON (flat)</button>
-                  <button onClick={() => handleExport('flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export CSV (flat)</button>
-                  <button onClick={() => handleExport('json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export JSON (grouped)</button>
-                  <button onClick={() => handleExport('csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export CSV (grouped)</button>
-                  <button onClick={() => handleExport('stix')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export STIX 2.1</button>
-                  <button onClick={() => handleExport('misp')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">Export MISP Event</button>
+                  <button onClick={() => handleExport('flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportJsonFlat')}</button>
+                  <button onClick={() => handleExport('flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportCsvFlat')}</button>
+                  <button onClick={() => handleExport('json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportJsonGrouped')}</button>
+                  <button onClick={() => handleExport('csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportCsvGrouped')}</button>
+                  <button onClick={() => handleExport('stix')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportStix')}</button>
+                  <button onClick={() => handleExport('misp')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">{t('iocPanel.exportMisp')}</button>
                 </div>
               )}
             </div>
@@ -362,8 +364,8 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
               onClick={handlePushAll}
               disabled={!cloudBackupConfigured || cloudPushing}
               className="p-1 rounded text-gray-500 hover:text-gray-300 disabled:opacity-50"
-              title={cloudBackupConfigured ? 'Push IOCs to cloud' : 'Configure backup destination in Settings to push IOCs'}
-              aria-label="Push IOCs to cloud"
+              title={cloudBackupConfigured ? t('iocPanel.pushTitle') : t('iocPanel.pushTitleDisabled')}
+              aria-label={t('iocPanel.pushAria')}
             >
               <Upload size={14} />
             </button>
@@ -372,8 +374,8 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
         <button
           onClick={onClose}
           className="p-1 rounded text-gray-500 hover:text-gray-300"
-          title="Close panel"
-          aria-label="Close IOC panel"
+          title={t('iocPanel.closeTitle')}
+          aria-label={t('iocPanel.closeAria')}
         >
           <X size={14} />
         </button>
@@ -392,7 +394,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
       {/* Last pushed indicator */}
       {lastPushedAt && !pushMessage && (
         <div className="px-3 py-1 text-[10px] text-gray-500 shrink-0">
-          Last pushed {formatDate(lastPushedAt)}
+          {t('iocPanel.lastPushed', { date: formatDate(lastPushedAt) })}
         </div>
       )}
 
@@ -401,31 +403,31 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
         {!analysis ? (
           <div className="flex flex-col items-center justify-center py-8 text-gray-600">
             <Search size={36} className="mb-2" />
-            <p className="text-sm">No analysis yet</p>
+            <p className="text-sm">{t('iocPanel.noAnalysis')}</p>
             <button
               onClick={analyze}
               className="mt-2 text-xs text-accent hover:text-accent-hover"
             >
-              Analyze now
+              {t('iocPanel.analyzeNow')}
             </button>
           </div>
         ) : (
           <>
             {/* Analysis summary */}
             <div>
-              <label className="text-[10px] text-gray-500 uppercase tracking-wider">Analysis Summary</label>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('iocPanel.analysisSummary')}</label>
               <textarea
                 value={analysis.analysisSummary || ''}
                 onChange={(e) => updateSummary(e.target.value)}
                 className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-2 mt-1 focus:outline-none focus:ring-1 focus:ring-gray-600 resize-none"
                 rows={2}
-                placeholder="Add analysis notes..."
+                placeholder={t('iocPanel.analysisSummaryPlaceholder')}
               />
             </div>
 
             {/* Grouped IOCs */}
             {visibleActiveIOCs.length === 0 ? (
-              <p className="text-xs text-gray-600 text-center py-4">No IOCs found</p>
+              <p className="text-xs text-gray-600 text-center py-4">{t('iocPanel.noIOCsFound')}</p>
             ) : (
               [...grouped.entries()].map(([type, iocs]) => {
                 const { label, color } = IOC_TYPE_LABELS[type as IOCType] || { label: type, color: '#6b7280' };
@@ -445,8 +447,8 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                       <button
                         onClick={(e) => { e.stopPropagation(); dismissByType(type); }}
                         className="p-0.5 rounded text-gray-600 hover:text-red-400"
-                        title="Dismiss all"
-                        aria-label={`Dismiss all ${label}`}
+                        title={t('iocPanel.dismissAll')}
+                        aria-label={t('iocPanel.dismissAllAria', { label })}
                       >
                         <XCircle size={12} />
                       </button>
@@ -462,8 +464,8 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                           }
                         }}
                         className={cn('p-0.5 rounded', attributionForType === type ? 'text-accent' : 'text-gray-600 hover:text-gray-300')}
-                        title="Set attribution"
-                        aria-label={`Set attribution for all ${label}`}
+                        title={t('iocPanel.setAttribution')}
+                        aria-label={t('iocPanel.setAttributionAria', { label })}
                       >
                         <Tag size={12} />
                       </button>
@@ -474,19 +476,19 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                             setExportForType(exportForType === type ? null : type);
                           }}
                           className={cn('p-0.5 rounded', exportForType === type ? 'text-accent' : 'text-gray-600 hover:text-gray-300')}
-                          title="Download category"
-                          aria-label={`Download ${label} IOCs`}
+                          title={t('iocPanel.downloadCategory')}
+                          aria-label={t('iocPanel.downloadCategoryAria', { label })}
                         >
                           <Download size={12} />
                         </button>
                         {exportForType === type && (
                           <div className="absolute right-0 top-full mt-1 w-36 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
-                            <button onClick={() => handleCategoryExport(type, 'flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">JSON (flat)</button>
-                            <button onClick={() => handleCategoryExport(type, 'flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">CSV (flat)</button>
-                            <button onClick={() => handleCategoryExport(type, 'json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">JSON (grouped)</button>
-                            <button onClick={() => handleCategoryExport(type, 'csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">CSV (grouped)</button>
-                            <button onClick={() => handleCategoryExport(type, 'stix')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">STIX 2.1</button>
-                            <button onClick={() => handleCategoryExport(type, 'misp')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">MISP Event</button>
+                            <button onClick={() => handleCategoryExport(type, 'flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">{t('iocPanel.jsonFlat')}</button>
+                            <button onClick={() => handleCategoryExport(type, 'flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.csvFlat')}</button>
+                            <button onClick={() => handleCategoryExport(type, 'json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.jsonGrouped')}</button>
+                            <button onClick={() => handleCategoryExport(type, 'csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.csvGrouped')}</button>
+                            <button onClick={() => handleCategoryExport(type, 'stix')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.stix')}</button>
+                            <button onClick={() => handleCategoryExport(type, 'misp')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.mispEvent')}</button>
                             <button
                               onClick={() => {
                                 setExportForType(null);
@@ -495,7 +497,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                               disabled={!cloudBackupConfigured || cloudPushing}
                               className={cn('w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 rounded-b-lg disabled:opacity-50', cloudBackupConfigured ? 'text-accent' : 'text-gray-500')}
                             >
-                              Push to cloud (flat)
+                              {t('iocPanel.pushToCloudFlat')}
                             </button>
                           </div>
                         )}
@@ -508,15 +510,15 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                             value={attributionInput}
                             onChange={setAttributionInput}
                             actors={attributionActors ?? []}
-                            placeholder="Actor name..."
+                            placeholder={t('iocPanel.actorPlaceholder')}
                           />
                         </div>
                         <button
                           onClick={() => handleBulkAttribution(type)}
                           disabled={!attributionInput.trim()}
                           className="p-1 rounded bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-50"
-                          title="Apply attribution"
-                          aria-label="Apply attribution to all"
+                          title={t('iocPanel.applyAttribution')}
+                          aria-label={t('iocPanel.applyAttributionAria')}
                         >
                           <Check size={12} />
                         </button>
@@ -552,7 +554,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                   className="flex items-center gap-2 w-full text-left py-1"
                 >
                   {showDismissed ? <ChevronDown size={12} className="text-gray-500" /> : <ChevronRight size={12} className="text-gray-500" />}
-                  <span className="text-xs font-medium text-gray-500">Dismissed</span>
+                  <span className="text-xs font-medium text-gray-500">{t('iocPanel.dismissed')}</span>
                   <span className="text-[10px] text-gray-600">({dismissedIOCs.length})</span>
                 </button>
                 {showDismissed && (
@@ -579,17 +581,17 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
         open={confirmPushAll}
         onClose={() => setConfirmPushAll(false)}
         onConfirm={() => doPushAll()}
-        title="Push IOCs Again?"
-        message={`IOCs from this report were already pushed ${lastPushedAt ? formatDate(lastPushedAt) : ''}. Push again?`}
-        confirmLabel="Push Again"
+        title={t('iocPanel.pushAgainTitle')}
+        message={t('iocPanel.pushAgainMessage', { date: lastPushedAt ? formatDate(lastPushedAt) : '' })}
+        confirmLabel={t('iocPanel.pushAgainConfirm')}
       />
       <ConfirmDialog
         open={confirmPushCategory !== null}
         onClose={() => setConfirmPushCategory(null)}
         onConfirm={() => { if (confirmPushCategory) doPushCategory(confirmPushCategory); }}
-        title="Push IOCs Again?"
-        message={`IOCs from this report were already pushed ${lastPushedAt ? formatDate(lastPushedAt) : ''}. Push this category again?`}
-        confirmLabel="Push Again"
+        title={t('iocPanel.pushAgainTitle')}
+        message={t('iocPanel.pushAgainCategoryMessage', { date: lastPushedAt ? formatDate(lastPushedAt) : '' })}
+        confirmLabel={t('iocPanel.pushAgainConfirm')}
       />
     </div>
   );

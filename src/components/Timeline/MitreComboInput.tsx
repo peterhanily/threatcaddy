@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { searchTechniques, getTechniqueLabel, MITRE_TACTICS } from '../../lib/mitre-attack';
 import type { MitreTechnique } from '../../lib/mitre-attack';
@@ -18,6 +19,7 @@ for (const t of MITRE_TACTICS) {
 }
 
 export function MitreComboInput({ value, onChange }: MitreComboInputProps) {
+  const { t } = useTranslation('timeline');
   const [input, setInput] = useState('');
   const [open, setOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -25,7 +27,7 @@ export function MitreComboInput({ value, onChange }: MitreComboInputProps) {
   const listRef = useRef<HTMLUListElement>(null);
 
   const results: MitreTechnique[] = input
-    ? searchTechniques(input).filter((t) => !value.includes(t.id)).slice(0, MAX_RESULTS)
+    ? searchTechniques(input).filter((tech) => !value.includes(tech.id)).slice(0, MAX_RESULTS)
     : [];
 
   // Close on click outside
@@ -142,7 +144,7 @@ export function MitreComboInput({ value, onChange }: MitreComboInputProps) {
           onFocus={() => { if (input) setOpen(true); }}
           onKeyDown={handleKeyDown}
           className="flex-1 min-w-[120px] bg-transparent border-none text-xs text-gray-300 placeholder-gray-600 focus:outline-none"
-          placeholder={value.length === 0 ? 'Search techniques (e.g. T1566, Phishing)...' : 'Add more...'}
+          placeholder={value.length === 0 ? t('mitreCombo.searchPlaceholder') : t('mitreCombo.addMore')}
         />
       </div>
 
@@ -169,7 +171,7 @@ export function MitreComboInput({ value, onChange }: MitreComboInputProps) {
                   <span
                     key={tac}
                     className="text-[9px] px-1 rounded bg-gray-700 text-gray-500"
-                    title={MITRE_TACTICS.find((t) => t.shortName === tac)?.name}
+                    title={MITRE_TACTICS.find((mt) => mt.shortName === tac)?.name}
                   >
                     {TACTIC_ABBREV[tac] || tac}
                   </span>

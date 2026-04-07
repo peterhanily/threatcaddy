@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Plus, Trash2, RefreshCw, CheckCircle2, AlertTriangle, ChevronDown, ChevronRight, Loader2, Server } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { nanoid } from 'nanoid';
 import type { Settings, AgentHost, AgentHostSkill } from '../../types';
 import { fetchHostSkills } from '../../lib/agent-hosts';
@@ -10,6 +11,8 @@ interface AgentHostsConfigProps {
 }
 
 export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfigProps) {
+  const { t } = useTranslation('settings');
+  const { t: tc } = useTranslation('common');
   const hosts = settings.agentHosts || [];
   const [adding, setAdding] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -62,7 +65,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
       const skills = await fetchHostSkills(host);
       // Update cached skills in settings
       updateHosts(hosts.map(h => h.id === host.id ? { ...h, skills, skillsFetchedAt: Date.now() } : h));
-      setTestResult({ id: host.id, ok: true, msg: `Connected — ${skills.length} skill${skills.length === 1 ? '' : 's'} discovered` });
+      setTestResult({ id: host.id, ok: true, msg: t('agents.connected', { count: skills.length, plural: skills.length === 1 ? '' : 's' }) });
     } catch (err) {
       setTestResult({ id: host.id, ok: false, msg: (err as Error).message });
     } finally {
@@ -83,7 +86,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-text-secondary flex items-center gap-2">
           <Server size={16} />
-          Agent Hosts
+          {t('agents.hosts')}
         </h3>
         <div className="flex gap-1.5">
           {hosts.length > 0 && (
@@ -92,7 +95,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
               className="text-[10px] px-2 py-0.5 rounded bg-surface-raised text-text-muted hover:text-text-primary transition-colors"
             >
               <RefreshCw size={10} className="inline mr-1" />
-              Refresh All
+              {t('agents.refreshAll')}
             </button>
           )}
           <button
@@ -100,13 +103,13 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
             className="text-[10px] px-2 py-0.5 rounded bg-accent-blue/20 text-accent-blue hover:bg-accent-blue/30 transition-colors"
           >
             <Plus size={10} className="inline mr-1" />
-            Add Host
+            {t('agents.addHost')}
           </button>
         </div>
       </div>
 
       <p className="text-xs text-text-muted mb-3">
-        Connect external agent hosts (Claude Code, custom runtimes) that expose skills via REST API. Discovered skills become available as LLM tools.
+        {t('agents.hostsDesc')}
       </p>
 
       {/* Add Host Form */}
@@ -114,7 +117,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
         <div className="border border-border-default rounded-lg p-3 mb-3 space-y-2 bg-surface-raised">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] text-text-muted block mb-0.5">Name (slug)</label>
+              <label className="text-[10px] text-text-muted block mb-0.5">{t('agents.nameSlug')}</label>
               <input
                 className={inputClass}
                 placeholder="soc1"
@@ -124,7 +127,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
               />
             </div>
             <div>
-              <label className="text-[10px] text-text-muted block mb-0.5">Display Name</label>
+              <label className="text-[10px] text-text-muted block mb-0.5">{t('agents.displayName')}</label>
               <input
                 className={inputClass}
                 placeholder="SOC Workstation"
@@ -134,7 +137,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
             </div>
           </div>
           <div>
-            <label className="text-[10px] text-text-muted block mb-0.5">URL</label>
+            <label className="text-[10px] text-text-muted block mb-0.5">{t('agents.url')}</label>
             <input
               className={inputClass}
               placeholder="http://192.168.1.50:8080"
@@ -143,7 +146,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
             />
           </div>
           <div>
-            <label className="text-[10px] text-text-muted block mb-0.5">API Key (optional)</label>
+            <label className="text-[10px] text-text-muted block mb-0.5">{t('agents.apiKeyOptional')}</label>
             <input
               className={inputClass}
               type="password"
@@ -164,7 +167,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
               onClick={() => setAdding(false)}
               className="text-xs px-3 py-1 rounded bg-surface-raised text-text-muted hover:text-text-primary transition-colors"
             >
-              Cancel
+              {tc('cancel')}
             </button>
           </div>
         </div>
@@ -173,7 +176,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
       {/* Host List */}
       {hosts.length === 0 && !adding && (
         <div className="text-xs text-text-muted text-center py-4 border border-dashed border-border-default rounded-lg">
-          No agent hosts configured. Click "Add Host" to connect an external agent runtime.
+          {t('agents.hostsEmpty')}
         </div>
       )}
 
@@ -194,7 +197,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
                   <span className="text-[10px] text-text-muted font-mono">{host.name}</span>
                   {host.skills.length > 0 && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent-blue/20 text-accent-blue">
-                      {host.skills.length} skill{host.skills.length === 1 ? '' : 's'}
+                      {t('agents.skillsCount', { count: host.skills.length })}
                     </span>
                   )}
                 </div>
@@ -207,7 +210,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
                   className="text-[10px] px-2 py-0.5 rounded bg-surface-raised text-text-muted hover:text-text-primary disabled:opacity-40 transition-colors"
                 >
                   {testingId === host.id ? <Loader2 size={10} className="inline mr-1 animate-spin" /> : <RefreshCw size={10} className="inline mr-1" />}
-                  Fetch Skills
+                  {t('agents.fetchSkills')}
                 </button>
                 <button
                   onClick={() => toggleEnabled(host.id)}
@@ -240,11 +243,11 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
             {expandedId === host.id && (
               <div className="border-t border-border-default px-3 py-2 bg-surface-base">
                 {host.skills.length === 0 ? (
-                  <p className="text-[10px] text-text-muted">No skills cached. Click "Fetch Skills" to discover available skills.</p>
+                  <p className="text-[10px] text-text-muted">{t('agents.noSkillsCached')}</p>
                 ) : (
                   <div className="space-y-1.5">
                     <div className="text-[10px] text-text-muted mb-1">
-                      {host.skills.length} skill{host.skills.length === 1 ? '' : 's'} — last fetched {host.skillsFetchedAt ? new Date(host.skillsFetchedAt).toLocaleString() : 'unknown'}
+                      {t('agents.skillsLastFetched', { count: host.skills.length, plural: host.skills.length === 1 ? '' : 's', date: host.skillsFetchedAt ? new Date(host.skillsFetchedAt).toLocaleString() : tc('unknown') })}
                     </div>
                     {host.skills.map(skill => (
                       <SkillRow key={skill.name} skill={skill} hostName={host.name} />

@@ -1,56 +1,23 @@
 import '@testing-library/jest-dom/vitest';
 import 'fake-indexeddb/auto';
 
-// Initialize i18next for tests with English strings loaded synchronously.
-// This means tests that use screen.getByText('Cancel') etc. continue to work
-// because i18next returns the English translation inline — no JSON file I/O.
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
-import labelsEn from '../public/locales/en/labels.json';
-import datesEn from '../public/locales/en/dates.json';
+// Import the app's actual i18n instance so that all modules (including i18n-labels.ts
+// which imports src/i18n.ts directly) share the same initialized instance.
+// The src/i18n.ts init is synchronous for bundled namespaces, so by the time tests
+// run, all English strings are available. We add the feature namespaces here so
+// components using useTranslation('settings') etc. also resolve correctly.
+import i18n from './i18n';
+import settingsEn from '../public/locales/en/settings.json';
+import analysisEn from '../public/locales/en/analysis.json';
+import timelineEn from '../public/locales/en/timeline.json';
+import notesEn from '../public/locales/en/notes.json';
+import tasksEn from '../public/locales/en/tasks.json';
+import chatEn from '../public/locales/en/chat.json';
 
-i18n.use(initReactI18next).init({
-  lng: 'en',
-  fallbackLng: 'en',
-  ns: ['common', 'labels', 'dates'],
-  defaultNS: 'common',
-  resources: {
-    en: {
-      common: {
-        appName: 'ThreatCaddy',
-        save: 'Save',
-        cancel: 'Cancel',
-        delete: 'Delete',
-        confirm: 'Confirm',
-        close: 'Close',
-        edit: 'Edit',
-        search: 'Search',
-        loading: 'Loading...',
-        noResults: 'No results',
-        ok: 'OK',
-        back: 'Back',
-        next: 'Next',
-        done: 'Done',
-        create: 'Create',
-        copy: 'Copy',
-        copied: 'Copied!',
-        reset: 'Reset',
-        apply: 'Apply',
-        remove: 'Remove',
-        add: 'Add',
-        yes: 'Yes',
-        no: 'No',
-        none: 'None',
-        unknown: 'Unknown',
-        untitled: 'Untitled',
-        'error.generic': 'Something went wrong',
-        'error.notFound': 'Not found',
-      },
-      labels: labelsEn,
-      dates: datesEn,
-    },
-  },
-  interpolation: { escapeValue: false },
-  returnNull: false,
-  returnEmptyString: false,
-});
+// Add feature namespaces to the already-initialized i18n instance
+i18n.addResourceBundle('en', 'settings', settingsEn);
+i18n.addResourceBundle('en', 'analysis', analysisEn);
+i18n.addResourceBundle('en', 'timeline', timelineEn);
+i18n.addResourceBundle('en', 'notes', notesEn);
+i18n.addResourceBundle('en', 'tasks', tasksEn);
+i18n.addResourceBundle('en', 'chat', chatEn);

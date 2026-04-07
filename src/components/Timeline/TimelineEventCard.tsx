@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Star, FileText, ListChecks, Trash2, MapPin, Search } from 'lucide-react';
 import type { TimelineEvent } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
@@ -26,6 +27,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
   onToggleStar,
   onDelete,
 }: TimelineEventCardProps) {
+  const { t } = useTranslation('timeline');
   const typeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType] ?? { label: event.eventType || 'Unknown', color: '#6b7280' };
   const confidenceInfo = CONFIDENCE_LEVELS[event.confidence] ?? { label: event.confidence || 'unknown', color: '#6b7280', description: '' };
   const preview = event.description?.replace(/[#*`_[\]()>-]/g, '').trim() || '';
@@ -66,8 +68,8 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(event.id); }}
               className="text-red-500 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-red-400 p-0.5 rounded transition-colors"
-              title="Delete event"
-              aria-label="Delete event"
+              title={t('eventCard.deleteEvent')}
+              aria-label={t('eventCard.deleteEvent')}
             >
               <Trash2 size={14} />
             </button>
@@ -80,7 +82,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
                 ? 'text-yellow-400'
                 : 'text-gray-600 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-yellow-400'
             )}
-            aria-label={event.starred ? 'Unstar event' : 'Star event'}
+            aria-label={event.starred ? t('eventCard.unstarEvent') : t('eventCard.starEvent')}
           >
             <Star size={14} fill={event.starred ? 'currentColor' : 'none'} />
           </button>
@@ -89,7 +91,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
 
       {/* Title */}
       <h3 className="font-medium text-sm text-gray-200 truncate mt-1.5">
-        {event.title || 'Untitled Event'}
+        {event.title || t('eventCard.untitledEvent')}
       </h3>
 
       {/* Description preview */}
@@ -151,7 +153,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
           </span>
         )}
         {event.assets.length > 0 && (
-          <span className="text-[10px] text-gray-500">{event.assets.length} asset{event.assets.length !== 1 ? 's' : ''}</span>
+          <span className="text-[10px] text-gray-500">{t('eventCard.assetCount', { count: event.assets.length })}</span>
         )}
         <TagPills tags={event.tags} />
       </div>

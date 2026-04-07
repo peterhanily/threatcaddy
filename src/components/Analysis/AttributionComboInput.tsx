@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface AttributionComboInputProps {
   value: string;
@@ -8,6 +9,7 @@ interface AttributionComboInputProps {
 }
 
 export function AttributionComboInput({ value, onChange, actors, placeholder }: AttributionComboInputProps) {
+  const { t } = useTranslation('analysis');
   const [open, setOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -83,7 +85,7 @@ export function AttributionComboInput({ value, onChange, actors, placeholder }: 
         }}
         onKeyDown={handleKeyDown}
         className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600"
-        placeholder={placeholder ?? 'e.g. APT29, Lazarus Group...'}
+        placeholder={placeholder ?? t('attribution.placeholder')}
       />
       {open && filtered.length > 0 && (
         <ul

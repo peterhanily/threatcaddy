@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Task, TaskStatus } from '../../types';
 import { TaskItem } from './TaskItem';
 import { cn } from '../../lib/utils';
@@ -12,13 +13,14 @@ interface KanbanBoardProps {
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
 }
 
-const COLUMNS: { status: TaskStatus; label: string; color: string }[] = [
-  { status: 'todo', label: 'To Do', color: '#6b7280' },
-  { status: 'in-progress', label: 'In Progress', color: '#eab308' },
-  { status: 'done', label: 'Done', color: '#22c55e' },
+const COLUMNS: { status: TaskStatus; labelKey: string; color: string }[] = [
+  { status: 'todo', labelKey: 'status.todo', color: '#6b7280' },
+  { status: 'in-progress', labelKey: 'status.inProgress', color: '#eab308' },
+  { status: 'done', labelKey: 'status.done', color: '#22c55e' },
 ];
 
 export function KanbanBoard({ getTasksByStatus, onToggleComplete, onSelect, onDelete, onUpdateTask }: KanbanBoardProps) {
+  const { t } = useTranslation('tasks');
   const isMobile = useIsMobile();
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
@@ -48,9 +50,10 @@ export function KanbanBoard({ getTasksByStatus, onToggleComplete, onSelect, onDe
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-4 h-full overflow-x-auto pb-4" role="region" aria-label="Kanban board">
-      {COLUMNS.map(({ status, label, color }) => {
+    <div className="flex flex-col md:flex-row gap-4 h-full overflow-x-auto pb-4" role="region" aria-label={t('kanban.boardLabel')}>
+      {COLUMNS.map(({ status, labelKey, color }) => {
         const tasks = getTasksByStatus(status);
+        const label = t(labelKey);
         return (
           <div
             key={status}
@@ -64,7 +67,7 @@ export function KanbanBoard({ getTasksByStatus, onToggleComplete, onSelect, onDe
             onDragLeave={handleDragLeave}
             onDrop={handleDrop(status)}
             role="group"
-            aria-label={`${label} column, ${tasks.length} tasks`}
+            aria-label={t('kanban.columnLabel', { label, count: tasks.length })}
           >
             <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-800">
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} aria-hidden="true" />
@@ -87,17 +90,17 @@ export function KanbanBoard({ getTasksByStatus, onToggleComplete, onSelect, onDe
                       value={task.status}
                       onChange={(e) => onUpdateTask(task.id, { status: e.target.value as TaskStatus })}
                       className="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-accent"
-                      aria-label={`Change status of ${task.title}`}
+                      aria-label={t('kanban.changeStatus', { title: task.title })}
                     >
                       {COLUMNS.map((col) => (
-                        <option key={col.status} value={col.status}>{col.label}</option>
+                        <option key={col.status} value={col.status}>{t(col.labelKey)}</option>
                       ))}
                     </select>
                   )}
                 </div>
               ))}
               {tasks.length === 0 && (
-                <p className="text-xs text-gray-600 text-center py-8">{isMobile ? 'No tasks' : 'Drop tasks here'}</p>
+                <p className="text-xs text-gray-600 text-center py-8">{isMobile ? t('kanban.noTasks') : t('kanban.dropHere')}</p>
               )}
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Server, LogIn, LogOut, UserPlus, CheckCircle, XCircle, Wifi, WifiOff, RotateCw, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { ServerProfiles } from './ServerProfiles';
@@ -35,6 +36,7 @@ interface ServerConnectionProps {
 }
 
 export function ServerConnection({ settings, onUpdateSettings }: ServerConnectionProps) {
+  const { t } = useTranslation('settings');
   const { user, connected, serverUrl, login, register, logout, setServerUrl } = useAuth();
   const { addToast } = useToast();
   const [mode, setMode] = useState<'connect' | 'login' | 'register' | 'reconnect'>('connect');
@@ -79,7 +81,7 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
     try {
       await login(email, password);
       setPassword('');
-      addToast('success', 'Connected to server');
+      addToast('success', t('server.connectedToast'));
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -93,7 +95,7 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
     try {
       await register(email, displayName, password);
       setPassword('');
-      addToast('success', 'Account created');
+      addToast('success', t('server.accountCreated'));
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -109,7 +111,7 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
       await login(lastSession.email, password, lastSession.serverUrl);
       onUpdateSettings({ serverUrl: lastSession.serverUrl });
       setPassword('');
-      addToast('success', 'Reconnected to server');
+      addToast('success', t('server.reconnectedToast'));
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -142,7 +144,7 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
     await logout();
     setServerUrl(null);
     onUpdateSettings({ serverUrl: undefined, serverDisplayName: undefined });
-    addToast('info', 'Disconnected from server');
+    addToast('info', t('server.disconnectedToast'));
     // Reload last session for reconnect
     const session = getLastSession();
     if (session) {
@@ -163,30 +165,30 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
           <Server size={16} />
-          Team Server
+          {t('server.teamServer')}
         </div>
 
         <div className="border border-[var(--border)] rounded-lg p-4 bg-[var(--bg-secondary)]">
           <div className="flex items-center gap-2 mb-3">
             <CheckCircle size={16} className="text-green-500" />
-            <span className="text-sm text-green-500 font-medium">Connected</span>
+            <span className="text-sm text-green-500 font-medium">{t('server.connected')}</span>
           </div>
 
           <div className="space-y-1.5 text-sm">
             <div className="flex justify-between">
-              <span className="text-[var(--text-tertiary)]">Server</span>
+              <span className="text-[var(--text-tertiary)]">{t('server.serverLabel')}</span>
               <span className="text-[var(--text-secondary)] font-mono text-xs">{serverUrl}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[var(--text-tertiary)]">User</span>
+              <span className="text-[var(--text-tertiary)]">{t('server.userLabel')}</span>
               <span className="text-[var(--text-secondary)]">{user.displayName}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[var(--text-tertiary)]">Email</span>
+              <span className="text-[var(--text-tertiary)]">{t('server.emailLabel')}</span>
               <span className="text-[var(--text-secondary)]">{user.email}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[var(--text-tertiary)]">Role</span>
+              <span className="text-[var(--text-tertiary)]">{t('server.roleLabel')}</span>
               <span className="text-[var(--text-secondary)] capitalize">{user.role}</span>
             </div>
           </div>
@@ -195,7 +197,7 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
             onClick={handleDisconnect}
             className="w-full mt-4 px-3 py-2 bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg text-sm flex items-center justify-center gap-2 hover:bg-red-600/30 transition-colors"
           >
-            <LogOut size={14} /> Disconnect & Logout
+            <LogOut size={14} /> {t('server.disconnectLogout')}
           </button>
         </div>
       </div>
@@ -206,7 +208,7 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
         <Server size={16} />
-        Team Server
+        {t('server.teamServer')}
       </div>
 
       {/* Saved server profiles */}
@@ -218,12 +220,12 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <RotateCw size={14} className="text-blue-400" />
-              <span className="text-sm font-medium text-[var(--text-primary)]">Quick Reconnect</span>
+              <span className="text-sm font-medium text-[var(--text-primary)]">{t('server.quickReconnect')}</span>
             </div>
             <button
               onClick={handleClearSession}
               className="p-1 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
-              title="Clear saved session"
+              title={t('server.clearSavedSession')}
             >
               <X size={14} />
             </button>
@@ -231,11 +233,11 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
 
           <div className="space-y-1 text-xs">
             <div className="flex justify-between">
-              <span className="text-[var(--text-tertiary)]">Server</span>
+              <span className="text-[var(--text-tertiary)]">{t('server.serverLabel')}</span>
               <span className="text-[var(--text-secondary)] font-mono">{lastSession.serverUrl}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[var(--text-tertiary)]">User</span>
+              <span className="text-[var(--text-tertiary)]">{t('server.userLabel')}</span>
               <span className="text-[var(--text-secondary)]">{lastSession.displayName} ({lastSession.email})</span>
             </div>
           </div>
@@ -250,7 +252,7 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
+            placeholder={t('server.passwordPlaceholder')}
             className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg text-sm"
             autoFocus
             onKeyDown={(e) => { if (e.key === 'Enter') handleReconnect(); }}
@@ -261,14 +263,14 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
             disabled={loading || !password}
             className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg text-sm flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-blue-500 transition-colors"
           >
-            {loading ? 'Connecting...' : <><RotateCw size={14} /> Reconnect</>}
+            {loading ? t('server.connecting') : <><RotateCw size={14} /> {t('server.reconnect')}</>}
           </button>
 
           <button
             onClick={() => { setMode('connect'); setError(''); }}
             className="w-full text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
           >
-            Use different server or account
+            {t('server.useDifferent')}
           </button>
         </div>
       )}
@@ -277,7 +279,7 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
         <div className="border border-[var(--border)] rounded-lg p-4 bg-[var(--bg-secondary)] space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <WifiOff size={14} className="text-[var(--text-tertiary)]" />
-            <span className="text-sm text-[var(--text-tertiary)]">Not connected</span>
+            <span className="text-sm text-[var(--text-tertiary)]">{t('server.notConnected')}</span>
           </div>
           <p className="text-xs text-[var(--text-tertiary)]">
             Connect to a ThreatCaddy team server to collaborate with other investigators.
@@ -362,7 +364,7 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
+            placeholder={t('server.passwordPlaceholder')}
             className="w-full px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg text-sm"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {

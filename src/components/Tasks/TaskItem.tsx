@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Circle, CheckCircle2, Calendar, Trash2, GripVertical, MessageSquare, Archive, RotateCcw, Search, CheckSquare, Square, AlertTriangle, ChevronDown } from 'lucide-react';
 import type { Task, Priority, InvestigationMember } from '../../types';
 import { PRIORITY_COLORS } from '../../types';
@@ -22,14 +23,15 @@ interface TaskItemProps {
   members?: InvestigationMember[];
 }
 
-const priorityLabels: Record<Priority, string> = {
+const PRIORITY_KEYS: Record<Priority, string> = {
   none: '',
-  low: 'Low',
-  medium: 'Med',
-  high: 'High',
+  low: 'priority.low',
+  medium: 'priority.medium',
+  high: 'priority.high',
 };
 
 export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, onSelect, onDelete, onTrash, onRestore, onToggleArchive, onUpdateTask, active, draggable, onDragStart, members }: TaskItemProps) {
+  const { t } = useTranslation('tasks');
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const checklistRef = useRef<HTMLDivElement>(null);
@@ -76,7 +78,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
       <button
         onClick={(e) => { e.stopPropagation(); onToggleComplete(task.id); }}
         className={cn('shrink-0', task.completed ? 'text-green-400' : 'text-gray-500 hover:text-gray-300')}
-        title={task.completed ? 'Mark incomplete' : 'Mark complete'}
+        title={task.completed ? t('item.markIncomplete') : t('item.markComplete')}
       >
         {task.completed ? <CheckCircle2 size={18} /> : <Circle size={18} />}
       </button>
@@ -86,7 +88,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
         className="flex-1 text-left min-w-0"
       >
         <span className={cn('text-sm truncate block', task.completed ? 'text-gray-500 line-through' : 'text-gray-200')}>
-          {task.title || 'Untitled task'}
+          {task.title || t('item.untitled')}
         </span>
       </button>
 
@@ -100,7 +102,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
                 ? 'text-accent bg-accent/15'
                 : 'text-gray-400 bg-gray-700/50 hover:bg-gray-700 hover:text-gray-300'
             )}
-            title="Toggle checklist"
+            title={t('item.toggleChecklist')}
           >
             <CheckSquare size={10} />
             {task.checklist!.filter(c => c.done).length}/{task.checklist!.length}
@@ -132,7 +134,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
             className="text-[10px] font-medium px-1.5 py-0.5 rounded"
             style={{ backgroundColor: PRIORITY_COLORS[task.priority] + '20', color: PRIORITY_COLORS[task.priority] }}
           >
-            {priorityLabels[task.priority]}
+            {t(PRIORITY_KEYS[task.priority])}
           </span>
         )}
         {task.clsLevel && <ClsBadge level={task.clsLevel} />}
@@ -149,7 +151,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
               <button
                 onClick={(e) => { e.stopPropagation(); onRestore(task.id); }}
                 className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-green-400"
-                title="Restore task"
+                title={t('item.restoreTask')}
               >
                 <RotateCcw size={12} />
               </button>
@@ -157,7 +159,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
             <button
               onClick={(e) => { e.stopPropagation(); setShowConfirmDelete(true); }}
               className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
-              title="Delete permanently"
+              title={t('item.deletePermanently')}
             >
               <Trash2 size={12} />
             </button>
@@ -168,7 +170,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
               <button
                 onClick={(e) => { e.stopPropagation(); onToggleArchive(task.id); }}
                 className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
-                title={task.archived ? 'Unarchive' : 'Archive'}
+                title={task.archived ? t('item.unarchive') : t('item.archive')}
               >
                 <Archive size={12} />
               </button>
@@ -177,7 +179,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
               <button
                 onClick={(e) => { e.stopPropagation(); onTrash(task.id); }}
                 className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
-                title="Move to trash"
+                title={t('item.moveToTrash')}
               >
                 <Trash2 size={12} />
               </button>
@@ -185,7 +187,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
               <button
                 onClick={(e) => { e.stopPropagation(); setShowConfirmDelete(true); }}
                 className="opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
-                title="Delete task"
+                title={t('item.deleteTask')}
               >
                 <Trash2 size={12} />
               </button>
@@ -198,9 +200,9 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
         open={showConfirmDelete}
         onClose={() => setShowConfirmDelete(false)}
         onConfirm={() => onDelete(task.id)}
-        title="Delete Task"
-        message="This task will be permanently deleted. This cannot be undone."
-        confirmLabel="Delete Task"
+        title={t('item.confirmDeleteTitle')}
+        message={t('item.confirmDeleteMessage')}
+        confirmLabel={t('item.confirmDeleteLabel')}
         danger
       />
     </div>

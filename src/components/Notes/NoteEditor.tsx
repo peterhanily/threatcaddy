@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette, ArrowLeft, Upload, Briefcase, MessageSquare, Search, Lock, LockOpen, Share2, FileText, Download } from 'lucide-react';
 import type { Note, Task, TimelineEvent, Tag, Folder, EditorMode, Settings, NoteAnnotation } from '../../types';
 import { NOTE_COLORS } from '../../types';
@@ -70,6 +71,7 @@ export function NoteEditor({
   onShareLink,
   onSaveAsTemplate,
 }: NoteEditorProps) {
+  const { t } = useTranslation('notes');
   const iocCount = note.iocAnalysis?.iocs.filter((i) => !i.dismissed).length ?? 0;
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
@@ -646,8 +648,8 @@ export function NoteEditor({
           <button
             onClick={onBack}
             className="p-1.5 rounded text-gray-500 hover:text-gray-300 md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Back to notes list"
-            title="Back to list"
+            aria-label={t('editor.backToListAria')}
+            title={t('editor.backToList')}
           >
             <ArrowLeft size={18} />
           </button>
@@ -655,24 +657,24 @@ export function NoteEditor({
         <button
           onClick={() => onEditorModeChange('edit')}
           className={cn('p-1.5 rounded', editorMode === 'edit' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
-          title="Edit mode"
-          aria-label="Edit mode"
+          title={t('editor.editMode')}
+          aria-label={t('editor.editMode')}
         >
           <Edit3 size={16} />
         </button>
         <button
           onClick={() => onEditorModeChange('split')}
           className={cn('p-1.5 rounded hidden sm:block', editorMode === 'split' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
-          title="Split mode"
-          aria-label="Split mode"
+          title={t('editor.splitMode')}
+          aria-label={t('editor.splitMode')}
         >
           <Columns size={16} />
         </button>
         <button
           onClick={() => onEditorModeChange('preview')}
           className={cn('p-1.5 rounded', editorMode === 'preview' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
-          title="Preview mode"
-          aria-label="Preview mode"
+          title={t('editor.previewMode')}
+          aria-label={t('editor.previewMode')}
         >
           <Eye size={16} />
         </button>
@@ -682,16 +684,16 @@ export function NoteEditor({
         <button
           onClick={() => onTogglePin(note.id)}
           className={cn('p-1.5 rounded', note.pinned ? 'text-yellow-400' : 'text-gray-500 hover:text-gray-300')}
-          title={note.pinned ? 'Unpin' : 'Pin'}
-          aria-label={note.pinned ? 'Unpin note' : 'Pin note'}
+          title={note.pinned ? t('editor.unpin') : t('editor.pin')}
+          aria-label={note.pinned ? t('editor.unpinAria') : t('editor.pinAria')}
         >
           <Pin size={16} />
         </button>
         <button
           onClick={() => onToggleArchive(note.id)}
           className={cn('p-1.5 rounded', note.archived ? 'text-accent' : 'text-gray-500 hover:text-gray-300')}
-          title={note.archived ? 'Unarchive' : 'Archive'}
-          aria-label={note.archived ? 'Unarchive note' : 'Archive note'}
+          title={note.archived ? t('editor.unarchive') : t('editor.archive')}
+          aria-label={note.archived ? t('editor.unarchiveAria') : t('editor.archiveAria')}
         >
           <Archive size={16} />
         </button>
@@ -700,8 +702,8 @@ export function NoteEditor({
           <button
             onClick={() => setShowColors(!showColors)}
             className="p-1.5 rounded text-gray-500 hover:text-gray-300"
-            title="Color"
-            aria-label="Set note color"
+            title={t('editor.color')}
+            aria-label={t('editor.colorAria')}
           >
             <Palette size={16} />
           </button>
@@ -716,7 +718,7 @@ export function NoteEditor({
                   )}
                   style={{ backgroundColor: c.value || '#374151' }}
                   title={c.name}
-                  aria-label={`Color: ${c.name}`}
+                  aria-label={t('editor.colorOption', { name: c.name })}
                 />
               ))}
             </div>
@@ -729,9 +731,9 @@ export function NoteEditor({
             value={note.folderId || ''}
             onChange={(e) => onUpdate(note.id, { folderId: e.target.value || undefined })}
             className="bg-transparent text-xs text-gray-300 border-none focus:outline-none cursor-pointer"
-            aria-label="Assign to investigation"
+            aria-label={t('editor.assignInvestigation')}
           >
-            <option value="">No investigation</option>
+            <option value="">{t('editor.noInvestigation')}</option>
             {folders.map((f) => (
               <option key={f.id} value={f.id}>{f.name}</option>
             ))}
@@ -767,8 +769,8 @@ export function NoteEditor({
             setShowIOCPanel(!showIOCPanel);
           }}
           className={cn('p-1.5 rounded hidden md:flex items-center gap-1', showIOCPanel ? 'bg-gray-700 text-accent' : 'text-gray-500 hover:text-gray-300')}
-          title="IOC Analysis"
-          aria-label="Toggle IOC analysis panel"
+          title={t('editor.iocAnalysis')}
+          aria-label={t('editor.iocAnalysisAria')}
         >
           <Search size={14} />
           {iocCount > 0 && (
@@ -779,18 +781,18 @@ export function NoteEditor({
         </button>
 
         {showPreview && (
-          <label className="relative inline-flex items-center cursor-pointer" title={defangPreview ? 'Show original IOCs' : 'Defang IOCs in preview'}>
+          <label className="relative inline-flex items-center cursor-pointer" title={defangPreview ? t('editor.showOriginalIOCs') : t('editor.defangIOCs')}>
             <input type="checkbox" checked={defangPreview} onChange={() => setDefangPreview(!defangPreview)} className="sr-only peer" />
             <div className="w-7 h-4 bg-gray-700 peer-checked:bg-accent/60 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3" />
-            <span className="ml-1.5 text-[10px] text-gray-500 peer-checked:text-accent select-none">Defang</span>
+            <span className="ml-1.5 text-[10px] text-gray-500 peer-checked:text-accent select-none">{t('editor.defang')}</span>
           </label>
         )}
 
         <button
           onClick={() => setShowAnnotations(!showAnnotations)}
           className={cn('p-1.5 rounded flex items-center gap-1', showAnnotations ? 'bg-gray-700 text-accent' : 'text-gray-500 hover:text-gray-300')}
-          title="Annotations"
-          aria-label="Toggle annotations panel"
+          title={t('editor.annotations')}
+          aria-label={t('editor.annotationsAria')}
         >
           <MessageSquare size={16} />
           {(note.annotations?.length ?? 0) > 0 && (
@@ -804,8 +806,8 @@ export function NoteEditor({
           <button
             onClick={() => onShareLink(note)}
             className="p-1.5 rounded text-gray-500 hover:text-gray-300"
-            title="Share link"
-            aria-label="Generate shareable link"
+            title={t('editor.shareLink')}
+            aria-label={t('editor.shareLinkAria')}
           >
             <Share2 size={16} />
           </button>
@@ -815,8 +817,8 @@ export function NoteEditor({
           <button
             onClick={() => onSaveAsTemplate(note)}
             className="p-1.5 rounded text-gray-500 hover:text-gray-300"
-            title="Save as template"
-            aria-label="Save note as reusable template"
+            title={t('editor.saveAsTemplate')}
+            aria-label={t('editor.saveAsTemplateAria')}
           >
             <FileText size={16} />
           </button>
@@ -824,13 +826,13 @@ export function NoteEditor({
 
         <button
           onClick={() => {
-            const mdContent = `# ${note.title || 'Untitled'}\n\n${note.content}`;
+            const mdContent = `# ${note.title || t('common:untitled')}\n\n${note.content}`;
             const safeTitle = (note.title || 'untitled').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
             downloadFile(mdContent, `${safeTitle}.md`, 'text/markdown');
           }}
           className="p-1.5 rounded text-gray-500 hover:text-gray-300"
-          title="Download as Markdown"
-          aria-label="Download note as Markdown file"
+          title={t('editor.downloadMarkdown')}
+          aria-label={t('editor.downloadMarkdownAria')}
         >
           <Download size={16} />
         </button>
@@ -849,8 +851,8 @@ export function NoteEditor({
               }}
               disabled={cloud.syncing}
               className="p-1.5 rounded text-gray-500 hover:text-gray-300 disabled:opacity-50"
-              title="Share to cloud"
-              aria-label="Share to cloud backup"
+              title={t('editor.shareToCloud')}
+              aria-label={t('editor.shareToCloudAria')}
             >
               <Upload size={16} />
             </button>
@@ -861,14 +863,14 @@ export function NoteEditor({
                   disabled={cloud.syncing}
                   className="w-full px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-50"
                 >
-                  Share Note
+                  {t('editor.shareNote')}
                 </button>
                 <button
                   onClick={() => { if (cloud.syncing) return; cloud.shareIOCReport(note); logActivity('sync', 'share-ioc-report', `Shared IOC report for "${note.title}"`, note.id, note.title); setShowShareMenu(false); }}
                   disabled={cloud.syncing}
                   className="w-full px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-50"
                 >
-                  Share IOC Report
+                  {t('editor.shareIOCReport')}
                 </button>
               </div>
             )}
@@ -881,14 +883,14 @@ export function NoteEditor({
               {shareMessage.text}
             </span>
           )}
-          {mergeIndicator === 'merged' && !shareMessage && <span className="text-xs text-blue-400" role="status">Merged</span>}
-          {saved && !shareMessage && !mergeIndicator && <span className="text-xs text-green-400" role="status">Saved</span>}
+          {mergeIndicator === 'merged' && !shareMessage && <span className="text-xs text-blue-400" role="status">{t('editor.merged')}</span>}
+          {saved && !shareMessage && !mergeIndicator && <span className="text-xs text-green-400" role="status">{t('editor.saved')}</span>}
           {note.trashed ? (
             <button
               onClick={() => onRestore(note.id)}
               className="p-1.5 rounded text-gray-500 hover:text-green-400"
-              title="Restore"
-              aria-label="Restore note from trash"
+              title={t('editor.restore')}
+              aria-label={t('editor.restoreAria')}
             >
               <RotateCcw size={16} />
             </button>
@@ -896,8 +898,8 @@ export function NoteEditor({
             <button
               onClick={() => onTrash(note.id)}
               className="p-1.5 rounded text-red-500 hover:text-red-400"
-              title="Move to trash"
-              aria-label="Move note to trash"
+              title={t('editor.moveToTrash')}
+              aria-label={t('editor.moveToTrashAria')}
             >
               <Trash2 size={16} />
             </button>
@@ -943,9 +945,9 @@ export function NoteEditor({
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
           className="w-full bg-transparent text-xl font-bold text-gray-100 placeholder-gray-600 focus:outline-none"
-          placeholder="Note title..."
+          placeholder={t('editor.titlePlaceholder')}
           readOnly={note.trashed}
-          aria-label="Note title"
+          aria-label={t('editor.titleAria')}
         />
       </div>
 
@@ -984,9 +986,9 @@ export function NoteEditor({
                 }}
                 onKeyDown={handleEditorKeyDown}
                 className="note-editor flex-1 w-full p-2 sm:p-4 pl-1 bg-transparent text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-0 border-none text-sm leading-relaxed"
-                placeholder="Start writing in markdown..."
+                placeholder={t('editor.contentPlaceholder')}
                 readOnly={note.trashed}
-                aria-label="Note content editor"
+                aria-label={t('editor.contentAria')}
               />
               {slashMenuOpen && filteredSlashCommands.length > 0 && (
                 <SlashCommandMenu
@@ -1017,8 +1019,8 @@ export function NoteEditor({
                   onClick={(e) => { e.stopPropagation(); setScrollLocked(!scrollLocked); }}
                   onMouseDown={(e) => e.stopPropagation()}
                   className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-5 h-5 flex items-center justify-center rounded-full bg-gray-800 border border-gray-600 hover:border-accent/50 text-gray-400 hover:text-gray-200 transition-colors"
-                  title={scrollLocked ? 'Unlock scroll (scroll independently)' : 'Lock scroll (scroll together)'}
-                  aria-label={scrollLocked ? 'Unlock scroll sync' : 'Lock scroll sync'}
+                  title={scrollLocked ? t('editor.unlockScroll') : t('editor.lockScroll')}
+                  aria-label={scrollLocked ? t('editor.unlockScrollAria') : t('editor.lockScrollAria')}
                 >
                   {scrollLocked ? <Lock size={12} /> : <LockOpen size={12} />}
                 </button>
@@ -1034,7 +1036,7 @@ export function NoteEditor({
               {content ? (
                 <MarkdownPreview content={content} defanged={defangPreview} allNotes={allNotes} onNavigateToNote={onNavigateToNote} iocs={note.iocAnalysis?.iocs} />
               ) : (
-                <p className="text-gray-600 text-sm italic">Nothing to preview</p>
+                <p className="text-gray-600 text-sm italic">{t('editor.nothingToPreview')}</p>
               )}
             </div>
           )}
@@ -1083,7 +1085,7 @@ export function NoteEditor({
         <div className="border-t border-gray-800 shrink-0 max-h-48 overflow-y-auto">
           <div className="px-3 py-2 space-y-2">
             {(note.annotations || []).length === 0 && (
-              <p className="text-xs text-gray-600 italic">No annotations yet</p>
+              <p className="text-xs text-gray-600 italic">{t('editor.noAnnotations')}</p>
             )}
             {(note.annotations || []).map((ann) => (
               <div key={ann.id} className="flex items-start gap-2 text-xs">
@@ -1095,7 +1097,7 @@ export function NoteEditor({
                     onUpdate(note.id, { annotations: updated });
                   }}
                   className="text-gray-600 hover:text-red-400 shrink-0"
-                  aria-label="Delete annotation"
+                  aria-label={t('editor.deleteAnnotation')}
                 >
                   <Trash2 size={12} />
                 </button>
@@ -1113,7 +1115,7 @@ export function NoteEditor({
                   }
                 }}
                 className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
-                placeholder="Add annotation..."
+                placeholder={t('editor.addAnnotationPlaceholder')}
               />
               <button
                 onClick={() => {
@@ -1125,7 +1127,7 @@ export function NoteEditor({
                 disabled={!annotationText.trim()}
                 className="px-2 py-1 rounded bg-accent/20 text-accent text-xs hover:bg-accent/30 disabled:opacity-50"
               >
-                Add
+                {t('common:add')}
               </button>
             </div>
           </div>
@@ -1145,7 +1147,7 @@ export function NoteEditor({
               className="w-full px-4 py-1.5 flex items-center gap-2 text-xs text-gray-400 hover:text-gray-200 transition-colors"
             >
               <span>{showBacklinks ? '\u25BE' : '\u25B8'}</span>
-              <span>Backlinks ({backlinks.length})</span>
+              <span>{t('editor.backlinks', { count: backlinks.length })}</span>
             </button>
             {showBacklinks && backlinks.length > 0 && (
               <div className="px-4 pb-2 space-y-1">
@@ -1155,7 +1157,7 @@ export function NoteEditor({
                     onClick={() => onNavigateToNote?.(bl.id)}
                     className="block w-full text-left text-xs text-accent hover:text-accent-hover hover:bg-gray-800/50 px-2 py-1 rounded truncate"
                   >
-                    {bl.title || 'Untitled'}
+                    {bl.title || t('common:untitled')}
                   </button>
                 ))}
               </div>
@@ -1180,9 +1182,9 @@ export function NoteEditor({
             <span className="truncate max-w-32">{note.sourceTitle || note.sourceUrl}</span>
           </a>
         )}
-        <span className="hidden sm:inline">{stats.words} words, {stats.chars} chars</span>
-        <span className="hidden md:inline">Created {formatFullDate(note.createdAt)}</span>
-        <span className="hidden md:inline">Modified {formatFullDate(note.updatedAt)}</span>
+        <span className="hidden sm:inline">{t('editor.wordsChars', { words: stats.words, chars: stats.chars })}</span>
+        <span className="hidden md:inline">{t('editor.created', { date: formatFullDate(note.createdAt) })}</span>
+        <span className="hidden md:inline">{t('editor.modified', { date: formatFullDate(note.updatedAt) })}</span>
       </div>
     </div>
   );

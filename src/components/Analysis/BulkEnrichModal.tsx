@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Zap, Loader2, X, CheckCircle2, AlertTriangle, XCircle, Pause, Play } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { nanoid } from 'nanoid';
 import { useAuth } from '../../contexts/AuthContext';
 import { IntegrationExecutor } from '../../lib/integration-executor';
@@ -75,6 +76,7 @@ export function BulkEnrichModal({
   investigation,
   onCompleted,
 }: BulkEnrichModalProps) {
+  const { t } = useTranslation('analysis');
   const { connected, serverUrl, getAccessToken } = useAuth();
 
   // Phase: 'configure' → 'running' → 'done'
@@ -386,8 +388,8 @@ export function BulkEnrichModal({
             <Zap size={16} className="text-amber-500" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-semibold text-gray-100">Bulk Enrich</h2>
-            <p className="text-[11px] text-gray-500">{iocs.length} IOC{iocs.length !== 1 ? 's' : ''} selected</p>
+            <h2 className="text-sm font-semibold text-gray-100">{t('bulkEnrich.title')}</h2>
+            <p className="text-[11px] text-gray-500">{t('bulkEnrich.selectedCount', { count: iocs.length })}</p>
           </div>
           <button
             onClick={handleClose}
@@ -404,22 +406,22 @@ export function BulkEnrichModal({
               {/* Summary */}
               <div className="bg-gray-800/50 rounded-lg p-3.5 text-xs space-y-1.5">
                 <div className="flex justify-between text-gray-300">
-                  <span>IOCs with matching integrations</span>
+                  <span>{t('bulkEnrich.matchingIntegrations')}</span>
                   <span className="font-medium text-gray-100">{enrichableCount} / {iocs.length}</span>
                 </div>
                 {skippableCount > 0 && (
                   <div className="flex justify-between text-gray-400">
-                    <span>Already enriched</span>
+                    <span>{t('bulkEnrich.alreadyEnriched')}</span>
                     <span>{skippableCount}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-gray-300">
-                  <span>Total integration runs</span>
+                  <span>{t('bulkEnrich.totalRuns')}</span>
                   <span className="font-medium text-gray-100">{totalRuns}</span>
                 </div>
                 {iocs.length - enrichableCount > 0 && (
                   <p className="text-[10px] text-gray-500 pt-1">
-                    {iocs.length - enrichableCount} IOC{iocs.length - enrichableCount !== 1 ? 's' : ''} have no matching integrations and will be skipped.
+                    {t('bulkEnrich.noMatchHint', { count: iocs.length - enrichableCount })}
                   </p>
                 )}
               </div>
@@ -434,7 +436,7 @@ export function BulkEnrichModal({
                     className="rounded border-gray-600 bg-gray-800 text-accent focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5"
                   />
                   <span className="text-xs text-gray-300 group-hover:text-gray-100 transition-colors">
-                    Skip already-enriched IOCs
+                    {t('bulkEnrich.skipAlreadyEnriched')}
                     <span className="text-gray-500 ml-1">({skippableCount})</span>
                   </span>
                 </label>
@@ -448,15 +450,15 @@ export function BulkEnrichModal({
                   className="rounded border-gray-600 bg-gray-800 text-accent focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5"
                 />
                 <span className="text-xs text-gray-300 group-hover:text-gray-100 transition-colors">
-                  Create enrichment notes
-                  <span className="text-gray-500 ml-1">(one per IOC per provider)</span>
+                  {t('bulkEnrich.createNotes')}
+                  <span className="text-gray-500 ml-1">{t('bulkEnrich.createNotesHint')}</span>
                 </span>
               </label>
 
               {enrichableCount === 0 && (
                 <div className="text-center py-4">
-                  <p className="text-xs text-gray-500">No integrations match the selected IOC types.</p>
-                  <p className="text-[10px] text-gray-600 mt-1">Install integrations in Settings to enable enrichment.</p>
+                  <p className="text-xs text-gray-500">{t('bulkEnrich.noIntegrations')}</p>
+                  <p className="text-[10px] text-gray-600 mt-1">{t('bulkEnrich.installHint')}</p>
                 </div>
               )}
             </div>
@@ -468,9 +470,9 @@ export function BulkEnrichModal({
               <div>
                 <div className="flex items-center justify-between text-xs text-gray-400 mb-1.5">
                   <span>
-                    {paused ? 'Paused' : 'Enriching'} — {currentIndex + 1} of {effectivePlan.length} IOCs
+                    {t('bulkEnrich.progressLabel', { state: paused ? t('bulkEnrich.paused') : t('bulkEnrich.enriching'), current: currentIndex + 1, total: effectivePlan.length })}
                   </span>
-                  <span className="tabular-nums">{completedRuns} / {totalRuns} runs</span>
+                  <span className="tabular-nums">{t('bulkEnrich.runsProgress', { completed: completedRuns, total: totalRuns })}</span>
                 </div>
                 <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
                   <div
@@ -483,7 +485,7 @@ export function BulkEnrichModal({
               {/* Current IOC */}
               {effectivePlan[currentIndex] && (
                 <div className="bg-gray-800/50 rounded-lg p-3 text-xs">
-                  <span className="text-gray-500">Current: </span>
+                  <span className="text-gray-500">{t('bulkEnrich.currentLabel')}</span>
                   <span className="text-gray-200 font-mono">{effectivePlan[currentIndex].ioc.value}</span>
                 </div>
               )}
@@ -524,19 +526,19 @@ export function BulkEnrichModal({
                 <div className="bg-green-500/10 rounded-lg p-3 text-center">
                   <CheckCircle2 size={18} className="text-green-500 mx-auto mb-1" />
                   <div className="text-lg font-semibold text-green-400 tabular-nums">{stats.success}</div>
-                  <div className="text-[10px] text-gray-500">Enriched</div>
+                  <div className="text-[10px] text-gray-500">{t('bulkEnrich.enrichedLabel')}</div>
                 </div>
                 <div className="bg-amber-500/10 rounded-lg p-3 text-center">
                   <AlertTriangle size={18} className="text-amber-500 mx-auto mb-1" />
                   <div className="text-lg font-semibold text-amber-400 tabular-nums">{stats.error}</div>
-                  <div className="text-[10px] text-gray-500">Errors</div>
+                  <div className="text-[10px] text-gray-500">{t('bulkEnrich.errorsLabel')}</div>
                 </div>
                 <div className="bg-gray-500/10 rounded-lg p-3 text-center">
                   <XCircle size={18} className="text-gray-500 mx-auto mb-1" />
                   <div className="text-lg font-semibold text-gray-400 tabular-nums">
                     {effectivePlan.length - results.length}
                   </div>
-                  <div className="text-[10px] text-gray-500">Cancelled</div>
+                  <div className="text-[10px] text-gray-500">{t('bulkEnrich.cancelledLabel')}</div>
                 </div>
               </div>
 
@@ -544,7 +546,7 @@ export function BulkEnrichModal({
               {stats.error > 0 && (
                 <details className="text-xs">
                   <summary className="text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
-                    View error details ({stats.error})
+                    {t('bulkEnrich.viewErrors', { count: stats.error })}
                   </summary>
                   <div className="mt-2 flex flex-col gap-1.5 max-h-40 overflow-y-auto">
                     {results
@@ -579,7 +581,7 @@ export function BulkEnrichModal({
                 onClick={handleClose}
                 className="px-3.5 py-1.5 rounded-lg text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors"
               >
-                Cancel
+                {t('common:cancel')}
               </button>
               <button
                 onClick={handleStart}
@@ -587,7 +589,7 @@ export function BulkEnrichModal({
                 className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-medium bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Zap size={12} />
-                Enrich {effectivePlan.length} IOC{effectivePlan.length !== 1 ? 's' : ''}
+                {t('bulkEnrich.enrichButton', { count: effectivePlan.length })}
               </button>
             </>
           )}
@@ -599,14 +601,14 @@ export function BulkEnrichModal({
                 className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs text-gray-300 hover:bg-gray-800 transition-colors"
               >
                 {paused ? <Play size={12} /> : <Pause size={12} />}
-                {paused ? 'Resume' : 'Pause'}
+                {paused ? t('bulkEnrich.resume') : t('bulkEnrich.pause')}
               </button>
               <button
                 onClick={handleCancel}
                 className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs text-red-400 hover:bg-red-900/20 transition-colors"
               >
                 <X size={12} />
-                Stop
+                {t('bulkEnrich.stop')}
               </button>
             </>
           )}
@@ -616,7 +618,7 @@ export function BulkEnrichModal({
               onClick={handleClose}
               className="px-4 py-1.5 rounded-lg text-xs font-medium bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"
             >
-              Done
+              {t('common:done')}
             </button>
           )}
         </div>

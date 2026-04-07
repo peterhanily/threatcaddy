@@ -1,4 +1,5 @@
 import { ArrowUpDown, FileText, Download, FolderPlus, Pencil } from 'lucide-react';
+import { useTranslation, Trans } from 'react-i18next';
 import type { Note, SortOption, IOCType, Folder } from '../../types';
 import { cn } from '../../lib/utils';
 import { NoteCard } from './NoteCard';
@@ -28,6 +29,7 @@ interface NoteListProps {
 }
 
 export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, title, selectedIOCTypes, onIOCTypesChange, folders, tiExportConfig, onTrash, onCreateFolder, onMoveToFolder, onRenameFolder, onDeleteFolder }: NoteListProps) {
+  const { t } = useTranslation('notes');
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
@@ -108,14 +110,14 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
   return (
     <div className="w-full border-r border-gray-800 flex flex-col h-full overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800 shrink-0">
-        <span className="text-sm font-medium text-gray-300">{title || 'Notes'} ({notes.length})</span>
+        <span className="text-sm font-medium text-gray-300">{t('list.titleWithCount', { title: title || t('list.defaultTitle'), count: notes.length })}</span>
         <div className="flex items-center gap-1">
           {onCreateFolder && (
             <button
               onClick={() => setShowNewFolder(!showNewFolder)}
               className={cn('p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300', showNewFolder && 'bg-gray-800 text-gray-300')}
-              title="New folder"
-              aria-label="Create note folder"
+              title={t('list.newFolder')}
+              aria-label={t('list.newFolderAria')}
             >
               <FolderPlus size={14} />
             </button>
@@ -125,17 +127,17 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
               <button
                 onClick={() => setShowExportMenu(!showExportMenu)}
                 className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300"
-                title="Download IOCs"
-                aria-label="Download IOCs"
+                title={t('list.downloadIOCs')}
+                aria-label={t('list.downloadIOCsAria')}
               >
                 <Download size={14} />
               </button>
               {showExportMenu && (
                 <div className="absolute right-0 top-full mt-1 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
-                  <button onClick={() => handleBulkExport('flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">Export JSON (flat)</button>
-                  <button onClick={() => handleBulkExport('flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export CSV (flat)</button>
-                  <button onClick={() => handleBulkExport('json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">Export JSON (grouped)</button>
-                  <button onClick={() => handleBulkExport('csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">Export CSV (grouped)</button>
+                  <button onClick={() => handleBulkExport('flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">{t('list.exportJSONFlat')}</button>
+                  <button onClick={() => handleBulkExport('flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('list.exportCSVFlat')}</button>
+                  <button onClick={() => handleBulkExport('json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('list.exportJSONGrouped')}</button>
+                  <button onClick={() => handleBulkExport('csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">{t('list.exportCSVGrouped')}</button>
                 </div>
               )}
             </div>
@@ -144,14 +146,14 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
             <button
               onClick={() => setShowSortMenu(!showSortMenu)}
               className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-gray-300"
-              aria-label="Sort notes"
-              title="Sort notes"
+              aria-label={t('list.sortNotesAria')}
+              title={t('list.sortNotes')}
             >
               <ArrowUpDown size={14} />
             </button>
             {showSortMenu && (
               <div className="absolute right-0 top-full mt-1 w-36 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
-                {([['updatedAt', 'Last Modified'], ['createdAt', 'Created'], ['title', 'Title'], ['iocCount', 'IOC Count']] as [SortOption, string][]).map(([value, label]) => (
+                {([['updatedAt', t('list.sortLastModified')], ['createdAt', t('list.sortCreated')], ['title', t('list.sortTitle')], ['iocCount', t('list.sortIOCCount')]] as [SortOption, string][]).map(([value, label]) => (
                   <button
                     key={value}
                     onClick={() => { onSortChange(value); setShowSortMenu(false); }}
@@ -177,7 +179,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                 setNewFolderIcon(icons[(idx + 1) % icons.length]);
               }}
               className="w-8 h-8 flex items-center justify-center rounded-lg border border-border-subtle bg-surface hover:bg-surface-raised text-base"
-              title="Click to change icon"
+              title={t('list.clickToChangeIcon')}
             >
               {newFolderIcon}
             </button>
@@ -194,7 +196,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                 }
                 if (e.key === 'Escape') setShowNewFolder(false);
               }}
-              placeholder="Folder name..."
+              placeholder={t('list.folderNamePlaceholder')}
               className="flex-1 bg-surface border border-border-subtle rounded-lg px-3 py-1.5 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-blue/50"
             />
             <button
@@ -209,7 +211,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
               disabled={!newFolderName.trim()}
               className="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent-blue text-white hover:bg-accent-blue/90 disabled:opacity-40 transition-colors"
             >
-              Create
+              {t('common:create')}
             </button>
           </div>
         </div>
@@ -223,8 +225,8 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
         {notes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-gray-600">
             <FileText size={32} className="mb-2" />
-            <p className="text-sm">No notes yet</p>
-            <p className="text-xs mt-1">Press Ctrl+N to create one</p>
+            <p className="text-sm">{t('list.noNotes')}</p>
+            <p className="text-xs mt-1">{t('list.noNotesHint')}</p>
           </div>
         ) : (
           <Virtuoso
@@ -315,8 +317,8 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                             <button
                               onClick={(e) => { e.stopPropagation(); setRenamingId(note.id); setRenameValue(note.title); }}
                               className="text-text-muted hover:text-text-primary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all shrink-0"
-                              title="Rename folder"
-                              aria-label={`Rename ${note.title}`}
+                              title={t('list.renameFolder')}
+                              aria-label={t('list.renameFolderAria', { name: note.title })}
                             >
                               <Pencil size={10} />
                             </button>
@@ -327,47 +329,52 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                         <button
                           onClick={(e) => { e.stopPropagation(); setDeletingFolderId(note.id); }}
                           className="text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all shrink-0"
-                          title="Delete folder"
+                          title={t('list.deleteFolder')}
                         >
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                         </button>
                       )}
                       {isSubNote && onMoveToFolder && (
                         <button onClick={(e) => { e.stopPropagation(); onMoveToFolder(note.id, null); }}
-                          className="text-[9px] text-text-muted hover:text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" title="Move to top level">↑</button>
+                          className="text-[9px] text-text-muted hover:text-text-secondary opacity-0 group-hover:opacity-100 group-focus-within:opacity-100" title={t('list.moveToTopLevel')}>↑</button>
                       )}
                     </div>
                     {/* Delete folder confirmation */}
                     {deletingFolderId === note.id && onDeleteFolder && (
                       <div className="mx-3 mb-2 p-2 rounded-lg border border-red-500/30 bg-red-500/5 text-xs space-y-2" onClick={e => e.stopPropagation()}>
-                        <p className="text-text-secondary">Delete <strong>{note.title}</strong>{childCount > 0 ? ` (${childCount} note${childCount !== 1 ? 's' : ''} inside)` : ''}?</p>
+                        <p className="text-text-secondary">
+                          {childCount > 0
+                            ? <Trans i18nKey="list.deleteFolderConfirmWithNotes" ns="notes" values={{ name: note.title, count: childCount, s: childCount !== 1 ? 's' : '' }} components={{ strong: <strong /> }} />
+                            : <Trans i18nKey="list.deleteFolderConfirm" ns="notes" values={{ name: note.title }} components={{ strong: <strong /> }} />
+                          }
+                        </p>
                         <div className="flex gap-2">
                           {childCount === 0 ? (
                             <button
                               onClick={() => { setDeletingFolderId(null); onDeleteFolder(note.id, 'move_out'); }}
                               className="px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
                             >
-                              Delete folder
+                              {t('list.deleteFolderButton')}
                             </button>
                           ) : (<>
                             <button
                               onClick={() => { setDeletingFolderId(null); onDeleteFolder(note.id, 'move_out'); }}
                               className="px-2 py-1 rounded bg-surface-raised text-text-primary hover:bg-bg-hover transition-colors"
                             >
-                              Move notes out & delete
+                              {t('list.moveNotesOutAndDelete')}
                             </button>
                             <button
                               onClick={() => { setDeletingFolderId(null); onDeleteFolder(note.id, 'trash_contents'); }}
                               className="px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
                             >
-                              Trash all
+                              {t('list.trashAll')}
                             </button>
                           </>)}
                           <button
                             onClick={() => setDeletingFolderId(null)}
                             className="px-2 py-1 rounded text-text-muted hover:text-text-secondary transition-colors"
                           >
-                            Cancel
+                            {t('common:cancel')}
                           </button>
                         </div>
                       </div>

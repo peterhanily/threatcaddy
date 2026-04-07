@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { X, Check, Merge } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { StandaloneIOC, ConfidenceLevel } from '../../types';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 
@@ -56,6 +57,7 @@ function findDuplicateGroups(iocs: StandaloneIOC[]): DuplicateGroup[] {
 }
 
 export function IOCDeduplicator({ open, onClose, iocs, onUpdate, onDelete }: IOCDeduplicatorProps) {
+  const { t } = useTranslation('analysis');
   const duplicateGroups = useMemo(() => findDuplicateGroups(iocs), [iocs]);
   const [mergedGroups, setMergedGroups] = useState<Set<string>>(new Set());
   const [selectedKeepers, setSelectedKeepers] = useState<Map<string, string>>(new Map());
@@ -152,9 +154,9 @@ export function IOCDeduplicator({ open, onClose, iocs, onUpdate, onDelete }: IOC
       <div className="bg-gray-900 rounded-xl shadow-2xl border border-gray-700 w-full max-w-3xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <div>
-            <h2 className="text-lg font-semibold text-gray-100">Find Duplicates</h2>
+            <h2 className="text-lg font-semibold text-gray-100">{t('dedup.title')}</h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              Found {duplicateGroups.length} duplicate group{duplicateGroups.length !== 1 ? 's' : ''} ({totalDuplicates} total duplicate{totalDuplicates !== 1 ? 's' : ''})
+              {t('dedup.summary', { groups: duplicateGroups.length, groupPlural: duplicateGroups.length !== 1 ? 's' : '', total: totalDuplicates, totalPlural: totalDuplicates !== 1 ? 's' : '' })}
             </p>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-gray-200">
@@ -166,8 +168,8 @@ export function IOCDeduplicator({ open, onClose, iocs, onUpdate, onDelete }: IOC
           {duplicateGroups.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-gray-600">
               <Check size={36} className="mb-3 text-green-500" />
-              <p className="text-lg font-medium text-gray-300">No duplicates found</p>
-              <p className="text-sm mt-1">All standalone IOCs are unique.</p>
+              <p className="text-lg font-medium text-gray-300">{t('dedup.noDuplicatesTitle')}</p>
+              <p className="text-sm mt-1">{t('dedup.noDuplicatesHint')}</p>
             </div>
           ) : (
             <>
@@ -178,7 +180,7 @@ export function IOCDeduplicator({ open, onClose, iocs, onUpdate, onDelete }: IOC
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 text-xs font-medium"
                   >
                     <Merge size={14} />
-                    Merge All ({remainingGroups.length} groups)
+                    {t('dedup.mergeAll', { count: remainingGroups.length })}
                   </button>
                 </div>
               )}

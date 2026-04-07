@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ZoomIn, ZoomOut, Maximize2, Layers } from 'lucide-react';
 import type { TimelineEvent, TimelineEventType } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS } from '../../types';
@@ -61,6 +62,7 @@ function computeTickInterval(spanMs: number): number {
 
 export function TimelineGantt({ events, onSelect, onToggleStar: _onToggleStar }: TimelineGanttProps) {
   void _onToggleStar;
+  const { t } = useTranslation('timeline');
   const chartRef = useRef<HTMLDivElement>(null);
   const labelRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
@@ -196,13 +198,13 @@ export function TimelineGantt({ events, onSelect, onToggleStar: _onToggleStar }:
     <div className="flex flex-col h-full">
       {/* Controls */}
       <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-gray-800 shrink-0">
-        <button onClick={handleZoomIn} className="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800" title="Zoom in">
+        <button onClick={handleZoomIn} className="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800" title={t('gantt.zoomIn')}>
           <ZoomIn size={14} />
         </button>
-        <button onClick={handleZoomOut} className="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800" title="Zoom out">
+        <button onClick={handleZoomOut} className="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800" title={t('gantt.zoomOut')}>
           <ZoomOut size={14} />
         </button>
-        <button onClick={handleFitAll} className="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800" title="Fit all">
+        <button onClick={handleFitAll} className="p-1 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800" title={t('gantt.fitAll')}>
           <Maximize2 size={14} />
         </button>
         <div className="w-px h-4 bg-gray-700 mx-1" />
@@ -211,12 +213,12 @@ export function TimelineGantt({ events, onSelect, onToggleStar: _onToggleStar }:
           className={cn('flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors',
             groupByType ? 'bg-gray-600 text-gray-200' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
           )}
-          title="Group by event type"
+          title={t('gantt.groupByEventType')}
         >
           <Layers size={10} />
-          Group
+          {t('gantt.group')}
         </button>
-        <span className="ml-auto text-[10px] text-gray-600">{sortedEvents.length} event{sortedEvents.length !== 1 ? 's' : ''}</span>
+        <span className="ml-auto text-[10px] text-gray-600">{t('gantt.eventCount', { count: sortedEvents.length })}</span>
       </div>
 
       {/* Chart area */}
@@ -229,7 +231,7 @@ export function TimelineGantt({ events, onSelect, onToggleStar: _onToggleStar }:
         >
           {/* Sticky header */}
           <div className="sticky top-0 z-10 bg-gray-900 border-b border-gray-700" style={{ height: HEADER_HEIGHT }}>
-            <div className="px-2 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Event</div>
+            <div className="px-2 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{t('gantt.eventLabel')}</div>
           </div>
           {/* Row labels */}
             <div style={{ height: chartHeight }}>
@@ -399,7 +401,7 @@ export function TimelineGantt({ events, onSelect, onToggleStar: _onToggleStar }:
         >
           <div className="font-medium text-gray-200 mb-1 truncate">{tooltip.event.title}</div>
           <div className="text-gray-400 space-y-0.5">
-            <div>{formatTime(tooltip.event.timestamp)}{tooltip.event.timestampEnd ? ` → ${formatTime(tooltip.event.timestampEnd)}` : ' (point event)'}</div>
+            <div>{formatTime(tooltip.event.timestamp)}{tooltip.event.timestampEnd ? ` → ${formatTime(tooltip.event.timestampEnd)}` : ` ${t('gantt.pointEvent')}`}</div>
             <div className="flex items-center gap-1.5">
               <span
                 className="px-1 py-0.5 rounded text-[9px] font-medium"
@@ -411,8 +413,8 @@ export function TimelineGantt({ events, onSelect, onToggleStar: _onToggleStar }:
                 {getEventMeta(tooltip.event.eventType).label}
               </span>
             </div>
-            {tooltip.event.source && <div>Source: {tooltip.event.source}</div>}
-            {tooltip.event.actor && <div>Actor: {tooltip.event.actor}</div>}
+            {tooltip.event.source && <div>{t('gantt.tooltipSource', { source: tooltip.event.source })}</div>}
+            {tooltip.event.actor && <div>{t('gantt.tooltipActor', { actor: tooltip.event.actor })}</div>}
           </div>
         </div>
       )}

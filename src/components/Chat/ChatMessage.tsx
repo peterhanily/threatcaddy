@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { ChevronRight, FileText, ListChecks, Shield, Clock, GitBranch, RotateCcw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
 import { renderMarkdown, sanitizeHtml } from '../../lib/markdown';
 import type { ToolCallRecord, ChatAttachment } from '../../types';
@@ -27,37 +28,38 @@ function formatTokens(n: number): string {
   return String(n);
 }
 
-function summarizeInput(input: Record<string, unknown>): string {
+function summarizeInput(input: Record<string, unknown>, noInputLabel: string): string {
   const parts: string[] = [];
   for (const [key, val] of Object.entries(input)) {
     if (val === undefined || val === null) continue;
     const str = typeof val === 'string' ? val : JSON.stringify(val);
     parts.push(`${key}: ${str.length > 60 ? str.slice(0, 60) + '...' : str}`);
   }
-  return parts.join(', ') || '(no input)';
+  return parts.join(', ') || noInputLabel;
 }
 
 function ToolCallBlock({ tc }: { tc: ToolCallRecord }) {
+  const { t } = useTranslation('chat');
   const [expanded, setExpanded] = useState(false);
 
   let resultPreview = '';
   try {
     const parsed = JSON.parse(tc.result);
     if (parsed.error) {
-      resultPreview = `Error: ${parsed.error}`;
+      resultPreview = t('tool.errorPrefix', { message: parsed.error });
     } else if (parsed.message) {
       resultPreview = String(parsed.message);
     } else if (parsed.count !== undefined) {
-      resultPreview = `${parsed.count} result${parsed.count !== 1 ? 's' : ''}`;
+      resultPreview = t('tool.resultCount', { count: parsed.count });
     } else if (parsed.success) {
       const label = parsed.title || parsed.name || parsed.value || parsed.profile || parsed.noteId || parsed.id || '';
-      resultPreview = label ? `Done: ${label}` : 'Done';
+      resultPreview = label ? t('tool.doneWithLabel', { label }) : t('tool.done');
     } else if (parsed.title) {
       resultPreview = parsed.title;
     } else if (Array.isArray(parsed)) {
-      resultPreview = parsed.length === 0 ? 'No results' : `${parsed.length} item${parsed.length !== 1 ? 's' : ''}`;
+      resultPreview = parsed.length === 0 ? t('tool.noResults') : t('tool.itemCount', { count: parsed.length });
     } else if (typeof parsed === 'object' && Object.keys(parsed).length === 0) {
-      resultPreview = 'Done (empty result)';
+      resultPreview = t('tool.doneEmpty');
     } else {
       resultPreview = tc.result.length > 80 ? tc.result.slice(0, 80) + '...' : tc.result;
     }
@@ -79,7 +81,7 @@ function ToolCallBlock({ tc }: { tc: ToolCallRecord }) {
           className={cn('shrink-0 text-text-muted transition-transform', expanded && 'rotate-90')}
         />
         <span className="font-mono font-medium text-purple shrink-0">{tc.name}</span>
-        <span className="text-text-muted truncate flex-1 min-w-0">{summarizeInput(tc.input)}</span>
+        <span className="text-text-muted truncate flex-1 min-w-0">{summarizeInput(tc.input, t('tool.noInput'))}</span>
         <span className={cn(
           'shrink-0 ml-1 max-w-[200px] truncate',
           tc.isError ? 'text-red-400' : 'text-emerald-400'
@@ -90,13 +92,13 @@ function ToolCallBlock({ tc }: { tc: ToolCallRecord }) {
       {expanded && (
         <div className="px-2.5 pb-2 border-t border-border-subtle mt-0.5 pt-1.5">
           <div className="mb-1">
-            <span className="text-text-muted">Input:</span>
+            <span className="text-text-muted">{t('tool.inputLabel')}</span>
             <pre className="mt-0.5 p-1.5 rounded bg-bg-deep text-[10px] font-mono overflow-x-auto whitespace-pre-wrap">
               {JSON.stringify(tc.input, null, 2)}
             </pre>
           </div>
           <div>
-            <span className="text-text-muted">Result:</span>
+            <span className="text-text-muted">{t('tool.resultLabel')}</span>
             <pre className="mt-0.5 p-1.5 rounded bg-bg-deep text-[10px] font-mono overflow-x-auto whitespace-pre-wrap max-h-48 overflow-y-auto">
               {(() => { try { return JSON.stringify(JSON.parse(tc.result), null, 2); } catch { return tc.result; } })()}
             </pre>
@@ -148,7 +150,7 @@ function stripSuggestions(content: string): string {
 
 // ── Sources Footer ─────────────────────────────────────────────────
 
-function SourcesFooter({ toolCalls, onEntityClick }: { toolCalls: ToolCallRecord[]; onEntityClick?: (type: string, id: string) => void }) {
+function SourcesFooter({ toolCalls, onEntityClick, sourcesLabel }: { toolCalls: ToolCallRecord[]; onEntityClick?: (type: string, id: string) => void; sourcesLabel: string }) {
   const sources = useMemo(() => {
     const items: { type: string; id: string; label: string }[] = [];
     const seen = new Set<string>();
@@ -190,7 +192,7 @@ function SourcesFooter({ toolCalls, onEntityClick }: { toolCalls: ToolCallRecord
 
   return (
     <div className="mt-2 pt-2 border-t border-border-subtle">
-      <div className="text-[10px] text-text-muted mb-1 font-medium uppercase tracking-wider">Sources</div>
+      <div className="text-[10px] text-text-muted mb-1 font-medium uppercase tracking-wider">{sourcesLabel}</div>
       <div className="flex flex-wrap gap-1">
         {sources.map((s) => {
           const Icon = IconMap[s.type] || FileText;
@@ -236,6 +238,7 @@ function SuggestionChips({ suggestions, onSuggestionClick }: { suggestions: stri
 // ── Main Component ─────────────────────────────────────────────────
 
 export function ChatMessageBubble({ role, content, attachments, isStreaming, toolCalls, onEntityClick, onSuggestionClick, isLastAssistant, messageIndex, onBranchFromHere, onRewindToHere, tokenCount, messageId, onRestoreCheckpoint, hasCheckpoint }: ChatMessageProps) {
+  const { t } = useTranslation('chat');
   const isUser = role === 'user';
 
   const suggestions = useMemo(() => {
@@ -282,7 +285,7 @@ export function ChatMessageBubble({ role, content, attachments, isStreaming, too
               <button
                 onClick={() => onBranchFromHere(messageIndex)}
                 className="p-1 text-text-muted hover:text-purple transition-colors"
-                title="Branch conversation from here"
+                title={t('message.branchTitle')}
               >
                 <GitBranch size={12} />
               </button>
@@ -291,7 +294,7 @@ export function ChatMessageBubble({ role, content, attachments, isStreaming, too
               <button
                 onClick={() => onRewindToHere(messageIndex)}
                 className="p-1 text-text-muted hover:text-amber-400 transition-colors"
-                title="Rewind to this message"
+                title={t('message.rewindTitle')}
               >
                 <RotateCcw size={12} />
               </button>
@@ -300,7 +303,7 @@ export function ChatMessageBubble({ role, content, attachments, isStreaming, too
               <button
                 onClick={() => onRestoreCheckpoint(messageId)}
                 className="p-1 text-text-muted hover:text-red-400 transition-colors"
-                title="Undo: restore entities to before this action"
+                title={t('message.undoTitle')}
               >
                 <RotateCcw size={12} className="scale-x-[-1]" />
               </button>
@@ -315,7 +318,7 @@ export function ChatMessageBubble({ role, content, attachments, isStreaming, too
                   <img
                     key={i}
                     src={`data:${att.mimeType};base64,${att.data}`}
-                    alt={att.name || `Attachment ${i + 1}`}
+                    alt={att.name || t('message.attachmentAlt', { index: i + 1 })}
                     className="max-w-[200px] max-h-[150px] rounded-lg border border-border-subtle object-cover"
                   />
                 ))}
@@ -354,7 +357,7 @@ export function ChatMessageBubble({ role, content, attachments, isStreaming, too
             )}
             {/* Sources footer */}
             {hasReadTools && toolCalls && (
-              <SourcesFooter toolCalls={toolCalls} onEntityClick={onEntityClick} />
+              <SourcesFooter toolCalls={toolCalls} onEntityClick={onEntityClick} sourcesLabel={t('message.sources')} />
             )}
             {/* Suggestion chips */}
             <SuggestionChips suggestions={suggestions} onSuggestionClick={onSuggestionClick} />
@@ -365,8 +368,8 @@ export function ChatMessageBubble({ role, content, attachments, isStreaming, too
         )}
         {/* Token count badge */}
         {tokenCount && !isStreaming && (
-          <div className="mt-1.5 text-[9px] text-text-muted font-mono opacity-60" title={`Input: ${tokenCount.input.toLocaleString()} tokens, Output: ${tokenCount.output.toLocaleString()} tokens`}>
-            {formatTokens(tokenCount.input + tokenCount.output)} tokens
+          <div className="mt-1.5 text-[9px] text-text-muted font-mono opacity-60" title={t('message.tokenCountTitle', { input: tokenCount.input.toLocaleString(), output: tokenCount.output.toLocaleString() })}>
+            {t('message.tokenCount', { count: formatTokens(tokenCount.input + tokenCount.output) })}
           </div>
         )}
       </div>

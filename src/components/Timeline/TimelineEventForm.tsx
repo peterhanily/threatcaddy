@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronRight, Search } from 'lucide-react';
 import type { TimelineEvent, TimelineEventType, ConfidenceLevel, Folder, Tag, IOCTarget, IOCAnalysis, IOCType, EntityComment } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
@@ -41,6 +42,7 @@ const ALL_EVENT_TYPES = Object.keys(TIMELINE_EVENT_TYPE_LABELS) as TimelineEvent
 const ALL_CONFIDENCE = Object.keys(CONFIDENCE_LEVELS) as ConfidenceLevel[];
 
 export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave, onCancel, onUpdateEvent, defaultFolderId, defaultLatitude, defaultLongitude }: TimelineEventFormProps) {
+  const { t } = useTranslation('timeline');
   const { settings } = useSettings();
 
   const [initialTs] = useState(() => Date.now());
@@ -109,7 +111,7 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      setTitleError('Event title is required');
+      setTitleError(t('eventForm.titleRequired'));
       return;
     }
     setTitleError('');
@@ -163,14 +165,14 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
     <div className="flex gap-0">
     <form onSubmit={handleSubmit} className="space-y-4 flex-1 min-w-0">
       <div>
-        <label className={labelClass} htmlFor="event-title">Title</label>
+        <label className={labelClass} htmlFor="event-title">{t('eventForm.title')}</label>
         <input
           id="event-title"
           autoFocus
           value={title}
           onChange={(e) => { setTitle(e.target.value); if (titleError) setTitleError(''); }}
           className={cn(inputClass, titleError && 'border-red-500')}
-          placeholder="Event title..."
+          placeholder={t('eventForm.titlePlaceholder')}
           aria-required="true"
           aria-invalid={!!titleError}
           aria-describedby={titleError ? 'event-title-error' : undefined}
@@ -182,7 +184,7 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelClass}>Timestamp</label>
+          <label className={labelClass}>{t('eventForm.timestamp')}</label>
           <input
             type="datetime-local"
             value={timestamp}
@@ -191,7 +193,7 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
           />
         </div>
         <div>
-          <label className={labelClass}>End Time (optional)</label>
+          <label className={labelClass}>{t('eventForm.endTime')}</label>
           <input
             type="datetime-local"
             value={timestampEnd}
@@ -203,15 +205,15 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelClass}>Event Type</label>
+          <label className={labelClass}>{t('eventForm.eventType')}</label>
           <select value={eventType} onChange={(e) => setEventType(e.target.value as TimelineEventType)} className={inputClass}>
-            {ALL_EVENT_TYPES.map((t) => (
-              <option key={t} value={t}>{TIMELINE_EVENT_TYPE_LABELS[t].label}</option>
+            {ALL_EVENT_TYPES.map((et) => (
+              <option key={et} value={et}>{TIMELINE_EVENT_TYPE_LABELS[et].label}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className={labelClass}>Confidence</label>
+          <label className={labelClass}>{t('eventForm.confidence')}</label>
           <select value={confidence} onChange={(e) => setConfidence(e.target.value as ConfidenceLevel)} className={inputClass}>
             {ALL_CONFIDENCE.map((c) => (
               <option key={c} value={c}>{CONFIDENCE_LEVELS[c].label}</option>
@@ -222,30 +224,30 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelClass}>Classification</label>
+          <label className={labelClass}>{t('eventForm.classification')}</label>
           <select value={clsLevel} onChange={(e) => setClsLevel(e.target.value)} className={inputClass}>
-            <option value="">None</option>
+            <option value="">{t('common:none')}</option>
             {getEffectiveClsLevels(settings.tiClsLevels).map((v) => (
               <option key={v} value={v}>{v}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className={labelClass}>Source</label>
+          <label className={labelClass}>{t('eventForm.source')}</label>
           <input
             value={source}
             onChange={(e) => setSource(e.target.value)}
             className={inputClass}
-            placeholder="e.g. Firewall logs, EDR..."
+            placeholder={t('eventForm.sourcePlaceholder')}
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelClass}>Investigation</label>
+          <label className={labelClass}>{t('eventForm.investigation')}</label>
           <select value={folderId} onChange={(e) => setFolderId(e.target.value)} className={inputClass}>
-            <option value="">No investigation</option>
+            <option value="">{t('eventForm.noInvestigation')}</option>
             {folders.map((f) => (
               <option key={f.id} value={f.id}>{f.name}</option>
             ))}
@@ -254,23 +256,23 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
       </div>
 
       <div>
-        <label className={labelClass}>Actor</label>
+        <label className={labelClass}>{t('eventForm.actor')}</label>
         <AttributionComboInput
           value={actor}
           onChange={setActor}
           actors={settings.attributionActors || []}
-          placeholder="e.g. APT29, Lazarus Group..."
+          placeholder={t('eventForm.actorPlaceholder')}
         />
       </div>
 
       <div>
-        <label className={labelClass}>MITRE ATT&CK Techniques</label>
+        <label className={labelClass}>{t('eventForm.mitreAttackTechniques')}</label>
         <MitreComboInput value={mitreAttackIds} onChange={setMitreAttackIds} />
       </div>
 
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <label className="text-xs font-medium text-text-muted">Description (markdown)</label>
+          <label className="text-xs font-medium text-text-muted">{t('eventForm.descriptionMarkdown')}</label>
           {isEditMode && onUpdateEvent && (
             <button
               type="button"
@@ -284,8 +286,8 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
                 setShowIOCPanel(!showIOCPanel);
               }}
               className={cn('p-1 rounded flex items-center gap-1', showIOCPanel ? 'bg-bg-active text-accent' : 'text-text-muted hover:text-text-secondary')}
-              title="IOC Analysis"
-              aria-label="Toggle IOC analysis"
+              title={t('eventForm.iocAnalysis')}
+              aria-label={t('eventForm.toggleIocAnalysis')}
             >
               <Search size={14} />
               {iocCount > 0 && (
@@ -298,22 +300,22 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className={`${inputClass} h-24 resize-none note-editor`}
-          placeholder="Optional description..."
+          placeholder={t('eventForm.descriptionPlaceholder')}
         />
       </div>
 
       <div>
-        <label className={labelClass}>Assets (comma-separated)</label>
+        <label className={labelClass}>{t('eventForm.assets')}</label>
         <input
           value={assets}
           onChange={(e) => setAssets(e.target.value)}
           className={inputClass}
-          placeholder="e.g. DC01, WEB-SRV-02, 10.0.0.5..."
+          placeholder={t('eventForm.assetsPlaceholder')}
         />
       </div>
 
       <div>
-        <label className={labelClass}>Tags</label>
+        <label className={labelClass}>{t('eventForm.tags')}</label>
         <TagInput
           selectedTags={tags}
           allTags={allTags}
@@ -330,7 +332,7 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
           onChange={(e) => setStarred(e.target.checked)}
           className="rounded border-border-medium bg-bg-deep text-accent focus:ring-accent"
         />
-        <label htmlFor="timeline-starred" className="text-xs text-text-muted">Starred</label>
+        <label htmlFor="timeline-starred" className="text-xs text-text-muted">{t('eventForm.starred')}</label>
       </div>
 
       {/* Location collapsible section */}
@@ -341,12 +343,12 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
           className="flex items-center gap-1 text-xs font-medium text-text-muted hover:text-text-secondary"
         >
           {locationOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          Location
+          {t('eventForm.location')}
         </button>
         {locationOpen && (
           <div className="grid grid-cols-2 gap-3 mt-1">
             <div>
-              <label className={labelClass}>Latitude</label>
+              <label className={labelClass}>{t('eventForm.latitude')}</label>
               <input
                 type="number"
                 step="any"
@@ -355,11 +357,11 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
                 value={latitude}
                 onChange={(e) => setLatitude(e.target.value)}
                 className={inputClass}
-                placeholder="-90 to 90"
+                placeholder={t('eventForm.latitudePlaceholder')}
               />
             </div>
             <div>
-              <label className={labelClass}>Longitude</label>
+              <label className={labelClass}>{t('eventForm.longitude')}</label>
               <input
                 type="number"
                 step="any"
@@ -368,7 +370,7 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
                 value={longitude}
                 onChange={(e) => setLongitude(e.target.value)}
                 className={inputClass}
-                placeholder="-180 to 180"
+                placeholder={t('eventForm.longitudePlaceholder')}
               />
             </div>
           </div>
@@ -383,14 +385,14 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
           className="flex items-center gap-1 text-xs font-medium text-text-muted hover:text-text-secondary"
         >
           {rawDataOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          Raw Data
+          {t('eventForm.rawData')}
         </button>
         {rawDataOpen && (
           <textarea
             value={rawData}
             onChange={(e) => setRawData(e.target.value)}
             className={`${inputClass} h-32 resize-none font-mono text-xs mt-1`}
-            placeholder="Paste raw log data, JSON, etc..."
+            placeholder={t('eventForm.rawDataPlaceholder')}
           />
         )}
       </div>
@@ -409,13 +411,13 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
           onClick={onCancel}
           className="px-4 py-2 rounded-lg bg-bg-active hover:bg-bg-hover text-text-primary text-sm transition-colors"
         >
-          Cancel
+          {t('common:cancel')}
         </button>
         <button
           type="submit"
           className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
         >
-          {event ? 'Update Event' : 'Create Event'}
+          {event ? t('eventForm.updateEvent') : t('eventForm.createEvent')}
         </button>
       </div>
     </form>

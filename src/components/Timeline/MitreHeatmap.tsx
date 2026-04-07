@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MITRE_TACTICS, MITRE_TECHNIQUES, getParentTechniqueId, confidenceToRank } from '../../lib/mitre-attack';
 import type { TimelineEvent } from '../../types';
 
@@ -49,6 +50,7 @@ function getCellColor(tech: TechData, mode: HeatmapColorMode, maxCount: number, 
 }
 
 export function MitreHeatmap({ events, colorMode, onTechniqueClick }: MitreHeatmapProps) {
+  const { t } = useTranslation('timeline');
   const { columns, maxCount, maxActorCount, stats } = useMemo(() => {
     // Build maps: parentTechniqueId → aggregated data
     const countMap = new Map<string, Set<string>>();
@@ -118,36 +120,36 @@ export function MitreHeatmap({ events, colorMode, onTechniqueClick }: MitreHeatm
   }, [events]);
 
   // Legend configuration per mode
-  const legendLabel = colorMode === 'count' ? 'Events' : colorMode === 'confidence' ? 'Confidence' : 'Actors';
+  const legendLabel = colorMode === 'count' ? t('view.colorModeEvents') : colorMode === 'confidence' ? t('view.colorModeConfidence') : t('view.colorModeActors');
   const legendSteps = colorMode === 'confidence'
     ? [
-        { label: 'None', ...confidenceColor(0) },
-        { label: 'Low', ...confidenceColor(1) },
-        { label: 'Med', ...confidenceColor(2) },
-        { label: 'High', ...confidenceColor(3) },
-        { label: 'Conf', ...confidenceColor(4) },
+        { label: t('heatmap.legendNone'), ...confidenceColor(0) },
+        { label: t('heatmap.legendLow'), ...confidenceColor(1) },
+        { label: t('heatmap.legendMed'), ...confidenceColor(2) },
+        { label: t('heatmap.legendHigh'), ...confidenceColor(3) },
+        { label: t('heatmap.legendConf'), ...confidenceColor(4) },
       ]
     : [
         { label: '0', ...heatColor(0, 1) },
-        { label: 'Low', ...heatColor(1, 4) },
+        { label: t('heatmap.legendLow'), ...heatColor(1, 4) },
         { label: '', ...heatColor(2, 4) },
         { label: '', ...heatColor(3, 4) },
-        { label: 'High', ...heatColor(4, 4) },
+        { label: t('heatmap.legendHigh'), ...heatColor(4, 4) },
       ];
 
   const maxLabel = colorMode === 'count'
-    ? `${maxCount} max event${maxCount !== 1 ? 's' : ''} per technique`
+    ? t('heatmap.maxEventsPerTechnique', { count: maxCount })
     : colorMode === 'actors'
-      ? `${maxActorCount} max actor${maxActorCount !== 1 ? 's' : ''} per technique`
+      ? t('heatmap.maxActorsPerTechnique', { count: maxActorCount })
       : '';
 
   return (
     <div className="space-y-3">
       {/* Stats bar */}
       <div className="flex items-center gap-4 text-xs text-gray-400 px-1">
-        <span>Techniques: <span className="text-gray-200 font-medium">{stats.totalTechniquesMapped}</span>/{MITRE_TECHNIQUES.length}</span>
-        <span>Events w/ MITRE: <span className="text-gray-200 font-medium">{stats.totalEventsWithMitre}</span></span>
-        <span>Tactics hit: <span className="text-gray-200 font-medium">{stats.tacticsWithCoverage}</span>/{MITRE_TACTICS.length}</span>
+        <span>{t('heatmap.techniques')} <span className="text-gray-200 font-medium">{stats.totalTechniquesMapped}</span>/{MITRE_TECHNIQUES.length}</span>
+        <span>{t('heatmap.eventsWithMitre')} <span className="text-gray-200 font-medium">{stats.totalEventsWithMitre}</span></span>
+        <span>{t('heatmap.tacticsHit')} <span className="text-gray-200 font-medium">{stats.tacticsWithCoverage}</span>/{MITRE_TACTICS.length}</span>
       </div>
 
       {/* Legend */}
@@ -187,8 +189,8 @@ export function MitreHeatmap({ events, colorMode, onTechniqueClick }: MitreHeatm
                 {techniques.map((tech) => {
                   const color = getCellColor(tech, colorMode, maxCount, maxActorCount);
                   const clickable = tech.count > 0;
-                  const confLabels = ['—', 'Low', 'Medium', 'High', 'Confirmed'];
-                  const tooltip = `${tech.id}: ${tech.name}\n${tech.count} event${tech.count !== 1 ? 's' : ''} · Confidence: ${confLabels[tech.maxConfidence]} · ${tech.actorCount} actor${tech.actorCount !== 1 ? 's' : ''}`;
+                  const confLabels = [t('heatmap.confidenceNone'), t('heatmap.confidenceLow'), t('heatmap.confidenceMedium'), t('heatmap.confidenceHigh'), t('heatmap.confidenceConfirmed')];
+                  const tooltip = `${tech.id}: ${tech.name}\n${t('gantt.eventCount', { count: tech.count })} · ${t('heatmap.tooltipConfidence')}: ${confLabels[tech.maxConfidence]} · ${tech.actorCount} actor${tech.actorCount !== 1 ? 's' : ''}`;
                   return (
                     <button
                       key={tech.id}

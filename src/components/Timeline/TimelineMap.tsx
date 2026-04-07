@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
@@ -93,6 +94,7 @@ const DEFAULT_CENTER: [number, number] = [20, 0];
 const DEFAULT_ZOOM = 2;
 
 export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreateEventAtLocation }: TimelineMapProps) {
+  const { t } = useTranslation('timeline');
   const hasAnyMapped = events.some((e) => e.latitude != null && e.longitude != null);
   const [placeMode, setPlaceMode] = useState(!hasAnyMapped);
 
@@ -153,12 +155,12 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-gray-800 text-xs text-gray-500 shrink-0">
         <MapPin size={12} />
         {mappedEvents.length > 0 ? (
-          <span>{mappedEvents.length} mapped</span>
+          <span>{t('map.mapped', { count: mappedEvents.length })}</span>
         ) : (
-          <span>Double-click map to place events</span>
+          <span>{t('map.doubleClickToPlace')}</span>
         )}
         {unmappedCount > 0 && (
-          <span className="text-gray-600">&middot; {unmappedCount} without location</span>
+          <span className="text-gray-600">&middot; {t('map.withoutLocation', { count: unmappedCount })}</span>
         )}
         <div className="ml-auto">
           {onCreateEventAtLocation && (
@@ -170,10 +172,10 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
                   ? 'bg-accent/20 text-accent'
                   : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
               )}
-              title={placeMode ? 'Cancel single-click place mode' : 'Enable single-click placement'}
+              title={placeMode ? t('map.cancelPlaceMode') : t('map.enablePlacement')}
             >
               <Crosshair size={12} />
-              Place
+              {t('map.place')}
             </button>
           )}
         </div>
@@ -237,7 +239,7 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
                         </span>
                       </div>
                       <h4 className="font-medium text-sm mb-1 leading-tight">
-                        {event.title || 'Untitled Event'}
+                        {event.title || t('eventCard.untitledEvent')}
                       </h4>
                       <p className="text-xs opacity-70 mb-2">{formatTime(event.timestamp)}</p>
                       {event.description && (
@@ -250,12 +252,12 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
                           onClick={(e) => { e.stopPropagation(); onSelect(event.id); }}
                           className="text-xs px-2 py-0.5 rounded hover:bg-black/10 transition-colors"
                         >
-                          Edit
+                          {t('common:edit')}
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); onToggleStar(event.id); }}
                           className={cn('p-0.5 rounded transition-colors', event.starred ? 'text-yellow-400' : 'opacity-50 hover:opacity-100')}
-                          title={event.starred ? 'Unstar' : 'Star'}
+                          title={event.starred ? t('map.unstar') : t('map.star')}
                         >
                           <Star size={14} fill={event.starred ? 'currentColor' : 'none'} />
                         </button>
@@ -263,7 +265,7 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
                           <button
                             onClick={(e) => { e.stopPropagation(); onDelete(event.id); }}
                             className="p-0.5 rounded text-red-400 opacity-50 hover:opacity-100 transition-colors"
-                            title="Delete"
+                            title={t('common:delete')}
                           >
                             <Trash2 size={14} />
                           </button>

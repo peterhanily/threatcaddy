@@ -1,25 +1,26 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Send, Square, Wifi, WifiOff, Globe, Search, FileText, CheckSquare, Shield, BarChart3, Clock, Network, ClipboardList, Zap, Link2, AlertTriangle, Terminal, RefreshCw, StopCircle, Wrench, ImagePlus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { LLMProvider } from '../../types';
 import { MODELS as STATIC_MODELS } from '../../lib/models';
 import { cn } from '../../lib/utils';
 import { searchMentions, MENTION_CATEGORIES, type MentionSuggestion } from '../../lib/chat-mentions';
 
-const SLASH_COMMANDS = [
-  { command: '/fetch', description: 'Fetch URL into a note', placeholder: '<url>', icon: Globe },
-  { command: '/search', description: 'Search your notes', placeholder: '<query>', icon: Search },
-  { command: '/note', description: 'Create a new note', placeholder: '<title>', icon: FileText },
-  { command: '/task', description: 'Create a task', placeholder: '<title>', icon: CheckSquare },
-  { command: '/iocs', description: 'Extract IOCs from text', placeholder: '<text>', icon: Shield },
-  { command: '/summary', description: 'Summarize this investigation', placeholder: '', icon: BarChart3 },
-  { command: '/timeline', description: 'List timeline events', placeholder: '', icon: Clock },
-  { command: '/report', description: 'Generate investigation report', placeholder: '', icon: ClipboardList },
-  { command: '/triage', description: 'Auto-triage an alert or email', placeholder: '<paste alert>', icon: Zap },
-  { command: '/graph', description: 'Analyze entity relationships', placeholder: '', icon: Network },
-  { command: '/link', description: 'Find and link related entities', placeholder: '<description>', icon: Link2 },
-  { command: '/loop', description: 'Schedule a recurring prompt', placeholder: '<interval> <prompt>', icon: RefreshCw },
-  { command: '/stoploop', description: 'Stop background loops', placeholder: '', icon: StopCircle },
-];
+const SLASH_COMMAND_DEFS = [
+  { command: '/fetch', descKey: 'slash.fetch', placeholder: '<url>', icon: Globe },
+  { command: '/search', descKey: 'slash.search', placeholder: '<query>', icon: Search },
+  { command: '/note', descKey: 'slash.note', placeholder: '<title>', icon: FileText },
+  { command: '/task', descKey: 'slash.task', placeholder: '<title>', icon: CheckSquare },
+  { command: '/iocs', descKey: 'slash.iocs', placeholder: '<text>', icon: Shield },
+  { command: '/summary', descKey: 'slash.summary', placeholder: '', icon: BarChart3 },
+  { command: '/timeline', descKey: 'slash.timeline', placeholder: '', icon: Clock },
+  { command: '/report', descKey: 'slash.report', placeholder: '', icon: ClipboardList },
+  { command: '/triage', descKey: 'slash.triage', placeholder: '<paste alert>', icon: Zap },
+  { command: '/graph', descKey: 'slash.graph', placeholder: '', icon: Network },
+  { command: '/link', descKey: 'slash.link', placeholder: '<description>', icon: Link2 },
+  { command: '/loop', descKey: 'slash.loop', placeholder: '<interval> <prompt>', icon: RefreshCw },
+  { command: '/stoploop', descKey: 'slash.stoploop', placeholder: '', icon: StopCircle },
+] as const;
 
 interface ChatInputProps {
   onSend: (text: string) => void;
@@ -41,6 +42,7 @@ interface ChatInputProps {
 }
 
 export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, model, onModelChange, disabled, localModelName, configuredProviders, onOpenSettings, folderId, customCommands, onImageAttach, attachedImages, onClearImages }: ChatInputProps) {
+  const { t } = useTranslation('chat');
   // Can send if extension is available OR a local LLM is configured (direct fetch, no extension needed)
   const canSend = extensionAvailable || !!localModelName;
   const MODELS = useMemo(() => {
@@ -77,14 +79,20 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
 
   // Merge built-in + custom slash commands
   const allCommands = useMemo(() => {
+    const builtIn = SLASH_COMMAND_DEFS.map(c => ({
+      command: c.command,
+      description: t(c.descKey),
+      placeholder: c.placeholder as string,
+      icon: c.icon,
+    }));
     const custom = (customCommands || []).map(c => ({
       command: c.command.startsWith('/') ? c.command : `/${c.command}`,
       description: c.description,
       placeholder: '<input>' as string,
       icon: Wrench,
     }));
-    return [...SLASH_COMMANDS, ...custom];
-  }, [customCommands]);
+    return [...builtIn, ...custom];
+  }, [customCommands, t]);
 
   // Show/hide slash menu based on text content
   const filteredCommands = useMemo(() => {
@@ -270,7 +278,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
       {/* Model selector + extension status */}
       <div className="flex items-center gap-2 text-xs">
         {MODELS.length === 0 ? (
-          <span className="text-text-muted text-[10px] italic">No API keys configured — add one in Settings → AI/LLM</span>
+          <span className="text-text-muted text-[10px] italic">{t('input.noApiKeys')}</span>
         ) : (
           <select
             value={model}
@@ -295,7 +303,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
           canSend ? 'text-accent-green' : 'text-text-muted'
         )}>
           {canSend ? <Wifi size={10} /> : <WifiOff size={10} />}
-          {extensionAvailable ? 'Extension' : localModelName ? 'Local LLM' : 'No connection'}
+          {extensionAvailable ? t('input.extensionStatus') : localModelName ? t('input.localLlmStatus') : t('input.noConnection')}
         </div>
       </div>
 
@@ -304,13 +312,13 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
         <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <div className="text-xs space-y-1">
-            <p className="font-medium">Browser extension required</p>
-            <p className="text-amber-400/80">The ThreatCaddy browser extension is required for CaddyAI to make API calls. Install it from the{' '}
-              <a href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">Chrome Web Store</a>.
+            <p className="font-medium">{t('input.extensionRequiredTitle')}</p>
+            <p className="text-amber-400/80">{t('input.extensionRequiredDesc')}{' '}
+              <a href="https://chromewebstore.google.com/detail/threatcaddy-%E2%80%94-quick-captu/lakelgngpkkaeinfdlnmifookbeeffbh" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-300">{t('input.chromeWebStore')}</a>.
             </p>
             {onOpenSettings && (
               <button onClick={onOpenSettings} className="text-accent hover:text-accent-hover underline">
-                Configure API keys in Settings
+                {t('input.configureApiKeys')}
               </button>
             )}
           </div>
@@ -392,7 +400,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
                 </button>
               ))
             ) : (
-              <div className="px-3 py-2 text-xs text-text-muted">No matches found</div>
+              <div className="px-3 py-2 text-xs text-text-muted">{t('input.noMatchesFound')}</div>
             )}
           </div>
         )}
@@ -400,8 +408,8 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
           onClick={() => { setText('/'); textareaRef.current?.focus(); }}
           disabled={!canSend || disabled}
           className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Type / for commands"
-          aria-label="Insert slash command"
+          title={t('input.slashCommandTitle')}
+          aria-label={t('input.slashCommandAria')}
         >
           <Terminal size={14} />
         </button>
@@ -412,10 +420,10 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
               {attachedImages.map((img, i) => (
                 <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple/10 border border-purple/20 text-[10px] text-purple">
                   <ImagePlus size={10} />
-                  {img.name || `Image ${i + 1}`}
+                  {img.name || t('input.imageLabel', { index: i + 1 })}
                 </span>
               ))}
-              <button onClick={onClearImages} className="text-[10px] text-text-muted hover:text-red-400 ml-1">clear</button>
+              <button onClick={onClearImages} className="text-[10px] text-text-muted hover:text-red-400 ml-1">{t('input.clearImages')}</button>
             </div>
           )}
           {/* Thinking indicator */}
@@ -426,19 +434,19 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
                 <span className="w-1.5 h-1.5 rounded-full bg-purple animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-1.5 h-1.5 rounded-full bg-purple animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
-              <span>Thinking...</span>
+              <span>{t('input.thinking')}</span>
             </div>
           )}
           <textarea
             ref={textareaRef}
-            aria-label="Message to CaddyAI"
+            aria-label={t('input.messageAria')}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
-            placeholder={canSend ? 'Ask CaddyAI anything... (/ for commands, @ to mention, paste images)' : 'Configure a local LLM or install the extension'}
+            placeholder={canSend ? t('input.placeholderReady') : t('input.placeholderDisabled')}
             disabled={!canSend || disabled}
             rows={3}
             className="w-full bg-bg-deep border border-border-medium rounded-xl px-4 py-3 text-sm text-text-primary placeholder-text-muted resize-y focus:outline-none focus:ring-2 focus:ring-purple/30 focus:border-purple disabled:opacity-50 transition-all min-h-[72px] max-h-[50vh]"
@@ -452,7 +460,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
               onClick={() => fileInputRef.current?.click()}
               disabled={!canSend || disabled}
               className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Attach image"
+              title={t('input.attachImage')}
             >
               <ImagePlus size={14} />
             </button>
@@ -462,7 +470,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
           <button
             onClick={onStop}
             className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all"
-            title="Stop generating"
+            title={t('input.stopGenerating')}
           >
             <Square size={16} />
           </button>
@@ -471,7 +479,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
             onClick={handleSend}
             disabled={!text.trim() || !canSend || disabled}
             className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-purple text-white hover:bg-purple/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Send message (Enter)"
+            title={t('input.sendMessage')}
           >
             <Send size={16} />
           </button>

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SlashCommand } from './slashCommands';
 
 const CATEGORY_ORDER: SlashCommand['category'][] = ['Formatting', 'Blocks', 'Threat Intel', 'Insert'];
@@ -13,7 +14,15 @@ interface SlashCommandMenuProps {
   menuRef: RefObject<HTMLDivElement | null>;
 }
 
+const CATEGORY_I18N_KEY: Record<string, string> = {
+  'Formatting': 'slashCommands.categoryFormatting',
+  'Blocks': 'slashCommands.categoryBlocks',
+  'Threat Intel': 'slashCommands.categoryThreatIntel',
+  'Insert': 'slashCommands.categoryInsert',
+};
+
 export function SlashCommandMenu({ commands, activeIndex, position, onSelect, menuRef }: SlashCommandMenuProps) {
+  const { t } = useTranslation('notes');
   const listRef = useRef<HTMLDivElement>(null);
   const [adjustedPos, setAdjustedPos] = useState<{ top: number; left: number } | null>(null);
 
@@ -82,7 +91,7 @@ export function SlashCommandMenu({ commands, activeIndex, position, onSelect, me
         {indexedGroups.map(group => (
           <div key={group.category}>
             <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold sticky top-0 bg-gray-800">
-              {group.category}
+              {t(CATEGORY_I18N_KEY[group.category] || group.category)}
             </div>
             {group.items.map(({ cmd, index }) => {
               const Icon = cmd.icon;

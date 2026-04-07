@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Copy, Check, ChevronDown, ChevronRight, X, RotateCcw, Plus, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { IOCEntry, IOCType, ConfidenceLevel, IOCRelationship, IOCRelationshipDef } from '../../types';
 import { CONFIDENCE_LEVELS, DEFAULT_IOC_SUBTYPES, DEFAULT_RELATIONSHIP_TYPES, IOC_TYPE_LABELS } from '../../types';
 import { AttributionComboInput } from './AttributionComboInput';
@@ -54,6 +55,7 @@ function getValidTargetTypes(relType: string, allDefs: Record<string, IOCRelatio
 const NETWORK_IOC_TYPES = new Set<IOCType>(['url', 'domain', 'ipv4', 'ipv6', 'email']);
 
 export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors = [], threatIntelConfig, allIOCs = [], defanged }: IOCItemProps) {
+  const { t } = useTranslation('analysis');
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [addingRelationship, setAddingRelationship] = useState(false);
@@ -128,7 +130,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
         <button
           onClick={() => setExpanded(!expanded)}
           className="text-gray-500 hover:text-gray-300 shrink-0"
-          aria-label={expanded ? 'Collapse' : 'Expand'}
+          aria-label={expanded ? t('iocItem.collapseAria') : t('iocItem.expandAria')}
         >
           {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </button>
@@ -140,8 +142,8 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
         <button
           onClick={handleCopy}
           className="text-gray-500 hover:text-gray-300 shrink-0"
-          title="Copy value"
-          aria-label="Copy IOC value"
+          title={t('iocItem.copyTitle')}
+          aria-label={t('iocItem.copyAria')}
         >
           {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
         </button>
@@ -151,7 +153,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
           onChange={(e) => onUpdate(ioc.id, { confidence: e.target.value as ConfidenceLevel })}
           className="bg-gray-800 text-xs rounded px-1 py-0.5 border-0 focus:outline-none cursor-pointer"
           style={{ color: confidenceColor }}
-          aria-label="Confidence level"
+          aria-label={t('iocItem.confidenceAria')}
         >
           {(Object.entries(CONFIDENCE_LEVELS) as [ConfidenceLevel, { label: string }][]).map(([value, { label }]) => (
             <option key={value} value={value}>{label}</option>
@@ -162,8 +164,8 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
           <button
             onClick={() => onRestore(ioc.id)}
             className="text-gray-500 hover:text-green-400 shrink-0"
-            title="Restore"
-            aria-label="Restore IOC"
+            title={t('iocItem.restoreTitle')}
+            aria-label={t('iocItem.restoreAria')}
           >
             <RotateCcw size={12} />
           </button>
@@ -171,8 +173,8 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
           <button
             onClick={() => onDismiss(ioc.id)}
             className="text-gray-500 hover:text-red-400 shrink-0"
-            title="Dismiss"
-            aria-label="Dismiss IOC"
+            title={t('iocItem.dismissTitle')}
+            aria-label={t('iocItem.dismissAria')}
           >
             <X size={12} />
           </button>
@@ -182,17 +184,17 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
       {expanded && (
         <div className="px-3 pb-2 space-y-2 border-t border-gray-800 pt-2">
           <div>
-            <label className="text-[10px] text-gray-500 uppercase tracking-wider">Analyst Notes</label>
+            <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('iocItem.analystNotes')}</label>
             <textarea
               value={ioc.analystNotes || ''}
               onChange={(e) => onUpdate(ioc.id, { analystNotes: e.target.value })}
               className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600 resize-none"
               rows={2}
-              placeholder="Add notes..."
+              placeholder={t('iocItem.notesPlaceholder')}
             />
           </div>
           <div>
-            <label className="text-[10px] text-gray-500 uppercase tracking-wider">Attribution</label>
+            <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('iocItem.attribution')}</label>
             <AttributionComboInput
               value={ioc.attribution || ''}
               onChange={(v) => onUpdate(ioc.id, { attribution: v })}
@@ -201,7 +203,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
           </div>
           {subtypes.length > 0 && (
             <div>
-              <label className="text-[10px] text-gray-500 uppercase tracking-wider">IOC Subtype</label>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('iocItem.iocSubtype')}</label>
               <select
                 value={ioc.iocSubtype || ''}
                 onChange={(e) => onUpdate(ioc.id, { iocSubtype: e.target.value || undefined })}
@@ -214,7 +216,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
           )}
           {threatIntelConfig?.iocStatuses && threatIntelConfig.iocStatuses.length > 0 && (
             <div>
-              <label className="text-[10px] text-gray-500 uppercase tracking-wider">IOC Status</label>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('iocItem.iocStatus')}</label>
               <select
                 value={ioc.iocStatus || ''}
                 onChange={(e) => onUpdate(ioc.id, { iocStatus: e.target.value || undefined })}
@@ -226,7 +228,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
             </div>
           )}
           <div>
-            <label className="text-[10px] text-gray-500 uppercase tracking-wider">Classification Level</label>
+            <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('iocItem.classificationLevel')}</label>
             <select
               value={ioc.clsLevel || ''}
               onChange={(e) => onUpdate(ioc.id, { clsLevel: e.target.value || undefined })}
@@ -238,7 +240,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
           </div>
           {/* Relationships (many-to-many) */}
           <div>
-            <label className="text-[10px] text-gray-500 uppercase tracking-wider">Relationships</label>
+            <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('iocItem.relationships')}</label>
             {relationships.length > 0 && (
               <div className="space-y-1 mt-1">
                 {relationships.map((rel, idx) => {
@@ -254,7 +256,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
                       <button
                         onClick={() => removeRelationship(idx)}
                         className="text-gray-600 hover:text-red-400 shrink-0"
-                        aria-label="Remove relationship"
+                        aria-label={t('iocItem.removeRelationshipAria')}
                       >
                         <X size={10} />
                       </button>
@@ -270,7 +272,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
                   onChange={(e) => { setNewRelType(e.target.value); setNewRelTarget(''); }}
                   className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 focus:outline-none focus:ring-1 focus:ring-gray-600"
                 >
-                  <option value="">Select type...</option>
+                  <option value="">{t('iocItem.selectType')}</option>
                   {Object.entries(availableRelTypes).map(([k, d]) => (
                     <option key={k} value={k}>{d.label}</option>
                   ))}
@@ -281,7 +283,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
                     onChange={(e) => setNewRelTarget(e.target.value)}
                     className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 focus:outline-none focus:ring-1 focus:ring-gray-600"
                   >
-                    <option value="">Select target IOC...</option>
+                    <option value="">{t('iocItem.selectTarget')}</option>
                     {validTargets.map((t) => (
                       <option key={t.id} value={t.id}>{(IOC_TYPE_LABELS[t.type as IOCType]?.label || t.type)}: {t.value}</option>
                     ))}
@@ -308,7 +310,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
                 onClick={() => setAddingRelationship(true)}
                 className="flex items-center gap-1 mt-1 text-xs text-gray-500 hover:text-accent"
               >
-                <Plus size={10} /> Add Relationship
+                <Plus size={10} /> {t('iocItem.addRelationship')}
               </button>
             )}
           </div>

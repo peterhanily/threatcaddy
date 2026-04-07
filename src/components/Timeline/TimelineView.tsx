@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Search, ArrowUpDown, Star, List, Grid3X3, BarChart3, GanttChart, MapPin, Download, Upload, Trash2, RotateCcw } from 'lucide-react';
 import type { TimelineEvent, TimelineEventType, Tag, Folder, Timeline } from '../../types';
 import { TimelineFeed } from './TimelineFeed';
@@ -53,6 +54,7 @@ interface TimelineViewProps {
 }
 
 function ExportDropdown({ events, selectedTimelineId, timelines, onImportClick }: { events: TimelineEvent[]; selectedTimelineId?: string; timelines: Timeline[]; onImportClick: () => void }) {
+  const { t } = useTranslation('timeline');
   const logActivity = useLogActivity();
   const { addToast } = useToast();
   const [open, setOpen] = useState(false);
@@ -85,7 +87,7 @@ function ExportDropdown({ events, selectedTimelineId, timelines, onImportClick }
     try {
       if (selectedTimelineId) {
         const json = await exportTimelineJSON(selectedTimelineId);
-        const timeline = timelines.find((t) => t.id === selectedTimelineId);
+        const timeline = timelines.find((tl) => tl.id === selectedTimelineId);
         const filename = timeline ? `timeline-${timeline.name.toLowerCase().replace(/\s+/g, '-')}.json` : 'timeline-export.json';
         downloadFile(json, filename, 'application/json');
         logActivity('timeline', 'export', `Exported timeline "${timeline?.name || 'Unknown'}"`, selectedTimelineId, timeline?.name);
@@ -96,7 +98,7 @@ function ExportDropdown({ events, selectedTimelineId, timelines, onImportClick }
       }
     } catch (err) {
       console.error('Timeline export failed:', err);
-      addToast('error', 'Timeline export failed');
+      addToast('error', t('export.exportFailed'));
     }
     setOpen(false);
   };
@@ -106,8 +108,8 @@ function ExportDropdown({ events, selectedTimelineId, timelines, onImportClick }
       <button
         onClick={() => setOpen(!open)}
         className={cn('p-1 rounded', open ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
-        title="Export / Import"
-        aria-label="Export / Import"
+        title={t('export.exportImport')}
+        aria-label={t('export.exportImport')}
       >
         <Download size={16} />
       </button>
@@ -117,27 +119,27 @@ function ExportDropdown({ events, selectedTimelineId, timelines, onImportClick }
             onClick={handleTimelineExport}
             className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
           >
-            {selectedTimelineId ? 'Export Timeline JSON' : 'Export All Events JSON'}
+            {selectedTimelineId ? t('export.exportTimelineJSON') : t('export.exportAllEventsJSON')}
           </button>
           <button
             onClick={() => { setOpen(false); onImportClick(); }}
             className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-1.5"
           >
             <Upload size={12} />
-            Import Timeline...
+            {t('export.importTimeline')}
           </button>
           <div className="border-t border-gray-700 my-1" />
           <button
             onClick={handleNavigatorExport}
             className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
           >
-            ATT&CK Navigator JSON
+            {t('export.attackNavigatorJSON')}
           </button>
           <button
             onClick={handleCSVExport}
             className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
           >
-            MITRE Mappings CSV
+            {t('export.mitreMappingsCSV')}
           </button>
         </div>
       )}
@@ -167,6 +169,7 @@ export function TimelineView({
   openNewForm,
   onNewFormOpened,
 }: TimelineViewProps) {
+  const { t } = useTranslation('timeline');
   const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(null);
   const [showNewEvent, setShowNewEvent] = useState(false);
 
@@ -242,9 +245,9 @@ export function TimelineView({
   };
 
   const colorModes: { key: HeatmapColorMode; label: string }[] = [
-    { key: 'count', label: 'Events' },
-    { key: 'confidence', label: 'Confidence' },
-    { key: 'actors', label: 'Actors' },
+    { key: 'count', label: t('view.colorModeEvents') },
+    { key: 'confidence', label: t('view.colorModeConfidence') },
+    { key: 'actors', label: t('view.colorModeActors') },
   ];
 
   return (
@@ -252,7 +255,7 @@ export function TimelineView({
       {/* Toolbar */}
       <div className="flex items-center gap-1.5 px-3 py-2 border-b border-gray-800 shrink-0">
         <span className="text-sm font-medium text-gray-300 hidden sm:inline">
-          {scopeLabel ? `Timeline \u2014 ${scopeLabel} (${events.length})` : `Timeline (${events.length})`}
+          {scopeLabel ? t('view.titleWithScope', { scope: scopeLabel, count: events.length }) : t('view.titleWithCount', { count: events.length })}
         </span>
         <span className="text-sm font-medium text-gray-300 sm:hidden">{events.length}</span>
 
@@ -260,40 +263,40 @@ export function TimelineView({
           <button
             onClick={() => setViewMode('feed')}
             className={cn('p-1 rounded', viewMode === 'feed' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
-            title="Feed view"
-            aria-label="Feed view"
+            title={t('view.feedView')}
+            aria-label={t('view.feedView')}
           >
             <List size={16} />
           </button>
           <button
             onClick={() => setViewMode('heatmap')}
             className={cn('p-1 rounded', viewMode === 'heatmap' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
-            title="ATT&CK Heatmap"
-            aria-label="ATT&CK Heatmap"
+            title={t('view.attackHeatmap')}
+            aria-label={t('view.attackHeatmap')}
           >
             <Grid3X3 size={16} />
           </button>
           <button
             onClick={() => setViewMode('report')}
             className={cn('p-1 rounded', viewMode === 'report' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
-            title="MITRE Report"
-            aria-label="MITRE Report"
+            title={t('view.mitreReport')}
+            aria-label={t('view.mitreReport')}
           >
             <BarChart3 size={16} />
           </button>
           <button
             onClick={() => setViewMode('gantt')}
             className={cn('p-1 rounded', viewMode === 'gantt' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
-            title="Gantt Chart"
-            aria-label="Gantt Chart"
+            title={t('view.ganttChart')}
+            aria-label={t('view.ganttChart')}
           >
             <GanttChart size={16} />
           </button>
           <button
             onClick={() => setViewMode('map')}
             className={cn('p-1 rounded', viewMode === 'map' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
-            title="Map View"
-            aria-label="Map View"
+            title={t('view.mapView')}
+            aria-label={t('view.mapView')}
           >
             <MapPin size={16} />
           </button>
@@ -324,7 +327,7 @@ export function TimelineView({
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search events..."
+            placeholder={t('view.searchPlaceholder')}
             className="bg-transparent border-none text-xs text-gray-300 placeholder-gray-600 focus:outline-none w-full min-w-0"
           />
         </div>
@@ -332,8 +335,8 @@ export function TimelineView({
         <button
           onClick={() => setSortDir((d) => d === 'asc' ? 'desc' : 'asc')}
           className={cn('p-1 rounded text-gray-500 hover:text-gray-300', sortDir === 'asc' && 'bg-gray-700 text-gray-200')}
-          title={sortDir === 'asc' ? 'Oldest first' : 'Newest first'}
-          aria-label="Toggle sort direction"
+          title={sortDir === 'asc' ? t('view.sortOldestFirst') : t('view.sortNewestFirst')}
+          aria-label={t('view.toggleSortDirection')}
         >
           <ArrowUpDown size={16} />
         </button>
@@ -341,8 +344,8 @@ export function TimelineView({
         <button
           onClick={() => setShowStarredOnly(!showStarredOnly)}
           className={cn('p-1 rounded', showStarredOnly ? 'bg-yellow-400/20 text-yellow-400' : 'text-gray-500 hover:text-gray-300')}
-          title="Toggle starred filter"
-          aria-label="Filter starred"
+          title={t('view.toggleStarredFilter')}
+          aria-label={t('view.filterStarred')}
         >
           <Star size={16} fill={showStarredOnly ? 'currentColor' : 'none'} />
         </button>
@@ -358,10 +361,10 @@ export function TimelineView({
         <button
           onClick={() => setShowNewEvent(true)}
           className="ml-auto flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
-          aria-label="New event"
+          aria-label={t('view.newEventAria')}
         >
           <Plus size={14} />
-          <span className="hidden sm:inline">New Event</span>
+          <span className="hidden sm:inline">{t('view.newEvent')}</span>
         </button>
       </div>
 
@@ -390,7 +393,7 @@ export function TimelineView({
         </div>
       ) : viewMode === 'map' ? (
         <div className="flex-1 overflow-hidden">
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500 text-sm">Loading map...</div>}>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500 text-sm">{t('view.loadingMap')}</div>}>
             <LazyTimelineMap
               events={filteredEvents}
               onSelect={handleSelect}
@@ -425,7 +428,7 @@ export function TimelineView({
       )}
 
       {/* Edit Event Modal */}
-      <Modal open={editingEvent !== null} onClose={() => setEditingEvent(null)} title="Edit Event" wide>
+      <Modal open={editingEvent !== null} onClose={() => setEditingEvent(null)} title={t('view.editEvent')} wide>
         {editingEvent && (
           <div>
             <TimelineEventForm
@@ -443,7 +446,7 @@ export function TimelineView({
                   type="button"
                   onClick={() => { onRestoreEvent(editingEvent.id); setEditingEvent(null); }}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-green-500 hover:text-green-400 hover:bg-gray-800 text-sm transition-colors"
-                  title="Restore"
+                  title={t('view.restore')}
                 >
                   <RotateCcw size={16} />
                 </button>
@@ -453,7 +456,7 @@ export function TimelineView({
                   type="button"
                   onClick={() => { onTrashEvent(editingEvent.id); setEditingEvent(null); }}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-red-500 hover:text-red-400 hover:bg-gray-800 text-sm transition-colors"
-                  title="Move to trash"
+                  title={t('view.moveToTrash')}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -462,8 +465,8 @@ export function TimelineView({
                   type="button"
                   onClick={() => setDeletingEventId(editingEvent.id)}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-red-500 hover:text-red-400 hover:bg-gray-800 text-sm transition-colors"
-                  title="Delete event"
-                  aria-label="Delete event"
+                  title={t('view.deleteEvent')}
+                  aria-label={t('view.deleteEvent')}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -473,9 +476,9 @@ export function TimelineView({
                   type="button"
                   onClick={() => { onToggleArchiveEvent(editingEvent.id); setEditingEvent(null); }}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-800 text-sm transition-colors"
-                  title={editingEvent.archived ? 'Unarchive' : 'Archive'}
+                  title={editingEvent.archived ? t('view.unarchive') : t('view.archive')}
                 >
-                  {editingEvent.archived ? 'Unarchive' : 'Archive'}
+                  {editingEvent.archived ? t('view.unarchive') : t('view.archive')}
                 </button>
               )}
             </div>
@@ -484,7 +487,7 @@ export function TimelineView({
       </Modal>
 
       {/* New Event Modal */}
-      <Modal open={showNewEvent} onClose={() => { setShowNewEvent(false); setNewEventCoords(null); }} title="Create Event" wide>
+      <Modal open={showNewEvent} onClose={() => { setShowNewEvent(false); setNewEventCoords(null); }} title={t('view.createEvent')} wide>
         <TimelineEventForm
           folders={folders}
           allTags={allTags}
@@ -506,7 +509,7 @@ export function TimelineView({
       >
         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
           {heatmapDetailEvents.length === 0 ? (
-            <p className="text-sm text-gray-500">No events linked to this technique.</p>
+            <p className="text-sm text-gray-500">{t('view.noEventsForTechnique')}</p>
           ) : (
             heatmapDetailEvents.map((ev) => (
               <TimelineEventCard
@@ -530,9 +533,9 @@ export function TimelineView({
         open={deletingEventId !== null}
         onClose={() => setDeletingEventId(null)}
         onConfirm={handleConfirmDelete}
-        title="Delete Event"
-        message="This timeline event will be permanently deleted. This cannot be undone."
-        confirmLabel="Delete Event"
+        title={t('view.deleteEvent')}
+        message={t('view.deleteEventMessage')}
+        confirmLabel={t('view.deleteEventConfirm')}
         danger
       />
 

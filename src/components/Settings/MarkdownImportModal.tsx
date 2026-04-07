@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Upload } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { parseMarkdown } from '../../lib/markdown-import';
 import type { MarkdownNote } from '../../lib/markdown-import';
 
@@ -10,6 +11,8 @@ interface MarkdownImportModalProps {
 }
 
 export function MarkdownImportModal({ open, onClose, onImport }: MarkdownImportModalProps) {
+  const { t } = useTranslation('settings');
+  const { t: tc } = useTranslation('common');
   const [step, setStep] = useState<'upload' | 'preview' | 'results'>('upload');
   const [parsedNotes, setParsedNotes] = useState<MarkdownNote[]>([]);
   const [importing, setImporting] = useState(false);
@@ -75,9 +78,9 @@ export function MarkdownImportModal({ open, onClose, onImport }: MarkdownImportM
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-gray-200">
-            {step === 'upload' && 'Import Markdown'}
-            {step === 'preview' && 'Preview Import'}
-            {step === 'results' && 'Import Complete'}
+            {step === 'upload' && t('data.mdImportTitle')}
+            {step === 'preview' && t('data.mdPreviewTitle')}
+            {step === 'results' && t('data.mdCompleteTitle')}
           </h3>
           <button onClick={onClose} className="p-1 rounded hover:bg-gray-800 text-gray-500">
             <X size={16} />
@@ -87,12 +90,12 @@ export function MarkdownImportModal({ open, onClose, onImport }: MarkdownImportM
         {step === 'upload' && (
           <div className="space-y-3">
             <p className="text-xs text-gray-400">
-              Select a Markdown file to import as notes. Sections separated by horizontal rules (---) will be created as separate notes.
+              {t('data.mdUploadDesc')}
             </p>
 
             <label className="flex items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-gray-700 hover:border-accent/50 text-gray-400 hover:text-accent cursor-pointer transition-colors">
               <Upload size={18} />
-              <span className="text-sm">Choose Markdown file</span>
+              <span className="text-sm">{t('data.mdChooseFile')}</span>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -107,7 +110,7 @@ export function MarkdownImportModal({ open, onClose, onImport }: MarkdownImportM
                 onClick={onClose}
                 className="px-3 py-1.5 text-sm rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800"
               >
-                Cancel
+                {tc('cancel')}
               </button>
             </div>
           </div>
@@ -116,7 +119,7 @@ export function MarkdownImportModal({ open, onClose, onImport }: MarkdownImportM
         {step === 'preview' && (
           <div className="space-y-3">
             <div className="text-xs text-gray-400">
-              {parsedNotes.length} note{parsedNotes.length !== 1 ? 's' : ''} found
+              {t('data.mdNotesFound', { count: parsedNotes.length })}
             </div>
 
             {parsedNotes.length > 0 && (
@@ -143,7 +146,7 @@ export function MarkdownImportModal({ open, onClose, onImport }: MarkdownImportM
 
             {parsedNotes.length === 0 && (
               <div className="text-xs text-yellow-500 text-center py-4">
-                No notes found in the file. The file may be empty.
+                {t('data.mdNoNotes')}
               </div>
             )}
 
@@ -152,14 +155,14 @@ export function MarkdownImportModal({ open, onClose, onImport }: MarkdownImportM
                 onClick={() => setStep('upload')}
                 className="px-3 py-1.5 text-sm rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800"
               >
-                Back
+                {tc('back')}
               </button>
               <button
                 onClick={handleImport}
                 disabled={importing || parsedNotes.length === 0}
                 className="px-3 py-1.5 text-sm rounded-lg bg-accent/15 text-accent hover:bg-accent/25 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {importing ? 'Importing...' : `Import ${parsedNotes.length} note${parsedNotes.length !== 1 ? 's' : ''}`}
+                {importing ? t('data.mdImporting') : t('data.mdImportButton', { count: parsedNotes.length })}
               </button>
             </div>
           </div>
@@ -169,7 +172,7 @@ export function MarkdownImportModal({ open, onClose, onImport }: MarkdownImportM
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-sm text-green-400">
               <span className="w-2 h-2 rounded-full bg-green-400" />
-              {importedCount} note{importedCount !== 1 ? 's' : ''} imported successfully
+              {t('data.mdImportedSuccess', { count: importedCount })}
             </div>
 
             <div className="flex justify-end">
@@ -177,7 +180,7 @@ export function MarkdownImportModal({ open, onClose, onImport }: MarkdownImportM
                 onClick={onClose}
                 className="px-3 py-1.5 text-sm rounded-lg bg-accent/15 text-accent hover:bg-accent/25 font-medium"
               >
-                Done
+                {tc('done')}
               </button>
             </div>
           </div>

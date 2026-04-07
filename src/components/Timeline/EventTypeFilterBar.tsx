@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { TimelineEventType } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS } from '../../types';
 import { EventTypeBadge } from './EventTypeBadge';
@@ -10,9 +11,10 @@ interface EventTypeFilterBarProps {
 const ALL_EVENT_TYPES = Object.keys(TIMELINE_EVENT_TYPE_LABELS) as TimelineEventType[];
 
 export function EventTypeFilterBar({ selectedTypes, onChange }: EventTypeFilterBarProps) {
+  const { t } = useTranslation('timeline');
   const toggleType = (type: TimelineEventType) => {
     if (selectedTypes.includes(type)) {
-      onChange(selectedTypes.filter((t) => t !== type));
+      onChange(selectedTypes.filter((st) => st !== type));
     } else {
       onChange([...selectedTypes, type]);
     }
@@ -33,7 +35,7 @@ export function EventTypeFilterBar({ selectedTypes, onChange }: EventTypeFilterB
           onClick={() => onChange([])}
           className="text-[11px] text-gray-500 hover:text-gray-300 px-2 whitespace-nowrap"
         >
-          Clear
+          {t('filter.clear')}
         </button>
       )}
     </div>

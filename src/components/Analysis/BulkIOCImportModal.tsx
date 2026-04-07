@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { StandaloneIOC, IOCType, ConfidenceLevel, Folder, Tag } from '../../types';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 
@@ -106,6 +107,8 @@ export function BulkIOCImportModal({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [open, handleEscape]);
 
+  const { t } = useTranslation('analysis');
+
   if (!open) return null;
 
   const handleParse = () => {
@@ -211,9 +214,9 @@ export function BulkIOCImportModal({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-gray-200">
-            {step === 'input' && 'Bulk Import IOCs'}
-            {step === 'preview' && 'Preview Import'}
-            {step === 'results' && 'Import Results'}
+            {step === 'input' && t('bulkImport.inputTitle')}
+            {step === 'preview' && t('bulkImport.previewTitle')}
+            {step === 'results' && t('bulkImport.resultsTitle')}
           </h3>
           <button onClick={onClose} className="p-1 rounded hover:bg-gray-800 text-gray-500">
             <X size={16} />
@@ -224,7 +227,7 @@ export function BulkIOCImportModal({
           <div className="space-y-3">
             <div>
               <label className="block text-xs text-gray-400 mb-1">
-                Paste IOCs (one per line, max {MAX_IOCS})
+                {t('bulkImport.pasteLabel', { max: MAX_IOCS })}
               </label>
               <textarea
                 autoFocus
@@ -238,9 +241,9 @@ export function BulkIOCImportModal({
 
             {/* Default folder */}
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Investigation (optional)</label>
+              <label className="block text-xs text-gray-400 mb-1">{t('bulkImport.investigationLabel')}</label>
               <select value={folderId} onChange={(e) => setFolderId(e.target.value)} className={`${selectCls} w-full`}>
-                <option value="">No investigation</option>
+                <option value="">{t('bulkImport.noInvestigation')}</option>
                 {folders.map((f) => (
                   <option key={f.id} value={f.id}>{f.name}</option>
                 ))}
@@ -249,7 +252,7 @@ export function BulkIOCImportModal({
 
             {/* Default tags */}
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Tags (applied to all)</label>
+              <label className="block text-xs text-gray-400 mb-1">{t('bulkImport.tagsLabel')}</label>
               <div className="flex flex-wrap gap-1 mb-1.5">
                 {tags.map((t) => (
                   <span key={t} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-800 text-xs text-gray-300 border border-gray-700">
@@ -267,7 +270,7 @@ export function BulkIOCImportModal({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput); }
                   }}
-                  placeholder="Type tag name, press Enter..."
+                  placeholder={t('bulkImport.tagPlaceholder')}
                   className={inputCls}
                 />
                 {tagInput && tagSuggestions.length > 0 && (
@@ -292,14 +295,14 @@ export function BulkIOCImportModal({
                 onClick={onClose}
                 className="px-3 py-1.5 text-sm rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800"
               >
-                Cancel
+                {t('common:cancel')}
               </button>
               <button
                 onClick={handleParse}
                 disabled={!rawText.trim()}
                 className="px-3 py-1.5 text-sm rounded-lg bg-accent/15 text-accent hover:bg-accent/25 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Parse & Preview
+                {t('bulkImport.parseAndPreview')}
               </button>
             </div>
           </div>
@@ -308,9 +311,9 @@ export function BulkIOCImportModal({
         {step === 'preview' && (
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-xs text-gray-400">
-              <span>{parsed.length} IOC{parsed.length !== 1 ? 's' : ''} parsed</span>
+              <span>{t('bulkImport.parsedCount', { count: parsed.length })}</span>
               {otherCount > 0 && (
-                <span className="text-yellow-500">{otherCount} unrecognized (will be skipped)</span>
+                <span className="text-yellow-500">{t('bulkImport.unrecognized', { count: otherCount })}</span>
               )}
             </div>
 
@@ -319,9 +322,9 @@ export function BulkIOCImportModal({
               <table className="w-full text-xs">
                 <thead className="sticky top-0 bg-gray-900 z-10">
                   <tr className="border-b border-gray-800">
-                    <th className="text-left text-gray-500 font-medium py-2 px-2">Value</th>
-                    <th className="text-left text-gray-500 font-medium py-2 px-2 w-28">Type</th>
-                    <th className="text-left text-gray-500 font-medium py-2 px-2 w-28">Confidence</th>
+                    <th className="text-left text-gray-500 font-medium py-2 px-2">{t('bulkImport.previewValue')}</th>
+                    <th className="text-left text-gray-500 font-medium py-2 px-2 w-28">{t('bulkImport.previewType')}</th>
+                    <th className="text-left text-gray-500 font-medium py-2 px-2 w-28">{t('bulkImport.previewConfidence')}</th>
                     <th className="text-right text-gray-500 font-medium py-2 px-2 w-10"></th>
                   </tr>
                 </thead>
@@ -338,7 +341,7 @@ export function BulkIOCImportModal({
                             className={selectCls}
                             style={typeInfo ? { color: typeInfo.color } : { color: '#6b7280' }}
                           >
-                            <option value="other" style={{ color: '#6b7280' }}>other</option>
+                            <option value="other" style={{ color: '#6b7280' }}>{t('bulkImport.otherType')}</option>
                             {(Object.keys(IOC_TYPE_LABELS) as IOCType[]).map((t) => (
                               <option key={t} value={t} style={{ color: IOC_TYPE_LABELS[t].color }}>
                                 {IOC_TYPE_LABELS[t].label}
@@ -377,14 +380,14 @@ export function BulkIOCImportModal({
                 onClick={() => setStep('input')}
                 className="px-3 py-1.5 text-sm rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800"
               >
-                Back
+                {t('common:back')}
               </button>
               <button
                 onClick={handleImport}
                 disabled={importing || validCount === 0}
                 className="px-3 py-1.5 text-sm rounded-lg bg-accent/15 text-accent hover:bg-accent/25 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {importing ? 'Importing...' : `Import ${validCount} IOC${validCount !== 1 ? 's' : ''}`}
+                {importing ? t('bulkImport.importing') : t('bulkImport.importButton', { count: validCount })}
               </button>
             </div>
           </div>
@@ -396,19 +399,19 @@ export function BulkIOCImportModal({
               {results.created > 0 && (
                 <div className="flex items-center gap-2 text-green-400">
                   <span className="w-2 h-2 rounded-full bg-green-400" />
-                  {results.created} IOC{results.created !== 1 ? 's' : ''} created
+                  {t('bulkImport.createdCount', { count: results.created })}
                 </div>
               )}
               {results.skipped > 0 && (
                 <div className="flex items-center gap-2 text-yellow-400">
                   <span className="w-2 h-2 rounded-full bg-yellow-400" />
-                  {results.skipped} duplicate{results.skipped !== 1 ? 's' : ''} skipped
+                  {t('bulkImport.skippedCount', { count: results.skipped })}
                 </div>
               )}
               {results.failed > 0 && (
                 <div className="flex items-center gap-2 text-red-400">
                   <span className="w-2 h-2 rounded-full bg-red-400" />
-                  {results.failed} failed
+                  {t('bulkImport.failedCount', { count: results.failed })}
                 </div>
               )}
             </div>
@@ -418,7 +421,7 @@ export function BulkIOCImportModal({
                 onClick={onClose}
                 className="px-3 py-1.5 text-sm rounded-lg bg-accent/15 text-accent hover:bg-accent/25 font-medium"
               >
-                Done
+                {t('common:done')}
               </button>
             </div>
           </div>

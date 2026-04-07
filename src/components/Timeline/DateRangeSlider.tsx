@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useCallback, type PointerEvent as ReactPointerEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TimelineEvent } from '../../types';
 import { currentLocale } from '../../lib/utils';
 
@@ -120,6 +121,7 @@ function computeMonthTicks(minTs: number, maxTs: number, stepMonths: number, maj
 }
 
 export function DateRangeSlider({ events, dateStart, dateEnd, onChange }: DateRangeSliderProps) {
+  const { t } = useTranslation('timeline');
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<'start' | 'end' | null>(null);
   const [dragStartFrac, setDragStartFrac] = useState<number | null>(null);
@@ -274,7 +276,7 @@ export function DateRangeSlider({ events, dateStart, dateEnd, onChange }: DateRa
             onClick={() => { setDragStartFrac(null); setDragEndFrac(null); onChange(undefined, undefined); }}
             className="text-[10px] text-accent hover:text-accent-hover shrink-0"
           >
-            Reset
+            {t('common:reset')}
           </button>
         )}
       </div>

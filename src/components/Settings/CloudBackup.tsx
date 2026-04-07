@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { AlertCircle, CheckCircle, Cloud, Upload, Loader2, Trash2, Plus, ToggleLeft, ToggleRight, Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useSettings } from '../../hooks/useSettings';
 import { useCloudSync } from '../../hooks/useCloudSync';
 import { testDestination } from '../../lib/cloud-sync';
@@ -17,6 +18,7 @@ const PROVIDER_OPTIONS: { value: CloudProvider; label: string }[] = [
 ];
 
 export function CloudBackup() {
+  const { t } = useTranslation('settings');
   const { settings, updateSettings } = useSettings();
   const cloud = useCloudSync(settings.backupDestinations);
   const logActivity = useLogActivity();
@@ -59,12 +61,12 @@ export function CloudBackup() {
   const handleAddDestination = () => {
     const trimmedUrl = addUrl.trim();
     const trimmedLabel = addLabel.trim();
-    if (!trimmedUrl) { setAddError('URL is required'); return; }
-    if (!trimmedLabel) { setAddError('Label is required'); return; }
+    if (!trimmedUrl) { setAddError(t('cloud.urlRequired')); return; }
+    if (!trimmedLabel) { setAddError(t('cloud.labelRequired')); return; }
 
     const provider = CLOUD_PROVIDERS[addProvider];
     const validation = provider.validateUrl(trimmedUrl);
-    if (!validation.valid) { setAddError(validation.error || 'Invalid URL'); return; }
+    if (!validation.valid) { setAddError(validation.error || t('cloud.invalidUrl')); return; }
 
     const newDest: BackupDestination = {
       id: `dest-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -78,7 +80,7 @@ export function CloudBackup() {
     setAddUrl('');
     setAddLabel('');
     setAddError('');
-    showMessage('Destination added');
+    showMessage(t('cloud.destinationAdded'));
   };
 
   const handleRemoveDestination = (id: string) => {
@@ -104,7 +106,7 @@ export function CloudBackup() {
     const password = encryptEnabled && encryptPassword ? encryptPassword : undefined;
     await cloud.pushFullBackup(password);
     if (!cloud.error) {
-      showMessage(password ? 'Encrypted backup pushed successfully' : 'Backup pushed successfully');
+      showMessage(password ? t('cloud.encryptedPushSuccess') : t('cloud.pushSuccess'));
       addToast('success', password ? 'Encrypted cloud backup pushed' : 'Cloud backup pushed');
       logActivity('sync', 'backup', `Pushed ${password ? 'encrypted ' : ''}full backup to ${cloud.lastResults.length} destination(s)`);
       if (password) setEncryptPassword('');
@@ -135,7 +137,7 @@ export function CloudBackup() {
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
         <Cloud size={16} />
-        Cloud Backup
+        {t('cloud.title')}
       </h3>
 
       {/* Existing destinations */}
@@ -151,8 +153,8 @@ export function CloudBackup() {
                   <button
                     onClick={() => handleToggleDestination(dest.id)}
                     className="p-1 rounded text-gray-400 hover:text-gray-200"
-                    title={dest.enabled ? 'Disable' : 'Enable'}
-                    aria-label={dest.enabled ? 'Disable destination' : 'Enable destination'}
+                    title={dest.enabled ? t('common:remove') : t('common:add')}
+                    aria-label={dest.enabled ? t('cloud.disableDestination') : t('cloud.enableDestination')}
                   >
                     {dest.enabled ? <ToggleRight size={18} className="text-green-400" /> : <ToggleLeft size={18} />}
                   </button>
@@ -161,13 +163,13 @@ export function CloudBackup() {
                     disabled={test?.testing}
                     className="text-xs px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-300 disabled:opacity-50"
                   >
-                    {test?.testing ? <Loader2 size={12} className="animate-spin" /> : 'Test'}
+                    {test?.testing ? <Loader2 size={12} className="animate-spin" /> : t('cloud.test')}
                   </button>
                   <button
                     onClick={() => handleRemoveDestination(dest.id)}
                     className="p-1 rounded text-gray-500 hover:text-red-400"
-                    title="Delete destination"
-                    aria-label="Delete destination"
+                    title={t('cloud.deleteDestination')}
+                    aria-label={t('cloud.deleteDestination')}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -176,7 +178,7 @@ export function CloudBackup() {
                 {test && !test.testing && (
                   <p className={`text-xs flex items-center gap-1 ${test.ok ? 'text-green-400' : 'text-red-400'}`}>
                     {test.ok ? <CheckCircle size={12} /> : <AlertCircle size={12} />}
-                    {test.ok ? 'Connected successfully' : test.error}
+                    {test.ok ? t('cloud.testConnected') : test.error}
                   </p>
                 )}
               </div>
@@ -189,11 +191,11 @@ export function CloudBackup() {
       <div className="bg-gray-800/30 rounded-lg p-3 space-y-3">
         <h4 className="text-xs font-semibold text-gray-400 flex items-center gap-1">
           <Plus size={12} />
-          Add Destination
+          {t('cloud.addDestination')}
         </h4>
 
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Provider</label>
+          <label className="block text-xs text-gray-500 mb-1">{t('cloud.provider')}</label>
           <select
             value={addProvider}
             onChange={(e) => setAddProvider(e.target.value as CloudProvider)}
@@ -206,18 +208,18 @@ export function CloudBackup() {
         </div>
 
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Label</label>
+          <label className="block text-xs text-gray-500 mb-1">{t('cloud.label')}</label>
           <input
             type="text"
             value={addLabel}
             onChange={(e) => setAddLabel(e.target.value)}
             className={inputClass}
-            placeholder="e.g. Team S3 Bucket"
+            placeholder={t('cloud.labelPlaceholder')}
           />
         </div>
 
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Presigned / SAS URL</label>
+          <label className="block text-xs text-gray-500 mb-1">{t('cloud.presignedUrl')}</label>
           <input
             type="password"
             value={addUrl}
@@ -239,13 +241,13 @@ export function CloudBackup() {
           className={`${btnClass} bg-accent hover:bg-accent-hover text-white`}
         >
           <Plus size={16} />
-          Add Destination
+          {t('cloud.addDestination')}
         </button>
       </div>
 
       {/* Full Backup */}
       <div className="pt-2 border-t border-gray-800 space-y-3">
-        <h4 className="text-sm font-semibold text-gray-400">Full Backup</h4>
+        <h4 className="text-sm font-semibold text-gray-400">{t('cloud.fullBackup')}</h4>
 
         {/* Encryption toggle */}
         <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
@@ -256,7 +258,7 @@ export function CloudBackup() {
             className="rounded"
           />
           <Lock size={14} />
-          Encrypt before upload
+          {t('cloud.encryptBeforeUpload')}
         </label>
         {encryptEnabled && (
           <input
@@ -264,7 +266,7 @@ export function CloudBackup() {
             value={encryptPassword}
             onChange={(e) => setEncryptPassword(e.target.value)}
             className={inputClass}
-            placeholder="Encryption password"
+            placeholder={t('cloud.encryptionPasswordPlaceholder')}
             autoComplete="new-password"
           />
         )}
@@ -276,11 +278,11 @@ export function CloudBackup() {
             className={`${btnClass} bg-gray-700 hover:bg-gray-600 text-gray-200 disabled:opacity-50`}
           >
             {cloud.syncing ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-            {encryptEnabled ? 'Push Encrypted Backup' : 'Push Backup'}
+            {encryptEnabled ? t('cloud.pushEncryptedBackup') : t('cloud.pushBackup')}
           </button>
         </div>
         {cloud.lastSyncAt && (
-          <p className="text-xs text-gray-500">Last sync: {new Date(cloud.lastSyncAt).toLocaleString()}</p>
+          <p className="text-xs text-gray-500">{t('cloud.lastSync', { date: new Date(cloud.lastSyncAt).toLocaleString() })}</p>
         )}
         {/* Per-destination results */}
         {cloud.lastResults.length > 1 && (
@@ -315,9 +317,9 @@ export function CloudBackup() {
         open={confirmPush}
         onClose={() => setConfirmPush(false)}
         onConfirm={handlePushBackup}
-        title="Push Backup"
-        message={`This will upload your entire database to ${destinations.filter((d) => d.enabled).length} cloud destination(s). Continue?`}
-        confirmLabel="Push Backup"
+        title={t('cloud.pushBackupTitle')}
+        message={t('cloud.pushBackupMessage', { count: destinations.filter((d) => d.enabled).length })}
+        confirmLabel={t('cloud.pushBackup')}
       />
     </div>
   );

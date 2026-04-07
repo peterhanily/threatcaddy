@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, AlertCircle, CheckCircle } from 'lucide-react';
 import type { Timeline, TimelineExportData } from '../../types';
 import { parseTimelineImport, importTimelineAsNew, mergeTimelineInto } from '../../lib/export';
@@ -14,6 +15,7 @@ interface TimelineImportModalProps {
 }
 
 export function TimelineImportModal({ open, onClose, timelines, selectedTimelineId, onComplete }: TimelineImportModalProps) {
+  const { t } = useTranslation('timeline');
   const logActivity = useLogActivity();
   const fileRef = useRef<HTMLInputElement>(null);
   const [parsed, setParsed] = useState<TimelineExportData | null>(null);
@@ -47,7 +49,7 @@ export function TimelineImportModal({ open, onClose, timelines, selectedTimeline
       setParsed(data);
     } catch (err) {
       setParsed(null);
-      setParseError(err instanceof Error ? err.message : 'Failed to parse file');
+      setParseError(err instanceof Error ? err.message : t('import.parseFailed'));
     }
   };
 
@@ -57,33 +59,33 @@ export function TimelineImportModal({ open, onClose, timelines, selectedTimeline
     try {
       if (mode === 'new') {
         const res = await importTimelineAsNew(parsed);
-        setResult(`Created timeline with ${res.eventCount} events`);
+        setResult(t('import.createdTimeline', { count: res.eventCount }));
         logActivity('timeline', 'import', `Imported timeline "${parsed.timeline.name}" with ${res.eventCount} events`);
       } else {
         if (!selectedTimelineId) return;
         const res = await mergeTimelineInto(parsed, selectedTimelineId);
-        const parts = [`${res.added} added`, `${res.updated} updated`];
-        if (res.skipped > 0) parts.push(`${res.skipped} unchanged`);
-        setResult(`Merged: ${parts.join(', ')}`);
-        const selectedTimeline = timelines.find((t) => t.id === selectedTimelineId);
-        logActivity('timeline', 'import', `Merged timeline into "${selectedTimeline?.name || 'Unknown'}": ${parts.join(', ')}`, selectedTimelineId, selectedTimeline?.name);
+        const parts = [t('import.mergedAdded', { count: res.added }), t('import.mergedUpdated', { count: res.updated })];
+        if (res.skipped > 0) parts.push(t('import.mergedSkipped', { count: res.skipped }));
+        setResult(t('import.mergedResult', { details: parts.join(', ') }));
+        const selTl = timelines.find((tl) => tl.id === selectedTimelineId);
+        logActivity('timeline', 'import', `Merged timeline into "${selTl?.name || 'Unknown'}": ${parts.join(', ')}`, selectedTimelineId, selTl?.name);
       }
       onComplete();
     } catch (err) {
-      setParseError(err instanceof Error ? err.message : 'Import failed');
+      setParseError(err instanceof Error ? err.message : t('import.importFailed'));
     } finally {
       setImporting(false);
     }
   };
 
-  const selectedTimeline = timelines.find((t) => t.id === selectedTimelineId);
+  const selectedTimeline = timelines.find((tl) => tl.id === selectedTimelineId);
 
   return (
-    <Modal open={open} onClose={handleClose} title="Import Timeline">
+    <Modal open={open} onClose={handleClose} title={t('import.title')}>
       <div className="space-y-4">
         {/* File picker */}
         <div>
-          <label className="block text-xs text-gray-400 mb-1">Select timeline JSON file</label>
+          <label className="block text-xs text-gray-400 mb-1">{t('import.selectFile')}</label>
           <input
             ref={fileRef}
             type="file"
@@ -104,11 +106,11 @@ export function TimelineImportModal({ open, onClose, timelines, selectedTimeline
           <>
             {/* Summary */}
             <div className="bg-gray-800 rounded-lg p-3 text-xs text-gray-300 space-y-1">
-              <p><span className="text-gray-500">Name:</span> {parsed.timeline.name}</p>
+              <p><span className="text-gray-500">{t('import.summaryName')}</span> {parsed.timeline.name}</p>
               {parsed.timeline.description && (
-                <p><span className="text-gray-500">Description:</span> {parsed.timeline.description}</p>
+                <p><span className="text-gray-500">{t('import.summaryDescription')}</span> {parsed.timeline.description}</p>
               )}
-              <p><span className="text-gray-500">Events:</span> {parsed.events.length}</p>
+              <p><span className="text-gray-500">{t('import.summaryEvents')}</span> {parsed.events.length}</p>
             </div>
 
             {/* Mode selection */}
@@ -121,7 +123,7 @@ export function TimelineImportModal({ open, onClose, timelines, selectedTimeline
                   onChange={() => setMode('new')}
                   className="accent-blue-500"
                 />
-                Create as new timeline
+                {t('import.createAsNew')}
               </label>
               <label className={`flex items-center gap-2 text-xs cursor-pointer ${selectedTimelineId ? 'text-gray-300' : 'text-gray-600'}`}>
                 <input
@@ -132,8 +134,8 @@ export function TimelineImportModal({ open, onClose, timelines, selectedTimeline
                   disabled={!selectedTimelineId}
                   className="accent-blue-500"
                 />
-                Merge into {selectedTimeline ? `"${selectedTimeline.name}"` : 'current timeline'}
-                {!selectedTimelineId && <span className="text-gray-600">(select a timeline first)</span>}
+                {selectedTimeline ? t('import.mergeInto', { name: selectedTimeline.name }) : t('import.mergeIntoCurrent')}
+                {!selectedTimelineId && <span className="text-gray-600">{t('import.selectTimelineFirst')}</span>}
               </label>
             </div>
 
@@ -144,7 +146,7 @@ export function TimelineImportModal({ open, onClose, timelines, selectedTimeline
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors disabled:opacity-50"
             >
               <Upload size={14} />
-              {importing ? 'Importing...' : 'Import'}
+              {importing ? t('import.importing') : t('import.import')}
             </button>
           </>
         )}
