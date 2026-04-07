@@ -131,7 +131,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
     const newComment: TaskComment = {
       id: nanoid(),
       text: commentText.trim(),
-      createdAt: Date.now(),
+      createdAt: new Date().getTime(),
     };
     onUpdateTask(task.id, { comments: [...comments, newComment] });
     setCommentText('');
