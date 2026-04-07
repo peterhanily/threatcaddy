@@ -18,7 +18,9 @@
     "build:extension:chrome": "cd extension && npm run build:chrome",
     "build:extension:firefox": "cd extension && npm run build:firefox",
     "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "translate": "node scripts/translate-i18n.mjs",
+    "translate:dry": "node scripts/translate-i18n.mjs --dry-run"
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",

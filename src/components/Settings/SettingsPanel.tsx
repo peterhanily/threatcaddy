@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Github, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw, Plus, Pencil, Wrench, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { SUPPORTED_LANGUAGES } from '../../i18n';
 import { useToast } from '../../contexts/ToastContext';
 import type { Settings, Note, NoteTemplate, PlaybookTemplate, PlaybookStep, CustomSlashCommand } from '../../types';
 import { useCustomSlashCommands } from '../../hooks/useCustomSlashCommands';
@@ -329,6 +330,24 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 <option value="list">{t('general.taskView.list')}</option>
                 <option value="kanban">{t('general.taskView.kanban')}</option>
               </select>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className={labelClass}>{t('general.language')}</label>
+                <select
+                  value={settings.language ?? 'en'}
+                  onChange={(e) => onUpdateSettings({ language: e.target.value })}
+                  className={selectClass}
+                >
+                  {SUPPORTED_LANGUAGES.map(lang => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.nativeName}{lang.name !== lang.nativeName ? ` — ${lang.name}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-[10px] text-gray-500 text-right">{t('general.languageHelp')}</p>
             </div>
           </div>
 

@@ -26,6 +26,8 @@
   "general.taskView": "Default Task View",
   "general.taskView.list": "List",
   "general.taskView.kanban": "Kanban",
+  "general.language": "Interface Language",
+  "general.languageHelp": "Changes UI text. LLM system prompts remain in English.",
   "general.notifications": "Notifications",
   "general.notifications.mention": "Mentions",
   "general.notifications.mentionDesc": "When someone @mentions you",

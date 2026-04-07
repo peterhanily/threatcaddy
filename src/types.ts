@@ -279,6 +279,8 @@ export interface Settings {
   llmLocalSkills?: AgentHostSkill[];
   /** Timestamp of last local skill discovery */
   llmLocalSkillsFetchedAt?: number;
+  /** UI language code (e.g. 'en', 'de', 'zh-CN'). Defaults to 'en'. */
+  language?: string;
 }
 
 // ── Agent Host Types ─────────────────────────────────────────────────
