@@ -33,6 +33,9 @@ function inlineFaviconForSingleFile(): Plugin {
 export default defineConfig({
   plugins: [react(), tailwindcss(), stripCSPForSingleFile(), inlineFaviconForSingleFile(), viteSingleFile()],
   base: './',
+  worker: {
+    format: 'es',
+  },
   define: {
     __STANDALONE__: JSON.stringify(true),
     __BUILD_TIME__: JSON.stringify(Date.now()),
