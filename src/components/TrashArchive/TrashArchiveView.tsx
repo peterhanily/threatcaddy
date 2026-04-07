@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Trash2, Archive, RotateCcw, ChevronDown, ChevronRight,
-  FileText, ListChecks, Clock, PenTool, Search,
+  FileText, ListChecks, Clock, PenTool, Search, MessageSquare,
 } from 'lucide-react';
-import type { Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, Folder } from '../../types';
+import type { Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ChatThread, Folder } from '../../types';
 import { IOC_TYPE_LABELS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { formatDate, cn } from '../../lib/utils';
@@ -16,6 +16,7 @@ interface TrashArchiveViewProps {
   timelineEvents: TimelineEvent[];
   whiteboards: Whiteboard[];
   standaloneIOCs: StandaloneIOC[];
+  chatThreads: ChatThread[];
   folders: Folder[];
   // Note actions
   onRestoreNote: (id: string) => void;
@@ -42,6 +43,11 @@ interface TrashArchiveViewProps {
   onDeleteIOCPermanently: (id: string) => void;
   onTrashIOC: (id: string) => void;
   onUnarchiveIOC: (id: string) => void;
+  // Chat thread actions
+  onRestoreThread: (id: string) => void;
+  onDeleteThreadPermanently: (id: string) => void;
+  onTrashThread: (id: string) => void;
+  onUnarchiveThread: (id: string) => void;
   // Empty all trash
   onEmptyAllTrash: () => void;
 }
@@ -132,6 +138,7 @@ export function TrashArchiveView({
   timelineEvents,
   whiteboards,
   standaloneIOCs,
+  chatThreads,
   folders,
   onRestoreNote,
   onDeleteNotePermanently,
@@ -153,6 +160,10 @@ export function TrashArchiveView({
   onDeleteIOCPermanently,
   onTrashIOC,
   onUnarchiveIOC,
+  onRestoreThread,
+  onDeleteThreadPermanently,
+  onTrashThread,
+  onUnarchiveThread,
   onEmptyAllTrash,
 }: TrashArchiveViewProps) {
   const { t } = useTranslation('trash');
@@ -165,18 +176,20 @@ export function TrashArchiveView({
   const trashedEvents = timelineEvents.filter((e) => e.trashed);
   const trashedWhiteboards = whiteboards.filter((w) => w.trashed);
   const trashedIOCs = standaloneIOCs.filter((i) => i.trashed);
+  const trashedThreads = chatThreads.filter((c) => c.trashed && !c.isFolder);
 
   const archivedNotes = notes.filter((n) => n.archived && !n.trashed);
   const archivedTasks = tasks.filter((t) => t.archived && !t.trashed);
   const archivedEvents = timelineEvents.filter((e) => e.archived && !e.trashed);
   const archivedWhiteboards = whiteboards.filter((w) => w.archived && !w.trashed);
   const archivedIOCs = standaloneIOCs.filter((i) => i.archived && !i.trashed);
+  const archivedThreads = chatThreads.filter((c) => (c.archived && !c.trashed) && !c.isFolder);
 
   const items = isTrash
-    ? { notes: trashedNotes, tasks: trashedTasks, events: trashedEvents, whiteboards: trashedWhiteboards, iocs: trashedIOCs }
-    : { notes: archivedNotes, tasks: archivedTasks, events: archivedEvents, whiteboards: archivedWhiteboards, iocs: archivedIOCs };
+    ? { notes: trashedNotes, tasks: trashedTasks, events: trashedEvents, whiteboards: trashedWhiteboards, iocs: trashedIOCs, threads: trashedThreads }
+    : { notes: archivedNotes, tasks: archivedTasks, events: archivedEvents, whiteboards: archivedWhiteboards, iocs: archivedIOCs, threads: archivedThreads };
 
-  const totalCount = items.notes.length + items.tasks.length + items.events.length + items.whiteboards.length + items.iocs.length;
+  const totalCount = items.notes.length + items.tasks.length + items.events.length + items.whiteboards.length + items.iocs.length + items.threads.length;
 
   const folderMap = new Map(folders.map((f) => [f.id, f.name]));
   const getFolderName = (folderId?: string) => folderId ? folderMap.get(folderId) : undefined;
@@ -333,6 +346,23 @@ export function TrashArchiveView({
                     title={`${ioc.value} (${typeLabel})`}
                     folderName={getFolderName(ioc.folderId)}
                     timestamp={isTrash ? ioc.trashedAt : ioc.updatedAt}
+                    primaryAction={actions.primary}
+                    secondaryAction={actions.secondary}
+                  />
+                );
+              })}
+            </EntitySection>
+
+            <EntitySection icon={<MessageSquare size={16} />} label="Chat Threads" count={items.threads.length}>
+              {items.threads.map((thread) => {
+                const actions = makeActions(thread.id, onRestoreThread, onDeleteThreadPermanently, onUnarchiveThread, onTrashThread);
+                return (
+                  <ItemRow
+                    key={thread.id}
+                    icon={<MessageSquare size={14} />}
+                    title={thread.title || 'Untitled Chat'}
+                    folderName={getFolderName(thread.folderId)}
+                    timestamp={isTrash ? thread.trashedAt : thread.updatedAt}
                     primaryAction={actions.primary}
                     secondaryAction={actions.secondary}
                   />

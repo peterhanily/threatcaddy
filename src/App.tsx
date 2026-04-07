@@ -1654,6 +1654,7 @@ function AppInner() {
             timelineEvents={screensafeTimelineEvents}
             whiteboards={screensafeWhiteboards}
             standaloneIOCs={screensafeStandaloneIOCs}
+            chatThreads={screensafeChatThreads}
             folders={folders}
             onRestoreNote={loggedRestoreNote}
             onDeleteNotePermanently={(id) => { notes.deleteNote(id); activityLog.log('note', 'delete', 'Permanently deleted note', id); }}
@@ -1675,6 +1676,10 @@ function AppInner() {
             onDeleteIOCPermanently={loggedDeleteIOC}
             onTrashIOC={loggedTrashIOC}
             onUnarchiveIOC={loggedToggleArchiveIOC}
+            onRestoreThread={chatsHook.restoreThread}
+            onDeleteThreadPermanently={chatsHook.deleteThread}
+            onTrashThread={chatsHook.trashThread}
+            onUnarchiveThread={chatsHook.restoreThread}
             onEmptyAllTrash={async () => { await emptyAllTrash(); addToast('success', tt('investigation.trashEmptied')); }}
           />
         ) : activeView === 'dashboard' ? (
