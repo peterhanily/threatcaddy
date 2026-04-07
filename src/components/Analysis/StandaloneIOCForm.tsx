@@ -4,6 +4,7 @@ import type { StandaloneIOC, IOCType, ConfidenceLevel, Folder, Tag, IOCRelations
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, DEFAULT_CLS_LEVELS, DEFAULT_RELATIONSHIP_TYPES, IOC_STATUS_VALUES, IOC_STATUS_LABELS } from '../../types';
 import { EntityComments } from '../Common/EntityComments';
 import { EnrichmentLabels } from './EnrichmentLabels';
+import { currentLocale } from '../../lib/utils';
 
 interface StandaloneIOCFormProps {
   open: boolean;
@@ -393,7 +394,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
                         <div key={i} className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] border-l-2 border-gray-700 pl-2">
                           {ts && (
                             <span className="text-gray-500 w-full">
-                              {new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              {new Date(ts).toLocaleString(currentLocale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </span>
                           )}
                           {Object.entries(snap)

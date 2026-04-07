@@ -32,20 +32,12 @@ export interface FieldDiff {
   newValue: string;
 }
 
-const FIELD_LABELS: Record<string, string> = {
-  title: 'Title',
-  content: 'Content',
-  description: 'Description',
-  status: 'Status',
-  priority: 'Priority',
-  name: 'Name',
-  value: 'Value',
-  type: 'Type',
-  notes: 'Notes',
-  category: 'Category',
-  timestamp: 'Timestamp',
-  source: 'Source',
-};
+import { createLabelProxy } from './i18n-labels';
+
+const FIELD_LABELS: Record<string, string> = createLabelProxy(
+  'field',
+  ['title', 'content', 'description', 'status', 'priority', 'name', 'value', 'type', 'notes', 'category', 'timestamp', 'source'] as const,
+);
 
 export function computeFieldDiffs(
   localData: Record<string, unknown>,

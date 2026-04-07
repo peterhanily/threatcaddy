@@ -9,6 +9,7 @@ import { IntegrationResultModal } from './IntegrationResultModal';
 import { db } from '../../db';
 import type { IntegrationRun, InstalledIntegration, IntegrationTemplate } from '../../types/integration-types';
 import type { StandaloneIOC } from '../../types';
+import { currentLocale } from '../../lib/utils';
 
 interface RunIntegrationMenuProps {
   ioc: { id: string; value: string; type: string; confidence: string };
@@ -108,7 +109,7 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
                   : (fields.body as string) || (fields.content as string) || '';
 
                 // Add timestamp to title
-                const timestamp = new Date().toLocaleString('en-US', {
+                const timestamp = new Date().toLocaleString(currentLocale(), {
                   month: 'short', day: 'numeric', year: 'numeric',
                   hour: '2-digit', minute: '2-digit',
                   timeZone: 'UTC',

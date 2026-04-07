@@ -2,7 +2,7 @@ import React from 'react';
 import { Star, FileText, ListChecks, Trash2, MapPin, Search } from 'lucide-react';
 import type { TimelineEvent } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
-import { cn, truncate } from '../../lib/utils';
+import { cn, truncate, currentLocale } from '../../lib/utils';
 import { getTechniqueLabel } from '../../lib/mitre-attack';
 import { ClsBadge } from '../Common/ClsBadge';
 import { TagPills } from '../Common/TagPills';
@@ -16,7 +16,7 @@ interface TimelineEventCardProps {
 }
 
 function formatTime(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return new Date(timestamp).toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 export const TimelineEventCard = React.memo(function TimelineEventCard({

@@ -1,3 +1,10 @@
+import i18n from '../i18n';
+
+/** Returns the active locale for date/number formatting (falls back to browser default). */
+export function currentLocale(): string {
+  return i18n.language || navigator.language || 'en-US';
+}
+
 export function formatDate(timestamp: number): string {
   const date = new Date(timestamp);
   const now = new Date();
@@ -6,12 +13,12 @@ export function formatDate(timestamp: number): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffMins < 1) return i18n.t('justNow', { ns: 'dates' });
+  if (diffMins < 60) return i18n.t('minutesAgo', { ns: 'dates', count: diffMins });
+  if (diffHours < 24) return i18n.t('hoursAgo', { ns: 'dates', count: diffHours });
+  if (diffDays < 7) return i18n.t('daysAgo', { ns: 'dates', count: diffDays });
 
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(currentLocale(), {
     month: 'short',
     day: 'numeric',
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
@@ -19,7 +26,7 @@ export function formatDate(timestamp: number): string {
 }
 
 export function formatFullDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleDateString('en-US', {
+  return new Date(timestamp).toLocaleDateString(currentLocale(), {
     month: 'long',
     day: 'numeric',
     year: 'numeric',

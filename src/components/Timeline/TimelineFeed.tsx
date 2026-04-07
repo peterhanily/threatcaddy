@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Clock } from 'lucide-react';
 import type { TimelineEvent } from '../../types';
 import { TimelineEventCard } from './TimelineEventCard';
+import { currentLocale } from '../../lib/utils';
 import { GroupedVirtuoso } from 'react-virtuoso';
 
 interface TimelineFeedProps {
@@ -24,7 +25,7 @@ function formatDateHeader(dateKey: string): string {
   if (dateKey === yesterdayKey) return 'Yesterday';
 
   const date = new Date(dateKey + 'T00:00:00');
-  return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  return date.toLocaleDateString(currentLocale(), { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
 export function TimelineFeed({ events, selectedId, onSelect, onToggleStar, onDelete }: TimelineFeedProps) {

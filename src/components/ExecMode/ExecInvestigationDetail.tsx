@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { FileText, ListChecks, Clock, PenTool, Shield, ExternalLink, Share2 } from 'lucide-react';
 import type { Folder, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ActivityLogEntry } from '../../types';
 import { ACTIVITY_CATEGORY_LABELS } from '../../types';
-import { cn } from '../../lib/utils';
+import { cn, currentLocale } from '../../lib/utils';
 import { formatDate } from '../../lib/utils';
 import { isEncryptedEnvelope } from '../../lib/crypto';
 
@@ -126,7 +126,7 @@ export function ExecInvestigationDetail({
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-muted">
         <span className="capitalize">{status}</span>
         {folder.clsLevel && <span>CLS: {folder.clsLevel}</span>}
-        <span>Created {new Date(folder.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+        <span>Created {new Date(folder.createdAt).toLocaleDateString(currentLocale(), { month: 'short', day: 'numeric', year: 'numeric' })}</span>
       </div>
 
       {/* Metrics row — clickable */}

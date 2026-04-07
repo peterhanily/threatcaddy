@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import './i18n' // Initialize i18next before React renders
 import { AppShell } from './components/Encryption/AppShell'
 import { migrateStorageKeys } from './lib/storage-migration'
 import { migrateIndexedDB } from './lib/db-migration'

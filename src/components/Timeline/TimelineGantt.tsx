@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { ZoomIn, ZoomOut, Maximize2, Layers } from 'lucide-react';
 import type { TimelineEvent, TimelineEventType } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS } from '../../types';
-import { cn } from '../../lib/utils';
+import { cn, currentLocale } from '../../lib/utils';
 
 interface TimelineGanttProps {
   events: TimelineEvent[];
@@ -30,7 +30,7 @@ interface TooltipData {
 }
 
 function formatTime(ts: number): string {
-  return new Date(ts).toLocaleString('en-US', {
+  return new Date(ts).toLocaleString(currentLocale(), {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 }
@@ -38,15 +38,15 @@ function formatTime(ts: number): string {
 function formatTickLabel(ts: number, spanMs: number): string {
   const d = new Date(ts);
   if (spanMs < 2 * 86400000) {
-    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleString(currentLocale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
   if (spanMs < 7 * 86400000) {
-    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit' });
+    return d.toLocaleString(currentLocale(), { month: 'short', day: 'numeric', hour: '2-digit' });
   }
   if (spanMs < 30 * 86400000) {
-    return d.toLocaleString('en-US', { month: 'short', day: 'numeric' });
+    return d.toLocaleString(currentLocale(), { month: 'short', day: 'numeric' });
   }
-  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+  return d.toLocaleString(currentLocale(), { month: 'short', day: 'numeric', year: '2-digit' });
 }
 
 function computeTickInterval(spanMs: number): number {

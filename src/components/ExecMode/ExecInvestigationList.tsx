@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { FileText, ListChecks, Clock, PenTool, Shield } from 'lucide-react';
 import type { Folder, Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, InvestigationStatus } from '../../types';
-import { cn } from '../../lib/utils';
+import { cn, currentLocale } from '../../lib/utils';
 
 type FilterStatus = 'all' | InvestigationStatus;
 
@@ -112,7 +112,7 @@ export function ExecInvestigationList({ folders, allNotes, allTasks, allEvents, 
                 <span className="text-xs text-text-muted capitalize">{status}</span>
                 <span className="text-xs text-text-muted">·</span>
                 <span className="text-xs text-text-muted">
-                  {new Date(folder.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {new Date(folder.createdAt).toLocaleDateString(currentLocale(), { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
               </div>
 

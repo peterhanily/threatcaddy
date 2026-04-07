@@ -1,6 +1,7 @@
 import Papa from 'papaparse';
 import { nanoid } from 'nanoid';
 import { extractIOCs, mergeIOCAnalysis } from './ioc-extractor';
+import { createLabelProxy } from './i18n-labels';
 import type {
   TimelineEvent,
   TimelineEventType,
@@ -811,29 +812,6 @@ export const MAPPING_COLORS: Record<ColumnMapping, string> = {
   'ignore': '#6b7280',         // gray
 };
 
-/** Human-readable labels for column mappings */
-export const MAPPING_LABELS: Record<ColumnMapping, string> = {
-  'timestamp': 'Timestamp',
-  'event-title': 'Event Title',
-  'event-description': 'Description',
-  'event-type': 'Event Type',
-  'source': 'Source',
-  'mitre-technique': 'MITRE Technique',
-  'confidence': 'Confidence',
-  'actor': 'Actor',
-  'asset': 'Asset',
-  'ioc-ipv4': 'IOC: IPv4',
-  'ioc-domain': 'IOC: Domain',
-  'ioc-url': 'IOC: URL',
-  'ioc-email': 'IOC: Email',
-  'ioc-md5': 'IOC: MD5',
-  'ioc-sha1': 'IOC: SHA-1',
-  'ioc-sha256': 'IOC: SHA-256',
-  'ioc-cve': 'IOC: CVE',
-  'ioc-file-path': 'IOC: File Path',
-  'ignore': 'Ignore',
-};
-
 /** All possible column mapping values for dropdown */
 export const ALL_MAPPINGS: ColumnMapping[] = [
   'timestamp',
@@ -843,3 +821,9 @@ export const ALL_MAPPINGS: ColumnMapping[] = [
   'ioc-md5', 'ioc-sha1', 'ioc-sha256', 'ioc-cve', 'ioc-file-path',
   'ignore',
 ];
+
+/** Human-readable labels for column mappings */
+export const MAPPING_LABELS: Record<ColumnMapping, string> = createLabelProxy(
+  'mapping',
+  ALL_MAPPINGS,
+);

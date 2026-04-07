@@ -8,11 +8,13 @@ export interface MentionSuggestion {
   preview?: string;
 }
 
+import { mentionCategoryLabel } from './i18n-labels';
+
 /** Category options shown when user types just '@' */
 export const MENTION_CATEGORIES = [
-  { type: 'note' as const, label: 'Notes', prefix: '@note:' },
-  { type: 'ioc' as const, label: 'IOCs', prefix: '@ioc:' },
-  { type: 'investigation' as const, label: 'Investigations', prefix: '@investigation:' },
+  { type: 'note' as const, get label() { return mentionCategoryLabel('note'); }, prefix: '@note:' },
+  { type: 'ioc' as const, get label() { return mentionCategoryLabel('ioc'); }, prefix: '@ioc:' },
+  { type: 'investigation' as const, get label() { return mentionCategoryLabel('investigation'); }, prefix: '@investigation:' },
 ];
 
 /**

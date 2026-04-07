@@ -7,6 +7,7 @@ import type { ExecutionOptions } from '../../lib/integration-executor';
 import { db } from '../../db';
 import type { IntegrationRun, InstalledIntegration, IntegrationTemplate } from '../../types/integration-types';
 import type { StandaloneIOC } from '../../types';
+import { currentLocale } from '../../lib/utils';
 
 interface BulkEnrichModalProps {
   open: boolean;
@@ -255,7 +256,7 @@ export function BulkEnrichModal({
                             }
                           }
                           const noteContent = bodyParts.length > 0 ? bodyParts.join('\n') : (fields.body as string) || (fields.content as string) || '';
-                          const timestamp = new Date().toLocaleString('en-US', {
+                          const timestamp = new Date().toLocaleString(currentLocale(), {
                             month: 'short', day: 'numeric', year: 'numeric',
                             hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
                           }) + ' UTC';

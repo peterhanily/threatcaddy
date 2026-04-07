@@ -5,7 +5,7 @@ import { PRIORITY_COLORS } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { ClsBadge } from '../Common/ClsBadge';
 import { TagPills } from '../Common/TagPills';
-import { isOverdue, cn } from '../../lib/utils';
+import { isOverdue, cn, currentLocale } from '../../lib/utils';
 
 interface TaskItemProps {
   task: Task;
@@ -139,7 +139,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
         {task.dueDate && (
           <span className={cn('flex items-center gap-1 text-[10px]', overdue ? 'text-red-400 font-medium' : 'text-gray-500')}>
             {overdue ? <AlertTriangle size={10} /> : <Calendar size={10} />}
-            {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            {new Date(task.dueDate).toLocaleDateString(currentLocale(), { month: 'short', day: 'numeric' })}
           </span>
         )}
         <TagPills tags={task.tags} />

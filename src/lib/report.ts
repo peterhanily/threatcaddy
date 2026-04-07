@@ -1,4 +1,5 @@
 import type { Folder, Note, Task, TimelineEvent, StandaloneIOC } from '../types';
+import { currentLocale } from './utils';
 
 export interface ReportData {
   folder: Folder;
@@ -18,14 +19,14 @@ function escapeHtml(str: string): string {
 }
 
 function formatDate(ts: number): string {
-  return new Date(ts).toLocaleString('en-US', {
+  return new Date(ts).toLocaleString(currentLocale(), {
     year: 'numeric', month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
 }
 
 function formatDateShort(ts: number): string {
-  return new Date(ts).toLocaleDateString('en-US', {
+  return new Date(ts).toLocaleDateString(currentLocale(), {
     year: 'numeric', month: 'short', day: 'numeric',
   });
 }

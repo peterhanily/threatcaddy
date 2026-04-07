@@ -1,3 +1,5 @@
+import { createLabelProxy, createLabelColorProxy, noteColorLabel, iocTableColumnLabel } from './lib/i18n-labels';
+
 /** An investigation note with markdown content, tags, and optional IOC analysis. */
 export interface Note {
   id: string;
@@ -110,13 +112,10 @@ export type InvestigationStatus = 'active' | 'closed' | 'archived';
 
 export type ClosureResolution = 'resolved' | 'false-positive' | 'escalated' | 'duplicate' | 'inconclusive';
 
-export const CLOSURE_RESOLUTION_LABELS: Record<ClosureResolution, string> = {
-  'resolved': 'Resolved',
-  'false-positive': 'False Positive',
-  'escalated': 'Escalated',
-  'duplicate': 'Duplicate',
-  'inconclusive': 'Inconclusive',
-};
+export const CLOSURE_RESOLUTION_LABELS: Record<ClosureResolution, string> = createLabelProxy(
+  'closureResolution',
+  ['resolved', 'false-positive', 'escalated', 'duplicate', 'inconclusive'] as const,
+);
 
 export interface PlaybookExecutionStep {
   stepIndex: number;
@@ -331,17 +330,10 @@ export const AVAILABLE_KPI_METRICS = [
 
 export type KPIMetricId = typeof AVAILABLE_KPI_METRICS[number];
 
-export const KPI_METRIC_LABELS: Record<KPIMetricId, string> = {
-  'open-investigations': 'Open Investigations',
-  'closed-this-month': 'Closed This Month',
-  'avg-investigation-age': 'Avg Investigation Age',
-  'tasks-pending': 'Tasks Pending',
-  'tasks-completed-week': 'Tasks Completed (Week)',
-  'iocs-under-investigation': 'IOCs Under Investigation',
-  'notes-created-week': 'Notes Created (Week)',
-  'timeline-events-week': 'Timeline Events (Week)',
-  'overdue-tasks': 'Overdue Tasks',
-};
+export const KPI_METRIC_LABELS: Record<KPIMetricId, string> = createLabelProxy(
+  'kpiMetric',
+  AVAILABLE_KPI_METRICS,
+);
 
 export const DEFAULT_DASHBOARD_KPIS: KPIMetricId[] = [
   'open-investigations',
@@ -354,21 +346,26 @@ export const DEFAULT_IOC_TABLE_COLUMNS = [
   'value', 'type', 'confidence', 'source', 'iocStatus', 'attribution', 'clsLevel', 'updatedAt',
 ];
 
-export const ALL_IOC_TABLE_COLUMNS: { key: string; label: string; alwaysVisible?: boolean; hiddenByDefault?: boolean; teamOnly?: boolean }[] = [
-  { key: 'value', label: 'Value', alwaysVisible: true },
-  { key: 'type', label: 'Type' },
-  { key: 'confidence', label: 'Confidence' },
-  { key: 'source', label: 'Source' },
-  { key: 'iocStatus', label: 'Status' },
-  { key: 'attribution', label: 'Attribution' },
-  { key: 'clsLevel', label: 'CLS' },
-  { key: 'updatedAt', label: 'Updated' },
-  { key: 'analystNotes', label: 'Notes', hiddenByDefault: true },
-  { key: 'tags', label: 'Tags', hiddenByDefault: true },
-  { key: 'firstSeen', label: 'First Seen', hiddenByDefault: true },
-  { key: 'labels', label: 'Labels', hiddenByDefault: true },
-  { key: 'assignee', label: 'Assignee', hiddenByDefault: true, teamOnly: true },
+const IOC_TABLE_COLUMN_DEFS: { key: string; alwaysVisible?: boolean; hiddenByDefault?: boolean; teamOnly?: boolean }[] = [
+  { key: 'value', alwaysVisible: true },
+  { key: 'type' },
+  { key: 'confidence' },
+  { key: 'source' },
+  { key: 'iocStatus' },
+  { key: 'attribution' },
+  { key: 'clsLevel' },
+  { key: 'updatedAt' },
+  { key: 'analystNotes', hiddenByDefault: true },
+  { key: 'tags', hiddenByDefault: true },
+  { key: 'firstSeen', hiddenByDefault: true },
+  { key: 'labels', hiddenByDefault: true },
+  { key: 'assignee', hiddenByDefault: true, teamOnly: true },
 ];
+export const ALL_IOC_TABLE_COLUMNS: { key: string; label: string; alwaysVisible?: boolean; hiddenByDefault?: boolean; teamOnly?: boolean }[] =
+  IOC_TABLE_COLUMN_DEFS.map((col) => ({
+    ...col,
+    get label() { return iocTableColumnLabel(col.key); },
+  }));
 
 // IOC Analysis types
 /** Indicator of Compromise type, matching standard CTI taxonomy. */
@@ -419,31 +416,22 @@ export interface IOCAnalysis {
   lastPushedAt?: number;
 }
 
-export const IOC_TYPE_LABELS: Record<IOCType, { label: string; color: string }> = {
-  ipv4:          { label: 'IPv4',         color: '#3b82f6' },
-  ipv6:          { label: 'IPv6',         color: '#6366f1' },
-  domain:        { label: 'Domain',       color: '#06b6d4' },
-  url:           { label: 'URL',          color: '#8b5cf6' },
-  email:         { label: 'Email',        color: '#ec4899' },
-  md5:           { label: 'MD5',          color: '#f97316' },
-  sha1:          { label: 'SHA-1',        color: '#eab308' },
-  sha256:        { label: 'SHA-256',      color: '#ef4444' },
-  cve:           { label: 'CVE',          color: '#10b981' },
-  'mitre-attack': { label: 'MITRE ATT&CK', color: '#14b8a6' },
-  'yara-rule':   { label: 'YARA Rule',   color: '#a855f7' },
-  'sigma-rule':  { label: 'SIGMA Rule',  color: '#0891b2' },
-  'file-path':   { label: 'File Path',   color: '#64748b' },
+const IOC_TYPE_COLORS: Record<IOCType, string> = {
+  ipv4: '#3b82f6', ipv6: '#6366f1', domain: '#06b6d4', url: '#8b5cf6',
+  email: '#ec4899', md5: '#f97316', sha1: '#eab308', sha256: '#ef4444',
+  cve: '#10b981', 'mitre-attack': '#14b8a6', 'yara-rule': '#a855f7',
+  'sigma-rule': '#0891b2', 'file-path': '#64748b',
 };
+export const IOC_TYPE_LABELS: Record<IOCType, { label: string; color: string }> = createLabelColorProxy(
+  'iocType', IOC_TYPE_COLORS,
+);
 
 export const IOC_STATUS_VALUES = ['active', 'resolved', 'false-positive', 'under-investigation'] as const;
 export type IOCStatusValue = typeof IOC_STATUS_VALUES[number];
 
-export const IOC_STATUS_LABELS: Record<IOCStatusValue, string> = {
-  active: 'Active',
-  resolved: 'Resolved',
-  'false-positive': 'False Positive',
-  'under-investigation': 'Under Investigation',
-};
+export const IOC_STATUS_LABELS: Record<IOCStatusValue, string> = createLabelProxy(
+  'iocStatus', IOC_STATUS_VALUES,
+);
 
 export const IOC_STATUS_COLORS: Record<IOCStatusValue, string> = {
   active: '#22c55e',
@@ -452,12 +440,12 @@ export const IOC_STATUS_COLORS: Record<IOCStatusValue, string> = {
   'under-investigation': '#3b82f6',
 };
 
-export const CONFIDENCE_LEVELS: Record<ConfidenceLevel, { label: string; color: string }> = {
-  low:       { label: 'Low',       color: '#6b7280' },
-  medium:    { label: 'Medium',    color: '#eab308' },
-  high:      { label: 'High',      color: '#f97316' },
-  confirmed: { label: 'Confirmed', color: '#ef4444' },
+const CONFIDENCE_COLORS: Record<ConfidenceLevel, string> = {
+  low: '#6b7280', medium: '#eab308', high: '#f97316', confirmed: '#ef4444',
 };
+export const CONFIDENCE_LEVELS: Record<ConfidenceLevel, { label: string; color: string }> = createLabelColorProxy(
+  'confidence', CONFIDENCE_COLORS,
+);
 
 // IOC subtype defaults per IOC type
 export const DEFAULT_IOC_SUBTYPES: Record<IOCType, string[]> = {
@@ -730,41 +718,26 @@ export interface TimelineExportData {
   events: TimelineEvent[];
 }
 
-export const TIMELINE_EVENT_TYPE_LABELS: Record<TimelineEventType, { label: string; color: string }> = {
-  'initial-access':        { label: 'Initial Access',        color: '#ef4444' },
-  'execution':             { label: 'Execution',             color: '#f97316' },
-  'persistence':           { label: 'Persistence',           color: '#eab308' },
-  'privilege-escalation':  { label: 'Privilege Escalation',  color: '#f59e0b' },
-  'defense-evasion':       { label: 'Defense Evasion',       color: '#84cc16' },
-  'credential-access':     { label: 'Credential Access',     color: '#22c55e' },
-  'discovery':             { label: 'Discovery',             color: '#10b981' },
-  'lateral-movement':      { label: 'Lateral Movement',      color: '#14b8a6' },
-  'collection':            { label: 'Collection',            color: '#06b6d4' },
-  'exfiltration':          { label: 'Exfiltration',          color: '#0ea5e9' },
-  'command-and-control':   { label: 'C2',                    color: '#3b82f6' },
-  'impact':                { label: 'Impact',                color: '#6366f1' },
-  'detection':             { label: 'Detection',             color: '#8b5cf6' },
-  'containment':           { label: 'Containment',           color: '#a855f7' },
-  'eradication':           { label: 'Eradication',           color: '#d946ef' },
-  'recovery':              { label: 'Recovery',              color: '#ec4899' },
-  'communication':         { label: 'Communication',         color: '#f43f5e' },
-  'evidence':              { label: 'Evidence',              color: '#64748b' },
-  'other':                 { label: 'Other',                 color: '#6b7280' },
+const TIMELINE_EVENT_TYPE_COLORS: Record<TimelineEventType, string> = {
+  'initial-access': '#ef4444', 'execution': '#f97316', 'persistence': '#eab308',
+  'privilege-escalation': '#f59e0b', 'defense-evasion': '#84cc16', 'credential-access': '#22c55e',
+  'discovery': '#10b981', 'lateral-movement': '#14b8a6', 'collection': '#06b6d4',
+  'exfiltration': '#0ea5e9', 'command-and-control': '#3b82f6', 'impact': '#6366f1',
+  'detection': '#8b5cf6', 'containment': '#a855f7', 'eradication': '#d946ef',
+  'recovery': '#ec4899', 'communication': '#f43f5e', 'evidence': '#64748b', 'other': '#6b7280',
 };
+export const TIMELINE_EVENT_TYPE_LABELS: Record<TimelineEventType, { label: string; color: string }> = createLabelColorProxy(
+  'timelineEventType', TIMELINE_EVENT_TYPE_COLORS,
+);
 
 export type SortOption = 'updatedAt' | 'createdAt' | 'title' | 'iocCount';
 export type SortDirection = 'asc' | 'desc';
 
-export const NOTE_COLORS = [
-  { name: 'None', value: '' },
-  { name: 'Red', value: '#ef4444' },
-  { name: 'Orange', value: '#f97316' },
-  { name: 'Yellow', value: '#eab308' },
-  { name: 'Green', value: '#22c55e' },
-  { name: 'Blue', value: '#3b82f6' },
-  { name: 'Purple', value: '#a855f7' },
-  { name: 'Pink', value: '#ec4899' },
-];
+const NOTE_COLOR_VALUES = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899'];
+export const NOTE_COLORS = NOTE_COLOR_VALUES.map((value, i) => ({
+  get name() { return noteColorLabel(i); },
+  value,
+}));
 
 export const PRIORITY_COLORS: Record<Priority, string> = {
   none: '',
@@ -894,19 +867,14 @@ export interface ActivityLogEntry {
   timestamp: number;
 }
 
-export const ACTIVITY_CATEGORY_LABELS: Record<ActivityCategory, { label: string; color: string }> = {
-  note:       { label: 'Note',       color: '#3b82f6' },
-  task:       { label: 'Task',       color: '#22c55e' },
-  timeline:   { label: 'Timeline',   color: '#f97316' },
-  whiteboard: { label: 'Whiteboard', color: '#a855f7' },
-  folder:     { label: 'Investigation', color: '#eab308' },
-  tag:        { label: 'Tag',        color: '#ec4899' },
-  ioc:        { label: 'IOC',        color: '#ef4444' },
-  sync:       { label: 'Sync',       color: '#06b6d4' },
-  data:            { label: 'Data',         color: '#6366f1' },
-  chat:            { label: 'Chat',         color: '#8b5cf6' },
-  'agent-bridge':  { label: 'Agent',        color: '#14b8a6' },
+const ACTIVITY_CATEGORY_COLORS: Record<ActivityCategory, string> = {
+  note: '#3b82f6', task: '#22c55e', timeline: '#f97316', whiteboard: '#a855f7',
+  folder: '#eab308', tag: '#ec4899', ioc: '#ef4444', sync: '#06b6d4',
+  data: '#6366f1', chat: '#8b5cf6', 'agent-bridge': '#14b8a6',
 };
+export const ACTIVITY_CATEGORY_LABELS: Record<ActivityCategory, { label: string; color: string }> = createLabelColorProxy(
+  'activityCategory', ACTIVITY_CATEGORY_COLORS,
+);
 
 // ─── Social / Team Types ────────────────────────────────────────
 

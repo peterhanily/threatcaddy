@@ -7,13 +7,12 @@ const SESSION_CACHE_KEY = 'threatcaddy-session-cache';
 
 export type SessionDuration = 'every-load' | 'tab-close' | '1h' | '8h' | '24h';
 
-export const SESSION_DURATION_LABELS: Record<SessionDuration, string> = {
-  'every-load': 'Every page load',
-  'tab-close': 'Until tab is closed',
-  '1h': '1 hour',
-  '8h': '8 hours',
-  '24h': '24 hours',
-};
+import { createLabelProxy } from './i18n-labels';
+
+export const SESSION_DURATION_LABELS: Record<SessionDuration, string> = createLabelProxy(
+  'sessionDuration',
+  ['every-load', 'tab-close', '1h', '8h', '24h'] as const,
+);
 
 const DURATION_MS: Partial<Record<SessionDuration, number>> = {
   '1h': 60 * 60 * 1000,

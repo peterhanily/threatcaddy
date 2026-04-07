@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useCallback, type PointerEvent as ReactPointerEvent } from 'react';
 import type { TimelineEvent } from '../../types';
+import { currentLocale } from '../../lib/utils';
 
 interface DateRangeSliderProps {
   events: TimelineEvent[];
@@ -10,7 +11,7 @@ interface DateRangeSliderProps {
 
 function formatLabel(ts: number): string {
   const d = new Date(ts);
-  const month = d.toLocaleString('en-US', { month: 'short' });
+  const month = d.toLocaleString(currentLocale(), { month: 'short' });
   const day = d.getDate();
   const hours = d.getHours().toString().padStart(2, '0');
   const mins = d.getMinutes().toString().padStart(2, '0');
@@ -49,13 +50,13 @@ function computeTicks(minTs: number, maxTs: number): Tick[] {
     // 2 weeks – 3 months: tick every week, labels on weeks
     stepMs = 7 * DAY;
     majorEvery = 1;
-    labelFn = (d) => `${d.toLocaleString('en-US', { month: 'short' })} ${d.getDate()}`;
+    labelFn = (d) => `${d.toLocaleString(currentLocale(), { month: 'short' })} ${d.getDate()}`;
     majorLabelFn = labelFn;
   } else if (range > 2 * DAY) {
     // 2–14 days: tick every day
     stepMs = DAY;
     majorEvery = 1;
-    labelFn = (d) => `${d.toLocaleString('en-US', { month: 'short' })} ${d.getDate()}`;
+    labelFn = (d) => `${d.toLocaleString(currentLocale(), { month: 'short' })} ${d.getDate()}`;
     majorLabelFn = labelFn;
   } else if (range > 12 * HOUR) {
     // 12h–2d: tick every 4 hours
@@ -107,8 +108,8 @@ function computeMonthTicks(minTs: number, maxTs: number, stepMonths: number, maj
       const major = count % majorEvery === 0;
       const d = new Date(ts);
       const label = d.getMonth() === 0
-        ? `${d.toLocaleString('en-US', { month: 'short' })} '${String(d.getFullYear()).slice(2)}`
-        : d.toLocaleString('en-US', { month: 'short' });
+        ? `${d.toLocaleString(currentLocale(), { month: 'short' })} '${String(d.getFullYear()).slice(2)}`
+        : d.toLocaleString(currentLocale(), { month: 'short' });
       ticks.push({ frac, label, major });
     }
     month += stepMonths;

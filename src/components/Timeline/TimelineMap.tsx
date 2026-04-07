@@ -5,7 +5,7 @@ import L from 'leaflet';
 import { Crosshair, MapPin, Star, Trash2 } from 'lucide-react';
 import type { TimelineEvent } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
-import { cn } from '../../lib/utils';
+import { cn, currentLocale } from '../../lib/utils';
 import 'leaflet/dist/leaflet.css';
 
 interface TimelineMapProps {
@@ -40,7 +40,7 @@ function getMarkerIcon(color: string): L.Icon {
 }
 
 function formatTime(timestamp: number): string {
-  return new Date(timestamp).toLocaleString('en-US', {
+  return new Date(timestamp).toLocaleString(currentLocale(), {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',

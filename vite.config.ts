@@ -44,6 +44,9 @@ export default defineConfig({
     }),
   ],
   base: './',
+  worker: {
+    format: 'es',
+  },
   build: {
     rollupOptions: {
       output: {
