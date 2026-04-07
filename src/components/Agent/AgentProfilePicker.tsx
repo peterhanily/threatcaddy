@@ -68,8 +68,8 @@ export function AgentProfilePicker({ profiles, deployments, onDeployMultiple, on
   }, [profiles]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Deploy Agents">
-      <div className="bg-surface border border-border-subtle rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden flex flex-col max-h-[80vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Deploy Agents">
+      <div className="bg-bg-deep border border-border-subtle rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden flex flex-col max-h-[80vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle shrink-0">
           <div>

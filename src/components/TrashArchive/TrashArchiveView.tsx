@@ -64,7 +64,7 @@ function EntitySection({
     <div className="mb-4">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 w-full px-2 py-1.5 text-sm font-medium text-gray-300 hover:text-gray-100 transition-colors"
+        className="flex items-center gap-2 w-full px-2 py-1.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
       >
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         {icon}

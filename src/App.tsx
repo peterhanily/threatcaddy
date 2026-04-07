@@ -1605,7 +1605,7 @@ function AppInner() {
       >
         <ErrorBoundary region="main-content">
         <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500">Loading…</div>}>
-        <div className={(activeView === 'graph' || activeView === 'chat') && !showSettings ? 'hidden' : 'flex flex-col flex-1 overflow-hidden'}>
+        <div className={(activeView === 'graph' || activeView === 'chat') && !showSettings && !showTrash && !showArchive ? 'hidden' : 'flex flex-col flex-1 overflow-hidden'}>
         {filterBar}
         {investigationMode === 'remote' && selectedFolderId && (
           <div className="mx-4 mt-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm flex items-center justify-between">

@@ -248,8 +248,8 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
             onClick={() => setActiveTab(tabKey)}
             className={`flex-1 px-1 py-2 text-xs font-medium text-center transition-colors border-b-2 ${
               activeTab === tabKey
-                ? 'border-accent text-white'
-                : 'border-transparent text-gray-400 hover:text-gray-200'
+                ? 'border-accent text-text-primary'
+                : 'border-transparent text-text-secondary hover:text-text-primary'
             }`}
           >
             {t(`tabs.${tabKey}`)}
