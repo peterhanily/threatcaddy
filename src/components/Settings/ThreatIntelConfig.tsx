@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Upload, Download, X, FileJson, Users, ChevronDown, ChevronRight, RotateCcw, Plus, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../contexts/ToastContext';
 import type { IOCType, IOCRelationshipDef, ConfidenceLevel } from '../../types';
@@ -11,12 +12,12 @@ const ALL_IOC_TYPES = Object.keys(IOC_TYPE_LABELS) as IOCType[];
 
 interface ConfigCategory {
   key: 'tiClsLevels' | 'tiIocStatuses';
-  label: string;
+  labelKey: string;
 }
 
 const SIMPLE_CATEGORIES: ConfigCategory[] = [
-  { key: 'tiClsLevels', label: 'Classification Levels' },
-  { key: 'tiIocStatuses', label: 'IOC Statuses' },
+  { key: 'tiClsLevels', labelKey: 'intel.clsLevels' },
+  { key: 'tiIocStatuses', labelKey: 'intel.iocStatuses' },
 ];
 
 const BULK_KEY_MAP: Record<string, 'tiClsLevels' | 'tiIocStatuses' | 'attributionActors' | 'tiIocSubtypes' | 'tiRelationshipTypes' | 'tiDefaultClsLevel' | 'tiDefaultReportSource' | 'ociLabel' | 'tiAutoExtractEnabled' | 'tiAutoExtractDebounceMs' | 'tiEnabledIOCTypes' | 'tiDefaultConfidence'> = {
@@ -44,6 +45,8 @@ const DEBOUNCE_OPTIONS = [
 const ALL_CONFIDENCE_LEVELS = Object.keys(CONFIDENCE_LEVELS) as ConfidenceLevel[];
 
 export function ThreatIntelConfig() {
+  const { t } = useTranslation('settings');
+  const { t: tc } = useTranslation('common');
   const { settings, updateSettings } = useSettings();
   const { addToast } = useToast();
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -197,10 +200,10 @@ export function ThreatIntelConfig() {
         }
         if (Object.keys(updates).length > 0) {
           updateSettings(updates);
-          addToast('success', 'Config imported');
+          addToast('success', t('intel.configImported'));
         }
       } catch {
-        addToast('error', 'Invalid JSON config file');
+        addToast('error', t('intel.invalidConfigFile'));
       }
     };
     reader.readAsText(file);
@@ -234,18 +237,18 @@ export function ThreatIntelConfig() {
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
         <Search size={16} />
-        Threat Intel Configuration
+        {t('intel.title')}
       </h3>
 
       {/* Extraction Behavior */}
       <div className="space-y-3">
-        <span className="text-xs font-medium text-gray-400">Extraction Behavior</span>
+        <span className="text-xs font-medium text-gray-400">{t('intel.extractionBehavior')}</span>
 
         {/* Auto-Extraction Toggle */}
         <div className="flex items-center justify-between">
           <div>
-            <label className="text-sm text-gray-300">Auto-extract IOCs from content</label>
-            <p className="text-[10px] text-gray-600">Automatically extract IOCs as you type in notes, tasks, and timeline events.</p>
+            <label className="text-sm text-gray-300">{t('intel.autoExtract')}</label>
+            <p className="text-[10px] text-gray-600">{t('intel.autoExtractDesc')}</p>
           </div>
           <button
             onClick={() => updateSettings({ tiAutoExtractEnabled: !(settings.tiAutoExtractEnabled !== false) })}
@@ -260,8 +263,8 @@ export function ThreatIntelConfig() {
         {/* Default Confidence Level */}
         <div className="flex items-center justify-between">
           <div>
-            <label className="text-sm text-gray-400">Default Confidence Level</label>
-            <p className="text-[10px] text-gray-600">Default confidence assigned to newly extracted IOCs.</p>
+            <label className="text-sm text-gray-400">{t('intel.defaultConfidence')}</label>
+            <p className="text-[10px] text-gray-600">{t('intel.defaultConfidenceDesc')}</p>
           </div>
           <select
             value={settings.tiDefaultConfidence || 'medium'}
@@ -277,8 +280,8 @@ export function ThreatIntelConfig() {
         {/* Extraction Delay */}
         <div className="flex items-center justify-between">
           <div>
-            <label className="text-sm text-gray-400">Extraction Delay</label>
-            <p className="text-[10px] text-gray-600">Delay after typing before auto-extraction runs.</p>
+            <label className="text-sm text-gray-400">{t('intel.extractionDelay')}</label>
+            <p className="text-[10px] text-gray-600">{t('intel.extractionDelayDesc')}</p>
           </div>
           <select
             value={settings.tiAutoExtractDebounceMs ?? 2000}
@@ -297,19 +300,19 @@ export function ThreatIntelConfig() {
         {/* IOC Type Toggles */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-sm text-gray-400">Enabled IOC Types</label>
+            <label className="text-sm text-gray-400">{t('intel.enabledIocTypes')}</label>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => updateSettings({ tiEnabledIOCTypes: undefined })}
                 className="px-2 py-0.5 rounded text-[10px] font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-300"
               >
-                Enable All
+                {t('intel.enableAll')}
               </button>
               <button
                 onClick={() => updateSettings({ tiEnabledIOCTypes: [] })}
                 className="px-2 py-0.5 rounded text-[10px] font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-300"
               >
-                Disable All
+                {t('intel.disableAll')}
               </button>
             </div>
           </div>
@@ -362,18 +365,18 @@ export function ThreatIntelConfig() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-200"
           >
             <FileJson size={16} />
-            Bulk JSON Import
+            {t('intel.bulkJsonImport')}
           </button>
           <button
             onClick={handleConfigExport}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-200"
           >
             <Download size={16} />
-            Export Config
+            {t('intel.exportConfig')}
           </button>
         </div>
         <p className="text-xs text-gray-600 mt-1">
-          Accepts {'{'} cls_levels, ioc_subtypes, relationship_types, ioc_statuses, attribution_actors, default_cls_level, default_report_source, oci_label, auto_extract_enabled, auto_extract_debounce_ms, enabled_ioc_types, default_confidence {'}'}
+          {t('intel.bulkImportHelp')}
         </p>
       </div>
 
@@ -381,9 +384,9 @@ export function ThreatIntelConfig() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <label className="text-sm text-gray-400">Default Classification Level</label>
+            <label className="text-sm text-gray-400">{t('intel.defaultClsLevel')}</label>
             {getSimpleValues('tiClsLevels').length === 0 && (
-              <p className="text-[10px] text-gray-600">Using TLP defaults</p>
+              <p className="text-[10px] text-gray-600">{t('intel.usingTlpDefaults')}</p>
             )}
           </div>
           <select
@@ -391,20 +394,20 @@ export function ThreatIntelConfig() {
             onChange={(e) => updateSettings({ tiDefaultClsLevel: e.target.value || undefined })}
             className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
           >
-            <option value="">None</option>
+            <option value="">{tc('none')}</option>
             {getEffectiveClsLevels(getSimpleValues('tiClsLevels')).map((v) => (
               <option key={v} value={v}>{v}</option>
             ))}
           </select>
         </div>
         <div className="flex items-center justify-between">
-          <label className="text-sm text-gray-400">Default Report Source</label>
+          <label className="text-sm text-gray-400">{t('intel.defaultReportSource')}</label>
           <input
             type="text"
             value={settings.tiDefaultReportSource || ''}
             onChange={(e) => updateSettings({ tiDefaultReportSource: e.target.value || undefined })}
             className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent w-48"
-            placeholder="e.g. Internal"
+            placeholder={t('intel.reportSourcePlaceholder')}
           />
         </div>
       </div>
@@ -414,7 +417,7 @@ export function ThreatIntelConfig() {
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-gray-400 flex items-center gap-1.5">
             <Users size={12} />
-            Attribution Actors
+            {t('intel.attributionActors')}
           </span>
           <div className="flex items-center gap-2">
             <input
@@ -429,7 +432,7 @@ export function ThreatIntelConfig() {
               className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-300"
             >
               <Upload size={12} />
-              Import CSV
+              {t('intel.importCsv')}
             </button>
             {actors.length > 0 && (
               <button
@@ -437,14 +440,14 @@ export function ThreatIntelConfig() {
                 className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-red-400"
               >
                 <X size={12} />
-                Clear
+                {t('intel.clear')}
               </button>
             )}
           </div>
         </div>
         {actors.length > 0 && (
           <div>
-            <p className="text-xs text-gray-500 mb-1">{actors.length} actor{actors.length !== 1 ? 's' : ''} loaded</p>
+            <p className="text-xs text-gray-500 mb-1">{t('intel.actorsLoaded', { count: actors.length })}</p>
             <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
               {actors.map((v) => (
                 <span
@@ -462,12 +465,12 @@ export function ThreatIntelConfig() {
       <hr className="border-gray-800" />
 
       {/* Per-category sections (simple: cls levels, ioc statuses) */}
-      {SIMPLE_CATEGORIES.map(({ key, label }) => {
+      {SIMPLE_CATEGORIES.map(({ key, labelKey }) => {
         const values = getSimpleValues(key);
         return (
           <div key={key} className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-400">{label}</span>
+              <span className="text-xs font-medium text-gray-400">{t(labelKey)}</span>
               <div className="flex items-center gap-2">
                 <input
                   ref={(el) => { fileRefs.current[key] = el; }}
@@ -481,7 +484,7 @@ export function ThreatIntelConfig() {
                   className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-300"
                 >
                   <Upload size={12} />
-                  Import CSV
+                  {t('intel.importCsv')}
                 </button>
                 {values.length > 0 && (
                   <button
@@ -489,14 +492,14 @@ export function ThreatIntelConfig() {
                     className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-red-400"
                   >
                     <X size={12} />
-                    Clear
+                    {t('intel.clear')}
                   </button>
                 )}
               </div>
             </div>
             {values.length > 0 && (
               <div>
-                <p className="text-xs text-gray-500 mb-1">{values.length} value{values.length !== 1 ? 's' : ''} loaded</p>
+                <p className="text-xs text-gray-500 mb-1">{t('intel.valuesLoaded', { count: values.length })}</p>
                 <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
                   {values.map((v) => (
                     <span
@@ -517,7 +520,7 @@ export function ThreatIntelConfig() {
 
       {/* IOC Subtypes — per-type editor */}
       <div className="space-y-2">
-        <span className="text-xs font-medium text-gray-400">IOC Subtypes (per type)</span>
+        <span className="text-xs font-medium text-gray-400">{t('intel.iocSubtypes')}</span>
         <div className="space-y-1">
           {ALL_IOC_TYPES.map((type) => {
             const { label, color } = IOC_TYPE_LABELS[type];
@@ -531,8 +534,8 @@ export function ThreatIntelConfig() {
                 >
                   {isExpanded ? <ChevronDown size={12} className="text-gray-500" /> : <ChevronRight size={12} className="text-gray-500" />}
                   <span style={{ color }} className="font-medium">{label}</span>
-                  <span className="text-gray-600">{defaults.length + custom.length} subtypes</span>
-                  {custom.length > 0 && <span className="text-accent">+{custom.length} custom</span>}
+                  <span className="text-gray-600">{t('intel.subtypes', { count: defaults.length + custom.length })}</span>
+                  {custom.length > 0 && <span className="text-accent">{t('intel.customSubtypes', { count: custom.length })}</span>}
                 </button>
                 {isExpanded && (
                   <div className="px-3 pb-2 space-y-1.5">
@@ -552,7 +555,7 @@ export function ThreatIntelConfig() {
                         value={newSubtypeInput}
                         onChange={(e) => setNewSubtypeInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') addCustomSubtype(type); }}
-                        placeholder="Add custom subtype..."
+                        placeholder={t('intel.addCustomSubtype')}
                         className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
                       />
                       <button onClick={() => addCustomSubtype(type)} className="text-accent hover:text-accent-hover p-0.5"><Plus size={14} /></button>
@@ -562,7 +565,7 @@ export function ThreatIntelConfig() {
                         onClick={() => resetSubtypesForType(type)}
                         className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-300"
                       >
-                        <RotateCcw size={10} /> Reset to defaults
+                        <RotateCcw size={10} /> {t('intel.resetToDefaults')}
                       </button>
                     )}
                   </div>
@@ -582,20 +585,20 @@ export function ThreatIntelConfig() {
           className="flex items-center gap-2 text-xs font-medium text-gray-400"
         >
           {showRelTypes ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-          Relationship Types
+          {t('intel.relationshipTypes')}
         </button>
         {showRelTypes && (
           <div className="space-y-2">
             {/* Default types (read-only) */}
-            <p className="text-[10px] text-gray-600">Built-in relationship types:</p>
+            <p className="text-[10px] text-gray-600">{t('intel.builtinRelTypes')}</p>
             <div className="space-y-1">
               {Object.entries(DEFAULT_RELATIONSHIP_TYPES).map(([key, def]) => (
                 <div key={key} className="flex items-center gap-2 px-2 py-1 bg-gray-800/50 rounded text-xs">
                   <span className="text-gray-300 font-medium flex-1">{def.label}</span>
                   <span className="text-gray-600 text-[10px]">
-                    {def.sourceTypes.length > 0 ? def.sourceTypes.map((t) => IOC_TYPE_LABELS[t as IOCType]?.label || t).join(', ') : 'Any'}
+                    {def.sourceTypes.length > 0 ? def.sourceTypes.map((st) => IOC_TYPE_LABELS[st as IOCType]?.label || st).join(', ') : tc('any')}
                     {' → '}
-                    {def.targetTypes.length > 0 ? def.targetTypes.map((t) => IOC_TYPE_LABELS[t as IOCType]?.label || t).join(', ') : 'Any'}
+                    {def.targetTypes.length > 0 ? def.targetTypes.map((st) => IOC_TYPE_LABELS[st as IOCType]?.label || st).join(', ') : tc('any')}
                   </span>
                 </div>
               ))}
@@ -604,15 +607,15 @@ export function ThreatIntelConfig() {
             {/* Custom types */}
             {Object.keys(customRelTypes).length > 0 && (
               <>
-                <p className="text-[10px] text-gray-600 mt-2">Custom relationship types:</p>
+                <p className="text-[10px] text-gray-600 mt-2">{t('intel.customRelTypes')}</p>
                 <div className="space-y-1">
                   {Object.entries(customRelTypes).map(([key, def]) => (
                     <div key={key} className="flex items-center gap-2 px-2 py-1 bg-accent/5 rounded text-xs border border-accent/20">
                       <span className="text-accent font-medium flex-1">{def.label}</span>
                       <span className="text-gray-600 text-[10px]">
-                        {def.sourceTypes.length > 0 ? def.sourceTypes.map((t) => IOC_TYPE_LABELS[t].label).join(', ') : 'Any'}
+                        {def.sourceTypes.length > 0 ? def.sourceTypes.map((st) => IOC_TYPE_LABELS[st].label).join(', ') : tc('any')}
                         {' → '}
-                        {def.targetTypes.length > 0 ? def.targetTypes.map((t) => IOC_TYPE_LABELS[t].label).join(', ') : 'Any'}
+                        {def.targetTypes.length > 0 ? def.targetTypes.map((st) => IOC_TYPE_LABELS[st].label).join(', ') : tc('any')}
                       </span>
                       <button onClick={() => removeCustomRelType(key)} className="text-gray-500 hover:text-red-400"><X size={12} /></button>
                     </div>
@@ -627,11 +630,11 @@ export function ThreatIntelConfig() {
                 <input
                   value={newRelLabel}
                   onChange={(e) => { setNewRelLabel(e.target.value); setNewRelKey(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')); }}
-                  placeholder="Label (e.g. Delivers)"
+                  placeholder={t('intel.relLabelPlaceholder')}
                   className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
                 />
                 <div>
-                  <label className="text-[10px] text-gray-500">Source Types (empty = any)</label>
+                  <label className="text-[10px] text-gray-500">{t('intel.sourceTypes')}</label>
                   <div className="flex flex-wrap gap-1 mt-0.5">
                     {ALL_IOC_TYPES.map((t) => (
                       <button
@@ -645,7 +648,7 @@ export function ThreatIntelConfig() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-500">Target Types (empty = any)</label>
+                  <label className="text-[10px] text-gray-500">{t('intel.targetTypes')}</label>
                   <div className="flex flex-wrap gap-1 mt-0.5">
                     {ALL_IOC_TYPES.map((t) => (
                       <button
@@ -659,8 +662,8 @@ export function ThreatIntelConfig() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={addCustomRelType} disabled={!newRelLabel.trim()} className="text-xs px-2 py-0.5 rounded bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-50">Add</button>
-                  <button onClick={() => setAddingRelType(false)} className="text-xs px-2 py-0.5 rounded text-gray-500 hover:text-gray-300">Cancel</button>
+                  <button onClick={addCustomRelType} disabled={!newRelLabel.trim()} className="text-xs px-2 py-0.5 rounded bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-50">{tc('add')}</button>
+                  <button onClick={() => setAddingRelType(false)} className="text-xs px-2 py-0.5 rounded text-gray-500 hover:text-gray-300">{tc('cancel')}</button>
                 </div>
               </div>
             ) : (
@@ -668,7 +671,7 @@ export function ThreatIntelConfig() {
                 onClick={() => setAddingRelType(true)}
                 className="flex items-center gap-1 text-xs text-gray-500 hover:text-accent"
               >
-                <Plus size={12} /> Add Custom Relationship Type
+                <Plus size={12} /> {t('intel.addCustomRelType')}
               </button>
             )}
           </div>

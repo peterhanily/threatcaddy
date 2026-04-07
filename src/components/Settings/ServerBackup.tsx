@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Shield, Loader2, Trash2, Download, Upload, AlertCircle, CheckCircle, Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../contexts/ToastContext';
 import { db } from '../../db';
@@ -23,6 +24,8 @@ function formatBytes(bytes: number): string {
 }
 
 export function ServerBackup() {
+  const { t } = useTranslation('settings');
+  const { t: tc } = useTranslation('common');
   const { settings } = useSettings();
   const { addToast } = useToast();
   const isConnected = !!settings.serverUrl;
@@ -87,9 +90,9 @@ export function ServerBackup() {
 
   const handleCreate = async () => {
     setCreateError('');
-    if (password.length < 12) { setCreateError('Password must be at least 12 characters'); return; }
-    if (password !== confirmPassword) { setCreateError('Passwords do not match'); return; }
-    if (scope === 'investigation' && !selectedFolderId) { setCreateError('Select an investigation'); return; }
+    if (password.length < 12) { setCreateError(t('encryption.passwordMinLength')); return; }
+    if (password !== confirmPassword) { setCreateError(t('encryption.passwordMismatch')); return; }
+    if (scope === 'investigation' && !selectedFolderId) { setCreateError(t('encryption.selectInvestigationError')); return; }
 
     try {
       // 1. Collect data
@@ -214,7 +217,7 @@ export function ServerBackup() {
           <Shield size={16} />
           Server Encrypted Backups
         </h3>
-        <p className="text-xs text-gray-500">Connect to a team server to use encrypted backups.</p>
+        <p className="text-xs text-gray-500">{t('encryption.connectPrompt')}</p>
       </div>
     );
   }
@@ -223,29 +226,29 @@ export function ServerBackup() {
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
         <Shield size={16} />
-        Server Encrypted Backups
+        {t('encryption.title')}
       </h3>
       <p className="text-xs text-gray-500">
-        Password-protected backups stored on the server. Even admins cannot read them.
+        {t('encryption.description')}
       </p>
 
       {/* ─── Create Backup ─── */}
       <div className="bg-gray-800/30 rounded-lg p-3 space-y-3">
-        <h4 className="text-xs font-semibold text-gray-400">Create Backup</h4>
+        <h4 className="text-xs font-semibold text-gray-400">{t('encryption.createBackup')}</h4>
 
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Scope</label>
+          <label className="block text-xs text-gray-500 mb-1">{t('encryption.scope')}</label>
           <select value={scope} onChange={(e) => setScope(e.target.value as typeof scope)} className={inputClass}>
-            <option value="all">All Data</option>
-            <option value="investigation">Investigation</option>
+            <option value="all">{t('encryption.scopeAll')}</option>
+            <option value="investigation">{t('encryption.scopeInvestigation')}</option>
           </select>
         </div>
 
         {scope === 'investigation' && (
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Investigation</label>
+            <label className="block text-xs text-gray-500 mb-1">{t('encryption.investigation')}</label>
             <select value={selectedFolderId} onChange={(e) => setSelectedFolderId(e.target.value)} className={inputClass}>
-              <option value="">Select...</option>
+              <option value="">{t('encryption.selectInvestigation')}</option>
               {folders.map((f) => (
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
@@ -254,31 +257,31 @@ export function ServerBackup() {
         )}
 
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Type</label>
+          <label className="block text-xs text-gray-500 mb-1">{t('encryption.type')}</label>
           <select
             value={backupType}
             onChange={(e) => setBackupType(e.target.value as 'full' | 'differential')}
             className={inputClass}
           >
-            <option value="full">Full</option>
+            <option value="full">{t('encryption.typeFull')}</option>
             <option value="differential" disabled={!hasFullBackup}>
-              Differential{!hasFullBackup ? ' (needs full backup first)' : ''}
+              {!hasFullBackup ? t('encryption.differentialNeedsFullBackup') : t('encryption.typeDifferential')}
             </option>
           </select>
         </div>
 
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Name</label>
+          <label className="block text-xs text-gray-500 mb-1">{t('encryption.name')}</label>
           <input type="text" value={backupName} onChange={(e) => setBackupName(e.target.value)} className={inputClass} />
         </div>
 
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Password (min 12 chars)</label>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} placeholder="Encryption password" />
+          <label className="block text-xs text-gray-500 mb-1">{t('encryption.passwordLabel')}</label>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} placeholder={t('encryption.passwordPlaceholder')} />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Confirm Password</label>
-          <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputClass} placeholder="Confirm password" />
+          <label className="block text-xs text-gray-500 mb-1">{t('encryption.confirmPassword')}</label>
+          <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputClass} placeholder={t('encryption.confirmPasswordPlaceholder')} />
         </div>
 
         {createError && (
@@ -288,14 +291,14 @@ export function ServerBackup() {
         {createStep !== 'idle' && createStep !== 'error' && createStep !== 'done' && (
           <p className="text-xs text-accent flex items-center gap-1">
             <Loader2 size={12} className="animate-spin" />
-            {createStep === 'collecting' && 'Collecting data...'}
-            {createStep === 'encrypting' && 'Encrypting...'}
-            {createStep === 'uploading' && 'Uploading to server...'}
+            {createStep === 'collecting' && t('encryption.collecting')}
+            {createStep === 'encrypting' && t('encryption.encrypting')}
+            {createStep === 'uploading' && t('encryption.uploading')}
           </p>
         )}
 
         {createStep === 'done' && (
-          <p className="text-xs text-green-400 flex items-center gap-1"><CheckCircle size={12} /> Backup created successfully</p>
+          <p className="text-xs text-green-400 flex items-center gap-1"><CheckCircle size={12} /> {t('encryption.backupCreated')}</p>
         )}
 
         <button
@@ -306,19 +309,19 @@ export function ServerBackup() {
           {(createStep === 'collecting' || createStep === 'encrypting' || createStep === 'uploading')
             ? <Loader2 size={16} className="animate-spin" />
             : <Upload size={16} />}
-          Create Backup
+          {t('encryption.createBackup')}
         </button>
       </div>
 
       {/* ─── Backup List ─── */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <h4 className="text-xs font-semibold text-gray-400">Your Backups</h4>
+          <h4 className="text-xs font-semibold text-gray-400">{t('encryption.yourBackups')}</h4>
           {listLoading && <Loader2 size={12} className="animate-spin text-gray-500" />}
         </div>
 
         {backupsList.length === 0 && !listLoading && (
-          <p className="text-xs text-gray-600">No backups yet.</p>
+          <p className="text-xs text-gray-600">{t('encryption.noBackups')}</p>
         )}
 
         {backupsList.map((b) => (
@@ -337,23 +340,23 @@ export function ServerBackup() {
               <button
                 onClick={() => { resetRestore(); setRestoreBackupId(b.id); }}
                 className="p-1 rounded text-gray-400 hover:text-accent"
-                title="Restore"
-                aria-label="Restore backup"
+                title={t('encryption.restore')}
+                aria-label={t('encryption.restore')}
               >
                 <Download size={14} />
               </button>
               <button
                 onClick={() => setDeleteId(b.id)}
                 className="p-1 rounded text-gray-500 hover:text-red-400"
-                title="Delete"
-                aria-label="Delete backup"
+                title={tc('delete')}
+                aria-label={t('encryption.deleteBackup')}
               >
                 <Trash2 size={14} />
               </button>
             </div>
             <div className="text-[10px] text-gray-500 flex gap-3">
               <span>{formatBytes(b.sizeBytes)}</span>
-              <span>{b.entityCount} entities</span>
+              <span>{t('encryption.entities', { count: b.entityCount })}</span>
               <span>{new Date(b.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
@@ -364,25 +367,25 @@ export function ServerBackup() {
       {restoreBackupId && (
         <div className="bg-gray-800/30 rounded-lg p-3 space-y-3 border border-gray-700">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-semibold text-gray-400">Restore Backup</h4>
-            <button onClick={resetRestore} className="text-xs text-gray-500 hover:text-gray-300">Cancel</button>
+            <h4 className="text-xs font-semibold text-gray-400">{t('encryption.restoreBackup')}</h4>
+            <button onClick={resetRestore} className="text-xs text-gray-500 hover:text-gray-300">{tc('cancel')}</button>
           </div>
 
           {restoreStep === 'idle' && (
             <>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Password</label>
+                <label className="block text-xs text-gray-500 mb-1">{t('encryption.password')}</label>
                 <input
                   type="password"
                   value={restorePassword}
                   onChange={(e) => setRestorePassword(e.target.value)}
                   className={inputClass}
-                  placeholder="Enter backup password"
+                  placeholder={t('encryption.enterPassword')}
                 />
               </div>
               <button onClick={handleDecrypt} className={`${btnClass} bg-gray-700 hover:bg-gray-600 text-gray-200`}>
                 <Lock size={16} />
-                Decrypt
+                {t('encryption.decrypt')}
               </button>
             </>
           )}
@@ -390,7 +393,7 @@ export function ServerBackup() {
           {(restoreStep === 'downloading' || restoreStep === 'decrypting') && (
             <p className="text-xs text-accent flex items-center gap-1">
               <Loader2 size={12} className="animate-spin" />
-              {restoreStep === 'downloading' ? 'Downloading...' : 'Decrypting...'}
+              {restoreStep === 'downloading' ? t('encryption.downloading') : t('encryption.decrypting')}
             </p>
           )}
 
@@ -408,7 +411,7 @@ export function ServerBackup() {
                   onClick={() => handleRestore('merge')}
                   className={`${btnClass} bg-accent hover:bg-accent-hover text-white`}
                 >
-                  Apply Changes (Merge)
+                  {t('encryption.applyChanges')}
                 </button>
               ) : (
                 <div className="flex gap-2">
@@ -416,13 +419,13 @@ export function ServerBackup() {
                     onClick={() => handleRestore('replace')}
                     className={`${btnClass} bg-red-600/80 hover:bg-red-600 text-white`}
                   >
-                    Replace All
+                    {t('encryption.replaceAll')}
                   </button>
                   <button
                     onClick={() => handleRestore('merge')}
                     className={`${btnClass} bg-gray-700 hover:bg-gray-600 text-gray-200`}
                   >
-                    Merge
+                    {t('encryption.merge')}
                   </button>
                 </div>
               )}
@@ -431,17 +434,17 @@ export function ServerBackup() {
 
           {restoreStep === 'restoring' && (
             <p className="text-xs text-accent flex items-center gap-1">
-              <Loader2 size={12} className="animate-spin" /> Restoring...
+              <Loader2 size={12} className="animate-spin" /> {t('encryption.restoring')}
             </p>
           )}
 
           {restoreStep === 'done' && restoreResult && (
             <div className="text-xs text-green-400 space-y-1">
-              <p className="flex items-center gap-1"><CheckCircle size={12} /> Restore complete</p>
+              <p className="flex items-center gap-1"><CheckCircle size={12} /> {t('encryption.restoreComplete')}</p>
               <p className="text-gray-400">
-                Added: {restoreResult.added} | Updated: {restoreResult.updated} | Deleted: {restoreResult.deleted}
+                {t('encryption.restoreStats', { added: restoreResult.added, updated: restoreResult.updated, deleted: restoreResult.deleted })}
               </p>
-              <p className="text-gray-500">Tables: {restoreResult.tables.join(', ')}</p>
+              <p className="text-gray-500">{t('encryption.restoreTables', { tables: restoreResult.tables.join(', ') })}</p>
             </div>
           )}
 
@@ -455,9 +458,9 @@ export function ServerBackup() {
         open={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={handleDelete}
-        title="Delete Backup"
-        message="This will permanently delete this encrypted backup from the server. This cannot be undone."
-        confirmLabel="Delete"
+        title={t('encryption.deleteConfirmTitle')}
+        message={t('encryption.deleteConfirmMessage')}
+        confirmLabel={tc('delete')}
       />
     </div>
   );

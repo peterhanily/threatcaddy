@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Github, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw, Plus, Pencil, Wrench, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../../contexts/ToastContext';
 import type { Settings, Note, NoteTemplate, PlaybookTemplate, PlaybookStep, CustomSlashCommand } from '../../types';
 import { useCustomSlashCommands } from '../../hooks/useCustomSlashCommands';
@@ -20,6 +21,7 @@ import { IntegrationPanel } from '../Integrations/IntegrationPanel';
 import { AppearanceSettings } from './AppearanceSettings';
 
 function SystemPromptEditor({ value, onChange }: { value?: string; onChange: (v: string | undefined) => void }) {
+  const { t } = useTranslation('settings');
   const [expanded, setExpanded] = useState(false);
   const isCustom = !!value?.trim();
   const displayValue = value ?? DEFAULT_SYSTEM_PROMPT;
@@ -31,17 +33,17 @@ function SystemPromptEditor({ value, onChange }: { value?: string; onChange: (v:
           onClick={() => setExpanded(!expanded)}
           className="text-sm text-gray-300 font-medium hover:text-gray-100 transition-colors text-left"
         >
-          CaddyAI System Prompt {expanded ? '▾' : '▸'}
+          {t('ai.systemPrompt')} {expanded ? '▾' : '▸'}
         </button>
         <div className="flex items-center gap-2">
           {isCustom && (
-            <span className="text-[10px] text-accent font-medium">Custom</span>
+            <span className="text-[10px] text-accent font-medium">{t('ai.systemPromptCustom')}</span>
           )}
           {isCustom && (
             <button
               onClick={() => onChange(undefined)}
               className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300 transition-colors"
-              title="Reset to default"
+              title={t('ai.systemPromptResetTitle')}
             >
               <RotateCcw size={13} />
             </button>
@@ -51,7 +53,7 @@ function SystemPromptEditor({ value, onChange }: { value?: string; onChange: (v:
       {expanded && (
         <>
           <p className="text-[10px] text-gray-500">
-            Customize the system prompt sent to the LLM. The current investigation context (name, status, entity counts) is always appended automatically.
+            {t('ai.systemPromptHelp')}
           </p>
           <textarea
             value={displayValue}
@@ -117,6 +119,8 @@ function AgentProfileSection() {
 }
 
 function CustomSlashCommandsEditor() {
+  const { t } = useTranslation('settings');
+  const { t: tc } = useTranslation('common');
   const { commands, createCommand, updateCommand, deleteCommand } = useCustomSlashCommands();
   const { addToast } = useToast();
   const [editing, setEditing] = useState<CustomSlashCommand | null>(null);
@@ -152,24 +156,24 @@ function CustomSlashCommandsEditor() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-1.5">
-          <Wrench size={14} /> Custom Slash Commands
+          <Wrench size={14} /> {t('ai.slashCommands')}
         </h3>
         {!creating && (
           <button onClick={() => setCreating(true)} className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover">
-            <Plus size={12} /> Add
+            <Plus size={12} /> {tc('add')}
           </button>
         )}
       </div>
 
       {commands.length === 0 && !creating && (
-        <p className="text-xs text-gray-500">No custom commands yet. Create reusable prompt templates accessible via /commands in CaddyAI.</p>
+        <p className="text-xs text-gray-500">{t('ai.slashCommandsEmpty')}</p>
       )}
 
       {commands.map(cmd => (
         <div key={cmd.id} className="flex items-start gap-2 p-2.5 rounded-lg bg-gray-800/50 border border-gray-700/50">
           <div className="flex-1 min-w-0">
             <div className="text-xs font-mono text-purple font-medium">/{cmd.name}</div>
-            <div className="text-[11px] text-gray-400 mt-0.5">{cmd.description || 'No description'}</div>
+            <div className="text-[11px] text-gray-400 mt-0.5">{cmd.description || t('ai.noDescription')}</div>
             <div className="text-[10px] text-gray-600 mt-0.5 truncate font-mono">{cmd.template.slice(0, 80)}</div>
           </div>
           <button onClick={() => startEdit(cmd)} className="p-1 text-gray-500 hover:text-gray-300"><Pencil size={12} /></button>
@@ -182,27 +186,27 @@ function CustomSlashCommandsEditor() {
           <input
             value={formName}
             onChange={e => setFormName(e.target.value)}
-            placeholder="Command name (e.g. mytriage)"
+            placeholder={t('ai.commandNamePlaceholder')}
             className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent font-mono"
           />
           <input
             value={formDesc}
             onChange={e => setFormDesc(e.target.value)}
-            placeholder="Description (shown in slash menu)"
+            placeholder={t('ai.commandDescPlaceholder')}
             className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent"
           />
           <textarea
             value={formTemplate}
             onChange={e => setFormTemplate(e.target.value)}
-            placeholder="Prompt template. Use {{input}} for user arguments.&#10;&#10;Example: Analyze this alert for IOCs and create a triage report:&#10;&#10;{{input}}"
+            placeholder={t('ai.commandTemplatePlaceholder')}
             rows={4}
             className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent resize-none font-mono"
           />
           <div className="flex gap-2">
             <button onClick={handleSave} disabled={!formName.trim() || !formTemplate.trim()} className="px-3 py-1.5 rounded bg-accent text-white text-xs font-medium hover:brightness-110 disabled:opacity-50">
-              {editing ? 'Update' : 'Create'}
+              {editing ? tc('save') : tc('create')}
             </button>
-            <button onClick={resetForm} className="px-3 py-1.5 rounded bg-gray-700 text-gray-300 text-xs hover:bg-gray-600">Cancel</button>
+            <button onClick={resetForm} className="px-3 py-1.5 rounded bg-gray-700 text-gray-300 text-xs hover:bg-gray-600">{tc('cancel')}</button>
           </div>
         </div>
       )}
@@ -210,19 +214,10 @@ function CustomSlashCommandsEditor() {
   );
 }
 
-const TABS: { key: SettingsTab; label: string }[] = [
-  { key: 'general', label: 'General' },
-  { key: 'appearance', label: 'Appearance' },
-  { key: 'ai', label: 'AI' },
-  { key: 'agents', label: 'Agents' },
-  { key: 'data', label: 'Data' },
-  { key: 'templates', label: 'Templates' },
-  { key: 'intel', label: 'Intel' },
-  { key: 'integrations', label: 'Integrations' },
-  { key: 'shortcuts', label: 'Shortcuts' },
-];
+const TAB_KEYS: SettingsTab[] = ['general', 'appearance', 'ai', 'agents', 'data', 'templates', 'intel', 'integrations', 'shortcuts'];
 
 export function SettingsPanel({ settings, onUpdateSettings, notes, onImportComplete, sampleLoaded, onLoadSample, onDeleteSample, onClose, initialTab, templateProps, playbookProps }: SettingsPanelProps) {
+  const { t } = useTranslation('settings');
   const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab || 'general');
   const selectClass = 'bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent';
@@ -232,31 +227,31 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
     <div className="flex-1 overflow-y-auto">
     <div className="w-full max-w-2xl mx-auto p-6 space-y-8">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-100">Settings</h2>
+        <h2 className="text-xl font-bold text-gray-100">{t('title')}</h2>
         {onClose && (
-          <button onClick={onClose} className="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors" aria-label="Close settings">
+          <button onClick={onClose} className="p-1 rounded hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors" aria-label={t('closeSettings')}>
             <X size={18} />
           </button>
         )}
       </div>
 
       {/* Tab Bar */}
-      <div className="flex gap-0.5 border-b border-gray-700 pb-0" role="tablist" aria-label="Settings sections">
-        {TABS.map((tab) => (
+      <div className="flex gap-0.5 border-b border-gray-700 pb-0" role="tablist" aria-label={t('title')}>
+        {TAB_KEYS.map((tabKey) => (
           <button
-            key={tab.key}
+            key={tabKey}
             role="tab"
-            aria-selected={activeTab === tab.key}
-            aria-controls={`settings-panel-${tab.key}`}
-            id={`settings-tab-${tab.key}`}
-            onClick={() => setActiveTab(tab.key)}
+            aria-selected={activeTab === tabKey}
+            aria-controls={`settings-panel-${tabKey}`}
+            id={`settings-tab-${tabKey}`}
+            onClick={() => setActiveTab(tabKey)}
             className={`flex-1 px-1 py-2 text-xs font-medium text-center transition-colors border-b-2 ${
-              activeTab === tab.key
+              activeTab === tabKey
                 ? 'border-accent text-white'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             }`}
           >
-            {tab.label}
+            {t(`tabs.${tabKey}`)}
           </button>
         ))}
       </div>
@@ -279,27 +274,27 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
             } catch { /* ignore */ }
             return (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-gray-300">Your Identity</h3>
+                <h3 className="text-sm font-semibold text-gray-300">{t('general.identity')}</h3>
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">Display Name</label>
+                  <label className="text-sm text-gray-400 block mb-2">{t('general.displayName')}</label>
                   {teamName ? (
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-sm text-gray-200">{teamName}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400">from team server</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400">{t('general.fromTeamServer')}</span>
                     </div>
                   ) : (
                     <input
                       type="text"
                       value={settings.displayName || ''}
                       onChange={(e) => onUpdateSettings({ displayName: e.target.value.trim() || undefined })}
-                      placeholder="Your name (shown on entities you create)"
+                      placeholder={t('general.displayNamePlaceholder')}
                       className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent mb-2"
                     />
                   )}
                   <p className="text-[10px] text-gray-500">
                     {teamName
-                      ? 'Using your team server account name for attribution.'
-                      : 'Shown on notes, IOCs, and other entities you create. Defaults to "Analyst" if not set.'}
+                      ? t('general.displayNameHelpTeam')
+                      : t('general.displayNameHelp')}
                   </p>
                 </div>
               </div>
@@ -308,50 +303,44 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
           {/* Preferences */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-300">Display Preferences</h3>
+            <h3 className="text-sm font-semibold text-gray-300">{t('general.preferences')}</h3>
 
             <div className="flex items-center justify-between">
-              <label className={labelClass}>Default Editor Mode</label>
+              <label className={labelClass}>{t('general.editorMode')}</label>
               <select
                 value={settings.editorMode}
                 onChange={(e) => onUpdateSettings({ editorMode: e.target.value as Settings['editorMode'] })}
                 className={selectClass}
               >
-                <option value="edit">Edit Only</option>
-                <option value="split">Split View</option>
-                <option value="preview">Preview Only</option>
+                <option value="edit">{t('general.editorMode.edit')}</option>
+                <option value="split">{t('general.editorMode.split')}</option>
+                <option value="preview">{t('general.editorMode.preview')}</option>
               </select>
             </div>
 
             <div className="flex items-center justify-between">
-              <label className={labelClass}>Default Task View</label>
+              <label className={labelClass}>{t('general.taskView')}</label>
               <select
                 value={settings.taskViewMode}
                 onChange={(e) => onUpdateSettings({ taskViewMode: e.target.value as Settings['taskViewMode'] })}
                 className={selectClass}
               >
-                <option value="list">List</option>
-                <option value="kanban">Kanban</option>
+                <option value="list">{t('general.taskView.list')}</option>
+                <option value="kanban">{t('general.taskView.kanban')}</option>
               </select>
             </div>
           </div>
 
           {/* Notifications */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-300">Notifications</h3>
-            {([
-              { key: 'mention', label: 'Mentions', desc: 'When someone @mentions you' },
-              { key: 'reply', label: 'Replies', desc: 'When someone replies to your post' },
-              { key: 'reaction', label: 'Reactions', desc: 'When someone reacts to your post' },
-              { key: 'invite', label: 'Invites', desc: 'When you\'re added to an investigation' },
-              { key: 'bot', label: 'Bot alerts', desc: 'Automated bot notifications' },
-            ] as const).map(({ key, label, desc }) => {
+            <h3 className="text-sm font-semibold text-gray-300">{t('general.notifications')}</h3>
+            {(['mention', 'reply', 'reaction', 'invite', 'bot'] as const).map((key) => {
               const enabled = settings.notificationPrefs?.[key] !== false;
               return (
                 <div key={key} className="flex items-center justify-between">
                   <div>
-                    <span className="text-sm text-gray-300">{label}</span>
-                    <p className="text-xs text-gray-500">{desc}</p>
+                    <span className="text-sm text-gray-300">{t(`general.notifications.${key}`)}</span>
+                    <p className="text-xs text-gray-500">{t(`general.notifications.${key}Desc`)}</p>
                   </div>
                   <button
                     onClick={() => onUpdateSettings({ notificationPrefs: { ...settings.notificationPrefs, [key]: !enabled } })}
@@ -367,9 +356,9 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
           {/* Sample Data */}
           {(onLoadSample || onDeleteSample) && (
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-gray-300">Sample Data</h3>
+              <h3 className="text-sm font-semibold text-gray-300">{t('general.sampleData')}</h3>
               <p className="text-xs text-gray-500">
-                Load a pre-built APT investigation (Operation FERMENTED PERSISTENCE) to explore ThreatCaddy's features. Includes notes, tasks, timeline events, IOCs, and a whiteboard.
+                {t('general.sampleDataDesc')}
               </p>
               {sampleLoaded ? (
                 <button
@@ -378,7 +367,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/15 text-red-400 hover:bg-red-600/25 text-sm font-medium transition-colors"
                 >
                   <Trash2 size={16} />
-                  Remove Sample Investigation
+                  {t('general.removeSample')}
                 </button>
               ) : (
                 <button
@@ -387,7 +376,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 text-sm font-medium transition-colors"
                 >
                   <FlaskConical size={16} />
-                  Load Sample Investigation
+                  {t('general.loadSample')}
                 </button>
               )}
             </div>
@@ -395,12 +384,11 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
           {/* About */}
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-gray-300">About</h3>
+            <h3 className="text-sm font-semibold text-gray-300">{t('general.about')}</h3>
             <p className="text-sm text-gray-400">
-              ThreatCaddy v1.0 — Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs.
-              All data stored locally in your browser using IndexedDB.
+              {t('general.aboutDesc')}
             </p>
-            <p className="text-xs text-gray-600">Local-first. Your data stays in your browser unless you connect a self-hosted server.</p>
+            <p className="text-xs text-gray-600">{t('general.aboutLocalFirst')}</p>
             <div className="flex items-center gap-4 pt-2">
               <a
                 href="https://github.com/peterhanily/threatcaddy"
@@ -409,7 +397,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 className="flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover transition-colors"
               >
                 <Github size={16} />
-                GitHub
+                {t('general.github')}
               </a>
               {typeof __STANDALONE__ !== 'undefined' && __STANDALONE__ ? (
                 <button
@@ -425,13 +413,13 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                       a.click();
                       URL.revokeObjectURL(url);
                     } catch {
-                      addToast('error', 'Failed to download update. Visit https://threatcaddy.com to get the latest version.');
+                      addToast('error', t('general.updateFailed'));
                     }
                   }}
                   className="flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover transition-colors"
                 >
                   <RefreshCw size={16} />
-                  Update
+                  {t('general.update')}
                 </button>
               ) : (
                 <a
@@ -440,7 +428,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                   className="flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover transition-colors"
                 >
                   <Download size={16} />
-                  Download Standalone
+                  {t('general.downloadStandalone')}
                 </a>
               )}
               <a
@@ -450,7 +438,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 className="flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover transition-colors"
               >
                 <Shield size={16} />
-                Privacy
+                {t('general.privacy')}
               </a>
             </div>
           </div>
@@ -462,16 +450,16 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
         <div className="space-y-6" role="tabpanel" id="settings-panel-appearance" aria-labelledby="settings-tab-appearance">
           {/* Theme toggle — moved from General */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-300">Theme</h3>
+            <h3 className="text-sm font-semibold text-gray-300">{t('appearance.theme')}</h3>
             <div className="flex items-center justify-between">
-              <label className={labelClass}>Mode</label>
+              <label className={labelClass}>{t('appearance.mode')}</label>
               <select
                 value={settings.theme}
                 onChange={(e) => onUpdateSettings({ theme: e.target.value as 'dark' | 'light' })}
                 className={selectClass}
               >
-                <option value="dark">Dark</option>
-                <option value="light">Light</option>
+                <option value="dark">{t('appearance.dark')}</option>
+                <option value="light">{t('appearance.light')}</option>
               </select>
             </div>
           </div>
@@ -485,12 +473,12 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
               <Bot size={16} />
-              CaddyAI / LLM
+              {t('ai.title')}
             </h3>
 
             <div className="space-y-3">
               <div>
-                <label className={labelClass}>Anthropic API Key</label>
+                <label className={labelClass}>{t('ai.anthropicKey')}</label>
                 <input
                   type="password"
                   autoComplete="off"
@@ -504,7 +492,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               </div>
 
               <div>
-                <label className={labelClass}>OpenAI API Key</label>
+                <label className={labelClass}>{t('ai.openaiKey')}</label>
                 <input
                   type="password"
                   autoComplete="off"
@@ -518,7 +506,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               </div>
 
               <div>
-                <label className={labelClass}>Google Gemini API Key</label>
+                <label className={labelClass}>{t('ai.geminiKey')}</label>
                 <input
                   type="password"
                   autoComplete="off"
@@ -532,7 +520,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               </div>
 
               <div>
-                <label className={labelClass}>Mistral API Key</label>
+                <label className={labelClass}>{t('ai.mistralKey')}</label>
                 <input
                   type="password"
                   autoComplete="off"
@@ -540,7 +528,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                   data-lpignore="true"
                   value={settings.llmMistralApiKey || ''}
                   onChange={(e) => onUpdateSettings({ llmMistralApiKey: e.target.value.trim() || undefined })}
-                  placeholder="Enter your Mistral API key"
+                  placeholder={t('ai.mistralPlaceholder')}
                   className="w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent"
                 />
               </div>
@@ -548,7 +536,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               <LocalLLMConfig settings={settings} onUpdateSettings={onUpdateSettings} />
 
               <div className="flex items-center justify-between">
-                <label className={labelClass}>Default Model</label>
+                <label className={labelClass}>{t('ai.defaultModel')}</label>
                 <select
                   value={settings.llmDefaultModel || 'claude-sonnet-4-6'}
                   onChange={(e) => {
@@ -566,15 +554,15 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                     </optgroup>
                   ))}
                   {settings.llmLocalModelName && (
-                    <optgroup label="Local">
-                      <option value={settings.llmLocalModelName}>Local: {settings.llmLocalModelName}</option>
+                    <optgroup label={t('ai.localGroup')}>
+                      <option value={settings.llmLocalModelName}>{t('ai.localModelPrefix', { name: settings.llmLocalModelName })}</option>
                     </optgroup>
                   )}
                 </select>
               </div>
 
               <div className="flex items-center justify-between">
-                <label className={labelClass}>Max Context Messages</label>
+                <label className={labelClass}>{t('ai.maxContextMessages')}</label>
                 <input
                   type="number"
                   min={6}
@@ -589,11 +577,11 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 />
               </div>
               <p className="text-[10px] text-gray-600">
-                Conversations longer than this will be truncated (keeping the first 2 and most recent messages) before sending to the LLM.
+                {t('ai.maxContextHelp')}
               </p>
 
               <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-400">Token budget per thread</label>
+                <label className="text-xs text-gray-400">{t('ai.tokenBudget')}</label>
                 <input
                   type="number"
                   min={0}
@@ -603,28 +591,28 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                     const val = parseInt(e.target.value, 10);
                     onUpdateSettings({ llmTokenBudget: isNaN(val) || val <= 0 ? undefined : val });
                   }}
-                  placeholder="No limit"
+                  placeholder={t('ai.tokenBudgetPlaceholder')}
                   className="w-28 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent text-right"
                 />
               </div>
               <p className="text-[10px] text-gray-600">
-                Token usage badge turns amber at 80% and red when exceeded. Leave empty for no limit.
+                {t('ai.tokenBudgetHelp')}
               </p>
 
               <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-400">LLM request routing</label>
+                <label className="text-xs text-gray-400">{t('ai.routing')}</label>
                 <select
                   value={settings.llmRoutingMode || 'extension'}
                   onChange={(e) => onUpdateSettings({ llmRoutingMode: e.target.value as 'extension' | 'server' | 'auto' })}
                   className={selectClass}
                 >
-                  <option value="extension">Browser Extension</option>
-                  <option value="server">Team Server Proxy</option>
-                  <option value="auto">Auto (server when connected)</option>
+                  <option value="extension">{t('ai.routing.extension')}</option>
+                  <option value="server">{t('ai.routing.server')}</option>
+                  <option value="auto">{t('ai.routing.auto')}</option>
                 </select>
               </div>
               <p className="text-[10px] text-gray-600">
-                Extension: routes through the browser extension (requires API keys locally). Server: routes through the team server (uses server API keys). Auto: prefers server when connected.
+                {t('ai.routingHelp')}
               </p>
 
               <SystemPromptEditor
@@ -633,10 +621,10 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               />
 
               <p className="text-[10px] text-gray-600">
-                Keys are saved locally and sent only to your chosen provider. LLM calls are proxied through the browser extension to bypass CORS.
+                {t('ai.keysLocalNote')}
               </p>
               {(settings.llmAnthropicApiKey || settings.llmOpenAIApiKey || settings.llmGeminiApiKey || settings.llmMistralApiKey) && (
-                <p className="text-[10px] text-accent-green font-medium">API key saved</p>
+                <p className="text-[10px] text-accent-green font-medium">{t('ai.apiKeySaved')}</p>
               )}
             </div>
           </div>
@@ -657,29 +645,29 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
           <div className="border border-gray-700 rounded-lg p-4 space-y-3">
             <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
               <Bot size={16} />
-              Supervisor Agent
+              {t('agents.supervisor')}
             </h3>
             <p className="text-xs text-gray-500">
-              Cross-investigation analysis — detects shared IOCs, stale cases, and patterns across your caseload.
+              {t('agents.supervisorDesc')}
             </p>
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-xs text-gray-300">Enable Supervisor</span>
-                <p className="text-[10px] text-gray-500">Runs every {settings.agentSupervisorIntervalMinutes || 30} minutes</p>
+                <span className="text-xs text-gray-300">{t('agents.enableSupervisor')}</span>
+                <p className="text-[10px] text-gray-500">{t('agents.supervisorInterval', { minutes: settings.agentSupervisorIntervalMinutes || 30 })}</p>
               </div>
               <button
                 onClick={() => onUpdateSettings({ agentSupervisorEnabled: !settings.agentSupervisorEnabled })}
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${settings.agentSupervisorEnabled ? 'bg-accent-blue' : 'bg-gray-600'}`}
                 role="switch"
                 aria-checked={!!settings.agentSupervisorEnabled}
-                aria-label="Enable supervisor agent"
+                aria-label={t('agents.supervisorAriaLabel')}
               >
                 <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${settings.agentSupervisorEnabled ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
               </button>
             </div>
             {settings.agentSupervisorEnabled && (
               <div className="flex items-center gap-3 mt-2">
-                <label className="text-xs text-gray-400 shrink-0">Interval</label>
+                <label className="text-xs text-gray-400 shrink-0">{t('agents.interval')}</label>
                 <input
                   type="range"
                   min={10}
@@ -747,6 +735,7 @@ interface LocalLLMConfigProps {
 }
 
 function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
+  const { t } = useTranslation('settings');
   const [fetchingModels, setFetchingModels] = useState(false);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
@@ -861,7 +850,7 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
   return (
     <div className="border border-gray-700 rounded-lg p-3 space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-sm text-gray-300 font-medium">Local LLM (Ollama / LM Studio / vLLM)</label>
+        <label className="text-sm text-gray-300 font-medium">{t('ai.localLlm')}</label>
         <div className="flex items-center gap-1.5">
           {testStatus === 'success' && <CheckCircle2 size={12} className="text-green-400" />}
           {testStatus === 'error' && <AlertTriangle size={12} className="text-red-400" />}
@@ -870,7 +859,7 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
             disabled={testStatus === 'testing'}
             className="text-[10px] text-accent-blue hover:underline disabled:opacity-50"
           >
-            {testStatus === 'testing' ? 'Testing...' : 'Test Connection'}
+            {testStatus === 'testing' ? t('ai.testing') : t('ai.testConnection')}
           </button>
         </div>
       </div>
@@ -878,7 +867,7 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
         <p className="text-[10px] text-red-400">{testError}</p>
       )}
       <div>
-        <label className={labelClass}>Endpoint URL</label>
+        <label className={labelClass}>{t('ai.endpointUrl')}</label>
         <input
           type="text"
           value={settings.llmLocalEndpoint || ''}
@@ -886,10 +875,10 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
           placeholder="http://localhost:11434/v1"
           className={inputClass}
         />
-        <p className="text-[10px] text-gray-600 mt-0.5">Any OpenAI-compatible endpoint. Ollama: localhost:11434/v1, vLLM: localhost:8000/v1</p>
+        <p className="text-[10px] text-gray-600 mt-0.5">{t('ai.endpointHelp')}</p>
       </div>
       <div>
-        <label className={labelClass}>API Key (optional)</label>
+        <label className={labelClass}>{t('ai.localApiKey')}</label>
         <input
           type="password"
           autoComplete="off"
@@ -897,20 +886,20 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
           data-lpignore="true"
           value={settings.llmLocalApiKey || ''}
           onChange={(e) => onUpdateSettings({ llmLocalApiKey: e.target.value.trim() || undefined })}
-          placeholder="Optional — some servers require one"
+          placeholder={t('ai.localApiKeyPlaceholder')}
           className={inputClass}
         />
       </div>
       <div>
         <div className="flex items-center justify-between">
-          <label className={labelClass}>Model</label>
+          <label className={labelClass}>{t('ai.model')}</label>
           <button
             onClick={fetchModels}
             disabled={fetchingModels}
             className="flex items-center gap-1 text-[10px] text-accent-blue hover:underline disabled:opacity-50"
           >
             {fetchingModels ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
-            {fetchingModels ? 'Fetching...' : 'Fetch Models'}
+            {fetchingModels ? t('ai.fetching') : t('ai.fetchModels')}
           </button>
         </div>
         {availableModels.length > 0 ? (
@@ -919,7 +908,7 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
             onChange={(e) => onUpdateSettings({ llmLocalModelName: e.target.value || undefined })}
             className="w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
           >
-            <option value="">Select a model...</option>
+            <option value="">{t('ai.selectModel')}</option>
             {availableModels.map((m) => (
               <option key={m} value={m}>{m}</option>
             ))}
@@ -934,14 +923,14 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
           />
         )}
         {availableModels.length > 0 && (
-          <p className="text-[10px] text-green-400/70 mt-0.5">{availableModels.length} model{availableModels.length !== 1 ? 's' : ''} available</p>
+          <p className="text-[10px] text-green-400/70 mt-0.5">{t('ai.modelsAvailable', { count: availableModels.length })}</p>
         )}
       </div>
 
       {/* Agent Skills Discovery */}
       <div className="border-t border-gray-700 pt-3 mt-1">
         <div className="flex items-center justify-between">
-          <label className="text-xs text-gray-400 font-medium">Agent Skills</label>
+          <label className="text-xs text-gray-400 font-medium">{t('ai.agentSkills')}</label>
           <button
             onClick={async () => {
               setFetchingSkills(true);
@@ -966,20 +955,18 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
             className="flex items-center gap-1 text-[10px] text-accent-blue hover:underline disabled:opacity-50"
           >
             {fetchingSkills ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
-            {fetchingSkills ? 'Discovering...' : 'Discover Skills'}
+            {fetchingSkills ? t('ai.discovering') : t('ai.discoverSkills')}
           </button>
         </div>
-        <p className="text-[10px] text-gray-600 mt-0.5">
-          If your endpoint exposes <code className="text-gray-500">GET /skills</code>, discovered skills become LLM tools for CaddyAI and agents.
-        </p>
-        {skillsError && <p className="text-[10px] text-gray-500 mt-1">Skill discovery failed: {skillsError.substring(0, 100)}. This feature is optional — your endpoint works fine for chat without it.</p>}
+        <p className="text-[10px] text-gray-600 mt-0.5" dangerouslySetInnerHTML={{ __html: t('ai.skillsHelp') }} />
+        {skillsError && <p className="text-[10px] text-gray-500 mt-1">{t('ai.skillDiscoveryFailed', { error: skillsError.substring(0, 100) })}</p>}
         {(settings.llmLocalSkills || []).length > 0 && (
           <div className="mt-2">
             <button
               onClick={() => setShowSkills(!showSkills)}
               className="text-[10px] text-green-400/70 hover:text-green-400"
             >
-              {settings.llmLocalSkills!.length} skill{settings.llmLocalSkills!.length !== 1 ? 's' : ''} available {showSkills ? '▾' : '▸'}
+              {t('ai.skillsAvailable', { count: settings.llmLocalSkills!.length })} {showSkills ? '▾' : '▸'}
             </button>
             {showSkills && (
               <div className="mt-1.5 space-y-1">

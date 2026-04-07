@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Server, Trash2, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { loadServerProfiles, saveServerProfiles, type ServerProfile } from '../../lib/server-profiles';
 
 interface ServerProfilesProps {
@@ -8,6 +9,7 @@ interface ServerProfilesProps {
 }
 
 export function ServerProfiles({ onSelectProfile, currentUrl }: ServerProfilesProps) {
+  const { t } = useTranslation('settings');
   const [profiles, setProfiles] = useState<ServerProfile[]>(loadServerProfiles);
 
   const handleDelete = (id: string) => {
@@ -20,7 +22,7 @@ export function ServerProfiles({ onSelectProfile, currentUrl }: ServerProfilesPr
 
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Saved Servers</h4>
+      <h4 className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">{t('server.savedServers')}</h4>
       <div className="space-y-1.5">
         {profiles.map(p => (
           <div
@@ -46,7 +48,7 @@ export function ServerProfiles({ onSelectProfile, currentUrl }: ServerProfilesPr
             <button
               onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }}
               className="p-1 rounded hover:bg-red-500/15 text-[var(--text-tertiary)] hover:text-red-400 transition-colors shrink-0"
-              title="Delete saved server"
+              title={t('server.deleteSavedServer')}
             >
               <Trash2 size={12} />
             </button>

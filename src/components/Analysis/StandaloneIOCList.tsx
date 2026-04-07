@@ -1,4 +1,5 @@
 import { useState, useMemo, forwardRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, Archive, RotateCcw, Search, ChevronUp, ChevronDown, X, ListPlus, Clipboard, Tag as TagIcon, GitMerge, Zap } from 'lucide-react';
 import type { StandaloneIOC, Folder, Tag, IOCType, ConfidenceLevel } from '../../types';
 import { IOC_TYPE_LABELS, CONFIDENCE_LEVELS, IOC_STATUS_VALUES, IOC_STATUS_LABELS, IOC_STATUS_COLORS } from '../../types';
@@ -79,6 +80,7 @@ export function StandaloneIOCList({
 
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const { t } = useTranslation('analysis');
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [showBulkStatusMenu, setShowBulkStatusMenu] = useState(false);
   const [showBulkConfidenceMenu, setShowBulkConfidenceMenu] = useState(false);
@@ -387,7 +389,7 @@ export function StandaloneIOCList({
         </div>
 
         <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wide mr-1">Status</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-wide mr-1">{t('iocList.statusFilterLabel')}</span>
           <button
             onClick={() => setStatusFilter(null)}
             className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
@@ -396,7 +398,7 @@ export function StandaloneIOCList({
                 : 'bg-gray-800/50 border-gray-700 text-gray-500 hover:text-gray-300 hover:border-gray-600'
             }`}
           >
-            All
+            {t('iocList.filterAll')}
           </button>
           {STATUS_OPTIONS.map(s => {
             const color = STATUS_COLORS[s] || '#6b7280';
@@ -419,7 +421,7 @@ export function StandaloneIOCList({
         </div>
 
         <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wide mr-1">Confidence</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-wide mr-1">{t('iocList.confidenceFilterLabel')}</span>
           <button
             onClick={() => setConfidenceFilter(null)}
             className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
@@ -428,7 +430,7 @@ export function StandaloneIOCList({
                 : 'bg-gray-800/50 border-gray-700 text-gray-500 hover:text-gray-300 hover:border-gray-600'
             }`}
           >
-            All
+            {t('iocList.filterAll')}
           </button>
           {CONFIDENCE_OPTIONS.map(c => {
             const info = CONFIDENCE_LEVELS[c];
@@ -451,7 +453,7 @@ export function StandaloneIOCList({
         </div>
 
         <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wide mr-1">Type</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-wide mr-1">{t('iocList.typeFilterLabel')}</span>
           {ALL_IOC_TYPES.map(type => {
             const info = IOC_TYPE_LABELS[type];
             const active = typeFilter.includes(type);
@@ -475,7 +477,7 @@ export function StandaloneIOCList({
               onClick={() => setTypeFilter([])}
               className="text-[10px] text-gray-500 hover:text-gray-300 px-1.5"
             >
-              Clear
+              {t('iocList.clearTypeFilter')}
             </button>
           )}
         </div>
@@ -483,13 +485,13 @@ export function StandaloneIOCList({
         {hasActiveFilters && (
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-gray-500">
-              Showing {filteredSortedIOCs.length} of {iocs.length}
+              {t('iocList.showingOf', { shown: filteredSortedIOCs.length, total: iocs.length })}
             </span>
             <button
               onClick={() => { setSearchText(''); setStatusFilter(null); setConfidenceFilter(null); setTypeFilter([]); }}
               className="text-[10px] text-gray-500 hover:text-gray-300"
             >
-              Clear all filters
+              {t('iocList.clearAllFilters')}
             </button>
           </div>
         )}
@@ -521,17 +523,17 @@ export function StandaloneIOCList({
               fixedHeaderContent={() => (
                 <tr className="border-b border-gray-800 bg-gray-900">
                   <th className="text-left text-gray-500 font-medium py-2 pr-1 w-8">
-                    <input type="checkbox" checked={filteredSortedIOCs.length > 0 && selectedIds.size === filteredSortedIOCs.length} onChange={toggleSelectAll} className="rounded border-gray-600 bg-gray-800 text-accent focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 cursor-pointer" aria-label="Select all IOCs" />
+                    <input type="checkbox" checked={filteredSortedIOCs.length > 0 && selectedIds.size === filteredSortedIOCs.length} onChange={toggleSelectAll} className="rounded border-gray-600 bg-gray-800 text-accent focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 cursor-pointer" aria-label={t('iocList.selectAllAria')} />
                   </th>
-                  <SortHeader field="value" label="Value" className="text-left text-gray-500 font-medium py-2 pr-2" />
-                  <SortHeader field="type" label="Type" className="text-left text-gray-500 font-medium py-2 px-2" />
-                  <SortHeader field="confidence" label="Confidence" className="text-left text-gray-500 font-medium py-2 px-2" />
-                  <SortHeader field="iocStatus" label="Status" className="text-left text-gray-500 font-medium py-2 px-2" />
-                  <SortHeader field="attribution" label="Attribution" className="text-left text-gray-500 font-medium py-2 px-2" />
-                  <th className="text-left text-gray-500 font-medium py-2 px-2" title="Classification">CLS</th>
-                  {hasAnyEnrichment && <th className="text-left text-gray-500 font-medium py-2 px-2">Labels</th>}
-                  <SortHeader field="updatedAt" label="Updated" className="text-left text-gray-500 font-medium py-2 px-2" />
-                  <th className="text-right text-gray-500 font-medium py-2 pl-2">Actions</th>
+                  <SortHeader field="value" label={t('iocList.valueHeader')} className="text-left text-gray-500 font-medium py-2 pr-2" />
+                  <SortHeader field="type" label={t('iocList.typeHeader')} className="text-left text-gray-500 font-medium py-2 px-2" />
+                  <SortHeader field="confidence" label={t('iocList.confidenceHeader')} className="text-left text-gray-500 font-medium py-2 px-2" />
+                  <SortHeader field="iocStatus" label={t('iocList.statusHeader')} className="text-left text-gray-500 font-medium py-2 px-2" />
+                  <SortHeader field="attribution" label={t('iocList.attributionHeader')} className="text-left text-gray-500 font-medium py-2 px-2" />
+                  <th className="text-left text-gray-500 font-medium py-2 px-2" title={t('iocForm.classificationLabel')}>{t('iocList.clsHeader')}</th>
+                  {hasAnyEnrichment && <th className="text-left text-gray-500 font-medium py-2 px-2">{t('iocList.labelsHeader')}</th>}
+                  <SortHeader field="updatedAt" label={t('iocList.updatedHeader')} className="text-left text-gray-500 font-medium py-2 px-2" />
+                  <th className="text-right text-gray-500 font-medium py-2 pl-2">{t('iocList.actionsHeader')}</th>
                 </tr>
               )}
               itemContent={(_index, ioc) => {

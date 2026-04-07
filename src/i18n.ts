@@ -6,12 +6,14 @@ import HttpBackend from 'i18next-http-backend';
 import commonEn from '../public/locales/en/common.json';
 import labelsEn from '../public/locales/en/labels.json';
 import datesEn from '../public/locales/en/dates.json';
+import analysisEn from '../public/locales/en/analysis.json';
 
 const bundledResources = {
   en: {
     common: commonEn,
     labels: labelsEn,
     dates: datesEn,
+    analysis: analysisEn,
   },
 };
 
@@ -26,7 +28,7 @@ i18n
     fallbackLng: 'en',
 
     // Namespaces that are always loaded (bundled above)
-    ns: ['common', 'labels', 'dates'],
+    ns: ['common', 'labels', 'dates', 'analysis'],
     defaultNS: 'common',
 
     interpolation: {

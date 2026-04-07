@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Trash2, Edit3, Copy, ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../../contexts/ToastContext';
 import type { NoteTemplate } from '../../types';
 import { Modal } from '../Common/Modal';
@@ -23,6 +24,8 @@ export function TemplateManager({
   onDeleteTemplate,
   onDuplicateBuiltin,
 }: TemplateManagerProps) {
+  const { t } = useTranslation('settings');
+  const { t: tc } = useTranslation('common');
   const { addToast } = useToast();
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState<NoteTemplate | null>(null);
@@ -71,7 +74,7 @@ export function TemplateManager({
           description: formDescription.trim() || undefined,
         });
         setEditing(null);
-        addToast('success', `Template "${formName.trim()}" updated`);
+        addToast('success', t('templates.savedToast', { name: formName.trim() }));
       } else {
         await onCreateTemplate({
           name: formName.trim(),
@@ -81,11 +84,11 @@ export function TemplateManager({
           description: formDescription.trim() || undefined,
         });
         setCreating(false);
-        addToast('success', `Template "${formName.trim()}" created`);
+        addToast('success', t('templates.createdToast', { name: formName.trim() }));
       }
       resetForm();
     } catch {
-      addToast('error', 'Failed to save template');
+      addToast('error', t('templates.saveFailed'));
     }
   };
 
@@ -101,22 +104,22 @@ export function TemplateManager({
           className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-gray-100 transition-colors"
         >
           <FileText size={16} />
-          Note Templates
+          {t('templates.noteTemplates')}
           {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </button>
-        <span className="text-xs text-gray-500">{userTemplates.length} custom, {builtinTemplates.length} built-in</span>
+        <span className="text-xs text-gray-500">{t('templates.summary', { custom: userTemplates.length, builtin: builtinTemplates.length })}</span>
       </div>
 
       {expanded && (
         <div className="space-y-3 pl-1">
           <p className="text-xs text-gray-500">
-            Templates pre-fill notes with structured content. Built-in templates can be duplicated and customized.
+            {t('templates.description')}
           </p>
 
           {/* User templates */}
           {userTemplates.length > 0 && (
             <div className="space-y-1.5">
-              <h4 className="text-xs font-medium text-gray-400">Your Templates</h4>
+              <h4 className="text-xs font-medium text-gray-400">{t('templates.yourTemplates')}</h4>
               {userTemplates.map((tpl) => (
                 <div key={tpl.id} className="flex items-center justify-between p-2 rounded-lg bg-gray-800/50 border border-gray-700/50">
                   <div className="flex items-center gap-2 min-w-0">
@@ -127,10 +130,10 @@ export function TemplateManager({
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => openEdit(tpl)} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300" title="Edit">
+                    <button onClick={() => openEdit(tpl)} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300" title={tc('edit')}>
                       <Edit3 size={13} />
                     </button>
-                    <button onClick={async () => { await onDeleteTemplate(tpl.id); addToast('success', `Template "${tpl.name}" deleted`); }} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400" title="Delete">
+                    <button onClick={async () => { await onDeleteTemplate(tpl.id); addToast('success', t('templates.deletedToast', { name: tpl.name })); }} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400" title={tc('delete')}>
                       <Trash2 size={13} />
                     </button>
                   </div>
@@ -141,7 +144,7 @@ export function TemplateManager({
 
           {/* Built-in templates (read-only, can duplicate) */}
           <div className="space-y-1.5">
-            <h4 className="text-xs font-medium text-gray-400">Built-in Templates</h4>
+            <h4 className="text-xs font-medium text-gray-400">{t('templates.builtinTemplates')}</h4>
             <div className="grid grid-cols-2 gap-1.5">
               {builtinTemplates.map((tpl) => (
                 <div key={tpl.id} className="flex items-center justify-between p-2 rounded-lg bg-gray-800/30 border border-gray-700/30">
@@ -152,7 +155,7 @@ export function TemplateManager({
                   <button
                     onClick={() => onDuplicateBuiltin(tpl.id)}
                     className="p-1 rounded hover:bg-gray-700 text-gray-600 hover:text-gray-300 shrink-0"
-                    title="Duplicate as custom template"
+                    title={t('templates.duplicateAsCustom')}
                   >
                     <Copy size={12} />
                   </button>
@@ -166,33 +169,33 @@ export function TemplateManager({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 text-xs font-medium transition-colors"
           >
             <Plus size={14} />
-            New Template
+            {t('templates.newTemplate')}
           </button>
         </div>
       )}
 
       {/* Create/Edit modal */}
-      <Modal open={creating || editing !== null} onClose={() => { setCreating(false); setEditing(null); resetForm(); }} title={editing ? 'Edit Template' : 'Create Template'} wide>
+      <Modal open={creating || editing !== null} onClose={() => { setCreating(false); setEditing(null); resetForm(); }} title={editing ? t('templates.editTemplate') : t('templates.createTemplate')} wide>
         <div className="space-y-3">
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-400 mb-1">Name</label>
-              <input value={formName} onChange={(e) => setFormName(e.target.value)} className={inputClass} placeholder="Template name..." />
+              <label className="block text-xs font-medium text-gray-400 mb-1">{t('templates.name')}</label>
+              <input value={formName} onChange={(e) => setFormName(e.target.value)} className={inputClass} placeholder={t('templates.namePlaceholder')} />
             </div>
             <div className="w-20">
-              <label className="block text-xs font-medium text-gray-400 mb-1">Icon</label>
-              <input value={formIcon} onChange={(e) => setFormIcon(e.target.value)} className={inputClass} placeholder="emoji" />
+              <label className="block text-xs font-medium text-gray-400 mb-1">{t('templates.icon')}</label>
+              <input value={formIcon} onChange={(e) => setFormIcon(e.target.value)} className={inputClass} placeholder={t('templates.iconPlaceholder')} />
             </div>
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-400 mb-1">Category</label>
+              <label className="block text-xs font-medium text-gray-400 mb-1">{t('templates.category')}</label>
               <input
                 value={formCategory}
                 onChange={(e) => setFormCategory(e.target.value)}
                 className={inputClass}
-                placeholder="Custom"
+                placeholder={t('templates.categoryPlaceholder')}
                 list="template-categories"
               />
               <datalist id="template-categories">
@@ -200,13 +203,13 @@ export function TemplateManager({
               </datalist>
             </div>
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-400 mb-1">Description (optional)</label>
-              <input value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className={inputClass} placeholder="Short description..." />
+              <label className="block text-xs font-medium text-gray-400 mb-1">{t('templates.descriptionLabel')}</label>
+              <input value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className={inputClass} placeholder={t('templates.descriptionPlaceholder')} />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Content (Markdown)</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">{t('templates.contentLabel')}</label>
             <textarea
               value={formContent}
               onChange={(e) => setFormContent(e.target.value)}
@@ -216,8 +219,8 @@ export function TemplateManager({
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <button onClick={() => { setCreating(false); setEditing(null); resetForm(); }} className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm">Cancel</button>
-            <button onClick={handleSave} disabled={!formName.trim() || !formContent.trim()} className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium disabled:opacity-50">{editing ? 'Save' : 'Create'}</button>
+            <button onClick={() => { setCreating(false); setEditing(null); resetForm(); }} className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm">{tc('cancel')}</button>
+            <button onClick={handleSave} disabled={!formName.trim() || !formContent.trim()} className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium disabled:opacity-50">{editing ? tc('save') : tc('create')}</button>
           </div>
         </div>
       </Modal>

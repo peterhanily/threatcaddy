@@ -24,8 +24,9 @@ describe('i18n foundation', () => {
     expect(i18n.t('greeting', { name: 'Analyst' })).toBe('Hello Analyst');
   });
 
-  it('has labels and dates namespaces loaded', () => {
+  it('has labels, dates, and analysis namespaces loaded', () => {
     expect(i18n.hasLoadedNamespace('labels')).toBe(true);
     expect(i18n.hasLoadedNamespace('dates')).toBe(true);
+    expect(i18n.hasLoadedNamespace('analysis')).toBe(true);
   });
 });
