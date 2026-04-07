@@ -1070,6 +1070,7 @@ function HistoryTab({
 
 export function IntegrationPanel() {
   const { t } = useTranslation('integrations');
+  const { t: tt } = useTranslation('toast');
   const {
     templates,
     installations,
@@ -1151,27 +1152,27 @@ export function IntegrationPanel() {
       template.source = 'community';
       await installTemplate(template);
       await createInstallation(template.id, {});
-      addToast('success', `Installed ${entry.name} from community catalog`);
+      addToast('success', tt('integration.installedFromCatalog', { name: entry.name }));
       if (template.configSchema.length > 0) {
         setActiveSubTab('installed');
       }
     } catch (err) {
-      addToast('error', err instanceof Error ? err.message : 'Failed to install community template');
+      addToast('error', err instanceof Error ? err.message : tt('integration.installCatalogFailed'));
     }
   };
 
   const handleExport = (template: IntegrationTemplate) => {
     exportTemplateAsJson(template);
-    addToast('success', `Exported ${template.name}`);
+    addToast('success', tt('integration.templateExported', { name: template.name }));
   };
 
   const handleShareWithTeam = async (template: IntegrationTemplate) => {
     try {
       await shareIntegrationTemplate(template);
-      addToast('success', 'Template shared with team');
+      addToast('success', tt('share.templateShared'));
       void loadTeamTemplates();
     } catch (err) {
-      addToast('error', err instanceof Error ? err.message : 'Failed to share template');
+      addToast('error', err instanceof Error ? err.message : tt('share.templateShareFailed'));
     }
   };
 
@@ -1180,12 +1181,12 @@ export function IntegrationPanel() {
       const teamTemplate = { ...template, source: 'team' as const };
       await installTemplate(teamTemplate);
       await createInstallation(teamTemplate.id, {});
-      addToast('success', `Installed ${template.name} from team`);
+      addToast('success', tt('integration.installedFromTeam', { name: template.name }));
       if (template.configSchema.length > 0) {
         setActiveSubTab('installed');
       }
     } catch (err) {
-      addToast('error', err instanceof Error ? err.message : 'Failed to install team template');
+      addToast('error', err instanceof Error ? err.message : tt('integration.installTeamFailed'));
     }
   };
 
@@ -1193,9 +1194,9 @@ export function IntegrationPanel() {
     try {
       await deleteTeamTemplate(id);
       setTeamTemplates((prev) => prev.filter((t) => t.id !== id));
-      addToast('success', 'Template removed from team');
+      addToast('success', tt('share.templateRemovedFromTeam'));
     } catch (err) {
-      addToast('error', err instanceof Error ? err.message : 'Failed to delete team template');
+      addToast('error', err instanceof Error ? err.message : tt('share.templateRemoveFailed'));
     }
   };
 

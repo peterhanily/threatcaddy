@@ -5,12 +5,13 @@
 import type { AgentProfile } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
 import { FORENSICATE_AGENT_PROFILE } from './forensicate-tool';
+import i18n from '../i18n';
 
 export const BUILTIN_AGENT_PROFILES: AgentProfile[] = [
   {
     id: 'ap-lead-analyst',
-    name: 'Lead Analyst',
-    description: 'Orchestrator — delegates work, reviews output, drives investigation forward.',
+    get name() { return i18n.t('builtinProfile.leadAnalyst.name', { ns: 'agent' }); },
+    get description() { return i18n.t('builtinProfile.leadAnalyst.description', { ns: 'agent' }); },
     icon: '👑',
     role: 'lead',
     systemPrompt: `Orchestrator. Assess case, delegate via delegate_task, review via list_agent_activity.
@@ -25,8 +26,8 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
   },
   {
     id: 'ap-ioc-enricher',
-    name: 'IOC Enricher',
-    description: 'Enriches IOCs via vendor integrations and OSINT research.',
+    get name() { return i18n.t('builtinProfile.iocEnricher.name', { ns: 'agent' }); },
+    get description() { return i18n.t('builtinProfile.iocEnricher.description', { ns: 'agent' }); },
     icon: '🔍',
     role: 'specialist',
     systemPrompt: `IOC specialist. For each IOC: use enrich_ioc (runs VirusTotal, AbuseIPDB, Shodan, etc. automatically), then fetch_url for additional OSINT. Create notes with findings. Update IOC confidence. Extract new IOCs from research. If case is empty, research the topic and create initial IOCs.`,
@@ -44,8 +45,8 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
   },
   {
     id: 'ap-timeline-builder',
-    name: 'Timeline Builder',
-    description: 'Constructs chronological timelines, maps to ATT&CK techniques.',
+    get name() { return i18n.t('builtinProfile.timelineBuilder.name', { ns: 'agent' }); },
+    get description() { return i18n.t('builtinProfile.timelineBuilder.description', { ns: 'agent' }); },
     icon: '📅',
     role: 'specialist',
     systemPrompt: `Timeline specialist. Extract dates from notes/IOCs/tasks. Create timeline events with ATT&CK types (initial-access, execution, persistence, etc.). Research via fetch_url to find key dates. Identify temporal gaps. Create narrative note explaining the timeline.`,
@@ -62,8 +63,8 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
   },
   {
     id: 'ap-case-analyst',
-    name: 'Case Analyst',
-    description: 'General analyst — researches, identifies gaps, creates analysis.',
+    get name() { return i18n.t('builtinProfile.caseAnalyst.name', { ns: 'agent' }); },
+    get description() { return i18n.t('builtinProfile.caseAnalyst.description', { ns: 'agent' }); },
     icon: '🧠',
     role: 'specialist',
     systemPrompt: `General analyst. Read investigation, identify gaps, research via fetch_url/enrich_ioc. Create analysis notes with hypotheses. Create follow-up tasks. Link related entities. If case is empty, research the topic and create initial intelligence. Every cycle must produce new output.`,
@@ -76,8 +77,8 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
   },
   {
     id: 'ap-reporter',
-    name: 'Reporter',
-    description: 'Synthesizes findings into structured reports and summaries.',
+    get name() { return i18n.t('builtinProfile.reporter.name', { ns: 'agent' }); },
+    get description() { return i18n.t('builtinProfile.reporter.description', { ns: 'agent' }); },
     icon: '📝',
     role: 'specialist',
     systemPrompt: `Reporter. Read all data, generate structured reports via generate_report or create_note. Include IOC stats, timeline coverage, task completion, open questions. Recommend next steps. Use fetch_url for context if data is sparse.`,
@@ -98,16 +99,16 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
 
   // ── Executive Leadership ──────────────────────────────────────
   {
-    id: 'ap-ciso', name: 'CISO', icon: '🏛️', role: 'executive',
-    description: 'Chief Information Security Officer — strategic risk, resource allocation, agent oversight, board-level reporting.',
+    id: 'ap-ciso', get name() { return i18n.t('builtinProfile.ciso.name', { ns: 'agent' }); }, icon: '🏛️', role: 'executive',
+    get description() { return i18n.t('builtinProfile.ciso.description', { ns: 'agent' }); },
     systemPrompt: `You are the CISO. Focus on strategic risk: What is the business impact? What resources are needed? What should the board know? Prioritize threats by business risk, not just technical severity. Delegate tactical work. Use dismiss_agent to remove underperformers (with evidence). Use spawn_agent or define_specialist when the team needs new capabilities. Use reflect_on_performance to build your leadership experience. Create executive summary notes.`,
     allowedTools: undefined,
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true },
     priority: 0, source: 'builtin', createdAt: 0, updatedAt: 0,
   },
   {
-    id: 'ap-chief-of-staff', name: 'Chief of Staff', icon: '📋', role: 'executive',
-    description: 'Operational coordination — agent oversight, team performance, cross-team alignment.',
+    id: 'ap-chief-of-staff', get name() { return i18n.t('builtinProfile.chiefOfStaff.name', { ns: 'agent' }); }, icon: '📋', role: 'executive',
+    get description() { return i18n.t('builtinProfile.chiefOfStaff.description', { ns: 'agent' }); },
     systemPrompt: `You are the Chief of Staff. Coordinate operations: track progress across all agents, identify blockers, ensure alignment. Monitor agent performance via read_soul. Use dismiss_agent when agents consistently underperform (always with evidence). Use spawn_agent to fill gaps. Facilitate meetings. Create status reports. Flag overdue items. Create communication notes for stakeholders.`,
     allowedTools: undefined,
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true },
@@ -116,40 +117,40 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
 
   // ── Security Specialists ──────────────────────────────────────
   {
-    id: 'ap-threat-hunter', name: 'Threat Hunter', icon: '🎯', role: 'specialist',
-    description: 'Proactive threat hunting — hypothesis-driven investigation, ATT&CK mapping, behavioral analysis.',
+    id: 'ap-threat-hunter', get name() { return i18n.t('builtinProfile.threatHunter.name', { ns: 'agent' }); }, icon: '🎯', role: 'specialist',
+    get description() { return i18n.t('builtinProfile.threatHunter.description', { ns: 'agent' }); },
     systemPrompt: `You are a Threat Hunter. Proactively hunt for threats using hypothesis-driven methodology. Map findings to MITRE ATT&CK techniques. Look for behavioral patterns, not just IOCs. Create hypotheses as notes, test them via research (fetch_url), document results. Build timeline events for discovered activity. Focus on what automated tools miss.`,
     allowedTools: undefined,
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true },
     priority: 12, source: 'builtin', createdAt: 0, updatedAt: 0,
   },
   {
-    id: 'ap-malware-analyst', name: 'Malware Analyst', icon: '🦠', role: 'specialist',
-    description: 'Malware analysis — sandbox results, indicator extraction, family attribution.',
+    id: 'ap-malware-analyst', get name() { return i18n.t('builtinProfile.malwareAnalyst.name', { ns: 'agent' }); }, icon: '🦠', role: 'specialist',
+    get description() { return i18n.t('builtinProfile.malwareAnalyst.description', { ns: 'agent' }); },
     systemPrompt: `You are a Malware Analyst. Analyze malware indicators: research hashes via fetch_url/enrich_ioc, identify malware families, extract C2 infrastructure, map capabilities to ATT&CK. Create IOCs for discovered indicators. Document analysis methodology and findings in notes. Link related samples and infrastructure.`,
     allowedTools: ['list_iocs', 'read_ioc', 'create_ioc', 'update_ioc', 'fetch_url', 'enrich_ioc', 'create_note', 'search_notes', 'read_note', 'get_investigation_summary', 'search_all', 'link_entities', 'create_timeline_event', 'extract_iocs', 'list_integrations'],
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true },
     priority: 13, source: 'builtin', createdAt: 0, updatedAt: 0,
   },
   {
-    id: 'ap-network-forensics', name: 'Network Forensics', icon: '🌐', role: 'specialist',
-    description: 'Network analysis — flow examination, C2 detection, lateral movement tracing.',
+    id: 'ap-network-forensics', get name() { return i18n.t('builtinProfile.networkForensics.name', { ns: 'agent' }); }, icon: '🌐', role: 'specialist',
+    get description() { return i18n.t('builtinProfile.networkForensics.description', { ns: 'agent' }); },
     systemPrompt: `You are a Network Forensics specialist. Analyze network-related IOCs: IPs, domains, URLs. Research C2 infrastructure via fetch_url/enrich_ioc. Trace lateral movement patterns. Create timeline events for network activity. Map communication flows. Identify beaconing patterns and data exfiltration indicators.`,
     allowedTools: ['list_iocs', 'read_ioc', 'create_ioc', 'update_ioc', 'fetch_url', 'enrich_ioc', 'create_note', 'search_notes', 'read_note', 'get_investigation_summary', 'search_all', 'link_entities', 'create_timeline_event', 'list_timeline_events', 'list_integrations'],
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true },
     priority: 14, source: 'builtin', createdAt: 0, updatedAt: 0,
   },
   {
-    id: 'ap-digital-forensics', name: 'Digital Forensics', icon: '🔬', role: 'specialist',
-    description: 'Disk/memory forensics — artifact analysis, evidence preservation, chain of custody.',
+    id: 'ap-digital-forensics', get name() { return i18n.t('builtinProfile.digitalForensics.name', { ns: 'agent' }); }, icon: '🔬', role: 'specialist',
+    get description() { return i18n.t('builtinProfile.digitalForensics.description', { ns: 'agent' }); },
     systemPrompt: `You are a Digital Forensics specialist. Analyze forensic artifacts: file paths, registry keys, process execution, memory artifacts. Document evidence chain of custody. Create detailed timeline events with precise timestamps. Research file hashes and paths via fetch_url. Preserve evidence integrity in analysis notes. Flag artifacts that require physical evidence collection.`,
     allowedTools: undefined,
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true },
     priority: 16, source: 'builtin', createdAt: 0, updatedAt: 0,
   },
   {
-    id: 'ap-vulnerability-analyst', name: 'Vulnerability Analyst', icon: '🛡️', role: 'specialist',
-    description: 'CVE research — exploit assessment, patch prioritization, attack surface mapping.',
+    id: 'ap-vulnerability-analyst', get name() { return i18n.t('builtinProfile.vulnerabilityAnalyst.name', { ns: 'agent' }); }, icon: '🛡️', role: 'specialist',
+    get description() { return i18n.t('builtinProfile.vulnerabilityAnalyst.description', { ns: 'agent' }); },
     systemPrompt: `You are a Vulnerability Analyst. Research CVEs via fetch_url (NVD, exploit-db). Assess exploitability and impact. Prioritize patching by business risk. Map vulnerabilities to the investigation's attack surface. Create IOCs for vulnerable software versions. Document remediation recommendations. Track patch status as tasks.`,
     allowedTools: undefined,
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true },
@@ -158,8 +159,8 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
 
   // ── Business Stakeholders (Observer role — read + create notes only) ──
   {
-    id: 'ap-legal-counsel', name: 'Legal Counsel', icon: '⚖️', role: 'observer',
-    description: 'Legal implications — regulatory exposure, evidence admissibility, breach notification requirements.',
+    id: 'ap-legal-counsel', get name() { return i18n.t('builtinProfile.legalCounsel.name', { ns: 'agent' }); }, icon: '⚖️', role: 'observer',
+    get description() { return i18n.t('builtinProfile.legalCounsel.description', { ns: 'agent' }); },
     systemPrompt: `You are Legal Counsel advising on this investigation. Assess legal implications: breach notification requirements (GDPR 72hrs, state laws), evidence admissibility, regulatory exposure, litigation risk. Create advisory notes. Flag items requiring immediate legal action. Do NOT modify technical entities — you advise only.`,
     allowedTools: ['get_investigation_summary', 'search_notes', 'read_note', 'list_tasks', 'read_task', 'list_iocs', 'search_all', 'create_note'],
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: false, autoApproveCreate: true },
@@ -167,8 +168,8 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
     priority: 40, source: 'builtin', createdAt: 0, updatedAt: 0,
   },
   {
-    id: 'ap-compliance-officer', name: 'Compliance Officer', icon: '📜', role: 'observer',
-    description: 'Regulatory compliance — GDPR, HIPAA, PCI-DSS, SOX impact assessment.',
+    id: 'ap-compliance-officer', get name() { return i18n.t('builtinProfile.complianceOfficer.name', { ns: 'agent' }); }, icon: '📜', role: 'observer',
+    get description() { return i18n.t('builtinProfile.complianceOfficer.description', { ns: 'agent' }); },
     systemPrompt: `You are the Compliance Officer. Assess regulatory impact: which frameworks apply (GDPR, HIPAA, PCI-DSS, SOX, NIST)? What controls failed? What remediation is required? What must be reported to regulators? Create compliance assessment notes. Flag mandatory reporting deadlines. Do NOT modify technical entities.`,
     allowedTools: ['get_investigation_summary', 'search_notes', 'read_note', 'list_tasks', 'read_task', 'list_iocs', 'search_all', 'create_note'],
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: false, autoApproveCreate: true },
@@ -176,8 +177,8 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
     priority: 41, source: 'builtin', createdAt: 0, updatedAt: 0,
   },
   {
-    id: 'ap-comms-lead', name: 'Communications Lead', icon: '📢', role: 'observer',
-    description: 'External communications — stakeholder messaging, media response, customer notification.',
+    id: 'ap-comms-lead', get name() { return i18n.t('builtinProfile.commsLead.name', { ns: 'agent' }); }, icon: '📢', role: 'observer',
+    get description() { return i18n.t('builtinProfile.commsLead.description', { ns: 'agent' }); },
     systemPrompt: `You are the Communications Lead. Draft external communications: customer notification letters, press statements, internal staff briefings, board updates. Assess reputational impact. Create draft communications as notes. Tailor messaging to audience (technical vs executive vs public). Flag items that need PR review before release.`,
     allowedTools: ['get_investigation_summary', 'search_notes', 'read_note', 'list_tasks', 'search_all', 'create_note'],
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: false, autoApproveCreate: true },
@@ -185,8 +186,8 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
     priority: 42, source: 'builtin', createdAt: 0, updatedAt: 0,
   },
   {
-    id: 'ap-business-continuity', name: 'Business Continuity', icon: '🏢', role: 'observer',
-    description: 'Business impact — recovery priorities, continuity planning, operational workarounds.',
+    id: 'ap-business-continuity', get name() { return i18n.t('builtinProfile.businessContinuity.name', { ns: 'agent' }); }, icon: '🏢', role: 'observer',
+    get description() { return i18n.t('builtinProfile.businessContinuity.description', { ns: 'agent' }); },
     systemPrompt: `You are the Business Continuity Planner. Assess operational impact: which business processes are affected? What are recovery priorities? What workarounds exist? Create impact assessment notes. Document recovery time objectives (RTO) and recovery point objectives (RPO). Create tasks for recovery actions. Flag critical business functions at risk.`,
     allowedTools: ['get_investigation_summary', 'search_notes', 'read_note', 'list_tasks', 'read_task', 'search_all', 'create_note', 'create_task'],
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: false, autoApproveCreate: true },
@@ -196,8 +197,8 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
 
   // ── Cross-Case Analysis ───────────────────────────────────────
   {
-    id: 'ap-pattern-hunter', name: 'Pattern Hunter', icon: '🔗', role: 'lead',
-    description: 'Cross-investigation pattern detection — shared IOCs, common infrastructure, campaign correlation.',
+    id: 'ap-pattern-hunter', get name() { return i18n.t('builtinProfile.patternHunter.name', { ns: 'agent' }); }, icon: '🔗', role: 'lead',
+    get description() { return i18n.t('builtinProfile.patternHunter.description', { ns: 'agent' }); },
     systemPrompt: `You are the Pattern Hunter. Work across ALL investigations to find connections. Use list_investigations to survey the caseload. Use compare_investigations to find shared IOCs and TTPs. Use search_across_investigations to find common indicators. Document patterns as notes. Create tasks for investigation teams when patterns are found. Flag potential campaign connections.`,
     allowedTools: ['list_investigations', 'get_investigation_details', 'search_across_investigations', 'compare_investigations', 'get_investigation_summary', 'list_iocs', 'search_notes', 'create_note', 'create_task'],
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true },

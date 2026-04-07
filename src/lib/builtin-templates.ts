@@ -1,12 +1,13 @@
 import type { NoteTemplate } from '../types';
+import i18n from '../i18n';
 
 export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   // ─── General ──────────────────────────────────────────────────
   {
     id: 'bt-article',
-    name: 'Article',
+    get name() { return i18n.t('builtinTemplate.article.name', { ns: 'notes' }); },
     icon: '\uD83D\uDCF0',
-    category: 'General',
+    get category() { return i18n.t('builtinTemplateCategory.general', { ns: 'notes' }); },
     source: 'builtin',
     content: `# Article Title
 
@@ -34,9 +35,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   },
   {
     id: 'bt-bookmark',
-    name: 'Bookmark',
+    get name() { return i18n.t('builtinTemplate.bookmark.name', { ns: 'notes' }); },
     icon: '\uD83D\uDD17',
-    category: 'General',
+    get category() { return i18n.t('builtinTemplateCategory.general', { ns: 'notes' }); },
     source: 'builtin',
     content: `# Bookmark
 
@@ -54,9 +55,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   },
   {
     id: 'bt-code-snippet',
-    name: 'Code Snippet',
+    get name() { return i18n.t('builtinTemplate.codeSnippet.name', { ns: 'notes' }); },
     icon: '\uD83D\uDCBB',
-    category: 'General',
+    get category() { return i18n.t('builtinTemplateCategory.general', { ns: 'notes' }); },
     source: 'builtin',
     content: `# Code Snippet
 
@@ -82,9 +83,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   },
   {
     id: 'bt-meeting-notes',
-    name: 'Meeting Notes',
+    get name() { return i18n.t('builtinTemplate.meetingNotes.name', { ns: 'notes' }); },
     icon: '\uD83D\uDCCB',
-    category: 'General',
+    get category() { return i18n.t('builtinTemplateCategory.general', { ns: 'notes' }); },
     source: 'builtin',
     content: `# Meeting Notes
 
@@ -115,9 +116,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   // ─── Investigation ────────────────────────────────────────────
   {
     id: 'bt-host-endpoint',
-    name: 'Host/Endpoint Details',
+    get name() { return i18n.t('builtinTemplate.hostEndpoint.name', { ns: 'notes' }); },
     icon: '\uD83D\uDDA5\uFE0F',
-    category: 'Investigation',
+    get category() { return i18n.t('builtinTemplateCategory.investigation', { ns: 'notes' }); },
     source: 'builtin',
     content: `# Host/Endpoint Details
 
@@ -164,9 +165,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   },
   {
     id: 'bt-user-account',
-    name: 'User Account Details',
+    get name() { return i18n.t('builtinTemplate.userAccount.name', { ns: 'notes' }); },
     icon: '\uD83D\uDC64',
-    category: 'Investigation',
+    get category() { return i18n.t('builtinTemplateCategory.investigation', { ns: 'notes' }); },
     source: 'builtin',
     content: `# User Account Details
 
@@ -206,9 +207,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   },
   {
     id: 'bt-malware-sample',
-    name: 'Malware Sample Analysis',
+    get name() { return i18n.t('builtinTemplate.malwareSample.name', { ns: 'notes' }); },
     icon: '\uD83E\uDDA0',
-    category: 'Investigation',
+    get category() { return i18n.t('builtinTemplateCategory.investigation', { ns: 'notes' }); },
     source: 'builtin',
     content: `# Malware Sample Analysis
 
@@ -259,9 +260,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   },
   {
     id: 'bt-phishing-report',
-    name: 'Phishing Campaign Report',
+    get name() { return i18n.t('builtinTemplate.phishingReport.name', { ns: 'notes' }); },
     icon: '\uD83C\uDFA3',
-    category: 'Investigation',
+    get category() { return i18n.t('builtinTemplateCategory.investigation', { ns: 'notes' }); },
     source: 'builtin',
     content: `# Phishing Campaign Report
 
@@ -319,9 +320,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   },
   {
     id: 'bt-threat-actor',
-    name: 'Threat Actor Profile',
+    get name() { return i18n.t('builtinTemplate.threatActor.name', { ns: 'notes' }); },
     icon: '\uD83C\uDFAD',
-    category: 'Investigation',
+    get category() { return i18n.t('builtinTemplateCategory.investigation', { ns: 'notes' }); },
     source: 'builtin',
     content: `# Threat Actor Profile
 
@@ -372,9 +373,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   },
   {
     id: 'bt-hunt-hypothesis',
-    name: 'Threat Hunt Hypothesis',
+    get name() { return i18n.t('builtinTemplate.huntHypothesis.name', { ns: 'notes' }); },
     icon: '\uD83D\uDD2D',
-    category: 'Investigation',
+    get category() { return i18n.t('builtinTemplateCategory.investigation', { ns: 'notes' }); },
     source: 'builtin',
     content: `# Threat Hunt Hypothesis
 
@@ -413,9 +414,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   },
   {
     id: 'bt-ir-triage',
-    name: 'IR Triage Checklist',
+    get name() { return i18n.t('builtinTemplate.irTriage.name', { ns: 'notes' }); },
     icon: '\uD83D\uDEA8',
-    category: 'Incident Response',
+    get category() { return i18n.t('builtinTemplateCategory.incidentResponse', { ns: 'notes' }); },
     source: 'builtin',
     content: `# Incident Response Triage
 
@@ -473,9 +474,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   },
   {
     id: 'bt-vuln-assessment',
-    name: 'Vulnerability Assessment',
+    get name() { return i18n.t('builtinTemplate.vulnAssessment.name', { ns: 'notes' }); },
     icon: '\uD83D\uDEE1\uFE0F',
-    category: 'Incident Response',
+    get category() { return i18n.t('builtinTemplateCategory.incidentResponse', { ns: 'notes' }); },
     source: 'builtin',
     content: `# Vulnerability Assessment
 
@@ -527,9 +528,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   },
   {
     id: 'bt-post-incident',
-    name: 'Post-Incident Review',
+    get name() { return i18n.t('builtinTemplate.postIncident.name', { ns: 'notes' }); },
     icon: '\uD83D\uDCD3',
-    category: 'Incident Response',
+    get category() { return i18n.t('builtinTemplateCategory.incidentResponse', { ns: 'notes' }); },
     source: 'builtin',
     content: `# Post-Incident Review
 
@@ -581,9 +582,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   // ─── Cloud ────────────────────────────────────────────────────
   {
     id: 'bt-cloud-account',
-    name: 'Cloud Account Details',
+    get name() { return i18n.t('builtinTemplate.cloudAccount.name', { ns: 'notes' }); },
     icon: '\u2601\uFE0F',
-    category: 'Cloud',
+    get category() { return i18n.t('builtinTemplateCategory.cloud', { ns: 'notes' }); },
     source: 'builtin',
     content: `# Cloud Account Details
 
@@ -627,9 +628,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   },
   {
     id: 'bt-oci-user',
-    name: 'OCI User Details',
+    get name() { return i18n.t('builtinTemplate.ociUser.name', { ns: 'notes' }); },
     icon: '\uD83D\uDD11',
-    category: 'Cloud',
+    get category() { return i18n.t('builtinTemplateCategory.cloud', { ns: 'notes' }); },
     source: 'builtin',
     content: `# OCI User Details
 
@@ -681,9 +682,9 @@ export const BUILTIN_NOTE_TEMPLATES: NoteTemplate[] = [
   },
   {
     id: 'bt-oci-tenancy',
-    name: 'OCI Tenancy Details',
+    get name() { return i18n.t('builtinTemplate.ociTenancy.name', { ns: 'notes' }); },
     icon: '\uD83C\uDFE2',
-    category: 'Cloud',
+    get category() { return i18n.t('builtinTemplateCategory.cloud', { ns: 'notes' }); },
     source: 'builtin',
     content: `# OCI Tenancy Details
 

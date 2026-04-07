@@ -10,6 +10,7 @@
 
 import type { AgentProfile } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
+import i18n from '../i18n';
 
 // ── Tool Definition (Anthropic format) ───────────────────────────────────
 
@@ -122,9 +123,8 @@ function performBasicCheck(text: string): BasicCheckResult {
 
 export const FORENSICATE_AGENT_PROFILE: AgentProfile = {
   id: 'ap-forensicate-scanner',
-  name: 'Forensicate Scanner',
-  description:
-    'Scans investigation content for prompt injection patterns, jailbreak attempts, and adversarial inputs using Forensicate.ai.',
+  get name() { return i18n.t('builtinProfile.forensicateScanner.name', { ns: 'agent' }); },
+  get description() { return i18n.t('builtinProfile.forensicateScanner.description', { ns: 'agent' }); },
   icon: '🛡️',
   role: 'specialist',
   systemPrompt:

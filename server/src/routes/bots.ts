@@ -8,6 +8,7 @@ import {
   createBot, updateBot, enableBot, disableBot, triggerBot, deleteBot,
   listBots, getBot, getBotRuns, getBotRunDetail, auditBotAction,
 } from '../services/bot-service.js';
+import { ErrorCodes } from '../types/error-codes.js';
 
 const app = new Hono();
 
@@ -30,7 +31,7 @@ app.get('/', requireRole('admin', 'analyst'), async (c) => {
 
 app.get('/:id', requireRole('admin', 'analyst'), async (c) => {
   const bot = await getBot(c.req.param('id'));
-  if (!bot) return c.json({ error: 'Bot not found' }, 404);
+  if (!bot) return c.json({ error: 'Bot not found', code: ErrorCodes.BOT_NOT_FOUND }, 404);
   return c.json({ bot });
 });
 
@@ -39,10 +40,10 @@ app.get('/:id', requireRole('admin', 'analyst'), async (c) => {
 app.post('/', requireRole('admin'), async (c) => {
   const user = c.get('user' as never) as { id: string };
   let body;
-  try { body = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON body' }, 400); }
+  try { body = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON body', code: ErrorCodes.INVALID_JSON_BODY }, 400); }
 
   const error = validateBotCreate(body);
-  if (error) return c.json({ error }, 400);
+  if (error) return c.json({ error, code: ErrorCodes.VALIDATION_FAILED }, 400);
 
   const bot = await createBot(body, user.id);
 
@@ -56,13 +57,13 @@ app.post('/', requireRole('admin'), async (c) => {
 app.patch('/:id', requireRole('admin'), async (c) => {
   const user = c.get('user' as never) as { id: string };
   let body;
-  try { body = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON body' }, 400); }
+  try { body = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON body', code: ErrorCodes.INVALID_JSON_BODY }, 400); }
 
   const result = validateBotUpdate(body);
-  if ('error' in result) return c.json({ error: result.error }, 400);
+  if ('error' in result) return c.json({ error: result.error, code: ErrorCodes.VALIDATION_FAILED }, 400);
 
   const bot = await updateBot(c.req.param('id'), result.updates);
-  if (!bot) return c.json({ error: 'Bot not found' }, 404);
+  if (!bot) return c.json({ error: 'Bot not found', code: ErrorCodes.BOT_NOT_FOUND }, 404);
 
   await auditBotAction(user.id, 'update', bot.name, `Updated bot "${bot.name}"`, c.req.param('id'));
 
@@ -74,7 +75,7 @@ app.patch('/:id', requireRole('admin'), async (c) => {
 app.post('/:id/enable', requireRole('admin'), async (c) => {
   const user = c.get('user' as never) as { id: string };
   const bot = await enableBot(c.req.param('id'));
-  if (!bot) return c.json({ error: 'Bot not found' }, 404);
+  if (!bot) return c.json({ error: 'Bot not found', code: ErrorCodes.BOT_NOT_FOUND }, 404);
 
   await auditBotAction(user.id, 'enable', bot.name, `Enabled bot "${bot.name}"`, c.req.param('id'));
   return c.json({ ok: true, enabled: true });
@@ -83,7 +84,7 @@ app.post('/:id/enable', requireRole('admin'), async (c) => {
 app.post('/:id/disable', requireRole('admin'), async (c) => {
   const user = c.get('user' as never) as { id: string };
   const bot = await disableBot(c.req.param('id'));
-  if (!bot) return c.json({ error: 'Bot not found' }, 404);
+  if (!bot) return c.json({ error: 'Bot not found', code: ErrorCodes.BOT_NOT_FOUND }, 404);
 
   await auditBotAction(user.id, 'disable', bot.name, `Disabled bot "${bot.name}"`, c.req.param('id'));
   return c.json({ ok: true, enabled: false });
@@ -94,8 +95,8 @@ app.post('/:id/disable', requireRole('admin'), async (c) => {
 app.post('/:id/trigger', requireRole('admin'), async (c) => {
   const user = c.get('user' as never) as { id: string };
   const result = await triggerBot(c.req.param('id'));
-  if (!result) return c.json({ error: 'Bot not found' }, 404);
-  if ('error' in result) return c.json({ error: result.error }, 400);
+  if (!result) return c.json({ error: 'Bot not found', code: ErrorCodes.BOT_NOT_FOUND }, 404);
+  if ('error' in result) return c.json({ error: result.error, code: ErrorCodes.VALIDATION_FAILED }, 400);
 
   await auditBotAction(user.id, 'trigger.manual', result.name, `Manually triggered bot "${result.name}"`, c.req.param('id'));
   return c.json({ ok: true, message: 'Bot triggered' });
@@ -110,7 +111,7 @@ app.post('/:id/webhook', async (c) => {
   // Uses cached decrypted config from BotManager (no DB query or decryption per request).
   const webhookSecret = botManager.getWebhookSecret(id);
   if (!webhookSecret) {
-    return c.json({ error: 'Not found' }, 404);
+    return c.json({ error: 'Not found', code: ErrorCodes.NOT_FOUND }, 404);
   }
 
   // Support two auth modes: HMAC-SHA256 signature or raw secret comparison
@@ -138,11 +139,11 @@ app.post('/:id/webhook', async (c) => {
   }
 
   if (!authenticated) {
-    return c.json({ error: 'Invalid webhook secret' }, 401);
+    return c.json({ error: 'Invalid webhook secret', code: ErrorCodes.INVALID_WEBHOOK_SECRET }, 401);
   }
 
   let payload: Record<string, unknown>;
-  try { payload = JSON.parse(rawBody); } catch { return c.json({ error: 'Invalid JSON body' }, 400); }
+  try { payload = JSON.parse(rawBody); } catch { return c.json({ error: 'Invalid JSON body', code: ErrorCodes.INVALID_JSON_BODY }, 400); }
 
   botManager.executeBot(id, 'webhook', undefined, payload).catch(err => {
     logger.error('Webhook bot execution failed', { botId: id, error: String(err) });
@@ -155,7 +156,7 @@ app.post('/:id/webhook', async (c) => {
 app.delete('/:id', requireRole('admin'), async (c) => {
   const user = c.get('user' as never) as { id: string };
   const bot = await deleteBot(c.req.param('id'));
-  if (!bot) return c.json({ error: 'Bot not found' }, 404);
+  if (!bot) return c.json({ error: 'Bot not found', code: ErrorCodes.BOT_NOT_FOUND }, 404);
 
   await auditBotAction(user.id, 'delete', bot.name, `Deleted bot "${bot.name}"`, c.req.param('id'));
   return c.json({ ok: true });
@@ -172,7 +173,7 @@ app.get('/:id/runs', requireRole('admin', 'analyst'), async (c) => {
 app.get('/:id/runs/:runId', requireRole('admin', 'analyst'), async (c) => {
   const run = await getBotRunDetail(c.req.param('runId'));
   if (!run || run.botConfigId !== c.req.param('id')) {
-    return c.json({ error: 'Run not found' }, 404);
+    return c.json({ error: 'Run not found', code: ErrorCodes.RUN_NOT_FOUND }, 404);
   }
   return c.json({ run });
 });

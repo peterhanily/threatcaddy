@@ -73,6 +73,7 @@ export function StandaloneIOCList({
 }: StandaloneIOCListProps) {
   const { getInstallationsForIOCType, addRun } = useIntegrations();
   const { addToast } = useToast();
+  const { t: tt } = useTranslation('toast');
   const [showForm, setShowForm] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [editingIOC, setEditingIOC] = useState<StandaloneIOC | undefined>();
@@ -199,7 +200,7 @@ export function StandaloneIOCList({
     }
     setSelectedIds(new Set());
     setShowBulkDelete(false);
-    addToast('success', `Deleted ${ids.length} IOC${ids.length !== 1 ? 's' : ''}`);
+    addToast('success', tt('ioc.deleted', { count: ids.length }));
   };
 
   const handleBulkSetStatus = (status: string) => {
@@ -207,7 +208,7 @@ export function StandaloneIOCList({
     for (const id of ids) onUpdate(id, { iocStatus: status });
     setSelectedIds(new Set());
     setShowBulkStatusMenu(false);
-    addToast('success', `Updated status on ${ids.length} IOC${ids.length !== 1 ? 's' : ''}`);
+    addToast('success', tt('ioc.statusUpdated', { count: ids.length }));
   };
 
   const handleBulkSetConfidence = (confidence: ConfidenceLevel) => {
@@ -215,7 +216,7 @@ export function StandaloneIOCList({
     for (const id of ids) onUpdate(id, { confidence });
     setSelectedIds(new Set());
     setShowBulkConfidenceMenu(false);
-    addToast('success', `Updated confidence on ${ids.length} IOC${ids.length !== 1 ? 's' : ''}`);
+    addToast('success', tt('ioc.confidenceUpdated', { count: ids.length }));
   };
 
   const handleBulkAddTags = () => {
@@ -229,7 +230,7 @@ export function StandaloneIOCList({
     setSelectedIds(new Set());
     setShowBulkTagInput(false);
     setBulkTagText('');
-    addToast('success', `Added tags to ${selected.length} IOC${selected.length !== 1 ? 's' : ''}`);
+    addToast('success', tt('ioc.tagsAdded', { count: selected.length }));
   };
 
   const SortHeader = ({ field, label, className }: { field: SortField; label: string; className: string }) => (
@@ -281,9 +282,9 @@ export function StandaloneIOCList({
                 const text = filteredSortedIOCs.map((i) => i.value).join('\n');
                 try {
                   await navigator.clipboard.writeText(text);
-                  addToast('success', `Copied ${filteredSortedIOCs.length} IOC${filteredSortedIOCs.length !== 1 ? 's' : ''} to clipboard`);
+                  addToast('success', tt('ioc.copiedToClipboard', { count: filteredSortedIOCs.length }));
                 } catch {
-                  addToast('error', 'Failed to copy to clipboard');
+                  addToast('error', tt('ioc.copyFailed'));
                 }
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 text-sm font-medium transition-colors"
@@ -730,7 +731,7 @@ export function StandaloneIOCList({
           if (stats.success) parts.push(`${stats.success} enriched`);
           if (stats.error) parts.push(`${stats.error} errors`);
           if (stats.skipped) parts.push(`${stats.skipped} skipped`);
-          addToast(stats.error > 0 ? 'warning' : 'success', `Bulk enrich done: ${parts.join(', ') || 'no results'}`);
+          addToast(stats.error > 0 ? 'warning' : 'success', tt('ioc.bulkEnrichDone', { details: parts.join(', ') || 'no results' }));
           // Phase 4c: clear selection after completed run
           setSelectedIds(new Set());
         }}

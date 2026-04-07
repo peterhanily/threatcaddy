@@ -369,61 +369,63 @@
     <div class="header-left">
       <img src="assets/icon.svg" alt="ThreatCaddy" class="header-logo" />
       <div>
-        <h1>ThreatCaddy</h1>
-        <div class="version">v1.0.0</div>
+        <h1 data-i18n="appName">ThreatCaddy</h1>
+        <div class="version" data-i18n="version">v1.0.0</div>
       </div>
     </div>
-    <button id="settings-btn" style="background:none;border:none;color:#9ca3af;cursor:pointer;padding:4px;margin:0;width:auto;transition:color 0.2s;" title="Settings">
+    <button id="settings-btn" style="background:none;border:none;color:#9ca3af;cursor:pointer;padding:4px;margin:0;width:auto;transition:color 0.2s;" data-i18n-title="settingsTooltip" title="Settings">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
   </header>
 
   <section>
-    <h2>Quick Stats</h2>
+    <h2 data-i18n="quickStats">Quick Stats</h2>
     <div class="stats">
       <div class="stat">
-        <div class="stat-label">Captures</div>
+        <div class="stat-label" data-i18n="captures">Captures</div>
         <div class="stat-value" id="total-captures">0</div>
       </div>
       <div class="stat">
-        <div class="stat-label">This Week</div>
+        <div class="stat-label" data-i18n="thisWeek">This Week</div>
         <div class="stat-value" id="week-captures">0</div>
       </div>
     </div>
   </section>
 
   <section>
-    <h2>Quick Capture</h2>
+    <h2 data-i18n="quickCapture">Quick Capture</h2>
     <div class="capture-form">
       <input
         type="text"
         id="capture-title"
         class="capture-title"
+        data-i18n-placeholder="noteTitlePlaceholder"
         placeholder="Note title (optional)"
       />
       <textarea
         id="capture-text"
         class="capture-textarea"
+        data-i18n-placeholder="captureTextPlaceholder"
         placeholder="Type or paste a note..."
       ></textarea>
-      <button type="button" class="options-toggle" id="options-toggle">&#9662; Options</button>
+      <button type="button" class="options-toggle" id="options-toggle" data-i18n-options="options">&#9662; Options</button>
       <div class="options-panel" id="options-panel">
         <div class="option-row">
-          <label for="opt-folder">Investigation</label>
-          <input type="text" id="opt-folder" placeholder="Default: Clips" />
+          <label for="opt-folder" data-i18n="investigation">Investigation</label>
+          <input type="text" id="opt-folder" data-i18n-placeholder="defaultClips" placeholder="Default: Clips" />
         </div>
         <div class="option-row">
-          <label for="opt-entity">Save as</label>
+          <label for="opt-entity" data-i18n="saveAs">Save as</label>
           <select id="opt-entity">
-            <option value="note">Note</option>
-            <option value="task">Task</option>
-            <option value="timeline-event">Timeline Event</option>
+            <option value="note" data-i18n="entityNote">Note</option>
+            <option value="task" data-i18n="entityTask">Task</option>
+            <option value="timeline-event" data-i18n="entityTimelineEvent">Timeline Event</option>
           </select>
         </div>
         <div class="option-row">
-          <label for="opt-cls">Classification</label>
+          <label for="opt-cls" data-i18n="classification">Classification</label>
           <select id="opt-cls">
-            <option value="">None</option>
+            <option value="" data-i18n="classificationNone">None</option>
             <option value="TLP:CLEAR">TLP:CLEAR</option>
             <option value="TLP:GREEN">TLP:GREEN</option>
             <option value="TLP:AMBER">TLP:AMBER</option>
@@ -432,33 +434,33 @@
           </select>
         </div>
       </div>
-      <button id="save-btn">Save Note</button>
-      <div class="save-success" id="save-success">Saved!</div>
-      <div class="save-error" id="save-error">Failed to save. Please try again.</div>
+      <button id="save-btn" data-i18n="saveNote">Save Note</button>
+      <div class="save-success" id="save-success" data-i18n="saved">Saved!</div>
+      <div class="save-error" id="save-error" data-i18n="saveFailed">Failed to save. Please try again.</div>
     </div>
   </section>
 
   <section>
-    <h2>Recent Captures</h2>
+    <h2 data-i18n="recentCaptures">Recent Captures</h2>
     <div class="recent-list" id="recent-list">
-      <div class="recent-empty">No captures yet. Select text on any page and right-click to save.</div>
+      <div class="recent-empty" data-i18n="noCaptures">No captures yet. Select text on any page and right-click to save.</div>
     </div>
   </section>
 
   <section>
-    <h2>Quick Actions</h2>
+    <h2 data-i18n="quickActions">Quick Actions</h2>
     <div class="actions">
-      <button id="open-app-btn">Open ThreatCaddy</button>
-      <button id="review-btn" class="secondary">Review All Captures</button>
+      <button id="open-app-btn" data-i18n="openThreatCaddy">Open ThreatCaddy</button>
+      <button id="review-btn" class="secondary" data-i18n="reviewAllCaptures">Review All Captures</button>
     </div>
   </section>
 
   <section>
-    <h2>Permissions</h2>
+    <h2 data-i18n="permissions">Permissions</h2>
     <div class="help-text" style="display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:8px;">
       <div>
-        <strong>Allow CaddyAI</strong><br>
-        <span style="font-size:11px;color:#9ca3af;">Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral).</span>
+        <strong data-i18n="allowCaddyAI">Allow CaddyAI</strong><br>
+        <span style="font-size:11px;color:#9ca3af;" data-i18n="allowCaddyAIDesc">Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral).</span>
       </div>
       <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
         <input type="checkbox" id="ai-perm-toggle" style="opacity:0;width:0;height:0;">
@@ -467,8 +469,8 @@
     </div>
     <div class="help-text" style="display:flex;align-items:center;gap:8px;justify-content:space-between;">
       <div>
-        <strong>Allow URL fetching</strong><br>
-        <span style="font-size:11px;color:#9ca3af;">Required for the /fetch command and non-localhost local LLMs.</span>
+        <strong data-i18n="allowUrlFetching">Allow URL fetching</strong><br>
+        <span style="font-size:11px;color:#9ca3af;" data-i18n="allowUrlFetchingDesc">Required for the /fetch command and non-localhost local LLMs.</span>
       </div>
       <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
         <input type="checkbox" id="url-perm-toggle" style="opacity:0;width:0;height:0;">
@@ -479,12 +481,12 @@
 
   <section>
     <div class="help-text">
-      <strong>How to use:</strong><br>
-      Select text and right-click "Save to ThreatCaddy"<br>
-      Or use keyboard shortcut: <span class="kbd" id="shortcut-kbd"></span> (clips selection, or full page if nothing selected)<br>
+      <strong data-i18n="howToUse">How to use:</strong><br>
+      <span data-i18n="howToUseContextMenu">Select text and right-click "Save to ThreatCaddy"</span><br>
+      <span data-i18n="howToUseShortcut">Or use keyboard shortcut:</span> <span class="kbd" id="shortcut-kbd"></span> <span data-i18n="howToUseShortcutSuffix">(clips selection, or full page if nothing selected)</span><br>
       <br>
-      <strong>Privacy:</strong><br>
-      All data stays local on your device. API keys are sent only to your chosen provider. No tracking.
+      <strong data-i18n="privacyLabel">Privacy:</strong><br>
+      <span data-i18n="privacyText">All data stays local on your device. API keys are sent only to your chosen provider. No tracking.</span>
     </div>
   </section>
 
@@ -498,28 +500,28 @@
 
   <div id="settings-page" style="display:none;">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-      <button id="settings-back" style="background:none;border:none;color:#9ca3af;cursor:pointer;padding:4px;margin:0;width:auto;" title="Back">
+      <button id="settings-back" style="background:none;border:none;color:#9ca3af;cursor:pointer;padding:4px;margin:0;width:auto;" data-i18n-title="back" title="Back">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
       </button>
-      <h2 style="margin:0;">Settings</h2>
+      <h2 style="margin:0;" data-i18n="settings">Settings</h2>
     </div>
 
     <section style="margin-bottom:20px;">
-      <h2 style="font-size:13px;">Target URL</h2>
+      <h2 style="font-size:13px;" data-i18n="targetUrl">Target URL</h2>
       <div class="help-text" style="margin-bottom:8px;">
-        <span style="font-size:11px;color:#9ca3af;">The ThreatCaddy instance URL this extension connects to.</span>
+        <span style="font-size:11px;color:#9ca3af;" data-i18n="targetUrlDesc">The ThreatCaddy instance URL this extension connects to.</span>
       </div>
-      <input type="text" id="settings-target-url" class="capture-title" placeholder="https://threatcaddy.com" style="margin-bottom:4px;" />
-      <button id="settings-save-url" style="font-size:12px;padding:6px 12px;">Save</button>
-      <div id="settings-url-saved" class="save-success">Saved!</div>
+      <input type="text" id="settings-target-url" class="capture-title" data-i18n-placeholder="targetUrlPlaceholder" placeholder="https://threatcaddy.com" style="margin-bottom:4px;" />
+      <button id="settings-save-url" style="font-size:12px;padding:6px 12px;" data-i18n="save">Save</button>
+      <div id="settings-url-saved" class="save-success" data-i18n="saved">Saved!</div>
     </section>
 
     <section style="margin-bottom:20px;">
-      <h2 style="font-size:13px;">Permissions</h2>
+      <h2 style="font-size:13px;" data-i18n="permissions">Permissions</h2>
       <div class="help-text" style="display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:8px;">
         <div>
-          <strong>Allow CaddyAI</strong><br>
-          <span style="font-size:11px;color:#9ca3af;">Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral).</span>
+          <strong data-i18n="allowCaddyAI">Allow CaddyAI</strong><br>
+          <span style="font-size:11px;color:#9ca3af;" data-i18n="allowCaddyAIDesc">Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral).</span>
         </div>
         <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
           <input type="checkbox" id="settings-ai-toggle" style="opacity:0;width:0;height:0;">
@@ -528,8 +530,8 @@
       </div>
       <div class="help-text" style="display:flex;align-items:center;gap:8px;justify-content:space-between;">
         <div>
-          <strong>Allow URL fetching</strong><br>
-          <span style="font-size:11px;color:#9ca3af;">Required for the /fetch command and non-localhost local LLMs.</span>
+          <strong data-i18n="allowUrlFetching">Allow URL fetching</strong><br>
+          <span style="font-size:11px;color:#9ca3af;" data-i18n="allowUrlFetchingDesc">Required for the /fetch command and non-localhost local LLMs.</span>
         </div>
         <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
           <input type="checkbox" id="settings-url-toggle" style="opacity:0;width:0;height:0;">

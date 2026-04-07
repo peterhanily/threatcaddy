@@ -1,5 +1,19 @@
 // Popup script for ThreatCaddy extension
 
+// i18n bootstrap — resolve data-i18n attributes to localized strings
+document.querySelectorAll('[data-i18n]').forEach(el => {
+  const msg = chrome.i18n.getMessage(el.dataset.i18n);
+  if (msg) el.textContent = msg;
+});
+document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+  const msg = chrome.i18n.getMessage(el.dataset.i18nPlaceholder);
+  if (msg) el.placeholder = msg;
+});
+document.querySelectorAll('[data-i18n-title]').forEach(el => {
+  const msg = chrome.i18n.getMessage(el.dataset.i18nTitle);
+  if (msg) el.title = msg;
+});
+
 // Load stats and recent captures on popup open
 async function loadStats() {
   try {
@@ -24,7 +38,7 @@ function renderRecentCaptures(captures) {
   const list = document.getElementById('recent-list');
 
   if (captures.length === 0) {
-    list.innerHTML = '<div class="recent-empty">No captures yet. Select text on any page and right-click to save.</div>';
+    list.innerHTML = '<div class="recent-empty">' + escapeHtml(chrome.i18n.getMessage('noCaptures')) + '</div>';
     return;
   }
 
@@ -35,7 +49,7 @@ function renderRecentCaptures(captures) {
 
     return `
       <div class="recent-item">
-        <div class="recent-title">${escapeHtml(capture.title || 'Untitled')}</div>
+        <div class="recent-title">${escapeHtml(capture.title || chrome.i18n.getMessage('untitled'))}</div>
         <div class="recent-preview">${escapeHtml(capture.content.substring(0, 120))}</div>
         <div class="recent-meta">
           <span class="recent-source">${escapeHtml(source)}</span>
@@ -53,10 +67,10 @@ function formatRelativeTime(date) {
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
 
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
+  if (minutes < 1) return chrome.i18n.getMessage('justNow');
+  if (minutes < 60) return chrome.i18n.getMessage('minutesAgo', [String(minutes)]);
+  if (hours < 24) return chrome.i18n.getMessage('hoursAgo', [String(hours)]);
+  if (days < 7) return chrome.i18n.getMessage('daysAgo', [String(days)]);
   return date.toLocaleDateString();
 }
 
@@ -71,7 +85,8 @@ document.getElementById('options-toggle').addEventListener('click', () => {
   const panel = document.getElementById('options-panel');
   const toggle = document.getElementById('options-toggle');
   const open = panel.classList.toggle('show');
-  toggle.innerHTML = (open ? '&#9652; Options' : '&#9662; Options');
+  const optionsLabel = chrome.i18n.getMessage('options');
+  toggle.innerHTML = (open ? '&#9652; ' : '&#9662; ') + escapeHtml(optionsLabel);
 });
 
 // Save note from quick capture form

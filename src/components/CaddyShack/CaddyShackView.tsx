@@ -24,6 +24,7 @@ interface CaddyShackViewProps {
 
 export function CaddyShackView({ folderId, folderName, settings }: CaddyShackViewProps) {
   const { t } = useTranslation('caddyshack');
+  const { t: tt } = useTranslation('toast');
   const { user, connected } = useAuth();
   const { addToast } = useToast();
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('caddyshack-onboarded'));
@@ -96,36 +97,36 @@ export function CaddyShackView({ folderId, folderName, settings }: CaddyShackVie
     try {
       await addReaction(postId, emoji);
       await loadFeed();
-    } catch { addToast('error', 'Failed to add reaction'); }
+    } catch { addToast('error', tt('caddyshack.reactionAddFailed')); }
   };
 
   const handleRemoveReaction = async (postId: string, emoji: string) => {
     try {
       await removeReaction(postId, emoji);
       await loadFeed();
-    } catch { addToast('error', 'Failed to remove reaction'); }
+    } catch { addToast('error', tt('caddyshack.reactionRemoveFailed')); }
   };
 
   const handleDelete = async (postId: string) => {
     try {
       await deletePost(postId);
-      addToast('success', 'Post deleted');
+      addToast('success', tt('caddyshack.postDeleted'));
       await loadFeed();
-    } catch { addToast('error', 'Failed to delete post'); }
+    } catch { addToast('error', tt('caddyshack.postDeleteFailed')); }
   };
 
   const handleEdit = async (postId: string, content: string) => {
     try {
       await editPost(postId, { content });
       await loadFeed();
-    } catch { addToast('error', 'Failed to edit post'); }
+    } catch { addToast('error', tt('caddyshack.editFailed')); }
   };
 
   const handlePin = async (postId: string, pinned: boolean) => {
     try {
       await editPost(postId, { pinned });
       await loadFeed();
-    } catch { addToast('error', 'Failed to update pin status'); }
+    } catch { addToast('error', tt('caddyshack.pinUpdateFailed')); }
   };
 
   const handleRefresh = useCallback(async () => {

@@ -8,6 +8,7 @@ import { posts, reactions, users } from '../db/schema.js';
 import { notifyMentions, createNotification } from '../services/notification-service.js';
 import { broadcastToFolder, broadcastGlobal } from '../ws/handler.js';
 import type { AuthUser } from '../types.js';
+import { ErrorCodes } from '../types/error-codes.js';
 
 const app = new Hono<{ Variables: { user: AuthUser } }>();
 
@@ -23,7 +24,7 @@ app.get('/', async (c) => {
   if (folderId) {
     const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer');
     if (!hasAccess) {
-      return c.json({ error: 'No access to this investigation' }, 403);
+      return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
     }
   }
 
@@ -114,13 +115,13 @@ app.post('/posts', async (c) => {
 
   // Input validation
   if (typeof content !== 'string' || !content.trim()) {
-    return c.json({ error: 'Content is required and must be a string' }, 400);
+    return c.json({ error: 'Content is required and must be a string', code: ErrorCodes.CONTENT_REQUIRED }, 400);
   }
   if (content.length > 50_000) {
-    return c.json({ error: 'Content must be 50,000 characters or fewer' }, 400);
+    return c.json({ error: 'Content must be 50,000 characters or fewer', code: ErrorCodes.CONTENT_TOO_LONG }, 400);
   }
   if (!Array.isArray(attachments) || attachments.length > 10) {
-    return c.json({ error: 'Attachments must be an array (max 10)' }, 400);
+    return c.json({ error: 'Attachments must be an array (max 10)', code: ErrorCodes.INVALID_ATTACHMENTS }, 400);
   }
   const validAttTypes = new Set(['image', 'video', 'audio', 'document']);
   for (const att of attachments) {
@@ -132,10 +133,10 @@ app.post('/posts', async (c) => {
       typeof att.mimeType !== 'string' ||
       typeof att.filename !== 'string'
     ) {
-      return c.json({ error: 'Each attachment must have id, url, type, mimeType, and filename' }, 400);
+      return c.json({ error: 'Each attachment must have id, url, type, mimeType, and filename', code: ErrorCodes.INVALID_ATTACHMENT_FIELDS }, 400);
     }
     if (!validAttTypes.has(att.type)) {
-      return c.json({ error: 'Attachment type must be image, video, audio, or document' }, 400);
+      return c.json({ error: 'Attachment type must be image, video, audio, or document', code: ErrorCodes.INVALID_ATTACHMENT_TYPE }, 400);
     }
     // Reject dangerous URI schemes to prevent XSS
     const urlLower = att.url.toLowerCase().trim();
@@ -145,21 +146,21 @@ app.post('/posts', async (c) => {
       urlLower.startsWith('data:') ||
       urlLower.startsWith('blob:')
     ) {
-      return c.json({ error: 'Invalid attachment URL' }, 400);
+      return c.json({ error: 'Invalid attachment URL', code: ErrorCodes.INVALID_ATTACHMENT_URL }, 400);
     }
     // Only allow http(s) and relative URLs
     if (att.url.includes(':') && !urlLower.startsWith('http://') && !urlLower.startsWith('https://') && !att.url.startsWith('/')) {
-      return c.json({ error: 'Attachment URL must use http(s) or be a relative path' }, 400);
+      return c.json({ error: 'Attachment URL must use http(s) or be a relative path', code: ErrorCodes.INVALID_ATTACHMENT_URL }, 400);
     }
   }
   if (!Array.isArray(mentions) || mentions.length > 50 || !mentions.every((m: unknown) => typeof m === 'string' && m.length <= 128)) {
-    return c.json({ error: 'Mentions must be an array of strings (max 50, each max 128 chars)' }, 400);
+    return c.json({ error: 'Mentions must be an array of strings (max 50, each max 128 chars)', code: ErrorCodes.INVALID_MENTIONS }, 400);
   }
 
   if (folderId) {
     const hasAccess = await checkInvestigationAccess(user.id, folderId, 'editor');
     if (!hasAccess) {
-      return c.json({ error: 'No access to this investigation' }, 403);
+      return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
     }
   }
 
@@ -172,18 +173,18 @@ app.post('/posts', async (c) => {
     // Find the specified parent
     const parentResult = await db.select().from(posts).where(eq(posts.id, parentId)).limit(1);
     if (parentResult.length === 0 || parentResult[0].deleted) {
-      return c.json({ error: 'Parent post not found' }, 404);
+      return c.json({ error: 'Parent post not found', code: ErrorCodes.PARENT_POST_NOT_FOUND }, 404);
     }
     parentPost = parentResult[0];
 
     // Prevent cross-folder replies
     if (parentPost.folderId !== folderId) {
-      return c.json({ error: 'Reply must be in the same folder as parent post' }, 400);
+      return c.json({ error: 'Reply must be in the same folder as parent post', code: ErrorCodes.CROSS_FOLDER_REPLY }, 400);
     }
     if (parentPost.folderId) {
       const hasParentAccess = await checkInvestigationAccess(user.id, parentPost.folderId, 'viewer');
       if (!hasParentAccess) {
-        return c.json({ error: 'No access to parent post' }, 403);
+        return c.json({ error: 'No access to parent post', code: ErrorCodes.NO_ACCESS }, 403);
       }
     }
 
@@ -324,14 +325,14 @@ app.get('/posts/:id', async (c) => {
     .limit(1);
 
   if (result.length === 0) {
-    return c.json({ error: 'Post not found' }, 404);
+    return c.json({ error: 'Post not found', code: ErrorCodes.POST_NOT_FOUND }, 404);
   }
 
   if (result[0].folderId) {
     const user = c.get('user');
     const hasAccess = await checkInvestigationAccess(user.id, result[0].folderId, 'viewer');
     if (!hasAccess) {
-      return c.json({ error: 'No access to this investigation' }, 403);
+      return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
     }
   }
 
@@ -409,25 +410,25 @@ app.patch('/posts/:id', async (c) => {
 
   const existing = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
   if (existing.length === 0) {
-    return c.json({ error: 'Post not found' }, 404);
+    return c.json({ error: 'Post not found', code: ErrorCodes.POST_NOT_FOUND }, 404);
   }
   if (existing[0].authorId !== user.id && user.role !== 'admin') {
-    return c.json({ error: 'Not authorized' }, 403);
+    return c.json({ error: 'Not authorized', code: ErrorCodes.NOT_AUTHORIZED }, 403);
   }
 
   const updates: Record<string, unknown> = { updatedAt: new Date() };
   if (body.content !== undefined) {
     if (typeof body.content !== 'string' || !body.content.trim()) {
-      return c.json({ error: 'Content must be a non-empty string' }, 400);
+      return c.json({ error: 'Content must be a non-empty string', code: ErrorCodes.CONTENT_REQUIRED }, 400);
     }
     if (body.content.length > 50_000) {
-      return c.json({ error: 'Content must be 50,000 characters or fewer' }, 400);
+      return c.json({ error: 'Content must be 50,000 characters or fewer', code: ErrorCodes.CONTENT_TOO_LONG }, 400);
     }
     updates.content = body.content;
   }
   if (body.pinned !== undefined) {
     if (typeof body.pinned !== 'boolean') {
-      return c.json({ error: 'Pinned must be a boolean' }, 400);
+      return c.json({ error: 'Pinned must be a boolean', code: ErrorCodes.VALIDATION_FAILED }, 400);
     }
     updates.pinned = body.pinned;
   }
@@ -444,10 +445,10 @@ app.delete('/posts/:id', async (c) => {
 
   const existing = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
   if (existing.length === 0) {
-    return c.json({ error: 'Post not found' }, 404);
+    return c.json({ error: 'Post not found', code: ErrorCodes.POST_NOT_FOUND }, 404);
   }
   if (existing[0].authorId !== user.id && user.role !== 'admin') {
-    return c.json({ error: 'Not authorized' }, 403);
+    return c.json({ error: 'Not authorized', code: ErrorCodes.NOT_AUTHORIZED }, 403);
   }
 
   await db.update(posts).set({ deleted: true, updatedAt: new Date() }).where(eq(posts.id, postId));
@@ -463,7 +464,7 @@ app.post('/posts/:id/reactions', async (c) => {
   const { emoji } = body;
 
   if (!emoji || typeof emoji !== 'string' || emoji.length > 32) {
-    return c.json({ error: 'Emoji is required (max 32 chars)' }, 400);
+    return c.json({ error: 'Emoji is required (max 32 chars)', code: ErrorCodes.EMOJI_REQUIRED }, 400);
   }
 
   try {
@@ -474,7 +475,7 @@ app.post('/posts/:id/reactions', async (c) => {
       emoji,
     });
   } catch {
-    return c.json({ error: 'Already reacted with this emoji' }, 409);
+    return c.json({ error: 'Already reacted with this emoji', code: ErrorCodes.ALREADY_REACTED }, 409);
   }
 
   // Notify post author

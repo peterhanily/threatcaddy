@@ -17,6 +17,7 @@ interface ReplyThreadProps {
 
 export function ReplyThread({ postId, currentUserId, onBack, onUserClick, settings }: ReplyThreadProps) {
   const { t } = useTranslation('caddyshack');
+  const { t: tt } = useTranslation('toast');
   const { addToast } = useToast();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,36 +43,36 @@ export function ReplyThread({ postId, currentUserId, onBack, onUserClick, settin
     try {
       await addReaction(targetId, emoji);
       await loadPost();
-    } catch { addToast('error', 'Failed to add reaction'); }
+    } catch { addToast('error', tt('caddyshack.reactionAddFailed')); }
   };
 
   const handleRemoveReaction = async (targetId: string, emoji: string) => {
     try {
       await removeReaction(targetId, emoji);
       await loadPost();
-    } catch { addToast('error', 'Failed to remove reaction'); }
+    } catch { addToast('error', tt('caddyshack.reactionRemoveFailed')); }
   };
 
   const handleDelete = async (targetId: string) => {
     try {
       await deletePost(targetId);
-      addToast('success', 'Post deleted');
+      addToast('success', tt('caddyshack.postDeleted'));
       await loadPost();
-    } catch { addToast('error', 'Failed to delete post'); }
+    } catch { addToast('error', tt('caddyshack.postDeleteFailed')); }
   };
 
   const handleEdit = async (targetId: string, content: string) => {
     try {
       await editPost(targetId, { content });
       await loadPost();
-    } catch { addToast('error', 'Failed to edit post'); }
+    } catch { addToast('error', tt('caddyshack.editFailed')); }
   };
 
   const handlePin = async (targetId: string, pinned: boolean) => {
     try {
       await editPost(targetId, { pinned });
       await loadPost();
-    } catch { addToast('error', 'Failed to update pin status'); }
+    } catch { addToast('error', tt('caddyshack.pinUpdateFailed')); }
   };
 
   const handleReplyToReply = (replyId: string) => {

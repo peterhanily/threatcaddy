@@ -26,6 +26,7 @@ interface EncryptionSetupProps {
 
 export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupProps) {
   const { t } = useTranslation('encryption');
+  const { t: tt } = useTranslation('toast');
   const { addToast } = useToast();
   const [step, setStep] = useState(1);
   const [passphrase, setPassphrase] = useState('');
@@ -119,7 +120,7 @@ export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupPro
       // Encrypt all existing records
       await encryptAllExistingData(db, setProgress);
 
-      addToast('success', 'Encryption enabled');
+      addToast('success', tt('encryption.enabled'));
       onEnabled();
       reset();
     } catch (err) {

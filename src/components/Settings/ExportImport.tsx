@@ -17,6 +17,7 @@ interface ExportImportProps {
 
 export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
   const { t } = useTranslation('settings');
+  const { t: tt } = useTranslation('toast');
   const logActivity = useLogActivity();
   const { addToast } = useToast();
   const [importing, setImporting] = useState(false);
@@ -38,10 +39,10 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
       const json = await exportJSON();
       downloadFile(json, `threatcaddy-backup-${new Date().toISOString().split('T')[0]}.json`, 'application/json');
       showMessage(t('data.exportSuccess'));
-      addToast('success', 'Backup exported');
+      addToast('success', tt('backup.exported'));
       logActivity('data', 'export', 'Exported JSON backup');
     } catch {
-      addToast('error', 'Failed to export backup');
+      addToast('error', tt('backup.exportFailed'));
     }
   };
 
@@ -67,13 +68,13 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
       const text = await pendingFile.text();
       const counts = await importJSON(text);
       showMessage(t('data.importedCounts', { notes: counts.notes, tasks: counts.tasks, folders: counts.folders, tags: counts.tags }));
-      addToast('success', `Imported ${counts.notes} notes, ${counts.tasks} tasks`);
+      addToast('success', tt('import.jsonImported', { notes: counts.notes, tasks: counts.tasks }));
       logActivity('data', 'import', `Imported ${counts.notes} notes, ${counts.tasks} tasks, ${counts.folders} investigations, ${counts.tags} tags`);
       onImportComplete();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to import';
       setError(msg);
-      addToast('error', 'Import failed');
+      addToast('error', tt('import.importFailed'));
     } finally {
       setImporting(false);
       setPendingFile(null);
@@ -96,7 +97,7 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
 
     await db.notes.bulkAdd(notesToAdd);
     showMessage(t('data.importedMarkdown', { count: notesToAdd.length }));
-    addToast('success', `Imported ${notesToAdd.length} notes from Markdown`);
+    addToast('success', tt('import.markdownImported', { count: notesToAdd.length }));
     logActivity('data', 'import', `Imported ${notesToAdd.length} notes from Markdown`);
     onImportComplete();
     return notesToAdd.length;

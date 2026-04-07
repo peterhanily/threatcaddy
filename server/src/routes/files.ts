@@ -6,6 +6,7 @@ import { checkInvestigationAccess } from '../middleware/access.js';
 import { db } from '../db/index.js';
 import { files } from '../db/schema.js';
 import type { AuthUser } from '../types.js';
+import { ErrorCodes } from '../types/error-codes.js';
 import { mkdir, writeFile, stat, realpath } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -67,18 +68,18 @@ app.post('/upload', requireRole('admin', 'analyst'), async (c) => {
   const file = body['file'];
 
   if (!file || typeof file === 'string') {
-    return c.json({ error: 'No file provided' }, 400);
+    return c.json({ error: 'No file provided', code: ErrorCodes.NO_FILE_PROVIDED }, 400);
   }
 
   const blob = file as File;
   if (blob.size > MAX_FILE_SIZE) {
-    return c.json({ error: 'File too large (max 50MB)' }, 413);
+    return c.json({ error: 'File too large (max 50MB)', code: ErrorCodes.FILE_TOO_LARGE }, 413);
   }
 
   const id = nanoid();
   const ext = (blob.name.split('.').pop() || 'bin').toLowerCase();
   if (!ALLOWED_EXTENSIONS.has(ext)) {
-    return c.json({ error: 'File type not allowed' }, 400);
+    return c.json({ error: 'File type not allowed', code: ErrorCodes.FILE_TYPE_NOT_ALLOWED }, 400);
   }
   const storageName = `${id}.${ext}`;
   const storagePath = join(STORAGE_PATH, storageName);
@@ -93,16 +94,16 @@ app.post('/upload', requireRole('admin', 'analyst'), async (c) => {
   if (claimedMime.startsWith('image/')) {
     const detected = detectMimeFromMagicBytes(buffer);
     if (detected === 'image/svg+xml') {
-      return c.json({ error: 'SVG uploads are not allowed' }, 400);
+      return c.json({ error: 'SVG uploads are not allowed', code: ErrorCodes.SVG_NOT_ALLOWED }, 400);
     }
     if (detected && !detected.startsWith('image/')) {
-      return c.json({ error: 'File content does not match claimed image type' }, 400);
+      return c.json({ error: 'File content does not match claimed image type', code: ErrorCodes.FILE_CONTENT_MISMATCH }, 400);
     }
   }
   // Block SVG regardless of claimed type
   const detectedAny = detectMimeFromMagicBytes(buffer);
   if (detectedAny === 'image/svg+xml') {
-    return c.json({ error: 'SVG uploads are not allowed' }, 400);
+    return c.json({ error: 'SVG uploads are not allowed', code: ErrorCodes.SVG_NOT_ALLOWED }, 400);
   }
 
   // Block MIME types that could contain active/executable content
@@ -111,10 +112,10 @@ app.post('/upload', requireRole('admin', 'analyst'), async (c) => {
     'application/x-httpd-php', 'image/svg+xml', 'application/xhtml+xml',
   ]);
   if (DANGEROUS_MIMES.has(claimedMime)) {
-    return c.json({ error: 'File MIME type not allowed (active content)' }, 400);
+    return c.json({ error: 'File MIME type not allowed (active content)', code: ErrorCodes.FILE_MIME_NOT_ALLOWED }, 400);
   }
   if (detectedAny && DANGEROUS_MIMES.has(detectedAny)) {
-    return c.json({ error: 'Detected file content type not allowed (active content)' }, 400);
+    return c.json({ error: 'Detected file content type not allowed (active content)', code: ErrorCodes.FILE_MIME_NOT_ALLOWED }, 400);
   }
 
   // Validate that detected MIME type is consistent with file extension
@@ -126,7 +127,7 @@ app.post('/upload', requireRole('admin', 'analyst'), async (c) => {
     };
     const allowedMimes = extMimeMap[ext];
     if (allowedMimes && !allowedMimes.includes(detectedAny)) {
-      return c.json({ error: `File extension .${ext} does not match detected content type (${detectedAny})` }, 400);
+      return c.json({ error: `File extension .${ext} does not match detected content type (${detectedAny})`, code: ErrorCodes.FILE_CONTENT_MISMATCH }, 400);
     }
   }
 
@@ -136,7 +137,7 @@ app.post('/upload', requireRole('admin', 'analyst'), async (c) => {
   if (folderId) {
     const hasAccess = await checkInvestigationAccess(user.id, folderId, 'editor');
     if (!hasAccess) {
-      return c.json({ error: 'No access to this investigation' }, 403);
+      return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
     }
   }
 
@@ -185,7 +186,7 @@ app.get('/:id', async (c) => {
 
   const result = await db.select().from(files).where(eq(files.id, fileId)).limit(1);
   if (result.length === 0) {
-    return c.json({ error: 'File not found' }, 404);
+    return c.json({ error: 'File not found', code: ErrorCodes.FILE_NOT_FOUND }, 404);
   }
 
   const file = result[0];
@@ -195,10 +196,10 @@ app.get('/:id', async (c) => {
   if (file.folderId) {
     const hasAccess = await checkInvestigationAccess(user.id, file.folderId, 'viewer');
     if (!hasAccess) {
-      return c.json({ error: 'No access to this file' }, 403);
+      return c.json({ error: 'No access to this file', code: ErrorCodes.NO_ACCESS }, 403);
     }
   } else if (file.uploadedBy !== user.id) {
-    return c.json({ error: 'No access to this file' }, 403);
+    return c.json({ error: 'No access to this file', code: ErrorCodes.NO_ACCESS }, 403);
   }
 
   const filePath = join(STORAGE_PATH, file.storagePath);
@@ -210,12 +211,12 @@ app.get('/:id', async (c) => {
   try {
     resolvedFilePath = await realpath(filePath);
   } catch {
-    return c.json({ error: 'File not found on disk' }, 404);
+    return c.json({ error: 'File not found on disk', code: ErrorCodes.FILE_NOT_FOUND }, 404);
   }
   const resolvedBasePath = await realpath(basePath).catch(() => basePath);
   if (!resolvedFilePath.startsWith(resolvedBasePath + '/')) {
     logger.warn('Path traversal blocked', { fileId, storagePath: file.storagePath, resolved: resolvedFilePath });
-    return c.json({ error: 'Invalid file path' }, 403);
+    return c.json({ error: 'Invalid file path', code: ErrorCodes.INVALID_FILE_PATH }, 403);
   }
 
   try {
@@ -238,7 +239,7 @@ app.get('/:id', async (c) => {
       },
     });
   } catch {
-    return c.json({ error: 'File not found on disk' }, 404);
+    return c.json({ error: 'File not found on disk', code: ErrorCodes.FILE_NOT_FOUND }, 404);
   }
 });
 
@@ -249,7 +250,7 @@ app.get('/:id/thumbnail', async (c) => {
 
   const result = await db.select().from(files).where(eq(files.id, fileId)).limit(1);
   if (result.length === 0 || !result[0].thumbnailPath) {
-    return c.json({ error: 'Thumbnail not found' }, 404);
+    return c.json({ error: 'Thumbnail not found', code: ErrorCodes.THUMBNAIL_NOT_FOUND }, 404);
   }
 
   const file = result[0];
@@ -257,10 +258,10 @@ app.get('/:id/thumbnail', async (c) => {
   if (file.folderId) {
     const hasAccess = await checkInvestigationAccess(user.id, file.folderId, 'viewer');
     if (!hasAccess) {
-      return c.json({ error: 'No access to this file' }, 403);
+      return c.json({ error: 'No access to this file', code: ErrorCodes.NO_ACCESS }, 403);
     }
   } else if (file.uploadedBy !== user.id) {
-    return c.json({ error: 'No access to this file' }, 403);
+    return c.json({ error: 'No access to this file', code: ErrorCodes.NO_ACCESS }, 403);
   }
 
   const thumbPath = join(STORAGE_PATH, file.thumbnailPath!);
@@ -271,11 +272,11 @@ app.get('/:id/thumbnail', async (c) => {
   try {
     resolvedThumbPath = await realpath(thumbPath);
   } catch {
-    return c.json({ error: 'Thumbnail not found' }, 404);
+    return c.json({ error: 'Thumbnail not found', code: ErrorCodes.THUMBNAIL_NOT_FOUND }, 404);
   }
   const resolvedThumbBase = await realpath(thumbBasePath).catch(() => thumbBasePath);
   if (!resolvedThumbPath.startsWith(resolvedThumbBase + '/')) {
-    return c.json({ error: 'Invalid file path' }, 403);
+    return c.json({ error: 'Invalid file path', code: ErrorCodes.INVALID_FILE_PATH }, 403);
   }
 
   try {
@@ -291,7 +292,7 @@ app.get('/:id/thumbnail', async (c) => {
       },
     });
   } catch {
-    return c.json({ error: 'Thumbnail not found on disk' }, 404);
+    return c.json({ error: 'Thumbnail not found on disk', code: ErrorCodes.THUMBNAIL_NOT_FOUND }, 404);
   }
 });
 

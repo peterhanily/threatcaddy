@@ -26,6 +26,7 @@ function formatBytes(bytes: number): string {
 export function ServerBackup() {
   const { t } = useTranslation('settings');
   const { t: tc } = useTranslation('common');
+  const { t: tt } = useTranslation('toast');
   const { settings } = useSettings();
   const { addToast } = useToast();
   const isConnected = !!settings.serverUrl;
@@ -133,12 +134,12 @@ export function ServerBackup() {
       setCreateStep('done');
       setPassword('');
       setConfirmPassword('');
-      addToast('success', 'Backup created');
+      addToast('success', tt('backup.serverCreated'));
       refreshList();
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Backup failed');
       setCreateStep('error');
-      addToast('error', 'Backup creation failed');
+      addToast('error', tt('backup.serverCreateFailed'));
     }
   };
 
@@ -160,7 +161,7 @@ export function ServerBackup() {
     } catch (err) {
       setRestoreError(err instanceof Error ? err.message : 'Decryption failed');
       setRestoreStep('error');
-      addToast('error', 'Decryption failed');
+      addToast('error', tt('backup.decryptionFailed'));
     }
   };
 
@@ -178,11 +179,11 @@ export function ServerBackup() {
       }
       setRestoreResult(result);
       setRestoreStep('done');
-      addToast('success', 'Backup restored');
+      addToast('success', tt('backup.serverRestored'));
     } catch (err) {
       setRestoreError(err instanceof Error ? err.message : 'Restore failed');
       setRestoreStep('error');
-      addToast('error', 'Restore failed');
+      addToast('error', tt('backup.serverRestoreFailed'));
     }
   };
 
@@ -191,10 +192,10 @@ export function ServerBackup() {
     try {
       await deleteBackup(deleteId);
       setDeleteId(null);
-      addToast('success', 'Backup deleted');
+      addToast('success', tt('backup.serverDeleted'));
       refreshList();
     } catch {
-      addToast('error', 'Failed to delete backup');
+      addToast('error', tt('backup.serverDeleteFailed'));
     }
   };
 

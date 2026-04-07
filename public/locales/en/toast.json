@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "Imported with {{count}} failed clip(s)",
+    "importFailed": "Failed to import clips from extension",
+    "openedAsNote": "Opened \"{{name}}\" as a new note",
+    "openFailed": "Failed to open \"{{name}}\""
+  },
+  "share": {
+    "investigationSaved": "Saved investigation \"{{name}}\" with all entities",
+    "noteSaved": "Note saved to ThreatCaddy",
+    "taskSaved": "Task saved to ThreatCaddy",
+    "eventSaved": "Event saved to ThreatCaddy",
+    "chatSaved": "Chat saved to ThreatCaddy",
+    "templateShared": "Template shared with team",
+    "templateShareFailed": "Failed to share template",
+    "templateRemovedFromTeam": "Template removed from team",
+    "templateRemoveFailed": "Failed to delete team template"
+  },
+  "import": {
+    "dataImported": "Imported {{events}} events and {{iocs}} IOCs",
+    "jsonImported": "Imported {{notes}} notes, {{tasks}} tasks",
+    "markdownImported": "Imported {{count}} notes from Markdown",
+    "importFailed": "Import failed",
+    "stixImported": "Imported {{count}} IOC(s) from STIX bundle",
+    "stixFailed": "STIX import failed for {{count}} IOC(s)",
+    "stixNoDuplicates": "No new IOCs imported (all duplicates)",
+    "mispImported": "Imported {{count}} IOC(s) from MISP event",
+    "mispFailed": "MISP import failed for {{count}} IOC(s)",
+    "mispNoDuplicates": "No new IOCs imported (all duplicates)"
+  },
+  "backup": {
+    "exported": "Backup exported",
+    "exportFailed": "Failed to export backup",
+    "restored": "Backup restored",
+    "restoreFailed": "Failed to restore backup",
+    "mergeComplete": "Merge complete: {{added}} added, {{updated}} updated, {{skipped}} skipped",
+    "mergeFailed": "Failed to merge backup",
+    "serverCreated": "Backup created",
+    "serverCreateFailed": "Backup creation failed",
+    "decryptionFailed": "Decryption failed",
+    "serverRestored": "Backup restored",
+    "serverRestoreFailed": "Restore failed",
+    "serverDeleted": "Backup deleted",
+    "serverDeleteFailed": "Failed to delete backup",
+    "cloudPushed": "Cloud backup pushed",
+    "cloudEncryptedPushed": "Encrypted cloud backup pushed",
+    "cloudFailed": "Cloud backup failed"
+  },
+  "investigation": {
+    "sampleLoaded": "Sample investigation loaded",
+    "sampleRemoved": "Sample investigation removed",
+    "trashEmptied": "Trash emptied",
+    "savedAsTemplate": "Saved \"{{name}}\" as a template",
+    "playbookRan": "Ran \"{{playbook}}\" playbook on \"{{investigation}}\"",
+    "createdFromPlaybook": "Created \"{{name}}\" from playbook",
+    "exported": "Exported investigation \"{{name}}\"",
+    "exportFailed": "Failed to export investigation",
+    "reportGenerated": "Report generated for \"{{name}}\""
+  },
+  "encryption": {
+    "enabled": "Encryption enabled",
+    "disabled": "Encryption disabled",
+    "passphraseChanged": "Passphrase changed"
+  },
+  "integration": {
+    "nameRequired": "Integration name is required",
+    "createdAndInstalled": "Integration \"{{name}}\" created and installed",
+    "saveFailed": "Failed to save: {{error}}",
+    "installedFromCatalog": "Installed {{name}} from community catalog",
+    "installCatalogFailed": "Failed to install community template",
+    "templateExported": "Exported {{name}}",
+    "installedFromTeam": "Installed {{name}} from team",
+    "installTeamFailed": "Failed to install team template",
+    "notFound": "Integration not found",
+    "completed": "Integration \"{{name}}\" completed successfully",
+    "failed": "Integration \"{{name}}\" failed: {{error}}",
+    "error": "Integration error: {{error}}"
+  },
+  "ioc": {
+    "exported": "Exported {{count}} IOC(s) as {{format}}",
+    "deleted": "Deleted {{count}} IOC(s)",
+    "statusUpdated": "Updated status on {{count}} IOC(s)",
+    "confidenceUpdated": "Updated confidence on {{count}} IOC(s)",
+    "tagsAdded": "Added tags to {{count}} IOC(s)",
+    "copiedToClipboard": "Copied {{count}} IOC(s) to clipboard",
+    "copyFailed": "Failed to copy to clipboard",
+    "bulkEnrichDone": "Bulk enrich done: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "Reply posted",
+    "postCreated": "Post created",
+    "postCreateFailed": "Failed to create post",
+    "uploadFailed": "Failed to upload file: {{name}}",
+    "reactionAddFailed": "Failed to add reaction",
+    "reactionRemoveFailed": "Failed to remove reaction",
+    "postDeleted": "Post deleted",
+    "postDeleteFailed": "Failed to delete post",
+    "editFailed": "Failed to edit post",
+    "pinUpdateFailed": "Failed to update pin status",
+    "notificationsLoadFailed": "Failed to load notifications",
+    "markReadFailed": "Failed to mark notification read",
+    "markAllReadFailed": "Failed to mark all read",
+    "clearNotificationsFailed": "Failed to clear notifications"
+  },
+  "settings": {
+    "slashCommandUpdated": "Updated /{{name}}",
+    "slashCommandCreated": "Created /{{name}}",
+    "slashCommandDeleted": "Deleted /{{name}}"
+  },
+  "generic": {
+    "tagCreateFailed": "Failed to create tag"
+  }
+}

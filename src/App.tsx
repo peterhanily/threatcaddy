@@ -71,6 +71,7 @@ const DemoWelcomeModal = lazy(() => import('./components/Common/DemoWelcomeModal
 const DataImportModal = lazy(() => import('./components/Import/DataImportModal').then(m => ({ default: m.DataImportModal })));
 import type { ImportResult } from './lib/data-import';
 import { ToastProvider, useToast } from './contexts/ToastContext';
+import { useTranslation } from 'react-i18next';
 import { ToastContainer } from './components/Common/Toast';
 import { generateInvestigationReport, printReport } from './lib/report';
 import { useIsMobile } from './hooks/useIsMobile';
@@ -140,6 +141,7 @@ export default function App() {
 function AppInner() {
   const { settings, updateSettings, toggleTheme } = useSettings();
   const { addToast } = useToast();
+  const { t: tt } = useTranslation('toast');
   const notes = useNotes();
   const tasks = useTasks();
   const timeline = useTimeline();
@@ -645,7 +647,7 @@ function AppInner() {
           }
         }
         if (failedClips > 0) {
-          addToast('warning', `Imported with ${failedClips} failed clip${failedClips > 1 ? 's' : ''}`);
+          addToast('warning', tt('clip.importWarning', { count: failedClips }));
         }
 
         // Navigate to the appropriate view and select the latest entity
@@ -666,7 +668,7 @@ function AppInner() {
         }
       } catch (error) {
         console.error('Failed to import clips:', error);
-        addToast('error', 'Failed to import clips from extension');
+        addToast('error', tt('clip.importFailed'));
       }
     };
 
@@ -702,10 +704,10 @@ function AppInner() {
         });
         setSelectedNoteId(note.id);
         navigateTo('notes', { selectedNoteId: note.id });
-        addToast('success', `Opened "${name}" as a new note`);
+        addToast('success', tt('clip.openedAsNote', { name }));
       } catch (err) {
         console.error('Failed to import file as note:', err);
-        addToast('error', `Failed to open "${name}"`);
+        addToast('error', tt('clip.openFailed', { name }));
       }
     };
     window.addEventListener('threatcaddy:file-open', handler);
@@ -1115,23 +1117,23 @@ function AppInner() {
         await db.tags.bulkPut(bundle.tags);
       });
       reloadAll();
-      addToast('success', `Saved investigation "${bundle.folder.name}" with all entities`);
+      addToast('success', tt('share.investigationSaved', { name: bundle.folder.name }));
     } else if (payload.s === 'note') {
       await db.notes.put(payload.d as Note);
       notes.reload();
-      addToast('success', 'Note saved to ThreatCaddy');
+      addToast('success', tt('share.noteSaved'));
     } else if (payload.s === 'task') {
       await db.tasks.put(payload.d as Task);
       tasks.reload();
-      addToast('success', 'Task saved to ThreatCaddy');
+      addToast('success', tt('share.taskSaved'));
     } else if (payload.s === 'event') {
       await db.timelineEvents.put(payload.d as TimelineEvent);
       timeline.reload();
-      addToast('success', 'Event saved to ThreatCaddy');
+      addToast('success', tt('share.eventSaved'));
     } else if (payload.s === 'chat') {
       await db.chatThreads.put(payload.d as ChatThread);
       chatsHook.reload();
-      addToast('success', 'Chat saved to ThreatCaddy');
+      addToast('success', tt('share.chatSaved'));
     }
   }, [reloadAll, notes, tasks, timeline, chatsHook, addToast]);
 
@@ -1143,7 +1145,7 @@ function AppInner() {
       'import',
       `Data import: ${result.timelineEventsCreated} events, ${result.iocsExtracted} IOCs`,
     );
-    addToast('success', `Imported ${result.timelineEventsCreated} events and ${result.iocsExtracted} IOCs`);
+    addToast('success', tt('import.dataImported', { events: result.timelineEventsCreated, iocs: result.iocsExtracted }));
     // Reload all hooks to pick up new entities
     notes.reload();
     timeline.reload();
@@ -1187,11 +1189,11 @@ function AppInner() {
       const json = await exportJSON();
       const date = new Date().toISOString().slice(0, 10);
       downloadFile(json, `threatcaddy-backup-${date}.json`, 'application/json');
-      addToast('success', 'Backup exported');
+      addToast('success', tt('backup.exported'));
     } catch {
-      addToast('error', 'Failed to export backup');
+      addToast('error', tt('backup.exportFailed'));
     }
-  }, [addToast]);
+  }, [addToast, tt]);
 
   const handleQuickLoad = useCallback((file: File) => {
     setPendingImportFile(file);
@@ -1204,12 +1206,12 @@ function AppInner() {
       await importJSON(text);
       setPendingImportFile(null);
       handleImportComplete();
-      addToast('success', 'Backup restored');
+      addToast('success', tt('backup.restored'));
     } catch {
-      addToast('error', 'Failed to restore backup');
+      addToast('error', tt('backup.restoreFailed'));
       setPendingImportFile(null);
     }
-  }, [pendingImportFile, handleImportComplete, addToast]);
+  }, [pendingImportFile, handleImportComplete, addToast, tt]);
 
   const handleMergeImport = useCallback(async () => {
     if (!pendingImportFile) return;
@@ -1218,12 +1220,12 @@ function AppInner() {
       const result = await mergeImportJSON(text);
       setPendingImportFile(null);
       handleImportComplete();
-      addToast('success', `Merge complete: ${result.added} added, ${result.updated} updated, ${result.skipped} skipped`);
+      addToast('success', tt('backup.mergeComplete', { added: result.added, updated: result.updated, skipped: result.skipped }));
     } catch {
-      addToast('error', 'Failed to merge backup');
+      addToast('error', tt('backup.mergeFailed'));
       setPendingImportFile(null);
     }
-  }, [pendingImportFile, handleImportComplete, addToast]);
+  }, [pendingImportFile, handleImportComplete, addToast, tt]);
 
   // Sample investigation
   const sampleLoaded = useMemo(() => folders.some((f) => f.id === 'sample-investigation'), [folders]);
@@ -1247,7 +1249,7 @@ function AppInner() {
     navigateTo('notes');
     setSelectedNoteId(data.notes[0]?.id);
     activityLog.log('data', 'import', 'Loaded sample investigation "Operation DARK GLACIER"');
-    addToast('success', 'Sample investigation loaded');
+    addToast('success', tt('investigation.sampleLoaded'));
   }, [handleImportComplete, navigateTo, activityLog, setSelectedFolderId, addToast]);
 
   const handleDeleteSample = useCallback(async () => {
@@ -1276,7 +1278,7 @@ function AppInner() {
       setSelectedFolderId(undefined);
     }
     activityLog.log('data', 'delete', 'Removed sample investigation "Operation DARK GLACIER"');
-    addToast('success', 'Sample investigation removed');
+    addToast('success', tt('investigation.sampleRemoved'));
   }, [handleImportComplete, selectedFolderId, activityLog, setSelectedFolderId, addToast]);
 
   // ?demo URL parameter handling
@@ -1673,7 +1675,7 @@ function AppInner() {
             onDeleteIOCPermanently={loggedDeleteIOC}
             onTrashIOC={loggedTrashIOC}
             onUnarchiveIOC={loggedToggleArchiveIOC}
-            onEmptyAllTrash={async () => { await emptyAllTrash(); addToast('success', 'Trash emptied'); }}
+            onEmptyAllTrash={async () => { await emptyAllTrash(); addToast('success', tt('investigation.trashEmptied')); }}
           />
         ) : activeView === 'dashboard' ? (
           <DashboardView
@@ -1990,7 +1992,7 @@ function AppInner() {
                   onShareLink={handleShareNoteLink}
                   onSaveAsTemplate={async (n) => {
                     await noteTemplatesHook.saveNoteAsTemplate(n);
-                    addToast('success', `Saved "${n.title}" as a template`);
+                    addToast('success', tt('investigation.savedAsTemplate', { name: n.title }));
                   }}
                 />
               ) : (
@@ -2100,7 +2102,7 @@ function AppInner() {
             reloadFolders();
             setPlaybookApplyFolderId(undefined);
             const pb = playbooksHook.playbooks.find(p => p.id === playbookId);
-            addToast('success', `Ran "${pb?.name}" playbook on "${folder.name}"`);
+            addToast('success', tt('investigation.playbookRan', { playbook: pb?.name, investigation: folder.name }));
           } else {
             // Create new investigation from playbook
             const folder = await loggedCreateFolder(name);
@@ -2113,7 +2115,7 @@ function AppInner() {
             setSelectedTag(undefined);
             setShowTrash(false);
             setShowArchive(false);
-            addToast('success', `Created "${name}" from playbook`);
+            addToast('success', tt('investigation.createdFromPlaybook', { name }));
           }
         }}
       /></Suspense>
@@ -2230,9 +2232,9 @@ function AppInner() {
               const date = new Date().toISOString().slice(0, 10);
               downloadFile(json, `threatcaddy-${slug}-${date}.json`, 'application/json');
               activityLog.log('data', 'export', `Exported investigation "${folder?.name}"`, folderId, folder?.name);
-              addToast('success', `Exported investigation "${folder?.name}"`);
+              addToast('success', tt('investigation.exported', { name: folder?.name }));
             } catch {
-              addToast('error', 'Failed to export investigation');
+              addToast('error', tt('investigation.exportFailed'));
             }
           }}
           onGenerateReport={(folderId) => {
@@ -2248,7 +2250,7 @@ function AppInner() {
             window.open(blobUrl);
             setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
             activityLog.log('data', 'export', `Generated report for "${folder.name}"`, folderId, folder.name);
-            addToast('success', `Report generated for "${folder.name}"`);
+            addToast('success', tt('investigation.reportGenerated', { name: folder.name }));
           }}
           onPrintReport={(folderId) => {
             const folder = folders.find((f) => f.id === folderId);

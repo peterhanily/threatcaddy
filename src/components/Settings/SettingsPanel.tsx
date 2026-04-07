@@ -121,6 +121,7 @@ function AgentProfileSection() {
 function CustomSlashCommandsEditor() {
   const { t } = useTranslation('settings');
   const { t: tc } = useTranslation('common');
+  const { t: tt } = useTranslation('toast');
   const { commands, createCommand, updateCommand, deleteCommand } = useCustomSlashCommands();
   const { addToast } = useToast();
   const [editing, setEditing] = useState<CustomSlashCommand | null>(null);
@@ -136,10 +137,10 @@ function CustomSlashCommandsEditor() {
     if (!name || !formTemplate.trim()) return;
     if (editing) {
       await updateCommand(editing.id, { name, description: formDesc, template: formTemplate });
-      addToast('success', `Updated /${name}`);
+      addToast('success', tt('settings.slashCommandUpdated', { name }));
     } else {
       await createCommand(name, formDesc, formTemplate);
-      addToast('success', `Created /${name}`);
+      addToast('success', tt('settings.slashCommandCreated', { name }));
     }
     resetForm();
   };
@@ -177,7 +178,7 @@ function CustomSlashCommandsEditor() {
             <div className="text-[10px] text-gray-600 mt-0.5 truncate font-mono">{cmd.template.slice(0, 80)}</div>
           </div>
           <button onClick={() => startEdit(cmd)} className="p-1 text-gray-500 hover:text-gray-300"><Pencil size={12} /></button>
-          <button onClick={async () => { await deleteCommand(cmd.id); addToast('success', `Deleted /${cmd.name}`); }} className="p-1 text-gray-500 hover:text-red-400"><Trash2 size={12} /></button>
+          <button onClick={async () => { await deleteCommand(cmd.id); addToast('success', tt('settings.slashCommandDeleted', { name: cmd.name })); }} className="p-1 text-gray-500 hover:text-red-400"><Trash2 size={12} /></button>
         </div>
       ))}
 

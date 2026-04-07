@@ -23,6 +23,7 @@ interface RunIntegrationMenuProps {
 
 export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onComplete, onOpenSettings }: RunIntegrationMenuProps) {
   const { t } = useTranslation('integrations');
+  const { t: tt } = useTranslation('toast');
   const { addToast } = useToast();
   const { connected, serverUrl, getAccessToken } = useAuth();
   const [open, setOpen] = useState(false);
@@ -52,7 +53,7 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
         (m) => m.installation.id === installationId && m.template.id === templateId,
       );
       if (!match) {
-        addToast('error', 'Integration not found');
+        addToast('error', tt('integration.notFound'));
         setRunning(false);
         return;
       }
@@ -202,9 +203,9 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
       await addRun(run);
 
       if (run.status === 'success') {
-        addToast('success', `Integration "${match.template.name}" completed successfully`);
+        addToast('success', tt('integration.completed', { name: match.template.name }));
       } else {
-        addToast('error', `Integration "${match.template.name}" failed: ${run.error || run.status}`);
+        addToast('error', tt('integration.failed', { name: match.template.name, error: run.error || run.status }));
       }
 
       setResultRun(run);
@@ -221,7 +222,7 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
         }));
       }
     } catch (err) {
-      addToast('error', `Integration error: ${err instanceof Error ? err.message : String(err)}`);
+      addToast('error', tt('integration.error', { error: err instanceof Error ? err.message : String(err) }));
     } finally {
       setRunning(false);
     }

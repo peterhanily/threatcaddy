@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "ThreatCaddy — Quick Capture",
+  "name": "__MSG_appName__",
   "version": "1.0.0",
-  "description": "Quick-capture web content and proxy AI requests for ThreatCaddy threat intelligence. All data stays local on your device.",
+  "description": "__MSG_appDescription__",
+  "default_locale": "en",
 
   "browser_specific_settings": {
     "gecko": {

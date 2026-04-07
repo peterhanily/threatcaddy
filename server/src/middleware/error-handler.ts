@@ -1,6 +1,7 @@
 import type { Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { logger } from '../lib/logger.js';
+import { ErrorCodes } from '../types/error-codes.js';
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -36,6 +37,7 @@ export function globalErrorHandler(err: Error, c: Context): Response {
 
   const body: Record<string, unknown> = {
     error: isProd ? 'Internal server error' : err.message,
+    code: ErrorCodes.INTERNAL_ERROR,
   };
   if (requestId) body.requestId = requestId;
 

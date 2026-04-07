@@ -456,6 +456,7 @@ interface IntegrationBuilderProps {
 
 export function IntegrationBuilder({ onBack }: IntegrationBuilderProps) {
   const { t } = useTranslation('integrations');
+  const { t: tt } = useTranslation('toast');
   const { installTemplate, createInstallation } = useIntegrations();
   const { addToast } = useToast();
 
@@ -649,7 +650,7 @@ export function IntegrationBuilder({ onBack }: IntegrationBuilderProps) {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      addToast('error', 'Integration name is required');
+      addToast('error', tt('integration.nameRequired'));
       return;
     }
 
@@ -657,10 +658,10 @@ export function IntegrationBuilder({ onBack }: IntegrationBuilderProps) {
       const template = buildTemplate();
       await installTemplate(template);
       await createInstallation(template.id, {});
-      addToast('success', `Integration "${template.name}" created and installed`);
+      addToast('success', tt('integration.createdAndInstalled', { name: template.name }));
       onBack();
     } catch (err) {
-      addToast('error', `Failed to save: ${err instanceof Error ? err.message : String(err)}`);
+      addToast('error', tt('integration.saveFailed', { error: err instanceof Error ? err.message : String(err) }));
     }
   };
 

@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "Quick-capture web content and proxy AI requests for ThreatCaddy threat intelligence. Data stays local on your device by default."
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "Quick Stats"
+  },
+  "captures": {
+    "message": "Captures"
+  },
+  "thisWeek": {
+    "message": "This Week"
+  },
+
+  "quickCapture": {
+    "message": "Quick Capture"
+  },
+  "noteTitlePlaceholder": {
+    "message": "Note title (optional)"
+  },
+  "captureTextPlaceholder": {
+    "message": "Type or paste a note..."
+  },
+  "options": {
+    "message": "Options"
+  },
+  "investigation": {
+    "message": "Investigation"
+  },
+  "defaultClips": {
+    "message": "Default: Clips"
+  },
+  "saveAs": {
+    "message": "Save as"
+  },
+  "entityNote": {
+    "message": "Note"
+  },
+  "entityTask": {
+    "message": "Task"
+  },
+  "entityTimelineEvent": {
+    "message": "Timeline Event"
+  },
+  "classification": {
+    "message": "Classification"
+  },
+  "classificationNone": {
+    "message": "None"
+  },
+  "saveNote": {
+    "message": "Save Note"
+  },
+  "saved": {
+    "message": "Saved!"
+  },
+  "saveFailed": {
+    "message": "Failed to save. Please try again."
+  },
+
+  "recentCaptures": {
+    "message": "Recent Captures"
+  },
+  "noCaptures": {
+    "message": "No captures yet. Select text on any page and right-click to save."
+  },
+  "untitled": {
+    "message": "Untitled"
+  },
+
+  "quickActions": {
+    "message": "Quick Actions"
+  },
+  "openThreatCaddy": {
+    "message": "Open ThreatCaddy"
+  },
+  "reviewAllCaptures": {
+    "message": "Review All Captures"
+  },
+
+  "permissions": {
+    "message": "Permissions"
+  },
+  "allowCaddyAI": {
+    "message": "Allow CaddyAI"
+  },
+  "allowCaddyAIDesc": {
+    "message": "Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral)."
+  },
+  "allowUrlFetching": {
+    "message": "Allow URL fetching"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "Required for the /fetch command and non-localhost local LLMs."
+  },
+
+  "howToUse": {
+    "message": "How to use:"
+  },
+  "howToUseContextMenu": {
+    "message": "Select text and right-click \"Save to ThreatCaddy\""
+  },
+  "howToUseShortcut": {
+    "message": "Or use keyboard shortcut:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(clips selection, or full page if nothing selected)"
+  },
+  "privacyLabel": {
+    "message": "Privacy:"
+  },
+  "privacyText": {
+    "message": "All data stays local on your device. API keys are sent only to your chosen provider. No tracking."
+  },
+
+  "settings": {
+    "message": "Settings"
+  },
+  "settingsTooltip": {
+    "message": "Settings"
+  },
+  "back": {
+    "message": "Back"
+  },
+  "targetUrl": {
+    "message": "Target URL"
+  },
+  "targetUrlDesc": {
+    "message": "The ThreatCaddy instance URL this extension connects to."
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "Save"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "Save to ThreatCaddy"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "Saved to ThreatCaddy!"
+  },
+
+  "justNow": {
+    "message": "Just now"
+  },
+  "minutesAgo": {
+    "message": "$count$m ago",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "$count$h ago",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "$count$d ago",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "Extension context invalidated. Please reload this page."
+  },
+  "errorExtensionDisconnected": {
+    "message": "Extension disconnected"
+  },
+  "errorExtensionUnknown": {
+    "message": "Extension error: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "No response from extension background"
+  },
+  "errorExtensionError": {
+    "message": "Extension error"
+  },
+
+  "errorInvalidUrl": {
+    "message": "Invalid URL"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "Only HTTP and HTTPS URLs are supported"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "URL access permission required. Open the ThreatCaddy extension popup and enable \"Allow URL fetching\", then try again."
+  },
+  "errorRequestTimedOut15": {
+    "message": "Request timed out (15s). The page may be unreachable."
+  },
+  "errorRequestTimedOut30": {
+    "message": "Request timed out (30s)"
+  },
+  "errorBlockedInternal": {
+    "message": "Blocked: requests to internal/private addresses are not allowed"
+  },
+  "errorBlockedDomain": {
+    "message": "Blocked: $hostname$ is not in the allowed proxy domains list",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "Host permission required for $hostname$",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "CaddyAI permission required. Open the ThreatCaddy extension popup and enable \"Allow CaddyAI\" under Permissions."
+  },
+  "errorUnknownProvider": {
+    "message": "Unknown provider: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "Unknown error"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "Host permission required for $hostname$. Open the ThreatCaddy extension popup and enable \"Allow URL fetching\" under Permissions.",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "Timed out waiting for page to load"
+  },
+  "errorDeliverClips": {
+    "message": "Failed to deliver clips — bridge.js could not reach the page. Check that the extension has permission for this site."
+  },
+  "errorInvalidTargetUrl": {
+    "message": "Invalid target URL"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

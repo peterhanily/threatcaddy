@@ -155,15 +155,15 @@ function createBubbleElement(noteTitle) {
     </style>
 
     <div class="threatcaddy-header">
-      <div class="threatcaddy-logo">ThreatCaddy</div>
+      <div class="threatcaddy-logo">${escapeHtml(chrome.i18n.getMessage('appName') || 'ThreatCaddy')}</div>
       <button class="threatcaddy-close" id="threatcaddy-close">&times;</button>
     </div>
 
     <div class="threatcaddy-check">&#10003;</div>
-    <div class="threatcaddy-message">Saved to ThreatCaddy!</div>
+    <div class="threatcaddy-message">${escapeHtml(chrome.i18n.getMessage('savedToThreatCaddy') || 'Saved to ThreatCaddy!')}</div>
     <div class="threatcaddy-title-preview">${escapeHtml(noteTitle)}</div>
 
-    <button class="threatcaddy-open-btn" id="threatcaddy-review">Review All Captures</button>
+    <button class="threatcaddy-open-btn" id="threatcaddy-review">${escapeHtml(chrome.i18n.getMessage('reviewAllCaptures') || 'Review All Captures')}</button>
   `;
 
   // Event listeners

@@ -5,6 +5,7 @@ import { db } from '../db/index.js';
 import { users, posts, investigationMembers, sessions, reactions, activityLog } from '../db/schema.js';
 import { disconnectUser } from '../ws/handler.js';
 import type { AuthUser } from '../types.js';
+import { ErrorCodes } from '../types/error-codes.js';
 
 const app = new Hono<{ Variables: { user: AuthUser } }>();
 
@@ -45,7 +46,7 @@ app.get('/', async (c) => {
   // Full list requires admin
   const user = c.get('user');
   if (user.role !== 'admin') {
-    return c.json({ error: 'Admin access required' }, 403);
+    return c.json({ error: 'Admin access required', code: ErrorCodes.ADMIN_REQUIRED }, 403);
   }
 
   const [totalResult, result] = await Promise.all([
@@ -87,7 +88,7 @@ app.get('/:id', async (c) => {
     .limit(1);
 
   if (result.length === 0) {
-    return c.json({ error: 'User not found' }, 404);
+    return c.json({ error: 'User not found', code: ErrorCodes.USER_NOT_FOUND }, 404);
   }
 
   return c.json(result[0]);
@@ -220,7 +221,7 @@ app.patch('/:id', requireRole('admin'), async (c) => {
   const VALID_ROLES = ['admin', 'analyst', 'viewer'] as const;
   if (body.role) {
     if (!VALID_ROLES.includes(body.role)) {
-      return c.json({ error: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}` }, 400);
+      return c.json({ error: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}`, code: ErrorCodes.INVALID_ROLE }, 400);
     }
     updates.role = body.role;
   }
@@ -239,7 +240,7 @@ app.delete('/:id', requireRole('admin'), async (c) => {
 
   // Prevent self-deactivation
   if (userId === requestingUser.id) {
-    return c.json({ error: 'Cannot deactivate yourself' }, 400);
+    return c.json({ error: 'Cannot deactivate yourself', code: ErrorCodes.CANNOT_DEACTIVATE_SELF }, 400);
   }
 
   await db.update(users).set({ active: false, updatedAt: new Date() }).where(eq(users.id, userId));

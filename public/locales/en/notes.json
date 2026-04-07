@@ -1,4 +1,26 @@
 {
+  "builtinTemplate.article.name": "Article",
+  "builtinTemplate.bookmark.name": "Bookmark",
+  "builtinTemplate.codeSnippet.name": "Code Snippet",
+  "builtinTemplate.meetingNotes.name": "Meeting Notes",
+  "builtinTemplate.hostEndpoint.name": "Host/Endpoint Details",
+  "builtinTemplate.userAccount.name": "User Account Details",
+  "builtinTemplate.malwareSample.name": "Malware Sample Analysis",
+  "builtinTemplate.phishingReport.name": "Phishing Campaign Report",
+  "builtinTemplate.threatActor.name": "Threat Actor Profile",
+  "builtinTemplate.huntHypothesis.name": "Threat Hunt Hypothesis",
+  "builtinTemplate.irTriage.name": "IR Triage Checklist",
+  "builtinTemplate.vulnAssessment.name": "Vulnerability Assessment",
+  "builtinTemplate.postIncident.name": "Post-Incident Review",
+  "builtinTemplate.cloudAccount.name": "Cloud Account Details",
+  "builtinTemplate.ociUser.name": "OCI User Details",
+  "builtinTemplate.ociTenancy.name": "OCI Tenancy Details",
+
+  "builtinTemplateCategory.general": "General",
+  "builtinTemplateCategory.investigation": "Investigation",
+  "builtinTemplateCategory.incidentResponse": "Incident Response",
+  "builtinTemplateCategory.cloud": "Cloud",
+
   "card": {
     "moveToTrash": "Move to trash",
     "moveToTrashAria": "Move note to trash",

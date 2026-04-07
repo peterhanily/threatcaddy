@@ -26,6 +26,7 @@ import playbooksEn from '../public/locales/en/playbooks.json';
 import importEn from '../public/locales/en/import.json';
 import trashEn from '../public/locales/en/trash.json';
 import investigationsEn from '../public/locales/en/investigations.json';
+import toastEn from '../public/locales/en/toast.json';
 
 const namespaces: Record<string, Record<string, unknown>> = {
   settings: settingsEn, analysis: analysisEn, timeline: timelineEn,
@@ -34,7 +35,7 @@ const namespaces: Record<string, Record<string, unknown>> = {
   exec: execEn, caddyshack: caddyshackEn, dashboard: dashboardEn,
   search: searchEn, activity: activityEn, whiteboard: whiteboardEn,
   tour: tourEn, playbooks: playbooksEn, import: importEn, trash: trashEn,
-  investigations: investigationsEn,
+  investigations: investigationsEn, toast: toastEn,
 };
 
 for (const [ns, data] of Object.entries(namespaces)) {

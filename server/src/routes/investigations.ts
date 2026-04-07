@@ -10,6 +10,7 @@ import { logActivity } from '../services/audit-service.js';
 import { revokeUserFolderAccess, broadcastToUser } from '../ws/handler.js';
 import { getEntityCounts, getEntityCountsBatch } from '../services/sync-service.js';
 import type { AuthUser } from '../types.js';
+import { ErrorCodes } from '../types/error-codes.js';
 import { unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { logger } from '../lib/logger.js';
@@ -91,7 +92,7 @@ app.get('/:id/summary', async (c) => {
 
   const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer');
   if (!hasAccess) {
-    return c.json({ error: 'No access to this investigation' }, 403);
+    return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
   }
 
   const [folderResult, members, entityCounts, lastActivityResult] = await Promise.all([
@@ -144,7 +145,7 @@ app.get('/:id/summary', async (c) => {
 
   const folder = folderResult[0];
   if (!folder) {
-    return c.json({ error: 'Investigation not found' }, 404);
+    return c.json({ error: 'Investigation not found', code: ErrorCodes.INVESTIGATION_NOT_FOUND }, 404);
   }
 
   // Find the most recent updatedAt across all entity tables
@@ -171,7 +172,7 @@ app.get('/:id/members', async (c) => {
 
   const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer');
   if (!hasAccess) {
-    return c.json({ error: 'No access to this investigation' }, 403);
+    return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
   }
 
   const members = await db
@@ -199,13 +200,13 @@ app.post('/:id/members', async (c) => {
   const { userId, role = 'editor' } = body;
 
   if (!['owner', 'editor', 'viewer'].includes(role)) {
-    return c.json({ error: 'Invalid role' }, 400);
+    return c.json({ error: 'Invalid role', code: ErrorCodes.INVALID_ROLE }, 400);
   }
 
   // Check folder exists
   const [folder] = await db.select({ id: folders.id, name: folders.name }).from(folders).where(eq(folders.id, folderId)).limit(1);
   if (!folder) {
-    return c.json({ error: 'Investigation not found' }, 404);
+    return c.json({ error: 'Investigation not found', code: ErrorCodes.INVESTIGATION_NOT_FOUND }, 404);
   }
 
   // Check requester is owner
@@ -221,13 +222,13 @@ app.post('/:id/members', async (c) => {
     .limit(1);
 
   if (requesterMembership.length === 0 || requesterMembership[0].role !== 'owner') {
-    return c.json({ error: 'Only investigation owners can add members' }, 403);
+    return c.json({ error: 'Only investigation owners can add members', code: ErrorCodes.OWNER_REQUIRED }, 403);
   }
 
   // Check target user exists
   const targetUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (targetUser.length === 0) {
-    return c.json({ error: 'User not found' }, 404);
+    return c.json({ error: 'User not found', code: ErrorCodes.USER_NOT_FOUND }, 404);
   }
 
   // Check not already a member
@@ -235,7 +236,7 @@ app.post('/:id/members', async (c) => {
     .where(and(eq(investigationMembers.folderId, folderId), eq(investigationMembers.userId, userId)))
     .limit(1);
   if (existing.length > 0) {
-    return c.json({ error: 'User already a member' }, 409);
+    return c.json({ error: 'User already a member', code: ErrorCodes.USER_ALREADY_MEMBER }, 409);
   }
 
   await db.insert(investigationMembers).values({
@@ -268,7 +269,7 @@ app.patch('/:id/members/:userId', async (c) => {
   const { role } = body;
 
   if (!['owner', 'editor', 'viewer'].includes(role)) {
-    return c.json({ error: 'Invalid role' }, 400);
+    return c.json({ error: 'Invalid role', code: ErrorCodes.INVALID_ROLE }, 400);
   }
 
   // Check permissions — must be owner
@@ -284,7 +285,7 @@ app.patch('/:id/members/:userId', async (c) => {
     .limit(1);
 
   if (requesterMembership.length === 0 || requesterMembership[0].role !== 'owner') {
-    return c.json({ error: 'Insufficient permissions' }, 403);
+    return c.json({ error: 'Insufficient permissions', code: ErrorCodes.INSUFFICIENT_PERMISSIONS }, 403);
   }
 
   const result = await db
@@ -299,7 +300,7 @@ app.patch('/:id/members/:userId', async (c) => {
     .returning({ id: investigationMembers.id });
 
   if (result.length === 0) {
-    return c.json({ error: 'Member not found' }, 404);
+    return c.json({ error: 'Member not found', code: ErrorCodes.MEMBER_NOT_FOUND }, 404);
   }
 
   return c.json({ ok: true });
@@ -325,7 +326,7 @@ app.delete('/:id/members/:userId', async (c) => {
       .limit(1);
 
     if (requesterMembership.length === 0 || requesterMembership[0].role !== 'owner') {
-      return c.json({ error: 'Insufficient permissions' }, 403);
+      return c.json({ error: 'Insufficient permissions', code: ErrorCodes.INSUFFICIENT_PERMISSIONS }, 403);
     }
   }
 
@@ -340,7 +341,7 @@ app.delete('/:id/members/:userId', async (c) => {
     .returning({ id: investigationMembers.id });
 
   if (result.length === 0) {
-    return c.json({ error: 'Member not found' }, 404);
+    return c.json({ error: 'Member not found', code: ErrorCodes.MEMBER_NOT_FOUND }, 404);
   }
 
   // Revoke WS subscriptions immediately so removed user can't receive further data
@@ -369,12 +370,12 @@ app.delete('/:id', async (c) => {
     .limit(1);
 
   if (membership.length === 0 || membership[0].role !== 'owner') {
-    return c.json({ error: 'Only investigation owners can delete investigations' }, 403);
+    return c.json({ error: 'Only investigation owners can delete investigations', code: ErrorCodes.OWNER_REQUIRED }, 403);
   }
 
   const [folder] = await db.select({ id: folders.id, name: folders.name }).from(folders).where(eq(folders.id, folderId)).limit(1);
   if (!folder) {
-    return c.json({ error: 'Investigation not found' }, 404);
+    return c.json({ error: 'Investigation not found', code: ErrorCodes.INVESTIGATION_NOT_FOUND }, 404);
   }
 
   // Delete files from disk
@@ -421,19 +422,19 @@ app.post('/:id/invite', async (c) => {
   const { email, role = 'editor' } = body;
 
   if (!['owner', 'editor', 'viewer'].includes(role)) {
-    return c.json({ error: 'Invalid role' }, 400);
+    return c.json({ error: 'Invalid role', code: ErrorCodes.INVALID_ROLE }, 400);
   }
 
   // Check folder exists
   const [folder] = await db.select({ id: folders.id, name: folders.name }).from(folders).where(eq(folders.id, folderId)).limit(1);
   if (!folder) {
-    return c.json({ error: 'Investigation not found' }, 404);
+    return c.json({ error: 'Investigation not found', code: ErrorCodes.INVESTIGATION_NOT_FOUND }, 404);
   }
 
   // Find user by email
   const targetUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (targetUser.length === 0) {
-    return c.json({ error: 'No user with that email found' }, 404);
+    return c.json({ error: 'No user with that email found', code: ErrorCodes.USER_NOT_FOUND }, 404);
   }
 
   const userId = targetUser[0].id;
@@ -451,7 +452,7 @@ app.post('/:id/invite', async (c) => {
     .limit(1);
 
   if (requesterMembership.length === 0 || requesterMembership[0].role !== 'owner') {
-    return c.json({ error: 'Only investigation owners can invite members' }, 403);
+    return c.json({ error: 'Only investigation owners can invite members', code: ErrorCodes.OWNER_REQUIRED }, 403);
   }
 
   // Check not already a member
@@ -459,7 +460,7 @@ app.post('/:id/invite', async (c) => {
     .where(and(eq(investigationMembers.folderId, folderId), eq(investigationMembers.userId, userId)))
     .limit(1);
   if (existing.length > 0) {
-    return c.json({ error: 'User already a member' }, 409);
+    return c.json({ error: 'User already a member', code: ErrorCodes.USER_ALREADY_MEMBER }, 409);
   }
 
   await db.insert(investigationMembers).values({

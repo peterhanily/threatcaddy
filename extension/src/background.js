@@ -304,7 +304,7 @@ async function getPageAsMarkdown() {
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'save-to-threatcaddy',
-    title: 'Save to ThreatCaddy',
+    title: chrome.i18n.getMessage('contextMenuSaveToThreatCaddy'),
     contexts: ['selection']
   });
   // Re-sync dynamic bridge registration on install/update
@@ -457,11 +457,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       parsed = new URL(message.url);
     } catch {
-      sendResponse({ success: false, error: 'Invalid URL' });
+      sendResponse({ success: false, error: chrome.i18n.getMessage('errorInvalidUrl') });
       return;
     }
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      sendResponse({ success: false, error: 'Only HTTP and HTTPS URLs are supported' });
+      sendResponse({ success: false, error: chrome.i18n.getMessage('errorHttpHttpsOnly') });
       return;
     }
     (async () => {
@@ -475,7 +475,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           if (!granted) {
             sendResponse({
               success: false,
-              error: 'URL access permission required. Open the ThreatCaddy extension popup and enable "Allow URL fetching", then try again.',
+              error: chrome.i18n.getMessage('errorUrlPermissionRequired'),
             });
             return;
           }
@@ -497,7 +497,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true, title, content, url: message.url });
       } catch (err) {
         const msg = err.name === 'AbortError'
-          ? 'Request timed out (15s). The page may be unreachable.'
+          ? chrome.i18n.getMessage('errorRequestTimedOut15')
           : (err.message || String(err));
         sendResponse({ success: false, error: msg });
       }
@@ -510,11 +510,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       parsed = new URL(message.url);
     } catch {
-      sendResponse({ success: false, error: 'Invalid URL' });
+      sendResponse({ success: false, error: chrome.i18n.getMessage('errorInvalidUrl') });
       return;
     }
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      sendResponse({ success: false, error: 'Only HTTP and HTTPS URLs are supported' });
+      sendResponse({ success: false, error: chrome.i18n.getMessage('errorHttpHttpsOnly') });
       return;
     }
     // Block requests to private/internal hostnames (SSRF protection)
@@ -523,7 +523,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         || hostname === '0.0.0.0' || hostname.endsWith('.local')
         || hostname === 'metadata.google.internal'
         || hostname === '169.254.169.254') {
-      sendResponse({ success: false, error: 'Blocked: requests to internal/private addresses are not allowed' });
+      sendResponse({ success: false, error: chrome.i18n.getMessage('errorBlockedInternal') });
       return;
     }
     (async () => {
@@ -535,7 +535,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             (d) => hostname === d || hostname.endsWith('.' + d)
           );
           if (!allowed) {
-            sendResponse({ success: false, error: 'Blocked: ' + hostname + ' is not in the allowed proxy domains list' });
+            sendResponse({ success: false, error: chrome.i18n.getMessage('errorBlockedDomain', [hostname]) });
             return;
           }
         }
@@ -545,7 +545,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (!hasPermission) {
           const granted = await chrome.permissions.request({ origins: [origin] }).catch(() => false);
           if (!granted) {
-            sendResponse({ success: false, error: 'Host permission required for ' + parsed.hostname });
+            sendResponse({ success: false, error: chrome.i18n.getMessage('errorHostPermissionRequired', [parsed.hostname]) });
             return;
           }
         }
@@ -576,7 +576,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
       } catch (err) {
         const msg = err.name === 'AbortError'
-          ? 'Request timed out (30s)'
+          ? chrome.i18n.getMessage('errorRequestTimedOut30')
           : (err.message || String(err));
         sendResponse({ success: false, error: msg });
       }
@@ -612,7 +612,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.notifications.create({
       type: 'basic',
       iconUrl: iconPath,
-      title: message.title || 'CaddyAgent',
+      title: message.title || chrome.i18n.getMessage('notificationDefaultTitle'),
       message: message.message || '',
       priority: message.severity === 'critical' ? 2 : 1,
     });
@@ -652,11 +652,11 @@ chrome.runtime.onConnect.addListener((port) => {
       } else if (payload.provider === 'local') {
         await streamLocal(safeSend, payload, abortController.signal);
       } else {
-        safeSend({ type: 'error', error: `Unknown provider: ${payload.provider}` });
+        safeSend({ type: 'error', error: chrome.i18n.getMessage('errorUnknownProvider', [payload.provider]) });
       }
     } catch (err) {
       if (err.name === 'AbortError') return;
-      safeSend({ type: 'error', error: err.message || 'Unknown error' });
+      safeSend({ type: 'error', error: err.message || chrome.i18n.getMessage('errorUnknown') });
     }
   });
 });
@@ -668,7 +668,7 @@ async function ensureLLMPermission(url) {
   const has = await chrome.permissions.contains({ origins: [origin] });
   if (!has) {
     throw new Error(
-      'CaddyAI permission required. Open the ThreatCaddy extension popup and enable "Allow CaddyAI" under Permissions.'
+      chrome.i18n.getMessage('errorCaddyAIPermission')
     );
   }
 }
@@ -1004,7 +1004,7 @@ async function streamLocal(send, payload, signal) {
     const has = await chrome.permissions.contains({ origins: [origin] });
     if (!has) {
       throw new Error(
-        'Host permission required for ' + parsed.hostname + '. Open the ThreatCaddy extension popup and enable "Allow URL fetching" under Permissions.'
+        chrome.i18n.getMessage('errorHostPermissionLocalLLM', [parsed.hostname])
       );
     }
   }
@@ -1155,7 +1155,7 @@ async function sendToTarget(targetUrl, captures) {
       throw new Error('Invalid target URL protocol');
     }
   } catch {
-    throw new Error('Invalid target URL');
+    throw new Error(chrome.i18n.getMessage('errorInvalidTargetUrl'));
   }
 
   // Open target URL in a new tab
@@ -1165,7 +1165,7 @@ async function sendToTarget(targetUrl, captures) {
   await new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       chrome.tabs.onUpdated.removeListener(listener);
-      reject(new Error('Timed out waiting for page to load'));
+      reject(new Error(chrome.i18n.getMessage('errorTimedOutPageLoad')));
     }, 30000);
 
     function listener(tabId, changeInfo) {
@@ -1230,7 +1230,7 @@ async function sendToTarget(targetUrl, captures) {
   try {
     await chrome.tabs.sendMessage(tab.id, { type: 'INJECT_CLIPS_TO_PAGE', clips: captures });
   } catch {
-    throw new Error('Failed to deliver clips — bridge.js could not reach the page. Check that the extension has permission for this site.');
+    throw new Error(chrome.i18n.getMessage('errorDeliverClips'));
   }
 
   return { success: true };

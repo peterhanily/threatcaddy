@@ -1,5 +1,6 @@
 import type { Post, Notification, InvestigationMember } from '../types';
 import type { ActivityEntry } from '../components/CaddyShack/ActivityCard';
+import i18n from '../i18n';
 
 type GetTokenFn = () => Promise<string | null>;
 type InvalidateTokenFn = () => void;
@@ -69,6 +70,19 @@ export interface SyncPullResult {
 // Snapshot returns entity arrays keyed by table name
 export interface SyncSnapshotResult {
   [table: string]: unknown[];
+}
+
+/**
+ * Translate a server error response using i18n error codes.
+ * Falls back to the raw English `error` field when no translation exists.
+ */
+export function localizeServerError(response: { error: string; code?: string }): string {
+  if (response.code) {
+    const key = `serverError.${response.code}`;
+    const translated = i18n.t(key, { ns: 'common', defaultValue: '' });
+    if (translated) return translated;
+  }
+  return response.error;
 }
 
 export function configureServerApi(

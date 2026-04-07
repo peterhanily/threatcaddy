@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { copyFileSync, mkdirSync, existsSync } from 'fs';
+import { copyFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -84,6 +84,20 @@ iconSizes.forEach(size => {
 const svgSource = join(rootDir, 'assets/icon.svg');
 if (existsSync(svgSource)) {
   copyFileSync(svgSource, join(outdir, 'assets/icon.svg'));
+}
+
+// Copy _locales directory (chrome.i18n)
+console.log('Copying _locales...');
+const localesDir = join(rootDir, 'src/_locales');
+if (existsSync(localesDir)) {
+  for (const locale of readdirSync(localesDir)) {
+    const localeSrc = join(localesDir, locale);
+    const localeDest = join(outdir, '_locales', locale);
+    mkdirSync(localeDest, { recursive: true });
+    for (const file of readdirSync(localeSrc)) {
+      copyFileSync(join(localeSrc, file), join(localeDest, file));
+    }
+  }
 }
 
 console.log(`\nExtension built successfully for ${browser}!`);

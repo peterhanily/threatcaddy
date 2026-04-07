@@ -10,6 +10,7 @@ import { getRegistrationMode, getSessionSettings, ADMIN_SYSTEM_USER_ID } from '.
 import { logActivity } from '../services/audit-service.js';
 import { isLocked, recordFailedAttempt, resetAttempts } from '../services/login-limiter.js';
 import type { AuthUser } from '../types.js';
+import { ErrorCodes } from '../types/error-codes.js';
 
 const app = new Hono<{ Variables: { user: AuthUser } }>();
 
@@ -76,7 +77,7 @@ app.post('/register', async (c) => {
   const body = await c.req.json();
   const parsed = registerSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
+    return c.json({ error: 'Validation failed', code: ErrorCodes.VALIDATION_FAILED, details: parsed.error.flatten() }, 400);
   }
 
   const { displayName, password } = parsed.data;
@@ -84,13 +85,13 @@ app.post('/register', async (c) => {
 
   // Block internal bot domain from registration
   if (email.endsWith('@threatcaddy.internal')) {
-    return c.json({ error: 'Cannot register with this email domain' }, 400);
+    return c.json({ error: 'Cannot register with this email domain', code: ErrorCodes.BOT_REGISTER_FORBIDDEN }, 400);
   }
 
   // Check if email already exists
   const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (existing.length > 0) {
-    return c.json({ error: 'Email already registered' }, 409);
+    return c.json({ error: 'Email already registered', code: ErrorCodes.EMAIL_ALREADY_REGISTERED }, 409);
   }
 
   // Invite-only gate
@@ -98,7 +99,7 @@ app.post('/register', async (c) => {
   if (mode === 'invite') {
     const allowed = await db.select().from(allowedEmails).where(eq(allowedEmails.email, email)).limit(1);
     if (allowed.length === 0) {
-      return c.json({ error: 'Registration is invite-only. Contact an admin.' }, 403);
+      return c.json({ error: 'Registration is invite-only. Contact an admin.', code: ErrorCodes.REGISTRATION_INVITE_ONLY }, 403);
     }
   }
 
@@ -141,7 +142,7 @@ app.post('/login', async (c) => {
   const body = await c.req.json();
   const parsed = loginSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json({ error: 'Validation failed' }, 400);
+    return c.json({ error: 'Validation failed', code: ErrorCodes.VALIDATION_FAILED }, 400);
   }
 
   const email = parsed.data.email.trim().toLowerCase();
@@ -152,7 +153,7 @@ app.post('/login', async (c) => {
   if (lockStatus.locked) {
     const retryMin = lockStatus.retryAfterMinutes ?? 15;
     c.header('Retry-After', String(retryMin * 60));
-    return c.json({ error: `Account temporarily locked. Try again in ${retryMin} minutes.` }, 429);
+    return c.json({ error: `Account temporarily locked. Try again in ${retryMin} minutes.`, code: ErrorCodes.ACCOUNT_LOCKED }, 429);
   }
 
   const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -162,18 +163,18 @@ app.post('/login', async (c) => {
     if (failResult.locked) {
       const retryMin = failResult.retryAfterMinutes ?? 15;
       c.header('Retry-After', String(retryMin * 60));
-      return c.json({ error: `Account temporarily locked. Try again in ${retryMin} minutes.` }, 429);
+      return c.json({ error: `Account temporarily locked. Try again in ${retryMin} minutes.`, code: ErrorCodes.ACCOUNT_LOCKED }, 429);
     }
-    return c.json({ error: 'Invalid credentials' }, 401);
+    return c.json({ error: 'Invalid credentials', code: ErrorCodes.INVALID_CREDENTIALS }, 401);
   }
 
   const user = result[0];
   if (!user.active) {
-    return c.json({ error: 'Account disabled' }, 403);
+    return c.json({ error: 'Account disabled', code: ErrorCodes.ACCOUNT_DISABLED }, 403);
   }
 
   if (user.email.endsWith('@threatcaddy.internal')) {
-    return c.json({ error: 'Bot accounts cannot log in interactively' }, 403);
+    return c.json({ error: 'Bot accounts cannot log in interactively', code: ErrorCodes.BOT_LOGIN_FORBIDDEN }, 403);
   }
 
   const valid = await argon2.verify(user.passwordHash, password);
@@ -183,9 +184,9 @@ app.post('/login', async (c) => {
     if (failResult.locked) {
       const retryMin = failResult.retryAfterMinutes ?? 15;
       c.header('Retry-After', String(retryMin * 60));
-      return c.json({ error: `Account temporarily locked. Try again in ${retryMin} minutes.` }, 429);
+      return c.json({ error: `Account temporarily locked. Try again in ${retryMin} minutes.`, code: ErrorCodes.ACCOUNT_LOCKED }, 429);
     }
-    return c.json({ error: 'Invalid credentials' }, 401);
+    return c.json({ error: 'Invalid credentials', code: ErrorCodes.INVALID_CREDENTIALS }, 401);
   }
 
   resetAttempts(email);
@@ -213,7 +214,7 @@ app.post('/refresh', async (c) => {
   const body = await c.req.json();
   const { refreshToken } = body;
   if (!refreshToken) {
-    return c.json({ error: 'Missing refresh token' }, 400);
+    return c.json({ error: 'Missing refresh token', code: ErrorCodes.INVALID_REFRESH_TOKEN }, 400);
   }
 
   const session = await db.select().from(sessions).where(eq(sessions.id, refreshToken)).limit(1);
@@ -223,13 +224,13 @@ app.post('/refresh', async (c) => {
     // We can't check family directly here since the token is gone, but this
     // path is the normal "invalid token" case. The real reuse detection happens
     // if a token family has a newer rotation counter than expected.
-    return c.json({ error: 'Invalid refresh token' }, 401);
+    return c.json({ error: 'Invalid refresh token', code: ErrorCodes.INVALID_REFRESH_TOKEN }, 401);
   }
 
   const s = session[0];
   if (new Date() > s.expiresAt) {
     await db.delete(sessions).where(eq(sessions.id, s.id));
-    return c.json({ error: 'Refresh token expired' }, 401);
+    return c.json({ error: 'Refresh token expired', code: ErrorCodes.REFRESH_TOKEN_EXPIRED }, 401);
   }
 
   // Reuse detection: if there's another session in this family with a higher
@@ -251,7 +252,7 @@ app.post('/refresh', async (c) => {
         action: 'token.reuse_detected',
         detail: `Refresh token reuse detected for family ${s.tokenFamily}. All sessions in family revoked.`,
       });
-      return c.json({ error: 'Refresh token reuse detected. All sessions revoked for security.' }, 401);
+      return c.json({ error: 'Refresh token reuse detected. All sessions revoked for security.', code: ErrorCodes.REFRESH_TOKEN_REUSE }, 401);
     }
   }
 
@@ -260,7 +261,7 @@ app.post('/refresh', async (c) => {
 
   const user = await db.select().from(users).where(eq(users.id, s.userId)).limit(1);
   if (user.length === 0 || !user[0].active) {
-    return c.json({ error: 'User not found or disabled' }, 401);
+    return c.json({ error: 'User not found or disabled', code: ErrorCodes.ACCOUNT_DISABLED }, 401);
   }
 
   const u = user[0];
@@ -299,7 +300,7 @@ app.get('/me', requireAuth, async (c) => {
   const authUser = c.get('user');
   const result = await db.select().from(users).where(eq(users.id, authUser.id)).limit(1);
   if (result.length === 0) {
-    return c.json({ error: 'User not found' }, 404);
+    return c.json({ error: 'User not found', code: ErrorCodes.NOT_FOUND }, 404);
   }
   const u = result[0];
   return c.json({
@@ -318,7 +319,7 @@ app.patch('/me', requireAuth, async (c) => {
   const body = await c.req.json();
   const parsed = updateProfileSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
+    return c.json({ error: 'Validation failed', code: ErrorCodes.VALIDATION_FAILED, details: parsed.error.flatten() }, 400);
   }
 
   const updates: Record<string, unknown> = { updatedAt: new Date() };
@@ -336,17 +337,17 @@ app.post('/change-password', requireAuth, async (c) => {
   const body = await c.req.json();
   const parsed = changePasswordSchema.safeParse(body);
   if (!parsed.success) {
-    return c.json({ error: 'Validation failed' }, 400);
+    return c.json({ error: 'Validation failed', code: ErrorCodes.VALIDATION_FAILED }, 400);
   }
 
   const result = await db.select().from(users).where(eq(users.id, authUser.id)).limit(1);
   if (result.length === 0) {
-    return c.json({ error: 'User not found' }, 404);
+    return c.json({ error: 'User not found', code: ErrorCodes.NOT_FOUND }, 404);
   }
 
   const valid = await argon2.verify(result[0].passwordHash, parsed.data.oldPassword);
   if (!valid) {
-    return c.json({ error: 'Incorrect current password' }, 401);
+    return c.json({ error: 'Incorrect current password', code: ErrorCodes.INCORRECT_PASSWORD }, 401);
   }
 
   const newHash = await argon2.hash(parsed.data.newPassword, { type: argon2.argon2id });

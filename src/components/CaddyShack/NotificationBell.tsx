@@ -114,6 +114,7 @@ function groupByDate(
 
 export function NotificationBell() {
   const { t } = useTranslation('caddyshack');
+  const { t: tt } = useTranslation('toast');
   const { connected } = useAuth();
   const { addToast } = useToast();
   const { settings } = useSettings();
@@ -151,11 +152,11 @@ export function NotificationBell() {
         ),
       );
     } catch {
-      addToast('error', 'Failed to load notifications');
+      addToast('error', tt('caddyshack.notificationsLoadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [connected, addToast, settings.notificationPrefs]);
+  }, [connected, addToast, tt, settings.notificationPrefs]);
 
   // Initial load + WS push events
   useEffect(() => {
@@ -186,7 +187,7 @@ export function NotificationBell() {
         prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
       );
     } catch {
-      addToast('error', 'Failed to mark notification read');
+      addToast('error', tt('caddyshack.markReadFailed'));
     }
   };
 
@@ -205,7 +206,7 @@ export function NotificationBell() {
       await markAllNotificationsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     } catch {
-      addToast('error', 'Failed to mark all read');
+      addToast('error', tt('caddyshack.markAllReadFailed'));
     }
   };
 
@@ -215,7 +216,7 @@ export function NotificationBell() {
       await markAllNotificationsRead();
       setNotifications([]);
     } catch {
-      addToast('error', 'Failed to clear notifications');
+      addToast('error', tt('caddyshack.clearNotificationsFailed'));
     }
   };
 

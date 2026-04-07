@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Upload } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../../contexts/ToastContext';
 import type { StandaloneIOC, Folder, Tag } from '../../types';
 import { parseMISPEvent } from '../../lib/misp-import';
@@ -29,6 +30,7 @@ export function MISPImportModal({
   defaultFolderId,
 }: MISPImportModalProps) {
   const { addToast } = useToast();
+  const { t: tt } = useTranslation('toast');
   const [step, setStep] = useState<'upload' | 'preview' | 'results'>('upload');
   const [folderId, setFolderId] = useState(defaultFolderId || '');
   const [importing, setImporting] = useState(false);
@@ -110,11 +112,11 @@ export function MISPImportModal({
     setStep('results');
     setImporting(false);
     if (created > 0) {
-      addToast('success', `Imported ${created} IOC${created !== 1 ? 's' : ''} from MISP event`);
+      addToast('success', tt('import.mispImported', { count: created }));
     } else if (failed > 0) {
-      addToast('error', `MISP import failed for ${failed} IOC${failed !== 1 ? 's' : ''}`);
+      addToast('error', tt('import.mispFailed', { count: failed }));
     } else {
-      addToast('info', 'No new IOCs imported (all duplicates)');
+      addToast('info', tt('import.mispNoDuplicates'));
     }
   };
 

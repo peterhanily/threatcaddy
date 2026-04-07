@@ -1,4 +1,66 @@
 {
+  "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
+  "builtin.vtIpLookup.description": "Look up an IP address on VirusTotal to retrieve reputation, geolocation, and analysis statistics.",
+  "builtin.vtIpLookup.config.apiKey.label": "API Key",
+  "builtin.vtIpLookup.config.apiKey.description": "Your VirusTotal API key",
+
+  "builtin.abuseipdbCheck.name": "AbuseIPDB Check",
+  "builtin.abuseipdbCheck.description": "Check an IP address against the AbuseIPDB database for abuse reports and confidence scoring.",
+  "builtin.abuseipdbCheck.config.apiKey.label": "API Key",
+  "builtin.abuseipdbCheck.config.apiKey.description": "Your AbuseIPDB API key",
+  "builtin.abuseipdbCheck.config.maxAgeInDays.label": "Max Age (days)",
+  "builtin.abuseipdbCheck.config.maxAgeInDays.description": "Maximum age of reports to include",
+
+  "builtin.shodanHostInfo.name": "Shodan Host Info",
+  "builtin.shodanHostInfo.description": "Retrieve host information from Shodan including open ports, vulnerabilities, and organization details.",
+  "builtin.shodanHostInfo.config.apiKey.label": "API Key",
+  "builtin.shodanHostInfo.config.apiKey.description": "Your Shodan API key",
+
+  "builtin.slackWebhookNotify.name": "Slack Webhook Notification",
+  "builtin.slackWebhookNotify.description": "Send IOC alerts to a Slack channel via an incoming webhook with rich Block Kit formatting.",
+  "builtin.slackWebhookNotify.config.webhookUrl.label": "Webhook URL",
+  "builtin.slackWebhookNotify.config.webhookUrl.description": "Slack incoming webhook URL",
+  "builtin.slackWebhookNotify.config.channel.label": "Channel Override",
+  "builtin.slackWebhookNotify.config.channel.description": "Optional channel to post to (overrides webhook default)",
+
+  "builtin.urlhausLookup.name": "URLhaus URL Lookup",
+  "builtin.urlhausLookup.description": "Look up a URL on URLhaus (abuse.ch) for known malware distribution activity. Requires a free API key from auth.abuse.ch.",
+  "builtin.urlhausLookup.config.apiKey.label": "Auth Key",
+  "builtin.urlhausLookup.config.apiKey.description": "Your abuse.ch Auth Key (free at auth.abuse.ch)",
+
+  "builtin.urlhausDomainLookup.name": "URLhaus Domain Lookup",
+  "builtin.urlhausDomainLookup.description": "Look up a domain on URLhaus (abuse.ch) for known malware distribution URLs. Requires a free API key from auth.abuse.ch.",
+  "builtin.urlhausDomainLookup.config.apiKey.label": "Auth Key",
+  "builtin.urlhausDomainLookup.config.apiKey.description": "Your abuse.ch Auth Key (free at auth.abuse.ch)",
+
+  "builtin.shodanInternetdb.name": "Shodan InternetDB",
+  "builtin.shodanInternetdb.description": "Free IP enrichment from Shodan — open ports, CVEs, hostnames, and tags. No API key required.",
+
+  "builtin.vtDomainLookup.name": "VirusTotal Domain Lookup",
+  "builtin.vtDomainLookup.description": "Look up a domain on VirusTotal for reputation, DNS records, and analysis statistics.",
+  "builtin.vtDomainLookup.config.apiKey.label": "API Key",
+  "builtin.vtDomainLookup.config.apiKey.description": "Your VirusTotal API key",
+
+  "builtin.vtHashLookup.name": "VirusTotal Hash Lookup",
+  "builtin.vtHashLookup.description": "Look up a file hash (MD5/SHA1/SHA256) on VirusTotal for malware detection results.",
+  "builtin.vtHashLookup.config.apiKey.label": "API Key",
+  "builtin.vtHashLookup.config.apiKey.description": "Your VirusTotal API key",
+
+  "builtin.threatfoxLookup.name": "ThreatFox IOC Search",
+  "builtin.threatfoxLookup.description": "Search ThreatFox (abuse.ch) for known malware-associated IOCs — C2 servers, distribution URLs, payload hashes.",
+  "builtin.threatfoxLookup.config.apiKey.label": "Auth Key",
+  "builtin.threatfoxLookup.config.apiKey.description": "Your abuse.ch Auth Key (free at auth.abuse.ch)",
+
+  "builtin.malwarebazaarLookup.name": "MalwareBazaar Hash Lookup",
+  "builtin.malwarebazaarLookup.description": "Look up a file hash on MalwareBazaar (abuse.ch) — known malware samples, signatures, tags, and vendor intel.",
+  "builtin.malwarebazaarLookup.config.apiKey.label": "Auth Key",
+  "builtin.malwarebazaarLookup.config.apiKey.description": "Your abuse.ch Auth Key (free at auth.abuse.ch)",
+
+  "builtin.greynoiseCommunity.name": "GreyNoise Community",
+  "builtin.greynoiseCommunity.description": "Classify an IP as benign, malicious, or unknown using GreyNoise. Identifies known scanners, bots, and trusted services.",
+  "builtin.greynoiseCommunity.config.apiKey.label": "API Key",
+  "builtin.greynoiseCommunity.config.apiKey.description": "Your GreyNoise Community API key (free at greynoise.io)",
+
   "panel.integrations": "Integrations",
   "panel.description": "Connect to threat intelligence feeds, enrichment APIs, and export pipelines.",
   "panel.loadingIntegrations": "Loading integrations...",

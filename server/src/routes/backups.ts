@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { db } from '../db/index.js';
 import { backups } from '../db/schema.js';
 import type { AuthUser } from '../types.js';
+import { ErrorCodes } from '../types/error-codes.js';
 import { mkdir, writeFile, readFile, unlink } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { logger } from '../lib/logger.js';
@@ -26,7 +27,7 @@ app.post('/', async (c) => {
     .from(backups)
     .where(eq(backups.userId, user.id));
   if (existing.length >= MAX_BACKUPS_PER_USER) {
-    return c.json({ error: `Maximum ${MAX_BACKUPS_PER_USER} backups reached. Delete old backups first.` }, 400);
+    return c.json({ error: `Maximum ${MAX_BACKUPS_PER_USER} backups reached. Delete old backups first.`, code: ErrorCodes.MAX_BACKUPS_REACHED }, 400);
   }
 
   const body = await c.req.parseBody();
@@ -34,10 +35,10 @@ app.post('/', async (c) => {
   const blob = body['blob'];
 
   if (!metadataRaw || typeof metadataRaw !== 'string') {
-    return c.json({ error: 'Missing metadata field' }, 400);
+    return c.json({ error: 'Missing metadata field', code: ErrorCodes.MISSING_METADATA }, 400);
   }
   if (!blob || typeof blob === 'string') {
-    return c.json({ error: 'Missing blob file' }, 400);
+    return c.json({ error: 'Missing blob file', code: ErrorCodes.MISSING_BLOB }, 400);
   }
 
   let metadata: {
@@ -51,12 +52,12 @@ app.post('/', async (c) => {
   try {
     metadata = JSON.parse(metadataRaw);
   } catch {
-    return c.json({ error: 'Invalid metadata JSON' }, 400);
+    return c.json({ error: 'Invalid metadata JSON', code: ErrorCodes.INVALID_METADATA }, 400);
   }
 
   const name = typeof metadata.name === 'string' ? metadata.name.slice(0, 200) : '';
   if (!name) {
-    return c.json({ error: 'Backup name is required' }, 400);
+    return c.json({ error: 'Backup name is required', code: ErrorCodes.BACKUP_NAME_REQUIRED }, 400);
   }
 
   const type = metadata.type === 'differential' ? 'differential' : 'full';
@@ -141,7 +142,7 @@ app.get('/:id', async (c) => {
     .limit(1);
 
   if (result.length === 0) {
-    return c.json({ error: 'Backup not found' }, 404);
+    return c.json({ error: 'Backup not found', code: ErrorCodes.BACKUP_NOT_FOUND }, 404);
   }
 
   const backup = result[0];
@@ -151,7 +152,7 @@ app.get('/:id', async (c) => {
   const resolvedPath = resolve(filePath);
   const basePath = resolve(STORAGE_PATH);
   if (!resolvedPath.startsWith(basePath + '/') && resolvedPath !== basePath) {
-    return c.json({ error: 'Invalid backup path' }, 403);
+    return c.json({ error: 'Invalid backup path', code: ErrorCodes.INVALID_BACKUP_PATH }, 403);
   }
 
   try {
@@ -165,7 +166,7 @@ app.get('/:id', async (c) => {
       },
     });
   } catch {
-    return c.json({ error: 'Backup file not found on disk' }, 404);
+    return c.json({ error: 'Backup file not found on disk', code: ErrorCodes.BACKUP_FILE_NOT_FOUND }, 404);
   }
 });
 
@@ -180,7 +181,7 @@ app.delete('/:id', async (c) => {
     .limit(1);
 
   if (result.length === 0) {
-    return c.json({ error: 'Backup not found' }, 404);
+    return c.json({ error: 'Backup not found', code: ErrorCodes.BACKUP_NOT_FOUND }, 404);
   }
 
   const backup = result[0];
@@ -190,7 +191,7 @@ app.delete('/:id', async (c) => {
   const resolvedDeletePath = resolve(filePath);
   const deleteBasePath = resolve(STORAGE_PATH);
   if (!resolvedDeletePath.startsWith(deleteBasePath + '/') && resolvedDeletePath !== deleteBasePath) {
-    return c.json({ error: 'Invalid backup path' }, 403);
+    return c.json({ error: 'Invalid backup path', code: ErrorCodes.INVALID_BACKUP_PATH }, 403);
   }
 
   // Delete from disk

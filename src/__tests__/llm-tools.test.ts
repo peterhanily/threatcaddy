@@ -3,6 +3,11 @@ import { TOOL_DEFINITIONS, isWriteTool, executeTool, buildSystemPrompt } from '.
 import { db } from '../db';
 import type { ToolUseBlock } from '../types';
 
+// NOTE: LLM tool descriptions and error messages (e.g. "query is required",
+// "not found", "Unknown tool") are intentionally NOT localized. They are
+// returned as JSON to the LLM, not displayed to users. Keep these assertions
+// matching English strings.
+
 function makeToolUse(name: string, input: Record<string, unknown> = {}): ToolUseBlock {
   return { type: 'tool_use', id: `tool-${name}`, name, input };
 }

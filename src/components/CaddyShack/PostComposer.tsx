@@ -31,6 +31,7 @@ interface PostComposerProps {
 
 export function PostComposer({ folderId, parentId, replyToId, placeholder, initialContent, onPostCreated, settings }: PostComposerProps) {
   const { t } = useTranslation('caddyshack');
+  const { t: tt } = useTranslation('toast');
   const { user, serverUrl } = useAuth();
   const { addToast } = useToast();
   const [content, setContent] = useState(initialContent || '');
@@ -173,11 +174,11 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
       setAttachments([]);
       setMentions([]);
       setClsLevel(undefined);
-      addToast('success', parentId ? 'Reply posted' : 'Post created');
+      addToast('success', parentId ? tt('caddyshack.replyPosted') : tt('caddyshack.postCreated'));
       onPostCreated?.();
     } catch (err) {
       console.error('Failed to create post:', err);
-      addToast('error', 'Failed to create post');
+      addToast('error', tt('caddyshack.postCreateFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -202,7 +203,7 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
         setAttachments((prev) => [...prev, att]);
       } catch (err) {
         console.error('Failed to upload file:', err);
-        addToast('error', `Failed to upload file: ${file.name}`);
+        addToast('error', tt('caddyshack.uploadFailed', { name: file.name }));
       }
     }
     if (fileInputRef.current) fileInputRef.current.value = '';

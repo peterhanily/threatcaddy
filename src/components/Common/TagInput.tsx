@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { X, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Tag } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -16,6 +17,7 @@ export function TagInput({ selectedTags, allTags, onChange, onCreateTag }: TagIn
   const [highlightIdx, setHighlightIdx] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const { addToast } = useToast();
+  const { t: tt } = useTranslation('toast');
 
   const filteredTags = allTags.filter(
     (t) =>
@@ -32,7 +34,7 @@ export function TagInput({ selectedTags, allTags, onChange, onCreateTag }: TagIn
       try {
         await onCreateTag(trimmed);
       } catch {
-        addToast('error', 'Failed to create tag');
+        addToast('error', tt('generic.tagCreateFailed'));
         return;
       }
     }

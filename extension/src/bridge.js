@@ -91,7 +91,7 @@ window.addEventListener('message', function (event) {
       window.postMessage({
         type: 'TC_LLM_ERROR',
         requestId: requestId,
-        error: 'Extension context invalidated. Please reload this page.'
+        error: chrome.i18n.getMessage('errorExtensionInvalidated')
       }, postOrigin());
       return;
     }
@@ -118,7 +118,7 @@ window.addEventListener('message', function (event) {
           window.postMessage({
             type: 'TC_LLM_ERROR',
             requestId: requestId,
-            error: lastError.message || 'Extension disconnected'
+            error: lastError.message || chrome.i18n.getMessage('errorExtensionDisconnected')
           }, postOrigin());
         }
         ports.delete(requestId);
@@ -129,7 +129,7 @@ window.addEventListener('message', function (event) {
       window.postMessage({
         type: 'TC_LLM_ERROR',
         requestId: requestId,
-        error: 'Extension error: ' + (err.message || 'unknown. Try reloading the page.')
+        error: chrome.i18n.getMessage('errorExtensionUnknown', [err.message || 'unknown'])
       }, postOrigin());
     }
   }
@@ -143,7 +143,7 @@ window.addEventListener('message', function (event) {
         type: 'TC_FETCH_URL_RESULT',
         requestId: fetchRequestId,
         success: false,
-        error: 'Extension context invalidated. Please reload this page.'
+        error: chrome.i18n.getMessage('errorExtensionInvalidated')
       }, postOrigin());
       return;
     }
@@ -156,14 +156,14 @@ window.addEventListener('message', function (event) {
             type: 'TC_FETCH_URL_RESULT',
             requestId: fetchRequestId,
             success: false,
-            error: lastError.message || 'Extension error'
+            error: lastError.message || chrome.i18n.getMessage('errorExtensionError')
           }, postOrigin());
         } else if (!response) {
           window.postMessage({
             type: 'TC_FETCH_URL_RESULT',
             requestId: fetchRequestId,
             success: false,
-            error: 'No response from extension background'
+            error: chrome.i18n.getMessage('errorNoResponse')
           }, postOrigin());
         } else {
           window.postMessage({
@@ -182,7 +182,7 @@ window.addEventListener('message', function (event) {
         type: 'TC_FETCH_URL_RESULT',
         requestId: fetchRequestId,
         success: false,
-        error: 'Extension error: ' + (err.message || 'unknown')
+        error: chrome.i18n.getMessage('errorExtensionUnknown', [err.message || 'unknown'])
       }, postOrigin());
     }
   }
@@ -202,7 +202,7 @@ window.addEventListener('message', function (event) {
         type: 'TC_PROXY_FETCH_RESULT',
         requestId: proxyId,
         success: false,
-        error: 'Extension context invalidated. Please reload this page.'
+        error: chrome.i18n.getMessage('errorExtensionInvalidated')
       }, postOrigin());
       return;
     }
@@ -215,14 +215,14 @@ window.addEventListener('message', function (event) {
             type: 'TC_PROXY_FETCH_RESULT',
             requestId: proxyId,
             success: false,
-            error: lastError.message || 'Extension error'
+            error: lastError.message || chrome.i18n.getMessage('errorExtensionError')
           }, postOrigin());
         } else if (!response) {
           window.postMessage({
             type: 'TC_PROXY_FETCH_RESULT',
             requestId: proxyId,
             success: false,
-            error: 'No response from extension background'
+            error: chrome.i18n.getMessage('errorNoResponse')
           }, postOrigin());
         } else {
           window.postMessage({
@@ -242,7 +242,7 @@ window.addEventListener('message', function (event) {
         type: 'TC_PROXY_FETCH_RESULT',
         requestId: proxyId,
         success: false,
-        error: 'Extension error: ' + (err.message || 'unknown')
+        error: chrome.i18n.getMessage('errorExtensionUnknown', [err.message || 'unknown'])
       }, postOrigin());
     }
   }

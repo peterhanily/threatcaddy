@@ -10,6 +10,7 @@ import { MISPImportModal } from './MISPImportModal';
 import { IOCDeduplicator } from './IOCDeduplicator';
 import { RunIntegrationMenu } from '../Integrations/RunIntegrationMenu';
 import { useIntegrations } from '../../hooks/useIntegrations';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../../contexts/ToastContext';
 import { formatDate } from '../../lib/utils';
 import { EnrichmentLabels } from './EnrichmentLabels';
@@ -754,6 +755,7 @@ function AllIOCsTab({
 }) {
   const { getInstallationsForIOCType, addRun } = useIntegrations();
   const { addToast } = useToast();
+  const { t: tt } = useTranslation('toast');
 
   const [showForm, setShowForm] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
@@ -932,7 +934,7 @@ function AllIOCsTab({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    addToast('success', `Exported ${data.length} IOC${data.length !== 1 ? 's' : ''} as ${ext.toUpperCase()}`);
+    addToast('success', tt('ioc.exported', { count: data.length, format: ext.toUpperCase() }));
   };
 
   const selectedStandaloneCount = useMemo(() => {
@@ -957,7 +959,7 @@ function AllIOCsTab({
     }
     setSelectedIds(new Set());
     setShowBulkDelete(false);
-    addToast('success', `Deleted ${ids.length} IOC${ids.length !== 1 ? 's' : ''}`);
+    addToast('success', tt('ioc.deleted', { count: ids.length }));
   };
 
   const handleBulkSetStatus = (status: string) => {
@@ -965,7 +967,7 @@ function AllIOCsTab({
     for (const id of ids) onUpdateIOC?.(id, { iocStatus: status });
     setSelectedIds(new Set());
     setShowBulkStatusMenu(false);
-    addToast('success', `Updated status on ${ids.length} IOC${ids.length !== 1 ? 's' : ''}`);
+    addToast('success', tt('ioc.statusUpdated', { count: ids.length }));
   };
 
   const handleBulkSetConfidence = (confidence: ConfidenceLevel) => {
@@ -973,7 +975,7 @@ function AllIOCsTab({
     for (const id of ids) onUpdateIOC?.(id, { confidence });
     setSelectedIds(new Set());
     setShowBulkConfidenceMenu(false);
-    addToast('success', `Updated confidence on ${ids.length} IOC${ids.length !== 1 ? 's' : ''}`);
+    addToast('success', tt('ioc.confidenceUpdated', { count: ids.length }));
   };
 
   const handleBulkAddTags = () => {
@@ -988,7 +990,7 @@ function AllIOCsTab({
     setSelectedIds(new Set());
     setShowBulkTagInput(false);
     setBulkTagText('');
-    addToast('success', `Added tags to ${standaloneRows.length} IOC${standaloneRows.length !== 1 ? 's' : ''}`);
+    addToast('success', tt('ioc.tagsAdded', { count: standaloneRows.length }));
   };
 
   // ─── Column toggle helper ──────────────────────────────────
@@ -1077,9 +1079,9 @@ function AllIOCsTab({
                   const text = filteredSortedRows.map(r => r.value).join('\n');
                   try {
                     await navigator.clipboard.writeText(text);
-                    addToast('success', `Copied ${filteredSortedRows.length} IOC${filteredSortedRows.length !== 1 ? 's' : ''} to clipboard`);
+                    addToast('success', tt('ioc.copiedToClipboard', { count: filteredSortedRows.length }));
                   } catch {
-                    addToast('error', 'Failed to copy to clipboard');
+                    addToast('error', tt('ioc.copyFailed'));
                   }
                 }}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs font-medium transition-colors"

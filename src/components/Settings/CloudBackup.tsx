@@ -19,6 +19,7 @@ const PROVIDER_OPTIONS: { value: CloudProvider; label: string }[] = [
 
 export function CloudBackup() {
   const { t } = useTranslation('settings');
+  const { t: tt } = useTranslation('toast');
   const { settings, updateSettings } = useSettings();
   const cloud = useCloudSync(settings.backupDestinations);
   const logActivity = useLogActivity();
@@ -107,11 +108,11 @@ export function CloudBackup() {
     await cloud.pushFullBackup(password);
     if (!cloud.error) {
       showMessage(password ? t('cloud.encryptedPushSuccess') : t('cloud.pushSuccess'));
-      addToast('success', password ? 'Encrypted cloud backup pushed' : 'Cloud backup pushed');
+      addToast('success', password ? tt('backup.cloudEncryptedPushed') : tt('backup.cloudPushed'));
       logActivity('sync', 'backup', `Pushed ${password ? 'encrypted ' : ''}full backup to ${cloud.lastResults.length} destination(s)`);
       if (password) setEncryptPassword('');
     } else {
-      addToast('error', 'Cloud backup failed');
+      addToast('error', tt('backup.cloudFailed'));
     }
   };
 

@@ -30,6 +30,7 @@ import { db } from '../../db';
 
 export function EncryptionSettings() {
   const { t } = useTranslation('encryption');
+  const { t: tt } = useTranslation('toast');
   const { addToast } = useToast();
   const [enabled, setEnabled] = useState(isEncryptionEnabled);
   const [showSetup, setShowSetup] = useState(false);
@@ -87,7 +88,7 @@ export function EncryptionSettings() {
       setEnabled(false);
       setShowDisable(false);
       setDisablePass('');
-      addToast('info', 'Encryption disabled');
+      addToast('info', tt('encryption.disabled'));
     } catch {
       setDisableError(t('settings.wrongPassphrase'));
       setDisabling(false);
@@ -151,7 +152,7 @@ export function EncryptionSettings() {
       setCurrentPass('');
       setNewPass('');
       setConfirmPass('');
-      addToast('success', 'Passphrase changed');
+      addToast('success', tt('encryption.passphraseChanged'));
     } catch {
       setChangeError(t('settings.wrongCurrentPass'));
     } finally {

@@ -10,6 +10,7 @@ import { broadcastToFolder } from '../ws/handler.js';
 import { db } from '../db/index.js';
 import { folders, investigationMembers } from '../db/schema.js';
 import type { AuthUser, SyncChange, SyncResult } from '../types.js';
+import { ErrorCodes } from '../types/error-codes.js';
 
 // Tables that are global (not scoped to a folder)
 const TABLES_WITHOUT_FOLDER = new Set(['tags', 'timelines']);
@@ -240,7 +241,7 @@ app.get('/pull', async (c) => {
   const user = c.get('user');
   const since = c.req.query('since');
   if (!since) {
-    return c.json({ error: 'Missing since parameter' }, 400);
+    return c.json({ error: 'Missing since parameter', code: ErrorCodes.MISSING_SINCE_PARAM }, 400);
   }
 
   const folderId = c.req.query('folderId');
@@ -252,7 +253,7 @@ app.get('/pull', async (c) => {
     // Specific folder: verify access
     const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer');
     if (!hasAccess) {
-      return c.json({ error: 'No access to this investigation' }, 403);
+      return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
     }
     const result = await pullChanges(since, [folderId], pullOpts);
     return c.json(result);
@@ -275,7 +276,7 @@ app.get('/snapshot/:folderId', async (c) => {
 
   const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer');
   if (!hasAccess) {
-    return c.json({ error: 'No access to this investigation' }, 403);
+    return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
   }
 
   const snapshot = await getSnapshot(folderId);
