@@ -402,7 +402,7 @@ export function SearchOverlay({
                       )}
                     >
                       <Briefcase size={12} />
-                      All Investigations
+                      {t('allInvestigations')}
                     </button>
                     {filteredFolders.map((f) => (
                       <button
@@ -421,7 +421,7 @@ export function SearchOverlay({
                       </button>
                     ))}
                     {filteredFolders.length === 0 && (
-                      <div className="px-3 py-2 text-xs text-gray-600">No matches</div>
+                      <div className="px-3 py-2 text-xs text-gray-600">{t('noMatches')}</div>
                     )}
                   </div>
                 </div>
@@ -483,7 +483,7 @@ export function SearchOverlay({
 
           {/* Type filter chips */}
           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-            <span className="text-[10px] text-gray-600 mr-1">Types:</span>
+            <span className="text-[10px] text-gray-600 mr-1">{t('types')}:</span>
             {(['note', 'clip', 'task', 'timeline', 'whiteboard', 'ioc', 'chat'] as SearchResultType[]).map((type) => {
               const Icon = TYPE_ICONS[type];
               const active = activeTypes.has(type);
@@ -517,7 +517,7 @@ export function SearchOverlay({
               )}
             >
               <Calendar size={10} />
-              Date
+              {t('date')}
             </button>
             {dateFilterOpen && (
               <>
@@ -531,7 +531,7 @@ export function SearchOverlay({
                         : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
                     )}
                   >
-                    Created
+                    {t('created')}
                   </button>
                   <button
                     onClick={() => setDateField('updatedAt')}
@@ -542,7 +542,7 @@ export function SearchOverlay({
                         : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
                     )}
                   >
-                    Updated
+                    {t('updated')}
                   </button>
                 </div>
                 <input
@@ -552,7 +552,7 @@ export function SearchOverlay({
                   className="px-1.5 py-0.5 bg-gray-800 border border-gray-700 rounded text-[11px] text-gray-200 focus:outline-none focus:border-accent"
                   placeholder="From"
                 />
-                <span className="text-[10px] text-gray-600">to</span>
+                <span className="text-[10px] text-gray-600">{t('to')}</span>
                 <input
                   type="date"
                   value={dateTo}
@@ -634,7 +634,7 @@ export function SearchOverlay({
         {searches.length > 0 && (
           <div className="border-t border-gray-800 px-3 py-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-gray-500 shrink-0">Saved:</span>
+              <span className="text-xs text-gray-500 shrink-0">{t('saved')}:</span>
               {searches.map((s) => (
                 editingSearchId === s.id ? (
                   <input
@@ -687,7 +687,7 @@ export function SearchOverlay({
                 onClick={clearAll}
                 className="text-xs text-gray-600 hover:text-red-400 transition-colors ml-auto"
               >
-                Clear All
+                {t('clearAll')}
               </button>
             </div>
           </div>
