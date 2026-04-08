@@ -45,11 +45,15 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
     if (!serverUrl) throw new Error('No server connection');
     const token = await getAccessToken();
     if (!token) throw new Error('Not authenticated');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15_000);
     const resp = await fetch(`${serverUrl}/api/caddy-agents${path}`, {
       method,
+      signal: controller.signal,
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: body ? JSON.stringify(body) : undefined,
     });
+    clearTimeout(timer);
     if (!resp.ok) {
       const text = await resp.text().catch(() => '');
       throw new Error(`Server ${resp.status}: ${text.substring(0, 200)}`);
