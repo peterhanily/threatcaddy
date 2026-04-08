@@ -691,6 +691,7 @@ function PolicyEditor({ folder, settings, onFolderChanged }: { folder: Folder; s
         {showFocus && (
           <div className="mt-1.5">
             <textarea
+              maxLength={2000}
               value={focusText}
               onChange={(e) => setFocusText(e.target.value)}
               onBlur={saveFocusAreas}

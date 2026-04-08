@@ -102,6 +102,7 @@ export function AgentMeetingPanel({
       {showNewMeeting && (
         <div className="border border-border-subtle rounded-lg p-3 bg-surface-raised/50 space-y-2">
           <textarea
+            maxLength={2000}
             value={agenda}
             onChange={e => setAgenda(e.target.value)}
             placeholder={t('meeting.meetingAgendaPlaceholder')}

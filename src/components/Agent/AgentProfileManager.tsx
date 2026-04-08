@@ -315,6 +315,7 @@ function ProfileForm({ profile, onSave, onCancel }: {
         <option value="observer">{t('profile.observerRole')}</option>
       </select>
       <textarea
+        maxLength={10000}
         value={systemPrompt}
         onChange={e => setSystemPrompt(e.target.value)}
         placeholder={t('profile.systemPromptPlaceholder')}

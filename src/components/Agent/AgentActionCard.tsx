@@ -128,6 +128,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
       {editing && isPending && (
         <div className="mt-2 pl-6 space-y-1.5">
           <textarea
+            maxLength={10000}
             value={editJson}
             onChange={e => { setEditJson(e.target.value); setEditError(''); }}
             rows={4}
