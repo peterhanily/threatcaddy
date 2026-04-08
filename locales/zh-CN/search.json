@@ -12,7 +12,7 @@
   "clear": "清除",
   "resultCount": "{{count}} 个结果",
   "resultCountPlural": "{{count}} 个结果",
-  "noResults": "未找到"{{query}}"的结果",
+  "noResults": "未找到\"{{query}}\"的结果",
   "types": "类型：",
   "date": "日期",
   "created": "创建",

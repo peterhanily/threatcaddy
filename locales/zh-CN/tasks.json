@@ -28,7 +28,7 @@
   "list.newTask": "新建任务",
   "list.newTaskAria": "新建任务",
   "list.emptyTitle": "暂无任务",
-  "list.emptyHint": "点击"新建任务"或按 Ctrl+Shift+T",
+  "list.emptyHint": "点击\"新建任务\"或按 Ctrl+Shift+T",
   "list.editTaskModal": "编辑任务",
   "list.createTaskModal": "创建任务",
 

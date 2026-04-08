@@ -74,7 +74,7 @@
   "detail.unarchive": "取消存档",
   "detail.delete": "删除",
   "detail.deleteTitle": "删除调查",
-  "detail.deleteMessage": "删除"{{name}}"及其所有内容？此操作无法撤销。",
+  "detail.deleteMessage": "删除\"{{name}}\"及其所有内容？此操作无法撤销。",
   "detail.deleteConfirm": "删除调查",
   "detail.created": "创建于 {{date}}",
   "detail.updated": "更新于 {{date}}"
