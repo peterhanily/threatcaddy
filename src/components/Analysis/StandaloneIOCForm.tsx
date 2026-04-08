@@ -192,7 +192,9 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
         <div>
           <label className="block text-xs text-gray-400 mb-1">{t('iocForm.valueLabel')}<span className="text-red-400 ml-0.5">*</span></label>
           <input
+            type="text"
             autoFocus
+            maxLength={2000}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={t('iocForm.valuePlaceholder')}
@@ -205,6 +207,8 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
           <div>
             <label className="block text-xs text-gray-400 mb-1">{t('iocForm.subtypeLabel')}</label>
             <input
+              type="text"
+              maxLength={100}
               value={iocSubtype}
               onChange={(e) => setIocSubtype(e.target.value)}
               placeholder={t('iocForm.subtypePlaceholder')}
@@ -226,6 +230,8 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
           <div>
             <label className="block text-xs text-gray-400 mb-1">{t('iocForm.attributionLabel')}</label>
             <input
+              type="text"
+              maxLength={500}
               value={attribution}
               onChange={(e) => setAttribution(e.target.value)}
               placeholder={t('iocForm.attributionPlaceholder')}
@@ -282,6 +288,8 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
           </div>
           <div className="relative">
             <input
+              type="text"
+              maxLength={100}
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => {
@@ -336,6 +344,8 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
               </div>
               <div className="flex-1">
                 <input
+                  type="text"
+                  maxLength={2000}
                   value={newRelTarget}
                   onChange={(e) => setNewRelTarget(e.target.value)}
                   placeholder={t('iocForm.targetPlaceholder')}

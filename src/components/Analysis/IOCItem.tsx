@@ -186,6 +186,7 @@ export function IOCItem({ ioc, onUpdate, onDismiss, onRestore, attributionActors
           <div>
             <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('iocItem.analystNotes')}</label>
             <textarea
+              maxLength={5000}
               value={ioc.analystNotes || ''}
               onChange={(e) => onUpdate(ioc.id, { analystNotes: e.target.value })}
               className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-1.5 mt-0.5 focus:outline-none focus:ring-1 focus:ring-gray-600 resize-none"

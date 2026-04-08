@@ -1257,7 +1257,9 @@ function AllIOCsTab({
               {showBulkTagInput && (
                 <div className="absolute top-full left-0 mt-1 z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-xl p-2 w-56">
                   <input
+                    type="text"
                     autoFocus
+                    maxLength={500}
                     value={bulkTagText}
                     onChange={e => setBulkTagText(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') handleBulkAddTags(); }}

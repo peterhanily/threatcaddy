@@ -417,6 +417,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
             <div>
               <label className="text-[10px] text-gray-500 uppercase tracking-wider">{t('iocPanel.analysisSummary')}</label>
               <textarea
+                maxLength={5000}
                 value={analysis.analysisSummary || ''}
                 onChange={(e) => updateSummary(e.target.value)}
                 className="w-full bg-gray-800/50 text-xs text-gray-300 rounded p-2 mt-1 focus:outline-none focus:ring-1 focus:ring-gray-600 resize-none"

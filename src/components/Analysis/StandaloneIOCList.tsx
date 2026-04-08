@@ -361,7 +361,7 @@ export function StandaloneIOCList({
             </button>
             {showBulkTagInput && (
               <div className="absolute top-full left-0 mt-1 z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-xl p-2 w-56">
-                <input autoFocus value={bulkTagText} onChange={e => setBulkTagText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleBulkAddTags(); }} placeholder="tag1, tag2, ..." className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-gray-600" />
+                <input type="text" autoFocus maxLength={500} value={bulkTagText} onChange={e => setBulkTagText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleBulkAddTags(); }} placeholder="tag1, tag2, ..." className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-gray-600" />
                 <button onClick={handleBulkAddTags} disabled={!bulkTagText.trim()} className="mt-1.5 w-full px-2 py-1 rounded bg-accent/15 text-accent text-xs font-medium hover:bg-accent/25 disabled:opacity-50">Apply Tags</button>
               </div>
             )}

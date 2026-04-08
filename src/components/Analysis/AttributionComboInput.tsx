@@ -74,6 +74,8 @@ export function AttributionComboInput({ value, onChange, actors, placeholder }: 
   return (
     <div ref={containerRef} className="relative">
       <input
+        type="text"
+        maxLength={500}
         value={value}
         onChange={(e) => {
           onChange(e.target.value);

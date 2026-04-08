@@ -138,6 +138,7 @@ export function InvestigationDetailPanel({
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
             <textarea
+              maxLength={2000}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               onBlur={handleDescriptionBlur}
