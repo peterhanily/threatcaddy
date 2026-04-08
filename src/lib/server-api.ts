@@ -121,10 +121,19 @@ async function apiFetch(path: string, opts: RequestInit = {}, _retry = false): P
     headers['Content-Type'] = headers['Content-Type'] || 'application/json';
   }
 
+  // Apply a 30s timeout to non-streaming requests that don't already carry a signal
+  let timeoutController: AbortController | undefined;
+  let timeoutTimer: ReturnType<typeof setTimeout> | undefined;
+  if (!opts.signal) {
+    timeoutController = new AbortController();
+    timeoutTimer = setTimeout(() => timeoutController!.abort(), 30_000);
+  }
   const resp = await fetch(`${_serverUrl}${path}`, {
     ...opts,
     headers,
+    signal: opts.signal ?? timeoutController?.signal,
   });
+  clearTimeout(timeoutTimer);
 
   // On 401, invalidate the cached token so getAccessToken triggers a refresh,
   // then retry the request once with the fresh token.

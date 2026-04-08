@@ -27,7 +27,10 @@ export function clearCatalogCache(): void {
 
 export async function fetchCatalog(): Promise<CatalogEntry[]> {
   try {
-    const resp = await fetch(CATALOG_URL, { cache: 'no-cache' });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15_000);
+    const resp = await fetch(CATALOG_URL, { cache: 'no-cache', signal: controller.signal });
+    clearTimeout(timer);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
     const entries: CatalogEntry[] = data.entries ?? [];
@@ -45,7 +48,9 @@ export async function fetchCatalog(): Promise<CatalogEntry[]> {
 }
 
 export async function fetchTemplate(entry: CatalogEntry): Promise<IntegrationTemplate> {
-  const resp = await fetch(entry.templateUrl);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
+  const resp = await fetch(entry.templateUrl, { signal: controller.signal }).finally(() => clearTimeout(timer));
   if (!resp.ok) throw new Error(`Failed to fetch template: HTTP ${resp.status}`);
   const body = await resp.text();
 

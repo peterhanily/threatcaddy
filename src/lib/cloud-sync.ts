@@ -103,7 +103,10 @@ export async function cloudPut(
   };
 
   try {
-    const resp = await fetch(url, { method: 'PUT', body: data, headers });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 60_000);
+    const resp = await fetch(url, { method: 'PUT', body: data, headers, signal: controller.signal });
+    clearTimeout(timer);
     if (!resp.ok) {
       return { destinationId: destination.id, label: destination.label, ok: false, status: resp.status, error: `HTTP ${resp.status}: ${resp.statusText}` };
     }

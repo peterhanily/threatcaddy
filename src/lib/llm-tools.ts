@@ -932,11 +932,15 @@ async function executeRunRemoteCommand(inp: Record<string, unknown>, folderId?: 
     const token = localStorage.getItem('threatcaddy-server-token');
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
+    const execController = new AbortController();
+    const execTimer = setTimeout(() => execController.abort(), 30_000);
     const resp = await fetch(`${s.serverUrl}/api/caddy-agents/exec`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ host, command, reason, folderId }),
+      signal: execController.signal,
     });
+    clearTimeout(execTimer);
     if (!resp.ok) return JSON.stringify({ error: `Server ${resp.status}: ${(await resp.text().catch(() => '')).substring(0, 300)}` });
     return await resp.text();
   } catch (err) {
@@ -958,7 +962,10 @@ async function executeQuerySiem(inp: Record<string, unknown>, settings?: Setting
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if ((s as Record<string, unknown>).siemApiKey) headers['Authorization'] = `Bearer ${(s as Record<string, unknown>).siemApiKey}`;
 
-    const resp = await fetch((s as Record<string, unknown>).siemEndpoint as string, { method: 'POST', headers, body: JSON.stringify({ query, timeRange, maxResults }) });
+    const siemController = new AbortController();
+    const siemTimer = setTimeout(() => siemController.abort(), 30_000);
+    const resp = await fetch((s as Record<string, unknown>).siemEndpoint as string, { method: 'POST', headers, body: JSON.stringify({ query, timeRange, maxResults }), signal: siemController.signal });
+    clearTimeout(siemTimer);
     if (!resp.ok) return JSON.stringify({ error: `SIEM ${resp.status}`, query });
     return await resp.text();
   } catch (err) {
@@ -988,10 +995,14 @@ async function executeCreateTicket(inp: Record<string, unknown>, folderId?: stri
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (s.ticketApiKey) headers['Authorization'] = `Bearer ${s.ticketApiKey}`;
 
+    const ticketController = new AbortController();
+    const ticketTimer = setTimeout(() => ticketController.abort(), 30_000);
     const resp = await fetch(s.ticketEndpoint as string, {
       method: 'POST', headers,
       body: JSON.stringify({ title, description, priority, assignee: inp.assignee ? String(inp.assignee) : undefined }),
+      signal: ticketController.signal,
     });
+    clearTimeout(ticketTimer);
     if (!resp.ok) return JSON.stringify({ error: `Ticketing system ${resp.status}` });
     const result = await resp.json();
     return JSON.stringify({ success: true, external: true, ticketId: result.id || result.key, message: 'External ticket created.' });

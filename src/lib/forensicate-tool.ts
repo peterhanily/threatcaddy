@@ -45,6 +45,8 @@ export async function executeForensicateScan(params: {
   threshold?: number;
 }): Promise<string> {
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -52,7 +54,9 @@ export async function executeForensicateScan(params: {
         text: params.text,
         confidenceThreshold: params.threshold ?? 0,
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timer);
 
     if (!response.ok) {
       return JSON.stringify({
