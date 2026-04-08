@@ -1,5 +1,6 @@
 declare const __STANDALONE__: boolean | undefined;
 declare const __BUILD_TIME__: number | undefined;
+declare const __STANDALONE_LOCALES__: Record<string, Record<string, unknown>> | undefined;
 
 // Allow importing JSON files as modules (used by i18n)
 declare module '*.json' {

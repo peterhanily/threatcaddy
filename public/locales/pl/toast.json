@@ -2,11 +2,11 @@
   "clip": {
     "importWarning": "Zaimportowano z {{count}} nieudanym klipem(-ami)",
     "importFailed": "Nie udało się zaimportować klipów z rozszerzenia",
-    "openedAsNote": "Otwarto „{{name}}" jako nową notatkę",
-    "openFailed": "Nie udało się otworzyć „{{name}}""
+    "openedAsNote": "Otwarto „{{name}}\" jako nową notatkę",
+    "openFailed": "Nie udało się otworzyć „{{name}}\""
   },
   "share": {
-    "investigationSaved": "Zapisano dochodzenie „{{name}}" ze wszystkimi encjami",
+    "investigationSaved": "Zapisano dochodzenie „{{name}}\" ze wszystkimi encjami",
     "noteSaved": "Notatka zapisana w ThreatCaddy",
     "taskSaved": "Zadanie zapisane w ThreatCaddy",
     "eventSaved": "Zdarzenie zapisane w ThreatCaddy",
@@ -50,12 +50,12 @@
     "sampleLoaded": "Przykładowe dochodzenie załadowane",
     "sampleRemoved": "Przykładowe dochodzenie usunięte",
     "trashEmptied": "Kosz opróżniony",
-    "savedAsTemplate": "„{{name}}" zapisane jako szablon",
-    "playbookRan": "Playbooek „{{playbook}}" uruchomiony dla „{{investigation}}"",
-    "createdFromPlaybook": "„{{name}}" utworzone z playbooka",
-    "exported": "Dochodzenie „{{name}}" wyeksportowane",
+    "savedAsTemplate": "„{{name}}\" zapisane jako szablon",
+    "playbookRan": "Playbooek „{{playbook}}\" uruchomiony dla „{{investigation}}\"",
+    "createdFromPlaybook": "„{{name}}\" utworzone z playbooka",
+    "exported": "Dochodzenie „{{name}}\" wyeksportowane",
     "exportFailed": "Nie udało się wyeksportować dochodzenia",
-    "reportGenerated": "Raport wygenerowany dla „{{name}}""
+    "reportGenerated": "Raport wygenerowany dla „{{name}}\""
   },
   "encryption": {
     "enabled": "Szyfrowanie włączone",
@@ -64,7 +64,7 @@
   },
   "integration": {
     "nameRequired": "Nazwa integracji jest wymagana",
-    "createdAndInstalled": "Integracja „{{name}}" utworzona i zainstalowana",
+    "createdAndInstalled": "Integracja „{{name}}\" utworzona i zainstalowana",
     "saveFailed": "Nie udało się zapisać: {{error}}",
     "installedFromCatalog": "Zainstalowano {{name}} z katalogu społeczności",
     "installCatalogFailed": "Nie udało się zainstalować szablonu społeczności",
@@ -72,8 +72,8 @@
     "installedFromTeam": "Zainstalowano {{name}} z zespołu",
     "installTeamFailed": "Nie udało się zainstalować szablonu zespołu",
     "notFound": "Integracja nie znaleziona",
-    "completed": "Integracja „{{name}}" zakończona pomyślnie",
-    "failed": "Integracja „{{name}}" nie powiodła się: {{error}}",
+    "completed": "Integracja „{{name}}\" zakończona pomyślnie",
+    "failed": "Integracja „{{name}}\" nie powiodła się: {{error}}",
     "error": "Błąd integracji: {{error}}"
   },
   "ioc": {

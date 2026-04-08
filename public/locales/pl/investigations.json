@@ -24,7 +24,7 @@
   "create.nameRequired": "Nazwa dochodzenia jest wymagana",
   "create.createButton": "Utwórz dochodzenie",
   "create.nameGenDescription": "Wygeneruj losową nazwę operacji za pomocą automatu losującego",
-  "create.nameGenHint": "Po wygenerowaniu nazwa zostanie wstępnie wypełniona na karcie „Szybkie tworzenie"",
+  "create.nameGenHint": "Po wygenerowaniu nazwa zostanie wstępnie wypełniona na karcie „Szybkie tworzenie\"",
   "create.openNameGenerator": "Otwórz generator nazw",
   "create.playbookDescription": "Zacznij od szablonu playbooka z wstępnie skonfigurowanymi zadaniami i notatkami",
   "create.browsePlaybooks": "Przeglądaj playbooki",
@@ -72,7 +72,7 @@
   "detail.unarchive": "Przywróć z archiwum",
   "detail.delete": "Usuń",
   "detail.deleteTitle": "Usuń dochodzenie",
-  "detail.deleteMessage": "Usunąć „{{name}}" wraz z całą zawartością? Tej operacji nie można cofnąć.",
+  "detail.deleteMessage": "Usunąć „{{name}}\" wraz z całą zawartością? Tej operacji nie można cofnąć.",
   "detail.deleteConfirm": "Usuń dochodzenie",
   "detail.created": "Utworzono {{date}}",
   "detail.updated": "Zaktualizowano {{date}}"

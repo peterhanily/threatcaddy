@@ -81,7 +81,7 @@
   "import.title": "导入时间线",
   "import.selectFile": "选择时间线 JSON 文件",
   "import.createAsNew": "创建为新时间线",
-  "import.mergeInto": "合并到"{{name}}"",
+  "import.mergeInto": "合并到\"{{name}}\"",
   "import.mergeIntoCurrent": "合并到当前时间线",
   "import.selectTimelineFirst": "（请先选择时间线）",
   "import.importing": "导入中...",
@@ -98,7 +98,7 @@
   "import.importFailed": "导入失败",
 
   "feed.noEventsYet": "暂无时间线事件",
-  "feed.noEventsHint": "点击"新建事件"添加时间线事件",
+  "feed.noEventsHint": "点击\"新建事件\"添加时间线事件",
   "feed.today": "今天",
   "feed.yesterday": "昨天",
   "feed.eventCount": "{{count}} 个事件",

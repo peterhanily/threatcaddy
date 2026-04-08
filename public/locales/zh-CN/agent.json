@@ -157,7 +157,7 @@
   "profile.builtinProfiles": "内置配置文件",
   "profile.noDescription": "无描述",
   "profile.duplicateToCustomize": "复制以自定义",
-  "profile.deleteConfirm": "删除"{{name}}"？此操作无法撤销。",
+  "profile.deleteConfirm": "删除\"{{name}}\"？此操作无法撤销。",
   "profile.systemPrompt": "系统提示",
   "profile.role": "角色",
   "profile.priority": "优先级",

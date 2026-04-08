@@ -65,7 +65,7 @@
   "passphrase.startFresh": "重新开始",
   "passphrase.startFreshWarning": "这将永久删除您所有的加密数据（笔记、任务、时间线等），此操作无法撤销。",
   "passphrase.typeDeleteConfirm": "输入 <mono>DELETE</mono> 以确认。",
-  "passphrase.typeDeletePlaceholder": "输入"DELETE"以确认",
+  "passphrase.typeDeletePlaceholder": "输入\"DELETE\"以确认",
   "passphrase.deleting": "删除中...",
   "passphrase.deleteAllData": "删除所有数据并重新开始",
 

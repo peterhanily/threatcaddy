@@ -81,7 +81,7 @@
   "import.title": "Importuj oś czasu",
   "import.selectFile": "Wybierz plik JSON osi czasu",
   "import.createAsNew": "Utwórz jako nową oś czasu",
-  "import.mergeInto": "Scal z „{{name}}"",
+  "import.mergeInto": "Scal z „{{name}}\"",
   "import.mergeIntoCurrent": "Scal z bieżącą osią czasu",
   "import.selectTimelineFirst": "(najpierw wybierz oś czasu)",
   "import.importing": "Importowanie...",
@@ -98,7 +98,7 @@
   "import.importFailed": "Import nie powiódł się",
 
   "feed.noEventsYet": "Brak zdarzeń osi czasu",
-  "feed.noEventsHint": "Kliknij „Nowe zdarzenie", aby dodać zdarzenie osi czasu",
+  "feed.noEventsHint": "Kliknij „Nowe zdarzenie\", aby dodać zdarzenie osi czasu",
   "feed.today": "Dzisiaj",
   "feed.yesterday": "Wczoraj",
   "feed.eventCount": "{{count}} zdarzenie",

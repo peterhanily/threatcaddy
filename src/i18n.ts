@@ -111,6 +111,12 @@ const enResources = isStandalone ? {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const bundledResources: Record<string, any> = { en: enResources };
 
+// In standalone builds, all non-English locale files are injected at build time
+// by vite.config.single.ts so language switching works without HTTP requests.
+if (isStandalone && typeof __STANDALONE_LOCALES__ !== 'undefined') {
+  Object.assign(bundledResources, __STANDALONE_LOCALES__);
+}
+
 // Register plugins — skip HttpBackend in standalone (no HTTP requests needed or possible)
 i18n.use(initReactI18next);
 if (!isStandalone) i18n.use(HttpBackend);

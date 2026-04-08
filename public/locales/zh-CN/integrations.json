@@ -117,7 +117,7 @@
   "builder.removeStep": "移除步骤",
   "builder.outputs": "输出",
   "builder.addOutput": "添加输出",
-  "builder.noOutputsDefined": "未定义输出。添加"display"输出以显示结果。",
+  "builder.noOutputsDefined": "未定义输出。添加\"display\"输出以显示结果。",
   "builder.requiredDomains": "所需域名",
   "builder.rateLimits": "速率限制",
   "builder.maxPerHour": "每小时最大值",

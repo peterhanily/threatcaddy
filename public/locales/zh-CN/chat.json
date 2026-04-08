@@ -37,7 +37,7 @@
     "shareChat": "分享聊天",
     "emptyTitle": "开始对话",
     "emptySubtitle": "消息存储在本地并加密",
-    "emptyFolderContext": "AI 可以在"{{name}}"中读取和创建实体",
+    "emptyFolderContext": "AI 可以在\"{{name}}\"中读取和创建实体",
     "caddyAI": "CaddyAI",
     "selectThread": "选择会话以查看对话",
     "aiAssistant": "AI 驱动的调查助手",
@@ -58,7 +58,7 @@
     "reject": "拒绝",
     "switchedToPlan": "已切换到计划模式——AI 将提出建议而不执行",
     "switchedToAct": "已切换到执行模式——AI 将在审批下执行",
-    "switchedToActMessage": "已切换到**执行模式**。发送"执行计划"以在审批下运行提案操作，或继续对话。",
+    "switchedToActMessage": "已切换到**执行模式**。发送\"执行计划\"以在审批下运行提案操作，或继续对话。",
     "errorCreateThread": "创建聊天会话失败。请尝试刷新页面。",
     "settingsAiLlm": "设置 → AI/LLM",
     "errorNoLocalEndpoint": "未配置本地 LLM 端点。请在设置 → AI/LLM 中添加。",
@@ -73,7 +73,7 @@
     "onboardingStep2Title": "2. 安装浏览器扩展",
     "onboardingStep2Desc": "CaddyAI 需要 ThreatCaddy 浏览器扩展来代理 API 请求。",
     "onboardingStep3Title": "3. 启用权限",
-    "onboardingStep3Desc": "在扩展弹出窗口中，启用"允许 CaddyAI"以访问 AI 提供商，以及"允许 URL 获取"以使用 /fetch 工具。",
+    "onboardingStep3Desc": "在扩展弹出窗口中，启用\"允许 CaddyAI\"以访问 AI 提供商，以及\"允许 URL 获取\"以使用 /fetch 工具。",
     "onboardingDismiss": "明白了"
   },
   "input": {
