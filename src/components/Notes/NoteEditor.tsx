@@ -112,6 +112,7 @@ export function NoteEditor({
 
   // Line numbers + current line tracking
   const lineCount = useMemo(() => (content.match(/\n/g) || []).length + 1, [content]);
+  const lineNumberText = useMemo(() => Array.from({ length: lineCount }, (_, i) => i + 1).join('\n'), [lineCount]);
   const [currentLine, setCurrentLine] = useState(1);
 
   const updateCurrentLine = useCallback(() => {
@@ -121,7 +122,7 @@ export function NoteEditor({
     setCurrentLine((before.match(/\n/g) || []).length + 1);
   }, []);
 
-  // Sync gutter scroll with textarea
+  // Sync gutter scroll with textarea + track cursor line
   useEffect(() => {
     const ta = textareaRef.current;
     const gutter = gutterRef.current;
@@ -130,6 +131,9 @@ export function NoteEditor({
     ta.addEventListener('scroll', syncScroll, { passive: true });
     ta.addEventListener('click', updateCurrentLine);
     ta.addEventListener('keyup', updateCurrentLine);
+    // Initial sync
+    syncScroll();
+    updateCurrentLine();
     return () => {
       ta.removeEventListener('scroll', syncScroll);
       ta.removeEventListener('click', updateCurrentLine);
@@ -978,15 +982,23 @@ export function NoteEditor({
               className="relative flex overflow-hidden"
               style={editorMode === 'split' ? { width: `${editorPreview.ratio * 100}%` } : { flex: 1 }}
             >
-              {/* Line number gutter with current-line highlight */}
-              <div
-                ref={gutterRef}
-                className="shrink-0 pt-2 sm:pt-4 pr-2 pl-2 text-right select-none overflow-hidden font-mono border-r border-gray-800"
-                style={{ minWidth: '2.5rem', fontSize: '12px', lineHeight: 'calc(0.875rem * 1.625)' }}
-                aria-hidden="true"
-              >{Array.from({ length: lineCount }, (_, i) => (
-                <div key={i} className={i + 1 === currentLine ? 'text-gray-200 bg-gray-800/60 -mx-2 px-2 rounded-sm' : 'text-gray-600'}>{i + 1}</div>
-              ))}</div>
+              {/* Line number gutter with current-line highlight overlay */}
+              <div className="relative shrink-0 border-r border-gray-800" style={{ minWidth: '2.5rem' }} aria-hidden="true">
+                {/* Highlight bar for current line */}
+                <div
+                  className="absolute left-0 right-0 bg-gray-800/60 pointer-events-none transition-transform duration-75"
+                  style={{
+                    height: 'calc(0.875rem * 1.625)',
+                    transform: `translateY(calc(${(currentLine - 1)} * (0.875rem * 1.625)))`,
+                    top: window.innerWidth >= 640 ? '1rem' : '0.5rem',
+                  }}
+                />
+                <div
+                  ref={gutterRef}
+                  className="pt-2 sm:pt-4 pr-2 pl-2 text-right select-none overflow-hidden text-gray-600 font-mono whitespace-pre"
+                  style={{ fontSize: '12px', lineHeight: 'calc(0.875rem * 1.625)' }}
+                >{lineNumberText}</div>
+              </div>
               <textarea
                 ref={textareaRef}
                 value={content}
