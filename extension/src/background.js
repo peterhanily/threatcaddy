@@ -522,7 +522,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
         || hostname === '0.0.0.0' || hostname.endsWith('.local')
         || hostname === 'metadata.google.internal'
-        || hostname === '169.254.169.254') {
+        || hostname === '169.254.169.254'
+        || hostname === '[::1]'
+        || /^::ffff:(127\.|0\.0\.0\.0|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.)/.test(hostname)
+        || /^0[xX]7[fF]\.|^0177\./.test(hostname)) {
       sendResponse({ success: false, error: chrome.i18n.getMessage('errorBlockedInternal') });
       return;
     }

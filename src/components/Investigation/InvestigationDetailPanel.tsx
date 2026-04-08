@@ -32,10 +32,10 @@ interface InvestigationDetailPanelProps {
   onDelete?: (folderId: string) => void;
 }
 
-const STATUS_OPTIONS: { value: InvestigationStatus; label: string }[] = [
-  { value: 'active', label: 'Active' },
-  { value: 'closed', label: 'Closed' },
-  { value: 'archived', label: 'Archived' },
+const STATUS_KEYS: { value: InvestigationStatus; key: string }[] = [
+  { value: 'active', key: 'detail.active' },
+  { value: 'closed', key: 'detail.closed' },
+  { value: 'archived', key: 'detail.archived' },
 ];
 
 export function InvestigationDetailPanel({
@@ -151,7 +151,7 @@ export function InvestigationDetailPanel({
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
             <div className="flex gap-1">
-              {STATUS_OPTIONS.map((opt) => (
+              {STATUS_KEYS.map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => {
@@ -170,7 +170,7 @@ export function InvestigationDetailPanel({
                       : 'bg-gray-800 text-gray-500 hover:text-gray-300 border border-gray-700'
                   )}
                 >
-                  {opt.label}
+                  {t(opt.key)}
                 </button>
               ))}
             </div>
@@ -202,7 +202,7 @@ export function InvestigationDetailPanel({
                 </div>
                 {folder.closedAt && (
                   <div className="text-xs text-gray-500">
-                    Closed {formatFullDate(folder.closedAt)}
+                    {t('detail.closedDate', { date: formatFullDate(folder.closedAt) })}
                   </div>
                 )}
               </div>

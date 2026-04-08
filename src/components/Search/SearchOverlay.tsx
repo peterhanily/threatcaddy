@@ -43,14 +43,14 @@ const TYPE_ICONS: Record<SearchResultType, typeof FileText> = {
   chat: MessageSquare,
 };
 
-const TYPE_LABELS: Record<SearchResultType, string> = {
-  note: 'Notes',
-  clip: 'Clips',
-  task: 'Tasks',
-  timeline: 'Timeline Events',
-  whiteboard: 'Whiteboards',
-  ioc: 'IOCs',
-  chat: 'Chat Threads',
+const TYPE_LABEL_KEYS: Record<SearchResultType, string> = {
+  note: 'notes',
+  clip: 'clips',
+  task: 'tasks',
+  timeline: 'timelineEvents',
+  whiteboard: 'whiteboards',
+  ioc: 'iocs',
+  chat: 'chatThreads',
 };
 
 export function SearchOverlay({
@@ -499,7 +499,7 @@ export function SearchOverlay({
                   )}
                 >
                   <Icon size={10} />
-                  {TYPE_LABELS[type].replace(/s$/, '')}
+                  {t(TYPE_LABEL_KEYS[type])}
                 </button>
               );
             })}
@@ -589,7 +589,7 @@ export function SearchOverlay({
             return (
               <div key={type}>
                 <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-900/80 sticky top-0">
-                  {TYPE_LABELS[type]} ({group.length})
+                  {t(TYPE_LABEL_KEYS[type])} ({group.length})
                 </div>
                 {group.map((result) => {
                   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -601,7 +601,7 @@ export function SearchOverlay({
                       data-index={idx}
                       onClick={() => handleSelect(result)}
                       onMouseEnter={() => setActiveIndex(idx)}
-                      aria-label={`${TYPE_LABELS[result.type].replace(/s$/, '')}: ${result.title}`}
+                      aria-label={`${t(TYPE_LABEL_KEYS[result.type])}: ${result.title}`}
                       className={cn(
                         'w-full text-left px-3 py-2 flex items-start gap-3 transition-colors cursor-pointer',
                         idx === activeIndex ? 'bg-accent/10' : 'hover:bg-gray-800/50'

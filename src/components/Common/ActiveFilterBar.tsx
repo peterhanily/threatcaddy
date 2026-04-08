@@ -1,11 +1,6 @@
 import { Briefcase, Tag } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { InvestigationStatus, PlaybookExecution } from '../../types';
-
-const statusLabels: Record<InvestigationStatus, string> = {
-  active: 'Active',
-  closed: 'Closed',
-  archived: 'Archived',
-};
 
 const statusColors: Record<InvestigationStatus, string> = {
   active: 'bg-green-500/20 text-green-400',
@@ -24,7 +19,10 @@ interface ActiveFilterBarProps {
   playbookExecution?: PlaybookExecution;
 }
 
+const STATUS_KEYS: Record<InvestigationStatus, string> = { active: 'hub.active', closed: 'hub.closed', archived: 'hub.archived' };
+
 export function ActiveFilterBar({ folderName, folderColor, folderStatus, tagName, tagColor, onClear, onEditFolder, playbookExecution }: ActiveFilterBarProps) {
+  const { t } = useTranslation('investigations');
   if (!folderName && !tagName) return null;
 
   const accentColor = folderColor || tagColor || '#6366f1';
@@ -65,7 +63,7 @@ export function ActiveFilterBar({ folderName, folderColor, folderStatus, tagName
       )}
       {folderStatus && (
         <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${statusColors[folderStatus]}`}>
-          {statusLabels[folderStatus]}
+          {t(STATUS_KEYS[folderStatus])}
         </span>
       )}
       {playbookExecution && pbTotal > 0 && (

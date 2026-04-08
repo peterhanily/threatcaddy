@@ -29,7 +29,8 @@ export function useActivityLog() {
         await db.activityLog.bulkDelete(expiredIds);
       }
       kept.sort((a, b) => b.timestamp - a.timestamp);
-      setEntries(kept);
+      // Cap in-memory entries to prevent excessive state size
+      setEntries(kept.length > 5000 ? kept.slice(0, 5000) : kept);
     })();
   }, []);
 

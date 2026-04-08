@@ -880,13 +880,13 @@ describe('SearchOverlay', () => {
 
   it('shows type filter chips', () => {
     render(<SearchOverlay {...defaultProps} />);
-    expect(screen.getByText('Note')).toBeInTheDocument();
-    expect(screen.getByText('Clip')).toBeInTheDocument();
-    expect(screen.getByText('Task')).toBeInTheDocument();
-    expect(screen.getByText('Timeline Event')).toBeInTheDocument();
-    expect(screen.getByText('Whiteboard')).toBeInTheDocument();
-    expect(screen.getByText('IOC')).toBeInTheDocument();
-    expect(screen.getByText('Chat Thread')).toBeInTheDocument();
+    expect(screen.getByText('Notes')).toBeInTheDocument();
+    expect(screen.getByText('Clips')).toBeInTheDocument();
+    expect(screen.getByText('Tasks')).toBeInTheDocument();
+    expect(screen.getByText('Timeline Events')).toBeInTheDocument();
+    expect(screen.getByText('Whiteboards')).toBeInTheDocument();
+    expect(screen.getByText('IOCs')).toBeInTheDocument();
+    expect(screen.getByText('Chat Threads')).toBeInTheDocument();
   });
 
   it('shows Date filter toggle', () => {
