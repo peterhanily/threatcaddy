@@ -51,26 +51,26 @@ app.patch('/api/ai/settings', requireAdminAuth, async (c) => {
   const updates: Record<string, unknown> = {};
 
   if (body.localEndpoint !== undefined) {
-    const ep = String(body.localEndpoint).trim();
+    const ep = String(body.localEndpoint).trim().substring(0, 500);
     if (ep && !/^https?:\/\//.test(ep)) {
       return c.json({ error: 'Local endpoint must start with http:// or https://' }, 400);
     }
     updates.localEndpoint = ep;
   }
   if (body.localApiKey !== undefined && body.localApiKey !== '***configured***') {
-    updates.localApiKey = String(body.localApiKey);
+    updates.localApiKey = String(body.localApiKey).substring(0, 500);
   }
   if (body.localModelName !== undefined) {
-    updates.localModelName = String(body.localModelName).trim();
+    updates.localModelName = String(body.localModelName).trim().substring(0, 200);
   }
   if (body.customSystemPrompt !== undefined) {
-    updates.customSystemPrompt = String(body.customSystemPrompt);
+    updates.customSystemPrompt = String(body.customSystemPrompt).substring(0, 10000);
   }
   if (body.defaultProvider !== undefined) {
-    updates.defaultProvider = String(body.defaultProvider);
+    updates.defaultProvider = String(body.defaultProvider).substring(0, 50);
   }
   if (body.defaultModel !== undefined) {
-    updates.defaultModel = String(body.defaultModel);
+    updates.defaultModel = String(body.defaultModel).substring(0, 200);
   }
   if (body.temperature !== undefined) {
     const temp = parseFloat(body.temperature);
