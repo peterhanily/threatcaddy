@@ -169,6 +169,7 @@ export class AgentBot extends GenericBot {
 
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal: AbortSignal.timeout(60_000),
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
@@ -211,6 +212,7 @@ export class AgentBot extends GenericBot {
 
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
+      signal: AbortSignal.timeout(60_000),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
@@ -243,6 +245,7 @@ export class AgentBot extends GenericBot {
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
+          signal: AbortSignal.timeout(60_000),
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: systemPrompt }] } }),
         },
@@ -255,6 +258,7 @@ export class AgentBot extends GenericBot {
       const allMessages = [{ role: 'system', content: systemPrompt }, ...messages];
       const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
         method: 'POST',
+        signal: AbortSignal.timeout(60_000),
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
         body: JSON.stringify({ model, messages: allMessages }),
       });
