@@ -107,14 +107,14 @@
     "message": "需要向 file:// 独立构建发送剪辑。"
   },
   "allowFileAccessHint": {
-    "message": "要启用：前往 chrome://extensions，找到 ThreatCaddy，并开启"允许访问文件URL"。"
+    "message": "要启用：前往 chrome://extensions，找到 ThreatCaddy，并开启\"允许访问文件URL\"。"
   },
 
   "howToUse": {
     "message": "使用方法："
   },
   "howToUseContextMenu": {
-    "message": "选择文本并右键点击"保存到 ThreatCaddy""
+    "message": "选择文本并右键点击\"保存到 ThreatCaddy\""
   },
   "howToUseShortcut": {
     "message": "或使用键盘快捷键："
@@ -207,7 +207,7 @@
     "message": "仅支持 HTTP 和 HTTPS URL"
   },
   "errorUrlPermissionRequired": {
-    "message": "需要 URL 访问权限。请打开 ThreatCaddy 扩展弹出窗口并启用"允许 URL 获取"，然后重试。"
+    "message": "需要 URL 访问权限。请打开 ThreatCaddy 扩展弹出窗口并启用\"允许 URL 获取\"，然后重试。"
   },
   "errorRequestTimedOut15": {
     "message": "请求超时（15秒）。该页面可能无法访问。"
@@ -231,7 +231,7 @@
     }
   },
   "errorCaddyAIPermission": {
-    "message": "需要 CaddyAI 权限。请打开 ThreatCaddy 扩展弹出窗口并在权限下启用"允许 CaddyAI"。"
+    "message": "需要 CaddyAI 权限。请打开 ThreatCaddy 扩展弹出窗口并在权限下启用\"允许 CaddyAI\"。"
   },
   "errorUnknownProvider": {
     "message": "未知提供商：$provider$",
@@ -243,7 +243,7 @@
     "message": "未知错误"
   },
   "errorHostPermissionLocalLLM": {
-    "message": "需要 $hostname$ 的主机权限。请打开 ThreatCaddy 扩展弹出窗口并在权限下启用"允许 URL 获取"。",
+    "message": "需要 $hostname$ 的主机权限。请打开 ThreatCaddy 扩展弹出窗口并在权限下启用\"允许 URL 获取\"。",
     "placeholders": {
       "hostname": { "content": "$1" }
     }

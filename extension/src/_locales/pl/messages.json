@@ -114,7 +114,7 @@
     "message": "Jak używać:"
   },
   "howToUseContextMenu": {
-    "message": "Zaznacz tekst i kliknij prawym przyciskiem „Zapisz w ThreatCaddy""
+    "message": "Zaznacz tekst i kliknij prawym przyciskiem „Zapisz w ThreatCaddy\""
   },
   "howToUseShortcut": {
     "message": "Lub użyj skrótu klawiszowego:"
@@ -207,7 +207,7 @@
     "message": "Obsługiwane są tylko URL HTTP i HTTPS"
   },
   "errorUrlPermissionRequired": {
-    "message": "Wymagane uprawnienie dostępu do URL. Otwórz wyskakujące okno rozszerzenia ThreatCaddy i włącz „Zezwól na pobieranie URL", a następnie spróbuj ponownie."
+    "message": "Wymagane uprawnienie dostępu do URL. Otwórz wyskakujące okno rozszerzenia ThreatCaddy i włącz „Zezwól na pobieranie URL\", a następnie spróbuj ponownie."
   },
   "errorRequestTimedOut15": {
     "message": "Przekroczono limit czasu (15s). Strona może być niedostępna."
@@ -231,7 +231,7 @@
     }
   },
   "errorCaddyAIPermission": {
-    "message": "Wymagane uprawnienie CaddyAI. Otwórz wyskakujące okno rozszerzenia ThreatCaddy i włącz „Zezwól na CaddyAI" w sekcji Uprawnienia."
+    "message": "Wymagane uprawnienie CaddyAI. Otwórz wyskakujące okno rozszerzenia ThreatCaddy i włącz „Zezwól na CaddyAI\" w sekcji Uprawnienia."
   },
   "errorUnknownProvider": {
     "message": "Nieznany dostawca: $provider$",
@@ -243,7 +243,7 @@
     "message": "Nieznany błąd"
   },
   "errorHostPermissionLocalLLM": {
-    "message": "Wymagane uprawnienie hosta dla $hostname$. Otwórz wyskakujące okno rozszerzenia ThreatCaddy i włącz „Zezwól na pobieranie URL" w sekcji Uprawnienia.",
+    "message": "Wymagane uprawnienie hosta dla $hostname$. Otwórz wyskakujące okno rozszerzenia ThreatCaddy i włącz „Zezwól na pobieranie URL\" w sekcji Uprawnienia.",
     "placeholders": {
       "hostname": { "content": "$1" }
     }
