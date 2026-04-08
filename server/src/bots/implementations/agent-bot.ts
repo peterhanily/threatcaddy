@@ -51,8 +51,9 @@ export class AgentBot extends GenericBot {
     const provider = (agentConfig.llmProvider as string) || 'anthropic';
     const model = (agentConfig.llmModel as string) || 'claude-sonnet-4-20250514';
     const customSystemPrompt = (agentConfig.systemPrompt as string) || '';
+    const rawIterations = Number(agentConfig.maxIterations);
     const maxIterations = Math.min(
-      (agentConfig.maxIterations as number) || DEFAULT_MAX_ITERATIONS,
+      (isFinite(rawIterations) && rawIterations > 0) ? Math.floor(rawIterations) : DEFAULT_MAX_ITERATIONS,
       25, // hard cap
     );
 

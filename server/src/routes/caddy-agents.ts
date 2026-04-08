@@ -46,6 +46,9 @@ app.post('/register', async (c) => {
   if (!body.investigationId || !body.deployments?.length) {
     return c.json({ error: 'investigationId and deployments required' }, 400);
   }
+  if (body.deployments.length > 50) {
+    return c.json({ error: 'Too many deployments in a single request (max 50)' }, 400);
+  }
 
   const results: { deploymentId: string; botConfigId: string }[] = [];
 
@@ -190,9 +193,10 @@ app.get('/actions/:investigationId', async (c) => {
 
   const actions = await query;
 
-  // Filter by since timestamp if provided
-  const filtered = since
-    ? actions.filter(a => a.createdAt > new Date(since))
+  // Filter by since timestamp if provided (validate date before using)
+  const sinceDate = since ? new Date(since) : null;
+  const filtered = sinceDate && !isNaN(sinceDate.getTime())
+    ? actions.filter(a => a.createdAt > sinceDate)
     : actions;
 
   return c.json({ actions: filtered });

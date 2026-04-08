@@ -226,7 +226,12 @@ app.patch('/:id', requireRole('admin'), async (c) => {
     updates.role = body.role;
   }
   if (body.active !== undefined) updates.active = body.active;
-  if (body.displayName) updates.displayName = body.displayName;
+  if (body.displayName) {
+    if (typeof body.displayName !== 'string' || body.displayName.trim().length > 100) {
+      return c.json({ error: 'Display name must be a string of 100 characters or fewer' }, 400);
+    }
+    updates.displayName = body.displayName.trim();
+  }
 
   await db.update(users).set(updates).where(eq(users.id, userId));
 

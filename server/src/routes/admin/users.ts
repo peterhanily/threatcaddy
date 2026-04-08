@@ -87,8 +87,8 @@ app.post('/api/users', requireAdminAuth, async (c) => {
   if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
     return c.json({ error: 'Invalid email' }, 400);
   }
-  if (!displayName || typeof displayName !== 'string' || displayName.trim().length < 1) {
-    return c.json({ error: 'Display name required' }, 400);
+  if (!displayName || typeof displayName !== 'string' || displayName.trim().length < 1 || displayName.trim().length > 100) {
+    return c.json({ error: 'Display name required and must be 100 characters or fewer' }, 400);
   }
   if (!password || typeof password !== 'string' || password.length < 8) {
     return c.json({ error: 'Password must be at least 8 characters' }, 400);
