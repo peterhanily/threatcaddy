@@ -110,7 +110,7 @@ export function NoteEditor({
   const localTitleRef = useRef(title);
   localTitleRef.current = title;
 
-  // Line numbers + per-line height measurement for wrap alignment
+  // Line numbers — measure wrapped line heights to match textarea word-wrap (Sublime-style)
   const lines = useMemo(() => content.split('\n'), [content]);
   const [currentLine, setCurrentLine] = useState(1);
   const [lineHeights, setLineHeights] = useState<number[]>([]);
@@ -123,35 +123,51 @@ export function NoteEditor({
     setCurrentLine((before.match(/\n/g) || []).length + 1);
   }, []);
 
-  // Measure each line's rendered height using a hidden mirror div
+  // Measure wrapped line heights: render all lines in a mirror div, read heights in one pass
   const measureLineHeights = useCallback(() => {
     const ta = textareaRef.current;
     const mirror = mirrorRef.current;
     if (!ta || !mirror) return;
 
-    // Copy textarea computed styles to mirror
     const cs = getComputedStyle(ta);
-    mirror.style.width = cs.width;
-    mirror.style.font = cs.font;
-    mirror.style.letterSpacing = cs.letterSpacing;
-    mirror.style.wordSpacing = cs.wordSpacing;
-    mirror.style.lineHeight = cs.lineHeight;
-    mirror.style.padding = cs.padding;
-    mirror.style.boxSizing = cs.boxSizing;
-    mirror.style.whiteSpace = 'pre-wrap';
-    mirror.style.wordWrap = 'break-word';
-    mirror.style.overflowWrap = 'break-word';
+    Object.assign(mirror.style, {
+      position: 'absolute',
+      visibility: 'hidden',
+      left: '-9999px',
+      top: '0',
+      width: cs.width,
+      font: cs.font,
+      letterSpacing: cs.letterSpacing,
+      lineHeight: cs.lineHeight,
+      paddingLeft: cs.paddingLeft,
+      paddingRight: cs.paddingRight,
+      boxSizing: 'border-box',
+      whiteSpace: 'pre-wrap',
+      wordWrap: 'break-word',
+      overflowWrap: 'break-word',
+      borderLeft: cs.borderLeft,
+      borderRight: cs.borderRight,
+    });
 
-    const heights: number[] = [];
+    // Render all lines as separate child divs, then batch-read heights (single reflow)
+    mirror.innerHTML = '';
+    const frag = document.createDocumentFragment();
     for (const line of lines) {
-      // Use a zero-width space for empty lines so they still have height
-      mirror.textContent = line || '\u200b';
-      heights.push(mirror.offsetHeight);
+      const div = document.createElement('div');
+      div.textContent = line || '\u200b';
+      frag.appendChild(div);
+    }
+    mirror.appendChild(frag);
+
+    // Single DOM read pass
+    const heights: number[] = [];
+    for (let i = 0; i < mirror.children.length; i++) {
+      heights.push((mirror.children[i] as HTMLElement).offsetHeight);
     }
     setLineHeights(heights);
   }, [lines]);
 
-  // Re-measure on content change, mode change, or resize
+  // Re-measure on content, mode, or textarea resize
   useEffect(() => {
     measureLineHeights();
     const ro = new ResizeObserver(measureLineHeights);
@@ -1019,7 +1035,7 @@ export function NoteEditor({
               style={editorMode === 'split' ? { width: `${editorPreview.ratio * 100}%` } : { flex: 1 }}
             >
               {/* Hidden mirror div for measuring wrapped line heights */}
-              <div ref={mirrorRef} className="absolute invisible" style={{ pointerEvents: 'none', height: 0, overflow: 'hidden' }} aria-hidden="true" />
+              <div ref={mirrorRef} aria-hidden="true" />
               {/* Line number gutter — heights match textarea line wrapping */}
               <div
                 ref={gutterRef}
