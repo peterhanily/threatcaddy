@@ -84,7 +84,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
           <div>
             <span className="text-[10px] text-text-muted uppercase tracking-wide">{t('action.input')}</span>
             <pre className="text-xs text-text-secondary bg-surface-raised rounded p-2 mt-0.5 overflow-auto max-h-32">
-              {JSON.stringify(action.toolInput, null, 2)}
+              {JSON.stringify(action.toolInput, null, 2).substring(0, 5000)}
             </pre>
           </div>
 

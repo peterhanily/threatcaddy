@@ -10,7 +10,7 @@ function snippet(text: string, maxLen = MAX_SNIPPET): string {
 }
 
 export async function executeSearchNotes(input: Record<string, unknown>, folderId?: string): Promise<string> {
-  const query = String(input.query || '').toLowerCase();
+  const query = String(input.query || '').toLowerCase().substring(0, 500);
   const limit = Math.min(Number(input.limit) || 10, 30);
   if (!query) return JSON.stringify({ error: 'query is required' });
 
@@ -28,7 +28,7 @@ export async function executeSearchNotes(input: Record<string, unknown>, folderI
 }
 
 export async function executeSearchAll(input: Record<string, unknown>, folderId?: string): Promise<string> {
-  const query = String(input.query || '').toLowerCase();
+  const query = String(input.query || '').toLowerCase().substring(0, 500);
   const limit = Math.min(Number(input.limit) || 10, 30);
   if (!query) return JSON.stringify({ error: 'query is required' });
 
