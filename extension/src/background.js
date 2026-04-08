@@ -1159,7 +1159,18 @@ async function sendToTarget(targetUrl, captures) {
   }
 
   // Open target URL in a new tab
-  const tab = await chrome.tabs.create({ url: targetUrl, active: true });
+  let tab;
+  try {
+    tab = await chrome.tabs.create({ url: targetUrl, active: true });
+  } catch (err) {
+    // Chrome blocks file:// navigation unless "Allow access to file URLs" is enabled
+    if (/file url/i.test(err.message) || /local file/i.test(err.message)) {
+      throw new Error(
+        'File URL access is disabled. In Chrome, go to chrome://extensions → ThreatCaddy → Enable "Allow access to file URLs", then try again.'
+      );
+    }
+    throw err;
+  }
 
   // Wait for the tab to finish loading
   await new Promise((resolve, reject) => {

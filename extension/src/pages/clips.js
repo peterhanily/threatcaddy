@@ -328,6 +328,20 @@ async function sendAllToTarget() {
     return;
   }
 
+  // For file:// targets, check that the extension has file URL access before proceeding
+  if (targetUrl.startsWith('file://')) {
+    const hasFileAccess = await new Promise(resolve =>
+      chrome.extension.isAllowedFileSchemeAccess(resolve)
+    );
+    if (!hasFileAccess) {
+      showToast(
+        'File URL access is disabled. Go to chrome://extensions → ThreatCaddy → Enable "Allow access to file URLs"',
+        true
+      );
+      return;
+    }
+  }
+
   // Request host permission for the target (Chrome prompts, Firefox may already have it)
   try {
     const granted = await requestHostPermission(targetUrl);
