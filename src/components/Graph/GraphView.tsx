@@ -197,7 +197,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, layout: exte
     const entityType = node.type === 'note' ? 'note' : node.type === 'task' ? 'task' : node.type === 'timeline-event' ? 'event' : null;
     if (!entityType) return;
     const url = `${location.origin}${location.pathname}#entity=${entityType}:${entityId}`;
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener,noreferrer');
   }, []);
 
   const nodeTypeCounts = useMemo(() => {
