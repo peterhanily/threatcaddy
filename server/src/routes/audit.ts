@@ -17,7 +17,8 @@ app.get('/', async (c) => {
   const userId = c.req.query('userId');
   const since = c.req.query('since');
   const category = c.req.query('category');
-  const limit = Math.min(parseInt(c.req.query('limit') || '100', 10), 500);
+  const rawLimit0 = parseInt(c.req.query('limit') || '', 10);
+  const limit = Math.min(isFinite(rawLimit0) && rawLimit0 > 0 ? rawLimit0 : 100, 500);
 
   // Non-admin users must specify a folderId and be an owner of that investigation
   if (user.role !== 'admin') {
@@ -64,7 +65,8 @@ app.get('/team', async (c) => {
   const user = c.get('user');
   const since = c.req.query('since');
   const category = c.req.query('category');
-  const limit = Math.min(parseInt(c.req.query('limit') || '50', 10), 200);
+  const rawLimit1 = parseInt(c.req.query('limit') || '', 10);
+  const limit = Math.min(isFinite(rawLimit1) && rawLimit1 > 0 ? rawLimit1 : 50, 200);
 
   // Get all folder IDs the user has access to
   const memberships = await db

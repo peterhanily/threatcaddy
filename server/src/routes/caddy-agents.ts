@@ -184,7 +184,8 @@ app.get('/status/:investigationId', async (c) => {
 app.get('/actions/:investigationId', async (c) => {
   const folderId = c.req.param('investigationId');
   const since = c.req.query('since');
-  const limit = Math.min(parseInt(c.req.query('limit') || '50'), 200);
+  const rawLimit = parseInt(c.req.query('limit') || '', 10);
+  const limit = Math.min(isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 50, 200);
 
   const query = db.select().from(agentActions)
     .where(eq(agentActions.investigationId, folderId))

@@ -13,7 +13,8 @@ app.use('*', requireAuth);
 app.get('/', async (c) => {
   const user = c.get('user');
   const unread = c.req.query('unread');
-  const limit = Math.min(parseInt(c.req.query('limit') || '50', 10), 500);
+  const rawLimitN = parseInt(c.req.query('limit') || '', 10);
+  const limit = Math.min(isFinite(rawLimitN) && rawLimitN > 0 ? rawLimitN : 50, 500);
 
   const conditions = [eq(notifications.userId, user.id)];
   if (unread === 'true') {

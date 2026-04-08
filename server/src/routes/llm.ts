@@ -34,6 +34,15 @@ app.post('/chat', requireRole('admin', 'analyst'), async (c) => {
     return c.json({ error: 'Missing required fields: provider, model, messages' }, 400);
   }
 
+  // Validate provider and model strings to prevent URL/path injection
+  const VALID_PROVIDERS = ['anthropic', 'openai', 'gemini', 'mistral'];
+  if (typeof body.provider !== 'string' || !VALID_PROVIDERS.includes(body.provider)) {
+    return c.json({ error: 'Invalid provider' }, 400);
+  }
+  if (typeof body.model !== 'string' || body.model.length > 200 || !/^[\w.:-]+$/.test(body.model)) {
+    return c.json({ error: 'Invalid model identifier' }, 400);
+  }
+
   if (!Array.isArray(body.messages) || body.messages.length > 200) {
     return c.json({ error: 'Messages must be an array with at most 200 entries' }, 400);
   }

@@ -18,7 +18,8 @@ app.use('*', requireAuth);
 app.get('/', async (c) => {
   const user = c.get('user');
   const cursor = c.req.query('cursor');
-  const limit = Math.min(Math.max(parseInt(c.req.query('limit') || '20', 10), 1), 100);
+  const rawLimitCs = parseInt(c.req.query('limit') || '', 10);
+  const limit = Math.min(Math.max(isFinite(rawLimitCs) ? rawLimitCs : 20, 1), 100);
   const folderId = c.req.query('folderId');
 
   if (folderId) {
