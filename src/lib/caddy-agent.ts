@@ -759,7 +759,8 @@ export async function bulkApproveActions(investigationId: string): Promise<{ exe
       const result = await executeApprovedAction(action);
       if (result.isError) failed++;
       else executed++;
-    } catch {
+    } catch (err) {
+      console.error('[caddy-agent] executeApprovedAction failed:', err);
       failed++;
     }
   }
