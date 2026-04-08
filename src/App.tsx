@@ -2258,7 +2258,7 @@ function AppInner() {
             const html = generateInvestigationReport({ folder, notes: folderNotes, tasks: folderTasks, events: folderEvents, standaloneIOCs: folderIOCs });
             const blob = new Blob([html], { type: 'text/html' });
             const blobUrl = URL.createObjectURL(blob);
-            window.open(blobUrl);
+            window.open(blobUrl, '_blank', 'noopener,noreferrer');
             setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
             activityLog.log('data', 'export', `Generated report for "${folder.name}"`, folderId, folder.name);
             addToast('success', tt('investigation.reportGenerated', { name: folder.name }));

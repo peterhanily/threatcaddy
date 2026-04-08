@@ -80,7 +80,7 @@ function collectIOCs(data: ReportData): DeduplicatedIOC[] {
  * The user can then choose "Save as PDF" from the print dialog.
  */
 export function printReport(html: string): void {
-  const printWindow = window.open('', '_blank');
+  const printWindow = window.open('', '_blank', 'noopener,noreferrer');
   if (!printWindow) return;
   printWindow.document.write(html);
   printWindow.document.close();
