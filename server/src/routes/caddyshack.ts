@@ -55,7 +55,7 @@ app.get('/', async (c) => {
         folderId
           ? eq(posts.folderId, folderId)
           : or(isNull(posts.folderId), eq(posts.folderId, '')),
-        cursor ? lt(posts.createdAt, new Date(cursor)) : undefined
+        cursor && !isNaN(new Date(cursor).getTime()) ? lt(posts.createdAt, new Date(cursor)) : undefined
       )
     )
     .orderBy(desc(posts.createdAt))

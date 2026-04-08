@@ -34,7 +34,8 @@ app.get('/', async (c) => {
   const conditions = [];
   if (folderId) conditions.push(eq(activityLog.folderId, folderId));
   if (userId) conditions.push(eq(activityLog.userId, userId));
-  if (since) conditions.push(gt(activityLog.timestamp, new Date(since)));
+  const sinceDate0 = since ? new Date(since) : null;
+  if (sinceDate0 && !isNaN(sinceDate0.getTime())) conditions.push(gt(activityLog.timestamp, sinceDate0));
   if (category) conditions.push(eq(activityLog.category, category));
 
   const result = await db
@@ -83,7 +84,8 @@ app.get('/team', async (c) => {
     // No accessible folders — return empty
     return c.json([]);
   }
-  if (since) conditions.push(gt(activityLog.timestamp, new Date(since)));
+  const sinceDate1 = since ? new Date(since) : null;
+  if (sinceDate1 && !isNaN(sinceDate1.getTime())) conditions.push(gt(activityLog.timestamp, sinceDate1));
   if (category) conditions.push(eq(activityLog.category, category));
 
   const result = await db
