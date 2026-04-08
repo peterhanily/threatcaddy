@@ -46,6 +46,8 @@ export function useNotes(folderId?: string) {
   const [loading, setLoading] = useState(true);
   // Bounded LRU cache of full note content keyed by note id (used by search when content isn't in state)
   const contentCacheRef = useRef(createLRUCache<string, string>(CONTENT_CACHE_MAX));
+  const mountedRef = useRef(true);
+  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
 
   const loadNotes = useCallback(async () => {
     const allNotes = folderId
@@ -61,6 +63,7 @@ export function useNotes(folderId?: string) {
     for (const id of cache.keys()) {
       if (!activeIds.has(id)) cache.delete(id);
     }
+    if (!mountedRef.current) return;
     setNotes(remaining);
     setLoading(false);
   }, [folderId]);
@@ -137,7 +140,7 @@ export function useNotes(folderId?: string) {
       throw err;
     }
     contentCacheRef.current.delete(id);
-    setNotes((prev) => prev.filter((n) => n.id !== id));
+    if (mountedRef.current) setNotes((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
   const trashNote = useCallback(async (id: string) => {
@@ -263,12 +266,12 @@ export function useNotes(folderId?: string) {
         }
         await Promise.all(ops);
       });
-      for (const id of trashedIds) contentCacheRef.current.delete(id);
+        for (const id of trashedIds) contentCacheRef.current.delete(id);
     } catch (err) {
       console.error('Failed to empty trash:', err);
       throw err;
     }
-    setNotes((prev) => prev.filter((n) => !n.trashed));
+    if (mountedRef.current) setNotes((prev) => prev.filter((n) => !n.trashed));
   }, [notes]);
 
   return {

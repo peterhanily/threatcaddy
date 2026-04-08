@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ClipboardList } from 'lucide-react';
 import type { Task, TaskStatus } from '../../types';
 import { TaskItem } from './TaskItem';
 import { cn } from '../../lib/utils';
@@ -100,7 +101,10 @@ export function KanbanBoard({ getTasksByStatus, onToggleComplete, onSelect, onDe
                 </div>
               ))}
               {tasks.length === 0 && (
-                <p className="text-xs text-gray-600 text-center py-8">{isMobile ? t('kanban.noTasks') : t('kanban.dropHere')}</p>
+                <div className="flex flex-col items-center justify-center py-8 gap-1.5 text-gray-600">
+                  <ClipboardList size={20} strokeWidth={1.5} />
+                  <p className="text-xs text-center">{isMobile ? t('kanban.noTasks') : t('kanban.dropHere')}</p>
+                </div>
               )}
             </div>
           </div>

@@ -190,7 +190,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
 
         {/* Value */}
         <div>
-          <label className="block text-xs text-gray-400 mb-1">{t('iocForm.valueLabel')}</label>
+          <label className="block text-xs text-gray-400 mb-1">{t('iocForm.valueLabel')}<span className="text-red-400 ml-0.5">*</span></label>
           <input
             autoFocus
             value={value}

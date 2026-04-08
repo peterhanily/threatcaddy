@@ -44,6 +44,8 @@ interface AgentResult {
 }
 
 const MAX_TOOL_TURNS = 8;
+/** Hard cap on streaming content buffer to prevent unbounded memory growth on very long responses */
+const MAX_STREAMING_CHARS = 200_000;
 
 export interface ExtensionInfo {
   protocolVersion: number;
@@ -287,7 +289,9 @@ export function useLLM() {
 
       if (event.data.type === 'TC_LLM_CHUNK') {
         if (event.data.requestId && event.data.requestId !== requestIdRef.current) return;
-        accumulatedRef.current += event.data.content;
+        if (accumulatedRef.current.length < MAX_STREAMING_CHARS) {
+          accumulatedRef.current += event.data.content;
+        }
         // Batch rendering to once per animation frame to avoid thrashing
         if (!rafRef.current) {
           rafRef.current = requestAnimationFrame(() => {

@@ -100,6 +100,7 @@ interface ErrorFallbackProps {
   onCopy: () => void;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 function ErrorFallback({ errorMessage, copied, onReload, onCopy }: ErrorFallbackProps) {
   const { t } = useTranslation('common');
   return (

@@ -411,9 +411,10 @@ export async function streamLLMChat(
       if (!data) continue;
       try {
         const event = JSON.parse(data);
-        if (event.type === 'chunk') onChunk(event.content);
-        else if (event.type === 'done') onDone(event.stopReason, event.contentBlocks, event.usage);
-        else if (event.type === 'error') onError(event.error);
+        if (typeof event !== 'object' || event === null || typeof event.type !== 'string') continue;
+        if (event.type === 'chunk' && typeof event.content === 'string') onChunk(event.content);
+        else if (event.type === 'done') onDone(event.stopReason ?? 'end_turn', event.contentBlocks ?? [], event.usage);
+        else if (event.type === 'error' && event.error) onError(String(event.error));
       } catch (e) { console.warn('Failed to parse SSE event:', e); }
     }
   }

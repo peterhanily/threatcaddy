@@ -97,6 +97,17 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
   }
 });
 
+// Validate data-entity-id and data-note-id values to safe ID format (nanoid: alphanumeric + _-)
+const SAFE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  for (const attr of ['data-entity-id', 'data-note-id'] as const) {
+    const val = node.getAttribute(attr);
+    if (val !== null && !SAFE_ID_RE.test(val)) {
+      node.removeAttribute(attr);
+    }
+  }
+});
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

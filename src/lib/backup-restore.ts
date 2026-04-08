@@ -27,6 +27,28 @@ function getTable(name: string): any {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+/**
+ * Validate and sanitize a table's items from a backup payload.
+ * Filters out any items missing a string `id` field (the Dexie primary key).
+ * Returns the filtered array and logs a warning if items were dropped.
+ */
+function validateItems(tableName: string, items: unknown[]): Record<string, unknown>[] {
+  if (!Array.isArray(items)) return [];
+  const valid: Record<string, unknown>[] = [];
+  let dropped = 0;
+  for (const item of items) {
+    if (typeof item === 'object' && item !== null && typeof (item as Record<string, unknown>).id === 'string') {
+      valid.push(item as Record<string, unknown>);
+    } else {
+      dropped++;
+    }
+  }
+  if (dropped > 0) {
+    console.warn(`[backup-restore] Dropped ${dropped} invalid item(s) from table "${tableName}" (missing string id)`);
+  }
+  return valid;
+}
+
 export async function restoreFullReplace(payload: BackupPayload): Promise<RestoreResult> {
   let added = 0;
   const tables: string[] = [];
@@ -36,8 +58,10 @@ export async function restoreFullReplace(payload: BackupPayload): Promise<Restor
   try {
     await db.transaction('rw', dexieTables, async () => {
       for (const tableName of SYNCED_TABLES) {
-        const items = payload.data[tableName as keyof BackupPayload['data']];
-        if (!items || items.length === 0) continue;
+        const rawItems = payload.data[tableName as keyof BackupPayload['data']];
+        if (!rawItems || rawItems.length === 0) continue;
+        const items = validateItems(tableName, rawItems);
+        if (items.length === 0) continue;
 
         const table = getTable(tableName);
         await table.clear();
@@ -65,8 +89,9 @@ export async function restoreMerge(payload: BackupPayload): Promise<RestoreResul
   try {
     await db.transaction('rw', dexieTables, async () => {
       for (const tableName of SYNCED_TABLES) {
-        const items = payload.data[tableName as keyof BackupPayload['data']];
-        if (!items || items.length === 0) {
+        const rawItems = payload.data[tableName as keyof BackupPayload['data']];
+        const items = rawItems ? validateItems(tableName, rawItems) : [];
+        if (items.length === 0) {
           // Still check for deletedIds
           if (payload.deletedIds?.[tableName]?.length) {
             const table = getTable(tableName);

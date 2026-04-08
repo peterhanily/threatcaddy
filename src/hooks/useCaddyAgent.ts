@@ -195,7 +195,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.folderId === folder?.id) {
-        executeCycle().catch(() => {});
+        executeCycle().catch((err) => console.error('[AgentCaddy] chat-triggered cycle failed:', err));
       }
     };
     window.addEventListener('tc-run-agent-cycle', handler);
@@ -284,7 +284,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     // Run first cycle after a short delay (3s) to let UI settle
     const initialTimer = setTimeout(() => {
       if (!mountedRef.current) return;
-      executeCycle().then(scheduleNext).catch(() => {});
+      executeCycle().then(scheduleNext).catch((err) => { console.error('[AgentCaddy] cycle failed:', err); scheduleNext(); });
     }, 3000);
 
     return () => {
@@ -341,7 +341,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     // First run after 10s delay
     const initialTimer = setTimeout(() => {
       if (!mountedRef.current) return;
-      runSupervisor().then(scheduleNext).catch(() => {});
+      runSupervisor().then(scheduleNext).catch((err) => { console.error('[AgentCaddy] supervisor failed:', err); scheduleNext(); });
     }, 10000);
 
     return () => {
