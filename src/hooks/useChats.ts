@@ -94,6 +94,11 @@ export function useChats() {
     // Write to DB using modify() to avoid full clone-and-replace
     await db.chatThreads.where('id').equals(threadId).modify((t: ChatThread) => {
       t.messages.push(message);
+      // Prune oldest messages if thread exceeds 2000 messages to prevent unbounded growth.
+      // Keep the first 2 (for context) and the latest messages.
+      if (t.messages.length > 2000) {
+        t.messages = [...t.messages.slice(0, 2), ...t.messages.slice(-1998)];
+      }
       t.updatedAt = now;
       if (updates.title) t.title = updates.title!;
     });

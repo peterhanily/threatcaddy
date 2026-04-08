@@ -4,23 +4,23 @@ import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS, IOC_TYPE_LABELS } from '
 import { nanoid } from 'nanoid';
 
 export async function exportJSON(): Promise<string> {
-  const [notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, noteTemplates, playbookTemplates, agentActions, agentProfiles, agentDeployments, agentMeetings] = await Promise.all([
-    db.notes.toArray(),
-    db.tasks.toArray(),
-    db.folders.toArray(),
-    db.tags.toArray(),
-    db.timelineEvents.toArray(),
-    db.timelines.toArray(),
-    db.whiteboards.toArray(),
-    db.standaloneIOCs.toArray(),
-    db.chatThreads.toArray(),
-    db.noteTemplates.toArray(),
-    db.playbookTemplates.toArray(),
-    db.agentActions.toArray(),
-    db.agentProfiles.toArray(),
-    db.agentDeployments.toArray(),
-    db.agentMeetings.toArray(),
-  ]);
+  // Load tables sequentially to reduce peak memory usage (avoids loading
+  // all 15 tables into memory simultaneously on large datasets).
+  const notes = await db.notes.toArray();
+  const tasks = await db.tasks.toArray();
+  const folders = await db.folders.toArray();
+  const tags = await db.tags.toArray();
+  const timelineEvents = await db.timelineEvents.toArray();
+  const timelines = await db.timelines.toArray();
+  const whiteboards = await db.whiteboards.toArray();
+  const standaloneIOCs = await db.standaloneIOCs.toArray();
+  const chatThreads = await db.chatThreads.toArray();
+  const noteTemplates = await db.noteTemplates.toArray();
+  const playbookTemplates = await db.playbookTemplates.toArray();
+  const agentActions = await db.agentActions.toArray();
+  const agentProfiles = await db.agentProfiles.toArray();
+  const agentDeployments = await db.agentDeployments.toArray();
+  const agentMeetings = await db.agentMeetings.toArray();
 
   // Include quick links from settings if user has customized them
   let quickLinks: QuickLink[] | undefined;
