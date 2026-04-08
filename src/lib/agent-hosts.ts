@@ -35,14 +35,16 @@ export async function fetchHostSkills(host: AgentHost): Promise<AgentHostSkill[]
     if (!Array.isArray(data)) throw new Error('Expected JSON array of skills');
 
     // Validate each skill has at minimum name + description
+    const SAFE_SKILL_NAME_RE = /^[A-Za-z0-9_-]{1,80}$/;
     return data.filter(
       (s: unknown): s is AgentHostSkill =>
         typeof s === 'object' && s !== null &&
         typeof (s as AgentHostSkill).name === 'string' &&
+        SAFE_SKILL_NAME_RE.test((s as AgentHostSkill).name) &&
         typeof (s as AgentHostSkill).description === 'string'
     ).map(s => ({
       name: s.name,
-      description: s.description,
+      description: s.description.substring(0, 500),
       parameters: s.parameters || { type: 'object' as const, properties: {}, required: [] },
       actionClass: s.actionClass,
     }));
