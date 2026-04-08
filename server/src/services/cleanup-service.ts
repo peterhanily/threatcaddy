@@ -16,10 +16,13 @@ export async function getRetentionSettings(): Promise<{ notificationRetentionDay
   const notifRow = await db.select().from(serverSettings).where(eq(serverSettings.key, NOTIF_RETENTION_KEY)).limit(1);
   const auditRow = await db.select().from(serverSettings).where(eq(serverSettings.key, AUDIT_RETENTION_KEY)).limit(1);
   const tombstoneRow = await db.select().from(serverSettings).where(eq(serverSettings.key, TOMBSTONE_RETENTION_KEY)).limit(1);
+  const parsedNotif = notifRow.length > 0 ? parseInt(notifRow[0].value, 10) : NaN;
+  const parsedAudit = auditRow.length > 0 ? parseInt(auditRow[0].value, 10) : NaN;
+  const parsedTombstone = tombstoneRow.length > 0 ? parseInt(tombstoneRow[0].value, 10) : NaN;
   return {
-    notificationRetentionDays: notifRow.length > 0 ? parseInt(notifRow[0].value, 10) : DEFAULT_NOTIF_DAYS,
-    auditLogRetentionDays: auditRow.length > 0 ? parseInt(auditRow[0].value, 10) : DEFAULT_AUDIT_DAYS,
-    tombstoneRetentionDays: tombstoneRow.length > 0 ? parseInt(tombstoneRow[0].value, 10) : DEFAULT_TOMBSTONE_DAYS,
+    notificationRetentionDays: isFinite(parsedNotif) && parsedNotif >= 1 ? parsedNotif : DEFAULT_NOTIF_DAYS,
+    auditLogRetentionDays: isFinite(parsedAudit) && parsedAudit >= 1 ? parsedAudit : DEFAULT_AUDIT_DAYS,
+    tombstoneRetentionDays: isFinite(parsedTombstone) && parsedTombstone >= 1 ? parsedTombstone : DEFAULT_TOMBSTONE_DAYS,
   };
 }
 

@@ -148,9 +148,11 @@ export async function setRegistrationMode(mode: 'invite' | 'open'): Promise<void
 export async function getSessionSettings(): Promise<{ ttlHours: number; maxPerUser: number }> {
   const ttlRow = await db.select().from(serverSettings).where(eq(serverSettings.key, 'session_ttl_hours')).limit(1);
   const maxRow = await db.select().from(serverSettings).where(eq(serverSettings.key, 'max_sessions_per_user')).limit(1);
+  const parsedTtl = ttlRow.length > 0 ? parseInt(ttlRow[0].value, 10) : NaN;
+  const parsedMax = maxRow.length > 0 ? parseInt(maxRow[0].value, 10) : NaN;
   return {
-    ttlHours: ttlRow.length > 0 ? parseInt(ttlRow[0].value, 10) : 24,
-    maxPerUser: maxRow.length > 0 ? parseInt(maxRow[0].value, 10) : 0,
+    ttlHours: isFinite(parsedTtl) && parsedTtl >= 1 ? parsedTtl : 24,
+    maxPerUser: isFinite(parsedMax) && parsedMax >= 0 ? parsedMax : 0,
   };
 }
 

@@ -113,7 +113,7 @@ export function convertProfileToBotConfig(
   const capabilities = deriveCapabilities(profile.allowedTools);
 
   const config: Record<string, unknown> = {
-    systemPrompt: profile.systemPrompt,
+    systemPrompt: profile.systemPrompt.substring(0, 10_000),
     agentRole: profile.role,
     agentPolicy: mergedPolicy,
     allowedTools: profile.allowedTools,
