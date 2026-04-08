@@ -1,0 +1,7 @@
+{
+  "stepCounter": "{{current}} / {{total}}",
+  "skipTour": "Rondleiding overslaan",
+  "back": "Terug",
+  "next": "Volgende",
+  "finish": "Afronden"
+}

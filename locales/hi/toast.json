@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "{{count}} विफल क्लिप के साथ आयात हुआ",
+    "importFailed": "एक्सटेंशन से क्लिप आयात विफल",
+    "openedAsNote": "«{{name}}» नए नोट के रूप में खोला गया",
+    "openFailed": "«{{name}}» खोलने में विफल"
+  },
+  "share": {
+    "investigationSaved": "जाँच «{{name}}» सभी एंटिटी के साथ सहेजी गई",
+    "noteSaved": "ThreatCaddy में नोट सहेजा गया",
+    "taskSaved": "ThreatCaddy में कार्य सहेजा गया",
+    "eventSaved": "ThreatCaddy में इवेंट सहेजा गया",
+    "chatSaved": "ThreatCaddy में चैट सहेजी गई",
+    "templateShared": "टेम्पलेट टीम के साथ साझा किया गया",
+    "templateShareFailed": "टेम्पलेट साझा करने में विफल",
+    "templateRemovedFromTeam": "टेम्पलेट टीम से हटाया गया",
+    "templateRemoveFailed": "टीम टेम्पलेट हटाने में विफल"
+  },
+  "import": {
+    "dataImported": "{{events}} इवेंट और {{iocs}} IOC आयात हुए",
+    "jsonImported": "{{notes}} नोट्स, {{tasks}} कार्य आयात हुए",
+    "markdownImported": "Markdown से {{count}} नोट्स आयात हुए",
+    "importFailed": "आयात विफल",
+    "stixImported": "STIX बंडल से {{count}} IOC आयात हुए",
+    "stixFailed": "{{count}} IOC के लिए STIX आयात विफल",
+    "stixNoDuplicates": "कोई नया IOC आयात नहीं हुआ (सभी डुप्लिकेट)",
+    "mispImported": "MISP इवेंट से {{count}} IOC आयात हुए",
+    "mispFailed": "{{count}} IOC के लिए MISP आयात विफल",
+    "mispNoDuplicates": "कोई नया IOC आयात नहीं हुआ (सभी डुप्लिकेट)"
+  },
+  "backup": {
+    "exported": "बैकअप निर्यात हुआ",
+    "exportFailed": "बैकअप निर्यात विफल",
+    "restored": "बैकअप पुनर्स्थापित हुआ",
+    "restoreFailed": "बैकअप पुनर्स्थापना विफल",
+    "mergeComplete": "मर्ज पूर्ण: {{added}} जोड़े गए, {{updated}} अपडेट हुए, {{skipped}} छोड़े गए",
+    "mergeFailed": "बैकअप मर्ज विफल",
+    "serverCreated": "बैकअप बनाया गया",
+    "serverCreateFailed": "बैकअप बनाने में विफल",
+    "decryptionFailed": "डिक्रिप्शन विफल",
+    "serverRestored": "बैकअप पुनर्स्थापित हुआ",
+    "serverRestoreFailed": "पुनर्स्थापना विफल",
+    "serverDeleted": "बैकअप हटाया गया",
+    "serverDeleteFailed": "बैकअप हटाने में विफल",
+    "cloudPushed": "क्लाउड बैकअप भेजा गया",
+    "cloudEncryptedPushed": "एन्क्रिप्टेड क्लाउड बैकअप भेजा गया",
+    "cloudFailed": "क्लाउड बैकअप विफल"
+  },
+  "investigation": {
+    "sampleLoaded": "नमूना जाँच लोड हुई",
+    "sampleRemoved": "नमूना जाँच हटाई गई",
+    "trashEmptied": "ट्रैश खाली हुआ",
+    "savedAsTemplate": "«{{name}}» टेम्पलेट के रूप में सहेजा गया",
+    "playbookRan": "playbook «{{playbook}}» «{{investigation}}» पर चला",
+    "createdFromPlaybook": "«{{name}}» playbook से बनाया गया",
+    "exported": "जाँच «{{name}}» निर्यात हुई",
+    "exportFailed": "जाँच निर्यात विफल",
+    "reportGenerated": "«{{name}}» के लिए रिपोर्ट तैयार हुई"
+  },
+  "encryption": {
+    "enabled": "एन्क्रिप्शन सक्षम हुआ",
+    "disabled": "एन्क्रिप्शन अक्षम हुआ",
+    "passphraseChanged": "पासफ्रेज बदला गया"
+  },
+  "integration": {
+    "nameRequired": "इंटीग्रेशन नाम आवश्यक है",
+    "createdAndInstalled": "इंटीग्रेशन «{{name}}» बनाया और इंस्टॉल किया गया",
+    "saveFailed": "सहेजने में विफल: {{error}}",
+    "installedFromCatalog": "{{name}} कम्युनिटी कैटलॉग से इंस्टॉल हुआ",
+    "installCatalogFailed": "कम्युनिटी टेम्पलेट इंस्टॉल करने में विफल",
+    "templateExported": "{{name}} निर्यात हुआ",
+    "installedFromTeam": "{{name}} टीम से इंस्टॉल हुआ",
+    "installTeamFailed": "टीम टेम्पलेट इंस्टॉल करने में विफल",
+    "notFound": "इंटीग्रेशन नहीं मिला",
+    "completed": "इंटीग्रेशन «{{name}}» सफलतापूर्वक पूर्ण हुआ",
+    "failed": "इंटीग्रेशन «{{name}}» विफल: {{error}}",
+    "error": "इंटीग्रेशन त्रुटि: {{error}}"
+  },
+  "ioc": {
+    "exported": "{{count}} IOC {{format}} के रूप में निर्यात हुए",
+    "deleted": "{{count}} IOC हटाए गए",
+    "statusUpdated": "{{count}} IOC की स्थिति अपडेट हुई",
+    "confidenceUpdated": "{{count}} IOC की विश्वसनीयता अपडेट हुई",
+    "tagsAdded": "{{count}} IOC में टैग जोड़े गए",
+    "copiedToClipboard": "{{count}} IOC क्लिपबोर्ड पर कॉपी हुए",
+    "copyFailed": "क्लिपबोर्ड पर कॉपी करने में विफल",
+    "bulkEnrichDone": "बल्क संवर्धन पूर्ण: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "उत्तर पोस्ट हुआ",
+    "postCreated": "पोस्ट बना",
+    "postCreateFailed": "पोस्ट बनाने में विफल",
+    "uploadFailed": "फ़ाइल अपलोड विफल: {{name}}",
+    "reactionAddFailed": "प्रतिक्रिया जोड़ने में विफल",
+    "reactionRemoveFailed": "प्रतिक्रिया हटाने में विफल",
+    "postDeleted": "पोस्ट हटाया गया",
+    "postDeleteFailed": "पोस्ट हटाने में विफल",
+    "editFailed": "पोस्ट संपादित करने में विफल",
+    "pinUpdateFailed": "पिन स्थिति अपडेट करने में विफल",
+    "notificationsLoadFailed": "सूचनाएं लोड करने में विफल",
+    "markReadFailed": "सूचना पढ़ा हुआ चिह्नित करने में विफल",
+    "markAllReadFailed": "सभी पढ़ा हुआ चिह्नित करने में विफल",
+    "clearNotificationsFailed": "सूचनाएं साफ करने में विफल"
+  },
+  "settings": {
+    "slashCommandUpdated": "/{{name}} अपडेट हुआ",
+    "slashCommandCreated": "/{{name}} बना",
+    "slashCommandDeleted": "/{{name}} हटाया गया"
+  },
+  "generic": {
+    "tagCreateFailed": "टैग बनाने में विफल"
+  }
+}

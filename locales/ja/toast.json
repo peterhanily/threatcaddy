@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "{{count}} 件のクリップ失敗でインポートしました",
+    "importFailed": "拡張機能からのクリップのインポートに失敗しました",
+    "openedAsNote": "「{{name}}」を新しいノートとして開きました",
+    "openFailed": "「{{name}}」を開けませんでした"
+  },
+  "share": {
+    "investigationSaved": "調査「{{name}}」とすべてのエンティティを保存しました",
+    "noteSaved": "ノートをThreatCaddyに保存しました",
+    "taskSaved": "タスクをThreatCaddyに保存しました",
+    "eventSaved": "イベントをThreatCaddyに保存しました",
+    "chatSaved": "チャットをThreatCaddyに保存しました",
+    "templateShared": "テンプレートをチームと共有しました",
+    "templateShareFailed": "テンプレートの共有に失敗しました",
+    "templateRemovedFromTeam": "テンプレートをチームから削除しました",
+    "templateRemoveFailed": "チームテンプレートの削除に失敗しました"
+  },
+  "import": {
+    "dataImported": "{{events}} 件のイベントと {{iocs}} 件のIOCをインポートしました",
+    "jsonImported": "{{notes}} 件のノート、{{tasks}} 件のタスクをインポートしました",
+    "markdownImported": "Markdownから {{count}} 件のノートをインポートしました",
+    "importFailed": "インポートに失敗しました",
+    "stixImported": "STIXバンドルから {{count}} 件のIOCをインポートしました",
+    "stixFailed": "{{count}} 件のIOCのSTIXインポートに失敗しました",
+    "stixNoDuplicates": "新しいIOCはインポートされませんでした（すべて重複）",
+    "mispImported": "MISPイベントから {{count}} 件のIOCをインポートしました",
+    "mispFailed": "{{count}} 件のIOCのMISPインポートに失敗しました",
+    "mispNoDuplicates": "新しいIOCはインポートされませんでした（すべて重複）"
+  },
+  "backup": {
+    "exported": "バックアップをエクスポートしました",
+    "exportFailed": "バックアップのエクスポートに失敗しました",
+    "restored": "バックアップを復元しました",
+    "restoreFailed": "バックアップの復元に失敗しました",
+    "mergeComplete": "マージ完了: {{added}} 件追加、{{updated}} 件更新、{{skipped}} 件スキップ",
+    "mergeFailed": "バックアップのマージに失敗しました",
+    "serverCreated": "バックアップを作成しました",
+    "serverCreateFailed": "バックアップの作成に失敗しました",
+    "decryptionFailed": "復号化に失敗しました",
+    "serverRestored": "バックアップを復元しました",
+    "serverRestoreFailed": "復元に失敗しました",
+    "serverDeleted": "バックアップを削除しました",
+    "serverDeleteFailed": "バックアップの削除に失敗しました",
+    "cloudPushed": "クラウドバックアップをプッシュしました",
+    "cloudEncryptedPushed": "暗号化されたクラウドバックアップをプッシュしました",
+    "cloudFailed": "クラウドバックアップに失敗しました"
+  },
+  "investigation": {
+    "sampleLoaded": "サンプル調査を読み込みました",
+    "sampleRemoved": "サンプル調査を削除しました",
+    "trashEmptied": "ゴミ箱を空にしました",
+    "savedAsTemplate": "「{{name}}」をテンプレートとして保存しました",
+    "playbookRan": "「{{investigation}}」で「{{playbook}}」プレイブックを実行しました",
+    "createdFromPlaybook": "プレイブックから「{{name}}」を作成しました",
+    "exported": "調査「{{name}}」をエクスポートしました",
+    "exportFailed": "調査のエクスポートに失敗しました",
+    "reportGenerated": "「{{name}}」のレポートを生成しました"
+  },
+  "encryption": {
+    "enabled": "暗号化を有効化しました",
+    "disabled": "暗号化を無効化しました",
+    "passphraseChanged": "パスフレーズを変更しました"
+  },
+  "integration": {
+    "nameRequired": "インテグレーション名は必須です",
+    "createdAndInstalled": "インテグレーション「{{name}}」を作成してインストールしました",
+    "saveFailed": "保存に失敗しました: {{error}}",
+    "installedFromCatalog": "コミュニティカタログから {{name}} をインストールしました",
+    "installCatalogFailed": "コミュニティテンプレートのインストールに失敗しました",
+    "templateExported": "{{name}} をエクスポートしました",
+    "installedFromTeam": "チームから {{name}} をインストールしました",
+    "installTeamFailed": "チームテンプレートのインストールに失敗しました",
+    "notFound": "インテグレーションが見つかりません",
+    "completed": "インテグレーション「{{name}}」が正常に完了しました",
+    "failed": "インテグレーション「{{name}}」が失敗しました: {{error}}",
+    "error": "インテグレーションエラー: {{error}}"
+  },
+  "ioc": {
+    "exported": "{{count}} 件のIOCを {{format}} としてエクスポートしました",
+    "deleted": "{{count}} 件のIOCを削除しました",
+    "statusUpdated": "{{count}} 件のIOCのステータスを更新しました",
+    "confidenceUpdated": "{{count}} 件のIOCの信頼度を更新しました",
+    "tagsAdded": "{{count}} 件のIOCにタグを追加しました",
+    "copiedToClipboard": "{{count}} 件のIOCをクリップボードにコピーしました",
+    "copyFailed": "クリップボードへのコピーに失敗しました",
+    "bulkEnrichDone": "一括エンリッチメント完了: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "返信を投稿しました",
+    "postCreated": "投稿を作成しました",
+    "postCreateFailed": "投稿の作成に失敗しました",
+    "uploadFailed": "ファイルのアップロードに失敗しました: {{name}}",
+    "reactionAddFailed": "リアクションの追加に失敗しました",
+    "reactionRemoveFailed": "リアクションの削除に失敗しました",
+    "postDeleted": "投稿を削除しました",
+    "postDeleteFailed": "投稿の削除に失敗しました",
+    "editFailed": "投稿の編集に失敗しました",
+    "pinUpdateFailed": "ピン状態の更新に失敗しました",
+    "notificationsLoadFailed": "通知の読み込みに失敗しました",
+    "markReadFailed": "通知を既読にできませんでした",
+    "markAllReadFailed": "すべてを既読にできませんでした",
+    "clearNotificationsFailed": "通知のクリアに失敗しました"
+  },
+  "settings": {
+    "slashCommandUpdated": "/{{name}} を更新しました",
+    "slashCommandCreated": "/{{name}} を作成しました",
+    "slashCommandDeleted": "/{{name}} を削除しました"
+  },
+  "generic": {
+    "tagCreateFailed": "タグの作成に失敗しました"
+  }
+}

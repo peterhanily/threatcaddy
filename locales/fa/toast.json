@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "با {{count}} کلیپ ناموفق وارد شد",
+    "importFailed": "ورود کلیپ‌ها از افزونه ناموفق بود",
+    "openedAsNote": "«{{name}}» به عنوان یادداشت جدید باز شد",
+    "openFailed": "باز کردن «{{name}}» ناموفق بود"
+  },
+  "share": {
+    "investigationSaved": "تحقیق «{{name}}» با همه موجودیت‌ها ذخیره شد",
+    "noteSaved": "یادداشت در ThreatCaddy ذخیره شد",
+    "taskSaved": "وظیفه در ThreatCaddy ذخیره شد",
+    "eventSaved": "رویداد در ThreatCaddy ذخیره شد",
+    "chatSaved": "چت در ThreatCaddy ذخیره شد",
+    "templateShared": "قالب با تیم به اشتراک گذاشته شد",
+    "templateShareFailed": "اشتراک‌گذاری قالب ناموفق بود",
+    "templateRemovedFromTeam": "قالب از تیم حذف شد",
+    "templateRemoveFailed": "حذف قالب تیم ناموفق بود"
+  },
+  "import": {
+    "dataImported": "{{events}} رویداد و {{iocs}} IOC وارد شد",
+    "jsonImported": "{{notes}} یادداشت، {{tasks}} وظیفه وارد شد",
+    "markdownImported": "{{count}} یادداشت از Markdown وارد شد",
+    "importFailed": "ورود ناموفق بود",
+    "stixImported": "{{count}} IOC از بسته STIX وارد شد",
+    "stixFailed": "ورود STIX برای {{count}} IOC ناموفق بود",
+    "stixNoDuplicates": "IOC جدیدی وارد نشد (همه تکراری)",
+    "mispImported": "{{count}} IOC از رویداد MISP وارد شد",
+    "mispFailed": "ورود MISP برای {{count}} IOC ناموفق بود",
+    "mispNoDuplicates": "IOC جدیدی وارد نشد (همه تکراری)"
+  },
+  "backup": {
+    "exported": "پشتیبان صادر شد",
+    "exportFailed": "صدور پشتیبان ناموفق بود",
+    "restored": "پشتیبان بازیابی شد",
+    "restoreFailed": "بازیابی پشتیبان ناموفق بود",
+    "mergeComplete": "ادغام تکمیل شد: {{added}} اضافه شد، {{updated}} به‌روزرسانی شد، {{skipped}} نادیده گرفته شد",
+    "mergeFailed": "ادغام پشتیبان ناموفق بود",
+    "serverCreated": "پشتیبان ایجاد شد",
+    "serverCreateFailed": "ایجاد پشتیبان ناموفق بود",
+    "decryptionFailed": "رمزگشایی ناموفق بود",
+    "serverRestored": "پشتیبان بازیابی شد",
+    "serverRestoreFailed": "بازیابی ناموفق بود",
+    "serverDeleted": "پشتیبان حذف شد",
+    "serverDeleteFailed": "حذف پشتیبان ناموفق بود",
+    "cloudPushed": "پشتیبان ابری ارسال شد",
+    "cloudEncryptedPushed": "پشتیبان ابری رمزنگاری شده ارسال شد",
+    "cloudFailed": "پشتیبان ابری ناموفق بود"
+  },
+  "investigation": {
+    "sampleLoaded": "تحقیق نمونه بارگذاری شد",
+    "sampleRemoved": "تحقیق نمونه حذف شد",
+    "trashEmptied": "سطل زباله خالی شد",
+    "savedAsTemplate": "«{{name}}» به عنوان قالب ذخیره شد",
+    "playbookRan": "playbook «{{playbook}}» روی «{{investigation}}» اجرا شد",
+    "createdFromPlaybook": "«{{name}}» از playbook ایجاد شد",
+    "exported": "تحقیق «{{name}}» صادر شد",
+    "exportFailed": "صدور تحقیق ناموفق بود",
+    "reportGenerated": "گزارش برای «{{name}}» تولید شد"
+  },
+  "encryption": {
+    "enabled": "رمزنگاری فعال شد",
+    "disabled": "رمزنگاری غیرفعال شد",
+    "passphraseChanged": "عبارت عبور تغییر یافت"
+  },
+  "integration": {
+    "nameRequired": "نام یکپارچه‌سازی لازم است",
+    "createdAndInstalled": "یکپارچه‌سازی «{{name}}» ایجاد و نصب شد",
+    "saveFailed": "ذخیره ناموفق بود: {{error}}",
+    "installedFromCatalog": "{{name}} از کاتالوگ جامعه نصب شد",
+    "installCatalogFailed": "نصب قالب جامعه ناموفق بود",
+    "templateExported": "{{name}} صادر شد",
+    "installedFromTeam": "{{name}} از تیم نصب شد",
+    "installTeamFailed": "نصب قالب تیم ناموفق بود",
+    "notFound": "یکپارچه‌سازی یافت نشد",
+    "completed": "یکپارچه‌سازی «{{name}}» با موفقیت تکمیل شد",
+    "failed": "یکپارچه‌سازی «{{name}}» ناموفق بود: {{error}}",
+    "error": "خطای یکپارچه‌سازی: {{error}}"
+  },
+  "ioc": {
+    "exported": "{{count}} IOC به عنوان {{format}} صادر شد",
+    "deleted": "{{count}} IOC حذف شد",
+    "statusUpdated": "وضعیت {{count}} IOC به‌روزرسانی شد",
+    "confidenceUpdated": "اطمینان {{count}} IOC به‌روزرسانی شد",
+    "tagsAdded": "برچسب‌ها به {{count}} IOC اضافه شد",
+    "copiedToClipboard": "{{count}} IOC به کلیپبورد کپی شد",
+    "copyFailed": "کپی به کلیپبورد ناموفق بود",
+    "bulkEnrichDone": "غنی‌سازی انبوه تکمیل شد: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "پاسخ ارسال شد",
+    "postCreated": "پست ایجاد شد",
+    "postCreateFailed": "ایجاد پست ناموفق بود",
+    "uploadFailed": "بارگذاری فایل ناموفق بود: {{name}}",
+    "reactionAddFailed": "افزودن واکنش ناموفق بود",
+    "reactionRemoveFailed": "حذف واکنش ناموفق بود",
+    "postDeleted": "پست حذف شد",
+    "postDeleteFailed": "حذف پست ناموفق بود",
+    "editFailed": "ویرایش پست ناموفق بود",
+    "pinUpdateFailed": "به‌روزرسانی وضعیت پین ناموفق بود",
+    "notificationsLoadFailed": "بارگذاری اعلان‌ها ناموفق بود",
+    "markReadFailed": "علامت‌گذاری اعلان به عنوان خوانده شده ناموفق بود",
+    "markAllReadFailed": "علامت‌گذاری همه به عنوان خوانده شده ناموفق بود",
+    "clearNotificationsFailed": "پاک کردن اعلان‌ها ناموفق بود"
+  },
+  "settings": {
+    "slashCommandUpdated": "/{{name}} به‌روزرسانی شد",
+    "slashCommandCreated": "/{{name}} ایجاد شد",
+    "slashCommandDeleted": "/{{name}} حذف شد"
+  },
+  "generic": {
+    "tagCreateFailed": "ایجاد برچسب ناموفق بود"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "title": "Whiteboards",
+  "new": "Nieuw",
+  "noWhiteboards": "Geen whiteboards",
+  "createHint": "Maak een whiteboard aan om te beginnen met tekenen",
+  "loadingWhiteboard": "Whiteboard laden...",
+  "deleteTitle": "Whiteboard verwijderen",
+  "deleteMessage": "Dit whiteboard wordt definitief verwijderd. Dit kan niet ongedaan worden gemaakt.",
+  "deleteConfirm": "Whiteboard verwijderen",
+  "elements": "{{count}} elementen",
+  "element": "{{count}} element",
+  "rename": "Hernoemen",
+  "archive": "Archiveren",
+  "unarchive": "Dearchiveren",
+  "moveToTrash": "Naar prullenbak",
+  "restore": "Herstellen",
+  "deletePermanently": "Definitief verwijderen"
+}

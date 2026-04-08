@@ -1,0 +1,20 @@
+{
+  "trash": "سطل زباله",
+  "archive": "بایگانی",
+  "emptyAllTrash": "خالی کردن همه سطل زباله",
+  "autoDeleteHint": "موارد پس از ۳۰ روز به طور خودکار حذف می‌شوند",
+  "trashEmpty": "سطل زباله خالی است",
+  "archiveEmpty": "بایگانی خالی است",
+  "notes": "یادداشت‌ها",
+  "tasks": "وظایف",
+  "timelineEvents": "رویدادهای جدول زمانی",
+  "whiteboards": "تخته‌های سفید",
+  "iocs": "IOCها",
+  "restore": "بازیابی",
+  "deletePermanently": "حذف دائمی",
+  "unarchive": "خروج از بایگانی",
+  "moveToTrash": "انتقال به سطل زباله",
+  "emptyAllTitle": "خالی کردن همه سطل زباله",
+  "emptyAllMessage": "{{count}} مورد حذف شده از همه انواع موجودیت را به طور دائمی حذف کنید؟ این عمل قابل بازگشت نیست.",
+  "emptyAllConfirm": "خالی کردن همه سطل زباله"
+}

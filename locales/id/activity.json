@@ -1,0 +1,15 @@
+{
+  "title": "Log Aktivitas",
+  "clearButton": "Hapus",
+  "searchPlaceholder": "Cari aktivitas...",
+  "allFilter": "Semua",
+  "noActivity": "Belum ada aktivitas",
+  "noActivityHint": "Tindakan yang Anda lakukan akan muncul di sini",
+  "today": "Hari Ini",
+  "yesterday": "Kemarin",
+  "thisWeek": "Minggu Ini",
+  "older": "Lebih Lama",
+  "clearTitle": "Hapus Log Aktivitas",
+  "clearMessage": "Ini akan menghapus semua entri log aktivitas secara permanen. Tindakan ini tidak dapat dibatalkan.",
+  "clearConfirm": "Hapus Semua"
+}

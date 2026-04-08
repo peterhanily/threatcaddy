@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "Diimpor dengan {{count}} klip gagal",
+    "importFailed": "Gagal mengimpor klip dari ekstensi",
+    "openedAsNote": "Dibuka \"{{name}}\" sebagai catatan baru",
+    "openFailed": "Gagal membuka \"{{name}}\""
+  },
+  "share": {
+    "investigationSaved": "Investigasi \"{{name}}\" disimpan dengan semua entitas",
+    "noteSaved": "Catatan disimpan ke ThreatCaddy",
+    "taskSaved": "Tugas disimpan ke ThreatCaddy",
+    "eventSaved": "Kejadian disimpan ke ThreatCaddy",
+    "chatSaved": "Obrolan disimpan ke ThreatCaddy",
+    "templateShared": "Template dibagikan ke tim",
+    "templateShareFailed": "Gagal berbagi template",
+    "templateRemovedFromTeam": "Template dihapus dari tim",
+    "templateRemoveFailed": "Gagal menghapus template tim"
+  },
+  "import": {
+    "dataImported": "Diimpor {{events}} kejadian dan {{iocs}} IOC",
+    "jsonImported": "Diimpor {{notes}} catatan, {{tasks}} tugas",
+    "markdownImported": "Diimpor {{count}} catatan dari Markdown",
+    "importFailed": "Impor gagal",
+    "stixImported": "Diimpor {{count}} IOC dari bundel STIX",
+    "stixFailed": "Impor STIX gagal untuk {{count}} IOC",
+    "stixNoDuplicates": "Tidak ada IOC baru yang diimpor (semua duplikat)",
+    "mispImported": "Diimpor {{count}} IOC dari kejadian MISP",
+    "mispFailed": "Impor MISP gagal untuk {{count}} IOC",
+    "mispNoDuplicates": "Tidak ada IOC baru yang diimpor (semua duplikat)"
+  },
+  "backup": {
+    "exported": "Cadangan diekspor",
+    "exportFailed": "Gagal mengekspor cadangan",
+    "restored": "Cadangan dipulihkan",
+    "restoreFailed": "Gagal memulihkan cadangan",
+    "mergeComplete": "Penggabungan selesai: {{added}} ditambahkan, {{updated}} diperbarui, {{skipped}} dilewati",
+    "mergeFailed": "Gagal menggabungkan cadangan",
+    "serverCreated": "Cadangan dibuat",
+    "serverCreateFailed": "Pembuatan cadangan gagal",
+    "decryptionFailed": "Dekripsi gagal",
+    "serverRestored": "Cadangan dipulihkan",
+    "serverRestoreFailed": "Pemulihan gagal",
+    "serverDeleted": "Cadangan dihapus",
+    "serverDeleteFailed": "Gagal menghapus cadangan",
+    "cloudPushed": "Cadangan cloud dikirim",
+    "cloudEncryptedPushed": "Cadangan cloud terenkripsi dikirim",
+    "cloudFailed": "Cadangan cloud gagal"
+  },
+  "investigation": {
+    "sampleLoaded": "Investigasi sampel dimuat",
+    "sampleRemoved": "Investigasi sampel dihapus",
+    "trashEmptied": "Sampah dikosongkan",
+    "savedAsTemplate": "Disimpan \"{{name}}\" sebagai template",
+    "playbookRan": "Menjalankan playbook \"{{playbook}}\" pada \"{{investigation}}\"",
+    "createdFromPlaybook": "Dibuat \"{{name}}\" dari playbook",
+    "exported": "Investigasi \"{{name}}\" diekspor",
+    "exportFailed": "Gagal mengekspor investigasi",
+    "reportGenerated": "Laporan dibuat untuk \"{{name}}\""
+  },
+  "encryption": {
+    "enabled": "Enkripsi diaktifkan",
+    "disabled": "Enkripsi dinonaktifkan",
+    "passphraseChanged": "Kata sandi diubah"
+  },
+  "integration": {
+    "nameRequired": "Nama integrasi diperlukan",
+    "createdAndInstalled": "Integrasi \"{{name}}\" dibuat dan dipasang",
+    "saveFailed": "Gagal menyimpan: {{error}}",
+    "installedFromCatalog": "Dipasang {{name}} dari katalog komunitas",
+    "installCatalogFailed": "Gagal memasang template komunitas",
+    "templateExported": "Diekspor {{name}}",
+    "installedFromTeam": "Dipasang {{name}} dari tim",
+    "installTeamFailed": "Gagal memasang template tim",
+    "notFound": "Integrasi tidak ditemukan",
+    "completed": "Integrasi \"{{name}}\" berhasil diselesaikan",
+    "failed": "Integrasi \"{{name}}\" gagal: {{error}}",
+    "error": "Kesalahan integrasi: {{error}}"
+  },
+  "ioc": {
+    "exported": "Diekspor {{count}} IOC sebagai {{format}}",
+    "deleted": "Dihapus {{count}} IOC",
+    "statusUpdated": "Status diperbarui pada {{count}} IOC",
+    "confidenceUpdated": "Kepercayaan diperbarui pada {{count}} IOC",
+    "tagsAdded": "Tag ditambahkan ke {{count}} IOC",
+    "copiedToClipboard": "Disalin {{count}} IOC ke clipboard",
+    "copyFailed": "Gagal menyalin ke clipboard",
+    "bulkEnrichDone": "Pengayaan massal selesai: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "Balasan diposting",
+    "postCreated": "Postingan dibuat",
+    "postCreateFailed": "Gagal membuat postingan",
+    "uploadFailed": "Gagal mengunggah file: {{name}}",
+    "reactionAddFailed": "Gagal menambahkan reaksi",
+    "reactionRemoveFailed": "Gagal menghapus reaksi",
+    "postDeleted": "Postingan dihapus",
+    "postDeleteFailed": "Gagal menghapus postingan",
+    "editFailed": "Gagal mengedit postingan",
+    "pinUpdateFailed": "Gagal memperbarui status sematan",
+    "notificationsLoadFailed": "Gagal memuat notifikasi",
+    "markReadFailed": "Gagal menandai notifikasi sudah dibaca",
+    "markAllReadFailed": "Gagal menandai semua sudah dibaca",
+    "clearNotificationsFailed": "Gagal menghapus notifikasi"
+  },
+  "settings": {
+    "slashCommandUpdated": "Diperbarui /{{name}}",
+    "slashCommandCreated": "Dibuat /{{name}}",
+    "slashCommandDeleted": "Dihapus /{{name}}"
+  },
+  "generic": {
+    "tagCreateFailed": "Gagal membuat tag"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "trash": "المهملات",
+  "archive": "الأرشيف",
+  "emptyAllTrash": "إفراغ جميع المهملات",
+  "autoDeleteHint": "تُحذف العناصر تلقائيًا بعد 30 يومًا",
+  "trashEmpty": "المهملات فارغة",
+  "archiveEmpty": "الأرشيف فارغ",
+  "notes": "الملاحظات",
+  "tasks": "المهام",
+  "timelineEvents": "أحداث الجدول الزمني",
+  "whiteboards": "الألواح البيضاء",
+  "iocs": "IOCs",
+  "restore": "استعادة",
+  "deletePermanently": "حذف نهائي",
+  "unarchive": "إلغاء الأرشفة",
+  "moveToTrash": "نقل إلى المهملات",
+  "emptyAllTitle": "إفراغ جميع المهملات",
+  "emptyAllMessage": "حذف جميع {{count}} عنصر محذوف بشكل نهائي عبر جميع أنواع الكيانات؟ لا يمكن التراجع عن هذا الإجراء.",
+  "emptyAllConfirm": "إفراغ جميع المهملات"
+}

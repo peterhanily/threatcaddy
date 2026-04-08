@@ -1,0 +1,50 @@
+{
+  "title": "대시보드",
+  "welcome": "{{name}}님, 안녕하세요",
+  "welcomeDefault": "안녕하세요, 분석가님",
+  "subtitle": "위협 조사 워크스페이스",
+
+  "kpi.openInvestigations": "진행 중인 조사",
+  "kpi.closedThisMonth": "이번 달 종료",
+  "kpi.avgAge": "평균 조사 기간",
+  "kpi.tasksPending": "대기 중인 태스크",
+  "kpi.tasksCompletedWeek": "이번 주 완료된 태스크",
+  "kpi.iocsUnderInvestigation": "조사 중인 IOC",
+  "kpi.notesCreatedWeek": "이번 주 생성된 노트",
+  "kpi.timelineEventsWeek": "이번 주 타임라인 이벤트",
+  "kpi.overdueTasks": "기한 초과 태스크",
+  "kpi.days": "{{count}}일",
+  "kpi.noData": "데이터 없음",
+
+  "section.activeInvestigations": "활성 조사",
+  "section.recentActivity": "최근 활동",
+  "section.agentActivity": "에이전트 활동",
+  "section.entityGraph": "엔티티 그래프",
+  "section.quickActions": "빠른 작업",
+
+  "investigation.viewAll": "모두 보기",
+  "investigation.newInvestigation": "새 조사",
+  "investigation.noActive": "활성 조사 없음",
+  "investigation.noActiveHint": "새 조사를 만들어 시작하세요",
+  "investigation.tasks": "태스크 {{done}}/{{total}}",
+  "investigation.openInAnalyst": "분석가 모드에서 열기",
+
+  "quickAction.newNote": "새 노트",
+  "quickAction.newTask": "새 태스크",
+  "quickAction.newInvestigation": "새 조사",
+  "quickAction.newTimelineEvent": "새 타임라인 이벤트",
+  "quickAction.askCaddyAI": "CaddyAI에게 질문",
+
+  "graph.noNodes": "그래프 노드 없음",
+  "graph.noNodesHint": "IOC 또는 타임라인 이벤트가 있는 노트를 추가하여 그래프를 구성하세요",
+  "graph.openGraph": "전체 그래프 열기",
+  "graph.nodes": "{{count}}개 노드",
+
+  "agent.noActivity": "최근 에이전트 활동 없음",
+  "agent.viewAll": "모두 보기",
+  "agent.cyclesRun": "{{count}}회 실행",
+  "agent.toolCalls": "{{count}}번 도구 호출",
+
+  "activity.noActivity": "최근 활동 없음",
+  "activity.viewAll": "모두 보기"
+}

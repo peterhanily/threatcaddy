@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "导入时有 {{count}} 个片段失败",
+    "importFailed": "从扩展导入片段失败",
+    "openedAsNote": "已将"{{name}}"作为新笔记打开",
+    "openFailed": "无法打开"{{name}}""
+  },
+  "share": {
+    "investigationSaved": "已保存调查"{{name}}"及其所有实体",
+    "noteSaved": "笔记已保存到 ThreatCaddy",
+    "taskSaved": "任务已保存到 ThreatCaddy",
+    "eventSaved": "事件已保存到 ThreatCaddy",
+    "chatSaved": "聊天已保存到 ThreatCaddy",
+    "templateShared": "模板已与团队共享",
+    "templateShareFailed": "共享模板失败",
+    "templateRemovedFromTeam": "模板已从团队移除",
+    "templateRemoveFailed": "删除团队模板失败"
+  },
+  "import": {
+    "dataImported": "已导入 {{events}} 个事件和 {{iocs}} 个 IOC",
+    "jsonImported": "已导入 {{notes}} 条笔记，{{tasks}} 个任务",
+    "markdownImported": "已从 Markdown 导入 {{count}} 条笔记",
+    "importFailed": "导入失败",
+    "stixImported": "已从 STIX 包导入 {{count}} 个 IOC",
+    "stixFailed": "STIX 导入失败，{{count}} 个 IOC",
+    "stixNoDuplicates": "未导入新 IOC（全部重复）",
+    "mispImported": "已从 MISP 事件导入 {{count}} 个 IOC",
+    "mispFailed": "MISP 导入失败，{{count}} 个 IOC",
+    "mispNoDuplicates": "未导入新 IOC（全部重复）"
+  },
+  "backup": {
+    "exported": "备份已导出",
+    "exportFailed": "导出备份失败",
+    "restored": "备份已恢复",
+    "restoreFailed": "恢复备份失败",
+    "mergeComplete": "合并完成：{{added}} 个已添加，{{updated}} 个已更新，{{skipped}} 个已跳过",
+    "mergeFailed": "合并备份失败",
+    "serverCreated": "备份已创建",
+    "serverCreateFailed": "备份创建失败",
+    "decryptionFailed": "解密失败",
+    "serverRestored": "备份已恢复",
+    "serverRestoreFailed": "恢复失败",
+    "serverDeleted": "备份已删除",
+    "serverDeleteFailed": "删除备份失败",
+    "cloudPushed": "云备份已推送",
+    "cloudEncryptedPushed": "加密云备份已推送",
+    "cloudFailed": "云备份失败"
+  },
+  "investigation": {
+    "sampleLoaded": "示例调查已加载",
+    "sampleRemoved": "示例调查已移除",
+    "trashEmptied": "回收站已清空",
+    "savedAsTemplate": "已将"{{name}}"保存为模板",
+    "playbookRan": "已在"{{investigation}}"上运行"{{playbook}}"剧本",
+    "createdFromPlaybook": "已从剧本创建"{{name}}"",
+    "exported": "调查"{{name}}"已导出",
+    "exportFailed": "导出调查失败",
+    "reportGenerated": "已生成"{{name}}"的报告"
+  },
+  "encryption": {
+    "enabled": "加密已启用",
+    "disabled": "加密已禁用",
+    "passphraseChanged": "密码短语已更改"
+  },
+  "integration": {
+    "nameRequired": "集成名称是必需的",
+    "createdAndInstalled": "集成"{{name}}"已创建并安装",
+    "saveFailed": "保存失败：{{error}}",
+    "installedFromCatalog": "已从社区目录安装 {{name}}",
+    "installCatalogFailed": "安装社区模板失败",
+    "templateExported": "已导出 {{name}}",
+    "installedFromTeam": "已从团队安装 {{name}}",
+    "installTeamFailed": "安装团队模板失败",
+    "notFound": "集成未找到",
+    "completed": "集成"{{name}}"成功完成",
+    "failed": "集成"{{name}}"失败：{{error}}",
+    "error": "集成错误：{{error}}"
+  },
+  "ioc": {
+    "exported": "已将 {{count}} 个 IOC 导出为 {{format}}",
+    "deleted": "已删除 {{count}} 个 IOC",
+    "statusUpdated": "已更新 {{count}} 个 IOC 的状态",
+    "confidenceUpdated": "已更新 {{count}} 个 IOC 的置信度",
+    "tagsAdded": "已为 {{count}} 个 IOC 添加标签",
+    "copiedToClipboard": "已复制 {{count}} 个 IOC 到剪贴板",
+    "copyFailed": "复制到剪贴板失败",
+    "bulkEnrichDone": "批量丰富完成：{{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "回复已发布",
+    "postCreated": "帖子已创建",
+    "postCreateFailed": "创建帖子失败",
+    "uploadFailed": "上传文件失败：{{name}}",
+    "reactionAddFailed": "添加反应失败",
+    "reactionRemoveFailed": "移除反应失败",
+    "postDeleted": "帖子已删除",
+    "postDeleteFailed": "删除帖子失败",
+    "editFailed": "编辑帖子失败",
+    "pinUpdateFailed": "更新置顶状态失败",
+    "notificationsLoadFailed": "加载通知失败",
+    "markReadFailed": "标记通知为已读失败",
+    "markAllReadFailed": "全部标为已读失败",
+    "clearNotificationsFailed": "清除通知失败"
+  },
+  "settings": {
+    "slashCommandUpdated": "已更新 /{{name}}",
+    "slashCommandCreated": "已创建 /{{name}}",
+    "slashCommandDeleted": "已删除 /{{name}}"
+  },
+  "generic": {
+    "tagCreateFailed": "创建标签失败"
+  }
+}

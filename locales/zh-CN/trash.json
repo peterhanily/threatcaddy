@@ -1,0 +1,20 @@
+{
+  "trash": "回收站",
+  "archive": "存档",
+  "emptyAllTrash": "清空所有回收站",
+  "autoDeleteHint": "项目将在 30 天后自动删除",
+  "trashEmpty": "回收站为空",
+  "archiveEmpty": "存档为空",
+  "notes": "笔记",
+  "tasks": "任务",
+  "timelineEvents": "时间线事件",
+  "whiteboards": "白板",
+  "iocs": "IOC",
+  "restore": "恢复",
+  "deletePermanently": "永久删除",
+  "unarchive": "取消存档",
+  "moveToTrash": "移至回收站",
+  "emptyAllTitle": "清空所有回收站",
+  "emptyAllMessage": "永久删除所有 {{count}} 个已删除项目（跨所有实体类型）？此操作无法撤销。",
+  "emptyAllConfirm": "清空所有回收站"
+}

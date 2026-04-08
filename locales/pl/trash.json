@@ -1,0 +1,20 @@
+{
+  "trash": "Kosz",
+  "archive": "Archiwum",
+  "emptyAllTrash": "Opróżnij cały kosz",
+  "autoDeleteHint": "Elementy są automatycznie usuwane po 30 dniach",
+  "trashEmpty": "Kosz jest pusty",
+  "archiveEmpty": "Archiwum jest puste",
+  "notes": "Notatki",
+  "tasks": "Zadania",
+  "timelineEvents": "Zdarzenia osi czasu",
+  "whiteboards": "Tablice",
+  "iocs": "IOC",
+  "restore": "Przywróć",
+  "deletePermanently": "Usuń trwale",
+  "unarchive": "Przywróć z archiwum",
+  "moveToTrash": "Przenieś do kosza",
+  "emptyAllTitle": "Opróżnij cały kosz",
+  "emptyAllMessage": "Trwale usunąć wszystkie {{count}} element(ów) kosza dla wszystkich typów encji? Tej operacji nie można cofnąć.",
+  "emptyAllConfirm": "Opróżnij cały kosz"
+}

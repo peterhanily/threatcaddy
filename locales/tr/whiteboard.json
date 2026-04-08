@@ -1,0 +1,18 @@
+{
+  "title": "Beyaz Tahtalar",
+  "new": "Yeni",
+  "noWhiteboards": "Henüz beyaz tahta yok",
+  "createHint": "Çizmeye başlamak için bir tane oluşturun",
+  "loadingWhiteboard": "Beyaz tahta yükleniyor...",
+  "deleteTitle": "Beyaz Tahta Sil",
+  "deleteMessage": "Bu beyaz tahta kalıcı olarak silinecek. Bu işlem geri alınamaz.",
+  "deleteConfirm": "Beyaz Tahta Sil",
+  "elements": "{{count}} öğe",
+  "element": "{{count}} öğe",
+  "rename": "Yeniden Adlandır",
+  "archive": "Arşivle",
+  "unarchive": "Arşivden Çıkar",
+  "moveToTrash": "Çöpe taşı",
+  "restore": "Geri Yükle",
+  "deletePermanently": "Kalıcı olarak sil"
+}

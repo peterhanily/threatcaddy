@@ -1,0 +1,20 @@
+{
+  "trash": "Корзина",
+  "archive": "Архив",
+  "emptyAllTrash": "Очистить всю корзину",
+  "autoDeleteHint": "Элементы автоматически удаляются через 30 дней",
+  "trashEmpty": "Корзина пуста",
+  "archiveEmpty": "Архив пуст",
+  "notes": "Заметки",
+  "tasks": "Задачи",
+  "timelineEvents": "События хронологии",
+  "whiteboards": "Доски",
+  "iocs": "IOC",
+  "restore": "Восстановить",
+  "deletePermanently": "Удалить навсегда",
+  "unarchive": "Разархивировать",
+  "moveToTrash": "Переместить в корзину",
+  "emptyAllTitle": "Очистить всю корзину",
+  "emptyAllMessage": "Навсегда удалить все {{count}} элемент(ов) из корзины по всем типам сущностей? Отменить невозможно.",
+  "emptyAllConfirm": "Очистить всю корзину"
+}

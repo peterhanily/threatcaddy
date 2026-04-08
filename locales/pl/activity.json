@@ -1,0 +1,15 @@
+{
+  "title": "Dziennik aktywności",
+  "clearButton": "Wyczyść",
+  "searchPlaceholder": "Szukaj aktywności...",
+  "allFilter": "Wszystkie",
+  "noActivity": "Brak aktywności",
+  "noActivityHint": "Twoje działania będą widoczne tutaj",
+  "today": "Dziś",
+  "yesterday": "Wczoraj",
+  "thisWeek": "W tym tygodniu",
+  "older": "Starsze",
+  "clearTitle": "Wyczyść dziennik aktywności",
+  "clearMessage": "Spowoduje to trwałe usunięcie wszystkich wpisów dziennika aktywności. Tej operacji nie można cofnąć.",
+  "clearConfirm": "Wyczyść wszystko"
+}

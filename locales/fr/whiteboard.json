@@ -1,0 +1,18 @@
+{
+  "title": "Tableaux blancs",
+  "new": "Nouveau",
+  "noWhiteboards": "Aucun tableau blanc pour l'instant",
+  "createHint": "Créez-en un pour commencer à dessiner",
+  "loadingWhiteboard": "Chargement du tableau blanc...",
+  "deleteTitle": "Supprimer le tableau blanc",
+  "deleteMessage": "Ce tableau blanc sera supprimé définitivement. Cette action est irréversible.",
+  "deleteConfirm": "Supprimer le tableau blanc",
+  "elements": "{{count}} éléments",
+  "element": "{{count}} élément",
+  "rename": "Renommer",
+  "archive": "Archiver",
+  "unarchive": "Désarchiver",
+  "moveToTrash": "Mettre à la corbeille",
+  "restore": "Restaurer",
+  "deletePermanently": "Supprimer définitivement"
+}

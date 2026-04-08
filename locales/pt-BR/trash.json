@@ -1,0 +1,20 @@
+{
+  "trash": "Lixeira",
+  "archive": "Arquivo",
+  "emptyAllTrash": "Esvaziar toda a lixeira",
+  "autoDeleteHint": "Itens são excluídos automaticamente após 30 dias",
+  "trashEmpty": "A lixeira está vazia",
+  "archiveEmpty": "O arquivo está vazio",
+  "notes": "Notas",
+  "tasks": "Tarefas",
+  "timelineEvents": "Eventos de linha do tempo",
+  "whiteboards": "Quadros brancos",
+  "iocs": "IOCs",
+  "restore": "Restaurar",
+  "deletePermanently": "Excluir permanentemente",
+  "unarchive": "Desarquivar",
+  "moveToTrash": "Mover para lixeira",
+  "emptyAllTitle": "Esvaziar toda a lixeira",
+  "emptyAllMessage": "Excluir permanentemente todos os {{count}} item(ns) na lixeira de todos os tipos de entidades? Essa ação não pode ser desfeita.",
+  "emptyAllConfirm": "Esvaziar toda a lixeira"
+}

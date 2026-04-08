@@ -1,0 +1,23 @@
+{
+  "placeholder": "ค้นหา...",
+  "globalSearch": "ค้นหาทั้งหมด",
+  "searchPlaceholder": "ค้นหาบันทึก งาน IOC เหตุการณ์ การสืบสวน...",
+  "noResults": "ไม่มีผลลัพธ์",
+  "noResultsFor": "ไม่มีผลลัพธ์สำหรับ \"{{query}}\"",
+  "resultsFor": "ผลลัพธ์สำหรับ \"{{query}}\"",
+  "resultCount": "{{count}} ผลลัพธ์",
+  "resultCount_other": "{{count}} ผลลัพธ์",
+  "searching": "กำลังค้นหา...",
+  "filterByType": "กรองตามประเภท",
+  "allTypes": "ทุกประเภท",
+  "notes": "บันทึก",
+  "tasks": "งาน",
+  "iocs": "IOC",
+  "events": "เหตุการณ์",
+  "investigations": "การสืบสวน",
+  "chats": "แชท",
+  "recentSearches": "การค้นหาล่าสุด",
+  "clearRecent": "ล้างการค้นหาล่าสุด",
+  "pressEnter": "กด Enter เพื่อค้นหา",
+  "pressEsc": "กด Esc เพื่อปิด"
+}

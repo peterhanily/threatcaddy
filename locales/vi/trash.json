@@ -1,0 +1,20 @@
+{
+  "trash": "Thùng rác",
+  "archive": "Lưu trữ",
+  "emptyAllTrash": "Xóa tất cả thùng rác",
+  "autoDeleteHint": "Các mục tự động xóa sau 30 ngày",
+  "trashEmpty": "Thùng rác trống",
+  "archiveEmpty": "Lưu trữ trống",
+  "notes": "Ghi chú",
+  "tasks": "Nhiệm vụ",
+  "timelineEvents": "Sự kiện timeline",
+  "whiteboards": "Bảng trắng",
+  "iocs": "IOC",
+  "restore": "Khôi phục",
+  "deletePermanently": "Xóa vĩnh viễn",
+  "unarchive": "Bỏ lưu trữ",
+  "moveToTrash": "Chuyển vào thùng rác",
+  "emptyAllTitle": "Xóa tất cả thùng rác",
+  "emptyAllMessage": "Xóa vĩnh viễn tất cả {{count}} mục trong thùng rác trên tất cả loại thực thể? Không thể hoàn tác.",
+  "emptyAllConfirm": "Xóa tất cả thùng rác"
+}

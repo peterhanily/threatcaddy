@@ -1,0 +1,6 @@
+{
+  "justNow": "Az önce",
+  "minutesAgo": "{{count}}d önce",
+  "hoursAgo": "{{count}}s önce",
+  "daysAgo": "{{count}}g önce"
+}

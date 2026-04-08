@@ -1,0 +1,6 @@
+{
+  "format.date": "{{date, date}}",
+  "format.datetime": "{{date, datetime}}",
+  "format.relative": "{{date, relative}}",
+  "format.time": "{{date, time}}"
+}

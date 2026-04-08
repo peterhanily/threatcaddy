@@ -1,0 +1,20 @@
+{
+  "trash": "Çöp Kutusu",
+  "archive": "Arşiv",
+  "emptyAllTrash": "Tüm Çöpü Boşalt",
+  "autoDeleteHint": "Öğeler 30 gün sonra otomatik silinir",
+  "trashEmpty": "Çöp kutusu boş",
+  "archiveEmpty": "Arşiv boş",
+  "notes": "Notlar",
+  "tasks": "Görevler",
+  "timelineEvents": "Zaman Çizelgesi Olayları",
+  "whiteboards": "Beyaz Tahtalar",
+  "iocs": "IOC'ler",
+  "restore": "Geri Yükle",
+  "deletePermanently": "Kalıcı olarak sil",
+  "unarchive": "Arşivden Çıkar",
+  "moveToTrash": "Çöpe taşı",
+  "emptyAllTitle": "Tüm Çöpü Boşalt",
+  "emptyAllMessage": "Tüm varlık türlerindeki {{count}} çöpe atılmış öğe kalıcı olarak silinsin mi? Bu işlem geri alınamaz.",
+  "emptyAllConfirm": "Tüm Çöpü Boşalt"
+}

@@ -1,0 +1,6 @@
+{
+  "justNow": "الآن",
+  "minutesAgo": "منذ {{count}} د",
+  "hoursAgo": "منذ {{count}} س",
+  "daysAgo": "منذ {{count}} يوم"
+}

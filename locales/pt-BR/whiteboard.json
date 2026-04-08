@@ -1,0 +1,18 @@
+{
+  "title": "Quadros brancos",
+  "new": "Novo",
+  "noWhiteboards": "Nenhum quadro branco ainda",
+  "createHint": "Crie um para começar a desenhar",
+  "loadingWhiteboard": "Carregando quadro branco...",
+  "deleteTitle": "Excluir quadro branco",
+  "deleteMessage": "Este quadro branco será excluído permanentemente. Essa ação não pode ser desfeita.",
+  "deleteConfirm": "Excluir quadro branco",
+  "elements": "{{count}} elementos",
+  "element": "{{count}} elemento",
+  "rename": "Renomear",
+  "archive": "Arquivar",
+  "unarchive": "Desarquivar",
+  "moveToTrash": "Mover para lixeira",
+  "restore": "Restaurar",
+  "deletePermanently": "Excluir permanentemente"
+}

@@ -1,0 +1,7 @@
+{
+  "stepCounter": "{{current}} / {{total}}",
+  "skipTour": "Bỏ qua tour",
+  "back": "Quay lại",
+  "next": "Tiếp theo",
+  "finish": "Hoàn tất"
+}

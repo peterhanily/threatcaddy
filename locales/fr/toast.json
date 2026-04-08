@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "Importé avec {{count}} clip(s) échoué(s)",
+    "importFailed": "Échec de l'importation des clips depuis l'extension",
+    "openedAsNote": "\"{{name}}\" ouvert comme nouvelle note",
+    "openFailed": "Impossible d'ouvrir \"{{name}}\""
+  },
+  "share": {
+    "investigationSaved": "Enquête \"{{name}}\" enregistrée avec toutes les entités",
+    "noteSaved": "Note enregistrée dans ThreatCaddy",
+    "taskSaved": "Tâche enregistrée dans ThreatCaddy",
+    "eventSaved": "Événement enregistré dans ThreatCaddy",
+    "chatSaved": "Chat enregistré dans ThreatCaddy",
+    "templateShared": "Modèle partagé avec l'équipe",
+    "templateShareFailed": "Échec du partage du modèle",
+    "templateRemovedFromTeam": "Modèle retiré de l'équipe",
+    "templateRemoveFailed": "Échec de la suppression du modèle d'équipe"
+  },
+  "import": {
+    "dataImported": "{{events}} événements et {{iocs}} IOCs importés",
+    "jsonImported": "{{notes}} notes, {{tasks}} tâches importées",
+    "markdownImported": "{{count}} notes importées depuis Markdown",
+    "importFailed": "Importation échouée",
+    "stixImported": "{{count}} IOC(s) importé(s) depuis le bundle STIX",
+    "stixFailed": "Importation STIX échouée pour {{count}} IOC(s)",
+    "stixNoDuplicates": "Aucun nouvel IOC importé (tous des doublons)",
+    "mispImported": "{{count}} IOC(s) importé(s) depuis l'événement MISP",
+    "mispFailed": "Importation MISP échouée pour {{count}} IOC(s)",
+    "mispNoDuplicates": "Aucun nouvel IOC importé (tous des doublons)"
+  },
+  "backup": {
+    "exported": "Sauvegarde exportée",
+    "exportFailed": "Échec de l'exportation de la sauvegarde",
+    "restored": "Sauvegarde restaurée",
+    "restoreFailed": "Échec de la restauration de la sauvegarde",
+    "mergeComplete": "Fusion terminée : {{added}} ajoutés, {{updated}} mis à jour, {{skipped}} ignorés",
+    "mergeFailed": "Échec de la fusion de la sauvegarde",
+    "serverCreated": "Sauvegarde créée",
+    "serverCreateFailed": "Échec de la création de la sauvegarde",
+    "decryptionFailed": "Décryptage échoué",
+    "serverRestored": "Sauvegarde restaurée",
+    "serverRestoreFailed": "Restauration échouée",
+    "serverDeleted": "Sauvegarde supprimée",
+    "serverDeleteFailed": "Échec de la suppression de la sauvegarde",
+    "cloudPushed": "Sauvegarde cloud envoyée",
+    "cloudEncryptedPushed": "Sauvegarde cloud chiffrée envoyée",
+    "cloudFailed": "Sauvegarde cloud échouée"
+  },
+  "investigation": {
+    "sampleLoaded": "Enquête exemple chargée",
+    "sampleRemoved": "Enquête exemple supprimée",
+    "trashEmptied": "Corbeille vidée",
+    "savedAsTemplate": "\"{{name}}\" enregistrée comme modèle",
+    "playbookRan": "Playbook \"{{playbook}}\" exécuté sur \"{{investigation}}\"",
+    "createdFromPlaybook": "\"{{name}}\" créée depuis le playbook",
+    "exported": "Enquête \"{{name}}\" exportée",
+    "exportFailed": "Échec de l'exportation de l'enquête",
+    "reportGenerated": "Rapport généré pour \"{{name}}\""
+  },
+  "encryption": {
+    "enabled": "Chiffrement activé",
+    "disabled": "Chiffrement désactivé",
+    "passphraseChanged": "Phrase secrète modifiée"
+  },
+  "integration": {
+    "nameRequired": "Le nom de l'intégration est requis",
+    "createdAndInstalled": "Intégration \"{{name}}\" créée et installée",
+    "saveFailed": "Échec de l'enregistrement : {{error}}",
+    "installedFromCatalog": "{{name}} installé depuis le catalogue communautaire",
+    "installCatalogFailed": "Échec de l'installation du modèle communautaire",
+    "templateExported": "{{name}} exporté",
+    "installedFromTeam": "{{name}} installé depuis l'équipe",
+    "installTeamFailed": "Échec de l'installation du modèle d'équipe",
+    "notFound": "Intégration introuvable",
+    "completed": "Intégration \"{{name}}\" terminée avec succès",
+    "failed": "Intégration \"{{name}}\" échouée : {{error}}",
+    "error": "Erreur d'intégration : {{error}}"
+  },
+  "ioc": {
+    "exported": "{{count}} IOC(s) exporté(s) en {{format}}",
+    "deleted": "{{count}} IOC(s) supprimé(s)",
+    "statusUpdated": "Statut mis à jour pour {{count}} IOC(s)",
+    "confidenceUpdated": "Confiance mise à jour pour {{count}} IOC(s)",
+    "tagsAdded": "Étiquettes ajoutées à {{count}} IOC(s)",
+    "copiedToClipboard": "{{count}} IOC(s) copié(s) dans le presse-papiers",
+    "copyFailed": "Échec de la copie dans le presse-papiers",
+    "bulkEnrichDone": "Enrichissement en masse terminé : {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "Réponse publiée",
+    "postCreated": "Publication créée",
+    "postCreateFailed": "Échec de la création de la publication",
+    "uploadFailed": "Échec du téléversement du fichier : {{name}}",
+    "reactionAddFailed": "Échec de l'ajout de la réaction",
+    "reactionRemoveFailed": "Échec de la suppression de la réaction",
+    "postDeleted": "Publication supprimée",
+    "postDeleteFailed": "Échec de la suppression de la publication",
+    "editFailed": "Échec de la modification de la publication",
+    "pinUpdateFailed": "Échec de la mise à jour du statut d'épinglage",
+    "notificationsLoadFailed": "Échec du chargement des notifications",
+    "markReadFailed": "Échec du marquage de la notification comme lue",
+    "markAllReadFailed": "Échec du marquage de toutes les notifications comme lues",
+    "clearNotificationsFailed": "Échec de la suppression des notifications"
+  },
+  "settings": {
+    "slashCommandUpdated": "/{{name}} mis à jour",
+    "slashCommandCreated": "/{{name}} créé",
+    "slashCommandDeleted": "/{{name}} supprimé"
+  },
+  "generic": {
+    "tagCreateFailed": "Échec de la création de l'étiquette"
+  }
+}

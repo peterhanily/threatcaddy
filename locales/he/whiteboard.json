@@ -1,0 +1,18 @@
+{
+  "title": "לוחות ציור",
+  "new": "חדש",
+  "noWhiteboards": "אין לוחות ציור עדיין",
+  "createHint": "צור אחד להתחלת ציור",
+  "loadingWhiteboard": "טוען לוח ציור...",
+  "deleteTitle": "מחק לוח ציור",
+  "deleteMessage": "לוח ציור זה יימחק לצמיתות. לא ניתן לבטל פעולה זו.",
+  "deleteConfirm": "מחק לוח ציור",
+  "elements": "{{count}} אלמנטים",
+  "element": "{{count}} אלמנט",
+  "rename": "שנה שם",
+  "archive": "העבר לארכיון",
+  "unarchive": "הוצא מארכיון",
+  "moveToTrash": "העבר לאשפה",
+  "restore": "שחזר",
+  "deletePermanently": "מחק לצמיתות"
+}

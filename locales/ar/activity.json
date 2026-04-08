@@ -1,0 +1,15 @@
+{
+  "title": "سجل النشاط",
+  "clearButton": "مسح",
+  "searchPlaceholder": "البحث في النشاط...",
+  "allFilter": "الكل",
+  "noActivity": "لا يوجد نشاط بعد",
+  "noActivityHint": "ستظهر هنا الإجراءات التي تتخذها",
+  "today": "اليوم",
+  "yesterday": "أمس",
+  "thisWeek": "هذا الأسبوع",
+  "older": "أقدم",
+  "clearTitle": "مسح سجل النشاط",
+  "clearMessage": "سيؤدي هذا إلى حذف جميع إدخالات سجل النشاط بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
+  "clearConfirm": "مسح الكل"
+}

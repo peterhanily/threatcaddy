@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "Importiert mit {{count}} fehlgeschlagenen Clip(s)",
+    "importFailed": "Import von Clips aus Erweiterung fehlgeschlagen",
+    "openedAsNote": "\"{{name}}\" als neue Notiz geöffnet",
+    "openFailed": "\"{{name}}\" konnte nicht geöffnet werden"
+  },
+  "share": {
+    "investigationSaved": "Untersuchung \"{{name}}\" mit allen Entitäten gespeichert",
+    "noteSaved": "Notiz in ThreatCaddy gespeichert",
+    "taskSaved": "Aufgabe in ThreatCaddy gespeichert",
+    "eventSaved": "Ereignis in ThreatCaddy gespeichert",
+    "chatSaved": "Chat in ThreatCaddy gespeichert",
+    "templateShared": "Vorlage mit Team geteilt",
+    "templateShareFailed": "Vorlage konnte nicht geteilt werden",
+    "templateRemovedFromTeam": "Vorlage aus Team entfernt",
+    "templateRemoveFailed": "Team-Vorlage konnte nicht gelöscht werden"
+  },
+  "import": {
+    "dataImported": "{{events}} Ereignisse und {{iocs}} IOCs importiert",
+    "jsonImported": "{{notes}} Notizen, {{tasks}} Aufgaben importiert",
+    "markdownImported": "{{count}} Notizen aus Markdown importiert",
+    "importFailed": "Import fehlgeschlagen",
+    "stixImported": "{{count}} IOC(s) aus STIX-Bundle importiert",
+    "stixFailed": "STIX-Import für {{count}} IOC(s) fehlgeschlagen",
+    "stixNoDuplicates": "Keine neuen IOCs importiert (alle Duplikate)",
+    "mispImported": "{{count}} IOC(s) aus MISP-Ereignis importiert",
+    "mispFailed": "MISP-Import für {{count}} IOC(s) fehlgeschlagen",
+    "mispNoDuplicates": "Keine neuen IOCs importiert (alle Duplikate)"
+  },
+  "backup": {
+    "exported": "Sicherung exportiert",
+    "exportFailed": "Sicherung konnte nicht exportiert werden",
+    "restored": "Sicherung wiederhergestellt",
+    "restoreFailed": "Sicherung konnte nicht wiederhergestellt werden",
+    "mergeComplete": "Zusammenführung abgeschlossen: {{added}} hinzugefügt, {{updated}} aktualisiert, {{skipped}} übersprungen",
+    "mergeFailed": "Sicherung konnte nicht zusammengeführt werden",
+    "serverCreated": "Sicherung erstellt",
+    "serverCreateFailed": "Sicherung konnte nicht erstellt werden",
+    "decryptionFailed": "Entschlüsselung fehlgeschlagen",
+    "serverRestored": "Sicherung wiederhergestellt",
+    "serverRestoreFailed": "Wiederherstellung fehlgeschlagen",
+    "serverDeleted": "Sicherung gelöscht",
+    "serverDeleteFailed": "Sicherung konnte nicht gelöscht werden",
+    "cloudPushed": "Cloud-Sicherung hochgeladen",
+    "cloudEncryptedPushed": "Verschlüsselte Cloud-Sicherung hochgeladen",
+    "cloudFailed": "Cloud-Sicherung fehlgeschlagen"
+  },
+  "investigation": {
+    "sampleLoaded": "Beispieluntersuchung geladen",
+    "sampleRemoved": "Beispieluntersuchung entfernt",
+    "trashEmptied": "Papierkorb geleert",
+    "savedAsTemplate": "\"{{name}}\" als Vorlage gespeichert",
+    "playbookRan": "Playbook \"{{playbook}}\" auf \"{{investigation}}\" ausgeführt",
+    "createdFromPlaybook": "\"{{name}}\" aus Playbook erstellt",
+    "exported": "Untersuchung \"{{name}}\" exportiert",
+    "exportFailed": "Untersuchung konnte nicht exportiert werden",
+    "reportGenerated": "Bericht für \"{{name}}\" generiert"
+  },
+  "encryption": {
+    "enabled": "Verschlüsselung aktiviert",
+    "disabled": "Verschlüsselung deaktiviert",
+    "passphraseChanged": "Passphrase geändert"
+  },
+  "integration": {
+    "nameRequired": "Integrationsname ist erforderlich",
+    "createdAndInstalled": "Integration \"{{name}}\" erstellt und installiert",
+    "saveFailed": "Speichern fehlgeschlagen: {{error}}",
+    "installedFromCatalog": "{{name}} aus Community-Katalog installiert",
+    "installCatalogFailed": "Community-Vorlage konnte nicht installiert werden",
+    "templateExported": "{{name}} exportiert",
+    "installedFromTeam": "{{name}} vom Team installiert",
+    "installTeamFailed": "Team-Vorlage konnte nicht installiert werden",
+    "notFound": "Integration nicht gefunden",
+    "completed": "Integration \"{{name}}\" erfolgreich abgeschlossen",
+    "failed": "Integration \"{{name}}\" fehlgeschlagen: {{error}}",
+    "error": "Integrationsfehler: {{error}}"
+  },
+  "ioc": {
+    "exported": "{{count}} IOC(s) als {{format}} exportiert",
+    "deleted": "{{count}} IOC(s) gelöscht",
+    "statusUpdated": "Status für {{count}} IOC(s) aktualisiert",
+    "confidenceUpdated": "Konfidenz für {{count}} IOC(s) aktualisiert",
+    "tagsAdded": "Tags zu {{count}} IOC(s) hinzugefügt",
+    "copiedToClipboard": "{{count}} IOC(s) in Zwischenablage kopiert",
+    "copyFailed": "Kopieren in Zwischenablage fehlgeschlagen",
+    "bulkEnrichDone": "Massen-Anreicherung abgeschlossen: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "Antwort gepostet",
+    "postCreated": "Beitrag erstellt",
+    "postCreateFailed": "Beitrag konnte nicht erstellt werden",
+    "uploadFailed": "Datei konnte nicht hochgeladen werden: {{name}}",
+    "reactionAddFailed": "Reaktion konnte nicht hinzugefügt werden",
+    "reactionRemoveFailed": "Reaktion konnte nicht entfernt werden",
+    "postDeleted": "Beitrag gelöscht",
+    "postDeleteFailed": "Beitrag konnte nicht gelöscht werden",
+    "editFailed": "Beitrag konnte nicht bearbeitet werden",
+    "pinUpdateFailed": "Pin-Status konnte nicht aktualisiert werden",
+    "notificationsLoadFailed": "Benachrichtigungen konnten nicht geladen werden",
+    "markReadFailed": "Benachrichtigung konnte nicht als gelesen markiert werden",
+    "markAllReadFailed": "Alle Benachrichtigungen konnten nicht als gelesen markiert werden",
+    "clearNotificationsFailed": "Benachrichtigungen konnten nicht gelöscht werden"
+  },
+  "settings": {
+    "slashCommandUpdated": "/{{name}} aktualisiert",
+    "slashCommandCreated": "/{{name}} erstellt",
+    "slashCommandDeleted": "/{{name}} gelöscht"
+  },
+  "generic": {
+    "tagCreateFailed": "Tag konnte nicht erstellt werden"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "title": "Registro de actividad",
+  "clearButton": "Borrar",
+  "searchPlaceholder": "Buscar actividad...",
+  "allFilter": "Todo",
+  "noActivity": "Sin actividad aún",
+  "noActivityHint": "Las acciones que realice aparecerán aquí",
+  "today": "Hoy",
+  "yesterday": "Ayer",
+  "thisWeek": "Esta semana",
+  "older": "Más antiguo",
+  "clearTitle": "Borrar registro de actividad",
+  "clearMessage": "Se eliminarán permanentemente todas las entradas del registro de actividad. Esta acción no se puede deshacer.",
+  "clearConfirm": "Borrar todo"
+}

@@ -1,0 +1,15 @@
+{
+  "title": "Activiteitenlog",
+  "clearButton": "Wissen",
+  "searchPlaceholder": "Activiteit zoeken...",
+  "allFilter": "Alle",
+  "noActivity": "Nog geen activiteit",
+  "noActivityHint": "Uw acties worden hier weergegeven",
+  "today": "Vandaag",
+  "yesterday": "Gisteren",
+  "thisWeek": "Deze week",
+  "older": "Ouder",
+  "clearTitle": "Activiteitenlog wissen",
+  "clearMessage": "Hiermee worden alle activiteitslogboekitems permanent verwijderd. Dit kan niet ongedaan worden gemaakt.",
+  "clearConfirm": "Alles wissen"
+}

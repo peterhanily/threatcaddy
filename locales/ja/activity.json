@@ -1,0 +1,15 @@
+{
+  "title": "アクティビティログ",
+  "clearButton": "クリア",
+  "searchPlaceholder": "アクティビティを検索...",
+  "allFilter": "すべて",
+  "noActivity": "アクティビティなし",
+  "noActivityHint": "実行したアクションがここに表示されます",
+  "today": "今日",
+  "yesterday": "昨日",
+  "thisWeek": "今週",
+  "older": "それ以前",
+  "clearTitle": "アクティビティログをクリア",
+  "clearMessage": "すべてのアクティビティログエントリを完全に削除します。この操作は元に戻せません。",
+  "clearConfirm": "すべてクリア"
+}

@@ -1,0 +1,20 @@
+{
+  "trash": "Кошик",
+  "archive": "Архів",
+  "emptyAllTrash": "Очистити весь кошик",
+  "autoDeleteHint": "Елементи автоматично видаляються через 30 днів",
+  "trashEmpty": "Кошик порожній",
+  "archiveEmpty": "Архів порожній",
+  "notes": "Нотатки",
+  "tasks": "Завдання",
+  "timelineEvents": "Події хронології",
+  "whiteboards": "Дошки",
+  "iocs": "IOC",
+  "restore": "Відновити",
+  "deletePermanently": "Видалити назавжди",
+  "unarchive": "Розархівувати",
+  "moveToTrash": "Перемістити в кошик",
+  "emptyAllTitle": "Очистити весь кошик",
+  "emptyAllMessage": "Назавжди видалити всі {{count}} елемент(ів) кошика по всіх типах сутностей? Відмінити неможливо.",
+  "emptyAllConfirm": "Очистити весь кошик"
+}

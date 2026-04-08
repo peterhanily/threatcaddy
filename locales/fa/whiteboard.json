@@ -1,0 +1,18 @@
+{
+  "title": "تخته‌های سفید",
+  "new": "جدید",
+  "noWhiteboards": "هنوز تخته سفیدی وجود ندارد",
+  "createHint": "یکی ایجاد کنید تا شروع به رسم کنید",
+  "loadingWhiteboard": "در حال بارگذاری تخته سفید...",
+  "deleteTitle": "حذف تخته سفید",
+  "deleteMessage": "این تخته سفید به طور دائمی حذف خواهد شد. این عمل قابل بازگشت نیست.",
+  "deleteConfirm": "حذف تخته سفید",
+  "elements": "{{count}} عنصر",
+  "element": "{{count}} عنصر",
+  "rename": "تغییر نام",
+  "archive": "بایگانی",
+  "unarchive": "خروج از بایگانی",
+  "moveToTrash": "انتقال به سطل زباله",
+  "restore": "بازیابی",
+  "deletePermanently": "حذف دائمی"
+}

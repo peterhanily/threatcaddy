@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "تم الاستيراد مع {{count}} مقتطف فاشل",
+    "importFailed": "فشل استيراد المقتطفات من الإضافة",
+    "openedAsNote": "تم فتح \"{{name}}\" كملاحظة جديدة",
+    "openFailed": "فشل فتح \"{{name}}\""
+  },
+  "share": {
+    "investigationSaved": "تم حفظ التحقيق \"{{name}}\" بجميع كيانات",
+    "noteSaved": "تم حفظ الملاحظة في ThreatCaddy",
+    "taskSaved": "تم حفظ المهمة في ThreatCaddy",
+    "eventSaved": "تم حفظ الحدث في ThreatCaddy",
+    "chatSaved": "تم حفظ الدردشة في ThreatCaddy",
+    "templateShared": "تم مشاركة القالب مع الفريق",
+    "templateShareFailed": "فشل مشاركة القالب",
+    "templateRemovedFromTeam": "تمت إزالة القالب من الفريق",
+    "templateRemoveFailed": "فشل حذف قالب الفريق"
+  },
+  "import": {
+    "dataImported": "تم استيراد {{events}} حدث و{{iocs}} IOCs",
+    "jsonImported": "تم استيراد {{notes}} ملاحظة، {{tasks}} مهمة",
+    "markdownImported": "تم استيراد {{count}} ملاحظة من Markdown",
+    "importFailed": "فشل الاستيراد",
+    "stixImported": "تم استيراد {{count}} IOC من حزمة STIX",
+    "stixFailed": "فشل استيراد STIX لـ {{count}} IOC",
+    "stixNoDuplicates": "لم يتم استيراد IOCs جديدة (كلها مكررة)",
+    "mispImported": "تم استيراد {{count}} IOC من حدث MISP",
+    "mispFailed": "فشل استيراد MISP لـ {{count}} IOC",
+    "mispNoDuplicates": "لم يتم استيراد IOCs جديدة (كلها مكررة)"
+  },
+  "backup": {
+    "exported": "تم تصدير النسخة الاحتياطية",
+    "exportFailed": "فشل تصدير النسخة الاحتياطية",
+    "restored": "تمت استعادة النسخة الاحتياطية",
+    "restoreFailed": "فشل استعادة النسخة الاحتياطية",
+    "mergeComplete": "اكتمل الدمج: {{added}} مضاف، {{updated}} محدَّث، {{skipped}} تم تخطيه",
+    "mergeFailed": "فشل دمج النسخة الاحتياطية",
+    "serverCreated": "تم إنشاء النسخة الاحتياطية",
+    "serverCreateFailed": "فشل إنشاء النسخة الاحتياطية",
+    "decryptionFailed": "فشل فك التشفير",
+    "serverRestored": "تمت استعادة النسخة الاحتياطية",
+    "serverRestoreFailed": "فشل الاستعادة",
+    "serverDeleted": "تم حذف النسخة الاحتياطية",
+    "serverDeleteFailed": "فشل حذف النسخة الاحتياطية",
+    "cloudPushed": "تم رفع النسخة الاحتياطية السحابية",
+    "cloudEncryptedPushed": "تم رفع النسخة الاحتياطية السحابية المشفرة",
+    "cloudFailed": "فشل النسخ الاحتياطي السحابي"
+  },
+  "investigation": {
+    "sampleLoaded": "تم تحميل التحقيق النموذجي",
+    "sampleRemoved": "تمت إزالة التحقيق النموذجي",
+    "trashEmptied": "تم إفراغ المهملات",
+    "savedAsTemplate": "تم حفظ \"{{name}}\" كقالب",
+    "playbookRan": "تم تشغيل دليل التشغيل \"{{playbook}}\" على \"{{investigation}}\"",
+    "createdFromPlaybook": "تم إنشاء \"{{name}}\" من دليل التشغيل",
+    "exported": "تم تصدير التحقيق \"{{name}}\"",
+    "exportFailed": "فشل تصدير التحقيق",
+    "reportGenerated": "تم إنشاء تقرير لـ \"{{name}}\""
+  },
+  "encryption": {
+    "enabled": "تم تفعيل التشفير",
+    "disabled": "تم تعطيل التشفير",
+    "passphraseChanged": "تم تغيير عبارة المرور"
+  },
+  "integration": {
+    "nameRequired": "اسم التكامل مطلوب",
+    "createdAndInstalled": "تم إنشاء التكامل \"{{name}}\" وتثبيته",
+    "saveFailed": "فشل الحفظ: {{error}}",
+    "installedFromCatalog": "تم تثبيت {{name}} من كتالوج المجتمع",
+    "installCatalogFailed": "فشل تثبيت قالب المجتمع",
+    "templateExported": "تم تصدير {{name}}",
+    "installedFromTeam": "تم تثبيت {{name}} من الفريق",
+    "installTeamFailed": "فشل تثبيت قالب الفريق",
+    "notFound": "التكامل غير موجود",
+    "completed": "اكتمل التكامل \"{{name}}\" بنجاح",
+    "failed": "فشل التكامل \"{{name}}\": {{error}}",
+    "error": "خطأ في التكامل: {{error}}"
+  },
+  "ioc": {
+    "exported": "تم تصدير {{count}} IOC كـ {{format}}",
+    "deleted": "تم حذف {{count}} IOC",
+    "statusUpdated": "تم تحديث الحالة على {{count}} IOC",
+    "confidenceUpdated": "تم تحديث الثقة على {{count}} IOC",
+    "tagsAdded": "تمت إضافة وسوم إلى {{count}} IOC",
+    "copiedToClipboard": "تم نسخ {{count}} IOC إلى الحافظة",
+    "copyFailed": "فشل النسخ إلى الحافظة",
+    "bulkEnrichDone": "اكتمل الإثراء المجمَّع: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "تم نشر الرد",
+    "postCreated": "تم إنشاء المنشور",
+    "postCreateFailed": "فشل إنشاء المنشور",
+    "uploadFailed": "فشل تحميل الملف: {{name}}",
+    "reactionAddFailed": "فشل إضافة التفاعل",
+    "reactionRemoveFailed": "فشل إزالة التفاعل",
+    "postDeleted": "تم حذف المنشور",
+    "postDeleteFailed": "فشل حذف المنشور",
+    "editFailed": "فشل تعديل المنشور",
+    "pinUpdateFailed": "فشل تحديث حالة التثبيت",
+    "notificationsLoadFailed": "فشل تحميل الإشعارات",
+    "markReadFailed": "فشل وضع علامة مقروء على الإشعار",
+    "markAllReadFailed": "فشل وضع علامة مقروء على الكل",
+    "clearNotificationsFailed": "فشل مسح الإشعارات"
+  },
+  "settings": {
+    "slashCommandUpdated": "تم تحديث /{{name}}",
+    "slashCommandCreated": "تم إنشاء /{{name}}",
+    "slashCommandDeleted": "تم حذف /{{name}}"
+  },
+  "generic": {
+    "tagCreateFailed": "فشل إنشاء الوسم"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "stepCounter": "{{current}} / {{total}}",
+  "skipTour": "דלג על הסיור",
+  "back": "חזרה",
+  "next": "הבא",
+  "finish": "סיים"
+}

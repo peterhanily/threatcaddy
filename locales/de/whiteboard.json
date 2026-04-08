@@ -1,0 +1,18 @@
+{
+  "title": "Whiteboards",
+  "new": "Neu",
+  "noWhiteboards": "Noch keine Whiteboards",
+  "createHint": "Erstellen Sie eines, um mit dem Zeichnen zu beginnen",
+  "loadingWhiteboard": "Whiteboard wird geladen...",
+  "deleteTitle": "Whiteboard löschen",
+  "deleteMessage": "Dieses Whiteboard wird dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.",
+  "deleteConfirm": "Whiteboard löschen",
+  "elements": "{{count}} Elemente",
+  "element": "{{count}} Element",
+  "rename": "Umbenennen",
+  "archive": "Archivieren",
+  "unarchive": "Aus Archiv entfernen",
+  "moveToTrash": "In Papierkorb verschieben",
+  "restore": "Wiederherstellen",
+  "deletePermanently": "Dauerhaft löschen"
+}

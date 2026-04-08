@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "Geïmporteerd met {{count}} mislukte clip(s)",
+    "importFailed": "Clips importeren uit extensie mislukt",
+    "openedAsNote": "'{{name}}' geopend als nieuwe notitie",
+    "openFailed": "'{{name}}' openen mislukt"
+  },
+  "share": {
+    "investigationSaved": "Onderzoek '{{name}}' opgeslagen met alle entiteiten",
+    "noteSaved": "Notitie opgeslagen in ThreatCaddy",
+    "taskSaved": "Taak opgeslagen in ThreatCaddy",
+    "eventSaved": "Gebeurtenis opgeslagen in ThreatCaddy",
+    "chatSaved": "Chat opgeslagen in ThreatCaddy",
+    "templateShared": "Sjabloon gedeeld met team",
+    "templateShareFailed": "Sjabloon delen mislukt",
+    "templateRemovedFromTeam": "Sjabloon verwijderd uit team",
+    "templateRemoveFailed": "Teamsjabloon verwijderen mislukt"
+  },
+  "import": {
+    "dataImported": "{{events}} gebeurtenissen en {{iocs}} IOC's geïmporteerd",
+    "jsonImported": "{{notes}} notities, {{tasks}} taken geïmporteerd",
+    "markdownImported": "{{count}} notities geïmporteerd uit Markdown",
+    "importFailed": "Importeren mislukt",
+    "stixImported": "{{count}} IOC's geïmporteerd uit STIX-bundel",
+    "stixFailed": "STIX-import mislukt voor {{count}} IOC's",
+    "stixNoDuplicates": "Geen nieuwe IOC's geïmporteerd (alle duplicaten)",
+    "mispImported": "{{count}} IOC's geïmporteerd uit MISP-gebeurtenis",
+    "mispFailed": "MISP-import mislukt voor {{count}} IOC's",
+    "mispNoDuplicates": "Geen nieuwe IOC's geïmporteerd (alle duplicaten)"
+  },
+  "backup": {
+    "exported": "Back-up geëxporteerd",
+    "exportFailed": "Back-up exporteren mislukt",
+    "restored": "Back-up hersteld",
+    "restoreFailed": "Back-up herstellen mislukt",
+    "mergeComplete": "Samenvoegen voltooid: {{added}} toegevoegd, {{updated}} bijgewerkt, {{skipped}} overgeslagen",
+    "mergeFailed": "Back-up samenvoegen mislukt",
+    "serverCreated": "Back-up aangemaakt",
+    "serverCreateFailed": "Back-up aanmaken mislukt",
+    "decryptionFailed": "Ontsleuteling mislukt",
+    "serverRestored": "Back-up hersteld",
+    "serverRestoreFailed": "Herstellen mislukt",
+    "serverDeleted": "Back-up verwijderd",
+    "serverDeleteFailed": "Back-up verwijderen mislukt",
+    "cloudPushed": "Cloud-back-up verzonden",
+    "cloudEncryptedPushed": "Versleutelde cloud-back-up verzonden",
+    "cloudFailed": "Cloud-back-up mislukt"
+  },
+  "investigation": {
+    "sampleLoaded": "Voorbeeldonderzoek geladen",
+    "sampleRemoved": "Voorbeeldonderzoek verwijderd",
+    "trashEmptied": "Prullenbak geleegd",
+    "savedAsTemplate": "'{{name}}' opgeslagen als sjabloon",
+    "playbookRan": "Playbook '{{playbook}}' uitgevoerd voor '{{investigation}}'",
+    "createdFromPlaybook": "'{{name}}' aangemaakt vanuit playbook",
+    "exported": "Onderzoek '{{name}}' geëxporteerd",
+    "exportFailed": "Onderzoek exporteren mislukt",
+    "reportGenerated": "Rapport gegenereerd voor '{{name}}'"
+  },
+  "encryption": {
+    "enabled": "Versleuteling ingeschakeld",
+    "disabled": "Versleuteling uitgeschakeld",
+    "passphraseChanged": "Wachtwoordzin gewijzigd"
+  },
+  "integration": {
+    "nameRequired": "Integratienaam is verplicht",
+    "createdAndInstalled": "Integratie '{{name}}' aangemaakt en geïnstalleerd",
+    "saveFailed": "Opslaan mislukt: {{error}}",
+    "installedFromCatalog": "{{name}} geïnstalleerd vanuit de communitycatalogus",
+    "installCatalogFailed": "Communitysjabloon installeren mislukt",
+    "templateExported": "{{name}} geëxporteerd",
+    "installedFromTeam": "{{name}} geïnstalleerd vanuit team",
+    "installTeamFailed": "Teamsjabloon installeren mislukt",
+    "notFound": "Integratie niet gevonden",
+    "completed": "Integratie '{{name}}' succesvol voltooid",
+    "failed": "Integratie '{{name}}' mislukt: {{error}}",
+    "error": "Integratiefout: {{error}}"
+  },
+  "ioc": {
+    "exported": "{{count}} IOC's geëxporteerd als {{format}}",
+    "deleted": "{{count}} IOC's verwijderd",
+    "statusUpdated": "Status van {{count}} IOC's bijgewerkt",
+    "confidenceUpdated": "Betrouwbaarheid van {{count}} IOC's bijgewerkt",
+    "tagsAdded": "Tags toegevoegd aan {{count}} IOC's",
+    "copiedToClipboard": "{{count}} IOC's gekopieerd naar klembord",
+    "copyFailed": "Kopiëren naar klembord mislukt",
+    "bulkEnrichDone": "Bulkverrijking voltooid: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "Antwoord geplaatst",
+    "postCreated": "Bericht aangemaakt",
+    "postCreateFailed": "Bericht aanmaken mislukt",
+    "uploadFailed": "Bestand uploaden mislukt: {{name}}",
+    "reactionAddFailed": "Reactie toevoegen mislukt",
+    "reactionRemoveFailed": "Reactie verwijderen mislukt",
+    "postDeleted": "Bericht verwijderd",
+    "postDeleteFailed": "Bericht verwijderen mislukt",
+    "editFailed": "Bericht bewerken mislukt",
+    "pinUpdateFailed": "Vastmaakstatus bijwerken mislukt",
+    "notificationsLoadFailed": "Meldingen laden mislukt",
+    "markReadFailed": "Melding als gelezen markeren mislukt",
+    "markAllReadFailed": "Alles als gelezen markeren mislukt",
+    "clearNotificationsFailed": "Meldingen wissen mislukt"
+  },
+  "settings": {
+    "slashCommandUpdated": "/{{name}} bijgewerkt",
+    "slashCommandCreated": "/{{name}} aangemaakt",
+    "slashCommandDeleted": "/{{name}} verwijderd"
+  },
+  "generic": {
+    "tagCreateFailed": "Tag aanmaken mislukt"
+  }
+}

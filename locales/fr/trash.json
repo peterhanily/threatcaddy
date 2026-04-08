@@ -1,0 +1,20 @@
+{
+  "trash": "Corbeille",
+  "archive": "Archive",
+  "emptyAllTrash": "Vider toute la corbeille",
+  "autoDeleteHint": "Les éléments sont supprimés automatiquement après 30 jours",
+  "trashEmpty": "La corbeille est vide",
+  "archiveEmpty": "L'archive est vide",
+  "notes": "Notes",
+  "tasks": "Tâches",
+  "timelineEvents": "Événements de chronologie",
+  "whiteboards": "Tableaux blancs",
+  "iocs": "IOCs",
+  "restore": "Restaurer",
+  "deletePermanently": "Supprimer définitivement",
+  "unarchive": "Désarchiver",
+  "moveToTrash": "Mettre à la corbeille",
+  "emptyAllTitle": "Vider toute la corbeille",
+  "emptyAllMessage": "Supprimer définitivement les {{count}} élément(s) dans la corbeille pour tous les types d'entités ? Cette action est irréversible.",
+  "emptyAllConfirm": "Vider toute la corbeille"
+}

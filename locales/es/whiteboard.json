@@ -1,0 +1,18 @@
+{
+  "title": "Pizarras",
+  "new": "Nueva",
+  "noWhiteboards": "Sin pizarras aún",
+  "createHint": "Cree una para empezar a dibujar",
+  "loadingWhiteboard": "Cargando pizarra...",
+  "deleteTitle": "Eliminar pizarra",
+  "deleteMessage": "Esta pizarra será eliminada permanentemente. Esta acción no se puede deshacer.",
+  "deleteConfirm": "Eliminar pizarra",
+  "elements": "{{count}} elementos",
+  "element": "{{count}} elemento",
+  "rename": "Renombrar",
+  "archive": "Archivar",
+  "unarchive": "Desarchivar",
+  "moveToTrash": "Mover a la papelera",
+  "restore": "Restaurar",
+  "deletePermanently": "Eliminar permanentemente"
+}

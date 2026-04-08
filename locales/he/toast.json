@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "יובא עם {{count}} קטע/ים שנכשלו",
+    "importFailed": "ייבוא קטעים מהרחבה נכשל",
+    "openedAsNote": "\"{{name}}\" נפתח כהערה חדשה",
+    "openFailed": "פתיחת \"{{name}}\" נכשלה"
+  },
+  "share": {
+    "investigationSaved": "חקירה \"{{name}}\" נשמרה עם כל הישויות",
+    "noteSaved": "הערה נשמרה ב-ThreatCaddy",
+    "taskSaved": "משימה נשמרה ב-ThreatCaddy",
+    "eventSaved": "אירוע נשמר ב-ThreatCaddy",
+    "chatSaved": "צ'אט נשמר ב-ThreatCaddy",
+    "templateShared": "תבנית שותפה עם הצוות",
+    "templateShareFailed": "שיתוף תבנית נכשל",
+    "templateRemovedFromTeam": "תבנית הוסרה מהצוות",
+    "templateRemoveFailed": "מחיקת תבנית צוות נכשלה"
+  },
+  "import": {
+    "dataImported": "יובאו {{events}} אירועים ו-{{iocs}} IOCs",
+    "jsonImported": "יובאו {{notes}} הערות, {{tasks}} משימות",
+    "markdownImported": "יובאו {{count}} הערות מ-Markdown",
+    "importFailed": "הייבוא נכשל",
+    "stixImported": "יובאו {{count}} IOC/IOCs מחבילת STIX",
+    "stixFailed": "ייבוא STIX נכשל עבור {{count}} IOC/IOCs",
+    "stixNoDuplicates": "לא יובאו IOCs חדשים (כולם כפולים)",
+    "mispImported": "יובאו {{count}} IOC/IOCs מאירוע MISP",
+    "mispFailed": "ייבוא MISP נכשל עבור {{count}} IOC/IOCs",
+    "mispNoDuplicates": "לא יובאו IOCs חדשים (כולם כפולים)"
+  },
+  "backup": {
+    "exported": "גיבוי יוצא",
+    "exportFailed": "ייצוא גיבוי נכשל",
+    "restored": "גיבוי שוחזר",
+    "restoreFailed": "שחזור גיבוי נכשל",
+    "mergeComplete": "מיזוג הושלם: {{added}} נוספו, {{updated}} עודכנו, {{skipped}} דולגו",
+    "mergeFailed": "מיזוג גיבוי נכשל",
+    "serverCreated": "גיבוי נוצר",
+    "serverCreateFailed": "יצירת גיבוי נכשלה",
+    "decryptionFailed": "פענוח נכשל",
+    "serverRestored": "גיבוי שוחזר",
+    "serverRestoreFailed": "שחזור נכשל",
+    "serverDeleted": "גיבוי נמחק",
+    "serverDeleteFailed": "מחיקת גיבוי נכשלה",
+    "cloudPushed": "גיבוי ענן נדחף",
+    "cloudEncryptedPushed": "גיבוי ענן מוצפן נדחף",
+    "cloudFailed": "גיבוי ענן נכשל"
+  },
+  "investigation": {
+    "sampleLoaded": "חקירת דוגמה נטענה",
+    "sampleRemoved": "חקירת דוגמה הוסרה",
+    "trashEmptied": "האשפה רוקנה",
+    "savedAsTemplate": "\"{{name}}\" נשמר כתבנית",
+    "playbookRan": "פלייבוק \"{{playbook}}\" הורץ על \"{{investigation}}\"",
+    "createdFromPlaybook": "\"{{name}}\" נוצר מפלייבוק",
+    "exported": "חקירה \"{{name}}\" יוצאה",
+    "exportFailed": "ייצוא חקירה נכשל",
+    "reportGenerated": "דוח נוצר עבור \"{{name}}\""
+  },
+  "encryption": {
+    "enabled": "הצפנה הופעלה",
+    "disabled": "הצפנה הושבתה",
+    "passphraseChanged": "סיסמת הגישה שונתה"
+  },
+  "integration": {
+    "nameRequired": "שם אינטגרציה נדרש",
+    "createdAndInstalled": "אינטגרציה \"{{name}}\" נוצרה והותקנה",
+    "saveFailed": "שמירה נכשלה: {{error}}",
+    "installedFromCatalog": "{{name}} הותקן מקטלוג הקהילה",
+    "installCatalogFailed": "התקנת תבנית קהילה נכשלה",
+    "templateExported": "{{name}} יוצא",
+    "installedFromTeam": "{{name}} הותקן מהצוות",
+    "installTeamFailed": "התקנת תבנית צוות נכשלה",
+    "notFound": "אינטגרציה לא נמצאה",
+    "completed": "אינטגרציה \"{{name}}\" הושלמה בהצלחה",
+    "failed": "אינטגרציה \"{{name}}\" נכשלה: {{error}}",
+    "error": "שגיאת אינטגרציה: {{error}}"
+  },
+  "ioc": {
+    "exported": "יוצאו {{count}} IOC/IOCs כ-{{format}}",
+    "deleted": "נמחקו {{count}} IOC/IOCs",
+    "statusUpdated": "סטטוס עודכן ב-{{count}} IOC/IOCs",
+    "confidenceUpdated": "ביטחון עודכן ב-{{count}} IOC/IOCs",
+    "tagsAdded": "תגיות נוספו ל-{{count}} IOC/IOCs",
+    "copiedToClipboard": "הועתקו {{count}} IOC/IOCs ללוח",
+    "copyFailed": "העתקה ללוח נכשלה",
+    "bulkEnrichDone": "העשרה בכמויות הושלמה: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "תגובה פורסמה",
+    "postCreated": "פוסט נוצר",
+    "postCreateFailed": "יצירת פוסט נכשלה",
+    "uploadFailed": "העלאת קובץ נכשלה: {{name}}",
+    "reactionAddFailed": "הוספת תגובה נכשלה",
+    "reactionRemoveFailed": "הסרת תגובה נכשלה",
+    "postDeleted": "פוסט נמחק",
+    "postDeleteFailed": "מחיקת פוסט נכשלה",
+    "editFailed": "עריכת פוסט נכשלה",
+    "pinUpdateFailed": "עדכון סטטוס נעיצה נכשל",
+    "notificationsLoadFailed": "טעינת התראות נכשלה",
+    "markReadFailed": "סימון התראה כנקראה נכשל",
+    "markAllReadFailed": "סימון כל ההתראות כנקראות נכשל",
+    "clearNotificationsFailed": "ניקוי התראות נכשל"
+  },
+  "settings": {
+    "slashCommandUpdated": "עודכן /{{name}}",
+    "slashCommandCreated": "נוצר /{{name}}",
+    "slashCommandDeleted": "נמחק /{{name}}"
+  },
+  "generic": {
+    "tagCreateFailed": "יצירת תגית נכשלה"
+  }
+}

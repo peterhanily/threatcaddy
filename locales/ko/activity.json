@@ -1,0 +1,15 @@
+{
+  "title": "활동 로그",
+  "clearButton": "지우기",
+  "searchPlaceholder": "활동 검색...",
+  "allFilter": "전체",
+  "noActivity": "활동 없음",
+  "noActivityHint": "수행한 작업이 여기에 표시됩니다",
+  "today": "오늘",
+  "yesterday": "어제",
+  "thisWeek": "이번 주",
+  "older": "이전",
+  "clearTitle": "활동 로그 지우기",
+  "clearMessage": "모든 활동 로그 항목이 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+  "clearConfirm": "전체 지우기"
+}

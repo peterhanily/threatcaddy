@@ -1,0 +1,18 @@
+{
+  "title": "Доски",
+  "new": "Новая",
+  "noWhiteboards": "Досок пока нет",
+  "createHint": "Создайте доску для начала рисования",
+  "loadingWhiteboard": "Загрузка доски...",
+  "deleteTitle": "Удалить доску",
+  "deleteMessage": "Эта доска будет навсегда удалена. Отменить невозможно.",
+  "deleteConfirm": "Удалить доску",
+  "elements": "{{count}} элементов",
+  "element": "{{count}} элемент",
+  "rename": "Переименовать",
+  "archive": "Архивировать",
+  "unarchive": "Разархивировать",
+  "moveToTrash": "Переместить в корзину",
+  "restore": "Восстановить",
+  "deletePermanently": "Удалить навсегда"
+}
