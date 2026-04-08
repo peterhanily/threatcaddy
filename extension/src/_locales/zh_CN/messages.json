@@ -6,7 +6,7 @@
     "message": "快速捕获网页内容并为 ThreatCaddy 威胁情报代理 AI 请求。数据默认本地存储在您的设备上。"
   },
   "version": {
-    "message": "v1.0.0"
+    "message": "v1.1.1"
   },
 
   "quickStats": {

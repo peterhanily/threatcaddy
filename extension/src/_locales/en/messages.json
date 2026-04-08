@@ -6,7 +6,7 @@
     "message": "Quick-capture web content and proxy AI requests for ThreatCaddy threat intelligence. Data stays local on your device by default."
   },
   "version": {
-    "message": "v1.0.0"
+    "message": "v1.1.1"
   },
 
   "quickStats": {

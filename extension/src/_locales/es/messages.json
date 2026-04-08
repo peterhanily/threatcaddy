@@ -6,7 +6,7 @@
     "message": "Captura rápidamente contenido web y redirige solicitudes de IA para ThreatCaddy Threat Intelligence. Los datos se almacenan localmente en tu dispositivo por defecto."
   },
   "version": {
-    "message": "v1.0.0"
+    "message": "v1.1.1"
   },
 
   "quickStats": {

@@ -6,7 +6,7 @@
     "message": "웹 콘텐츠를 빠르게 캡처하고 ThreatCaddy 위협 인텔리전스를 위한 AI 요청을 프록시합니다. 데이터는 기본적으로 기기에 로컬로 유지됩니다."
   },
   "version": {
-    "message": "v1.0.0"
+    "message": "v1.1.1"
   },
 
   "quickStats": {
