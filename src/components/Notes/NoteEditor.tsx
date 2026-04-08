@@ -129,13 +129,17 @@ export function NoteEditor({
     const mirror = mirrorRef.current;
     if (!ta || !mirror) return;
 
+    // Use clientWidth as the authoritative width (works even when getComputedStyle returns 0)
+    const taWidth = ta.clientWidth;
+    if (taWidth < 10) return; // Not laid out yet — ResizeObserver will retry
+
     const cs = getComputedStyle(ta);
     Object.assign(mirror.style, {
       position: 'absolute',
       visibility: 'hidden',
       left: '-9999px',
       top: '0',
-      width: cs.width,
+      width: `${taWidth}px`,
       font: cs.font,
       letterSpacing: cs.letterSpacing,
       lineHeight: cs.lineHeight,
@@ -145,11 +149,9 @@ export function NoteEditor({
       whiteSpace: 'pre-wrap',
       wordWrap: 'break-word',
       overflowWrap: 'break-word',
-      borderLeft: cs.borderLeft,
-      borderRight: cs.borderRight,
     });
 
-    // Render all lines as separate child divs, then batch-read heights (single reflow)
+    // Render all lines as child divs in single write, batch-read heights in single pass
     mirror.innerHTML = '';
     const frag = document.createDocumentFragment();
     for (const line of lines) {
@@ -159,7 +161,6 @@ export function NoteEditor({
     }
     mirror.appendChild(frag);
 
-    // Single DOM read pass
     const heights: number[] = [];
     for (let i = 0; i < mirror.children.length; i++) {
       heights.push((mirror.children[i] as HTMLElement).offsetHeight);
@@ -167,12 +168,12 @@ export function NoteEditor({
     setLineHeights(heights);
   }, [lines]);
 
-  // Re-measure on content, mode, or textarea resize
+  // Re-measure on content, mode, or textarea resize — delay first measure to ensure layout
   useEffect(() => {
-    measureLineHeights();
+    const frame = requestAnimationFrame(measureLineHeights);
     const ro = new ResizeObserver(measureLineHeights);
     if (textareaRef.current) ro.observe(textareaRef.current);
-    return () => ro.disconnect();
+    return () => { cancelAnimationFrame(frame); ro.disconnect(); };
   }, [measureLineHeights, editorMode]);
 
   // Sync gutter scroll with textarea + track cursor line
