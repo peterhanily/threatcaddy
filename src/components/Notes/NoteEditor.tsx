@@ -110,19 +110,32 @@ export function NoteEditor({
   const localTitleRef = useRef(title);
   localTitleRef.current = title;
 
-  // Line numbers — single string instead of N divs, memoized (used for both editor and preview gutters)
+  // Line numbers + current line tracking
   const lineCount = useMemo(() => (content.match(/\n/g) || []).length + 1, [content]);
-  const lineNumberText = useMemo(() => Array.from({ length: lineCount }, (_, i) => i + 1).join('\n'), [lineCount]);
+  const [currentLine, setCurrentLine] = useState(1);
 
-  // Sync gutter scroll with textarea (proper useEffect, not ref callback)
+  const updateCurrentLine = useCallback(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const before = ta.value.substring(0, ta.selectionStart);
+    setCurrentLine((before.match(/\n/g) || []).length + 1);
+  }, []);
+
+  // Sync gutter scroll with textarea
   useEffect(() => {
     const ta = textareaRef.current;
     const gutter = gutterRef.current;
     if (!ta || !gutter) return;
-    const sync = () => { gutter.scrollTop = ta.scrollTop; };
-    ta.addEventListener('scroll', sync);
-    return () => ta.removeEventListener('scroll', sync);
-  }, []);
+    const syncScroll = () => { gutter.scrollTop = ta.scrollTop; };
+    ta.addEventListener('scroll', syncScroll, { passive: true });
+    ta.addEventListener('click', updateCurrentLine);
+    ta.addEventListener('keyup', updateCurrentLine);
+    return () => {
+      ta.removeEventListener('scroll', syncScroll);
+      ta.removeEventListener('click', updateCurrentLine);
+      ta.removeEventListener('keyup', updateCurrentLine);
+    };
+  }, [updateCurrentLine, editorMode]);
 
   // Slash command menu state
   const [slashMenuOpen, setSlashMenuOpen] = useState(false);
@@ -965,13 +978,15 @@ export function NoteEditor({
               className="relative flex overflow-hidden"
               style={editorMode === 'split' ? { width: `${editorPreview.ratio * 100}%` } : { flex: 1 }}
             >
-              {/* Line number gutter — uses CSS counters instead of N divs */}
+              {/* Line number gutter with current-line highlight */}
               <div
                 ref={gutterRef}
-                className="shrink-0 pt-2 sm:pt-4 pr-2 pl-2 text-right select-none overflow-hidden text-gray-500 font-mono whitespace-pre border-r border-gray-800"
+                className="shrink-0 pt-2 sm:pt-4 pr-2 pl-2 text-right select-none overflow-hidden font-mono border-r border-gray-800"
                 style={{ minWidth: '2.5rem', fontSize: '12px', lineHeight: 'calc(0.875rem * 1.625)' }}
                 aria-hidden="true"
-              >{lineNumberText}</div>
+              >{Array.from({ length: lineCount }, (_, i) => (
+                <div key={i} className={i + 1 === currentLine ? 'text-gray-200 bg-gray-800/60 -mx-2 px-2 rounded-sm' : 'text-gray-600'}>{i + 1}</div>
+              ))}</div>
               <textarea
                 ref={textareaRef}
                 value={content}
