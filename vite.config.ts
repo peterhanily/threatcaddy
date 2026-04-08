@@ -39,6 +39,19 @@ export default defineConfig({
             urlPattern: /^.*\/ws.*/,
             handler: 'NetworkOnly',
           },
+          {
+            // Cache locale JSON files after first fetch — CacheFirst so repeat
+            // loads serve instantly from the SW cache without a network round-trip.
+            urlPattern: /\/locales\/[^/]+\/[^/]+\.json$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'i18n-locales',
+              expiration: {
+                maxEntries: 600,       // 20 languages × 25 namespaces + headroom
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+              },
+            },
+          },
         ],
       },
     }),
