@@ -86,18 +86,20 @@ export function KanbanBoard({ getTasksByStatus, onToggleComplete, onSelect, onDe
                     draggable={!isMobile}
                     onDragStart={!isMobile ? handleDragStart(task.id) : undefined}
                   />
-                  {isMobile && (
-                    <select
-                      value={task.status}
-                      onChange={(e) => onUpdateTask(task.id, { status: e.target.value as TaskStatus })}
-                      className="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-accent"
-                      aria-label={t('kanban.changeStatus', { title: task.title })}
-                    >
-                      {COLUMNS.map((col) => (
-                        <option key={col.status} value={col.status}>{t(col.labelKey)}</option>
-                      ))}
-                    </select>
-                  )}
+                  {/* Status select: always visible on mobile, visible on focus on desktop for keyboard a11y */}
+                  <select
+                    value={task.status}
+                    onChange={(e) => onUpdateTask(task.id, { status: e.target.value as TaskStatus })}
+                    className={cn(
+                      'mt-1 w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-accent',
+                      !isMobile && 'sr-only focus:not-sr-only focus:relative focus:w-full',
+                    )}
+                    aria-label={t('kanban.changeStatus', { title: task.title })}
+                  >
+                    {COLUMNS.map((col) => (
+                      <option key={col.status} value={col.status}>{t(col.labelKey)}</option>
+                    ))}
+                  </select>
                 </div>
               ))}
               {tasks.length === 0 && (
