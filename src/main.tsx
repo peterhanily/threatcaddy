@@ -30,6 +30,12 @@ migrateStorageKeys();
 // Run DB migration in the background — don't block first render
 migrateIndexedDB().catch(console.error);
 
+// Surface unhandled promise rejections so they're visible in the console
+// rather than silently swallowed by the browser's default handler.
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('[unhandledrejection]', event.reason);
+});
+
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

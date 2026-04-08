@@ -102,7 +102,11 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!value.trim()) return;
+    if (!value.trim()) {
+      // Focus the value input so the user sees what's missing
+      (document.querySelector<HTMLInputElement>('.ioc-value-input'))?.focus();
+      return;
+    }
     const selectedMember = investigationMembers?.find((m) => m.userId === assigneeId);
     onSubmit({
       ...editingIOC,
@@ -198,7 +202,8 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={t('iocForm.valuePlaceholder')}
-            className={`${inputCls} font-mono`}
+            className={`${inputCls} font-mono ioc-value-input`}
+            required
           />
         </div>
 
