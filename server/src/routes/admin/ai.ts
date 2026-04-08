@@ -112,8 +112,11 @@ function getApiKey(provider: string): string {
 }
 
 async function callAnthropic(model: string, messages: unknown[], apiKey: string, systemPrompt: string, temperature: number): Promise<LLMResult> {
+  const anthCtrl = new AbortController();
+  const anthTimer = setTimeout(() => anthCtrl.abort(), 60_000);
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
+    signal: anthCtrl.signal,
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
@@ -128,6 +131,7 @@ async function callAnthropic(model: string, messages: unknown[], apiKey: string,
       temperature,
     }),
   });
+  clearTimeout(anthTimer);
 
   if (!resp.ok) {
     const errText = await resp.text();
@@ -166,8 +170,11 @@ async function callOpenAI(model: string, messages: unknown[], apiKey: string, pr
   // Prepend system message
   const allMessages = [{ role: 'system', content: systemPrompt }, ...(messages as Array<Record<string, unknown>>)];
 
+  const oaiCtrl = new AbortController();
+  const oaiTimer = setTimeout(() => oaiCtrl.abort(), 60_000);
   const resp = await fetch(url, {
     method: 'POST',
+    signal: oaiCtrl.signal,
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
@@ -180,6 +187,7 @@ async function callOpenAI(model: string, messages: unknown[], apiKey: string, pr
       temperature,
     }),
   });
+  clearTimeout(oaiTimer);
 
   if (!resp.ok) {
     const errText = await resp.text();
@@ -240,8 +248,11 @@ async function callGemini(model: string, messages: unknown[], apiKey: string, sy
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
+  const gemCtrl = new AbortController();
+  const gemTimer = setTimeout(() => gemCtrl.abort(), 60_000);
   const resp = await fetch(url, {
     method: 'POST',
+    signal: gemCtrl.signal,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents,
@@ -250,6 +261,7 @@ async function callGemini(model: string, messages: unknown[], apiKey: string, sy
       generationConfig: { temperature },
     }),
   });
+  clearTimeout(gemTimer);
 
   if (!resp.ok) {
     const errText = await resp.text();
@@ -280,15 +292,23 @@ async function callGemini(model: string, messages: unknown[], apiKey: string, sy
 }
 
 async function callLocal(model: string, messages: unknown[], endpoint: string, apiKey: string, systemPrompt: string, temperature: number): Promise<LLMResult> {
-  const url = endpoint.replace(/\/+$/, '') + '/chat/completions';
+  let parsedEndpoint: URL;
+  try { parsedEndpoint = new URL(endpoint); } catch { throw new Error('Invalid local endpoint URL'); }
+  if (parsedEndpoint.protocol !== 'http:' && parsedEndpoint.protocol !== 'https:') {
+    throw new Error('Local endpoint must use http or https');
+  }
+  const url = parsedEndpoint.href.replace(/\/+$/, '') + '/chat/completions';
 
   const allMessages = [{ role: 'system', content: systemPrompt }, ...(messages as Array<Record<string, unknown>>)];
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
+  const localCtrl = new AbortController();
+  const localTimer = setTimeout(() => localCtrl.abort(), 60_000);
   const resp = await fetch(url, {
     method: 'POST',
+    signal: localCtrl.signal,
     headers,
     body: JSON.stringify({
       model,
@@ -298,6 +318,7 @@ async function callLocal(model: string, messages: unknown[], endpoint: string, a
       temperature,
     }),
   });
+  clearTimeout(localTimer);
 
   if (!resp.ok) {
     const errText = await resp.text();
