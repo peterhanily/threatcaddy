@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "محتوای وب را سریع ثبت کنید و درخواست‌های هوش مصنوعی را برای اطلاعات تهدید ThreatCaddy پروکسی کنید. داده‌ها به‌طور پیش‌فرض روی دستگاه شما محلی می‌مانند."
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "آمار سریع"
+  },
+  "captures": {
+    "message": "ثبت‌ها"
+  },
+  "thisWeek": {
+    "message": "این هفته"
+  },
+
+  "quickCapture": {
+    "message": "ثبت سریع"
+  },
+  "noteTitlePlaceholder": {
+    "message": "عنوان یادداشت (اختیاری)"
+  },
+  "captureTextPlaceholder": {
+    "message": "یادداشت بنویسید یا الصاق کنید..."
+  },
+  "options": {
+    "message": "گزینه‌ها"
+  },
+  "investigation": {
+    "message": "تحقیق"
+  },
+  "defaultClips": {
+    "message": "پیش‌فرض: کلیپ‌ها"
+  },
+  "saveAs": {
+    "message": "ذخیره به عنوان"
+  },
+  "entityNote": {
+    "message": "یادداشت"
+  },
+  "entityTask": {
+    "message": "وظیفه"
+  },
+  "entityTimelineEvent": {
+    "message": "رویداد جدول زمانی"
+  },
+  "classification": {
+    "message": "طبقه‌بندی"
+  },
+  "classificationNone": {
+    "message": "هیچ‌کدام"
+  },
+  "saveNote": {
+    "message": "ذخیره یادداشت"
+  },
+  "saved": {
+    "message": "ذخیره شد!"
+  },
+  "saveFailed": {
+    "message": "ذخیره ناموفق بود. لطفاً دوباره امتحان کنید."
+  },
+
+  "recentCaptures": {
+    "message": "ثبت‌های اخیر"
+  },
+  "noCaptures": {
+    "message": "هنوز ثبتی وجود ندارد. متنی را در هر صفحه انتخاب کنید و راست‌کلیک کنید تا ذخیره شود."
+  },
+  "untitled": {
+    "message": "بی‌عنوان"
+  },
+
+  "quickActions": {
+    "message": "اقدامات سریع"
+  },
+  "openThreatCaddy": {
+    "message": "باز کردن ThreatCaddy"
+  },
+  "reviewAllCaptures": {
+    "message": "مرور همه ثبت‌ها"
+  },
+
+  "permissions": {
+    "message": "مجوزها"
+  },
+  "allowCaddyAI": {
+    "message": "اجازه به CaddyAI"
+  },
+  "allowCaddyAIDesc": {
+    "message": "دسترسی به API‌های ارائه‌دهنده هوش مصنوعی (Anthropic، OpenAI، Google، Mistral) را اعطا می‌کند."
+  },
+  "allowUrlFetching": {
+    "message": "اجازه دریافت URL"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "برای دستور /fetch و LLM‌های محلی غیر-localhost لازم است."
+  },
+
+  "howToUse": {
+    "message": "نحوه استفاده:"
+  },
+  "howToUseContextMenu": {
+    "message": "متن را انتخاب کنید و روی «ذخیره در ThreatCaddy» راست‌کلیک کنید"
+  },
+  "howToUseShortcut": {
+    "message": "یا از میانبر صفحه‌کلید استفاده کنید:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(انتخاب را کلیپ می‌کند، یا کل صفحه اگر چیزی انتخاب نشده)"
+  },
+  "privacyLabel": {
+    "message": "حریم خصوصی:"
+  },
+  "privacyText": {
+    "message": "همه داده‌ها روی دستگاه شما محلی می‌مانند. کلیدهای API فقط به ارائه‌دهنده انتخابی شما ارسال می‌شوند. بدون ردیابی."
+  },
+
+  "settings": {
+    "message": "تنظیمات"
+  },
+  "settingsTooltip": {
+    "message": "تنظیمات"
+  },
+  "back": {
+    "message": "بازگشت"
+  },
+  "targetUrl": {
+    "message": "URL هدف"
+  },
+  "targetUrlDesc": {
+    "message": "URL نمونه ThreatCaddy که این افزونه به آن متصل می‌شود."
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "ذخیره"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "ذخیره در ThreatCaddy"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "در ThreatCaddy ذخیره شد!"
+  },
+
+  "justNow": {
+    "message": "همین الان"
+  },
+  "minutesAgo": {
+    "message": "$count$د پیش",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "$count$س پیش",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "$count$ر پیش",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "زمینه افزونه باطل شد. لطفاً این صفحه را بارگذاری مجدد کنید."
+  },
+  "errorExtensionDisconnected": {
+    "message": "افزونه قطع شد"
+  },
+  "errorExtensionUnknown": {
+    "message": "خطای افزونه: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "پاسخی از پس‌زمینه افزونه دریافت نشد"
+  },
+  "errorExtensionError": {
+    "message": "خطای افزونه"
+  },
+
+  "errorInvalidUrl": {
+    "message": "URL نامعتبر"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "فقط URL‌های HTTP و HTTPS پشتیبانی می‌شوند"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "مجوز دسترسی به URL لازم است. پنجره بازشوی افزونه ThreatCaddy را باز کنید و «اجازه دریافت URL» را فعال کنید، سپس دوباره امتحان کنید."
+  },
+  "errorRequestTimedOut15": {
+    "message": "درخواست پس از ۱۵ ثانیه منقضی شد. صفحه ممکن است در دسترس نباشد."
+  },
+  "errorRequestTimedOut30": {
+    "message": "درخواست پس از ۳۰ ثانیه منقضی شد"
+  },
+  "errorBlockedInternal": {
+    "message": "مسدود شد: درخواست‌ها به آدرس‌های داخلی/خصوصی مجاز نیستند"
+  },
+  "errorBlockedDomain": {
+    "message": "مسدود شد: $hostname$ در لیست دامنه‌های پروکسی مجاز نیست",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "مجوز میزبان برای $hostname$ لازم است",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "مجوز CaddyAI لازم است. پنجره بازشوی افزونه ThreatCaddy را باز کنید و «اجازه به CaddyAI» را در قسمت مجوزها فعال کنید."
+  },
+  "errorUnknownProvider": {
+    "message": "ارائه‌دهنده ناشناخته: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "خطای ناشناخته"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "مجوز میزبان برای $hostname$ لازم است. پنجره بازشوی افزونه ThreatCaddy را باز کنید و «اجازه دریافت URL» را در قسمت مجوزها فعال کنید.",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "انتظار برای بارگذاری صفحه منقضی شد"
+  },
+  "errorDeliverClips": {
+    "message": "ارسال کلیپ‌ها ناموفق بود — bridge.js نتوانست به صفحه دسترسی پیدا کند. بررسی کنید که افزونه مجوز این سایت را دارد."
+  },
+  "errorInvalidTargetUrl": {
+    "message": "URL هدف نامعتبر"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

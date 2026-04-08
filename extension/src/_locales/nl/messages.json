@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "Snel webinhoud vastleggen en AI-verzoeken proxyen voor ThreatCaddy. Gegevens blijven standaard op uw apparaat."
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "Snelle statistieken"
+  },
+  "captures": {
+    "message": "Vastleggingen"
+  },
+  "thisWeek": {
+    "message": "Deze week"
+  },
+
+  "quickCapture": {
+    "message": "Snel vastleggen"
+  },
+  "noteTitlePlaceholder": {
+    "message": "Notitietitel (optioneel)"
+  },
+  "captureTextPlaceholder": {
+    "message": "Typ of plak een notitie..."
+  },
+  "options": {
+    "message": "Opties"
+  },
+  "investigation": {
+    "message": "Onderzoek"
+  },
+  "defaultClips": {
+    "message": "Standaard: Clips"
+  },
+  "saveAs": {
+    "message": "Opslaan als"
+  },
+  "entityNote": {
+    "message": "Notitie"
+  },
+  "entityTask": {
+    "message": "Taak"
+  },
+  "entityTimelineEvent": {
+    "message": "Tijdlijngebeurtenis"
+  },
+  "classification": {
+    "message": "Classificatie"
+  },
+  "classificationNone": {
+    "message": "Geen"
+  },
+  "saveNote": {
+    "message": "Notitie opslaan"
+  },
+  "saved": {
+    "message": "Opgeslagen!"
+  },
+  "saveFailed": {
+    "message": "Opslaan mislukt. Probeer opnieuw."
+  },
+
+  "recentCaptures": {
+    "message": "Recente vastleggingen"
+  },
+  "noCaptures": {
+    "message": "Geen vastleggingen. Selecteer tekst op een willekeurige pagina en klik met de rechtermuisknop om op te slaan."
+  },
+  "untitled": {
+    "message": "Naamloos"
+  },
+
+  "quickActions": {
+    "message": "Snelle acties"
+  },
+  "openThreatCaddy": {
+    "message": "ThreatCaddy openen"
+  },
+  "reviewAllCaptures": {
+    "message": "Alle vastleggingen bekijken"
+  },
+
+  "permissions": {
+    "message": "Machtigingen"
+  },
+  "allowCaddyAI": {
+    "message": "CaddyAI toestaan"
+  },
+  "allowCaddyAIDesc": {
+    "message": "Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral)."
+  },
+  "allowUrlFetching": {
+    "message": "URL ophalen toestaan"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "Required for the /fetch command and non-localhost local LLMs."
+  },
+
+  "howToUse": {
+    "message": "Hoe te gebruiken:"
+  },
+  "howToUseContextMenu": {
+    "message": "Selecteer tekst en klik met rechts op 'Opslaan in ThreatCaddy'"
+  },
+  "howToUseShortcut": {
+    "message": "Of gebruik de sneltoets:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(legt selectie vast of hele pagina indien niets geselecteerd)"
+  },
+  "privacyLabel": {
+    "message": "Privacy:"
+  },
+  "privacyText": {
+    "message": "Alle gegevens blijven op uw apparaat. API-sleutels worden alleen naar de geselecteerde provider gestuurd. Geen tracking."
+  },
+
+  "settings": {
+    "message": "Instellingen"
+  },
+  "settingsTooltip": {
+    "message": "Instellingen"
+  },
+  "back": {
+    "message": "Terug"
+  },
+  "targetUrl": {
+    "message": "Doel-URL"
+  },
+  "targetUrlDesc": {
+    "message": "The ThreatCaddy instance URL this extension connects to."
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "Opslaan"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "Opslaan in ThreatCaddy"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "Opgeslagen in ThreatCaddy!"
+  },
+
+  "justNow": {
+    "message": "Zojuist"
+  },
+  "minutesAgo": {
+    "message": "$count$min geleden",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "$count$u geleden",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "$count$d geleden",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "Extensiecontext ongeldig geworden. Laad deze pagina opnieuw."
+  },
+  "errorExtensionDisconnected": {
+    "message": "Extensie verbroken"
+  },
+  "errorExtensionUnknown": {
+    "message": "Extensiefout: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "Geen reactie van het achtergrondproces van de extensie"
+  },
+  "errorExtensionError": {
+    "message": "Extensiefout"
+  },
+
+  "errorInvalidUrl": {
+    "message": "Ongeldige URL"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "Alleen HTTP- en HTTPS-URL's worden ondersteund"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "URL-toegangsmachtiging vereist. Open het ThreatCaddy-extensiepopup en schakel 'URL ophalen toestaan' in, en probeer opnieuw."
+  },
+  "errorRequestTimedOut15": {
+    "message": "Time-out (15s). De pagina is mogelijk niet bereikbaar."
+  },
+  "errorRequestTimedOut30": {
+    "message": "Time-out (30s)"
+  },
+  "errorBlockedInternal": {
+    "message": "Geblokkeerd: verzoeken naar interne/privéadressen zijn niet toegestaan"
+  },
+  "errorBlockedDomain": {
+    "message": "Geblokkeerd: $hostname$ staat niet op de toegestane proxy-domeinenlijst",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "Hostmachtiging vereist voor $hostname$",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "CaddyAI-machtiging vereist. Open het ThreatCaddy-extensiepopup en schakel 'CaddyAI toestaan' in onder Machtigingen."
+  },
+  "errorUnknownProvider": {
+    "message": "Onbekende provider: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "Onbekende fout"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "Hostmachtiging vereist voor $hostname$. Open het ThreatCaddy-extensiepopup en schakel 'URL ophalen toestaan' in onder Machtigingen.",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "Time-out bij wachten op laden van pagina"
+  },
+  "errorDeliverClips": {
+    "message": "Clips bezorgen mislukt — bridge.js kon de pagina niet bereiken. Controleer of de extensie machtigingen heeft voor deze site."
+  },
+  "errorInvalidTargetUrl": {
+    "message": "Ongeldige doel-URL"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

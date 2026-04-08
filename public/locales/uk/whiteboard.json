@@ -1,0 +1,18 @@
+{
+  "title": "Дошки",
+  "new": "Нова",
+  "noWhiteboards": "Дошок поки немає",
+  "createHint": "Створіть дошку для початку малювання",
+  "loadingWhiteboard": "Завантаження дошки...",
+  "deleteTitle": "Видалити дошку",
+  "deleteMessage": "Цю дошку буде видалено назавжди. Відмінити неможливо.",
+  "deleteConfirm": "Видалити дошку",
+  "elements": "{{count}} елементів",
+  "element": "{{count}} елемент",
+  "rename": "Перейменувати",
+  "archive": "Архівувати",
+  "unarchive": "Розархівувати",
+  "moveToTrash": "Перемістити в кошик",
+  "restore": "Відновити",
+  "deletePermanently": "Видалити назавжди"
+}

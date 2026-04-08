@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "จับภาพเนื้อหาเว็บอย่างรวดเร็วและพร็อกซีคำขอ AI สำหรับข่าวกรองภัยคุกคาม ThreatCaddy ข้อมูลจะถูกเก็บไว้ในเครื่องของคุณเป็นค่าเริ่มต้น"
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "สถิติด่วน"
+  },
+  "captures": {
+    "message": "การจับภาพ"
+  },
+  "thisWeek": {
+    "message": "สัปดาห์นี้"
+  },
+
+  "quickCapture": {
+    "message": "จับภาพด่วน"
+  },
+  "noteTitlePlaceholder": {
+    "message": "ชื่อบันทึก (ไม่บังคับ)"
+  },
+  "captureTextPlaceholder": {
+    "message": "พิมพ์หรือวางบันทึก..."
+  },
+  "options": {
+    "message": "ตัวเลือก"
+  },
+  "investigation": {
+    "message": "การสืบสวน"
+  },
+  "defaultClips": {
+    "message": "ค่าเริ่มต้น: คลิป"
+  },
+  "saveAs": {
+    "message": "บันทึกเป็น"
+  },
+  "entityNote": {
+    "message": "บันทึก"
+  },
+  "entityTask": {
+    "message": "งาน"
+  },
+  "entityTimelineEvent": {
+    "message": "เหตุการณ์ไทม์ไลน์"
+  },
+  "classification": {
+    "message": "การจำแนกประเภท"
+  },
+  "classificationNone": {
+    "message": "ไม่มี"
+  },
+  "saveNote": {
+    "message": "บันทึกบันทึก"
+  },
+  "saved": {
+    "message": "บันทึกแล้ว!"
+  },
+  "saveFailed": {
+    "message": "บันทึกล้มเหลว กรุณาลองอีกครั้ง"
+  },
+
+  "recentCaptures": {
+    "message": "การจับภาพล่าสุด"
+  },
+  "noCaptures": {
+    "message": "ยังไม่มีการจับภาพ เลือกข้อความบนหน้าเว็บแล้วคลิกขวาเพื่อบันทึก"
+  },
+  "untitled": {
+    "message": "ไม่มีชื่อ"
+  },
+
+  "quickActions": {
+    "message": "การดำเนินการด่วน"
+  },
+  "openThreatCaddy": {
+    "message": "เปิด ThreatCaddy"
+  },
+  "reviewAllCaptures": {
+    "message": "ดูการจับภาพทั้งหมด"
+  },
+
+  "permissions": {
+    "message": "สิทธิ์"
+  },
+  "allowCaddyAI": {
+    "message": "อนุญาต CaddyAI"
+  },
+  "allowCaddyAIDesc": {
+    "message": "อนุญาตการเข้าถึง API ของผู้ให้บริการ AI (Anthropic, OpenAI, Google, Mistral)"
+  },
+  "allowUrlFetching": {
+    "message": "อนุญาตการดึง URL"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "จำเป็นสำหรับคำสั่ง /fetch และ LLM ในเครื่องที่ไม่ใช่ localhost"
+  },
+
+  "howToUse": {
+    "message": "วิธีใช้:"
+  },
+  "howToUseContextMenu": {
+    "message": "เลือกข้อความแล้วคลิกขวา \"บันทึกไปยัง ThreatCaddy\""
+  },
+  "howToUseShortcut": {
+    "message": "หรือใช้แป้นพิมพ์ลัด:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(คลิปสิ่งที่เลือก หรือทั้งหน้าถ้าไม่มีการเลือก)"
+  },
+  "privacyLabel": {
+    "message": "ความเป็นส่วนตัว:"
+  },
+  "privacyText": {
+    "message": "ข้อมูลทั้งหมดเก็บในเครื่องของคุณ API key จะถูกส่งไปยังผู้ให้บริการที่คุณเลือกเท่านั้น ไม่มีการติดตาม"
+  },
+
+  "settings": {
+    "message": "การตั้งค่า"
+  },
+  "settingsTooltip": {
+    "message": "การตั้งค่า"
+  },
+  "back": {
+    "message": "กลับ"
+  },
+  "targetUrl": {
+    "message": "URL เป้าหมาย"
+  },
+  "targetUrlDesc": {
+    "message": "URL ของอินสแตนซ์ ThreatCaddy ที่ส่วนขยายนี้เชื่อมต่อ"
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "บันทึก"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "บันทึกไปยัง ThreatCaddy"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "บันทึกไปยัง ThreatCaddy แล้ว!"
+  },
+
+  "justNow": {
+    "message": "เมื่อกี้นี้"
+  },
+  "minutesAgo": {
+    "message": "$count$ นาทีที่แล้ว",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "$count$ ชั่วโมงที่แล้ว",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "$count$ วันที่แล้ว",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "บริบทส่วนขยายถูกยกเลิก กรุณาโหลดหน้านี้ใหม่"
+  },
+  "errorExtensionDisconnected": {
+    "message": "ส่วนขยายตัดการเชื่อมต่อ"
+  },
+  "errorExtensionUnknown": {
+    "message": "ข้อผิดพลาดส่วนขยาย: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "ไม่มีการตอบสนองจากพื้นหลังส่วนขยาย"
+  },
+  "errorExtensionError": {
+    "message": "ข้อผิดพลาดส่วนขยาย"
+  },
+
+  "errorInvalidUrl": {
+    "message": "URL ไม่ถูกต้อง"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "รองรับเฉพาะ URL แบบ HTTP และ HTTPS เท่านั้น"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "จำเป็นต้องมีสิทธิ์เข้าถึง URL เปิดป็อปอัปส่วนขยาย ThreatCaddy แล้วเปิดใช้งาน \"อนุญาตการดึง URL\" จากนั้นลองอีกครั้ง"
+  },
+  "errorRequestTimedOut15": {
+    "message": "คำขอหมดเวลา (15 วินาที) อาจไม่สามารถเข้าถึงหน้าเว็บได้"
+  },
+  "errorRequestTimedOut30": {
+    "message": "คำขอหมดเวลา (30 วินาที)"
+  },
+  "errorBlockedInternal": {
+    "message": "ถูกบล็อก: ไม่อนุญาตคำขอไปยังที่อยู่ภายใน/ส่วนตัว"
+  },
+  "errorBlockedDomain": {
+    "message": "ถูกบล็อก: $hostname$ ไม่อยู่ในรายการโดเมนพร็อกซีที่อนุญาต",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "จำเป็นต้องมีสิทธิ์โฮสต์สำหรับ $hostname$",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "จำเป็นต้องมีสิทธิ์ CaddyAI เปิดป็อปอัปส่วนขยาย ThreatCaddy แล้วเปิดใช้งาน \"อนุญาต CaddyAI\" ในส่วนสิทธิ์"
+  },
+  "errorUnknownProvider": {
+    "message": "ผู้ให้บริการไม่รู้จัก: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "ข้อผิดพลาดที่ไม่รู้จัก"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "จำเป็นต้องมีสิทธิ์โฮสต์สำหรับ $hostname$ เปิดป็อปอัปส่วนขยาย ThreatCaddy แล้วเปิดใช้งาน \"อนุญาตการดึง URL\" ในส่วนสิทธิ์",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "หมดเวลารอการโหลดหน้า"
+  },
+  "errorDeliverClips": {
+    "message": "ส่งคลิปล้มเหลว — bridge.js ไม่สามารถเข้าถึงหน้าได้ ตรวจสอบว่าส่วนขยายมีสิทธิ์สำหรับเว็บไซต์นี้"
+  },
+  "errorInvalidTargetUrl": {
+    "message": "URL เป้าหมายไม่ถูกต้อง"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

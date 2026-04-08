@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "Szybkie przechwytywanie treści internetowych i proxowanie żądań AI dla ThreatCaddy. Dane domyślnie pozostają na Twoim urządzeniu."
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "Szybkie statystyki"
+  },
+  "captures": {
+    "message": "Przechwycenia"
+  },
+  "thisWeek": {
+    "message": "W tym tygodniu"
+  },
+
+  "quickCapture": {
+    "message": "Szybkie przechwycenie"
+  },
+  "noteTitlePlaceholder": {
+    "message": "Tytuł notatki (opcjonalnie)"
+  },
+  "captureTextPlaceholder": {
+    "message": "Wpisz lub wklej notatkę..."
+  },
+  "options": {
+    "message": "Opcje"
+  },
+  "investigation": {
+    "message": "Dochodzenie"
+  },
+  "defaultClips": {
+    "message": "Domyślnie: Klipy"
+  },
+  "saveAs": {
+    "message": "Zapisz jako"
+  },
+  "entityNote": {
+    "message": "Notatka"
+  },
+  "entityTask": {
+    "message": "Zadanie"
+  },
+  "entityTimelineEvent": {
+    "message": "Zdarzenie osi czasu"
+  },
+  "classification": {
+    "message": "Klasyfikacja"
+  },
+  "classificationNone": {
+    "message": "Brak"
+  },
+  "saveNote": {
+    "message": "Zapisz notatkę"
+  },
+  "saved": {
+    "message": "Zapisano!"
+  },
+  "saveFailed": {
+    "message": "Nie udało się zapisać. Spróbuj ponownie."
+  },
+
+  "recentCaptures": {
+    "message": "Ostatnie przechwycenia"
+  },
+  "noCaptures": {
+    "message": "Brak przechwytywań. Zaznacz tekst na dowolnej stronie i kliknij prawym przyciskiem myszy, aby zapisać."
+  },
+  "untitled": {
+    "message": "Bez tytułu"
+  },
+
+  "quickActions": {
+    "message": "Szybkie akcje"
+  },
+  "openThreatCaddy": {
+    "message": "Otwórz ThreatCaddy"
+  },
+  "reviewAllCaptures": {
+    "message": "Przejrzyj wszystkie przechwycenia"
+  },
+
+  "permissions": {
+    "message": "Uprawnienia"
+  },
+  "allowCaddyAI": {
+    "message": "Zezwól na CaddyAI"
+  },
+  "allowCaddyAIDesc": {
+    "message": "Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral)."
+  },
+  "allowUrlFetching": {
+    "message": "Zezwól na pobieranie URL"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "Required for the /fetch command and non-localhost local LLMs."
+  },
+
+  "howToUse": {
+    "message": "Jak używać:"
+  },
+  "howToUseContextMenu": {
+    "message": "Zaznacz tekst i kliknij prawym przyciskiem „Zapisz w ThreatCaddy""
+  },
+  "howToUseShortcut": {
+    "message": "Lub użyj skrótu klawiszowego:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(przechwytuje zaznaczenie lub całą stronę, jeśli nic nie zaznaczono)"
+  },
+  "privacyLabel": {
+    "message": "Prywatność:"
+  },
+  "privacyText": {
+    "message": "Wszystkie dane pozostają na Twoim urządzeniu. Klucze API są wysyłane tylko do wybranego dostawcy. Bez śledzenia."
+  },
+
+  "settings": {
+    "message": "Ustawienia"
+  },
+  "settingsTooltip": {
+    "message": "Ustawienia"
+  },
+  "back": {
+    "message": "Wstecz"
+  },
+  "targetUrl": {
+    "message": "Docelowy URL"
+  },
+  "targetUrlDesc": {
+    "message": "The ThreatCaddy instance URL this extension connects to."
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "Zapisz"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "Zapisz w ThreatCaddy"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "Zapisano w ThreatCaddy!"
+  },
+
+  "justNow": {
+    "message": "Przed chwilą"
+  },
+  "minutesAgo": {
+    "message": "$count$min temu",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "$count$godz temu",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "$count$d temu",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "Kontekst rozszerzenia stał się nieważny. Przeładuj tę stronę."
+  },
+  "errorExtensionDisconnected": {
+    "message": "Rozszerzenie rozłączone"
+  },
+  "errorExtensionUnknown": {
+    "message": "Błąd rozszerzenia: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "Brak odpowiedzi od procesu tła rozszerzenia"
+  },
+  "errorExtensionError": {
+    "message": "Błąd rozszerzenia"
+  },
+
+  "errorInvalidUrl": {
+    "message": "Nieprawidłowy URL"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "Obsługiwane są tylko URL HTTP i HTTPS"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "Wymagane uprawnienie dostępu do URL. Otwórz wyskakujące okno rozszerzenia ThreatCaddy i włącz „Zezwól na pobieranie URL", a następnie spróbuj ponownie."
+  },
+  "errorRequestTimedOut15": {
+    "message": "Przekroczono limit czasu (15s). Strona może być niedostępna."
+  },
+  "errorRequestTimedOut30": {
+    "message": "Przekroczono limit czasu (30s)"
+  },
+  "errorBlockedInternal": {
+    "message": "Zablokowane: żądania do adresów wewnętrznych/prywatnych nie są dozwolone"
+  },
+  "errorBlockedDomain": {
+    "message": "Zablokowane: $hostname$ nie znajduje się na liście dozwolonych domen proxy",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "Wymagane uprawnienie hosta dla $hostname$",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "Wymagane uprawnienie CaddyAI. Otwórz wyskakujące okno rozszerzenia ThreatCaddy i włącz „Zezwól na CaddyAI" w sekcji Uprawnienia."
+  },
+  "errorUnknownProvider": {
+    "message": "Nieznany dostawca: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "Nieznany błąd"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "Wymagane uprawnienie hosta dla $hostname$. Otwórz wyskakujące okno rozszerzenia ThreatCaddy i włącz „Zezwól na pobieranie URL" w sekcji Uprawnienia.",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "Przekroczono limit czasu oczekiwania na załadowanie strony"
+  },
+  "errorDeliverClips": {
+    "message": "Nie udało się dostarczyć klipów — bridge.js nie mógł dotrzeć do strony. Sprawdź, czy rozszerzenie ma uprawnienia dla tej witryny."
+  },
+  "errorInvalidTargetUrl": {
+    "message": "Nieprawidłowy docelowy URL"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

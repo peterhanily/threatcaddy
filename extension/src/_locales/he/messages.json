@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "לכידה מהירה של תוכן אינטרנט וניתוב בקשות AI עבור מודיעין איומים ThreatCaddy. הנתונים נשארים מקומיים במכשיר שלך כברירת מחדל."
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "סטטיסטיקות מהירות"
+  },
+  "captures": {
+    "message": "לכידות"
+  },
+  "thisWeek": {
+    "message": "השבוע"
+  },
+
+  "quickCapture": {
+    "message": "לכידה מהירה"
+  },
+  "noteTitlePlaceholder": {
+    "message": "כותרת הערה (אופציונלי)"
+  },
+  "captureTextPlaceholder": {
+    "message": "הקלד או הדבק הערה..."
+  },
+  "options": {
+    "message": "אפשרויות"
+  },
+  "investigation": {
+    "message": "חקירה"
+  },
+  "defaultClips": {
+    "message": "ברירת מחדל: קטעים"
+  },
+  "saveAs": {
+    "message": "שמור בתור"
+  },
+  "entityNote": {
+    "message": "הערה"
+  },
+  "entityTask": {
+    "message": "משימה"
+  },
+  "entityTimelineEvent": {
+    "message": "אירוע ציר זמן"
+  },
+  "classification": {
+    "message": "סיווג"
+  },
+  "classificationNone": {
+    "message": "ללא"
+  },
+  "saveNote": {
+    "message": "שמור הערה"
+  },
+  "saved": {
+    "message": "נשמר!"
+  },
+  "saveFailed": {
+    "message": "השמירה נכשלה. אנא נסה שוב."
+  },
+
+  "recentCaptures": {
+    "message": "לכידות אחרונות"
+  },
+  "noCaptures": {
+    "message": "אין לכידות עדיין. סמן טקסט בכל עמוד ולחץ באמצעות כפתור ימני לשמירה."
+  },
+  "untitled": {
+    "message": "ללא כותרת"
+  },
+
+  "quickActions": {
+    "message": "פעולות מהירות"
+  },
+  "openThreatCaddy": {
+    "message": "פתח ThreatCaddy"
+  },
+  "reviewAllCaptures": {
+    "message": "סקור את כל הלכידות"
+  },
+
+  "permissions": {
+    "message": "הרשאות"
+  },
+  "allowCaddyAI": {
+    "message": "אפשר CaddyAI"
+  },
+  "allowCaddyAIDesc": {
+    "message": "מעניק גישה ל-API של ספקי AI (Anthropic, OpenAI, Google, Mistral)."
+  },
+  "allowUrlFetching": {
+    "message": "אפשר שליפת URL"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "נדרש לפקודת /fetch ול-LLMs מקומיים שאינם localhost."
+  },
+
+  "howToUse": {
+    "message": "כיצד להשתמש:"
+  },
+  "howToUseContextMenu": {
+    "message": "סמן טקסט ולחץ לחיצה ימנית \"שמור ל-ThreatCaddy\""
+  },
+  "howToUseShortcut": {
+    "message": "או השתמש בקיצור מקלדת:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(לוכד בחירה, או עמוד שלם אם לא נבחר דבר)"
+  },
+  "privacyLabel": {
+    "message": "פרטיות:"
+  },
+  "privacyText": {
+    "message": "כל הנתונים נשארים מקומיים במכשיר שלך. מפתחות API נשלחים רק לספק שנבחר. ללא מעקב."
+  },
+
+  "settings": {
+    "message": "הגדרות"
+  },
+  "settingsTooltip": {
+    "message": "הגדרות"
+  },
+  "back": {
+    "message": "חזרה"
+  },
+  "targetUrl": {
+    "message": "כתובת URL יעד"
+  },
+  "targetUrlDesc": {
+    "message": "כתובת ה-URL של מופע ThreatCaddy שהרחבה זו מתחברת אליו."
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "שמור"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "שמור ל-ThreatCaddy"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "נשמר ב-ThreatCaddy!"
+  },
+
+  "justNow": {
+    "message": "זה עתה"
+  },
+  "minutesAgo": {
+    "message": "לפני $count$ד",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "לפני $count$ש",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "לפני $count$י",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "הקשר ההרחבה אינו תקף. אנא טען מחדש את הדף."
+  },
+  "errorExtensionDisconnected": {
+    "message": "ההרחבה נותקה"
+  },
+  "errorExtensionUnknown": {
+    "message": "שגיאת הרחבה: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "אין תגובה מרקע ההרחבה"
+  },
+  "errorExtensionError": {
+    "message": "שגיאת הרחבה"
+  },
+
+  "errorInvalidUrl": {
+    "message": "כתובת URL לא חוקית"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "נתמכות רק כתובות URL מסוג HTTP ו-HTTPS"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "נדרשת הרשאת גישה ל-URL. פתח את חלון ההרחבה ThreatCaddy ואפשר \"אפשר שליפת URL\", ואז נסה שוב."
+  },
+  "errorRequestTimedOut15": {
+    "message": "הבקשה פג תוקפה (15ש). ייתכן שהדף אינו נגיש."
+  },
+  "errorRequestTimedOut30": {
+    "message": "הבקשה פג תוקפה (30ש)"
+  },
+  "errorBlockedInternal": {
+    "message": "חסום: בקשות לכתובות פנימיות/פרטיות אינן מותרות"
+  },
+  "errorBlockedDomain": {
+    "message": "חסום: $hostname$ אינו ברשימת הדומיינים המורשים לפרוקסי",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "נדרשת הרשאת מארח עבור $hostname$",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "נדרשת הרשאת CaddyAI. פתח את חלון ההרחבה ThreatCaddy ואפשר \"אפשר CaddyAI\" תחת הרשאות."
+  },
+  "errorUnknownProvider": {
+    "message": "ספק לא ידוע: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "שגיאה לא ידועה"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "נדרשת הרשאת מארח עבור $hostname$. פתח את חלון ההרחבה ThreatCaddy ואפשר \"אפשר שליפת URL\" תחת הרשאות.",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "פג תוקף ממתין לטעינת הדף"
+  },
+  "errorDeliverClips": {
+    "message": "מסירת קטעים נכשלה — bridge.js לא הצליח להגיע לדף. ודא שלהרחבה יש הרשאה לאתר זה."
+  },
+  "errorInvalidTargetUrl": {
+    "message": "כתובת URL יעד לא חוקית"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "title": "데이터 가져오기",
+  "selectFormat": "형식 선택",
+  "csv": "CSV",
+  "json": "JSON",
+  "markdown": "Markdown",
+  "stix": "STIX",
+  "misp": "MISP",
+
+  "csv.title": "CSV 가져오기",
+  "csv.selectFile": "CSV 파일 선택",
+  "csv.preview": "미리보기",
+  "csv.mapping": "열 매핑",
+  "csv.import": "가져오기",
+  "csv.importing": "가져오는 중...",
+  "csv.rows": "{{count}}개 행",
+  "csv.skipHeader": "헤더 행 건너뛰기",
+  "csv.delimiter": "구분자",
+  "csv.comma": "쉼표",
+  "csv.semicolon": "세미콜론",
+  "csv.tab": "탭",
+
+  "json.title": "JSON 가져오기",
+  "json.selectFile": "JSON 파일 선택",
+  "json.preview": "미리보기",
+  "json.import": "가져오기",
+  "json.importing": "가져오는 중...",
+
+  "result.success": "{{count}}개 항목을 성공적으로 가져왔습니다",
+  "result.partial": "{{success}}개 가져옴, {{failed}}개 실패",
+  "result.failed": "가져오기 실패",
+  "result.skipped": "{{count}}개 건너뜀 (중복)",
+  "result.created": "{{count}}개 생성됨",
+  "result.updated": "{{count}}개 업데이트됨",
+
+  "error.invalidFile": "유효하지 않은 파일 형식",
+  "error.emptyFile": "파일이 비어 있습니다",
+  "error.parseError": "파일 파싱 오류",
+  "error.mappingRequired": "열 매핑이 필요합니다"
+}

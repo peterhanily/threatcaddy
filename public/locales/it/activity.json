@@ -1,0 +1,15 @@
+{
+  "title": "Registro attività",
+  "clearButton": "Cancella",
+  "searchPlaceholder": "Cerca attività...",
+  "allFilter": "Tutto",
+  "noActivity": "Nessuna attività",
+  "noActivityHint": "Le azioni che esegui appariranno qui",
+  "today": "Oggi",
+  "yesterday": "Ieri",
+  "thisWeek": "Questa settimana",
+  "older": "Più vecchi",
+  "clearTitle": "Cancella registro attività",
+  "clearMessage": "Questa operazione eliminerà permanentemente tutte le voci del registro attività. Non può essere annullata.",
+  "clearConfirm": "Cancella tutto"
+}

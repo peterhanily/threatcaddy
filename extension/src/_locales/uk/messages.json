@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "Швидке захоплення веб-вмісту та проксування AI-запитів для ThreatCaddy. Дані за замовчуванням залишаються на вашому пристрої."
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "Швидка статистика"
+  },
+  "captures": {
+    "message": "Захоплення"
+  },
+  "thisWeek": {
+    "message": "Цього тижня"
+  },
+
+  "quickCapture": {
+    "message": "Швидке захоплення"
+  },
+  "noteTitlePlaceholder": {
+    "message": "Заголовок нотатки (необов'язково)"
+  },
+  "captureTextPlaceholder": {
+    "message": "Введіть або вставте нотатку..."
+  },
+  "options": {
+    "message": "Параметри"
+  },
+  "investigation": {
+    "message": "Розслідування"
+  },
+  "defaultClips": {
+    "message": "За замовчуванням: Кліпи"
+  },
+  "saveAs": {
+    "message": "Зберегти як"
+  },
+  "entityNote": {
+    "message": "Нотатка"
+  },
+  "entityTask": {
+    "message": "Завдання"
+  },
+  "entityTimelineEvent": {
+    "message": "Подія хронології"
+  },
+  "classification": {
+    "message": "Класифікація"
+  },
+  "classificationNone": {
+    "message": "Немає"
+  },
+  "saveNote": {
+    "message": "Зберегти нотатку"
+  },
+  "saved": {
+    "message": "Збережено!"
+  },
+  "saveFailed": {
+    "message": "Не вдалося зберегти. Спробуйте ще раз."
+  },
+
+  "recentCaptures": {
+    "message": "Нещодавні захоплення"
+  },
+  "noCaptures": {
+    "message": "Захоплень поки немає. Виділіть текст на будь-якій сторінці та натисніть правою кнопкою для збереження."
+  },
+  "untitled": {
+    "message": "Без назви"
+  },
+
+  "quickActions": {
+    "message": "Швидкі дії"
+  },
+  "openThreatCaddy": {
+    "message": "Відкрити ThreatCaddy"
+  },
+  "reviewAllCaptures": {
+    "message": "Переглянути всі захоплення"
+  },
+
+  "permissions": {
+    "message": "Дозволи"
+  },
+  "allowCaddyAI": {
+    "message": "Дозволити CaddyAI"
+  },
+  "allowCaddyAIDesc": {
+    "message": "Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral)."
+  },
+  "allowUrlFetching": {
+    "message": "Дозволити отримання URL"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "Required for the /fetch command and non-localhost local LLMs."
+  },
+
+  "howToUse": {
+    "message": "Як використовувати:"
+  },
+  "howToUseContextMenu": {
+    "message": "Виділіть текст та натисніть правою кнопкою «Зберегти в ThreatCaddy»"
+  },
+  "howToUseShortcut": {
+    "message": "Або використовуйте гарячу клавішу:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(захоплює виділення або всю сторінку, якщо нічого не виділено)"
+  },
+  "privacyLabel": {
+    "message": "Конфіденційність:"
+  },
+  "privacyText": {
+    "message": "Усі дані залишаються на вашому пристрої. API-ключі надсилаються лише обраному провайдеру. Без відстеження."
+  },
+
+  "settings": {
+    "message": "Налаштування"
+  },
+  "settingsTooltip": {
+    "message": "Налаштування"
+  },
+  "back": {
+    "message": "Назад"
+  },
+  "targetUrl": {
+    "message": "Цільовий URL"
+  },
+  "targetUrlDesc": {
+    "message": "The ThreatCaddy instance URL this extension connects to."
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "Зберегти"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "Зберегти в ThreatCaddy"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "Збережено в ThreatCaddy!"
+  },
+
+  "justNow": {
+    "message": "Щойно"
+  },
+  "minutesAgo": {
+    "message": "$count$хв тому",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "$count$год тому",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "$count$д тому",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "Контекст розширення став недійсним. Перезавантажте сторінку."
+  },
+  "errorExtensionDisconnected": {
+    "message": "Розширення відключено"
+  },
+  "errorExtensionUnknown": {
+    "message": "Помилка розширення: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "Немає відповіді від фонового процесу розширення"
+  },
+  "errorExtensionError": {
+    "message": "Помилка розширення"
+  },
+
+  "errorInvalidUrl": {
+    "message": "Невірний URL"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "Підтримуються лише URL HTTP та HTTPS"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "Потрібен дозвіл на доступ до URL. Відкрийте спливаюче вікно розширення ThreatCaddy та увімкніть «Дозволити отримання URL», потім спробуйте ще раз."
+  },
+  "errorRequestTimedOut15": {
+    "message": "Час очікування вичерпано (15 с). Сторінка може бути недоступна."
+  },
+  "errorRequestTimedOut30": {
+    "message": "Час очікування вичерпано (30 с)"
+  },
+  "errorBlockedInternal": {
+    "message": "Заблоковано: запити до внутрішніх/приватних адрес не дозволені"
+  },
+  "errorBlockedDomain": {
+    "message": "Заблоковано: $hostname$ не входить до списку дозволених проксі-доменів",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "Потрібен дозвіл хоста для $hostname$",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "Потрібен дозвіл CaddyAI. Відкрийте спливаюче вікно розширення ThreatCaddy та увімкніть «Дозволити CaddyAI» в розділі «Дозволи»."
+  },
+  "errorUnknownProvider": {
+    "message": "Невідомий провайдер: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "Невідома помилка"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "Потрібен дозвіл хоста для $hostname$. Відкрийте спливаюче вікно розширення ThreatCaddy та увімкніть «Дозволити отримання URL» в розділі «Дозволи».",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "Час очікування завантаження сторінки вичерпано"
+  },
+  "errorDeliverClips": {
+    "message": "Не вдалося доставити кліпи — bridge.js не зміг зв'язатися зі сторінкою. Перевірте, що розширення має дозвіл для цього сайту."
+  },
+  "errorInvalidTargetUrl": {
+    "message": "Невірний цільовий URL"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

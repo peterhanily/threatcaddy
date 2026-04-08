@@ -1,0 +1,18 @@
+{
+  "title": "Tablice",
+  "new": "Nowa",
+  "noWhiteboards": "Brak tablic",
+  "createHint": "Utwórz tablicę, aby zacząć rysować",
+  "loadingWhiteboard": "Ładowanie tablicy...",
+  "deleteTitle": "Usuń tablicę",
+  "deleteMessage": "Ta tablica zostanie trwale usunięta. Tej operacji nie można cofnąć.",
+  "deleteConfirm": "Usuń tablicę",
+  "elements": "{{count}} elementów",
+  "element": "{{count}} element",
+  "rename": "Zmień nazwę",
+  "archive": "Archiwizuj",
+  "unarchive": "Przywróć z archiwum",
+  "moveToTrash": "Przenieś do kosza",
+  "restore": "Przywróć",
+  "deletePermanently": "Usuń trwale"
+}

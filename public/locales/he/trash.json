@@ -1,0 +1,20 @@
+{
+  "trash": "אשפה",
+  "archive": "ארכיון",
+  "emptyAllTrash": "רוקן את כל האשפה",
+  "autoDeleteHint": "פריטים נמחקים אוטומטית לאחר 30 יום",
+  "trashEmpty": "האשפה ריקה",
+  "archiveEmpty": "הארכיון ריק",
+  "notes": "הערות",
+  "tasks": "משימות",
+  "timelineEvents": "אירועי ציר זמן",
+  "whiteboards": "לוחות ציור",
+  "iocs": "IOCs",
+  "restore": "שחזר",
+  "deletePermanently": "מחק לצמיתות",
+  "unarchive": "הוצא מארכיון",
+  "moveToTrash": "העבר לאשפה",
+  "emptyAllTitle": "רוקן את כל האשפה",
+  "emptyAllMessage": "למחוק לצמיתות את כל {{count}} פריט/ים שנמחקו בכל סוגי הישויות? לא ניתן לבטל פעולה זו.",
+  "emptyAllConfirm": "רוקן את כל האשפה"
+}

@@ -1,0 +1,15 @@
+{
+  "title": "ไวท์บอร์ด",
+  "newWhiteboard": "ไวท์บอร์ดใหม่",
+  "untitled": "ไวท์บอร์ดที่ไม่มีชื่อ",
+  "openInExcalidraw": "เปิดใน Excalidraw",
+  "deleteWhiteboard": "ลบไวท์บอร์ด",
+  "deleteConfirmTitle": "ลบไวท์บอร์ด",
+  "deleteConfirmMessage": "ต้องการลบไวท์บอร์ดนี้ใช่ไหม? การกระทำนี้ไม่สามารถยกเลิกได้",
+  "deleteConfirmButton": "ลบ",
+  "noWhiteboards": "ยังไม่มีไวท์บอร์ด",
+  "noWhiteboardsHint": "สร้างไวท์บอร์ดใหม่เพื่อเริ่มสร้างไดอะแกรมและการสืบสวนด้วยภาพ",
+  "lastModified": "แก้ไขล่าสุดเมื่อ {{date}}",
+  "restore": "กู้คืน",
+  "moveToTrash": "ย้ายไปถังขยะ"
+}

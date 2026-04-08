@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "التقاط سريع لمحتوى الويب وتوجيه طلبات الذكاء الاصطناعي لـ ThreatCaddy لاستخبارات التهديدات. تبقى البيانات محلية على جهازك افتراضيًا."
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "إحصاءات سريعة"
+  },
+  "captures": {
+    "message": "الالتقاطات"
+  },
+  "thisWeek": {
+    "message": "هذا الأسبوع"
+  },
+
+  "quickCapture": {
+    "message": "التقاط سريع"
+  },
+  "noteTitlePlaceholder": {
+    "message": "عنوان الملاحظة (اختياري)"
+  },
+  "captureTextPlaceholder": {
+    "message": "اكتب أو الصق ملاحظة..."
+  },
+  "options": {
+    "message": "الخيارات"
+  },
+  "investigation": {
+    "message": "التحقيق"
+  },
+  "defaultClips": {
+    "message": "الافتراضي: المقتطفات"
+  },
+  "saveAs": {
+    "message": "حفظ كـ"
+  },
+  "entityNote": {
+    "message": "ملاحظة"
+  },
+  "entityTask": {
+    "message": "مهمة"
+  },
+  "entityTimelineEvent": {
+    "message": "حدث في الجدول الزمني"
+  },
+  "classification": {
+    "message": "التصنيف"
+  },
+  "classificationNone": {
+    "message": "لا شيء"
+  },
+  "saveNote": {
+    "message": "حفظ الملاحظة"
+  },
+  "saved": {
+    "message": "تم الحفظ!"
+  },
+  "saveFailed": {
+    "message": "فشل الحفظ. يرجى المحاولة مجددًا."
+  },
+
+  "recentCaptures": {
+    "message": "الالتقاطات الأخيرة"
+  },
+  "noCaptures": {
+    "message": "لا توجد التقاطات بعد. حدد نصًا على أي صفحة وانقر بزر الماوس الأيمن للحفظ."
+  },
+  "untitled": {
+    "message": "بدون عنوان"
+  },
+
+  "quickActions": {
+    "message": "إجراءات سريعة"
+  },
+  "openThreatCaddy": {
+    "message": "فتح ThreatCaddy"
+  },
+  "reviewAllCaptures": {
+    "message": "مراجعة جميع الالتقاطات"
+  },
+
+  "permissions": {
+    "message": "الأذونات"
+  },
+  "allowCaddyAI": {
+    "message": "السماح لـ CaddyAI"
+  },
+  "allowCaddyAIDesc": {
+    "message": "يمنح الوصول إلى واجهات برمجة مزودي الذكاء الاصطناعي (Anthropic، OpenAI، Google، Mistral)."
+  },
+  "allowUrlFetching": {
+    "message": "السماح بجلب URL"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "مطلوب لأمر /fetch وللـ LLMs المحلية غير localhost."
+  },
+
+  "howToUse": {
+    "message": "طريقة الاستخدام:"
+  },
+  "howToUseContextMenu": {
+    "message": "حدد النص وانقر بزر الأيمن \"حفظ إلى ThreatCaddy\""
+  },
+  "howToUseShortcut": {
+    "message": "أو استخدم اختصار لوحة المفاتيح:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(يلتقط التحديد، أو الصفحة الكاملة إذا لم يكن هناك تحديد)"
+  },
+  "privacyLabel": {
+    "message": "الخصوصية:"
+  },
+  "privacyText": {
+    "message": "جميع البيانات تبقى محلية على جهازك. مفاتيح API تُرسل فقط إلى مزودك المختار. لا تتبع."
+  },
+
+  "settings": {
+    "message": "الإعدادات"
+  },
+  "settingsTooltip": {
+    "message": "الإعدادات"
+  },
+  "back": {
+    "message": "رجوع"
+  },
+  "targetUrl": {
+    "message": "رابط الهدف"
+  },
+  "targetUrlDesc": {
+    "message": "رابط نسخة ThreatCaddy التي تتصل بها هذه الإضافة."
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "حفظ"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "حفظ إلى ThreatCaddy"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "تم الحفظ في ThreatCaddy!"
+  },
+
+  "justNow": {
+    "message": "الآن"
+  },
+  "minutesAgo": {
+    "message": "منذ $count$د",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "منذ $count$س",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "منذ $count$ يوم",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "سياق الإضافة غير صالح. يرجى إعادة تحميل هذه الصفحة."
+  },
+  "errorExtensionDisconnected": {
+    "message": "انقطع اتصال الإضافة"
+  },
+  "errorExtensionUnknown": {
+    "message": "خطأ في الإضافة: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "لا استجابة من الخلفية"
+  },
+  "errorExtensionError": {
+    "message": "خطأ في الإضافة"
+  },
+
+  "errorInvalidUrl": {
+    "message": "رابط غير صالح"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "يُدعم HTTP وHTTPS فقط"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "إذن الوصول إلى URL مطلوب. افتح نافذة إضافة ThreatCaddy وفعّل \"السماح بجلب URL\"، ثم حاول مجددًا."
+  },
+  "errorRequestTimedOut15": {
+    "message": "انتهت مهلة الطلب (15 ثانية). قد تكون الصفحة غير متاحة."
+  },
+  "errorRequestTimedOut30": {
+    "message": "انتهت مهلة الطلب (30 ثانية)"
+  },
+  "errorBlockedInternal": {
+    "message": "محجوب: الطلبات إلى العناوين الداخلية/الخاصة غير مسموحة"
+  },
+  "errorBlockedDomain": {
+    "message": "محجوب: $hostname$ ليس في قائمة نطاقات الوكيل المسموحة",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "إذن المضيف مطلوب لـ $hostname$",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "إذن CaddyAI مطلوب. افتح نافذة إضافة ThreatCaddy وفعّل \"السماح لـ CaddyAI\" ضمن الأذونات."
+  },
+  "errorUnknownProvider": {
+    "message": "مزود غير معروف: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "خطأ غير معروف"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "إذن المضيف مطلوب لـ $hostname$. افتح نافذة إضافة ThreatCaddy وفعّل \"السماح بجلب URL\" ضمن الأذونات.",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "انتهت المهلة في انتظار تحميل الصفحة"
+  },
+  "errorDeliverClips": {
+    "message": "فشل تسليم المقتطفات — لم يتمكن bridge.js من الوصول إلى الصفحة. تحقق من أن الإضافة لديها إذن لهذا الموقع."
+  },
+  "errorInvalidTargetUrl": {
+    "message": "رابط الهدف غير صالح"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

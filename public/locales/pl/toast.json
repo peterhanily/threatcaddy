@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "Zaimportowano z {{count}} nieudanym klipem(-ami)",
+    "importFailed": "Nie udało się zaimportować klipów z rozszerzenia",
+    "openedAsNote": "Otwarto „{{name}}" jako nową notatkę",
+    "openFailed": "Nie udało się otworzyć „{{name}}""
+  },
+  "share": {
+    "investigationSaved": "Zapisano dochodzenie „{{name}}" ze wszystkimi encjami",
+    "noteSaved": "Notatka zapisana w ThreatCaddy",
+    "taskSaved": "Zadanie zapisane w ThreatCaddy",
+    "eventSaved": "Zdarzenie zapisane w ThreatCaddy",
+    "chatSaved": "Czat zapisany w ThreatCaddy",
+    "templateShared": "Szablon udostępniony zespołowi",
+    "templateShareFailed": "Nie udało się udostępnić szablonu",
+    "templateRemovedFromTeam": "Szablon usunięty z zespołu",
+    "templateRemoveFailed": "Nie udało się usunąć szablonu zespołu"
+  },
+  "import": {
+    "dataImported": "Zaimportowano {{events}} zdarzeń i {{iocs}} IOC",
+    "jsonImported": "Zaimportowano {{notes}} notatek, {{tasks}} zadań",
+    "markdownImported": "Zaimportowano {{count}} notatek z Markdown",
+    "importFailed": "Import nie powiódł się",
+    "stixImported": "Zaimportowano {{count}} IOC z pakietu STIX",
+    "stixFailed": "Import STIX nie powiódł się dla {{count}} IOC",
+    "stixNoDuplicates": "Nie zaimportowano nowych IOC (wszystkie duplikaty)",
+    "mispImported": "Zaimportowano {{count}} IOC ze zdarzenia MISP",
+    "mispFailed": "Import MISP nie powiódł się dla {{count}} IOC",
+    "mispNoDuplicates": "Nie zaimportowano nowych IOC (wszystkie duplikaty)"
+  },
+  "backup": {
+    "exported": "Kopia zapasowa wyeksportowana",
+    "exportFailed": "Nie udało się wyeksportować kopii zapasowej",
+    "restored": "Kopia zapasowa przywrócona",
+    "restoreFailed": "Nie udało się przywrócić kopii zapasowej",
+    "mergeComplete": "Scalanie zakończone: {{added}} dodano, {{updated}} zaktualizowano, {{skipped}} pominięto",
+    "mergeFailed": "Nie udało się scalić kopii zapasowej",
+    "serverCreated": "Kopia zapasowa utworzona",
+    "serverCreateFailed": "Nie udało się utworzyć kopii zapasowej",
+    "decryptionFailed": "Odszyfrowywanie nie powiodło się",
+    "serverRestored": "Kopia zapasowa przywrócona",
+    "serverRestoreFailed": "Przywracanie nie powiodło się",
+    "serverDeleted": "Kopia zapasowa usunięta",
+    "serverDeleteFailed": "Nie udało się usunąć kopii zapasowej",
+    "cloudPushed": "Kopia zapasowa chmury wysłana",
+    "cloudEncryptedPushed": "Zaszyfrowana kopia zapasowa chmury wysłana",
+    "cloudFailed": "Kopia zapasowa chmury nie powiodła się"
+  },
+  "investigation": {
+    "sampleLoaded": "Przykładowe dochodzenie załadowane",
+    "sampleRemoved": "Przykładowe dochodzenie usunięte",
+    "trashEmptied": "Kosz opróżniony",
+    "savedAsTemplate": "„{{name}}" zapisane jako szablon",
+    "playbookRan": "Playbooek „{{playbook}}" uruchomiony dla „{{investigation}}"",
+    "createdFromPlaybook": "„{{name}}" utworzone z playbooka",
+    "exported": "Dochodzenie „{{name}}" wyeksportowane",
+    "exportFailed": "Nie udało się wyeksportować dochodzenia",
+    "reportGenerated": "Raport wygenerowany dla „{{name}}""
+  },
+  "encryption": {
+    "enabled": "Szyfrowanie włączone",
+    "disabled": "Szyfrowanie wyłączone",
+    "passphraseChanged": "Hasło zmienione"
+  },
+  "integration": {
+    "nameRequired": "Nazwa integracji jest wymagana",
+    "createdAndInstalled": "Integracja „{{name}}" utworzona i zainstalowana",
+    "saveFailed": "Nie udało się zapisać: {{error}}",
+    "installedFromCatalog": "Zainstalowano {{name}} z katalogu społeczności",
+    "installCatalogFailed": "Nie udało się zainstalować szablonu społeczności",
+    "templateExported": "Wyeksportowano {{name}}",
+    "installedFromTeam": "Zainstalowano {{name}} z zespołu",
+    "installTeamFailed": "Nie udało się zainstalować szablonu zespołu",
+    "notFound": "Integracja nie znaleziona",
+    "completed": "Integracja „{{name}}" zakończona pomyślnie",
+    "failed": "Integracja „{{name}}" nie powiodła się: {{error}}",
+    "error": "Błąd integracji: {{error}}"
+  },
+  "ioc": {
+    "exported": "Wyeksportowano {{count}} IOC jako {{format}}",
+    "deleted": "Usunięto {{count}} IOC",
+    "statusUpdated": "Zaktualizowano status {{count}} IOC",
+    "confidenceUpdated": "Zaktualizowano pewność {{count}} IOC",
+    "tagsAdded": "Dodano tagi do {{count}} IOC",
+    "copiedToClipboard": "Skopiowano {{count}} IOC do schowka",
+    "copyFailed": "Nie udało się skopiować do schowka",
+    "bulkEnrichDone": "Masowe wzbogacanie zakończone: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "Odpowiedź opublikowana",
+    "postCreated": "Post utworzony",
+    "postCreateFailed": "Nie udało się utworzyć posta",
+    "uploadFailed": "Nie udało się przesłać pliku: {{name}}",
+    "reactionAddFailed": "Nie udało się dodać reakcji",
+    "reactionRemoveFailed": "Nie udało się usunąć reakcji",
+    "postDeleted": "Post usunięty",
+    "postDeleteFailed": "Nie udało się usunąć posta",
+    "editFailed": "Nie udało się edytować posta",
+    "pinUpdateFailed": "Nie udało się zaktualizować statusu przypięcia",
+    "notificationsLoadFailed": "Nie udało się załadować powiadomień",
+    "markReadFailed": "Nie udało się oznaczyć powiadomienia jako przeczytane",
+    "markAllReadFailed": "Nie udało się oznaczyć wszystkich jako przeczytane",
+    "clearNotificationsFailed": "Nie udało się wyczyścić powiadomień"
+  },
+  "settings": {
+    "slashCommandUpdated": "Zaktualizowano /{{name}}",
+    "slashCommandCreated": "Utworzono /{{name}}",
+    "slashCommandDeleted": "Usunięto /{{name}}"
+  },
+  "generic": {
+    "tagCreateFailed": "Nie udało się utworzyć tagu"
+  }
+}

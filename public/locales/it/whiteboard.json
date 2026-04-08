@@ -1,0 +1,18 @@
+{
+  "title": "Lavagne",
+  "new": "Nuova",
+  "noWhiteboards": "Ancora nessuna lavagna",
+  "createHint": "Crea una per iniziare a disegnare",
+  "loadingWhiteboard": "Caricamento lavagna...",
+  "deleteTitle": "Elimina lavagna",
+  "deleteMessage": "Questa lavagna verrà eliminata definitivamente. Questa azione non può essere annullata.",
+  "deleteConfirm": "Elimina lavagna",
+  "elements": "{{count}} elementi",
+  "element": "{{count}} elemento",
+  "rename": "Rinomina",
+  "archive": "Archivia",
+  "unarchive": "Rimuovi dall'archivio",
+  "moveToTrash": "Sposta nel cestino",
+  "restore": "Ripristina",
+  "deletePermanently": "Elimina definitivamente"
+}

@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "ウェブコンテンツをクイックキャプチャし、ThreatCaddyの脅威インテリジェンスのためにAIリクエストをプロキシします。データはデフォルトでデバイス上にローカル保存されます。"
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "クイック統計"
+  },
+  "captures": {
+    "message": "キャプチャ"
+  },
+  "thisWeek": {
+    "message": "今週"
+  },
+
+  "quickCapture": {
+    "message": "クイックキャプチャ"
+  },
+  "noteTitlePlaceholder": {
+    "message": "ノートタイトル（オプション）"
+  },
+  "captureTextPlaceholder": {
+    "message": "メモを入力または貼り付け..."
+  },
+  "options": {
+    "message": "オプション"
+  },
+  "investigation": {
+    "message": "調査"
+  },
+  "defaultClips": {
+    "message": "デフォルト: クリップ"
+  },
+  "saveAs": {
+    "message": "名前を付けて保存"
+  },
+  "entityNote": {
+    "message": "ノート"
+  },
+  "entityTask": {
+    "message": "タスク"
+  },
+  "entityTimelineEvent": {
+    "message": "タイムラインイベント"
+  },
+  "classification": {
+    "message": "分類"
+  },
+  "classificationNone": {
+    "message": "なし"
+  },
+  "saveNote": {
+    "message": "ノートを保存"
+  },
+  "saved": {
+    "message": "保存しました！"
+  },
+  "saveFailed": {
+    "message": "保存に失敗しました。もう一度お試しください。"
+  },
+
+  "recentCaptures": {
+    "message": "最近のキャプチャ"
+  },
+  "noCaptures": {
+    "message": "キャプチャはまだありません。任意のページでテキストを選択して右クリックして保存してください。"
+  },
+  "untitled": {
+    "message": "無題"
+  },
+
+  "quickActions": {
+    "message": "クイックアクション"
+  },
+  "openThreatCaddy": {
+    "message": "ThreatCaddyを開く"
+  },
+  "reviewAllCaptures": {
+    "message": "すべてのキャプチャを確認"
+  },
+
+  "permissions": {
+    "message": "権限"
+  },
+  "allowCaddyAI": {
+    "message": "CaddyAIを許可"
+  },
+  "allowCaddyAIDesc": {
+    "message": "AIプロバイダーAPI（Anthropic、OpenAI、Google、Mistral）へのアクセスを許可します。"
+  },
+  "allowUrlFetching": {
+    "message": "URLフェッチを許可"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "/fetchコマンドおよびlocalhost以外のローカルLLMに必要です。"
+  },
+
+  "howToUse": {
+    "message": "使い方:"
+  },
+  "howToUseContextMenu": {
+    "message": "テキストを選択して右クリック「ThreatCaddyに保存」"
+  },
+  "howToUseShortcut": {
+    "message": "またはキーボードショートカットを使用:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "（選択テキストをクリップ、何も選択していない場合はページ全体）"
+  },
+  "privacyLabel": {
+    "message": "プライバシー:"
+  },
+  "privacyText": {
+    "message": "すべてのデータはデバイス上にローカル保存されます。APIキーは選択したプロバイダーにのみ送信されます。トラッキングなし。"
+  },
+
+  "settings": {
+    "message": "設定"
+  },
+  "settingsTooltip": {
+    "message": "設定"
+  },
+  "back": {
+    "message": "戻る"
+  },
+  "targetUrl": {
+    "message": "ターゲットURL"
+  },
+  "targetUrlDesc": {
+    "message": "この拡張機能が接続するThreatCaddyインスタンスのURL。"
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "保存"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "ThreatCaddyに保存"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "ThreatCaddyに保存しました！"
+  },
+
+  "justNow": {
+    "message": "たった今"
+  },
+  "minutesAgo": {
+    "message": "$count$分前",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "$count$時間前",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "$count$日前",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "拡張機能のコンテキストが無効になりました。ページをリロードしてください。"
+  },
+  "errorExtensionDisconnected": {
+    "message": "拡張機能が切断されました"
+  },
+  "errorExtensionUnknown": {
+    "message": "拡張機能エラー: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "拡張機能のバックグラウンドから応答がありません"
+  },
+  "errorExtensionError": {
+    "message": "拡張機能エラー"
+  },
+
+  "errorInvalidUrl": {
+    "message": "無効なURL"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "HTTPおよびHTTPS URLのみサポートされています"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "URLアクセス権限が必要です。ThreatCaddy拡張機能のポップアップを開いて「URLフェッチを許可」を有効にしてから再試行してください。"
+  },
+  "errorRequestTimedOut15": {
+    "message": "リクエストがタイムアウトしました（15秒）。ページに到達できない可能性があります。"
+  },
+  "errorRequestTimedOut30": {
+    "message": "リクエストがタイムアウトしました（30秒）"
+  },
+  "errorBlockedInternal": {
+    "message": "ブロック: 内部/プライベートアドレスへのリクエストは許可されていません"
+  },
+  "errorBlockedDomain": {
+    "message": "ブロック: $hostname$ は許可されたプロキシドメインリストにありません",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "$hostname$ にはホスト権限が必要です",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "CaddyAI権限が必要です。ThreatCaddy拡張機能のポップアップを開いて権限の「CaddyAIを許可」を有効にしてください。"
+  },
+  "errorUnknownProvider": {
+    "message": "不明なプロバイダー: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "不明なエラー"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "$hostname$ にはホスト権限が必要です。ThreatCaddy拡張機能のポップアップを開いて権限の「URLフェッチを許可」を有効にしてください。",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "ページの読み込み待機中にタイムアウトしました"
+  },
+  "errorDeliverClips": {
+    "message": "クリップの配信に失敗しました——bridge.jsがページに到達できませんでした。拡張機能がこのサイトの権限を持っているか確認してください。"
+  },
+  "errorInvalidTargetUrl": {
+    "message": "無効なターゲットURL"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

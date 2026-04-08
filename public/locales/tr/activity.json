@@ -1,0 +1,15 @@
+{
+  "title": "Etkinlik Günlüğü",
+  "clearButton": "Temizle",
+  "searchPlaceholder": "Etkinlik ara...",
+  "allFilter": "Tümü",
+  "noActivity": "Henüz etkinlik yok",
+  "noActivityHint": "Gerçekleştirdiğiniz işlemler burada görünecek",
+  "today": "Bugün",
+  "yesterday": "Dün",
+  "thisWeek": "Bu Hafta",
+  "older": "Daha Eski",
+  "clearTitle": "Etkinlik Günlüğünü Temizle",
+  "clearMessage": "Bu işlem tüm etkinlik günlüğü girişlerini kalıcı olarak silecek. Bu işlem geri alınamaz.",
+  "clearConfirm": "Tümünü Temizle"
+}

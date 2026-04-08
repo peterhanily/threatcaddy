@@ -1,0 +1,15 @@
+{
+  "title": "화이트보드",
+  "newWhiteboard": "새 화이트보드",
+  "untitled": "제목 없는 화이트보드",
+  "openInExcalidraw": "Excalidraw에서 열기",
+  "deleteWhiteboard": "화이트보드 삭제",
+  "deleteConfirmTitle": "화이트보드 삭제",
+  "deleteConfirmMessage": "이 화이트보드를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+  "deleteConfirmButton": "삭제",
+  "noWhiteboards": "화이트보드가 아직 없습니다",
+  "noWhiteboardsHint": "새 화이트보드를 만들어 다이어그램과 시각적 조사를 시작하세요",
+  "lastModified": "{{date}}에 마지막으로 수정됨",
+  "restore": "복원",
+  "moveToTrash": "휴지통으로 이동"
+}

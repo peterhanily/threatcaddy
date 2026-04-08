@@ -1,0 +1,18 @@
+{
+  "title": "ホワイトボード",
+  "new": "新規",
+  "noWhiteboards": "ホワイトボードがまだありません",
+  "createHint": "作成して描画を開始",
+  "loadingWhiteboard": "ホワイトボードを読み込み中...",
+  "deleteTitle": "ホワイトボードを削除",
+  "deleteMessage": "このホワイトボードは完全に削除されます。この操作は元に戻せません。",
+  "deleteConfirm": "ホワイトボードを削除",
+  "elements": "{{count}} 件の要素",
+  "element": "{{count}} 件の要素",
+  "rename": "名前を変更",
+  "archive": "アーカイブ",
+  "unarchive": "アーカイブ解除",
+  "moveToTrash": "ゴミ箱に移動",
+  "restore": "復元",
+  "deletePermanently": "完全に削除"
+}

@@ -1,0 +1,18 @@
+{
+  "title": "Papan Tulis",
+  "new": "Baru",
+  "noWhiteboards": "Belum ada papan tulis",
+  "createHint": "Buat satu untuk mulai menggambar",
+  "loadingWhiteboard": "Memuat papan tulis...",
+  "deleteTitle": "Hapus Papan Tulis",
+  "deleteMessage": "Papan tulis ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.",
+  "deleteConfirm": "Hapus Papan Tulis",
+  "elements": "{{count}} elemen",
+  "element": "{{count}} elemen",
+  "rename": "Ganti Nama",
+  "archive": "Arsipkan",
+  "unarchive": "Batal Arsipkan",
+  "moveToTrash": "Pindah ke sampah",
+  "restore": "Pulihkan",
+  "deletePermanently": "Hapus permanen"
+}

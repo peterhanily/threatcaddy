@@ -1,0 +1,18 @@
+{
+  "title": "白板",
+  "new": "新建",
+  "noWhiteboards": "暂无白板",
+  "createHint": "创建一个以开始绘图",
+  "loadingWhiteboard": "加载白板...",
+  "deleteTitle": "删除白板",
+  "deleteMessage": "此白板将被永久删除，此操作无法撤销。",
+  "deleteConfirm": "删除白板",
+  "elements": "{{count}} 个元素",
+  "element": "{{count}} 个元素",
+  "rename": "重命名",
+  "archive": "存档",
+  "unarchive": "取消存档",
+  "moveToTrash": "移至回收站",
+  "restore": "恢复",
+  "deletePermanently": "永久删除"
+}

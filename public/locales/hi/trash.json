@@ -1,0 +1,20 @@
+{
+  "trash": "ट्रैश",
+  "archive": "संग्रह",
+  "emptyAllTrash": "सारा ट्रैश खाली करें",
+  "autoDeleteHint": "आइटम 30 दिनों के बाद स्वतः हट जाते हैं",
+  "trashEmpty": "ट्रैश खाली है",
+  "archiveEmpty": "संग्रह खाली है",
+  "notes": "नोट्स",
+  "tasks": "कार्य",
+  "timelineEvents": "टाइमलाइन इवेंट",
+  "whiteboards": "व्हाइटबोर्ड",
+  "iocs": "IOCs",
+  "restore": "पुनर्स्थापित करें",
+  "deletePermanently": "स्थायी रूप से हटाएं",
+  "unarchive": "संग्रह से निकालें",
+  "moveToTrash": "ट्रैश में भेजें",
+  "emptyAllTitle": "सारा ट्रैश खाली करें",
+  "emptyAllMessage": "सभी एंटिटी प्रकारों में {{count}} ट्रैश किए गए आइटम स्थायी रूप से हटाएं? यह पूर्ववत नहीं किया जा सकता।",
+  "emptyAllConfirm": "सारा ट्रैश खाली करें"
+}

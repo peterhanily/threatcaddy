@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "Đã nhập với {{count}} đoạn trích thất bại",
+    "importFailed": "Nhập đoạn trích từ tiện ích mở rộng thất bại",
+    "openedAsNote": "Đã mở \"{{name}}\" dưới dạng ghi chú mới",
+    "openFailed": "Mở \"{{name}}\" thất bại"
+  },
+  "share": {
+    "investigationSaved": "Điều tra \"{{name}}\" đã lưu với tất cả thực thể",
+    "noteSaved": "Đã lưu ghi chú vào ThreatCaddy",
+    "taskSaved": "Đã lưu nhiệm vụ vào ThreatCaddy",
+    "eventSaved": "Đã lưu sự kiện vào ThreatCaddy",
+    "chatSaved": "Đã lưu trò chuyện vào ThreatCaddy",
+    "templateShared": "Đã chia sẻ mẫu với nhóm",
+    "templateShareFailed": "Chia sẻ mẫu thất bại",
+    "templateRemovedFromTeam": "Đã xóa mẫu khỏi nhóm",
+    "templateRemoveFailed": "Xóa mẫu nhóm thất bại"
+  },
+  "import": {
+    "dataImported": "Đã nhập {{events}} sự kiện và {{iocs}} IOC",
+    "jsonImported": "Đã nhập {{notes}} ghi chú, {{tasks}} nhiệm vụ",
+    "markdownImported": "Đã nhập {{count}} ghi chú từ Markdown",
+    "importFailed": "Nhập thất bại",
+    "stixImported": "Đã nhập {{count}} IOC từ gói STIX",
+    "stixFailed": "Nhập STIX thất bại cho {{count}} IOC",
+    "stixNoDuplicates": "Không có IOC mới được nhập (tất cả là trùng lặp)",
+    "mispImported": "Đã nhập {{count}} IOC từ sự kiện MISP",
+    "mispFailed": "Nhập MISP thất bại cho {{count}} IOC",
+    "mispNoDuplicates": "Không có IOC mới được nhập (tất cả là trùng lặp)"
+  },
+  "backup": {
+    "exported": "Đã xuất bản sao lưu",
+    "exportFailed": "Xuất bản sao lưu thất bại",
+    "restored": "Đã khôi phục bản sao lưu",
+    "restoreFailed": "Khôi phục bản sao lưu thất bại",
+    "mergeComplete": "Gộp hoàn tất: {{added}} đã thêm, {{updated}} đã cập nhật, {{skipped}} bỏ qua",
+    "mergeFailed": "Gộp bản sao lưu thất bại",
+    "serverCreated": "Đã tạo bản sao lưu",
+    "serverCreateFailed": "Tạo bản sao lưu thất bại",
+    "decryptionFailed": "Giải mã thất bại",
+    "serverRestored": "Đã khôi phục bản sao lưu",
+    "serverRestoreFailed": "Khôi phục thất bại",
+    "serverDeleted": "Đã xóa bản sao lưu",
+    "serverDeleteFailed": "Xóa bản sao lưu thất bại",
+    "cloudPushed": "Đã đẩy bản sao lưu đám mây",
+    "cloudEncryptedPushed": "Đã đẩy bản sao lưu đám mây được mã hóa",
+    "cloudFailed": "Bản sao lưu đám mây thất bại"
+  },
+  "investigation": {
+    "sampleLoaded": "Đã tải điều tra mẫu",
+    "sampleRemoved": "Đã xóa điều tra mẫu",
+    "trashEmptied": "Đã làm sạch thùng rác",
+    "savedAsTemplate": "Đã lưu \"{{name}}\" dưới dạng mẫu",
+    "playbookRan": "Đang chạy playbook \"{{playbook}}\" trên \"{{investigation}}\"",
+    "createdFromPlaybook": "Đã tạo \"{{name}}\" từ playbook",
+    "exported": "Đã xuất điều tra \"{{name}}\"",
+    "exportFailed": "Xuất điều tra thất bại",
+    "reportGenerated": "Đã tạo báo cáo cho \"{{name}}\""
+  },
+  "encryption": {
+    "enabled": "Đã bật mã hóa",
+    "disabled": "Đã tắt mã hóa",
+    "passphraseChanged": "Đã đổi mật khẩu"
+  },
+  "integration": {
+    "nameRequired": "Cần tên tích hợp",
+    "createdAndInstalled": "Đã tạo và cài đặt tích hợp \"{{name}}\"",
+    "saveFailed": "Lưu thất bại: {{error}}",
+    "installedFromCatalog": "Đã cài đặt {{name}} từ danh mục cộng đồng",
+    "installCatalogFailed": "Cài đặt mẫu cộng đồng thất bại",
+    "templateExported": "Đã xuất {{name}}",
+    "installedFromTeam": "Đã cài đặt {{name}} từ nhóm",
+    "installTeamFailed": "Cài đặt mẫu nhóm thất bại",
+    "notFound": "Không tìm thấy tích hợp",
+    "completed": "Tích hợp \"{{name}}\" hoàn thành thành công",
+    "failed": "Tích hợp \"{{name}}\" thất bại: {{error}}",
+    "error": "Lỗi tích hợp: {{error}}"
+  },
+  "ioc": {
+    "exported": "Đã xuất {{count}} IOC dưới dạng {{format}}",
+    "deleted": "Đã xóa {{count}} IOC",
+    "statusUpdated": "Đã cập nhật trạng thái trên {{count}} IOC",
+    "confidenceUpdated": "Đã cập nhật độ tin cậy trên {{count}} IOC",
+    "tagsAdded": "Đã thêm thẻ vào {{count}} IOC",
+    "copiedToClipboard": "Đã sao chép {{count}} IOC vào bộ nhớ tạm",
+    "copyFailed": "Sao chép vào bộ nhớ tạm thất bại",
+    "bulkEnrichDone": "Làm phong phú hàng loạt hoàn tất: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "Đã đăng phản hồi",
+    "postCreated": "Đã tạo bài đăng",
+    "postCreateFailed": "Tạo bài đăng thất bại",
+    "uploadFailed": "Tải lên tệp thất bại: {{name}}",
+    "reactionAddFailed": "Thêm phản ứng thất bại",
+    "reactionRemoveFailed": "Xóa phản ứng thất bại",
+    "postDeleted": "Đã xóa bài đăng",
+    "postDeleteFailed": "Xóa bài đăng thất bại",
+    "editFailed": "Sửa bài đăng thất bại",
+    "pinUpdateFailed": "Cập nhật trạng thái ghim thất bại",
+    "notificationsLoadFailed": "Tải thông báo thất bại",
+    "markReadFailed": "Đánh dấu thông báo đã đọc thất bại",
+    "markAllReadFailed": "Đánh dấu tất cả đã đọc thất bại",
+    "clearNotificationsFailed": "Xóa thông báo thất bại"
+  },
+  "settings": {
+    "slashCommandUpdated": "Đã cập nhật /{{name}}",
+    "slashCommandCreated": "Đã tạo /{{name}}",
+    "slashCommandDeleted": "Đã xóa /{{name}}"
+  },
+  "generic": {
+    "tagCreateFailed": "Tạo thẻ thất bại"
+  }
+}

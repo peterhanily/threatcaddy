@@ -1,0 +1,20 @@
+{
+  "trash": "Papierkorb",
+  "archive": "Archiv",
+  "emptyAllTrash": "Gesamten Papierkorb leeren",
+  "autoDeleteHint": "Elemente werden nach 30 Tagen automatisch gelöscht",
+  "trashEmpty": "Papierkorb ist leer",
+  "archiveEmpty": "Archiv ist leer",
+  "notes": "Notizen",
+  "tasks": "Aufgaben",
+  "timelineEvents": "Zeitleistenereignisse",
+  "whiteboards": "Whiteboards",
+  "iocs": "IOCs",
+  "restore": "Wiederherstellen",
+  "deletePermanently": "Dauerhaft löschen",
+  "unarchive": "Aus Archiv entfernen",
+  "moveToTrash": "In Papierkorb verschieben",
+  "emptyAllTitle": "Gesamten Papierkorb leeren",
+  "emptyAllMessage": "Alle {{count}} Elemente im Papierkorb aller Entitätstypen dauerhaft löschen? Dies kann nicht rückgängig gemacht werden.",
+  "emptyAllConfirm": "Gesamten Papierkorb leeren"
+}

@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "वेब सामग्री जल्दी कैप्चर करें और ThreatCaddy थ्रेट इंटेलिजेंस के लिए AI अनुरोधों को प्रॉक्सी करें। डेटा डिफ़ॉल्ट रूप से आपके डिवाइस पर स्थानीय रहता है।"
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "त्वरित आँकड़े"
+  },
+  "captures": {
+    "message": "कैप्चर"
+  },
+  "thisWeek": {
+    "message": "इस सप्ताह"
+  },
+
+  "quickCapture": {
+    "message": "त्वरित कैप्चर"
+  },
+  "noteTitlePlaceholder": {
+    "message": "नोट शीर्षक (वैकल्पिक)"
+  },
+  "captureTextPlaceholder": {
+    "message": "नोट टाइप करें या पेस्ट करें..."
+  },
+  "options": {
+    "message": "विकल्प"
+  },
+  "investigation": {
+    "message": "जाँच"
+  },
+  "defaultClips": {
+    "message": "डिफ़ॉल्ट: क्लिप"
+  },
+  "saveAs": {
+    "message": "इस रूप में सहेजें"
+  },
+  "entityNote": {
+    "message": "नोट"
+  },
+  "entityTask": {
+    "message": "कार्य"
+  },
+  "entityTimelineEvent": {
+    "message": "टाइमलाइन इवेंट"
+  },
+  "classification": {
+    "message": "वर्गीकरण"
+  },
+  "classificationNone": {
+    "message": "कोई नहीं"
+  },
+  "saveNote": {
+    "message": "नोट सहेजें"
+  },
+  "saved": {
+    "message": "सहेजा गया!"
+  },
+  "saveFailed": {
+    "message": "सहेजने में विफल। कृपया पुनः प्रयास करें।"
+  },
+
+  "recentCaptures": {
+    "message": "हालिया कैप्चर"
+  },
+  "noCaptures": {
+    "message": "अभी कोई कैप्चर नहीं। किसी पेज पर टेक्स्ट चुनें और सहेजने के लिए राइट-क्लिक करें।"
+  },
+  "untitled": {
+    "message": "बिना शीर्षक"
+  },
+
+  "quickActions": {
+    "message": "त्वरित क्रियाएं"
+  },
+  "openThreatCaddy": {
+    "message": "ThreatCaddy खोलें"
+  },
+  "reviewAllCaptures": {
+    "message": "सभी कैप्चर देखें"
+  },
+
+  "permissions": {
+    "message": "अनुमतियाँ"
+  },
+  "allowCaddyAI": {
+    "message": "CaddyAI अनुमति दें"
+  },
+  "allowCaddyAIDesc": {
+    "message": "AI प्रदाता API (Anthropic, OpenAI, Google, Mistral) तक पहुँच देता है।"
+  },
+  "allowUrlFetching": {
+    "message": "URL प्राप्त करने की अनुमति दें"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "/fetch कमांड और non-localhost स्थानीय LLMs के लिए आवश्यक।"
+  },
+
+  "howToUse": {
+    "message": "उपयोग कैसे करें:"
+  },
+  "howToUseContextMenu": {
+    "message": "टेक्स्ट चुनें और \"ThreatCaddy में सहेजें\" राइट-क्लिक करें"
+  },
+  "howToUseShortcut": {
+    "message": "या कीबोर्ड शॉर्टकट उपयोग करें:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(चयन क्लिप करता है, या पूरा पेज अगर कुछ चुना नहीं)"
+  },
+  "privacyLabel": {
+    "message": "गोपनीयता:"
+  },
+  "privacyText": {
+    "message": "सभी डेटा आपके डिवाइस पर स्थानीय रहता है। API कुंजियाँ केवल आपके चुने प्रदाता को भेजी जाती हैं। कोई ट्रैकिंग नहीं।"
+  },
+
+  "settings": {
+    "message": "सेटिंग"
+  },
+  "settingsTooltip": {
+    "message": "सेटिंग"
+  },
+  "back": {
+    "message": "वापस"
+  },
+  "targetUrl": {
+    "message": "लक्ष्य URL"
+  },
+  "targetUrlDesc": {
+    "message": "ThreatCaddy इंस्टेंस URL जिससे यह एक्सटेंशन कनेक्ट होता है।"
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "सहेजें"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "ThreatCaddy में सहेजें"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "ThreatCaddy में सहेजा गया!"
+  },
+
+  "justNow": {
+    "message": "अभी-अभी"
+  },
+  "minutesAgo": {
+    "message": "$count$मि॰ पहले",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "$count$घं॰ पहले",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "$count$दि॰ पहले",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "एक्सटेंशन संदर्भ अमान्य हो गया। कृपया यह पेज रीलोड करें।"
+  },
+  "errorExtensionDisconnected": {
+    "message": "एक्सटेंशन डिस्कनेक्ट हुआ"
+  },
+  "errorExtensionUnknown": {
+    "message": "एक्सटेंशन त्रुटि: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "एक्सटेंशन बैकग्राउंड से कोई प्रतिक्रिया नहीं"
+  },
+  "errorExtensionError": {
+    "message": "एक्सटेंशन त्रुटि"
+  },
+
+  "errorInvalidUrl": {
+    "message": "अमान्य URL"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "केवल HTTP और HTTPS URLs समर्थित हैं"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "URL पहुँच अनुमति आवश्यक। ThreatCaddy एक्सटेंशन पॉपअप खोलें और \"URL प्राप्त करने की अनुमति दें\" सक्षम करें, फिर पुनः प्रयास करें।"
+  },
+  "errorRequestTimedOut15": {
+    "message": "अनुरोध टाइमआउट (15 सेकंड)। पेज अनुपलब्ध हो सकता है।"
+  },
+  "errorRequestTimedOut30": {
+    "message": "अनुरोध टाइमआउट (30 सेकंड)"
+  },
+  "errorBlockedInternal": {
+    "message": "ब्लॉक: आंतरिक/निजी पतों पर अनुरोध की अनुमति नहीं"
+  },
+  "errorBlockedDomain": {
+    "message": "ब्लॉक: $hostname$ अनुमत प्रॉक्सी डोमेन सूची में नहीं है",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "$hostname$ के लिए होस्ट अनुमति आवश्यक",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "CaddyAI अनुमति आवश्यक। ThreatCaddy एक्सटेंशन पॉपअप खोलें और अनुमतियों में \"CaddyAI अनुमति दें\" सक्षम करें।"
+  },
+  "errorUnknownProvider": {
+    "message": "अज्ञात प्रदाता: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "अज्ञात त्रुटि"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "$hostname$ के लिए होस्ट अनुमति आवश्यक। ThreatCaddy एक्सटेंशन पॉपअप खोलें और अनुमतियों में \"URL प्राप्त करने की अनुमति दें\" सक्षम करें।",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "पेज लोड होने की प्रतीक्षा टाइमआउट"
+  },
+  "errorDeliverClips": {
+    "message": "क्लिप भेजने में विफल — bridge.js पेज तक नहीं पहुँच सका। जाँचें कि एक्सटेंशन के पास इस साइट की अनुमति है।"
+  },
+  "errorInvalidTargetUrl": {
+    "message": "अमान्य लक्ष्य URL"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

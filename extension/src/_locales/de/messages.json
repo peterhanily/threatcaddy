@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "Web-Inhalte schnell erfassen und KI-Anfragen für ThreatCaddy Threat Intelligence proxyen. Daten bleiben standardmäßig lokal auf Ihrem Gerät."
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "Schnellstatistiken"
+  },
+  "captures": {
+    "message": "Erfassungen"
+  },
+  "thisWeek": {
+    "message": "Diese Woche"
+  },
+
+  "quickCapture": {
+    "message": "Schnellerfassung"
+  },
+  "noteTitlePlaceholder": {
+    "message": "Notiztitel (optional)"
+  },
+  "captureTextPlaceholder": {
+    "message": "Notiz eingeben oder einfügen..."
+  },
+  "options": {
+    "message": "Optionen"
+  },
+  "investigation": {
+    "message": "Untersuchung"
+  },
+  "defaultClips": {
+    "message": "Standard: Clips"
+  },
+  "saveAs": {
+    "message": "Speichern als"
+  },
+  "entityNote": {
+    "message": "Notiz"
+  },
+  "entityTask": {
+    "message": "Aufgabe"
+  },
+  "entityTimelineEvent": {
+    "message": "Zeitleistenereignis"
+  },
+  "classification": {
+    "message": "Klassifizierung"
+  },
+  "classificationNone": {
+    "message": "Keine"
+  },
+  "saveNote": {
+    "message": "Notiz speichern"
+  },
+  "saved": {
+    "message": "Gespeichert!"
+  },
+  "saveFailed": {
+    "message": "Speichern fehlgeschlagen. Bitte erneut versuchen."
+  },
+
+  "recentCaptures": {
+    "message": "Aktuelle Erfassungen"
+  },
+  "noCaptures": {
+    "message": "Noch keine Erfassungen. Text auf einer Seite auswählen und mit der rechten Maustaste klicken, um zu speichern."
+  },
+  "untitled": {
+    "message": "Ohne Titel"
+  },
+
+  "quickActions": {
+    "message": "Schnellaktionen"
+  },
+  "openThreatCaddy": {
+    "message": "ThreatCaddy öffnen"
+  },
+  "reviewAllCaptures": {
+    "message": "Alle Erfassungen überprüfen"
+  },
+
+  "permissions": {
+    "message": "Berechtigungen"
+  },
+  "allowCaddyAI": {
+    "message": "CaddyAI zulassen"
+  },
+  "allowCaddyAIDesc": {
+    "message": "Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral)."
+  },
+  "allowUrlFetching": {
+    "message": "URL-Abruf zulassen"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "Required for the /fetch command and non-localhost local LLMs."
+  },
+
+  "howToUse": {
+    "message": "Verwendung:"
+  },
+  "howToUseContextMenu": {
+    "message": "Text auswählen und \"In ThreatCaddy speichern\" mit rechter Maustaste"
+  },
+  "howToUseShortcut": {
+    "message": "Oder Tastenkürzel verwenden:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(erfasst Auswahl oder ganze Seite, wenn nichts ausgewählt)"
+  },
+  "privacyLabel": {
+    "message": "Datenschutz:"
+  },
+  "privacyText": {
+    "message": "Alle Daten bleiben lokal auf Ihrem Gerät. API-Schlüssel werden nur an Ihren gewählten Anbieter gesendet. Kein Tracking."
+  },
+
+  "settings": {
+    "message": "Einstellungen"
+  },
+  "settingsTooltip": {
+    "message": "Einstellungen"
+  },
+  "back": {
+    "message": "Zurück"
+  },
+  "targetUrl": {
+    "message": "Ziel-URL"
+  },
+  "targetUrlDesc": {
+    "message": "The ThreatCaddy instance URL this extension connects to."
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "Speichern"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "In ThreatCaddy speichern"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "In ThreatCaddy gespeichert!"
+  },
+
+  "justNow": {
+    "message": "Gerade eben"
+  },
+  "minutesAgo": {
+    "message": "vor $count$m",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "vor $count$h",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "vor $count$T",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "Erweiterungskontext ungültig. Bitte diese Seite neu laden."
+  },
+  "errorExtensionDisconnected": {
+    "message": "Erweiterung getrennt"
+  },
+  "errorExtensionUnknown": {
+    "message": "Erweiterungsfehler: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "Keine Antwort vom Erweiterungs-Hintergrund"
+  },
+  "errorExtensionError": {
+    "message": "Erweiterungsfehler"
+  },
+
+  "errorInvalidUrl": {
+    "message": "Ungültige URL"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "Nur HTTP- und HTTPS-URLs werden unterstützt"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "URL-Zugriffsberechtigung erforderlich. Öffnen Sie das ThreatCaddy-Erweiterungs-Popup und aktivieren Sie \"URL-Abruf zulassen\", dann erneut versuchen."
+  },
+  "errorRequestTimedOut15": {
+    "message": "Anfrage-Timeout (15s). Die Seite ist möglicherweise nicht erreichbar."
+  },
+  "errorRequestTimedOut30": {
+    "message": "Anfrage-Timeout (30s)"
+  },
+  "errorBlockedInternal": {
+    "message": "Blockiert: Anfragen an interne/private Adressen sind nicht erlaubt"
+  },
+  "errorBlockedDomain": {
+    "message": "Blockiert: $hostname$ ist nicht in der Liste der erlaubten Proxy-Domains",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "Host-Berechtigung erforderlich für $hostname$",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "CaddyAI-Berechtigung erforderlich. Öffnen Sie das ThreatCaddy-Erweiterungs-Popup und aktivieren Sie \"CaddyAI zulassen\" unter Berechtigungen."
+  },
+  "errorUnknownProvider": {
+    "message": "Unbekannter Anbieter: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "Unbekannter Fehler"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "Host-Berechtigung erforderlich für $hostname$. Öffnen Sie das ThreatCaddy-Erweiterungs-Popup und aktivieren Sie \"URL-Abruf zulassen\" unter Berechtigungen.",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "Timeout beim Warten auf Seitenladung"
+  },
+  "errorDeliverClips": {
+    "message": "Clips konnten nicht zugestellt werden — bridge.js konnte die Seite nicht erreichen. Prüfen Sie, ob die Erweiterung für diese Website berechtigt ist."
+  },
+  "errorInvalidTargetUrl": {
+    "message": "Ungültige Ziel-URL"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "title": "Journal d'activité",
+  "clearButton": "Effacer",
+  "searchPlaceholder": "Rechercher dans l'activité...",
+  "allFilter": "Tout",
+  "noActivity": "Aucune activité pour l'instant",
+  "noActivityHint": "Les actions que vous effectuez apparaîtront ici",
+  "today": "Aujourd'hui",
+  "yesterday": "Hier",
+  "thisWeek": "Cette semaine",
+  "older": "Plus ancien",
+  "clearTitle": "Effacer le journal d'activité",
+  "clearMessage": "Toutes les entrées du journal d'activité seront supprimées définitivement. Cette action est irréversible.",
+  "clearConfirm": "Tout effacer"
+}

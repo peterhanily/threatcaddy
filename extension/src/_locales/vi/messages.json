@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "Chụp nhanh nội dung web và ủy quyền yêu cầu AI cho tình báo mối đe dọa ThreatCaddy. Dữ liệu mặc định ở lại cục bộ trên thiết bị của bạn."
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "Thống kê nhanh"
+  },
+  "captures": {
+    "message": "Đoạn trích"
+  },
+  "thisWeek": {
+    "message": "Tuần này"
+  },
+
+  "quickCapture": {
+    "message": "Chụp nhanh"
+  },
+  "noteTitlePlaceholder": {
+    "message": "Tiêu đề ghi chú (tùy chọn)"
+  },
+  "captureTextPlaceholder": {
+    "message": "Nhập hoặc dán ghi chú..."
+  },
+  "options": {
+    "message": "Tùy chọn"
+  },
+  "investigation": {
+    "message": "Điều tra"
+  },
+  "defaultClips": {
+    "message": "Mặc định: Đoạn trích"
+  },
+  "saveAs": {
+    "message": "Lưu dưới dạng"
+  },
+  "entityNote": {
+    "message": "Ghi chú"
+  },
+  "entityTask": {
+    "message": "Nhiệm vụ"
+  },
+  "entityTimelineEvent": {
+    "message": "Sự kiện timeline"
+  },
+  "classification": {
+    "message": "Phân loại"
+  },
+  "classificationNone": {
+    "message": "Không có"
+  },
+  "saveNote": {
+    "message": "Lưu ghi chú"
+  },
+  "saved": {
+    "message": "Đã lưu!"
+  },
+  "saveFailed": {
+    "message": "Lưu thất bại. Vui lòng thử lại."
+  },
+
+  "recentCaptures": {
+    "message": "Đoạn trích gần đây"
+  },
+  "noCaptures": {
+    "message": "Chưa có đoạn trích. Chọn văn bản trên bất kỳ trang nào và nhấp chuột phải để lưu."
+  },
+  "untitled": {
+    "message": "Chưa có tiêu đề"
+  },
+
+  "quickActions": {
+    "message": "Hành động nhanh"
+  },
+  "openThreatCaddy": {
+    "message": "Mở ThreatCaddy"
+  },
+  "reviewAllCaptures": {
+    "message": "Xem tất cả đoạn trích"
+  },
+
+  "permissions": {
+    "message": "Quyền"
+  },
+  "allowCaddyAI": {
+    "message": "Cho phép CaddyAI"
+  },
+  "allowCaddyAIDesc": {
+    "message": "Cấp quyền truy cập API nhà cung cấp AI (Anthropic, OpenAI, Google, Mistral)."
+  },
+  "allowUrlFetching": {
+    "message": "Cho phép lấy URL"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "Cần cho lệnh /fetch và LLM cục bộ không phải localhost."
+  },
+
+  "howToUse": {
+    "message": "Cách sử dụng:"
+  },
+  "howToUseContextMenu": {
+    "message": "Chọn văn bản và nhấp chuột phải \"Lưu vào ThreatCaddy\""
+  },
+  "howToUseShortcut": {
+    "message": "Hoặc dùng phím tắt:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(chụp lựa chọn, hoặc toàn trang nếu không chọn gì)"
+  },
+  "privacyLabel": {
+    "message": "Quyền riêng tư:"
+  },
+  "privacyText": {
+    "message": "Tất cả dữ liệu ở lại cục bộ trên thiết bị. Khóa API chỉ gửi đến nhà cung cấp bạn chọn. Không theo dõi."
+  },
+
+  "settings": {
+    "message": "Cài đặt"
+  },
+  "settingsTooltip": {
+    "message": "Cài đặt"
+  },
+  "back": {
+    "message": "Quay lại"
+  },
+  "targetUrl": {
+    "message": "URL đích"
+  },
+  "targetUrlDesc": {
+    "message": "URL phiên bản ThreatCaddy mà tiện ích mở rộng này kết nối."
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "Lưu"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "Lưu vào ThreatCaddy"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "Đã lưu vào ThreatCaddy!"
+  },
+
+  "justNow": {
+    "message": "Vừa xong"
+  },
+  "minutesAgo": {
+    "message": "$count$ phút trước",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "$count$ giờ trước",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "$count$ ngày trước",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "Ngữ cảnh tiện ích mở rộng không hợp lệ. Vui lòng tải lại trang này."
+  },
+  "errorExtensionDisconnected": {
+    "message": "Tiện ích mở rộng bị ngắt kết nối"
+  },
+  "errorExtensionUnknown": {
+    "message": "Lỗi tiện ích mở rộng: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "Không có phản hồi từ nền tiện ích mở rộng"
+  },
+  "errorExtensionError": {
+    "message": "Lỗi tiện ích mở rộng"
+  },
+
+  "errorInvalidUrl": {
+    "message": "URL không hợp lệ"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "Chỉ hỗ trợ URL HTTP và HTTPS"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "Cần quyền truy cập URL. Mở popup tiện ích ThreatCaddy và bật \"Cho phép lấy URL\", rồi thử lại."
+  },
+  "errorRequestTimedOut15": {
+    "message": "Yêu cầu hết thời gian (15s). Trang có thể không truy cập được."
+  },
+  "errorRequestTimedOut30": {
+    "message": "Yêu cầu hết thời gian (30s)"
+  },
+  "errorBlockedInternal": {
+    "message": "Bị chặn: yêu cầu đến địa chỉ nội bộ/riêng tư không được phép"
+  },
+  "errorBlockedDomain": {
+    "message": "Bị chặn: $hostname$ không có trong danh sách tên miền proxy được phép",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "Cần quyền máy chủ cho $hostname$",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "Cần quyền CaddyAI. Mở popup tiện ích ThreatCaddy và bật \"Cho phép CaddyAI\" trong Quyền."
+  },
+  "errorUnknownProvider": {
+    "message": "Nhà cung cấp không xác định: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "Lỗi không xác định"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "Cần quyền máy chủ cho $hostname$. Mở popup tiện ích ThreatCaddy và bật \"Cho phép lấy URL\" trong Quyền.",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "Hết thời gian chờ trang tải"
+  },
+  "errorDeliverClips": {
+    "message": "Gửi đoạn trích thất bại — bridge.js không thể đến trang. Kiểm tra xem tiện ích mở rộng có quyền cho trang này không."
+  },
+  "errorInvalidTargetUrl": {
+    "message": "URL đích không hợp lệ"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

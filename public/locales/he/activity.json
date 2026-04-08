@@ -1,0 +1,15 @@
+{
+  "title": "יומן פעילות",
+  "clearButton": "נקה",
+  "searchPlaceholder": "חפש פעילות...",
+  "allFilter": "הכל",
+  "noActivity": "אין פעילות עדיין",
+  "noActivityHint": "פעולות שתבצע יופיעו כאן",
+  "today": "היום",
+  "yesterday": "אתמול",
+  "thisWeek": "השבוע",
+  "older": "ישן יותר",
+  "clearTitle": "נקה יומן פעילות",
+  "clearMessage": "פעולה זו תמחק לצמיתות את כל רשומות יומן הפעילות. לא ניתן לבטל פעולה זו.",
+  "clearConfirm": "נקה הכל"
+}

@@ -1,0 +1,18 @@
+{
+  "title": "الألواح البيضاء",
+  "new": "جديد",
+  "noWhiteboards": "لا توجد ألواح بيضاء بعد",
+  "createHint": "أنشئ واحدًا للبدء في الرسم",
+  "loadingWhiteboard": "جارٍ تحميل اللوح الأبيض...",
+  "deleteTitle": "حذف اللوح الأبيض",
+  "deleteMessage": "سيتم حذف هذا اللوح الأبيض بشكل نهائي. لا يمكن التراجع عن هذا الإجراء.",
+  "deleteConfirm": "حذف اللوح الأبيض",
+  "elements": "{{count}} عنصر",
+  "element": "{{count}} عنصر",
+  "rename": "إعادة تسمية",
+  "archive": "أرشفة",
+  "unarchive": "إلغاء الأرشفة",
+  "moveToTrash": "نقل إلى المهملات",
+  "restore": "استعادة",
+  "deletePermanently": "حذف نهائي"
+}

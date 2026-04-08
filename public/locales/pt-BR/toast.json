@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "Importado com {{count}} clip(s) com falha",
+    "importFailed": "Falha ao importar clips da extensão",
+    "openedAsNote": "\"{{name}}\" aberto como nova nota",
+    "openFailed": "Falha ao abrir \"{{name}}\""
+  },
+  "share": {
+    "investigationSaved": "Investigação \"{{name}}\" salva com todas as entidades",
+    "noteSaved": "Nota salva no ThreatCaddy",
+    "taskSaved": "Tarefa salva no ThreatCaddy",
+    "eventSaved": "Evento salvo no ThreatCaddy",
+    "chatSaved": "Chat salvo no ThreatCaddy",
+    "templateShared": "Modelo compartilhado com a equipe",
+    "templateShareFailed": "Falha ao compartilhar modelo",
+    "templateRemovedFromTeam": "Modelo removido da equipe",
+    "templateRemoveFailed": "Falha ao excluir modelo da equipe"
+  },
+  "import": {
+    "dataImported": "{{events}} eventos e {{iocs}} IOCs importados",
+    "jsonImported": "{{notes}} notas, {{tasks}} tarefas importadas",
+    "markdownImported": "{{count}} notas importadas do Markdown",
+    "importFailed": "Importação falhou",
+    "stixImported": "{{count}} IOC(s) importado(s) do pacote STIX",
+    "stixFailed": "Importação STIX falhou para {{count}} IOC(s)",
+    "stixNoDuplicates": "Nenhum novo IOC importado (todos duplicados)",
+    "mispImported": "{{count}} IOC(s) importado(s) do evento MISP",
+    "mispFailed": "Importação MISP falhou para {{count}} IOC(s)",
+    "mispNoDuplicates": "Nenhum novo IOC importado (todos duplicados)"
+  },
+  "backup": {
+    "exported": "Backup exportado",
+    "exportFailed": "Falha ao exportar backup",
+    "restored": "Backup restaurado",
+    "restoreFailed": "Falha ao restaurar backup",
+    "mergeComplete": "Mesclagem concluída: {{added}} adicionados, {{updated}} atualizados, {{skipped}} ignorados",
+    "mergeFailed": "Falha ao mesclar backup",
+    "serverCreated": "Backup criado",
+    "serverCreateFailed": "Falha ao criar backup",
+    "decryptionFailed": "Falha na descriptografia",
+    "serverRestored": "Backup restaurado",
+    "serverRestoreFailed": "Restauração falhou",
+    "serverDeleted": "Backup excluído",
+    "serverDeleteFailed": "Falha ao excluir backup",
+    "cloudPushed": "Backup na nuvem enviado",
+    "cloudEncryptedPushed": "Backup criptografado na nuvem enviado",
+    "cloudFailed": "Falha no backup na nuvem"
+  },
+  "investigation": {
+    "sampleLoaded": "Investigação de exemplo carregada",
+    "sampleRemoved": "Investigação de exemplo removida",
+    "trashEmptied": "Lixeira esvaziada",
+    "savedAsTemplate": "\"{{name}}\" salva como modelo",
+    "playbookRan": "Playbook \"{{playbook}}\" executado em \"{{investigation}}\"",
+    "createdFromPlaybook": "\"{{name}}\" criada a partir do playbook",
+    "exported": "Investigação \"{{name}}\" exportada",
+    "exportFailed": "Falha ao exportar investigação",
+    "reportGenerated": "Relatório gerado para \"{{name}}\""
+  },
+  "encryption": {
+    "enabled": "Criptografia ativada",
+    "disabled": "Criptografia desativada",
+    "passphraseChanged": "Senha alterada"
+  },
+  "integration": {
+    "nameRequired": "O nome da integração é obrigatório",
+    "createdAndInstalled": "Integração \"{{name}}\" criada e instalada",
+    "saveFailed": "Falha ao salvar: {{error}}",
+    "installedFromCatalog": "{{name}} instalado do catálogo comunitário",
+    "installCatalogFailed": "Falha ao instalar modelo comunitário",
+    "templateExported": "{{name}} exportado",
+    "installedFromTeam": "{{name}} instalado da equipe",
+    "installTeamFailed": "Falha ao instalar modelo da equipe",
+    "notFound": "Integração não encontrada",
+    "completed": "Integração \"{{name}}\" concluída com sucesso",
+    "failed": "Integração \"{{name}}\" falhou: {{error}}",
+    "error": "Erro de integração: {{error}}"
+  },
+  "ioc": {
+    "exported": "{{count}} IOC(s) exportado(s) como {{format}}",
+    "deleted": "{{count}} IOC(s) excluído(s)",
+    "statusUpdated": "Status atualizado em {{count}} IOC(s)",
+    "confidenceUpdated": "Confiança atualizada em {{count}} IOC(s)",
+    "tagsAdded": "Tags adicionadas a {{count}} IOC(s)",
+    "copiedToClipboard": "{{count}} IOC(s) copiado(s) para a área de transferência",
+    "copyFailed": "Falha ao copiar para a área de transferência",
+    "bulkEnrichDone": "Enriquecimento em massa concluído: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "Resposta publicada",
+    "postCreated": "Publicação criada",
+    "postCreateFailed": "Falha ao criar publicação",
+    "uploadFailed": "Falha ao enviar arquivo: {{name}}",
+    "reactionAddFailed": "Falha ao adicionar reação",
+    "reactionRemoveFailed": "Falha ao remover reação",
+    "postDeleted": "Publicação excluída",
+    "postDeleteFailed": "Falha ao excluir publicação",
+    "editFailed": "Falha ao editar publicação",
+    "pinUpdateFailed": "Falha ao atualizar status de fixação",
+    "notificationsLoadFailed": "Falha ao carregar notificações",
+    "markReadFailed": "Falha ao marcar notificação como lida",
+    "markAllReadFailed": "Falha ao marcar todas as notificações como lidas",
+    "clearNotificationsFailed": "Falha ao limpar notificações"
+  },
+  "settings": {
+    "slashCommandUpdated": "/{{name}} atualizado",
+    "slashCommandCreated": "/{{name}} criado",
+    "slashCommandDeleted": "/{{name}} excluído"
+  },
+  "generic": {
+    "tagCreateFailed": "Falha ao criar tag"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "trash": "ゴミ箱",
+  "archive": "アーカイブ",
+  "emptyAllTrash": "ゴミ箱をすべて空にする",
+  "autoDeleteHint": "アイテムは30日後に自動削除されます",
+  "trashEmpty": "ゴミ箱は空です",
+  "archiveEmpty": "アーカイブは空です",
+  "notes": "ノート",
+  "tasks": "タスク",
+  "timelineEvents": "タイムラインイベント",
+  "whiteboards": "ホワイトボード",
+  "iocs": "IOC",
+  "restore": "復元",
+  "deletePermanently": "完全に削除",
+  "unarchive": "アーカイブ解除",
+  "moveToTrash": "ゴミ箱に移動",
+  "emptyAllTitle": "ゴミ箱をすべて空にする",
+  "emptyAllMessage": "すべてのエンティティタイプにわたる {{count}} 件のゴミ箱アイテムをすべて完全に削除しますか？この操作は元に戻せません。",
+  "emptyAllConfirm": "ゴミ箱をすべて空にする"
+}

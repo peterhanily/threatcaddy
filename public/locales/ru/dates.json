@@ -1,0 +1,6 @@
+{
+  "justNow": "Только что",
+  "minutesAgo": "{{count}} мин. назад",
+  "hoursAgo": "{{count}} ч. назад",
+  "daysAgo": "{{count}} д. назад"
+}

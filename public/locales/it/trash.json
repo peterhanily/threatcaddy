@@ -1,0 +1,20 @@
+{
+  "trash": "Cestino",
+  "archive": "Archivio",
+  "emptyAllTrash": "Svuota tutto il cestino",
+  "autoDeleteHint": "Gli elementi vengono eliminati automaticamente dopo 30 giorni",
+  "trashEmpty": "Il cestino è vuoto",
+  "archiveEmpty": "L'archivio è vuoto",
+  "notes": "Note",
+  "tasks": "Attività",
+  "timelineEvents": "Eventi timeline",
+  "whiteboards": "Lavagne",
+  "iocs": "IOC",
+  "restore": "Ripristina",
+  "deletePermanently": "Elimina definitivamente",
+  "unarchive": "Rimuovi dall'archivio",
+  "moveToTrash": "Sposta nel cestino",
+  "emptyAllTitle": "Svuota tutto il cestino",
+  "emptyAllMessage": "Eliminare definitivamente tutti i {{count}} elementi nel cestino in tutti i tipi di entità? Questa azione non può essere annullata.",
+  "emptyAllConfirm": "Svuota tutto il cestino"
+}

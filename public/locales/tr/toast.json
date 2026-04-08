@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "{{count}} başarısız klip ile içe aktarıldı",
+    "importFailed": "Uzantıdan klipler içe aktarılamadı",
+    "openedAsNote": "\"{{name}}\" yeni not olarak açıldı",
+    "openFailed": "\"{{name}}\" açılamadı"
+  },
+  "share": {
+    "investigationSaved": "\"{{name}}\" soruşturması tüm varlıklarla kaydedildi",
+    "noteSaved": "Not ThreatCaddy'ye kaydedildi",
+    "taskSaved": "Görev ThreatCaddy'ye kaydedildi",
+    "eventSaved": "Olay ThreatCaddy'ye kaydedildi",
+    "chatSaved": "Sohbet ThreatCaddy'ye kaydedildi",
+    "templateShared": "Şablon ekiple paylaşıldı",
+    "templateShareFailed": "Şablon paylaşılamadı",
+    "templateRemovedFromTeam": "Şablon ekipten kaldırıldı",
+    "templateRemoveFailed": "Ekip şablonu silinemedi"
+  },
+  "import": {
+    "dataImported": "{{events}} olay ve {{iocs}} IOC içe aktarıldı",
+    "jsonImported": "{{notes}} not, {{tasks}} görev içe aktarıldı",
+    "markdownImported": "Markdown'dan {{count}} not içe aktarıldı",
+    "importFailed": "İçe aktarma başarısız",
+    "stixImported": "STIX paketinden {{count}} IOC içe aktarıldı",
+    "stixFailed": "{{count}} IOC için STIX içe aktarımı başarısız",
+    "stixNoDuplicates": "Yeni IOC içe aktarılmadı (tümü yinelenen)",
+    "mispImported": "MISP olayından {{count}} IOC içe aktarıldı",
+    "mispFailed": "{{count}} IOC için MISP içe aktarımı başarısız",
+    "mispNoDuplicates": "Yeni IOC içe aktarılmadı (tümü yinelenen)"
+  },
+  "backup": {
+    "exported": "Yedek dışa aktarıldı",
+    "exportFailed": "Yedek dışa aktarılamadı",
+    "restored": "Yedek geri yüklendi",
+    "restoreFailed": "Yedek geri yüklenemedi",
+    "mergeComplete": "Birleştirme tamamlandı: {{added}} eklendi, {{updated}} güncellendi, {{skipped}} atlandı",
+    "mergeFailed": "Yedek birleştirilemedi",
+    "serverCreated": "Yedek oluşturuldu",
+    "serverCreateFailed": "Yedek oluşturma başarısız",
+    "decryptionFailed": "Şifre çözme başarısız",
+    "serverRestored": "Yedek geri yüklendi",
+    "serverRestoreFailed": "Geri yükleme başarısız",
+    "serverDeleted": "Yedek silindi",
+    "serverDeleteFailed": "Yedek silinemedi",
+    "cloudPushed": "Bulut yedeği iletildi",
+    "cloudEncryptedPushed": "Şifreli bulut yedeği iletildi",
+    "cloudFailed": "Bulut yedeği başarısız"
+  },
+  "investigation": {
+    "sampleLoaded": "Örnek soruşturma yüklendi",
+    "sampleRemoved": "Örnek soruşturma kaldırıldı",
+    "trashEmptied": "Çöp kutusu boşaltıldı",
+    "savedAsTemplate": "\"{{name}}\" şablon olarak kaydedildi",
+    "playbookRan": "\"{{investigation}}\" üzerinde \"{{playbook}}\" playbook'u çalıştırıldı",
+    "createdFromPlaybook": "Playbook'tan \"{{name}}\" oluşturuldu",
+    "exported": "\"{{name}}\" soruşturması dışa aktarıldı",
+    "exportFailed": "Soruşturma dışa aktarılamadı",
+    "reportGenerated": "\"{{name}}\" için rapor oluşturuldu"
+  },
+  "encryption": {
+    "enabled": "Şifreleme etkinleştirildi",
+    "disabled": "Şifreleme devre dışı bırakıldı",
+    "passphraseChanged": "Parola değiştirildi"
+  },
+  "integration": {
+    "nameRequired": "Entegrasyon adı gereklidir",
+    "createdAndInstalled": "\"{{name}}\" entegrasyonu oluşturuldu ve yüklendi",
+    "saveFailed": "Kaydetme başarısız: {{error}}",
+    "installedFromCatalog": "Topluluk kataloğundan {{name}} yüklendi",
+    "installCatalogFailed": "Topluluk şablonu yüklenemedi",
+    "templateExported": "{{name}} dışa aktarıldı",
+    "installedFromTeam": "Ekipten {{name}} yüklendi",
+    "installTeamFailed": "Ekip şablonu yüklenemedi",
+    "notFound": "Entegrasyon bulunamadı",
+    "completed": "\"{{name}}\" entegrasyonu başarıyla tamamlandı",
+    "failed": "\"{{name}}\" entegrasyonu başarısız: {{error}}",
+    "error": "Entegrasyon hatası: {{error}}"
+  },
+  "ioc": {
+    "exported": "{{count}} IOC {{format}} olarak dışa aktarıldı",
+    "deleted": "{{count}} IOC silindi",
+    "statusUpdated": "{{count}} IOC'de durum güncellendi",
+    "confidenceUpdated": "{{count}} IOC'de güven güncellendi",
+    "tagsAdded": "{{count}} IOC'ye etiket eklendi",
+    "copiedToClipboard": "{{count}} IOC panoya kopyalandı",
+    "copyFailed": "Panoya kopyalanamadı",
+    "bulkEnrichDone": "Toplu zenginleştirme tamamlandı: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "Yanıt gönderildi",
+    "postCreated": "Gönderi oluşturuldu",
+    "postCreateFailed": "Gönderi oluşturulamadı",
+    "uploadFailed": "Dosya yüklenemedi: {{name}}",
+    "reactionAddFailed": "Tepki eklenemedi",
+    "reactionRemoveFailed": "Tepki kaldırılamadı",
+    "postDeleted": "Gönderi silindi",
+    "postDeleteFailed": "Gönderi silinemedi",
+    "editFailed": "Gönderi düzenlenemedi",
+    "pinUpdateFailed": "Sabitleme durumu güncellenemedi",
+    "notificationsLoadFailed": "Bildirimler yüklenemedi",
+    "markReadFailed": "Bildirim okundu olarak işaretlenemedi",
+    "markAllReadFailed": "Tümü okundu olarak işaretlenemedi",
+    "clearNotificationsFailed": "Bildirimler temizlenemedi"
+  },
+  "settings": {
+    "slashCommandUpdated": "/{{name}} güncellendi",
+    "slashCommandCreated": "/{{name}} oluşturuldu",
+    "slashCommandDeleted": "/{{name}} silindi"
+  },
+  "generic": {
+    "tagCreateFailed": "Etiket oluşturulamadı"
+  }
+}

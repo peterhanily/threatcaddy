@@ -1,0 +1,15 @@
+{
+  "title": "Nhật ký hoạt động",
+  "clearButton": "Xóa",
+  "searchPlaceholder": "Tìm kiếm hoạt động...",
+  "allFilter": "Tất cả",
+  "noActivity": "Chưa có hoạt động",
+  "noActivityHint": "Các hành động bạn thực hiện sẽ xuất hiện ở đây",
+  "today": "Hôm nay",
+  "yesterday": "Hôm qua",
+  "thisWeek": "Tuần này",
+  "older": "Cũ hơn",
+  "clearTitle": "Xóa nhật ký hoạt động",
+  "clearMessage": "Thao tác này sẽ xóa vĩnh viễn tất cả mục nhập nhật ký hoạt động. Không thể hoàn tác.",
+  "clearConfirm": "Xóa tất cả"
+}

@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "{{count}}개의 클립 실패로 가져왔습니다",
+    "importFailed": "확장 프로그램에서 클립 가져오기 실패",
+    "openedAsNote": "\"{{name}}\"을/를 새 노트로 열었습니다",
+    "openFailed": "\"{{name}}\"을/를 열지 못했습니다"
+  },
+  "share": {
+    "investigationSaved": "조사 \"{{name}}\"과/와 모든 엔티티를 저장했습니다",
+    "noteSaved": "노트가 ThreatCaddy에 저장되었습니다",
+    "taskSaved": "태스크가 ThreatCaddy에 저장되었습니다",
+    "eventSaved": "이벤트가 ThreatCaddy에 저장되었습니다",
+    "chatSaved": "채팅이 ThreatCaddy에 저장되었습니다",
+    "templateShared": "템플릿이 팀과 공유되었습니다",
+    "templateShareFailed": "템플릿 공유 실패",
+    "templateRemovedFromTeam": "팀에서 템플릿이 제거되었습니다",
+    "templateRemoveFailed": "팀 템플릿 삭제 실패"
+  },
+  "import": {
+    "dataImported": "{{events}}개 이벤트와 {{iocs}}개 IOC를 가져왔습니다",
+    "jsonImported": "{{notes}}개 노트, {{tasks}}개 태스크를 가져왔습니다",
+    "markdownImported": "Markdown에서 {{count}}개 노트를 가져왔습니다",
+    "importFailed": "가져오기 실패",
+    "stixImported": "STIX 번들에서 {{count}}개 IOC를 가져왔습니다",
+    "stixFailed": "{{count}}개 IOC의 STIX 가져오기 실패",
+    "stixNoDuplicates": "새 IOC가 가져오지 않았습니다 (모두 중복)",
+    "mispImported": "MISP 이벤트에서 {{count}}개 IOC를 가져왔습니다",
+    "mispFailed": "{{count}}개 IOC의 MISP 가져오기 실패",
+    "mispNoDuplicates": "새 IOC가 가져오지 않았습니다 (모두 중복)"
+  },
+  "backup": {
+    "exported": "백업 내보내기됨",
+    "exportFailed": "백업 내보내기 실패",
+    "restored": "백업 복원됨",
+    "restoreFailed": "백업 복원 실패",
+    "mergeComplete": "병합 완료: {{added}}개 추가됨, {{updated}}개 업데이트됨, {{skipped}}개 건너뜀",
+    "mergeFailed": "백업 병합 실패",
+    "serverCreated": "백업 만들어짐",
+    "serverCreateFailed": "백업 만들기 실패",
+    "decryptionFailed": "복호화 실패",
+    "serverRestored": "백업 복원됨",
+    "serverRestoreFailed": "복원 실패",
+    "serverDeleted": "백업 삭제됨",
+    "serverDeleteFailed": "백업 삭제 실패",
+    "cloudPushed": "클라우드 백업 푸시됨",
+    "cloudEncryptedPushed": "암호화된 클라우드 백업 푸시됨",
+    "cloudFailed": "클라우드 백업 실패"
+  },
+  "investigation": {
+    "sampleLoaded": "샘플 조사 로드됨",
+    "sampleRemoved": "샘플 조사 제거됨",
+    "trashEmptied": "휴지통 비워짐",
+    "savedAsTemplate": "\"{{name}}\"이/가 템플릿으로 저장됨",
+    "playbookRan": "\"{{investigation}}\"에서 \"{{playbook}}\" 플레이북 실행됨",
+    "createdFromPlaybook": "플레이북에서 \"{{name}}\" 만들어짐",
+    "exported": "조사 \"{{name}}\" 내보내기됨",
+    "exportFailed": "조사 내보내기 실패",
+    "reportGenerated": "\"{{name}}\"에 대한 보고서 생성됨"
+  },
+  "encryption": {
+    "enabled": "암호화 활성화됨",
+    "disabled": "암호화 비활성화됨",
+    "passphraseChanged": "패스프레이즈 변경됨"
+  },
+  "integration": {
+    "nameRequired": "통합 이름이 필요합니다",
+    "createdAndInstalled": "통합 \"{{name}}\" 만들어지고 설치됨",
+    "saveFailed": "저장 실패: {{error}}",
+    "installedFromCatalog": "커뮤니티 카탈로그에서 {{name}} 설치됨",
+    "installCatalogFailed": "커뮤니티 템플릿 설치 실패",
+    "templateExported": "{{name}} 내보내기됨",
+    "installedFromTeam": "팀에서 {{name}} 설치됨",
+    "installTeamFailed": "팀 템플릿 설치 실패",
+    "notFound": "통합을 찾을 수 없습니다",
+    "completed": "통합 \"{{name}}\"이/가 성공적으로 완료됨",
+    "failed": "통합 \"{{name}}\" 실패: {{error}}",
+    "error": "통합 오류: {{error}}"
+  },
+  "ioc": {
+    "exported": "{{count}}개 IOC를 {{format}}으로/로 내보냈습니다",
+    "deleted": "{{count}}개 IOC 삭제됨",
+    "statusUpdated": "{{count}}개 IOC의 상태 업데이트됨",
+    "confidenceUpdated": "{{count}}개 IOC의 신뢰도 업데이트됨",
+    "tagsAdded": "{{count}}개 IOC에 태그 추가됨",
+    "copiedToClipboard": "{{count}}개 IOC를 클립보드에 복사했습니다",
+    "copyFailed": "클립보드에 복사 실패",
+    "bulkEnrichDone": "일괄 보강 완료: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "답장 게시됨",
+    "postCreated": "게시물 만들어짐",
+    "postCreateFailed": "게시물 만들기 실패",
+    "uploadFailed": "파일 업로드 실패: {{name}}",
+    "reactionAddFailed": "반응 추가 실패",
+    "reactionRemoveFailed": "반응 제거 실패",
+    "postDeleted": "게시물 삭제됨",
+    "postDeleteFailed": "게시물 삭제 실패",
+    "editFailed": "게시물 편집 실패",
+    "pinUpdateFailed": "고정 상태 업데이트 실패",
+    "notificationsLoadFailed": "알림 로드 실패",
+    "markReadFailed": "알림 읽음 표시 실패",
+    "markAllReadFailed": "모두 읽음 표시 실패",
+    "clearNotificationsFailed": "알림 지우기 실패"
+  },
+  "settings": {
+    "slashCommandUpdated": "/{{name}} 업데이트됨",
+    "slashCommandCreated": "/{{name}} 만들어짐",
+    "slashCommandDeleted": "/{{name}} 삭제됨"
+  },
+  "generic": {
+    "tagCreateFailed": "태그 만들기 실패"
+  }
+}

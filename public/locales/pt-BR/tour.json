@@ -1,0 +1,7 @@
+{
+  "stepCounter": "{{current}} / {{total}}",
+  "skipTour": "Pular tour",
+  "back": "Voltar",
+  "next": "Próximo",
+  "finish": "Concluir"
+}

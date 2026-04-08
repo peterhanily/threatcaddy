@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "Быстрый захват веб-контента и проксирование AI-запросов для ThreatCaddy. Данные по умолчанию остаются на вашем устройстве."
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "Быстрая статистика"
+  },
+  "captures": {
+    "message": "Захваты"
+  },
+  "thisWeek": {
+    "message": "На этой неделе"
+  },
+
+  "quickCapture": {
+    "message": "Быстрый захват"
+  },
+  "noteTitlePlaceholder": {
+    "message": "Заголовок заметки (необязательно)"
+  },
+  "captureTextPlaceholder": {
+    "message": "Введите или вставьте заметку..."
+  },
+  "options": {
+    "message": "Параметры"
+  },
+  "investigation": {
+    "message": "Расследование"
+  },
+  "defaultClips": {
+    "message": "По умолчанию: Клипы"
+  },
+  "saveAs": {
+    "message": "Сохранить как"
+  },
+  "entityNote": {
+    "message": "Заметка"
+  },
+  "entityTask": {
+    "message": "Задача"
+  },
+  "entityTimelineEvent": {
+    "message": "Событие хронологии"
+  },
+  "classification": {
+    "message": "Классификация"
+  },
+  "classificationNone": {
+    "message": "Нет"
+  },
+  "saveNote": {
+    "message": "Сохранить заметку"
+  },
+  "saved": {
+    "message": "Сохранено!"
+  },
+  "saveFailed": {
+    "message": "Не удалось сохранить. Повторите попытку."
+  },
+
+  "recentCaptures": {
+    "message": "Недавние захваты"
+  },
+  "noCaptures": {
+    "message": "Захватов пока нет. Выделите текст на любой странице и нажмите правую кнопку мыши для сохранения."
+  },
+  "untitled": {
+    "message": "Без названия"
+  },
+
+  "quickActions": {
+    "message": "Быстрые действия"
+  },
+  "openThreatCaddy": {
+    "message": "Открыть ThreatCaddy"
+  },
+  "reviewAllCaptures": {
+    "message": "Просмотреть все захваты"
+  },
+
+  "permissions": {
+    "message": "Разрешения"
+  },
+  "allowCaddyAI": {
+    "message": "Разрешить CaddyAI"
+  },
+  "allowCaddyAIDesc": {
+    "message": "Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral)."
+  },
+  "allowUrlFetching": {
+    "message": "Разрешить получение URL"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "Required for the /fetch command and non-localhost local LLMs."
+  },
+
+  "howToUse": {
+    "message": "Как использовать:"
+  },
+  "howToUseContextMenu": {
+    "message": "Выделите текст и нажмите правую кнопку мыши «Сохранить в ThreatCaddy»"
+  },
+  "howToUseShortcut": {
+    "message": "Или используйте горячую клавишу:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(захватывает выделение или всю страницу, если ничего не выделено)"
+  },
+  "privacyLabel": {
+    "message": "Конфиденциальность:"
+  },
+  "privacyText": {
+    "message": "Все данные остаются на вашем устройстве. API-ключи отправляются только выбранному провайдеру. Без отслеживания."
+  },
+
+  "settings": {
+    "message": "Настройки"
+  },
+  "settingsTooltip": {
+    "message": "Настройки"
+  },
+  "back": {
+    "message": "Назад"
+  },
+  "targetUrl": {
+    "message": "Целевой URL"
+  },
+  "targetUrlDesc": {
+    "message": "The ThreatCaddy instance URL this extension connects to."
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "Сохранить"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "Сохранить в ThreatCaddy"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "Сохранено в ThreatCaddy!"
+  },
+
+  "justNow": {
+    "message": "Только что"
+  },
+  "minutesAgo": {
+    "message": "$count$мин. назад",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "$count$ч. назад",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "$count$д. назад",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "Контекст расширения стал недействительным. Перезагрузите страницу."
+  },
+  "errorExtensionDisconnected": {
+    "message": "Расширение отключено"
+  },
+  "errorExtensionUnknown": {
+    "message": "Ошибка расширения: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "Нет ответа от фонового процесса расширения"
+  },
+  "errorExtensionError": {
+    "message": "Ошибка расширения"
+  },
+
+  "errorInvalidUrl": {
+    "message": "Неверный URL"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "Поддерживаются только URL HTTP и HTTPS"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "Требуется разрешение на доступ к URL. Откройте всплывающее окно расширения ThreatCaddy и включите «Разрешить получение URL», затем повторите попытку."
+  },
+  "errorRequestTimedOut15": {
+    "message": "Время ожидания истекло (15 с). Страница может быть недоступна."
+  },
+  "errorRequestTimedOut30": {
+    "message": "Время ожидания истекло (30 с)"
+  },
+  "errorBlockedInternal": {
+    "message": "Заблокировано: запросы к внутренним/частным адресам не разрешены"
+  },
+  "errorBlockedDomain": {
+    "message": "Заблокировано: $hostname$ не входит в список разрешённых прокси-доменов",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "Требуется разрешение хоста для $hostname$",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "Требуется разрешение CaddyAI. Откройте всплывающее окно расширения ThreatCaddy и включите «Разрешить CaddyAI» в разделе «Разрешения»."
+  },
+  "errorUnknownProvider": {
+    "message": "Неизвестный провайдер: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "Неизвестная ошибка"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "Требуется разрешение хоста для $hostname$. Откройте всплывающее окно расширения ThreatCaddy и включите «Разрешить получение URL» в разделе «Разрешения».",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "Время ожидания загрузки страницы истекло"
+  },
+  "errorDeliverClips": {
+    "message": "Не удалось доставить клипы — bridge.js не смог связаться со страницей. Проверьте, что расширение имеет разрешение для этого сайта."
+  },
+  "errorInvalidTargetUrl": {
+    "message": "Неверный целевой URL"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

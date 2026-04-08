@@ -1,0 +1,6 @@
+{
+  "justNow": "Baru saja",
+  "minutesAgo": "{{count}}m lalu",
+  "hoursAgo": "{{count}}j lalu",
+  "daysAgo": "{{count}}h lalu"
+}

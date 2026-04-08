@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "นำเข้าพร้อมคลิปล้มเหลว {{count}} รายการ",
+    "importFailed": "การนำเข้าคลิปจากส่วนขยายล้มเหลว",
+    "openedAsNote": "เปิด \"{{name}}\" เป็นบันทึกใหม่แล้ว",
+    "openFailed": "ไม่สามารถเปิด \"{{name}}\""
+  },
+  "share": {
+    "investigationSaved": "บันทึกการสืบสวน \"{{name}}\" พร้อมเอนทิตีทั้งหมดแล้ว",
+    "noteSaved": "บันทึกบันทึกไปยัง ThreatCaddy แล้ว",
+    "taskSaved": "บันทึกงานไปยัง ThreatCaddy แล้ว",
+    "eventSaved": "บันทึกเหตุการณ์ไปยัง ThreatCaddy แล้ว",
+    "chatSaved": "บันทึกแชทไปยัง ThreatCaddy แล้ว",
+    "templateShared": "แบ่งปันเทมเพลตกับทีมแล้ว",
+    "templateShareFailed": "การแบ่งปันเทมเพลตล้มเหลว",
+    "templateRemovedFromTeam": "ลบเทมเพลตออกจากทีมแล้ว",
+    "templateRemoveFailed": "การลบเทมเพลตทีมล้มเหลว"
+  },
+  "import": {
+    "dataImported": "นำเข้า {{events}} เหตุการณ์และ {{iocs}} IOC แล้ว",
+    "jsonImported": "นำเข้า {{notes}} บันทึก, {{tasks}} งานแล้ว",
+    "markdownImported": "นำเข้า {{count}} บันทึกจาก Markdown แล้ว",
+    "importFailed": "การนำเข้าล้มเหลว",
+    "stixImported": "นำเข้า {{count}} IOC จากชุด STIX แล้ว",
+    "stixFailed": "การนำเข้า STIX ล้มเหลวสำหรับ {{count}} IOC",
+    "stixNoDuplicates": "ไม่ได้นำเข้า IOC ใหม่ (ซ้ำกันทั้งหมด)",
+    "mispImported": "นำเข้า {{count}} IOC จากเหตุการณ์ MISP แล้ว",
+    "mispFailed": "การนำเข้า MISP ล้มเหลวสำหรับ {{count}} IOC",
+    "mispNoDuplicates": "ไม่ได้นำเข้า IOC ใหม่ (ซ้ำกันทั้งหมด)"
+  },
+  "backup": {
+    "exported": "ส่งออกการสำรองข้อมูลแล้ว",
+    "exportFailed": "การส่งออกการสำรองข้อมูลล้มเหลว",
+    "restored": "กู้คืนการสำรองข้อมูลแล้ว",
+    "restoreFailed": "การกู้คืนการสำรองข้อมูลล้มเหลว",
+    "mergeComplete": "การรวมเสร็จสมบูรณ์: เพิ่ม {{added}}, อัปเดต {{updated}}, ข้าม {{skipped}}",
+    "mergeFailed": "การรวมการสำรองข้อมูลล้มเหลว",
+    "serverCreated": "สร้างการสำรองข้อมูลแล้ว",
+    "serverCreateFailed": "การสร้างการสำรองข้อมูลล้มเหลว",
+    "decryptionFailed": "การถอดรหัสล้มเหลว",
+    "serverRestored": "กู้คืนการสำรองข้อมูลแล้ว",
+    "serverRestoreFailed": "การกู้คืนล้มเหลว",
+    "serverDeleted": "ลบการสำรองข้อมูลแล้ว",
+    "serverDeleteFailed": "การลบการสำรองข้อมูลล้มเหลว",
+    "cloudPushed": "พุชการสำรองข้อมูลคลาวด์แล้ว",
+    "cloudEncryptedPushed": "พุชการสำรองข้อมูลคลาวด์ที่เข้ารหัสแล้ว",
+    "cloudFailed": "การสำรองข้อมูลคลาวด์ล้มเหลว"
+  },
+  "investigation": {
+    "sampleLoaded": "โหลดการสืบสวนตัวอย่างแล้ว",
+    "sampleRemoved": "ลบการสืบสวนตัวอย่างแล้ว",
+    "trashEmptied": "เปิดถังขยะแล้ว",
+    "savedAsTemplate": "บันทึก \"{{name}}\" เป็นเทมเพลตแล้ว",
+    "playbookRan": "เรียกใช้ Playbook \"{{playbook}}\" บน \"{{investigation}}\" แล้ว",
+    "createdFromPlaybook": "สร้าง \"{{name}}\" จาก Playbook แล้ว",
+    "exported": "ส่งออกการสืบสวน \"{{name}}\" แล้ว",
+    "exportFailed": "การส่งออกการสืบสวนล้มเหลว",
+    "reportGenerated": "สร้างรายงานสำหรับ \"{{name}}\" แล้ว"
+  },
+  "encryption": {
+    "enabled": "เปิดใช้งานการเข้ารหัสแล้ว",
+    "disabled": "ปิดใช้งานการเข้ารหัสแล้ว",
+    "passphraseChanged": "เปลี่ยนวลีรหัสผ่านแล้ว"
+  },
+  "integration": {
+    "nameRequired": "ต้องระบุชื่อการรวมระบบ",
+    "createdAndInstalled": "สร้างและติดตั้งการรวมระบบ \"{{name}}\" แล้ว",
+    "saveFailed": "การบันทึกล้มเหลว: {{error}}",
+    "installedFromCatalog": "ติดตั้ง {{name}} จากแคตตาล็อกชุมชนแล้ว",
+    "installCatalogFailed": "การติดตั้งเทมเพลตชุมชนล้มเหลว",
+    "templateExported": "ส่งออก {{name}} แล้ว",
+    "installedFromTeam": "ติดตั้ง {{name}} จากทีมแล้ว",
+    "installTeamFailed": "การติดตั้งเทมเพลตทีมล้มเหลว",
+    "notFound": "ไม่พบการรวมระบบ",
+    "completed": "การรวมระบบ \"{{name}}\" เสร็จสมบูรณ์",
+    "failed": "การรวมระบบ \"{{name}}\" ล้มเหลว: {{error}}",
+    "error": "ข้อผิดพลาดการรวมระบบ: {{error}}"
+  },
+  "ioc": {
+    "exported": "ส่งออก {{count}} IOC เป็น {{format}} แล้ว",
+    "deleted": "ลบ {{count}} IOC แล้ว",
+    "statusUpdated": "อัปเดตสถานะสำหรับ {{count}} IOC แล้ว",
+    "confidenceUpdated": "อัปเดตความเชื่อมั่นสำหรับ {{count}} IOC แล้ว",
+    "tagsAdded": "เพิ่มแท็กไปยัง {{count}} IOC แล้ว",
+    "copiedToClipboard": "คัดลอก {{count}} IOC ไปยังคลิปบอร์ดแล้ว",
+    "copyFailed": "การคัดลอกไปยังคลิปบอร์ดล้มเหลว",
+    "bulkEnrichDone": "การเสริมข้อมูลแบบกลุ่มเสร็จสมบูรณ์: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "โพสต์การตอบกลับแล้ว",
+    "postCreated": "สร้างโพสต์แล้ว",
+    "postCreateFailed": "การสร้างโพสต์ล้มเหลว",
+    "uploadFailed": "การอัปโหลดไฟล์ล้มเหลว: {{name}}",
+    "reactionAddFailed": "การเพิ่มปฏิกิริยาล้มเหลว",
+    "reactionRemoveFailed": "การลบปฏิกิริยาล้มเหลว",
+    "postDeleted": "ลบโพสต์แล้ว",
+    "postDeleteFailed": "การลบโพสต์ล้มเหลว",
+    "editFailed": "การแก้ไขโพสต์ล้มเหลว",
+    "pinUpdateFailed": "การอัปเดตสถานะปักหมุดล้มเหลว",
+    "notificationsLoadFailed": "การโหลดการแจ้งเตือนล้มเหลว",
+    "markReadFailed": "การทำเครื่องหมายการแจ้งเตือนว่าอ่านแล้วล้มเหลว",
+    "markAllReadFailed": "การทำเครื่องหมายทั้งหมดว่าอ่านแล้วล้มเหลว",
+    "clearNotificationsFailed": "การล้างการแจ้งเตือนล้มเหลว"
+  },
+  "settings": {
+    "slashCommandUpdated": "อัปเดต /{{name}} แล้ว",
+    "slashCommandCreated": "สร้าง /{{name}} แล้ว",
+    "slashCommandDeleted": "ลบ /{{name}} แล้ว"
+  },
+  "generic": {
+    "tagCreateFailed": "การสร้างแท็กล้มเหลว"
+  }
+}

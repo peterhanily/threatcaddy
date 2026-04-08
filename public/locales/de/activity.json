@@ -1,0 +1,15 @@
+{
+  "title": "Aktivitätsprotokoll",
+  "clearButton": "Löschen",
+  "searchPlaceholder": "Aktivität suchen...",
+  "allFilter": "Alle",
+  "noActivity": "Noch keine Aktivität",
+  "noActivityHint": "Hier werden Ihre Aktionen angezeigt",
+  "today": "Heute",
+  "yesterday": "Gestern",
+  "thisWeek": "Diese Woche",
+  "older": "Älter",
+  "clearTitle": "Aktivitätsprotokoll löschen",
+  "clearMessage": "Alle Einträge des Aktivitätsprotokolls werden dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.",
+  "clearConfirm": "Alle löschen"
+}

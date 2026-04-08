@@ -1,0 +1,15 @@
+{
+  "title": "活动日志",
+  "clearButton": "清除",
+  "searchPlaceholder": "搜索活动...",
+  "allFilter": "全部",
+  "noActivity": "暂无活动",
+  "noActivityHint": "您的操作将显示在此处",
+  "today": "今天",
+  "yesterday": "昨天",
+  "thisWeek": "本周",
+  "older": "更早",
+  "clearTitle": "清除活动日志",
+  "clearMessage": "这将永久删除所有活动日志条目，此操作无法撤销。",
+  "clearConfirm": "全部清除"
+}

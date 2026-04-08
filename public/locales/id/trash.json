@@ -1,0 +1,20 @@
+{
+  "trash": "Sampah",
+  "archive": "Arsip",
+  "emptyAllTrash": "Kosongkan Semua Sampah",
+  "autoDeleteHint": "Item dihapus otomatis setelah 30 hari",
+  "trashEmpty": "Sampah kosong",
+  "archiveEmpty": "Arsip kosong",
+  "notes": "Catatan",
+  "tasks": "Tugas",
+  "timelineEvents": "Kejadian Timeline",
+  "whiteboards": "Papan Tulis",
+  "iocs": "IOC",
+  "restore": "Pulihkan",
+  "deletePermanently": "Hapus permanen",
+  "unarchive": "Batal arsipkan",
+  "moveToTrash": "Pindah ke sampah",
+  "emptyAllTitle": "Kosongkan Semua Sampah",
+  "emptyAllMessage": "Hapus permanen semua {{count}} item yang ada di sampah di semua jenis entitas? Tindakan ini tidak dapat dibatalkan.",
+  "emptyAllConfirm": "Kosongkan Semua Sampah"
+}

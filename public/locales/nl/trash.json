@@ -1,0 +1,21 @@
+{
+  "trash": "Prullenbak",
+  "archive": "Archief",
+  "emptyAllTrash": "Prullenbak leegmaken",
+  "autoDeleteHint": "Items worden na 30 dagen automatisch verwijderd",
+  "trashEmpty": "Prullenbak is leeg",
+  "archiveEmpty": "Archief is leeg",
+  "notes": "Notities",
+  "tasks": "Taken",
+  "timelineEvents": "Tijdlijngebeurtenissen",
+  "whiteboards": "Whiteboards",
+  "iocs": "IOC's",
+  "restore": "Herstellen",
+  "deletePermanently": "Definitief verwijderen",
+  "unarchive": "Dearchiveren",
+  "moveToTrash": "Naar prullenbak",
+  "emptyAllTitle": "Prullenbak leegmaken",
+  "emptyAllMessage": "Alle {{count}} prullenbakitems voor alle entiteitstypen definitief verwijderen? Dit kan niet ongedaan worden gemaakt.",
+  "emptyAllConfirm": "Prullenbak leegmaken",
+  "chatThreads": "Chatthreads"
+}

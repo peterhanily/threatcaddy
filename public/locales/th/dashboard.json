@@ -1,0 +1,50 @@
+{
+  "title": "แดชบอร์ด",
+  "welcome": "สวัสดี {{name}}",
+  "welcomeDefault": "สวัสดี นักวิเคราะห์",
+  "subtitle": "พื้นที่ทำงานการสืบสวนภัยคุกคาม",
+
+  "kpi.openInvestigations": "การสืบสวนที่กำลังดำเนินการ",
+  "kpi.closedThisMonth": "ปิดเดือนนี้",
+  "kpi.avgAge": "อายุเฉลี่ยของการสืบสวน",
+  "kpi.tasksPending": "งานที่รอดำเนินการ",
+  "kpi.tasksCompletedWeek": "งานที่เสร็จสิ้นสัปดาห์นี้",
+  "kpi.iocsUnderInvestigation": "IOC ที่อยู่ระหว่างการสืบสวน",
+  "kpi.notesCreatedWeek": "บันทึกที่สร้างสัปดาห์นี้",
+  "kpi.timelineEventsWeek": "เหตุการณ์ไทม์ไลน์สัปดาห์นี้",
+  "kpi.overdueTasks": "งานที่เกินกำหนด",
+  "kpi.days": "{{count}} วัน",
+  "kpi.noData": "ไม่มีข้อมูล",
+
+  "section.activeInvestigations": "การสืบสวนที่ใช้งานอยู่",
+  "section.recentActivity": "กิจกรรมล่าสุด",
+  "section.agentActivity": "กิจกรรมเอเจนต์",
+  "section.entityGraph": "กราฟเอนทิตี",
+  "section.quickActions": "การกระทำด่วน",
+
+  "investigation.viewAll": "ดูทั้งหมด",
+  "investigation.newInvestigation": "การสืบสวนใหม่",
+  "investigation.noActive": "ไม่มีการสืบสวนที่ใช้งานอยู่",
+  "investigation.noActiveHint": "สร้างการสืบสวนใหม่เพื่อเริ่มต้น",
+  "investigation.tasks": "งาน {{done}}/{{total}}",
+  "investigation.openInAnalyst": "เปิดในโหมดนักวิเคราะห์",
+
+  "quickAction.newNote": "บันทึกใหม่",
+  "quickAction.newTask": "งานใหม่",
+  "quickAction.newInvestigation": "การสืบสวนใหม่",
+  "quickAction.newTimelineEvent": "เหตุการณ์ไทม์ไลน์ใหม่",
+  "quickAction.askCaddyAI": "ถาม CaddyAI",
+
+  "graph.noNodes": "ไม่มีโหนดกราฟ",
+  "graph.noNodesHint": "เพิ่มบันทึกที่มี IOC หรือเหตุการณ์ไทม์ไลน์เพื่อสร้างกราฟ",
+  "graph.openGraph": "เปิดกราฟเต็มรูปแบบ",
+  "graph.nodes": "{{count}} โหนด",
+
+  "agent.noActivity": "ไม่มีกิจกรรมเอเจนต์ล่าสุด",
+  "agent.viewAll": "ดูทั้งหมด",
+  "agent.cyclesRun": "รัน {{count}} รอบ",
+  "agent.toolCalls": "เรียกใช้เครื่องมือ {{count}} ครั้ง",
+
+  "activity.noActivity": "ไม่มีกิจกรรมล่าสุด",
+  "activity.viewAll": "ดูทั้งหมด"
+}

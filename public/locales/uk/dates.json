@@ -1,0 +1,6 @@
+{
+  "justNow": "Щойно",
+  "minutesAgo": "{{count}}хв тому",
+  "hoursAgo": "{{count}}год тому",
+  "daysAgo": "{{count}}д тому"
+}

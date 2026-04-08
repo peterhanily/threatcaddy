@@ -1,0 +1,23 @@
+{
+  "placeholder": "검색...",
+  "globalSearch": "전체 검색",
+  "searchPlaceholder": "노트, 태스크, IOC, 이벤트, 조사 검색...",
+  "noResults": "결과 없음",
+  "noResultsFor": "\"{{query}}\"에 대한 결과 없음",
+  "resultsFor": "\"{{query}}\" 검색 결과",
+  "resultCount": "{{count}}개 결과",
+  "resultCount_other": "{{count}}개 결과",
+  "searching": "검색 중...",
+  "filterByType": "유형별 필터",
+  "allTypes": "모든 유형",
+  "notes": "노트",
+  "tasks": "태스크",
+  "iocs": "IOC",
+  "events": "이벤트",
+  "investigations": "조사",
+  "chats": "채팅",
+  "recentSearches": "최근 검색",
+  "clearRecent": "최근 검색 지우기",
+  "pressEnter": "Enter를 눌러 검색",
+  "pressEsc": "Esc를 눌러 닫기"
+}

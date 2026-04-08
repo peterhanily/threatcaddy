@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "Tangkap konten web dengan cepat dan proksi permintaan AI untuk intelijen ancaman ThreatCaddy. Data tetap lokal di perangkat Anda secara default."
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "Statistik Cepat"
+  },
+  "captures": {
+    "message": "Tangkapan"
+  },
+  "thisWeek": {
+    "message": "Minggu Ini"
+  },
+
+  "quickCapture": {
+    "message": "Tangkap Cepat"
+  },
+  "noteTitlePlaceholder": {
+    "message": "Judul catatan (opsional)"
+  },
+  "captureTextPlaceholder": {
+    "message": "Ketik atau tempel catatan..."
+  },
+  "options": {
+    "message": "Opsi"
+  },
+  "investigation": {
+    "message": "Investigasi"
+  },
+  "defaultClips": {
+    "message": "Default: Klip"
+  },
+  "saveAs": {
+    "message": "Simpan sebagai"
+  },
+  "entityNote": {
+    "message": "Catatan"
+  },
+  "entityTask": {
+    "message": "Tugas"
+  },
+  "entityTimelineEvent": {
+    "message": "Kejadian Timeline"
+  },
+  "classification": {
+    "message": "Klasifikasi"
+  },
+  "classificationNone": {
+    "message": "Tidak ada"
+  },
+  "saveNote": {
+    "message": "Simpan Catatan"
+  },
+  "saved": {
+    "message": "Tersimpan!"
+  },
+  "saveFailed": {
+    "message": "Gagal menyimpan. Silakan coba lagi."
+  },
+
+  "recentCaptures": {
+    "message": "Tangkapan Terbaru"
+  },
+  "noCaptures": {
+    "message": "Belum ada tangkapan. Pilih teks di halaman mana pun dan klik kanan untuk menyimpan."
+  },
+  "untitled": {
+    "message": "Tanpa Judul"
+  },
+
+  "quickActions": {
+    "message": "Tindakan Cepat"
+  },
+  "openThreatCaddy": {
+    "message": "Buka ThreatCaddy"
+  },
+  "reviewAllCaptures": {
+    "message": "Tinjau Semua Tangkapan"
+  },
+
+  "permissions": {
+    "message": "Izin"
+  },
+  "allowCaddyAI": {
+    "message": "Izinkan CaddyAI"
+  },
+  "allowCaddyAIDesc": {
+    "message": "Memberikan akses ke API penyedia AI (Anthropic, OpenAI, Google, Mistral)."
+  },
+  "allowUrlFetching": {
+    "message": "Izinkan pengambilan URL"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "Diperlukan untuk perintah /fetch dan LLM lokal non-localhost."
+  },
+
+  "howToUse": {
+    "message": "Cara menggunakan:"
+  },
+  "howToUseContextMenu": {
+    "message": "Pilih teks dan klik kanan \"Simpan ke ThreatCaddy\""
+  },
+  "howToUseShortcut": {
+    "message": "Atau gunakan pintasan keyboard:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(mengklip pilihan, atau halaman penuh jika tidak ada yang dipilih)"
+  },
+  "privacyLabel": {
+    "message": "Privasi:"
+  },
+  "privacyText": {
+    "message": "Semua data tetap lokal di perangkat Anda. API key hanya dikirim ke penyedia yang Anda pilih. Tidak ada pelacakan."
+  },
+
+  "settings": {
+    "message": "Pengaturan"
+  },
+  "settingsTooltip": {
+    "message": "Pengaturan"
+  },
+  "back": {
+    "message": "Kembali"
+  },
+  "targetUrl": {
+    "message": "URL Target"
+  },
+  "targetUrlDesc": {
+    "message": "URL instansi ThreatCaddy yang dihubungkan ekstensi ini."
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "Simpan"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "Simpan ke ThreatCaddy"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "Tersimpan ke ThreatCaddy!"
+  },
+
+  "justNow": {
+    "message": "Baru saja"
+  },
+  "minutesAgo": {
+    "message": "$count$m lalu",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "$count$j lalu",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "$count$h lalu",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "Konteks ekstensi tidak valid. Harap muat ulang halaman ini."
+  },
+  "errorExtensionDisconnected": {
+    "message": "Ekstensi terputus"
+  },
+  "errorExtensionUnknown": {
+    "message": "Kesalahan ekstensi: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "Tidak ada respons dari latar belakang ekstensi"
+  },
+  "errorExtensionError": {
+    "message": "Kesalahan ekstensi"
+  },
+
+  "errorInvalidUrl": {
+    "message": "URL tidak valid"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "Hanya URL HTTP dan HTTPS yang didukung"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "Izin akses URL diperlukan. Buka popup ekstensi ThreatCaddy dan aktifkan \"Izinkan pengambilan URL\", lalu coba lagi."
+  },
+  "errorRequestTimedOut15": {
+    "message": "Permintaan habis waktu (15d). Halaman mungkin tidak dapat dijangkau."
+  },
+  "errorRequestTimedOut30": {
+    "message": "Permintaan habis waktu (30d)"
+  },
+  "errorBlockedInternal": {
+    "message": "Diblokir: permintaan ke alamat internal/privat tidak diizinkan"
+  },
+  "errorBlockedDomain": {
+    "message": "Diblokir: $hostname$ tidak ada dalam daftar domain proksi yang diizinkan",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "Izin host diperlukan untuk $hostname$",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "Izin CaddyAI diperlukan. Buka popup ekstensi ThreatCaddy dan aktifkan \"Izinkan CaddyAI\" di bawah Izin."
+  },
+  "errorUnknownProvider": {
+    "message": "Penyedia tidak diketahui: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "Kesalahan tidak diketahui"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "Izin host diperlukan untuk $hostname$. Buka popup ekstensi ThreatCaddy dan aktifkan \"Izinkan pengambilan URL\" di bawah Izin.",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "Habis waktu menunggu halaman dimuat"
+  },
+  "errorDeliverClips": {
+    "message": "Gagal mengirim klip — bridge.js tidak dapat menjangkau halaman. Periksa apakah ekstensi memiliki izin untuk situs ini."
+  },
+  "errorInvalidTargetUrl": {
+    "message": "URL target tidak valid"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

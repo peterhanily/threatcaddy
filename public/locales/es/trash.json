@@ -1,0 +1,20 @@
+{
+  "trash": "Papelera",
+  "archive": "Archivo",
+  "emptyAllTrash": "Vaciar toda la papelera",
+  "autoDeleteHint": "Los elementos se eliminan automáticamente después de 30 días",
+  "trashEmpty": "La papelera está vacía",
+  "archiveEmpty": "El archivo está vacío",
+  "notes": "Notas",
+  "tasks": "Tareas",
+  "timelineEvents": "Eventos de cronología",
+  "whiteboards": "Pizarras",
+  "iocs": "IOCs",
+  "restore": "Restaurar",
+  "deletePermanently": "Eliminar permanentemente",
+  "unarchive": "Desarchivar",
+  "moveToTrash": "Mover a la papelera",
+  "emptyAllTitle": "Vaciar toda la papelera",
+  "emptyAllMessage": "¿Eliminar permanentemente todos los {{count}} elemento(s) en la papelera de todos los tipos de entidades? Esta acción no se puede deshacer.",
+  "emptyAllConfirm": "Vaciar toda la papelera"
+}

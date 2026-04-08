@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "快速捕获网页内容并为 ThreatCaddy 威胁情报代理 AI 请求。数据默认本地存储在您的设备上。"
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "快速统计"
+  },
+  "captures": {
+    "message": "捕获"
+  },
+  "thisWeek": {
+    "message": "本周"
+  },
+
+  "quickCapture": {
+    "message": "快速捕获"
+  },
+  "noteTitlePlaceholder": {
+    "message": "笔记标题（可选）"
+  },
+  "captureTextPlaceholder": {
+    "message": "输入或粘贴笔记..."
+  },
+  "options": {
+    "message": "选项"
+  },
+  "investigation": {
+    "message": "调查"
+  },
+  "defaultClips": {
+    "message": "默认：片段"
+  },
+  "saveAs": {
+    "message": "另存为"
+  },
+  "entityNote": {
+    "message": "笔记"
+  },
+  "entityTask": {
+    "message": "任务"
+  },
+  "entityTimelineEvent": {
+    "message": "时间线事件"
+  },
+  "classification": {
+    "message": "分类"
+  },
+  "classificationNone": {
+    "message": "无"
+  },
+  "saveNote": {
+    "message": "保存笔记"
+  },
+  "saved": {
+    "message": "已保存！"
+  },
+  "saveFailed": {
+    "message": "保存失败，请重试。"
+  },
+
+  "recentCaptures": {
+    "message": "近期捕获"
+  },
+  "noCaptures": {
+    "message": "暂无捕获。在任意页面上选择文本并右键点击以保存。"
+  },
+  "untitled": {
+    "message": "未命名"
+  },
+
+  "quickActions": {
+    "message": "快速操作"
+  },
+  "openThreatCaddy": {
+    "message": "打开 ThreatCaddy"
+  },
+  "reviewAllCaptures": {
+    "message": "查看所有捕获"
+  },
+
+  "permissions": {
+    "message": "权限"
+  },
+  "allowCaddyAI": {
+    "message": "允许 CaddyAI"
+  },
+  "allowCaddyAIDesc": {
+    "message": "授予访问 AI 提供商 API（Anthropic、OpenAI、Google、Mistral）的权限。"
+  },
+  "allowUrlFetching": {
+    "message": "允许 URL 获取"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "/fetch 命令和非 localhost 本地 LLM 所需。"
+  },
+
+  "howToUse": {
+    "message": "使用方法："
+  },
+  "howToUseContextMenu": {
+    "message": "选择文本并右键点击"保存到 ThreatCaddy""
+  },
+  "howToUseShortcut": {
+    "message": "或使用键盘快捷键："
+  },
+  "howToUseShortcutSuffix": {
+    "message": "（捕获选中内容，如无选中则捕获整页）"
+  },
+  "privacyLabel": {
+    "message": "隐私："
+  },
+  "privacyText": {
+    "message": "所有数据本地存储在您的设备上。API 密钥仅发送给您选择的提供商。无追踪。"
+  },
+
+  "settings": {
+    "message": "设置"
+  },
+  "settingsTooltip": {
+    "message": "设置"
+  },
+  "back": {
+    "message": "返回"
+  },
+  "targetUrl": {
+    "message": "目标 URL"
+  },
+  "targetUrlDesc": {
+    "message": "此扩展连接的 ThreatCaddy 实例 URL。"
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "保存"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "保存到 ThreatCaddy"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "已保存到 ThreatCaddy！"
+  },
+
+  "justNow": {
+    "message": "刚刚"
+  },
+  "minutesAgo": {
+    "message": "$count$分钟前",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "$count$小时前",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "$count$天前",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "扩展上下文已失效。请重新加载此页面。"
+  },
+  "errorExtensionDisconnected": {
+    "message": "扩展已断开连接"
+  },
+  "errorExtensionUnknown": {
+    "message": "扩展错误：$detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "扩展后台无响应"
+  },
+  "errorExtensionError": {
+    "message": "扩展错误"
+  },
+
+  "errorInvalidUrl": {
+    "message": "无效的 URL"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "仅支持 HTTP 和 HTTPS URL"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "需要 URL 访问权限。请打开 ThreatCaddy 扩展弹出窗口并启用"允许 URL 获取"，然后重试。"
+  },
+  "errorRequestTimedOut15": {
+    "message": "请求超时（15秒）。该页面可能无法访问。"
+  },
+  "errorRequestTimedOut30": {
+    "message": "请求超时（30秒）"
+  },
+  "errorBlockedInternal": {
+    "message": "已阻止：不允许向内部/私有地址发出请求"
+  },
+  "errorBlockedDomain": {
+    "message": "已阻止：$hostname$ 不在允许的代理域名列表中",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "需要 $hostname$ 的主机权限",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "需要 CaddyAI 权限。请打开 ThreatCaddy 扩展弹出窗口并在权限下启用"允许 CaddyAI"。"
+  },
+  "errorUnknownProvider": {
+    "message": "未知提供商：$provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "未知错误"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "需要 $hostname$ 的主机权限。请打开 ThreatCaddy 扩展弹出窗口并在权限下启用"允许 URL 获取"。",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "等待页面加载超时"
+  },
+  "errorDeliverClips": {
+    "message": "无法传递片段——bridge.js 无法访问页面。请检查扩展是否有此站点的权限。"
+  },
+  "errorInvalidTargetUrl": {
+    "message": "无效的目标 URL"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

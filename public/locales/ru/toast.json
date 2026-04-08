@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "Импортировано с {{count}} неудачным клипом(ами)",
+    "importFailed": "Не удалось импортировать клипы из расширения",
+    "openedAsNote": "Открыто «{{name}}» как новая заметка",
+    "openFailed": "Не удалось открыть «{{name}}»"
+  },
+  "share": {
+    "investigationSaved": "Расследование «{{name}}» сохранено со всеми сущностями",
+    "noteSaved": "Заметка сохранена в ThreatCaddy",
+    "taskSaved": "Задача сохранена в ThreatCaddy",
+    "eventSaved": "Событие сохранено в ThreatCaddy",
+    "chatSaved": "Чат сохранён в ThreatCaddy",
+    "templateShared": "Шаблон поделён с командой",
+    "templateShareFailed": "Не удалось поделиться шаблоном",
+    "templateRemovedFromTeam": "Шаблон удалён из команды",
+    "templateRemoveFailed": "Не удалось удалить шаблон команды"
+  },
+  "import": {
+    "dataImported": "Импортировано {{events}} событий и {{iocs}} IOC",
+    "jsonImported": "Импортировано {{notes}} заметок, {{tasks}} задач",
+    "markdownImported": "Импортировано {{count}} заметок из Markdown",
+    "importFailed": "Импорт не удался",
+    "stixImported": "Импортировано {{count}} IOC из STIX-пакета",
+    "stixFailed": "Импорт STIX не удался для {{count}} IOC",
+    "stixNoDuplicates": "Новые IOC не импортированы (все дубликаты)",
+    "mispImported": "Импортировано {{count}} IOC из события MISP",
+    "mispFailed": "Импорт MISP не удался для {{count}} IOC",
+    "mispNoDuplicates": "Новые IOC не импортированы (все дубликаты)"
+  },
+  "backup": {
+    "exported": "Резервная копия экспортирована",
+    "exportFailed": "Не удалось экспортировать резервную копию",
+    "restored": "Резервная копия восстановлена",
+    "restoreFailed": "Не удалось восстановить резервную копию",
+    "mergeComplete": "Слияние завершено: {{added}} добавлено, {{updated}} обновлено, {{skipped}} пропущено",
+    "mergeFailed": "Не удалось слить резервную копию",
+    "serverCreated": "Резервная копия создана",
+    "serverCreateFailed": "Не удалось создать резервную копию",
+    "decryptionFailed": "Расшифровка не удалась",
+    "serverRestored": "Резервная копия восстановлена",
+    "serverRestoreFailed": "Восстановление не удалось",
+    "serverDeleted": "Резервная копия удалена",
+    "serverDeleteFailed": "Не удалось удалить резервную копию",
+    "cloudPushed": "Облачная резервная копия отправлена",
+    "cloudEncryptedPushed": "Зашифрованная облачная резервная копия отправлена",
+    "cloudFailed": "Облачное резервное копирование не удалось"
+  },
+  "investigation": {
+    "sampleLoaded": "Пример расследования загружен",
+    "sampleRemoved": "Пример расследования удалён",
+    "trashEmptied": "Корзина очищена",
+    "savedAsTemplate": "«{{name}}» сохранено как шаблон",
+    "playbookRan": "Плейбук «{{playbook}}» запущен для «{{investigation}}»",
+    "createdFromPlaybook": "«{{name}}» создано из плейбука",
+    "exported": "Расследование «{{name}}» экспортировано",
+    "exportFailed": "Не удалось экспортировать расследование",
+    "reportGenerated": "Отчёт сгенерирован для «{{name}}»"
+  },
+  "encryption": {
+    "enabled": "Шифрование включено",
+    "disabled": "Шифрование отключено",
+    "passphraseChanged": "Парольная фраза изменена"
+  },
+  "integration": {
+    "nameRequired": "Название интеграции обязательно",
+    "createdAndInstalled": "Интеграция «{{name}}» создана и установлена",
+    "saveFailed": "Не удалось сохранить: {{error}}",
+    "installedFromCatalog": "Установлено {{name}} из каталога сообщества",
+    "installCatalogFailed": "Не удалось установить шаблон сообщества",
+    "templateExported": "Экспортировано {{name}}",
+    "installedFromTeam": "Установлено {{name}} из команды",
+    "installTeamFailed": "Не удалось установить шаблон команды",
+    "notFound": "Интеграция не найдена",
+    "completed": "Интеграция «{{name}}» выполнена успешно",
+    "failed": "Интеграция «{{name}}» не удалась: {{error}}",
+    "error": "Ошибка интеграции: {{error}}"
+  },
+  "ioc": {
+    "exported": "Экспортировано {{count}} IOC как {{format}}",
+    "deleted": "Удалено {{count}} IOC",
+    "statusUpdated": "Статус обновлён у {{count}} IOC",
+    "confidenceUpdated": "Уверенность обновлена у {{count}} IOC",
+    "tagsAdded": "Теги добавлены к {{count}} IOC",
+    "copiedToClipboard": "Скопировано {{count}} IOC в буфер обмена",
+    "copyFailed": "Не удалось скопировать в буфер обмена",
+    "bulkEnrichDone": "Массовое обогащение завершено: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "Ответ опубликован",
+    "postCreated": "Публикация создана",
+    "postCreateFailed": "Не удалось создать публикацию",
+    "uploadFailed": "Не удалось загрузить файл: {{name}}",
+    "reactionAddFailed": "Не удалось добавить реакцию",
+    "reactionRemoveFailed": "Не удалось удалить реакцию",
+    "postDeleted": "Публикация удалена",
+    "postDeleteFailed": "Не удалось удалить публикацию",
+    "editFailed": "Не удалось отредактировать публикацию",
+    "pinUpdateFailed": "Не удалось обновить статус закрепления",
+    "notificationsLoadFailed": "Не удалось загрузить уведомления",
+    "markReadFailed": "Не удалось отметить уведомление прочитанным",
+    "markAllReadFailed": "Не удалось отметить все прочитанными",
+    "clearNotificationsFailed": "Не удалось очистить уведомления"
+  },
+  "settings": {
+    "slashCommandUpdated": "Обновлена /{{name}}",
+    "slashCommandCreated": "Создана /{{name}}",
+    "slashCommandDeleted": "Удалена /{{name}}"
+  },
+  "generic": {
+    "tagCreateFailed": "Не удалось создать тег"
+  }
+}

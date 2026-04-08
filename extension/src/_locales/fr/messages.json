@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "Capturez rapidement du contenu web et proxytez les requêtes IA pour ThreatCaddy Threat Intelligence. Les données restent localement sur votre appareil par défaut."
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "Statistiques rapides"
+  },
+  "captures": {
+    "message": "Captures"
+  },
+  "thisWeek": {
+    "message": "Cette semaine"
+  },
+
+  "quickCapture": {
+    "message": "Capture rapide"
+  },
+  "noteTitlePlaceholder": {
+    "message": "Titre de la note (optionnel)"
+  },
+  "captureTextPlaceholder": {
+    "message": "Saisir ou coller une note..."
+  },
+  "options": {
+    "message": "Options"
+  },
+  "investigation": {
+    "message": "Enquête"
+  },
+  "defaultClips": {
+    "message": "Par défaut : Clips"
+  },
+  "saveAs": {
+    "message": "Enregistrer sous"
+  },
+  "entityNote": {
+    "message": "Note"
+  },
+  "entityTask": {
+    "message": "Tâche"
+  },
+  "entityTimelineEvent": {
+    "message": "Événement de chronologie"
+  },
+  "classification": {
+    "message": "Classification"
+  },
+  "classificationNone": {
+    "message": "Aucune"
+  },
+  "saveNote": {
+    "message": "Enregistrer la note"
+  },
+  "saved": {
+    "message": "Enregistré !"
+  },
+  "saveFailed": {
+    "message": "Échec de l'enregistrement. Veuillez réessayer."
+  },
+
+  "recentCaptures": {
+    "message": "Captures récentes"
+  },
+  "noCaptures": {
+    "message": "Aucune capture pour l'instant. Sélectionnez du texte sur n'importe quelle page et faites un clic droit pour enregistrer."
+  },
+  "untitled": {
+    "message": "Sans titre"
+  },
+
+  "quickActions": {
+    "message": "Actions rapides"
+  },
+  "openThreatCaddy": {
+    "message": "Ouvrir ThreatCaddy"
+  },
+  "reviewAllCaptures": {
+    "message": "Revoir toutes les captures"
+  },
+
+  "permissions": {
+    "message": "Permissions"
+  },
+  "allowCaddyAI": {
+    "message": "Autoriser CaddyAI"
+  },
+  "allowCaddyAIDesc": {
+    "message": "Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral)."
+  },
+  "allowUrlFetching": {
+    "message": "Autoriser la récupération d'URL"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "Required for the /fetch command and non-localhost local LLMs."
+  },
+
+  "howToUse": {
+    "message": "Comment utiliser :"
+  },
+  "howToUseContextMenu": {
+    "message": "Sélectionner du texte et clic droit \"Enregistrer dans ThreatCaddy\""
+  },
+  "howToUseShortcut": {
+    "message": "Ou utiliser le raccourci clavier :"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(capture la sélection, ou la page entière si rien n'est sélectionné)"
+  },
+  "privacyLabel": {
+    "message": "Confidentialité :"
+  },
+  "privacyText": {
+    "message": "Toutes les données restent localement sur votre appareil. Les clés API sont envoyées uniquement à votre fournisseur choisi. Aucun suivi."
+  },
+
+  "settings": {
+    "message": "Paramètres"
+  },
+  "settingsTooltip": {
+    "message": "Paramètres"
+  },
+  "back": {
+    "message": "Retour"
+  },
+  "targetUrl": {
+    "message": "URL cible"
+  },
+  "targetUrlDesc": {
+    "message": "The ThreatCaddy instance URL this extension connects to."
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "Enregistrer"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "Enregistrer dans ThreatCaddy"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "Enregistré dans ThreatCaddy !"
+  },
+
+  "justNow": {
+    "message": "À l'instant"
+  },
+  "minutesAgo": {
+    "message": "il y a $count$min",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "il y a $count$h",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "il y a $count$j",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "Contexte de l'extension invalidé. Veuillez recharger cette page."
+  },
+  "errorExtensionDisconnected": {
+    "message": "Extension déconnectée"
+  },
+  "errorExtensionUnknown": {
+    "message": "Erreur d'extension : $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "Aucune réponse de l'arrière-plan de l'extension"
+  },
+  "errorExtensionError": {
+    "message": "Erreur d'extension"
+  },
+
+  "errorInvalidUrl": {
+    "message": "URL invalide"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "Seules les URLs HTTP et HTTPS sont prises en charge"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "Permission d'accès URL requise. Ouvrez le popup de l'extension ThreatCaddy et activez \"Autoriser la récupération d'URL\", puis réessayez."
+  },
+  "errorRequestTimedOut15": {
+    "message": "Délai d'attente de la requête (15s). La page est peut-être inaccessible."
+  },
+  "errorRequestTimedOut30": {
+    "message": "Délai d'attente de la requête (30s)"
+  },
+  "errorBlockedInternal": {
+    "message": "Bloqué : les requêtes vers des adresses internes/privées ne sont pas autorisées"
+  },
+  "errorBlockedDomain": {
+    "message": "Bloqué : $hostname$ n'est pas dans la liste des domaines proxy autorisés",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "Permission d'hôte requise pour $hostname$",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "Permission CaddyAI requise. Ouvrez le popup de l'extension ThreatCaddy et activez \"Autoriser CaddyAI\" sous Permissions."
+  },
+  "errorUnknownProvider": {
+    "message": "Fournisseur inconnu : $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "Erreur inconnue"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "Permission d'hôte requise pour $hostname$. Ouvrez le popup de l'extension ThreatCaddy et activez \"Autoriser la récupération d'URL\" sous Permissions.",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "Délai d'attente du chargement de la page"
+  },
+  "errorDeliverClips": {
+    "message": "Impossible de livrer les clips — bridge.js n'a pas pu atteindre la page. Vérifiez que l'extension a la permission pour ce site."
+  },
+  "errorInvalidTargetUrl": {
+    "message": "URL cible invalide"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

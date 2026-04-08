@@ -1,0 +1,113 @@
+{
+  "clip": {
+    "importWarning": "Importato con {{count}} clip falliti",
+    "importFailed": "Impossibile importare clip dall'estensione",
+    "openedAsNote": "Aperto \"{{name}}\" come nuova nota",
+    "openFailed": "Impossibile aprire \"{{name}}\""
+  },
+  "share": {
+    "investigationSaved": "Indagine \"{{name}}\" salvata con tutte le entità",
+    "noteSaved": "Nota salvata in ThreatCaddy",
+    "taskSaved": "Attività salvata in ThreatCaddy",
+    "eventSaved": "Evento salvato in ThreatCaddy",
+    "chatSaved": "Chat salvata in ThreatCaddy",
+    "templateShared": "Template condiviso con il team",
+    "templateShareFailed": "Impossibile condividere il template",
+    "templateRemovedFromTeam": "Template rimosso dal team",
+    "templateRemoveFailed": "Impossibile rimuovere il template dal team"
+  },
+  "import": {
+    "dataImported": "Importati {{events}} eventi e {{iocs}} IOC",
+    "jsonImported": "Importate {{notes}} note, {{tasks}} attività",
+    "markdownImported": "Importate {{count}} note da Markdown",
+    "importFailed": "Importazione fallita",
+    "stixImported": "Importati {{count}} IOC dal bundle STIX",
+    "stixFailed": "Importazione STIX fallita per {{count}} IOC",
+    "stixNoDuplicates": "Nessun nuovo IOC importato (tutti duplicati)",
+    "mispImported": "Importati {{count}} IOC dall'evento MISP",
+    "mispFailed": "Importazione MISP fallita per {{count}} IOC",
+    "mispNoDuplicates": "Nessun nuovo IOC importato (tutti duplicati)"
+  },
+  "backup": {
+    "exported": "Backup esportato",
+    "exportFailed": "Impossibile esportare il backup",
+    "restored": "Backup ripristinato",
+    "restoreFailed": "Impossibile ripristinare il backup",
+    "mergeComplete": "Unione completata: {{added}} aggiunti, {{updated}} aggiornati, {{skipped}} ignorati",
+    "mergeFailed": "Impossibile unire il backup",
+    "serverCreated": "Backup creato",
+    "serverCreateFailed": "Creazione backup fallita",
+    "decryptionFailed": "Decrittografia fallita",
+    "serverRestored": "Backup ripristinato",
+    "serverRestoreFailed": "Ripristino fallito",
+    "serverDeleted": "Backup eliminato",
+    "serverDeleteFailed": "Impossibile eliminare il backup",
+    "cloudPushed": "Backup cloud inviato",
+    "cloudEncryptedPushed": "Backup cloud crittografato inviato",
+    "cloudFailed": "Backup cloud fallito"
+  },
+  "investigation": {
+    "sampleLoaded": "Indagine di esempio caricata",
+    "sampleRemoved": "Indagine di esempio rimossa",
+    "trashEmptied": "Cestino svuotato",
+    "savedAsTemplate": "Salvato \"{{name}}\" come template",
+    "playbookRan": "Esecuzione playbook \"{{playbook}}\" su \"{{investigation}}\"",
+    "createdFromPlaybook": "Creato \"{{name}}\" dal playbook",
+    "exported": "Indagine \"{{name}}\" esportata",
+    "exportFailed": "Impossibile esportare l'indagine",
+    "reportGenerated": "Report generato per \"{{name}}\""
+  },
+  "encryption": {
+    "enabled": "Crittografia abilitata",
+    "disabled": "Crittografia disabilitata",
+    "passphraseChanged": "Passphrase modificata"
+  },
+  "integration": {
+    "nameRequired": "Il nome dell'integrazione è obbligatorio",
+    "createdAndInstalled": "Integrazione \"{{name}}\" creata e installata",
+    "saveFailed": "Impossibile salvare: {{error}}",
+    "installedFromCatalog": "Installato {{name}} dal catalogo community",
+    "installCatalogFailed": "Impossibile installare il template community",
+    "templateExported": "Esportato {{name}}",
+    "installedFromTeam": "Installato {{name}} dal team",
+    "installTeamFailed": "Impossibile installare il template team",
+    "notFound": "Integrazione non trovata",
+    "completed": "Integrazione \"{{name}}\" completata con successo",
+    "failed": "Integrazione \"{{name}}\" fallita: {{error}}",
+    "error": "Errore integrazione: {{error}}"
+  },
+  "ioc": {
+    "exported": "Esportati {{count}} IOC come {{format}}",
+    "deleted": "Eliminati {{count}} IOC",
+    "statusUpdated": "Stato aggiornato su {{count}} IOC",
+    "confidenceUpdated": "Affidabilità aggiornata su {{count}} IOC",
+    "tagsAdded": "Tag aggiunti a {{count}} IOC",
+    "copiedToClipboard": "Copiati {{count}} IOC negli appunti",
+    "copyFailed": "Impossibile copiare negli appunti",
+    "bulkEnrichDone": "Arricchimento in blocco completato: {{details}}"
+  },
+  "caddyshack": {
+    "replyPosted": "Risposta pubblicata",
+    "postCreated": "Post creato",
+    "postCreateFailed": "Impossibile creare il post",
+    "uploadFailed": "Impossibile caricare il file: {{name}}",
+    "reactionAddFailed": "Impossibile aggiungere reazione",
+    "reactionRemoveFailed": "Impossibile rimuovere reazione",
+    "postDeleted": "Post eliminato",
+    "postDeleteFailed": "Impossibile eliminare il post",
+    "editFailed": "Impossibile modificare il post",
+    "pinUpdateFailed": "Impossibile aggiornare lo stato di fissaggio",
+    "notificationsLoadFailed": "Impossibile caricare le notifiche",
+    "markReadFailed": "Impossibile segnare la notifica come letta",
+    "markAllReadFailed": "Impossibile segnare tutto come letto",
+    "clearNotificationsFailed": "Impossibile cancellare le notifiche"
+  },
+  "settings": {
+    "slashCommandUpdated": "Aggiornato /{{name}}",
+    "slashCommandCreated": "Creato /{{name}}",
+    "slashCommandDeleted": "Eliminato /{{name}}"
+  },
+  "generic": {
+    "tagCreateFailed": "Impossibile creare il tag"
+  }
+}

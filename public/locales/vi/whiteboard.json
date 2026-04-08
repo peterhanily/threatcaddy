@@ -1,0 +1,18 @@
+{
+  "title": "Bảng trắng",
+  "new": "Mới",
+  "noWhiteboards": "Chưa có bảng trắng",
+  "createHint": "Tạo một bảng để bắt đầu vẽ",
+  "loadingWhiteboard": "Đang tải bảng trắng...",
+  "deleteTitle": "Xóa bảng trắng",
+  "deleteMessage": "Bảng trắng này sẽ bị xóa vĩnh viễn. Không thể hoàn tác.",
+  "deleteConfirm": "Xóa bảng trắng",
+  "elements": "{{count}} phần tử",
+  "element": "{{count}} phần tử",
+  "rename": "Đổi tên",
+  "archive": "Lưu trữ",
+  "unarchive": "Bỏ lưu trữ",
+  "moveToTrash": "Chuyển vào thùng rác",
+  "restore": "Khôi phục",
+  "deletePermanently": "Xóa vĩnh viễn"
+}

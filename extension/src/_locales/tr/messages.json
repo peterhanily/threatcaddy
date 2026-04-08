@@ -1,0 +1,255 @@
+{
+  "appName": {
+    "message": "ThreatCaddy"
+  },
+  "appDescription": {
+    "message": "ThreatCaddy tehdit istihbaratı için web içeriğini hızlıca yakala ve AI isteklerini proxy et. Veriler varsayılan olarak cihazınızda yerel kalır."
+  },
+  "version": {
+    "message": "v1.0.0"
+  },
+
+  "quickStats": {
+    "message": "Hızlı İstatistikler"
+  },
+  "captures": {
+    "message": "Yakalamalar"
+  },
+  "thisWeek": {
+    "message": "Bu Hafta"
+  },
+
+  "quickCapture": {
+    "message": "Hızlı Yakalama"
+  },
+  "noteTitlePlaceholder": {
+    "message": "Not başlığı (isteğe bağlı)"
+  },
+  "captureTextPlaceholder": {
+    "message": "Bir not yazın veya yapıştırın..."
+  },
+  "options": {
+    "message": "Seçenekler"
+  },
+  "investigation": {
+    "message": "Soruşturma"
+  },
+  "defaultClips": {
+    "message": "Varsayılan: Klipler"
+  },
+  "saveAs": {
+    "message": "Farklı kaydet"
+  },
+  "entityNote": {
+    "message": "Not"
+  },
+  "entityTask": {
+    "message": "Görev"
+  },
+  "entityTimelineEvent": {
+    "message": "Zaman Çizelgesi Olayı"
+  },
+  "classification": {
+    "message": "Sınıflandırma"
+  },
+  "classificationNone": {
+    "message": "Yok"
+  },
+  "saveNote": {
+    "message": "Notu Kaydet"
+  },
+  "saved": {
+    "message": "Kaydedildi!"
+  },
+  "saveFailed": {
+    "message": "Kaydetme başarısız. Lütfen tekrar deneyin."
+  },
+
+  "recentCaptures": {
+    "message": "Son Yakalamalar"
+  },
+  "noCaptures": {
+    "message": "Henüz yakalama yok. Herhangi bir sayfada metin seçin ve kaydetmek için sağ tıklayın."
+  },
+  "untitled": {
+    "message": "Başlıksız"
+  },
+
+  "quickActions": {
+    "message": "Hızlı İşlemler"
+  },
+  "openThreatCaddy": {
+    "message": "ThreatCaddy'yi Aç"
+  },
+  "reviewAllCaptures": {
+    "message": "Tüm Yakalamaları İncele"
+  },
+
+  "permissions": {
+    "message": "İzinler"
+  },
+  "allowCaddyAI": {
+    "message": "CaddyAI'ye İzin Ver"
+  },
+  "allowCaddyAIDesc": {
+    "message": "AI sağlayıcı API'lerine erişim verir (Anthropic, OpenAI, Google, Mistral)."
+  },
+  "allowUrlFetching": {
+    "message": "URL getirmeye izin ver"
+  },
+  "allowUrlFetchingDesc": {
+    "message": "/fetch komutu ve localhost dışı yerel LLM'ler için gerekli."
+  },
+
+  "howToUse": {
+    "message": "Nasıl kullanılır:"
+  },
+  "howToUseContextMenu": {
+    "message": "Metin seçin ve \"ThreatCaddy'ye Kaydet\" için sağ tıklayın"
+  },
+  "howToUseShortcut": {
+    "message": "Veya klavye kısayolunu kullanın:"
+  },
+  "howToUseShortcutSuffix": {
+    "message": "(seçimi klipler, hiçbir şey seçilmezse tam sayfa)"
+  },
+  "privacyLabel": {
+    "message": "Gizlilik:"
+  },
+  "privacyText": {
+    "message": "Tüm veriler cihazınızda yerel kalır. API anahtarları yalnızca seçtiğiniz sağlayıcıya gönderilir. İzleme yok."
+  },
+
+  "settings": {
+    "message": "Ayarlar"
+  },
+  "settingsTooltip": {
+    "message": "Ayarlar"
+  },
+  "back": {
+    "message": "Geri"
+  },
+  "targetUrl": {
+    "message": "Hedef URL"
+  },
+  "targetUrlDesc": {
+    "message": "Bu uzantının bağlandığı ThreatCaddy örneği URL'si."
+  },
+  "targetUrlPlaceholder": {
+    "message": "https://threatcaddy.com"
+  },
+  "save": {
+    "message": "Kaydet"
+  },
+
+  "contextMenuSaveToThreatCaddy": {
+    "message": "ThreatCaddy'ye Kaydet"
+  },
+
+  "savedToThreatCaddy": {
+    "message": "ThreatCaddy'ye Kaydedildi!"
+  },
+
+  "justNow": {
+    "message": "Az önce"
+  },
+  "minutesAgo": {
+    "message": "$count$d önce",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgo": {
+    "message": "$count$s önce",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "daysAgo": {
+    "message": "$count$g önce",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "errorExtensionInvalidated": {
+    "message": "Uzantı bağlamı geçersiz kılındı. Lütfen bu sayfayı yenileyin."
+  },
+  "errorExtensionDisconnected": {
+    "message": "Uzantı bağlantısı kesildi"
+  },
+  "errorExtensionUnknown": {
+    "message": "Uzantı hatası: $detail$",
+    "placeholders": {
+      "detail": { "content": "$1" }
+    }
+  },
+  "errorNoResponse": {
+    "message": "Uzantı arka planından yanıt yok"
+  },
+  "errorExtensionError": {
+    "message": "Uzantı hatası"
+  },
+
+  "errorInvalidUrl": {
+    "message": "Geçersiz URL"
+  },
+  "errorHttpHttpsOnly": {
+    "message": "Yalnızca HTTP ve HTTPS URL'leri desteklenir"
+  },
+  "errorUrlPermissionRequired": {
+    "message": "URL erişim izni gerekli. ThreatCaddy uzantı açılır penceresini açın ve \"URL getirmeye izin ver\"i etkinleştirin, ardından tekrar deneyin."
+  },
+  "errorRequestTimedOut15": {
+    "message": "İstek zaman aşımına uğradı (15s). Sayfa erişilemez olabilir."
+  },
+  "errorRequestTimedOut30": {
+    "message": "İstek zaman aşımına uğradı (30s)"
+  },
+  "errorBlockedInternal": {
+    "message": "Engellendi: dahili/özel adreslere isteklere izin verilmiyor"
+  },
+  "errorBlockedDomain": {
+    "message": "Engellendi: $hostname$ izin verilen proxy alanları listesinde değil",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorHostPermissionRequired": {
+    "message": "$hostname$ için ana bilgisayar izni gerekli",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorCaddyAIPermission": {
+    "message": "CaddyAI izni gerekli. ThreatCaddy uzantı açılır penceresini açın ve İzinler altında \"CaddyAI'ye İzin Ver\"i etkinleştirin."
+  },
+  "errorUnknownProvider": {
+    "message": "Bilinmeyen sağlayıcı: $provider$",
+    "placeholders": {
+      "provider": { "content": "$1" }
+    }
+  },
+  "errorUnknown": {
+    "message": "Bilinmeyen hata"
+  },
+  "errorHostPermissionLocalLLM": {
+    "message": "$hostname$ için ana bilgisayar izni gerekli. ThreatCaddy uzantı açılır penceresini açın ve İzinler altında \"URL getirmeye izin ver\"i etkinleştirin.",
+    "placeholders": {
+      "hostname": { "content": "$1" }
+    }
+  },
+  "errorTimedOutPageLoad": {
+    "message": "Sayfa yüklemesi beklentisi zaman aşımına uğradı"
+  },
+  "errorDeliverClips": {
+    "message": "Klipler teslim edilemedi — bridge.js sayfaya ulaşamadı. Uzantının bu site için iznine sahip olduğunu kontrol edin."
+  },
+  "errorInvalidTargetUrl": {
+    "message": "Geçersiz hedef URL"
+  },
+
+  "notificationDefaultTitle": {
+    "message": "CaddyAgent"
+  }
+}

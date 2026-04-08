@@ -1,0 +1,6 @@
+{
+  "justNow": "עכשיו",
+  "minutesAgo": "לפני {{count}} דק'",
+  "hoursAgo": "לפני {{count}} שעות",
+  "daysAgo": "לפני {{count}} ימים"
+}
