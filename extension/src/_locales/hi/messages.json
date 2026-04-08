@@ -100,6 +100,15 @@
   "allowUrlFetchingDesc": {
     "message": "/fetch कमांड और non-localhost स्थानीय LLMs के लिए आवश्यक।"
   },
+  "allowFileAccess": {
+    "message": "फ़ाइल URL एक्सेस की अनुमति दें"
+  },
+  "allowFileAccessDesc": {
+    "message": "file:// स्टैंडअलोन बिल्ड को क्लिप भेजने के लिए आवश्यक।"
+  },
+  "allowFileAccessHint": {
+    "message": "सक्षम करने के लिए: chrome://extensions पर जाएं, ThreatCaddy ढूंढें, और \"फ़ाइल URL तक पहुंच की अनुमति दें\" टॉगल करें।"
+  },
 
   "howToUse": {
     "message": "उपयोग कैसे करें:"

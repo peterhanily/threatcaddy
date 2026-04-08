@@ -100,6 +100,15 @@
   "allowUrlFetchingDesc": {
     "message": "Cần cho lệnh /fetch và LLM cục bộ không phải localhost."
   },
+  "allowFileAccess": {
+    "message": "Cho phép truy cập URL tệp"
+  },
+  "allowFileAccessDesc": {
+    "message": "Bắt buộc để gửi clip đến bản dựng độc lập file://."
+  },
+  "allowFileAccessHint": {
+    "message": "Để bật: vào chrome://extensions, tìm ThreatCaddy, và bật \"Cho phép truy cập URL tệp\"."
+  },
 
   "howToUse": {
     "message": "Cách sử dụng:"

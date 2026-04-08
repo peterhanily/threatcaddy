@@ -100,6 +100,15 @@
   "allowUrlFetchingDesc": {
     "message": "נדרש לפקודת /fetch ול-LLMs מקומיים שאינם localhost."
   },
+  "allowFileAccess": {
+    "message": "אפשר גישה לכתובות URL של קבצים"
+  },
+  "allowFileAccessDesc": {
+    "message": "נדרש לשליחת קליפים לגרסאות עצמאיות בפרוטוקול file://."
+  },
+  "allowFileAccessHint": {
+    "message": "להפעלה: עבור אל chrome://extensions, מצא את ThreatCaddy, והפעל \"אפשר גישה לכתובות URL של קבצים\"."
+  },
 
   "howToUse": {
     "message": "כיצד להשתמש:"

@@ -100,6 +100,15 @@
   "allowUrlFetchingDesc": {
     "message": "مطلوب لأمر /fetch وللـ LLMs المحلية غير localhost."
   },
+  "allowFileAccess": {
+    "message": "السماح بالوصول إلى عناوين URL للملفات"
+  },
+  "allowFileAccessDesc": {
+    "message": "مطلوب لإرسال المقاطع إلى إصدارات مستقلة بتنسيق file://."
+  },
+  "allowFileAccessHint": {
+    "message": "للتفعيل: انتقل إلى chrome://extensions، ابحث عن ThreatCaddy، وفعّل \"السماح بالوصول إلى عناوين URL للملفات\"."
+  },
 
   "howToUse": {
     "message": "طريقة الاستخدام:"

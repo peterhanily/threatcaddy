@@ -100,6 +100,15 @@
   "allowUrlFetchingDesc": {
     "message": "/fetch 命令和非 localhost 本地 LLM 所需。"
   },
+  "allowFileAccess": {
+    "message": "允许访问文件URL"
+  },
+  "allowFileAccessDesc": {
+    "message": "需要向 file:// 独立构建发送剪辑。"
+  },
+  "allowFileAccessHint": {
+    "message": "要启用：前往 chrome://extensions，找到 ThreatCaddy，并开启"允许访问文件URL"。"
+  },
 
   "howToUse": {
     "message": "使用方法："

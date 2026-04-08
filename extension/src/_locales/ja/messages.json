@@ -100,6 +100,15 @@
   "allowUrlFetchingDesc": {
     "message": "/fetchコマンドおよびlocalhost以外のローカルLLMに必要です。"
   },
+  "allowFileAccess": {
+    "message": "ファイルURLアクセスを許可"
+  },
+  "allowFileAccessDesc": {
+    "message": "file://スタンドアロンビルドにクリップを送信するために必要です。"
+  },
+  "allowFileAccessHint": {
+    "message": "有効にするには: chrome://extensionsに移動し、ThreatCaddyを見つけて「ファイルURLへのアクセスを許可」を切り替えます。"
+  },
 
   "howToUse": {
     "message": "使い方:"

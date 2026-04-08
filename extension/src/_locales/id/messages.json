@@ -100,6 +100,15 @@
   "allowUrlFetchingDesc": {
     "message": "Diperlukan untuk perintah /fetch dan LLM lokal non-localhost."
   },
+  "allowFileAccess": {
+    "message": "Izinkan akses URL file"
+  },
+  "allowFileAccessDesc": {
+    "message": "Diperlukan untuk mengirim klip ke build mandiri file://."
+  },
+  "allowFileAccessHint": {
+    "message": "Untuk mengaktifkan: buka chrome://extensions, temukan ThreatCaddy, dan aktifkan \"Izinkan akses URL file\"."
+  },
 
   "howToUse": {
     "message": "Cara menggunakan:"

@@ -100,6 +100,15 @@
   "allowUrlFetchingDesc": {
     "message": "Richiesto per il comando /fetch e per LLM locali non-localhost."
   },
+  "allowFileAccess": {
+    "message": "Consenti accesso a URL file"
+  },
+  "allowFileAccessDesc": {
+    "message": "Necessario per inviare clip alle build standalone file://."
+  },
+  "allowFileAccessHint": {
+    "message": "Per abilitare: vai a chrome://extensions, trova ThreatCaddy e attiva \"Consenti accesso a URL file\"."
+  },
 
   "howToUse": {
     "message": "Come usare:"

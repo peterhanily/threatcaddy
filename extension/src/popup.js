@@ -204,6 +204,31 @@ function setupPermToggle(toggleId, sliderId, origins) {
   });
 }
 
+// File URL access — read-only indicator; Chrome manages this setting
+function setupFileAccessIndicator(toggleId, sliderId) {
+  const toggle = document.getElementById(toggleId);
+  const slider = document.getElementById(sliderId);
+
+  function syncState() {
+    chrome.extension.isAllowedFileSchemeAccess(allowed => {
+      toggle.checked = allowed;
+      slider.style.backgroundColor = allowed ? '#8b5cf6' : '#4b5563';
+    });
+  }
+
+  syncState();
+
+  // Can't be changed programmatically — restore state and show instructions
+  toggle.addEventListener('change', () => {
+    syncState();
+    const hint = document.getElementById(toggleId + '-hint');
+    if (hint) {
+      hint.style.display = 'block';
+      setTimeout(() => { hint.style.display = 'none'; }, 5000);
+    }
+  });
+}
+
 // AI chat — grants access to provider API origins
 setupPermToggle('ai-perm-toggle', 'ai-perm-slider', [
   'https://api.anthropic.com/*',
@@ -244,6 +269,13 @@ function refreshAllPermToggles() {
       if (t && s) { t.checked = granted; s.style.backgroundColor = granted ? '#8b5cf6' : '#4b5563'; }
     }
   });
+  chrome.extension.isAllowedFileSchemeAccess(allowed => {
+    for (const [tid, sid] of [['file-perm-toggle', 'file-perm-slider'], ['settings-file-toggle', 'settings-file-slider']]) {
+      const t = document.getElementById(tid);
+      const s = document.getElementById(sid);
+      if (t && s) { t.checked = allowed; s.style.backgroundColor = allowed ? '#8b5cf6' : '#4b5563'; }
+    }
+  });
 }
 
 document.getElementById('settings-btn').addEventListener('click', () => {
@@ -266,6 +298,8 @@ setupPermToggle('settings-ai-toggle', 'settings-ai-slider', [
   'https://api.mistral.ai/*',
 ]);
 setupPermToggle('settings-url-toggle', 'settings-url-slider', ['*://*/*']);
+setupFileAccessIndicator('file-perm-toggle', 'file-perm-slider');
+setupFileAccessIndicator('settings-file-toggle', 'settings-file-slider');
 
 // Target URL — stored inside settings.targetUrl to match background.js / clips.js
 (async function loadTargetUrl() {

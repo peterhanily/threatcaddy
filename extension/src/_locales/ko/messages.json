@@ -100,6 +100,15 @@
   "allowUrlFetchingDesc": {
     "message": "/fetch 명령어 및 localhost가 아닌 로컬 LLM에 필요합니다."
   },
+  "allowFileAccess": {
+    "message": "파일 URL 액세스 허용"
+  },
+  "allowFileAccessDesc": {
+    "message": "file:// 독립 실행형 빌드에 클립을 보내는 데 필요합니다."
+  },
+  "allowFileAccessHint": {
+    "message": "사용하려면: chrome://extensions으로 이동하여 ThreatCaddy를 찾고 \"파일 URL에 대한 액세스 허용\"을 켜세요."
+  },
 
   "howToUse": {
     "message": "사용 방법:"

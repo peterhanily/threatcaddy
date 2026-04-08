@@ -477,6 +477,17 @@
         <span id="url-perm-slider" class="perm-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#4b5563;border-radius:11px;transition:background-color .2s;"></span>
       </label>
     </div>
+    <div class="help-text" style="display:flex;align-items:center;gap:8px;justify-content:space-between;margin-top:8px;">
+      <div>
+        <strong data-i18n="allowFileAccess">Allow file URL access</strong><br>
+        <span style="font-size:11px;color:#9ca3af;" data-i18n="allowFileAccessDesc">Required to send clips to file:// standalone builds.</span>
+      </div>
+      <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
+        <input type="checkbox" id="file-perm-toggle" style="opacity:0;width:0;height:0;">
+        <span id="file-perm-slider" class="perm-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#4b5563;border-radius:11px;transition:background-color .2s;"></span>
+      </label>
+    </div>
+    <div id="file-perm-toggle-hint" style="display:none;font-size:11px;color:#f59e0b;padding:6px 10px;background:#1c1208;border:1px solid #92400e;border-radius:4px;margin-top:4px;" data-i18n="allowFileAccessHint">To enable: go to chrome://extensions, find ThreatCaddy, and toggle "Allow access to file URLs".</div>
   </section>
 
   <section>
@@ -538,6 +549,17 @@
           <span id="settings-url-slider" class="perm-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#4b5563;border-radius:11px;transition:background-color .2s;"></span>
         </label>
       </div>
+      <div class="help-text" style="display:flex;align-items:center;gap:8px;justify-content:space-between;margin-top:8px;">
+        <div>
+          <strong data-i18n="allowFileAccess">Allow file URL access</strong><br>
+          <span style="font-size:11px;color:#9ca3af;" data-i18n="allowFileAccessDesc">Required to send clips to file:// standalone builds.</span>
+        </div>
+        <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
+          <input type="checkbox" id="settings-file-toggle" style="opacity:0;width:0;height:0;">
+          <span id="settings-file-slider" class="perm-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#4b5563;border-radius:11px;transition:background-color .2s;"></span>
+        </label>
+      </div>
+      <div id="settings-file-toggle-hint" style="display:none;font-size:11px;color:#f59e0b;padding:6px 10px;background:#1c1208;border:1px solid #92400e;border-radius:4px;margin-top:4px;" data-i18n="allowFileAccessHint">To enable: go to chrome://extensions, find ThreatCaddy, and toggle "Allow access to file URLs".</div>
     </section>
   </div>
 

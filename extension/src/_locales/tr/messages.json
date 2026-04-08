@@ -100,6 +100,15 @@
   "allowUrlFetchingDesc": {
     "message": "/fetch komutu ve localhost dışı yerel LLM'ler için gerekli."
   },
+  "allowFileAccess": {
+    "message": "Dosya URL'si erişimine izin ver"
+  },
+  "allowFileAccessDesc": {
+    "message": "Klipler file:// bağımsız derlemelere göndermek için gereklidir."
+  },
+  "allowFileAccessHint": {
+    "message": "Etkinleştirmek için: chrome://extensions'a gidin, ThreatCaddy'yi bulun ve \"Dosya URL'lerine erişime izin ver\"i açın."
+  },
 
   "howToUse": {
     "message": "Nasıl kullanılır:"

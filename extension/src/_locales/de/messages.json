@@ -100,6 +100,15 @@
   "allowUrlFetchingDesc": {
     "message": "Required for the /fetch command and non-localhost local LLMs."
   },
+  "allowFileAccess": {
+    "message": "Datei-URL-Zugriff erlauben"
+  },
+  "allowFileAccessDesc": {
+    "message": "Erforderlich, um Clips an eigenständige file://-Builds zu senden."
+  },
+  "allowFileAccessHint": {
+    "message": "Zum Aktivieren: Gehe zu chrome://extensions, finde ThreatCaddy und aktiviere \"Zugriff auf Datei-URLs erlauben\"."
+  },
 
   "howToUse": {
     "message": "Verwendung:"

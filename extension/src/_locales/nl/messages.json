@@ -100,6 +100,15 @@
   "allowUrlFetchingDesc": {
     "message": "Required for the /fetch command and non-localhost local LLMs."
   },
+  "allowFileAccess": {
+    "message": "Toegang tot bestands-URL's toestaan"
+  },
+  "allowFileAccessDesc": {
+    "message": "Vereist om clips te sturen naar standalone file://-builds."
+  },
+  "allowFileAccessHint": {
+    "message": "Om in te schakelen: ga naar chrome://extensions, vind ThreatCaddy en schakel \"Toegang tot bestands-URL's toestaan\" in."
+  },
 
   "howToUse": {
     "message": "Hoe te gebruiken:"

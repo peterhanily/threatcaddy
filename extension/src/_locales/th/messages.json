@@ -100,6 +100,15 @@
   "allowUrlFetchingDesc": {
     "message": "จำเป็นสำหรับคำสั่ง /fetch และ LLM ในเครื่องที่ไม่ใช่ localhost"
   },
+  "allowFileAccess": {
+    "message": "อนุญาตการเข้าถึง URL ไฟล์"
+  },
+  "allowFileAccessDesc": {
+    "message": "จำเป็นสำหรับการส่งคลิปไปยังบิลด์แบบสแตนด์อโลน file://"
+  },
+  "allowFileAccessHint": {
+    "message": "หากต้องการเปิดใช้งาน: ไปที่ chrome://extensions ค้นหา ThreatCaddy และเปิด \"อนุญาตการเข้าถึง URL ไฟล์\""
+  },
 
   "howToUse": {
     "message": "วิธีใช้:"
