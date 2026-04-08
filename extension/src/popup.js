@@ -208,29 +208,16 @@ function setupPermToggle(toggleId, sliderId, origins) {
 function setupFileAccessIndicator(toggleId, sliderId) {
   const toggle = document.getElementById(toggleId);
   const slider = document.getElementById(sliderId);
+  const label = toggle.closest('label');
 
-  function syncState() {
-    chrome.extension.isAllowedFileSchemeAccess(allowed => {
-      toggle.checked = allowed;
-      slider.style.backgroundColor = allowed ? '#8b5cf6' : '#4b5563';
-    });
-  }
+  // Non-interactive: this is a status indicator only
+  if (label) { label.style.pointerEvents = 'none'; label.style.cursor = 'default'; }
 
-  syncState();
-
-  // Can't be changed programmatically — restore state; show hint only when disabled
-  toggle.addEventListener('change', () => {
-    chrome.extension.isAllowedFileSchemeAccess(allowed => {
-      toggle.checked = allowed;
-      slider.style.backgroundColor = allowed ? '#8b5cf6' : '#4b5563';
-      if (!allowed) {
-        const hint = document.getElementById(toggleId + '-hint');
-        if (hint) {
-          hint.style.display = 'block';
-          setTimeout(() => { hint.style.display = 'none'; }, 5000);
-        }
-      }
-    });
+  chrome.extension.isAllowedFileSchemeAccess(allowed => {
+    toggle.checked = allowed;
+    slider.style.backgroundColor = allowed ? '#8b5cf6' : '#4b5563';
+    const hint = document.getElementById(toggleId + '-hint');
+    if (hint) hint.style.display = allowed ? 'none' : 'block';
   });
 }
 
