@@ -22,7 +22,8 @@
     "translate": "node scripts/translate-i18n.mjs",
     "translate:dry": "node scripts/translate-i18n.mjs --dry-run",
     "translate:sync": "node scripts/translate-i18n.mjs --sync",
-    "translate:sync:dry": "node scripts/translate-i18n.mjs --sync --dry-run"
+    "translate:sync:dry": "node scripts/translate-i18n.mjs --sync --dry-run",
+    "deploy": "pnpm build && pnpm build:single && cp dist-single/index.html dist/threatcaddy-standalone.html && touch dist/.nojekyll && npx gh-pages -d dist --dotfiles -m \"Deploy $(git rev-parse --short HEAD)\""
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",
