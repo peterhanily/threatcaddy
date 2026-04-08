@@ -688,6 +688,16 @@ async function _runAgentCycleInner(
         }
       }
 
+      // If all tool calls in this turn were pending (none auto-executed), stop early
+      // to avoid wasting LLM turns repeating "pending approval" responses.
+      const allPending = toolResults.every(r =>
+        typeof r === 'object' && 'content' in r && typeof r.content === 'string' && r.content.includes('pending_approval')
+      );
+      if (allPending && toolResults.length > 0) {
+        onProgress?.(`${agentName}: all actions require approval — pausing`);
+        break;
+      }
+
       // Continue the conversation with tool results
       messages.push(
         { role: 'assistant', content: assistantContent },
@@ -713,6 +723,12 @@ async function _runAgentCycleInner(
  * Execute an approved agent action that was previously proposed.
  */
 export async function executeApprovedAction(action: AgentAction): Promise<{ result: string; isError: boolean }> {
+  // Idempotency guard: re-read from DB to catch concurrent approvals
+  const fresh = await db.agentActions.get(action.id);
+  if (!fresh || fresh.status === 'executed' || fresh.status === 'failed') {
+    return { result: fresh?.resultSummary || 'Already executed', isError: false };
+  }
+
   const toolUse: ToolUseBlock = {
     type: 'tool_use',
     id: nanoid(),

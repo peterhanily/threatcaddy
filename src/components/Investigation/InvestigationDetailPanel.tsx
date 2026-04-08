@@ -122,7 +122,7 @@ export function InvestigationDetailPanel({
         <div className="p-4 space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Name</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.nameLabel')}</label>
             <input
               type="text"
               maxLength={200}
@@ -136,20 +136,20 @@ export function InvestigationDetailPanel({
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.descriptionLabel')}</label>
             <textarea
               maxLength={2000}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               onBlur={handleDescriptionBlur}
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent h-20 resize-none"
-              placeholder="Investigation description..."
+              placeholder={t('detail.descriptionPlaceholder')}
             />
           </div>
 
           {/* Status */}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.statusLabel')}</label>
             <div className="flex gap-1">
               {STATUS_KEYS.map((opt) => (
                 <button
@@ -179,25 +179,25 @@ export function InvestigationDetailPanel({
             {status === 'closed' && (
               <div className="mt-3 pl-2 border-l-2 border-gray-700 space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Resolution</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.resolutionLabel')}</label>
                   <select
                     value={folder.closureResolution || ''}
                     onChange={(e) => onUpdate(folder.id, { closureResolution: (e.target.value || undefined) as ClosureResolution | undefined })}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
                   >
-                    <option value="">Select resolution...</option>
+                    <option value="">{t('detail.selectResolution')}</option>
                     {(Object.entries(CLOSURE_RESOLUTION_LABELS) as [ClosureResolution, string][]).map(([value, label]) => (
                       <option key={value} value={value}>{label}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Closure Notes</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.closureNotesLabel')}</label>
                   <textarea
                     value={folder.closedReason || ''}
                     onChange={(e) => onUpdate(folder.id, { closedReason: e.target.value || undefined })}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent h-20 resize-none"
-                    placeholder="Reason for closing..."
+                    placeholder={t('detail.closureNotesPlaceholder')}
                   />
                 </div>
                 {folder.closedAt && (
@@ -212,7 +212,7 @@ export function InvestigationDetailPanel({
           {/* Classification & PAP */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">Classification</label>
+              <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.classificationLabel')}</label>
               <select
                 value={folder.clsLevel || ''}
                 onChange={(e) => onUpdate(folder.id, { clsLevel: e.target.value || undefined })}
@@ -225,7 +225,7 @@ export function InvestigationDetailPanel({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">PAP Level</label>
+              <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.papLabel')}</label>
               <select
                 value={folder.papLevel || ''}
                 onChange={(e) => onUpdate(folder.id, { papLevel: e.target.value || undefined })}
@@ -242,7 +242,7 @@ export function InvestigationDetailPanel({
 
           {/* Tags */}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Tags</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.tagsLabel')}</label>
             <TagInput
               selectedTags={folder.tags || []}
               allTags={allTags}
@@ -253,7 +253,7 @@ export function InvestigationDetailPanel({
 
           {/* Color */}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Color</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.colorLabel')}</label>
             <div className="flex gap-1.5">
               {NOTE_COLORS.map((c) => (
                 <button
@@ -272,19 +272,19 @@ export function InvestigationDetailPanel({
 
           {/* Entity counts */}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Contents ({totalEntities} items)</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.contentsLabel', { count: totalEntities })}</label>
             <div className="flex gap-3 text-xs text-gray-400">
-              <span>{entityCounts.notes} notes</span>
-              <span>{entityCounts.tasks} tasks</span>
-              <span>{entityCounts.events} events</span>
-              <span>{entityCounts.whiteboards} whiteboards</span>
+              <span>{entityCounts.notes} {t('detail.notesCount')}</span>
+              <span>{entityCounts.tasks} {t('detail.tasksCount')}</span>
+              <span>{entityCounts.events} {t('detail.eventsCount')}</span>
+              <span>{entityCounts.whiteboards} {t('detail.whiteboardsCount')}</span>
             </div>
           </div>
 
           {/* Playbook Progress */}
           {folder.playbookExecution && playbookSteps && playbookSteps.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">Playbook Progress</label>
+              <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.playbookProgressLabel')}</label>
               <PlaybookProgress
                 execution={folder.playbookExecution}
                 steps={playbookSteps.map(s => ({ title: s.title, content: s.content, phase: s.phase }))}
@@ -315,29 +315,29 @@ export function InvestigationDetailPanel({
           {/* Run Playbook */}
           {onRunPlaybook && (
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">Playbook</label>
+              <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.playbookLabel')}</label>
               <button
                 onClick={onRunPlaybook}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 hover:text-gray-100 transition-colors border border-gray-700"
               >
                 <BookOpen size={14} className="text-accent" />
-                {folder.playbookExecution ? 'Run Another Playbook' : 'Run Playbook'}
+                {folder.playbookExecution ? t('detail.runAnotherPlaybook') : t('detail.runPlaybook')}
               </button>
               {!folder.playbookExecution && (
-                <p className="text-[11px] text-gray-500 mt-1">Add tasks, notes, and templates from a playbook</p>
+                <p className="text-[11px] text-gray-500 mt-1">{t('detail.playbookHint')}</p>
               )}
             </div>
           )}
 
           {/* Timeline */}
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Investigation Timeline</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.timelineLabel')}</label>
             {folder.timelineId ? (
               <button
                 onClick={() => { if (folder.timelineId) onNavigateToTimeline?.(folder.timelineId); }}
                 className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-accent hover:text-accent-hover transition-colors"
               >
-                View Timeline
+                {t('detail.viewTimeline')}
               </button>
             ) : (
               <button
@@ -345,7 +345,7 @@ export function InvestigationDetailPanel({
                 disabled={!onCreateTimeline}
                 className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 transition-colors disabled:opacity-50"
               >
-                Create Investigation Timeline
+                {t('detail.createTimeline')}
               </button>
             )}
           </div>
@@ -353,7 +353,7 @@ export function InvestigationDetailPanel({
           {/* Cloud Sync */}
           {serverConnected && onToggleSync && (
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-2">Cloud Sync</label>
+              <label className="block text-xs font-medium text-gray-400 mb-2">{t('detail.cloudSyncLabel')}</label>
               <button
                 onClick={() => onToggleSync(folder.id, !!folder.localOnly)}
                 className={cn(
@@ -370,12 +370,12 @@ export function InvestigationDetailPanel({
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-gray-200">
-                    {folder.localOnly ? 'Local only' : 'Synced to server'}
+                    {folder.localOnly ? t('detail.localOnly') : t('detail.syncedToServer')}
                   </div>
                   <div className="text-[11px] text-gray-500 mt-0.5">
                     {folder.localOnly
-                      ? 'This investigation stays on your device only'
-                      : 'Backed up and available for team sharing'}
+                      ? t('detail.localOnlyDesc')
+                      : t('detail.syncedToServerDesc')}
                   </div>
                 </div>
                 <div className={cn(
@@ -399,7 +399,7 @@ export function InvestigationDetailPanel({
                   onClick={() => onExport(folder.id)}
                   className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 transition-colors"
                 >
-                  Export Investigation
+                  {t('detail.exportInvestigation')}
                 </button>
               )}
               {onGenerateReport && (
@@ -408,7 +408,7 @@ export function InvestigationDetailPanel({
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 transition-colors"
                 >
                   <FileBarChart size={14} />
-                  Generate Report
+                  {t('detail.generateReport')}
                 </button>
               )}
               {onPrintReport && (
@@ -417,7 +417,7 @@ export function InvestigationDetailPanel({
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 transition-colors"
                 >
                   <Printer size={14} />
-                  Print / Save as PDF
+                  {t('detail.printSaveAsPdf')}
                 </button>
               )}
               {onShareLink && (
@@ -426,7 +426,7 @@ export function InvestigationDetailPanel({
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 transition-colors"
                 >
                   <Share2 size={14} />
-                  Share Link
+                  {t('detail.shareLink')}
                 </button>
               )}
             </div>
@@ -441,7 +441,7 @@ export function InvestigationDetailPanel({
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-sm text-amber-400 transition-colors"
                 >
                   <Archive size={14} />
-                  Archive
+                  {t('detail.archive')}
                 </button>
               )}
               {status === 'archived' && onUnarchive && (
@@ -450,7 +450,7 @@ export function InvestigationDetailPanel({
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-sm text-green-400 transition-colors"
                 >
                   <Archive size={14} />
-                  Unarchive
+                  {t('detail.unarchive')}
                 </button>
               )}
               {onDelete && (
@@ -459,7 +459,7 @@ export function InvestigationDetailPanel({
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-sm text-red-400 transition-colors ml-auto"
                 >
                   <Trash2 size={14} />
-                  Delete
+                  {t('detail.delete')}
                 </button>
               )}
             </div>
@@ -467,8 +467,8 @@ export function InvestigationDetailPanel({
 
           {/* Timestamps */}
           <div className="flex gap-4 text-xs text-gray-500 pt-2 border-t border-gray-800">
-            <span>Created {formatFullDate(folder.createdAt)}</span>
-            {folder.updatedAt && <span>Updated {formatFullDate(folder.updatedAt)}</span>}
+            <span>{t('detail.created')} {formatFullDate(folder.createdAt)}</span>
+            {folder.updatedAt && <span>{t('detail.updated')} {formatFullDate(folder.updatedAt)}</span>}
           </div>
         </div>
       </div>
@@ -478,9 +478,9 @@ export function InvestigationDetailPanel({
           open={showConfirmDelete}
           onClose={() => setShowConfirmDelete(false)}
           onConfirm={() => { onDelete(folder.id); onClose(); }}
-          title="Delete Investigation"
-          message={`Delete "${folder.name}" and all its contents? This cannot be undone.`}
-          confirmLabel="Delete Investigation"
+          title={t('detail.deleteTitle')}
+          message={t('detail.deleteMessage', { name: folder.name })}
+          confirmLabel={t('detail.deleteConfirm')}
           danger
         />
       )}
