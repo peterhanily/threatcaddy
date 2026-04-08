@@ -179,8 +179,8 @@ function CustomSlashCommandsEditor() {
             <div className="text-[11px] text-gray-400 mt-0.5">{cmd.description || t('ai.noDescription')}</div>
             <div className="text-[10px] text-gray-600 mt-0.5 truncate font-mono">{cmd.template.slice(0, 80)}</div>
           </div>
-          <button onClick={() => startEdit(cmd)} className="p-1 text-gray-500 hover:text-gray-300"><Pencil size={12} /></button>
-          <button onClick={async () => { await deleteCommand(cmd.id); addToast('success', tt('settings.slashCommandDeleted', { name: cmd.name })); }} className="p-1 text-gray-500 hover:text-red-400"><Trash2 size={12} /></button>
+          <button onClick={() => startEdit(cmd)} aria-label={tc('edit')} className="p-1 text-gray-500 hover:text-gray-300"><Pencil size={12} /></button>
+          <button onClick={async () => { await deleteCommand(cmd.id); addToast('success', tt('settings.slashCommandDeleted', { name: cmd.name })); }} aria-label={tc('delete')} className="p-1 text-gray-500 hover:text-red-400"><Trash2 size={12} /></button>
         </div>
       ))}
 

@@ -280,7 +280,7 @@ export function PlaybookManager({
                     placeholder={t('templates.stepTitlePlaceholder')}
                     aria-label={`Step ${idx + 1} title`}
                   />
-                  <button onClick={() => removeStep(idx)} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400">
+                  <button onClick={() => removeStep(idx)} aria-label={tc('remove')} className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400">
                     <X size={12} />
                   </button>
                 </div>

@@ -558,7 +558,7 @@ export function ThreatIntelConfig() {
                         placeholder={t('intel.addCustomSubtype')}
                         className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent"
                       />
-                      <button onClick={() => addCustomSubtype(type)} className="text-accent hover:text-accent-hover p-0.5"><Plus size={14} /></button>
+                      <button onClick={() => addCustomSubtype(type)} aria-label={tc('add')} className="text-accent hover:text-accent-hover p-0.5"><Plus size={14} /></button>
                     </div>
                     {custom.length > 0 && (
                       <button

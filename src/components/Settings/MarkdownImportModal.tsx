@@ -82,7 +82,7 @@ export function MarkdownImportModal({ open, onClose, onImport }: MarkdownImportM
             {step === 'preview' && t('data.mdPreviewTitle')}
             {step === 'results' && t('data.mdCompleteTitle')}
           </h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-gray-800 text-gray-500">
+          <button onClick={onClose} aria-label="Close" className="p-1 rounded hover:bg-gray-800 text-gray-500">
             <X size={16} />
           </button>
         </div>

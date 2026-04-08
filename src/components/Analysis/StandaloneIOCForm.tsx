@@ -163,7 +163,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
       >
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-200">{editingIOC ? t('iocForm.editTitle') : t('iocForm.createTitle')}</h3>
-          <button type="button" onClick={onClose} className="p-1 rounded hover:bg-gray-800 text-gray-500">
+          <button type="button" onClick={onClose} aria-label="Close" className="p-1 rounded hover:bg-gray-800 text-gray-500">
             <X size={16} />
           </button>
         </div>

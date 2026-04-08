@@ -135,7 +135,7 @@ export function MISPImportModal({
             {step === 'preview' && 'Preview MISP Import'}
             {step === 'results' && 'Import Results'}
           </h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-gray-800 text-gray-500">
+          <button onClick={onClose} aria-label="Close" className="p-1 rounded hover:bg-gray-800 text-gray-500">
             <X size={16} />
           </button>
         </div>

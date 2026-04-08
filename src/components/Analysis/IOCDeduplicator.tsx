@@ -159,7 +159,7 @@ export function IOCDeduplicator({ open, onClose, iocs, onUpdate, onDelete }: IOC
               {t('dedup.summary', { groups: duplicateGroups.length, groupPlural: duplicateGroups.length !== 1 ? 's' : '', total: totalDuplicates, totalPlural: totalDuplicates !== 1 ? 's' : '' })}
             </p>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-gray-200">
+          <button onClick={onClose} aria-label="Close" className="p-1 rounded-lg hover:bg-gray-700 text-gray-400 hover:text-gray-200">
             <X size={20} />
           </button>
         </div>
