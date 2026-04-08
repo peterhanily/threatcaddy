@@ -1030,7 +1030,7 @@ export function NoteEditor({
                 <div
                   key={i}
                   className={i + 1 === currentLine ? 'text-gray-300' : 'text-gray-600'}
-                  style={{ height: lineHeights[i] || 'calc(0.875rem * 1.625)', lineHeight: lineHeights[i] ? `${lineHeights[i]}px` : 'calc(0.875rem * 1.625)' }}
+                  style={{ height: lineHeights[i] || undefined, lineHeight: 'calc(0.875rem * 1.625)' }}
                 >{i + 1}</div>
               ))}</div>
               <textarea
