@@ -28,6 +28,7 @@
   "untitled": "Untitled",
   "error.generic": "Something went wrong",
   "error.notFound": "Not found",
+  "error.unexpectedDetail": "An unexpected error occurred.",
   "error.reloadHint": "Try reloading this section or refreshing the page. If the problem persists, copy the error details and report the issue.",
   "error.copyDetails": "Copy error details",
   "reload": "Reload",
