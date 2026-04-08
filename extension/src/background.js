@@ -444,7 +444,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'SET_PROXY_DOMAINS') {
     // Store allowed domains for proxy fetch validation
     const domains = Array.isArray(message.domains)
-      ? message.domains.filter((d) => typeof d === 'string' && d.length > 0 && d.length < 256)
+      ? message.domains.filter((d) => typeof d === 'string' && d.length > 4 && d.length < 256 && d.includes('.') && !d.startsWith('.'))
       : [];
     chrome.storage.local.set({ proxyAllowedDomains: domains });
     return;
@@ -531,9 +531,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Validate hostname against stored allowed proxy domains
         const { proxyAllowedDomains = [] } = await chrome.storage.local.get(['proxyAllowedDomains']);
         if (proxyAllowedDomains.length > 0) {
-          const allowed = proxyAllowedDomains.some(
-            (d) => hostname === d || hostname.endsWith('.' + d)
-          );
+          const allowed = proxyAllowedDomains.some((d) => {
+            // Reject bare TLDs (no dot = could match entire TLD like 'com')
+            if (!d.includes('.')) return false;
+            return hostname === d || hostname.endsWith('.' + d);
+          });
           if (!allowed) {
             sendResponse({ success: false, error: chrome.i18n.getMessage('errorBlockedDomain', [hostname]) });
             return;
@@ -777,6 +779,12 @@ async function streamAnthropic(send, payload, signal) {
           if (parsed.delta?.stop_reason) stopReason = parsed.delta.stop_reason;
           if (parsed.usage?.output_tokens && usage) usage.output = parsed.usage.output_tokens;
         }
+
+        if (parsed.type === 'error') {
+          const msg = parsed.error?.message || parsed.error?.type || 'Streaming error';
+          send({ type: 'error', error: `Anthropic mid-stream error: ${msg}` });
+          return;
+        }
       } catch {}
     }
   }
@@ -931,6 +939,11 @@ async function streamOpenAICompatible(send, payload, signal, endpoint, headers, 
         // OpenAI reports usage in the final chunk (with stream_options.include_usage)
         if (parsed.usage) {
           usage = { input: parsed.usage.prompt_tokens || 0, output: parsed.usage.completion_tokens || 0 };
+        }
+
+        if (parsed.error) {
+          send({ type: 'error', error: `API mid-stream error: ${parsed.error.message || String(parsed.error)}` });
+          return;
         }
       } catch {}
     }

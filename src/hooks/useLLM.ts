@@ -40,6 +40,7 @@ interface AgentResult {
   content: string;
   toolCalls: ToolCallRecord[];
   usage?: TokenUsage;
+  error?: string;
 }
 
 const MAX_TOOL_TURNS = 8;
@@ -319,8 +320,17 @@ export function useLLM() {
         setActiveRequestId(null);
         requestIdRef.current = null;
         setStreamingContent('');
+        // Deliver any partial content to the caller rather than silently dropping it
+        const partialContent = accumulatedRef.current;
         accumulatedRef.current = '';
+        const agentState = agentStateRef.current;
         agentStateRef.current = null;
+        onCompleteRef.current?.({
+          content: partialContent,
+          toolCalls: agentState?.allToolCalls ?? [],
+          usage: agentState?.totalUsage.input ? agentState.totalUsage : undefined,
+          error: event.data.error,
+        });
         onCompleteRef.current = null;
         return;
       }

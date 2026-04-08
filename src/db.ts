@@ -193,6 +193,13 @@ db.version(25).stores({
   agentMeetings: 'id, investigationId, status, createdAt, [investigationId+createdAt]',
 });
 
+// Version 26: MultiEntry indexes for reverse-link lookups (eliminates N+1 on entity deletes)
+db.version(26).stores({
+  notes: 'id, title, folderId, pinned, archived, trashed, createdAt, updatedAt, *tags, *iocTypes, createdBy, [folderId+updatedAt], *linkedNoteIds, *linkedTaskIds, *linkedTimelineEventIds',
+  tasks: 'id, title, folderId, status, priority, completed, trashed, archived, order, createdAt, updatedAt, *tags, *iocTypes, createdBy, assigneeId, [folderId+status], [folderId+updatedAt], *linkedNoteIds, *linkedTaskIds, *linkedTimelineEventIds',
+  timelineEvents: 'id, timestamp, eventType, source, starred, trashed, archived, folderId, timelineId, createdAt, updatedAt, *tags, *iocTypes, createdBy, [folderId+timestamp], *linkedNoteIds, *linkedTaskIds',
+});
+
 // Encryption-at-rest middleware (transparent to all CRUD hooks)
 installEncryptionMiddleware(db);
 

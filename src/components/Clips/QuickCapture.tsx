@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { Modal } from '../Common/Modal';
 import type { Note, Folder, NoteTemplate } from '../../types';
@@ -13,6 +14,7 @@ interface QuickCaptureProps {
 }
 
 export function QuickCapture({ open, onClose, onCapture, folders = [], defaultFolderId, templates = [] }: QuickCaptureProps) {
+  const { t } = useTranslation('common');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
@@ -79,7 +81,7 @@ export function QuickCapture({ open, onClose, onCapture, folders = [], defaultFo
   const inputClass = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent';
 
   return (
-    <Modal open={open} onClose={onClose} title="Create Note" wide>
+    <Modal open={open} onClose={onClose} title={t('quickCapture.title')} wide>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Templates */}
         {categoryOrder.map((cat) => (
@@ -95,7 +97,7 @@ export function QuickCapture({ open, onClose, onCapture, folders = [], defaultFo
                 >
                   {tpl.icon && <span>{tpl.icon}</span>}
                   {tpl.name}
-                  {tpl.source === 'user' && <span className="text-[9px] text-accent/60 ml-0.5">custom</span>}
+                  {tpl.source === 'user' && <span className="text-[9px] text-accent/60 ml-0.5">{t('quickCapture.customBadge')}</span>}
                 </button>
               ))}
             </div>
@@ -103,45 +105,45 @@ export function QuickCapture({ open, onClose, onCapture, folders = [], defaultFo
         ))}
 
         <div>
-          <label className="block text-xs font-medium text-gray-400 mb-1">Title</label>
+          <label className="block text-xs font-medium text-gray-400 mb-1">{t('quickCapture.titleLabel')}</label>
           <input
             autoFocus
             value={title}
             onChange={(e) => { titleTouchedByUser.current = true; setTitle(e.target.value); }}
             className={inputClass}
-            placeholder="Note title..."
+            placeholder={t('quickCapture.titlePlaceholder')}
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-400 mb-1">Content (markdown)</label>
+          <label className="block text-xs font-medium text-gray-400 mb-1">{t('quickCapture.contentLabel')}</label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className={`${inputClass} h-40 resize-none note-editor`}
-            placeholder="Write or paste content..."
+            placeholder={t('quickCapture.contentPlaceholder')}
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-400 mb-1">Source URL (optional)</label>
+          <label className="block text-xs font-medium text-gray-400 mb-1">{t('quickCapture.sourceUrlLabel')}</label>
           <input
             value={sourceUrl}
             onChange={(e) => setSourceUrl(e.target.value)}
             className={inputClass}
-            placeholder="https://..."
+            placeholder={t('quickCapture.sourceUrlPlaceholder')}
           />
         </div>
 
         {folders.length > 0 && (
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Investigation</label>
+            <label className="block text-xs font-medium text-gray-400 mb-1">{t('quickCapture.investigationLabel')}</label>
             <select
               value={folderId}
               onChange={(e) => setFolderId(e.target.value)}
               className={inputClass}
             >
-              <option value="">No investigation</option>
+              <option value="">{t('quickCapture.noInvestigation')}</option>
               {folders.map((f) => (
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
@@ -155,7 +157,7 @@ export function QuickCapture({ open, onClose, onCapture, folders = [], defaultFo
             onClick={onClose}
             className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm transition-colors"
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             type="submit"
@@ -163,7 +165,7 @@ export function QuickCapture({ open, onClose, onCapture, folders = [], defaultFo
             className="px-4 py-2 rounded-lg bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium transition-colors flex items-center gap-2"
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
-            {saving ? 'Saving...' : 'Create Note'}
+            {saving ? t('quickCapture.saving') : t('quickCapture.createNote')}
           </button>
         </div>
       </form>

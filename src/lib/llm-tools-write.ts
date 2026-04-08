@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid';
+import DOMPurify from 'dompurify';
 import { db } from '../db';
 import type {
   IOCType, ConfidenceLevel, TimelineEventType, Priority, TaskStatus,
@@ -6,6 +7,13 @@ import type {
 } from '../types';
 
 const MAX_SNIPPET = 200;
+/** Max stored length for LLM-supplied free-text fields (prevents memory abuse from runaway agents) */
+const MAX_LLM_TEXT_LEN = 500_000;
+
+/** Strip HTML from LLM-supplied content and cap length before writing to DB */
+function sanitizeText(text: string): string {
+  return DOMPurify.sanitize(text, { ALLOWED_TAGS: [] }).substring(0, MAX_LLM_TEXT_LEN);
+}
 
 function snippet(text: string, maxLen = MAX_SNIPPET): string {
   if (text.length <= maxLen) return text;
@@ -17,7 +25,7 @@ export async function executeCreateNote(input: Record<string, unknown>, folderId
   const note = {
     id: nanoid(),
     title: String(input.title || 'Untitled'),
-    content: String(input.content || ''),
+    content: sanitizeText(String(input.content || '')),
     folderId: folderId || undefined,
     tags: Array.isArray(input.tags) ? input.tags.map(String) : [],
     pinned: false,
@@ -39,8 +47,8 @@ export async function executeUpdateNote(input: Record<string, unknown>): Promise
 
   const updates: Partial<Note> = { updatedAt: Date.now() };
   if (input.title !== undefined) updates.title = String(input.title);
-  if (input.content !== undefined) updates.content = String(input.content);
-  if (input.appendContent !== undefined) updates.content = note.content + '\n' + String(input.appendContent);
+  if (input.content !== undefined) updates.content = sanitizeText(String(input.content));
+  if (input.appendContent !== undefined) updates.content = sanitizeText(note.content + '\n' + String(input.appendContent));
   if (input.tags !== undefined && Array.isArray(input.tags)) updates.tags = input.tags.map(String);
 
   await db.notes.update(id, updates);
@@ -56,7 +64,7 @@ export async function executeCreateTask(input: Record<string, unknown>, folderId
   const task = {
     id: nanoid(),
     title: String(input.title || 'Untitled Task'),
-    description: input.description ? String(input.description) : undefined,
+    description: input.description ? sanitizeText(String(input.description)) : undefined,
     completed: false,
     priority: (input.priority as Priority) || 'none',
     status: (input.status as TaskStatus) || 'todo',
@@ -82,7 +90,7 @@ export async function executeUpdateTask(input: Record<string, unknown>): Promise
 
   const updates: Partial<Task> = { updatedAt: Date.now() };
   if (input.title !== undefined) updates.title = String(input.title);
-  if (input.description !== undefined) updates.description = String(input.description);
+  if (input.description !== undefined) updates.description = sanitizeText(String(input.description));
   if (input.status !== undefined) {
     updates.status = input.status as TaskStatus;
     updates.completed = input.status === 'done';
@@ -101,7 +109,7 @@ export async function executeCreateIOC(input: Record<string, unknown>, folderId?
     type: (input.type as IOCType) || 'domain',
     value: String(input.value || ''),
     confidence: (input.confidence as ConfidenceLevel) || 'medium',
-    analystNotes: input.analystNotes ? String(input.analystNotes) : undefined,
+    analystNotes: input.analystNotes ? sanitizeText(String(input.analystNotes)) : undefined,
     folderId: folderId || undefined,
     tags: [],
     trashed: false,
@@ -124,7 +132,7 @@ export async function executeUpdateIOC(input: Record<string, unknown>): Promise<
   if (input.type !== undefined) updates.type = input.type as IOCType;
   if (input.value !== undefined) updates.value = String(input.value);
   if (input.confidence !== undefined) updates.confidence = input.confidence as ConfidenceLevel;
-  if (input.analystNotes !== undefined) updates.analystNotes = String(input.analystNotes);
+  if (input.analystNotes !== undefined) updates.analystNotes = sanitizeText(String(input.analystNotes));
   if (input.attribution !== undefined) updates.attribution = String(input.attribution);
   if (input.iocSubtype !== undefined) updates.iocSubtype = String(input.iocSubtype);
   if (input.iocStatus !== undefined) updates.iocStatus = String(input.iocStatus);
@@ -147,7 +155,7 @@ export async function executeBulkCreateIOCs(input: Record<string, unknown>, fold
     type: (iocInput.type as IOCType) || 'domain',
     value: String(iocInput.value || ''),
     confidence: (iocInput.confidence as ConfidenceLevel) || 'medium',
-    analystNotes: iocInput.analystNotes ? String(iocInput.analystNotes) : undefined,
+    analystNotes: iocInput.analystNotes ? sanitizeText(String(iocInput.analystNotes)) : undefined,
     folderId: folderId || undefined,
     tags: [],
     trashed: false,
@@ -196,7 +204,7 @@ export async function executeCreateTimelineEvent(input: Record<string, unknown>,
     id: nanoid(),
     timestamp,
     title: String(input.title || 'Untitled Event'),
-    description: input.description ? String(input.description) : undefined,
+    description: input.description ? sanitizeText(String(input.description)) : undefined,
     eventType: (input.eventType as TimelineEventType) || 'other',
     source: input.source ? String(input.source) : 'CaddyAI',
     confidence: 'medium' as const,
@@ -228,7 +236,7 @@ export async function executeUpdateTimelineEvent(input: Record<string, unknown>)
 
   const updates: Partial<TimelineEvent> = { updatedAt: Date.now() };
   if (input.title !== undefined) updates.title = String(input.title);
-  if (input.description !== undefined) updates.description = String(input.description);
+  if (input.description !== undefined) updates.description = sanitizeText(String(input.description));
   if (input.timestamp !== undefined) {
     const parsed = new Date(String(input.timestamp)).getTime();
     if (!isNaN(parsed)) updates.timestamp = parsed;

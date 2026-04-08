@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { ChevronRight, FileText, ListChecks, Shield, Clock, GitBranch, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
@@ -237,7 +237,7 @@ function SuggestionChips({ suggestions, onSuggestionClick }: { suggestions: stri
 
 // ── Main Component ─────────────────────────────────────────────────
 
-export function ChatMessageBubble({ role, content, attachments, isStreaming, toolCalls, onEntityClick, onSuggestionClick, isLastAssistant, messageIndex, onBranchFromHere, onRewindToHere, tokenCount, messageId, onRestoreCheckpoint, hasCheckpoint }: ChatMessageProps) {
+export const ChatMessageBubble = memo(function ChatMessageBubble({ role, content, attachments, isStreaming, toolCalls, onEntityClick, onSuggestionClick, isLastAssistant, messageIndex, onBranchFromHere, onRewindToHere, tokenCount, messageId, onRestoreCheckpoint, hasCheckpoint }: ChatMessageProps) {
   const { t } = useTranslation('chat');
   const isUser = role === 'user';
 
@@ -375,4 +375,4 @@ export function ChatMessageBubble({ role, content, attachments, isStreaming, too
       </div>
     </div>
   );
-}
+});

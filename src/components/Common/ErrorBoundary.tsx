@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, RotateCcw, Copy, Check } from 'lucide-react';
 
 interface Props {
@@ -80,34 +81,53 @@ export class ErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center h-full p-8 text-gray-400">
-          <AlertTriangle size={48} className="mb-4 text-red-400" />
-          <h2 className="text-lg font-semibold text-gray-200 mb-2">Something went wrong</h2>
-          <p className="text-sm text-gray-500 mb-2 max-w-md text-center">
-            {this.state.error?.message || 'An unexpected error occurred.'}
-          </p>
-          <p className="text-sm text-gray-500 mb-6 max-w-md text-center">
-            Try reloading this section or refreshing the page. If the problem persists, copy the error details and report the issue.
-          </p>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={this.handleReload}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors"
-            >
-              <RotateCcw size={16} />
-              Reload
-            </button>
-            <button
-              onClick={this.handleCopy}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 transition-colors"
-            >
-              {this.state.copied ? <Check size={16} /> : <Copy size={16} />}
-              {this.state.copied ? 'Copied' : 'Copy error details'}
-            </button>
-          </div>
-        </div>
+        <ErrorFallback
+          errorMessage={this.state.error?.message}
+          copied={this.state.copied}
+          onReload={this.handleReload}
+          onCopy={this.handleCopy}
+        />
       );
     }
     return this.props.children;
   }
+}
+
+interface ErrorFallbackProps {
+  errorMessage?: string;
+  copied: boolean;
+  onReload: () => void;
+  onCopy: () => void;
+}
+
+function ErrorFallback({ errorMessage, copied, onReload, onCopy }: ErrorFallbackProps) {
+  const { t } = useTranslation('common');
+  return (
+    <div className="flex flex-col items-center justify-center h-full p-8 text-gray-400">
+      <AlertTriangle size={48} className="mb-4 text-red-400" />
+      <h2 className="text-lg font-semibold text-gray-200 mb-2">{t('error.generic')}</h2>
+      <p className="text-sm text-gray-500 mb-2 max-w-md text-center">
+        {errorMessage || t('error.unexpectedDetail')}
+      </p>
+      <p className="text-sm text-gray-500 mb-6 max-w-md text-center">
+        {t('error.reloadHint')}
+      </p>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onReload}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white hover:bg-accent-hover transition-colors"
+        >
+          <RotateCcw size={16} />
+          {t('reload')}
+        </button>
+        <button
+          onClick={onCopy}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 transition-colors"
+        >
+          {copied ? <Check size={16} /> : <Copy size={16} />}
+          {copied ? t('copied') : t('error.copyDetails')}
+        </button>
+      </div>
+    </div>
+  );
 }

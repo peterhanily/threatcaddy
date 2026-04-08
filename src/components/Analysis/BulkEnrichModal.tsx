@@ -88,6 +88,7 @@ export function BulkEnrichModal({
   const [paused, setPaused] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const pauseRef = useRef(false);
+  const cancelledRef = useRef(false);
 
   // Keep pauseRef in sync
   useEffect(() => { pauseRef.current = paused; }, [paused]);
@@ -164,6 +165,7 @@ export function BulkEnrichModal({
       setPaused(false);
       setSkipAlreadyEnriched(true);
       setCreateNotes(false);
+      cancelledRef.current = false;
     }
   }, [open]);
 
@@ -184,7 +186,7 @@ export function BulkEnrichModal({
     // Phase 1a: top-level try/finally so any unhandled error transitions to 'done'
     try {
       for (let i = 0; i < effectivePlan.length; i++) {
-        if (controller.signal.aborted) break;
+        if (cancelledRef.current || controller.signal.aborted) break;
 
         // Pause (Phase 3a: signal-aware sleep)
         await sleepUntilUnpaused(controller.signal, pauseRef);
@@ -368,6 +370,7 @@ export function BulkEnrichModal({
   }, [effectivePlan, addRun, investigation, createNotes, onCompleted, connected, serverUrl, getAccessToken]);
 
   const handleCancel = useCallback(() => {
+    cancelledRef.current = true;
     abortRef.current?.abort();
     setPhase('done');
   }, []);

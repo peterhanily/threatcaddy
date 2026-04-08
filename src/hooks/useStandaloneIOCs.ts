@@ -4,17 +4,21 @@ import type { StandaloneIOC } from '../types';
 import { nanoid } from 'nanoid';
 import { purgeOldTrash } from '../lib/trash-purge';
 
-/** Manages standalone IOCs stored in IndexedDB -- create, update, bulk import, trash, and tag operations. */
-export function useStandaloneIOCs() {
+/** Manages standalone IOCs stored in IndexedDB -- create, update, bulk import, trash, and tag operations.
+ * Pass `folderId` to scope the initial load to a single investigation (uses folderId index for performance).
+ */
+export function useStandaloneIOCs(folderId?: string) {
   const [iocs, setIOCs] = useState<StandaloneIOC[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadIOCs = useCallback(async () => {
-    const all = await db.standaloneIOCs.toArray();
+    const all = folderId
+      ? await db.standaloneIOCs.where('folderId').equals(folderId).toArray()
+      : await db.standaloneIOCs.toArray();
     const remaining = await purgeOldTrash(all, db.standaloneIOCs);
     setIOCs(remaining.sort((a, b) => b.createdAt - a.createdAt));
     setLoading(false);
-  }, []);
+  }, [folderId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

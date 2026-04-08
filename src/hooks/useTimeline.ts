@@ -1,20 +1,25 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import Dexie from 'dexie';
 import { db } from '../db';
 import type { TimelineEvent, TimelineEventType } from '../types';
 import { nanoid } from 'nanoid';
 import { purgeOldTrash } from '../lib/trash-purge';
 
-/** Manages CRUD operations and state for timeline events, with filtering by type, date range, and folder. */
-export function useTimeline() {
+/** Manages CRUD operations and state for timeline events, with filtering by type, date range, and folder.
+ * Pass `folderId` to scope the initial load to a single investigation (uses compound index for performance).
+ */
+export function useTimeline(folderId?: string) {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadEvents = useCallback(async () => {
-    const all = await db.timelineEvents.toArray();
+    const all = folderId
+      ? await db.timelineEvents.where('[folderId+timestamp]').between([folderId, Dexie.minKey], [folderId, Dexie.maxKey]).toArray()
+      : await db.timelineEvents.toArray();
     const remaining = await purgeOldTrash(all, db.timelineEvents);
     setEvents(remaining);
     setLoading(false);
-  }, []);
+  }, [folderId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -72,8 +77,8 @@ export function useTimeline() {
         await db.timelineEvents.delete(id);
         // Batch orphan link cleanup: collect affected entities then update in bulk
         const [linkedNotes, linkedTasks] = await Promise.all([
-          db.notes.toArray().then(items => items.filter(n => n.linkedTimelineEventIds?.includes(id))),
-          db.tasks.toArray().then(items => items.filter(t => t.linkedTimelineEventIds?.includes(id))),
+          db.notes.where('linkedTimelineEventIds').equals(id).toArray(),
+          db.tasks.where('linkedTimelineEventIds').equals(id).toArray(),
         ]);
         const ops: Promise<unknown>[] = [];
         for (const n of linkedNotes) {
@@ -110,22 +115,18 @@ export function useTimeline() {
     try {
       await db.transaction('rw', [db.timelineEvents, db.notes, db.tasks], async () => {
         await db.timelineEvents.bulkDelete(trashedIds);
-        // Batch orphan link cleanup in a single pass per table
+        // Use MultiEntry index to find only affected records (avoids full table scan)
         const idSet = new Set(trashedIds);
-        const [allNotes, allTasks] = await Promise.all([
-          db.notes.toArray(),
-          db.tasks.toArray(),
+        const [affectedNotes, affectedTasks] = await Promise.all([
+          db.notes.where('linkedTimelineEventIds').anyOf(trashedIds).distinct().toArray(),
+          db.tasks.where('linkedTimelineEventIds').anyOf(trashedIds).distinct().toArray(),
         ]);
         const ops: Promise<unknown>[] = [];
-        for (const n of allNotes) {
-          if (n.linkedTimelineEventIds?.some(eid => idSet.has(eid))) {
-            ops.push(db.notes.update(n.id, { linkedTimelineEventIds: (n.linkedTimelineEventIds ?? []).filter(eid => !idSet.has(eid)) }));
-          }
+        for (const n of affectedNotes) {
+          ops.push(db.notes.update(n.id, { linkedTimelineEventIds: (n.linkedTimelineEventIds ?? []).filter(eid => !idSet.has(eid)) }));
         }
-        for (const t of allTasks) {
-          if (t.linkedTimelineEventIds?.some(eid => idSet.has(eid))) {
-            ops.push(db.tasks.update(t.id, { linkedTimelineEventIds: (t.linkedTimelineEventIds ?? []).filter(eid => !idSet.has(eid)) }));
-          }
+        for (const t of affectedTasks) {
+          ops.push(db.tasks.update(t.id, { linkedTimelineEventIds: (t.linkedTimelineEventIds ?? []).filter(eid => !idSet.has(eid)) }));
         }
         await Promise.all(ops);
       });

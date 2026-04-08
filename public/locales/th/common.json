@@ -108,5 +108,23 @@
   "serverError.serviceUnavailable": "บริการไม่พร้อมใช้งานชั่วคราว",
   "serverError.unknownError": "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ",
   "serverError.connectionRefused": "การเชื่อมต่อถูกปฏิเสธ - ตรวจสอบว่าเซิร์ฟเวอร์กำลังทำงาน",
-  "serverError.invalidResponse": "ได้รับการตอบสนองที่ไม่ถูกต้องจากเซิร์ฟเวอร์"
+  "serverError.invalidResponse": "ได้รับการตอบสนองที่ไม่ถูกต้องจากเซิร์ฟเวอร์",
+
+  "error.generic": "เกิดข้อผิดพลาดบางอย่าง",
+  "error.notFound": "ไม่พบ",
+  "error.reloadHint": "ลองโหลดส่วนนี้ใหม่หรือรีเฟรชหน้า หากปัญหายังคงอยู่ ให้คัดลอกรายละเอียดข้อผิดพลาดและรายงานปัญหา",
+  "error.copyDetails": "คัดลอกรายละเอียดข้อผิดพลาด",
+  "reload": "โหลดใหม่",
+  "quickCapture.title": "สร้างบันทึก",
+  "quickCapture.titleLabel": "หัวข้อ",
+  "quickCapture.titlePlaceholder": "หัวข้อบันทึก...",
+  "quickCapture.contentLabel": "เนื้อหา (markdown)",
+  "quickCapture.contentPlaceholder": "เขียนหรือวางเนื้อหา...",
+  "quickCapture.sourceUrlLabel": "URL แหล่งที่มา (ไม่บังคับ)",
+  "quickCapture.sourceUrlPlaceholder": "https://...",
+  "quickCapture.investigationLabel": "การสืบสวน",
+  "quickCapture.noInvestigation": "ไม่มีการสืบสวน",
+  "quickCapture.saving": "กำลังบันทึก...",
+  "quickCapture.createNote": "สร้างบันทึก",
+  "quickCapture.customBadge": "กำหนดเอง"
 }

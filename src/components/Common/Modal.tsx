@@ -14,6 +14,7 @@ interface ModalProps {
 export function Modal({ open, onClose, title, children, wide, extraWide }: ModalProps) {
   const { t } = useTranslation('common');
   const overlayRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const titleId = `modal-title-${title.replace(/\s+/g, '-').toLowerCase()}`;
 
   useEffect(() => {
@@ -51,7 +52,14 @@ export function Modal({ open, onClose, title, children, wide, extraWide }: Modal
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      // Restore focus to the element that triggered the modal
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
+      return;
+    }
+    // Capture the currently-focused element before modal steals focus
+    previousFocusRef.current = document.activeElement as HTMLElement;
     document.addEventListener('keydown', handleKeyDown);
     // Focus first focusable element only when modal opens
     const el = overlayRef.current;

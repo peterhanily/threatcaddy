@@ -1,18 +1,56 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Dexie from 'dexie';
 import { db } from '../db';
 import type { Note, SortOption, SortDirection, IOCType } from '../types';
 import { nanoid } from 'nanoid';
 import { purgeOldTrash } from '../lib/trash-purge';
 
-/** Manages CRUD operations and state for investigation notes stored in IndexedDB. Returns notes array, loading flag, and mutation helpers. */
-export function useNotes() {
+const CONTENT_CACHE_MAX = 200;
+
+type LRUCache<K, V> = {
+  get(key: K): V | undefined;
+  set(key: K, val: V): void;
+  delete(key: K): void;
+  keys(): IterableIterator<K>;
+};
+
+/** Create a size-bounded LRU cache that evicts least-recently-used entries when full */
+function createLRUCache<K, V>(maxSize: number): LRUCache<K, V> {
+  const map = new Map<K, V>();
+  return {
+    get(key) {
+      if (!map.has(key)) return undefined;
+      const val = map.get(key)!;
+      map.delete(key);
+      map.set(key, val);
+      return val;
+    },
+    set(key, val) {
+      if (map.has(key)) map.delete(key);
+      map.set(key, val);
+      if (map.size > maxSize) {
+        map.delete(map.keys().next().value as K);
+      }
+    },
+    delete(key) { map.delete(key); },
+    keys() { return map.keys(); },
+  };
+}
+
+/** Manages CRUD operations and state for investigation notes stored in IndexedDB. Returns notes array, loading flag, and mutation helpers.
+ * Pass `folderId` to scope the initial load to a single investigation (uses compound index for performance).
+ * Without `folderId`, all notes across all investigations are loaded (needed for search, graph, dashboard).
+ */
+export function useNotes(folderId?: string) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
-  // Cache of full note content keyed by note id (used by search when content isn't in state)
-  const contentCacheRef = useRef<Map<string, string>>(new Map());
+  // Bounded LRU cache of full note content keyed by note id (used by search when content isn't in state)
+  const contentCacheRef = useRef(createLRUCache<string, string>(CONTENT_CACHE_MAX));
 
   const loadNotes = useCallback(async () => {
-    const allNotes = await db.notes.toArray();
+    const allNotes = folderId
+      ? await db.notes.where('[folderId+updatedAt]').between([folderId, Dexie.minKey], [folderId, Dexie.maxKey]).toArray()
+      : await db.notes.toArray();
     const remaining = await purgeOldTrash(allNotes, db.notes);
     const cache = contentCacheRef.current;
     for (const note of remaining) {
@@ -25,7 +63,7 @@ export function useNotes() {
     }
     setNotes(remaining);
     setLoading(false);
-  }, []);
+  }, [folderId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -78,9 +116,9 @@ export function useNotes() {
         await db.notes.delete(id);
         // Batch orphan link cleanup: collect IDs from affected tables then modify in bulk
         const [linkedNotes, linkedTasks, linkedEvents] = await Promise.all([
-          db.notes.toArray().then(items => items.filter(n => n.linkedNoteIds?.includes(id))),
-          db.tasks.toArray().then(items => items.filter(t => t.linkedNoteIds?.includes(id))),
-          db.timelineEvents.toArray().then(items => items.filter(e => e.linkedNoteIds.includes(id))),
+          db.notes.where('linkedNoteIds').equals(id).toArray(),
+          db.tasks.where('linkedNoteIds').equals(id).toArray(),
+          db.timelineEvents.where('linkedNoteIds').equals(id).toArray(),
         ]);
         const ops: Promise<unknown>[] = [];
         for (const n of linkedNotes) {
@@ -206,28 +244,22 @@ export function useNotes() {
     try {
       await db.transaction('rw', [db.notes, db.tasks, db.timelineEvents], async () => {
         await db.notes.bulkDelete(trashedIds);
-        // Batch orphan link cleanup in a single pass per table
+        // Use MultiEntry index to find only affected records (avoids full table scan)
         const idSet = new Set(trashedIds);
-        const [allNotes, allTasks, allEvents] = await Promise.all([
-          db.notes.toArray(),
-          db.tasks.toArray(),
-          db.timelineEvents.toArray(),
+        const [affectedNotes, affectedTasks, affectedEvents] = await Promise.all([
+          db.notes.where('linkedNoteIds').anyOf(trashedIds).distinct().toArray(),
+          db.tasks.where('linkedNoteIds').anyOf(trashedIds).distinct().toArray(),
+          db.timelineEvents.where('linkedNoteIds').anyOf(trashedIds).distinct().toArray(),
         ]);
         const ops: Promise<unknown>[] = [];
-        for (const n of allNotes) {
-          if (n.linkedNoteIds?.some(nid => idSet.has(nid))) {
-            ops.push(db.notes.update(n.id, { linkedNoteIds: n.linkedNoteIds.filter(nid => !idSet.has(nid)) }));
-          }
+        for (const n of affectedNotes) {
+          ops.push(db.notes.update(n.id, { linkedNoteIds: n.linkedNoteIds!.filter(nid => !idSet.has(nid)) }));
         }
-        for (const t of allTasks) {
-          if (t.linkedNoteIds?.some(nid => idSet.has(nid))) {
-            ops.push(db.tasks.update(t.id, { linkedNoteIds: (t.linkedNoteIds ?? []).filter(nid => !idSet.has(nid)) }));
-          }
+        for (const t of affectedTasks) {
+          ops.push(db.tasks.update(t.id, { linkedNoteIds: (t.linkedNoteIds ?? []).filter(nid => !idSet.has(nid)) }));
         }
-        for (const e of allEvents) {
-          if (e.linkedNoteIds.some(nid => idSet.has(nid))) {
-            ops.push(db.timelineEvents.update(e.id, { linkedNoteIds: e.linkedNoteIds.filter(nid => !idSet.has(nid)) }));
-          }
+        for (const e of affectedEvents) {
+          ops.push(db.timelineEvents.update(e.id, { linkedNoteIds: e.linkedNoteIds.filter(nid => !idSet.has(nid)) }));
         }
         await Promise.all(ops);
       });

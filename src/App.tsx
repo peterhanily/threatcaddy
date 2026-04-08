@@ -1565,6 +1565,7 @@ function AppInner() {
         bgImageZoom={settings.bgImageZoom}
         theme={settings.theme}
         header={
+          <ErrorBoundary region="header">
           <Header
             onOpenSearch={() => setSearchOverlayOpen(true)}
             theme={settings.theme}
@@ -1591,8 +1592,10 @@ function AppInner() {
             presenceUsers={presenceUsers}
             addToast={addToast}
           />
+          </ErrorBoundary>
         }
         sidebar={
+          <ErrorBoundary region="sidebar">
           <Sidebar
             {...sidebarProps}
             agentStatus={caddyAgent.agentStatus}
@@ -1601,6 +1604,7 @@ function AppInner() {
             onToggleCollapsed={() => updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })}
             onNavigate={() => setSelectedNoteId(undefined)}
           />
+          </ErrorBoundary>
         }
       >
         <ErrorBoundary region="main-content">
@@ -1619,6 +1623,7 @@ function AppInner() {
           </div>
         )}
         {showSettings ? (
+          <ErrorBoundary region="settings">
           <SettingsPanel
             settings={settings}
             onUpdateSettings={updateSettings}
@@ -1646,6 +1651,7 @@ function AppInner() {
               onDeletePlaybook: playbooksHook.deletePlaybook,
             }}
           />
+          </ErrorBoundary>
         ) : showTrash || showArchive ? (
           <TrashArchiveView
             mode={showTrash ? 'trash' : 'archive'}
