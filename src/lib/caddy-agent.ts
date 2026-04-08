@@ -510,10 +510,11 @@ async function _runAgentCycleInner(
     // Leads get delegation tools only (delegate, review, meetings) — no dismiss/spawn
     availableTools = [...availableTools, ...DELEGATION_TOOL_DEFINITIONS] as typeof TOOL_DEFINITIONS;
   } else if (profile?.role === 'observer') {
-    // Observer agents only get read tools
+    // Observer agents get read tools + explicitly allowed create tools (e.g., create_note for advisory notes)
+    const explicitlyAllowed = new Set(profile.allowedTools || []);
     availableTools = availableTools.filter(t => {
       const cls = getToolActionClass(t.name);
-      return cls === 'read';
+      return cls === 'read' || (cls === 'create' && explicitlyAllowed.has(t.name));
     });
   }
 
@@ -614,7 +615,9 @@ async function _runAgentCycleInner(
           onProgress?.(`Executing ${toolCall.name}...`);
           let result: { result: string; isError: boolean };
           try {
-            result = await executeTool(toolCall, folder.id, profile ? { profileId: profile.id, deploymentId: deployment?.id } : undefined);
+            const toolPromise = executeTool(toolCall, folder.id, profile ? { profileId: profile.id, deploymentId: deployment?.id } : undefined);
+            const toolTimeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`Tool ${toolCall.name} timed out after 30s`)), 30_000));
+            result = await Promise.race([toolPromise, toolTimeout]);
           } catch (toolErr) {
             result = { result: JSON.stringify({ error: String((toolErr as Error).message || toolErr) }), isError: true };
           }
