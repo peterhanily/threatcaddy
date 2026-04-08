@@ -7,15 +7,15 @@ import { QuickLinkForm } from './QuickLinkForm';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { KPIWidgets } from './KPIWidgets';
 
-const INTERNAL_TOOLS: { view: ViewMode; label: string; description: string; icon: typeof FileText; color: string }[] = [
-  { view: 'notes', label: 'Notes', description: 'Investigation notes & IOC extraction', icon: FileText, color: '#38bdf8' },
-  { view: 'tasks', label: 'Tasks', description: 'Task board with kanban & list views', icon: ListChecks, color: '#fbbf24' },
-  { view: 'timeline', label: 'Timeline', description: 'Chronological event tracking', icon: Clock, color: '#4ade80' },
-  { view: 'whiteboard', label: 'Whiteboards', description: 'Visual diagramming & collaboration', icon: PenTool, color: '#a855f7' },
-  { view: 'ioc-stats', label: 'IOCs', description: 'Indicators of compromise and analytics', icon: Search, color: '#10b981' },
-  { view: 'graph', label: 'Graph', description: 'Relationship & link analysis', icon: Network, color: '#6366f1' },
-  { view: 'activity', label: 'Activity', description: 'Audit log of all actions', icon: Activity, color: '#f472b6' },
-  { view: 'chat', label: 'CaddyAI', description: 'AI-powered investigation assistant', icon: MessageSquare, color: '#8b5cf6' },
+const INTERNAL_TOOLS: { view: ViewMode; labelKey: string; descKey: string; icon: typeof FileText; color: string }[] = [
+  { view: 'notes', labelKey: 'view.notes', descKey: 'view.notesDesc', icon: FileText, color: '#38bdf8' },
+  { view: 'tasks', labelKey: 'view.tasks', descKey: 'view.tasksDesc', icon: ListChecks, color: '#fbbf24' },
+  { view: 'timeline', labelKey: 'view.timeline', descKey: 'view.timelineDesc', icon: Clock, color: '#4ade80' },
+  { view: 'whiteboard', labelKey: 'view.whiteboards', descKey: 'view.whiteboardsDesc', icon: PenTool, color: '#a855f7' },
+  { view: 'ioc-stats', labelKey: 'view.iocs', descKey: 'view.iocsDesc', icon: Search, color: '#10b981' },
+  { view: 'graph', labelKey: 'view.graph', descKey: 'view.graphDesc', icon: Network, color: '#6366f1' },
+  { view: 'activity', labelKey: 'view.activity', descKey: 'view.activityDesc', icon: Activity, color: '#f472b6' },
+  { view: 'chat', labelKey: 'view.caddyAI', descKey: 'view.caddyAIDesc', icon: MessageSquare, color: '#8b5cf6' },
 ];
 
 interface DashboardViewProps {
@@ -185,8 +185,8 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
                     }}
                   >
                     <Icon size={18} style={{ color: tool.color }} className="mb-1.5" />
-                    <h4 className="text-sm font-medium text-gray-200 group-hover:text-gray-100 transition-colors">{tool.label}</h4>
-                    <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-1">{tool.description}</p>
+                    <h4 className="text-sm font-medium text-gray-200 group-hover:text-gray-100 transition-colors">{t(tool.labelKey)}</h4>
+                    <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-1">{t(tool.descKey)}</p>
                   </button>
                 );
               })}
