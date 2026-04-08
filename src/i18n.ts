@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import HttpBackend from 'i18next-http-backend';
+import pako from 'pako';
 
 // Always-bundled English namespaces — available before any HTTP request.
 // encryption is here because the lock screen renders before lazy namespaces load.
@@ -111,15 +112,44 @@ const enResources = isStandalone ? {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const bundledResources: Record<string, any> = { en: enResources };
 
-// In standalone builds, all non-English locale files are injected at build time
-// by vite.config.single.ts so language switching works without HTTP requests.
-if (isStandalone && typeof __STANDALONE_LOCALES__ !== 'undefined') {
-  Object.assign(bundledResources, __STANDALONE_LOCALES__);
+// Standalone backend: each non-English language is deflate-compressed + base64-encoded
+// at build time by vite.config.single.ts. We decompress lazily with pako only when the
+// user actually switches to that language, then cache the result. This avoids parsing
+// a ~4MB object literal at startup — string literals are far cheaper for V8 to handle.
+const _standaloneLangCache: Record<string, Record<string, unknown>> = {};
+
+function _decompressLang(lang: string): Record<string, unknown> {
+  if (_standaloneLangCache[lang]) return _standaloneLangCache[lang];
+  if (typeof __STANDALONE_LOCALES_GZ__ === 'undefined' || !__STANDALONE_LOCALES_GZ__[lang]) return {};
+  const b64 = __STANDALONE_LOCALES_GZ__[lang];
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const json = pako.inflateRaw(bytes, { to: 'string' });
+  _standaloneLangCache[lang] = JSON.parse(json) as Record<string, unknown>;
+  return _standaloneLangCache[lang];
 }
 
-// Register plugins — skip HttpBackend in standalone (no HTTP requests needed or possible)
+const standaloneBackend = {
+  type: 'backend' as const,
+  init() {},
+  read(language: string, namespace: string, callback: (err: Error | null, data: unknown) => void) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      callback(null, (_decompressLang(language) as any)[namespace] ?? false);
+    } catch (e) {
+      callback(e as Error, null);
+    }
+  },
+};
+
+// Register plugins — standalone uses the lazy-decompress backend; hosted uses HttpBackend
 i18n.use(initReactI18next);
-if (!isStandalone) i18n.use(HttpBackend);
+if (isStandalone) {
+  i18n.use(standaloneBackend);
+} else {
+  i18n.use(HttpBackend);
+}
 
 i18n.init({
   resources: bundledResources,

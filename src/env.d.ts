@@ -1,6 +1,7 @@
 declare const __STANDALONE__: boolean | undefined;
 declare const __BUILD_TIME__: number | undefined;
-declare const __STANDALONE_LOCALES__: Record<string, Record<string, unknown>> | undefined;
+/** Per-language deflate-compressed, base64-encoded locale data for standalone builds. */
+declare const __STANDALONE_LOCALES_GZ__: Record<string, string> | undefined;
 
 // Allow importing JSON files as modules (used by i18n)
 declare module '*.json' {
