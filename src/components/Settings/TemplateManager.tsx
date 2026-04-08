@@ -184,7 +184,7 @@ export function TemplateManager({
             </div>
             <div className="w-20">
               <label className="block text-xs font-medium text-gray-400 mb-1">{t('templates.icon')}</label>
-              <input value={formIcon} onChange={(e) => setFormIcon(e.target.value)} className={inputClass} placeholder={t('templates.iconPlaceholder')} />
+              <input type="text" maxLength={10} value={formIcon} onChange={(e) => setFormIcon(e.target.value)} className={inputClass} placeholder={t('templates.iconPlaceholder')} />
             </div>
           </div>
 

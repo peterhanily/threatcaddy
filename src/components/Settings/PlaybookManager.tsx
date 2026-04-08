@@ -219,7 +219,7 @@ export function PlaybookManager({
             </div>
             <div className="w-20">
               <label htmlFor="pb-icon" className="block text-xs font-medium text-gray-400 mb-1">{t('templates.playbookIcon')}</label>
-              <input id="pb-icon" value={formIcon} onChange={(e) => setFormIcon(e.target.value)} className={inputClass} placeholder={t('templates.playbookIconPlaceholder')} />
+              <input id="pb-icon" type="text" maxLength={10} value={formIcon} onChange={(e) => setFormIcon(e.target.value)} className={inputClass} placeholder={t('templates.playbookIconPlaceholder')} />
             </div>
           </div>
 
@@ -248,7 +248,7 @@ export function PlaybookManager({
 
           <div>
             <label htmlFor="pb-tags" className="block text-xs font-medium text-gray-400 mb-1">{t('templates.defaultTags')}</label>
-            <input id="pb-tags" value={formDefaultTags} onChange={(e) => setFormDefaultTags(e.target.value)} className={inputClass} placeholder={t('templates.defaultTagsPlaceholder')} />
+            <input id="pb-tags" type="text" maxLength={500} value={formDefaultTags} onChange={(e) => setFormDefaultTags(e.target.value)} className={inputClass} placeholder={t('templates.defaultTagsPlaceholder')} />
           </div>
 
           {/* Steps */}
