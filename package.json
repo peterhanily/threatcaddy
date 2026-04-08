@@ -20,7 +20,9 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "translate": "node scripts/translate-i18n.mjs",
-    "translate:dry": "node scripts/translate-i18n.mjs --dry-run"
+    "translate:dry": "node scripts/translate-i18n.mjs --dry-run",
+    "translate:sync": "node scripts/translate-i18n.mjs --sync",
+    "translate:sync:dry": "node scripts/translate-i18n.mjs --sync --dry-run"
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",

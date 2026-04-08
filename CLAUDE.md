@@ -81,6 +81,22 @@ Always run `pnpm lint` and `pnpm build` before committing. Fix lint errors (espe
 5. Update `llm-tools.test.ts` tool count assertion
 6. Add to relevant agent profile `allowedTools` arrays in `builtin-agent-profiles.ts`
 
+## When Adding New i18n Keys
+
+The app is translated into 20 languages. Whenever you add new keys to any `public/locales/en/*.json` or `extension/src/_locales/en/messages.json`:
+
+1. Add the English key/value as normal
+2. Run `pnpm translate:sync` to fill in the new keys across all 20 languages (only adds missing keys, preserves existing translations)
+3. Commit the updated locale files alongside your code change
+
+To preview what's missing without translating: `pnpm translate:sync:dry`
+
+To sync a single namespace only: `node scripts/translate-i18n.mjs --sync --ns <namespace>`
+
+**Do not** run `pnpm translate` (without `--sync`) on existing locale directories — it will skip already-translated files by default, but `--force` would overwrite human-corrected translations.
+
+Note: `pnpm translate:sync` requires `ANTHROPIC_API_KEY`. If unavailable, translate the new keys inline using agents (read the en file, write the translated values directly into each language file).
+
 ## Git Workflow
 
 Commit and push after completing implementation unless told not to. When modifying `extension/src/`, rebuild extension zips via `pnpm build:extension` and commit the zips.

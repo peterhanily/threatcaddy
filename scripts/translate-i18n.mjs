@@ -217,6 +217,8 @@ const langFilter = args.includes('--lang') ? args[args.indexOf('--lang') + 1] : 
 const nsFilter   = args.includes('--ns')   ? args[args.indexOf('--ns')   + 1] : null;
 const force      = args.includes('--force');
 const dryRun     = args.includes('--dry-run');
+// --sync: only translate keys missing from existing files, preserving existing translations
+const syncMode   = args.includes('--sync');
 
 if (!process.env.ANTHROPIC_API_KEY && !dryRun) {
   console.error('Error: ANTHROPIC_API_KEY environment variable is not set.');
@@ -234,12 +236,12 @@ if (langFilter && langs.length === 0) {
 }
 
 let processed = 0, skipped = 0, errors = 0;
-const totalFiles = langs.length * ((nsFilter ? 1 : NAMESPACES.length) + (nsFilter && nsFilter !== 'extension' ? 0 : 1));
 
+const modeLabel = dryRun ? 'DRY RUN' : syncMode ? 'sync (missing keys only)' : force ? 'force (overwrite)' : 'resume (skip existing)';
 console.log(`\nThreatCaddy i18n Translator`);
 console.log(`Languages : ${langs.length} (${langs.map(l => l.code).join(', ')})`);
 console.log(`Namespaces: ${nsFilter ?? 'all (' + NAMESPACES.length + ')'} + extension`);
-console.log(`Mode      : ${dryRun ? 'DRY RUN' : force ? 'force (overwrite)' : 'resume (skip existing)'}`);
+console.log(`Mode      : ${modeLabel}`);
 console.log('─'.repeat(60));
 
 for (const lang of langs) {
@@ -252,6 +254,43 @@ for (const lang of langs) {
 
   for (const ns of nsList) {
     const outPath = join(localeDir, `${ns}.json`);
+    const enContent = JSON.parse(
+      readFileSync(join(ROOT, 'public', 'locales', 'en', `${ns}.json`), 'utf8'),
+    );
+
+    if (syncMode) {
+      // Only translate keys missing from the existing file
+      const existing = existsSync(outPath)
+        ? JSON.parse(readFileSync(outPath, 'utf8'))
+        : {};
+      const missingKeys = Object.keys(enContent).filter(k => !(k in existing));
+
+      if (missingKeys.length === 0) {
+        process.stdout.write(`  ✓ ${ns} (up to date)\n`);
+        skipped++;
+        continue;
+      }
+
+      if (dryRun) {
+        process.stdout.write(`  ~ ${ns} (+${missingKeys.length} keys would be added)\n`);
+        continue;
+      }
+
+      try {
+        process.stdout.write(`  → ${ns} (+${missingKeys.length} new keys)\n`);
+        const toTranslate = Object.fromEntries(missingKeys.map(k => [k, enContent[k]]));
+        const translated = await translateNamespace(toTranslate, lang, ns);
+        // Merge: existing keys first, then new translations appended
+        const merged = { ...existing, ...translated };
+        writeFileSync(outPath, JSON.stringify(merged, null, 2) + '\n', 'utf8');
+        processed++;
+        await sleep(250);
+      } catch (err) {
+        console.error(`  ✗ ${ns}: ${err.message}`);
+        errors++;
+      }
+      continue;
+    }
 
     if (!force && existsSync(outPath)) {
       process.stdout.write(`  ✓ ${ns} (exists)\n`);
@@ -266,9 +305,6 @@ for (const lang of langs) {
 
     try {
       process.stdout.write(`  → ${ns}\n`);
-      const enContent = JSON.parse(
-        readFileSync(join(ROOT, 'public', 'locales', 'en', `${ns}.json`), 'utf8'),
-      );
       const translated = await translateNamespace(enContent, lang, ns);
       writeFileSync(outPath, JSON.stringify(translated, null, 2) + '\n', 'utf8');
       processed++;
@@ -282,8 +318,38 @@ for (const lang of langs) {
   // Extension messages
   if (!nsFilter || nsFilter === 'extension') {
     const extOutPath = join(ROOT, 'extension', 'src', '_locales', lang.code, 'messages.json');
+    const enMessages = JSON.parse(
+      readFileSync(join(ROOT, 'extension', 'src', '_locales', 'en', 'messages.json'), 'utf8'),
+    );
 
-    if (!force && existsSync(extOutPath)) {
+    if (syncMode) {
+      const existing = existsSync(extOutPath)
+        ? JSON.parse(readFileSync(extOutPath, 'utf8'))
+        : {};
+      const missingKeys = Object.keys(enMessages).filter(k => !(k in existing));
+
+      if (missingKeys.length === 0) {
+        process.stdout.write(`  ✓ extension/messages (up to date)\n`);
+        skipped++;
+      } else if (dryRun) {
+        process.stdout.write(`  ~ extension/messages (+${missingKeys.length} keys)\n`);
+      } else {
+        try {
+          process.stdout.write(`  → extension/messages (+${missingKeys.length} new keys)\n`);
+          mkdirSync(dirname(extOutPath), { recursive: true });
+          const toTranslate = Object.fromEntries(missingKeys.map(k => [k, enMessages[k]]));
+          const translated = await translateExtensionMessages(toTranslate, lang);
+          const merged = { ...existing, ...translated };
+          writeFileSync(extOutPath, JSON.stringify(merged, null, 2) + '\n', 'utf8');
+          process.stdout.write(`    chunk... ✓\n`);
+          processed++;
+          await sleep(250);
+        } catch (err) {
+          console.error(`  ✗ extension/messages: ${err.message}`);
+          errors++;
+        }
+      }
+    } else if (!force && existsSync(extOutPath)) {
       process.stdout.write(`  ✓ extension/messages (exists)\n`);
       skipped++;
     } else if (dryRun) {
@@ -292,9 +358,6 @@ for (const lang of langs) {
       try {
         process.stdout.write(`  → extension/messages\n`);
         mkdirSync(dirname(extOutPath), { recursive: true });
-        const enMessages = JSON.parse(
-          readFileSync(join(ROOT, 'extension', 'src', '_locales', 'en', 'messages.json'), 'utf8'),
-        );
         const translated = await translateExtensionMessages(enMessages, lang);
         writeFileSync(extOutPath, JSON.stringify(translated, null, 2) + '\n', 'utf8');
         process.stdout.write(`    chunk... ✓\n`);
