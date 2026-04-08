@@ -110,9 +110,11 @@ export function NoteEditor({
   const localTitleRef = useRef(title);
   localTitleRef.current = title;
 
-  // Line numbers + current line tracking
-  const lineCount = useMemo(() => (content.match(/\n/g) || []).length + 1, [content]);
+  // Line numbers + per-line height measurement for wrap alignment
+  const lines = useMemo(() => content.split('\n'), [content]);
   const [currentLine, setCurrentLine] = useState(1);
+  const [lineHeights, setLineHeights] = useState<number[]>([]);
+  const mirrorRef = useRef<HTMLDivElement>(null);
 
   const updateCurrentLine = useCallback(() => {
     const ta = textareaRef.current;
@@ -120,6 +122,42 @@ export function NoteEditor({
     const before = ta.value.substring(0, ta.selectionStart);
     setCurrentLine((before.match(/\n/g) || []).length + 1);
   }, []);
+
+  // Measure each line's rendered height using a hidden mirror div
+  const measureLineHeights = useCallback(() => {
+    const ta = textareaRef.current;
+    const mirror = mirrorRef.current;
+    if (!ta || !mirror) return;
+
+    // Copy textarea computed styles to mirror
+    const cs = getComputedStyle(ta);
+    mirror.style.width = cs.width;
+    mirror.style.font = cs.font;
+    mirror.style.letterSpacing = cs.letterSpacing;
+    mirror.style.wordSpacing = cs.wordSpacing;
+    mirror.style.lineHeight = cs.lineHeight;
+    mirror.style.padding = cs.padding;
+    mirror.style.boxSizing = cs.boxSizing;
+    mirror.style.whiteSpace = 'pre-wrap';
+    mirror.style.wordWrap = 'break-word';
+    mirror.style.overflowWrap = 'break-word';
+
+    const heights: number[] = [];
+    for (const line of lines) {
+      // Use a zero-width space for empty lines so they still have height
+      mirror.textContent = line || '\u200b';
+      heights.push(mirror.offsetHeight);
+    }
+    setLineHeights(heights);
+  }, [lines]);
+
+  // Re-measure on content change, mode change, or resize
+  useEffect(() => {
+    measureLineHeights();
+    const ro = new ResizeObserver(measureLineHeights);
+    if (textareaRef.current) ro.observe(textareaRef.current);
+    return () => ro.disconnect();
+  }, [measureLineHeights, editorMode]);
 
   // Sync gutter scroll with textarea + track cursor line
   useEffect(() => {
@@ -130,7 +168,6 @@ export function NoteEditor({
     ta.addEventListener('scroll', syncScroll, { passive: true });
     ta.addEventListener('click', updateCurrentLine);
     ta.addEventListener('keyup', updateCurrentLine);
-    // Initial sync
     syncScroll();
     updateCurrentLine();
     return () => {
@@ -981,15 +1018,21 @@ export function NoteEditor({
               className="relative flex overflow-hidden"
               style={editorMode === 'split' ? { width: `${editorPreview.ratio * 100}%` } : { flex: 1 }}
             >
-              {/* Line number gutter — current line rendered brighter */}
+              {/* Hidden mirror div for measuring wrapped line heights */}
+              <div ref={mirrorRef} className="absolute invisible" style={{ pointerEvents: 'none', height: 0, overflow: 'hidden' }} aria-hidden="true" />
+              {/* Line number gutter — heights match textarea line wrapping */}
               <div
                 ref={gutterRef}
-                className="shrink-0 pt-2 sm:pt-4 pr-2 pl-2 text-right select-none overflow-hidden font-mono whitespace-pre border-r border-gray-800"
-                style={{ minWidth: '2.5rem', fontSize: '12px', lineHeight: 'calc(0.875rem * 1.625)' }}
+                className="shrink-0 pt-2 sm:pt-4 pr-2 pl-2 text-right select-none overflow-hidden font-mono border-r border-gray-800"
+                style={{ minWidth: '2.5rem', fontSize: '12px' }}
                 aria-hidden="true"
-              >{Array.from({ length: lineCount }, (_, i) => i + 1).map((n) =>
-                <span key={n} className={n === currentLine ? 'text-gray-300' : 'text-gray-600'}>{n}{'\n'}</span>
-              )}</div>
+              >{lines.map((_, i) => (
+                <div
+                  key={i}
+                  className={i + 1 === currentLine ? 'text-gray-300' : 'text-gray-600'}
+                  style={{ height: lineHeights[i] || 'calc(0.875rem * 1.625)', lineHeight: lineHeights[i] ? `${lineHeights[i]}px` : 'calc(0.875rem * 1.625)' }}
+                >{i + 1}</div>
+              ))}</div>
               <textarea
                 ref={textareaRef}
                 value={content}
