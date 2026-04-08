@@ -37,7 +37,20 @@ export function sendDirectToLocal(
   signal?: AbortSignal,
 ): string {
   const requestId = nanoid();
-  const base = (request.endpoint || 'http://localhost:11434/v1').replace(/\/+$/, '');
+  const rawEndpoint = (request.endpoint || 'http://localhost:11434/v1').replace(/\/+$/, '');
+  // Validate endpoint is a safe http/https URL before using it
+  let parsedEndpoint: URL;
+  try {
+    parsedEndpoint = new URL(rawEndpoint);
+  } catch {
+    callbacks.onError('Invalid local endpoint URL');
+    return requestId;
+  }
+  if (parsedEndpoint.protocol !== 'http:' && parsedEndpoint.protocol !== 'https:') {
+    callbacks.onError('Local endpoint must use http or https');
+    return requestId;
+  }
+  const base = rawEndpoint;
   const url = `${base}/chat/completions`;
 
   // Build OpenAI-compatible messages
