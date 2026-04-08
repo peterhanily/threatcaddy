@@ -202,11 +202,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Try to refresh
     const refreshPromise = (async () => {
       try {
+        const refreshCtrl = new AbortController();
+        const refreshTimer = setTimeout(() => refreshCtrl.abort(), 10_000);
         const resp = await fetch(`${serverUrl}/api/auth/refresh`, {
           method: 'POST',
+          signal: refreshCtrl.signal,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken: refreshTokenRef.current }),
         });
+        clearTimeout(refreshTimer);
 
         if (!resp.ok) {
           // Refresh failed — logged out
