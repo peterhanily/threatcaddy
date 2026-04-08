@@ -39,7 +39,8 @@ export function AgentMeetingPanel({
       .reverse()
       .limit(10)
       .toArray()
-      .then(setMeetings);
+      .then(setMeetings)
+      .catch(console.error);
   }, [folder.id, running]);
 
   const handleStartMeeting = async () => {

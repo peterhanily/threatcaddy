@@ -137,7 +137,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
       setMentionOpen(true);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setMentionIndex(0);
-      searchMentions(type, query, folderId).then(setMentionResults);
+      searchMentions(type, query, folderId).then(setMentionResults).catch(console.error);
       return;
     }
 

@@ -1,4 +1,4 @@
-import { useState, useMemo, forwardRef } from 'react';
+import { useState, useMemo, useEffect, forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, Archive, RotateCcw, Search, ChevronUp, ChevronDown, X, ListPlus, Clipboard, Tag as TagIcon, GitMerge, Zap } from 'lucide-react';
 import type { StandaloneIOC, Folder, Tag, IOCType, ConfidenceLevel } from '../../types';
@@ -99,6 +99,11 @@ export function StandaloneIOCList({
   const [confidenceFilter, setConfidenceFilter] = useState<ConfidenceLevel | null>(null);
   const [typeFilter, setTypeFilter] = useState<IOCType[]>([]);
   const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(searchText), 150);
+    return () => clearTimeout(id);
+  }, [searchText]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -113,8 +118,8 @@ export function StandaloneIOCList({
   const filteredSortedIOCs = useMemo(() => {
     let result = iocs;
 
-    if (searchText.trim()) {
-      const q = searchText.trim().toLowerCase();
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.trim().toLowerCase();
       result = result.filter(ioc => ioc.value.toLowerCase().includes(q));
     }
     if (statusFilter) {
@@ -159,7 +164,7 @@ export function StandaloneIOCList({
     });
 
     return sorted;
-  }, [iocs, searchText, statusFilter, confidenceFilter, typeFilter, sortField, sortDir]);
+  }, [iocs, debouncedSearch, statusFilter, confidenceFilter, typeFilter, sortField, sortDir]);
 
   const hasActiveFilters = searchText.trim() !== '' || statusFilter !== null || confidenceFilter !== null || typeFilter.length > 0;
   const hasAnyEnrichment = useMemo(() => iocs.some(i => i.enrichment && Object.keys(i.enrichment).length > 0), [iocs]);

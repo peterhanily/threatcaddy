@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import { Github, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw, Plus, Pencil, Wrench, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES } from '../../i18n';
@@ -978,7 +979,7 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
             {fetchingSkills ? t('ai.discovering') : t('ai.discoverSkills')}
           </button>
         </div>
-        <p className="text-[10px] text-gray-600 mt-0.5" dangerouslySetInnerHTML={{ __html: t('ai.skillsHelp') }} />
+        <p className="text-[10px] text-gray-600 mt-0.5" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t('ai.skillsHelp'), { ALLOWED_TAGS: ['code'], ALLOWED_ATTR: [] }) }} />
         {skillsError && <p className="text-[10px] text-gray-500 mt-1">{t('ai.skillDiscoveryFailed', { error: skillsError.substring(0, 100) })}</p>}
         {(settings.llmLocalSkills || []).length > 0 && (
           <div className="mt-2">

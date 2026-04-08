@@ -55,10 +55,10 @@ export function UserProfile({ userId, currentUserId, onBack, onUserClick }: User
   // Lazy-load likes and activity on tab switch
   useEffect(() => {
     if (tab === 'likes' && likes.length === 0) {
-      fetchUserLikes(userId).then(setLikes).catch(() => {});
+      fetchUserLikes(userId).then(setLikes).catch(console.error);
     }
     if (tab === 'activity' && activity.length === 0) {
-      fetchUserActivity(userId).then(setActivity).catch(() => {});
+      fetchUserActivity(userId).then(setActivity).catch(console.error);
     }
   }, [tab, userId, likes.length, activity.length]);
 

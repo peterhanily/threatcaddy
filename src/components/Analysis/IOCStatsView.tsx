@@ -773,6 +773,11 @@ function AllIOCsTab({
   const [confidenceFilter, setConfidenceFilter] = useState<ConfidenceLevel | null>(null);
   const [typeFilter, setTypeFilter] = useState<IOCType[]>([]);
   const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(searchText), 150);
+    return () => clearTimeout(id);
+  }, [searchText]);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'note' | 'task' | 'event' | 'standalone'>('all');
 
   // Bulk selection state
@@ -805,8 +810,8 @@ function AllIOCsTab({
   const filteredSortedRows = useMemo(() => {
     let result = rows;
 
-    if (searchText.trim()) {
-      const q = searchText.trim().toLowerCase();
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.trim().toLowerCase();
       result = result.filter(r => r.value.toLowerCase().includes(q) || r.source.toLowerCase().includes(q));
     }
     if (statusFilter) {
@@ -836,7 +841,7 @@ function AllIOCsTab({
       }
     });
     return sorted;
-  }, [rows, searchText, statusFilter, confidenceFilter, typeFilter, sourceFilter, sortField, sortDir]);
+  }, [rows, debouncedSearch, statusFilter, confidenceFilter, typeFilter, sourceFilter, sortField, sortDir]);
 
   const hasActiveFilters = searchText.trim() !== '' || statusFilter !== null || confidenceFilter !== null || typeFilter.length > 0 || sourceFilter !== 'all';
 
