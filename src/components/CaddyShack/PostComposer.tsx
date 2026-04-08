@@ -251,6 +251,7 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
         <div className="flex-1 min-w-0 relative">
           <textarea
             ref={textareaRef}
+            maxLength={10000}
             value={content}
             onChange={handleContentChange}
             onKeyDown={handleKeyDown}

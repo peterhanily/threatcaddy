@@ -106,6 +106,7 @@ export function TagInput({ selectedTags, allTags, onChange, onCreateTag }: TagIn
             <input
               ref={inputRef}
               type="text"
+              maxLength={100}
               value={input}
               onChange={(e) => { setInput(e.target.value); setShowDropdown(true); setHighlightIdx(-1); }}
               onFocus={() => setShowDropdown(true)}

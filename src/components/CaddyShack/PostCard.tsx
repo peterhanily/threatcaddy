@@ -136,6 +136,7 @@ export function PostCard({
           {editing ? (
             <div className="mt-1" onClick={(e) => e.stopPropagation()}>
               <textarea
+                maxLength={10000}
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg p-2.5 text-sm resize-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
