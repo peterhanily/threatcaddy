@@ -305,9 +305,9 @@ function ProfileForm({ profile, onSave, onCancel }: {
       </div>
       <div className="flex gap-2">
         <input value={icon} onChange={e => setIcon(e.target.value)} className="w-10 bg-surface-raised border border-border-subtle rounded px-1 py-1.5 text-xs text-center text-text-primary focus:outline-none focus:border-accent-blue/50" maxLength={2} title="Icon emoji" />
-        <input value={name} onChange={e => setName(e.target.value)} placeholder={t('profile.profileName')} className={cn(inputClass, 'flex-1')} />
+        <input type="text" maxLength={200} value={name} onChange={e => setName(e.target.value)} placeholder={t('profile.profileName')} className={cn(inputClass, 'flex-1')} />
       </div>
-      <input value={description} onChange={e => setDescription(e.target.value)} placeholder={t('profile.briefDescription')} className={inputClass} />
+      <input type="text" maxLength={500} value={description} onChange={e => setDescription(e.target.value)} placeholder={t('profile.briefDescription')} className={inputClass} />
       <select value={role} onChange={e => setRole(e.target.value as 'executive' | 'lead' | 'specialist' | 'observer')} className={inputClass}>
         <option value="executive">{t('profile.executiveRole')}</option>
         <option value="lead">{t('profile.leadRole')}</option>

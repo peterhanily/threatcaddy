@@ -82,6 +82,8 @@ export function EntityComments({ comments, onUpdate }: EntityCommentsProps) {
               {editingId === c.id ? (
                 <div className="flex-1 flex gap-1.5">
                   <input
+                    type="text"
+                    maxLength={2000}
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
                     onKeyDown={(e) => {
@@ -153,6 +155,8 @@ export function EntityComments({ comments, onUpdate }: EntityCommentsProps) {
 
       <div className="flex gap-2">
         <input
+          type="text"
+          maxLength={2000}
           value={commentText}
           onChange={(e) => setCommentText(e.target.value)}
           onKeyDown={(e) => {

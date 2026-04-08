@@ -942,6 +942,8 @@ export function NoteEditor({
       <div className="px-2 sm:px-4 pt-2 sm:pt-3 shrink-0">
         <input
           ref={titleRef}
+          type="text"
+          maxLength={500}
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
           className="w-full bg-transparent text-xl font-bold text-gray-100 placeholder-gray-600 focus:outline-none"
@@ -1105,6 +1107,8 @@ export function NoteEditor({
             ))}
             <div className="flex items-center gap-2">
               <input
+                type="text"
+                maxLength={1000}
                 value={annotationText}
                 onChange={(e) => setAnnotationText(e.target.value)}
                 onKeyDown={(e) => {

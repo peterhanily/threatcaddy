@@ -180,7 +180,7 @@ export function TemplateManager({
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="block text-xs font-medium text-gray-400 mb-1">{t('templates.name')}</label>
-              <input value={formName} onChange={(e) => setFormName(e.target.value)} className={inputClass} placeholder={t('templates.namePlaceholder')} />
+              <input type="text" maxLength={200} value={formName} onChange={(e) => setFormName(e.target.value)} className={inputClass} placeholder={t('templates.namePlaceholder')} />
             </div>
             <div className="w-20">
               <label className="block text-xs font-medium text-gray-400 mb-1">{t('templates.icon')}</label>
@@ -204,7 +204,7 @@ export function TemplateManager({
             </div>
             <div className="flex-1">
               <label className="block text-xs font-medium text-gray-400 mb-1">{t('templates.descriptionLabel')}</label>
-              <input value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className={inputClass} placeholder={t('templates.descriptionPlaceholder')} />
+              <input type="text" maxLength={500} value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className={inputClass} placeholder={t('templates.descriptionPlaceholder')} />
             </div>
           </div>
 

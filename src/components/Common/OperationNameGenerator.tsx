@@ -348,6 +348,8 @@ export function OperationNameGenerator({ open, onClose, onCreateInvestigation }:
                 {editedName !== null ? (
                   <input
                     ref={nameInputRef}
+                    type="text"
+                    maxLength={200}
                     value={editedName}
                     onChange={(e) => setEditedName(e.target.value)}
                     onKeyDown={(e) => {

@@ -785,7 +785,9 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
       if (settings.llmLocalApiKey) headers['Authorization'] = `Bearer ${settings.llmLocalApiKey}`;
 
       // Try OpenAI-compatible /v1/models endpoint
-      const resp = await fetch(`${base}/models`, { headers });
+      const modelsCtrl = new AbortController();
+      const modelsTimer = setTimeout(() => modelsCtrl.abort(), 10_000);
+      const resp = await fetch(`${base}/models`, { headers, signal: modelsCtrl.signal }).finally(() => clearTimeout(modelsTimer));
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const data = await resp.json();
 
@@ -812,7 +814,9 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
       // Try Ollama's native API as fallback
       try {
         const ollamaBase = (settings.llmLocalEndpoint || 'http://localhost:11434').replace(/\/v1\/?$/, '').replace(/\/+$/, '');
-        const resp = await fetch(`${ollamaBase}/api/tags`);
+        const tagsCtrl = new AbortController();
+        const tagsTimer = setTimeout(() => tagsCtrl.abort(), 10_000);
+        const resp = await fetch(`${ollamaBase}/api/tags`, { signal: tagsCtrl.signal }).finally(() => clearTimeout(tagsTimer));
         if (resp.ok) {
           const data = await resp.json();
           const models = (data.models || [])
@@ -844,6 +848,8 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
       if (settings.llmLocalApiKey) headers['Authorization'] = `Bearer ${settings.llmLocalApiKey}`;
 
       const model = settings.llmLocalModelName || 'test';
+      const testCtrl = new AbortController();
+      const testTimer = setTimeout(() => testCtrl.abort(), 15_000);
       const resp = await fetch(`${base}/chat/completions`, {
         method: 'POST',
         headers,
@@ -853,7 +859,8 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
           max_tokens: 10,
           stream: false,
         }),
-      });
+        signal: testCtrl.signal,
+      }).finally(() => clearTimeout(testTimer));
 
       if (!resp.ok) {
         const text = await resp.text().catch(() => '');

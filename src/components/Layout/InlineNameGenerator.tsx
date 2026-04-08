@@ -100,6 +100,8 @@ export function InlineNameGenerator({ onCreateInvestigation, onCancel }: InlineN
         {editing ? (
           <input
             ref={inputRef}
+            type="text"
+            maxLength={200}
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             onKeyDown={(e) => {

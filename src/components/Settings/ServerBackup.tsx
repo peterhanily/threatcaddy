@@ -273,7 +273,7 @@ export function ServerBackup() {
 
         <div>
           <label className="block text-xs text-gray-500 mb-1">{t('encryption.name')}</label>
-          <input type="text" value={backupName} onChange={(e) => setBackupName(e.target.value)} className={inputClass} />
+          <input type="text" maxLength={200} value={backupName} onChange={(e) => setBackupName(e.target.value)} className={inputClass} />
         </div>
 
         <div>

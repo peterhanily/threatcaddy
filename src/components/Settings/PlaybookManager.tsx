@@ -215,7 +215,7 @@ export function PlaybookManager({
           <div className="flex gap-3">
             <div className="flex-1">
               <label htmlFor="pb-name" className="block text-xs font-medium text-gray-400 mb-1">{t('templates.playbookName')}</label>
-              <input id="pb-name" value={formName} onChange={(e) => setFormName(e.target.value)} className={inputClass} placeholder={t('templates.playbookNamePlaceholder')} />
+              <input id="pb-name" type="text" maxLength={200} value={formName} onChange={(e) => setFormName(e.target.value)} className={inputClass} placeholder={t('templates.playbookNamePlaceholder')} />
             </div>
             <div className="w-20">
               <label htmlFor="pb-icon" className="block text-xs font-medium text-gray-400 mb-1">{t('templates.playbookIcon')}</label>
@@ -225,13 +225,13 @@ export function PlaybookManager({
 
           <div>
             <label htmlFor="pb-description" className="block text-xs font-medium text-gray-400 mb-1">{t('templates.playbookDescription')}</label>
-            <input id="pb-description" value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className={inputClass} placeholder={t('templates.playbookDescPlaceholder')} />
+            <input id="pb-description" type="text" maxLength={500} value={formDescription} onChange={(e) => setFormDescription(e.target.value)} className={inputClass} placeholder={t('templates.playbookDescPlaceholder')} />
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1">
               <label htmlFor="pb-type" className="block text-xs font-medium text-gray-400 mb-1">{t('templates.investigationType')}</label>
-              <input id="pb-type" value={formType} onChange={(e) => setFormType(e.target.value)} className={inputClass} placeholder={t('templates.investigationTypePlaceholder')} />
+              <input id="pb-type" type="text" maxLength={200} value={formType} onChange={(e) => setFormType(e.target.value)} className={inputClass} placeholder={t('templates.investigationTypePlaceholder')} />
             </div>
             <div className="flex-1">
               <label htmlFor="pb-cls" className="block text-xs font-medium text-gray-400 mb-1">{t('templates.defaultClassification')}</label>
