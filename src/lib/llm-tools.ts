@@ -408,6 +408,8 @@ async function injectAgentFeedback(task: { title: string; createdBy?: string }, 
 
 // ── Delegation Tools ──────────────────────────────────────────────────
 
+const MAX_DELEGATION_DEPTH = 3;
+
 async function executeDelegateTask(inp: Record<string, unknown>, folderId?: string): Promise<string> {
   if (!folderId) return JSON.stringify({ error: 'No investigation context' });
 
@@ -418,6 +420,16 @@ async function executeDelegateTask(inp: Record<string, unknown>, folderId?: stri
 
   if (!title || !description || !assignToProfile) {
     return JSON.stringify({ error: 'title, description, and assignToProfile are required' });
+  }
+
+  // Prevent infinite delegation chains by checking depth
+  const delegatedTasks = await db.tasks
+    .where('folderId').equals(folderId)
+    .filter(t => t.tags.includes('agent-delegated') && !t.trashed)
+    .toArray();
+  const pendingDelegations = delegatedTasks.filter(t => !t.completed).length;
+  if (pendingDelegations >= MAX_DELEGATION_DEPTH * 5) {
+    return JSON.stringify({ error: `Too many pending delegated tasks (${pendingDelegations}). Complete existing delegations before creating more.` });
   }
 
   // Find the target deployment by profile name
@@ -793,28 +805,27 @@ async function executeUpdateKnowledge(inp: Record<string, unknown>, folderId?: s
   let knowledge: Record<string, { value: string; category: string; updatedAt: string }> = {};
 
   if (kbNote) {
-    try { knowledge = JSON.parse(kbNote.content); } catch { knowledge = {}; }
-  }
-
-  // Update the entry
-  knowledge[key] = { value, category, updatedAt: new Date().toISOString() };
-
-  // Cap at 100 entries — remove oldest if over
-  const entries = Object.entries(knowledge);
-  if (entries.length > 100) {
-    entries.sort((a, b) => a[1].updatedAt.localeCompare(b[1].updatedAt));
-    for (let i = 0; i < entries.length - 100; i++) delete knowledge[entries[i][0]];
-  }
-
-  const content = JSON.stringify(knowledge, null, 2);
-
-  if (kbNote) {
-    await db.notes.update(kbNote.id, { content, updatedAt: Date.now() });
+    // Use modify() for atomic read-modify-write to prevent concurrent update races
+    await db.notes.where('id').equals(kbNote.id).modify((note) => {
+      let kb: Record<string, { value: string; category: string; updatedAt: string }> = {};
+      try { kb = JSON.parse(note.content); } catch { kb = {}; }
+      kb[key] = { value, category, updatedAt: new Date().toISOString() };
+      // Cap at 100 entries — remove oldest if over
+      const ents = Object.entries(kb);
+      if (ents.length > 100) {
+        ents.sort((a, b) => a[1].updatedAt.localeCompare(b[1].updatedAt));
+        for (let i = 0; i < ents.length - 100; i++) delete kb[ents[i][0]];
+      }
+      note.content = JSON.stringify(kb, null, 2);
+      note.updatedAt = Date.now();
+    });
+    knowledge = JSON.parse((await db.notes.get(kbNote.id))?.content || '{}');
   } else {
+    knowledge[key] = { value, category, updatedAt: new Date().toISOString() };
     await db.notes.add({
       id: nanoid(),
       title: 'Investigation Knowledge Base',
-      content,
+      content: JSON.stringify(knowledge, null, 2),
       folderId,
       tags: [KNOWLEDGE_TAG],
       pinned: false, archived: false, trashed: false,
@@ -1190,16 +1201,30 @@ async function executeDeployAgent(inp: Record<string, unknown>, folderId?: strin
   const competitiveness = String(inp.competitiveness || 'cooperative') as 'cooperative' | 'competitive' | 'independent';
 
   const deploymentId = nanoid();
+  const threadId = nanoid();
+  const now = Date.now();
+
+  // Create audit thread immediately so the agent's history is visible from deployment
+  await db.chatThreads.add({
+    id: threadId,
+    title: `${profile.name} — Audit Log`,
+    messages: [{ id: nanoid(), role: 'assistant' as const, content: `**${profile.icon || ''} ${profile.name}** deployed to investigation. Role: ${profile.role}. Status: active.`, createdAt: now }],
+    model: '', provider: 'anthropic', folderId,
+    tags: ['agent-audit'], archived: false, trashed: false,
+    createdAt: now, updatedAt: now,
+  });
+
   await db.agentDeployments.add({
     id: deploymentId,
     investigationId: folderId,
     profileId: profile.id,
+    threadId,
     status: 'idle',
     competitiveness,
     shift: 'active',
     order: existing.length,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+    createdAt: now,
+    updatedAt: now,
   });
 
   // Enable agent on the folder + set autonomous policy if not already configured
@@ -1414,14 +1439,14 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
   const targetDeployments = deployments.filter(d => d.profileId === targetProfile.id && d.shift === 'active');
   if (targetDeployments.length === 0) return JSON.stringify({ error: `"${agentName}" is not actively deployed in this investigation` });
 
-  // Dismiss — set to resting with dismissal metadata
+  // Dismiss — delete deployment (audit history preserved in dismissal note below)
   const now = Date.now();
   for (const d of targetDeployments) {
-    await db.agentDeployments.update(d.id, {
-      shift: 'resting',
-      status: 'idle',
-      updatedAt: now,
-    });
+    // Clean up associated agent actions and chat thread
+    if (d.threadId) {
+      await db.agentActions.where('threadId').equals(d.threadId).delete();
+    }
+    await db.agentDeployments.delete(d.id);
   }
 
   // Create after-action dismissal note
