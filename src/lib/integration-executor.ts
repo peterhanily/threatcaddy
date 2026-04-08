@@ -54,14 +54,18 @@ async function serverProxyFetch(
   body: string | null,
 ): Promise<{ ok: boolean; status: number; statusText: string; data: unknown; headers: Record<string, string> }> {
   const token = await getAccessToken();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 60_000);
   const resp = await fetch(`${serverUrl}/api/proxy-fetch`, {
     method: 'POST',
+    signal: controller.signal,
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ url, method, headers, body }),
   });
+  clearTimeout(timer);
   const result = await resp.json();
   if (!resp.ok) {
     throw new Error(result.error || `Server proxy error: ${resp.status}`);

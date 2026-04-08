@@ -59,8 +59,10 @@ export async function exportJSON(): Promise<string> {
 const MAX_IMPORT_SIZE = 50 * 1024 * 1024; // 50 MB
 const MAX_ITEMS = 100_000;
 
+/** Max string length for imported fields (matches server sync-service 500KB cap). */
+const MAX_IMPORT_STRING = 500_000;
 function str(v: unknown, fallback = ''): string {
-  return typeof v === 'string' ? v : fallback;
+  return typeof v === 'string' ? v.substring(0, MAX_IMPORT_STRING) : fallback;
 }
 function num(v: unknown, fallback = 0): number {
   return typeof v === 'number' && isFinite(v) ? v : fallback;
