@@ -10,8 +10,8 @@ const app = new Hono();
 // ─── Audit Log ───────────────────────────────────────────────────
 
 app.get('/api/audit-log', requireAdminAuth, async (c) => {
-  const page = Math.max(1, parseInt(c.req.query('page') || '1', 10));
-  const pageSize = Math.min(200, Math.max(1, parseInt(c.req.query('pageSize') || '50', 10)));
+  const page = Math.max(1, parseInt(c.req.query('page') || '1', 10) || 1);
+  const pageSize = Math.min(200, Math.max(1, parseInt(c.req.query('pageSize') || '50', 10) || 50));
   const userId = c.req.query('userId');
   const category = c.req.query('category');
   const action = c.req.query('action');
@@ -25,8 +25,8 @@ app.get('/api/audit-log', requireAdminAuth, async (c) => {
   if (category) conditions.push(eq(activityLog.category, category));
   if (action) conditions.push(eq(activityLog.action, action));
   if (folderId) conditions.push(eq(activityLog.folderId, folderId));
-  if (dateFrom) conditions.push(gte(activityLog.timestamp, new Date(dateFrom)));
-  if (dateTo) conditions.push(lte(activityLog.timestamp, new Date(dateTo)));
+  if (dateFrom) { const d = new Date(dateFrom); if (!isNaN(d.getTime())) conditions.push(gte(activityLog.timestamp, d)); }
+  if (dateTo) { const d = new Date(dateTo); if (!isNaN(d.getTime())) conditions.push(lte(activityLog.timestamp, d)); }
   if (search) {
     const escaped = search.replace(/[%_\\]/g, '\\$&');
     conditions.push(or(
@@ -79,8 +79,8 @@ app.get('/api/audit-log/export', requireAdminAuth, async (c) => {
   if (category) conditions.push(eq(activityLog.category, category));
   if (action) conditions.push(eq(activityLog.action, action));
   if (folderId) conditions.push(eq(activityLog.folderId, folderId));
-  if (dateFrom) conditions.push(gte(activityLog.timestamp, new Date(dateFrom)));
-  if (dateTo) conditions.push(lte(activityLog.timestamp, new Date(dateTo)));
+  if (dateFrom) { const d = new Date(dateFrom); if (!isNaN(d.getTime())) conditions.push(gte(activityLog.timestamp, d)); }
+  if (dateTo) { const d = new Date(dateTo); if (!isNaN(d.getTime())) conditions.push(lte(activityLog.timestamp, d)); }
   if (search) {
     const escaped = search.replace(/[%_\\]/g, '\\$&');
     conditions.push(or(
