@@ -326,7 +326,7 @@ function callLLM(opts: {
     };
 
     const callbacks = {
-      onChunk: (content: string) => { accumulated += content; opts.onStream?.(content); },
+      onChunk: (content: string) => { if (accumulated.length < 200_000) { accumulated += content; } opts.onStream?.(content); },
       onDone: (_stopReason: string, contentBlocks: unknown[]) => {
         const blocks = contentBlocks as ContentBlock[];
         let toolCalls = blocks.filter(
@@ -639,7 +639,7 @@ async function _runAgentCycleInner(
           toolResults.push({
             type: 'tool_result',
             tool_use_id: toolCall.id,
-            content: result.result,
+            content: result.result.substring(0, 50_000),
             is_error: result.isError,
           });
         } else {

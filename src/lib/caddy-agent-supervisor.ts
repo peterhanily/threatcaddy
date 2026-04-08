@@ -266,7 +266,7 @@ export async function runSupervisorCycle(
         toolResults.push({
           type: 'tool_result',
           tool_use_id: toolCall.id,
-          content: result.result,
+          content: result.result.substring(0, 50_000),
           is_error: result.isError,
         });
 
