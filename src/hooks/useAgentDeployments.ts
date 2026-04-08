@@ -83,7 +83,15 @@ export function useAgentDeployments(investigationId?: string) {
   }, [investigationId, deployments, reload]);
 
   const removeDeployment = useCallback(async (deploymentId: string) => {
-    await db.agentDeployments.delete(deploymentId);
+    // Cascade: delete the deployment's audit thread and associated actions
+    const deployment = await db.agentDeployments.get(deploymentId);
+    await db.transaction('rw', [db.agentDeployments, db.chatThreads, db.agentActions], async () => {
+      await db.agentDeployments.delete(deploymentId);
+      if (deployment?.threadId) {
+        await db.chatThreads.delete(deployment.threadId);
+        await db.agentActions.where('threadId').equals(deployment.threadId).delete();
+      }
+    });
     await reload();
   }, [reload]);
 

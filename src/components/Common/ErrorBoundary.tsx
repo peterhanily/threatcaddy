@@ -17,6 +17,11 @@ interface State {
 
 export class ErrorBoundary extends React.Component<Props, State> {
   state: State = { hasError: false, error: null, componentStack: null, copied: false };
+  private copyTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  componentWillUnmount() {
+    if (this.copyTimeoutId !== null) clearTimeout(this.copyTimeoutId);
+  }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
@@ -57,10 +62,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   private handleCopy = async () => {
+    if (this.copyTimeoutId !== null) clearTimeout(this.copyTimeoutId);
     try {
       await navigator.clipboard.writeText(this.getErrorDetails());
       this.setState({ copied: true });
-      setTimeout(() => this.setState({ copied: false }), 2000);
+      this.copyTimeoutId = setTimeout(() => this.setState({ copied: false }), 2000);
     } catch {
       // Fallback: select a textarea (clipboard API may not be available in all contexts)
       const ta = document.createElement('textarea');
@@ -70,7 +76,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
       document.execCommand('copy');
       document.body.removeChild(ta);
       this.setState({ copied: true });
-      setTimeout(() => this.setState({ copied: false }), 2000);
+      this.copyTimeoutId = setTimeout(() => this.setState({ copied: false }), 2000);
     }
   };
 
