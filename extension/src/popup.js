@@ -218,14 +218,19 @@ function setupFileAccessIndicator(toggleId, sliderId) {
 
   syncState();
 
-  // Can't be changed programmatically — restore state and show instructions
+  // Can't be changed programmatically — restore state; show hint only when disabled
   toggle.addEventListener('change', () => {
-    syncState();
-    const hint = document.getElementById(toggleId + '-hint');
-    if (hint) {
-      hint.style.display = 'block';
-      setTimeout(() => { hint.style.display = 'none'; }, 5000);
-    }
+    chrome.extension.isAllowedFileSchemeAccess(allowed => {
+      toggle.checked = allowed;
+      slider.style.backgroundColor = allowed ? '#8b5cf6' : '#4b5563';
+      if (!allowed) {
+        const hint = document.getElementById(toggleId + '-hint');
+        if (hint) {
+          hint.style.display = 'block';
+          setTimeout(() => { hint.style.display = 'none'; }, 5000);
+        }
+      }
+    });
   });
 }
 
