@@ -204,22 +204,6 @@ function setupPermToggle(toggleId, sliderId, origins) {
   });
 }
 
-// File URL access — read-only indicator; Chrome manages this setting
-function setupFileAccessIndicator(toggleId, sliderId) {
-  const toggle = document.getElementById(toggleId);
-  const slider = document.getElementById(sliderId);
-  const label = toggle.closest('label');
-
-  // Non-interactive: this is a status indicator only
-  if (label) { label.style.pointerEvents = 'none'; label.style.cursor = 'default'; }
-
-  chrome.extension.isAllowedFileSchemeAccess(allowed => {
-    toggle.checked = allowed;
-    slider.style.backgroundColor = allowed ? '#8b5cf6' : '#4b5563';
-    const hint = document.getElementById(toggleId + '-hint');
-    if (hint) hint.style.display = allowed ? 'none' : 'block';
-  });
-}
 
 // AI chat — grants access to provider API origins
 setupPermToggle('ai-perm-toggle', 'ai-perm-slider', [
@@ -290,8 +274,6 @@ setupPermToggle('settings-ai-toggle', 'settings-ai-slider', [
   'https://api.mistral.ai/*',
 ]);
 setupPermToggle('settings-url-toggle', 'settings-url-slider', ['*://*/*']);
-setupFileAccessIndicator('file-perm-toggle', 'file-perm-slider');
-setupFileAccessIndicator('settings-file-toggle', 'settings-file-slider');
 
 // Target URL — stored inside settings.targetUrl to match background.js / clips.js
 (async function loadTargetUrl() {
