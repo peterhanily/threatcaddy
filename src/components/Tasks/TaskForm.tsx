@@ -161,7 +161,9 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
           <label className={labelClass} htmlFor="task-title">{t('form.titleLabel')}</label>
           <input
             id="task-title"
+            type="text"
             autoFocus
+            maxLength={500}
             value={title}
             onChange={(e) => { setTitle(e.target.value); if (titleError) setTitleError(''); }}
             className={cn(inputClass, titleError && 'border-red-500')}
@@ -318,6 +320,8 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
 
           <div className="flex gap-2">
             <input
+              type="text"
+              maxLength={500}
               value={newChecklistText}
               onChange={(e) => setNewChecklistText(e.target.value)}
               onKeyDown={(e) => {
@@ -400,6 +404,8 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
 
             <div className="flex gap-2">
               <input
+                type="text"
+                maxLength={2000}
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddComment(); } }}

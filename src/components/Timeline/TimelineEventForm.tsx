@@ -168,7 +168,9 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
         <label className={labelClass} htmlFor="event-title">{t('eventForm.title')}</label>
         <input
           id="event-title"
+          type="text"
           autoFocus
+          maxLength={500}
           value={title}
           onChange={(e) => { setTitle(e.target.value); if (titleError) setTitleError(''); }}
           className={cn(inputClass, titleError && 'border-red-500')}
@@ -235,6 +237,8 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
         <div>
           <label className={labelClass}>{t('eventForm.source')}</label>
           <input
+            type="text"
+            maxLength={500}
             value={source}
             onChange={(e) => setSource(e.target.value)}
             className={inputClass}
@@ -307,6 +311,8 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
       <div>
         <label className={labelClass}>{t('eventForm.assets')}</label>
         <input
+          type="text"
+          maxLength={500}
           value={assets}
           onChange={(e) => setAssets(e.target.value)}
           className={inputClass}
