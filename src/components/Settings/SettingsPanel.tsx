@@ -247,7 +247,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
             aria-controls={`settings-panel-${tabKey}`}
             id={`settings-tab-${tabKey}`}
             onClick={() => setActiveTab(tabKey)}
-            className={`flex-1 px-1 py-2 text-xs font-medium text-center transition-colors border-b-2 ${
+            className={`flex-1 px-1 py-2 text-xs font-medium text-center tracking-tight transition-colors border-b-2 ${
               activeTab === tabKey
                 ? 'border-accent text-text-primary'
                 : 'border-transparent text-text-secondary hover:text-text-primary'
