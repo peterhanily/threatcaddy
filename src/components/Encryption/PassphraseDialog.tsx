@@ -137,16 +137,20 @@ export function PassphraseDialog({ onUnlocked }: PassphraseDialogProps) {
         </p>
 
         {useRecovery ? (
-          <textarea
-            value={passphrase}
-            onChange={(e) => setPassphrase(e.target.value)}
-            placeholder={t('passphrase.recoveryKeyPlaceholder')}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent min-h-[80px] mb-3 resize-none"
-            autoFocus
-          />
+          <>
+            <textarea
+              aria-label={t('passphrase.enterRecoveryKey')}
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+              placeholder={t('passphrase.recoveryKeyPlaceholder')}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent min-h-[80px] mb-3 resize-none"
+              autoFocus
+            />
+          </>
         ) : (
           <div className="relative mb-3">
             <input
+              aria-label={t('passphrase.enterPassphrase')}
               type={showPassword ? 'text' : 'password'}
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}

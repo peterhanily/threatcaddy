@@ -185,12 +185,13 @@ export function EncryptionSettings() {
             </p>
           )}
           <div className="space-y-2">
-            <label className="flex items-center gap-1.5 text-sm text-gray-400">
+            <label htmlFor="enc-session-duration" className="flex items-center gap-1.5 text-sm text-gray-400">
               <Clock size={14} />
               {t('settings.sessionDuration')}
             </label>
             <div className="flex gap-2">
               <select
+                id="enc-session-duration"
                 value={sessionDuration}
                 onChange={(e) => { setSessionDurationLocal(e.target.value as SessionDuration); setDurationSaved(false); }}
                 className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent"
@@ -259,7 +260,9 @@ export function EncryptionSettings() {
           <p className="text-sm text-gray-400">
             {t('settings.disableDesc')}
           </p>
+          <label htmlFor="enc-disable-pass" className="sr-only">{t('settings.currentPassphrase')}</label>
           <input
+            id="enc-disable-pass"
             type="password"
             value={disablePass}
             onChange={(e) => setDisablePass(e.target.value)}
@@ -306,8 +309,9 @@ export function EncryptionSettings() {
       <Modal open={showChangePass} onClose={() => !changing && setShowChangePass(false)} title={t('settings.changeTitle')}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-400 mb-1">{t('settings.currentPassphrase')}</label>
+            <label htmlFor="enc-current-pass" className="block text-sm text-gray-400 mb-1">{t('settings.currentPassphrase')}</label>
             <input
+              id="enc-current-pass"
               type="password"
               value={currentPass}
               onChange={(e) => setCurrentPass(e.target.value)}
@@ -317,8 +321,9 @@ export function EncryptionSettings() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">{t('settings.newPassphrase')}</label>
+            <label htmlFor="enc-new-pass" className="block text-sm text-gray-400 mb-1">{t('settings.newPassphrase')}</label>
             <input
+              id="enc-new-pass"
               type="password"
               value={newPass}
               onChange={(e) => setNewPass(e.target.value)}
@@ -327,8 +332,9 @@ export function EncryptionSettings() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">{t('settings.confirmNewPassphrase')}</label>
+            <label htmlFor="enc-confirm-pass" className="block text-sm text-gray-400 mb-1">{t('settings.confirmNewPassphrase')}</label>
             <input
+              id="enc-confirm-pass"
               type="password"
               value={confirmPass}
               onChange={(e) => setConfirmPass(e.target.value)}

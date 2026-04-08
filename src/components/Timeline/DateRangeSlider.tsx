@@ -169,18 +169,23 @@ export function DateRangeSlider({ events, dateStart, dateEnd, onChange }: DateRa
     setDragStartFrac(sf);
     setDragEndFrac(ef);
 
+    let rafId = 0;
     const onMove = (me: PointerEvent) => {
-      const frac = getTrackFraction(me.clientX);
-      if (handle === 'start') {
-        sf = Math.min(frac, ef);
-        setDragStartFrac(sf);
-      } else {
-        ef = Math.max(frac, sf);
-        setDragEndFrac(ef);
-      }
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const frac = getTrackFraction(me.clientX);
+        if (handle === 'start') {
+          sf = Math.min(frac, ef);
+          setDragStartFrac(sf);
+        } else {
+          ef = Math.max(frac, sf);
+          setDragEndFrac(ef);
+        }
+      });
     };
 
     const onUp = () => {
+      cancelAnimationFrame(rafId);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       const toTs = (f: number) => minTs + f * range;
