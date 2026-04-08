@@ -184,7 +184,9 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
               {newFolderIcon}
             </button>
             <input
+              type="text"
               autoFocus
+              maxLength={200}
               value={newFolderName}
               onChange={e => setNewFolderName(e.target.value)}
               onKeyDown={e => {
@@ -289,6 +291,8 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                       {renamingId === note.id ? (
                         <input
                           ref={renameInputRef}
+                          type="text"
+                          maxLength={200}
                           className="text-sm font-medium text-text-primary flex-1 bg-surface-raised border border-accent-blue rounded px-1.5 py-0.5 outline-none"
                           value={renameValue}
                           onChange={e => setRenameValue(e.target.value)}

@@ -85,7 +85,9 @@ export function CreateInvestigationModal({ open, onClose, onCreate, onOpenNameGe
           </label>
           <input
             id="inv-name"
+            type="text"
             autoFocus
+            maxLength={200}
             value={name}
             onChange={(e) => { setName(e.target.value); if (nameError) setNameError(''); }}
             onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}

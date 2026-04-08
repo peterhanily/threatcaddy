@@ -276,6 +276,8 @@ export class AgentBot extends GenericBot {
       stop_reason: string;
     };
 
+    if (!Array.isArray(msg.content)) return { continueLoop: false };
+
     // Append the full assistant response to messages
     messages.push({ role: 'assistant', content: msg.content });
 

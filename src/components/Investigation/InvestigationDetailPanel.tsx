@@ -124,6 +124,8 @@ export function InvestigationDetailPanel({
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1">Name</label>
             <input
+              type="text"
+              maxLength={200}
               value={name}
               onChange={(e) => setName(e.target.value)}
               onBlur={handleNameBlur}

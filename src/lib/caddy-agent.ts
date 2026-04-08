@@ -129,8 +129,8 @@ async function buildAgentSystemPrompt(folder: Folder, _settings: Settings, provi
 
   // Add investigation context
   if (folder) {
-    context += `\n\nInvestigation: "${folder.name}"`;
-    if (folder.description) context += `\nDescription: ${folder.description}`;
+    context += `\n\nInvestigation: "${folder.name.substring(0, 200)}"`;
+    if (folder.description) context += `\nDescription: ${folder.description.substring(0, 500)}`;
     if (folder.status) context += ` | Status: ${folder.status}`;
 
     // Quick entity counts
