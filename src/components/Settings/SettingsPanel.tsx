@@ -187,12 +187,14 @@ function CustomSlashCommandsEditor() {
       {creating && (
         <div className="space-y-2 p-3 rounded-lg bg-gray-800/50 border border-gray-700">
           <input
+            type="text"
             value={formName}
             onChange={e => setFormName(e.target.value)}
             placeholder={t('ai.commandNamePlaceholder')}
             className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent font-mono"
           />
           <input
+            type="text"
             value={formDesc}
             onChange={e => setFormDesc(e.target.value)}
             placeholder={t('ai.commandDescPlaceholder')}
@@ -424,7 +426,9 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 <button
                   onClick={async () => {
                     try {
-                      const resp = await fetch('https://threatcaddy.com/threatcaddy-standalone.html');
+                      const dlController = new AbortController();
+                      setTimeout(() => dlController.abort(), 30_000);
+                      const resp = await fetch('https://threatcaddy.com/threatcaddy-standalone.html', { signal: dlController.signal });
                       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                       const blob = await resp.blob();
                       const url = URL.createObjectURL(blob);

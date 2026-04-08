@@ -98,11 +98,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const url = overrideServerUrl || serverUrl;
     if (!url) throw new Error('No server URL configured');
 
+    const loginController = new AbortController();
+    const loginTimer = setTimeout(() => loginController.abort(), 15_000);
     const resp = await fetch(`${url}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
+      signal: loginController.signal,
     });
+    clearTimeout(loginTimer);
 
     if (!resp.ok) {
       const err = await resp.json();
@@ -129,11 +133,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(async (email: string, displayName: string, password: string) => {
     if (!serverUrl) throw new Error('No server URL configured');
 
+    const regController = new AbortController();
+    const regTimer = setTimeout(() => regController.abort(), 15_000);
     const resp = await fetch(`${serverUrl}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, displayName, password }),
+      signal: regController.signal,
     });
+    clearTimeout(regTimer);
 
     if (!resp.ok) {
       const err = await resp.json();
@@ -157,6 +165,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     if (serverUrl && refreshTokenRef.current && accessTokenRef.current) {
       try {
+        const logoutController = new AbortController();
+        setTimeout(() => logoutController.abort(), 5_000);
         await fetch(`${serverUrl}/api/auth/logout`, {
           method: 'POST',
           headers: {
@@ -164,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             'Authorization': `Bearer ${accessTokenRef.current}`,
           },
           body: JSON.stringify({ refreshToken: refreshTokenRef.current }),
+          signal: logoutController.signal,
         });
       } catch { /* best effort */ }
     }

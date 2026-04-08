@@ -196,7 +196,9 @@ export function Header({
                 onClick={async () => {
                   setHelpMenuOpen(false);
                   try {
-                    const resp = await fetch('https://threatcaddy.com/threatcaddy-standalone.html');
+                    const dlController = new AbortController();
+                    setTimeout(() => dlController.abort(), 30_000);
+                    const resp = await fetch('https://threatcaddy.com/threatcaddy-standalone.html', { signal: dlController.signal });
                     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                     const blob = await resp.blob();
                     const url = URL.createObjectURL(blob);
