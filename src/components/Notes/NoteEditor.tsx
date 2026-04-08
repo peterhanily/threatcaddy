@@ -982,22 +982,19 @@ export function NoteEditor({
               className="relative flex overflow-hidden"
               style={editorMode === 'split' ? { width: `${editorPreview.ratio * 100}%` } : { flex: 1 }}
             >
-              {/* Line number gutter with current-line highlight overlay */}
-              <div className="relative shrink-0 border-r border-gray-800" style={{ minWidth: '2.5rem' }} aria-hidden="true">
-                {/* Highlight bar for current line */}
+              {/* Line number gutter with current-line highlight */}
+              <div
+                ref={gutterRef}
+                className="relative shrink-0 pt-2 sm:pt-4 pr-2 pl-2 text-right select-none overflow-hidden text-gray-600 font-mono whitespace-pre border-r border-gray-800"
+                style={{ minWidth: '2.5rem', fontSize: '12px', lineHeight: 'calc(0.875rem * 1.625)' }}
+                aria-hidden="true"
+              >
+                {/* Highlight bar — inside scrollable gutter so it scrolls with line numbers */}
                 <div
-                  className="absolute left-0 right-0 bg-gray-800/60 pointer-events-none transition-transform duration-75"
-                  style={{
-                    height: 'calc(0.875rem * 1.625)',
-                    transform: `translateY(calc(${(currentLine - 1)} * (0.875rem * 1.625)))`,
-                    top: window.innerWidth >= 640 ? '1rem' : '0.5rem',
-                  }}
+                  className="absolute left-0 right-0 bg-gray-700/40 pointer-events-none"
+                  style={{ height: 'calc(0.875rem * 1.625)', top: `calc(${currentLine - 1} * (0.875rem * 1.625))` }}
                 />
-                <div
-                  ref={gutterRef}
-                  className="pt-2 sm:pt-4 pr-2 pl-2 text-right select-none overflow-hidden text-gray-600 font-mono whitespace-pre"
-                  style={{ fontSize: '12px', lineHeight: 'calc(0.875rem * 1.625)' }}
-                >{lineNumberText}</div>
+                {lineNumberText}
               </div>
               <textarea
                 ref={textareaRef}
