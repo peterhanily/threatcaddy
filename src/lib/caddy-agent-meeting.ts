@@ -23,6 +23,8 @@ export interface AgentMeetingResult {
 // ── Helpers ─────────────────────────────────────────────────────────────
 
 const LLM_TIMEOUT_MS = 120_000;
+/** Max chars across all conversation messages before oldest are trimmed (keeps ~50k tokens) */
+const CONVERSATION_BUDGET_CHARS = 200_000;
 
 function getApiKeyForProvider(provider: LLMProvider, settings: Settings): string | undefined {
   switch (provider) {
@@ -57,7 +59,7 @@ function callLLM(opts: {
       endpoint: opts.endpoint,
     };
     const callbacks = {
-      onChunk: (content: string) => { accumulated += content; },
+      onChunk: (content: string) => { if (accumulated.length < 200_000) accumulated += content; },
       onDone: (_stopReason: string, contentBlocks: unknown[]) => {
         const blocks = contentBlocks as ContentBlock[];
         const toolCalls = blocks.filter(
@@ -208,10 +210,18 @@ export async function runAgentMeeting(
     for (let round = 0; round < rounds; round++) {
       let anyNewInput = false;
 
+      // Trim oldest messages if conversation exceeds budget (keep first 2 + latest)
+      const totalChars = conversationMessages.reduce((sum, m) => sum + (typeof m.content === 'string' ? m.content.length : 200), 0);
+      if (totalChars > CONVERSATION_BUDGET_CHARS && conversationMessages.length > 6) {
+        const keep = Math.max(6, Math.floor(conversationMessages.length / 2));
+        conversationMessages.splice(2, conversationMessages.length - keep);
+      }
+
       for (const { profile } of participants) {
         onProgress?.(profile.name, `Round ${round + 1}/${rounds}`);
 
-        const systemPrompt = `${baseContext}
+        try {
+          const systemPrompt = `${baseContext}
 
 ## Meeting Context
 
@@ -226,34 +236,39 @@ Rules:
 - Focus on your area of expertise.
 - Propose concrete next steps when possible.`;
 
-        const response = await callLLM({
-          provider, model,
-          messages: conversationMessages,
-          apiKey, systemPrompt,
-          useServerProxy, endpoint,
-        });
+          const response = await callLLM({
+            provider, model,
+            messages: conversationMessages,
+            apiKey, systemPrompt,
+            useServerProxy, endpoint,
+          });
 
-        const content = `**${profile.icon || ''} ${profile.name}:** ${response.content}`;
+          const content = `**${profile.icon || ''} ${profile.name}:** ${response.content}`;
 
-        // Add to conversation
-        conversationMessages.push({ role: 'assistant', content });
-        conversationMessages.push({ role: 'user', content: 'Next participant, please share your perspective.' });
+          // Add to conversation
+          conversationMessages.push({ role: 'assistant', content });
+          conversationMessages.push({ role: 'user', content: 'Next participant, please share your perspective.' });
 
-        // Add to thread
-        const chatMsg: ChatMessage = {
-          id: nanoid(),
-          role: 'assistant',
-          content,
-          createdAt: Date.now(),
-        };
-        await db.chatThreads.where('id').equals(threadId).modify((t: ChatThread) => {
-          t.messages.push(chatMsg);
-          t.updatedAt = Date.now();
-        });
+          // Add to thread
+          const chatMsg: ChatMessage = {
+            id: nanoid(),
+            role: 'assistant',
+            content,
+            createdAt: Date.now(),
+          };
+          await db.chatThreads.where('id').equals(threadId).modify((t: ChatThread) => {
+            t.messages.push(chatMsg);
+            t.updatedAt = Date.now();
+          });
 
-        // Check if this agent had anything new to say
-        if (!response.content.toLowerCase().includes('no further input')) {
-          anyNewInput = true;
+          // Check if this agent had anything new to say
+          if (!response.content.toLowerCase().includes('no further input')) {
+            anyNewInput = true;
+          }
+        } catch (err) {
+          console.error(`[meeting] Agent ${profile.name} failed in round ${round + 1}:`, err);
+          const errorContent = `**${profile.icon || ''} ${profile.name}:** _(failed to respond: ${(err as Error).message?.substring(0, 100) || 'unknown error'})_`;
+          conversationMessages.push({ role: 'assistant', content: errorContent });
         }
       }
 
