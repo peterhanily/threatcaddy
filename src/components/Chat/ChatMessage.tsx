@@ -1,5 +1,5 @@
 import { useState, useMemo, memo } from 'react';
-import { ChevronRight, FileText, ListChecks, Shield, Clock, GitBranch, RotateCcw } from 'lucide-react';
+import { ChevronRight, FileText, ListChecks, Shield, Clock, GitBranch, RotateCcw, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
 import { renderMarkdown, sanitizeHtml } from '../../lib/markdown';
@@ -21,6 +21,8 @@ interface ChatMessageProps {
   messageId?: string;
   onRestoreCheckpoint?: (messageId: string) => void;
   hasCheckpoint?: boolean;
+  onRegenerate?: () => void;
+  isError?: boolean;
 }
 
 function formatTokens(n: number): string {
@@ -237,7 +239,7 @@ function SuggestionChips({ suggestions, onSuggestionClick }: { suggestions: stri
 
 // ── Main Component ─────────────────────────────────────────────────
 
-export const ChatMessageBubble = memo(function ChatMessageBubble({ role, content, attachments, isStreaming, toolCalls, onEntityClick, onSuggestionClick, isLastAssistant, messageIndex, onBranchFromHere, onRewindToHere, tokenCount, messageId, onRestoreCheckpoint, hasCheckpoint }: ChatMessageProps) {
+export const ChatMessageBubble = memo(function ChatMessageBubble({ role, content, attachments, isStreaming, toolCalls, onEntityClick, onSuggestionClick, isLastAssistant, messageIndex, onBranchFromHere, onRewindToHere, tokenCount, messageId, onRestoreCheckpoint, hasCheckpoint, onRegenerate, isError }: ChatMessageProps) {
   const { t } = useTranslation('chat');
   const isUser = role === 'user';
 
@@ -306,6 +308,15 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({ role, content
                 title={t('message.undoTitle')}
               >
                 <RotateCcw size={12} className="scale-x-[-1]" />
+              </button>
+            )}
+            {onRegenerate && isLastAssistant && !isStreaming && (
+              <button
+                onClick={onRegenerate}
+                className="p-1 text-text-muted hover:text-accent-blue transition-colors"
+                title={isError ? t('message.retryTitle', 'Retry') : t('message.regenerateTitle', 'Regenerate')}
+              >
+                <RefreshCw size={12} />
               </button>
             )}
           </div>

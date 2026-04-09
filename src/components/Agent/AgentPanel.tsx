@@ -660,24 +660,6 @@ function PolicyEditor({ folder, settings, onFolderChanged }: { folder: Folder; s
         <span className="text-xs text-text-secondary w-12 text-right">{localPolicy.intervalMinutes || 5}m</span>
       </div>
 
-      {/* Personality */}
-      <div className="text-[10px] text-text-muted uppercase tracking-wide mt-2">Personality</div>
-      {([
-        { key: 'creativity' as const, label: 'Creativity', low: 'Analytical', high: 'Creative' },
-        { key: 'seriousness' as const, label: 'Seriousness', low: 'Casual', high: 'Formal' },
-        { key: 'verbosity' as const, label: 'Verbosity', low: 'Terse', high: 'Detailed' },
-        { key: 'riskTolerance' as const, label: 'Risk Tolerance', low: 'Conservative', high: 'Aggressive' },
-      ] as const).map(({ key, label, low, high }) => (
-        <div key={key} className="flex items-center gap-2">
-          <label className="text-[10px] text-text-muted w-20 shrink-0">{label}</label>
-          <span className="text-[8px] text-text-muted">{low}</span>
-          <input type="range" min={0} max={100} value={localPolicy[key] ?? 50}
-            onChange={(e) => updatePolicy({ [key]: parseInt(e.target.value) })}
-            className="flex-1 h-1 accent-accent-blue" />
-          <span className="text-[8px] text-text-muted">{high}</span>
-        </div>
-      ))}
-
       {/* Focus areas */}
       <div>
         <button

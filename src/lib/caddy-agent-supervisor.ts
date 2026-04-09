@@ -21,7 +21,7 @@ const SUPERVISOR_FOLDER_NAME = 'CaddyAgent Supervisor';
 const SUPERVISOR_THREAD_TITLE = 'Supervisor Audit Trail';
 const MAX_SUPERVISOR_TURNS = 5;
 
-/** Tools the supervisor is allowed to use. */
+/** Tools the supervisor is allowed to use — includes write tools for cross-investigation coordination. */
 const SUPERVISOR_TOOLS = new Set([
   'list_investigations',
   'get_investigation_details',
@@ -31,6 +31,9 @@ const SUPERVISOR_TOOLS = new Set([
   'list_iocs',
   'search_notes',
   'create_note',
+  'create_task',
+  'link_entities',
+  'update_ioc',
 ]);
 
 const SUPERVISOR_TOOL_DEFS = TOOL_DEFINITIONS.filter(t => SUPERVISOR_TOOLS.has(t.name));
@@ -122,18 +125,24 @@ Your job:
 2. Compare investigations to find shared IOCs (IP addresses, domains, hashes that appear in multiple cases).
 3. Identify stale investigations (no updates in 7+ days, open tasks with no progress).
 4. Detect cross-case patterns (shared TTPs, overlapping infrastructure, common threat actors).
-5. Write a summary note with your findings.
+5. Take action on your findings — don't just report, coordinate.
 
 Guidelines:
 - Start by listing all investigations to understand the caseload.
 - If there are 2+ active investigations, compare them for shared IOCs and TTPs.
 - For each finding, explain why it matters and what the analyst should do.
-- Create a note in the current investigation (the Supervisor investigation) with your findings.
+- Create notes in the Supervisor investigation with your findings.
 - Be concise. Flag only actionable findings.
 - When you find shared IOCs across cases, this is HIGH PRIORITY — it may indicate a coordinated campaign.
 - Mark stale cases that haven't been updated in 7+ days.
 
-IMPORTANT: You can only READ from other investigations. You can only CREATE notes in the Supervisor investigation (your current investigation).`;
+Actions you can take:
+- create_note: Write findings and cross-case analysis reports.
+- create_task: Create follow-up tasks in specific investigations (e.g., "Investigate shared C2 infrastructure with case X").
+- link_entities: Link related IOCs or entities across investigations when patterns are found.
+- update_ioc: Update IOC confidence levels or add attribution when cross-case evidence strengthens a finding.
+
+IMPORTANT: Use write tools judiciously. Only create tasks and links when findings are actionable and supported by evidence.`;
 
 // ── Main ────────────────────────────────────────────────────────────────
 

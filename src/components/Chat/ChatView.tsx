@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Virtuoso } from 'react-virtuoso';
 import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, Check, X, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ChatThread, ChatMessage, LLMProvider, Settings, Folder, ToolUseBlock } from '../../types';
@@ -144,6 +145,7 @@ export function ChatView({
   const [pendingApproval, setPendingApproval] = useState<{
     toolName: string;
     input: Record<string, unknown>;
+    threadId: string;
     resolve: (approved: boolean) => void;
   } | null>(null);
 
@@ -271,6 +273,12 @@ export function ChatView({
       }
     }
     const apiKey = useServerProxy ? 'server-proxy' : getApiKeyForProvider(provider, settings);
+
+    // Hard token budget cap — prevent sending when over budget
+    if (settings.llmTokenBudget && threadTokenTotalRef.current > settings.llmTokenBudget) {
+      setLocalError(t('view.errorOverBudget', `Token budget exceeded (${threadTokenTotalRef.current.toLocaleString()} / ${settings.llmTokenBudget.toLocaleString()}). Start a new thread or increase the budget in Settings > AI.`));
+      return;
+    }
 
     // Resolve @-mentions: replace tokens with labels for display, inject entity data for LLM
     const { displayText: mentionDisplayText, contextBlock: mentionContext } = await resolveMentions(text);
@@ -493,10 +501,12 @@ export function ChatView({
       async (toolUse: ToolUseBlock) => {
         // Approval gate for write tools in Act mode (skip if yolo mode)
         if (isWriteTool(toolUse.name) && !yoloModeRef.current) {
+          const threadAtRequest = activeThread.id;
           const approved = await new Promise<boolean>((resolve) => {
             setPendingApproval({
               toolName: toolUse.name,
               input: toolUse.input as Record<string, unknown>,
+              threadId: threadAtRequest,
               resolve,
             });
           });
@@ -652,6 +662,9 @@ export function ChatView({
     }, 0);
   }, [activeThread]);
 
+  const threadTokenTotalRef = useRef(threadTokenTotal);
+  threadTokenTotalRef.current = threadTokenTotal;
+
   // ── Session rewind ──────────────────────────────────────────────────
   const [rewindConfirmIndex, setRewindConfirmIndex] = useState<number | null>(null);
 
@@ -694,6 +707,22 @@ export function ChatView({
   }, [restoreConfirmMsgId, onEntitiesChanged, addToast]);
 
   // ── Session branching ──────────────────────────────────────────────
+  const handleRegenerate = useCallback(async () => {
+    if (!activeThread || activeThread.messages.length < 2) return;
+    // Find last user message
+    let lastUserIdx = -1;
+    for (let i = activeThread.messages.length - 1; i >= 0; i--) {
+      if (activeThread.messages[i].role === 'user') { lastUserIdx = i; break; }
+    }
+    if (lastUserIdx === -1) return;
+    const userText = activeThread.messages[lastUserIdx].content;
+    // Remove all messages after (and including) the last user message
+    const trimmed = activeThread.messages.slice(0, lastUserIdx);
+    await onUpdateThread(activeThread.id, { messages: trimmed });
+    // Re-send the user message
+    handleSend(userText);
+  }, [activeThread, onUpdateThread, handleSend]);
+
   const handleBranchFromHere = useCallback(async (messageIndex: number) => {
     if (!activeThread) return;
     const branchedMessages = activeThread.messages.slice(0, messageIndex + 1);
@@ -1068,9 +1097,9 @@ export function ChatView({
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4" aria-live="polite">
-              {activeThread.messages.length === 0 && !isStreaming && (
+            {/* Messages — virtualized for performance on long threads */}
+            <div className="flex-1 overflow-hidden" aria-live="polite">
+              {activeThread.messages.length === 0 && !isStreaming ? (
                 <div className="flex flex-col items-center justify-center h-full text-text-muted">
                   <MessageSquare size={40} className="mb-3 opacity-30" />
                   <p className="text-sm font-medium">{t('view.emptyTitle')}</p>
@@ -1081,108 +1110,121 @@ export function ChatView({
                     </p>
                   )}
                 </div>
-              )}
-              {activeThread.messages.map((msg, idx) => (
-                <ChatMessageBubble
-                  key={msg.id}
-                  role={msg.role}
-                  content={msg.content}
-                  attachments={msg.attachments}
-                  toolCalls={msg.toolCalls}
-                  onEntityClick={onNavigateToEntity}
-                  onSuggestionClick={handleSuggestionClick}
-                  isLastAssistant={msg.role === 'assistant' && idx === activeThread.messages.length - 1}
-                  messageIndex={idx}
-                  onBranchFromHere={handleBranchFromHere}
-                  onRewindToHere={setRewindConfirmIndex}
-                  tokenCount={msg.tokenCount}
-                  messageId={msg.id}
-                  onRestoreCheckpoint={setRestoreConfirmMsgId}
-                  hasCheckpoint={checkpointMessageIds.has(msg.id)}
-                />
-              ))}
-              {isStreaming && streamingContent && streamingThreadRef.current === selectedThreadId && (
-                <ChatMessageBubble role="assistant" content={cleanStreamingContent(streamingContent)} isStreaming />
-              )}
-              {/* Tool activity indicators during streaming */}
-              {isStreaming && toolActivity.length > 0 && streamingThreadRef.current === selectedThreadId && (
-                <div className="ml-2 mb-2 space-y-1">
-                  {/* Completed tools — stable log */}
-                  {toolActivity.filter(ta => ta.status !== 'running').length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {toolActivity.filter(ta => ta.status !== 'running').map((ta) => (
-                        <span
-                          key={ta.id}
-                          className={cn(
-                            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono',
-                            ta.status === 'error' ? 'text-red-400' : 'text-emerald-400/70'
+              ) : (
+              <Virtuoso
+                data={activeThread.messages}
+                followOutput="smooth"
+                className="h-full"
+                itemContent={(idx, msg) => (
+                  <div className="px-4">
+                    <ChatMessageBubble
+                      key={msg.id}
+                      role={msg.role}
+                      content={msg.content}
+                      attachments={msg.attachments}
+                      toolCalls={msg.toolCalls}
+                      onEntityClick={onNavigateToEntity}
+                      onSuggestionClick={handleSuggestionClick}
+                      isLastAssistant={msg.role === 'assistant' && idx === activeThread.messages.length - 1}
+                      messageIndex={idx}
+                      onBranchFromHere={handleBranchFromHere}
+                      onRewindToHere={setRewindConfirmIndex}
+                      tokenCount={msg.tokenCount}
+                      messageId={msg.id}
+                      onRestoreCheckpoint={setRestoreConfirmMsgId}
+                      hasCheckpoint={checkpointMessageIds.has(msg.id)}
+                      onRegenerate={msg.role === 'assistant' ? handleRegenerate : undefined}
+                    />
+                  </div>
+                )}
+                components={{
+                  Footer: () => (
+                    <div className="px-4 pb-2">
+                      {isStreaming && streamingContent && streamingThreadRef.current === selectedThreadId && (
+                        <ChatMessageBubble role="assistant" content={cleanStreamingContent(streamingContent)} isStreaming />
+                      )}
+                      {/* Tool activity indicators during streaming */}
+                      {isStreaming && toolActivity.length > 0 && streamingThreadRef.current === selectedThreadId && (
+                        <div className="ml-2 mb-2 space-y-1">
+                          {toolActivity.filter(ta => ta.status !== 'running').length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {toolActivity.filter(ta => ta.status !== 'running').map((ta) => (
+                                <span
+                                  key={ta.id}
+                                  className={cn(
+                                    'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono',
+                                    ta.status === 'error' ? 'text-red-400' : 'text-emerald-400/70'
+                                  )}
+                                >
+                                  {ta.status === 'error' ? '✗' : '✓'} {ta.name}
+                                </span>
+                              ))}
+                            </div>
                           )}
-                        >
-                          {ta.status === 'error' ? '✗' : '✓'} {ta.name}
-                        </span>
-                      ))}
+                          {toolActivity.filter(ta => ta.status === 'running').map((ta) => (
+                            <span
+                              key={ta.id}
+                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-mono border border-purple/30 text-purple bg-purple/10 animate-pulse"
+                            >
+                              {t('view.toolRunning', { name: ta.name })}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {/* Write tool approval card */}
+                      {pendingApproval && pendingApproval.threadId === selectedThreadId && (
+                        <div className="mx-auto max-w-md my-3 rounded-xl border border-amber-500/30 bg-amber-500/5 overflow-hidden">
+                          <div className="px-4 py-2.5 border-b border-amber-500/20 flex items-center gap-2">
+                            <Shield size={14} className="text-amber-400" />
+                            <span className="text-xs font-medium text-amber-400">{t('view.approvalTitle')}</span>
+                          </div>
+                          <div className="px-4 py-2.5 space-y-1.5">
+                            <div className="text-xs">
+                              <span className="font-mono font-medium text-purple">{pendingApproval.toolName}</span>
+                            </div>
+                            <pre className="text-[10px] font-mono text-text-secondary bg-bg-deep rounded p-2 max-h-32 overflow-y-auto whitespace-pre-wrap">
+                              {JSON.stringify(pendingApproval.input, null, 2)}
+                            </pre>
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                onClick={handleApprove}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors"
+                              >
+                                <Check size={12} /> {t('view.approve')}
+                              </button>
+                              <button
+                                onClick={handleReject}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors"
+                              >
+                                <X size={12} /> {t('view.reject')}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {localError && (
+                        <div className="mx-auto max-w-md my-3 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                          {errorHasSettingsLink && onOpenSettings ? (
+                            <span>
+                              {localError.replace(/Settings \u2192 AI\/LLM\.?/, '')}{' '}
+                              <button
+                                onClick={() => onOpenSettings('ai')}
+                                className="underline hover:text-red-300 font-medium"
+                              >
+                                {t('view.settingsAiLlm')}
+                              </button>
+                            </span>
+                          ) : (
+                            localError
+                          )}
+                        </div>
+                      )}
+                      <div ref={messagesEndRef} />
                     </div>
-                  )}
-                  {/* Currently running tool */}
-                  {toolActivity.filter(ta => ta.status === 'running').map((ta) => (
-                    <span
-                      key={ta.id}
-                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-mono border border-purple/30 text-purple bg-purple/10 animate-pulse"
-                    >
-                      {t('view.toolRunning', { name: ta.name })}
-                    </span>
-                  ))}
-                </div>
+                  ),
+                }}
+              />
               )}
-              {/* Write tool approval card */}
-              {pendingApproval && (
-                <div className="mx-auto max-w-md my-3 rounded-xl border border-amber-500/30 bg-amber-500/5 overflow-hidden">
-                  <div className="px-4 py-2.5 border-b border-amber-500/20 flex items-center gap-2">
-                    <Shield size={14} className="text-amber-400" />
-                    <span className="text-xs font-medium text-amber-400">{t('view.approvalTitle')}</span>
-                  </div>
-                  <div className="px-4 py-2.5 space-y-1.5">
-                    <div className="text-xs">
-                      <span className="font-mono font-medium text-purple">{pendingApproval.toolName}</span>
-                    </div>
-                    <pre className="text-[10px] font-mono text-text-secondary bg-bg-deep rounded p-2 max-h-32 overflow-y-auto whitespace-pre-wrap">
-                      {JSON.stringify(pendingApproval.input, null, 2)}
-                    </pre>
-                    <div className="flex items-center gap-2 pt-1">
-                      <button
-                        onClick={handleApprove}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-medium hover:bg-emerald-500/30 transition-colors"
-                      >
-                        <Check size={12} /> {t('view.approve')}
-                      </button>
-                      <button
-                        onClick={handleReject}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/30 transition-colors"
-                      >
-                        <X size={12} /> {t('view.reject')}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {localError && (
-                <div className="mx-auto max-w-md my-3 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
-                  {errorHasSettingsLink && onOpenSettings ? (
-                    <span>
-                      {localError.replace(/Settings \u2192 AI\/LLM\.?/, '')}{' '}
-                      <button
-                        onClick={() => onOpenSettings('ai')}
-                        className="underline hover:text-red-300 font-medium"
-                      >
-                        {t('view.settingsAiLlm')}
-                      </button>
-                    </span>
-                  ) : (
-                    localError
-                  )}
-                </div>
-              )}
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Input */}

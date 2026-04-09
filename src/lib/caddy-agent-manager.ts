@@ -102,18 +102,23 @@ export async function runMultiAgentCycle(
 
   const results = allResults;
 
-  // Collect results
+  // Collect results — include agent name in errors for visibility
   const deploymentResults = new Map<string, AgentCycleResult>();
   const errors: string[] = [];
+  const profileNames = new Map(deploymentProfiles.map(({ deployment, profile }) => [deployment.id, profile.name]));
 
-  for (const r of results) {
+  for (let idx = 0; idx < results.length; idx++) {
+    const r = results[idx];
     if (r.status === 'fulfilled') {
       deploymentResults.set(r.value.deploymentId, r.value.result);
       if (r.value.result.error) {
-        errors.push(r.value.result.error);
+        const name = profileNames.get(r.value.deploymentId) || 'Unknown';
+        errors.push(`[${name}] ${r.value.result.error}`);
       }
     } else {
-      errors.push(String(r.reason));
+      const deploymentId = deploymentProfiles[idx]?.deployment.id;
+      const name = deploymentId ? profileNames.get(deploymentId) || 'Unknown' : 'Unknown';
+      errors.push(`[${name}] ${String(r.reason)}`);
     }
   }
 

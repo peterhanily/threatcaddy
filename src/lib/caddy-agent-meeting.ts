@@ -210,11 +210,30 @@ export async function runAgentMeeting(
     for (let round = 0; round < rounds; round++) {
       let anyNewInput = false;
 
-      // Trim oldest messages if conversation exceeds budget (keep first 2 + latest)
+      // Summarize older messages if conversation exceeds budget (preserve coherence)
       const totalChars = conversationMessages.reduce((sum, m) => sum + (typeof m.content === 'string' ? m.content.length : 200), 0);
       if (totalChars > CONVERSATION_BUDGET_CHARS && conversationMessages.length > 6) {
-        const keep = Math.max(6, Math.floor(conversationMessages.length / 2));
-        conversationMessages.splice(2, conversationMessages.length - keep);
+        onProgress?.('system', 'Summarizing earlier discussion...');
+        // Keep first 2 (agenda + context) and last 4 messages; summarize the middle
+        const head = conversationMessages.slice(0, 2);
+        const tail = conversationMessages.slice(-4);
+        const middle = conversationMessages.slice(2, -4);
+        const middleText = middle.map(m => `${m.role}: ${typeof m.content === 'string' ? m.content.substring(0, 2000) : '[structured]'}`).join('\n\n');
+
+        try {
+          const summaryResponse = await callLLM({
+            provider, model, apiKey: apiKey!, useServerProxy,
+            endpoint: provider === 'local' ? settings.llmLocalEndpoint : undefined,
+            systemPrompt: 'Summarize the following meeting discussion in 3-5 bullet points. Preserve key findings, decisions, and action items. Be concise.',
+            messages: [{ role: 'user', content: middleText.substring(0, 30_000) }],
+          });
+          const summaryMsg = { role: 'assistant' as const, content: `[MEETING SUMMARY — earlier rounds]\n${summaryResponse.content}` };
+          conversationMessages.splice(0, conversationMessages.length, ...head, summaryMsg, ...tail);
+        } catch {
+          // Fallback to old splice behavior if summarization fails
+          const keep = Math.max(6, Math.floor(conversationMessages.length / 2));
+          conversationMessages.splice(2, conversationMessages.length - keep);
+        }
       }
 
       for (const { profile } of participants) {
@@ -361,18 +380,36 @@ export async function runHandoffCall(
   const agenda = `Shift handoff: ${outgoing.length} agent(s) going off-shift brief ${incoming.length} agent(s) coming on-shift.`;
 
   // Run the meeting with a handoff-specific agenda
-  const result = await runAgentMeeting(
-    folder, allDeployments, settings, extensionAvailable,
-    agenda, 2, // 2 rounds: outgoing briefs, incoming asks questions
-    onProgress,
-  );
-
-  // After meeting completes, toggle shift states
-  for (const d of outgoing) {
-    await db.agentDeployments.update(d.id, { shift: 'resting', updatedAt: Date.now() });
+  let result: AgentMeetingResult;
+  try {
+    result = await runAgentMeeting(
+      folder, allDeployments, settings, extensionAvailable,
+      agenda, 2, // 2 rounds: outgoing briefs, incoming asks questions
+      onProgress,
+    );
+  } catch (err) {
+    // Handoff failed — restore all agents to their previous state
+    onProgress?.('system', 'Handoff meeting failed — restoring agent states');
+    // Don't change shift states on failure
+    return {
+      meetingId: '',
+      threadId: '',
+      minutesNoteId: undefined,
+      roundsCompleted: 0,
+      error: `Handoff failed: ${String((err as Error).message || err)}`,
+    };
   }
-  for (const d of incoming) {
-    await db.agentDeployments.update(d.id, { shift: 'active', shiftStartedAt: Date.now(), updatedAt: Date.now() });
+
+  // Only toggle shift states if meeting succeeded without error
+  if (!result.error) {
+    for (const d of outgoing) {
+      await db.agentDeployments.update(d.id, { shift: 'resting', updatedAt: Date.now() });
+    }
+    for (const d of incoming) {
+      await db.agentDeployments.update(d.id, { shift: 'active', shiftStartedAt: Date.now(), updatedAt: Date.now() });
+    }
+  } else {
+    onProgress?.('system', `Handoff meeting completed with errors — shift states unchanged`);
   }
 
   return result;

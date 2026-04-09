@@ -6,7 +6,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bot, Plus, Pencil, Trash2, Copy, ChevronDown, ChevronRight, X, Download, Upload } from 'lucide-react';
-import type { AgentProfile } from '../../types';
+import type { AgentProfile, AgentPolicy } from '../../types';
+import { DEFAULT_AGENT_POLICY } from '../../types';
 import { cn } from '../../lib/utils';
 
 interface AgentProfileManagerProps {
@@ -214,6 +215,15 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
               <p className="text-[10px] text-text-muted mt-0.5">{profile.readOnlyEntityTypes.join(', ')}</p>
             </div>
           ) : null}
+          {/* Personality values */}
+          {(profile.policy.creativity !== undefined || profile.policy.seriousness !== undefined || profile.policy.verbosity !== undefined || profile.policy.riskTolerance !== undefined) && (
+            <div className="flex gap-3 text-[10px]">
+              {profile.policy.creativity !== undefined && <span className="text-text-muted">Creativity: <span className="text-text-primary">{profile.policy.creativity}</span></span>}
+              {profile.policy.seriousness !== undefined && <span className="text-text-muted">Seriousness: <span className="text-text-primary">{profile.policy.seriousness}</span></span>}
+              {profile.policy.verbosity !== undefined && <span className="text-text-muted">Verbosity: <span className="text-text-primary">{profile.policy.verbosity}</span></span>}
+              {profile.policy.riskTolerance !== undefined && <span className="text-text-muted">Risk: <span className="text-text-primary">{profile.policy.riskTolerance}</span></span>}
+            </div>
+          )}
           <div>
             <span className="text-[9px] text-text-muted uppercase tracking-wide">{t('profile.autoApprovePolicy')}</span>
             <div className="flex gap-2 mt-0.5 text-[10px]">
@@ -286,12 +296,17 @@ function ProfileForm({ profile, onSave, onCancel }: {
   const [icon, setIcon] = useState(profile?.icon || '🤖');
   const [role, setRole] = useState<'executive' | 'lead' | 'specialist' | 'observer'>(profile?.role || 'specialist');
   const [systemPrompt, setSystemPrompt] = useState(profile?.systemPrompt || '');
+  const [creativity, setCreativity] = useState(profile?.policy?.creativity ?? 50);
+  const [seriousness, setSeriousness] = useState(profile?.policy?.seriousness ?? 50);
+  const [verbosity, setVerbosity] = useState(profile?.policy?.verbosity ?? 50);
+  const [riskTolerance, setRiskTolerance] = useState(profile?.policy?.riskTolerance ?? 50);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     if (!name.trim() || !systemPrompt.trim()) return;
     setSaving(true);
-    await onSave({ name: name.trim(), description: description.trim(), icon, role: role as AgentProfile['role'], systemPrompt: systemPrompt.trim() });
+    const policy: AgentPolicy = { ...(profile?.policy ?? DEFAULT_AGENT_POLICY), creativity, seriousness, verbosity, riskTolerance };
+    await onSave({ name: name.trim(), description: description.trim(), icon, role: role as AgentProfile['role'], systemPrompt: systemPrompt.trim(), policy });
     setSaving(false);
   };
 
@@ -322,6 +337,26 @@ function ProfileForm({ profile, onSave, onCancel }: {
         rows={4}
         className={cn(inputClass, 'resize-none')}
       />
+      {/* Personality */}
+      <div className="space-y-1.5">
+        <div className="text-[10px] text-text-muted uppercase tracking-wide">{t('profile.personality', 'Personality')}</div>
+        {([
+          { value: creativity, set: setCreativity, label: t('panel.creativity', 'Creativity'), low: t('panel.analytical', 'Analytical'), high: t('panel.creative', 'Creative') },
+          { value: seriousness, set: setSeriousness, label: t('panel.seriousness', 'Seriousness'), low: t('panel.casual', 'Casual'), high: t('panel.formal', 'Formal') },
+          { value: verbosity, set: setVerbosity, label: t('panel.verbosity', 'Verbosity'), low: t('panel.terse', 'Terse'), high: t('panel.detailed', 'Detailed') },
+          { value: riskTolerance, set: setRiskTolerance, label: t('panel.riskTolerance', 'Risk Tolerance'), low: t('panel.conservative', 'Conservative'), high: t('panel.aggressive', 'Aggressive') },
+        ] as const).map(({ value, set, label, low, high }) => (
+          <div key={label} className="flex items-center gap-2">
+            <label className="text-[10px] text-text-muted w-20 shrink-0">{label}</label>
+            <span className="text-[8px] text-text-muted">{low}</span>
+            <input type="range" min={0} max={100} value={value}
+              onChange={(e) => set(parseInt(e.target.value))}
+              className="flex-1 h-1 accent-accent-blue" />
+            <span className="text-[8px] text-text-muted">{high}</span>
+          </div>
+        ))}
+      </div>
+
       <div className="flex justify-end gap-2">
         <button onClick={onCancel} className="text-xs text-text-muted hover:text-text-secondary px-2 py-1">{t('common:cancel')}</button>
         <button

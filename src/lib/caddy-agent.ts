@@ -21,6 +21,25 @@ import { resolveRoutingMode, sendViaExtension, sendViaServer, sendDirectToLocal 
 import { DEFAULT_MODEL_PER_PROVIDER, MODEL_PROVIDER_MAP } from './models';
 import { getHostToolDefinitions } from './agent-hosts';
 
+// ── Tool Timeouts ─────────────────────────────────────────────────────
+
+const DEFAULT_TOOL_TIMEOUT = 60_000; // 60s default (up from 30s)
+
+/** Per-tool timeout overrides for tools that naturally take longer */
+const TOOL_TIMEOUTS: Record<string, number> = {
+  enrich_ioc: 90_000,
+  fetch_url: 90_000,
+  generate_report: 120_000,
+  search_across_investigations: 90_000,
+  compare_investigations: 90_000,
+};
+
+/** Truncate tool results and signal truncation to the LLM */
+function truncateToolResult(result: string, maxLen: number): string {
+  if (result.length <= maxLen) return result;
+  return result.substring(0, maxLen) + `\n\n[TRUNCATED: showing ${maxLen.toLocaleString()} of ${result.length.toLocaleString()} chars. Use more specific queries or filters to get complete data.]`;
+}
+
 // ── Global Concurrency Limit ───────────────────────────────────────────
 
 const MAX_CONCURRENT_CYCLES = 5;
@@ -165,8 +184,9 @@ Score: ${soul.lifetimeMetrics.performanceScore}/100 across ${soul.lifetimeMetric
 [END SOUL DATA]` : '';
 
   // Personality modifiers (clamped 0-100)
+  // Priority: deployment overrides > profile policy > investigation policy
   const personality: string[] = [];
-  const mergedPolicy = { ...policy, ...deployment?.policyOverrides };
+  const mergedPolicy = { ...policy, ...profile?.policy, ...deployment?.policyOverrides };
   const clamp = (v: number | undefined) => v !== undefined ? Math.max(0, Math.min(100, v)) : undefined;
   if (mergedPolicy.creativity !== undefined) {
     const c = clamp(mergedPolicy.creativity)!;
@@ -616,7 +636,8 @@ async function _runAgentCycleInner(
           let result: { result: string; isError: boolean };
           try {
             const toolPromise = executeTool(toolCall, folder.id, profile ? { profileId: profile.id, deploymentId: deployment?.id } : undefined);
-            const toolTimeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`Tool ${toolCall.name} timed out after 30s`)), 30_000));
+            const timeoutMs = TOOL_TIMEOUTS[toolCall.name] ?? DEFAULT_TOOL_TIMEOUT;
+            const toolTimeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`Tool ${toolCall.name} timed out after ${timeoutMs / 1000}s`)), timeoutMs));
             result = await Promise.race([toolPromise, toolTimeout]);
           } catch (toolErr) {
             result = { result: JSON.stringify({ error: String((toolErr as Error).message || toolErr) }), isError: true };
@@ -642,7 +663,7 @@ async function _runAgentCycleInner(
           toolResults.push({
             type: 'tool_result',
             tool_use_id: toolCall.id,
-            content: result.result.substring(0, 50_000),
+            content: truncateToolResult(result.result, 50_000),
             is_error: result.isError,
           });
         } else {
@@ -726,10 +747,20 @@ async function _runAgentCycleInner(
  * Execute an approved agent action that was previously proposed.
  */
 export async function executeApprovedAction(action: AgentAction): Promise<{ result: string; isError: boolean }> {
-  // Idempotency guard: re-read from DB to catch concurrent approvals
-  const fresh = await db.agentActions.get(action.id);
-  if (!fresh || fresh.status === 'executed' || fresh.status === 'failed') {
-    return { result: fresh?.resultSummary || 'Already executed', isError: false };
+  // Atomic compare-and-swap: only proceed if status is still 'pending'
+  // Use Dexie's modify with a filter to prevent concurrent execution
+  let claimed = false;
+  await db.agentActions.where('id').equals(action.id).modify((a) => {
+    if (a.status === 'pending') {
+      a.status = 'approved';
+      a.reviewedAt = Date.now();
+      claimed = true;
+    }
+  });
+
+  if (!claimed) {
+    const fresh = await db.agentActions.get(action.id);
+    return { result: fresh?.resultSummary || 'Already executed or no longer pending', isError: false };
   }
 
   const toolUse: ToolUseBlock = {
@@ -745,7 +776,6 @@ export async function executeApprovedAction(action: AgentAction): Promise<{ resu
     status: result.isError ? 'failed' : 'executed',
     resultSummary: result.result.substring(0, 500),
     executedAt: Date.now(),
-    reviewedAt: Date.now(),
   });
 
   return result;

@@ -127,13 +127,20 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
 
         if (!mountedRef.current) return;
 
+        // Per-agent status: determine folder-level status from individual results
+        const results = Array.from(multiResult.deploymentResults.values());
+        const succeeded = results.filter(r => !r.error);
+        const anyWaiting = results.some(r => r.proposed.length > 0);
+        const allFailed = results.length > 0 && succeeded.length === 0;
+
         if (multiResult.errors.length > 0) {
           setError(multiResult.errors.join('; '));
+        }
+
+        if (allFailed) {
           updateAgentStatus('error');
         } else {
           errorRetryCount.current = 0;
-          // Check if any deployment is waiting
-          const anyWaiting = Array.from(multiResult.deploymentResults.values()).some(r => r.proposed.length > 0);
           updateAgentStatus(anyWaiting ? 'waiting' : 'idle');
         }
 
