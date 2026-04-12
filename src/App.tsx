@@ -1,7 +1,10 @@
-import { useState, useCallback, useMemo, useEffect, useRef, lazy, Suspense } from 'react';
+import { useCallback, useMemo, useEffect, useRef, lazy, Suspense, type ReactNode } from 'react';
 import { AppLayout } from './components/Layout/AppLayout';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
+import { NavigationProvider, useNavigation, savedNavState } from './contexts/NavigationContext';
+import { InvestigationProvider, useInvestigation } from './contexts/InvestigationContext';
+import { UIModalProvider, useUIModals } from './contexts/UIModalContext';
 const NoteList = lazy(() => import('./components/Notes/NoteList').then(m => ({ default: m.NoteList })));
 const NoteEditor = lazy(() => import('./components/Notes/NoteEditor').then(m => ({ default: m.NoteEditor })));
 const TaskListView = lazy(() => import('./components/Tasks/TaskList').then(m => ({ default: m.TaskListView })));
@@ -29,12 +32,11 @@ import { useActivityLog } from './hooks/useActivityLog';
 import { ActivityLogContext } from './hooks/ActivityLogContext';
 import { ScreenshareContext } from './hooks/ScreenshareContext';
 import { getEffectiveClsLevels, isAboveClsThreshold } from './lib/classification';
-import { isEncryptionEnabled } from './lib/encryptionStore';
 import { clipBuffer } from './lib/clipBuffer';
 import { formatBytes, openFilePicker, getDroppedFiles, dispatchFile, type FileOpenDetail } from './lib/file-handler';
 import { hasPendingChanges } from './lib/pending-changes';
 import { useInvestigationData } from './hooks/useInvestigationData';
-import type { ViewMode, SortOption, EditorMode, Note, Task, TimelineEvent, TaskViewMode, IOCType, ChatThread, InvestigationDataMode } from './types';
+import type { ViewMode, Note, Task, TimelineEvent, ChatThread } from './types';
 import { DEFAULT_QUICK_LINKS } from './types';
 const DashboardView = lazy(() => import('./components/Dashboard/DashboardView').then(m => ({ default: m.DashboardView })));
 import { FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
@@ -48,7 +50,6 @@ import { db } from './db';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { ActiveFilterBar } from './components/Common/ActiveFilterBar';
 const InvestigationDetailPanel = lazy(() => import('./components/Investigation/InvestigationDetailPanel').then(m => ({ default: m.InvestigationDetailPanel })));
-import type { InvestigationStatus } from './types';
 const GraphView = lazy(() => import('./components/Graph/GraphView').then(m => ({ default: m.GraphView })));
 const ChatView = lazy(() => import('./components/Chat/ChatView').then(m => ({ default: m.ChatView })));
 const IOCStatsView = lazy(() => import('./components/Analysis/IOCStatsView').then(m => ({ default: m.IOCStatsView })));
@@ -57,13 +58,10 @@ const StandaloneIOCForm = lazy(() => import('./components/Analysis/StandaloneIOC
 const TrashArchiveView = lazy(() => import('./components/TrashArchive/TrashArchiveView').then(m => ({ default: m.TrashArchiveView })));
 const InvestigationsHub = lazy(() => import('./components/Investigations/InvestigationsHub').then(m => ({ default: m.InvestigationsHub })));
 const CreateInvestigationModal = lazy(() => import('./components/Investigations/CreateInvestigationModal').then(m => ({ default: m.CreateInvestigationModal })));
-import type { LayoutName } from './components/Graph/GraphCanvas';
 import { useCaddyAgent } from './hooks/useCaddyAgent';
 import { useAgentProfiles } from './hooks/useAgentProfiles';
 import { useAgentDeployments } from './hooks/useAgentDeployments';
 import { useServerAgents } from './hooks/useServerAgents';
-import { useNavigationHistory } from './hooks/useNavigationHistory';
-import type { NavState } from './hooks/useNavigationHistory';
 import { useTour } from './hooks/useTour';
 import { TourOverlay, TourGlow } from './components/Tour/TourOverlay';
 import { TourTooltip } from './components/Tour/TourTooltip';
@@ -85,8 +83,6 @@ const AgentPanel = lazy(() => import('./components/Agent/AgentPanel').then(m => 
 const AgentDashboard = lazy(() => import('./components/Agent/AgentDashboard').then(m => ({ default: m.AgentDashboard })));
 const ConflictDialog = lazy(() => import('./components/Common/ConflictDialog').then(m => ({ default: m.ConflictDialog })));
 const KeyboardShortcutsPanel = lazy(() => import('./components/Common/KeyboardShortcutsPanel').then(m => ({ default: m.KeyboardShortcutsPanel })));
-import type { InvestigationMember } from './types';
-import { fetchInvestigationMembers, fetchServerInfo } from './lib/server-api';
 const ServerOnboardingModal = lazy(() => import('./components/Settings/ServerOnboardingModal').then(m => ({ default: m.ServerOnboardingModal })));
 import { installSyncHooks, initLocalOnlyFlags } from './lib/sync-middleware';
 
@@ -97,48 +93,21 @@ import { useLoggedActions } from './hooks/useLoggedActions';
 import { useServerSync } from './hooks/useServerSync';
 import { useRemoteInvestigations } from './hooks/useRemoteInvestigations';
 
-// Parse share hash on initial load: #share=<encoded>
-function parseShareHash(): string | null {
-  const match = window.location.hash.match(/^#share=(.+)$/);
-  return match?.[1] ?? null;
-}
-const initialShareData = parseShareHash();
-
-// Parse hash deep-link on initial load: #entity=note:xxx, #entity=task:xxx, #entity=event:xxx
-function parseEntityHash(): { type: 'note' | 'task' | 'event'; id: string } | null {
-  // Don't parse entity hash if we have a share hash
-  if (initialShareData) return null;
-  const match = window.location.hash.match(/^#entity=(note|task|event):(.+)$/);
-  if (!match) return null;
-  // Clear the hash after reading
-  history.replaceState(null, '', location.pathname + location.search);
-  return { type: match[1] as 'note' | 'task' | 'event', id: match[2] };
-}
-
-const initialDeepLink = parseEntityHash();
-
-const NAV_STORAGE_KEY = 'threatcaddy-nav-state';
-
-function loadNavState(): NavState | null {
-  try {
-    const raw = sessionStorage.getItem(NAV_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-const savedNavState = loadNavState();
 
 export default function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <AppInner />
+        <AppDataLayer />
       </ToastProvider>
     </AuthProvider>
   );
 }
 
-function AppInner() {
+// ─── AppDataLayer ─────────────────────────────────────────────────────
+// Calls data/server hooks and renders: InvestigationProvider → NavigationBridge → UIModalProvider → AppInner
+
+function AppDataLayer() {
   const { settings, updateSettings, toggleTheme } = useSettings();
   const { addToast } = useToast();
   const { t: tt } = useTranslation('toast');
@@ -153,12 +122,6 @@ function AppInner() {
   const { tags, createTag, updateTag, deleteTag, reload: reloadTags } = useTags();
   const noteTemplatesHook = useNoteTemplates();
   const playbooksHook = usePlaybooks();
-
-  const tour = useTour({
-    onComplete: () => updateSettings({ tourCompleted: true }),
-    onNavigate: (view) => setActiveView(view),
-    onShowSettings: (show) => setShowSettings(show),
-  });
 
   const activityLog = useActivityLog();
 
@@ -214,73 +177,284 @@ function AppInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notes.reload, tasks.reload, timeline.reload, standaloneIOCsHook.reload]);
 
-
   const syncedFolderIds = useMemo(() => {
     const localIds = new Set(folders.map(f => f.id));
     return new Set(remoteInvestigations.filter(r => localIds.has(r.folderId)).map(r => r.folderId));
   }, [folders, remoteInvestigations]);
 
-  // Server onboarding modal — show once per server URL on first connection
-  const [showServerOnboarding, setShowServerOnboarding] = useState(false);
-  const [serverOnboardingName, setServerOnboardingName] = useState('your team server');
-  const serverOnboardingCheckedRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!auth.connected || !auth.serverUrl) return;
-    // Already checked this URL during this session
-    if (serverOnboardingCheckedRef.current === auth.serverUrl) return;
-    serverOnboardingCheckedRef.current = auth.serverUrl;
-    const key = `tc-server-onboarded-${auth.serverUrl}`;
-    if (localStorage.getItem(key)) return;
-    // Fetch server name then show the modal
-    const url = auth.serverUrl;
-    fetchServerInfo()
-      .then((info) => setServerOnboardingName(info.serverName || url))
-      .catch(() => setServerOnboardingName(url))
-      .finally(() => setShowServerOnboarding(true));
-  }, [auth.connected, auth.serverUrl]);
-
-  const handleDismissServerOnboarding = useCallback(() => {
-    if (auth.serverUrl) {
-      localStorage.setItem(`tc-server-onboarded-${auth.serverUrl}`, '1');
-    }
-    setShowServerOnboarding(false);
-  }, [auth.serverUrl]);
-
-  // Share receiver state — listen for hash changes to support re-navigation
-  const [shareData, setShareData] = useState<string | null>(initialShareData);
-  useEffect(() => {
-    const handleHashChange = () => {
-      const data = parseShareHash();
-      if (data) setShareData(data);
-    };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
-  // Mobile exec mode
   const isMobile = useIsMobile();
-  const [forceAnalystMode, setForceAnalystMode] = useState(() =>
-    typeof sessionStorage !== 'undefined' && sessionStorage.getItem('tc-analyst-mode') === '1',
-  );
-  useEffect(() => {
-    if (forceAnalystMode) sessionStorage.setItem('tc-analyst-mode', '1');
-    else sessionStorage.removeItem('tc-analyst-mode');
-  }, [forceAnalystMode]);
 
-  // Deep links force analyst mode on mobile so the target entity is reachable
-  useEffect(() => {
-    if (initialDeepLink && isMobile) setForceAnalystMode(true);
-  }, [isMobile]);
+  // Compute safe default view from settings for NavigationProvider
+  const safeDefaultView = settings.defaultView === 'dashboard' || settings.defaultView === 'notes' || settings.defaultView === 'tasks' || settings.defaultView === 'timeline' || settings.defaultView === 'whiteboard' || settings.defaultView === 'activity' || settings.defaultView === 'graph' || settings.defaultView === 'ioc-stats' || settings.defaultView === 'chat' || settings.defaultView === 'caddyshack' || settings.defaultView === 'investigations' ? settings.defaultView : 'notes';
 
-  // Standalone file:// encryption warning — dismissible via localStorage
-  const [showFileEncryptionWarning] = useState(() =>
-    typeof __STANDALONE__ !== 'undefined' && __STANDALONE__
-    && window.location.protocol === 'file:'
-    && !isEncryptionEnabled()
-    && localStorage.getItem('tc-file-encrypt-dismissed') !== '1',
+  return (
+    <InvestigationProvider
+      folders={folders}
+      tags={tags}
+      authConnected={auth.connected}
+      initialSelectedFolderId={savedNavState?.selectedFolderId}
+      onReloadAll={reloadAll}
+      onRefreshRemote={refreshRemote}
+    >
+      <UIModalProvider
+        authConnected={auth.connected}
+        authServerUrl={auth.serverUrl ?? undefined}
+        isMobile={isMobile}
+      >
+        <NavigationBridge
+          folders={folders}
+          timelineEvents={timeline.events}
+          initialSettings={settings}
+          updateSettings={updateSettings}
+          defaultView={safeDefaultView}
+        >
+          <AppInner
+            settings={settings}
+            updateSettings={updateSettings}
+            toggleTheme={toggleTheme}
+            addToast={addToast}
+            tt={tt}
+            notes={notes}
+            tasks={tasks}
+            timeline={timeline}
+            timelines={timelines}
+            createTimeline={createTimeline}
+            updateTimeline={updateTimeline}
+            deleteTimeline={deleteTimeline}
+            reloadTimelines={reloadTimelines}
+            whiteboards={whiteboards}
+            createWhiteboard={createWhiteboard}
+            updateWhiteboard={updateWhiteboard}
+            deleteWhiteboard={deleteWhiteboard}
+            trashWhiteboard={trashWhiteboard}
+            restoreWhiteboard={restoreWhiteboard}
+            toggleArchiveWhiteboard={toggleArchiveWhiteboard}
+            emptyTrashWhiteboards={emptyTrashWhiteboards}
+            getFilteredWhiteboards={getFilteredWhiteboards}
+            whiteboardCounts={whiteboardCounts}
+            reloadWhiteboards={reloadWhiteboards}
+            standaloneIOCsHook={standaloneIOCsHook}
+            chatsHook={chatsHook}
+            folders={folders}
+            foldersLoading={foldersLoading}
+            createFolder={createFolder}
+            findOrCreateFolder={findOrCreateFolder}
+            updateFolder={updateFolder}
+            deleteFolder={deleteFolder}
+            deleteFolderWithContents={deleteFolderWithContents}
+            trashFolderContents={trashFolderContents}
+            archiveFolder={archiveFolder}
+            unarchiveFolder={unarchiveFolder}
+            reloadFolders={reloadFolders}
+            tags={tags}
+            createTag={createTag}
+            updateTag={updateTag}
+            deleteTag={deleteTag}
+            reloadTags={reloadTags}
+            noteTemplatesHook={noteTemplatesHook}
+            playbooksHook={playbooksHook}
+            activityLog={activityLog}
+            auth={auth}
+            remoteInvestigations={remoteInvestigations}
+            remoteLoading={remoteLoading}
+            refreshRemote={refreshRemote}
+            presenceUsers={presenceUsers}
+            syncConflicts={syncConflicts}
+            setSyncConflicts={setSyncConflicts}
+            handleResolveConflict={handleResolveConflict}
+            handleResolveAllConflicts={handleResolveAllConflicts}
+            reloadAll={reloadAll}
+            syncedFolderIds={syncedFolderIds}
+            isMobile={isMobile}
+          />
+        </NavigationBridge>
+      </UIModalProvider>
+    </InvestigationProvider>
   );
-  const [fileEncryptionDismissed, setFileEncryptionDismissed] = useState(false);
+}
+
+// ─── NavigationBridge ─────────────────────────────────────────────────
+// Reads InvestigationContext to pass selectedFolderId & clearFilters to NavigationProvider
+
+function NavigationBridge({ folders, timelineEvents, initialSettings, updateSettings, defaultView, children }: {
+  folders: import('./types').Folder[];
+  timelineEvents: import('./types').TimelineEvent[];
+  initialSettings: Pick<import('./types').Settings, 'editorMode' | 'taskViewMode' | 'noteListCollapsed'>;
+  updateSettings: (s: Partial<import('./types').Settings>) => void;
+  defaultView: import('./types').ViewMode;
+  children: ReactNode;
+}) {
+  const { selectedFolderId, clearFilters, setSelectedFolderId } = useInvestigation();
+  const uiModals = useUIModals();
+
+  return (
+    <NavigationProvider
+      folders={folders}
+      selectedFolderId={selectedFolderId}
+      timelineEvents={timelineEvents}
+      initialSettings={initialSettings}
+      updateSettings={updateSettings}
+      onClearFilters={clearFilters}
+      onCloseSettings={uiModals.closeSettings}
+      onRestoreFolderId={setSelectedFolderId}
+      defaultView={defaultView}
+    >
+      {children}
+    </NavigationProvider>
+  );
+}
+
+// ─── AppInner Props ───────────────────────────────────────────────────
+// Entity hooks and other data passed down from AppDataLayer.
+// Using ReturnType for hooks to keep this type in sync automatically.
+
+type AppInnerProps = {
+  settings: ReturnType<typeof useSettings>['settings'];
+  updateSettings: ReturnType<typeof useSettings>['updateSettings'];
+  toggleTheme: ReturnType<typeof useSettings>['toggleTheme'];
+  addToast: ReturnType<typeof useToast>['addToast'];
+  tt: ReturnType<typeof useTranslation>['t'];
+  notes: ReturnType<typeof useNotes>;
+  tasks: ReturnType<typeof useTasks>;
+  timeline: ReturnType<typeof useTimeline>;
+  timelines: ReturnType<typeof useTimelines>['timelines'];
+  createTimeline: ReturnType<typeof useTimelines>['createTimeline'];
+  updateTimeline: ReturnType<typeof useTimelines>['updateTimeline'];
+  deleteTimeline: ReturnType<typeof useTimelines>['deleteTimeline'];
+  reloadTimelines: ReturnType<typeof useTimelines>['reload'];
+  whiteboards: ReturnType<typeof useWhiteboards>['whiteboards'];
+  createWhiteboard: ReturnType<typeof useWhiteboards>['createWhiteboard'];
+  updateWhiteboard: ReturnType<typeof useWhiteboards>['updateWhiteboard'];
+  deleteWhiteboard: ReturnType<typeof useWhiteboards>['deleteWhiteboard'];
+  trashWhiteboard: ReturnType<typeof useWhiteboards>['trashWhiteboard'];
+  restoreWhiteboard: ReturnType<typeof useWhiteboards>['restoreWhiteboard'];
+  toggleArchiveWhiteboard: ReturnType<typeof useWhiteboards>['toggleArchiveWhiteboard'];
+  emptyTrashWhiteboards: ReturnType<typeof useWhiteboards>['emptyTrashWhiteboards'];
+  getFilteredWhiteboards: ReturnType<typeof useWhiteboards>['getFilteredWhiteboards'];
+  whiteboardCounts: ReturnType<typeof useWhiteboards>['whiteboardCounts'];
+  reloadWhiteboards: ReturnType<typeof useWhiteboards>['reload'];
+  standaloneIOCsHook: ReturnType<typeof useStandaloneIOCs>;
+  chatsHook: ReturnType<typeof useChats>;
+  folders: ReturnType<typeof useFolders>['folders'];
+  foldersLoading: boolean;
+  createFolder: ReturnType<typeof useFolders>['createFolder'];
+  findOrCreateFolder: ReturnType<typeof useFolders>['findOrCreateFolder'];
+  updateFolder: ReturnType<typeof useFolders>['updateFolder'];
+  deleteFolder: ReturnType<typeof useFolders>['deleteFolder'];
+  deleteFolderWithContents: ReturnType<typeof useFolders>['deleteFolderWithContents'];
+  trashFolderContents: ReturnType<typeof useFolders>['trashFolderContents'];
+  archiveFolder: ReturnType<typeof useFolders>['archiveFolder'];
+  unarchiveFolder: ReturnType<typeof useFolders>['unarchiveFolder'];
+  reloadFolders: ReturnType<typeof useFolders>['reload'];
+  tags: ReturnType<typeof useTags>['tags'];
+  createTag: ReturnType<typeof useTags>['createTag'];
+  updateTag: ReturnType<typeof useTags>['updateTag'];
+  deleteTag: ReturnType<typeof useTags>['deleteTag'];
+  reloadTags: ReturnType<typeof useTags>['reload'];
+  noteTemplatesHook: ReturnType<typeof useNoteTemplates>;
+  playbooksHook: ReturnType<typeof usePlaybooks>;
+  activityLog: ReturnType<typeof useActivityLog>;
+  auth: ReturnType<typeof useAuth>;
+  remoteInvestigations: ReturnType<typeof useRemoteInvestigations>['remoteInvestigations'];
+  remoteLoading: boolean;
+  refreshRemote: ReturnType<typeof useRemoteInvestigations>['refresh'];
+  presenceUsers: ReturnType<typeof useServerSync>['presenceUsers'];
+  syncConflicts: ReturnType<typeof useServerSync>['syncConflicts'];
+  setSyncConflicts: ReturnType<typeof useServerSync>['setSyncConflicts'];
+  handleResolveConflict: ReturnType<typeof useServerSync>['handleResolveConflict'];
+  handleResolveAllConflicts: ReturnType<typeof useServerSync>['handleResolveAllConflicts'];
+  reloadAll: () => void;
+  syncedFolderIds: Set<string>;
+  isMobile: boolean;
+};
+
+// ─── AppInner ─────────────────────────────────────────────────────────
+// Consumes context hooks, contains filtering, callbacks, and JSX
+
+function AppInner({
+  settings, updateSettings, toggleTheme,
+  addToast, tt,
+  notes, tasks, timeline,
+  timelines, createTimeline, updateTimeline, deleteTimeline, reloadTimelines,
+  whiteboards, createWhiteboard, updateWhiteboard, deleteWhiteboard,
+  trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard,
+  emptyTrashWhiteboards, getFilteredWhiteboards, whiteboardCounts, reloadWhiteboards,
+  standaloneIOCsHook, chatsHook,
+  folders, foldersLoading, createFolder, findOrCreateFolder, updateFolder, deleteFolder,
+  deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder, reloadFolders,
+  tags, createTag, updateTag, deleteTag, reloadTags,
+  noteTemplatesHook, playbooksHook,
+  activityLog, auth,
+  remoteInvestigations, remoteLoading,
+  presenceUsers, syncConflicts, setSyncConflicts, handleResolveConflict, handleResolveAllConflicts,
+  reloadAll, syncedFolderIds, isMobile,
+}: AppInnerProps) {
+  // ─── Context hooks ────────────────────────────────────────────────
+  const nav = useNavigation();
+  const inv = useInvestigation();
+  const ui = useUIModals();
+
+  // Destructure frequently-used context values
+  const {
+    activeView, setActiveView, selectedNoteId, setSelectedNoteId,
+    selectedTimelineId, setSelectedTimelineId, selectedWhiteboardId, setSelectedWhiteboardId,
+    selectedChatThreadId, setSelectedChatThreadId,
+    sort, setSort, editorMode, setEditorMode, taskViewMode, setTaskViewMode,
+    graphLayout, setGraphLayout, noteListWidth, noteListCollapsed,
+    noteListDragging, notesContainerRef, noteNavGraceRef,
+    pendingNewTask, setPendingNewTask, pendingNewEvent, setPendingNewEvent,
+    navigateTo, handleNoteListDragStart, toggleNoteListCollapse, handleToggleEditorMode,
+    initialDeepLink,
+  } = nav;
+
+  const {
+    selectedFolderId, setSelectedFolderId,
+    investigationMode,
+    selectedTag, setSelectedTag,
+    showTrash, setShowTrash, showArchive, setShowArchive,
+    selectedIOCTypes, setSelectedIOCTypes,
+    editingFolderId, setEditingFolderId,
+    folderStatusFilter, setFolderStatusFilter,
+    selectedFolder, selectedTagObj, editingFolder,
+    investigationMembers, agentPendingCount,
+    syncingFolderId, confirmUnsyncId, setConfirmUnsyncId,
+    handleOpenInvestigation: ctxHandleOpenInvestigation, handleSyncLocally, handleUnsyncConfirmed, handleUnsync,
+  } = inv;
+
+  const {
+    showSettings, settingsInitialTab, openSettings, closeSettings,
+    showQuickCapture, setShowQuickCapture,
+    showPlaybookPicker, setShowPlaybookPicker,
+    playbookApplyFolderId, setPlaybookApplyFolderId,
+    showIOCForm, setShowIOCForm,
+    showDataImport, setShowDataImport,
+    searchOverlayOpen, setSearchOverlayOpen,
+    showDemoModal, setShowDemoModal,
+    showCreateInvestigationModal, setShowCreateInvestigationModal,
+    showNameGenerator, setShowNameGenerator,
+    showShortcutsPanel, setShowShortcutsPanel,
+    mobileSidebarOpen, setMobileSidebarOpen,
+    forceAnalystMode, setForceAnalystMode,
+    screenshareMaxLevel, setScreenshareMaxLevel,
+    pendingImportFile, setPendingImportFile,
+    shareLinkPayload, setShareLinkPayload,
+    shareData, setShareData,
+    showServerOnboarding, serverOnboardingName, dismissServerOnboarding,
+    showFileEncryptionWarning, fileEncryptionDismissed, dismissFileEncryptionWarning,
+  } = ui;
+
+  // Wrap InvestigationContext's handleOpenInvestigation to add navigation
+  // (InvestigationProvider can't receive navigateTo because NavigationProvider is nested inside it)
+  const handleOpenInvestigation = useCallback((folderId: string, mode: import('./types').InvestigationDataMode) => {
+    ctxHandleOpenInvestigation(folderId, mode);
+    navigateTo('notes');
+  }, [ctxHandleOpenInvestigation, navigateTo]);
+
+  const tour = useTour({
+    onComplete: () => updateSettings({ tourCompleted: true }),
+    onNavigate: (view) => setActiveView(view),
+    onShowSettings: (show) => { if (show) openSettings(); else closeSettings(); },
+  });
 
   // Instrumented wrappers for activity logging
   const {
@@ -313,84 +487,7 @@ function AppInner() {
     { tags, createTag, deleteTag },
   );
 
-  // UI state — guard against stale 'clips' defaultView in localStorage
-  const safeDefaultView: ViewMode = settings.defaultView === 'dashboard' || settings.defaultView === 'notes' || settings.defaultView === 'tasks' || settings.defaultView === 'timeline' || settings.defaultView === 'whiteboard' || settings.defaultView === 'activity' || settings.defaultView === 'graph' || settings.defaultView === 'ioc-stats' || settings.defaultView === 'chat' || settings.defaultView === 'caddyshack' || settings.defaultView === 'investigations' ? settings.defaultView : 'notes';
-  const deepLinkView: ViewMode | undefined = initialDeepLink
-    ? initialDeepLink.type === 'note' ? 'notes' : initialDeepLink.type === 'task' ? 'tasks' : 'timeline'
-    : undefined;
-  const [activeView, setActiveView] = useState<ViewMode>(deepLinkView ?? savedNavState?.view ?? safeDefaultView);
-  const [selectedNoteId, setSelectedNoteId] = useState<string | undefined>(
-    initialDeepLink?.type === 'note' ? initialDeepLink.id : savedNavState?.selectedNoteId,
-  );
-  // Grace period to prevent auto-deselect from racing with Dexie live query after note creation
-  const noteNavGraceRef = useRef(false);
-  const [selectedFolderId, setSelectedFolderIdRaw] = useState<string | undefined>(savedNavState?.selectedFolderId);
-  const [investigationMode, setInvestigationMode] = useState<InvestigationDataMode>('local');
-
-  // Wrapper that resets investigationMode to 'local' when clearing folder selection
-  const setSelectedFolderId = useCallback((id: string | undefined) => {
-    setSelectedFolderIdRaw(id);
-    if (!id) setInvestigationMode('local');
-    // Keep agent bridge in sync with the selected investigation
-    import('./lib/agent-bridge').then(m => m.syncBridgeFolderId(id)).catch(() => {});
-  }, []);
-
-  // Agent pending action count for sidebar badge — only re-query on folder change or agent view
-  const [agentPendingCount, setAgentPendingCount] = useState(0);
-  useEffect(() => {
-    if (!selectedFolderId) { setAgentPendingCount(0); return; }
-    db.agentActions.where('[investigationId+status]').equals([selectedFolderId, 'pending']).count()
-      .then(setAgentPendingCount).catch(() => setAgentPendingCount(0));
-  }, [selectedFolderId]);
-
-  const [selectedTag, setSelectedTag] = useState<string>();
-  const [showTrash, setShowTrash] = useState(false);
-  const [showArchive, setShowArchive] = useState(false);
-  const [searchOverlayOpen, setSearchOverlayOpen] = useState(false);
-  const [sort, setSort] = useState<SortOption>('updatedAt');
-  const [editorMode, setEditorMode] = useState<EditorMode>(settings.editorMode);
-  const [taskViewMode, setTaskViewMode] = useState<TaskViewMode>(settings.taskViewMode);
-  const [showQuickCapture, setShowQuickCapture] = useState(false);
-  const [showPlaybookPicker, setShowPlaybookPicker] = useState(false);
-  const [playbookApplyFolderId, setPlaybookApplyFolderId] = useState<string | undefined>();
-  const [showSettings, setShowSettings] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<string | undefined>(undefined);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
-  const [shareLinkPayload, setShareLinkPayload] = useState<SharePayload | null>(null);
-  const [selectedIOCTypes, setSelectedIOCTypes] = useState<IOCType[]>([]);
-  const [noteListWidth, setNoteListWidth] = useState(288); // md:w-72 = 288px
-  const [noteListCollapsed, setNoteListCollapsed] = useState(settings.noteListCollapsed ?? false);
-  const [noteListDragging, setNoteListDragging] = useState(false);
-  const notesContainerRef = useRef<HTMLDivElement>(null);
-  const [selectedTimelineId, setSelectedTimelineId] = useState<string | undefined>(savedNavState?.selectedTimelineId);
-  const [selectedWhiteboardId, setSelectedWhiteboardId] = useState<string | undefined>(savedNavState?.selectedWhiteboardId);
-  const [selectedChatThreadId, setSelectedChatThreadId] = useState<string | undefined>(() => {
-    try { return sessionStorage.getItem('tc-chat-thread') || undefined; } catch { return undefined; }
-  });
-  const [graphLayout, setGraphLayout] = useState<LayoutName>('cose-bilkent');
-  const [screenshareMaxLevel, setScreenshareMaxLevel] = useState<string | null>(null);
-  const [editingFolderId, setEditingFolderId] = useState<string | undefined>();
-  const [folderStatusFilter, setFolderStatusFilter] = useState<InvestigationStatus[]>(['active']);
-  const [showDemoModal, setShowDemoModal] = useState(false);
-  const [showCreateInvestigationModal, setShowCreateInvestigationModal] = useState(false);
-  const [showNameGenerator, setShowNameGenerator] = useState(false);
-  const [showShortcutsPanel, setShowShortcutsPanel] = useState(false);
-  const [syncingFolderId, setSyncingFolderId] = useState<string | null>(null);
-  const [confirmUnsyncId, setConfirmUnsyncId] = useState<string | null>(null);
   const demoProcessedRef = useRef(false);
-
-  // Fetch investigation members for task assignee support
-  const [investigationMembers, setInvestigationMembers] = useState<InvestigationMember[]>([]);
-  useEffect(() => {
-    if (!auth.connected || !selectedFolderId) {
-      setInvestigationMembers([]);
-      return;
-    }
-    fetchInvestigationMembers(selectedFolderId)
-      .then((data) => setInvestigationMembers(data))
-      .catch(() => setInvestigationMembers([]));
-  }, [auth.connected, selectedFolderId]);
 
   // Warn before closing tab with unsaved editor changes
   useEffect(() => {
@@ -405,104 +502,12 @@ function AppInner() {
 
   const effectiveClsLevels = useMemo(() => getEffectiveClsLevels(settings.tiClsLevels), [settings.tiClsLevels]);
 
-  // Browser back/forward navigation
-  const handleNavRestore = useCallback((state: NavState) => {
-    setActiveView(state.view);
-    if (state.selectedNoteId !== undefined) setSelectedNoteId(state.selectedNoteId);
-    if (state.selectedTimelineId !== undefined) setSelectedTimelineId(state.selectedTimelineId);
-    if (state.selectedWhiteboardId !== undefined) setSelectedWhiteboardId(state.selectedWhiteboardId);
-    if (state.selectedFolderId !== undefined) setSelectedFolderId(state.selectedFolderId);
-    setShowSettings(false);
-  }, [setSelectedFolderId]);
-  const { navigate: navPush } = useNavigationHistory({ onViewChange: handleNavRestore });
-
-  // Persist navigation state to sessionStorage for refresh restoration
-  useEffect(() => {
-    sessionStorage.setItem(NAV_STORAGE_KEY, JSON.stringify({
-      view: activeView,
-      selectedNoteId,
-      selectedFolderId,
-      selectedTimelineId,
-      selectedWhiteboardId,
-    }));
-  }, [activeView, selectedNoteId, selectedFolderId, selectedTimelineId, selectedWhiteboardId]);
-
-  // Persist chat thread selection
-  useEffect(() => {
-    if (selectedChatThreadId) sessionStorage.setItem('tc-chat-thread', selectedChatThreadId);
-    else sessionStorage.removeItem('tc-chat-thread');
-  }, [selectedChatThreadId]);
-
   const loggedTrashChatThread = useCallback(async (id: string) => {
     const thread = chatsHook.threads.find((t) => t.id === id);
     await chatsHook.trashThread(id);
     activityLog.log('chat', 'trash', `Trashed chat thread "${thread?.title || 'Untitled'}"`, id, thread?.title);
     if (selectedChatThreadId === id) setSelectedChatThreadId(undefined);
-  }, [chatsHook, activityLog, selectedChatThreadId]);
-
-  const navigateTo = useCallback((view: ViewMode, opts?: { selectedNoteId?: string; selectedTimelineId?: string; selectedWhiteboardId?: string }) => {
-    setActiveView(view);
-    setShowSettings(false);
-    // Auto-select investigation timeline when switching to timeline view
-    if (view === 'timeline' && !opts?.selectedTimelineId && selectedFolderId) {
-      const folder = folders.find((f) => f.id === selectedFolderId);
-      if (folder?.timelineId) {
-        setSelectedTimelineId(folder.timelineId);
-        navPush({ view, ...opts, selectedTimelineId: folder.timelineId });
-        return;
-      }
-    }
-    navPush({ view, ...opts });
-  }, [navPush, selectedFolderId, folders]);
-
-  // ─── Investigation Hub handlers ──────────────────────────────────
-  const handleOpenInvestigation = useCallback((folderId: string, mode: InvestigationDataMode) => {
-    setSelectedFolderId(folderId);
-    setInvestigationMode(mode);
-    navigateTo('notes');
-  }, [navigateTo, setSelectedFolderId]);
-
-  const handleSyncLocally = useCallback(async (folderId: string) => {
-    setSyncingFolderId(folderId);
-    try {
-      const { syncEngine } = await import('./lib/sync-engine');
-      await syncEngine.pullFolder(folderId);
-      reloadAll();
-      refreshRemote();
-      setInvestigationMode('synced');
-    } catch (err) {
-      console.error('Failed to sync investigation locally:', err);
-    } finally {
-      setSyncingFolderId(null);
-    }
-  }, [reloadAll, refreshRemote]);
-
-  const handleUnsyncConfirmed = useCallback(async (folderId: string) => {
-    setSyncingFolderId(folderId);
-    try {
-      await Promise.all([
-        db.notes.where('folderId').equals(folderId).delete(),
-        db.tasks.where('folderId').equals(folderId).delete(),
-        db.timelineEvents.where('folderId').equals(folderId).delete(),
-        db.whiteboards.where('folderId').equals(folderId).delete(),
-        db.standaloneIOCs.where('folderId').equals(folderId).delete(),
-        db.chatThreads.where('folderId').equals(folderId).delete(),
-      ]);
-      await db.folders.delete(folderId);
-      if (selectedFolderId === folderId) {
-        setSelectedFolderId(undefined);
-      }
-      reloadAll();
-    } catch (err) {
-      console.error('Failed to unsync investigation:', err);
-    } finally {
-      setSyncingFolderId(null);
-    }
-  }, [selectedFolderId, setSelectedFolderId, reloadAll]);
-
-  const handleUnsync = useCallback((folderId: string) => {
-    setConfirmUnsyncId(folderId);
-  }, []);
+  }, [chatsHook, activityLog, selectedChatThreadId, setSelectedChatThreadId]);
 
   // Resolve timeline deep-link once events are loaded
   const deepLinkTimelineResolved = useCallback(() => {
@@ -1003,9 +1008,6 @@ function AppInner() {
     navigateTo('notes', { selectedNoteId: note.id });
   }, [loggedCreateNote, selectedFolderId, showQuickCapture, navigateTo, folders]);
 
-  const [pendingNewTask, setPendingNewTask] = useState(false);
-  const [pendingNewEvent, setPendingNewEvent] = useState(false);
-
   const handleNewTask = useCallback(async () => {
     setShowTrash(false);
     setShowArchive(false);
@@ -1026,49 +1028,15 @@ function AppInner() {
     navigateTo('whiteboard', { selectedWhiteboardId: wb.id });
   }, [loggedCreateWhiteboard, selectedFolderId, navigateTo]);
 
-  const [showIOCForm, setShowIOCForm] = useState(false);
-
   const handleNewIOC = useCallback(() => {
     setShowIOCForm(true);
-  }, []);
+  }, [setShowIOCForm]);
 
   const handleShareNoteLink = useCallback((note: Note) => {
     setShareLinkPayload({ v: 1, s: 'note', t: Date.now(), d: note });
   }, []);
 
   // ─── Note list resize ────────────────────────────────────────
-  const handleNoteListDragStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setNoteListDragging(true);
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-
-    const onMove = (ev: MouseEvent) => {
-      const container = notesContainerRef.current;
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
-      const w = Math.min(480, Math.max(180, ev.clientX - rect.left));
-      setNoteListWidth(w);
-      setNoteListCollapsed(false);
-    };
-    const onUp = () => {
-      setNoteListDragging(false);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  }, []);
-
-  const toggleNoteListCollapse = useCallback(() => {
-    setNoteListCollapsed(prev => {
-      updateSettings({ noteListCollapsed: !prev });
-      return !prev;
-    });
-  }, [updateSettings]);
-
   const handleShareInvestigationLink = useCallback((folderId: string) => {
     const folder = folders.find((f) => f.id === folderId);
     if (!folder) return;
@@ -1137,8 +1105,6 @@ function AppInner() {
     }
   }, [reloadAll, notes, tasks, timeline, chatsHook, addToast]);
 
-  const [showDataImport, setShowDataImport] = useState(false);
-
   const handleDataImportComplete = useCallback((result: ImportResult) => {
     activityLog.log(
       'data',
@@ -1175,14 +1141,6 @@ function AppInner() {
   const handleImportComplete = useCallback(() => {
     reloadAll();
   }, [reloadAll]);
-
-  const handleToggleEditorMode = useCallback(() => {
-    setEditorMode((prev) => {
-      const modes: EditorMode[] = ['edit', 'split', 'preview'];
-      const nextIndex = (modes.indexOf(prev) + 1) % modes.length;
-      return modes[nextIndex];
-    });
-  }, []);
 
   const handleQuickSave = useCallback(async () => {
     try {
@@ -1346,11 +1304,7 @@ function AppInner() {
     onTogglePreview: handleToggleEditorMode,
     onSwitchView: (view) => { navigateTo(view); },
     onEscape: () => {
-      setSearchOverlayOpen(false);
-      setShowQuickCapture(false);
-      setShowSettings(false);
-      setShowShortcutsPanel(false);
-      setMobileSidebarOpen(false);
+      ui.closeAllModals();
     },
     onShowShortcuts: () => setShowShortcutsPanel(true),
   });
@@ -1382,7 +1336,7 @@ function AppInner() {
     onArchiveFolder: (id: string) => { loggedArchiveFolder(id); },
     onUnarchiveFolder: (id: string) => { loggedUnarchiveFolder(id); },
     onRenameFolder: (id: string, name: string) => updateFolder(id, { name }),
-    onOpenSettings: () => { setShowSettings(true); },
+    onOpenSettings: () => { openSettings(); },
     noteCounts: { ...noteCounts, trashed: combinedTrashedCount, archived: combinedArchivedCount },
     taskCounts: tasks.taskCounts,
     timelineCounts: timeline.eventCounts,
@@ -1413,8 +1367,6 @@ function AppInner() {
     onNewFromPlaybook: () => setShowPlaybookPicker(true),
   }), [activeView, folders, tags, auth.connected, selectedFolderId, setSelectedFolderId, selectedTag, showTrash, showArchive, loggedCreateFolder, loggedDeleteFolder, loggedTrashFolderContents, loggedArchiveFolder, loggedUnarchiveFolder, updateFolder, noteCounts, combinedTrashedCount, combinedArchivedCount, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, loggedCreateTimeline, loggedDeleteTimeline, updateTimeline, timelineEventCounts, whiteboards, selectedWhiteboardId, loggedCreateWhiteboard, loggedDeleteWhiteboard, updateWhiteboard, whiteboardCounts, handleMoveNoteToFolder, updateTag, loggedDeleteTag, navigateTo, folderStatusFilter, investigationScopedCounts, chatsHook.threadCounts.total, agentPendingCount]);
 
-  const selectedFolder = useMemo(() => folders.find((f) => f.id === selectedFolderId), [folders, selectedFolderId]);
-
   // CaddyAgent hook — manages auto-repeating loop
   const caddyAgent = useCaddyAgent({
     folder: selectedFolder,
@@ -1431,8 +1383,6 @@ function AppInner() {
     enabled: agentDeploymentsHook.deployments.some(d => d.serverSideEnabled),
   });
 
-  const selectedTagObj = useMemo(() => tags.find((t) => t.name === selectedTag), [tags, selectedTag]);
-  const editingFolder = useMemo(() => folders.find((f) => f.id === editingFolderId), [folders, editingFolderId]);
   const investigationEntityCounts = useMemo(() => {
     if (!editingFolderId) return { notes: 0, tasks: 0, events: 0, whiteboards: 0 };
     return {
@@ -1533,7 +1483,7 @@ function AppInner() {
             Running standalone on file:// without encryption. Other local HTML files can access your data.
             Content Security Policy is not enforced in standalone mode.{' '}
             <button
-              onClick={() => { setShowSettings(true); }}
+              onClick={() => { openSettings(); }}
               className="underline text-yellow-200 font-medium"
             >
               Enable encryption
@@ -1541,10 +1491,7 @@ function AppInner() {
             in Settings to protect it.
           </span>
           <button
-            onClick={() => {
-              localStorage.setItem('tc-file-encrypt-dismissed', '1');
-              setFileEncryptionDismissed(true);
-            }}
+            onClick={dismissFileEncryptionWarning}
             className="text-yellow-400 hover:text-yellow-200 font-medium whitespace-nowrap"
           >
             Dismiss
@@ -1626,7 +1573,7 @@ function AppInner() {
             sampleLoaded={sampleLoaded}
             onLoadSample={handleLoadSample}
             onDeleteSample={handleDeleteSample}
-            onClose={() => { setShowSettings(false); setSettingsInitialTab(undefined); }}
+            onClose={() => { closeSettings(); }}
             initialTab={settingsInitialTab as 'general' | 'ai' | 'data' | 'templates' | 'intel' | 'integrations' | 'shortcuts' | undefined}
             templateProps={{
               templates: noteTemplatesHook.templates,
@@ -1718,7 +1665,7 @@ function AppInner() {
             onTrashIOC={loggedTrashIOC}
             onRestoreIOC={loggedRestoreIOC}
             onToggleArchiveIOC={loggedToggleArchiveIOC}
-            onOpenSettings={() => { setSettingsInitialTab('integrations'); setShowSettings(true); }}
+            onOpenSettings={() => { openSettings('integrations'); }}
             onNavigateToSource={(sourceType, sourceId) => {
               if (sourceType === 'note') {
                 noteNavGraceRef.current = true;
@@ -1847,7 +1794,7 @@ function AppInner() {
                 setActiveView('notes');
               }}
               onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); chatsHook.reload(); }}
-              onOpenSettings={(tab) => { setSettingsInitialTab(tab); setShowSettings(true); }}
+              onOpenSettings={(tab) => { openSettings(tab); }}
               onFolderChanged={reloadFolders}
               profiles={agentProfilesHook.profiles}
               deployments={agentDeploymentsHook.deployments}
@@ -1866,7 +1813,7 @@ function AppInner() {
                 setSelectedFolderId(folderId);
                 setActiveView('agent');
               }}
-              onOpenSettings={(tab) => { setSettingsInitialTab(tab); setShowSettings(true); }}
+              onOpenSettings={(tab) => { openSettings(tab); }}
             />
           )
         ) : activeView === 'tasks' ? (
@@ -2055,7 +2002,7 @@ function AppInner() {
               else if (type === 'event') { const ev = timeline.events.find((e) => e.id === id); setSelectedTimelineId(ev?.timelineId); navigateTo('timeline', { selectedTimelineId: ev?.timelineId }); }
               else if (type === 'ioc') { navigateTo('graph'); }
             }}
-            onOpenSettings={(tab) => { setShowSettings(true); if (tab) setSettingsInitialTab(tab); }}
+            onOpenSettings={(tab) => { openSettings(tab); }}
           />
         </div>
         </Suspense>
@@ -2341,7 +2288,7 @@ function AppInner() {
       <Suspense fallback={null}>
         <ServerOnboardingModal
           open={showServerOnboarding}
-          onClose={handleDismissServerOnboarding}
+          onClose={dismissServerOnboarding}
           serverName={serverOnboardingName}
         />
       </Suspense>
