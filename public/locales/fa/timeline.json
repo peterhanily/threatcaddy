@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} تکنیک",
   "mitreReport.techniqueCount_other": "{{count}} تکنیک",
   "mitreReport.techniqueCoverage": "پوشش تکنیک",
-  "emptyState": "هنوز رویداد خط زمانی وجود ندارد"
+  "emptyState": "هنوز رویداد خط زمانی وجود ندارد",
+  "createFirstHint": "از دکمه + بالا برای افزودن اولین رویداد استفاده کنید"
 }

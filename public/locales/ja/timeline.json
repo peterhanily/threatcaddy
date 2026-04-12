@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} 件のテクニック",
   "mitreReport.techniqueCount_other": "{{count}} 件のテクニック",
   "mitreReport.techniqueCoverage": "テクニックカバレッジ",
-  "emptyState": "タイムラインイベントがまだありません"
+  "emptyState": "タイムラインイベントがまだありません",
+  "createFirstHint": "上の + ボタンを使って最初のイベントを追加"
 }

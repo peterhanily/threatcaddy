@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} technika",
   "mitreReport.techniqueCount_other": "{{count}} technik",
   "mitreReport.techniqueCoverage": "Pokrycie technik",
-  "emptyState": "Brak wydarzeń na osi czasu"
+  "emptyState": "Brak wydarzeń na osi czasu",
+  "createFirstHint": "Użyj przycisku + powyżej, aby dodać swoje pierwsze wydarzenie"
 }

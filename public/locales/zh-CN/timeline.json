@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} 个技术",
   "mitreReport.techniqueCount_other": "{{count}} 个技术",
   "mitreReport.techniqueCoverage": "技术覆盖率",
-  "emptyState": "暂无时间线事件"
+  "emptyState": "暂无时间线事件",
+  "createFirstHint": "使用上方的 + 按钮添加你的第一个事件"
 }

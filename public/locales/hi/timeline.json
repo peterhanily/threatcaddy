@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} तकनीक",
   "mitreReport.techniqueCount_other": "{{count}} तकनीकें",
   "mitreReport.techniqueCoverage": "तकनीक कवरेज",
-  "emptyState": "अभी तक कोई टाइमलाइन इवेंट नहीं"
+  "emptyState": "अभी तक कोई टाइमलाइन इवेंट नहीं",
+  "createFirstHint": "अपना पहला इवेंट जोड़ने के लिए ऊपर + बटन का उपयोग करें"
 }

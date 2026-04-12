@@ -82,5 +82,6 @@
   "kanban.changeStatus": "Đổi trạng thái {{title}}",
   "kanban.noTasks": "Không có nhiệm vụ",
   "kanban.dropHere": "Thả nhiệm vụ vào đây",
-  "emptyState": "Chưa có nhiệm vụ nào — tạo một nhiệm vụ để bắt đầu"
+  "emptyState": "Chưa có nhiệm vụ nào — tạo một nhiệm vụ để bắt đầu",
+  "createFirst": "Tạo nhiệm vụ đầu tiên"
 }

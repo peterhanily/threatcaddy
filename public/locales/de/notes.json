@@ -169,5 +169,6 @@
     "categoryThreatIntel": "Threat Intel",
     "categoryInsert": "Einfügen"
   },
-  "emptyState": "Noch keine Notizen — erstellen Sie eine, um zu beginnen"
+  "emptyState": "Noch keine Notizen — erstellen Sie eine, um zu beginnen",
+  "createFirst": "Erstelle deine erste Notiz"
 }

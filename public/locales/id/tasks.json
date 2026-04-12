@@ -82,5 +82,6 @@
   "kanban.changeStatus": "Ubah status {{title}}",
   "kanban.noTasks": "Tidak ada tugas",
   "kanban.dropHere": "Jatuhkan tugas di sini",
-  "emptyState": "Belum ada tugas — buat satu untuk memulai"
+  "emptyState": "Belum ada tugas — buat satu untuk memulai",
+  "createFirst": "Buat tugas pertama Anda"
 }

@@ -82,5 +82,6 @@
   "kanban.changeStatus": "{{title}} durumunu değiştir",
   "kanban.noTasks": "Görev yok",
   "kanban.dropHere": "Görevleri buraya bırakın",
-  "emptyState": "Henüz görev yok — başlamak için bir tane oluşturun"
+  "emptyState": "Henüz görev yok — başlamak için bir tane oluşturun",
+  "createFirst": "İlk görevinizi oluşturun"
 }

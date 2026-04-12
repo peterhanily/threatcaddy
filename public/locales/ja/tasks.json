@@ -82,5 +82,6 @@
   "kanban.changeStatus": "{{title}} のステータスを変更",
   "kanban.noTasks": "タスクなし",
   "kanban.dropHere": "ここにドロップ",
-  "emptyState": "タスクがまだありません — 作成して始めましょう"
+  "emptyState": "タスクがまだありません — 作成して始めましょう",
+  "createFirst": "最初のタスクを作成"
 }

@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} teknik",
   "mitreReport.techniqueCount_other": "{{count}} teknik",
   "mitreReport.techniqueCoverage": "Cakupan Teknik",
-  "emptyState": "Belum ada peristiwa timeline"
+  "emptyState": "Belum ada peristiwa timeline",
+  "createFirstHint": "Gunakan tombol + di atas untuk menambahkan acara pertama Anda"
 }

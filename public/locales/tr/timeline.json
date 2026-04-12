@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} teknik",
   "mitreReport.techniqueCount_other": "{{count}} teknik",
   "mitreReport.techniqueCoverage": "Teknik Kapsamı",
-  "emptyState": "Henüz zaman çizelgesi olayı yok"
+  "emptyState": "Henüz zaman çizelgesi olayı yok",
+  "createFirstHint": "İlk etkinliğinizi eklemek için yukarıdaki + düğmesini kullanın"
 }

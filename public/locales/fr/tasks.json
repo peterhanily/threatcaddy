@@ -82,5 +82,6 @@
   "kanban.changeStatus": "Changer le statut de {{title}}",
   "kanban.noTasks": "Aucune tâche",
   "kanban.dropHere": "Déposer les tâches ici",
-  "emptyState": "Aucune tâche pour le moment — créez-en une pour commencer"
+  "emptyState": "Aucune tâche pour le moment — créez-en une pour commencer",
+  "createFirst": "Créez votre première tâche"
 }

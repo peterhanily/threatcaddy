@@ -169,5 +169,6 @@
     "categoryThreatIntel": "Dreigingsinformatie",
     "categoryInsert": "Invoegen"
   },
-  "emptyState": "Nog geen notities — maak er een om te beginnen"
+  "emptyState": "Nog geen notities — maak er een om te beginnen",
+  "createFirst": "Maak je eerste notitie"
 }

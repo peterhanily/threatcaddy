@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}}개 기법",
   "mitreReport.techniqueCount_other": "{{count}}개 기법",
   "mitreReport.techniqueCoverage": "기법 커버리지",
-  "emptyState": "타임라인 이벤트가 아직 없습니다"
+  "emptyState": "타임라인 이벤트가 아직 없습니다",
+  "createFirstHint": "위의 + 버튼을 사용하여 첫 번째 이벤트를 추가하세요"
 }

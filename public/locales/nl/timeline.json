@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} techniek",
   "mitreReport.techniqueCount_other": "{{count}} technieken",
   "mitreReport.techniqueCoverage": "Techniektdekking",
-  "emptyState": "Nog geen tijdlijngebeurtenissen"
+  "emptyState": "Nog geen tijdlijngebeurtenissen",
+  "createFirstHint": "Gebruik de + knop hierboven om je eerste gebeurtenis toe te voegen"
 }

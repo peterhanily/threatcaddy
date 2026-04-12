@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} техника",
   "mitreReport.techniqueCount_other": "{{count}} техник",
   "mitreReport.techniqueCoverage": "Охват техник",
-  "emptyState": "Событий на временной шкале пока нет"
+  "emptyState": "Событий на временной шкале пока нет",
+  "createFirstHint": "Используйте кнопку + выше, чтобы добавить первое событие"
 }

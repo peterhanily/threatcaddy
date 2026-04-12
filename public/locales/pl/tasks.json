@@ -82,5 +82,6 @@
   "kanban.changeStatus": "Zmień status {{title}}",
   "kanban.noTasks": "Brak zadań",
   "kanban.dropHere": "Upuść zadania tutaj",
-  "emptyState": "Brak zadań — utwórz jedno, aby rozpocząć"
+  "emptyState": "Brak zadań — utwórz jedno, aby rozpocząć",
+  "createFirst": "Utwórz swoje pierwsze zadanie"
 }

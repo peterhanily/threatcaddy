@@ -207,6 +207,12 @@ export function TaskListView({
               <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-500">
                 <CheckSquare size={40} strokeWidth={1.5} className="text-gray-600" />
                 <p className="text-sm">{t('emptyState')}</p>
+                <button
+                  onClick={() => setShowNewTask(true)}
+                  className="px-4 py-2 rounded-lg bg-accent/10 text-accent text-sm font-medium hover:bg-accent/20 transition-colors"
+                >
+                  {t('createFirst')}
+                </button>
               </div>
             ) : (
               <Virtuoso

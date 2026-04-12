@@ -169,5 +169,6 @@
     "categoryThreatIntel": "威胁情报",
     "categoryInsert": "插入"
   },
-  "emptyState": "暂无笔记 — 创建一个开始吧"
+  "emptyState": "暂无笔记 — 创建一个开始吧",
+  "createFirst": "创建你的第一条笔记"
 }

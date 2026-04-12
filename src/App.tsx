@@ -1862,6 +1862,7 @@ function AppInner({
                 selectedIOCTypes={selectedIOCTypes}
                 onIOCTypesChange={setSelectedIOCTypes}
                 folders={folders}
+                onCreate={handleNewNote}
                 tiExportConfig={{
                   defaultClsLevel: settings.tiDefaultClsLevel,
                   defaultReportSource: settings.tiDefaultReportSource,

@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} Technik",
   "mitreReport.techniqueCount_other": "{{count}} Techniken",
   "mitreReport.techniqueCoverage": "Technik-Abdeckung",
-  "emptyState": "Noch keine Zeitleisten-Ereignisse"
+  "emptyState": "Noch keine Zeitleisten-Ereignisse",
+  "createFirstHint": "Verwende die Schaltfläche + oben, um dein erstes Ereignis hinzuzufügen"
 }

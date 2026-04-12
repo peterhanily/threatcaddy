@@ -169,5 +169,6 @@
     "categoryThreatIntel": "위협 인텔",
     "categoryInsert": "삽입"
   },
-  "emptyState": "메모가 아직 없습니다 — 하나 만들어 시작하세요"
+  "emptyState": "메모가 아직 없습니다 — 하나 만들어 시작하세요",
+  "createFirst": "첫 번째 노트 만들기"
 }

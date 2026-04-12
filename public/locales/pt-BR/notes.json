@@ -169,5 +169,6 @@
     "categoryThreatIntel": "Threat Intel",
     "categoryInsert": "Inserir"
   },
-  "emptyState": "Nenhuma nota ainda — crie uma para começar"
+  "emptyState": "Nenhuma nota ainda — crie uma para começar",
+  "createFirst": "Crie sua primeira nota"
 }

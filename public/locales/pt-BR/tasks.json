@@ -82,5 +82,6 @@
   "kanban.changeStatus": "Alterar status de {{title}}",
   "kanban.noTasks": "Sem tarefas",
   "kanban.dropHere": "Soltar tarefas aqui",
-  "emptyState": "Nenhuma tarefa ainda — crie uma para começar"
+  "emptyState": "Nenhuma tarefa ainda — crie uma para começar",
+  "createFirst": "Crie sua primeira tarefa"
 }

@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} kỹ thuật",
   "mitreReport.techniqueCount_other": "{{count}} kỹ thuật",
   "mitreReport.techniqueCoverage": "Độ phủ kỹ thuật",
-  "emptyState": "Chưa có sự kiện dòng thời gian nào"
+  "emptyState": "Chưa có sự kiện dòng thời gian nào",
+  "createFirstHint": "Sử dụng nút + ở trên để thêm sự kiện đầu tiên"
 }

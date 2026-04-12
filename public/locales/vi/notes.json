@@ -169,5 +169,6 @@
     "categoryThreatIntel": "Tình báo mối đe dọa",
     "categoryInsert": "Chèn"
   },
-  "emptyState": "Chưa có ghi chú nào — tạo một ghi chú để bắt đầu"
+  "emptyState": "Chưa có ghi chú nào — tạo một ghi chú để bắt đầu",
+  "createFirst": "Tạo ghi chú đầu tiên"
 }

@@ -169,5 +169,6 @@
     "categoryThreatIntel": "מודיעין איומים",
     "categoryInsert": "הוספה"
   },
-  "emptyState": "אין עדיין הערות — צרו אחת כדי להתחיל"
+  "emptyState": "אין עדיין הערות — צרו אחת כדי להתחיל",
+  "createFirst": "צור את ההערה הראשונה שלך"
 }

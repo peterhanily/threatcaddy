@@ -82,5 +82,6 @@
   "kanban.changeStatus": "تغيير حالة {{title}}",
   "kanban.noTasks": "لا توجد مهام",
   "kanban.dropHere": "أفلت المهام هنا",
-  "emptyState": "لا توجد مهام بعد — أنشئ واحدة للبدء"
+  "emptyState": "لا توجد مهام بعد — أنشئ واحدة للبدء",
+  "createFirst": "أنشئ مهمتك الأولى"
 }

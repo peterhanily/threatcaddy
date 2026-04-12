@@ -169,5 +169,6 @@
     "categoryThreatIntel": "脅威インテル",
     "categoryInsert": "挿入"
   },
-  "emptyState": "メモがまだありません — 作成して始めましょう"
+  "emptyState": "メモがまだありません — 作成して始めましょう",
+  "createFirst": "最初のノートを作成"
 }

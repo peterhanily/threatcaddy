@@ -88,5 +88,6 @@
   "kanban.noTasks": "No tasks",
   "kanban.dropHere": "Drop tasks here",
 
-  "emptyState": "No tasks yet — create one to get started"
+  "emptyState": "No tasks yet — create one to get started",
+  "createFirst": "Create your first task"
 }

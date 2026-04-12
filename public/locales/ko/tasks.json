@@ -82,5 +82,6 @@
   "kanban.changeStatus": "{{title}}의 상태 변경",
   "kanban.noTasks": "태스크 없음",
   "kanban.dropHere": "여기에 드롭",
-  "emptyState": "작업이 아직 없습니다 — 하나 만들어 시작하세요"
+  "emptyState": "작업이 아직 없습니다 — 하나 만들어 시작하세요",
+  "createFirst": "첫 번째 작업 만들기"
 }

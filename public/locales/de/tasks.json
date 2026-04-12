@@ -82,5 +82,6 @@
   "kanban.changeStatus": "Status von {{title}} ändern",
   "kanban.noTasks": "Keine Aufgaben",
   "kanban.dropHere": "Aufgaben hier ablegen",
-  "emptyState": "Noch keine Aufgaben — erstellen Sie eine, um zu beginnen"
+  "emptyState": "Noch keine Aufgaben — erstellen Sie eine, um zu beginnen",
+  "createFirst": "Erstelle deine erste Aufgabe"
 }

@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} טכניקה",
   "mitreReport.techniqueCount_other": "{{count}} טכניקות",
   "mitreReport.techniqueCoverage": "כיסוי טכניקות",
-  "emptyState": "אין עדיין אירועי ציר זמן"
+  "emptyState": "אין עדיין אירועי ציר זמן",
+  "createFirstHint": "השתמש בכפתור + למעלה כדי להוסיף את האירוע הראשון שלך"
 }

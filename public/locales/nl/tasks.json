@@ -82,5 +82,6 @@
   "kanban.changeStatus": "Status wijzigen {{title}}",
   "kanban.noTasks": "Geen taken",
   "kanban.dropHere": "Sleep taken hierheen",
-  "emptyState": "Nog geen taken — maak er een om te beginnen"
+  "emptyState": "Nog geen taken — maak er een om te beginnen",
+  "createFirst": "Maak je eerste taak"
 }

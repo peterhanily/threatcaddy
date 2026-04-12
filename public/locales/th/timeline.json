@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} เทคนิค",
   "mitreReport.techniqueCount_other": "{{count}} เทคนิค",
   "mitreReport.techniqueCoverage": "ความครอบคลุมเทคนิค",
-  "emptyState": "ยังไม่มีเหตุการณ์ในไทม์ไลน์"
+  "emptyState": "ยังไม่มีเหตุการณ์ในไทม์ไลน์",
+  "createFirstHint": "ใช้ปุ่ม + ด้านบนเพื่อเพิ่มเหตุการณ์แรกของคุณ"
 }

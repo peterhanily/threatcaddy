@@ -58,6 +58,7 @@ export function TimelineFeed({ events, selectedId, onSelect, onToggleStar, onDel
       <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-500">
         <Clock size={40} strokeWidth={1.5} className="text-gray-600" />
         <p className="text-sm">{t('emptyState')}</p>
+        <p className="text-xs text-gray-600">{t('createFirstHint')}</p>
       </div>
     );
   }

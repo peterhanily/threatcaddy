@@ -82,5 +82,6 @@
   "kanban.changeStatus": "Изменить статус {{title}}",
   "kanban.noTasks": "Нет задач",
   "kanban.dropHere": "Перетащить задачи сюда",
-  "emptyState": "Задач пока нет — создайте первую"
+  "emptyState": "Задач пока нет — создайте первую",
+  "createFirst": "Создайте свою первую задачу"
 }

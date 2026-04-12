@@ -82,5 +82,6 @@
   "kanban.changeStatus": "更改 {{title}} 的状态",
   "kanban.noTasks": "无任务",
   "kanban.dropHere": "拖拽任务到此处",
-  "emptyState": "暂无任务 — 创建一个开始吧"
+  "emptyState": "暂无任务 — 创建一个开始吧",
+  "createFirst": "创建你的第一个任务"
 }

@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} técnica",
   "mitreReport.techniqueCount_other": "{{count}} técnicas",
   "mitreReport.techniqueCoverage": "Cobertura de técnicas",
-  "emptyState": "Nenhum evento na linha do tempo ainda"
+  "emptyState": "Nenhum evento na linha do tempo ainda",
+  "createFirstHint": "Use o botão + acima para adicionar seu primeiro evento"
 }

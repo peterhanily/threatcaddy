@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} تقنية",
   "mitreReport.techniqueCount_other": "{{count}} تقنيات",
   "mitreReport.techniqueCoverage": "تغطية التقنيات",
-  "emptyState": "لا توجد أحداث في الجدول الزمني بعد"
+  "emptyState": "لا توجد أحداث في الجدول الزمني بعد",
+  "createFirstHint": "استخدم زر + أعلاه لإضافة أول حدث"
 }

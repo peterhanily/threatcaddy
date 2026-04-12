@@ -144,5 +144,6 @@
   "mitreReport.techniqueCount": "{{count}} техніка",
   "mitreReport.techniqueCount_other": "{{count}} технік",
   "mitreReport.techniqueCoverage": "Охоплення технік",
-  "emptyState": "Подій на часовій шкалі поки немає"
+  "emptyState": "Подій на часовій шкалі поки немає",
+  "createFirstHint": "Використовуйте кнопку + вище, щоб додати першу подію"
 }

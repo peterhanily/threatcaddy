@@ -26,9 +26,10 @@ interface NoteListProps {
   onMoveToFolder?: (noteId: string, parentNoteId: string | null) => void;
   onRenameFolder?: (noteId: string, newName: string) => void;
   onDeleteFolder?: (noteId: string, action: 'trash_contents' | 'move_out') => void;
+  onCreate?: () => void;
 }
 
-export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, title, selectedIOCTypes, onIOCTypesChange, folders, tiExportConfig, onTrash, onCreateFolder, onMoveToFolder, onRenameFolder, onDeleteFolder }: NoteListProps) {
+export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, title, selectedIOCTypes, onIOCTypesChange, folders, tiExportConfig, onTrash, onCreateFolder, onMoveToFolder, onRenameFolder, onDeleteFolder, onCreate }: NoteListProps) {
   const { t } = useTranslation('notes');
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -228,6 +229,14 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
           <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-500">
             <FileText size={40} strokeWidth={1.5} className="text-gray-600" />
             <p className="text-sm">{t('emptyState')}</p>
+            {onCreate && (
+              <button
+                onClick={onCreate}
+                className="px-4 py-2 rounded-lg bg-accent/10 text-accent text-sm font-medium hover:bg-accent/20 transition-colors"
+              >
+                {t('createFirst')}
+              </button>
+            )}
           </div>
         ) : (
           <Virtuoso
