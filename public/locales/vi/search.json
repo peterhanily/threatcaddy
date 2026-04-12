@@ -12,7 +12,7 @@
   "clear": "Xóa",
   "resultCount": "{{count}} kết quả",
   "resultCountPlural": "{{count}} kết quả",
-  "noResults": "Không có kết quả cho \"{{query}}\"",
+  "noResults": "Không tìm thấy kết quả — thử từ khóa khác",
   "types": "Loại:",
   "date": "Ngày",
   "created": "Đã tạo",

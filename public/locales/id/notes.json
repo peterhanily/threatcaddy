@@ -15,12 +15,10 @@
   "builtinTemplate.cloudAccount.name": "Detail Akun Cloud",
   "builtinTemplate.ociUser.name": "Detail Pengguna OCI",
   "builtinTemplate.ociTenancy.name": "Detail Tenancy OCI",
-
   "builtinTemplateCategory.general": "Umum",
   "builtinTemplateCategory.investigation": "Investigasi",
   "builtinTemplateCategory.incidentResponse": "Respons Insiden",
   "builtinTemplateCategory.cloud": "Cloud",
-
   "card": {
     "moveToTrash": "Pindah ke sampah",
     "moveToTrashAria": "Pindahkan catatan ke sampah",
@@ -170,5 +168,6 @@
     "categoryBlocks": "Blok",
     "categoryThreatIntel": "Intel Ancaman",
     "categoryInsert": "Sisipkan"
-  }
+  },
+  "emptyState": "Belum ada catatan — buat satu untuk memulai"
 }

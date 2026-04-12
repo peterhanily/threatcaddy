@@ -29,7 +29,6 @@
   "view.colorModeEvents": "イベント",
   "view.colorModeConfidence": "信頼度",
   "view.colorModeActors": "アクター",
-
   "export.exportImport": "エクスポート / インポート",
   "export.exportTimelineJSON": "タイムラインJSONをエクスポート",
   "export.exportAllEventsJSON": "全イベントJSONをエクスポート",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "MITREマッピングCSV",
   "export.exportFailed": "タイムラインのエクスポートに失敗しました",
-
   "eventCard.deleteEvent": "イベントを削除",
   "eventCard.unstarEvent": "スターを外す",
   "eventCard.starEvent": "スターを付ける",
   "eventCard.untitledEvent": "無題のイベント",
   "eventCard.assetCount": "{{count}} 件のアセット",
   "eventCard.assetCount_other": "{{count}} 件のアセット",
-
   "eventForm.title": "タイトル",
   "eventForm.titlePlaceholder": "イベントタイトル...",
   "eventForm.titleRequired": "イベントタイトルは必須です",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "生のログデータ、JSONなどを貼り付け...",
   "eventForm.updateEvent": "イベントを更新",
   "eventForm.createEvent": "イベントを作成",
-
   "import.title": "タイムラインをインポート",
   "import.selectFile": "タイムラインJSONファイルを選択",
   "import.createAsNew": "新しいタイムラインとして作成",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} 件変更なし",
   "import.parseFailed": "ファイルの解析に失敗しました",
   "import.importFailed": "インポートに失敗しました",
-
   "feed.noEventsYet": "タイムラインイベントはまだありません",
   "feed.noEventsHint": "「新規イベント」をクリックしてタイムラインイベントを追加",
   "feed.today": "今日",
   "feed.yesterday": "昨日",
   "feed.eventCount": "{{count}} 件のイベント",
   "feed.eventCount_other": "{{count}} 件のイベント",
-
   "gantt.zoomIn": "ズームイン",
   "gantt.zoomOut": "ズームアウト",
   "gantt.fitAll": "全体を表示",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "（ポイントイベント）",
   "gantt.tooltipSource": "ソース: {{source}}",
   "gantt.tooltipActor": "アクター: {{actor}}",
-
   "map.mapped": "{{count}} 件マップ済み",
   "map.doubleClickToPlace": "マップをダブルクリックしてイベントを配置",
   "map.withoutLocation": "{{count}} 件の場所なし",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "シングルクリック配置を有効化",
   "map.unstar": "スターを外す",
   "map.star": "スターを付ける",
-
   "heatmap.techniques": "テクニック:",
   "heatmap.eventsWithMitre": "MITRE付きイベント:",
   "heatmap.tacticsHit": "ヒットした戦術:",
@@ -143,16 +135,14 @@
   "heatmap.confidenceMedium": "中",
   "heatmap.confidenceHigh": "高",
   "heatmap.confidenceConfirmed": "確認済み",
-
   "filter.clear": "クリア",
-
   "mitreCombo.searchPlaceholder": "テクニックを検索（例: T1566、Phishing）...",
   "mitreCombo.addMore": "さらに追加...",
-
   "mitreReport.techniquesPerTactic": "戦術ごとのテクニック",
   "mitreReport.actorTTPSummary": "アクターTTPサマリー",
   "mitreReport.noActorsMapped": "テクニックにマップされたアクターはいません。",
   "mitreReport.techniqueCount": "{{count}} 件のテクニック",
   "mitreReport.techniqueCount_other": "{{count}} 件のテクニック",
-  "mitreReport.techniqueCoverage": "テクニックカバレッジ"
+  "mitreReport.techniqueCoverage": "テクニックカバレッジ",
+  "emptyState": "タイムラインイベントがまだありません"
 }

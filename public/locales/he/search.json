@@ -12,7 +12,7 @@
   "clear": "נקה",
   "resultCount": "{{count}} תוצאה",
   "resultCountPlural": "{{count}} תוצאות",
-  "noResults": "לא נמצאו תוצאות עבור \"{{query}}\"",
+  "noResults": "לא נמצאו תוצאות — נסו מילות מפתח אחרות",
   "types": "סוגים:",
   "date": "תאריך",
   "created": "נוצר",

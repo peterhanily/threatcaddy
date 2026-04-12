@@ -29,7 +29,6 @@
   "view.colorModeEvents": "事件",
   "view.colorModeConfidence": "置信度",
   "view.colorModeActors": "威胁行为者",
-
   "export.exportImport": "导出 / 导入",
   "export.exportTimelineJSON": "导出时间线 JSON",
   "export.exportAllEventsJSON": "导出所有事件 JSON",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "MITRE 映射 CSV",
   "export.exportFailed": "时间线导出失败",
-
   "eventCard.deleteEvent": "删除事件",
   "eventCard.unstarEvent": "取消加星",
   "eventCard.starEvent": "加星",
   "eventCard.untitledEvent": "未命名事件",
   "eventCard.assetCount": "{{count}} 个资产",
   "eventCard.assetCount_other": "{{count}} 个资产",
-
   "eventForm.title": "标题",
   "eventForm.titlePlaceholder": "事件标题...",
   "eventForm.titleRequired": "事件标题是必需的",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "粘贴原始日志数据、JSON 等...",
   "eventForm.updateEvent": "更新事件",
   "eventForm.createEvent": "创建事件",
-
   "import.title": "导入时间线",
   "import.selectFile": "选择时间线 JSON 文件",
   "import.createAsNew": "创建为新时间线",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} 个未更改",
   "import.parseFailed": "解析文件失败",
   "import.importFailed": "导入失败",
-
   "feed.noEventsYet": "暂无时间线事件",
   "feed.noEventsHint": "点击\"新建事件\"添加时间线事件",
   "feed.today": "今天",
   "feed.yesterday": "昨天",
   "feed.eventCount": "{{count}} 个事件",
   "feed.eventCount_other": "{{count}} 个事件",
-
   "gantt.zoomIn": "放大",
   "gantt.zoomOut": "缩小",
   "gantt.fitAll": "适配全部",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "（点事件）",
   "gantt.tooltipSource": "来源：{{source}}",
   "gantt.tooltipActor": "威胁行为者：{{actor}}",
-
   "map.mapped": "已映射 {{count}} 个",
   "map.doubleClickToPlace": "双击地图以放置事件",
   "map.withoutLocation": "{{count}} 个无位置",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "启用单击放置",
   "map.unstar": "取消加星",
   "map.star": "加星",
-
   "heatmap.techniques": "技术：",
   "heatmap.eventsWithMitre": "含 MITRE 的事件：",
   "heatmap.tacticsHit": "覆盖战术：",
@@ -143,16 +135,14 @@
   "heatmap.confidenceMedium": "中",
   "heatmap.confidenceHigh": "高",
   "heatmap.confidenceConfirmed": "已确认",
-
   "filter.clear": "清除",
-
   "mitreCombo.searchPlaceholder": "搜索技术（例如 T1566, 网络钓鱼）...",
   "mitreCombo.addMore": "添加更多...",
-
   "mitreReport.techniquesPerTactic": "每个战术的技术数量",
   "mitreReport.actorTTPSummary": "威胁行为者 TTP 摘要",
   "mitreReport.noActorsMapped": "没有映射了技术的威胁行为者。",
   "mitreReport.techniqueCount": "{{count}} 个技术",
   "mitreReport.techniqueCount_other": "{{count}} 个技术",
-  "mitreReport.techniqueCoverage": "技术覆盖率"
+  "mitreReport.techniqueCoverage": "技术覆盖率",
+  "emptyState": "暂无时间线事件"
 }

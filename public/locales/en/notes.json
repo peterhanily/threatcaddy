@@ -116,6 +116,7 @@
     "trashAll": "Trash all",
     "moveToTopLevel": "Move to top level"
   },
+  "emptyState": "No notes yet — create one to get started",
   "linkMenu": {
     "header": "Link to note"
   },

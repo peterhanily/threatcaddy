@@ -225,10 +225,9 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
 
       <div className="flex-1 overflow-hidden p-2">
         {notes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-gray-600">
-            <FileText size={32} className="mb-2" />
-            <p className="text-sm">{t('list.noNotes')}</p>
-            <p className="text-xs mt-1">{t('list.noNotesHint')}</p>
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-500">
+            <FileText size={40} strokeWidth={1.5} className="text-gray-600" />
+            <p className="text-sm">{t('emptyState')}</p>
           </div>
         ) : (
           <Virtuoso

@@ -5,11 +5,9 @@
   "priority.lowFull": "Niski",
   "priority.mediumFull": "Średni",
   "priority.highFull": "Wysoki",
-
   "status.todo": "Do zrobienia",
   "status.inProgress": "W toku",
   "status.done": "Ukończone",
-
   "list.title": "Zadania",
   "list.titleWithScope": "Zadania — {{scope}} ({{count}})",
   "list.titleWithCount": "Zadania ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "Kliknij „Nowe zadanie\" lub naciśnij Ctrl+Shift+T",
   "list.editTaskModal": "Edytuj zadanie",
   "list.createTaskModal": "Utwórz zadanie",
-
   "item.markIncomplete": "Oznacz jako nieukończone",
   "item.markComplete": "Oznacz jako ukończone",
   "item.untitled": "Zadanie bez tytułu",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "Usuń zadanie",
   "item.confirmDeleteMessage": "To zadanie zostanie trwale usunięte. Tej operacji nie można cofnąć.",
   "item.confirmDeleteLabel": "Usuń zadanie",
-
   "form.titleLabel": "Tytuł",
   "form.titlePlaceholder": "Tytuł zadania...",
   "form.titleRequired": "Tytuł zadania jest wymagany",
@@ -81,10 +77,10 @@
   "form.relativeTime.minutesAgo": "{{count}}min temu",
   "form.relativeTime.hoursAgo": "{{count}}godz temu",
   "form.relativeTime.daysAgo": "{{count}}d temu",
-
   "kanban.boardLabel": "Tablica kanban",
   "kanban.columnLabel": "Kolumna {{label}}, {{count}} zadań",
   "kanban.changeStatus": "Zmień status {{title}}",
   "kanban.noTasks": "Brak zadań",
-  "kanban.dropHere": "Upuść zadania tutaj"
+  "kanban.dropHere": "Upuść zadania tutaj",
+  "emptyState": "Brak zadań — utwórz jedno, aby rozpocząć"
 }

@@ -29,7 +29,6 @@
   "view.colorModeEvents": "Gebeurtenissen",
   "view.colorModeConfidence": "Betrouwbaarheid",
   "view.colorModeActors": "Actoren",
-
   "export.exportImport": "Export / Import",
   "export.exportTimelineJSON": "Tijdlijn exporteren als JSON",
   "export.exportAllEventsJSON": "Alle gebeurtenissen exporteren als JSON",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "MITRE-koppelingen CSV",
   "export.exportFailed": "Tijdlijnexport mislukt",
-
   "eventCard.deleteEvent": "Gebeurtenis verwijderen",
   "eventCard.unstarEvent": "Markering verwijderen",
   "eventCard.starEvent": "Gebeurtenis markeren",
   "eventCard.untitledEvent": "Naamloze gebeurtenis",
   "eventCard.assetCount": "{{count}} asset",
   "eventCard.assetCount_other": "{{count}} assets",
-
   "eventForm.title": "Titel",
   "eventForm.titlePlaceholder": "Gebeurtenistitel...",
   "eventForm.titleRequired": "Gebeurtenistitel is verplicht",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "Plak ruwe loggegevens, JSON, etc...",
   "eventForm.updateEvent": "Gebeurtenis bijwerken",
   "eventForm.createEvent": "Gebeurtenis aanmaken",
-
   "import.title": "Tijdlijn importeren",
   "import.selectFile": "Selecteer tijdlijn JSON-bestand",
   "import.createAsNew": "Aanmaken als nieuwe tijdlijn",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} ongewijzigd",
   "import.parseFailed": "Bestand verwerken mislukt",
   "import.importFailed": "Importeren mislukt",
-
   "feed.noEventsYet": "Geen tijdlijngebeurtenissen",
   "feed.noEventsHint": "Klik op 'Nieuwe gebeurtenis' om een tijdlijngebeurtenis toe te voegen",
   "feed.today": "Vandaag",
   "feed.yesterday": "Gisteren",
   "feed.eventCount": "{{count}} gebeurtenis",
   "feed.eventCount_other": "{{count}} gebeurtenissen",
-
   "gantt.zoomIn": "Inzoomen",
   "gantt.zoomOut": "Uitzoomen",
   "gantt.fitAll": "Alles passend maken",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(puntsgebeurtenis)",
   "gantt.tooltipSource": "Bron: {{source}}",
   "gantt.tooltipActor": "Actor: {{actor}}",
-
   "map.mapped": "{{count}} gekoppeld",
   "map.doubleClickToPlace": "Dubbelklik op de kaart om gebeurtenissen te plaatsen",
   "map.withoutLocation": "{{count}} zonder locatie",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "Plaatsing met één klik inschakelen",
   "map.unstar": "Markering verwijderen",
   "map.star": "Markeren",
-
   "heatmap.techniques": "Technieken:",
   "heatmap.eventsWithMitre": "Gebeurtenissen met MITRE:",
   "heatmap.tacticsHit": "Tactieken gedekt:",
@@ -143,16 +135,14 @@
   "heatmap.confidenceMedium": "Gemiddeld",
   "heatmap.confidenceHigh": "Hoog",
   "heatmap.confidenceConfirmed": "Bevestigd",
-
   "filter.clear": "Wissen",
-
   "mitreCombo.searchPlaceholder": "Technieken zoeken (bijv. T1566, Phishing)...",
   "mitreCombo.addMore": "Meer toevoegen...",
-
   "mitreReport.techniquesPerTactic": "Technieken per tactiek",
   "mitreReport.actorTTPSummary": "Actoroverzicht TTP's",
   "mitreReport.noActorsMapped": "Geen actoren hebben gekoppelde technieken.",
   "mitreReport.techniqueCount": "{{count}} techniek",
   "mitreReport.techniqueCount_other": "{{count}} technieken",
-  "mitreReport.techniqueCoverage": "Techniektdekking"
+  "mitreReport.techniqueCoverage": "Techniektdekking",
+  "emptyState": "Nog geen tijdlijngebeurtenissen"
 }

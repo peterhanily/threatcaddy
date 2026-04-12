@@ -5,11 +5,9 @@
   "priority.lowFull": "Niedrig",
   "priority.mediumFull": "Mittel",
   "priority.highFull": "Hoch",
-
   "status.todo": "Offen",
   "status.inProgress": "In Bearbeitung",
   "status.done": "Erledigt",
-
   "list.title": "Aufgaben",
   "list.titleWithScope": "Aufgaben — {{scope}} ({{count}})",
   "list.titleWithCount": "Aufgaben ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "Klicken Sie auf \"Neue Aufgabe\" oder drücken Sie Strg+Umschalt+T",
   "list.editTaskModal": "Aufgabe bearbeiten",
   "list.createTaskModal": "Aufgabe erstellen",
-
   "item.markIncomplete": "Als unvollständig markieren",
   "item.markComplete": "Als erledigt markieren",
   "item.untitled": "Aufgabe ohne Titel",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "Aufgabe löschen",
   "item.confirmDeleteMessage": "Diese Aufgabe wird dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.",
   "item.confirmDeleteLabel": "Aufgabe löschen",
-
   "form.titleLabel": "Titel",
   "form.titlePlaceholder": "Aufgabentitel...",
   "form.titleRequired": "Aufgabentitel ist erforderlich",
@@ -81,10 +77,10 @@
   "form.relativeTime.minutesAgo": "vor {{count}} Min.",
   "form.relativeTime.hoursAgo": "vor {{count}} Std.",
   "form.relativeTime.daysAgo": "vor {{count}} Tagen",
-
   "kanban.boardLabel": "Kanban-Board",
   "kanban.columnLabel": "{{label}}-Spalte, {{count}} Aufgaben",
   "kanban.changeStatus": "Status von {{title}} ändern",
   "kanban.noTasks": "Keine Aufgaben",
-  "kanban.dropHere": "Aufgaben hier ablegen"
+  "kanban.dropHere": "Aufgaben hier ablegen",
+  "emptyState": "Noch keine Aufgaben — erstellen Sie eine, um zu beginnen"
 }

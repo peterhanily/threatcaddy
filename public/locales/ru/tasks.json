@@ -5,11 +5,9 @@
   "priority.lowFull": "Низкий",
   "priority.mediumFull": "Средний",
   "priority.highFull": "Высокий",
-
   "status.todo": "К выполнению",
   "status.inProgress": "В процессе",
   "status.done": "Выполнено",
-
   "list.title": "Задачи",
   "list.titleWithScope": "Задачи — {{scope}} ({{count}})",
   "list.titleWithCount": "Задачи ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "Нажмите «Новая задача» или Ctrl+Shift+T",
   "list.editTaskModal": "Редактировать задачу",
   "list.createTaskModal": "Создать задачу",
-
   "item.markIncomplete": "Отметить незавершённой",
   "item.markComplete": "Отметить завершённой",
   "item.untitled": "Задача без названия",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "Удалить задачу",
   "item.confirmDeleteMessage": "Эта задача будет удалена навсегда. Отменить невозможно.",
   "item.confirmDeleteLabel": "Удалить задачу",
-
   "form.titleLabel": "Заголовок",
   "form.titlePlaceholder": "Название задачи...",
   "form.titleRequired": "Название задачи обязательно",
@@ -81,10 +77,10 @@
   "form.relativeTime.minutesAgo": "{{count}} мин. назад",
   "form.relativeTime.hoursAgo": "{{count}} ч. назад",
   "form.relativeTime.daysAgo": "{{count}} д. назад",
-
   "kanban.boardLabel": "Канбан-доска",
   "kanban.columnLabel": "Колонка {{label}}, {{count}} задач",
   "kanban.changeStatus": "Изменить статус {{title}}",
   "kanban.noTasks": "Нет задач",
-  "kanban.dropHere": "Перетащить задачи сюда"
+  "kanban.dropHere": "Перетащить задачи сюда",
+  "emptyState": "Задач пока нет — создайте первую"
 }

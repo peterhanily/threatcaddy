@@ -29,7 +29,6 @@
   "view.colorModeEvents": "Kejadian",
   "view.colorModeConfidence": "Kepercayaan",
   "view.colorModeActors": "Aktor",
-
   "export.exportImport": "Ekspor / Impor",
   "export.exportTimelineJSON": "Ekspor Timeline JSON",
   "export.exportAllEventsJSON": "Ekspor Semua Kejadian JSON",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "Pemetaan MITRE CSV",
   "export.exportFailed": "Ekspor timeline gagal",
-
   "eventCard.deleteEvent": "Hapus kejadian",
   "eventCard.unstarEvent": "Lepas bintang kejadian",
   "eventCard.starEvent": "Bintangi kejadian",
   "eventCard.untitledEvent": "Kejadian Tanpa Judul",
   "eventCard.assetCount": "{{count}} aset",
   "eventCard.assetCount_other": "{{count}} aset",
-
   "eventForm.title": "Judul",
   "eventForm.titlePlaceholder": "Judul kejadian...",
   "eventForm.titleRequired": "Judul kejadian diperlukan",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "Tempel data log mentah, JSON, dll...",
   "eventForm.updateEvent": "Perbarui Kejadian",
   "eventForm.createEvent": "Buat Kejadian",
-
   "import.title": "Impor Timeline",
   "import.selectFile": "Pilih file JSON timeline",
   "import.createAsNew": "Buat sebagai timeline baru",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} tidak berubah",
   "import.parseFailed": "Gagal mengurai file",
   "import.importFailed": "Impor gagal",
-
   "feed.noEventsYet": "Belum ada kejadian timeline",
   "feed.noEventsHint": "Klik \"Kejadian Baru\" untuk menambahkan kejadian timeline",
   "feed.today": "Hari Ini",
   "feed.yesterday": "Kemarin",
   "feed.eventCount": "{{count}} kejadian",
   "feed.eventCount_other": "{{count}} kejadian",
-
   "gantt.zoomIn": "Perbesar",
   "gantt.zoomOut": "Perkecil",
   "gantt.fitAll": "Sesuaikan semua",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(kejadian titik)",
   "gantt.tooltipSource": "Sumber: {{source}}",
   "gantt.tooltipActor": "Aktor: {{actor}}",
-
   "map.mapped": "{{count}} dipetakan",
   "map.doubleClickToPlace": "Klik dua kali peta untuk menempatkan kejadian",
   "map.withoutLocation": "{{count}} tanpa lokasi",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "Aktifkan penempatan satu klik",
   "map.unstar": "Lepas bintang",
   "map.star": "Bintangi",
-
   "heatmap.techniques": "Teknik:",
   "heatmap.eventsWithMitre": "Kejadian dgn MITRE:",
   "heatmap.tacticsHit": "Taktik yang digunakan:",
@@ -143,16 +135,14 @@
   "heatmap.confidenceMedium": "Sedang",
   "heatmap.confidenceHigh": "Tinggi",
   "heatmap.confidenceConfirmed": "Dikonfirmasi",
-
   "filter.clear": "Hapus",
-
   "mitreCombo.searchPlaceholder": "Cari teknik (misal T1566, Phishing)...",
   "mitreCombo.addMore": "Tambah lebih banyak...",
-
   "mitreReport.techniquesPerTactic": "Teknik per Taktik",
   "mitreReport.actorTTPSummary": "Ringkasan TTP Aktor",
   "mitreReport.noActorsMapped": "Tidak ada aktor yang memiliki teknik yang dipetakan.",
   "mitreReport.techniqueCount": "{{count}} teknik",
   "mitreReport.techniqueCount_other": "{{count}} teknik",
-  "mitreReport.techniqueCoverage": "Cakupan Teknik"
+  "mitreReport.techniqueCoverage": "Cakupan Teknik",
+  "emptyState": "Belum ada peristiwa timeline"
 }

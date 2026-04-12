@@ -12,7 +12,7 @@
   "clear": "साफ करें",
   "resultCount": "{{count}} परिणाम",
   "resultCountPlural": "{{count}} परिणाम",
-  "noResults": "«{{query}}» के लिए कोई परिणाम नहीं मिला",
+  "noResults": "कोई परिणाम नहीं मिला — अलग कीवर्ड आज़माएं",
   "types": "प्रकार:",
   "date": "तारीख",
   "created": "बनाया गया",

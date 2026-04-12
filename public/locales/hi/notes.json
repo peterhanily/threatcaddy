@@ -15,12 +15,10 @@
   "builtinTemplate.cloudAccount.name": "क्लाउड खाता विवरण",
   "builtinTemplate.ociUser.name": "OCI उपयोगकर्ता विवरण",
   "builtinTemplate.ociTenancy.name": "OCI टेनेंसी विवरण",
-
   "builtinTemplateCategory.general": "सामान्य",
   "builtinTemplateCategory.investigation": "जाँच",
   "builtinTemplateCategory.incidentResponse": "घटना प्रतिक्रिया",
   "builtinTemplateCategory.cloud": "क्लाउड",
-
   "card": {
     "moveToTrash": "ट्रैश में भेजें",
     "moveToTrashAria": "नोट को ट्रैश में भेजें",
@@ -170,5 +168,6 @@
     "categoryBlocks": "ब्लॉक",
     "categoryThreatIntel": "थ्रेट इंटेल",
     "categoryInsert": "डालें"
-  }
+  },
+  "emptyState": "अभी तक कोई नोट नहीं — शुरू करने के लिए एक बनाएं"
 }

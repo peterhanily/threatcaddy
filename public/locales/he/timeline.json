@@ -29,7 +29,6 @@
   "view.colorModeEvents": "אירועים",
   "view.colorModeConfidence": "ביטחון",
   "view.colorModeActors": "גורמים",
-
   "export.exportImport": "ייצוא / ייבוא",
   "export.exportTimelineJSON": "ייצא ציר זמן JSON",
   "export.exportAllEventsJSON": "ייצא כל האירועים JSON",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "JSON של ATT&CK Navigator",
   "export.mitreMappingsCSV": "CSV של מיפויי MITRE",
   "export.exportFailed": "ייצוא ציר הזמן נכשל",
-
   "eventCard.deleteEvent": "מחק אירוע",
   "eventCard.unstarEvent": "הסר כוכב מאירוע",
   "eventCard.starEvent": "סמן אירוע בכוכב",
   "eventCard.untitledEvent": "אירוע ללא כותרת",
   "eventCard.assetCount": "{{count}} נכס",
   "eventCard.assetCount_other": "{{count}} נכסים",
-
   "eventForm.title": "כותרת",
   "eventForm.titlePlaceholder": "כותרת אירוע...",
   "eventForm.titleRequired": "כותרת אירוע נדרשת",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "הדבק נתוני לוג גולמיים, JSON וכו'...",
   "eventForm.updateEvent": "עדכן אירוע",
   "eventForm.createEvent": "צור אירוע",
-
   "import.title": "ייבא ציר זמן",
   "import.selectFile": "בחר קובץ JSON של ציר זמן",
   "import.createAsNew": "צור כציר זמן חדש",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} ללא שינוי",
   "import.parseFailed": "ניתוח הקובץ נכשל",
   "import.importFailed": "הייבוא נכשל",
-
   "feed.noEventsYet": "אין אירועי ציר זמן עדיין",
   "feed.noEventsHint": "לחץ \"אירוע חדש\" להוספת אירוע לציר הזמן",
   "feed.today": "היום",
   "feed.yesterday": "אתמול",
   "feed.eventCount": "{{count}} אירוע",
   "feed.eventCount_other": "{{count}} אירועים",
-
   "gantt.zoomIn": "הגדל",
   "gantt.zoomOut": "הקטן",
   "gantt.fitAll": "התאם הכל",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(אירוע נקודתי)",
   "gantt.tooltipSource": "מקור: {{source}}",
   "gantt.tooltipActor": "גורם: {{actor}}",
-
   "map.mapped": "{{count}} ממופים",
   "map.doubleClickToPlace": "לחץ לחיצה כפולה על המפה למיקום אירועים",
   "map.withoutLocation": "{{count}} ללא מיקום",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "הפעל מיקום בלחיצה בודדת",
   "map.unstar": "הסר כוכב",
   "map.star": "סמן בכוכב",
-
   "heatmap.techniques": "טכניקות:",
   "heatmap.eventsWithMitre": "אירועים עם MITRE:",
   "heatmap.tacticsHit": "טקטיקות שנפגעו:",
@@ -143,16 +135,14 @@
   "heatmap.confidenceMedium": "בינוני",
   "heatmap.confidenceHigh": "גבוה",
   "heatmap.confidenceConfirmed": "מאושר",
-
   "filter.clear": "נקה",
-
   "mitreCombo.searchPlaceholder": "חפש טכניקות (לדוגמה T1566, Phishing)...",
   "mitreCombo.addMore": "הוסף עוד...",
-
   "mitreReport.techniquesPerTactic": "טכניקות לפי טקטיקה",
   "mitreReport.actorTTPSummary": "סיכום TTP גורמים",
   "mitreReport.noActorsMapped": "לא ממופות טכניקות לגורמים.",
   "mitreReport.techniqueCount": "{{count}} טכניקה",
   "mitreReport.techniqueCount_other": "{{count}} טכניקות",
-  "mitreReport.techniqueCoverage": "כיסוי טכניקות"
+  "mitreReport.techniqueCoverage": "כיסוי טכניקות",
+  "emptyState": "אין עדיין אירועי ציר זמן"
 }

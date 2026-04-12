@@ -12,7 +12,7 @@
   "clear": "Temizle",
   "resultCount": "{{count}} sonuç",
   "resultCountPlural": "{{count}} sonuç",
-  "noResults": "\"{{query}}\" için sonuç bulunamadı",
+  "noResults": "Sonuç bulunamadı — farklı anahtar kelimeler deneyin",
   "types": "Türler:",
   "date": "Tarih",
   "created": "Oluşturuldu",

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ListChecks, LayoutGrid, Plus, Filter, ArrowUpDown } from 'lucide-react';
+import { ListChecks, CheckSquare, LayoutGrid, Plus, Filter, ArrowUpDown } from 'lucide-react';
 import type { Task, Note, TimelineEvent, TaskStatus, TaskViewMode, Tag, Folder, InvestigationMember } from '../../types';
 import { TaskItem } from './TaskItem';
 import { TaskForm } from './TaskForm';
@@ -204,10 +204,9 @@ export function TaskListView({
         {viewMode === 'list' ? (
           <div className="max-w-3xl mx-auto h-full">
             {filteredTasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-600">
-                <ListChecks size={32} className="mb-2" />
-                <p className="text-sm">{t('list.emptyTitle')}</p>
-                <p className="text-xs mt-1">{t('list.emptyHint')}</p>
+              <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-500">
+                <CheckSquare size={40} strokeWidth={1.5} className="text-gray-600" />
+                <p className="text-sm">{t('emptyState')}</p>
               </div>
             ) : (
               <Virtuoso

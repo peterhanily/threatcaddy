@@ -29,7 +29,6 @@
   "view.colorModeEvents": "رویدادها",
   "view.colorModeConfidence": "اطمینان",
   "view.colorModeActors": "عاملان",
-
   "export.exportImport": "صدور / ورود",
   "export.exportTimelineJSON": "صدور JSON جدول زمانی",
   "export.exportAllEventsJSON": "صدور JSON همه رویدادها",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "JSON ناوبر ATT&CK",
   "export.mitreMappingsCSV": "CSV نگاشت‌های MITRE",
   "export.exportFailed": "صدور جدول زمانی ناموفق بود",
-
   "eventCard.deleteEvent": "حذف رویداد",
   "eventCard.unstarEvent": "حذف ستاره از رویداد",
   "eventCard.starEvent": "ستاره‌دار کردن رویداد",
   "eventCard.untitledEvent": "رویداد بی‌عنوان",
   "eventCard.assetCount": "{{count}} دارایی",
   "eventCard.assetCount_other": "{{count}} دارایی",
-
   "eventForm.title": "عنوان",
   "eventForm.titlePlaceholder": "عنوان رویداد...",
   "eventForm.titleRequired": "عنوان رویداد لازم است",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "داده گزارش خام، JSON و غیره را جای‌گذاری کنید...",
   "eventForm.updateEvent": "به‌روزرسانی رویداد",
   "eventForm.createEvent": "ایجاد رویداد",
-
   "import.title": "ورود جدول زمانی",
   "import.selectFile": "انتخاب فایل JSON جدول زمانی",
   "import.createAsNew": "ایجاد به عنوان جدول زمانی جدید",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} بدون تغییر",
   "import.parseFailed": "تجزیه فایل ناموفق بود",
   "import.importFailed": "ورود ناموفق بود",
-
   "feed.noEventsYet": "هنوز رویداد جدول زمانی وجود ندارد",
   "feed.noEventsHint": "روی «رویداد جدید» کلیک کنید تا رویداد جدول زمانی اضافه کنید",
   "feed.today": "امروز",
   "feed.yesterday": "دیروز",
   "feed.eventCount": "{{count}} رویداد",
   "feed.eventCount_other": "{{count}} رویداد",
-
   "gantt.zoomIn": "بزرگ‌نمایی",
   "gantt.zoomOut": "کوچک‌نمایی",
   "gantt.fitAll": "تنظیم همه",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(رویداد نقطه‌ای)",
   "gantt.tooltipSource": "منبع: {{source}}",
   "gantt.tooltipActor": "عامل: {{actor}}",
-
   "map.mapped": "{{count}} نگاشت شده",
   "map.doubleClickToPlace": "برای قرار دادن رویدادها روی نقشه دوبار کلیک کنید",
   "map.withoutLocation": "{{count}} بدون موقعیت",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "فعال کردن قرار دادن با یک کلیک",
   "map.unstar": "حذف ستاره",
   "map.star": "ستاره‌دار کردن",
-
   "heatmap.techniques": "تکنیک‌ها:",
   "heatmap.eventsWithMitre": "رویدادها با MITRE:",
   "heatmap.tacticsHit": "تاکتیک‌های هدف قرار گرفته:",
@@ -143,16 +135,14 @@
   "heatmap.confidenceMedium": "متوسط",
   "heatmap.confidenceHigh": "بالا",
   "heatmap.confidenceConfirmed": "تایید شده",
-
   "filter.clear": "پاک کردن",
-
   "mitreCombo.searchPlaceholder": "جستجوی تکنیک‌ها (مثلاً T1566، Phishing)...",
   "mitreCombo.addMore": "افزودن بیشتر...",
-
   "mitreReport.techniquesPerTactic": "تکنیک‌ها بر اساس تاکتیک",
   "mitreReport.actorTTPSummary": "خلاصه TTP عاملان",
   "mitreReport.noActorsMapped": "هیچ عاملی با تکنیک‌ها نگاشت نشده.",
   "mitreReport.techniqueCount": "{{count}} تکنیک",
   "mitreReport.techniqueCount_other": "{{count}} تکنیک",
-  "mitreReport.techniqueCoverage": "پوشش تکنیک"
+  "mitreReport.techniqueCoverage": "پوشش تکنیک",
+  "emptyState": "هنوز رویداد خط زمانی وجود ندارد"
 }

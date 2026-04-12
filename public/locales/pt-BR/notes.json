@@ -15,12 +15,10 @@
   "builtinTemplate.cloudAccount.name": "Detalhes de conta na nuvem",
   "builtinTemplate.ociUser.name": "Detalhes de usuário OCI",
   "builtinTemplate.ociTenancy.name": "Detalhes de tenant OCI",
-
   "builtinTemplateCategory.general": "Geral",
   "builtinTemplateCategory.investigation": "Investigação",
   "builtinTemplateCategory.incidentResponse": "Resposta a incidentes",
   "builtinTemplateCategory.cloud": "Nuvem",
-
   "card": {
     "moveToTrash": "Mover para lixeira",
     "moveToTrashAria": "Mover nota para lixeira",
@@ -170,5 +168,6 @@
     "categoryBlocks": "Blocos",
     "categoryThreatIntel": "Threat Intel",
     "categoryInsert": "Inserir"
-  }
+  },
+  "emptyState": "Nenhuma nota ainda — crie uma para começar"
 }

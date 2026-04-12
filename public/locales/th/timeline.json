@@ -29,7 +29,6 @@
   "view.colorModeEvents": "เหตุการณ์",
   "view.colorModeConfidence": "ความเชื่อมั่น",
   "view.colorModeActors": "ผู้กระทำ",
-
   "export.exportImport": "ส่งออก / นำเข้า",
   "export.exportTimelineJSON": "ส่งออก JSON ไทม์ไลน์",
   "export.exportAllEventsJSON": "ส่งออก JSON เหตุการณ์ทั้งหมด",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "MITRE Mappings CSV",
   "export.exportFailed": "การส่งออกไทม์ไลน์ล้มเหลว",
-
   "eventCard.deleteEvent": "ลบเหตุการณ์",
   "eventCard.unstarEvent": "เอาดาวออก",
   "eventCard.starEvent": "ติดดาว",
   "eventCard.untitledEvent": "เหตุการณ์ที่ไม่มีชื่อ",
   "eventCard.assetCount": "{{count}} ทรัพย์สิน",
   "eventCard.assetCount_other": "{{count}} ทรัพย์สิน",
-
   "eventForm.title": "ชื่อเรื่อง",
   "eventForm.titlePlaceholder": "ชื่อเหตุการณ์...",
   "eventForm.titleRequired": "ต้องระบุชื่อเหตุการณ์",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "วางข้อมูลล็อกดิบ JSON ฯลฯ...",
   "eventForm.updateEvent": "อัปเดตเหตุการณ์",
   "eventForm.createEvent": "สร้างเหตุการณ์",
-
   "import.title": "นำเข้าไทม์ไลน์",
   "import.selectFile": "เลือกไฟล์ JSON ไทม์ไลน์",
   "import.createAsNew": "สร้างเป็นไทม์ไลน์ใหม่",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "ไม่มีการเปลี่ยนแปลง {{count}} รายการ",
   "import.parseFailed": "การแยกวิเคราะห์ไฟล์ล้มเหลว",
   "import.importFailed": "การนำเข้าล้มเหลว",
-
   "feed.noEventsYet": "ยังไม่มีเหตุการณ์ไทม์ไลน์",
   "feed.noEventsHint": "คลิก \"เหตุการณ์ใหม่\" เพื่อเพิ่มเหตุการณ์ไทม์ไลน์",
   "feed.today": "วันนี้",
   "feed.yesterday": "เมื่อวาน",
   "feed.eventCount": "{{count}} เหตุการณ์",
   "feed.eventCount_other": "{{count}} เหตุการณ์",
-
   "gantt.zoomIn": "ซูมเข้า",
   "gantt.zoomOut": "ซูมออก",
   "gantt.fitAll": "ปรับให้พอดีทั้งหมด",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(เหตุการณ์จุด)",
   "gantt.tooltipSource": "แหล่งที่มา: {{source}}",
   "gantt.tooltipActor": "ผู้กระทำ: {{actor}}",
-
   "map.mapped": "แมปแล้ว {{count}} รายการ",
   "map.doubleClickToPlace": "ดับเบิลคลิกแผนที่เพื่อวางเหตุการณ์",
   "map.withoutLocation": "{{count}} รายการที่ไม่มีตำแหน่ง",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "เปิดใช้งานการวางด้วยคลิกเดียว",
   "map.unstar": "เอาดาวออก",
   "map.star": "ติดดาว",
-
   "heatmap.techniques": "เทคนิค:",
   "heatmap.eventsWithMitre": "เหตุการณ์ที่มี MITRE:",
   "heatmap.tacticsHit": "ยุทธวิธีที่พบ:",
@@ -143,16 +135,14 @@
   "heatmap.confidenceMedium": "ปานกลาง",
   "heatmap.confidenceHigh": "สูง",
   "heatmap.confidenceConfirmed": "ยืนยันแล้ว",
-
   "filter.clear": "ล้าง",
-
   "mitreCombo.searchPlaceholder": "ค้นหาเทคนิค (เช่น T1566, Phishing)...",
   "mitreCombo.addMore": "เพิ่มเติม...",
-
   "mitreReport.techniquesPerTactic": "เทคนิคต่อยุทธวิธี",
   "mitreReport.actorTTPSummary": "สรุป TTP ของผู้กระทำ",
   "mitreReport.noActorsMapped": "ไม่มีผู้กระทำที่แมปกับเทคนิค",
   "mitreReport.techniqueCount": "{{count}} เทคนิค",
   "mitreReport.techniqueCount_other": "{{count}} เทคนิค",
-  "mitreReport.techniqueCoverage": "ความครอบคลุมเทคนิค"
+  "mitreReport.techniqueCoverage": "ความครอบคลุมเทคนิค",
+  "emptyState": "ยังไม่มีเหตุการณ์ในไทม์ไลน์"
 }

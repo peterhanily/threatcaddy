@@ -15,12 +15,10 @@
   "builtinTemplate.cloudAccount.name": "تفاصيل الحساب السحابي",
   "builtinTemplate.ociUser.name": "تفاصيل مستخدم OCI",
   "builtinTemplate.ociTenancy.name": "تفاصيل مستأجر OCI",
-
   "builtinTemplateCategory.general": "عام",
   "builtinTemplateCategory.investigation": "تحقيق",
   "builtinTemplateCategory.incidentResponse": "الاستجابة للحوادث",
   "builtinTemplateCategory.cloud": "سحابة",
-
   "card": {
     "moveToTrash": "نقل إلى المهملات",
     "moveToTrashAria": "نقل الملاحظة إلى المهملات",
@@ -170,5 +168,6 @@
     "categoryBlocks": "الكتل",
     "categoryThreatIntel": "استخبارات التهديدات",
     "categoryInsert": "إدراج"
-  }
+  },
+  "emptyState": "لا توجد ملاحظات بعد — أنشئ واحدة للبدء"
 }

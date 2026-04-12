@@ -5,11 +5,9 @@
   "priority.lowFull": "低",
   "priority.mediumFull": "中",
   "priority.highFull": "高",
-
   "status.todo": "未対応",
   "status.inProgress": "進行中",
   "status.done": "完了",
-
   "list.title": "タスク",
   "list.titleWithScope": "タスク — {{scope}}（{{count}}）",
   "list.titleWithCount": "タスク（{{count}}）",
@@ -31,7 +29,6 @@
   "list.emptyHint": "「新規タスク」をクリックするか Ctrl+Shift+T を押してください",
   "list.editTaskModal": "タスクを編集",
   "list.createTaskModal": "タスクを作成",
-
   "item.markIncomplete": "未完了にする",
   "item.markComplete": "完了にする",
   "item.untitled": "無題のタスク",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "タスクを削除",
   "item.confirmDeleteMessage": "このタスクは完全に削除されます。この操作は元に戻せません。",
   "item.confirmDeleteLabel": "タスクを削除",
-
   "form.titleLabel": "タイトル",
   "form.titlePlaceholder": "タスクタイトル...",
   "form.titleRequired": "タスクタイトルは必須です",
@@ -81,10 +77,10 @@
   "form.relativeTime.minutesAgo": "{{count}}分前",
   "form.relativeTime.hoursAgo": "{{count}}時間前",
   "form.relativeTime.daysAgo": "{{count}}日前",
-
   "kanban.boardLabel": "かんばんボード",
   "kanban.columnLabel": "{{label}} 列、{{count}} 件のタスク",
   "kanban.changeStatus": "{{title}} のステータスを変更",
   "kanban.noTasks": "タスクなし",
-  "kanban.dropHere": "ここにドロップ"
+  "kanban.dropHere": "ここにドロップ",
+  "emptyState": "タスクがまだありません — 作成して始めましょう"
 }

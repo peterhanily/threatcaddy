@@ -5,11 +5,9 @@
   "priority.lowFull": "Faible",
   "priority.mediumFull": "Moyenne",
   "priority.highFull": "Haute",
-
   "status.todo": "À faire",
   "status.inProgress": "En cours",
   "status.done": "Terminé",
-
   "list.title": "Tâches",
   "list.titleWithScope": "Tâches — {{scope}} ({{count}})",
   "list.titleWithCount": "Tâches ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "Cliquez sur \"Nouvelle tâche\" ou appuyez sur Ctrl+Maj+T",
   "list.editTaskModal": "Modifier la tâche",
   "list.createTaskModal": "Créer une tâche",
-
   "item.markIncomplete": "Marquer comme incomplète",
   "item.markComplete": "Marquer comme terminée",
   "item.untitled": "Tâche sans titre",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "Supprimer la tâche",
   "item.confirmDeleteMessage": "Cette tâche sera supprimée définitivement. Cette action est irréversible.",
   "item.confirmDeleteLabel": "Supprimer la tâche",
-
   "form.titleLabel": "Titre",
   "form.titlePlaceholder": "Titre de la tâche...",
   "form.titleRequired": "Le titre de la tâche est requis",
@@ -81,10 +77,10 @@
   "form.relativeTime.minutesAgo": "il y a {{count}} min",
   "form.relativeTime.hoursAgo": "il y a {{count}} h",
   "form.relativeTime.daysAgo": "il y a {{count}} j",
-
   "kanban.boardLabel": "Tableau kanban",
   "kanban.columnLabel": "Colonne {{label}}, {{count}} tâches",
   "kanban.changeStatus": "Changer le statut de {{title}}",
   "kanban.noTasks": "Aucune tâche",
-  "kanban.dropHere": "Déposer les tâches ici"
+  "kanban.dropHere": "Déposer les tâches ici",
+  "emptyState": "Aucune tâche pour le moment — créez-en une pour commencer"
 }

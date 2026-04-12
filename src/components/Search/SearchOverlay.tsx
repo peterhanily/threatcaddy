@@ -577,8 +577,9 @@ export function SearchOverlay({
         {/* Results */}
         <div ref={resultsRef} className="flex-1 overflow-y-auto min-h-0" aria-live="polite">
           {debouncedQuery && results.length === 0 && !error && (
-            <div className="p-8 text-center text-gray-500 text-sm">
-              No results found for "{debouncedQuery}"
+            <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-500">
+              <Search size={40} strokeWidth={1.5} className="text-gray-600" />
+              <p className="text-sm">{t('noResults')}</p>
             </div>
           )}
 

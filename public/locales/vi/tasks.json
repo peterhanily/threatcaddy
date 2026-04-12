@@ -5,11 +5,9 @@
   "priority.lowFull": "Thấp",
   "priority.mediumFull": "Trung bình",
   "priority.highFull": "Cao",
-
   "status.todo": "Cần làm",
   "status.inProgress": "Đang tiến hành",
   "status.done": "Hoàn thành",
-
   "list.title": "Nhiệm vụ",
   "list.titleWithScope": "Nhiệm vụ — {{scope}} ({{count}})",
   "list.titleWithCount": "Nhiệm vụ ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "Nhấp \"Nhiệm vụ mới\" hoặc nhấn Ctrl+Shift+T",
   "list.editTaskModal": "Sửa nhiệm vụ",
   "list.createTaskModal": "Tạo nhiệm vụ",
-
   "item.markIncomplete": "Đánh dấu chưa hoàn thành",
   "item.markComplete": "Đánh dấu hoàn thành",
   "item.untitled": "Nhiệm vụ chưa có tiêu đề",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "Xóa nhiệm vụ",
   "item.confirmDeleteMessage": "Nhiệm vụ này sẽ bị xóa vĩnh viễn. Không thể hoàn tác.",
   "item.confirmDeleteLabel": "Xóa nhiệm vụ",
-
   "form.titleLabel": "Tiêu đề",
   "form.titlePlaceholder": "Tiêu đề nhiệm vụ...",
   "form.titleRequired": "Cần tiêu đề nhiệm vụ",
@@ -81,10 +77,10 @@
   "form.relativeTime.minutesAgo": "{{count}} phút trước",
   "form.relativeTime.hoursAgo": "{{count}} giờ trước",
   "form.relativeTime.daysAgo": "{{count}} ngày trước",
-
   "kanban.boardLabel": "Bảng kanban",
   "kanban.columnLabel": "Cột {{label}}, {{count}} nhiệm vụ",
   "kanban.changeStatus": "Đổi trạng thái {{title}}",
   "kanban.noTasks": "Không có nhiệm vụ",
-  "kanban.dropHere": "Thả nhiệm vụ vào đây"
+  "kanban.dropHere": "Thả nhiệm vụ vào đây",
+  "emptyState": "Chưa có nhiệm vụ nào — tạo một nhiệm vụ để bắt đầu"
 }

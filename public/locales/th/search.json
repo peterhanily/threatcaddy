@@ -2,7 +2,7 @@
   "placeholder": "ค้นหา...",
   "globalSearch": "ค้นหาทั้งหมด",
   "searchPlaceholder": "ค้นหาบันทึก งาน IOC เหตุการณ์ การสืบสวน...",
-  "noResults": "ไม่มีผลลัพธ์",
+  "noResults": "ไม่พบผลลัพธ์ — ลองใช้คำค้นหาอื่น",
   "noResultsFor": "ไม่มีผลลัพธ์สำหรับ \"{{query}}\"",
   "resultsFor": "ผลลัพธ์สำหรับ \"{{query}}\"",
   "resultCount": "{{count}} ผลลัพธ์",

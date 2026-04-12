@@ -29,7 +29,6 @@
   "view.colorModeEvents": "Eventos",
   "view.colorModeConfidence": "Confiança",
   "view.colorModeActors": "Atores",
-
   "export.exportImport": "Exportar / Importar",
   "export.exportTimelineJSON": "Exportar linha do tempo JSON",
   "export.exportAllEventsJSON": "Exportar todos os eventos JSON",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "Mapeamentos MITRE CSV",
   "export.exportFailed": "Exportação da linha do tempo falhou",
-
   "eventCard.deleteEvent": "Excluir evento",
   "eventCard.unstarEvent": "Remover destaque",
   "eventCard.starEvent": "Destacar",
   "eventCard.untitledEvent": "Evento sem título",
   "eventCard.assetCount": "{{count}} ativo",
   "eventCard.assetCount_other": "{{count}} ativos",
-
   "eventForm.title": "Título",
   "eventForm.titlePlaceholder": "Título do evento...",
   "eventForm.titleRequired": "O título do evento é obrigatório",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "Colar dados de log brutos, JSON, etc...",
   "eventForm.updateEvent": "Atualizar evento",
   "eventForm.createEvent": "Criar evento",
-
   "import.title": "Importar linha do tempo",
   "import.selectFile": "Selecionar arquivo JSON de linha do tempo",
   "import.createAsNew": "Criar como nova linha do tempo",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} sem alterações",
   "import.parseFailed": "Falha ao analisar o arquivo",
   "import.importFailed": "Importação falhou",
-
   "feed.noEventsYet": "Nenhum evento de linha do tempo ainda",
   "feed.noEventsHint": "Clique em \"Novo evento\" para adicionar um evento de linha do tempo",
   "feed.today": "Hoje",
   "feed.yesterday": "Ontem",
   "feed.eventCount": "{{count}} evento",
   "feed.eventCount_other": "{{count}} eventos",
-
   "gantt.zoomIn": "Ampliar",
   "gantt.zoomOut": "Reduzir",
   "gantt.fitAll": "Ajustar tudo",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(evento pontual)",
   "gantt.tooltipSource": "Fonte: {{source}}",
   "gantt.tooltipActor": "Ator: {{actor}}",
-
   "map.mapped": "{{count}} mapeado(s)",
   "map.doubleClickToPlace": "Clique duplo no mapa para colocar eventos",
   "map.withoutLocation": "{{count}} sem localização",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "Ativar colocação por clique único",
   "map.unstar": "Remover destaque",
   "map.star": "Destacar",
-
   "heatmap.techniques": "Técnicas:",
   "heatmap.eventsWithMitre": "Eventos com MITRE:",
   "heatmap.tacticsHit": "Táticas atingidas:",
@@ -138,21 +130,19 @@
   "heatmap.legendHigh": "Alto",
   "heatmap.legendConf": "Conf.",
   "heatmap.tooltipConfidence": "Confiança",
-  "heatmap.confidenceNone": "\u2014",
+  "heatmap.confidenceNone": "—",
   "heatmap.confidenceLow": "Baixa",
   "heatmap.confidenceMedium": "Média",
   "heatmap.confidenceHigh": "Alta",
   "heatmap.confidenceConfirmed": "Confirmada",
-
   "filter.clear": "Limpar",
-
   "mitreCombo.searchPlaceholder": "Buscar técnicas (ex. T1566, Phishing)...",
   "mitreCombo.addMore": "Adicionar mais...",
-
   "mitreReport.techniquesPerTactic": "Técnicas por tática",
   "mitreReport.actorTTPSummary": "Resumo TTP por ator",
   "mitreReport.noActorsMapped": "Nenhum ator tem técnicas mapeadas.",
   "mitreReport.techniqueCount": "{{count}} técnica",
   "mitreReport.techniqueCount_other": "{{count}} técnicas",
-  "mitreReport.techniqueCoverage": "Cobertura de técnicas"
+  "mitreReport.techniqueCoverage": "Cobertura de técnicas",
+  "emptyState": "Nenhum evento na linha do tempo ainda"
 }

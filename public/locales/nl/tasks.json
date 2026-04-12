@@ -5,11 +5,9 @@
   "priority.lowFull": "Laag",
   "priority.mediumFull": "Gemiddeld",
   "priority.highFull": "Hoog",
-
   "status.todo": "Te doen",
   "status.inProgress": "Bezig",
   "status.done": "Voltooid",
-
   "list.title": "Taken",
   "list.titleWithScope": "Taken — {{scope}} ({{count}})",
   "list.titleWithCount": "Taken ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "Klik op 'Nieuwe taak' of druk op Ctrl+Shift+T",
   "list.editTaskModal": "Taak bewerken",
   "list.createTaskModal": "Taak aanmaken",
-
   "item.markIncomplete": "Markeren als onvoltooid",
   "item.markComplete": "Markeren als voltooid",
   "item.untitled": "Naamloze taak",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "Taak verwijderen",
   "item.confirmDeleteMessage": "Deze taak wordt definitief verwijderd. Dit kan niet ongedaan worden gemaakt.",
   "item.confirmDeleteLabel": "Taak verwijderen",
-
   "form.titleLabel": "Titel",
   "form.titlePlaceholder": "Taaknaam...",
   "form.titleRequired": "Taaknaam is verplicht",
@@ -81,10 +77,10 @@
   "form.relativeTime.minutesAgo": "{{count}}min geleden",
   "form.relativeTime.hoursAgo": "{{count}}u geleden",
   "form.relativeTime.daysAgo": "{{count}}d geleden",
-
   "kanban.boardLabel": "Kanbanbord",
   "kanban.columnLabel": "Kolom {{label}}, {{count}} taken",
   "kanban.changeStatus": "Status wijzigen {{title}}",
   "kanban.noTasks": "Geen taken",
-  "kanban.dropHere": "Sleep taken hierheen"
+  "kanban.dropHere": "Sleep taken hierheen",
+  "emptyState": "Nog geen taken — maak er een om te beginnen"
 }

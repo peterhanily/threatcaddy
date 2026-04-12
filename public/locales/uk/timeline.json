@@ -29,7 +29,6 @@
   "view.colorModeEvents": "Події",
   "view.colorModeConfidence": "Впевненість",
   "view.colorModeActors": "Актори",
-
   "export.exportImport": "Експорт / Імпорт",
   "export.exportTimelineJSON": "Експорт хронології JSON",
   "export.exportAllEventsJSON": "Експорт усіх подій JSON",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "MITRE Mappings CSV",
   "export.exportFailed": "Експорт хронології не вдався",
-
   "eventCard.deleteEvent": "Видалити подію",
   "eventCard.unstarEvent": "Прибрати з вибраного",
   "eventCard.starEvent": "Додати до вибраного",
   "eventCard.untitledEvent": "Подія без назви",
   "eventCard.assetCount": "{{count}} актив",
   "eventCard.assetCount_other": "{{count}} активів",
-
   "eventForm.title": "Заголовок",
   "eventForm.titlePlaceholder": "Назва події...",
   "eventForm.titleRequired": "Назва події обов'язкова",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "Вставте сирі дані журналу, JSON тощо...",
   "eventForm.updateEvent": "Оновити подію",
   "eventForm.createEvent": "Створити подію",
-
   "import.title": "Імпорт хронології",
   "import.selectFile": "Вибрати JSON-файл хронології",
   "import.createAsNew": "Створити як нову хронологію",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} без змін",
   "import.parseFailed": "Не вдалося розібрати файл",
   "import.importFailed": "Імпорт не вдався",
-
   "feed.noEventsYet": "Подій хронології поки немає",
   "feed.noEventsHint": "Натисніть «Нова подія» для додавання",
   "feed.today": "Сьогодні",
   "feed.yesterday": "Вчора",
   "feed.eventCount": "{{count}} подія",
   "feed.eventCount_other": "{{count}} подій",
-
   "gantt.zoomIn": "Збільшити",
   "gantt.zoomOut": "Зменшити",
   "gantt.fitAll": "Вмістити все",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(точкова подія)",
   "gantt.tooltipSource": "Джерело: {{source}}",
   "gantt.tooltipActor": "Актор: {{actor}}",
-
   "map.mapped": "{{count}} розміщено",
   "map.doubleClickToPlace": "Подвійний клік по карті для розміщення подій",
   "map.withoutLocation": "{{count}} без місцезнаходження",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "Увімкнути розміщення одним кліком",
   "map.unstar": "Прибрати з вибраного",
   "map.star": "Додати до вибраного",
-
   "heatmap.techniques": "Техніки:",
   "heatmap.eventsWithMitre": "Події з MITRE:",
   "heatmap.tacticsHit": "Охоплені тактики:",
@@ -143,16 +135,14 @@
   "heatmap.confidenceMedium": "Середня",
   "heatmap.confidenceHigh": "Висока",
   "heatmap.confidenceConfirmed": "Підтверджено",
-
   "filter.clear": "Очистити",
-
   "mitreCombo.searchPlaceholder": "Пошук технік (напр. T1566, Phishing)...",
   "mitreCombo.addMore": "Додати ще...",
-
   "mitreReport.techniquesPerTactic": "Техніки за тактиками",
   "mitreReport.actorTTPSummary": "Зведення TTP акторів",
   "mitreReport.noActorsMapped": "Жоден актор не має зіставлених технік.",
   "mitreReport.techniqueCount": "{{count}} техніка",
   "mitreReport.techniqueCount_other": "{{count}} технік",
-  "mitreReport.techniqueCoverage": "Охоплення технік"
+  "mitreReport.techniqueCoverage": "Охоплення технік",
+  "emptyState": "Подій на часовій шкалі поки немає"
 }

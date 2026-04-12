@@ -168,5 +168,6 @@
     "categoryBlocks": "Blokken",
     "categoryThreatIntel": "Dreigingsinformatie",
     "categoryInsert": "Invoegen"
-  }
+  },
+  "emptyState": "Nog geen notities — maak er een om te beginnen"
 }

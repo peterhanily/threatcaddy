@@ -15,12 +15,10 @@
   "builtinTemplate.cloudAccount.name": "פרטי חשבון ענן",
   "builtinTemplate.ociUser.name": "פרטי משתמש OCI",
   "builtinTemplate.ociTenancy.name": "פרטי דייר OCI",
-
   "builtinTemplateCategory.general": "כללי",
   "builtinTemplateCategory.investigation": "חקירה",
   "builtinTemplateCategory.incidentResponse": "תגובה לאירועים",
   "builtinTemplateCategory.cloud": "ענן",
-
   "card": {
     "moveToTrash": "העבר לאשפה",
     "moveToTrashAria": "העבר הערה לאשפה",
@@ -170,5 +168,6 @@
     "categoryBlocks": "בלוקים",
     "categoryThreatIntel": "מודיעין איומים",
     "categoryInsert": "הוספה"
-  }
+  },
+  "emptyState": "אין עדיין הערות — צרו אחת כדי להתחיל"
 }

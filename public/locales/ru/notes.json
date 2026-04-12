@@ -168,5 +168,6 @@
     "categoryBlocks": "Блоки",
     "categoryThreatIntel": "Анализ угроз",
     "categoryInsert": "Вставка"
-  }
+  },
+  "emptyState": "Заметок пока нет — создайте первую"
 }

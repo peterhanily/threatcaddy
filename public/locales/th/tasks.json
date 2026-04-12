@@ -5,11 +5,9 @@
   "priority.lowFull": "ต่ำ",
   "priority.mediumFull": "ปานกลาง",
   "priority.highFull": "สูง",
-
   "status.todo": "ต้องทำ",
   "status.inProgress": "กำลังดำเนินการ",
   "status.done": "เสร็จสิ้น",
-
   "list.title": "งาน",
   "list.titleWithScope": "งาน — {{scope}} ({{count}})",
   "list.titleWithCount": "งาน ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "คลิก \"งานใหม่\" หรือกด Ctrl+Shift+T",
   "list.editTaskModal": "แก้ไขงาน",
   "list.createTaskModal": "สร้างงาน",
-
   "item.markIncomplete": "ทำเครื่องหมายว่าไม่เสร็จ",
   "item.markComplete": "ทำเครื่องหมายว่าเสร็จ",
   "item.untitled": "งานที่ไม่มีชื่อ",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "ลบงาน",
   "item.confirmDeleteMessage": "งานนี้จะถูกลบถาวร การกระทำนี้ไม่สามารถยกเลิกได้",
   "item.confirmDeleteLabel": "ลบงาน",
-
   "form.titleLabel": "ชื่อเรื่อง",
   "form.titlePlaceholder": "ชื่องาน...",
   "form.titleRequired": "ต้องระบุชื่องาน",
@@ -81,10 +77,10 @@
   "form.relativeTime.minutesAgo": "{{count}} นาทีที่แล้ว",
   "form.relativeTime.hoursAgo": "{{count}} ชั่วโมงที่แล้ว",
   "form.relativeTime.daysAgo": "{{count}} วันที่แล้ว",
-
   "kanban.boardLabel": "กระดาน Kanban",
   "kanban.columnLabel": "คอลัมน์ {{label}}, {{count}} งาน",
   "kanban.changeStatus": "เปลี่ยนสถานะของ {{title}}",
   "kanban.noTasks": "ไม่มีงาน",
-  "kanban.dropHere": "วางที่นี่"
+  "kanban.dropHere": "วางที่นี่",
+  "emptyState": "ยังไม่มีงาน — สร้างหนึ่งรายการเพื่อเริ่มต้น"
 }

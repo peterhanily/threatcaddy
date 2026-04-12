@@ -5,11 +5,9 @@
   "priority.lowFull": "منخفض",
   "priority.mediumFull": "متوسط",
   "priority.highFull": "عالٍ",
-
   "status.todo": "للقيام به",
   "status.inProgress": "قيد التنفيذ",
   "status.done": "منتهي",
-
   "list.title": "المهام",
   "list.titleWithScope": "المهام — {{scope}} ({{count}})",
   "list.titleWithCount": "المهام ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "انقر على \"مهمة جديدة\" أو اضغط Ctrl+Shift+T",
   "list.editTaskModal": "تعديل المهمة",
   "list.createTaskModal": "إنشاء مهمة",
-
   "item.markIncomplete": "وضع علامة غير مكتمل",
   "item.markComplete": "وضع علامة مكتمل",
   "item.untitled": "مهمة بدون عنوان",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "حذف المهمة",
   "item.confirmDeleteMessage": "سيتم حذف هذه المهمة بشكل نهائي. لا يمكن التراجع عن هذا الإجراء.",
   "item.confirmDeleteLabel": "حذف المهمة",
-
   "form.titleLabel": "العنوان",
   "form.titlePlaceholder": "عنوان المهمة...",
   "form.titleRequired": "عنوان المهمة مطلوب",
@@ -81,10 +77,10 @@
   "form.relativeTime.minutesAgo": "منذ {{count}} د",
   "form.relativeTime.hoursAgo": "منذ {{count}} س",
   "form.relativeTime.daysAgo": "منذ {{count}} يوم",
-
   "kanban.boardLabel": "لوحة Kanban",
   "kanban.columnLabel": "عمود {{label}}، {{count}} مهمة",
   "kanban.changeStatus": "تغيير حالة {{title}}",
   "kanban.noTasks": "لا توجد مهام",
-  "kanban.dropHere": "أفلت المهام هنا"
+  "kanban.dropHere": "أفلت المهام هنا",
+  "emptyState": "لا توجد مهام بعد — أنشئ واحدة للبدء"
 }

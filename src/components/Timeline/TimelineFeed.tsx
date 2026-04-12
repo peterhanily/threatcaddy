@@ -55,10 +55,9 @@ export function TimelineFeed({ events, selectedId, onSelect, onToggleStar, onDel
 
   if (events.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-gray-600">
-        <Clock size={32} className="mb-2" />
-        <p className="text-sm">{t('feed.noEventsYet')}</p>
-        <p className="text-xs mt-1">{t('feed.noEventsHint')}</p>
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-gray-500">
+        <Clock size={40} strokeWidth={1.5} className="text-gray-600" />
+        <p className="text-sm">{t('emptyState')}</p>
       </div>
     );
   }

@@ -15,12 +15,10 @@
   "builtinTemplate.cloudAccount.name": "Détails compte cloud",
   "builtinTemplate.ociUser.name": "Détails utilisateur OCI",
   "builtinTemplate.ociTenancy.name": "Détails locataire OCI",
-
   "builtinTemplateCategory.general": "Général",
   "builtinTemplateCategory.investigation": "Enquête",
   "builtinTemplateCategory.incidentResponse": "Réponse aux incidents",
   "builtinTemplateCategory.cloud": "Cloud",
-
   "card": {
     "moveToTrash": "Mettre à la corbeille",
     "moveToTrashAria": "Mettre la note à la corbeille",
@@ -42,7 +40,7 @@
     "unarchiveAria": "Désarchiver la note",
     "color": "Couleur",
     "colorAria": "Définir la couleur de la note",
-    "colorOption": "Couleur\u00a0: {{name}}",
+    "colorOption": "Couleur : {{name}}",
     "noInvestigation": "Aucune enquête",
     "assignInvestigation": "Assigner à une enquête",
     "iocAnalysis": "Analyse IOC",
@@ -109,8 +107,8 @@
     "renameFolder": "Renommer le dossier",
     "renameFolderAria": "Renommer {{name}}",
     "deleteFolder": "Supprimer le dossier",
-    "deleteFolderConfirm": "Supprimer <strong>{{name}}</strong>\u00a0?",
-    "deleteFolderConfirmWithNotes": "Supprimer <strong>{{name}}</strong> ({{count}} note{{s}} à l'intérieur)\u00a0?",
+    "deleteFolderConfirm": "Supprimer <strong>{{name}}</strong> ?",
+    "deleteFolderConfirmWithNotes": "Supprimer <strong>{{name}}</strong> ({{count}} note{{s}} à l'intérieur) ?",
     "deleteFolderButton": "Supprimer le dossier",
     "moveNotesOutAndDelete": "Déplacer les notes et supprimer",
     "trashAll": "Tout mettre à la corbeille",
@@ -170,5 +168,6 @@
     "categoryBlocks": "Blocs",
     "categoryThreatIntel": "Threat Intel",
     "categoryInsert": "Insérer"
-  }
+  },
+  "emptyState": "Aucune note pour le moment — créez-en une pour commencer"
 }

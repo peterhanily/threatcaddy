@@ -15,12 +15,10 @@
   "builtinTemplate.cloudAccount.name": "クラウドアカウント詳細",
   "builtinTemplate.ociUser.name": "OCIユーザー詳細",
   "builtinTemplate.ociTenancy.name": "OCIテナント詳細",
-
   "builtinTemplateCategory.general": "一般",
   "builtinTemplateCategory.investigation": "調査",
   "builtinTemplateCategory.incidentResponse": "インシデント対応",
   "builtinTemplateCategory.cloud": "クラウド",
-
   "card": {
     "moveToTrash": "ゴミ箱に移動",
     "moveToTrashAria": "ノートをゴミ箱に移動",
@@ -170,5 +168,6 @@
     "categoryBlocks": "ブロック",
     "categoryThreatIntel": "脅威インテル",
     "categoryInsert": "挿入"
-  }
+  },
+  "emptyState": "メモがまだありません — 作成して始めましょう"
 }

@@ -12,7 +12,7 @@
   "clear": "Limpar",
   "resultCount": "{{count}} resultado",
   "resultCountPlural": "{{count}} resultados",
-  "noResults": "Nenhum resultado para \"{{query}}\"",
+  "noResults": "Nenhum resultado encontrado — tente palavras-chave diferentes",
   "types": "Tipos:",
   "date": "Data",
   "created": "Criado",

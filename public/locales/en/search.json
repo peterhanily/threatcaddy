@@ -12,7 +12,7 @@
   "clear": "Clear",
   "resultCount": "{{count}} result",
   "resultCountPlural": "{{count}} results",
-  "noResults": "No results found for \"{{query}}\"",
+  "noResults": "No results found — try different keywords",
   "types": "Types:",
   "date": "Date",
   "created": "Created",

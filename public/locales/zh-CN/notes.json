@@ -15,12 +15,10 @@
   "builtinTemplate.cloudAccount.name": "云账户详情",
   "builtinTemplate.ociUser.name": "OCI 用户详情",
   "builtinTemplate.ociTenancy.name": "OCI 租户详情",
-
   "builtinTemplateCategory.general": "通用",
   "builtinTemplateCategory.investigation": "调查",
   "builtinTemplateCategory.incidentResponse": "事件响应",
   "builtinTemplateCategory.cloud": "云",
-
   "card": {
     "moveToTrash": "移至回收站",
     "moveToTrashAria": "将笔记移至回收站",
@@ -170,5 +168,6 @@
     "categoryBlocks": "块",
     "categoryThreatIntel": "威胁情报",
     "categoryInsert": "插入"
-  }
+  },
+  "emptyState": "暂无笔记 — 创建一个开始吧"
 }

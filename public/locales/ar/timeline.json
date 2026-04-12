@@ -29,7 +29,6 @@
   "view.colorModeEvents": "الأحداث",
   "view.colorModeConfidence": "الثقة",
   "view.colorModeActors": "الجهات الفاعلة",
-
   "export.exportImport": "تصدير / استيراد",
   "export.exportTimelineJSON": "تصدير الجدول الزمني JSON",
   "export.exportAllEventsJSON": "تصدير جميع الأحداث JSON",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "خرائط MITRE CSV",
   "export.exportFailed": "فشل تصدير الجدول الزمني",
-
   "eventCard.deleteEvent": "حذف الحدث",
   "eventCard.unstarEvent": "إزالة نجمة الحدث",
   "eventCard.starEvent": "تمييز الحدث بنجمة",
   "eventCard.untitledEvent": "حدث بدون عنوان",
   "eventCard.assetCount": "{{count}} أصل",
   "eventCard.assetCount_other": "{{count}} أصول",
-
   "eventForm.title": "العنوان",
   "eventForm.titlePlaceholder": "عنوان الحدث...",
   "eventForm.titleRequired": "عنوان الحدث مطلوب",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "الصق بيانات السجل الخام أو JSON إلخ...",
   "eventForm.updateEvent": "تحديث الحدث",
   "eventForm.createEvent": "إنشاء حدث",
-
   "import.title": "استيراد الجدول الزمني",
   "import.selectFile": "اختر ملف JSON للجدول الزمني",
   "import.createAsNew": "إنشاء كجدول زمني جديد",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} بدون تغيير",
   "import.parseFailed": "فشل تحليل الملف",
   "import.importFailed": "فشل الاستيراد",
-
   "feed.noEventsYet": "لا توجد أحداث في الجدول الزمني بعد",
   "feed.noEventsHint": "انقر على \"حدث جديد\" لإضافة حدث",
   "feed.today": "اليوم",
   "feed.yesterday": "أمس",
   "feed.eventCount": "{{count}} حدث",
   "feed.eventCount_other": "{{count}} أحداث",
-
   "gantt.zoomIn": "تكبير",
   "gantt.zoomOut": "تصغير",
   "gantt.fitAll": "ملاءمة الكل",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(حدث نقطي)",
   "gantt.tooltipSource": "المصدر: {{source}}",
   "gantt.tooltipActor": "الجهة الفاعلة: {{actor}}",
-
   "map.mapped": "{{count}} مرسوم على الخريطة",
   "map.doubleClickToPlace": "انقر نقرًا مزدوجًا على الخريطة لوضع الأحداث",
   "map.withoutLocation": "{{count}} بدون موقع",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "تفعيل الوضع بنقرة واحدة",
   "map.unstar": "إزالة النجمة",
   "map.star": "تمييز بنجمة",
-
   "heatmap.techniques": "التقنيات:",
   "heatmap.eventsWithMitre": "أحداث مع MITRE:",
   "heatmap.tacticsHit": "التكتيكات المُستخدمة:",
@@ -143,16 +135,14 @@
   "heatmap.confidenceMedium": "متوسط",
   "heatmap.confidenceHigh": "عالٍ",
   "heatmap.confidenceConfirmed": "مؤكَّد",
-
   "filter.clear": "مسح",
-
   "mitreCombo.searchPlaceholder": "البحث في التقنيات (مثل T1566، التصيد)...",
   "mitreCombo.addMore": "إضافة المزيد...",
-
   "mitreReport.techniquesPerTactic": "التقنيات لكل تكتيك",
   "mitreReport.actorTTPSummary": "ملخص TTP للجهة الفاعلة",
   "mitreReport.noActorsMapped": "لا توجد جهات فاعلة مرسومة بتقنيات.",
   "mitreReport.techniqueCount": "{{count}} تقنية",
   "mitreReport.techniqueCount_other": "{{count}} تقنيات",
-  "mitreReport.techniqueCoverage": "تغطية التقنيات"
+  "mitreReport.techniqueCoverage": "تغطية التقنيات",
+  "emptyState": "لا توجد أحداث في الجدول الزمني بعد"
 }
