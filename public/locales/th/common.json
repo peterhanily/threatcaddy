@@ -63,7 +63,6 @@
   "app.beta": "เบต้า",
   "app.experimental": "ทดลอง",
   "app.deprecated": "เลิกใช้แล้ว",
-
   "nav.notes": "บันทึก",
   "nav.tasks": "งาน",
   "nav.timeline": "ไทม์ไลน์",
@@ -77,7 +76,6 @@
   "nav.agents": "เอเจนต์",
   "nav.trash": "ถังขยะ",
   "nav.exec": "ผู้บริหาร",
-
   "sidebar.collapse": "ย่อแถบด้านข้าง",
   "sidebar.expand": "ขยายแถบด้านข้าง",
   "sidebar.investigationContext": "บริบทการสืบสวน",
@@ -109,7 +107,6 @@
   "sidebar.downloadStandalone": "ดาวน์โหลดเวอร์ชันสแตนด์อโลน",
   "sidebar.chromeExtension": "ส่วนขยาย Chrome",
   "sidebar.privacy": "ความเป็นส่วนตัว",
-
   "header.search": "ค้นหา",
   "header.searchPlaceholder": "ค้นหาบันทึก งาน IOC เหตุการณ์ การสืบสวน...",
   "header.notifications": "การแจ้งเตือน",
@@ -137,12 +134,10 @@
   "header.privacy": "ความเป็นส่วนตัว",
   "header.saveBackup": "บันทึกข้อมูลสำรอง",
   "header.loadBackup": "โหลดข้อมูลสำรอง",
-
   "tag.addTag": "เพิ่มแท็ก",
   "tag.createTag": "สร้างแท็ก",
   "tag.noTags": "ไม่มีแท็ก",
   "tag.searchTags": "ค้นหาแท็ก...",
-
   "serverError.unauthorized": "จำเป็นต้องตรวจสอบตัวตน",
   "serverError.forbidden": "การเข้าถึงถูกปฏิเสธ",
   "serverError.notFound": "ไม่พบ",
@@ -215,7 +210,6 @@
   "serverError.RUN_NOT_FOUND": "ไม่พบการรัน",
   "serverError.INTERNAL_ERROR": "ข้อผิดพลาดภายในเซิร์ฟเวอร์",
   "serverError.MISSING_BLOB": "ขาดข้อมูลไฟล์",
-
   "appName": "ThreatCaddy",
   "save": "บันทึก",
   "cancel": "ยกเลิก",
@@ -249,7 +243,6 @@
   "error.reloadHint": "ลองโหลดส่วนนี้ใหม่หรือรีเฟรชหน้า หากปัญหายังคงอยู่ ให้คัดลอกรายละเอียดข้อผิดพลาดและรายงานปัญหา",
   "error.copyDetails": "คัดลอกรายละเอียดข้อผิดพลาด",
   "reload": "โหลดใหม่",
-
   "quickCapture.title": "สร้างบันทึก",
   "quickCapture.titleLabel": "หัวข้อ",
   "quickCapture.titlePlaceholder": "หัวข้อบันทึก...",
@@ -263,7 +256,6 @@
   "quickCapture.createNote": "สร้างบันทึก",
   "quickCapture.customBadge": "กำหนดเอง",
   "skipToMainContent": "ข้ามไปยังเนื้อหาหลัก",
-
   "createDropdown.createNew": "สร้างใหม่...",
   "createDropdown.new": "ใหม่",
   "createDropdown.createItem": "สร้าง{{item}}",
@@ -275,7 +267,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "เปิดไฟล์",
   "createDropdown.importData": "นำเข้าข้อมูล",
-
   "shortcuts.title": "แป้นพิมพ์ลัด",
   "shortcuts.general": "ทั่วไป",
   "shortcuts.openSearch": "เปิดการค้นหา",
@@ -295,7 +286,6 @@
   "shortcuts.switchToTasks": "สลับไปยังงาน",
   "shortcuts.switchToTimeline": "สลับไปยังไทม์ไลน์",
   "shortcuts.switchToWhiteboards": "สลับไปยังไวท์บอร์ด",
-
   "entityLinker.linkEntities": "เชื่อมโยงเอนทิตี",
   "entityLinker.searchPlaceholder": "ค้นหาเอนทิตีเพื่อเชื่อมโยง...",
   "entityLinker.linked": "เชื่อมโยงแล้ว",
@@ -304,7 +294,6 @@
   "entityLinker.note": "บันทึก",
   "entityLinker.task": "งาน",
   "entityLinker.event": "เหตุการณ์",
-
   "comments.label": "ความคิดเห็น",
   "comments.justNow": "เมื่อสักครู่",
   "comments.minutesAgo": "{{count}} นาทีที่แล้ว",
@@ -315,5 +304,18 @@
   "comments.cancelEdit": "ยกเลิกการแก้ไข",
   "comments.editComment": "แก้ไขความคิดเห็น",
   "comments.deleteComment": "ลบความคิดเห็น",
-  "comments.addPlaceholder": "เพิ่มความคิดเห็น..."
+  "comments.addPlaceholder": "เพิ่มความคิดเห็น...",
+  "demoModal.title": "ยินดีต้อนรับสู่ ThreatCaddy",
+  "demoModal.descriptionPrefix": "การสืบสวนตัวอย่าง",
+  "demoModal.descriptionSuffix": "ถูกโหลดเพื่อให้คุณสามารถสำรวจวิธีการทำงานทั้งหมด",
+  "demoModal.whatYouCan": "สิ่งที่คุณทำได้:",
+  "demoModal.browseItems": "เรียกดูบันทึก งาน และเหตุการณ์บนไทม์ไลน์",
+  "demoModal.viewGraph": "ดูกราฟการสืบสวนและการวิเคราะห์ IOC",
+  "demoModal.tryWhiteboard": "ลองใช้ไวท์บอร์ดและการเชื่อมโยงเอนทิตี",
+  "demoModal.useLinksPrefix": "ใช้",
+  "demoModal.useLinksSuffix": "เพื่อเชื่อมโยงระหว่างบันทึก",
+  "demoModal.startExploring": "เริ่มสำรวจ",
+  "demoModal.guidedTour": "เริ่มทัวร์นำชม",
+  "demoModal.deleteDemo": "ลบเดโมและเริ่มใหม่",
+  "demoModal.removeHint": "คุณสามารถลบข้อมูลตัวอย่างได้ภายหลังในการตั้งค่า"
 }

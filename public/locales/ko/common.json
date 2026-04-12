@@ -63,7 +63,6 @@
   "app.beta": "베타",
   "app.experimental": "실험적",
   "app.deprecated": "더 이상 사용되지 않음",
-
   "nav.notes": "노트",
   "nav.tasks": "태스크",
   "nav.timeline": "타임라인",
@@ -77,7 +76,6 @@
   "nav.agents": "에이전트",
   "nav.trash": "휴지통",
   "nav.exec": "경영진",
-
   "sidebar.collapse": "사이드바 접기",
   "sidebar.expand": "사이드바 확장",
   "sidebar.investigationContext": "조사 컨텍스트",
@@ -109,7 +107,6 @@
   "sidebar.downloadStandalone": "독립 실행형 다운로드",
   "sidebar.chromeExtension": "Chrome 확장 프로그램",
   "sidebar.privacy": "개인정보 보호",
-
   "header.search": "검색",
   "header.searchPlaceholder": "노트, 태스크, IOC, 조사 검색...",
   "header.notifications": "알림",
@@ -137,12 +134,10 @@
   "header.privacy": "개인정보 보호",
   "header.saveBackup": "백업 저장",
   "header.loadBackup": "백업 불러오기",
-
   "tag.addTag": "태그 추가",
   "tag.createTag": "태그 만들기",
   "tag.noTags": "태그 없음",
   "tag.searchTags": "태그 검색...",
-
   "serverError.unauthorized": "인증이 필요합니다",
   "serverError.forbidden": "접근이 거부되었습니다",
   "serverError.notFound": "찾을 수 없습니다",
@@ -215,7 +210,6 @@
   "serverError.RUN_NOT_FOUND": "실행을 찾을 수 없습니다",
   "serverError.INTERNAL_ERROR": "내부 서버 오류",
   "serverError.MISSING_BLOB": "파일 데이터가 누락되었습니다",
-
   "appName": "ThreatCaddy",
   "save": "저장",
   "cancel": "취소",
@@ -249,7 +243,6 @@
   "error.reloadHint": "이 섹션을 다시 로드하거나 페이지를 새로 고침해 보세요. 문제가 계속되면 오류 세부 정보를 복사하여 문제를 신고하세요.",
   "error.copyDetails": "오류 세부 정보 복사",
   "reload": "다시 로드",
-
   "quickCapture.title": "노트 만들기",
   "quickCapture.titleLabel": "제목",
   "quickCapture.titlePlaceholder": "노트 제목...",
@@ -263,7 +256,6 @@
   "quickCapture.createNote": "노트 만들기",
   "quickCapture.customBadge": "사용자 정의",
   "skipToMainContent": "본문으로 건너뛰기",
-
   "createDropdown.createNew": "새로 만들기...",
   "createDropdown.new": "새 항목",
   "createDropdown.createItem": "{{item}} 만들기",
@@ -275,7 +267,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "파일 열기",
   "createDropdown.importData": "데이터 가져오기",
-
   "shortcuts.title": "키보드 단축키",
   "shortcuts.general": "일반",
   "shortcuts.openSearch": "검색 열기",
@@ -295,7 +286,6 @@
   "shortcuts.switchToTasks": "태스크로 전환",
   "shortcuts.switchToTimeline": "타임라인으로 전환",
   "shortcuts.switchToWhiteboards": "화이트보드로 전환",
-
   "entityLinker.linkEntities": "엔티티 연결",
   "entityLinker.searchPlaceholder": "연결할 엔티티 검색...",
   "entityLinker.linked": "연결됨",
@@ -304,7 +294,6 @@
   "entityLinker.note": "노트",
   "entityLinker.task": "태스크",
   "entityLinker.event": "이벤트",
-
   "comments.label": "댓글",
   "comments.justNow": "방금 전",
   "comments.minutesAgo": "{{count}}분 전",
@@ -315,5 +304,18 @@
   "comments.cancelEdit": "수정 취소",
   "comments.editComment": "댓글 수정",
   "comments.deleteComment": "댓글 삭제",
-  "comments.addPlaceholder": "댓글을 추가하세요..."
+  "comments.addPlaceholder": "댓글을 추가하세요...",
+  "demoModal.title": "ThreatCaddy에 오신 것을 환영합니다",
+  "demoModal.descriptionPrefix": "샘플 수사",
+  "demoModal.descriptionSuffix": "가 로드되어 모든 기능을 탐색할 수 있습니다.",
+  "demoModal.whatYouCan": "할 수 있는 작업:",
+  "demoModal.browseItems": "노트, 작업 및 타임라인 이벤트 탐색",
+  "demoModal.viewGraph": "수사 그래프 및 IOC 분석 보기",
+  "demoModal.tryWhiteboard": "화이트보드 및 엔티티 연결 시도",
+  "demoModal.useLinksPrefix": "사용",
+  "demoModal.useLinksSuffix": "으로 노트 간 연결",
+  "demoModal.startExploring": "탐색 시작",
+  "demoModal.guidedTour": "가이드 투어 시작",
+  "demoModal.deleteDemo": "데모 삭제 및 새로 시작",
+  "demoModal.removeHint": "나중에 설정에서 샘플 데이터를 제거할 수 있습니다."
 }

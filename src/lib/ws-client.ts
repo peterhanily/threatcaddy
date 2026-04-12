@@ -90,11 +90,13 @@ export class WSClient {
 
   private scheduleReconnect() {
     if (this.reconnectTimer) return;
+    // Add jitter (±25%) to prevent thundering herd when many clients reconnect simultaneously
+    const jitter = this.reconnectDelay * (0.75 + Math.random() * 0.5);
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay);
       this.connect();
-    }, this.reconnectDelay);
+    }, jitter);
   }
 
   subscribe(folderId: string) {

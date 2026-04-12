@@ -9,6 +9,7 @@
  */
 
 import { eq, lt, and } from 'drizzle-orm';
+import { logger } from '../lib/logger.js';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { agentHeartbeats, botConfigs } from '../db/schema.js';
 import type { BotManager } from './bot-manager.js';
@@ -33,8 +34,8 @@ export class HeartbeatManager {
   /** Start monitoring heartbeats. */
   start() {
     if (this.intervalId) return;
-    this.intervalId = setInterval(() => this.check().catch(console.error), CHECK_INTERVAL_MS);
-    console.log('[HeartbeatManager] Started monitoring (interval: 30s, grace: 90s)');
+    this.intervalId = setInterval(() => this.check().catch(logger.error), CHECK_INTERVAL_MS);
+    logger.info('[HeartbeatManager] Started monitoring (interval: 30s, grace: 90s)');
   }
 
   /** Stop monitoring. */
@@ -43,7 +44,7 @@ export class HeartbeatManager {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
-    console.log('[HeartbeatManager] Stopped');
+    logger.info('[HeartbeatManager] Stopped');
   }
 
   /**
@@ -85,7 +86,7 @@ export class HeartbeatManager {
           .where(eq(botConfigs.id, bot.id));
         this.botManager?.unloadBot?.(bot.id);
       }
-      console.log(`[HeartbeatManager] Client back for folder ${folderId} — disabled ${matchingBots.length} server bot(s)`);
+      logger.info(`[HeartbeatManager] Client back for folder ${folderId} — disabled ${matchingBots.length} server bot(s)`);
     }
 
     return { serverWasRunning };
@@ -121,7 +122,7 @@ export class HeartbeatManager {
             .where(eq(botConfigs.id, bot.id));
           await this.botManager?.reloadBot?.(bot.id);
         }
-        console.log(`[HeartbeatManager] Client stale for folder ${hb.folderId} — enabled ${matchingBots.length} server bot(s)`);
+        logger.info(`[HeartbeatManager] Client stale for folder ${hb.folderId} — enabled ${matchingBots.length} server bot(s)`);
       }
     }
   }

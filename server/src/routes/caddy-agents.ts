@@ -6,6 +6,7 @@
 import { Hono } from 'hono';
 import { eq, and, desc } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth.js';
+import { checkInvestigationAccess } from '../middleware/access.js';
 import { db } from '../db/index.js';
 import { botConfigs, agentActions, agentHeartbeats } from '../db/schema.js';
 import { convertProfileToBotConfig } from '../bots/caddy-agent-bridge.js';
@@ -153,7 +154,11 @@ app.post('/heartbeat', async (c) => {
 // ─── Status ─────────────────────────────────────────────────────
 
 app.get('/status/:investigationId', async (c) => {
+  const user = c.get('user' as never) as { id: string };
   const folderId = c.req.param('investigationId');
+  if (!await checkInvestigationAccess(user.id, folderId)) {
+    return c.json({ error: 'No access to this investigation' }, 403);
+  }
 
   const bots = await db.select()
     .from(botConfigs)
@@ -182,7 +187,11 @@ app.get('/status/:investigationId', async (c) => {
 // ─── Actions ────────────────────────────────────────────────────
 
 app.get('/actions/:investigationId', async (c) => {
+  const user = c.get('user' as never) as { id: string };
   const folderId = c.req.param('investigationId');
+  if (!await checkInvestigationAccess(user.id, folderId)) {
+    return c.json({ error: 'No access to this investigation' }, 403);
+  }
   const since = c.req.query('since');
   const rawLimit = parseInt(c.req.query('limit') || '', 10);
   const limit = Math.min(isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 50, 200);
@@ -204,7 +213,14 @@ app.get('/actions/:investigationId', async (c) => {
 });
 
 app.post('/actions/:actionId/approve', async (c) => {
+  const user = c.get('user' as never) as { id: string };
   const actionId = c.req.param('actionId');
+  // Verify user has access to the action's investigation
+  const [action] = await db.select({ investigationId: agentActions.investigationId })
+    .from(agentActions).where(eq(agentActions.id, actionId)).limit(1);
+  if (!action || !await checkInvestigationAccess(user.id, action.investigationId, 'editor')) {
+    return c.json({ error: 'No access to this action' }, 403);
+  }
   await db.update(agentActions)
     .set({ status: 'approved', reviewedAt: new Date(), updatedAt: new Date() })
     .where(eq(agentActions.id, actionId));
@@ -212,7 +228,13 @@ app.post('/actions/:actionId/approve', async (c) => {
 });
 
 app.post('/actions/:actionId/reject', async (c) => {
+  const user = c.get('user' as never) as { id: string };
   const actionId = c.req.param('actionId');
+  const [action] = await db.select({ investigationId: agentActions.investigationId })
+    .from(agentActions).where(eq(agentActions.id, actionId)).limit(1);
+  if (!action || !await checkInvestigationAccess(user.id, action.investigationId, 'editor')) {
+    return c.json({ error: 'No access to this action' }, 403);
+  }
   await db.update(agentActions)
     .set({ status: 'rejected', reviewedAt: new Date(), updatedAt: new Date() })
     .where(eq(agentActions.id, actionId));
@@ -222,7 +244,11 @@ app.post('/actions/:actionId/reject', async (c) => {
 // ─── Webhook trigger ────────────────────────────────────────────
 
 app.post('/trigger/:investigationId', async (c) => {
+  const user = c.get('user' as never) as { id: string };
   const folderId = c.req.param('investigationId');
+  if (!await checkInvestigationAccess(user.id, folderId, 'editor')) {
+    return c.json({ error: 'No access to this investigation' }, 403);
+  }
   const body = await c.req.json<{ context?: string }>().catch(() => ({ context: undefined }));
 
   // Find all caddy-agent bots for this investigation

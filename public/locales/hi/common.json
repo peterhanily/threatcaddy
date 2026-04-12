@@ -44,7 +44,6 @@
   "quickCapture.createNote": "नोट बनाएं",
   "quickCapture.customBadge": "कस्टम",
   "skipToMainContent": "मुख्य सामग्री पर जाएं",
-
   "createDropdown.createNew": "नया बनाएं...",
   "createDropdown.new": "नया",
   "createDropdown.createItem": "{{item}} बनाएं",
@@ -56,7 +55,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "फ़ाइल खोलें",
   "createDropdown.importData": "डेटा आयात करें",
-
   "shortcuts.title": "कीबोर्ड शॉर्टकट",
   "shortcuts.general": "सामान्य",
   "shortcuts.openSearch": "खोज खोलें",
@@ -76,7 +74,6 @@
   "shortcuts.switchToTasks": "कार्य पर जाएं",
   "shortcuts.switchToTimeline": "टाइमलाइन पर जाएं",
   "shortcuts.switchToWhiteboards": "व्हाइटबोर्ड पर जाएं",
-
   "entityLinker.linkEntities": "एंटिटी लिंक करें",
   "entityLinker.searchPlaceholder": "लिंक करने के लिए एंटिटी खोजें...",
   "entityLinker.linked": "लिंक किया",
@@ -85,7 +82,6 @@
   "entityLinker.note": "नोट",
   "entityLinker.task": "कार्य",
   "entityLinker.event": "इवेंट",
-
   "comments.label": "टिप्पणियाँ",
   "comments.justNow": "अभी-अभी",
   "comments.minutesAgo": "{{count}} मिनट पहले",
@@ -97,7 +93,6 @@
   "comments.editComment": "टिप्पणी संपादित करें",
   "comments.deleteComment": "टिप्पणी हटाएं",
   "comments.addPlaceholder": "टिप्पणी जोड़ें...",
-
   "sidebar.dashboard": "डैशबोर्ड",
   "sidebar.investigations": "जाँचें",
   "sidebar.notes": "नोट्स",
@@ -123,7 +118,6 @@
   "sidebar.downloadStandalone": "स्टैंडअलोन डाउनलोड",
   "sidebar.chromeExtension": "Chrome एक्सटेंशन",
   "sidebar.privacy": "गोपनीयता",
-
   "header.toggleMenu": "मेनू टॉगल",
   "header.toggleSidebar": "साइडबार टॉगल",
   "header.localEdition": "स्थानीय संस्करण",
@@ -146,7 +140,6 @@
   "header.privacy": "गोपनीयता",
   "header.saveBackup": "बैकअप सहेजें",
   "header.loadBackup": "बैकअप लोड करें",
-
   "serverError.VALIDATION_FAILED": "सत्यापन विफल",
   "serverError.EMAIL_ALREADY_REGISTERED": "ईमेल पहले से पंजीकृत है",
   "serverError.INVALID_CREDENTIALS": "गलत ईमेल या पासवर्ड",
@@ -205,5 +198,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "अमान्य वेबहुक सीक्रेट",
   "serverError.RUN_NOT_FOUND": "रन नहीं मिला",
   "serverError.INTERNAL_ERROR": "आंतरिक सर्वर त्रुटि",
-  "serverError.MISSING_BLOB": "फ़ाइल डेटा गायब है"
+  "serverError.MISSING_BLOB": "फ़ाइल डेटा गायब है",
+  "demoModal.title": "ThreatCaddy में आपका स्वागत है",
+  "demoModal.descriptionPrefix": "एक नमूना जांच",
+  "demoModal.descriptionSuffix": "लोड की गई है ताकि आप देख सकें कि सब कुछ कैसे काम करता है।",
+  "demoModal.whatYouCan": "आप क्या कर सकते हैं:",
+  "demoModal.browseItems": "नोट्स, कार्य और टाइमलाइन इवेंट ब्राउज़ करें",
+  "demoModal.viewGraph": "जांच ग्राफ और IOC विश्लेषण देखें",
+  "demoModal.tryWhiteboard": "व्हाइटबोर्ड और एंटिटी लिंकिंग आज़माएं",
+  "demoModal.useLinksPrefix": "उपयोग करें",
+  "demoModal.useLinksSuffix": "नोट्स के बीच लिंक करने के लिए",
+  "demoModal.startExploring": "एक्सप्लोर करना शुरू करें",
+  "demoModal.guidedTour": "गाइडेड टूर लें",
+  "demoModal.deleteDemo": "डेमो हटाएं और नए सिरे से शुरू करें",
+  "demoModal.removeHint": "आप बाद में सेटिंग्स में नमूना डेटा हटा सकते हैं।"
 }

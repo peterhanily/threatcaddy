@@ -64,6 +64,8 @@ let originalWebSocket: typeof globalThis.WebSocket;
 
 beforeEach(() => {
   vi.useFakeTimers();
+  // Pin Math.random so reconnect jitter is deterministic (0.75 + 0.5*0.5 = 1.0 → no jitter)
+  vi.spyOn(Math, 'random').mockReturnValue(0.5);
   MockWebSocket.instances = [];
   originalWebSocket = globalThis.WebSocket;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,6 +74,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
   globalThis.WebSocket = originalWebSocket;
 });
 

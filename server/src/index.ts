@@ -53,7 +53,13 @@ const corsOrigin: string | string[] = allowedOriginsEnv === '*'
   : allowedOriginsEnv.split(',').map((o) => o.trim());
 
 const redactingLogger = honoLogger((str: string, ...rest: string[]) => {
-  console.log(str.replace(/token=[^\s&]+/g, 'token=[REDACTED]'), ...rest);
+  console.log(
+    str
+      .replace(/token=[^\s&;]*/gi, 'token=[REDACTED]')
+      .replace(/Authorization:\s*Bearer\s+[^\s;]+/gi, 'Authorization: Bearer [REDACTED]')
+      .replace(/[Aa]pi[_-]?[Kk]ey[=:]\s*[^\s&;,]*/g, 'api_key=[REDACTED]'),
+    ...rest,
+  );
 });
 
 // ─── Security headers ──────────────────────────────────────────
@@ -95,6 +101,11 @@ app.use('/api/webhooks/*', rateLimiter({ windowMs: 60_000, max: 30 }));
 app.use('/api/auth/change-password', rateLimiter({ windowMs: 60_000, max: 5 }));
 app.use('/api/files/*', rateLimiter({ windowMs: 60_000, max: 30 }));
 app.use('/api/investigations/*', rateLimiter({ windowMs: 60_000, max: 60 }));
+app.use('/api/caddy-agents/status/*', rateLimiter({ windowMs: 60_000, max: 30 }));
+app.use('/api/caddy-agents/actions/*', rateLimiter({ windowMs: 60_000, max: 20 }));
+app.use('/api/caddy-agents/trigger/*', rateLimiter({ windowMs: 60_000, max: 10 }));
+app.use('/api/caddy-agents/register', rateLimiter({ windowMs: 60_000, max: 10 }));
+app.use('/api/caddy-agents/unregister', rateLimiter({ windowMs: 60_000, max: 10 }));
 
 // Read version once at startup
 let serverVersion = 'unknown';

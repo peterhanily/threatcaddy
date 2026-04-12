@@ -320,7 +320,7 @@ export class BotManager {
         createNotification({
           userId: config.createdBy,
           type: 'bot_error',
-          message: `Bot "${config.name}" execution dropped — queue full (${this.executionQueue.length} queued, ${this.activeRuns} active). Consider reducing trigger frequency or increasing BOT_MAX_CONCURRENT_RUNS.`,
+          message: `Bot "${config.name}" is busy — execution was skipped. Try again in a few moments or reduce trigger frequency.`,
         }).catch(() => { /* best effort */ });
         return;
       }

@@ -199,6 +199,14 @@ export function InvestigationProvider({
       .catch(() => setAgentPendingCount(0));
   }, [selectedFolderId]);
 
+  // Auto-deselect when selected folder no longer exists (deleted externally or by another tab)
+  useEffect(() => {
+    if (selectedFolderId && folders.length > 0 && !folders.find(f => f.id === selectedFolderId)) {
+      setSelectedFolderIdRaw(undefined);
+      setInvestigationMode('local');
+    }
+  }, [selectedFolderId, folders]);
+
   // --- computed ---
   const selectedFolder = useMemo(() => folders.find(f => f.id === selectedFolderId), [folders, selectedFolderId]);
   const selectedTagObj = useMemo(() => tags.find(t => t.name === selectedTag), [tags, selectedTag]);

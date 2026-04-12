@@ -44,7 +44,6 @@
   "quickCapture.createNote": "Notitie aanmaken",
   "quickCapture.customBadge": "aangepast",
   "skipToMainContent": "Naar hoofdinhoud gaan",
-
   "createDropdown.createNew": "Nieuw aanmaken...",
   "createDropdown.new": "Nieuw",
   "createDropdown.createItem": "{{item}} aanmaken",
@@ -56,7 +55,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "Bestand openen",
   "createDropdown.importData": "Gegevens importeren",
-
   "shortcuts.title": "Sneltoetsen",
   "shortcuts.general": "Algemeen",
   "shortcuts.openSearch": "Zoeken openen",
@@ -76,7 +74,6 @@
   "shortcuts.switchToTasks": "Naar Taken",
   "shortcuts.switchToTimeline": "Naar Tijdlijn",
   "shortcuts.switchToWhiteboards": "Naar Whiteboards",
-
   "entityLinker.linkEntities": "Objecten koppelen",
   "entityLinker.searchPlaceholder": "Objecten zoeken om te koppelen...",
   "entityLinker.linked": "gekoppeld",
@@ -85,7 +82,6 @@
   "entityLinker.note": "Notitie",
   "entityLinker.task": "Taak",
   "entityLinker.event": "Gebeurtenis",
-
   "comments.label": "Opmerkingen",
   "comments.justNow": "zojuist",
   "comments.minutesAgo": "{{count}} min. geleden",
@@ -97,7 +93,6 @@
   "comments.editComment": "Opmerking bewerken",
   "comments.deleteComment": "Opmerking verwijderen",
   "comments.addPlaceholder": "Een opmerking toevoegen...",
-
   "sidebar.dashboard": "Dashboard",
   "sidebar.investigations": "Onderzoeken",
   "sidebar.notes": "Notities",
@@ -123,7 +118,6 @@
   "sidebar.downloadStandalone": "Zelfstandige versie downloaden",
   "sidebar.chromeExtension": "Chrome-extensie",
   "sidebar.privacy": "Privacy",
-
   "header.toggleMenu": "Menu in-/uitschakelen",
   "header.toggleSidebar": "Zijbalk in-/uitschakelen",
   "header.localEdition": "Lokale editie",
@@ -146,7 +140,6 @@
   "header.privacy": "Privacy",
   "header.saveBackup": "Back-up opslaan",
   "header.loadBackup": "Back-up laden",
-
   "serverError.VALIDATION_FAILED": "Validatie mislukt",
   "serverError.EMAIL_ALREADY_REGISTERED": "E-mail al geregistreerd",
   "serverError.INVALID_CREDENTIALS": "Ongeldig e-mailadres of wachtwoord",
@@ -205,5 +198,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "Ongeldig webhook-geheim",
   "serverError.RUN_NOT_FOUND": "Uitvoering niet gevonden",
   "serverError.INTERNAL_ERROR": "Interne serverfout",
-  "serverError.MISSING_BLOB": "Bestandsgegevens ontbreken"
+  "serverError.MISSING_BLOB": "Bestandsgegevens ontbreken",
+  "demoModal.title": "Welkom bij ThreatCaddy",
+  "demoModal.descriptionPrefix": "Een voorbeeldonderzoek",
+  "demoModal.descriptionSuffix": "is geladen zodat u kunt ontdekken hoe alles werkt.",
+  "demoModal.whatYouCan": "Wat u kunt doen:",
+  "demoModal.browseItems": "Notities, taken en tijdlijnevenementen bekijken",
+  "demoModal.viewGraph": "De onderzoeksgrafiek en IOC-analyse bekijken",
+  "demoModal.tryWhiteboard": "Het whiteboard en entiteitkoppeling uitproberen",
+  "demoModal.useLinksPrefix": "Gebruik",
+  "demoModal.useLinksSuffix": "om te linken tussen notities",
+  "demoModal.startExploring": "Begin met verkennen",
+  "demoModal.guidedTour": "Volg de rondleiding",
+  "demoModal.deleteDemo": "Demo verwijderen & opnieuw beginnen",
+  "demoModal.removeHint": "U kunt de voorbeeldgegevens later verwijderen in Instellingen."
 }

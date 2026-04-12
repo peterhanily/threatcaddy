@@ -207,5 +207,19 @@
   "serverError.INVALID_WEBHOOK_SECRET": "Invalid webhook secret",
   "serverError.RUN_NOT_FOUND": "Run not found",
   "serverError.INTERNAL_ERROR": "Internal server error",
-  "serverError.MISSING_BLOB": "Missing file data"
+  "serverError.MISSING_BLOB": "Missing file data",
+
+  "demoModal.title": "Welcome to ThreatCaddy",
+  "demoModal.descriptionPrefix": "A sample investigation",
+  "demoModal.descriptionSuffix": "has been loaded so you can explore how everything works.",
+  "demoModal.whatYouCan": "What you can do:",
+  "demoModal.browseItems": "Browse notes, tasks, and timeline events",
+  "demoModal.viewGraph": "View the investigation graph and IOC analysis",
+  "demoModal.tryWhiteboard": "Try the whiteboard and entity linking",
+  "demoModal.useLinksPrefix": "Use",
+  "demoModal.useLinksSuffix": "to link between notes",
+  "demoModal.startExploring": "Start Exploring",
+  "demoModal.guidedTour": "Take the Guided Tour",
+  "demoModal.deleteDemo": "Delete Demo & Start Fresh",
+  "demoModal.removeHint": "You can remove the sample data later in Settings."
 }

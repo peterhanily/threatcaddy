@@ -44,7 +44,6 @@
   "quickCapture.createNote": "Utwórz notatkę",
   "quickCapture.customBadge": "własny",
   "skipToMainContent": "Przejdź do głównej treści",
-
   "createDropdown.createNew": "Utwórz nowy...",
   "createDropdown.new": "Nowy",
   "createDropdown.createItem": "Utwórz {{item}}",
@@ -56,7 +55,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "Otwórz plik",
   "createDropdown.importData": "Importuj dane",
-
   "shortcuts.title": "Skróty klawiszowe",
   "shortcuts.general": "Ogólne",
   "shortcuts.openSearch": "Otwórz wyszukiwanie",
@@ -76,7 +74,6 @@
   "shortcuts.switchToTasks": "Przejdź do zadań",
   "shortcuts.switchToTimeline": "Przejdź do osi czasu",
   "shortcuts.switchToWhiteboards": "Przejdź do tablic",
-
   "entityLinker.linkEntities": "Połącz obiekty",
   "entityLinker.searchPlaceholder": "Szukaj obiektów do połączenia...",
   "entityLinker.linked": "połączone",
@@ -85,7 +82,6 @@
   "entityLinker.note": "Notatka",
   "entityLinker.task": "Zadanie",
   "entityLinker.event": "Zdarzenie",
-
   "comments.label": "Komentarze",
   "comments.justNow": "przed chwilą",
   "comments.minutesAgo": "{{count}} min. temu",
@@ -97,7 +93,6 @@
   "comments.editComment": "Edytuj komentarz",
   "comments.deleteComment": "Usuń komentarz",
   "comments.addPlaceholder": "Dodaj komentarz...",
-
   "sidebar.dashboard": "Panel",
   "sidebar.investigations": "Dochodzenia",
   "sidebar.notes": "Notatki",
@@ -123,7 +118,6 @@
   "sidebar.downloadStandalone": "Pobierz wersję samodzielną",
   "sidebar.chromeExtension": "Rozszerzenie Chrome",
   "sidebar.privacy": "Prywatność",
-
   "header.toggleMenu": "Przełącz menu",
   "header.toggleSidebar": "Przełącz pasek boczny",
   "header.localEdition": "Wydanie lokalne",
@@ -146,7 +140,6 @@
   "header.privacy": "Prywatność",
   "header.saveBackup": "Zapisz kopię zapasową",
   "header.loadBackup": "Załaduj kopię zapasową",
-
   "serverError.VALIDATION_FAILED": "Błąd walidacji",
   "serverError.EMAIL_ALREADY_REGISTERED": "Email już zarejestrowany",
   "serverError.INVALID_CREDENTIALS": "Nieprawidłowy email lub hasło",
@@ -205,5 +198,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "Nieprawidłowy sekret webhooka",
   "serverError.RUN_NOT_FOUND": "Uruchomienie nie znalezione",
   "serverError.INTERNAL_ERROR": "Wewnętrzny błąd serwera",
-  "serverError.MISSING_BLOB": "Brak danych pliku"
+  "serverError.MISSING_BLOB": "Brak danych pliku",
+  "demoModal.title": "Witamy w ThreatCaddy",
+  "demoModal.descriptionPrefix": "Przykładowe dochodzenie",
+  "demoModal.descriptionSuffix": "zostało załadowane, abyś mógł sprawdzić, jak wszystko działa.",
+  "demoModal.whatYouCan": "Co możesz zrobić:",
+  "demoModal.browseItems": "Przeglądaj notatki, zadania i zdarzenia na osi czasu",
+  "demoModal.viewGraph": "Wyświetl graf dochodzenia i analizę IOC",
+  "demoModal.tryWhiteboard": "Wypróbuj tablicę i łączenie podmiotów",
+  "demoModal.useLinksPrefix": "Użyj",
+  "demoModal.useLinksSuffix": "aby linkować między notatkami",
+  "demoModal.startExploring": "Zacznij eksplorować",
+  "demoModal.guidedTour": "Rozpocznij wycieczkę z przewodnikiem",
+  "demoModal.deleteDemo": "Usuń demo i zacznij od nowa",
+  "demoModal.removeHint": "Możesz usunąć przykładowe dane później w Ustawieniach."
 }

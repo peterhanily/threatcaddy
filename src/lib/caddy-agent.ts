@@ -637,8 +637,15 @@ async function _runAgentCycleInner(
           try {
             const toolPromise = executeTool(toolCall, folder.id, profile ? { profileId: profile.id, deploymentId: deployment?.id } : undefined);
             const timeoutMs = TOOL_TIMEOUTS[toolCall.name] ?? DEFAULT_TOOL_TIMEOUT;
-            const toolTimeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`Tool ${toolCall.name} timed out after ${timeoutMs / 1000}s`)), timeoutMs));
-            result = await Promise.race([toolPromise, toolTimeout]);
+            let timeoutId: ReturnType<typeof setTimeout>;
+            const toolTimeout = new Promise<never>((_, reject) => {
+              timeoutId = setTimeout(() => reject(new Error(`Tool ${toolCall.name} timed out after ${timeoutMs / 1000}s`)), timeoutMs);
+            });
+            try {
+              result = await Promise.race([toolPromise, toolTimeout]);
+            } finally {
+              clearTimeout(timeoutId!);
+            }
           } catch (toolErr) {
             result = { result: JSON.stringify({ error: String((toolErr as Error).message || toolErr) }), isError: true };
           }

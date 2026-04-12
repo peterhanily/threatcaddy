@@ -44,7 +44,6 @@
   "quickCapture.createNote": "ایجاد یادداشت",
   "quickCapture.customBadge": "سفارشی",
   "skipToMainContent": "رد شدن به محتوای اصلی",
-
   "createDropdown.createNew": "ایجاد جدید...",
   "createDropdown.new": "جدید",
   "createDropdown.createItem": "ایجاد {{item}}",
@@ -56,7 +55,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "باز کردن فایل",
   "createDropdown.importData": "ورود داده",
-
   "shortcuts.title": "میانبرهای صفحه‌کلید",
   "shortcuts.general": "عمومی",
   "shortcuts.openSearch": "باز کردن جستجو",
@@ -76,7 +74,6 @@
   "shortcuts.switchToTasks": "تغییر به وظایف",
   "shortcuts.switchToTimeline": "تغییر به جدول زمانی",
   "shortcuts.switchToWhiteboards": "تغییر به تخته‌های سفید",
-
   "entityLinker.linkEntities": "پیوند موجودیت‌ها",
   "entityLinker.searchPlaceholder": "جستجوی موجودیت‌ها برای پیوند...",
   "entityLinker.linked": "پیوند داده شده",
@@ -85,7 +82,6 @@
   "entityLinker.note": "یادداشت",
   "entityLinker.task": "وظیفه",
   "entityLinker.event": "رویداد",
-
   "comments.label": "نظرات",
   "comments.justNow": "همین الان",
   "comments.minutesAgo": "{{count}} دقیقه پیش",
@@ -97,7 +93,6 @@
   "comments.editComment": "ویرایش نظر",
   "comments.deleteComment": "حذف نظر",
   "comments.addPlaceholder": "یک نظر اضافه کنید...",
-
   "sidebar.dashboard": "داشبورد",
   "sidebar.investigations": "تحقیقات",
   "sidebar.notes": "یادداشت‌ها",
@@ -123,7 +118,6 @@
   "sidebar.downloadStandalone": "دانلود مستقل",
   "sidebar.chromeExtension": "افزونه Chrome",
   "sidebar.privacy": "حریم خصوصی",
-
   "header.toggleMenu": "تغییر منو",
   "header.toggleSidebar": "تغییر نوار کناری",
   "header.localEdition": "نسخه محلی",
@@ -146,7 +140,6 @@
   "header.privacy": "حریم خصوصی",
   "header.saveBackup": "ذخیره پشتیبان",
   "header.loadBackup": "بارگذاری پشتیبان",
-
   "serverError.VALIDATION_FAILED": "اعتبارسنجی ناموفق بود",
   "serverError.EMAIL_ALREADY_REGISTERED": "ایمیل قبلاً ثبت شده است",
   "serverError.INVALID_CREDENTIALS": "ایمیل یا رمز عبور نادرست",
@@ -205,5 +198,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "راز webhook نامعتبر",
   "serverError.RUN_NOT_FOUND": "اجرا یافت نشد",
   "serverError.INTERNAL_ERROR": "خطای داخلی سرور",
-  "serverError.MISSING_BLOB": "داده فایل گم شده"
+  "serverError.MISSING_BLOB": "داده فایل گم شده",
+  "demoModal.title": "به ThreatCaddy خوش آمدید",
+  "demoModal.descriptionPrefix": "یک تحقیق نمونه",
+  "demoModal.descriptionSuffix": "بارگذاری شده است تا بتوانید نحوه عملکرد همه چیز را بررسی کنید.",
+  "demoModal.whatYouCan": "آنچه می‌توانید انجام دهید:",
+  "demoModal.browseItems": "مرور یادداشت‌ها، وظایف و رویدادهای خط زمانی",
+  "demoModal.viewGraph": "مشاهده نمودار تحقیق و تحلیل IOC",
+  "demoModal.tryWhiteboard": "امتحان تخته سفید و پیوند موجودیت‌ها",
+  "demoModal.useLinksPrefix": "استفاده از",
+  "demoModal.useLinksSuffix": "برای پیوند بین یادداشت‌ها",
+  "demoModal.startExploring": "شروع کاوش",
+  "demoModal.guidedTour": "تور راهنما را شروع کنید",
+  "demoModal.deleteDemo": "حذف دمو و شروع تازه",
+  "demoModal.removeHint": "می‌توانید داده‌های نمونه را بعداً در تنظیمات حذف کنید."
 }

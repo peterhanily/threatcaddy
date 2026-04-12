@@ -44,7 +44,6 @@
   "quickCapture.createNote": "Создать заметку",
   "quickCapture.customBadge": "пользовательский",
   "skipToMainContent": "Перейти к основному содержимому",
-
   "createDropdown.createNew": "Создать новый...",
   "createDropdown.new": "Новый",
   "createDropdown.createItem": "Создать {{item}}",
@@ -56,7 +55,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "Открыть файл",
   "createDropdown.importData": "Импортировать данные",
-
   "shortcuts.title": "Горячие клавиши",
   "shortcuts.general": "Общие",
   "shortcuts.openSearch": "Открыть поиск",
@@ -76,7 +74,6 @@
   "shortcuts.switchToTasks": "Перейти к задачам",
   "shortcuts.switchToTimeline": "Перейти к хронологии",
   "shortcuts.switchToWhiteboards": "Перейти к доскам",
-
   "entityLinker.linkEntities": "Связать объекты",
   "entityLinker.searchPlaceholder": "Поиск объектов для связи...",
   "entityLinker.linked": "связано",
@@ -85,7 +82,6 @@
   "entityLinker.note": "Заметка",
   "entityLinker.task": "Задача",
   "entityLinker.event": "Событие",
-
   "comments.label": "Комментарии",
   "comments.justNow": "только что",
   "comments.minutesAgo": "{{count}} мин. назад",
@@ -97,7 +93,6 @@
   "comments.editComment": "Редактировать комментарий",
   "comments.deleteComment": "Удалить комментарий",
   "comments.addPlaceholder": "Добавить комментарий...",
-
   "sidebar.dashboard": "Панель управления",
   "sidebar.investigations": "Расследования",
   "sidebar.notes": "Заметки",
@@ -123,7 +118,6 @@
   "sidebar.downloadStandalone": "Скачать автономную версию",
   "sidebar.chromeExtension": "Расширение Chrome",
   "sidebar.privacy": "Конфиденциальность",
-
   "header.toggleMenu": "Переключить меню",
   "header.toggleSidebar": "Переключить боковую панель",
   "header.localEdition": "Локальная версия",
@@ -146,7 +140,6 @@
   "header.privacy": "Конфиденциальность",
   "header.saveBackup": "Сохранить резервную копию",
   "header.loadBackup": "Загрузить резервную копию",
-
   "serverError.VALIDATION_FAILED": "Ошибка валидации",
   "serverError.EMAIL_ALREADY_REGISTERED": "Email уже зарегистрирован",
   "serverError.INVALID_CREDENTIALS": "Неверный email или пароль",
@@ -205,5 +198,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "Неверный секрет вебхука",
   "serverError.RUN_NOT_FOUND": "Запуск не найден",
   "serverError.INTERNAL_ERROR": "Внутренняя ошибка сервера",
-  "serverError.MISSING_BLOB": "Отсутствуют данные файла"
+  "serverError.MISSING_BLOB": "Отсутствуют данные файла",
+  "demoModal.title": "Добро пожаловать в ThreatCaddy",
+  "demoModal.descriptionPrefix": "Пример расследования",
+  "demoModal.descriptionSuffix": "был загружен, чтобы вы могли изучить, как всё работает.",
+  "demoModal.whatYouCan": "Что вы можете сделать:",
+  "demoModal.browseItems": "Просматривать заметки, задачи и события хронологии",
+  "demoModal.viewGraph": "Просматривать граф расследования и анализ IOC",
+  "demoModal.tryWhiteboard": "Попробовать доску и связывание сущностей",
+  "demoModal.useLinksPrefix": "Используйте",
+  "demoModal.useLinksSuffix": "для связи между заметками",
+  "demoModal.startExploring": "Начать исследование",
+  "demoModal.guidedTour": "Пройти экскурсию",
+  "demoModal.deleteDemo": "Удалить демо и начать заново",
+  "demoModal.removeHint": "Вы можете удалить примеры данных позже в Настройках."
 }
