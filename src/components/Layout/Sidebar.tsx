@@ -133,7 +133,7 @@ export function Sidebar({
         </div>
 
         {/* Scrollable view icons */}
-        <div className="flex-1 flex flex-col items-center py-2 gap-0.5 overflow-y-auto overflow-x-hidden w-full">
+        <div className="flex-1 flex flex-col items-center py-2 gap-1 overflow-y-auto overflow-x-hidden w-full">
           {collapsedTopItems.map((item) => (
             <CollapsedIcon
               key={item.view}
@@ -175,7 +175,7 @@ export function Sidebar({
         </div>
 
         {/* Fixed footer — always visible */}
-        <div className="shrink-0 flex flex-col items-center py-1.5 gap-0.5 border-t border-border-subtle w-full">
+        <div className="shrink-0 flex flex-col items-center py-1.5 gap-1 border-t border-border-subtle w-full">
           <CollapsedIcon
             icon={SettingsIcon}
             label={t('sidebar.settings')}

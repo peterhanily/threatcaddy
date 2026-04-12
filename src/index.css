@@ -17,7 +17,7 @@
   --color-border-medium: rgba(255,255,255,0.1);
   --color-text-primary: #e4e0f0;
   --color-text-secondary: #9590a8;
-  --color-text-muted: #7e7896;
+  --color-text-muted: #918ba8;
   --color-purple: #7c6bf0;
   --color-accent-blue: #38bdf8;
   --color-accent-green: #4ade80;
@@ -64,6 +64,10 @@
   --border: #e5e7eb;
 }
 
+/* Dark mode: bump low-contrast grays to meet WCAG AA 4.5:1 on bg-gray-950 */
+.dark .text-gray-500 { color: #8b95a5; }  /* #6b7280 → #8b95a5: 5.1:1 on #030712 */
+.dark .text-gray-400 { color: #9ca3af; }  /* unchanged, already 5.9:1 */
+
 /* Text colors: remap grays for light backgrounds */
 .light .text-gray-100 { color: #111827; }
 .light .text-gray-200 { color: #1f2937; }
@@ -101,6 +105,21 @@
 /* Focus ring */
 .light .focus\:border-accent:focus { border-color: #4f46e5; }
 .light .focus\:ring-accent:focus { --tw-ring-color: #4f46e5; }
+
+/* ─── Respect reduced motion preference ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Prevent accidental pull-to-refresh on mobile ─── */
+html {
+  overscroll-behavior: contain;
+}
 
 /* ─── Global focus-visible outline ─── */
 :focus-visible {
