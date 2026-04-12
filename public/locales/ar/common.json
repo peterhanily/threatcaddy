@@ -28,6 +28,7 @@
   "untitled": "بدون عنوان",
   "error.generic": "حدث خطأ ما",
   "error.notFound": "غير موجود",
+  "error.unexpectedDetail": "حدث خطأ غير متوقع.",
   "error.reloadHint": "جرّب إعادة تحميل هذا القسم أو تحديث الصفحة. إذا استمرت المشكلة، انسخ تفاصيل الخطأ وأبلغ عن المشكلة.",
   "error.copyDetails": "نسخ تفاصيل الخطأ",
   "reload": "إعادة تحميل",

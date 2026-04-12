@@ -200,6 +200,11 @@ db.version(26).stores({
   timelineEvents: 'id, timestamp, eventType, source, starred, trashed, archived, folderId, timelineId, createdAt, updatedAt, *tags, *iocTypes, createdBy, [folderId+timestamp], *linkedNoteIds, *linkedTaskIds',
 });
 
+// Version 27: Index parentNoteId for efficient nested note queries (eliminates full table scan)
+db.version(27).stores({
+  notes: 'id, title, folderId, pinned, archived, trashed, createdAt, updatedAt, *tags, *iocTypes, createdBy, [folderId+updatedAt], *linkedNoteIds, *linkedTaskIds, *linkedTimelineEventIds, parentNoteId',
+});
+
 // Encryption-at-rest middleware (transparent to all CRUD hooks)
 installEncryptionMiddleware(db);
 

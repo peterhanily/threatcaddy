@@ -229,8 +229,9 @@ export async function runAgentMeeting(
           });
           const summaryMsg = { role: 'assistant' as const, content: `[MEETING SUMMARY — earlier rounds]\n${summaryResponse.content}` };
           conversationMessages.splice(0, conversationMessages.length, ...head, summaryMsg, ...tail);
-        } catch {
+        } catch (err) {
           // Fallback to old splice behavior if summarization fails
+          console.error('[AgentMeeting] Failed to summarize conversation for budget trimming:', err);
           const keep = Math.max(6, Math.floor(conversationMessages.length / 2));
           conversationMessages.splice(2, conversationMessages.length - keep);
         }

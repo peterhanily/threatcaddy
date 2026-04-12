@@ -308,7 +308,20 @@ export class BotManager {
     if (this.activeRuns >= MAX_CONCURRENT_RUNS) {
       if (this.executionQueue.length >= MAX_QUEUE_SIZE) {
         this.stats.dropped++;
-        logger.warn('Bot execution queue full, dropping', { botId, queueSize: this.executionQueue.length });
+        logger.warn('Bot execution queue full, dropping execution', {
+          botId,
+          botName: config.name,
+          trigger,
+          queueSize: this.executionQueue.length,
+          activeRuns: this.activeRuns,
+          totalDropped: this.stats.dropped,
+        });
+        // Notify the bot owner so drops don't go unnoticed
+        createNotification({
+          userId: config.createdBy,
+          type: 'bot_error',
+          message: `Bot "${config.name}" execution dropped — queue full (${this.executionQueue.length} queued, ${this.activeRuns} active). Consider reducing trigger frequency or increasing BOT_MAX_CONCURRENT_RUNS.`,
+        }).catch(() => { /* best effort */ });
         return;
       }
       this.stats.queued++;

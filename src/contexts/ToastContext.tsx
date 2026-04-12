@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- context + provider + hook co-located by design */
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 import { nanoid } from 'nanoid';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -34,8 +34,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     }
   }, [removeToast]);
 
+  const value = useMemo(() => ({ toasts, addToast, removeToast }), [toasts, addToast, removeToast]);
+
   return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+    <ToastContext.Provider value={value}>
       {children}
     </ToastContext.Provider>
   );

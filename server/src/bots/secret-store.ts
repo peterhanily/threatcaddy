@@ -30,10 +30,19 @@ function getMasterKey(): string {
   if (masterKeyStr) return masterKeyStr;
   masterKeyStr = process.env.BOT_MASTER_KEY || null;
   if (!masterKeyStr) {
-    logger.warn(
-      'BOT_MASTER_KEY is not set — generating a random key. ' +
-      'Bot secrets will NOT survive server restarts. Set BOT_MASTER_KEY in production.',
-    );
+    const isProduction = process.env.NODE_ENV === 'production';
+    if (isProduction) {
+      logger.error(
+        '🚨 BOT_MASTER_KEY is not set in production! ' +
+        'Bot secrets will NOT survive server restarts. ' +
+        'Set BOT_MASTER_KEY to a stable 64-char hex string (openssl rand -hex 32).',
+      );
+    } else {
+      logger.warn(
+        'BOT_MASTER_KEY is not set — generating a random key. ' +
+        'Bot secrets will NOT survive server restarts. Set BOT_MASTER_KEY in production.',
+      );
+    }
     masterKeyStr = randomBytes(32).toString('hex');
   }
   return masterKeyStr;

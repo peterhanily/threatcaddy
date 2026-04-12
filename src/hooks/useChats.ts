@@ -80,19 +80,15 @@ export function useChats() {
     await ensureDB();
     const now = Date.now();
 
-    // Read current thread to determine auto-title
-    const currentThread = await db.chatThreads.get(threadId);
-    if (!currentThread) return;
-
-    const newMessages = [...currentThread.messages, message];
-    const updates: Partial<ChatThread> = { messages: newMessages, updatedAt: now };
-    // Auto-title from first user message
-    if (currentThread.title === 'New Chat' && message.role === 'user') {
-      updates.title = message.content.substring(0, 60).replace(/\n/g, ' ') || 'New Chat';
-    }
-
-    // Write to DB using modify() to avoid full clone-and-replace
-    await db.chatThreads.where('id').equals(threadId).modify((t: ChatThread) => {
+    // Atomic modify — no separate read step, so concurrent calls each push
+    // their own message without overwriting each other.
+    let autoTitle: string | undefined;
+    const modified = await db.chatThreads.where('id').equals(threadId).modify((t: ChatThread) => {
+      // Auto-title from first user message
+      if (t.title === 'New Chat' && message.role === 'user') {
+        autoTitle = message.content.substring(0, 60).replace(/\n/g, ' ') || 'New Chat';
+        t.title = autoTitle;
+      }
       t.messages.push(message);
       // Prune oldest messages if thread exceeds 2000 messages to prevent unbounded growth.
       // Keep the first 2 (for context) and the latest messages.
@@ -100,16 +96,27 @@ export function useChats() {
         t.messages = [...t.messages.slice(0, 2), ...t.messages.slice(-1998)];
       }
       t.updatedAt = now;
-      if (updates.title) t.title = updates.title!;
     });
 
-    // Update messages cache
-    messagesCacheRef.current.set(threadId, newMessages);
+    if (modified === 0) return; // thread not found
+
+    // Update messages cache from the actual DB state to stay consistent
+    const freshThread = await db.chatThreads.get(threadId);
+    if (freshThread) {
+      messagesCacheRef.current.set(threadId, freshThread.messages);
+    }
 
     // Optimistic update React state
+    const updates: Partial<ChatThread> = { updatedAt: now };
+    if (autoTitle) updates.title = autoTitle;
     setThreads((prev) =>
-      prev.map((t) => (t.id === threadId ? { ...t, ...updates } : t))
-        .sort((a, b) => b.updatedAt - a.updatedAt)
+      prev.map((t) => {
+        if (t.id !== threadId) return t;
+        const merged = { ...t, ...updates };
+        // Append to local state as well (will be authoritative on next reload)
+        merged.messages = [...t.messages, message];
+        return merged;
+      }).sort((a, b) => b.updatedAt - a.updatedAt)
     );
   }, []);
 

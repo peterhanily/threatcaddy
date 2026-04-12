@@ -1253,24 +1253,18 @@ function AppInner() {
   }, [handleImportComplete, navigateTo, activityLog, setSelectedFolderId, addToast]);
 
   const handleDeleteSample = useCallback(async () => {
-    // Delete all entities with sample- prefix
-    const allNotes = await db.notes.toArray();
-    const allTasks = await db.tasks.toArray();
-    const allEvents = await db.timelineEvents.toArray();
-    const allIOCs = await db.standaloneIOCs.toArray();
-    const allWB = await db.whiteboards.toArray();
-    const allTimelines = await db.timelines.toArray();
-    const allTags = await db.tags.toArray();
-    const allChats = await db.chatThreads.toArray();
-
-    await db.notes.bulkDelete(allNotes.filter((n) => isSampleEntity(n.id)).map((n) => n.id));
-    await db.tasks.bulkDelete(allTasks.filter((t) => isSampleEntity(t.id)).map((t) => t.id));
-    await db.timelineEvents.bulkDelete(allEvents.filter((e) => isSampleEntity(e.id)).map((e) => e.id));
-    await db.standaloneIOCs.bulkDelete(allIOCs.filter((i) => isSampleEntity(i.id)).map((i) => i.id));
-    await db.whiteboards.bulkDelete(allWB.filter((w) => isSampleEntity(w.id)).map((w) => w.id));
-    await db.timelines.bulkDelete(allTimelines.filter((t) => isSampleEntity(t.id)).map((t) => t.id));
-    await db.tags.bulkDelete(allTags.filter((t) => isSampleEntity(t.id)).map((t) => t.id));
-    await db.chatThreads.bulkDelete(allChats.filter((c) => isSampleEntity(c.id)).map((c) => c.id));
+    // Delete sample entities using filter() on primary key — avoids loading entire tables into memory.
+    // Dexie's filter() on a Collection still iterates the index but only pulls matching keys,
+    // which is far cheaper than .toArray() + in-memory filter + bulkDelete.
+    const tables = [
+      db.notes, db.tasks, db.timelineEvents, db.standaloneIOCs,
+      db.whiteboards, db.timelines, db.tags, db.chatThreads,
+    ] as const;
+    await Promise.all(
+      tables.map(table =>
+        table.filter(item => isSampleEntity(item.id)).delete()
+      )
+    );
     await db.folders.delete('sample-investigation');
 
     handleImportComplete();
@@ -1944,7 +1938,7 @@ function AppInner() {
                   notes.reload();
                 }}
                 onDeleteFolder={async (noteId, action) => {
-                  const children = await db.notes.filter(n => n.parentNoteId === noteId).toArray();
+                  const children = await db.notes.where('parentNoteId').equals(noteId).toArray();
                   const now = Date.now();
                   if (action === 'trash_contents') {
                     for (const child of children) {

@@ -51,11 +51,6 @@ export async function runMultiAgentCycle(
     }
   }
 
-  // Mark all as running
-  for (const { deployment } of deploymentProfiles) {
-    await db.agentDeployments.update(deployment.id, { status: 'running' });
-  }
-
   // Run agents with concurrency limit — use 1 for local LLMs (serial), 5 for cloud
   const isLocal = (settings.llmDefaultProvider === 'local') || (!settings.llmAnthropicApiKey && !settings.llmOpenAIApiKey && !settings.llmGeminiApiKey && !settings.llmMistralApiKey && settings.llmLocalEndpoint);
   const MAX_CONCURRENT = isLocal ? 1 : 5;
@@ -65,14 +60,24 @@ export async function runMultiAgentCycle(
     const chunk = deploymentProfiles.slice(i, i + MAX_CONCURRENT);
     const chunkResults = await Promise.allSettled(
       chunk.map(async ({ deployment, profile }) => {
-      const result = await runAgentCycle(
-        folder,
-        settings,
-        extensionAvailable,
-        (status) => onProgress?.(profile.name, status),
-        profile,
-        deployment,
-      );
+      // Mark running just before execution (not upfront) so failures revert cleanly
+      await db.agentDeployments.update(deployment.id, { status: 'running' });
+
+      let result: AgentCycleResult;
+      try {
+        result = await runAgentCycle(
+          folder,
+          settings,
+          extensionAvailable,
+          (status) => onProgress?.(profile.name, status),
+          profile,
+          deployment,
+        );
+      } catch (err) {
+        // Revert to error status on unexpected crash
+        await db.agentDeployments.update(deployment.id, { status: 'error', lastRunAt: Date.now() });
+        throw err;
+      }
 
       // Update deployment status + metrics
       const newStatus = result.error ? 'error'
