@@ -26,8 +26,30 @@ export default defineConfig({
       manifest: false,
       injectRegister: 'auto',
       workbox: {
-        globPatterns: ['**/*.{js,css,ico,woff,woff2}'],
-        globIgnores: ['**/excalidraw-*', '**/locales/**', 'chunk-reload-guard.js'],
+        // Only precache the critical-path assets needed for first render.
+        // Heavy lazy-loaded chunks (mermaid, cytoscape, leaflet, katex, etc.)
+        // are cached at runtime on first use via runtimeCaching below.
+        globPatterns: ['assets/**/*.{js,css}', '*.{ico,js}'],
+        globIgnores: [
+          '**/excalidraw-*',           // Whiteboard editor (1.1MB)
+          '**/locales/**',             // i18n locale files (cached separately)
+          'chunk-reload-guard.js',
+          '**/flowchart-elk-*',        // Mermaid flowchart-elk (1.4MB)
+          '**/subset-*',              // Mermaid shared subset (1.7MB)
+          '**/sequenceDiagram-*',      // Mermaid sequence (82KB)
+          '**/ganttDiagram-*',         // Mermaid gantt (59KB)
+          '**/c4Diagram-*',            // Mermaid C4 (67KB)
+          '**/createText-*',           // Mermaid text (59KB)
+          '**/cytoscape-*',            // Graph library (507KB)
+          '**/leaflet-*',             // Map library (163KB)
+          '**/katex-*',               // Math rendering (255KB)
+          '**/WhiteboardEditor-*',     // Whiteboard CSS (142KB)
+          '**/search.worker-*',        // Search web worker (260KB)
+          '**/SettingsPanel-*',        // Settings (lazy, 195KB)
+          '**/IOCStatsView-*',         // IOC stats (lazy, 85KB)
+          '**/TimelineView-*',         // Timeline (lazy, 73KB)
+          '**/ChatView-*',             // Chat (lazy, 68KB)
+        ],
         navigateFallback: null,
         skipWaiting: true,
         clientsClaim: true,
@@ -42,15 +64,27 @@ export default defineConfig({
             handler: 'NetworkOnly',
           },
           {
-            // Cache locale JSON files after first fetch — CacheFirst so repeat
-            // loads serve instantly from the SW cache without a network round-trip.
+            // Cache locale JSON files after first fetch
             urlPattern: /\/locales\/[^/]+\/[^/]+\.json$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'i18n-locales',
               expiration: {
-                maxEntries: 600,       // 20 languages × 25 namespaces + headroom
-                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+                maxEntries: 600,
+                maxAgeSeconds: 30 * 24 * 60 * 60,
+              },
+            },
+          },
+          {
+            // Cache lazy-loaded JS/CSS chunks on first use — StaleWhileRevalidate
+            // serves from cache instantly on repeat visits while fetching updates
+            urlPattern: /\/assets\/.*\.(js|css)$/,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'lazy-chunks',
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
               },
             },
           },
