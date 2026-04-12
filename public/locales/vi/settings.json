@@ -1,7 +1,6 @@
 {
   "title": "Cài đặt",
   "closeSettings": "Đóng cài đặt",
-
   "tabs.general": "Chung",
   "tabs.appearance": "Giao diện",
   "tabs.ai": "AI",
@@ -11,7 +10,6 @@
   "tabs.intel": "Tình báo",
   "tabs.integrations": "Tích hợp",
   "tabs.shortcuts": "Phím tắt",
-
   "general.identity": "Danh tính của bạn",
   "general.displayName": "Tên hiển thị",
   "general.displayNamePlaceholder": "Tên bạn (hiển thị trên các thực thể bạn tạo)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "Tải xuống cập nhật thất bại. Truy cập https://threatcaddy.com để lấy phiên bản mới nhất.",
   "general.downloadStandalone": "Tải xuống độc lập",
   "general.privacy": "Quyền riêng tư",
-
   "appearance.theme": "Chủ đề",
   "appearance.mode": "Chế độ",
   "appearance.dark": "Tối",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "Lưu ảnh thất bại",
   "appearance.bgRemoved": "Đã xóa ảnh nền",
   "appearance.bgRemoveFailed": "Xóa ảnh thất bại",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "Khóa API Anthropic",
   "ai.openaiKey": "Khóa API OpenAI",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "Tên lệnh (vd. phântíchcủatôi)",
   "ai.commandDescPlaceholder": "Mô tả (hiển thị trong menu slash)",
   "ai.commandTemplatePlaceholder": "Mẫu nhắc lệnh. Dùng {{input}} cho đối số người dùng.\n\nVí dụ: Phân tích cảnh báo này để tìm IOC và tạo báo cáo phân loại:\n\n{{input}}",
-
   "agents.supervisor": "Tác nhân giám sát",
   "agents.supervisorDesc": "Phân tích liên điều tra — phát hiện IOC chung, vụ việc đình trệ và các mẫu trong toàn bộ danh sách vụ việc.",
   "agents.enableSupervisor": "Bật giám sát",
   "agents.supervisorInterval": "Chạy mỗi {{minutes}} phút",
   "agents.supervisorAriaLabel": "Bật tác nhân giám sát",
   "agents.interval": "Khoảng thời gian",
-
   "agents.hosts": "Máy chủ tác nhân",
   "agents.hostsDesc": "Kết nối máy chủ tác nhân ngoài (Claude Code, runtime tùy chỉnh) cung cấp kỹ năng qua REST API. Các kỹ năng được khám phá trở thành công cụ LLM.",
   "agents.refreshAll": "Làm mới tất cả",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "Không có kỹ năng nào được lưu. Nhấp \"Lấy kỹ năng\" để khám phá kỹ năng có sẵn.",
   "agents.skillsLastFetched": "{{count}} kỹ năng{{plural}} — lấy lần cuối {{date}}",
   "agents.params": "tham số: {{params}}",
-
   "data.exportImportTitle": "Xuất & Nhập",
   "data.exportJSON": "Xuất bản sao lưu JSON",
   "data.exportMarkdown": "Xuất Markdown",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "Đã xuất {{count}} ghi chú dưới dạng Markdown",
   "data.importedCounts": "Đã nhập {{notes}} ghi chú, {{tasks}} nhiệm vụ, {{folders}} điều tra, {{tags}} thẻ",
   "data.importBackupTitle": "Nhập bản sao lưu",
-  "data.importBackupMessage": "Thao tác này sẽ thay thế tất cả ghi chú, nhiệm vụ, thư mục và thẻ hiện tại bằng dữ liệu đã nhập. Không thể hoàn tác.",
+  "data.importBackupMessage": "Thao tác này sẽ thay thế tất cả ghi chú, nhiệm vụ, cuộc điều tra và thẻ hiện tại bằng dữ liệu đã nhập. Không thể hoàn tác.",
   "data.importReplace": "Nhập & thay thế",
   "data.importedMarkdown": "Đã nhập {{count}} ghi chú từ Markdown",
-
   "data.mdImportTitle": "Nhập Markdown",
   "data.mdPreviewTitle": "Xem trước nhập",
   "data.mdCompleteTitle": "Nhập hoàn tất",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "Nhập {{count}} ghi chú",
   "data.mdImportedSuccess_one": "Đã nhập thành công {{count}} ghi chú",
   "data.mdImportedSuccess_other": "Đã nhập thành công {{count}} ghi chú",
-
   "encryption.title": "Bản sao lưu được mã hóa trên máy chủ",
   "encryption.connectPrompt": "Kết nối với máy chủ nhóm để sử dụng bản sao lưu được mã hóa.",
   "encryption.description": "Bản sao lưu được bảo vệ bằng mật khẩu, lưu trữ trên máy chủ. Ngay cả quản trị viên cũng không thể đọc được.",
@@ -233,7 +224,6 @@
   "encryption.merge": "Gộp",
   "encryption.deleteConfirmTitle": "Xóa bản sao lưu",
   "encryption.deleteConfirmMessage": "Thao tác này sẽ xóa vĩnh viễn bản sao lưu được mã hóa này khỏi máy chủ. Không thể hoàn tác.",
-
   "cloud.title": "Sao lưu đám mây",
   "cloud.addDestination": "Thêm đích",
   "cloud.provider": "Nhà cung cấp",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "Thao tác này sẽ tải toàn bộ cơ sở dữ liệu lên {{count}} đích đám mây. Tiếp tục?",
   "cloud.encryptedPushSuccess": "Đã đẩy bản sao lưu được mã hóa thành công",
   "cloud.pushSuccess": "Đã đẩy bản sao lưu thành công",
-
   "templates.noteTemplates": "Mẫu ghi chú",
   "templates.summary": "{{custom}} tùy chỉnh, {{builtin}} tích hợp sẵn",
   "templates.description": "Mẫu điền sẵn nội dung có cấu trúc vào ghi chú. Mẫu tích hợp sẵn có thể nhân đôi và tùy chỉnh.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "Đã tạo mẫu \"{{name}}\"",
   "templates.deletedToast": "Đã xóa mẫu \"{{name}}\"",
   "templates.saveFailed": "Lưu mẫu thất bại",
-
   "templates.playbooks": "Playbook điều tra",
   "templates.playbooksDesc": "Playbook tự động điền điều tra mới với nhiệm vụ và ghi chú. Dùng biểu tượng sách trong thanh bên để bắt đầu từ playbook.",
   "templates.yourPlaybooks": "Playbook của bạn",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "Đã tạo playbook \"{{name}}\"",
   "templates.playbookDeletedToast": "Đã xóa playbook \"{{name}}\"",
   "templates.playbookSaveFailed": "Lưu playbook thất bại",
-
   "intel.title": "Cấu hình tình báo mối đe dọa",
   "intel.extractionBehavior": "Hành vi trích xuất",
   "intel.autoExtract": "Tự động trích xuất IOC từ nội dung",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "Thêm loại quan hệ tùy chỉnh",
   "intel.configImported": "Đã nhập cấu hình",
   "intel.invalidConfigFile": "Tệp cấu hình JSON không hợp lệ",
-
   "shortcuts.title": "Phím tắt bàn phím",
   "shortcuts.newNote": "Ghi chú mới / Chụp nhanh",
   "shortcuts.focusSearch": "Tập trung tìm kiếm",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "Hiển thị phím tắt bàn phím",
   "shortcuts.switchView": "Chuyển đổi dạng xem (Ghi chú/Nhiệm vụ/Timeline/Bảng trắng)",
   "shortcuts.closeModals": "Đóng hộp thoại modal",
-
   "server.teamServer": "Máy chủ nhóm",
   "server.connected": "Đã kết nối",
   "server.serverLabel": "Máy chủ",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "Đã ngắt kết nối khỏi máy chủ",
   "server.savedServers": "Máy chủ đã lưu",
   "server.deleteSavedServer": "Xóa máy chủ đã lưu",
-
   "server.onboarding.welcome": "Chào mừng đến {{name}}!",
   "server.onboarding.intro": "Bạn đã kết nối với máy chủ nhóm. Đây là những gì bạn có thể làm:",
   "server.onboarding.sharedInvestigations": "Điều tra chung",
   "server.onboarding.sharedInvestigationsDesc": "Cộng tác trên các vụ việc với nhóm — chia sẻ ghi chú, nhiệm vụ, timeline và IOC theo thời gian thực.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "Bảng tin nhóm",
   "server.onboarding.caddyShackDesc": "Feed thảo luận nhóm cho SOC của bạn. Đăng cập nhật, chia sẻ phát hiện và phản ứng với bài đăng của đồng nghiệp.",
   "server.onboarding.realTimeSync": "Đồng bộ thời gian thực",
   "server.onboarding.realTimeSyncDesc": "Ghi chú, nhiệm vụ và IOC của bạn tự động đồng bộ trên tất cả thành viên nhóm đã kết nối.",

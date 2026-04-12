@@ -1,6 +1,6 @@
 {
-  "view.title": "CaddyShack",
-  "view.connectToServer": "اتصل بخادم فريق لاستخدام CaddyShack.",
+  "view.title": "موجز الفريق",
+  "view.connectToServer": "اتصل بخادم فريق لاستخدام موجز الفريق.",
   "view.loading": "جارٍ التحميل...",
   "view.noPostsYet": "لا توجد منشورات بعد. كن أول من يشارك تحديثًا!",
   "view.noTeamActivity": "لا يوجد نشاط للفريق بعد.",
@@ -11,16 +11,14 @@
   "view.all": "الكل",
   "view.posts": "المنشورات",
   "view.activity": "النشاط",
-
-  "view.onboarding.title": "البدء مع CaddyShack",
+  "view.onboarding.title": "البدء مع موجز الفريق",
   "view.onboarding.step1Title": "1. نشر خادم فريق",
-  "view.onboarding.step1Desc": "يتطلب CaddyShack خادم فريق ThreatCaddy. قم بتشغيل حاوية Docker من README الخادم.",
+  "view.onboarding.step1Desc": "يتطلب موجز الفريق خادم فريق ThreatCaddy. قم بتشغيل حاوية Docker من README الخادم.",
   "view.onboarding.step2Title": "2. تهيئة رابط الخادم",
   "view.onboarding.step2Desc": "انتقل إلى الإعدادات وأدخل رابط خادم الفريق لتوصيل ThreatCaddy بنظامك.",
   "view.onboarding.step3Title": "3. تسجيل وتسجيل الدخول",
   "view.onboarding.step3Desc": "أنشئ حسابًا على خادم الفريق وسجّل الدخول لبدء النشر والتفاعل والتعاون مع فريقك.",
   "view.onboarding.gotIt": "حسنًا",
-
   "composer.placeholder": "ما الذي يحدث؟",
   "composer.slashHint": "اكتب <kbd>/</kbd> للأوامر",
   "composer.post": "نشر",
@@ -31,7 +29,6 @@
   "composer.postCreated": "تم إنشاء المنشور",
   "composer.failedToCreatePost": "فشل إنشاء المنشور",
   "composer.failedToUploadFile": "فشل تحميل الملف: {{name}}",
-
   "post.replyingTo": "ردًا على",
   "post.unknown": "غير معروف",
   "post.justNow": "الآن",
@@ -41,8 +38,7 @@
   "post.delete": "حذف",
   "post.save": "حفظ",
   "post.cancel": "إلغاء",
-
-  "reply.backToCaddyShack": "العودة إلى CaddyShack",
+  "reply.backToCaddyShack": "العودة إلى موجز الفريق",
   "reply.loadingThread": "جارٍ تحميل المحادثة...",
   "reply.postNotFound": "المنشور غير موجود.",
   "reply.writeReply": "اكتب ردًا...",
@@ -55,8 +51,7 @@
   "reply.failedDeletePost": "فشل حذف المنشور",
   "reply.failedEditPost": "فشل تعديل المنشور",
   "reply.failedPinStatus": "فشل تحديث حالة التثبيت",
-
-  "profile.backToCaddyShack": "العودة إلى CaddyShack",
+  "profile.backToCaddyShack": "العودة إلى موجز الفريق",
   "profile.loadingProfile": "جارٍ تحميل الملف الشخصي...",
   "profile.userNotFound": "المستخدم غير موجود.",
   "profile.posts": "المنشورات",
@@ -66,7 +61,6 @@
   "profile.noLikes": "لا توجد منشورات معجب بها بعد.",
   "profile.noActivity": "لم يتم تسجيل أي نشاط.",
   "profile.thisIsYou": "هذا أنت",
-
   "notifications.title": "الإشعارات",
   "notifications.new": "{{count}} جديد",
   "notifications.readAll": "قراءة الكل",
@@ -88,7 +82,6 @@
   "notifications.failedToMarkRead": "فشل وضع علامة مقروء على الإشعار",
   "notifications.failedToMarkAllRead": "فشل وضع علامة مقروء على الكل",
   "notifications.failedToClear": "فشل مسح الإشعارات",
-
   "activity.justNow": "الآن",
   "activity.minutesAgo": "منذ {{count}} د",
   "activity.hoursAgo": "منذ {{count}} س",

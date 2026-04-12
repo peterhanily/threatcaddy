@@ -1,7 +1,6 @@
 {
   "title": "Настройки",
   "closeSettings": "Закрыть настройки",
-
   "tabs.general": "Общие",
   "tabs.appearance": "Внешний вид",
   "tabs.ai": "ИИ",
@@ -11,7 +10,6 @@
   "tabs.intel": "Разведка",
   "tabs.integrations": "Интеграции",
   "tabs.shortcuts": "Горячие клавиши",
-
   "general.identity": "Ваша личность",
   "general.displayName": "Отображаемое имя",
   "general.displayNamePlaceholder": "Ваше имя (отображается на создаваемых сущностях)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "Не удалось загрузить обновление. Посетите https://threatcaddy.com для получения последней версии.",
   "general.downloadStandalone": "Скачать автономную версию",
   "general.privacy": "Конфиденциальность",
-
   "appearance.theme": "Тема",
   "appearance.mode": "Режим",
   "appearance.dark": "Тёмный",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "Не удалось сохранить изображение",
   "appearance.bgRemoved": "Фоновое изображение удалено",
   "appearance.bgRemoveFailed": "Не удалось удалить изображение",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "API-ключ Anthropic",
   "ai.openaiKey": "API-ключ OpenAI",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "Название команды (например mytriage)",
   "ai.commandDescPlaceholder": "Описание (отображается в меню слеш-команд)",
   "ai.commandTemplatePlaceholder": "Шаблон промпта. Используйте {{input}} для аргументов пользователя.\n\nПример: Проанализируй это предупреждение на IOC и создай отчёт о триаже:\n\n{{input}}",
-
   "agents.supervisor": "Агент-Supervisor",
   "agents.supervisorDesc": "Межрасследовательский анализ — обнаруживает общие IOC, устаревшие дела и паттерны в вашей нагрузке.",
   "agents.enableSupervisor": "Включить Supervisor",
   "agents.supervisorInterval": "Запускается каждые {{minutes}} минут",
   "agents.supervisorAriaLabel": "Включить агента-supervisor",
   "agents.interval": "Интервал",
-
   "agents.hosts": "Хосты агентов",
   "agents.hostsDesc": "Подключение внешних хостов агентов (Claude Code, пользовательские среды выполнения), предоставляющих навыки через REST API. Обнаруженные навыки становятся доступными как LLM-инструменты.",
   "agents.refreshAll": "Обновить все",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "Навыки не кэшированы. Нажмите «Получить навыки» для обнаружения доступных.",
   "agents.skillsLastFetched": "{{count}} навык{{plural}} — последнее получение {{date}}",
   "agents.params": "параметры: {{params}}",
-
   "data.exportImportTitle": "Экспорт и Импорт",
   "data.exportJSON": "Экспорт резервной копии JSON",
   "data.exportMarkdown": "Экспорт Markdown",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "Экспортировано {{count}} заметок как Markdown",
   "data.importedCounts": "Импортировано {{notes}} заметок, {{tasks}} задач, {{folders}} расследований, {{tags}} тегов",
   "data.importBackupTitle": "Импорт резервной копии",
-  "data.importBackupMessage": "Это заменит все ваши текущие заметки, задачи, папки и теги импортированными данными. Отменить невозможно.",
+  "data.importBackupMessage": "Это заменит все ваши текущие заметки, задачи, расследования и теги импортированными данными. Отменить невозможно.",
   "data.importReplace": "Импортировать и заменить",
   "data.importedMarkdown": "Импортировано {{count}} заметок из Markdown",
-
   "data.mdImportTitle": "Импорт Markdown",
   "data.mdPreviewTitle": "Предпросмотр импорта",
   "data.mdCompleteTitle": "Импорт завершён",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "Импортировать {{count}} заметок",
   "data.mdImportedSuccess_one": "{{count}} заметка успешно импортирована",
   "data.mdImportedSuccess_other": "{{count}} заметок успешно импортировано",
-
   "encryption.title": "Зашифрованные резервные копии на сервере",
   "encryption.connectPrompt": "Подключитесь к командному серверу для использования зашифрованных резервных копий.",
   "encryption.description": "Защищённые паролем резервные копии, хранящиеся на сервере. Даже администраторы не могут их прочитать.",
@@ -233,7 +224,6 @@
   "encryption.merge": "Слить",
   "encryption.deleteConfirmTitle": "Удалить резервную копию",
   "encryption.deleteConfirmMessage": "Это навсегда удалит зашифрованную резервную копию с сервера. Отменить невозможно.",
-
   "cloud.title": "Облачное резервное копирование",
   "cloud.addDestination": "Добавить назначение",
   "cloud.provider": "Провайдер",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "Это загрузит всю базу данных в {{count}} облачное назначение(я). Продолжить?",
   "cloud.encryptedPushSuccess": "Зашифрованная копия успешно отправлена",
   "cloud.pushSuccess": "Резервная копия успешно отправлена",
-
   "templates.noteTemplates": "Шаблоны заметок",
   "templates.summary": "{{custom}} пользовательских, {{builtin}} встроенных",
   "templates.description": "Шаблоны предварительно заполняют заметки структурированным содержимым. Встроенные шаблоны можно дублировать и настраивать.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "Шаблон «{{name}}» создан",
   "templates.deletedToast": "Шаблон «{{name}}» удалён",
   "templates.saveFailed": "Не удалось сохранить шаблон",
-
   "templates.playbooks": "Плейбуки расследований",
   "templates.playbooksDesc": "Плейбуки автоматически заполняют новые расследования задачами и заметками. Используйте иконку книги на боковой панели для начала из плейбука.",
   "templates.yourPlaybooks": "Ваши плейбуки",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "Плейбук «{{name}}» создан",
   "templates.playbookDeletedToast": "Плейбук «{{name}}» удалён",
   "templates.playbookSaveFailed": "Не удалось сохранить плейбук",
-
   "intel.title": "Конфигурация разведки угроз",
   "intel.extractionBehavior": "Поведение извлечения",
   "intel.autoExtract": "Автоизвлечение IOC из содержимого",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "Добавить пользовательский тип связи",
   "intel.configImported": "Конфигурация импортирована",
   "intel.invalidConfigFile": "Неверный файл конфигурации JSON",
-
   "shortcuts.title": "Горячие клавиши",
   "shortcuts.newNote": "Новая заметка / Быстрый захват",
   "shortcuts.focusSearch": "Фокус поиска",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "Показать горячие клавиши",
   "shortcuts.switchView": "Переключить вид (Заметки/Задачи/Хронология/Доска)",
   "shortcuts.closeModals": "Закрыть диалоги",
-
   "server.teamServer": "Командный сервер",
   "server.connected": "Подключено",
   "server.serverLabel": "Сервер",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "Отключено от сервера",
   "server.savedServers": "Сохранённые серверы",
   "server.deleteSavedServer": "Удалить сохранённый сервер",
-
   "server.onboarding.welcome": "Добро пожаловать в {{name}}!",
   "server.onboarding.intro": "Вы подключены к командному серверу. Вот что вы можете делать:",
   "server.onboarding.sharedInvestigations": "Общие расследования",
   "server.onboarding.sharedInvestigationsDesc": "Сотрудничайте в делах с командой — делитесь заметками, задачами, хронологиями и IOC в реальном времени.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "Лента команды",
   "server.onboarding.caddyShackDesc": "Лента обсуждений команды для вашего SOC. Публикуйте обновления, делитесь находками и реагируйте на публикации коллег.",
   "server.onboarding.realTimeSync": "Синхронизация в реальном времени",
   "server.onboarding.realTimeSyncDesc": "Ваши заметки, задачи и IOC автоматически синхронизируются у всех подключённых участников команды.",

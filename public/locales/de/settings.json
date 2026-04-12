@@ -1,7 +1,6 @@
 {
   "title": "Einstellungen",
   "closeSettings": "Einstellungen schließen",
-
   "tabs.general": "Allgemein",
   "tabs.appearance": "Darstellung",
   "tabs.ai": "KI",
@@ -11,7 +10,6 @@
   "tabs.intel": "Intel",
   "tabs.integrations": "Integrationen",
   "tabs.shortcuts": "Tastenkürzel",
-
   "general.identity": "Ihre Identität",
   "general.displayName": "Anzeigename",
   "general.displayNamePlaceholder": "Ihr Name (wird auf erstellten Entitäten angezeigt)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "Update konnte nicht heruntergeladen werden. Besuchen Sie https://threatcaddy.com für die neueste Version.",
   "general.downloadStandalone": "Standalone herunterladen",
   "general.privacy": "Datenschutz",
-
   "appearance.theme": "Design",
   "appearance.mode": "Modus",
   "appearance.dark": "Dunkel",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "Bild konnte nicht gespeichert werden",
   "appearance.bgRemoved": "Hintergrundbild entfernt",
   "appearance.bgRemoveFailed": "Bild konnte nicht entfernt werden",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "Anthropic-API-Schlüssel",
   "ai.openaiKey": "OpenAI-API-Schlüssel",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "Befehlsname (z.B. meintriage)",
   "ai.commandDescPlaceholder": "Beschreibung (im Slash-Menü angezeigt)",
   "ai.commandTemplatePlaceholder": "Prompt-Vorlage. Verwenden Sie {{input}} für Benutzerargumente.\n\nBeispiel: Diesen Alarm auf IOCs analysieren und Triagebebericht erstellen:\n\n{{input}}",
-
   "agents.supervisor": "Supervisor-Agent",
   "agents.supervisorDesc": "Fallübergreifende Analyse — erkennt gemeinsame IOCs, veraltete Fälle und Muster in Ihrer Falllast.",
   "agents.enableSupervisor": "Supervisor aktivieren",
   "agents.supervisorInterval": "Läuft alle {{minutes}} Minuten",
   "agents.supervisorAriaLabel": "Supervisor-Agenten aktivieren",
   "agents.interval": "Intervall",
-
   "agents.hosts": "Agenten-Hosts",
   "agents.hostsDesc": "Externe Agenten-Hosts verbinden (Claude Code, benutzerdefinierte Laufzeiten), die Fähigkeiten über REST-API bereitstellen. Entdeckte Fähigkeiten werden als LLM-Tools verfügbar.",
   "agents.refreshAll": "Alle aktualisieren",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "Keine Fähigkeiten zwischengespeichert. Klicken Sie auf \"Fähigkeiten abrufen\", um verfügbare Fähigkeiten zu entdecken.",
   "agents.skillsLastFetched": "{{count}} Fähigkeit(en){{plural}} — zuletzt abgerufen {{date}}",
   "agents.params": "Parameter: {{params}}",
-
   "data.exportImportTitle": "Export & Import",
   "data.exportJSON": "JSON-Backup exportieren",
   "data.exportMarkdown": "Markdown exportieren",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "{{count}} Notizen als Markdown exportiert",
   "data.importedCounts": "{{notes}} Notizen, {{tasks}} Aufgaben, {{folders}} Untersuchungen, {{tags}} Tags importiert",
   "data.importBackupTitle": "Backup importieren",
-  "data.importBackupMessage": "Dadurch werden alle aktuellen Notizen, Aufgaben, Ordner und Tags durch die importierten Daten ersetzt. Dies kann nicht rückgängig gemacht werden.",
+  "data.importBackupMessage": "Dadurch werden alle aktuellen Notizen, Aufgaben, Untersuchungen und Tags durch die importierten Daten ersetzt. Dies kann nicht rückgängig gemacht werden.",
   "data.importReplace": "Importieren & Ersetzen",
   "data.importedMarkdown": "{{count}} Notizen aus Markdown importiert",
-
   "data.mdImportTitle": "Markdown importieren",
   "data.mdPreviewTitle": "Import-Vorschau",
   "data.mdCompleteTitle": "Import abgeschlossen",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "{{count}} Notizen importieren",
   "data.mdImportedSuccess_one": "{{count}} Notiz erfolgreich importiert",
   "data.mdImportedSuccess_other": "{{count}} Notizen erfolgreich importiert",
-
   "encryption.title": "Server-verschlüsselte Backups",
   "encryption.connectPrompt": "Mit einem Team-Server verbinden, um verschlüsselte Backups zu verwenden.",
   "encryption.description": "Passwortgeschützte Backups auf dem Server gespeichert. Selbst Administratoren können sie nicht lesen.",
@@ -233,7 +224,6 @@
   "encryption.merge": "Zusammenführen",
   "encryption.deleteConfirmTitle": "Backup löschen",
   "encryption.deleteConfirmMessage": "Dieses verschlüsselte Backup wird dauerhaft vom Server gelöscht. Dies kann nicht rückgängig gemacht werden.",
-
   "cloud.title": "Cloud-Backup",
   "cloud.addDestination": "Ziel hinzufügen",
   "cloud.provider": "Anbieter",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "Dadurch wird Ihre gesamte Datenbank auf {{count}} Cloud-Ziel(e) hochgeladen. Fortfahren?",
   "cloud.encryptedPushSuccess": "Verschlüsseltes Backup erfolgreich übertragen",
   "cloud.pushSuccess": "Backup erfolgreich übertragen",
-
   "templates.noteTemplates": "Notizvorlagen",
   "templates.summary": "{{custom}} benutzerdefiniert, {{builtin}} integriert",
   "templates.description": "Vorlagen füllen Notizen mit strukturiertem Inhalt vor. Integrierte Vorlagen können dupliziert und angepasst werden.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "Vorlage \"{{name}}\" erstellt",
   "templates.deletedToast": "Vorlage \"{{name}}\" gelöscht",
   "templates.saveFailed": "Vorlage konnte nicht gespeichert werden",
-
   "templates.playbooks": "Untersuchungs-Playbooks",
   "templates.playbooksDesc": "Playbooks befüllen neue Untersuchungen automatisch mit Aufgaben und Notizen. Verwenden Sie das Buch-Symbol in der Seitenleiste, um mit einem Playbook zu starten.",
   "templates.yourPlaybooks": "Ihre Playbooks",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "Playbook \"{{name}}\" erstellt",
   "templates.playbookDeletedToast": "Playbook \"{{name}}\" gelöscht",
   "templates.playbookSaveFailed": "Playbook konnte nicht gespeichert werden",
-
   "intel.title": "Threat-Intel-Konfiguration",
   "intel.extractionBehavior": "Extraktionsverhalten",
   "intel.autoExtract": "IOCs automatisch aus Inhalten extrahieren",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "Benutzerdefinierten Beziehungstyp hinzufügen",
   "intel.configImported": "Konfiguration importiert",
   "intel.invalidConfigFile": "Ungültige JSON-Konfigurationsdatei",
-
   "shortcuts.title": "Tastenkürzel",
   "shortcuts.newNote": "Neue Notiz / Schnellerfassung",
   "shortcuts.focusSearch": "Suche fokussieren",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "Tastenkürzel anzeigen",
   "shortcuts.switchView": "Ansicht wechseln (Notizen/Aufgaben/Zeitleiste/Whiteboard)",
   "shortcuts.closeModals": "Dialoge schließen",
-
   "server.teamServer": "Team-Server",
   "server.connected": "Verbunden",
   "server.serverLabel": "Server",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "Vom Server getrennt",
   "server.savedServers": "Gespeicherte Server",
   "server.deleteSavedServer": "Gespeicherten Server löschen",
-
   "server.onboarding.welcome": "Willkommen bei {{name}}!",
   "server.onboarding.intro": "Sie sind mit Ihrem Team-Server verbunden. Folgendes können Sie tun:",
   "server.onboarding.sharedInvestigations": "Gemeinsame Untersuchungen",
   "server.onboarding.sharedInvestigationsDesc": "Arbeiten Sie mit Ihrem Team an Fällen zusammen — teilen Sie Notizen, Aufgaben, Zeitleisten und IOCs in Echtzeit.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "Team-Feed",
   "server.onboarding.caddyShackDesc": "Team-Diskussions-Feed für Ihr SOC. Posten Sie Updates, teilen Sie Erkenntnisse und reagieren Sie auf Beiträge Ihrer Teamkollegen.",
   "server.onboarding.realTimeSync": "Echtzeit-Synchronisierung",
   "server.onboarding.realTimeSyncDesc": "Ihre Notizen, Aufgaben und IOCs synchronisieren sich automatisch zwischen allen verbundenen Teammitgliedern.",

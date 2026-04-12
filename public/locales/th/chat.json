@@ -21,7 +21,6 @@
   "view.unarchive": "ยกเลิกการเก็บถาวร",
   "view.rename": "เปลี่ยนชื่อ",
   "view.renamePlaceholder": "ชื่อแชท...",
-
   "thread.noMessages": "ไม่มีข้อความ",
   "thread.noMessagesHint": "พิมพ์ข้อความด้านล่างเพื่อเริ่มบทสนทนากับ CaddyAI",
   "thread.thinking": "กำลังคิด...",
@@ -35,7 +34,6 @@
   "thread.tokenBudgetExceeded": "เกินงบประมาณโทเค็น",
   "thread.you": "คุณ",
   "thread.caddyAI": "CaddyAI",
-
   "input.placeholder": "ส่งข้อความถึง CaddyAI...",
   "input.send": "ส่งข้อความ",
   "input.sendAria": "ส่งข้อความ",
@@ -47,7 +45,6 @@
   "input.slashCommands": "คำสั่งสแลช",
   "input.slashCommandPlaceholder": "ค้นหาคำสั่ง...",
   "input.noMatchingCommands": "ไม่มีคำสั่งที่ตรงกัน",
-
   "slashCommand.fetch": "ดึงเนื้อหาจาก URL",
   "slashCommand.search": "ค้นหาในการสืบสวน",
   "slashCommand.note": "สร้างบันทึกใหม่",

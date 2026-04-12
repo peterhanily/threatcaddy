@@ -1,6 +1,6 @@
 {
-  "view.title": "CaddyShack",
-  "view.connectToServer": "برای استفاده از CaddyShack به سرور تیمی متصل شوید.",
+  "view.title": "فید تیم",
+  "view.connectToServer": "برای استفاده از فید تیم به سرور تیمی متصل شوید.",
   "view.loading": "در حال بارگذاری...",
   "view.noPostsYet": "هنوز پستی وجود ندارد. اولین نفری باشید که به‌روزرسانی را به اشتراک می‌گذارد!",
   "view.noTeamActivity": "هنوز فعالیت تیمی وجود ندارد.",
@@ -11,16 +11,14 @@
   "view.all": "همه",
   "view.posts": "پست‌ها",
   "view.activity": "فعالیت",
-
-  "view.onboarding.title": "شروع با CaddyShack",
+  "view.onboarding.title": "شروع با فید تیم",
   "view.onboarding.step1Title": "۱. استقرار سرور تیمی",
-  "view.onboarding.step1Desc": "CaddyShack به سرور تیمی ThreatCaddy نیاز دارد. کانتینر Docker را از README سرور راه‌اندازی کنید.",
+  "view.onboarding.step1Desc": "فید تیم به سرور تیمی ThreatCaddy نیاز دارد. کانتینر Docker را از README سرور راه‌اندازی کنید.",
   "view.onboarding.step2Title": "۲. پیکربندی URL سرور",
   "view.onboarding.step2Desc": "به تنظیمات بروید و URL سرور تیمی خود را وارد کنید تا ThreatCaddy به نمونه شما متصل شود.",
   "view.onboarding.step3Title": "۳. ثبت‌نام و ورود",
   "view.onboarding.step3Desc": "یک حساب کاربری در سرور تیمی خود ایجاد کنید و وارد شوید تا شروع به ارسال، واکنش و همکاری با تیمتان کنید.",
   "view.onboarding.gotIt": "متوجه شدم",
-
   "composer.placeholder": "چه اتفاقی افتاده؟",
   "composer.slashHint": "برای دستورات <kbd>/</kbd> را تایپ کنید",
   "composer.post": "ارسال",
@@ -31,7 +29,6 @@
   "composer.postCreated": "پست ایجاد شد",
   "composer.failedToCreatePost": "ایجاد پست ناموفق بود",
   "composer.failedToUploadFile": "بارگذاری فایل ناموفق بود: {{name}}",
-
   "post.replyingTo": "پاسخ به",
   "post.unknown": "ناشناخته",
   "post.justNow": "همین الان",
@@ -41,8 +38,7 @@
   "post.delete": "حذف",
   "post.save": "ذخیره",
   "post.cancel": "لغو",
-
-  "reply.backToCaddyShack": "بازگشت به CaddyShack",
+  "reply.backToCaddyShack": "بازگشت به فید تیم",
   "reply.loadingThread": "در حال بارگذاری رشته...",
   "reply.postNotFound": "پست یافت نشد.",
   "reply.writeReply": "یک پاسخ بنویسید...",
@@ -55,8 +51,7 @@
   "reply.failedDeletePost": "حذف پست ناموفق بود",
   "reply.failedEditPost": "ویرایش پست ناموفق بود",
   "reply.failedPinStatus": "به‌روزرسانی وضعیت پین ناموفق بود",
-
-  "profile.backToCaddyShack": "بازگشت به CaddyShack",
+  "profile.backToCaddyShack": "بازگشت به فید تیم",
   "profile.loadingProfile": "در حال بارگذاری پروفایل...",
   "profile.userNotFound": "کاربر یافت نشد.",
   "profile.posts": "پست‌ها",
@@ -66,7 +61,6 @@
   "profile.noLikes": "هنوز پست پسندیده‌ای وجود ندارد.",
   "profile.noActivity": "فعالیتی ثبت نشده.",
   "profile.thisIsYou": "این شما هستید",
-
   "notifications.title": "اعلان‌ها",
   "notifications.new": "{{count}} جدید",
   "notifications.readAll": "خواندن همه",
@@ -88,7 +82,6 @@
   "notifications.failedToMarkRead": "علامت‌گذاری اعلان به عنوان خوانده شده ناموفق بود",
   "notifications.failedToMarkAllRead": "علامت‌گذاری همه به عنوان خوانده شده ناموفق بود",
   "notifications.failedToClear": "پاک کردن اعلان‌ها ناموفق بود",
-
   "activity.justNow": "همین الان",
   "activity.minutesAgo": "{{count}} دقیقه پیش",
   "activity.hoursAgo": "{{count}} ساعت پیش",

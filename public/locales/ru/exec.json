@@ -1,6 +1,6 @@
 {
   "dashboard.appName": "ThreatCaddy",
-  "dashboard.exec": "EXEC",
+  "dashboard.exec": "РУКОВОДСТВО",
   "dashboard.switchToAnalyst": "Переключиться в режим аналитика",
   "dashboard.overview": "Обзор",
   "dashboard.cases": "Дела",
@@ -166,5 +166,6 @@
   "metrics.iocsTracked": "IOC отслеживается",
   "metrics.eventsThisWeek": "Событий на этой неделе",
   "metrics.aiChats": "ИИ-чаты",
-  "metrics.graphNodes": "Узлы графа"
+  "metrics.graphNodes": "Узлы графа",
+  "dashboard.backToExecView": "Назад к Обзору руководства"
 }

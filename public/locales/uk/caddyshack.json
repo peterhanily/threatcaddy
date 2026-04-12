@@ -1,6 +1,6 @@
 {
-  "view.title": "CaddyShack",
-  "view.connectToServer": "Підключіться до командного сервера для використання CaddyShack.",
+  "view.title": "Стрічка команди",
+  "view.connectToServer": "Підключіться до командного сервера для використання Стрічки команди.",
   "view.loading": "Завантаження...",
   "view.noPostsYet": "Публікацій поки немає. Станьте першим, хто поділиться оновленням!",
   "view.noTeamActivity": "Активність команди поки відсутня.",
@@ -11,16 +11,14 @@
   "view.all": "Усі",
   "view.posts": "Публікації",
   "view.activity": "Активність",
-
-  "view.onboarding.title": "Початок роботи з CaddyShack",
+  "view.onboarding.title": "Початок роботи зі Стрічкою команди",
   "view.onboarding.step1Title": "1. Розгорніть командний сервер",
-  "view.onboarding.step1Desc": "CaddyShack потребує командний сервер ThreatCaddy. Запустіть Docker-контейнер з README сервера.",
+  "view.onboarding.step1Desc": "Стрічка команди потребує командний сервер ThreatCaddy. Запустіть Docker-контейнер з README сервера.",
   "view.onboarding.step2Title": "2. Налаштуйте URL-адресу сервера",
   "view.onboarding.step2Desc": "Перейдіть до Налаштувань і введіть URL-адресу командного сервера для підключення ThreatCaddy до вашого екземпляра.",
   "view.onboarding.step3Title": "3. Зареєструйтесь і увійдіть",
   "view.onboarding.step3Desc": "Створіть акаунт на командному сервері та увійдіть, щоб почати публікувати, реагувати і співпрацювати з командою.",
   "view.onboarding.gotIt": "Зрозуміло",
-
   "composer.placeholder": "Що відбувається?",
   "composer.slashHint": "Введіть <kbd>/</kbd> для команд",
   "composer.post": "Опублікувати",
@@ -31,7 +29,6 @@
   "composer.postCreated": "Публікацію створено",
   "composer.failedToCreatePost": "Не вдалося створити публікацію",
   "composer.failedToUploadFile": "Не вдалося завантажити файл: {{name}}",
-
   "post.replyingTo": "Відповідь на",
   "post.unknown": "Невідомо",
   "post.justNow": "щойно",
@@ -41,8 +38,7 @@
   "post.delete": "Видалити",
   "post.save": "Зберегти",
   "post.cancel": "Скасувати",
-
-  "reply.backToCaddyShack": "Назад до CaddyShack",
+  "reply.backToCaddyShack": "Назад до Стрічки команди",
   "reply.loadingThread": "Завантаження гілки...",
   "reply.postNotFound": "Публікацію не знайдено.",
   "reply.writeReply": "Напишіть відповідь...",
@@ -55,8 +51,7 @@
   "reply.failedDeletePost": "Не вдалося видалити публікацію",
   "reply.failedEditPost": "Не вдалося відредагувати публікацію",
   "reply.failedPinStatus": "Не вдалося оновити статус закріплення",
-
-  "profile.backToCaddyShack": "Назад до CaddyShack",
+  "profile.backToCaddyShack": "Назад до Стрічки команди",
   "profile.loadingProfile": "Завантаження профілю...",
   "profile.userNotFound": "Користувача не знайдено.",
   "profile.posts": "Публікації",
@@ -66,7 +61,6 @@
   "profile.noLikes": "Вподобаних публікацій поки немає.",
   "profile.noActivity": "Активність не зафіксована.",
   "profile.thisIsYou": "Це ви",
-
   "notifications.title": "Сповіщення",
   "notifications.new": "{{count}} нових",
   "notifications.readAll": "Прочитати всі",
@@ -88,7 +82,6 @@
   "notifications.failedToMarkRead": "Не вдалося позначити сповіщення як прочитане",
   "notifications.failedToMarkAllRead": "Не вдалося позначити всі як прочитані",
   "notifications.failedToClear": "Не вдалося очистити сповіщення",
-
   "activity.justNow": "щойно",
   "activity.minutesAgo": "{{count}} хв. тому",
   "activity.hoursAgo": "{{count}} год. тому",

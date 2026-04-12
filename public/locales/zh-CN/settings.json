@@ -1,7 +1,6 @@
 {
   "title": "设置",
   "closeSettings": "关闭设置",
-
   "tabs.general": "通用",
   "tabs.appearance": "外观",
   "tabs.ai": "AI",
@@ -11,7 +10,6 @@
   "tabs.intel": "情报",
   "tabs.integrations": "集成",
   "tabs.shortcuts": "快捷键",
-
   "general.identity": "您的身份",
   "general.displayName": "显示名称",
   "general.displayNamePlaceholder": "您的名字（显示在您创建的实体上）",
@@ -51,7 +49,6 @@
   "general.updateFailed": "下载更新失败。请访问 https://threatcaddy.com 获取最新版本。",
   "general.downloadStandalone": "下载独立版",
   "general.privacy": "隐私",
-
   "appearance.theme": "主题",
   "appearance.mode": "模式",
   "appearance.dark": "深色",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "保存图片失败",
   "appearance.bgRemoved": "背景图片已移除",
   "appearance.bgRemoveFailed": "移除图片失败",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "Anthropic API 密钥",
   "ai.openaiKey": "OpenAI API 密钥",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "命令名称（例如 mytriage）",
   "ai.commandDescPlaceholder": "描述（显示在斜杠菜单中）",
   "ai.commandTemplatePlaceholder": "提示模板。使用 {{input}} 表示用户参数。\n\n示例：分析此告警中的 IOC 并创建分类报告：\n\n{{input}}",
-
   "agents.supervisor": "监督代理",
   "agents.supervisorDesc": "跨调查分析——检测共享 IOC、陈旧案例和整个案件中的模式。",
   "agents.enableSupervisor": "启用监督代理",
   "agents.supervisorInterval": "每 {{minutes}} 分钟运行一次",
   "agents.supervisorAriaLabel": "启用监督代理",
   "agents.interval": "间隔",
-
   "agents.hosts": "代理主机",
   "agents.hostsDesc": "连接通过 REST API 暴露技能的外部代理主机（Claude Code、自定义运行时）。发现的技能可作为 LLM 工具使用。",
   "agents.refreshAll": "刷新全部",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "无缓存技能。点击\"获取技能\"发现可用技能。",
   "agents.skillsLastFetched": "{{count}} 个技能{{plural}}——最后获取于 {{date}}",
   "agents.params": "参数：{{params}}",
-
   "data.exportImportTitle": "导出和导入",
   "data.exportJSON": "导出 JSON 备份",
   "data.exportMarkdown": "导出 Markdown",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "已将 {{count}} 条笔记导出为 Markdown",
   "data.importedCounts": "已导入 {{notes}} 条笔记，{{tasks}} 个任务，{{folders}} 个调查，{{tags}} 个标签",
   "data.importBackupTitle": "导入备份",
-  "data.importBackupMessage": "这将用导入的数据替换您当前所有的笔记、任务、文件夹和标签，此操作无法撤销。",
+  "data.importBackupMessage": "这将用导入的数据替换您当前所有的笔记、任务、调查和标签，此操作无法撤销。",
   "data.importReplace": "导入并替换",
   "data.importedMarkdown": "已从 Markdown 导入 {{count}} 条笔记",
-
   "data.mdImportTitle": "导入 Markdown",
   "data.mdPreviewTitle": "预览导入",
   "data.mdCompleteTitle": "导入完成",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "导入 {{count}} 条笔记",
   "data.mdImportedSuccess_one": "已成功导入 {{count}} 条笔记",
   "data.mdImportedSuccess_other": "已成功导入 {{count}} 条笔记",
-
   "encryption.title": "服务器加密备份",
   "encryption.connectPrompt": "连接到团队服务器以使用加密备份。",
   "encryption.description": "存储在服务器上的密码保护备份。即使管理员也无法读取。",
@@ -233,7 +224,6 @@
   "encryption.merge": "合并",
   "encryption.deleteConfirmTitle": "删除备份",
   "encryption.deleteConfirmMessage": "这将从服务器永久删除此加密备份，此操作无法撤销。",
-
   "cloud.title": "云备份",
   "cloud.addDestination": "添加目标",
   "cloud.provider": "提供商",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "这将把您的整个数据库上传到 {{count}} 个云目标。继续？",
   "cloud.encryptedPushSuccess": "加密备份推送成功",
   "cloud.pushSuccess": "备份推送成功",
-
   "templates.noteTemplates": "笔记模板",
   "templates.summary": "{{custom}} 个自定义，{{builtin}} 个内置",
   "templates.description": "模板用结构化内容预填充笔记。内置模板可以复制并自定义。",
@@ -283,7 +272,6 @@
   "templates.createdToast": "模板\"{{name}}\"已创建",
   "templates.deletedToast": "模板\"{{name}}\"已删除",
   "templates.saveFailed": "保存模板失败",
-
   "templates.playbooks": "调查剧本",
   "templates.playbooksDesc": "剧本自动用任务和笔记填充新调查。使用侧边栏中的书本图标从剧本开始。",
   "templates.yourPlaybooks": "您的剧本",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "剧本\"{{name}}\"已创建",
   "templates.playbookDeletedToast": "剧本\"{{name}}\"已删除",
   "templates.playbookSaveFailed": "保存剧本失败",
-
   "intel.title": "威胁情报配置",
   "intel.extractionBehavior": "提取行为",
   "intel.autoExtract": "自动从内容提取 IOC",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "添加自定义关系类型",
   "intel.configImported": "配置已导入",
   "intel.invalidConfigFile": "无效的 JSON 配置文件",
-
   "shortcuts.title": "键盘快捷键",
   "shortcuts.newNote": "新建笔记 / 快速捕获",
   "shortcuts.focusSearch": "聚焦搜索",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "显示键盘快捷键",
   "shortcuts.switchView": "切换视图（笔记/任务/时间线/白板）",
   "shortcuts.closeModals": "关闭模态框",
-
   "server.teamServer": "团队服务器",
   "server.connected": "已连接",
   "server.serverLabel": "服务器",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "已断开与服务器的连接",
   "server.savedServers": "已保存的服务器",
   "server.deleteSavedServer": "删除已保存的服务器",
-
   "server.onboarding.welcome": "欢迎来到 {{name}}！",
   "server.onboarding.intro": "您已连接到团队服务器。以下是您可以做的：",
   "server.onboarding.sharedInvestigations": "共享调查",
   "server.onboarding.sharedInvestigationsDesc": "与您的团队协作处理案例——实时共享笔记、任务、时间线和 IOC。",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "团队动态",
   "server.onboarding.caddyShackDesc": "为您的 SOC 提供的团队讨论信息流。发布更新、分享发现并对队友的帖子做出反应。",
   "server.onboarding.realTimeSync": "实时同步",
   "server.onboarding.realTimeSyncDesc": "您的笔记、任务和 IOC 在所有连接的团队成员之间自动同步。",

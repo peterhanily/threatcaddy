@@ -1,6 +1,6 @@
 {
-  "view.title": "CaddyShack",
-  "view.connectToServer": "CaddyShack kullanmak için bir ekip sunucusuna bağlanın.",
+  "view.title": "Takım Akışı",
+  "view.connectToServer": "Takım Akışını kullanmak için bir ekip sunucusuna bağlanın.",
   "view.loading": "Yükleniyor...",
   "view.noPostsYet": "Henüz gönderi yok. İlk güncellemeyi paylaşan siz olun!",
   "view.noTeamActivity": "Henüz ekip etkinliği yok.",
@@ -11,16 +11,14 @@
   "view.all": "Tümü",
   "view.posts": "Gönderiler",
   "view.activity": "Etkinlik",
-
-  "view.onboarding.title": "CaddyShack'e Başlarken",
+  "view.onboarding.title": "Takım Akışına Başlarken",
   "view.onboarding.step1Title": "1. Ekip sunucusu kur",
-  "view.onboarding.step1Desc": "CaddyShack bir ThreatCaddy ekip sunucusu gerektirir. Sunucu README'sinden Docker konteynerini başlatın.",
+  "view.onboarding.step1Desc": "Takım Akışı bir ThreatCaddy ekip sunucusu gerektirir. Sunucu README'sinden Docker konteynerini başlatın.",
   "view.onboarding.step2Title": "2. Sunucu URL'sini yapılandır",
   "view.onboarding.step2Desc": "Ayarlar'a gidin ve ThreatCaddy'yi örneğinize bağlamak için ekip sunucusu URL'nizi girin.",
   "view.onboarding.step3Title": "3. Kayıt ol ve giriş yap",
   "view.onboarding.step3Desc": "Ekip sunucunuzda hesap oluşturun ve ekibinizle gönderi, tepki ve işbirliği başlatmak için giriş yapın.",
   "view.onboarding.gotIt": "Anladım",
-
   "composer.placeholder": "Ne oluyor?",
   "composer.slashHint": "Komutlar için <kbd>/</kbd> yazın",
   "composer.post": "Gönder",
@@ -31,7 +29,6 @@
   "composer.postCreated": "Gönderi oluşturuldu",
   "composer.failedToCreatePost": "Gönderi oluşturulamadı",
   "composer.failedToUploadFile": "Dosya yüklenemedi: {{name}}",
-
   "post.replyingTo": "Yanıtlayan",
   "post.unknown": "Bilinmeyen",
   "post.justNow": "az önce",
@@ -41,8 +38,7 @@
   "post.delete": "Sil",
   "post.save": "Kaydet",
   "post.cancel": "İptal",
-
-  "reply.backToCaddyShack": "CaddyShack'e dön",
+  "reply.backToCaddyShack": "Takım Akışına dön",
   "reply.loadingThread": "Konu yükleniyor...",
   "reply.postNotFound": "Gönderi bulunamadı.",
   "reply.writeReply": "Yanıt yaz...",
@@ -55,8 +51,7 @@
   "reply.failedDeletePost": "Gönderi silinemedi",
   "reply.failedEditPost": "Gönderi düzenlenemedi",
   "reply.failedPinStatus": "Sabitleme durumu güncellenemedi",
-
-  "profile.backToCaddyShack": "CaddyShack'e dön",
+  "profile.backToCaddyShack": "Takım Akışına dön",
   "profile.loadingProfile": "Profil yükleniyor...",
   "profile.userNotFound": "Kullanıcı bulunamadı.",
   "profile.posts": "Gönderiler",
@@ -66,7 +61,6 @@
   "profile.noLikes": "Henüz beğenilen gönderi yok.",
   "profile.noActivity": "Kayıtlı etkinlik yok.",
   "profile.thisIsYou": "Bu sizsiniz",
-
   "notifications.title": "Bildirimler",
   "notifications.new": "{{count}} yeni",
   "notifications.readAll": "Tümünü oku",
@@ -88,7 +82,6 @@
   "notifications.failedToMarkRead": "Bildirim okundu olarak işaretlenemedi",
   "notifications.failedToMarkAllRead": "Tümü okundu olarak işaretlenemedi",
   "notifications.failedToClear": "Bildirimler temizlenemedi",
-
   "activity.justNow": "az önce",
   "activity.minutesAgo": "{{count}}d önce",
   "activity.hoursAgo": "{{count}}s önce",

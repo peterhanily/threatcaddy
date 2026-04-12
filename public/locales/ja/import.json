@@ -8,7 +8,7 @@
   "columns": "{{count}} 列",
   "truncated": "10,000行に切り詰め",
   "investigationFolder": "調査フォルダー",
-  "noFolder": "フォルダーなし",
+  "noFolder": "調査なし",
   "timeline": "タイムライン",
   "allEventsFirst": "すべてのイベント（利用可能な最初のもの）",
   "newTimeline": "+ 新規タイムライン...",

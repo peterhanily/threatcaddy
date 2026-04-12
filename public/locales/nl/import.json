@@ -8,7 +8,7 @@
   "columns": "{{count}} kolommen",
   "truncated": "Ingekort tot 10.000 rijen",
   "investigationFolder": "Onderzoeksmap",
-  "noFolder": "Geen map",
+  "noFolder": "Geen onderzoek",
   "timeline": "Tijdlijn",
   "allEventsFirst": "Alle gebeurtenissen (eerste beschikbare)",
   "newTimeline": "+ Nieuwe tijdlijn...",

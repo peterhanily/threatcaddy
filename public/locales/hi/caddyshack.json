@@ -1,6 +1,6 @@
 {
-  "view.title": "CaddyShack",
-  "view.connectToServer": "CaddyShack उपयोग करने के लिए टीम सर्वर से कनेक्ट करें।",
+  "view.title": "टीम फ़ीड",
+  "view.connectToServer": "टीम फ़ीड उपयोग करने के लिए टीम सर्वर से कनेक्ट करें।",
   "view.loading": "लोड हो रहा है...",
   "view.noPostsYet": "अभी तक कोई पोस्ट नहीं। अपडेट साझा करने वाले पहले बनें!",
   "view.noTeamActivity": "अभी तक कोई टीम गतिविधि नहीं।",
@@ -11,16 +11,14 @@
   "view.all": "सभी",
   "view.posts": "पोस्ट",
   "view.activity": "गतिविधि",
-
-  "view.onboarding.title": "CaddyShack के साथ शुरुआत",
+  "view.onboarding.title": "टीम फ़ीड के साथ शुरुआत",
   "view.onboarding.step1Title": "1. टीम सर्वर तैनात करें",
-  "view.onboarding.step1Desc": "CaddyShack के लिए ThreatCaddy टीम सर्वर की आवश्यकता है। सर्वर README से Docker कंटेनर लॉन्च करें।",
+  "view.onboarding.step1Desc": "टीम फ़ीड के लिए ThreatCaddy टीम सर्वर की आवश्यकता है। सर्वर README से Docker कंटेनर लॉन्च करें।",
   "view.onboarding.step2Title": "2. सर्वर URL कॉन्फ़िगर करें",
   "view.onboarding.step2Desc": "Settings में जाएं और ThreatCaddy को आपके इंस्टेंस से कनेक्ट करने के लिए टीम सर्वर URL दर्ज करें।",
   "view.onboarding.step3Title": "3. रजिस्टर करें और साइन इन करें",
   "view.onboarding.step3Desc": "अपने टीम सर्वर पर एक खाता बनाएं और पोस्टिंग, प्रतिक्रिया और सहयोग शुरू करने के लिए साइन इन करें।",
   "view.onboarding.gotIt": "समझ गया",
-
   "composer.placeholder": "क्या हो रहा है?",
   "composer.slashHint": "कमांड के लिए <kbd>/</kbd> टाइप करें",
   "composer.post": "पोस्ट करें",
@@ -31,7 +29,6 @@
   "composer.postCreated": "पोस्ट बना",
   "composer.failedToCreatePost": "पोस्ट बनाने में विफल",
   "composer.failedToUploadFile": "फ़ाइल अपलोड विफल: {{name}}",
-
   "post.replyingTo": "उत्तर दे रहे हैं",
   "post.unknown": "अज्ञात",
   "post.justNow": "अभी-अभी",
@@ -41,8 +38,7 @@
   "post.delete": "हटाएं",
   "post.save": "सहेजें",
   "post.cancel": "रद्द करें",
-
-  "reply.backToCaddyShack": "CaddyShack पर वापस",
+  "reply.backToCaddyShack": "टीम फ़ीड पर वापस",
   "reply.loadingThread": "थ्रेड लोड हो रहा है...",
   "reply.postNotFound": "पोस्ट नहीं मिला।",
   "reply.writeReply": "उत्तर लिखें...",
@@ -55,8 +51,7 @@
   "reply.failedDeletePost": "पोस्ट हटाने में विफल",
   "reply.failedEditPost": "पोस्ट संपादित करने में विफल",
   "reply.failedPinStatus": "पिन स्थिति अपडेट करने में विफल",
-
-  "profile.backToCaddyShack": "CaddyShack पर वापस",
+  "profile.backToCaddyShack": "टीम फ़ीड पर वापस",
   "profile.loadingProfile": "प्रोफ़ाइल लोड हो रहा है...",
   "profile.userNotFound": "उपयोगकर्ता नहीं मिला।",
   "profile.posts": "पोस्ट",
@@ -66,7 +61,6 @@
   "profile.noLikes": "अभी तक कोई पसंद किया पोस्ट नहीं।",
   "profile.noActivity": "कोई गतिविधि दर्ज नहीं।",
   "profile.thisIsYou": "यह आप हैं",
-
   "notifications.title": "सूचनाएं",
   "notifications.new": "{{count}} नई",
   "notifications.readAll": "सब पढ़ें",
@@ -88,7 +82,6 @@
   "notifications.failedToMarkRead": "सूचना पढ़ा हुआ चिह्नित करने में विफल",
   "notifications.failedToMarkAllRead": "सभी पढ़ा हुआ चिह्नित करने में विफल",
   "notifications.failedToClear": "सूचनाएं साफ करने में विफल",
-
   "activity.justNow": "अभी-अभी",
   "activity.minutesAgo": "{{count}} मि॰ पहले",
   "activity.hoursAgo": "{{count}} घं॰ पहले",

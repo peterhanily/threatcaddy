@@ -1,6 +1,6 @@
 {
   "dashboard.appName": "ThreatCaddy",
-  "dashboard.exec": "EKSEK",
+  "dashboard.exec": "EKSEKUTIF",
   "dashboard.switchToAnalyst": "Beralih ke Mode Analis",
   "dashboard.overview": "Ikhtisar",
   "dashboard.cases": "Kasus",
@@ -22,7 +22,6 @@
   "dashboard.untitledChat": "Obrolan Tanpa Judul",
   "dashboard.general": "Umum",
   "dashboard.messagesCount": "{{count}} pesan",
-
   "investigations.all": "Semua",
   "investigations.active": "Aktif",
   "investigations.closed": "Ditutup",
@@ -33,7 +32,6 @@
   "investigations.events": "Kejadian",
   "investigations.boards": "Papan",
   "investigations.iocs": "IOC",
-
   "detail.share": "Bagikan",
   "detail.created": "Dibuat {{date}}",
   "detail.taskProgress": "Kemajuan Tugas",
@@ -42,13 +40,11 @@
   "detail.todo": "{{count}} yang harus dilakukan",
   "detail.recentActivity": "Aktivitas Terbaru",
   "detail.openInAnalystMode": "Buka di Mode Analis",
-
   "notes.untitled": "Tanpa judul",
   "notes.created": "Dibuat {{date}}",
   "notes.updated": "Diperbarui {{date}}",
   "notes.iocDetected": "{{count}} IOC terdeteksi",
   "notes.iocsDetected": "{{count}} IOC terdeteksi",
-
   "tasks.untitled": "Tanpa judul",
   "tasks.created": "Dibuat {{date}}",
   "tasks.updated": "Diperbarui {{date}}",
@@ -60,14 +56,12 @@
   "tasks.inProgress": "Sedang Berjalan",
   "tasks.done": "Selesai",
   "tasks.comments": "Komentar ({{count}})",
-
   "events.untitled": "Tanpa judul",
   "events.timestamp": "Timestamp {{date}}",
   "events.end": "Akhir {{date}}",
   "events.source": "Sumber: {{source}}",
   "events.actor": "Aktor:",
   "events.assets": "Aset:",
-
   "iocs.created": "Dibuat {{date}}",
   "iocs.updated": "Diperbarui {{date}}",
   "iocs.attribution": "Atribusi: {{value}}",
@@ -81,27 +75,22 @@
   "iocs.linkedTasksPlural": "{{count}} tugas tertaut",
   "iocs.linkedEvents": "{{count}} kejadian tertaut",
   "iocs.linkedEventsPlural": "{{count}} kejadian tertaut",
-
   "chat.untitledChat": "Obrolan Tanpa Judul",
   "chat.messagesCount": "{{count}} pesan",
   "chat.created": "Dibuat {{date}}",
   "chat.noMessages": "Tidak ada pesan di utas ini",
-
   "global.noItemsFound": "Tidak ada item ditemukan",
   "global.unfiled": "Tidak diarsipkan",
-
   "entities.inFolder": "di {{name}}",
   "entities.noEntities": "Tidak ada {{type}} di investigasi ini",
   "entities.elementCount": "{{count}} elemen",
   "entities.elementCountPlural": "{{count}} elemen",
   "entities.openInAnalyst": "Buka di Analis",
-
   "activity.noRecentActivity": "Tidak ada aktivitas terbaru",
   "activity.today": "Hari Ini",
   "activity.yesterday": "Kemarin",
   "activity.thisWeek": "Minggu Ini",
   "activity.older": "Lebih Lama",
-
   "share.title": "Bagikan",
   "share.encryptWithPassword": "Enkripsi dengan kata sandi",
   "share.enterPassword": "Masukkan kata sandi...",
@@ -137,7 +126,6 @@
   "share.scopeIoc": "IOC",
   "share.scopeInvestigation": "Investigasi",
   "share.scopeChat": "Obrolan",
-
   "share.shared": "DIBAGIKAN",
   "share.saveToThreatCaddy": "Simpan ke ThreatCaddy",
   "share.saving": "Menyimpan...",
@@ -153,18 +141,14 @@
   "share.messageCountPlural": "{{count}} pesan",
   "share.youLabel": "Anda",
   "share.caddyAI": "CaddyAI",
-
   "search.filterPlaceholder": "Filter...",
-
   "graph.notes": "Catatan",
   "graph.iocs": "IOC",
   "graph.tasks": "Tugas",
   "graph.events": "Kejadian",
-
   "nav.prev": "Sebelumnya",
   "nav.next": "Berikutnya",
   "nav.ofTotal": "{{current}} dari {{total}}",
-
   "breadcrumb.investigations": "Investigasi",
   "breadcrumb.overview": "Ikhtisar",
   "breadcrumb.allNotes": "Semua Catatan",
@@ -177,11 +161,11 @@
   "breadcrumb.task": "Tugas",
   "breadcrumb.event": "Kejadian",
   "breadcrumb.chat": "Obrolan",
-
   "metrics.notes": "Catatan",
   "metrics.openTasks": "Tugas Terbuka",
   "metrics.iocsTracked": "IOC Terlacak",
   "metrics.eventsThisWeek": "Kejadian Minggu Ini",
   "metrics.aiChats": "Obrolan AI",
-  "metrics.graphNodes": "Node Graf"
+  "metrics.graphNodes": "Node Graf",
+  "dashboard.backToExecView": "Kembali ke Tampilan Eksekutif"
 }

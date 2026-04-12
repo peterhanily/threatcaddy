@@ -1,6 +1,6 @@
 {
   "dashboard.appName": "ThreatCaddy",
-  "dashboard.exec": "מנהל",
+  "dashboard.exec": "הנהלה",
   "dashboard.switchToAnalyst": "עבור למצב אנליסט",
   "dashboard.overview": "סקירה כללית",
   "dashboard.cases": "תיקים",
@@ -166,5 +166,6 @@
   "metrics.iocsTracked": "IOCs במעקב",
   "metrics.eventsThisWeek": "אירועים השבוע",
   "metrics.aiChats": "צ'אטים AI",
-  "metrics.graphNodes": "צמתי גרף"
+  "metrics.graphNodes": "צמתי גרף",
+  "dashboard.backToExecView": "חזרה לתצוגת הנהלה"
 }

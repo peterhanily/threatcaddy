@@ -22,7 +22,6 @@
   "dashboard.untitledChat": "Trò chuyện chưa có tiêu đề",
   "dashboard.general": "Chung",
   "dashboard.messagesCount": "{{count}} tin nhắn",
-
   "investigations.all": "Tất cả",
   "investigations.active": "Đang hoạt động",
   "investigations.closed": "Đã đóng",
@@ -33,7 +32,6 @@
   "investigations.events": "Sự kiện",
   "investigations.boards": "Bảng",
   "investigations.iocs": "IOC",
-
   "detail.share": "Chia sẻ",
   "detail.created": "Đã tạo {{date}}",
   "detail.taskProgress": "Tiến độ nhiệm vụ",
@@ -42,13 +40,11 @@
   "detail.todo": "{{count}} cần làm",
   "detail.recentActivity": "Hoạt động gần đây",
   "detail.openInAnalystMode": "Mở trong chế độ phân tích viên",
-
   "notes.untitled": "Chưa có tiêu đề",
   "notes.created": "Đã tạo {{date}}",
   "notes.updated": "Đã cập nhật {{date}}",
   "notes.iocDetected": "Phát hiện {{count}} IOC",
   "notes.iocsDetected": "Phát hiện {{count}} IOC",
-
   "tasks.untitled": "Chưa có tiêu đề",
   "tasks.created": "Đã tạo {{date}}",
   "tasks.updated": "Đã cập nhật {{date}}",
@@ -60,14 +56,12 @@
   "tasks.inProgress": "Đang tiến hành",
   "tasks.done": "Hoàn thành",
   "tasks.comments": "Bình luận ({{count}})",
-
   "events.untitled": "Chưa có tiêu đề",
   "events.timestamp": "Timestamp {{date}}",
   "events.end": "Kết thúc {{date}}",
   "events.source": "Nguồn: {{source}}",
   "events.actor": "Tác nhân:",
   "events.assets": "Tài sản:",
-
   "iocs.created": "Đã tạo {{date}}",
   "iocs.updated": "Đã cập nhật {{date}}",
   "iocs.attribution": "Quy gán: {{value}}",
@@ -81,27 +75,22 @@
   "iocs.linkedTasksPlural": "{{count}} nhiệm vụ được liên kết",
   "iocs.linkedEvents": "{{count}} sự kiện được liên kết",
   "iocs.linkedEventsPlural": "{{count}} sự kiện được liên kết",
-
   "chat.untitledChat": "Trò chuyện chưa có tiêu đề",
   "chat.messagesCount": "{{count}} tin nhắn",
   "chat.created": "Đã tạo {{date}}",
   "chat.noMessages": "Không có tin nhắn trong luồng này",
-
   "global.noItemsFound": "Không tìm thấy mục nào",
   "global.unfiled": "Chưa phân loại",
-
   "entities.inFolder": "trong {{name}}",
   "entities.noEntities": "Không có {{type}} trong điều tra này",
   "entities.elementCount": "{{count}} phần tử",
   "entities.elementCountPlural": "{{count}} phần tử",
   "entities.openInAnalyst": "Mở trong phân tích viên",
-
   "activity.noRecentActivity": "Không có hoạt động gần đây",
   "activity.today": "Hôm nay",
   "activity.yesterday": "Hôm qua",
   "activity.thisWeek": "Tuần này",
   "activity.older": "Cũ hơn",
-
   "share.title": "Chia sẻ",
   "share.encryptWithPassword": "Mã hóa bằng mật khẩu",
   "share.enterPassword": "Nhập mật khẩu...",
@@ -137,7 +126,6 @@
   "share.scopeIoc": "IOC",
   "share.scopeInvestigation": "Điều tra",
   "share.scopeChat": "Trò chuyện",
-
   "share.shared": "ĐÃ CHIA SẺ",
   "share.saveToThreatCaddy": "Lưu vào ThreatCaddy",
   "share.saving": "Đang lưu...",
@@ -153,18 +141,14 @@
   "share.messageCountPlural": "{{count}} tin nhắn",
   "share.youLabel": "Bạn",
   "share.caddyAI": "CaddyAI",
-
   "search.filterPlaceholder": "Lọc...",
-
   "graph.notes": "Ghi chú",
   "graph.iocs": "IOC",
   "graph.tasks": "Nhiệm vụ",
   "graph.events": "Sự kiện",
-
   "nav.prev": "Trước",
   "nav.next": "Tiếp theo",
   "nav.ofTotal": "{{current}} / {{total}}",
-
   "breadcrumb.investigations": "Điều tra",
   "breadcrumb.overview": "Tổng quan",
   "breadcrumb.allNotes": "Tất cả ghi chú",
@@ -177,11 +161,11 @@
   "breadcrumb.task": "Nhiệm vụ",
   "breadcrumb.event": "Sự kiện",
   "breadcrumb.chat": "Trò chuyện",
-
   "metrics.notes": "Ghi chú",
   "metrics.openTasks": "Nhiệm vụ đang mở",
   "metrics.iocsTracked": "IOC được theo dõi",
   "metrics.eventsThisWeek": "Sự kiện tuần này",
   "metrics.aiChats": "Trò chuyện AI",
-  "metrics.graphNodes": "Nút đồ thị"
+  "metrics.graphNodes": "Nút đồ thị",
+  "dashboard.backToExecView": "Quay lại Chế độ điều hành"
 }

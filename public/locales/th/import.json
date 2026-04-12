@@ -6,7 +6,6 @@
   "markdown": "Markdown",
   "stix": "STIX",
   "misp": "MISP",
-
   "csv.title": "นำเข้า CSV",
   "csv.selectFile": "เลือกไฟล์ CSV",
   "csv.preview": "แสดงตัวอย่าง",
@@ -19,20 +18,17 @@
   "csv.comma": "จุลภาค",
   "csv.semicolon": "เซมิโคลอน",
   "csv.tab": "แท็บ",
-
   "json.title": "นำเข้า JSON",
   "json.selectFile": "เลือกไฟล์ JSON",
   "json.preview": "แสดงตัวอย่าง",
   "json.import": "นำเข้า",
   "json.importing": "กำลังนำเข้า...",
-
   "result.success": "นำเข้าสำเร็จ {{count}} รายการ",
   "result.partial": "นำเข้า {{success}} รายการ, ล้มเหลว {{failed}} รายการ",
   "result.failed": "การนำเข้าล้มเหลว",
   "result.skipped": "ข้าม {{count}} รายการ (ซ้ำกัน)",
   "result.created": "สร้าง {{count}} รายการ",
   "result.updated": "อัปเดต {{count}} รายการ",
-
   "error.invalidFile": "รูปแบบไฟล์ไม่ถูกต้อง",
   "error.emptyFile": "ไฟล์ว่างเปล่า",
   "error.parseError": "ข้อผิดพลาดในการแยกวิเคราะห์ไฟล์",

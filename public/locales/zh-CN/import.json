@@ -8,7 +8,7 @@
   "columns": "{{count}} 列",
   "truncated": "已截断至 10,000 行",
   "investigationFolder": "调查文件夹",
-  "noFolder": "无文件夹",
+  "noFolder": "无调查",
   "timeline": "时间线",
   "allEventsFirst": "所有事件（首个可用）",
   "newTimeline": "+ 新建时间线...",

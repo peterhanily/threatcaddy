@@ -1,6 +1,6 @@
 {
-  "view.title": "CaddyShack",
-  "view.connectToServer": "Connect to a team server to use CaddyShack.",
+  "view.title": "Team Feed",
+  "view.connectToServer": "Connect to a team server to use Team Feed.",
   "view.loading": "Loading...",
   "view.noPostsYet": "No posts yet. Be the first to share an update!",
   "view.noTeamActivity": "No team activity yet.",
@@ -11,16 +11,14 @@
   "view.all": "All",
   "view.posts": "Posts",
   "view.activity": "Activity",
-
-  "view.onboarding.title": "Getting Started with CaddyShack",
+  "view.onboarding.title": "Getting Started with Team Feed",
   "view.onboarding.step1Title": "1. Deploy a team server",
-  "view.onboarding.step1Desc": "CaddyShack requires a ThreatCaddy team server. Spin up the Docker container from the server README.",
+  "view.onboarding.step1Desc": "Team Feed requires a ThreatCaddy team server. Spin up the Docker container from the server README.",
   "view.onboarding.step2Title": "2. Configure server URL",
   "view.onboarding.step2Desc": "Go to Settings and enter your team server URL to connect ThreatCaddy to your instance.",
   "view.onboarding.step3Title": "3. Register and sign in",
   "view.onboarding.step3Desc": "Create an account on your team server and sign in to start posting, reacting, and collaborating with your team.",
   "view.onboarding.gotIt": "Got it",
-
   "composer.placeholder": "What's happening?",
   "composer.slashHint": "Type <kbd>/</kbd> for commands",
   "composer.post": "Post",
@@ -31,7 +29,6 @@
   "composer.postCreated": "Post created",
   "composer.failedToCreatePost": "Failed to create post",
   "composer.failedToUploadFile": "Failed to upload file: {{name}}",
-
   "post.replyingTo": "Replying to",
   "post.unknown": "Unknown",
   "post.justNow": "just now",
@@ -41,8 +38,7 @@
   "post.delete": "Delete",
   "post.save": "Save",
   "post.cancel": "Cancel",
-
-  "reply.backToCaddyShack": "Back to CaddyShack",
+  "reply.backToCaddyShack": "Back to Team Feed",
   "reply.loadingThread": "Loading thread...",
   "reply.postNotFound": "Post not found.",
   "reply.writeReply": "Write a reply...",
@@ -55,8 +51,7 @@
   "reply.failedDeletePost": "Failed to delete post",
   "reply.failedEditPost": "Failed to edit post",
   "reply.failedPinStatus": "Failed to update pin status",
-
-  "profile.backToCaddyShack": "Back to CaddyShack",
+  "profile.backToCaddyShack": "Back to Team Feed",
   "profile.loadingProfile": "Loading profile...",
   "profile.userNotFound": "User not found.",
   "profile.posts": "Posts",
@@ -66,7 +61,6 @@
   "profile.noLikes": "No liked posts yet.",
   "profile.noActivity": "No activity recorded.",
   "profile.thisIsYou": "This is you",
-
   "notifications.title": "Notifications",
   "notifications.new": "{{count}} new",
   "notifications.readAll": "Read all",
@@ -88,7 +82,6 @@
   "notifications.failedToMarkRead": "Failed to mark notification read",
   "notifications.failedToMarkAllRead": "Failed to mark all read",
   "notifications.failedToClear": "Failed to clear notifications",
-
   "activity.justNow": "just now",
   "activity.minutesAgo": "{{count}}m ago",
   "activity.hoursAgo": "{{count}}h ago",

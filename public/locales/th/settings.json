@@ -1,7 +1,6 @@
 {
   "title": "การตั้งค่า",
   "closeSettings": "ปิดการตั้งค่า",
-
   "tabs.general": "ทั่วไป",
   "tabs.appearance": "รูปลักษณ์",
   "tabs.ai": "AI",
@@ -11,7 +10,6 @@
   "tabs.intel": "อินเทล",
   "tabs.integrations": "การรวมระบบ",
   "tabs.shortcuts": "ปุ่มลัด",
-
   "general.identity": "ตัวตนของคุณ",
   "general.displayName": "ชื่อที่แสดง",
   "general.displayNamePlaceholder": "ชื่อของคุณ (แสดงบนเอนทิตีที่คุณสร้าง)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "ดาวน์โหลดการอัปเดตล้มเหลว เยี่ยมชม https://threatcaddy.com เพื่อรับเวอร์ชันล่าสุด",
   "general.downloadStandalone": "ดาวน์โหลดแบบ Standalone",
   "general.privacy": "ความเป็นส่วนตัว",
-
   "appearance.theme": "ธีม",
   "appearance.mode": "โหมด",
   "appearance.dark": "มืด",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "การบันทึกภาพล้มเหลว",
   "appearance.bgRemoved": "ลบภาพพื้นหลังแล้ว",
   "appearance.bgRemoveFailed": "การลบภาพล้มเหลว",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "Anthropic API Key",
   "ai.openaiKey": "OpenAI API Key",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "ชื่อคำสั่ง (เช่น mytriage)",
   "ai.commandDescPlaceholder": "คำอธิบาย (แสดงในเมนูสแลช)",
   "ai.commandTemplatePlaceholder": "เทมเพลตพรอมต์ ใช้ {{input}} สำหรับอาร์กิวเมนต์ผู้ใช้\n\nตัวอย่าง: วิเคราะห์การแจ้งเตือนนี้เพื่อหา IOC และสร้างรายงาน Triage:\n\n{{input}}",
-
   "agents.supervisor": "เอเจนต์ผู้ดูแล",
   "agents.supervisorDesc": "การวิเคราะห์ข้ามการสืบสวน — ตรวจจับ IOC ที่แบ่งปัน เคสที่หยุดนิ่ง และรูปแบบทั่วทั้งภาระงาน",
   "agents.enableSupervisor": "เปิดใช้งานผู้ดูแล",
   "agents.supervisorInterval": "เรียกใช้ทุก {{minutes}} นาที",
   "agents.supervisorAriaLabel": "เปิดใช้งานเอเจนต์ผู้ดูแล",
   "agents.interval": "ช่วงเวลา",
-
   "agents.hosts": "โฮสต์เอเจนต์",
   "agents.hostsDesc": "เชื่อมต่อกับโฮสต์เอเจนต์ภายนอก (Claude Code, รันไทม์แบบกำหนดเอง) ที่เปิดเผยทักษะผ่าน REST API ทักษะที่ค้นพบจะพร้อมใช้งานเป็นเครื่องมือ LLM",
   "agents.refreshAll": "รีเฟรชทั้งหมด",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "ไม่มีทักษะที่แคช คลิก \"ดึงทักษะ\" เพื่อค้นพบทักษะที่พร้อมใช้งาน",
   "agents.skillsLastFetched": "{{count}} ทักษะ — ดึงล่าสุดเมื่อ {{date}}",
   "agents.params": "พารามิเตอร์: {{params}}",
-
   "data.exportImportTitle": "ส่งออก & นำเข้า",
   "data.exportJSON": "ส่งออก JSON Backup",
   "data.exportMarkdown": "ส่งออก Markdown",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "ส่งออก {{count}} บันทึกเป็น Markdown แล้ว",
   "data.importedCounts": "นำเข้า {{notes}} บันทึก, {{tasks}} งาน, {{folders}} การสืบสวน, {{tags}} แท็กแล้ว",
   "data.importBackupTitle": "นำเข้าการสำรองข้อมูล",
-  "data.importBackupMessage": "บันทึก งาน โฟลเดอร์ และแท็กปัจจุบันทั้งหมดจะถูกแทนที่ด้วยข้อมูลที่นำเข้า การกระทำนี้ไม่สามารถยกเลิกได้",
+  "data.importBackupMessage": "บันทึก งาน การสอบสวน และแท็กปัจจุบันทั้งหมดจะถูกแทนที่ด้วยข้อมูลที่นำเข้า การกระทำนี้ไม่สามารถยกเลิกได้",
   "data.importReplace": "นำเข้าและแทนที่",
   "data.importedMarkdown": "นำเข้า {{count}} บันทึกจาก Markdown แล้ว",
-
   "data.mdImportTitle": "นำเข้า Markdown",
   "data.mdPreviewTitle": "แสดงตัวอย่างการนำเข้า",
   "data.mdCompleteTitle": "การนำเข้าเสร็จสมบูรณ์",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "นำเข้า {{count}} บันทึก",
   "data.mdImportedSuccess_one": "นำเข้า {{count}} บันทึกสำเร็จ",
   "data.mdImportedSuccess_other": "นำเข้า {{count}} บันทึกสำเร็จ",
-
   "encryption.title": "การสำรองข้อมูลที่เข้ารหัสของเซิร์ฟเวอร์",
   "encryption.connectPrompt": "เชื่อมต่อกับเซิร์ฟเวอร์ทีมเพื่อใช้การสำรองข้อมูลที่เข้ารหัส",
   "encryption.description": "การสำรองข้อมูลที่ป้องกันด้วยรหัสผ่านซึ่งจัดเก็บบนเซิร์ฟเวอร์ แม้แต่ผู้ดูแลระบบก็ไม่สามารถอ่านได้",
@@ -233,7 +224,6 @@
   "encryption.merge": "รวม",
   "encryption.deleteConfirmTitle": "ลบการสำรองข้อมูล",
   "encryption.deleteConfirmMessage": "การสำรองข้อมูลที่เข้ารหัสนี้จะถูกลบถาวรจากเซิร์ฟเวอร์ การกระทำนี้ไม่สามารถยกเลิกได้",
-
   "cloud.title": "การสำรองข้อมูลคลาวด์",
   "cloud.addDestination": "เพิ่มปลายทาง",
   "cloud.provider": "ผู้ให้บริการ",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "จะอัปโหลดฐานข้อมูลทั้งหมดไปยัง {{count}} ปลายทางคลาวด์ ดำเนินการต่อใช่ไหม?",
   "cloud.encryptedPushSuccess": "พุชการสำรองข้อมูลที่เข้ารหัสสำเร็จ",
   "cloud.pushSuccess": "พุชการสำรองข้อมูลสำเร็จ",
-
   "templates.noteTemplates": "เทมเพลตบันทึก",
   "templates.summary": "กำหนดเอง {{custom}}, ในตัว {{builtin}}",
   "templates.description": "เทมเพลตกรอกบันทึกด้วยเนื้อหาที่มีโครงสร้าง เทมเพลตในตัวสามารถคัดลอกและปรับแต่งได้",
@@ -283,7 +272,6 @@
   "templates.createdToast": "สร้างเทมเพลต \"{{name}}\" แล้ว",
   "templates.deletedToast": "ลบเทมเพลต \"{{name}}\" แล้ว",
   "templates.saveFailed": "การบันทึกเทมเพลตล้มเหลว",
-
   "templates.playbooks": "Playbook การสืบสวน",
   "templates.playbooksDesc": "Playbook กรอกการสืบสวนใหม่ด้วยงานและบันทึกโดยอัตโนมัติ ใช้ไอคอนหนังสือในแถบด้านข้างเพื่อเริ่มต้นจาก Playbook",
   "templates.yourPlaybooks": "Playbook ของคุณ",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "สร้าง Playbook \"{{name}}\" แล้ว",
   "templates.playbookDeletedToast": "ลบ Playbook \"{{name}}\" แล้ว",
   "templates.playbookSaveFailed": "การบันทึก Playbook ล้มเหลว",
-
   "intel.title": "การกำหนดค่าข่าวกรองภัยคุกคาม",
   "intel.extractionBehavior": "พฤติกรรมการดึงข้อมูล",
   "intel.autoExtract": "ดึง IOC จากเนื้อหาอัตโนมัติ",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "เพิ่มประเภทความสัมพันธ์แบบกำหนดเอง",
   "intel.configImported": "นำเข้าการกำหนดค่าแล้ว",
   "intel.invalidConfigFile": "ไฟล์การกำหนดค่า JSON ไม่ถูกต้อง",
-
   "shortcuts.title": "ปุ่มลัดแป้นพิมพ์",
   "shortcuts.newNote": "บันทึกใหม่ / บันทึกด่วน",
   "shortcuts.focusSearch": "โฟกัสการค้นหา",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "แสดงปุ่มลัดแป้นพิมพ์",
   "shortcuts.switchView": "สลับมุมมอง (บันทึก/งาน/ไทม์ไลน์/ไวท์บอร์ด)",
   "shortcuts.closeModals": "ปิดกล่องโต้ตอบ",
-
   "server.teamServer": "เซิร์ฟเวอร์ทีม",
   "server.connected": "เชื่อมต่อแล้ว",
   "server.serverLabel": "เซิร์ฟเวอร์",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "ตัดการเชื่อมต่อจากเซิร์ฟเวอร์แล้ว",
   "server.savedServers": "เซิร์ฟเวอร์ที่บันทึก",
   "server.deleteSavedServer": "ลบเซิร์ฟเวอร์ที่บันทึก",
-
   "server.onboarding.welcome": "ยินดีต้อนรับสู่ {{name}}!",
   "server.onboarding.intro": "คุณเชื่อมต่อกับเซิร์ฟเวอร์ทีมแล้ว นี่คือสิ่งที่คุณทำได้:",
   "server.onboarding.sharedInvestigations": "การสืบสวนที่แบ่งปัน",
   "server.onboarding.sharedInvestigationsDesc": "ทำงานร่วมกันในเคสกับทีม — แบ่งปันบันทึก งาน ไทม์ไลน์ และ IOC แบบเรียลไทม์",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "ฟีดทีม",
   "server.onboarding.caddyShackDesc": "ฟีดการสนทนาของทีมสำหรับ SOC โพสต์อัปเดต แบ่งปันผลการค้นพบ และแสดงปฏิกิริยาต่อโพสต์ของเพื่อนร่วมทีม",
   "server.onboarding.realTimeSync": "การซิงค์แบบเรียลไทม์",
   "server.onboarding.realTimeSyncDesc": "บันทึก งาน และ IOC จะซิงค์โดยอัตโนมัติในสมาชิกทีมทั้งหมดที่เชื่อมต่อ",

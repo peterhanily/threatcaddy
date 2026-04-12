@@ -1,6 +1,6 @@
 {
-  "view.title": "CaddyShack",
-  "view.connectToServer": "连接到团队服务器以使用 CaddyShack。",
+  "view.title": "团队动态",
+  "view.connectToServer": "连接到团队服务器以使用团队动态。",
   "view.loading": "加载中...",
   "view.noPostsYet": "暂无帖子。成为第一个分享更新的人！",
   "view.noTeamActivity": "暂无团队活动。",
@@ -11,16 +11,14 @@
   "view.all": "全部",
   "view.posts": "帖子",
   "view.activity": "活动",
-
-  "view.onboarding.title": "开始使用 CaddyShack",
+  "view.onboarding.title": "开始使用团队动态",
   "view.onboarding.step1Title": "1. 部署团队服务器",
-  "view.onboarding.step1Desc": "CaddyShack 需要 ThreatCaddy 团队服务器。从服务器 README 启动 Docker 容器。",
+  "view.onboarding.step1Desc": "团队动态需要 ThreatCaddy 团队服务器。从服务器 README 启动 Docker 容器。",
   "view.onboarding.step2Title": "2. 配置服务器 URL",
   "view.onboarding.step2Desc": "转到设置并输入团队服务器 URL 以将 ThreatCaddy 连接到您的实例。",
   "view.onboarding.step3Title": "3. 注册并登录",
   "view.onboarding.step3Desc": "在团队服务器上创建账户并登录，开始发帖、回应和与团队协作。",
   "view.onboarding.gotIt": "明白了",
-
   "composer.placeholder": "有什么新鲜事？",
   "composer.slashHint": "输入 <kbd>/</kbd> 获取命令",
   "composer.post": "发布",
@@ -31,7 +29,6 @@
   "composer.postCreated": "帖子已创建",
   "composer.failedToCreatePost": "创建帖子失败",
   "composer.failedToUploadFile": "上传文件失败：{{name}}",
-
   "post.replyingTo": "回复",
   "post.unknown": "未知",
   "post.justNow": "刚刚",
@@ -41,8 +38,7 @@
   "post.delete": "删除",
   "post.save": "保存",
   "post.cancel": "取消",
-
-  "reply.backToCaddyShack": "返回 CaddyShack",
+  "reply.backToCaddyShack": "返回团队动态",
   "reply.loadingThread": "加载讨论串...",
   "reply.postNotFound": "帖子未找到。",
   "reply.writeReply": "写回复...",
@@ -55,8 +51,7 @@
   "reply.failedDeletePost": "删除帖子失败",
   "reply.failedEditPost": "编辑帖子失败",
   "reply.failedPinStatus": "更新置顶状态失败",
-
-  "profile.backToCaddyShack": "返回 CaddyShack",
+  "profile.backToCaddyShack": "返回团队动态",
   "profile.loadingProfile": "加载个人资料...",
   "profile.userNotFound": "用户未找到。",
   "profile.posts": "帖子",
@@ -66,7 +61,6 @@
   "profile.noLikes": "暂无点赞帖子。",
   "profile.noActivity": "暂无活动记录。",
   "profile.thisIsYou": "这是您",
-
   "notifications.title": "通知",
   "notifications.new": "{{count}} 条新通知",
   "notifications.readAll": "全部已读",
@@ -88,7 +82,6 @@
   "notifications.failedToMarkRead": "标记通知为已读失败",
   "notifications.failedToMarkAllRead": "全部标为已读失败",
   "notifications.failedToClear": "清除通知失败",
-
   "activity.justNow": "刚刚",
   "activity.minutesAgo": "{{count}} 分钟前",
   "activity.hoursAgo": "{{count}} 小时前",

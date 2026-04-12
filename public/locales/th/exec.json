@@ -22,7 +22,6 @@
   "dashboard.untitledChat": "แชทที่ไม่มีชื่อ",
   "dashboard.general": "ทั่วไป",
   "dashboard.messagesCount": "{{count}} ข้อความ",
-
   "investigations.all": "ทั้งหมด",
   "investigations.active": "ใช้งานอยู่",
   "investigations.closed": "ปิดแล้ว",
@@ -33,7 +32,6 @@
   "investigations.events": "เหตุการณ์",
   "investigations.boards": "กระดาน",
   "investigations.iocs": "IOC",
-
   "detail.share": "แบ่งปัน",
   "detail.created": "สร้างเมื่อ {{date}}",
   "detail.taskProgress": "ความคืบหน้างาน",
@@ -42,13 +40,11 @@
   "detail.todo": "{{count}} รายการที่ต้องทำ",
   "detail.recentActivity": "กิจกรรมล่าสุด",
   "detail.openInAnalystMode": "เปิดในโหมดนักวิเคราะห์",
-
   "notes.untitled": "ไม่มีชื่อ",
   "notes.created": "สร้างเมื่อ {{date}}",
   "notes.updated": "อัปเดตเมื่อ {{date}}",
   "notes.iocDetected": "ตรวจพบ {{count}} IOC",
   "notes.iocsDetected": "ตรวจพบ {{count}} IOC",
-
   "tasks.untitled": "ไม่มีชื่อ",
   "tasks.created": "สร้างเมื่อ {{date}}",
   "tasks.updated": "อัปเดตเมื่อ {{date}}",
@@ -60,14 +56,12 @@
   "tasks.inProgress": "กำลังดำเนินการ",
   "tasks.done": "เสร็จสิ้น",
   "tasks.comments": "ความคิดเห็น ({{count}})",
-
   "events.untitled": "ไม่มีชื่อ",
   "events.timestamp": "เวลาประทับ {{date}}",
   "events.end": "สิ้นสุด {{date}}",
   "events.source": "แหล่งที่มา: {{source}}",
   "events.actor": "ผู้กระทำ:",
   "events.assets": "ทรัพย์สิน:",
-
   "iocs.created": "สร้างเมื่อ {{date}}",
   "iocs.updated": "อัปเดตเมื่อ {{date}}",
   "iocs.attribution": "การระบุที่มา: {{value}}",
@@ -81,27 +75,22 @@
   "iocs.linkedTasksPlural": "งานที่เชื่อมโยง {{count}} รายการ",
   "iocs.linkedEvents": "เหตุการณ์ที่เชื่อมโยง {{count}} รายการ",
   "iocs.linkedEventsPlural": "เหตุการณ์ที่เชื่อมโยง {{count}} รายการ",
-
   "chat.untitledChat": "แชทที่ไม่มีชื่อ",
   "chat.messagesCount": "{{count}} ข้อความ",
   "chat.created": "สร้างเมื่อ {{date}}",
   "chat.noMessages": "ไม่มีข้อความในเธรดนี้",
-
   "global.noItemsFound": "ไม่พบรายการ",
   "global.unfiled": "ยังไม่จัดหมวดหมู่",
-
   "entities.inFolder": "ใน {{name}}",
   "entities.noEntities": "ไม่มี {{type}} ในการสืบสวนนี้",
   "entities.elementCount": "{{count}} องค์ประกอบ",
   "entities.elementCountPlural": "{{count}} องค์ประกอบ",
   "entities.openInAnalyst": "เปิดในโหมดนักวิเคราะห์",
-
   "activity.noRecentActivity": "ไม่มีกิจกรรมล่าสุด",
   "activity.today": "วันนี้",
   "activity.yesterday": "เมื่อวาน",
   "activity.thisWeek": "สัปดาห์นี้",
   "activity.older": "เก่ากว่า",
-
   "share.title": "แบ่งปัน",
   "share.encryptWithPassword": "เข้ารหัสด้วยรหัสผ่าน",
   "share.enterPassword": "ป้อนรหัสผ่าน...",
@@ -137,7 +126,6 @@
   "share.scopeIoc": "IOC",
   "share.scopeInvestigation": "การสืบสวน",
   "share.scopeChat": "แชท",
-
   "share.shared": "แบ่งปันแล้ว",
   "share.saveToThreatCaddy": "บันทึกไปยัง ThreatCaddy",
   "share.saving": "กำลังบันทึก...",
@@ -153,18 +141,14 @@
   "share.messageCountPlural": "{{count}} ข้อความ",
   "share.youLabel": "คุณ",
   "share.caddyAI": "CaddyAI",
-
   "search.filterPlaceholder": "กรอง...",
-
   "graph.notes": "บันทึก",
   "graph.iocs": "IOC",
   "graph.tasks": "งาน",
   "graph.events": "เหตุการณ์",
-
   "nav.prev": "ก่อนหน้า",
   "nav.next": "ถัดไป",
   "nav.ofTotal": "{{current}} / {{total}}",
-
   "breadcrumb.investigations": "การสืบสวน",
   "breadcrumb.overview": "ภาพรวม",
   "breadcrumb.allNotes": "บันทึกทั้งหมด",
@@ -177,11 +161,11 @@
   "breadcrumb.task": "งาน",
   "breadcrumb.event": "เหตุการณ์",
   "breadcrumb.chat": "แชท",
-
   "metrics.notes": "บันทึก",
   "metrics.openTasks": "งานที่ยังค้างอยู่",
   "metrics.iocsTracked": "IOC ที่ติดตาม",
   "metrics.eventsThisWeek": "เหตุการณ์สัปดาห์นี้",
   "metrics.aiChats": "แชท AI",
-  "metrics.graphNodes": "โหนดกราฟ"
+  "metrics.graphNodes": "โหนดกราฟ",
+  "dashboard.backToExecView": "กลับสู่มุมมองผู้บริหาร"
 }

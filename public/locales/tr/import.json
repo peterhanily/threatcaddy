@@ -8,7 +8,7 @@
   "columns": "{{count}} sütun",
   "truncated": "10.000 satıra kısaltıldı",
   "investigationFolder": "Soruşturma Klasörü",
-  "noFolder": "Klasör yok",
+  "noFolder": "Soruşturma yok",
   "timeline": "Zaman Çizelgesi",
   "allEventsFirst": "Tüm Olaylar (mevcut ilk)",
   "newTimeline": "+ Yeni Zaman Çizelgesi...",

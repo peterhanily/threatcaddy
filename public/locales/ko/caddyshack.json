@@ -1,5 +1,5 @@
 {
-  "feed.title": "CaddyShack",
+  "feed.title": "팀 피드",
   "feed.newPost": "새 게시물",
   "feed.searchPlaceholder": "게시물 검색...",
   "feed.noPostsYet": "게시물이 없습니다",
@@ -11,7 +11,6 @@
   "feed.filterAll": "모두",
   "feed.filterMentions": "멘션",
   "feed.filterPinned": "고정됨",
-
   "post.edited": "(편집됨)",
   "post.pinned": "고정됨",
   "post.reply": "답장",
@@ -28,7 +27,6 @@
   "post.deleteTitle": "게시물 삭제",
   "post.deleteMessage": "이 게시물을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
   "post.deleteConfirm": "삭제",
-
   "compose.placeholder": "팀에게 무언가 공유하세요...",
   "compose.replyPlaceholder": "답장 작성...",
   "compose.send": "보내기",
@@ -39,7 +37,6 @@
   "compose.editPost": "게시물 편집",
   "compose.save": "저장",
   "compose.cancel": "취소",
-
   "notifications.title": "알림",
   "notifications.markAllRead": "모두 읽음으로 표시",
   "notifications.clearAll": "모두 지우기",
@@ -49,7 +46,6 @@
   "notifications.reaction": "{{author}}님이 게시물에 반응했습니다",
   "notifications.invite": "{{author}}님이 \"{{investigation}}\" 조사에 초대했습니다",
   "notifications.bot": "봇 알림: {{message}}",
-
   "presence.online": "온라인",
   "presence.away": "자리 비움",
   "presence.workingOn": "작업 중: {{investigation}}",

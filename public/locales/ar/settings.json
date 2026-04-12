@@ -1,7 +1,6 @@
 {
   "title": "الإعدادات",
   "closeSettings": "إغلاق الإعدادات",
-
   "tabs.general": "عام",
   "tabs.appearance": "المظهر",
   "tabs.ai": "الذكاء الاصطناعي",
@@ -11,7 +10,6 @@
   "tabs.intel": "الاستخبارات",
   "tabs.integrations": "التكاملات",
   "tabs.shortcuts": "الاختصارات",
-
   "general.identity": "هويتك",
   "general.displayName": "الاسم المعروض",
   "general.displayNamePlaceholder": "اسمك (يظهر على الكيانات التي تنشئها)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "فشل تنزيل التحديث. قم بزيارة https://threatcaddy.com للحصول على أحدث إصدار.",
   "general.downloadStandalone": "تنزيل النسخة المستقلة",
   "general.privacy": "الخصوصية",
-
   "appearance.theme": "السمة",
   "appearance.mode": "الوضع",
   "appearance.dark": "داكن",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "فشل حفظ الصورة",
   "appearance.bgRemoved": "تمت إزالة صورة الخلفية",
   "appearance.bgRemoveFailed": "فشل إزالة الصورة",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "مفتاح Anthropic API",
   "ai.openaiKey": "مفتاح OpenAI API",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "اسم الأمر (مثل mytriage)",
   "ai.commandDescPlaceholder": "الوصف (يظهر في قائمة slash)",
   "ai.commandTemplatePlaceholder": "قالب التعليمة. استخدم {{input}} لوسيطات المستخدم.\n\nمثال: تحليل هذا التنبيه لـ IOCs وإنشاء تقرير فرز:\n\n{{input}}",
-
   "agents.supervisor": "وكيل المشرف",
   "agents.supervisorDesc": "تحليل عبر التحقيقات — يكشف IOCs المشتركة والقضايا الراكدة والأنماط عبر عبء القضايا.",
   "agents.enableSupervisor": "تفعيل المشرف",
   "agents.supervisorInterval": "يعمل كل {{minutes}} دقيقة",
   "agents.supervisorAriaLabel": "تفعيل وكيل المشرف",
   "agents.interval": "الفاصل الزمني",
-
   "agents.hosts": "مضيفات الوكلاء",
   "agents.hostsDesc": "توصيل مضيفات وكلاء خارجية (Claude Code، بيئات تشغيل مخصصة) تعرض مهارات عبر REST API. تصبح المهارات المكتشفة متاحة كأدوات LLM.",
   "agents.refreshAll": "تحديث الكل",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "لا توجد مهارات مخزنة مؤقتًا. انقر على \"جلب المهارات\" لاكتشاف المهارات المتاحة.",
   "agents.skillsLastFetched": "{{count}} مهارة — آخر جلب {{date}}",
   "agents.params": "المعاملات: {{params}}",
-
   "data.exportImportTitle": "التصدير والاستيراد",
   "data.exportJSON": "تصدير نسخة احتياطية JSON",
   "data.exportMarkdown": "تصدير Markdown",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "تم تصدير {{count}} ملاحظة كـ Markdown",
   "data.importedCounts": "تم استيراد {{notes}} ملاحظة، {{tasks}} مهمة، {{folders}} تحقيق، {{tags}} وسوم",
   "data.importBackupTitle": "استيراد نسخة احتياطية",
-  "data.importBackupMessage": "سيستبدل هذا جميع ملاحظاتك ومهامك ومجلداتك ووسومك الحالية بالبيانات المستوردة. لا يمكن التراجع عن هذا الإجراء.",
+  "data.importBackupMessage": "سيستبدل هذا جميع ملاحظاتك ومهامك وتحقيقاتك ووسومك الحالية بالبيانات المستوردة. لا يمكن التراجع عن هذا الإجراء.",
   "data.importReplace": "استيراد واستبدال",
   "data.importedMarkdown": "تم استيراد {{count}} ملاحظة من Markdown",
-
   "data.mdImportTitle": "استيراد Markdown",
   "data.mdPreviewTitle": "معاينة الاستيراد",
   "data.mdCompleteTitle": "اكتمل الاستيراد",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "استيراد {{count}} ملاحظات",
   "data.mdImportedSuccess_one": "تم استيراد {{count}} ملاحظة بنجاح",
   "data.mdImportedSuccess_other": "تم استيراد {{count}} ملاحظات بنجاح",
-
   "encryption.title": "النسخ الاحتياطية المشفرة على الخادم",
   "encryption.connectPrompt": "اتصل بخادم فريق لاستخدام النسخ الاحتياطية المشفرة.",
   "encryption.description": "نسخ احتياطية محمية بكلمة مرور مخزنة على الخادم. حتى المسؤولون لا يستطيعون قراءتها.",
@@ -233,7 +224,6 @@
   "encryption.merge": "دمج",
   "encryption.deleteConfirmTitle": "حذف النسخة الاحتياطية",
   "encryption.deleteConfirmMessage": "سيؤدي هذا إلى حذف هذه النسخة الاحتياطية المشفرة من الخادم بشكل نهائي. لا يمكن التراجع عن هذا الإجراء.",
-
   "cloud.title": "النسخ الاحتياطية السحابية",
   "cloud.addDestination": "إضافة وجهة",
   "cloud.provider": "المزود",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "سيؤدي هذا إلى رفع قاعدة البيانات الكاملة إلى {{count}} وجهة سحابية. هل تريد المتابعة؟",
   "cloud.encryptedPushSuccess": "تم رفع النسخة الاحتياطية المشفرة بنجاح",
   "cloud.pushSuccess": "تم رفع النسخة الاحتياطية بنجاح",
-
   "templates.noteTemplates": "قوالب الملاحظات",
   "templates.summary": "{{custom}} مخصص، {{builtin}} مدمج",
   "templates.description": "تملأ القوالب الملاحظات بمحتوى منظم مسبقًا. يمكن تكرار القوالب المدمجة وتخصيصها.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "تم إنشاء القالب \"{{name}}\"",
   "templates.deletedToast": "تم حذف القالب \"{{name}}\"",
   "templates.saveFailed": "فشل حفظ القالب",
-
   "templates.playbooks": "أدلة تشغيل التحقيقات",
   "templates.playbooksDesc": "تملأ أدلة التشغيل التحقيقات الجديدة تلقائيًا بالمهام والملاحظات. استخدم أيقونة الكتاب في الشريط الجانبي للبدء من دليل تشغيل.",
   "templates.yourPlaybooks": "أدلة تشغيلك",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "تم إنشاء دليل التشغيل \"{{name}}\"",
   "templates.playbookDeletedToast": "تم حذف دليل التشغيل \"{{name}}\"",
   "templates.playbookSaveFailed": "فشل حفظ دليل التشغيل",
-
   "intel.title": "تهيئة استخبارات التهديدات",
   "intel.extractionBehavior": "سلوك الاستخراج",
   "intel.autoExtract": "استخراج IOCs تلقائيًا من المحتوى",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "إضافة نوع علاقة مخصص",
   "intel.configImported": "تم استيراد التهيئة",
   "intel.invalidConfigFile": "ملف تهيئة JSON غير صالح",
-
   "shortcuts.title": "اختصارات لوحة المفاتيح",
   "shortcuts.newNote": "ملاحظة جديدة / التقاط سريع",
   "shortcuts.focusSearch": "التركيز على البحث",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "عرض اختصارات لوحة المفاتيح",
   "shortcuts.switchView": "تبديل العرض (ملاحظات/مهام/جدول زمني/لوح أبيض)",
   "shortcuts.closeModals": "إغلاق النوافذ المنبثقة",
-
   "server.teamServer": "خادم الفريق",
   "server.connected": "متصل",
   "server.serverLabel": "الخادم",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "تم قطع الاتصال بالخادم",
   "server.savedServers": "الخوادم المحفوظة",
   "server.deleteSavedServer": "حذف الخادم المحفوظ",
-
   "server.onboarding.welcome": "مرحبًا في {{name}}!",
   "server.onboarding.intro": "أنت متصل بخادم فريقك. إليك ما يمكنك فعله:",
   "server.onboarding.sharedInvestigations": "التحقيقات المشتركة",
   "server.onboarding.sharedInvestigationsDesc": "تعاون في القضايا مع فريقك — شارك الملاحظات والمهام والجداول الزمنية والـ IOCs في الوقت الفعلي.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "موجز الفريق",
   "server.onboarding.caddyShackDesc": "موجز مناقشة الفريق لمركز عمليات الأمن. نشر التحديثات ومشاركة النتائج والتفاعل مع منشورات زملائك.",
   "server.onboarding.realTimeSync": "مزامنة في الوقت الفعلي",
   "server.onboarding.realTimeSyncDesc": "تتزامن ملاحظاتك ومهامك وIOCs تلقائيًا عبر جميع أعضاء الفريق المتصلين.",

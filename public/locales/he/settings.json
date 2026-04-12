@@ -1,7 +1,6 @@
 {
   "title": "הגדרות",
   "closeSettings": "סגור הגדרות",
-
   "tabs.general": "כללי",
   "tabs.appearance": "מראה",
   "tabs.ai": "בינה מלאכותית",
@@ -11,7 +10,6 @@
   "tabs.intel": "מודיעין",
   "tabs.integrations": "אינטגרציות",
   "tabs.shortcuts": "קיצורי מקלדת",
-
   "general.identity": "הזהות שלך",
   "general.displayName": "שם תצוגה",
   "general.displayNamePlaceholder": "שמך (מוצג בישויות שאתה יוצר)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "הורדת עדכון נכשלה. בקר ב-https://threatcaddy.com לקבלת הגרסה האחרונה.",
   "general.downloadStandalone": "הורד עצמאי",
   "general.privacy": "פרטיות",
-
   "appearance.theme": "ערכת נושא",
   "appearance.mode": "מצב",
   "appearance.dark": "כהה",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "שמירת תמונה נכשלה",
   "appearance.bgRemoved": "תמונת רקע הוסרה",
   "appearance.bgRemoveFailed": "הסרת תמונה נכשלה",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "מפתח API של Anthropic",
   "ai.openaiKey": "מפתח API של OpenAI",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "שם פקודה (לדוגמה mytriage)",
   "ai.commandDescPlaceholder": "תיאור (מוצג בתפריט slash)",
   "ai.commandTemplatePlaceholder": "תבנית פרומפט. השתמש ב-{{input}} לארגומנטים מהמשתמש.\n\nדוגמה: נתח התראה זו עבור IOCs וצור דוח triage:\n\n{{input}}",
-
   "agents.supervisor": "סוכן מפקח",
   "agents.supervisorDesc": "ניתוח חוצה חקירות — מזהה IOCs משותפים, תיקים ישנים ודפוסים בעומס התיקים שלך.",
   "agents.enableSupervisor": "הפעל מפקח",
   "agents.supervisorInterval": "פועל כל {{minutes}} דקות",
   "agents.supervisorAriaLabel": "הפעל סוכן מפקח",
   "agents.interval": "מרווח",
-
   "agents.hosts": "מארחי סוכנים",
   "agents.hostsDesc": "חבר מארחי סוכנים חיצוניים (Claude Code, ריצות מותאמות) החושפים כישורים דרך REST API. כישורים שהתגלו זמינים ככלי LLM.",
   "agents.refreshAll": "רענן הכל",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "אין כישורים שמורים. לחץ \"שלוף כישורים\" לגילוי כישורים זמינים.",
   "agents.skillsLastFetched": "{{count}} כישור{{plural}} — נשלף לאחרונה {{date}}",
   "agents.params": "פרמטרים: {{params}}",
-
   "data.exportImportTitle": "ייצוא וייבוא",
   "data.exportJSON": "ייצא גיבוי JSON",
   "data.exportMarkdown": "ייצא Markdown",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "יוצאו {{count}} הערות כ-Markdown",
   "data.importedCounts": "יובאו {{notes}} הערות, {{tasks}} משימות, {{folders}} חקירות, {{tags}} תגיות",
   "data.importBackupTitle": "ייבא גיבוי",
-  "data.importBackupMessage": "פעולה זו תחליף את כל ההערות, המשימות, התיקיות והתגיות הנוכחיות שלך בנתונים המיובאים. לא ניתן לבטל פעולה זו.",
+  "data.importBackupMessage": "פעולה זו תחליף את כל ההערות, המשימות, החקירות והתגיות הנוכחיות שלך בנתונים המיובאים. לא ניתן לבטל פעולה זו.",
   "data.importReplace": "ייבא והחלף",
   "data.importedMarkdown": "יובאו {{count}} הערות מ-Markdown",
-
   "data.mdImportTitle": "ייבא Markdown",
   "data.mdPreviewTitle": "תצוגה מקדימה של ייבוא",
   "data.mdCompleteTitle": "הייבוא הושלם",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "ייבא {{count}} הערות",
   "data.mdImportedSuccess_one": "{{count}} הערה יובאה בהצלחה",
   "data.mdImportedSuccess_other": "{{count}} הערות יובאו בהצלחה",
-
   "encryption.title": "גיבויים מוצפנים בשרת",
   "encryption.connectPrompt": "התחבר לשרת צוות לשימוש בגיבויים מוצפנים.",
   "encryption.description": "גיבויים מוגנים בסיסמה המאוחסנים בשרת. אפילו מנהלים לא יכולים לקרוא אותם.",
@@ -233,7 +224,6 @@
   "encryption.merge": "מזג",
   "encryption.deleteConfirmTitle": "מחק גיבוי",
   "encryption.deleteConfirmMessage": "פעולה זו תמחק לצמיתות את הגיבוי המוצפן הזה מהשרת. לא ניתן לבטל פעולה זו.",
-
   "cloud.title": "גיבוי ענן",
   "cloud.addDestination": "הוסף יעד",
   "cloud.provider": "ספק",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "פעולה זו תעלה את כל מסד הנתונים שלך ל-{{count}} יעד/ות ענן. להמשיך?",
   "cloud.encryptedPushSuccess": "גיבוי מוצפן נדחף בהצלחה",
   "cloud.pushSuccess": "גיבוי נדחף בהצלחה",
-
   "templates.noteTemplates": "תבניות הערות",
   "templates.summary": "{{custom}} מותאמות, {{builtin}} מובנות",
   "templates.description": "תבניות ממלאות מראש הערות בתוכן מובנה. תבניות מובנות ניתן לשכפל ולהתאים.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "תבנית \"{{name}}\" נוצרה",
   "templates.deletedToast": "תבנית \"{{name}}\" נמחקה",
   "templates.saveFailed": "שמירת תבנית נכשלה",
-
   "templates.playbooks": "פלייבוקים לחקירה",
   "templates.playbooksDesc": "פלייבוקים ממלאים אוטומטית חקירות חדשות עם משימות והערות. השתמש באייקון הספר בסרגל הצד להתחלה מפלייבוק.",
   "templates.yourPlaybooks": "הפלייבוקים שלך",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "פלייבוק \"{{name}}\" נוצר",
   "templates.playbookDeletedToast": "פלייבוק \"{{name}}\" נמחק",
   "templates.playbookSaveFailed": "שמירת פלייבוק נכשלה",
-
   "intel.title": "הגדרות מודיעין איומים",
   "intel.extractionBehavior": "התנהגות חילוץ",
   "intel.autoExtract": "חלץ IOCs אוטומטית מתוכן",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "הוסף סוג קשר מותאם",
   "intel.configImported": "הגדרות יובאו",
   "intel.invalidConfigFile": "קובץ הגדרות JSON לא חוקי",
-
   "shortcuts.title": "קיצורי מקלדת",
   "shortcuts.newNote": "הערה חדשה / לכידה מהירה",
   "shortcuts.focusSearch": "מקד חיפוש",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "הצג קיצורי מקלדת",
   "shortcuts.switchView": "החלף תצוגה (הערות/משימות/ציר זמן/לוח ציור)",
   "shortcuts.closeModals": "סגור חלונות מודאל",
-
   "server.teamServer": "שרת צוות",
   "server.connected": "מחובר",
   "server.serverLabel": "שרת",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "נותק מהשרת",
   "server.savedServers": "שרתים שמורים",
   "server.deleteSavedServer": "מחק שרת שמור",
-
   "server.onboarding.welcome": "ברוך הבא ל-{{name}}!",
   "server.onboarding.intro": "אתה מחובר לשרת הצוות שלך. הנה מה שאתה יכול לעשות:",
   "server.onboarding.sharedInvestigations": "חקירות משותפות",
   "server.onboarding.sharedInvestigationsDesc": "שתף פעולה בתיקים עם הצוות שלך — שתף הערות, משימות, ציירי זמן ו-IOCs בזמן אמת.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "פיד צוות",
   "server.onboarding.caddyShackDesc": "פיד דיון צוות ל-SOC שלך. פרסם עדכונים, שתף ממצאים והגב לפוסטים של עמיתייך.",
   "server.onboarding.realTimeSync": "סנכרון בזמן אמת",
   "server.onboarding.realTimeSyncDesc": "ההערות, המשימות וה-IOCs שלך מסתנכרנים אוטומטית בכל חברי הצוות המחוברים.",

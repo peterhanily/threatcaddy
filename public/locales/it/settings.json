@@ -1,7 +1,6 @@
 {
   "title": "Impostazioni",
   "closeSettings": "Chiudi impostazioni",
-
   "tabs.general": "Generale",
   "tabs.appearance": "Aspetto",
   "tabs.ai": "AI",
@@ -11,7 +10,6 @@
   "tabs.intel": "Intel",
   "tabs.integrations": "Integrazioni",
   "tabs.shortcuts": "Scorciatoie",
-
   "general.identity": "La tua identità",
   "general.displayName": "Nome visualizzato",
   "general.displayNamePlaceholder": "Il tuo nome (mostrato sulle entità che crei)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "Download aggiornamento non riuscito. Visita https://threatcaddy.com per l'ultima versione.",
   "general.downloadStandalone": "Scarica Standalone",
   "general.privacy": "Privacy",
-
   "appearance.theme": "Tema",
   "appearance.mode": "Modalità",
   "appearance.dark": "Scuro",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "Impossibile salvare l'immagine",
   "appearance.bgRemoved": "Immagine di sfondo rimossa",
   "appearance.bgRemoveFailed": "Impossibile rimuovere l'immagine",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "Anthropic API Key",
   "ai.openaiKey": "OpenAI API Key",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "Nome comando (es. miotriage)",
   "ai.commandDescPlaceholder": "Descrizione (mostrata nel menu slash)",
   "ai.commandTemplatePlaceholder": "Template prompt. Usa {{input}} per gli argomenti dell'utente.\n\nEsempio: Analizza questo alert per IOC e crea un report di triage:\n\n{{input}}",
-
   "agents.supervisor": "Agente supervisor",
   "agents.supervisorDesc": "Analisi cross-indagine — rileva IOC condivisi, casi in stallo e pattern in tutto il carico di lavoro.",
   "agents.enableSupervisor": "Abilita supervisor",
   "agents.supervisorInterval": "Esegue ogni {{minutes}} minuti",
   "agents.supervisorAriaLabel": "Abilita agente supervisor",
   "agents.interval": "Intervallo",
-
   "agents.hosts": "Host agente",
   "agents.hostsDesc": "Connetti host agente esterni (Claude Code, runtime personalizzati) che espongono skill tramite REST API. Le skill scoperte sono disponibili come strumenti LLM.",
   "agents.refreshAll": "Aggiorna tutto",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "Nessuna skill in cache. Clicca \"Recupera skill\" per scoprire le skill disponibili.",
   "agents.skillsLastFetched": "{{count}} skill{{plural}} — ultimo recupero {{date}}",
   "agents.params": "parametri: {{params}}",
-
   "data.exportImportTitle": "Esporta e importa",
   "data.exportJSON": "Esporta backup JSON",
   "data.exportMarkdown": "Esporta Markdown",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "Esportate {{count}} note come Markdown",
   "data.importedCounts": "Importate {{notes}} note, {{tasks}} attività, {{folders}} indagini, {{tags}} tag",
   "data.importBackupTitle": "Importa backup",
-  "data.importBackupMessage": "Questo sostituirà tutte le note, attività, cartelle e tag correnti con i dati importati. Questa azione non può essere annullata.",
+  "data.importBackupMessage": "Questo sostituirà tutte le note, attività, indagini e tag correnti con i dati importati. Questa azione non può essere annullata.",
   "data.importReplace": "Importa e sostituisci",
   "data.importedMarkdown": "Importate {{count}} note da Markdown",
-
   "data.mdImportTitle": "Importa Markdown",
   "data.mdPreviewTitle": "Anteprima importazione",
   "data.mdCompleteTitle": "Importazione completata",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "Importa {{count}} note",
   "data.mdImportedSuccess_one": "{{count}} nota importata con successo",
   "data.mdImportedSuccess_other": "{{count}} note importate con successo",
-
   "encryption.title": "Backup crittografati server",
   "encryption.connectPrompt": "Connettiti al server team per usare i backup crittografati.",
   "encryption.description": "Backup protetti da password archiviati sul server. Nemmeno gli amministratori possono leggerli.",
@@ -233,7 +224,6 @@
   "encryption.merge": "Unisci",
   "encryption.deleteConfirmTitle": "Elimina backup",
   "encryption.deleteConfirmMessage": "Questo eliminerà definitivamente questo backup crittografato dal server. Questa azione non può essere annullata.",
-
   "cloud.title": "Backup cloud",
   "cloud.addDestination": "Aggiungi destinazione",
   "cloud.provider": "Provider",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "Questo caricherà l'intero database su {{count}} destinazioni cloud. Continuare?",
   "cloud.encryptedPushSuccess": "Backup crittografato inviato con successo",
   "cloud.pushSuccess": "Backup inviato con successo",
-
   "templates.noteTemplates": "Template note",
   "templates.summary": "{{custom}} personalizzati, {{builtin}} integrati",
   "templates.description": "I template pre-compilano le note con contenuto strutturato. I template integrati possono essere duplicati e personalizzati.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "Template \"{{name}}\" creato",
   "templates.deletedToast": "Template \"{{name}}\" eliminato",
   "templates.saveFailed": "Impossibile salvare il template",
-
   "templates.playbooks": "Playbook indagine",
   "templates.playbooksDesc": "I playbook popolano automaticamente le nuove indagini con attività e note. Usa l'icona libro nella barra laterale per iniziare da un playbook.",
   "templates.yourPlaybooks": "I tuoi playbook",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "Playbook \"{{name}}\" creato",
   "templates.playbookDeletedToast": "Playbook \"{{name}}\" eliminato",
   "templates.playbookSaveFailed": "Impossibile salvare il playbook",
-
   "intel.title": "Configurazione threat intelligence",
   "intel.extractionBehavior": "Comportamento di estrazione",
   "intel.autoExtract": "Estrai IOC automaticamente dal contenuto",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "Aggiungi tipo di relazione personalizzato",
   "intel.configImported": "Configurazione importata",
   "intel.invalidConfigFile": "File di configurazione JSON non valido",
-
   "shortcuts.title": "Scorciatoie da tastiera",
   "shortcuts.newNote": "Nuova nota / Acquisizione rapida",
   "shortcuts.focusSearch": "Imposta focus sulla ricerca",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "Mostra scorciatoie da tastiera",
   "shortcuts.switchView": "Cambia vista (Note/Attività/Timeline/Lavagna)",
   "shortcuts.closeModals": "Chiudi finestre modali",
-
   "server.teamServer": "Server team",
   "server.connected": "Connesso",
   "server.serverLabel": "Server",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "Disconnesso dal server",
   "server.savedServers": "Server salvati",
   "server.deleteSavedServer": "Elimina server salvato",
-
   "server.onboarding.welcome": "Benvenuto in {{name}}!",
   "server.onboarding.intro": "Sei connesso al tuo server team. Ecco cosa puoi fare:",
   "server.onboarding.sharedInvestigations": "Indagini condivise",
   "server.onboarding.sharedInvestigationsDesc": "Collabora sui casi con il tuo team — condividi note, attività, timeline e IOC in tempo reale.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "Feed del team",
   "server.onboarding.caddyShackDesc": "Feed di discussione del team per il tuo SOC. Posta aggiornamenti, condividi risultati e reagisci ai post dei colleghi.",
   "server.onboarding.realTimeSync": "Sincronizzazione in tempo reale",
   "server.onboarding.realTimeSyncDesc": "Le tue note, attività e IOC si sincronizzano automaticamente tra tutti i membri del team connessi.",

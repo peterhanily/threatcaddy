@@ -1,6 +1,6 @@
 {
   "dashboard.appName": "ThreatCaddy",
-  "dashboard.exec": "EXEC",
+  "dashboard.exec": "KIEROWNICTWO",
   "dashboard.switchToAnalyst": "Przełącz na tryb analityka",
   "dashboard.overview": "Przegląd",
   "dashboard.cases": "Sprawy",
@@ -22,7 +22,6 @@
   "dashboard.untitledChat": "Czat bez tytułu",
   "dashboard.general": "Ogólne",
   "dashboard.messagesCount": "{{count}} wiadomości",
-
   "investigations.all": "Wszystkie",
   "investigations.active": "Aktywne",
   "investigations.closed": "Zamknięte",
@@ -33,7 +32,6 @@
   "investigations.events": "Zdarzenia",
   "investigations.boards": "Tablice",
   "investigations.iocs": "IOC",
-
   "detail.share": "Udostępnij",
   "detail.created": "Utworzono {{date}}",
   "detail.taskProgress": "Postęp zadań",
@@ -42,13 +40,11 @@
   "detail.todo": "{{count}} do zrobienia",
   "detail.recentActivity": "Ostatnia aktywność",
   "detail.openInAnalystMode": "Otwórz w trybie analityka",
-
   "notes.untitled": "Bez tytułu",
   "notes.created": "Utworzono {{date}}",
   "notes.updated": "Zaktualizowano {{date}}",
   "notes.iocDetected": "Wykryto {{count}} IOC",
   "notes.iocsDetected": "Wykryto {{count}} IOC",
-
   "tasks.untitled": "Bez tytułu",
   "tasks.created": "Utworzono {{date}}",
   "tasks.updated": "Zaktualizowano {{date}}",
@@ -60,14 +56,12 @@
   "tasks.inProgress": "W toku",
   "tasks.done": "Ukończone",
   "tasks.comments": "Komentarze ({{count}})",
-
   "events.untitled": "Bez tytułu",
   "events.timestamp": "Znacznik czasu {{date}}",
   "events.end": "Koniec {{date}}",
   "events.source": "Źródło: {{source}}",
   "events.actor": "Aktor:",
   "events.assets": "Zasoby:",
-
   "iocs.created": "Utworzono {{date}}",
   "iocs.updated": "Zaktualizowano {{date}}",
   "iocs.attribution": "Atrybucja: {{value}}",
@@ -81,27 +75,22 @@
   "iocs.linkedTasksPlural": "{{count}} powiązanych zadań",
   "iocs.linkedEvents": "{{count}} powiązane zdarzenie",
   "iocs.linkedEventsPlural": "{{count}} powiązanych zdarzeń",
-
   "chat.untitledChat": "Czat bez tytułu",
   "chat.messagesCount": "{{count}} wiadomości",
   "chat.created": "Utworzono {{date}}",
   "chat.noMessages": "Brak wiadomości w tym wątku",
-
   "global.noItemsFound": "Nie znaleziono elementów",
   "global.unfiled": "Niesklasyfikowane",
-
   "entities.inFolder": "w {{name}}",
   "entities.noEntities": "Brak {{type}} w tym dochodzeniu",
   "entities.elementCount": "{{count}} element",
   "entities.elementCountPlural": "{{count}} elementów",
   "entities.openInAnalyst": "Otwórz w analityku",
-
   "activity.noRecentActivity": "Brak ostatniej aktywności",
   "activity.today": "Dzisiaj",
   "activity.yesterday": "Wczoraj",
   "activity.thisWeek": "W tym tygodniu",
   "activity.older": "Starsze",
-
   "share.title": "Udostępnij",
   "share.encryptWithPassword": "Szyfruj hasłem",
   "share.enterPassword": "Wprowadź hasło...",
@@ -137,7 +126,6 @@
   "share.scopeIoc": "IOC",
   "share.scopeInvestigation": "Dochodzenie",
   "share.scopeChat": "Czat",
-
   "share.shared": "UDOSTĘPNIONE",
   "share.saveToThreatCaddy": "Zapisz w ThreatCaddy",
   "share.saving": "Zapisywanie...",
@@ -153,18 +141,14 @@
   "share.messageCountPlural": "{{count}} wiadomości",
   "share.youLabel": "Ty",
   "share.caddyAI": "CaddyAI",
-
   "search.filterPlaceholder": "Filtruj...",
-
   "graph.notes": "Notatki",
   "graph.iocs": "IOC",
   "graph.tasks": "Zadania",
   "graph.events": "Zdarzenia",
-
   "nav.prev": "Poprz.",
   "nav.next": "Nast.",
   "nav.ofTotal": "{{current}} z {{total}}",
-
   "breadcrumb.investigations": "Dochodzenia",
   "breadcrumb.overview": "Przegląd",
   "breadcrumb.allNotes": "Wszystkie notatki",
@@ -177,11 +161,11 @@
   "breadcrumb.task": "Zadanie",
   "breadcrumb.event": "Zdarzenie",
   "breadcrumb.chat": "Czat",
-
   "metrics.notes": "Notatki",
   "metrics.openTasks": "Otwarte zadania",
   "metrics.iocsTracked": "Śledzone IOC",
   "metrics.eventsThisWeek": "Zdarzenia w tym tygodniu",
   "metrics.aiChats": "Czaty AI",
-  "metrics.graphNodes": "Węzły grafu"
+  "metrics.graphNodes": "Węzły grafu",
+  "dashboard.backToExecView": "Powrót do Widoku kierownictwa"
 }

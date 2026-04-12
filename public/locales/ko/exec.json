@@ -22,7 +22,6 @@
   "dashboard.untitledChat": "제목 없는 채팅",
   "dashboard.general": "일반",
   "dashboard.messagesCount": "{{count}}개의 메시지",
-
   "investigations.all": "모두",
   "investigations.active": "활성",
   "investigations.closed": "종료됨",
@@ -33,7 +32,6 @@
   "investigations.events": "이벤트",
   "investigations.boards": "보드",
   "investigations.iocs": "IOC",
-
   "detail.share": "공유",
   "detail.created": "{{date}}에 생성됨",
   "detail.taskProgress": "태스크 진행률",
@@ -42,13 +40,11 @@
   "detail.todo": "{{count}}개 대기 중",
   "detail.recentActivity": "최근 활동",
   "detail.openInAnalystMode": "분석가 모드에서 열기",
-
   "notes.untitled": "제목 없음",
   "notes.created": "{{date}}에 생성됨",
   "notes.updated": "{{date}}에 업데이트됨",
   "notes.iocDetected": "{{count}}개의 IOC 감지됨",
   "notes.iocsDetected": "{{count}}개의 IOC 감지됨",
-
   "tasks.untitled": "제목 없음",
   "tasks.created": "{{date}}에 생성됨",
   "tasks.updated": "{{date}}에 업데이트됨",
@@ -60,14 +56,12 @@
   "tasks.inProgress": "진행 중",
   "tasks.done": "완료",
   "tasks.comments": "댓글 ({{count}})",
-
   "events.untitled": "제목 없음",
   "events.timestamp": "타임스탬프 {{date}}",
   "events.end": "종료 {{date}}",
   "events.source": "출처: {{source}}",
   "events.actor": "행위자:",
   "events.assets": "자산:",
-
   "iocs.created": "{{date}}에 생성됨",
   "iocs.updated": "{{date}}에 업데이트됨",
   "iocs.attribution": "귀속: {{value}}",
@@ -81,27 +75,22 @@
   "iocs.linkedTasksPlural": "{{count}}개의 연결된 태스크",
   "iocs.linkedEvents": "{{count}}개의 연결된 이벤트",
   "iocs.linkedEventsPlural": "{{count}}개의 연결된 이벤트",
-
   "chat.untitledChat": "제목 없는 채팅",
   "chat.messagesCount": "{{count}}개의 메시지",
   "chat.created": "{{date}}에 생성됨",
   "chat.noMessages": "이 스레드에 메시지가 없습니다",
-
   "global.noItemsFound": "항목을 찾을 수 없습니다",
   "global.unfiled": "미분류",
-
   "entities.inFolder": "{{name}} 내",
   "entities.noEntities": "이 조사에 {{type}}이/가 없습니다",
   "entities.elementCount": "{{count}}개의 요소",
   "entities.elementCountPlural": "{{count}}개의 요소",
   "entities.openInAnalyst": "분석가에서 열기",
-
   "activity.noRecentActivity": "최근 활동 없음",
   "activity.today": "오늘",
   "activity.yesterday": "어제",
   "activity.thisWeek": "이번 주",
   "activity.older": "이전",
-
   "share.title": "공유",
   "share.encryptWithPassword": "비밀번호로 암호화",
   "share.enterPassword": "비밀번호 입력...",
@@ -137,7 +126,6 @@
   "share.scopeIoc": "IOC",
   "share.scopeInvestigation": "조사",
   "share.scopeChat": "채팅",
-
   "share.shared": "공유됨",
   "share.saveToThreatCaddy": "ThreatCaddy에 저장",
   "share.saving": "저장 중...",
@@ -153,18 +141,14 @@
   "share.messageCountPlural": "{{count}}개의 메시지",
   "share.youLabel": "나",
   "share.caddyAI": "CaddyAI",
-
   "search.filterPlaceholder": "필터...",
-
   "graph.notes": "노트",
   "graph.iocs": "IOC",
   "graph.tasks": "태스크",
   "graph.events": "이벤트",
-
   "nav.prev": "이전",
   "nav.next": "다음",
   "nav.ofTotal": "{{current}} / {{total}}",
-
   "breadcrumb.investigations": "조사",
   "breadcrumb.overview": "개요",
   "breadcrumb.allNotes": "모든 노트",
@@ -177,11 +161,11 @@
   "breadcrumb.task": "태스크",
   "breadcrumb.event": "이벤트",
   "breadcrumb.chat": "채팅",
-
   "metrics.notes": "노트",
   "metrics.openTasks": "미완료 태스크",
   "metrics.iocsTracked": "추적 중인 IOC",
   "metrics.eventsThisWeek": "이번 주 이벤트",
   "metrics.aiChats": "AI 채팅",
-  "metrics.graphNodes": "그래프 노드"
+  "metrics.graphNodes": "그래프 노드",
+  "dashboard.backToExecView": "경영진 뷰로 돌아가기"
 }

@@ -36,7 +36,7 @@ import { clipBuffer } from './lib/clipBuffer';
 import { formatBytes, openFilePicker, getDroppedFiles, dispatchFile, type FileOpenDetail } from './lib/file-handler';
 import { hasPendingChanges } from './lib/pending-changes';
 import { useInvestigationData } from './hooks/useInvestigationData';
-import type { ViewMode, Note, Task, TimelineEvent, ChatThread } from './types';
+import type { Note, Task, TimelineEvent, ChatThread } from './types';
 import { DEFAULT_QUICK_LINKS } from './types';
 const DashboardView = lazy(() => import('./components/Dashboard/DashboardView').then(m => ({ default: m.DashboardView })));
 import { FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
@@ -393,6 +393,7 @@ function AppInner({
   const nav = useNavigation();
   const inv = useInvestigation();
   const ui = useUIModals();
+  const { t: tExec } = useTranslation('exec');
 
   // Destructure frequently-used context values
   const {
@@ -414,9 +415,8 @@ function AppInner({
     showTrash, setShowTrash, showArchive, setShowArchive,
     selectedIOCTypes, setSelectedIOCTypes,
     editingFolderId, setEditingFolderId,
-    folderStatusFilter, setFolderStatusFilter,
     selectedFolder, selectedTagObj, editingFolder,
-    investigationMembers, agentPendingCount,
+    investigationMembers,
     syncingFolderId, confirmUnsyncId, setConfirmUnsyncId,
     handleOpenInvestigation: ctxHandleOpenInvestigation, handleSyncLocally, handleUnsyncConfirmed, handleUnsync,
   } = inv;
@@ -470,7 +470,7 @@ function AppInner({
     loggedCreateIOC, loggedTrashIOC, loggedRestoreIOC,
     loggedToggleArchiveIOC, loggedDeleteIOC,
     loggedCreateFolder, loggedDeleteFolder,
-    loggedTrashFolderContents, loggedArchiveFolder, loggedUnarchiveFolder,
+    loggedArchiveFolder, loggedUnarchiveFolder,
     loggedCreateTag, loggedDeleteTag,
     loggedCreateChatThread,
     emptyAllTrash,
@@ -990,11 +990,6 @@ function AppInner({
     [noteCounts.archived, tasks.taskCounts.archived, timeline.eventCounts.archived, whiteboardCounts.archived, standaloneIOCsHook.iocCounts.archived]
   );
 
-  const handleMoveNoteToFolder = useCallback((noteId: string, folderId: string) => {
-    notes.updateNote(noteId, { folderId });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes.updateNote]);
-
   const handleNewNote = useCallback(async () => {
     if (showQuickCapture) return;
     setShowTrash(false);
@@ -1318,54 +1313,25 @@ function AppInner({
   else if (selectedTag) listTitle = `#${selectedTag}`;
 
   const sidebarProps = useMemo(() => ({
-    activeView,
-    onViewChange: (v: ViewMode) => { navigateTo(v); },
-    folders,
-    tags,
-    selectedFolderId,
-    onFolderSelect: setSelectedFolderId,
-    selectedTag,
-    onTagSelect: setSelectedTag,
-    showTrash,
-    onShowTrash: setShowTrash,
-    showArchive,
-    onShowArchive: setShowArchive,
-    onCreateFolder: async (name: string) => { const f = await loggedCreateFolder(name); setSelectedFolderId(f.id); setSelectedTag(undefined); setShowTrash(false); setShowArchive(false); },
-    onDeleteFolder: (id: string) => { loggedDeleteFolder(id); if (selectedFolderId === id) { setSelectedFolderId(undefined); setSelectedNoteId(undefined); } },
-    onTrashFolderContents: (id: string) => { loggedTrashFolderContents(id); if (selectedFolderId === id) { setSelectedFolderId(undefined); setSelectedNoteId(undefined); } },
-    onArchiveFolder: (id: string) => { loggedArchiveFolder(id); },
-    onUnarchiveFolder: (id: string) => { loggedUnarchiveFolder(id); },
-    onRenameFolder: (id: string, name: string) => updateFolder(id, { name }),
-    onOpenSettings: () => { openSettings(); },
     noteCounts: { ...noteCounts, trashed: combinedTrashedCount, archived: combinedArchivedCount },
     taskCounts: tasks.taskCounts,
     timelineCounts: timeline.eventCounts,
     timelines,
-    selectedTimelineId,
-    onTimelineSelect: setSelectedTimelineId,
     onCreateTimeline: (name: string) => loggedCreateTimeline(name),
     onDeleteTimeline: (id: string) => { loggedDeleteTimeline(id); if (selectedTimelineId === id) setSelectedTimelineId(undefined); },
     onRenameTimeline: (id: string, name: string) => updateTimeline(id, { name }),
     timelineEventCounts,
     whiteboards,
-    selectedWhiteboardId,
-    onWhiteboardSelect: (id: string) => setSelectedWhiteboardId(id),
     onCreateWhiteboard: (name?: string) => loggedCreateWhiteboard(name, selectedFolderId),
     onDeleteWhiteboard: (id: string) => { loggedDeleteWhiteboard(id); if (selectedWhiteboardId === id) setSelectedWhiteboardId(undefined); },
     onRenameWhiteboard: (id: string, name: string) => updateWhiteboard(id, { name }),
     whiteboardCount: whiteboardCounts.total,
-    onMoveNoteToFolder: handleMoveNoteToFolder,
     onRenameTag: (id: string, name: string) => updateTag(id, { name }),
     onDeleteTag: loggedDeleteTag,
-    onEditFolder: setEditingFolderId,
-    folderStatusFilter,
-    onFolderStatusFilterChange: setFolderStatusFilter,
     investigationScopedCounts,
     chatCount: chatsHook.threadCounts.total,
-    agentActionCount: agentPendingCount || undefined,
     serverConnected: auth.connected,
-    onNewFromPlaybook: () => setShowPlaybookPicker(true),
-  }), [activeView, folders, tags, auth.connected, selectedFolderId, setSelectedFolderId, selectedTag, showTrash, showArchive, loggedCreateFolder, loggedDeleteFolder, loggedTrashFolderContents, loggedArchiveFolder, loggedUnarchiveFolder, updateFolder, noteCounts, combinedTrashedCount, combinedArchivedCount, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, loggedCreateTimeline, loggedDeleteTimeline, updateTimeline, timelineEventCounts, whiteboards, selectedWhiteboardId, loggedCreateWhiteboard, loggedDeleteWhiteboard, updateWhiteboard, whiteboardCounts, handleMoveNoteToFolder, updateTag, loggedDeleteTag, navigateTo, folderStatusFilter, investigationScopedCounts, chatsHook.threadCounts.total, agentPendingCount]);
+  }), [noteCounts, combinedTrashedCount, combinedArchivedCount, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, loggedCreateTimeline, loggedDeleteTimeline, updateTimeline, timelineEventCounts, whiteboards, selectedFolderId, selectedWhiteboardId, loggedCreateWhiteboard, loggedDeleteWhiteboard, updateWhiteboard, whiteboardCounts, updateTag, loggedDeleteTag, investigationScopedCounts, chatsHook.threadCounts.total, auth.connected]);
 
   // CaddyAgent hook — manages auto-repeating loop
   const caddyAgent = useCaddyAgent({
@@ -1473,7 +1439,7 @@ function AppInner({
             onClick={() => setForceAnalystMode(false)}
             className="text-accent font-medium ml-2 whitespace-nowrap"
           >
-            Back to Exec Mode
+            {tExec('dashboard.backToExecView')}
           </button>
         </div>
       )}

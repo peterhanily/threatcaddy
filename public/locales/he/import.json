@@ -8,7 +8,7 @@
   "columns": "{{count}} עמודות",
   "truncated": "קוצר ל-10,000 שורות",
   "investigationFolder": "תיקיית חקירה",
-  "noFolder": "ללא תיקייה",
+  "noFolder": "ללא חקירה",
   "timeline": "ציר זמן",
   "allEventsFirst": "כל האירועים (הראשון הזמין)",
   "newTimeline": "+ ציר זמן חדש...",

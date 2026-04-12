@@ -1,6 +1,6 @@
 {
   "dashboard.appName": "ThreatCaddy",
-  "dashboard.exec": "EXEC",
+  "dashboard.exec": "DIRECTION",
   "dashboard.switchToAnalyst": "Passer en mode analyste",
   "dashboard.overview": "Vue d'ensemble",
   "dashboard.cases": "Dossiers",
@@ -22,7 +22,6 @@
   "dashboard.untitledChat": "Chat sans titre",
   "dashboard.general": "Général",
   "dashboard.messagesCount": "{{count}} messages",
-
   "investigations.all": "Tout",
   "investigations.active": "Active",
   "investigations.closed": "Fermée",
@@ -33,7 +32,6 @@
   "investigations.events": "Événements",
   "investigations.boards": "Tableaux",
   "investigations.iocs": "IOCs",
-
   "detail.share": "Partager",
   "detail.created": "Créée {{date}}",
   "detail.taskProgress": "Progression des tâches",
@@ -42,13 +40,11 @@
   "detail.todo": "{{count}} à faire",
   "detail.recentActivity": "Activité récente",
   "detail.openInAnalystMode": "Ouvrir en mode analyste",
-
   "notes.untitled": "Sans titre",
   "notes.created": "Créée {{date}}",
   "notes.updated": "Mise à jour {{date}}",
   "notes.iocDetected": "{{count}} IOC détecté",
   "notes.iocsDetected": "{{count}} IOCs détectés",
-
   "tasks.untitled": "Sans titre",
   "tasks.created": "Créée {{date}}",
   "tasks.updated": "Mise à jour {{date}}",
@@ -60,18 +56,16 @@
   "tasks.inProgress": "En cours",
   "tasks.done": "Terminé",
   "tasks.comments": "Commentaires ({{count}})",
-
   "events.untitled": "Sans titre",
   "events.timestamp": "Horodatage {{date}}",
   "events.end": "Fin {{date}}",
-  "events.source": "Source\u00a0: {{source}}",
-  "events.actor": "Acteur\u00a0:",
-  "events.assets": "Actifs\u00a0:",
-
+  "events.source": "Source : {{source}}",
+  "events.actor": "Acteur :",
+  "events.assets": "Actifs :",
   "iocs.created": "Créé {{date}}",
   "iocs.updated": "Mis à jour {{date}}",
-  "iocs.attribution": "Attribution\u00a0: {{value}}",
-  "iocs.subtype": "Sous-type\u00a0: {{value}}",
+  "iocs.attribution": "Attribution : {{value}}",
+  "iocs.subtype": "Sous-type : {{value}}",
   "iocs.analystNotes": "Notes de l'analyste",
   "iocs.relationships": "Relations ({{count}})",
   "iocs.comments": "Commentaires ({{count}})",
@@ -81,35 +75,30 @@
   "iocs.linkedTasksPlural": "{{count}} tâches liées",
   "iocs.linkedEvents": "{{count}} événement lié",
   "iocs.linkedEventsPlural": "{{count}} événements liés",
-
   "chat.untitledChat": "Chat sans titre",
   "chat.messagesCount": "{{count}} messages",
   "chat.created": "Créé {{date}}",
   "chat.noMessages": "Aucun message dans ce fil",
-
   "global.noItemsFound": "Aucun élément trouvé",
   "global.unfiled": "Non classé",
-
   "entities.inFolder": "dans {{name}}",
   "entities.noEntities": "Aucun {{type}} dans cette enquête",
   "entities.elementCount": "{{count}} élément",
   "entities.elementCountPlural": "{{count}} éléments",
   "entities.openInAnalyst": "Ouvrir dans Analyste",
-
   "activity.noRecentActivity": "Aucune activité récente",
   "activity.today": "Aujourd'hui",
   "activity.yesterday": "Hier",
   "activity.thisWeek": "Cette semaine",
   "activity.older": "Plus ancien",
-
   "share.title": "Partager",
   "share.encryptWithPassword": "Chiffrer avec un mot de passe",
   "share.enterPassword": "Saisir le mot de passe...",
   "share.generating": "Génération en cours...",
   "share.generateShareLink": "Générer un lien de partage",
-  "share.shareThisUrl": "Partager cette URL\u00a0:",
+  "share.shareThisUrl": "Partager cette URL :",
   "share.copyUrl": "Copier l'URL",
-  "share.copied": "Copié\u00a0!",
+  "share.copied": "Copié !",
   "share.payloadTooLarge": "Charge utile trop grande pour l'URL. Copiez le code de partage ci-dessous et envoyez-le au destinataire. Il peut le coller dans la boîte de dialogue d'importation.",
   "share.copyCode": "Copier le code",
   "share.shareLink": "Lien de partage",
@@ -137,7 +126,6 @@
   "share.scopeIoc": "IOC",
   "share.scopeInvestigation": "Enquête",
   "share.scopeChat": "Chat",
-
   "share.shared": "PARTAGÉ",
   "share.saveToThreatCaddy": "Enregistrer dans ThreatCaddy",
   "share.saving": "Enregistrement...",
@@ -147,24 +135,20 @@
   "share.decrypt": "Déchiffrer",
   "share.decoding": "Décodage...",
   "share.sharedDate": "Partagé {{date}}",
-  "share.unsupportedType": "Type de partage non pris en charge\u00a0: {{type}}",
+  "share.unsupportedType": "Type de partage non pris en charge : {{type}}",
   "share.tryAgain": "Réessayer",
   "share.messageCount": "{{count}} message",
   "share.messageCountPlural": "{{count}} messages",
   "share.youLabel": "Vous",
   "share.caddyAI": "CaddyAI",
-
   "search.filterPlaceholder": "Filtrer...",
-
   "graph.notes": "Notes",
   "graph.iocs": "IOCs",
   "graph.tasks": "Tâches",
   "graph.events": "Événements",
-
   "nav.prev": "Préc.",
   "nav.next": "Suiv.",
   "nav.ofTotal": "{{current}} sur {{total}}",
-
   "breadcrumb.investigations": "Enquêtes",
   "breadcrumb.overview": "Vue d'ensemble",
   "breadcrumb.allNotes": "Toutes les notes",
@@ -177,11 +161,11 @@
   "breadcrumb.task": "Tâche",
   "breadcrumb.event": "Événement",
   "breadcrumb.chat": "Chat",
-
   "metrics.notes": "Notes",
   "metrics.openTasks": "Tâches ouvertes",
   "metrics.iocsTracked": "IOCs suivis",
   "metrics.eventsThisWeek": "Événements cette semaine",
   "metrics.aiChats": "Chats IA",
-  "metrics.graphNodes": "Nœuds du graphe"
+  "metrics.graphNodes": "Nœuds du graphe",
+  "dashboard.backToExecView": "Retour à la Vue direction"
 }

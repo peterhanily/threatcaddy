@@ -1,7 +1,6 @@
 {
   "title": "Ustawienia",
   "closeSettings": "Zamknij ustawienia",
-
   "tabs.general": "Ogólne",
   "tabs.appearance": "Wygląd",
   "tabs.ai": "AI",
@@ -11,7 +10,6 @@
   "tabs.intel": "Wywiad",
   "tabs.integrations": "Integracje",
   "tabs.shortcuts": "Skróty klawiszowe",
-
   "general.identity": "Twoja tożsamość",
   "general.displayName": "Wyświetlana nazwa",
   "general.displayNamePlaceholder": "Twoje imię (wyświetlane na tworzonych encjach)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "Nie udało się pobrać aktualizacji. Odwiedź https://threatcaddy.com, aby uzyskać najnowszą wersję.",
   "general.downloadStandalone": "Pobierz wersję autonomiczną",
   "general.privacy": "Prywatność",
-
   "appearance.theme": "Motyw",
   "appearance.mode": "Tryb",
   "appearance.dark": "Ciemny",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "Nie udało się zapisać obrazu",
   "appearance.bgRemoved": "Obraz tła usunięty",
   "appearance.bgRemoveFailed": "Nie udało się usunąć obrazu",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "Klucz API Anthropic",
   "ai.openaiKey": "Klucz API OpenAI",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "Nazwa polecenia (np. mytriage)",
   "ai.commandDescPlaceholder": "Opis (widoczny w menu poleceń slash)",
   "ai.commandTemplatePlaceholder": "Szablon promptu. Użyj {{input}} dla argumentów użytkownika.\n\nPrzykład: Analizuj ten alert pod kątem IOC i utwórz raport triaż:\n\n{{input}}",
-
   "agents.supervisor": "Agent Supervisor",
   "agents.supervisorDesc": "Analiza między dochodzeniami — wykrywa wspólne IOC, nieaktywne sprawy i wzorce w Twoim obciążeniu.",
   "agents.enableSupervisor": "Włącz Supervisora",
   "agents.supervisorInterval": "Uruchamia się co {{minutes}} minut",
   "agents.supervisorAriaLabel": "Włącz agenta supervisor",
   "agents.interval": "Interwał",
-
   "agents.hosts": "Hosty agentów",
   "agents.hostsDesc": "Połączenie zewnętrznych hostów agentów (Claude Code, niestandardowe środowiska uruchomieniowe) udostępniających umiejętności przez REST API. Odkryte umiejętności stają się dostępne jako narzędzia LLM.",
   "agents.refreshAll": "Odśwież wszystkie",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "Brak zbuforowanych umiejętności. Kliknij „Pobierz umiejętności\", aby odkryć dostępne.",
   "agents.skillsLastFetched": "{{count}} umiejętność{{plural}} — ostatnio pobrano {{date}}",
   "agents.params": "parametry: {{params}}",
-
   "data.exportImportTitle": "Eksport i Import",
   "data.exportJSON": "Eksportuj kopię zapasową JSON",
   "data.exportMarkdown": "Eksportuj Markdown",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "Wyeksportowano {{count}} notatek jako Markdown",
   "data.importedCounts": "Zaimportowano {{notes}} notatek, {{tasks}} zadań, {{folders}} dochodzeń, {{tags}} tagów",
   "data.importBackupTitle": "Importuj kopię zapasową",
-  "data.importBackupMessage": "Spowoduje to zastąpienie wszystkich Twoich bieżących notatek, zadań, folderów i tagów zaimportowanymi danymi. Tej operacji nie można cofnąć.",
+  "data.importBackupMessage": "Spowoduje to zastąpienie wszystkich Twoich bieżących notatek, zadań, śledztw i tagów zaimportowanymi danymi. Tej operacji nie można cofnąć.",
   "data.importReplace": "Importuj i zastąp",
   "data.importedMarkdown": "Zaimportowano {{count}} notatek z Markdown",
-
   "data.mdImportTitle": "Importuj Markdown",
   "data.mdPreviewTitle": "Podgląd importu",
   "data.mdCompleteTitle": "Import zakończony",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "Importuj {{count}} notatek",
   "data.mdImportedSuccess_one": "{{count}} notatka zaimportowana pomyślnie",
   "data.mdImportedSuccess_other": "{{count}} notatek zaimportowanych pomyślnie",
-
   "encryption.title": "Zaszyfrowane kopie zapasowe serwera",
   "encryption.connectPrompt": "Połącz z serwerem zespołu, aby używać zaszyfrowanych kopii zapasowych.",
   "encryption.description": "Kopie zapasowe chronione hasłem przechowywane na serwerze. Nawet administratorzy nie mogą ich odczytać.",
@@ -233,7 +224,6 @@
   "encryption.merge": "Scal",
   "encryption.deleteConfirmTitle": "Usuń kopię zapasową",
   "encryption.deleteConfirmMessage": "Spowoduje to trwałe usunięcie tej zaszyfrowanej kopii zapasowej z serwera. Tej operacji nie można cofnąć.",
-
   "cloud.title": "Kopia zapasowa w chmurze",
   "cloud.addDestination": "Dodaj miejsce docelowe",
   "cloud.provider": "Dostawca",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "Spowoduje to przesłanie całej bazy danych do {{count}} miejsca(-miejsc) docelowego(-ych) w chmurze. Kontynuować?",
   "cloud.encryptedPushSuccess": "Zaszyfrowana kopia wysłana pomyślnie",
   "cloud.pushSuccess": "Kopia zapasowa wysłana pomyślnie",
-
   "templates.noteTemplates": "Szablony notatek",
   "templates.summary": "{{custom}} własnych, {{builtin}} wbudowanych",
   "templates.description": "Szablony wstępnie wypełniają notatki strukturyzowaną zawartością. Wbudowane szablony można duplikować i dostosowywać.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "Szablon „{{name}}\" utworzony",
   "templates.deletedToast": "Szablon „{{name}}\" usunięty",
   "templates.saveFailed": "Nie udało się zapisać szablonu",
-
   "templates.playbooks": "Playbooki dochodzeń",
   "templates.playbooksDesc": "Playbooki automatycznie wypełniają nowe dochodzenia zadaniami i notatkami. Użyj ikony książki na pasku bocznym, aby zacząć z playbooka.",
   "templates.yourPlaybooks": "Twoje playbooki",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "Playbooek „{{name}}\" utworzony",
   "templates.playbookDeletedToast": "Playbooek „{{name}}\" usunięty",
   "templates.playbookSaveFailed": "Nie udało się zapisać playbooka",
-
   "intel.title": "Konfiguracja wywiadu zagrożeń",
   "intel.extractionBehavior": "Zachowanie ekstrakcji",
   "intel.autoExtract": "Automatyczna ekstrakcja IOC z zawartości",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "Dodaj własny typ relacji",
   "intel.configImported": "Konfiguracja zaimportowana",
   "intel.invalidConfigFile": "Nieprawidłowy plik konfiguracji JSON",
-
   "shortcuts.title": "Skróty klawiszowe",
   "shortcuts.newNote": "Nowa notatka / Szybkie przechwytywanie",
   "shortcuts.focusSearch": "Fokus wyszukiwania",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "Pokaż skróty klawiszowe",
   "shortcuts.switchView": "Przełącz widok (Notatki/Zadania/Oś czasu/Tablica)",
   "shortcuts.closeModals": "Zamknij okna dialogowe",
-
   "server.teamServer": "Serwer zespołu",
   "server.connected": "Połączono",
   "server.serverLabel": "Serwer",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "Rozłączono z serwerem",
   "server.savedServers": "Zapisane serwery",
   "server.deleteSavedServer": "Usuń zapisany serwer",
-
   "server.onboarding.welcome": "Witaj w {{name}}!",
   "server.onboarding.intro": "Jesteś połączony z serwerem zespołu. Oto co możesz robić:",
   "server.onboarding.sharedInvestigations": "Współdzielone dochodzenia",
   "server.onboarding.sharedInvestigationsDesc": "Współpracuj przy sprawach z zespołem — udostępniaj notatki, zadania, osie czasu i IOC w czasie rzeczywistym.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "Kanał zespołu",
   "server.onboarding.caddyShackDesc": "Kanał dyskusji zespołu dla Twojego SOC. Publikuj aktualizacje, dziel się ustaleniami i reaguj na posty kolegów.",
   "server.onboarding.realTimeSync": "Synchronizacja w czasie rzeczywistym",
   "server.onboarding.realTimeSyncDesc": "Twoje notatki, zadania i IOC synchronizują się automatycznie we wszystkich połączonych członkach zespołu.",

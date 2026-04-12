@@ -8,7 +8,7 @@
   "columns": "{{count}} стовпців",
   "truncated": "Обрізано до 10 000 рядків",
   "investigationFolder": "Папка розслідування",
-  "noFolder": "Без папки",
+  "noFolder": "Без розслідування",
   "timeline": "Хронологія",
   "allEventsFirst": "Усі події (перша доступна)",
   "newTimeline": "+ Нова хронологія...",

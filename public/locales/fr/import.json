@@ -6,9 +6,9 @@
   "parsePreview": "Analyser et prévisualiser",
   "rows": "{{count}} lignes",
   "columns": "{{count}} colonnes",
-  "truncated": "Tronqué à 10\u00a0000 lignes",
+  "truncated": "Tronqué à 10 000 lignes",
   "investigationFolder": "Dossier d'enquête",
-  "noFolder": "Aucun dossier",
+  "noFolder": "Aucune enquête",
   "timeline": "Chronologie",
   "allEventsFirst": "Tous les événements (premier disponible)",
   "newTimeline": "+ Nouvelle chronologie...",
@@ -25,7 +25,7 @@
   "timelineEvents": "Événements de chronologie",
   "iocsExtracted": "IOCs extraits",
   "summaryNote": "Note de synthèse",
-  "errorCount": "{{count}} erreur(s)\u00a0:",
+  "errorCount": "{{count}} erreur(s) :",
   "andMore": "... et {{count}} de plus",
   "done": "Terminé"
 }

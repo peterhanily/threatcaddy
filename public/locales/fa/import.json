@@ -8,7 +8,7 @@
   "columns": "{{count}} ستون",
   "truncated": "به ۱۰٬۰۰۰ سطر کوتاه شده",
   "investigationFolder": "پوشه تحقیق",
-  "noFolder": "بدون پوشه",
+  "noFolder": "بدون تحقیق",
   "timeline": "جدول زمانی",
   "allEventsFirst": "همه رویدادها (اولین موجود)",
   "newTimeline": "+ جدول زمانی جدید...",

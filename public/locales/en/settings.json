@@ -1,7 +1,6 @@
 {
   "title": "Settings",
   "closeSettings": "Close settings",
-
   "tabs.general": "General",
   "tabs.appearance": "Appearance",
   "tabs.ai": "AI",
@@ -11,7 +10,6 @@
   "tabs.intel": "Intel",
   "tabs.integrations": "Integrations",
   "tabs.shortcuts": "Shortcuts",
-
   "general.identity": "Your Identity",
   "general.displayName": "Display Name",
   "general.displayNamePlaceholder": "Your name (shown on entities you create)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "Failed to download update. Visit https://threatcaddy.com to get the latest version.",
   "general.downloadStandalone": "Download Standalone",
   "general.privacy": "Privacy",
-
   "appearance.theme": "Theme",
   "appearance.mode": "Mode",
   "appearance.dark": "Dark",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "Failed to save image",
   "appearance.bgRemoved": "Background image removed",
   "appearance.bgRemoveFailed": "Failed to remove image",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "Anthropic API Key",
   "ai.openaiKey": "OpenAI API Key",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "Command name (e.g. mytriage)",
   "ai.commandDescPlaceholder": "Description (shown in slash menu)",
   "ai.commandTemplatePlaceholder": "Prompt template. Use {{input}} for user arguments.\n\nExample: Analyze this alert for IOCs and create a triage report:\n\n{{input}}",
-
   "agents.supervisor": "Supervisor Agent",
   "agents.supervisorDesc": "Cross-investigation analysis — detects shared IOCs, stale cases, and patterns across your caseload.",
   "agents.enableSupervisor": "Enable Supervisor",
   "agents.supervisorInterval": "Runs every {{minutes}} minutes",
   "agents.supervisorAriaLabel": "Enable supervisor agent",
   "agents.interval": "Interval",
-
   "agents.hosts": "Agent Hosts",
   "agents.hostsDesc": "Connect external agent hosts (Claude Code, custom runtimes) that expose skills via REST API. Discovered skills become available as LLM tools.",
   "agents.refreshAll": "Refresh All",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "No skills cached. Click \"Fetch Skills\" to discover available skills.",
   "agents.skillsLastFetched": "{{count}} skill{{plural}} — last fetched {{date}}",
   "agents.params": "params: {{params}}",
-
   "data.exportImportTitle": "Export & Import",
   "data.exportJSON": "Export JSON Backup",
   "data.exportMarkdown": "Export Markdown",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "Exported {{count}} notes as Markdown",
   "data.importedCounts": "Imported {{notes}} notes, {{tasks}} tasks, {{folders}} investigations, {{tags}} tags",
   "data.importBackupTitle": "Import Backup",
-  "data.importBackupMessage": "This will replace all your current notes, tasks, folders, and tags with the imported data. This cannot be undone.",
+  "data.importBackupMessage": "This will replace all your current notes, tasks, investigations, and tags with the imported data. This cannot be undone.",
   "data.importReplace": "Import & Replace",
   "data.importedMarkdown": "Imported {{count}} notes from Markdown",
-
   "data.mdImportTitle": "Import Markdown",
   "data.mdPreviewTitle": "Preview Import",
   "data.mdCompleteTitle": "Import Complete",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "Import {{count}} notes",
   "data.mdImportedSuccess_one": "{{count}} note imported successfully",
   "data.mdImportedSuccess_other": "{{count}} notes imported successfully",
-
   "encryption.title": "Server Encrypted Backups",
   "encryption.connectPrompt": "Connect to a team server to use encrypted backups.",
   "encryption.description": "Password-protected backups stored on the server. Even admins cannot read them.",
@@ -233,7 +224,6 @@
   "encryption.merge": "Merge",
   "encryption.deleteConfirmTitle": "Delete Backup",
   "encryption.deleteConfirmMessage": "This will permanently delete this encrypted backup from the server. This cannot be undone.",
-
   "cloud.title": "Cloud Backup",
   "cloud.addDestination": "Add Destination",
   "cloud.provider": "Provider",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "This will upload your entire database to {{count}} cloud destination(s). Continue?",
   "cloud.encryptedPushSuccess": "Encrypted backup pushed successfully",
   "cloud.pushSuccess": "Backup pushed successfully",
-
   "templates.noteTemplates": "Note Templates",
   "templates.summary": "{{custom}} custom, {{builtin}} built-in",
   "templates.description": "Templates pre-fill notes with structured content. Built-in templates can be duplicated and customized.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "Template \"{{name}}\" created",
   "templates.deletedToast": "Template \"{{name}}\" deleted",
   "templates.saveFailed": "Failed to save template",
-
   "templates.playbooks": "Investigation Playbooks",
   "templates.playbooksDesc": "Playbooks auto-populate new investigations with tasks and notes. Use the book icon in the sidebar to start from a playbook.",
   "templates.yourPlaybooks": "Your Playbooks",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "Playbook \"{{name}}\" created",
   "templates.playbookDeletedToast": "Playbook \"{{name}}\" deleted",
   "templates.playbookSaveFailed": "Failed to save playbook",
-
   "intel.title": "Threat Intel Configuration",
   "intel.extractionBehavior": "Extraction Behavior",
   "intel.autoExtract": "Auto-extract IOCs from content",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "Add Custom Relationship Type",
   "intel.configImported": "Config imported",
   "intel.invalidConfigFile": "Invalid JSON config file",
-
   "shortcuts.title": "Keyboard Shortcuts",
   "shortcuts.newNote": "New note / Quick capture",
   "shortcuts.focusSearch": "Focus search",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "Show keyboard shortcuts",
   "shortcuts.switchView": "Switch view (Notes/Tasks/Timeline/Whiteboard)",
   "shortcuts.closeModals": "Close modals",
-
   "server.teamServer": "Team Server",
   "server.connected": "Connected",
   "server.serverLabel": "Server",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "Disconnected from server",
   "server.savedServers": "Saved Servers",
   "server.deleteSavedServer": "Delete saved server",
-
   "server.onboarding.welcome": "Welcome to {{name}}!",
   "server.onboarding.intro": "You're connected to your team server. Here's what you can do:",
   "server.onboarding.sharedInvestigations": "Shared Investigations",
   "server.onboarding.sharedInvestigationsDesc": "Collaborate on cases with your team — share notes, tasks, timelines, and IOCs in real time.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "Team Feed",
   "server.onboarding.caddyShackDesc": "Team discussion feed for your SOC. Post updates, share findings, and react to your teammates' posts.",
   "server.onboarding.realTimeSync": "Real-time Sync",
   "server.onboarding.realTimeSyncDesc": "Your notes, tasks, and IOCs sync automatically across all connected team members.",

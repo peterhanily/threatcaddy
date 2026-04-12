@@ -1,7 +1,6 @@
 {
   "title": "Pengaturan",
   "closeSettings": "Tutup pengaturan",
-
   "tabs.general": "Umum",
   "tabs.appearance": "Tampilan",
   "tabs.ai": "AI",
@@ -11,7 +10,6 @@
   "tabs.intel": "Intelijen",
   "tabs.integrations": "Integrasi",
   "tabs.shortcuts": "Pintasan",
-
   "general.identity": "Identitas Anda",
   "general.displayName": "Nama Tampilan",
   "general.displayNamePlaceholder": "Nama Anda (ditampilkan pada entitas yang Anda buat)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "Gagal mengunduh pembaruan. Kunjungi https://threatcaddy.com untuk mendapatkan versi terbaru.",
   "general.downloadStandalone": "Unduh Standalone",
   "general.privacy": "Privasi",
-
   "appearance.theme": "Tema",
   "appearance.mode": "Mode",
   "appearance.dark": "Gelap",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "Gagal menyimpan gambar",
   "appearance.bgRemoved": "Gambar latar dihapus",
   "appearance.bgRemoveFailed": "Gagal menghapus gambar",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "Anthropic API Key",
   "ai.openaiKey": "OpenAI API Key",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "Nama perintah (mis. triasesaya)",
   "ai.commandDescPlaceholder": "Deskripsi (ditampilkan di menu slash)",
   "ai.commandTemplatePlaceholder": "Template prompt. Gunakan {{input}} untuk argumen pengguna.\n\nContoh: Analisis peringatan ini untuk IOC dan buat laporan triase:\n\n{{input}}",
-
   "agents.supervisor": "Agen Supervisor",
   "agents.supervisorDesc": "Analisis lintas investigasi — mendeteksi IOC bersama, kasus yang stagnan, dan pola di seluruh beban kerja Anda.",
   "agents.enableSupervisor": "Aktifkan Supervisor",
   "agents.supervisorInterval": "Berjalan setiap {{minutes}} menit",
   "agents.supervisorAriaLabel": "Aktifkan agen supervisor",
   "agents.interval": "Interval",
-
   "agents.hosts": "Host Agen",
   "agents.hostsDesc": "Hubungkan host agen eksternal (Claude Code, runtime kustom) yang mengekspos kemampuan melalui REST API. Kemampuan yang ditemukan tersedia sebagai alat LLM.",
   "agents.refreshAll": "Segarkan Semua",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "Tidak ada kemampuan yang di-cache. Klik \"Ambil Kemampuan\" untuk menemukan kemampuan yang tersedia.",
   "agents.skillsLastFetched": "{{count}} kemampuan{{plural}} — terakhir diambil {{date}}",
   "agents.params": "parameter: {{params}}",
-
   "data.exportImportTitle": "Ekspor & Impor",
   "data.exportJSON": "Ekspor Cadangan JSON",
   "data.exportMarkdown": "Ekspor Markdown",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "Diekspor {{count}} catatan sebagai Markdown",
   "data.importedCounts": "Diimpor {{notes}} catatan, {{tasks}} tugas, {{folders}} investigasi, {{tags}} tag",
   "data.importBackupTitle": "Impor Cadangan",
-  "data.importBackupMessage": "Ini akan menggantikan semua catatan, tugas, folder, dan tag Anda saat ini dengan data yang diimpor. Tindakan ini tidak dapat dibatalkan.",
+  "data.importBackupMessage": "Ini akan menggantikan semua catatan, tugas, investigasi, dan tag Anda saat ini dengan data yang diimpor. Tindakan ini tidak dapat dibatalkan.",
   "data.importReplace": "Impor & Ganti",
   "data.importedMarkdown": "Diimpor {{count}} catatan dari Markdown",
-
   "data.mdImportTitle": "Impor Markdown",
   "data.mdPreviewTitle": "Pratinjau Impor",
   "data.mdCompleteTitle": "Impor Selesai",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "Impor {{count}} catatan",
   "data.mdImportedSuccess_one": "{{count}} catatan berhasil diimpor",
   "data.mdImportedSuccess_other": "{{count}} catatan berhasil diimpor",
-
   "encryption.title": "Cadangan Terenkripsi Server",
   "encryption.connectPrompt": "Hubungkan ke server tim untuk menggunakan cadangan terenkripsi.",
   "encryption.description": "Cadangan yang dilindungi kata sandi disimpan di server. Bahkan admin tidak dapat membacanya.",
@@ -233,7 +224,6 @@
   "encryption.merge": "Gabung",
   "encryption.deleteConfirmTitle": "Hapus Cadangan",
   "encryption.deleteConfirmMessage": "Ini akan menghapus cadangan terenkripsi ini secara permanen dari server. Tindakan ini tidak dapat dibatalkan.",
-
   "cloud.title": "Cadangan Cloud",
   "cloud.addDestination": "Tambah Tujuan",
   "cloud.provider": "Penyedia",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "Ini akan mengunggah seluruh database Anda ke {{count}} tujuan cloud. Lanjutkan?",
   "cloud.encryptedPushSuccess": "Cadangan terenkripsi berhasil dikirim",
   "cloud.pushSuccess": "Cadangan berhasil dikirim",
-
   "templates.noteTemplates": "Template Catatan",
   "templates.summary": "{{custom}} kustom, {{builtin}} bawaan",
   "templates.description": "Template mengisi awal catatan dengan konten terstruktur. Template bawaan dapat diduplikasi dan dikustomisasi.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "Template \"{{name}}\" dibuat",
   "templates.deletedToast": "Template \"{{name}}\" dihapus",
   "templates.saveFailed": "Gagal menyimpan template",
-
   "templates.playbooks": "Playbook Investigasi",
   "templates.playbooksDesc": "Playbook mengisi otomatis investigasi baru dengan tugas dan catatan. Gunakan ikon buku di sidebar untuk memulai dari playbook.",
   "templates.yourPlaybooks": "Playbook Anda",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "Playbook \"{{name}}\" dibuat",
   "templates.playbookDeletedToast": "Playbook \"{{name}}\" dihapus",
   "templates.playbookSaveFailed": "Gagal menyimpan playbook",
-
   "intel.title": "Konfigurasi Intelijen Ancaman",
   "intel.extractionBehavior": "Perilaku Ekstraksi",
   "intel.autoExtract": "Ekstrak IOC otomatis dari konten",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "Tambah Jenis Relasi Kustom",
   "intel.configImported": "Konfigurasi diimpor",
   "intel.invalidConfigFile": "File konfigurasi JSON tidak valid",
-
   "shortcuts.title": "Pintasan Keyboard",
   "shortcuts.newNote": "Catatan baru / Tangkap cepat",
   "shortcuts.focusSearch": "Fokus pencarian",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "Tampilkan pintasan keyboard",
   "shortcuts.switchView": "Beralih tampilan (Catatan/Tugas/Timeline/Whiteboard)",
   "shortcuts.closeModals": "Tutup modal",
-
   "server.teamServer": "Server Tim",
   "server.connected": "Terhubung",
   "server.serverLabel": "Server",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "Terputus dari server",
   "server.savedServers": "Server Tersimpan",
   "server.deleteSavedServer": "Hapus server tersimpan",
-
   "server.onboarding.welcome": "Selamat datang di {{name}}!",
   "server.onboarding.intro": "Anda terhubung ke server tim Anda. Inilah yang dapat Anda lakukan:",
   "server.onboarding.sharedInvestigations": "Investigasi Bersama",
   "server.onboarding.sharedInvestigationsDesc": "Berkolaborasi pada kasus dengan tim Anda — bagikan catatan, tugas, timeline, dan IOC secara real time.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "Feed Tim",
   "server.onboarding.caddyShackDesc": "Feed diskusi tim untuk SOC Anda. Posting pembaruan, bagikan temuan, dan bereaksi pada postingan rekan tim.",
   "server.onboarding.realTimeSync": "Sinkronisasi Real-time",
   "server.onboarding.realTimeSyncDesc": "Catatan, tugas, dan IOC Anda disinkronkan secara otomatis di semua anggota tim yang terhubung.",
