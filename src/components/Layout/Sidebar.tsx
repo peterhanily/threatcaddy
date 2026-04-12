@@ -5,97 +5,54 @@ import {
   PanelLeftClose, PanelLeft, Github, Download, Chrome, PenTool, Activity, Network, Search, Shield,
   LayoutDashboard, MessageSquare, MessagesSquare, ChevronLeft, Bot,
 } from 'lucide-react';
-import type { Folder, Tag as TagType, Timeline, Whiteboard, ViewMode, InvestigationStatus } from '../../types';
+import type { Timeline, Whiteboard, ViewMode } from '../../types';
 import { cn } from '../../lib/utils';
 import { NavItem, CollapsedIcon } from './SidebarHelpers';
 import { WhiteboardSubList } from './WhiteboardSubList';
 import { TimelineSubList } from './TimelineSubList';
 import { TagSubList } from './TagSubList';
+import { useNavigation } from '../../contexts/NavigationContext';
+import { useInvestigation } from '../../contexts/InvestigationContext';
+import { useUIModals } from '../../contexts/UIModalContext';
 
 interface SidebarProps {
-  activeView: ViewMode;
-  onViewChange: (view: ViewMode) => void;
-  folders: Folder[];
-  tags: TagType[];
-  selectedFolderId?: string;
-  onFolderSelect: (id?: string) => void;
-  selectedTag?: string;
-  onTagSelect: (name?: string) => void;
-  showTrash: boolean;
-  onShowTrash: (show: boolean) => void;
-  showArchive: boolean;
-  onShowArchive: (show: boolean) => void;
-  onCreateFolder: (name: string) => void;
-  onDeleteFolder: (id: string) => void;
-  onTrashFolderContents: (id: string) => void;
-  onArchiveFolder: (id: string) => void;
-  onUnarchiveFolder: (id: string) => void;
-  onRenameFolder: (id: string, name: string) => void;
-  onOpenSettings: () => void;
   collapsed: boolean;
   onToggleCollapsed: () => void;
   noteCounts: { total: number; trashed: number; archived: number };
   taskCounts: { todo: number; 'in-progress': number; done: number; total: number };
   timelineCounts?: { total: number; starred: number };
   timelines?: Timeline[];
-  selectedTimelineId?: string;
-  onTimelineSelect?: (id?: string) => void;
   onCreateTimeline?: (name: string) => void;
   onDeleteTimeline?: (id: string) => void;
   onRenameTimeline?: (id: string, name: string) => void;
   timelineEventCounts?: Record<string, number>;
   whiteboards?: Whiteboard[];
-  selectedWhiteboardId?: string;
-  onWhiteboardSelect?: (id: string) => void;
   onCreateWhiteboard?: (name?: string) => Promise<Whiteboard>;
   onDeleteWhiteboard?: (id: string) => void;
   onRenameWhiteboard?: (id: string, name: string) => void;
   whiteboardCount?: number;
   onNavigate?: () => void;
-  onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
   onRenameTag?: (id: string, name: string) => void;
   onDeleteTag?: (id: string) => void;
-  onEditFolder?: (id: string) => void;
-  folderStatusFilter?: InvestigationStatus[];
-  onFolderStatusFilterChange?: (filter: InvestigationStatus[]) => void;
   investigationScopedCounts?: { notes: number; tasks: number; events: number; whiteboards: number; iocs: number } | null;
   chatCount?: number;
-  agentActionCount?: number;
   agentStatus?: 'idle' | 'running' | 'waiting' | 'paused' | 'error';
   onToggleAgent?: () => void;
   serverConnected?: boolean;
-  onNewFromPlaybook?: () => void;
 }
 
 export function Sidebar({
-  activeView,
-  onViewChange,
-  folders,
-  tags,
-  selectedFolderId,
-  onFolderSelect,
-  selectedTag,
-  onTagSelect,
-  showTrash,
-  onShowTrash,
-  showArchive,
-  onShowArchive,
-  onOpenSettings,
   collapsed,
   onToggleCollapsed,
   noteCounts,
   taskCounts,
   timelineCounts,
   timelines = [],
-  selectedTimelineId,
-  onTimelineSelect,
   onCreateTimeline,
   onDeleteTimeline,
   onRenameTimeline,
   timelineEventCounts = {},
   whiteboards = [],
-  selectedWhiteboardId,
-  onWhiteboardSelect,
   onCreateWhiteboard,
   onDeleteWhiteboard,
   onRenameWhiteboard,
@@ -103,26 +60,31 @@ export function Sidebar({
   onNavigate,
   onRenameTag,
   onDeleteTag,
-  onEditFolder,
   investigationScopedCounts,
   chatCount,
-  agentActionCount,
   agentStatus,
   onToggleAgent,
 }: SidebarProps) {
   const { t } = useTranslation('common');
+
+  // Context hooks
+  const { activeView, selectedTimelineId, setSelectedTimelineId, selectedWhiteboardId, setSelectedWhiteboardId, navigateTo } = useNavigation();
+  const { selectedFolderId, setSelectedFolderId, folders, tags, selectedTag, setSelectedTag, showTrash, setShowTrash, showArchive, setShowArchive, setEditingFolderId, agentPendingCount } = useInvestigation();
+  const { openSettings } = useUIModals();
+
   // Derived state
   const selectedFolder = folders.find((f) => f.id === selectedFolderId);
+  const agentActionCount = agentPendingCount || undefined;
 
   const clearFilters = () => {
-    onFolderSelect(undefined);
-    onTagSelect(undefined);
-    onShowTrash(false);
-    onShowArchive(false);
+    setSelectedFolderId(undefined);
+    setSelectedTag(undefined);
+    setShowTrash(false);
+    setShowArchive(false);
   };
 
   const navToView = (view: ViewMode) => {
-    onViewChange(view);
+    navigateTo(view);
     if (!selectedFolderId) clearFilters();
   };
 
@@ -217,21 +179,21 @@ export function Sidebar({
           <CollapsedIcon
             icon={SettingsIcon}
             label={t('sidebar.settings')}
-            onClick={() => nav(onOpenSettings)}
+            onClick={() => nav(() => openSettings())}
           />
           <CollapsedIcon
             icon={Archive}
             label={t('sidebar.archive')}
             active={showArchive}
             badge={noteCounts.archived}
-            onClick={() => nav(() => { onShowArchive(!showArchive); onShowTrash(false); onFolderSelect(undefined); onTagSelect(undefined); })}
+            onClick={() => nav(() => { setShowArchive(!showArchive); setShowTrash(false); setSelectedFolderId(undefined); setSelectedTag(undefined); })}
           />
           <CollapsedIcon
             icon={Trash2}
             label={t('sidebar.trash')}
             active={showTrash}
             badge={noteCounts.trashed}
-            onClick={() => nav(() => { onShowTrash(!showTrash); onShowArchive(false); onFolderSelect(undefined); onTagSelect(undefined); })}
+            onClick={() => nav(() => { setShowTrash(!showTrash); setShowArchive(false); setSelectedFolderId(undefined); setSelectedTag(undefined); })}
           />
           <CollapsedIcon
             icon={PanelLeft}
@@ -271,7 +233,7 @@ export function Sidebar({
       {selectedFolder && (
         <div className="px-3 py-2 border-b border-border-subtle">
           <button
-            onClick={() => { onFolderSelect(undefined); onViewChange('investigations'); }}
+            onClick={() => { setSelectedFolderId(undefined); navigateTo('investigations'); }}
             className="flex items-center gap-1 text-xs text-text-muted hover:text-text-secondary mb-1 transition-colors"
           >
             <ChevronLeft size={14} />
@@ -279,7 +241,7 @@ export function Sidebar({
           </button>
           {/* Clickable investigation card — opens settings */}
           <button
-            onClick={() => onEditFolder?.(selectedFolder.id)}
+            onClick={() => setEditingFolderId(selectedFolder.id)}
             className="w-full text-left rounded-lg border border-border-subtle bg-bg-raised hover:border-border-medium hover:bg-bg-hover transition-colors p-2 group"
             title={t('sidebar.investigationSettings')}
           >
@@ -471,7 +433,7 @@ export function Sidebar({
           <WhiteboardSubList
             whiteboards={whiteboards}
             selectedWhiteboardId={selectedWhiteboardId}
-            onWhiteboardSelect={onWhiteboardSelect}
+            onWhiteboardSelect={setSelectedWhiteboardId}
             onCreateWhiteboard={onCreateWhiteboard}
             onDeleteWhiteboard={onDeleteWhiteboard}
             onRenameWhiteboard={onRenameWhiteboard}
@@ -486,7 +448,7 @@ export function Sidebar({
             selectedTimelineId={selectedTimelineId}
             timelineCounts={timelineCounts}
             timelineEventCounts={timelineEventCounts}
-            onTimelineSelect={onTimelineSelect}
+            onTimelineSelect={setSelectedTimelineId}
             onCreateTimeline={onCreateTimeline}
             onDeleteTimeline={onDeleteTimeline}
             onRenameTimeline={onRenameTimeline}
@@ -498,10 +460,10 @@ export function Sidebar({
         <TagSubList
           tags={tags}
           selectedTag={selectedTag}
-          onTagSelect={onTagSelect}
-          onFolderSelect={onFolderSelect}
-          onShowTrash={onShowTrash}
-          onShowArchive={onShowArchive}
+          onTagSelect={setSelectedTag}
+          onFolderSelect={setSelectedFolderId}
+          onShowTrash={setShowTrash}
+          onShowArchive={setShowArchive}
           onRenameTag={onRenameTag}
           onDeleteTag={onDeleteTag}
           onNavigate={onNavigate}
@@ -511,7 +473,7 @@ export function Sidebar({
       {/* FOOTER */}
       <div className="border-t border-border-subtle px-2 py-2 flex items-center gap-1">
         <button
-          onClick={() => nav(onOpenSettings)}
+          onClick={() => nav(() => openSettings())}
           className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
         >
           <SettingsIcon size={14} />
@@ -519,7 +481,7 @@ export function Sidebar({
         </button>
         <div className="flex-1" />
         <button
-          onClick={() => nav(() => { onShowArchive(!showArchive); onShowTrash(false); onFolderSelect(undefined); onTagSelect(undefined); })}
+          onClick={() => nav(() => { setShowArchive(!showArchive); setShowTrash(false); setSelectedFolderId(undefined); setSelectedTag(undefined); })}
           className={cn(
             'flex items-center gap-1 px-1.5 py-1 rounded-lg text-xs transition-colors',
             showArchive ? 'bg-bg-active text-purple' : 'text-text-muted hover:bg-bg-hover hover:text-text-primary'
@@ -533,7 +495,7 @@ export function Sidebar({
           )}
         </button>
         <button
-          onClick={() => nav(() => { onShowTrash(!showTrash); onShowArchive(false); onFolderSelect(undefined); onTagSelect(undefined); })}
+          onClick={() => nav(() => { setShowTrash(!showTrash); setShowArchive(false); setSelectedFolderId(undefined); setSelectedTag(undefined); })}
           className={cn(
             'flex items-center gap-1 px-1.5 py-1 rounded-lg text-xs transition-colors',
             showTrash ? 'bg-bg-active text-purple' : 'text-text-muted hover:bg-bg-hover hover:text-text-primary'
