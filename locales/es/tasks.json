@@ -5,11 +5,9 @@
   "priority.lowFull": "Baja",
   "priority.mediumFull": "Media",
   "priority.highFull": "Alta",
-
   "status.todo": "Por hacer",
   "status.inProgress": "En progreso",
   "status.done": "Hecho",
-
   "list.title": "Tareas",
   "list.titleWithScope": "Tareas — {{scope}} ({{count}})",
   "list.titleWithCount": "Tareas ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "Haga clic en \"Nueva tarea\" o presione Ctrl+Mayús+T",
   "list.editTaskModal": "Editar tarea",
   "list.createTaskModal": "Crear tarea",
-
   "item.markIncomplete": "Marcar como incompleta",
   "item.markComplete": "Marcar como completada",
   "item.untitled": "Tarea sin título",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "Eliminar tarea",
   "item.confirmDeleteMessage": "Esta tarea será eliminada permanentemente. Esta acción no se puede deshacer.",
   "item.confirmDeleteLabel": "Eliminar tarea",
-
   "form.titleLabel": "Título",
   "form.titlePlaceholder": "Título de la tarea...",
   "form.titleRequired": "El título de la tarea es obligatorio",
@@ -81,10 +77,11 @@
   "form.relativeTime.minutesAgo": "hace {{count}} min",
   "form.relativeTime.hoursAgo": "hace {{count}} h",
   "form.relativeTime.daysAgo": "hace {{count}} días",
-
   "kanban.boardLabel": "Tablero kanban",
   "kanban.columnLabel": "Columna {{label}}, {{count}} tareas",
   "kanban.changeStatus": "Cambiar estado de {{title}}",
   "kanban.noTasks": "Sin tareas",
-  "kanban.dropHere": "Soltar tareas aquí"
+  "kanban.dropHere": "Soltar tareas aquí",
+  "emptyState": "Aún no hay tareas — crea una para comenzar",
+  "createFirst": "Crea tu primera tarea"
 }

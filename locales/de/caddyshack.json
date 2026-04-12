@@ -1,6 +1,6 @@
 {
-  "view.title": "CaddyShack",
-  "view.connectToServer": "Verbinden Sie sich mit einem Team-Server, um CaddyShack zu nutzen.",
+  "view.title": "Team-Feed",
+  "view.connectToServer": "Verbinden Sie sich mit einem Team-Server, um den Team-Feed zu nutzen.",
   "view.loading": "Wird geladen...",
   "view.noPostsYet": "Noch keine Beiträge. Teilen Sie als Erster ein Update!",
   "view.noTeamActivity": "Noch keine Teamaktivität.",
@@ -11,16 +11,14 @@
   "view.all": "Alle",
   "view.posts": "Beiträge",
   "view.activity": "Aktivität",
-
-  "view.onboarding.title": "Erste Schritte mit CaddyShack",
+  "view.onboarding.title": "Erste Schritte mit dem Team-Feed",
   "view.onboarding.step1Title": "1. Team-Server bereitstellen",
-  "view.onboarding.step1Desc": "CaddyShack erfordert einen ThreatCaddy-Team-Server. Starten Sie den Docker-Container aus der Server-README.",
+  "view.onboarding.step1Desc": "Der Team-Feed erfordert einen ThreatCaddy-Team-Server. Starten Sie den Docker-Container aus der Server-README.",
   "view.onboarding.step2Title": "2. Server-URL konfigurieren",
   "view.onboarding.step2Desc": "Gehen Sie zu den Einstellungen und geben Sie Ihre Team-Server-URL ein, um ThreatCaddy mit Ihrer Instanz zu verbinden.",
   "view.onboarding.step3Title": "3. Registrieren und anmelden",
   "view.onboarding.step3Desc": "Erstellen Sie ein Konto auf Ihrem Team-Server und melden Sie sich an, um Beiträge zu erstellen, zu reagieren und mit Ihrem Team zusammenzuarbeiten.",
   "view.onboarding.gotIt": "Verstanden",
-
   "composer.placeholder": "Was passiert?",
   "composer.slashHint": "Geben Sie <kbd>/</kbd> für Befehle ein",
   "composer.post": "Posten",
@@ -31,7 +29,6 @@
   "composer.postCreated": "Beitrag erstellt",
   "composer.failedToCreatePost": "Beitrag konnte nicht erstellt werden",
   "composer.failedToUploadFile": "Datei konnte nicht hochgeladen werden: {{name}}",
-
   "post.replyingTo": "Antworten an",
   "post.unknown": "Unbekannt",
   "post.justNow": "gerade eben",
@@ -41,8 +38,7 @@
   "post.delete": "Löschen",
   "post.save": "Speichern",
   "post.cancel": "Abbrechen",
-
-  "reply.backToCaddyShack": "Zurück zu CaddyShack",
+  "reply.backToCaddyShack": "Zurück zum Team-Feed",
   "reply.loadingThread": "Thread wird geladen...",
   "reply.postNotFound": "Beitrag nicht gefunden.",
   "reply.writeReply": "Antwort schreiben...",
@@ -55,8 +51,7 @@
   "reply.failedDeletePost": "Beitrag konnte nicht gelöscht werden",
   "reply.failedEditPost": "Beitrag konnte nicht bearbeitet werden",
   "reply.failedPinStatus": "Pin-Status konnte nicht aktualisiert werden",
-
-  "profile.backToCaddyShack": "Zurück zu CaddyShack",
+  "profile.backToCaddyShack": "Zurück zum Team-Feed",
   "profile.loadingProfile": "Profil wird geladen...",
   "profile.userNotFound": "Benutzer nicht gefunden.",
   "profile.posts": "Beiträge",
@@ -66,7 +61,6 @@
   "profile.noLikes": "Noch keine gelikten Beiträge.",
   "profile.noActivity": "Keine Aktivität aufgezeichnet.",
   "profile.thisIsYou": "Das sind Sie",
-
   "notifications.title": "Benachrichtigungen",
   "notifications.new": "{{count}} neu",
   "notifications.readAll": "Alle lesen",
@@ -88,7 +82,6 @@
   "notifications.failedToMarkRead": "Benachrichtigung konnte nicht als gelesen markiert werden",
   "notifications.failedToMarkAllRead": "Alle Benachrichtigungen konnten nicht als gelesen markiert werden",
   "notifications.failedToClear": "Benachrichtigungen konnten nicht gelöscht werden",
-
   "activity.justNow": "gerade eben",
   "activity.minutesAgo": "vor {{count}} Min.",
   "activity.hoursAgo": "vor {{count}} Std.",

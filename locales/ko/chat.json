@@ -21,7 +21,6 @@
   "view.unarchive": "보관 해제",
   "view.rename": "이름 변경",
   "view.renamePlaceholder": "채팅 이름...",
-
   "thread.noMessages": "메시지 없음",
   "thread.noMessagesHint": "아래에 메시지를 입력하여 CaddyAI와 대화를 시작하세요",
   "thread.thinking": "생각 중...",
@@ -35,7 +34,6 @@
   "thread.tokenBudgetExceeded": "토큰 예산 초과",
   "thread.you": "나",
   "thread.caddyAI": "CaddyAI",
-
   "input.placeholder": "CaddyAI에게 메시지 보내기...",
   "input.send": "메시지 보내기",
   "input.sendAria": "메시지 보내기",
@@ -47,7 +45,6 @@
   "input.slashCommands": "슬래시 명령어",
   "input.slashCommandPlaceholder": "명령어 검색...",
   "input.noMatchingCommands": "일치하는 명령어 없음",
-
   "slashCommand.fetch": "URL에서 콘텐츠 가져오기",
   "slashCommand.search": "조사에서 검색",
   "slashCommand.note": "새 노트 만들기",

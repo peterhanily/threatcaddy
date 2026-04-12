@@ -12,7 +12,7 @@
   "clear": "پاک کردن",
   "resultCount": "{{count}} نتیجه",
   "resultCountPlural": "{{count}} نتیجه",
-  "noResults": "نتیجه‌ای برای «{{query}}» یافت نشد",
+  "noResults": "نتیجه‌ای یافت نشد — کلمات کلیدی دیگری را امتحان کنید",
   "types": "انواع:",
   "date": "تاریخ",
   "created": "ایجاد شده",

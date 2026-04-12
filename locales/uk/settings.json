@@ -1,7 +1,6 @@
 {
   "title": "Налаштування",
   "closeSettings": "Закрити налаштування",
-
   "tabs.general": "Загальні",
   "tabs.appearance": "Зовнішній вигляд",
   "tabs.ai": "ШІ",
@@ -11,7 +10,6 @@
   "tabs.intel": "Розвідка",
   "tabs.integrations": "Інтеграції",
   "tabs.shortcuts": "Гарячі клавіші",
-
   "general.identity": "Ваша особистість",
   "general.displayName": "Відображуване ім'я",
   "general.displayNamePlaceholder": "Ваше ім'я (відображається на сутностях, що ви створюєте)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "Не вдалося завантажити оновлення. Відвідайте https://threatcaddy.com для отримання останньої версії.",
   "general.downloadStandalone": "Завантажити автономну версію",
   "general.privacy": "Конфіденційність",
-
   "appearance.theme": "Тема",
   "appearance.mode": "Режим",
   "appearance.dark": "Темний",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "Не вдалося зберегти зображення",
   "appearance.bgRemoved": "Фонове зображення видалено",
   "appearance.bgRemoveFailed": "Не вдалося видалити зображення",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "API-ключ Anthropic",
   "ai.openaiKey": "API-ключ OpenAI",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "Назва команди (напр. mytriage)",
   "ai.commandDescPlaceholder": "Опис (відображається у меню слеш-команд)",
   "ai.commandTemplatePlaceholder": "Шаблон промпту. Використовуйте {{input}} для аргументів користувача.\n\nПриклад: Проаналізуй це попередження на IOC та створи звіт тріажу:\n\n{{input}}",
-
   "agents.supervisor": "Агент-Supervisor",
   "agents.supervisorDesc": "Міжрозслідувальний аналіз — виявляє спільні IOC, застарілі справи та патерни у вашому навантаженні.",
   "agents.enableSupervisor": "Увімкнути Supervisor",
   "agents.supervisorInterval": "Запускається кожні {{minutes}} хвилин",
   "agents.supervisorAriaLabel": "Увімкнути агента-supervisor",
   "agents.interval": "Інтервал",
-
   "agents.hosts": "Хости агентів",
   "agents.hostsDesc": "Підключення зовнішніх хостів агентів (Claude Code, власні середовища виконання), що надають навички через REST API. Виявлені навички стають доступними як LLM-інструменти.",
   "agents.refreshAll": "Оновити всі",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "Навички не закешовані. Натисніть «Отримати навички» для виявлення доступних.",
   "agents.skillsLastFetched": "{{count}} навичк{{plural}} — останнє отримання {{date}}",
   "agents.params": "параметри: {{params}}",
-
   "data.exportImportTitle": "Експорт та Імпорт",
   "data.exportJSON": "Експорт резервної копії JSON",
   "data.exportMarkdown": "Експорт Markdown",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "Експортовано {{count}} нотаток як Markdown",
   "data.importedCounts": "Імпортовано {{notes}} нотаток, {{tasks}} завдань, {{folders}} розслідувань, {{tags}} тегів",
   "data.importBackupTitle": "Імпорт резервної копії",
-  "data.importBackupMessage": "Це замінить усі ваші поточні нотатки, завдання, папки та теги імпортованими даними. Відмінити неможливо.",
+  "data.importBackupMessage": "Це замінить усі ваші поточні нотатки, завдання, розслідування та теги імпортованими даними. Відмінити неможливо.",
   "data.importReplace": "Імпортувати та замінити",
   "data.importedMarkdown": "Імпортовано {{count}} нотаток із Markdown",
-
   "data.mdImportTitle": "Імпорт Markdown",
   "data.mdPreviewTitle": "Перегляд імпорту",
   "data.mdCompleteTitle": "Імпорт завершено",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "Імпортувати {{count}} нотаток",
   "data.mdImportedSuccess_one": "{{count}} нотатку успішно імпортовано",
   "data.mdImportedSuccess_other": "{{count}} нотаток успішно імпортовано",
-
   "encryption.title": "Зашифровані резервні копії на сервері",
   "encryption.connectPrompt": "Підключіться до командного сервера для використання зашифрованих резервних копій.",
   "encryption.description": "Захищені паролем резервні копії, що зберігаються на сервері. Навіть адміністратори не можуть їх прочитати.",
@@ -233,7 +224,6 @@
   "encryption.merge": "Злити",
   "encryption.deleteConfirmTitle": "Видалити резервну копію",
   "encryption.deleteConfirmMessage": "Це назавжди видалить зашифровану резервну копію з сервера. Відмінити неможливо.",
-
   "cloud.title": "Хмарне резервне копіювання",
   "cloud.addDestination": "Додати призначення",
   "cloud.provider": "Провайдер",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "Це завантажить всю базу даних до {{count}} хмарного призначення(нь). Продовжити?",
   "cloud.encryptedPushSuccess": "Зашифровану копію успішно надіслано",
   "cloud.pushSuccess": "Резервну копію успішно надіслано",
-
   "templates.noteTemplates": "Шаблони нотаток",
   "templates.summary": "{{custom}} власних, {{builtin}} вбудованих",
   "templates.description": "Шаблони попередньо заповнюють нотатки структурованим вмістом. Вбудовані шаблони можна дублювати та налаштовувати.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "Шаблон «{{name}}» створено",
   "templates.deletedToast": "Шаблон «{{name}}» видалено",
   "templates.saveFailed": "Не вдалося зберегти шаблон",
-
   "templates.playbooks": "Плейбуки розслідувань",
   "templates.playbooksDesc": "Плейбуки автоматично заповнюють нові розслідування завданнями та нотатками. Використовуйте іконку книги на бічній панелі для початку з плейбука.",
   "templates.yourPlaybooks": "Ваші плейбуки",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "Плейбук «{{name}}» створено",
   "templates.playbookDeletedToast": "Плейбук «{{name}}» видалено",
   "templates.playbookSaveFailed": "Не вдалося зберегти плейбук",
-
   "intel.title": "Конфігурація розвідки загроз",
   "intel.extractionBehavior": "Поведінка вилучення",
   "intel.autoExtract": "Автовилучення IOC з вмісту",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "Додати власний тип зв'язку",
   "intel.configImported": "Конфігурацію імпортовано",
   "intel.invalidConfigFile": "Невірний файл конфігурації JSON",
-
   "shortcuts.title": "Гарячі клавіші",
   "shortcuts.newNote": "Нова нотатка / Швидке захоплення",
   "shortcuts.focusSearch": "Фокус пошуку",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "Показати гарячі клавіші",
   "shortcuts.switchView": "Переключити вигляд (Нотатки/Завдання/Хронологія/Дошка)",
   "shortcuts.closeModals": "Закрити діалоги",
-
   "server.teamServer": "Командний сервер",
   "server.connected": "Підключено",
   "server.serverLabel": "Сервер",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "Відключено від сервера",
   "server.savedServers": "Збережені сервери",
   "server.deleteSavedServer": "Видалити збережений сервер",
-
   "server.onboarding.welcome": "Ласкаво просимо до {{name}}!",
   "server.onboarding.intro": "Ви підключені до командного сервера. Ось що ви можете робити:",
   "server.onboarding.sharedInvestigations": "Спільні розслідування",
   "server.onboarding.sharedInvestigationsDesc": "Співпрацюйте у справах з командою — діліться нотатками, завданнями, хронологіями та IOC в режимі реального часу.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "Стрічка команди",
   "server.onboarding.caddyShackDesc": "Стрічка обговорень команди для вашого SOC. Публікуйте оновлення, діліться знахідками та реагуйте на публікації колег.",
   "server.onboarding.realTimeSync": "Синхронізація в реальному часі",
   "server.onboarding.realTimeSyncDesc": "Ваші нотатки, завдання та IOC автоматично синхронізуються у всіх підключених членів команди.",

@@ -1,6 +1,6 @@
 {
-  "view.title": "CaddyShack",
-  "view.connectToServer": "Подключитесь к командному серверу для использования CaddyShack.",
+  "view.title": "Лента команды",
+  "view.connectToServer": "Подключитесь к командному серверу для использования Ленты команды.",
   "view.loading": "Загрузка...",
   "view.noPostsYet": "Публикаций пока нет. Станьте первым, кто поделится обновлением!",
   "view.noTeamActivity": "Активность команды пока отсутствует.",
@@ -11,16 +11,14 @@
   "view.all": "Все",
   "view.posts": "Публикации",
   "view.activity": "Активность",
-
-  "view.onboarding.title": "Начало работы с CaddyShack",
+  "view.onboarding.title": "Начало работы с Лентой команды",
   "view.onboarding.step1Title": "1. Разверните командный сервер",
-  "view.onboarding.step1Desc": "CaddyShack требует командный сервер ThreatCaddy. Запустите Docker-контейнер из README сервера.",
+  "view.onboarding.step1Desc": "Лента команды требует командный сервер ThreatCaddy. Запустите Docker-контейнер из README сервера.",
   "view.onboarding.step2Title": "2. Настройте URL-адрес сервера",
   "view.onboarding.step2Desc": "Перейдите в Настройки и введите URL-адрес командного сервера для подключения ThreatCaddy к вашему экземпляру.",
   "view.onboarding.step3Title": "3. Зарегистрируйтесь и войдите",
   "view.onboarding.step3Desc": "Создайте аккаунт на командном сервере и войдите, чтобы начать публиковать, реагировать и сотрудничать с командой.",
   "view.onboarding.gotIt": "Понял",
-
   "composer.placeholder": "Что происходит?",
   "composer.slashHint": "Введите <kbd>/</kbd> для команд",
   "composer.post": "Опубликовать",
@@ -31,7 +29,6 @@
   "composer.postCreated": "Публикация создана",
   "composer.failedToCreatePost": "Не удалось создать публикацию",
   "composer.failedToUploadFile": "Не удалось загрузить файл: {{name}}",
-
   "post.replyingTo": "Ответ на",
   "post.unknown": "Неизвестно",
   "post.justNow": "только что",
@@ -41,8 +38,7 @@
   "post.delete": "Удалить",
   "post.save": "Сохранить",
   "post.cancel": "Отмена",
-
-  "reply.backToCaddyShack": "Назад в CaddyShack",
+  "reply.backToCaddyShack": "Назад в Ленту команды",
   "reply.loadingThread": "Загрузка треда...",
   "reply.postNotFound": "Публикация не найдена.",
   "reply.writeReply": "Напишите ответ...",
@@ -55,8 +51,7 @@
   "reply.failedDeletePost": "Не удалось удалить публикацию",
   "reply.failedEditPost": "Не удалось отредактировать публикацию",
   "reply.failedPinStatus": "Не удалось обновить статус закрепления",
-
-  "profile.backToCaddyShack": "Назад в CaddyShack",
+  "profile.backToCaddyShack": "Назад в Ленту команды",
   "profile.loadingProfile": "Загрузка профиля...",
   "profile.userNotFound": "Пользователь не найден.",
   "profile.posts": "Публикации",
@@ -66,7 +61,6 @@
   "profile.noLikes": "Понравившихся публикаций пока нет.",
   "profile.noActivity": "Активность не зафиксирована.",
   "profile.thisIsYou": "Это вы",
-
   "notifications.title": "Уведомления",
   "notifications.new": "{{count}} новых",
   "notifications.readAll": "Прочитать все",
@@ -88,7 +82,6 @@
   "notifications.failedToMarkRead": "Не удалось отметить уведомление как прочитанное",
   "notifications.failedToMarkAllRead": "Не удалось отметить все как прочитанные",
   "notifications.failedToClear": "Не удалось очистить уведомления",
-
   "activity.justNow": "только что",
   "activity.minutesAgo": "{{count}} мин. назад",
   "activity.hoursAgo": "{{count}} ч. назад",

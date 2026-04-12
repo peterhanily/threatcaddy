@@ -1,6 +1,6 @@
 {
   "dashboard.appName": "ThreatCaddy",
-  "dashboard.exec": "EXEC",
+  "dashboard.exec": "КЕРІВНИЦТВО",
   "dashboard.switchToAnalyst": "Перейти в режим аналітика",
   "dashboard.overview": "Огляд",
   "dashboard.cases": "Справи",
@@ -22,7 +22,6 @@
   "dashboard.untitledChat": "Чат без назви",
   "dashboard.general": "Загальне",
   "dashboard.messagesCount": "{{count}} повідомлень",
-
   "investigations.all": "Усі",
   "investigations.active": "Активні",
   "investigations.closed": "Закриті",
@@ -33,7 +32,6 @@
   "investigations.events": "Події",
   "investigations.boards": "Дошки",
   "investigations.iocs": "IOC",
-
   "detail.share": "Поділитися",
   "detail.created": "Створено {{date}}",
   "detail.taskProgress": "Прогрес завдань",
@@ -42,13 +40,11 @@
   "detail.todo": "{{count}} до виконання",
   "detail.recentActivity": "Остання активність",
   "detail.openInAnalystMode": "Відкрити в режимі аналітика",
-
   "notes.untitled": "Без назви",
   "notes.created": "Створено {{date}}",
   "notes.updated": "Оновлено {{date}}",
   "notes.iocDetected": "{{count}} IOC виявлено",
   "notes.iocsDetected": "{{count}} IOC виявлено",
-
   "tasks.untitled": "Без назви",
   "tasks.created": "Створено {{date}}",
   "tasks.updated": "Оновлено {{date}}",
@@ -60,14 +56,12 @@
   "tasks.inProgress": "У процесі",
   "tasks.done": "Виконано",
   "tasks.comments": "Коментарі ({{count}})",
-
   "events.untitled": "Без назви",
   "events.timestamp": "Мітка часу {{date}}",
   "events.end": "Кінець {{date}}",
   "events.source": "Джерело: {{source}}",
   "events.actor": "Актор:",
   "events.assets": "Активи:",
-
   "iocs.created": "Створено {{date}}",
   "iocs.updated": "Оновлено {{date}}",
   "iocs.attribution": "Атрибуція: {{value}}",
@@ -81,27 +75,22 @@
   "iocs.linkedTasksPlural": "{{count}} пов'язаних завдань",
   "iocs.linkedEvents": "{{count}} пов'язана подія",
   "iocs.linkedEventsPlural": "{{count}} пов'язаних подій",
-
   "chat.untitledChat": "Чат без назви",
   "chat.messagesCount": "{{count}} повідомлень",
   "chat.created": "Створено {{date}}",
   "chat.noMessages": "Повідомлень у цьому треді немає",
-
   "global.noItemsFound": "Елементів не знайдено",
   "global.unfiled": "Без папки",
-
   "entities.inFolder": "у {{name}}",
   "entities.noEntities": "Немає {{type}} у цьому розслідуванні",
   "entities.elementCount": "{{count}} елемент",
   "entities.elementCountPlural": "{{count}} елементів",
   "entities.openInAnalyst": "Відкрити в аналітику",
-
   "activity.noRecentActivity": "Останньої активності немає",
   "activity.today": "Сьогодні",
   "activity.yesterday": "Вчора",
   "activity.thisWeek": "Цього тижня",
   "activity.older": "Раніше",
-
   "share.title": "Поділитися",
   "share.encryptWithPassword": "Зашифрувати паролем",
   "share.enterPassword": "Введіть пароль...",
@@ -137,7 +126,6 @@
   "share.scopeIoc": "IOC",
   "share.scopeInvestigation": "Розслідування",
   "share.scopeChat": "Чат",
-
   "share.shared": "СПІЛЬНИЙ",
   "share.saveToThreatCaddy": "Зберегти в ThreatCaddy",
   "share.saving": "Збереження...",
@@ -153,18 +141,14 @@
   "share.messageCountPlural": "{{count}} повідомлень",
   "share.youLabel": "Ви",
   "share.caddyAI": "CaddyAI",
-
   "search.filterPlaceholder": "Фільтр...",
-
   "graph.notes": "Нотатки",
   "graph.iocs": "IOC",
   "graph.tasks": "Завдання",
   "graph.events": "Події",
-
   "nav.prev": "Попер.",
   "nav.next": "Наст.",
   "nav.ofTotal": "{{current}} з {{total}}",
-
   "breadcrumb.investigations": "Розслідування",
   "breadcrumb.overview": "Огляд",
   "breadcrumb.allNotes": "Усі нотатки",
@@ -177,11 +161,11 @@
   "breadcrumb.task": "Завдання",
   "breadcrumb.event": "Подія",
   "breadcrumb.chat": "Чат",
-
   "metrics.notes": "Нотатки",
   "metrics.openTasks": "Відкриті завдання",
   "metrics.iocsTracked": "IOC відстежено",
   "metrics.eventsThisWeek": "Події цього тижня",
   "metrics.aiChats": "ІІ-чати",
-  "metrics.graphNodes": "Вузли графу"
+  "metrics.graphNodes": "Вузли графу",
+  "dashboard.backToExecView": "Назад до Огляду керівництва"
 }

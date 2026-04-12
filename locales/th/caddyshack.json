@@ -1,5 +1,5 @@
 {
-  "feed.title": "CaddyShack",
+  "feed.title": "ฟีดทีม",
   "feed.newPost": "โพสต์ใหม่",
   "feed.searchPlaceholder": "ค้นหาโพสต์...",
   "feed.noPostsYet": "ยังไม่มีโพสต์",
@@ -11,7 +11,6 @@
   "feed.filterAll": "ทั้งหมด",
   "feed.filterMentions": "การกล่าวถึง",
   "feed.filterPinned": "ที่ปักหมุด",
-
   "post.edited": "(แก้ไขแล้ว)",
   "post.pinned": "ปักหมุด",
   "post.reply": "ตอบกลับ",
@@ -28,7 +27,6 @@
   "post.deleteTitle": "ลบโพสต์",
   "post.deleteMessage": "ต้องการลบโพสต์นี้ใช่ไหม? การกระทำนี้ไม่สามารถยกเลิกได้",
   "post.deleteConfirm": "ลบ",
-
   "compose.placeholder": "แบ่งปันบางอย่างกับทีม...",
   "compose.replyPlaceholder": "เขียนการตอบกลับ...",
   "compose.send": "ส่ง",
@@ -39,7 +37,6 @@
   "compose.editPost": "แก้ไขโพสต์",
   "compose.save": "บันทึก",
   "compose.cancel": "ยกเลิก",
-
   "notifications.title": "การแจ้งเตือน",
   "notifications.markAllRead": "ทำเครื่องหมายว่าอ่านทั้งหมด",
   "notifications.clearAll": "ล้างทั้งหมด",
@@ -49,7 +46,6 @@
   "notifications.reaction": "{{author}} แสดงปฏิกิริยาต่อโพสต์ของคุณ",
   "notifications.invite": "{{author}} เชิญคุณเข้าร่วมการสืบสวน \"{{investigation}}\"",
   "notifications.bot": "การแจ้งเตือนบอต: {{message}}",
-
   "presence.online": "ออนไลน์",
   "presence.away": "ไม่อยู่",
   "presence.workingOn": "กำลังทำงาน: {{investigation}}",

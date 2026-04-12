@@ -2,7 +2,7 @@
   "placeholder": "검색...",
   "globalSearch": "전체 검색",
   "searchPlaceholder": "노트, 태스크, IOC, 이벤트, 조사 검색...",
-  "noResults": "결과 없음",
+  "noResults": "결과를 찾을 수 없습니다 — 다른 키워드를 시도해 보세요",
   "noResultsFor": "\"{{query}}\"에 대한 결과 없음",
   "resultsFor": "\"{{query}}\" 검색 결과",
   "resultCount": "{{count}}개 결과",

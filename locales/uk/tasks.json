@@ -5,11 +5,9 @@
   "priority.lowFull": "Низький",
   "priority.mediumFull": "Середній",
   "priority.highFull": "Високий",
-
   "status.todo": "До виконання",
   "status.inProgress": "У процесі",
   "status.done": "Виконано",
-
   "list.title": "Завдання",
   "list.titleWithScope": "Завдання — {{scope}} ({{count}})",
   "list.titleWithCount": "Завдання ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "Натисніть «Нове завдання» або Ctrl+Shift+T",
   "list.editTaskModal": "Редагувати завдання",
   "list.createTaskModal": "Створити завдання",
-
   "item.markIncomplete": "Відмітити незавершеним",
   "item.markComplete": "Відмітити завершеним",
   "item.untitled": "Завдання без назви",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "Видалити завдання",
   "item.confirmDeleteMessage": "Це завдання буде видалено назавжди. Відмінити неможливо.",
   "item.confirmDeleteLabel": "Видалити завдання",
-
   "form.titleLabel": "Заголовок",
   "form.titlePlaceholder": "Назва завдання...",
   "form.titleRequired": "Назва завдання обов'язкова",
@@ -81,10 +77,11 @@
   "form.relativeTime.minutesAgo": "{{count}}хв тому",
   "form.relativeTime.hoursAgo": "{{count}}год тому",
   "form.relativeTime.daysAgo": "{{count}}д тому",
-
   "kanban.boardLabel": "Канбан-дошка",
   "kanban.columnLabel": "Колонка {{label}}, {{count}} завдань",
   "kanban.changeStatus": "Змінити статус {{title}}",
   "kanban.noTasks": "Немає завдань",
-  "kanban.dropHere": "Перетягніть завдання сюди"
+  "kanban.dropHere": "Перетягніть завдання сюди",
+  "emptyState": "Завдань поки немає — створіть перше",
+  "createFirst": "Створіть своє перше завдання"
 }

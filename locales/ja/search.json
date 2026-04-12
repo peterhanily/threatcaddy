@@ -12,7 +12,7 @@
   "clear": "クリア",
   "resultCount": "{{count}} 件の結果",
   "resultCountPlural": "{{count}} 件の結果",
-  "noResults": "「{{query}}」の結果が見つかりません",
+  "noResults": "結果が見つかりません — 別のキーワードをお試しください",
   "types": "タイプ：",
   "date": "日付",
   "created": "作成",

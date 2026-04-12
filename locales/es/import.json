@@ -8,7 +8,7 @@
   "columns": "{{count}} columnas",
   "truncated": "Truncado a 10.000 filas",
   "investigationFolder": "Carpeta de investigación",
-  "noFolder": "Sin carpeta",
+  "noFolder": "Sin investigación",
   "timeline": "Cronología",
   "allEventsFirst": "Todos los eventos (primero disponible)",
   "newTimeline": "+ Nueva cronología...",

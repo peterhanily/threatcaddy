@@ -15,12 +15,10 @@
   "builtinTemplate.cloudAccount.name": "Bulut Hesabı Ayrıntıları",
   "builtinTemplate.ociUser.name": "OCI Kullanıcı Ayrıntıları",
   "builtinTemplate.ociTenancy.name": "OCI Kiracı Ayrıntıları",
-
   "builtinTemplateCategory.general": "Genel",
   "builtinTemplateCategory.investigation": "Soruşturma",
   "builtinTemplateCategory.incidentResponse": "Olay Müdahalesi",
   "builtinTemplateCategory.cloud": "Bulut",
-
   "card": {
     "moveToTrash": "Çöpe taşı",
     "moveToTrashAria": "Notu çöpe taşı",
@@ -170,5 +168,7 @@
     "categoryBlocks": "Bloklar",
     "categoryThreatIntel": "Tehdit İstihbaratı",
     "categoryInsert": "Ekle"
-  }
+  },
+  "emptyState": "Henüz not yok — başlamak için bir tane oluşturun",
+  "createFirst": "İlk notunuzu oluşturun"
 }

@@ -5,11 +5,9 @@
   "priority.lowFull": "Baixa",
   "priority.mediumFull": "Média",
   "priority.highFull": "Alta",
-
   "status.todo": "A fazer",
   "status.inProgress": "Em andamento",
   "status.done": "Concluído",
-
   "list.title": "Tarefas",
   "list.titleWithScope": "Tarefas — {{scope}} ({{count}})",
   "list.titleWithCount": "Tarefas ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "Clique em \"Nova tarefa\" ou pressione Ctrl+Shift+T",
   "list.editTaskModal": "Editar tarefa",
   "list.createTaskModal": "Criar tarefa",
-
   "item.markIncomplete": "Marcar como incompleta",
   "item.markComplete": "Marcar como concluída",
   "item.untitled": "Tarefa sem título",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "Excluir tarefa",
   "item.confirmDeleteMessage": "Esta tarefa será excluída permanentemente. Essa ação não pode ser desfeita.",
   "item.confirmDeleteLabel": "Excluir tarefa",
-
   "form.titleLabel": "Título",
   "form.titlePlaceholder": "Título da tarefa...",
   "form.titleRequired": "O título da tarefa é obrigatório",
@@ -81,10 +77,11 @@
   "form.relativeTime.minutesAgo": "há {{count}} min",
   "form.relativeTime.hoursAgo": "há {{count}} h",
   "form.relativeTime.daysAgo": "há {{count}} dias",
-
   "kanban.boardLabel": "Quadro kanban",
   "kanban.columnLabel": "Coluna {{label}}, {{count}} tarefas",
   "kanban.changeStatus": "Alterar status de {{title}}",
   "kanban.noTasks": "Sem tarefas",
-  "kanban.dropHere": "Soltar tarefas aqui"
+  "kanban.dropHere": "Soltar tarefas aqui",
+  "emptyState": "Nenhuma tarefa ainda — crie uma para começar",
+  "createFirst": "Crie sua primeira tarefa"
 }

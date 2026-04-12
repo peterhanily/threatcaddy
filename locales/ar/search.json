@@ -12,7 +12,7 @@
   "clear": "مسح",
   "resultCount": "{{count}} نتيجة",
   "resultCountPlural": "{{count}} نتائج",
-  "noResults": "لم يتم العثور على نتائج لـ \"{{query}}\"",
+  "noResults": "لم يتم العثور على نتائج — جرب كلمات مفتاحية مختلفة",
   "types": "الأنواع:",
   "date": "التاريخ",
   "created": "تم الإنشاء",

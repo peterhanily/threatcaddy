@@ -1,7 +1,6 @@
 {
   "title": "Ayarlar",
   "closeSettings": "Ayarları kapat",
-
   "tabs.general": "Genel",
   "tabs.appearance": "Görünüm",
   "tabs.ai": "AI",
@@ -11,7 +10,6 @@
   "tabs.intel": "İstihbarat",
   "tabs.integrations": "Entegrasyonlar",
   "tabs.shortcuts": "Kısayollar",
-
   "general.identity": "Kimliğiniz",
   "general.displayName": "Görünen Ad",
   "general.displayNamePlaceholder": "Adınız (oluşturduğunuz varlıklarda gösterilir)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "Güncelleme indirilemedi. En son sürümü almak için https://threatcaddy.com adresini ziyaret edin.",
   "general.downloadStandalone": "Bağımsız Sürümü İndir",
   "general.privacy": "Gizlilik",
-
   "appearance.theme": "Tema",
   "appearance.mode": "Mod",
   "appearance.dark": "Koyu",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "Görüntü kaydedilemedi",
   "appearance.bgRemoved": "Arka plan görüntüsü kaldırıldı",
   "appearance.bgRemoveFailed": "Görüntü kaldırılamadı",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "Anthropic API Anahtarı",
   "ai.openaiKey": "OpenAI API Anahtarı",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "Komut adı (örn. benim-triyajım)",
   "ai.commandDescPlaceholder": "Açıklama (eğik çizgi menüsünde gösterilir)",
   "ai.commandTemplatePlaceholder": "İstem şablonu. Kullanıcı argümanları için {{input}} kullanın.\n\nÖrnek: Bu uyarıyı IOC'ler için analiz edin ve bir triyaj raporu oluşturun:\n\n{{input}}",
-
   "agents.supervisor": "Süpervizör Ajan",
   "agents.supervisorDesc": "Çapraz soruşturma analizi — paylaşılan IOC'leri, durağan vakaları ve iş yükünüzdeki örüntüleri tespit eder.",
   "agents.enableSupervisor": "Süpervizörü Etkinleştir",
   "agents.supervisorInterval": "Her {{minutes}} dakikada bir çalışır",
   "agents.supervisorAriaLabel": "Süpervizör ajanı etkinleştir",
   "agents.interval": "Aralık",
-
   "agents.hosts": "Ajan Sunucuları",
   "agents.hostsDesc": "REST API aracılığıyla beceriler sunan harici ajan sunucularını bağlayın (Claude Code, özel çalışma zamanları). Keşfedilen beceriler LLM araçları olarak kullanılabilir hale gelir.",
   "agents.refreshAll": "Tümünü Yenile",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "Önbelleğe alınmış beceri yok. Mevcut becerileri keşfetmek için \"Becerileri Getir\"e tıklayın.",
   "agents.skillsLastFetched": "{{count}} beceri{{plural}} — son getirilme {{date}}",
   "agents.params": "parametreler: {{params}}",
-
   "data.exportImportTitle": "Dışa ve İçe Aktar",
   "data.exportJSON": "JSON Yedeği Dışa Aktar",
   "data.exportMarkdown": "Markdown Dışa Aktar",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "{{count}} not Markdown olarak dışa aktarıldı",
   "data.importedCounts": "{{notes}} not, {{tasks}} görev, {{folders}} soruşturma, {{tags}} etiket içe aktarıldı",
   "data.importBackupTitle": "Yedeği İçe Aktar",
-  "data.importBackupMessage": "Bu işlem mevcut tüm notlarınızı, görevlerinizi, klasörlerinizi ve etiketlerinizi içe aktarılan verilerle değiştirecek. Bu işlem geri alınamaz.",
+  "data.importBackupMessage": "Bu işlem mevcut tüm notlarınızı, görevlerinizi, soruşturmalarınızı ve etiketlerinizi içe aktarılan verilerle değiştirecek. Bu işlem geri alınamaz.",
   "data.importReplace": "İçe Aktar ve Değiştir",
   "data.importedMarkdown": "Markdown'dan {{count}} not içe aktarıldı",
-
   "data.mdImportTitle": "Markdown İçe Aktar",
   "data.mdPreviewTitle": "İçe Aktarma Önizlemesi",
   "data.mdCompleteTitle": "İçe Aktarma Tamamlandı",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "{{count}} notu içe aktar",
   "data.mdImportedSuccess_one": "{{count}} not başarıyla içe aktarıldı",
   "data.mdImportedSuccess_other": "{{count}} not başarıyla içe aktarıldı",
-
   "encryption.title": "Sunucu Şifreli Yedekler",
   "encryption.connectPrompt": "Şifreli yedekler kullanmak için bir ekip sunucusuna bağlanın.",
   "encryption.description": "Sunucuda saklanan şifreyle korunan yedekler. Yöneticiler bile okuyamaz.",
@@ -233,7 +224,6 @@
   "encryption.merge": "Birleştir",
   "encryption.deleteConfirmTitle": "Yedeği Sil",
   "encryption.deleteConfirmMessage": "Bu işlem bu şifreli yedeği sunucudan kalıcı olarak silecek. Bu işlem geri alınamaz.",
-
   "cloud.title": "Bulut Yedeği",
   "cloud.addDestination": "Hedef Ekle",
   "cloud.provider": "Sağlayıcı",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "Bu işlem tüm veritabanınızı {{count}} bulut hedefine yükleyecek. Devam edilsin mi?",
   "cloud.encryptedPushSuccess": "Şifreli yedek başarıyla iletildi",
   "cloud.pushSuccess": "Yedek başarıyla iletildi",
-
   "templates.noteTemplates": "Not Şablonları",
   "templates.summary": "{{custom}} özel, {{builtin}} yerleşik",
   "templates.description": "Şablonlar notları yapılandırılmış içerikle önceden doldurur. Yerleşik şablonlar çoğaltılabilir ve özelleştirilebilir.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "\"{{name}}\" şablonu oluşturuldu",
   "templates.deletedToast": "\"{{name}}\" şablonu silindi",
   "templates.saveFailed": "Şablon kaydedilemedi",
-
   "templates.playbooks": "Soruşturma Playbook'ları",
   "templates.playbooksDesc": "Playbook'lar yeni soruşturmaları görevler ve notlarla otomatik doldurur. Playbook'tan başlamak için kenar çubuğundaki kitap simgesini kullanın.",
   "templates.yourPlaybooks": "Playbook'larınız",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "\"{{name}}\" playbook'u oluşturuldu",
   "templates.playbookDeletedToast": "\"{{name}}\" playbook'u silindi",
   "templates.playbookSaveFailed": "Playbook kaydedilemedi",
-
   "intel.title": "Tehdit İstihbaratı Yapılandırması",
   "intel.extractionBehavior": "Çıkarım Davranışı",
   "intel.autoExtract": "İçerikten IOC'leri otomatik çıkar",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "Özel İlişki Türü Ekle",
   "intel.configImported": "Yapılandırma içe aktarıldı",
   "intel.invalidConfigFile": "Geçersiz JSON yapılandırma dosyası",
-
   "shortcuts.title": "Klavye Kısayolları",
   "shortcuts.newNote": "Yeni not / Hızlı yakalama",
   "shortcuts.focusSearch": "Aramaya odaklan",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "Klavye kısayollarını göster",
   "shortcuts.switchView": "Görünümü değiştir (Notlar/Görevler/Zaman Çizelgesi/Beyaz Tahta)",
   "shortcuts.closeModals": "Modalları kapat",
-
   "server.teamServer": "Ekip Sunucusu",
   "server.connected": "Bağlandı",
   "server.serverLabel": "Sunucu",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "Sunucu bağlantısı kesildi",
   "server.savedServers": "Kaydedilmiş Sunucular",
   "server.deleteSavedServer": "Kaydedilmiş sunucuyu sil",
-
   "server.onboarding.welcome": "{{name}}'e Hoş Geldiniz!",
   "server.onboarding.intro": "Ekip sunucunuza bağlandınız. Yapabilecekleriniz:",
   "server.onboarding.sharedInvestigations": "Paylaşılan Soruşturmalar",
   "server.onboarding.sharedInvestigationsDesc": "Ekibinizle vakalarda işbirliği yapın — gerçek zamanlı olarak notlar, görevler, zaman çizelgeleri ve IOC'ler paylaşın.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "Takım Akışı",
   "server.onboarding.caddyShackDesc": "SOC'unuz için ekip tartışma akışı. Güncellemeler yayınlayın, bulgular paylaşın ve takım arkadaşlarınızın gönderilerine tepki verin.",
   "server.onboarding.realTimeSync": "Gerçek Zamanlı Senkronizasyon",
   "server.onboarding.realTimeSyncDesc": "Notlarınız, görevleriniz ve IOC'leriniz tüm bağlı ekip üyelerinde otomatik olarak senkronize edilir.",

@@ -12,7 +12,7 @@
   "clear": "Hapus",
   "resultCount": "{{count}} hasil",
   "resultCountPlural": "{{count}} hasil",
-  "noResults": "Tidak ada hasil untuk \"{{query}}\"",
+  "noResults": "Tidak ada hasil ditemukan — coba kata kunci lain",
   "types": "Jenis:",
   "date": "Tanggal",
   "created": "Dibuat",

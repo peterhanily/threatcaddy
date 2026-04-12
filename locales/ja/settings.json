@@ -1,7 +1,6 @@
 {
   "title": "設定",
   "closeSettings": "設定を閉じる",
-
   "tabs.general": "一般",
   "tabs.appearance": "外観",
   "tabs.ai": "AI",
@@ -11,7 +10,6 @@
   "tabs.intel": "インテル",
   "tabs.integrations": "インテグレーション",
   "tabs.shortcuts": "ショートカット",
-
   "general.identity": "あなたのID",
   "general.displayName": "表示名",
   "general.displayNamePlaceholder": "名前（作成したエンティティに表示されます）",
@@ -51,7 +49,6 @@
   "general.updateFailed": "アップデートのダウンロードに失敗しました。最新版は https://threatcaddy.com をご覧ください。",
   "general.downloadStandalone": "スタンドアロン版をダウンロード",
   "general.privacy": "プライバシー",
-
   "appearance.theme": "テーマ",
   "appearance.mode": "モード",
   "appearance.dark": "ダーク",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "画像の保存に失敗しました",
   "appearance.bgRemoved": "背景画像を削除しました",
   "appearance.bgRemoveFailed": "画像の削除に失敗しました",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "Anthropic APIキー",
   "ai.openaiKey": "OpenAI APIキー",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "コマンド名（例: mytriage）",
   "ai.commandDescPlaceholder": "説明（スラッシュメニューに表示）",
   "ai.commandTemplatePlaceholder": "プロンプトテンプレート。ユーザー引数には {{input}} を使用。\n\n例: このアラートのIOCを分析してトリアージレポートを作成:\n\n{{input}}",
-
   "agents.supervisor": "スーパーバイザーエージェント",
   "agents.supervisorDesc": "クロス調査分析 — 調査全体にわたって共有IOC、停滞したケース、パターンを検出します。",
   "agents.enableSupervisor": "スーパーバイザーを有効化",
   "agents.supervisorInterval": "{{minutes}} 分ごとに実行",
   "agents.supervisorAriaLabel": "スーパーバイザーエージェントを有効化",
   "agents.interval": "インターバル",
-
   "agents.hosts": "エージェントホスト",
   "agents.hostsDesc": "REST API経由でスキルを公開する外部エージェントホスト（Claude Code、カスタムランタイム）に接続します。検出されたスキルはLLMツールとして利用可能になります。",
   "agents.refreshAll": "すべて更新",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "スキルがキャッシュされていません。「スキルを取得」をクリックして利用可能なスキルを検出してください。",
   "agents.skillsLastFetched": "{{count}} 件のスキル — 最終取得 {{date}}",
   "agents.params": "パラメーター: {{params}}",
-
   "data.exportImportTitle": "エクスポート & インポート",
   "data.exportJSON": "JSONバックアップをエクスポート",
   "data.exportMarkdown": "Markdownをエクスポート",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "{{count}} 件のノートをMarkdownとしてエクスポートしました",
   "data.importedCounts": "{{notes}} 件のノート、{{tasks}} 件のタスク、{{folders}} 件の調査、{{tags}} 件のタグをインポートしました",
   "data.importBackupTitle": "バックアップをインポート",
-  "data.importBackupMessage": "現在のすべてのノート、タスク、フォルダー、タグがインポートしたデータに置き換えられます。この操作は元に戻せません。",
+  "data.importBackupMessage": "現在のすべてのノート、タスク、調査、タグがインポートしたデータに置き換えられます。この操作は元に戻せません。",
   "data.importReplace": "インポートして置き換え",
   "data.importedMarkdown": "Markdownから {{count}} 件のノートをインポートしました",
-
   "data.mdImportTitle": "Markdownをインポート",
   "data.mdPreviewTitle": "インポートをプレビュー",
   "data.mdCompleteTitle": "インポート完了",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "{{count}} 件のノートをインポート",
   "data.mdImportedSuccess_one": "{{count}} 件のノートを正常にインポートしました",
   "data.mdImportedSuccess_other": "{{count}} 件のノートを正常にインポートしました",
-
   "encryption.title": "サーバー暗号化バックアップ",
   "encryption.connectPrompt": "暗号化バックアップを使用するにはチームサーバーに接続してください。",
   "encryption.description": "サーバーに保存されたパスワード保護バックアップ。管理者でも読めません。",
@@ -233,7 +224,6 @@
   "encryption.merge": "マージ",
   "encryption.deleteConfirmTitle": "バックアップを削除",
   "encryption.deleteConfirmMessage": "この暗号化バックアップはサーバーから完全に削除されます。この操作は元に戻せません。",
-
   "cloud.title": "クラウドバックアップ",
   "cloud.addDestination": "送信先を追加",
   "cloud.provider": "プロバイダー",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "データベース全体を {{count}} 件のクラウド送信先にアップロードします。続行しますか？",
   "cloud.encryptedPushSuccess": "暗号化バックアップを正常にプッシュしました",
   "cloud.pushSuccess": "バックアップを正常にプッシュしました",
-
   "templates.noteTemplates": "ノートテンプレート",
   "templates.summary": "カスタム {{custom}}、組み込み {{builtin}}",
   "templates.description": "テンプレートはノートに構造化コンテンツを事前入力します。組み込みテンプレートは複製してカスタマイズできます。",
@@ -283,7 +272,6 @@
   "templates.createdToast": "テンプレート「{{name}}」を作成しました",
   "templates.deletedToast": "テンプレート「{{name}}」を削除しました",
   "templates.saveFailed": "テンプレートの保存に失敗しました",
-
   "templates.playbooks": "調査プレイブック",
   "templates.playbooksDesc": "プレイブックは新しい調査にタスクとノートを自動入力します。サイドバーの本のアイコンを使用してプレイブックから開始します。",
   "templates.yourPlaybooks": "あなたのプレイブック",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "プレイブック「{{name}}」を作成しました",
   "templates.playbookDeletedToast": "プレイブック「{{name}}」を削除しました",
   "templates.playbookSaveFailed": "プレイブックの保存に失敗しました",
-
   "intel.title": "脅威インテル設定",
   "intel.extractionBehavior": "抽出動作",
   "intel.autoExtract": "コンテンツからIOCを自動抽出",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "カスタム関係タイプを追加",
   "intel.configImported": "設定をインポートしました",
   "intel.invalidConfigFile": "無効なJSON設定ファイル",
-
   "shortcuts.title": "キーボードショートカット",
   "shortcuts.newNote": "新規ノート / クイックキャプチャ",
   "shortcuts.focusSearch": "検索にフォーカス",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "キーボードショートカットを表示",
   "shortcuts.switchView": "ビューを切り替え（ノート/タスク/タイムライン/ホワイトボード）",
   "shortcuts.closeModals": "モーダルを閉じる",
-
   "server.teamServer": "チームサーバー",
   "server.connected": "接続済み",
   "server.serverLabel": "サーバー",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "サーバーから切断しました",
   "server.savedServers": "保存されたサーバー",
   "server.deleteSavedServer": "保存されたサーバーを削除",
-
   "server.onboarding.welcome": "{{name}} へようこそ！",
   "server.onboarding.intro": "チームサーバーに接続しました。以下のことが可能です:",
   "server.onboarding.sharedInvestigations": "共有調査",
   "server.onboarding.sharedInvestigationsDesc": "チームとケースで共同作業——リアルタイムでノート、タスク、タイムライン、IOCを共有。",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "チームフィード",
   "server.onboarding.caddyShackDesc": "SOC向けチームディスカッションフィード。更新を投稿し、発見事項を共有し、チームメンバーの投稿にリアクションします。",
   "server.onboarding.realTimeSync": "リアルタイム同期",
   "server.onboarding.realTimeSyncDesc": "ノート、タスク、IOCは接続されたすべてのチームメンバー間で自動同期します。",

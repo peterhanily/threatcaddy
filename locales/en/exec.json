@@ -1,6 +1,6 @@
 {
   "dashboard.appName": "ThreatCaddy",
-  "dashboard.exec": "EXEC",
+  "dashboard.exec": "EXECUTIVE",
   "dashboard.switchToAnalyst": "Switch to Analyst Mode",
   "dashboard.overview": "Overview",
   "dashboard.cases": "Cases",
@@ -16,13 +16,12 @@
   "dashboard.activeAgents": "Active Agents",
   "dashboard.recentActivity": "Recent Activity",
   "dashboard.entityGraphDescription": "Entity graph nodes across all investigations.",
-  "dashboard.totalNodes": "{{count}} total nodes \u00b7 Open full graph in Analyst Mode",
+  "dashboard.totalNodes": "{{count}} total nodes · Open full graph in Analyst Mode",
   "dashboard.openInteractiveGraph": "Open Interactive Graph",
   "dashboard.noChatThreads": "No chat threads",
   "dashboard.untitledChat": "Untitled Chat",
   "dashboard.general": "General",
   "dashboard.messagesCount": "{{count}} messages",
-
   "investigations.all": "All",
   "investigations.active": "Active",
   "investigations.closed": "Closed",
@@ -33,7 +32,6 @@
   "investigations.events": "Events",
   "investigations.boards": "Boards",
   "investigations.iocs": "IOCs",
-
   "detail.share": "Share",
   "detail.created": "Created {{date}}",
   "detail.taskProgress": "Task Progress",
@@ -42,13 +40,11 @@
   "detail.todo": "{{count}} todo",
   "detail.recentActivity": "Recent Activity",
   "detail.openInAnalystMode": "Open in Analyst Mode",
-
   "notes.untitled": "Untitled",
   "notes.created": "Created {{date}}",
   "notes.updated": "Updated {{date}}",
   "notes.iocDetected": "{{count}} IOC detected",
   "notes.iocsDetected": "{{count}} IOCs detected",
-
   "tasks.untitled": "Untitled",
   "tasks.created": "Created {{date}}",
   "tasks.updated": "Updated {{date}}",
@@ -60,14 +56,12 @@
   "tasks.inProgress": "In Progress",
   "tasks.done": "Done",
   "tasks.comments": "Comments ({{count}})",
-
   "events.untitled": "Untitled",
   "events.timestamp": "Timestamp {{date}}",
   "events.end": "End {{date}}",
   "events.source": "Source: {{source}}",
   "events.actor": "Actor:",
   "events.assets": "Assets:",
-
   "iocs.created": "Created {{date}}",
   "iocs.updated": "Updated {{date}}",
   "iocs.attribution": "Attribution: {{value}}",
@@ -81,27 +75,22 @@
   "iocs.linkedTasksPlural": "{{count}} linked tasks",
   "iocs.linkedEvents": "{{count}} linked event",
   "iocs.linkedEventsPlural": "{{count}} linked events",
-
   "chat.untitledChat": "Untitled Chat",
   "chat.messagesCount": "{{count}} messages",
   "chat.created": "Created {{date}}",
   "chat.noMessages": "No messages in this thread",
-
   "global.noItemsFound": "No items found",
   "global.unfiled": "Unfiled",
-
   "entities.inFolder": "in {{name}}",
   "entities.noEntities": "No {{type}} in this investigation",
   "entities.elementCount": "{{count}} element",
   "entities.elementCountPlural": "{{count}} elements",
   "entities.openInAnalyst": "Open in Analyst",
-
   "activity.noRecentActivity": "No recent activity",
   "activity.today": "Today",
   "activity.yesterday": "Yesterday",
   "activity.thisWeek": "This Week",
   "activity.older": "Older",
-
   "share.title": "Share",
   "share.encryptWithPassword": "Encrypt with password",
   "share.enterPassword": "Enter password...",
@@ -118,7 +107,7 @@
   "share.notSynced": "This investigation hasn't been synced to the server yet. Sync it first to manage team members.",
   "share.syncNow": "Sync Now",
   "share.syncing": "Syncing...",
-  "share.syncFailed": "Sync failed \u2014 please try again",
+  "share.syncFailed": "Sync failed — please try again",
   "share.emailPlaceholder": "Email address...",
   "share.viewer": "Viewer",
   "share.editor": "Editor",
@@ -137,7 +126,6 @@
   "share.scopeIoc": "IOC",
   "share.scopeInvestigation": "Investigation",
   "share.scopeChat": "Chat",
-
   "share.shared": "SHARED",
   "share.saveToThreatCaddy": "Save to ThreatCaddy",
   "share.saving": "Saving...",
@@ -153,18 +141,14 @@
   "share.messageCountPlural": "{{count}} messages",
   "share.youLabel": "You",
   "share.caddyAI": "CaddyAI",
-
   "search.filterPlaceholder": "Filter...",
-
   "graph.notes": "Notes",
   "graph.iocs": "IOCs",
   "graph.tasks": "Tasks",
   "graph.events": "Events",
-
   "nav.prev": "Prev",
   "nav.next": "Next",
   "nav.ofTotal": "{{current}} of {{total}}",
-
   "breadcrumb.investigations": "Investigations",
   "breadcrumb.overview": "Overview",
   "breadcrumb.allNotes": "All Notes",
@@ -177,11 +161,11 @@
   "breadcrumb.task": "Task",
   "breadcrumb.event": "Event",
   "breadcrumb.chat": "Chat",
-
   "metrics.notes": "Notes",
   "metrics.openTasks": "Open Tasks",
   "metrics.iocsTracked": "IOCs Tracked",
   "metrics.eventsThisWeek": "Events This Week",
   "metrics.aiChats": "AI Chats",
-  "metrics.graphNodes": "Graph Nodes"
+  "metrics.graphNodes": "Graph Nodes",
+  "dashboard.backToExecView": "Back to Executive View"
 }

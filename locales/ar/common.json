@@ -28,6 +28,7 @@
   "untitled": "بدون عنوان",
   "error.generic": "حدث خطأ ما",
   "error.notFound": "غير موجود",
+  "error.unexpectedDetail": "حدث خطأ غير متوقع.",
   "error.reloadHint": "جرّب إعادة تحميل هذا القسم أو تحديث الصفحة. إذا استمرت المشكلة، انسخ تفاصيل الخطأ وأبلغ عن المشكلة.",
   "error.copyDetails": "نسخ تفاصيل الخطأ",
   "reload": "إعادة تحميل",
@@ -44,7 +45,6 @@
   "quickCapture.createNote": "إنشاء ملاحظة",
   "quickCapture.customBadge": "مخصص",
   "skipToMainContent": "التخطي إلى المحتوى الرئيسي",
-
   "createDropdown.createNew": "إنشاء جديد...",
   "createDropdown.new": "جديد",
   "createDropdown.createItem": "إنشاء {{item}}",
@@ -56,7 +56,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "فتح ملف",
   "createDropdown.importData": "استيراد البيانات",
-
   "shortcuts.title": "اختصارات لوحة المفاتيح",
   "shortcuts.general": "عام",
   "shortcuts.openSearch": "فتح البحث",
@@ -76,7 +75,6 @@
   "shortcuts.switchToTasks": "التبديل إلى المهام",
   "shortcuts.switchToTimeline": "التبديل إلى الجدول الزمني",
   "shortcuts.switchToWhiteboards": "التبديل إلى الألواح البيضاء",
-
   "entityLinker.linkEntities": "ربط الكيانات",
   "entityLinker.searchPlaceholder": "البحث عن كيانات للربط...",
   "entityLinker.linked": "مرتبط",
@@ -85,7 +83,6 @@
   "entityLinker.note": "ملاحظة",
   "entityLinker.task": "مهمة",
   "entityLinker.event": "حدث",
-
   "comments.label": "التعليقات",
   "comments.justNow": "الآن",
   "comments.minutesAgo": "منذ {{count}} د",
@@ -97,7 +94,6 @@
   "comments.editComment": "تعديل التعليق",
   "comments.deleteComment": "حذف التعليق",
   "comments.addPlaceholder": "أضف تعليقًا...",
-
   "sidebar.dashboard": "لوحة التحكم",
   "sidebar.investigations": "التحقيقات",
   "sidebar.notes": "الملاحظات",
@@ -108,7 +104,7 @@
   "sidebar.graph": "الرسم البياني",
   "sidebar.activity": "النشاط",
   "sidebar.caddyAI": "CaddyAI",
-  "sidebar.caddyShack": "CaddyShack",
+  "sidebar.caddyShack": "موجز الفريق",
   "sidebar.agentCaddy": "AgentCaddy",
   "sidebar.settings": "الإعدادات",
   "sidebar.archive": "الأرشيف",
@@ -123,7 +119,6 @@
   "sidebar.downloadStandalone": "تنزيل النسخة المستقلة",
   "sidebar.chromeExtension": "إضافة Chrome",
   "sidebar.privacy": "الخصوصية",
-
   "header.toggleMenu": "تبديل القائمة",
   "header.toggleSidebar": "تبديل الشريط الجانبي",
   "header.localEdition": "الإصدار المحلي",
@@ -146,7 +141,6 @@
   "header.privacy": "الخصوصية",
   "header.saveBackup": "حفظ نسخة احتياطية",
   "header.loadBackup": "تحميل نسخة احتياطية",
-
   "serverError.VALIDATION_FAILED": "فشل التحقق",
   "serverError.EMAIL_ALREADY_REGISTERED": "البريد الإلكتروني مسجل مسبقًا",
   "serverError.INVALID_CREDENTIALS": "بريد إلكتروني أو كلمة مرور غير صحيحة",
@@ -205,5 +199,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "مفتاح webhook غير صالح",
   "serverError.RUN_NOT_FOUND": "التشغيل غير موجود",
   "serverError.INTERNAL_ERROR": "خطأ داخلي في الخادم",
-  "serverError.MISSING_BLOB": "بيانات الملف مفقودة"
+  "serverError.MISSING_BLOB": "بيانات الملف مفقودة",
+  "demoModal.title": "مرحبًا بك في ThreatCaddy",
+  "demoModal.descriptionPrefix": "تم تحميل تحقيق نموذجي",
+  "demoModal.descriptionSuffix": "حتى تتمكن من استكشاف كيفية عمل كل شيء.",
+  "demoModal.whatYouCan": "ما يمكنك فعله:",
+  "demoModal.browseItems": "تصفح الملاحظات والمهام وأحداث الجدول الزمني",
+  "demoModal.viewGraph": "عرض رسم التحقيق وتحليل مؤشرات الاختراق",
+  "demoModal.tryWhiteboard": "تجربة السبورة البيضاء وربط الكيانات",
+  "demoModal.useLinksPrefix": "استخدم",
+  "demoModal.useLinksSuffix": "للربط بين الملاحظات",
+  "demoModal.startExploring": "ابدأ الاستكشاف",
+  "demoModal.guidedTour": "خذ الجولة الإرشادية",
+  "demoModal.deleteDemo": "حذف العرض التوضيحي والبدء من جديد",
+  "demoModal.removeHint": "يمكنك إزالة البيانات النموذجية لاحقًا في الإعدادات."
 }

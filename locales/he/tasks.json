@@ -5,11 +5,9 @@
   "priority.lowFull": "נמוכה",
   "priority.mediumFull": "בינונית",
   "priority.highFull": "גבוהה",
-
   "status.todo": "לביצוע",
   "status.inProgress": "בתהליך",
   "status.done": "הושלם",
-
   "list.title": "משימות",
   "list.titleWithScope": "משימות — {{scope}} ({{count}})",
   "list.titleWithCount": "משימות ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "לחץ \"משימה חדשה\" או הקש Ctrl+Shift+T",
   "list.editTaskModal": "ערוך משימה",
   "list.createTaskModal": "צור משימה",
-
   "item.markIncomplete": "סמן כלא מושלם",
   "item.markComplete": "סמן כמושלם",
   "item.untitled": "משימה ללא כותרת",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "מחק משימה",
   "item.confirmDeleteMessage": "משימה זו תימחק לצמיתות. לא ניתן לבטל פעולה זו.",
   "item.confirmDeleteLabel": "מחק משימה",
-
   "form.titleLabel": "כותרת",
   "form.titlePlaceholder": "כותרת משימה...",
   "form.titleRequired": "כותרת משימה נדרשת",
@@ -81,10 +77,11 @@
   "form.relativeTime.minutesAgo": "לפני {{count}} דקות",
   "form.relativeTime.hoursAgo": "לפני {{count}} שעות",
   "form.relativeTime.daysAgo": "לפני {{count}} ימים",
-
   "kanban.boardLabel": "לוח Kanban",
   "kanban.columnLabel": "עמודת {{label}}, {{count}} משימות",
   "kanban.changeStatus": "שנה סטטוס של {{title}}",
   "kanban.noTasks": "אין משימות",
-  "kanban.dropHere": "שחרר משימות כאן"
+  "kanban.dropHere": "שחרר משימות כאן",
+  "emptyState": "אין עדיין משימות — צרו אחת כדי להתחיל",
+  "createFirst": "צור את המשימה הראשונה שלך"
 }

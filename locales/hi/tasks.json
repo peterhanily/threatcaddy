@@ -5,11 +5,9 @@
   "priority.lowFull": "निम्न",
   "priority.mediumFull": "मध्यम",
   "priority.highFull": "उच्च",
-
   "status.todo": "करना है",
   "status.inProgress": "प्रगति में",
   "status.done": "पूर्ण",
-
   "list.title": "कार्य",
   "list.titleWithScope": "कार्य — {{scope}} ({{count}})",
   "list.titleWithCount": "कार्य ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "«नया कार्य» पर क्लिक करें या Ctrl+Shift+T दबाएं",
   "list.editTaskModal": "कार्य संपादित करें",
   "list.createTaskModal": "कार्य बनाएं",
-
   "item.markIncomplete": "अधूरा चिह्नित करें",
   "item.markComplete": "पूर्ण चिह्नित करें",
   "item.untitled": "बिना शीर्षक कार्य",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "कार्य हटाएं",
   "item.confirmDeleteMessage": "यह कार्य स्थायी रूप से हटा दिया जाएगा। यह क्रिया पूर्ववत नहीं की जा सकती।",
   "item.confirmDeleteLabel": "कार्य हटाएं",
-
   "form.titleLabel": "शीर्षक",
   "form.titlePlaceholder": "कार्य का शीर्षक...",
   "form.titleRequired": "कार्य शीर्षक आवश्यक है",
@@ -81,10 +77,11 @@
   "form.relativeTime.minutesAgo": "{{count}} मिनट पहले",
   "form.relativeTime.hoursAgo": "{{count}} घंटे पहले",
   "form.relativeTime.daysAgo": "{{count}} दिन पहले",
-
   "kanban.boardLabel": "Kanban बोर्ड",
   "kanban.columnLabel": "कॉलम {{label}}, {{count}} कार्य",
   "kanban.changeStatus": "{{title}} की स्थिति बदलें",
   "kanban.noTasks": "कोई कार्य नहीं",
-  "kanban.dropHere": "कार्य यहाँ छोड़ें"
+  "kanban.dropHere": "कार्य यहाँ छोड़ें",
+  "emptyState": "अभी तक कोई कार्य नहीं — शुरू करने के लिए एक बनाएं",
+  "createFirst": "अपना पहला कार्य बनाएं"
 }

@@ -32,7 +32,6 @@
   "error.reloadHint": "Try reloading this section or refreshing the page. If the problem persists, copy the error details and report the issue.",
   "error.copyDetails": "Copy error details",
   "reload": "Reload",
-
   "quickCapture.title": "Create Note",
   "quickCapture.titleLabel": "Title",
   "quickCapture.titlePlaceholder": "Note title...",
@@ -46,7 +45,6 @@
   "quickCapture.createNote": "Create Note",
   "quickCapture.customBadge": "custom",
   "skipToMainContent": "Skip to main content",
-
   "createDropdown.createNew": "Create new...",
   "createDropdown.new": "New",
   "createDropdown.createItem": "Create {{item}}",
@@ -58,7 +56,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "Open File",
   "createDropdown.importData": "Import Data",
-
   "shortcuts.title": "Keyboard Shortcuts",
   "shortcuts.general": "General",
   "shortcuts.openSearch": "Open search",
@@ -78,7 +75,6 @@
   "shortcuts.switchToTasks": "Switch to Tasks",
   "shortcuts.switchToTimeline": "Switch to Timeline",
   "shortcuts.switchToWhiteboards": "Switch to Whiteboards",
-
   "entityLinker.linkEntities": "Link entities",
   "entityLinker.searchPlaceholder": "Search entities to link...",
   "entityLinker.linked": "linked",
@@ -87,7 +83,6 @@
   "entityLinker.note": "Note",
   "entityLinker.task": "Task",
   "entityLinker.event": "Event",
-
   "comments.label": "Comments",
   "comments.justNow": "just now",
   "comments.minutesAgo": "{{count}}m ago",
@@ -99,7 +94,6 @@
   "comments.editComment": "Edit comment",
   "comments.deleteComment": "Delete comment",
   "comments.addPlaceholder": "Add a comment...",
-
   "sidebar.dashboard": "Dashboard",
   "sidebar.investigations": "Investigations",
   "sidebar.notes": "Notes",
@@ -110,7 +104,7 @@
   "sidebar.graph": "Graph",
   "sidebar.activity": "Activity",
   "sidebar.caddyAI": "CaddyAI",
-  "sidebar.caddyShack": "CaddyShack",
+  "sidebar.caddyShack": "Team Feed",
   "sidebar.agentCaddy": "AgentCaddy",
   "sidebar.settings": "Settings",
   "sidebar.archive": "Archive",
@@ -125,7 +119,6 @@
   "sidebar.downloadStandalone": "Download Standalone",
   "sidebar.chromeExtension": "Chrome Extension",
   "sidebar.privacy": "Privacy",
-
   "header.toggleMenu": "Toggle menu",
   "header.toggleSidebar": "Toggle sidebar",
   "header.localEdition": "Local Edition",
@@ -148,7 +141,6 @@
   "header.privacy": "Privacy",
   "header.saveBackup": "Save Backup",
   "header.loadBackup": "Load Backup",
-
   "serverError.VALIDATION_FAILED": "Validation failed",
   "serverError.EMAIL_ALREADY_REGISTERED": "Email already registered",
   "serverError.INVALID_CREDENTIALS": "Invalid email or password",
@@ -207,5 +199,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "Invalid webhook secret",
   "serverError.RUN_NOT_FOUND": "Run not found",
   "serverError.INTERNAL_ERROR": "Internal server error",
-  "serverError.MISSING_BLOB": "Missing file data"
+  "serverError.MISSING_BLOB": "Missing file data",
+  "demoModal.title": "Welcome to ThreatCaddy",
+  "demoModal.descriptionPrefix": "A sample investigation",
+  "demoModal.descriptionSuffix": "has been loaded so you can explore how everything works.",
+  "demoModal.whatYouCan": "What you can do:",
+  "demoModal.browseItems": "Browse notes, tasks, and timeline events",
+  "demoModal.viewGraph": "View the investigation graph and IOC analysis",
+  "demoModal.tryWhiteboard": "Try the whiteboard and entity linking",
+  "demoModal.useLinksPrefix": "Use",
+  "demoModal.useLinksSuffix": "to link between notes",
+  "demoModal.startExploring": "Start Exploring",
+  "demoModal.guidedTour": "Take the Guided Tour",
+  "demoModal.deleteDemo": "Delete Demo & Start Fresh",
+  "demoModal.removeHint": "You can remove the sample data later in Settings."
 }

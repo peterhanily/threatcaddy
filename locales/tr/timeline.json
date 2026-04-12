@@ -29,7 +29,6 @@
   "view.colorModeEvents": "Olaylar",
   "view.colorModeConfidence": "Güven",
   "view.colorModeActors": "Aktörler",
-
   "export.exportImport": "Dışa / İçe Aktar",
   "export.exportTimelineJSON": "Zaman Çizelgesi JSON Dışa Aktar",
   "export.exportAllEventsJSON": "Tüm Olaylar JSON Dışa Aktar",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "MITRE Eşlemeleri CSV",
   "export.exportFailed": "Zaman çizelgesi dışa aktarımı başarısız",
-
   "eventCard.deleteEvent": "Olayı sil",
   "eventCard.unstarEvent": "Olayın yıldızını kaldır",
   "eventCard.starEvent": "Olayı yıldızla",
   "eventCard.untitledEvent": "Başlıksız Olay",
   "eventCard.assetCount": "{{count}} varlık",
   "eventCard.assetCount_other": "{{count}} varlık",
-
   "eventForm.title": "Başlık",
   "eventForm.titlePlaceholder": "Olay başlığı...",
   "eventForm.titleRequired": "Olay başlığı gereklidir",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "Ham günlük verisi, JSON vb. yapıştırın...",
   "eventForm.updateEvent": "Olayı Güncelle",
   "eventForm.createEvent": "Olay Oluştur",
-
   "import.title": "Zaman Çizelgesi İçe Aktar",
   "import.selectFile": "Zaman çizelgesi JSON dosyası seçin",
   "import.createAsNew": "Yeni zaman çizelgesi olarak oluştur",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} değişmedi",
   "import.parseFailed": "Dosya ayrıştırılamadı",
   "import.importFailed": "İçe aktarma başarısız",
-
   "feed.noEventsYet": "Henüz zaman çizelgesi olayı yok",
   "feed.noEventsHint": "Zaman çizelgesi olayı eklemek için \"Yeni Olay\"a tıklayın",
   "feed.today": "Bugün",
   "feed.yesterday": "Dün",
   "feed.eventCount": "{{count}} olay",
   "feed.eventCount_other": "{{count}} olay",
-
   "gantt.zoomIn": "Yakınlaştır",
   "gantt.zoomOut": "Uzaklaştır",
   "gantt.fitAll": "Tümüne sığdır",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(nokta olay)",
   "gantt.tooltipSource": "Kaynak: {{source}}",
   "gantt.tooltipActor": "Aktör: {{actor}}",
-
   "map.mapped": "{{count}} eşlendi",
   "map.doubleClickToPlace": "Olayları yerleştirmek için haritaya çift tıklayın",
   "map.withoutLocation": "{{count}} konum yok",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "Tek tıkla yerleştirmeyi etkinleştir",
   "map.unstar": "Yıldızı kaldır",
   "map.star": "Yıldızla",
-
   "heatmap.techniques": "Teknikler:",
   "heatmap.eventsWithMitre": "MITRE'li Olaylar:",
   "heatmap.tacticsHit": "Kullanılan taktikler:",
@@ -143,16 +135,15 @@
   "heatmap.confidenceMedium": "Orta",
   "heatmap.confidenceHigh": "Yüksek",
   "heatmap.confidenceConfirmed": "Onaylandı",
-
   "filter.clear": "Temizle",
-
   "mitreCombo.searchPlaceholder": "Teknikleri ara (örn. T1566, Phishing)...",
   "mitreCombo.addMore": "Daha fazla ekle...",
-
   "mitreReport.techniquesPerTactic": "Taktik Başına Teknikler",
   "mitreReport.actorTTPSummary": "Aktör TTP Özeti",
   "mitreReport.noActorsMapped": "Teknik eşlenmiş aktör yok.",
   "mitreReport.techniqueCount": "{{count}} teknik",
   "mitreReport.techniqueCount_other": "{{count}} teknik",
-  "mitreReport.techniqueCoverage": "Teknik Kapsamı"
+  "mitreReport.techniqueCoverage": "Teknik Kapsamı",
+  "emptyState": "Henüz zaman çizelgesi olayı yok",
+  "createFirstHint": "İlk etkinliğinizi eklemek için yukarıdaki + düğmesini kullanın"
 }

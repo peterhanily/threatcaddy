@@ -44,7 +44,6 @@
   "quickCapture.createNote": "ノートを作成",
   "quickCapture.customBadge": "カスタム",
   "skipToMainContent": "メインコンテンツへスキップ",
-
   "createDropdown.createNew": "新規作成...",
   "createDropdown.new": "新規",
   "createDropdown.createItem": "{{item}} を作成",
@@ -56,7 +55,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "ファイルを開く",
   "createDropdown.importData": "データをインポート",
-
   "shortcuts.title": "キーボードショートカット",
   "shortcuts.general": "一般",
   "shortcuts.openSearch": "検索を開く",
@@ -76,7 +74,6 @@
   "shortcuts.switchToTasks": "タスクに切り替え",
   "shortcuts.switchToTimeline": "タイムラインに切り替え",
   "shortcuts.switchToWhiteboards": "ホワイトボードに切り替え",
-
   "entityLinker.linkEntities": "エンティティをリンク",
   "entityLinker.searchPlaceholder": "リンクするエンティティを検索...",
   "entityLinker.linked": "リンク済み",
@@ -85,7 +82,6 @@
   "entityLinker.note": "ノート",
   "entityLinker.task": "タスク",
   "entityLinker.event": "イベント",
-
   "comments.label": "コメント",
   "comments.justNow": "たった今",
   "comments.minutesAgo": "{{count}}分前",
@@ -97,7 +93,6 @@
   "comments.editComment": "コメントを編集",
   "comments.deleteComment": "コメントを削除",
   "comments.addPlaceholder": "コメントを追加...",
-
   "sidebar.dashboard": "ダッシュボード",
   "sidebar.investigations": "調査",
   "sidebar.notes": "ノート",
@@ -108,7 +103,7 @@
   "sidebar.graph": "グラフ",
   "sidebar.activity": "アクティビティ",
   "sidebar.caddyAI": "CaddyAI",
-  "sidebar.caddyShack": "CaddyShack",
+  "sidebar.caddyShack": "チームフィード",
   "sidebar.agentCaddy": "AgentCaddy",
   "sidebar.settings": "設定",
   "sidebar.archive": "アーカイブ",
@@ -123,7 +118,6 @@
   "sidebar.downloadStandalone": "スタンドアロンをダウンロード",
   "sidebar.chromeExtension": "Chrome拡張機能",
   "sidebar.privacy": "プライバシー",
-
   "header.toggleMenu": "メニューを切り替え",
   "header.toggleSidebar": "サイドバーを切り替え",
   "header.localEdition": "ローカル版",
@@ -146,7 +140,6 @@
   "header.privacy": "プライバシー",
   "header.saveBackup": "バックアップを保存",
   "header.loadBackup": "バックアップを読み込む",
-
   "serverError.VALIDATION_FAILED": "検証に失敗しました",
   "serverError.EMAIL_ALREADY_REGISTERED": "メールアドレスはすでに登録されています",
   "serverError.INVALID_CREDENTIALS": "メールアドレスまたはパスワードが無効です",
@@ -205,5 +198,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "無効なWebhookシークレットです",
   "serverError.RUN_NOT_FOUND": "実行が見つかりません",
   "serverError.INTERNAL_ERROR": "内部サーバーエラー",
-  "serverError.MISSING_BLOB": "ファイルデータが不足しています"
+  "serverError.MISSING_BLOB": "ファイルデータが不足しています",
+  "demoModal.title": "ThreatCaddyへようこそ",
+  "demoModal.descriptionPrefix": "サンプル調査",
+  "demoModal.descriptionSuffix": "が読み込まれました。すべての機能をお試しいただけます。",
+  "demoModal.whatYouCan": "できること：",
+  "demoModal.browseItems": "ノート、タスク、タイムラインイベントを閲覧",
+  "demoModal.viewGraph": "調査グラフとIOC分析を表示",
+  "demoModal.tryWhiteboard": "ホワイトボードとエンティティリンクを試す",
+  "demoModal.useLinksPrefix": "使用",
+  "demoModal.useLinksSuffix": "でノート間をリンク",
+  "demoModal.startExploring": "探索を始める",
+  "demoModal.guidedTour": "ガイドツアーを開始",
+  "demoModal.deleteDemo": "デモを削除して最初から始める",
+  "demoModal.removeHint": "サンプルデータは後で設定から削除できます。"
 }

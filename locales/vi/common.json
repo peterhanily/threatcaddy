@@ -44,7 +44,6 @@
   "quickCapture.createNote": "Tạo ghi chú",
   "quickCapture.customBadge": "tùy chỉnh",
   "skipToMainContent": "Bỏ qua đến nội dung chính",
-
   "createDropdown.createNew": "Tạo mới...",
   "createDropdown.new": "Mới",
   "createDropdown.createItem": "Tạo {{item}}",
@@ -56,7 +55,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "Mở tệp",
   "createDropdown.importData": "Nhập dữ liệu",
-
   "shortcuts.title": "Phím tắt",
   "shortcuts.general": "Chung",
   "shortcuts.openSearch": "Mở tìm kiếm",
@@ -76,7 +74,6 @@
   "shortcuts.switchToTasks": "Chuyển sang Nhiệm vụ",
   "shortcuts.switchToTimeline": "Chuyển sang Timeline",
   "shortcuts.switchToWhiteboards": "Chuyển sang Bảng trắng",
-
   "entityLinker.linkEntities": "Liên kết thực thể",
   "entityLinker.searchPlaceholder": "Tìm kiếm thực thể để liên kết...",
   "entityLinker.linked": "đã liên kết",
@@ -85,7 +82,6 @@
   "entityLinker.note": "Ghi chú",
   "entityLinker.task": "Nhiệm vụ",
   "entityLinker.event": "Sự kiện",
-
   "comments.label": "Bình luận",
   "comments.justNow": "vừa xong",
   "comments.minutesAgo": "{{count}} phút trước",
@@ -97,7 +93,6 @@
   "comments.editComment": "Sửa bình luận",
   "comments.deleteComment": "Xóa bình luận",
   "comments.addPlaceholder": "Thêm bình luận...",
-
   "sidebar.dashboard": "Bảng điều khiển",
   "sidebar.investigations": "Điều tra",
   "sidebar.notes": "Ghi chú",
@@ -108,7 +103,7 @@
   "sidebar.graph": "Đồ thị",
   "sidebar.activity": "Hoạt động",
   "sidebar.caddyAI": "CaddyAI",
-  "sidebar.caddyShack": "CaddyShack",
+  "sidebar.caddyShack": "Bảng tin nhóm",
   "sidebar.agentCaddy": "AgentCaddy",
   "sidebar.settings": "Cài đặt",
   "sidebar.archive": "Lưu trữ",
@@ -123,7 +118,6 @@
   "sidebar.downloadStandalone": "Tải xuống phiên bản độc lập",
   "sidebar.chromeExtension": "Tiện ích Chrome",
   "sidebar.privacy": "Quyền riêng tư",
-
   "header.toggleMenu": "Chuyển đổi menu",
   "header.toggleSidebar": "Chuyển đổi thanh bên",
   "header.localEdition": "Bản cục bộ",
@@ -146,7 +140,6 @@
   "header.privacy": "Quyền riêng tư",
   "header.saveBackup": "Lưu bản sao lưu",
   "header.loadBackup": "Tải bản sao lưu",
-
   "serverError.VALIDATION_FAILED": "Xác thực thất bại",
   "serverError.EMAIL_ALREADY_REGISTERED": "Email đã được đăng ký",
   "serverError.INVALID_CREDENTIALS": "Email hoặc mật khẩu không hợp lệ",
@@ -205,5 +198,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "Bí mật webhook không hợp lệ",
   "serverError.RUN_NOT_FOUND": "Không tìm thấy lần chạy",
   "serverError.INTERNAL_ERROR": "Lỗi máy chủ nội bộ",
-  "serverError.MISSING_BLOB": "Thiếu dữ liệu tệp"
+  "serverError.MISSING_BLOB": "Thiếu dữ liệu tệp",
+  "demoModal.title": "Chào mừng đến với ThreatCaddy",
+  "demoModal.descriptionPrefix": "Một cuộc điều tra mẫu",
+  "demoModal.descriptionSuffix": "đã được tải để bạn có thể khám phá cách mọi thứ hoạt động.",
+  "demoModal.whatYouCan": "Bạn có thể làm gì:",
+  "demoModal.browseItems": "Duyệt ghi chú, nhiệm vụ và sự kiện trên dòng thời gian",
+  "demoModal.viewGraph": "Xem đồ thị điều tra và phân tích IOC",
+  "demoModal.tryWhiteboard": "Thử bảng trắng và liên kết thực thể",
+  "demoModal.useLinksPrefix": "Sử dụng",
+  "demoModal.useLinksSuffix": "để liên kết giữa các ghi chú",
+  "demoModal.startExploring": "Bắt đầu khám phá",
+  "demoModal.guidedTour": "Tham gia chuyến tham quan hướng dẫn",
+  "demoModal.deleteDemo": "Xóa bản demo & Bắt đầu mới",
+  "demoModal.removeHint": "Bạn có thể xóa dữ liệu mẫu sau trong Cài đặt."
 }

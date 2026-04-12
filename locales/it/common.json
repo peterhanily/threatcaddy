@@ -44,7 +44,6 @@
   "quickCapture.createNote": "Crea nota",
   "quickCapture.customBadge": "personalizzato",
   "skipToMainContent": "Salta al contenuto principale",
-
   "createDropdown.createNew": "Crea nuovo...",
   "createDropdown.new": "Nuovo",
   "createDropdown.createItem": "Crea {{item}}",
@@ -56,7 +55,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "Apri file",
   "createDropdown.importData": "Importa dati",
-
   "shortcuts.title": "Scorciatoie da tastiera",
   "shortcuts.general": "Generale",
   "shortcuts.openSearch": "Apri ricerca",
@@ -76,7 +74,6 @@
   "shortcuts.switchToTasks": "Vai ad Attività",
   "shortcuts.switchToTimeline": "Vai a Timeline",
   "shortcuts.switchToWhiteboards": "Vai a Lavagne",
-
   "entityLinker.linkEntities": "Collega entità",
   "entityLinker.searchPlaceholder": "Cerca entità da collegare...",
   "entityLinker.linked": "collegato",
@@ -85,7 +82,6 @@
   "entityLinker.note": "Nota",
   "entityLinker.task": "Attività",
   "entityLinker.event": "Evento",
-
   "comments.label": "Commenti",
   "comments.justNow": "adesso",
   "comments.minutesAgo": "{{count}}m fa",
@@ -97,7 +93,6 @@
   "comments.editComment": "Modifica commento",
   "comments.deleteComment": "Elimina commento",
   "comments.addPlaceholder": "Aggiungi un commento...",
-
   "sidebar.dashboard": "Dashboard",
   "sidebar.investigations": "Indagini",
   "sidebar.notes": "Note",
@@ -108,7 +103,7 @@
   "sidebar.graph": "Grafo",
   "sidebar.activity": "Attività",
   "sidebar.caddyAI": "CaddyAI",
-  "sidebar.caddyShack": "CaddyShack",
+  "sidebar.caddyShack": "Feed del team",
   "sidebar.agentCaddy": "AgentCaddy",
   "sidebar.settings": "Impostazioni",
   "sidebar.archive": "Archivio",
@@ -123,7 +118,6 @@
   "sidebar.downloadStandalone": "Scarica versione standalone",
   "sidebar.chromeExtension": "Estensione Chrome",
   "sidebar.privacy": "Privacy",
-
   "header.toggleMenu": "Attiva/disattiva menu",
   "header.toggleSidebar": "Attiva/disattiva barra laterale",
   "header.localEdition": "Edizione locale",
@@ -146,7 +140,6 @@
   "header.privacy": "Privacy",
   "header.saveBackup": "Salva backup",
   "header.loadBackup": "Carica backup",
-
   "serverError.VALIDATION_FAILED": "Validazione fallita",
   "serverError.EMAIL_ALREADY_REGISTERED": "Email già registrata",
   "serverError.INVALID_CREDENTIALS": "Email o password non validi",
@@ -205,5 +198,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "Segreto webhook non valido",
   "serverError.RUN_NOT_FOUND": "Esecuzione non trovata",
   "serverError.INTERNAL_ERROR": "Errore server interno",
-  "serverError.MISSING_BLOB": "Dati file mancanti"
+  "serverError.MISSING_BLOB": "Dati file mancanti",
+  "demoModal.title": "Benvenuto in ThreatCaddy",
+  "demoModal.descriptionPrefix": "Un'indagine di esempio",
+  "demoModal.descriptionSuffix": "è stata caricata per permetterti di esplorare come funziona tutto.",
+  "demoModal.whatYouCan": "Cosa puoi fare:",
+  "demoModal.browseItems": "Sfoglia note, attività ed eventi della cronologia",
+  "demoModal.viewGraph": "Visualizza il grafico dell'indagine e l'analisi IOC",
+  "demoModal.tryWhiteboard": "Prova la lavagna e il collegamento delle entità",
+  "demoModal.useLinksPrefix": "Usa",
+  "demoModal.useLinksSuffix": "per collegare tra le note",
+  "demoModal.startExploring": "Inizia a esplorare",
+  "demoModal.guidedTour": "Fai il tour guidato",
+  "demoModal.deleteDemo": "Elimina demo e ricomincia da zero",
+  "demoModal.removeHint": "Puoi rimuovere i dati di esempio più tardi nelle Impostazioni."
 }

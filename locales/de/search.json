@@ -12,7 +12,7 @@
   "clear": "Löschen",
   "resultCount": "{{count}} Ergebnis",
   "resultCountPlural": "{{count}} Ergebnisse",
-  "noResults": "Keine Ergebnisse für \"{{query}}\"",
+  "noResults": "Keine Ergebnisse gefunden — versuchen Sie andere Suchbegriffe",
   "types": "Typen:",
   "date": "Datum",
   "created": "Erstellt",

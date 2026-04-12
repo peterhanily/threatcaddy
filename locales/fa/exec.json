@@ -166,5 +166,6 @@
   "metrics.iocsTracked": "IOCهای ردیابی شده",
   "metrics.eventsThisWeek": "رویدادهای این هفته",
   "metrics.aiChats": "چت‌های AI",
-  "metrics.graphNodes": "گره‌های گراف"
+  "metrics.graphNodes": "گره‌های گراف",
+  "dashboard.backToExecView": "بازگشت به نمای اجرایی"
 }

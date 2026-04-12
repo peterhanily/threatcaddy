@@ -15,12 +15,10 @@
   "builtinTemplate.cloudAccount.name": "รายละเอียดบัญชีคลาวด์",
   "builtinTemplate.ociUser.name": "รายละเอียดผู้ใช้ OCI",
   "builtinTemplate.ociTenancy.name": "รายละเอียด OCI Tenancy",
-
   "builtinTemplateCategory.general": "ทั่วไป",
   "builtinTemplateCategory.investigation": "การสืบสวน",
   "builtinTemplateCategory.incidentResponse": "การตอบสนองเหตุการณ์",
   "builtinTemplateCategory.cloud": "คลาวด์",
-
   "card": {
     "moveToTrash": "ย้ายไปถังขยะ",
     "moveToTrashAria": "ย้ายบันทึกไปถังขยะ",
@@ -170,5 +168,7 @@
     "categoryBlocks": "บล็อก",
     "categoryThreatIntel": "ข่าวกรองภัยคุกคาม",
     "categoryInsert": "แทรก"
-  }
+  },
+  "emptyState": "ยังไม่มีบันทึก — สร้างหนึ่งรายการเพื่อเริ่มต้น",
+  "createFirst": "สร้างบันทึกแรกของคุณ"
 }

@@ -1,6 +1,6 @@
 {
-  "view.title": "CaddyShack",
-  "view.connectToServer": "Hubungkan ke server tim untuk menggunakan CaddyShack.",
+  "view.title": "Feed Tim",
+  "view.connectToServer": "Hubungkan ke server tim untuk menggunakan Feed Tim.",
   "view.loading": "Memuat...",
   "view.noPostsYet": "Belum ada postingan. Jadilah yang pertama berbagi pembaruan!",
   "view.noTeamActivity": "Belum ada aktivitas tim.",
@@ -11,16 +11,14 @@
   "view.all": "Semua",
   "view.posts": "Postingan",
   "view.activity": "Aktivitas",
-
-  "view.onboarding.title": "Memulai dengan CaddyShack",
+  "view.onboarding.title": "Memulai dengan Feed Tim",
   "view.onboarding.step1Title": "1. Deploy server tim",
-  "view.onboarding.step1Desc": "CaddyShack memerlukan server tim ThreatCaddy. Jalankan kontainer Docker dari README server.",
+  "view.onboarding.step1Desc": "Feed Tim memerlukan server tim ThreatCaddy. Jalankan kontainer Docker dari README server.",
   "view.onboarding.step2Title": "2. Konfigurasikan URL server",
   "view.onboarding.step2Desc": "Pergi ke Pengaturan dan masukkan URL server tim Anda untuk menghubungkan ThreatCaddy ke instans Anda.",
   "view.onboarding.step3Title": "3. Daftar dan masuk",
   "view.onboarding.step3Desc": "Buat akun di server tim Anda dan masuk untuk mulai memposting, bereaksi, dan berkolaborasi dengan tim Anda.",
   "view.onboarding.gotIt": "Mengerti",
-
   "composer.placeholder": "Apa yang sedang terjadi?",
   "composer.slashHint": "Ketik <kbd>/</kbd> untuk perintah",
   "composer.post": "Posting",
@@ -31,7 +29,6 @@
   "composer.postCreated": "Postingan dibuat",
   "composer.failedToCreatePost": "Gagal membuat postingan",
   "composer.failedToUploadFile": "Gagal mengunggah file: {{name}}",
-
   "post.replyingTo": "Membalas",
   "post.unknown": "Tidak diketahui",
   "post.justNow": "baru saja",
@@ -41,8 +38,7 @@
   "post.delete": "Hapus",
   "post.save": "Simpan",
   "post.cancel": "Batal",
-
-  "reply.backToCaddyShack": "Kembali ke CaddyShack",
+  "reply.backToCaddyShack": "Kembali ke Feed Tim",
   "reply.loadingThread": "Memuat utas...",
   "reply.postNotFound": "Postingan tidak ditemukan.",
   "reply.writeReply": "Tulis balasan...",
@@ -55,8 +51,7 @@
   "reply.failedDeletePost": "Gagal menghapus postingan",
   "reply.failedEditPost": "Gagal mengedit postingan",
   "reply.failedPinStatus": "Gagal memperbarui status sematan",
-
-  "profile.backToCaddyShack": "Kembali ke CaddyShack",
+  "profile.backToCaddyShack": "Kembali ke Feed Tim",
   "profile.loadingProfile": "Memuat profil...",
   "profile.userNotFound": "Pengguna tidak ditemukan.",
   "profile.posts": "Postingan",
@@ -66,7 +61,6 @@
   "profile.noLikes": "Belum ada postingan yang disukai.",
   "profile.noActivity": "Tidak ada aktivitas yang tercatat.",
   "profile.thisIsYou": "Ini adalah Anda",
-
   "notifications.title": "Notifikasi",
   "notifications.new": "{{count}} baru",
   "notifications.readAll": "Baca semua",
@@ -88,7 +82,6 @@
   "notifications.failedToMarkRead": "Gagal menandai notifikasi sudah dibaca",
   "notifications.failedToMarkAllRead": "Gagal menandai semua sudah dibaca",
   "notifications.failedToClear": "Gagal menghapus notifikasi",
-
   "activity.justNow": "baru saja",
   "activity.minutesAgo": "{{count}}m lalu",
   "activity.hoursAgo": "{{count}}j lalu",

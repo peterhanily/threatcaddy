@@ -5,11 +5,9 @@
   "priority.lowFull": "Bassa",
   "priority.mediumFull": "Media",
   "priority.highFull": "Alta",
-
   "status.todo": "Da fare",
   "status.inProgress": "In corso",
   "status.done": "Completate",
-
   "list.title": "Attività",
   "list.titleWithScope": "Attività — {{scope}} ({{count}})",
   "list.titleWithCount": "Attività ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "Clicca \"Nuova attività\" o premi Ctrl+Shift+T",
   "list.editTaskModal": "Modifica attività",
   "list.createTaskModal": "Crea attività",
-
   "item.markIncomplete": "Segna come incompleta",
   "item.markComplete": "Segna come completata",
   "item.untitled": "Attività senza titolo",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "Elimina attività",
   "item.confirmDeleteMessage": "Questa attività verrà eliminata definitivamente. Questa azione non può essere annullata.",
   "item.confirmDeleteLabel": "Elimina attività",
-
   "form.titleLabel": "Titolo",
   "form.titlePlaceholder": "Titolo attività...",
   "form.titleRequired": "Il titolo dell'attività è obbligatorio",
@@ -81,10 +77,11 @@
   "form.relativeTime.minutesAgo": "{{count}}m fa",
   "form.relativeTime.hoursAgo": "{{count}}h fa",
   "form.relativeTime.daysAgo": "{{count}}g fa",
-
   "kanban.boardLabel": "Board kanban",
   "kanban.columnLabel": "Colonna {{label}}, {{count}} attività",
   "kanban.changeStatus": "Cambia stato {{title}}",
   "kanban.noTasks": "Nessuna attività",
-  "kanban.dropHere": "Rilascia attività qui"
+  "kanban.dropHere": "Rilascia attività qui",
+  "emptyState": "Nessun compito ancora — creane uno per iniziare",
+  "createFirst": "Crea il tuo primo compito"
 }

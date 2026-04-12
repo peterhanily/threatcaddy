@@ -5,11 +5,9 @@
   "priority.lowFull": "Düşük",
   "priority.mediumFull": "Orta",
   "priority.highFull": "Yüksek",
-
   "status.todo": "Yapılacak",
   "status.inProgress": "Devam Ediyor",
   "status.done": "Tamamlandı",
-
   "list.title": "Görevler",
   "list.titleWithScope": "Görevler — {{scope}} ({{count}})",
   "list.titleWithCount": "Görevler ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "\"Yeni Görev\"e tıklayın veya Ctrl+Shift+T tuşlarına basın",
   "list.editTaskModal": "Görevi Düzenle",
   "list.createTaskModal": "Görev Oluştur",
-
   "item.markIncomplete": "Tamamlanmadı olarak işaretle",
   "item.markComplete": "Tamamlandı olarak işaretle",
   "item.untitled": "Başlıksız görev",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "Görevi Sil",
   "item.confirmDeleteMessage": "Bu görev kalıcı olarak silinecek. Bu işlem geri alınamaz.",
   "item.confirmDeleteLabel": "Görevi Sil",
-
   "form.titleLabel": "Başlık",
   "form.titlePlaceholder": "Görev başlığı...",
   "form.titleRequired": "Görev başlığı gereklidir",
@@ -81,10 +77,11 @@
   "form.relativeTime.minutesAgo": "{{count}}d önce",
   "form.relativeTime.hoursAgo": "{{count}}s önce",
   "form.relativeTime.daysAgo": "{{count}}g önce",
-
   "kanban.boardLabel": "Kanban panosu",
   "kanban.columnLabel": "{{label}} sütunu, {{count}} görev",
   "kanban.changeStatus": "{{title}} durumunu değiştir",
   "kanban.noTasks": "Görev yok",
-  "kanban.dropHere": "Görevleri buraya bırakın"
+  "kanban.dropHere": "Görevleri buraya bırakın",
+  "emptyState": "Henüz görev yok — başlamak için bir tane oluşturun",
+  "createFirst": "İlk görevinizi oluşturun"
 }

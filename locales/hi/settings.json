@@ -1,7 +1,6 @@
 {
   "title": "सेटिंग",
   "closeSettings": "सेटिंग बंद करें",
-
   "tabs.general": "सामान्य",
   "tabs.appearance": "रूप",
   "tabs.ai": "AI",
@@ -11,7 +10,6 @@
   "tabs.intel": "इंटेल",
   "tabs.integrations": "इंटीग्रेशन",
   "tabs.shortcuts": "शॉर्टकट",
-
   "general.identity": "आपकी पहचान",
   "general.displayName": "प्रदर्शन नाम",
   "general.displayNamePlaceholder": "आपका नाम (बनाई गई एंटिटी पर दिखाया जाता है)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "अपडेट डाउनलोड विफल। नवीनतम संस्करण के लिए https://threatcaddy.com पर जाएं।",
   "general.downloadStandalone": "स्टैंडअलोन डाउनलोड करें",
   "general.privacy": "गोपनीयता",
-
   "appearance.theme": "थीम",
   "appearance.mode": "मोड",
   "appearance.dark": "डार्क",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "छवि सहेजने में विफल",
   "appearance.bgRemoved": "पृष्ठभूमि छवि हटाई गई",
   "appearance.bgRemoveFailed": "छवि हटाने में विफल",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "Anthropic API कुंजी",
   "ai.openaiKey": "OpenAI API कुंजी",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "कमांड नाम (जैसे mytriage)",
   "ai.commandDescPlaceholder": "विवरण (स्लैश मेनू में दिखाया जाता है)",
   "ai.commandTemplatePlaceholder": "प्रॉम्प्ट टेम्पलेट। उपयोगकर्ता तर्कों के लिए {{input}} उपयोग करें।\n\nउदाहरण: IOCs के लिए इस अलर्ट का विश्लेषण करें और ट्राइएज रिपोर्ट बनाएं:\n\n{{input}}",
-
   "agents.supervisor": "सुपरवाइज़र एजेंट",
   "agents.supervisorDesc": "क्रॉस-जाँच विश्लेषण — आपके केसलोड में साझा IOCs, पुराने केस और पैटर्न पहचानता है।",
   "agents.enableSupervisor": "सुपरवाइज़र सक्षम करें",
   "agents.supervisorInterval": "हर {{minutes}} मिनट में चलता है",
   "agents.supervisorAriaLabel": "सुपरवाइज़र एजेंट सक्षम करें",
   "agents.interval": "अंतराल",
-
   "agents.hosts": "एजेंट होस्ट",
   "agents.hostsDesc": "बाहरी एजेंट होस्ट (Claude Code, कस्टम रनटाइम) कनेक्ट करें जो REST API के माध्यम से स्किल एक्सपोज़ करते हैं। खोजी गई स्किल LLM टूल के रूप में उपलब्ध हो जाती हैं।",
   "agents.refreshAll": "सभी रीफ्रेश करें",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "कोई स्किल कैश नहीं। उपलब्ध स्किल खोजने के लिए \"स्किल लाएं\" क्लिक करें।",
   "agents.skillsLastFetched": "{{count}} स्किल{{plural}} — अंतिम बार {{date}} को लाया गया",
   "agents.params": "पैरामीटर: {{params}}",
-
   "data.exportImportTitle": "निर्यात और आयात",
   "data.exportJSON": "JSON बैकअप निर्यात करें",
   "data.exportMarkdown": "Markdown निर्यात करें",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "{{count}} नोट्स Markdown के रूप में निर्यात हुए",
   "data.importedCounts": "{{notes}} नोट्स, {{tasks}} कार्य, {{folders}} जाँचें, {{tags}} टैग आयात हुए",
   "data.importBackupTitle": "बैकअप आयात करें",
-  "data.importBackupMessage": "यह आपके सभी वर्तमान नोट्स, कार्य, फ़ोल्डर और टैग को आयात किए गए डेटा से बदल देगा। यह पूर्ववत नहीं किया जा सकता।",
+  "data.importBackupMessage": "यह आपके सभी वर्तमान नोट्स, कार्य, जांच और टैग को आयात किए गए डेटा से बदल देगा। यह पूर्ववत नहीं किया जा सकता।",
   "data.importReplace": "आयात और बदलें",
   "data.importedMarkdown": "Markdown से {{count}} नोट्स आयात हुए",
-
   "data.mdImportTitle": "Markdown आयात करें",
   "data.mdPreviewTitle": "आयात प्रीव्यू",
   "data.mdCompleteTitle": "आयात पूर्ण",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "{{count}} नोट्स आयात करें",
   "data.mdImportedSuccess_one": "{{count}} नोट सफलतापूर्वक आयात हुआ",
   "data.mdImportedSuccess_other": "{{count}} नोट्स सफलतापूर्वक आयात हुए",
-
   "encryption.title": "सर्वर एन्क्रिप्टेड बैकअप",
   "encryption.connectPrompt": "एन्क्रिप्टेड बैकअप उपयोग करने के लिए टीम सर्वर से कनेक्ट करें।",
   "encryption.description": "सर्वर पर संग्रहीत पासवर्ड-सुरक्षित बैकअप। व्यवस्थापक भी इन्हें पढ़ नहीं सकते।",
@@ -233,7 +224,6 @@
   "encryption.merge": "मर्ज",
   "encryption.deleteConfirmTitle": "बैकअप हटाएं",
   "encryption.deleteConfirmMessage": "यह इस एन्क्रिप्टेड बैकअप को सर्वर से स्थायी रूप से हटा देगा। यह पूर्ववत नहीं किया जा सकता।",
-
   "cloud.title": "क्लाउड बैकअप",
   "cloud.addDestination": "गंतव्य जोड़ें",
   "cloud.provider": "प्रदाता",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "यह आपका पूरा डेटाबेस {{count}} क्लाउड गंतव्य(ओं) पर अपलोड करेगा। जारी रखें?",
   "cloud.encryptedPushSuccess": "एन्क्रिप्टेड बैकअप सफलतापूर्वक भेजा गया",
   "cloud.pushSuccess": "बैकअप सफलतापूर्वक भेजा गया",
-
   "templates.noteTemplates": "नोट टेम्पलेट",
   "templates.summary": "{{custom}} कस्टम, {{builtin}} बिल्टइन",
   "templates.description": "टेम्पलेट नोट्स को संरचित सामग्री से पूर्व-भरते हैं। बिल्टइन टेम्पलेट डुप्लिकेट और कस्टमाइज़ किए जा सकते हैं।",
@@ -283,7 +272,6 @@
   "templates.createdToast": "टेम्पलेट \"{{name}}\" बना",
   "templates.deletedToast": "टेम्पलेट \"{{name}}\" हटाया गया",
   "templates.saveFailed": "टेम्पलेट सहेजने में विफल",
-
   "templates.playbooks": "जाँच playbooks",
   "templates.playbooksDesc": "Playbooks नई जाँचें कार्यों और नोट्स के साथ स्वतः भरती हैं। playbook से शुरू करने के लिए साइडबार में पुस्तक आइकन उपयोग करें।",
   "templates.yourPlaybooks": "आपके Playbooks",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "Playbook \"{{name}}\" बना",
   "templates.playbookDeletedToast": "Playbook \"{{name}}\" हटाया गया",
   "templates.playbookSaveFailed": "Playbook सहेजने में विफल",
-
   "intel.title": "थ्रेट इंटेल कॉन्फ़िगरेशन",
   "intel.extractionBehavior": "निष्कर्षण व्यवहार",
   "intel.autoExtract": "सामग्री से IOCs स्वतः निकालें",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "कस्टम संबंध प्रकार जोड़ें",
   "intel.configImported": "कॉन्फ़िग आयात हुआ",
   "intel.invalidConfigFile": "अमान्य JSON कॉन्फ़िग फ़ाइल",
-
   "shortcuts.title": "कीबोर्ड शॉर्टकट",
   "shortcuts.newNote": "नया नोट / त्वरित कैप्चर",
   "shortcuts.focusSearch": "खोज पर फ़ोकस",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "कीबोर्ड शॉर्टकट दिखाएं",
   "shortcuts.switchView": "दृश्य बदलें (नोट्स/कार्य/टाइमलाइन/व्हाइटबोर्ड)",
   "shortcuts.closeModals": "मोडल बंद करें",
-
   "server.teamServer": "टीम सर्वर",
   "server.connected": "कनेक्टेड",
   "server.serverLabel": "सर्वर",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "सर्वर से डिस्कनेक्ट हुआ",
   "server.savedServers": "सहेजे गए सर्वर",
   "server.deleteSavedServer": "सहेजा सर्वर हटाएं",
-
   "server.onboarding.welcome": "{{name}} में आपका स्वागत है!",
   "server.onboarding.intro": "आप अपने टीम सर्वर से कनेक्ट हैं। यहाँ आप क्या कर सकते हैं:",
   "server.onboarding.sharedInvestigations": "साझा जाँचें",
   "server.onboarding.sharedInvestigationsDesc": "अपनी टीम के साथ केस पर सहयोग करें — नोट्स, कार्य, टाइमलाइन और IOCs रीयल-टाइम में साझा करें।",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "टीम फ़ीड",
   "server.onboarding.caddyShackDesc": "आपके SOC के लिए टीम चर्चा फ़ीड। अपडेट पोस्ट करें, निष्कर्ष साझा करें और अपने टीम के पोस्ट पर प्रतिक्रिया दें।",
   "server.onboarding.realTimeSync": "रीयल-टाइम सिंक",
   "server.onboarding.realTimeSyncDesc": "आपके नोट्स, कार्य और IOCs सभी कनेक्टेड टीम सदस्यों में स्वतः सिंक होते हैं।",

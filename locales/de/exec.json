@@ -1,6 +1,6 @@
 {
   "dashboard.appName": "ThreatCaddy",
-  "dashboard.exec": "EXEC",
+  "dashboard.exec": "FÜHRUNG",
   "dashboard.switchToAnalyst": "Zum Analysten-Modus wechseln",
   "dashboard.overview": "Übersicht",
   "dashboard.cases": "Fälle",
@@ -22,7 +22,6 @@
   "dashboard.untitledChat": "Unbenannter Chat",
   "dashboard.general": "Allgemein",
   "dashboard.messagesCount": "{{count}} Nachrichten",
-
   "investigations.all": "Alle",
   "investigations.active": "Aktiv",
   "investigations.closed": "Geschlossen",
@@ -33,7 +32,6 @@
   "investigations.events": "Ereignisse",
   "investigations.boards": "Boards",
   "investigations.iocs": "IOCs",
-
   "detail.share": "Teilen",
   "detail.created": "Erstellt {{date}}",
   "detail.taskProgress": "Aufgabenfortschritt",
@@ -42,13 +40,11 @@
   "detail.todo": "{{count}} offen",
   "detail.recentActivity": "Aktuelle Aktivität",
   "detail.openInAnalystMode": "Im Analysten-Modus öffnen",
-
   "notes.untitled": "Ohne Titel",
   "notes.created": "Erstellt {{date}}",
   "notes.updated": "Aktualisiert {{date}}",
   "notes.iocDetected": "{{count}} IOC erkannt",
   "notes.iocsDetected": "{{count}} IOCs erkannt",
-
   "tasks.untitled": "Ohne Titel",
   "tasks.created": "Erstellt {{date}}",
   "tasks.updated": "Aktualisiert {{date}}",
@@ -60,14 +56,12 @@
   "tasks.inProgress": "In Bearbeitung",
   "tasks.done": "Erledigt",
   "tasks.comments": "Kommentare ({{count}})",
-
   "events.untitled": "Ohne Titel",
   "events.timestamp": "Zeitstempel {{date}}",
   "events.end": "Ende {{date}}",
   "events.source": "Quelle: {{source}}",
   "events.actor": "Akteur:",
   "events.assets": "Assets:",
-
   "iocs.created": "Erstellt {{date}}",
   "iocs.updated": "Aktualisiert {{date}}",
   "iocs.attribution": "Zuschreibung: {{value}}",
@@ -81,27 +75,22 @@
   "iocs.linkedTasksPlural": "{{count}} verknüpfte Aufgaben",
   "iocs.linkedEvents": "{{count}} verknüpftes Ereignis",
   "iocs.linkedEventsPlural": "{{count}} verknüpfte Ereignisse",
-
   "chat.untitledChat": "Unbenannter Chat",
   "chat.messagesCount": "{{count}} Nachrichten",
   "chat.created": "Erstellt {{date}}",
   "chat.noMessages": "Keine Nachrichten in diesem Thread",
-
   "global.noItemsFound": "Keine Elemente gefunden",
   "global.unfiled": "Nicht abgelegt",
-
   "entities.inFolder": "in {{name}}",
   "entities.noEntities": "Keine {{type}} in dieser Untersuchung",
   "entities.elementCount": "{{count}} Element",
   "entities.elementCountPlural": "{{count}} Elemente",
   "entities.openInAnalyst": "Im Analysten-Modus öffnen",
-
   "activity.noRecentActivity": "Keine aktuelle Aktivität",
   "activity.today": "Heute",
   "activity.yesterday": "Gestern",
   "activity.thisWeek": "Diese Woche",
   "activity.older": "Älter",
-
   "share.title": "Teilen",
   "share.encryptWithPassword": "Mit Passwort verschlüsseln",
   "share.enterPassword": "Passwort eingeben...",
@@ -137,7 +126,6 @@
   "share.scopeIoc": "IOC",
   "share.scopeInvestigation": "Untersuchung",
   "share.scopeChat": "Chat",
-
   "share.shared": "GETEILT",
   "share.saveToThreatCaddy": "In ThreatCaddy speichern",
   "share.saving": "Wird gespeichert...",
@@ -153,18 +141,14 @@
   "share.messageCountPlural": "{{count}} Nachrichten",
   "share.youLabel": "Sie",
   "share.caddyAI": "CaddyAI",
-
   "search.filterPlaceholder": "Filtern...",
-
   "graph.notes": "Notizen",
   "graph.iocs": "IOCs",
   "graph.tasks": "Aufgaben",
   "graph.events": "Ereignisse",
-
   "nav.prev": "Zurück",
   "nav.next": "Weiter",
   "nav.ofTotal": "{{current}} von {{total}}",
-
   "breadcrumb.investigations": "Untersuchungen",
   "breadcrumb.overview": "Übersicht",
   "breadcrumb.allNotes": "Alle Notizen",
@@ -177,11 +161,11 @@
   "breadcrumb.task": "Aufgabe",
   "breadcrumb.event": "Ereignis",
   "breadcrumb.chat": "Chat",
-
   "metrics.notes": "Notizen",
   "metrics.openTasks": "Offene Aufgaben",
   "metrics.iocsTracked": "IOCs verfolgt",
   "metrics.eventsThisWeek": "Ereignisse diese Woche",
   "metrics.aiChats": "KI-Chats",
-  "metrics.graphNodes": "Graph-Knoten"
+  "metrics.graphNodes": "Graph-Knoten",
+  "dashboard.backToExecView": "Zurück zur Führungsansicht"
 }

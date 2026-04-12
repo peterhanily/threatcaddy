@@ -12,7 +12,7 @@
   "clear": "Wissen",
   "resultCount": "{{count}} resultaat",
   "resultCountPlural": "{{count}} resultaten",
-  "noResults": "Geen resultaten voor \"{{query}}\"",
+  "noResults": "Geen resultaten gevonden — probeer andere zoektermen",
   "types": "Typen:",
   "date": "Datum",
   "created": "Aangemaakt",

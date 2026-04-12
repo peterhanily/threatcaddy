@@ -29,7 +29,6 @@
   "view.colorModeEvents": "Eventi",
   "view.colorModeConfidence": "Affidabilità",
   "view.colorModeActors": "Attori",
-
   "export.exportImport": "Esporta / Importa",
   "export.exportTimelineJSON": "Esporta Timeline JSON",
   "export.exportAllEventsJSON": "Esporta tutti gli eventi JSON",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "Mappature MITRE CSV",
   "export.exportFailed": "Esportazione timeline fallita",
-
   "eventCard.deleteEvent": "Elimina evento",
   "eventCard.unstarEvent": "Rimuovi stella da evento",
   "eventCard.starEvent": "Aggiungi stella all'evento",
   "eventCard.untitledEvent": "Evento senza titolo",
   "eventCard.assetCount": "{{count}} asset",
   "eventCard.assetCount_other": "{{count}} asset",
-
   "eventForm.title": "Titolo",
   "eventForm.titlePlaceholder": "Titolo evento...",
   "eventForm.titleRequired": "Il titolo dell'evento è obbligatorio",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "Incolla dati log grezzi, JSON, ecc...",
   "eventForm.updateEvent": "Aggiorna evento",
   "eventForm.createEvent": "Crea evento",
-
   "import.title": "Importa Timeline",
   "import.selectFile": "Seleziona file JSON timeline",
   "import.createAsNew": "Crea come nuova timeline",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} invariati",
   "import.parseFailed": "Impossibile analizzare il file",
   "import.importFailed": "Importazione fallita",
-
   "feed.noEventsYet": "Ancora nessun evento timeline",
   "feed.noEventsHint": "Clicca \"Nuovo evento\" per aggiungere eventi timeline",
   "feed.today": "Oggi",
   "feed.yesterday": "Ieri",
   "feed.eventCount": "{{count}} evento",
   "feed.eventCount_other": "{{count}} eventi",
-
   "gantt.zoomIn": "Zoom avanti",
   "gantt.zoomOut": "Zoom indietro",
   "gantt.fitAll": "Adatta tutto",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(evento puntuale)",
   "gantt.tooltipSource": "Fonte: {{source}}",
   "gantt.tooltipActor": "Attore: {{actor}}",
-
   "map.mapped": "{{count}} mappati",
   "map.doubleClickToPlace": "Doppio clic sulla mappa per posizionare un evento",
   "map.withoutLocation": "{{count}} senza posizione",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "Abilita posizionamento con clic singolo",
   "map.unstar": "Rimuovi stella",
   "map.star": "Aggiungi stella",
-
   "heatmap.techniques": "Tecniche:",
   "heatmap.eventsWithMitre": "Eventi con MITRE:",
   "heatmap.tacticsHit": "Tattiche utilizzate:",
@@ -143,16 +135,15 @@
   "heatmap.confidenceMedium": "Media",
   "heatmap.confidenceHigh": "Alta",
   "heatmap.confidenceConfirmed": "Confermata",
-
   "filter.clear": "Cancella",
-
   "mitreCombo.searchPlaceholder": "Cerca tecniche (es. T1566, Phishing)...",
   "mitreCombo.addMore": "Aggiungi altro...",
-
   "mitreReport.techniquesPerTactic": "Tecniche per tattica",
   "mitreReport.actorTTPSummary": "Riepilogo TTP attori",
   "mitreReport.noActorsMapped": "Nessun attore ha tecniche mappate.",
   "mitreReport.techniqueCount": "{{count}} tecnica",
   "mitreReport.techniqueCount_other": "{{count}} tecniche",
-  "mitreReport.techniqueCoverage": "Copertura tecniche"
+  "mitreReport.techniqueCoverage": "Copertura tecniche",
+  "emptyState": "Nessun evento nella timeline ancora",
+  "createFirstHint": "Usa il pulsante + in alto per aggiungere il tuo primo evento"
 }

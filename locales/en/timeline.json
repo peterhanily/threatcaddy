@@ -154,5 +154,8 @@
   "mitreReport.noActorsMapped": "No actors have techniques mapped.",
   "mitreReport.techniqueCount": "{{count}} technique",
   "mitreReport.techniqueCount_other": "{{count}} techniques",
-  "mitreReport.techniqueCoverage": "Technique Coverage"
+  "mitreReport.techniqueCoverage": "Technique Coverage",
+
+  "emptyState": "No timeline events yet",
+  "createFirstHint": "Use the + button above to add your first event"
 }

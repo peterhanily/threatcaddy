@@ -168,5 +168,7 @@
     "categoryBlocks": "Bloki",
     "categoryThreatIntel": "Analiza zagrożeń",
     "categoryInsert": "Wstaw"
-  }
+  },
+  "emptyState": "Brak notatek — utwórz jedną, aby rozpocząć",
+  "createFirst": "Utwórz swoją pierwszą notatkę"
 }

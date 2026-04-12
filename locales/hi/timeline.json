@@ -29,7 +29,6 @@
   "view.colorModeEvents": "इवेंट",
   "view.colorModeConfidence": "विश्वसनीयता",
   "view.colorModeActors": "अभिनेता",
-
   "export.exportImport": "निर्यात / आयात",
   "export.exportTimelineJSON": "टाइमलाइन JSON निर्यात करें",
   "export.exportAllEventsJSON": "सभी इवेंट JSON निर्यात करें",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK नेविगेटर JSON",
   "export.mitreMappingsCSV": "MITRE मैपिंग CSV",
   "export.exportFailed": "टाइमलाइन निर्यात विफल",
-
   "eventCard.deleteEvent": "इवेंट हटाएं",
   "eventCard.unstarEvent": "इवेंट से तारा हटाएं",
   "eventCard.starEvent": "इवेंट को तारांकित करें",
   "eventCard.untitledEvent": "बिना शीर्षक इवेंट",
   "eventCard.assetCount": "{{count}} एसेट",
   "eventCard.assetCount_other": "{{count}} एसेट",
-
   "eventForm.title": "शीर्षक",
   "eventForm.titlePlaceholder": "इवेंट शीर्षक...",
   "eventForm.titleRequired": "इवेंट शीर्षक आवश्यक है",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "कच्चा लॉग डेटा, JSON आदि पेस्ट करें...",
   "eventForm.updateEvent": "इवेंट अपडेट करें",
   "eventForm.createEvent": "इवेंट बनाएं",
-
   "import.title": "टाइमलाइन आयात करें",
   "import.selectFile": "टाइमलाइन JSON फ़ाइल चुनें",
   "import.createAsNew": "नई टाइमलाइन के रूप में बनाएं",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} अपरिवर्तित",
   "import.parseFailed": "फ़ाइल पार्स करने में विफल",
   "import.importFailed": "आयात विफल",
-
   "feed.noEventsYet": "अभी तक कोई टाइमलाइन इवेंट नहीं",
   "feed.noEventsHint": "टाइमलाइन इवेंट जोड़ने के लिए «नया इवेंट» पर क्लिक करें",
   "feed.today": "आज",
   "feed.yesterday": "कल",
   "feed.eventCount": "{{count}} इवेंट",
   "feed.eventCount_other": "{{count}} इवेंट",
-
   "gantt.zoomIn": "ज़ूम इन",
   "gantt.zoomOut": "ज़ूम आउट",
   "gantt.fitAll": "सब फिट करें",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(बिंदु इवेंट)",
   "gantt.tooltipSource": "स्रोत: {{source}}",
   "gantt.tooltipActor": "अभिनेता: {{actor}}",
-
   "map.mapped": "{{count}} मैप किए गए",
   "map.doubleClickToPlace": "मानचित्र पर इवेंट रखने के लिए डबल-क्लिक करें",
   "map.withoutLocation": "{{count}} बिना स्थान",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "एक-क्लिक प्लेसमेंट सक्षम करें",
   "map.unstar": "तारा हटाएं",
   "map.star": "तारांकित करें",
-
   "heatmap.techniques": "तकनीकें:",
   "heatmap.eventsWithMitre": "MITRE के साथ इवेंट:",
   "heatmap.tacticsHit": "लक्षित रणनीतियाँ:",
@@ -143,16 +135,15 @@
   "heatmap.confidenceMedium": "मध्यम",
   "heatmap.confidenceHigh": "उच्च",
   "heatmap.confidenceConfirmed": "पुष्टि",
-
   "filter.clear": "साफ करें",
-
   "mitreCombo.searchPlaceholder": "तकनीकें खोजें (जैसे T1566, Phishing)...",
   "mitreCombo.addMore": "और जोड़ें...",
-
   "mitreReport.techniquesPerTactic": "रणनीति अनुसार तकनीकें",
   "mitreReport.actorTTPSummary": "अभिनेता TTP सारांश",
   "mitreReport.noActorsMapped": "कोई अभिनेता तकनीकों से मैप नहीं।",
   "mitreReport.techniqueCount": "{{count}} तकनीक",
   "mitreReport.techniqueCount_other": "{{count}} तकनीकें",
-  "mitreReport.techniqueCoverage": "तकनीक कवरेज"
+  "mitreReport.techniqueCoverage": "तकनीक कवरेज",
+  "emptyState": "अभी तक कोई टाइमलाइन इवेंट नहीं",
+  "createFirstHint": "अपना पहला इवेंट जोड़ने के लिए ऊपर + बटन का उपयोग करें"
 }

@@ -1,7 +1,6 @@
 {
   "title": "Instellingen",
   "closeSettings": "Instellingen sluiten",
-
   "tabs.general": "Algemeen",
   "tabs.appearance": "Weergave",
   "tabs.ai": "AI",
@@ -11,7 +10,6 @@
   "tabs.intel": "Inlichtingen",
   "tabs.integrations": "Integraties",
   "tabs.shortcuts": "Sneltoetsen",
-
   "general.identity": "Uw identiteit",
   "general.displayName": "Weergavenaam",
   "general.displayNamePlaceholder": "Uw naam (weergegeven op aangemakte entiteiten)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "Updates ophalen mislukt. Bezoek https://threatcaddy.com voor de nieuwste versie.",
   "general.downloadStandalone": "Standalone versie downloaden",
   "general.privacy": "Privacy",
-
   "appearance.theme": "Thema",
   "appearance.mode": "Modus",
   "appearance.dark": "Donker",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "Afbeelding opslaan mislukt",
   "appearance.bgRemoved": "Achtergrondafbeelding verwijderd",
   "appearance.bgRemoveFailed": "Afbeelding verwijderen mislukt",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "Anthropic API-sleutel",
   "ai.openaiKey": "OpenAI API-sleutel",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "Opdrachtnaam (bijv. mijnanalyse)",
   "ai.commandDescPlaceholder": "Beschrijving (weergegeven in slash-opdrachtmenu)",
   "ai.commandTemplatePlaceholder": "Promptsjabloon. Gebruik {{input}} voor gebruikersargumenten.\n\nVoorbeeld: Analyseer dit alert op IOC's en maak een triagerapport:\n\n{{input}}",
-
   "agents.supervisor": "Supervisor-agent",
   "agents.supervisorDesc": "Analyse over onderzoeken heen — detecteert gemeenschappelijke IOC's, inactieve zaken en patronen in uw werklast.",
   "agents.enableSupervisor": "Supervisor inschakelen",
   "agents.supervisorInterval": "Wordt elke {{minutes}} minuten uitgevoerd",
   "agents.supervisorAriaLabel": "Supervisor-agent inschakelen",
   "agents.interval": "Interval",
-
   "agents.hosts": "Agentshosts",
   "agents.hostsDesc": "Externe agentshosts verbinden (Claude Code, aangepaste runtimes) die vaardigheden beschikbaar stellen via REST API. Ontdekte vaardigheden worden beschikbaar als LLM-tools.",
   "agents.refreshAll": "Alles vernieuwen",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "Geen vaardigheden in cache. Klik op 'Vaardigheden ophalen' om beschikbare vaardigheden te ontdekken.",
   "agents.skillsLastFetched": "{{count}} vaardigheid{{plural}} — voor het laatst opgehaald {{date}}",
   "agents.params": "parameters: {{params}}",
-
   "data.exportImportTitle": "Export en import",
   "data.exportJSON": "JSON-back-up exporteren",
   "data.exportMarkdown": "Markdown exporteren",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "{{count}} notities geëxporteerd als Markdown",
   "data.importedCounts": "{{notes}} notities, {{tasks}} taken, {{folders}} onderzoeken, {{tags}} tags geïmporteerd",
   "data.importBackupTitle": "Back-up importeren",
-  "data.importBackupMessage": "Dit vervangt al uw huidige notities, taken, mappen en tags door de geïmporteerde gegevens. Dit kan niet ongedaan worden gemaakt.",
+  "data.importBackupMessage": "Dit vervangt al uw huidige notities, taken, onderzoeken en tags door de geïmporteerde gegevens. Dit kan niet ongedaan worden gemaakt.",
   "data.importReplace": "Importeren en vervangen",
   "data.importedMarkdown": "{{count}} notities geïmporteerd uit Markdown",
-
   "data.mdImportTitle": "Markdown importeren",
   "data.mdPreviewTitle": "Importvoorbeeld",
   "data.mdCompleteTitle": "Import voltooid",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "{{count}} notities importeren",
   "data.mdImportedSuccess_one": "{{count}} notitie succesvol geïmporteerd",
   "data.mdImportedSuccess_other": "{{count}} notities succesvol geïmporteerd",
-
   "encryption.title": "Versleutelde serverback-ups",
   "encryption.connectPrompt": "Verbind met de teamserver om versleutelde back-ups te gebruiken.",
   "encryption.description": "Met wachtwoord beveiligde back-ups opgeslagen op de server. Zelfs beheerders kunnen ze niet lezen.",
@@ -233,7 +224,6 @@
   "encryption.merge": "Samenvoegen",
   "encryption.deleteConfirmTitle": "Back-up verwijderen",
   "encryption.deleteConfirmMessage": "Dit verwijdert deze versleutelde back-up definitief van de server. Dit kan niet ongedaan worden gemaakt.",
-
   "cloud.title": "Cloud-back-up",
   "cloud.addDestination": "Bestemming toevoegen",
   "cloud.provider": "Provider",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "Dit uploadt de volledige database naar {{count}} cloudbestemming(en). Doorgaan?",
   "cloud.encryptedPushSuccess": "Versleutelde back-up succesvol verzonden",
   "cloud.pushSuccess": "Back-up succesvol verzonden",
-
   "templates.noteTemplates": "Notitiesjablonen",
   "templates.summary": "{{custom}} eigen, {{builtin}} ingebouwd",
   "templates.description": "Sjablonen vullen notities vooraf met gestructureerde inhoud. Ingebouwde sjablonen kunnen worden gedupliceerd en aangepast.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "Sjabloon '{{name}}' aangemaakt",
   "templates.deletedToast": "Sjabloon '{{name}}' verwijderd",
   "templates.saveFailed": "Sjabloon opslaan mislukt",
-
   "templates.playbooks": "Onderzoeksplaybooks",
   "templates.playbooksDesc": "Playbooks vullen nieuwe onderzoeken automatisch met taken en notities. Gebruik het boekpictogram op de zijbalk om te starten vanuit een playbook.",
   "templates.yourPlaybooks": "Uw playbooks",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "Playbook '{{name}}' aangemaakt",
   "templates.playbookDeletedToast": "Playbook '{{name}}' verwijderd",
   "templates.playbookSaveFailed": "Playbook opslaan mislukt",
-
   "intel.title": "Dreigingsinlichtingenconfiguratie",
   "intel.extractionBehavior": "Extractiegedrag",
   "intel.autoExtract": "IOC's automatisch extraheren uit inhoud",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "Eigen relatietype toevoegen",
   "intel.configImported": "Configuratie geïmporteerd",
   "intel.invalidConfigFile": "Ongeldig JSON-configuratiebestand",
-
   "shortcuts.title": "Sneltoetsen",
   "shortcuts.newNote": "Nieuwe notitie / Snel vastleggen",
   "shortcuts.focusSearch": "Zoekvak focussen",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "Sneltoetsen weergeven",
   "shortcuts.switchView": "Weergave wisselen (Notities/Taken/Tijdlijn/Whiteboard)",
   "shortcuts.closeModals": "Dialoogvensters sluiten",
-
   "server.teamServer": "Teamserver",
   "server.connected": "Verbonden",
   "server.serverLabel": "Server",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "Verbinding met server verbroken",
   "server.savedServers": "Opgeslagen servers",
   "server.deleteSavedServer": "Opgeslagen server verwijderen",
-
   "server.onboarding.welcome": "Welkom bij {{name}}!",
   "server.onboarding.intro": "U bent verbonden met de teamserver. Dit kunt u doen:",
   "server.onboarding.sharedInvestigations": "Gedeelde onderzoeken",
   "server.onboarding.sharedInvestigationsDesc": "Werk samen aan zaken met uw team — deel notities, taken, tijdlijnen en IOC's in realtime.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "Teamfeed",
   "server.onboarding.caddyShackDesc": "Teamdiscussiekanaal voor uw SOC. Plaats updates, deel bevindingen en reageer op berichten van collega's.",
   "server.onboarding.realTimeSync": "Realtime synchronisatie",
   "server.onboarding.realTimeSyncDesc": "Uw notities, taken en IOC's worden automatisch gesynchroniseerd over alle verbonden teamleden.",

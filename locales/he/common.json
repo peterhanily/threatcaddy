@@ -44,7 +44,6 @@
   "quickCapture.createNote": "צור פתק",
   "quickCapture.customBadge": "מותאם אישית",
   "skipToMainContent": "דלג לתוכן הראשי",
-
   "createDropdown.createNew": "צור חדש...",
   "createDropdown.new": "חדש",
   "createDropdown.createItem": "צור {{item}}",
@@ -56,7 +55,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "פתח קובץ",
   "createDropdown.importData": "ייבא נתונים",
-
   "shortcuts.title": "קיצורי מקלדת",
   "shortcuts.general": "כללי",
   "shortcuts.openSearch": "פתח חיפוש",
@@ -76,7 +74,6 @@
   "shortcuts.switchToTasks": "עבור למשימות",
   "shortcuts.switchToTimeline": "עבור לציר זמן",
   "shortcuts.switchToWhiteboards": "עבור ללוחות לבנים",
-
   "entityLinker.linkEntities": "קשר ישויות",
   "entityLinker.searchPlaceholder": "חפש ישויות לקישור...",
   "entityLinker.linked": "מקושר",
@@ -85,7 +82,6 @@
   "entityLinker.note": "הערה",
   "entityLinker.task": "משימה",
   "entityLinker.event": "אירוע",
-
   "comments.label": "תגובות",
   "comments.justNow": "עכשיו",
   "comments.minutesAgo": "לפני {{count}} דק'",
@@ -97,7 +93,6 @@
   "comments.editComment": "ערוך תגובה",
   "comments.deleteComment": "מחק תגובה",
   "comments.addPlaceholder": "הוסף תגובה...",
-
   "sidebar.dashboard": "לוח בקרה",
   "sidebar.investigations": "חקירות",
   "sidebar.notes": "הערות",
@@ -108,7 +103,7 @@
   "sidebar.graph": "גרף",
   "sidebar.activity": "פעילות",
   "sidebar.caddyAI": "CaddyAI",
-  "sidebar.caddyShack": "CaddyShack",
+  "sidebar.caddyShack": "פיד צוות",
   "sidebar.agentCaddy": "AgentCaddy",
   "sidebar.settings": "הגדרות",
   "sidebar.archive": "ארכיון",
@@ -123,7 +118,6 @@
   "sidebar.downloadStandalone": "הורד גרסה עצמאית",
   "sidebar.chromeExtension": "תוסף Chrome",
   "sidebar.privacy": "פרטיות",
-
   "header.toggleMenu": "החלף תפריט",
   "header.toggleSidebar": "החלף סרגל צד",
   "header.localEdition": "מהדורה מקומית",
@@ -146,7 +140,6 @@
   "header.privacy": "פרטיות",
   "header.saveBackup": "שמור גיבוי",
   "header.loadBackup": "טען גיבוי",
-
   "serverError.VALIDATION_FAILED": "אימות נכשל",
   "serverError.EMAIL_ALREADY_REGISTERED": "כתובת המייל כבר רשומה",
   "serverError.INVALID_CREDENTIALS": "אימייל או סיסמה שגויים",
@@ -205,5 +198,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "סוד webhook לא חוקי",
   "serverError.RUN_NOT_FOUND": "ריצה לא נמצאה",
   "serverError.INTERNAL_ERROR": "שגיאת שרת פנימית",
-  "serverError.MISSING_BLOB": "נתוני קובץ חסרים"
+  "serverError.MISSING_BLOB": "נתוני קובץ חסרים",
+  "demoModal.title": "ברוכים הבאים ל-ThreatCaddy",
+  "demoModal.descriptionPrefix": "חקירה לדוגמה",
+  "demoModal.descriptionSuffix": "נטענה כדי שתוכלו לחקור כיצד הכל עובד.",
+  "demoModal.whatYouCan": "מה אפשר לעשות:",
+  "demoModal.browseItems": "לעיין בהערות, משימות ואירועי ציר הזמן",
+  "demoModal.viewGraph": "לצפות בגרף החקירה ובניתוח IOC",
+  "demoModal.tryWhiteboard": "לנסות את הלוח הלבן וקישור ישויות",
+  "demoModal.useLinksPrefix": "השתמשו ב-",
+  "demoModal.useLinksSuffix": "כדי לקשר בין הערות",
+  "demoModal.startExploring": "התחילו לחקור",
+  "demoModal.guidedTour": "צאו לסיור מודרך",
+  "demoModal.deleteDemo": "מחיקת הדמו והתחלה מחדש",
+  "demoModal.removeHint": "ניתן להסיר את נתוני הדוגמה מאוחר יותר בהגדרות."
 }

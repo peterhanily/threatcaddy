@@ -44,7 +44,6 @@
   "quickCapture.createNote": "Buat Catatan",
   "quickCapture.customBadge": "kustom",
   "skipToMainContent": "Lewati ke konten utama",
-
   "createDropdown.createNew": "Buat baru...",
   "createDropdown.new": "Baru",
   "createDropdown.createItem": "Buat {{item}}",
@@ -56,7 +55,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "Buka File",
   "createDropdown.importData": "Impor Data",
-
   "shortcuts.title": "Pintasan Keyboard",
   "shortcuts.general": "Umum",
   "shortcuts.openSearch": "Buka pencarian",
@@ -76,7 +74,6 @@
   "shortcuts.switchToTasks": "Beralih ke Tugas",
   "shortcuts.switchToTimeline": "Beralih ke Timeline",
   "shortcuts.switchToWhiteboards": "Beralih ke Papan Tulis",
-
   "entityLinker.linkEntities": "Tautkan entitas",
   "entityLinker.searchPlaceholder": "Cari entitas untuk ditautkan...",
   "entityLinker.linked": "ditautkan",
@@ -85,7 +82,6 @@
   "entityLinker.note": "Catatan",
   "entityLinker.task": "Tugas",
   "entityLinker.event": "Kejadian",
-
   "comments.label": "Komentar",
   "comments.justNow": "baru saja",
   "comments.minutesAgo": "{{count}}m lalu",
@@ -97,7 +93,6 @@
   "comments.editComment": "Edit komentar",
   "comments.deleteComment": "Hapus komentar",
   "comments.addPlaceholder": "Tambah komentar...",
-
   "sidebar.dashboard": "Dasbor",
   "sidebar.investigations": "Investigasi",
   "sidebar.notes": "Catatan",
@@ -108,7 +103,7 @@
   "sidebar.graph": "Graf",
   "sidebar.activity": "Aktivitas",
   "sidebar.caddyAI": "CaddyAI",
-  "sidebar.caddyShack": "CaddyShack",
+  "sidebar.caddyShack": "Feed Tim",
   "sidebar.agentCaddy": "AgentCaddy",
   "sidebar.settings": "Pengaturan",
   "sidebar.archive": "Arsip",
@@ -123,7 +118,6 @@
   "sidebar.downloadStandalone": "Unduh Versi Mandiri",
   "sidebar.chromeExtension": "Ekstensi Chrome",
   "sidebar.privacy": "Privasi",
-
   "header.toggleMenu": "Beralih menu",
   "header.toggleSidebar": "Beralih bilah samping",
   "header.localEdition": "Edisi Lokal",
@@ -146,7 +140,6 @@
   "header.privacy": "Privasi",
   "header.saveBackup": "Simpan Cadangan",
   "header.loadBackup": "Muat Cadangan",
-
   "serverError.VALIDATION_FAILED": "Validasi gagal",
   "serverError.EMAIL_ALREADY_REGISTERED": "Email sudah terdaftar",
   "serverError.INVALID_CREDENTIALS": "Email atau kata sandi tidak valid",
@@ -205,5 +198,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "Rahasia webhook tidak valid",
   "serverError.RUN_NOT_FOUND": "Eksekusi tidak ditemukan",
   "serverError.INTERNAL_ERROR": "Kesalahan server internal",
-  "serverError.MISSING_BLOB": "Data file tidak ada"
+  "serverError.MISSING_BLOB": "Data file tidak ada",
+  "demoModal.title": "Selamat Datang di ThreatCaddy",
+  "demoModal.descriptionPrefix": "Investigasi sampel",
+  "demoModal.descriptionSuffix": "telah dimuat agar Anda dapat menjelajahi cara kerja semuanya.",
+  "demoModal.whatYouCan": "Yang dapat Anda lakukan:",
+  "demoModal.browseItems": "Jelajahi catatan, tugas, dan peristiwa timeline",
+  "demoModal.viewGraph": "Lihat grafik investigasi dan analisis IOC",
+  "demoModal.tryWhiteboard": "Coba papan tulis dan penautan entitas",
+  "demoModal.useLinksPrefix": "Gunakan",
+  "demoModal.useLinksSuffix": "untuk menautkan antar catatan",
+  "demoModal.startExploring": "Mulai Menjelajahi",
+  "demoModal.guidedTour": "Ikuti Tur Panduan",
+  "demoModal.deleteDemo": "Hapus Demo & Mulai Baru",
+  "demoModal.removeHint": "Anda dapat menghapus data sampel nanti di Pengaturan."
 }

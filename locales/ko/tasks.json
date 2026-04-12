@@ -5,11 +5,9 @@
   "priority.lowFull": "낮음",
   "priority.mediumFull": "중간",
   "priority.highFull": "높음",
-
   "status.todo": "할 일",
   "status.inProgress": "진행 중",
   "status.done": "완료",
-
   "list.title": "태스크",
   "list.titleWithScope": "태스크 — {{scope}} ({{count}})",
   "list.titleWithCount": "태스크 ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "\"새 태스크\"를 클릭하거나 Ctrl+Shift+T를 누르세요",
   "list.editTaskModal": "태스크 편집",
   "list.createTaskModal": "태스크 만들기",
-
   "item.markIncomplete": "미완료로 표시",
   "item.markComplete": "완료로 표시",
   "item.untitled": "제목 없는 태스크",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "태스크 삭제",
   "item.confirmDeleteMessage": "이 태스크는 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
   "item.confirmDeleteLabel": "태스크 삭제",
-
   "form.titleLabel": "제목",
   "form.titlePlaceholder": "태스크 제목...",
   "form.titleRequired": "태스크 제목이 필요합니다",
@@ -81,10 +77,11 @@
   "form.relativeTime.minutesAgo": "{{count}}분 전",
   "form.relativeTime.hoursAgo": "{{count}}시간 전",
   "form.relativeTime.daysAgo": "{{count}}일 전",
-
   "kanban.boardLabel": "칸반 보드",
   "kanban.columnLabel": "{{label}} 열, {{count}}개 태스크",
   "kanban.changeStatus": "{{title}}의 상태 변경",
   "kanban.noTasks": "태스크 없음",
-  "kanban.dropHere": "여기에 드롭"
+  "kanban.dropHere": "여기에 드롭",
+  "emptyState": "작업이 아직 없습니다 — 하나 만들어 시작하세요",
+  "createFirst": "첫 번째 작업 만들기"
 }

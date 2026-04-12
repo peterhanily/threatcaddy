@@ -1,6 +1,6 @@
 {
-  "view.title": "CaddyShack",
-  "view.connectToServer": "Connettiti a un server team per usare CaddyShack.",
+  "view.title": "Feed del team",
+  "view.connectToServer": "Connettiti a un server team per usare il Feed del team.",
   "view.loading": "Caricamento...",
   "view.noPostsYet": "Ancora nessun post. Sii il primo a condividere un aggiornamento!",
   "view.noTeamActivity": "Ancora nessuna attività del team.",
@@ -11,16 +11,14 @@
   "view.all": "Tutto",
   "view.posts": "Post",
   "view.activity": "Attività",
-
-  "view.onboarding.title": "Inizia con CaddyShack",
+  "view.onboarding.title": "Inizia con il Feed del team",
   "view.onboarding.step1Title": "1. Distribuisci un server team",
-  "view.onboarding.step1Desc": "CaddyShack richiede un server team ThreatCaddy. Avvia il container Docker dal README del server.",
+  "view.onboarding.step1Desc": "Il Feed del team richiede un server team ThreatCaddy. Avvia il container Docker dal README del server.",
   "view.onboarding.step2Title": "2. Configura l'URL del server",
   "view.onboarding.step2Desc": "Vai in Impostazioni e inserisci l'URL del tuo server team per connettere ThreatCaddy alla tua istanza.",
   "view.onboarding.step3Title": "3. Registrati e accedi",
   "view.onboarding.step3Desc": "Crea un account sul tuo server team e accedi per iniziare a postare, reagire e collaborare con il tuo team.",
   "view.onboarding.gotIt": "Capito",
-
   "composer.placeholder": "Cosa sta succedendo?",
   "composer.slashHint": "Digita <kbd>/</kbd> per i comandi",
   "composer.post": "Pubblica",
@@ -31,7 +29,6 @@
   "composer.postCreated": "Post creato",
   "composer.failedToCreatePost": "Impossibile creare il post",
   "composer.failedToUploadFile": "Impossibile caricare il file: {{name}}",
-
   "post.replyingTo": "In risposta a",
   "post.unknown": "Sconosciuto",
   "post.justNow": "adesso",
@@ -41,8 +38,7 @@
   "post.delete": "Elimina",
   "post.save": "Salva",
   "post.cancel": "Annulla",
-
-  "reply.backToCaddyShack": "Torna a CaddyShack",
+  "reply.backToCaddyShack": "Torna al Feed del team",
   "reply.loadingThread": "Caricamento thread...",
   "reply.postNotFound": "Post non trovato.",
   "reply.writeReply": "Scrivi una risposta...",
@@ -55,8 +51,7 @@
   "reply.failedDeletePost": "Impossibile eliminare il post",
   "reply.failedEditPost": "Impossibile modificare il post",
   "reply.failedPinStatus": "Impossibile aggiornare lo stato di fissaggio",
-
-  "profile.backToCaddyShack": "Torna a CaddyShack",
+  "profile.backToCaddyShack": "Torna al Feed del team",
   "profile.loadingProfile": "Caricamento profilo...",
   "profile.userNotFound": "Utente non trovato.",
   "profile.posts": "Post",
@@ -66,7 +61,6 @@
   "profile.noLikes": "Ancora nessun post piaciuto.",
   "profile.noActivity": "Nessuna attività registrata.",
   "profile.thisIsYou": "Questo sei tu",
-
   "notifications.title": "Notifiche",
   "notifications.new": "{{count}} nuove",
   "notifications.readAll": "Leggi tutto",
@@ -88,7 +82,6 @@
   "notifications.failedToMarkRead": "Impossibile segnare la notifica come letta",
   "notifications.failedToMarkAllRead": "Impossibile segnare tutto come letto",
   "notifications.failedToClear": "Impossibile cancellare le notifiche",
-
   "activity.justNow": "adesso",
   "activity.minutesAgo": "{{count}}m fa",
   "activity.hoursAgo": "{{count}}h fa",

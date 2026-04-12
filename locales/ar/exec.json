@@ -22,7 +22,6 @@
   "dashboard.untitledChat": "محادثة بدون عنوان",
   "dashboard.general": "عام",
   "dashboard.messagesCount": "{{count}} رسالة",
-
   "investigations.all": "الكل",
   "investigations.active": "نشط",
   "investigations.closed": "مغلق",
@@ -33,7 +32,6 @@
   "investigations.events": "الأحداث",
   "investigations.boards": "اللوحات",
   "investigations.iocs": "IOCs",
-
   "detail.share": "مشاركة",
   "detail.created": "تم الإنشاء {{date}}",
   "detail.taskProgress": "تقدم المهام",
@@ -42,13 +40,11 @@
   "detail.todo": "{{count}} للقيام به",
   "detail.recentActivity": "النشاط الأخير",
   "detail.openInAnalystMode": "فتح في وضع المحلل",
-
   "notes.untitled": "بدون عنوان",
   "notes.created": "تم الإنشاء {{date}}",
   "notes.updated": "تم التحديث {{date}}",
   "notes.iocDetected": "تم اكتشاف {{count}} IOC",
   "notes.iocsDetected": "تم اكتشاف {{count}} IOCs",
-
   "tasks.untitled": "بدون عنوان",
   "tasks.created": "تم الإنشاء {{date}}",
   "tasks.updated": "تم التحديث {{date}}",
@@ -60,14 +56,12 @@
   "tasks.inProgress": "قيد التنفيذ",
   "tasks.done": "منتهي",
   "tasks.comments": "التعليقات ({{count}})",
-
   "events.untitled": "بدون عنوان",
   "events.timestamp": "الطابع الزمني {{date}}",
   "events.end": "النهاية {{date}}",
   "events.source": "المصدر: {{source}}",
   "events.actor": "الجهة الفاعلة:",
   "events.assets": "الأصول:",
-
   "iocs.created": "تم الإنشاء {{date}}",
   "iocs.updated": "تم التحديث {{date}}",
   "iocs.attribution": "النسب: {{value}}",
@@ -81,27 +75,22 @@
   "iocs.linkedTasksPlural": "{{count}} مهام مرتبطة",
   "iocs.linkedEvents": "{{count}} حدث مرتبط",
   "iocs.linkedEventsPlural": "{{count}} أحداث مرتبطة",
-
   "chat.untitledChat": "محادثة بدون عنوان",
   "chat.messagesCount": "{{count}} رسالة",
   "chat.created": "تم الإنشاء {{date}}",
   "chat.noMessages": "لا توجد رسائل في هذه المحادثة",
-
   "global.noItemsFound": "لم يتم العثور على عناصر",
   "global.unfiled": "غير مصنَّف",
-
   "entities.inFolder": "في {{name}}",
   "entities.noEntities": "لا يوجد {{type}} في هذا التحقيق",
   "entities.elementCount": "{{count}} عنصر",
   "entities.elementCountPlural": "{{count}} عناصر",
   "entities.openInAnalyst": "فتح في وضع المحلل",
-
   "activity.noRecentActivity": "لا يوجد نشاط حديث",
   "activity.today": "اليوم",
   "activity.yesterday": "أمس",
   "activity.thisWeek": "هذا الأسبوع",
   "activity.older": "أقدم",
-
   "share.title": "مشاركة",
   "share.encryptWithPassword": "تشفير بكلمة مرور",
   "share.enterPassword": "أدخل كلمة المرور...",
@@ -137,7 +126,6 @@
   "share.scopeIoc": "IOC",
   "share.scopeInvestigation": "تحقيق",
   "share.scopeChat": "دردشة",
-
   "share.shared": "مشترك",
   "share.saveToThreatCaddy": "حفظ في ThreatCaddy",
   "share.saving": "جارٍ الحفظ...",
@@ -153,18 +141,14 @@
   "share.messageCountPlural": "{{count}} رسائل",
   "share.youLabel": "أنت",
   "share.caddyAI": "CaddyAI",
-
   "search.filterPlaceholder": "تصفية...",
-
   "graph.notes": "الملاحظات",
   "graph.iocs": "IOCs",
   "graph.tasks": "المهام",
   "graph.events": "الأحداث",
-
   "nav.prev": "السابق",
   "nav.next": "التالي",
   "nav.ofTotal": "{{current}} من {{total}}",
-
   "breadcrumb.investigations": "التحقيقات",
   "breadcrumb.overview": "نظرة عامة",
   "breadcrumb.allNotes": "جميع الملاحظات",
@@ -177,11 +161,11 @@
   "breadcrumb.task": "مهمة",
   "breadcrumb.event": "حدث",
   "breadcrumb.chat": "دردشة",
-
   "metrics.notes": "الملاحظات",
   "metrics.openTasks": "المهام المفتوحة",
   "metrics.iocsTracked": "IOCs المتتبعة",
   "metrics.eventsThisWeek": "أحداث هذا الأسبوع",
   "metrics.aiChats": "محادثات الذكاء الاصطناعي",
-  "metrics.graphNodes": "عقد الرسم البياني"
+  "metrics.graphNodes": "عقد الرسم البياني",
+  "dashboard.backToExecView": "العودة إلى العرض التنفيذي"
 }

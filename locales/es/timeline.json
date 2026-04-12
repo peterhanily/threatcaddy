@@ -29,7 +29,6 @@
   "view.colorModeEvents": "Eventos",
   "view.colorModeConfidence": "Confianza",
   "view.colorModeActors": "Actores",
-
   "export.exportImport": "Exportar / Importar",
   "export.exportTimelineJSON": "Exportar cronología JSON",
   "export.exportAllEventsJSON": "Exportar todos los eventos JSON",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "Asignaciones MITRE CSV",
   "export.exportFailed": "Exportación de cronología fallida",
-
   "eventCard.deleteEvent": "Eliminar evento",
   "eventCard.unstarEvent": "Quitar destacado",
   "eventCard.starEvent": "Destacar",
   "eventCard.untitledEvent": "Evento sin título",
   "eventCard.assetCount": "{{count}} activo",
   "eventCard.assetCount_other": "{{count}} activos",
-
   "eventForm.title": "Título",
   "eventForm.titlePlaceholder": "Título del evento...",
   "eventForm.titleRequired": "El título del evento es obligatorio",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "Pegar datos de registro sin procesar, JSON, etc...",
   "eventForm.updateEvent": "Actualizar evento",
   "eventForm.createEvent": "Crear evento",
-
   "import.title": "Importar cronología",
   "import.selectFile": "Seleccionar archivo JSON de cronología",
   "import.createAsNew": "Crear como nueva cronología",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} sin cambios",
   "import.parseFailed": "Error al analizar el archivo",
   "import.importFailed": "Importación fallida",
-
   "feed.noEventsYet": "Sin eventos de cronología aún",
   "feed.noEventsHint": "Haga clic en \"Nuevo evento\" para agregar un evento de cronología",
   "feed.today": "Hoy",
   "feed.yesterday": "Ayer",
   "feed.eventCount": "{{count}} evento",
   "feed.eventCount_other": "{{count}} eventos",
-
   "gantt.zoomIn": "Acercar",
   "gantt.zoomOut": "Alejar",
   "gantt.fitAll": "Ajustar todo",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(evento puntual)",
   "gantt.tooltipSource": "Fuente: {{source}}",
   "gantt.tooltipActor": "Actor: {{actor}}",
-
   "map.mapped": "{{count}} mapeado(s)",
   "map.doubleClickToPlace": "Doble clic en el mapa para colocar eventos",
   "map.withoutLocation": "{{count}} sin ubicación",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "Activar colocación por clic",
   "map.unstar": "Quitar destacado",
   "map.star": "Destacar",
-
   "heatmap.techniques": "Técnicas:",
   "heatmap.eventsWithMitre": "Eventos con MITRE:",
   "heatmap.tacticsHit": "Tácticas alcanzadas:",
@@ -138,21 +130,20 @@
   "heatmap.legendHigh": "Alto",
   "heatmap.legendConf": "Conf.",
   "heatmap.tooltipConfidence": "Confianza",
-  "heatmap.confidenceNone": "\u2014",
+  "heatmap.confidenceNone": "—",
   "heatmap.confidenceLow": "Baja",
   "heatmap.confidenceMedium": "Media",
   "heatmap.confidenceHigh": "Alta",
   "heatmap.confidenceConfirmed": "Confirmada",
-
   "filter.clear": "Borrar",
-
   "mitreCombo.searchPlaceholder": "Buscar técnicas (ej. T1566, Phishing)...",
   "mitreCombo.addMore": "Agregar más...",
-
   "mitreReport.techniquesPerTactic": "Técnicas por táctica",
   "mitreReport.actorTTPSummary": "Resumen TTP por actor",
   "mitreReport.noActorsMapped": "Ningún actor tiene técnicas mapeadas.",
   "mitreReport.techniqueCount": "{{count}} técnica",
   "mitreReport.techniqueCount_other": "{{count}} técnicas",
-  "mitreReport.techniqueCoverage": "Cobertura de técnicas"
+  "mitreReport.techniqueCoverage": "Cobertura de técnicas",
+  "emptyState": "Aún no hay eventos en la línea de tiempo",
+  "createFirstHint": "Usa el botón + de arriba para añadir tu primer evento"
 }

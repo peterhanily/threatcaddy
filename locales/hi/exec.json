@@ -1,6 +1,6 @@
 {
   "dashboard.appName": "ThreatCaddy",
-  "dashboard.exec": "EXEC",
+  "dashboard.exec": "कार्यकारी",
   "dashboard.switchToAnalyst": "विश्लेषक मोड पर जाएं",
   "dashboard.overview": "अवलोकन",
   "dashboard.cases": "केस",
@@ -22,7 +22,6 @@
   "dashboard.untitledChat": "बिना शीर्षक चैट",
   "dashboard.general": "सामान्य",
   "dashboard.messagesCount": "{{count}} संदेश",
-
   "investigations.all": "सभी",
   "investigations.active": "सक्रिय",
   "investigations.closed": "बंद",
@@ -33,7 +32,6 @@
   "investigations.events": "इवेंट",
   "investigations.boards": "बोर्ड",
   "investigations.iocs": "IOCs",
-
   "detail.share": "साझा करें",
   "detail.created": "{{date}} को बनाया गया",
   "detail.taskProgress": "कार्य प्रगति",
@@ -42,13 +40,11 @@
   "detail.todo": "{{count}} करना है",
   "detail.recentActivity": "हालिया गतिविधि",
   "detail.openInAnalystMode": "विश्लेषक मोड में खोलें",
-
   "notes.untitled": "बिना शीर्षक",
   "notes.created": "{{date}} को बनाया गया",
   "notes.updated": "{{date}} को अपडेट हुआ",
   "notes.iocDetected": "{{count}} IOC पाया गया",
   "notes.iocsDetected": "{{count}} IOCs पाए गए",
-
   "tasks.untitled": "बिना शीर्षक",
   "tasks.created": "{{date}} को बनाया गया",
   "tasks.updated": "{{date}} को अपडेट हुआ",
@@ -60,14 +56,12 @@
   "tasks.inProgress": "प्रगति में",
   "tasks.done": "पूर्ण",
   "tasks.comments": "टिप्पणियाँ ({{count}})",
-
   "events.untitled": "बिना शीर्षक",
   "events.timestamp": "टाइमस्टैम्प {{date}}",
   "events.end": "समाप्ति {{date}}",
   "events.source": "स्रोत: {{source}}",
   "events.actor": "अभिनेता:",
   "events.assets": "एसेट:",
-
   "iocs.created": "{{date}} को बनाया गया",
   "iocs.updated": "{{date}} को अपडेट हुआ",
   "iocs.attribution": "एट्रिब्यूशन: {{value}}",
@@ -81,27 +75,22 @@
   "iocs.linkedTasksPlural": "{{count}} लिंक किए कार्य",
   "iocs.linkedEvents": "{{count}} लिंक किया इवेंट",
   "iocs.linkedEventsPlural": "{{count}} लिंक किए इवेंट",
-
   "chat.untitledChat": "बिना शीर्षक चैट",
   "chat.messagesCount": "{{count}} संदेश",
   "chat.created": "{{date}} को बनाई गई",
   "chat.noMessages": "इस थ्रेड में कोई संदेश नहीं",
-
   "global.noItemsFound": "कोई आइटम नहीं मिला",
   "global.unfiled": "बिना फ़ाइल",
-
   "entities.inFolder": "{{name}} में",
   "entities.noEntities": "इस जाँच में कोई {{type}} नहीं",
   "entities.elementCount": "{{count}} तत्व",
   "entities.elementCountPlural": "{{count}} तत्व",
   "entities.openInAnalyst": "विश्लेषक में खोलें",
-
   "activity.noRecentActivity": "कोई हालिया गतिविधि नहीं",
   "activity.today": "आज",
   "activity.yesterday": "कल",
   "activity.thisWeek": "इस सप्ताह",
   "activity.older": "पुराना",
-
   "share.title": "साझा करें",
   "share.encryptWithPassword": "पासवर्ड से एन्क्रिप्ट करें",
   "share.enterPassword": "पासवर्ड दर्ज करें...",
@@ -137,7 +126,6 @@
   "share.scopeIoc": "IOC",
   "share.scopeInvestigation": "जाँच",
   "share.scopeChat": "चैट",
-
   "share.shared": "साझा",
   "share.saveToThreatCaddy": "ThreatCaddy में सहेजें",
   "share.saving": "सहेजा जा रहा है...",
@@ -153,18 +141,14 @@
   "share.messageCountPlural": "{{count}} संदेश",
   "share.youLabel": "आप",
   "share.caddyAI": "CaddyAI",
-
   "search.filterPlaceholder": "फ़िल्टर करें...",
-
   "graph.notes": "नोट्स",
   "graph.iocs": "IOCs",
   "graph.tasks": "कार्य",
   "graph.events": "इवेंट",
-
   "nav.prev": "पिछला",
   "nav.next": "अगला",
   "nav.ofTotal": "{{current}} / {{total}}",
-
   "breadcrumb.investigations": "जाँचें",
   "breadcrumb.overview": "अवलोकन",
   "breadcrumb.allNotes": "सभी नोट्स",
@@ -177,11 +161,11 @@
   "breadcrumb.task": "कार्य",
   "breadcrumb.event": "इवेंट",
   "breadcrumb.chat": "चैट",
-
   "metrics.notes": "नोट्स",
   "metrics.openTasks": "खुले कार्य",
   "metrics.iocsTracked": "IOCs ट्रैक किए",
   "metrics.eventsThisWeek": "इस सप्ताह के इवेंट",
   "metrics.aiChats": "AI चैट",
-  "metrics.graphNodes": "ग्राफ नोड्स"
+  "metrics.graphNodes": "ग्राफ नोड्स",
+  "dashboard.backToExecView": "कार्यकारी दृश्य पर वापस"
 }

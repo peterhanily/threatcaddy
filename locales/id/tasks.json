@@ -5,11 +5,9 @@
   "priority.lowFull": "Rendah",
   "priority.mediumFull": "Sedang",
   "priority.highFull": "Tinggi",
-
   "status.todo": "Yang Harus Dilakukan",
   "status.inProgress": "Sedang Berjalan",
   "status.done": "Selesai",
-
   "list.title": "Tugas",
   "list.titleWithScope": "Tugas — {{scope}} ({{count}})",
   "list.titleWithCount": "Tugas ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "Klik \"Tugas Baru\" atau tekan Ctrl+Shift+T",
   "list.editTaskModal": "Edit Tugas",
   "list.createTaskModal": "Buat Tugas",
-
   "item.markIncomplete": "Tandai tidak lengkap",
   "item.markComplete": "Tandai selesai",
   "item.untitled": "Tugas tanpa judul",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "Hapus Tugas",
   "item.confirmDeleteMessage": "Tugas ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.",
   "item.confirmDeleteLabel": "Hapus Tugas",
-
   "form.titleLabel": "Judul",
   "form.titlePlaceholder": "Judul tugas...",
   "form.titleRequired": "Judul tugas diperlukan",
@@ -81,10 +77,11 @@
   "form.relativeTime.minutesAgo": "{{count}}m lalu",
   "form.relativeTime.hoursAgo": "{{count}}j lalu",
   "form.relativeTime.daysAgo": "{{count}}h lalu",
-
   "kanban.boardLabel": "Papan kanban",
   "kanban.columnLabel": "Kolom {{label}}, {{count}} tugas",
   "kanban.changeStatus": "Ubah status {{title}}",
   "kanban.noTasks": "Tidak ada tugas",
-  "kanban.dropHere": "Jatuhkan tugas di sini"
+  "kanban.dropHere": "Jatuhkan tugas di sini",
+  "emptyState": "Belum ada tugas — buat satu untuk memulai",
+  "createFirst": "Buat tugas pertama Anda"
 }

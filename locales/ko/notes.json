@@ -15,12 +15,10 @@
   "builtinTemplate.cloudAccount.name": "클라우드 계정 세부 정보",
   "builtinTemplate.ociUser.name": "OCI 사용자 세부 정보",
   "builtinTemplate.ociTenancy.name": "OCI 테넌시 세부 정보",
-
   "builtinTemplateCategory.general": "일반",
   "builtinTemplateCategory.investigation": "조사",
   "builtinTemplateCategory.incidentResponse": "인시던트 대응",
   "builtinTemplateCategory.cloud": "클라우드",
-
   "card": {
     "moveToTrash": "휴지통으로 이동",
     "moveToTrashAria": "노트를 휴지통으로 이동",
@@ -170,5 +168,7 @@
     "categoryBlocks": "블록",
     "categoryThreatIntel": "위협 인텔",
     "categoryInsert": "삽입"
-  }
+  },
+  "emptyState": "메모가 아직 없습니다 — 하나 만들어 시작하세요",
+  "createFirst": "첫 번째 노트 만들기"
 }

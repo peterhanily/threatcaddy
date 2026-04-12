@@ -8,7 +8,7 @@
   "columns": "{{count}} kolumn",
   "truncated": "Skrócono do 10 000 wierszy",
   "investigationFolder": "Folder dochodzenia",
-  "noFolder": "Bez folderu",
+  "noFolder": "Bez śledztwa",
   "timeline": "Oś czasu",
   "allEventsFirst": "Wszystkie zdarzenia (pierwsza dostępna)",
   "newTimeline": "+ Nowa oś czasu...",

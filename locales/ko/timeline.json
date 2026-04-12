@@ -29,7 +29,6 @@
   "view.colorModeEvents": "이벤트",
   "view.colorModeConfidence": "신뢰도",
   "view.colorModeActors": "행위자",
-
   "export.exportImport": "내보내기 / 가져오기",
   "export.exportTimelineJSON": "타임라인 JSON 내보내기",
   "export.exportAllEventsJSON": "모든 이벤트 JSON 내보내기",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "MITRE 매핑 CSV",
   "export.exportFailed": "타임라인 내보내기 실패",
-
   "eventCard.deleteEvent": "이벤트 삭제",
   "eventCard.unstarEvent": "즐겨찾기 해제",
   "eventCard.starEvent": "즐겨찾기",
   "eventCard.untitledEvent": "제목 없는 이벤트",
   "eventCard.assetCount": "{{count}}개 자산",
   "eventCard.assetCount_other": "{{count}}개 자산",
-
   "eventForm.title": "제목",
   "eventForm.titlePlaceholder": "이벤트 제목...",
   "eventForm.titleRequired": "이벤트 제목이 필요합니다",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "원시 로그 데이터, JSON 등 붙여넣기...",
   "eventForm.updateEvent": "이벤트 업데이트",
   "eventForm.createEvent": "이벤트 만들기",
-
   "import.title": "타임라인 가져오기",
   "import.selectFile": "타임라인 JSON 파일 선택",
   "import.createAsNew": "새 타임라인으로 만들기",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}}개 변경 없음",
   "import.parseFailed": "파일 파싱 실패",
   "import.importFailed": "가져오기 실패",
-
   "feed.noEventsYet": "타임라인 이벤트가 아직 없습니다",
   "feed.noEventsHint": "\"새 이벤트\"를 클릭하여 타임라인 이벤트 추가",
   "feed.today": "오늘",
   "feed.yesterday": "어제",
   "feed.eventCount": "{{count}}개 이벤트",
   "feed.eventCount_other": "{{count}}개 이벤트",
-
   "gantt.zoomIn": "확대",
   "gantt.zoomOut": "축소",
   "gantt.fitAll": "전체 맞추기",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(포인트 이벤트)",
   "gantt.tooltipSource": "출처: {{source}}",
   "gantt.tooltipActor": "행위자: {{actor}}",
-
   "map.mapped": "{{count}}개 매핑됨",
   "map.doubleClickToPlace": "지도를 더블클릭하여 이벤트 배치",
   "map.withoutLocation": "{{count}}개 위치 없음",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "단일 클릭 배치 활성화",
   "map.unstar": "즐겨찾기 해제",
   "map.star": "즐겨찾기",
-
   "heatmap.techniques": "기법:",
   "heatmap.eventsWithMitre": "MITRE 포함 이벤트:",
   "heatmap.tacticsHit": "적중 전술:",
@@ -143,16 +135,15 @@
   "heatmap.confidenceMedium": "중간",
   "heatmap.confidenceHigh": "높음",
   "heatmap.confidenceConfirmed": "확인됨",
-
   "filter.clear": "지우기",
-
   "mitreCombo.searchPlaceholder": "기법 검색 (예: T1566, Phishing)...",
   "mitreCombo.addMore": "더 추가...",
-
   "mitreReport.techniquesPerTactic": "전술별 기법",
   "mitreReport.actorTTPSummary": "행위자 TTP 요약",
   "mitreReport.noActorsMapped": "기법에 매핑된 행위자가 없습니다.",
   "mitreReport.techniqueCount": "{{count}}개 기법",
   "mitreReport.techniqueCount_other": "{{count}}개 기법",
-  "mitreReport.techniqueCoverage": "기법 커버리지"
+  "mitreReport.techniqueCoverage": "기법 커버리지",
+  "emptyState": "타임라인 이벤트가 아직 없습니다",
+  "createFirstHint": "위의 + 버튼을 사용하여 첫 번째 이벤트를 추가하세요"
 }

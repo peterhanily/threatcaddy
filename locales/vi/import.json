@@ -8,7 +8,7 @@
   "columns": "{{count}} cột",
   "truncated": "Đã cắt bớt còn 10.000 hàng",
   "investigationFolder": "Thư mục điều tra",
-  "noFolder": "Không có thư mục",
+  "noFolder": "Không có cuộc điều tra",
   "timeline": "Timeline",
   "allEventsFirst": "Tất cả sự kiện (đầu tiên có sẵn)",
   "newTimeline": "+ Timeline mới...",

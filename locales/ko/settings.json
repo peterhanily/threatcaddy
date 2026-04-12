@@ -1,7 +1,6 @@
 {
   "title": "설정",
   "closeSettings": "설정 닫기",
-
   "tabs.general": "일반",
   "tabs.appearance": "외관",
   "tabs.ai": "AI",
@@ -11,7 +10,6 @@
   "tabs.intel": "인텔",
   "tabs.integrations": "통합",
   "tabs.shortcuts": "단축키",
-
   "general.identity": "내 신원",
   "general.displayName": "표시 이름",
   "general.displayNamePlaceholder": "이름 (만든 엔티티에 표시됨)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "업데이트 다운로드에 실패했습니다. 최신 버전은 https://threatcaddy.com을 방문하세요.",
   "general.downloadStandalone": "독립 실행형 다운로드",
   "general.privacy": "개인 정보",
-
   "appearance.theme": "테마",
   "appearance.mode": "모드",
   "appearance.dark": "다크",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "이미지 저장 실패",
   "appearance.bgRemoved": "배경 이미지 제거됨",
   "appearance.bgRemoveFailed": "이미지 제거 실패",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "Anthropic API 키",
   "ai.openaiKey": "OpenAI API 키",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "명령어 이름 (예: mytriage)",
   "ai.commandDescPlaceholder": "설명 (슬래시 메뉴에 표시)",
   "ai.commandTemplatePlaceholder": "프롬프트 템플릿. 사용자 인수에는 {{input}}을 사용하세요.\n\n예: 이 알림에서 IOC를 분석하고 트리아지 보고서를 만드세요:\n\n{{input}}",
-
   "agents.supervisor": "슈퍼바이저 에이전트",
   "agents.supervisorDesc": "교차 조사 분석 — 케이스 로드 전반에 걸쳐 공유 IOC, 정체된 케이스, 패턴을 탐지합니다.",
   "agents.enableSupervisor": "슈퍼바이저 활성화",
   "agents.supervisorInterval": "{{minutes}}분마다 실행",
   "agents.supervisorAriaLabel": "슈퍼바이저 에이전트 활성화",
   "agents.interval": "간격",
-
   "agents.hosts": "에이전트 호스트",
   "agents.hostsDesc": "REST API를 통해 스킬을 노출하는 외부 에이전트 호스트 (Claude Code, 사용자 정의 런타임)에 연결합니다. 발견된 스킬은 LLM 도구로 사용 가능합니다.",
   "agents.refreshAll": "모두 새로 고침",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "캐시된 스킬이 없습니다. \"스킬 가져오기\"를 클릭하여 사용 가능한 스킬을 검색하세요.",
   "agents.skillsLastFetched": "{{count}}개 스킬 — 마지막 가져오기 {{date}}",
   "agents.params": "파라미터: {{params}}",
-
   "data.exportImportTitle": "내보내기 & 가져오기",
   "data.exportJSON": "JSON 백업 내보내기",
   "data.exportMarkdown": "Markdown 내보내기",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "{{count}}개 노트를 Markdown으로 내보냈습니다",
   "data.importedCounts": "{{notes}}개 노트, {{tasks}}개 태스크, {{folders}}개 조사, {{tags}}개 태그를 가져왔습니다",
   "data.importBackupTitle": "백업 가져오기",
-  "data.importBackupMessage": "현재 모든 노트, 태스크, 폴더, 태그가 가져온 데이터로 대체됩니다. 이 작업은 취소할 수 없습니다.",
+  "data.importBackupMessage": "현재 모든 노트, 태스크, 조사, 태그가 가져온 데이터로 대체됩니다. 이 작업은 취소할 수 없습니다.",
   "data.importReplace": "가져오기 및 대체",
   "data.importedMarkdown": "Markdown에서 {{count}}개 노트를 가져왔습니다",
-
   "data.mdImportTitle": "Markdown 가져오기",
   "data.mdPreviewTitle": "가져오기 미리보기",
   "data.mdCompleteTitle": "가져오기 완료",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "{{count}}개 노트 가져오기",
   "data.mdImportedSuccess_one": "{{count}}개 노트를 성공적으로 가져왔습니다",
   "data.mdImportedSuccess_other": "{{count}}개 노트를 성공적으로 가져왔습니다",
-
   "encryption.title": "서버 암호화 백업",
   "encryption.connectPrompt": "암호화된 백업을 사용하려면 팀 서버에 연결하세요.",
   "encryption.description": "서버에 저장된 비밀번호 보호 백업. 관리자도 읽을 수 없습니다.",
@@ -233,7 +224,6 @@
   "encryption.merge": "병합",
   "encryption.deleteConfirmTitle": "백업 삭제",
   "encryption.deleteConfirmMessage": "이 암호화된 백업은 서버에서 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
-
   "cloud.title": "클라우드 백업",
   "cloud.addDestination": "대상 추가",
   "cloud.provider": "공급자",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "전체 데이터베이스를 {{count}}개 클라우드 대상에 업로드합니다. 계속하시겠습니까?",
   "cloud.encryptedPushSuccess": "암호화된 백업이 성공적으로 푸시되었습니다",
   "cloud.pushSuccess": "백업이 성공적으로 푸시되었습니다",
-
   "templates.noteTemplates": "노트 템플릿",
   "templates.summary": "사용자 정의 {{custom}}개, 기본 제공 {{builtin}}개",
   "templates.description": "템플릿은 구조화된 콘텐츠로 노트를 미리 채웁니다. 기본 제공 템플릿은 복제하여 사용자 정의할 수 있습니다.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "템플릿 \"{{name}}\" 만들어짐",
   "templates.deletedToast": "템플릿 \"{{name}}\" 삭제됨",
   "templates.saveFailed": "템플릿 저장 실패",
-
   "templates.playbooks": "조사 플레이북",
   "templates.playbooksDesc": "플레이북은 새 조사에 태스크와 노트를 자동으로 채웁니다. 사이드바의 책 아이콘을 사용하여 플레이북으로 시작하세요.",
   "templates.yourPlaybooks": "내 플레이북",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "플레이북 \"{{name}}\" 만들어짐",
   "templates.playbookDeletedToast": "플레이북 \"{{name}}\" 삭제됨",
   "templates.playbookSaveFailed": "플레이북 저장 실패",
-
   "intel.title": "위협 인텔 설정",
   "intel.extractionBehavior": "추출 동작",
   "intel.autoExtract": "콘텐츠에서 IOC 자동 추출",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "사용자 정의 관계 유형 추가",
   "intel.configImported": "설정 가져오기됨",
   "intel.invalidConfigFile": "유효하지 않은 JSON 설정 파일",
-
   "shortcuts.title": "키보드 단축키",
   "shortcuts.newNote": "새 노트 / 빠른 캡처",
   "shortcuts.focusSearch": "검색에 포커스",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "키보드 단축키 표시",
   "shortcuts.switchView": "보기 전환 (노트/태스크/타임라인/화이트보드)",
   "shortcuts.closeModals": "모달 닫기",
-
   "server.teamServer": "팀 서버",
   "server.connected": "연결됨",
   "server.serverLabel": "서버",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "서버에서 연결 끊김",
   "server.savedServers": "저장된 서버",
   "server.deleteSavedServer": "저장된 서버 삭제",
-
   "server.onboarding.welcome": "{{name}}에 오신 것을 환영합니다!",
   "server.onboarding.intro": "팀 서버에 연결되었습니다. 다음을 수행할 수 있습니다:",
   "server.onboarding.sharedInvestigations": "공유 조사",
   "server.onboarding.sharedInvestigationsDesc": "팀과 케이스 공동 작업 — 실시간으로 노트, 태스크, 타임라인, IOC 공유.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "팀 피드",
   "server.onboarding.caddyShackDesc": "SOC를 위한 팀 토론 피드. 업데이트 게시, 발견 사항 공유, 팀원 게시물에 반응.",
   "server.onboarding.realTimeSync": "실시간 동기화",
   "server.onboarding.realTimeSyncDesc": "노트, 태스크, IOC가 연결된 모든 팀원 간에 자동으로 동기화됩니다.",

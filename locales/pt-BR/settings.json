@@ -1,7 +1,6 @@
 {
   "title": "Configurações",
   "closeSettings": "Fechar configurações",
-
   "tabs.general": "Geral",
   "tabs.appearance": "Aparência",
   "tabs.ai": "IA",
@@ -11,7 +10,6 @@
   "tabs.intel": "Intel",
   "tabs.integrations": "Integrações",
   "tabs.shortcuts": "Atalhos",
-
   "general.identity": "Sua identidade",
   "general.displayName": "Nome de exibição",
   "general.displayNamePlaceholder": "Seu nome (exibido nas entidades que você cria)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "Falha ao baixar atualização. Visite https://threatcaddy.com para obter a versão mais recente.",
   "general.downloadStandalone": "Baixar versão standalone",
   "general.privacy": "Privacidade",
-
   "appearance.theme": "Tema",
   "appearance.mode": "Modo",
   "appearance.dark": "Escuro",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "Falha ao salvar imagem",
   "appearance.bgRemoved": "Imagem de fundo removida",
   "appearance.bgRemoveFailed": "Falha ao remover imagem",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "Chave de API da Anthropic",
   "ai.openaiKey": "Chave de API da OpenAI",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "Nome do comando (ex. meurtriagem)",
   "ai.commandDescPlaceholder": "Descrição (exibida no menu slash)",
   "ai.commandTemplatePlaceholder": "Modelo de prompt. Use {{input}} para argumentos do usuário.\n\nExemplo: Analisar este alerta para IOCs e criar um relatório de triagem:\n\n{{input}}",
-
   "agents.supervisor": "Agente supervisor",
   "agents.supervisorDesc": "Análise entre investigações — detecta IOCs compartilhados, casos desatualizados e padrões na sua carga de trabalho.",
   "agents.enableSupervisor": "Habilitar supervisor",
   "agents.supervisorInterval": "Executa a cada {{minutes}} minutos",
   "agents.supervisorAriaLabel": "Habilitar agente supervisor",
   "agents.interval": "Intervalo",
-
   "agents.hosts": "Hosts de agentes",
   "agents.hostsDesc": "Conecte hosts de agentes externos (Claude Code, runtimes personalizados) que expõem habilidades via REST API. As habilidades descobertas ficam disponíveis como ferramentas LLM.",
   "agents.refreshAll": "Atualizar tudo",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "Nenhuma habilidade em cache. Clique em \"Buscar habilidades\" para descobrir as habilidades disponíveis.",
   "agents.skillsLastFetched": "{{count}} habilidade(s){{plural}} — última busca {{date}}",
   "agents.params": "parâmetros: {{params}}",
-
   "data.exportImportTitle": "Exportar e Importar",
   "data.exportJSON": "Exportar backup JSON",
   "data.exportMarkdown": "Exportar Markdown",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "{{count}} notas exportadas como Markdown",
   "data.importedCounts": "{{notes}} notas, {{tasks}} tarefas, {{folders}} investigações, {{tags}} tags importadas",
   "data.importBackupTitle": "Importar backup",
-  "data.importBackupMessage": "Isso substituirá todas as suas notas, tarefas, pastas e tags atuais pelos dados importados. Não pode ser desfeito.",
+  "data.importBackupMessage": "Isso substituirá todas as suas notas, tarefas, investigações e tags atuais pelos dados importados. Não pode ser desfeito.",
   "data.importReplace": "Importar e substituir",
   "data.importedMarkdown": "{{count}} notas importadas do Markdown",
-
   "data.mdImportTitle": "Importar Markdown",
   "data.mdPreviewTitle": "Pré-visualização da importação",
   "data.mdCompleteTitle": "Importação concluída",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "Importar {{count}} notas",
   "data.mdImportedSuccess_one": "{{count}} nota importada com sucesso",
   "data.mdImportedSuccess_other": "{{count}} notas importadas com sucesso",
-
   "encryption.title": "Backups criptografados do servidor",
   "encryption.connectPrompt": "Conecte-se a um servidor de equipe para usar backups criptografados.",
   "encryption.description": "Backups protegidos por senha armazenados no servidor. Nem os administradores conseguem lê-los.",
@@ -233,7 +224,6 @@
   "encryption.merge": "Mesclar",
   "encryption.deleteConfirmTitle": "Excluir backup",
   "encryption.deleteConfirmMessage": "Este backup criptografado será excluído permanentemente do servidor. Não pode ser desfeito.",
-
   "cloud.title": "Backup na nuvem",
   "cloud.addDestination": "Adicionar destino",
   "cloud.provider": "Provedor",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "Isso fará o upload de todo o seu banco de dados para {{count}} destino(s) na nuvem. Continuar?",
   "cloud.encryptedPushSuccess": "Backup criptografado enviado com sucesso",
   "cloud.pushSuccess": "Backup enviado com sucesso",
-
   "templates.noteTemplates": "Modelos de notas",
   "templates.summary": "{{custom}} personalizado(s), {{builtin}} integrado(s)",
   "templates.description": "Os modelos preenchem as notas com conteúdo estruturado. Os modelos integrados podem ser duplicados e personalizados.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "Modelo \"{{name}}\" criado",
   "templates.deletedToast": "Modelo \"{{name}}\" excluído",
   "templates.saveFailed": "Falha ao salvar modelo",
-
   "templates.playbooks": "Playbooks de investigação",
   "templates.playbooksDesc": "Os playbooks preenchem automaticamente as novas investigações com tarefas e notas. Use o ícone de livro na barra lateral para começar a partir de um playbook.",
   "templates.yourPlaybooks": "Seus playbooks",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "Playbook \"{{name}}\" criado",
   "templates.playbookDeletedToast": "Playbook \"{{name}}\" excluído",
   "templates.playbookSaveFailed": "Falha ao salvar playbook",
-
   "intel.title": "Configuração de inteligência de ameaças",
   "intel.extractionBehavior": "Comportamento de extração",
   "intel.autoExtract": "Extrair IOCs automaticamente do conteúdo",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "Adicionar tipo de relacionamento personalizado",
   "intel.configImported": "Configuração importada",
   "intel.invalidConfigFile": "Arquivo de configuração JSON inválido",
-
   "shortcuts.title": "Atalhos de teclado",
   "shortcuts.newNote": "Nova nota / Captura rápida",
   "shortcuts.focusSearch": "Focar na pesquisa",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "Mostrar atalhos de teclado",
   "shortcuts.switchView": "Alternar visualização (Notas/Tarefas/Cronologia/Quadro branco)",
   "shortcuts.closeModals": "Fechar modais",
-
   "server.teamServer": "Servidor de equipe",
   "server.connected": "Conectado",
   "server.serverLabel": "Servidor",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "Desconectado do servidor",
   "server.savedServers": "Servidores salvos",
   "server.deleteSavedServer": "Excluir servidor salvo",
-
   "server.onboarding.welcome": "Bem-vindo(a) a {{name}}!",
   "server.onboarding.intro": "Você está conectado(a) ao seu servidor de equipe. Veja o que você pode fazer:",
   "server.onboarding.sharedInvestigations": "Investigações compartilhadas",
   "server.onboarding.sharedInvestigationsDesc": "Colabore em casos com sua equipe — compartilhe notas, tarefas, cronologias e IOCs em tempo real.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "Feed da equipe",
   "server.onboarding.caddyShackDesc": "Feed de discussão da equipe para o seu SOC. Publique atualizações, compartilhe descobertas e reaja às publicações dos seus colegas.",
   "server.onboarding.realTimeSync": "Sincronização em tempo real",
   "server.onboarding.realTimeSyncDesc": "Suas notas, tarefas e IOCs sincronizam automaticamente entre todos os membros da equipe conectados.",

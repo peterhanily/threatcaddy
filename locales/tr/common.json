@@ -44,7 +44,6 @@
   "quickCapture.createNote": "Not Oluştur",
   "quickCapture.customBadge": "özel",
   "skipToMainContent": "Ana içeriğe geç",
-
   "createDropdown.createNew": "Yeni oluştur...",
   "createDropdown.new": "Yeni",
   "createDropdown.createItem": "{{item}} Oluştur",
@@ -56,7 +55,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "Dosya Aç",
   "createDropdown.importData": "Veri İçe Aktar",
-
   "shortcuts.title": "Klavye Kısayolları",
   "shortcuts.general": "Genel",
   "shortcuts.openSearch": "Aramayı aç",
@@ -76,7 +74,6 @@
   "shortcuts.switchToTasks": "Görevlere geç",
   "shortcuts.switchToTimeline": "Zaman Çizelgesine geç",
   "shortcuts.switchToWhiteboards": "Beyaz Tahtalara geç",
-
   "entityLinker.linkEntities": "Varlıkları bağla",
   "entityLinker.searchPlaceholder": "Bağlanacak varlıkları ara...",
   "entityLinker.linked": "bağlandı",
@@ -85,7 +82,6 @@
   "entityLinker.note": "Not",
   "entityLinker.task": "Görev",
   "entityLinker.event": "Olay",
-
   "comments.label": "Yorumlar",
   "comments.justNow": "az önce",
   "comments.minutesAgo": "{{count}}d önce",
@@ -97,7 +93,6 @@
   "comments.editComment": "Yorumu düzenle",
   "comments.deleteComment": "Yorumu sil",
   "comments.addPlaceholder": "Yorum ekle...",
-
   "sidebar.dashboard": "Kontrol Paneli",
   "sidebar.investigations": "Soruşturmalar",
   "sidebar.notes": "Notlar",
@@ -108,7 +103,7 @@
   "sidebar.graph": "Graf",
   "sidebar.activity": "Etkinlik",
   "sidebar.caddyAI": "CaddyAI",
-  "sidebar.caddyShack": "CaddyShack",
+  "sidebar.caddyShack": "Takım Akışı",
   "sidebar.agentCaddy": "AgentCaddy",
   "sidebar.settings": "Ayarlar",
   "sidebar.archive": "Arşiv",
@@ -123,7 +118,6 @@
   "sidebar.downloadStandalone": "Bağımsız Sürümü İndir",
   "sidebar.chromeExtension": "Chrome Uzantısı",
   "sidebar.privacy": "Gizlilik",
-
   "header.toggleMenu": "Menüyü aç/kapat",
   "header.toggleSidebar": "Kenar çubuğunu aç/kapat",
   "header.localEdition": "Yerel Sürüm",
@@ -146,7 +140,6 @@
   "header.privacy": "Gizlilik",
   "header.saveBackup": "Yedek Kaydet",
   "header.loadBackup": "Yedek Yükle",
-
   "serverError.VALIDATION_FAILED": "Doğrulama başarısız",
   "serverError.EMAIL_ALREADY_REGISTERED": "E-posta zaten kayıtlı",
   "serverError.INVALID_CREDENTIALS": "Geçersiz e-posta veya şifre",
@@ -205,5 +198,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "Geçersiz webhook sırrı",
   "serverError.RUN_NOT_FOUND": "Çalıştırma bulunamadı",
   "serverError.INTERNAL_ERROR": "Dahili sunucu hatası",
-  "serverError.MISSING_BLOB": "Dosya verisi eksik"
+  "serverError.MISSING_BLOB": "Dosya verisi eksik",
+  "demoModal.title": "ThreatCaddy'ye Hoş Geldiniz",
+  "demoModal.descriptionPrefix": "Bir örnek soruşturma",
+  "demoModal.descriptionSuffix": "yüklendi, böylece her şeyin nasıl çalıştığını keşfedebilirsiniz.",
+  "demoModal.whatYouCan": "Yapabilecekleriniz:",
+  "demoModal.browseItems": "Notları, görevleri ve zaman çizelgesi olaylarını gözden geçirin",
+  "demoModal.viewGraph": "Soruşturma grafiğini ve IOC analizini görüntüleyin",
+  "demoModal.tryWhiteboard": "Beyaz tahtayı ve varlık bağlantısını deneyin",
+  "demoModal.useLinksPrefix": "Kullanın",
+  "demoModal.useLinksSuffix": "notlar arasında bağlantı kurmak için",
+  "demoModal.startExploring": "Keşfetmeye Başla",
+  "demoModal.guidedTour": "Rehberli Tura Katıl",
+  "demoModal.deleteDemo": "Demoyu Sil ve Sıfırdan Başla",
+  "demoModal.removeHint": "Örnek verileri daha sonra Ayarlar'dan kaldırabilirsiniz."
 }

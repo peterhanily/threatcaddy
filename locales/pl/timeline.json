@@ -29,7 +29,6 @@
   "view.colorModeEvents": "Zdarzenia",
   "view.colorModeConfidence": "Pewność",
   "view.colorModeActors": "Aktorzy",
-
   "export.exportImport": "Eksport / Import",
   "export.exportTimelineJSON": "Eksportuj oś czasu JSON",
   "export.exportAllEventsJSON": "Eksportuj wszystkie zdarzenia JSON",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "MITRE Mappings CSV",
   "export.exportFailed": "Eksport osi czasu nie powiódł się",
-
   "eventCard.deleteEvent": "Usuń zdarzenie",
   "eventCard.unstarEvent": "Usuń oznaczenie",
   "eventCard.starEvent": "Oznacz zdarzenie",
   "eventCard.untitledEvent": "Zdarzenie bez tytułu",
   "eventCard.assetCount": "{{count}} zasób",
   "eventCard.assetCount_other": "{{count}} zasobów",
-
   "eventForm.title": "Tytuł",
   "eventForm.titlePlaceholder": "Tytuł zdarzenia...",
   "eventForm.titleRequired": "Tytuł zdarzenia jest wymagany",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "Wklej surowe dane logu, JSON itp...",
   "eventForm.updateEvent": "Zaktualizuj zdarzenie",
   "eventForm.createEvent": "Utwórz zdarzenie",
-
   "import.title": "Importuj oś czasu",
   "import.selectFile": "Wybierz plik JSON osi czasu",
   "import.createAsNew": "Utwórz jako nową oś czasu",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} bez zmian",
   "import.parseFailed": "Nie udało się przetworzyć pliku",
   "import.importFailed": "Import nie powiódł się",
-
   "feed.noEventsYet": "Brak zdarzeń osi czasu",
   "feed.noEventsHint": "Kliknij „Nowe zdarzenie\", aby dodać zdarzenie osi czasu",
   "feed.today": "Dzisiaj",
   "feed.yesterday": "Wczoraj",
   "feed.eventCount": "{{count}} zdarzenie",
   "feed.eventCount_other": "{{count}} zdarzeń",
-
   "gantt.zoomIn": "Powiększ",
   "gantt.zoomOut": "Pomniejsz",
   "gantt.fitAll": "Dopasuj wszystko",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(zdarzenie punktowe)",
   "gantt.tooltipSource": "Źródło: {{source}}",
   "gantt.tooltipActor": "Aktor: {{actor}}",
-
   "map.mapped": "{{count}} zmapowano",
   "map.doubleClickToPlace": "Kliknij dwukrotnie na mapę, aby umieścić zdarzenia",
   "map.withoutLocation": "{{count}} bez lokalizacji",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "Włącz umieszczanie jednym kliknięciem",
   "map.unstar": "Usuń oznaczenie",
   "map.star": "Oznacz",
-
   "heatmap.techniques": "Techniki:",
   "heatmap.eventsWithMitre": "Zdarzenia z MITRE:",
   "heatmap.tacticsHit": "Objęte taktyki:",
@@ -143,16 +135,15 @@
   "heatmap.confidenceMedium": "Średnia",
   "heatmap.confidenceHigh": "Wysoka",
   "heatmap.confidenceConfirmed": "Potwierdzone",
-
   "filter.clear": "Wyczyść",
-
   "mitreCombo.searchPlaceholder": "Szukaj technik (np. T1566, Phishing)...",
   "mitreCombo.addMore": "Dodaj więcej...",
-
   "mitreReport.techniquesPerTactic": "Techniki według taktyk",
   "mitreReport.actorTTPSummary": "Podsumowanie TTP aktorów",
   "mitreReport.noActorsMapped": "Żaden aktor nie ma zmapowanych technik.",
   "mitreReport.techniqueCount": "{{count}} technika",
   "mitreReport.techniqueCount_other": "{{count}} technik",
-  "mitreReport.techniqueCoverage": "Pokrycie technik"
+  "mitreReport.techniqueCoverage": "Pokrycie technik",
+  "emptyState": "Brak wydarzeń na osi czasu",
+  "createFirstHint": "Użyj przycisku + powyżej, aby dodać swoje pierwsze wydarzenie"
 }

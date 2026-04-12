@@ -44,7 +44,6 @@
   "quickCapture.createNote": "创建笔记",
   "quickCapture.customBadge": "自定义",
   "skipToMainContent": "跳转到主要内容",
-
   "createDropdown.createNew": "新建...",
   "createDropdown.new": "新建",
   "createDropdown.createItem": "创建 {{item}}",
@@ -56,7 +55,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "打开文件",
   "createDropdown.importData": "导入数据",
-
   "shortcuts.title": "键盘快捷键",
   "shortcuts.general": "通用",
   "shortcuts.openSearch": "打开搜索",
@@ -76,7 +74,6 @@
   "shortcuts.switchToTasks": "切换到任务",
   "shortcuts.switchToTimeline": "切换到时间线",
   "shortcuts.switchToWhiteboards": "切换到白板",
-
   "entityLinker.linkEntities": "链接实体",
   "entityLinker.searchPlaceholder": "搜索要链接的实体...",
   "entityLinker.linked": "已链接",
@@ -85,7 +82,6 @@
   "entityLinker.note": "笔记",
   "entityLinker.task": "任务",
   "entityLinker.event": "事件",
-
   "comments.label": "评论",
   "comments.justNow": "刚刚",
   "comments.minutesAgo": "{{count}} 分钟前",
@@ -97,7 +93,6 @@
   "comments.editComment": "编辑评论",
   "comments.deleteComment": "删除评论",
   "comments.addPlaceholder": "添加评论...",
-
   "sidebar.dashboard": "仪表板",
   "sidebar.investigations": "调查",
   "sidebar.notes": "笔记",
@@ -108,7 +103,7 @@
   "sidebar.graph": "图谱",
   "sidebar.activity": "活动",
   "sidebar.caddyAI": "CaddyAI",
-  "sidebar.caddyShack": "CaddyShack",
+  "sidebar.caddyShack": "团队动态",
   "sidebar.agentCaddy": "AgentCaddy",
   "sidebar.settings": "设置",
   "sidebar.archive": "存档",
@@ -123,7 +118,6 @@
   "sidebar.downloadStandalone": "下载独立版",
   "sidebar.chromeExtension": "Chrome 扩展",
   "sidebar.privacy": "隐私",
-
   "header.toggleMenu": "切换菜单",
   "header.toggleSidebar": "切换侧边栏",
   "header.localEdition": "本地版",
@@ -146,7 +140,6 @@
   "header.privacy": "隐私",
   "header.saveBackup": "保存备份",
   "header.loadBackup": "加载备份",
-
   "serverError.VALIDATION_FAILED": "验证失败",
   "serverError.EMAIL_ALREADY_REGISTERED": "邮箱已注册",
   "serverError.INVALID_CREDENTIALS": "无效的邮箱或密码",
@@ -205,5 +198,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "无效的 Webhook 密钥",
   "serverError.RUN_NOT_FOUND": "运行未找到",
   "serverError.INTERNAL_ERROR": "内部服务器错误",
-  "serverError.MISSING_BLOB": "缺少文件数据"
+  "serverError.MISSING_BLOB": "缺少文件数据",
+  "demoModal.title": "欢迎使用 ThreatCaddy",
+  "demoModal.descriptionPrefix": "已加载示例调查",
+  "demoModal.descriptionSuffix": "以便您探索一切是如何运作的。",
+  "demoModal.whatYouCan": "您可以做什么：",
+  "demoModal.browseItems": "浏览笔记、任务和时间线事件",
+  "demoModal.viewGraph": "查看调查图和 IOC 分析",
+  "demoModal.tryWhiteboard": "试用白板和实体关联",
+  "demoModal.useLinksPrefix": "使用",
+  "demoModal.useLinksSuffix": "在笔记之间进行链接",
+  "demoModal.startExploring": "开始探索",
+  "demoModal.guidedTour": "开始导览",
+  "demoModal.deleteDemo": "删除演示并重新开始",
+  "demoModal.removeHint": "您可以稍后在设置中删除示例数据。"
 }

@@ -5,11 +5,9 @@
   "priority.lowFull": "پایین",
   "priority.mediumFull": "متوسط",
   "priority.highFull": "بالا",
-
   "status.todo": "برای انجام",
   "status.inProgress": "در حال انجام",
   "status.done": "تکمیل شده",
-
   "list.title": "وظایف",
   "list.titleWithScope": "وظایف — {{scope}} ({{count}})",
   "list.titleWithCount": "وظایف ({{count}})",
@@ -31,7 +29,6 @@
   "list.emptyHint": "روی «وظیفه جدید» کلیک کنید یا Ctrl+Shift+T را فشار دهید",
   "list.editTaskModal": "ویرایش وظیفه",
   "list.createTaskModal": "ایجاد وظیفه",
-
   "item.markIncomplete": "علامت‌گذاری به عنوان ناتمام",
   "item.markComplete": "علامت‌گذاری به عنوان تکمیل شده",
   "item.untitled": "وظیفه بی‌عنوان",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "حذف وظیفه",
   "item.confirmDeleteMessage": "این وظیفه به طور دائمی حذف خواهد شد. این عمل قابل بازگشت نیست.",
   "item.confirmDeleteLabel": "حذف وظیفه",
-
   "form.titleLabel": "عنوان",
   "form.titlePlaceholder": "عنوان وظیفه...",
   "form.titleRequired": "عنوان وظیفه لازم است",
@@ -81,10 +77,11 @@
   "form.relativeTime.minutesAgo": "{{count}} دقیقه پیش",
   "form.relativeTime.hoursAgo": "{{count}} ساعت پیش",
   "form.relativeTime.daysAgo": "{{count}} روز پیش",
-
   "kanban.boardLabel": "تخته Kanban",
   "kanban.columnLabel": "ستون {{label}}، {{count}} وظیفه",
   "kanban.changeStatus": "تغییر وضعیت {{title}}",
   "kanban.noTasks": "وظیفه‌ای وجود ندارد",
-  "kanban.dropHere": "وظایف را اینجا رها کنید"
+  "kanban.dropHere": "وظایف را اینجا رها کنید",
+  "emptyState": "هنوز وظیفه‌ای وجود ندارد — یکی بسازید تا شروع کنید",
+  "createFirst": "اولین وظیفه خود را بسازید"
 }

@@ -44,7 +44,6 @@
   "quickCapture.createNote": "Criar nota",
   "quickCapture.customBadge": "personalizado",
   "skipToMainContent": "Ir para o conteúdo principal",
-
   "createDropdown.createNew": "Criar novo...",
   "createDropdown.new": "Novo",
   "createDropdown.createItem": "Criar {{item}}",
@@ -56,7 +55,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "Abrir arquivo",
   "createDropdown.importData": "Importar dados",
-
   "shortcuts.title": "Atalhos de teclado",
   "shortcuts.general": "Geral",
   "shortcuts.openSearch": "Abrir pesquisa",
@@ -76,7 +74,6 @@
   "shortcuts.switchToTasks": "Ir para Tarefas",
   "shortcuts.switchToTimeline": "Ir para Linha do tempo",
   "shortcuts.switchToWhiteboards": "Ir para Quadros brancos",
-
   "entityLinker.linkEntities": "Vincular entidades",
   "entityLinker.searchPlaceholder": "Buscar entidades para vincular...",
   "entityLinker.linked": "vinculado",
@@ -85,7 +82,6 @@
   "entityLinker.note": "Nota",
   "entityLinker.task": "Tarefa",
   "entityLinker.event": "Evento",
-
   "comments.label": "Comentários",
   "comments.justNow": "agora mesmo",
   "comments.minutesAgo": "há {{count}} min",
@@ -97,7 +93,6 @@
   "comments.editComment": "Editar comentário",
   "comments.deleteComment": "Excluir comentário",
   "comments.addPlaceholder": "Adicionar um comentário...",
-
   "sidebar.dashboard": "Painel",
   "sidebar.investigations": "Investigações",
   "sidebar.notes": "Notas",
@@ -108,7 +103,7 @@
   "sidebar.graph": "Grafo",
   "sidebar.activity": "Atividade",
   "sidebar.caddyAI": "CaddyAI",
-  "sidebar.caddyShack": "CaddyShack",
+  "sidebar.caddyShack": "Feed da equipe",
   "sidebar.agentCaddy": "AgentCaddy",
   "sidebar.settings": "Configurações",
   "sidebar.archive": "Arquivo",
@@ -123,7 +118,6 @@
   "sidebar.downloadStandalone": "Baixar versão standalone",
   "sidebar.chromeExtension": "Extensão do Chrome",
   "sidebar.privacy": "Privacidade",
-
   "header.toggleMenu": "Alternar menu",
   "header.toggleSidebar": "Alternar barra lateral",
   "header.localEdition": "Edição local",
@@ -146,7 +140,6 @@
   "header.privacy": "Privacidade",
   "header.saveBackup": "Salvar backup",
   "header.loadBackup": "Carregar backup",
-
   "serverError.VALIDATION_FAILED": "Validação falhou",
   "serverError.EMAIL_ALREADY_REGISTERED": "E-mail já registrado",
   "serverError.INVALID_CREDENTIALS": "E-mail ou senha inválidos",
@@ -205,5 +198,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "Segredo de webhook inválido",
   "serverError.RUN_NOT_FOUND": "Execução não encontrada",
   "serverError.INTERNAL_ERROR": "Erro interno do servidor",
-  "serverError.MISSING_BLOB": "Dados de arquivo ausentes"
+  "serverError.MISSING_BLOB": "Dados de arquivo ausentes",
+  "demoModal.title": "Bem-vindo ao ThreatCaddy",
+  "demoModal.descriptionPrefix": "Uma investigação de exemplo",
+  "demoModal.descriptionSuffix": "foi carregada para que você possa explorar como tudo funciona.",
+  "demoModal.whatYouCan": "O que você pode fazer:",
+  "demoModal.browseItems": "Navegar por notas, tarefas e eventos da linha do tempo",
+  "demoModal.viewGraph": "Visualizar o gráfico da investigação e a análise de IOC",
+  "demoModal.tryWhiteboard": "Experimentar o quadro branco e a vinculação de entidades",
+  "demoModal.useLinksPrefix": "Use",
+  "demoModal.useLinksSuffix": "para vincular entre notas",
+  "demoModal.startExploring": "Começar a explorar",
+  "demoModal.guidedTour": "Fazer o tour guiado",
+  "demoModal.deleteDemo": "Excluir demo e começar do zero",
+  "demoModal.removeHint": "Você pode remover os dados de exemplo mais tarde nas Configurações."
 }

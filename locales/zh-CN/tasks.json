@@ -5,11 +5,9 @@
   "priority.lowFull": "低",
   "priority.mediumFull": "中",
   "priority.highFull": "高",
-
   "status.todo": "待办",
   "status.inProgress": "进行中",
   "status.done": "已完成",
-
   "list.title": "任务",
   "list.titleWithScope": "任务 — {{scope}}（{{count}}）",
   "list.titleWithCount": "任务（{{count}}）",
@@ -31,7 +29,6 @@
   "list.emptyHint": "点击\"新建任务\"或按 Ctrl+Shift+T",
   "list.editTaskModal": "编辑任务",
   "list.createTaskModal": "创建任务",
-
   "item.markIncomplete": "标记为未完成",
   "item.markComplete": "标记为已完成",
   "item.untitled": "未命名任务",
@@ -45,7 +42,6 @@
   "item.confirmDeleteTitle": "删除任务",
   "item.confirmDeleteMessage": "此任务将被永久删除，此操作无法撤销。",
   "item.confirmDeleteLabel": "删除任务",
-
   "form.titleLabel": "标题",
   "form.titlePlaceholder": "任务标题...",
   "form.titleRequired": "任务标题是必需的",
@@ -81,10 +77,11 @@
   "form.relativeTime.minutesAgo": "{{count}} 分钟前",
   "form.relativeTime.hoursAgo": "{{count}} 小时前",
   "form.relativeTime.daysAgo": "{{count}} 天前",
-
   "kanban.boardLabel": "看板",
   "kanban.columnLabel": "{{label}} 列，{{count}} 个任务",
   "kanban.changeStatus": "更改 {{title}} 的状态",
   "kanban.noTasks": "无任务",
-  "kanban.dropHere": "拖拽任务到此处"
+  "kanban.dropHere": "拖拽任务到此处",
+  "emptyState": "暂无任务 — 创建一个开始吧",
+  "createFirst": "创建你的第一个任务"
 }

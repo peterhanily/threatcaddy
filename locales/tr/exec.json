@@ -1,6 +1,6 @@
 {
   "dashboard.appName": "ThreatCaddy",
-  "dashboard.exec": "YÖN",
+  "dashboard.exec": "YÖNETİM",
   "dashboard.switchToAnalyst": "Analist Moduna Geç",
   "dashboard.overview": "Genel Bakış",
   "dashboard.cases": "Vakalar",
@@ -22,7 +22,6 @@
   "dashboard.untitledChat": "Başlıksız Sohbet",
   "dashboard.general": "Genel",
   "dashboard.messagesCount": "{{count}} mesaj",
-
   "investigations.all": "Tümü",
   "investigations.active": "Aktif",
   "investigations.closed": "Kapalı",
@@ -33,7 +32,6 @@
   "investigations.events": "Olaylar",
   "investigations.boards": "Panolar",
   "investigations.iocs": "IOC'ler",
-
   "detail.share": "Paylaş",
   "detail.created": "{{date}} oluşturuldu",
   "detail.taskProgress": "Görev İlerlemesi",
@@ -42,13 +40,11 @@
   "detail.todo": "{{count}} yapılacak",
   "detail.recentActivity": "Son Etkinlik",
   "detail.openInAnalystMode": "Analist Modunda Aç",
-
   "notes.untitled": "Başlıksız",
   "notes.created": "{{date}} oluşturuldu",
   "notes.updated": "{{date}} güncellendi",
   "notes.iocDetected": "{{count}} IOC tespit edildi",
   "notes.iocsDetected": "{{count}} IOC tespit edildi",
-
   "tasks.untitled": "Başlıksız",
   "tasks.created": "{{date}} oluşturuldu",
   "tasks.updated": "{{date}} güncellendi",
@@ -60,14 +56,12 @@
   "tasks.inProgress": "Devam Ediyor",
   "tasks.done": "Tamamlandı",
   "tasks.comments": "Yorumlar ({{count}})",
-
   "events.untitled": "Başlıksız",
   "events.timestamp": "Zaman damgası {{date}}",
   "events.end": "Bitiş {{date}}",
   "events.source": "Kaynak: {{source}}",
   "events.actor": "Aktör:",
   "events.assets": "Varlıklar:",
-
   "iocs.created": "{{date}} oluşturuldu",
   "iocs.updated": "{{date}} güncellendi",
   "iocs.attribution": "Atıf: {{value}}",
@@ -81,27 +75,22 @@
   "iocs.linkedTasksPlural": "{{count}} bağlı görev",
   "iocs.linkedEvents": "{{count}} bağlı olay",
   "iocs.linkedEventsPlural": "{{count}} bağlı olay",
-
   "chat.untitledChat": "Başlıksız Sohbet",
   "chat.messagesCount": "{{count}} mesaj",
   "chat.created": "{{date}} oluşturuldu",
   "chat.noMessages": "Bu konuda mesaj yok",
-
   "global.noItemsFound": "Öğe bulunamadı",
   "global.unfiled": "Dosyalanmamış",
-
   "entities.inFolder": "{{name}} içinde",
   "entities.noEntities": "Bu soruşturmada {{type}} yok",
   "entities.elementCount": "{{count}} öğe",
   "entities.elementCountPlural": "{{count}} öğe",
   "entities.openInAnalyst": "Analistte Aç",
-
   "activity.noRecentActivity": "Son etkinlik yok",
   "activity.today": "Bugün",
   "activity.yesterday": "Dün",
   "activity.thisWeek": "Bu Hafta",
   "activity.older": "Daha Eski",
-
   "share.title": "Paylaş",
   "share.encryptWithPassword": "Şifreyle şifrele",
   "share.enterPassword": "Şifre girin...",
@@ -137,7 +126,6 @@
   "share.scopeIoc": "IOC",
   "share.scopeInvestigation": "Soruşturma",
   "share.scopeChat": "Sohbet",
-
   "share.shared": "PAYLAŞILDI",
   "share.saveToThreatCaddy": "ThreatCaddy'ye Kaydet",
   "share.saving": "Kaydediliyor...",
@@ -153,18 +141,14 @@
   "share.messageCountPlural": "{{count}} mesaj",
   "share.youLabel": "Siz",
   "share.caddyAI": "CaddyAI",
-
   "search.filterPlaceholder": "Filtrele...",
-
   "graph.notes": "Notlar",
   "graph.iocs": "IOC'ler",
   "graph.tasks": "Görevler",
   "graph.events": "Olaylar",
-
   "nav.prev": "Önceki",
   "nav.next": "Sonraki",
   "nav.ofTotal": "{{current}} / {{total}}",
-
   "breadcrumb.investigations": "Soruşturmalar",
   "breadcrumb.overview": "Genel Bakış",
   "breadcrumb.allNotes": "Tüm Notlar",
@@ -177,11 +161,11 @@
   "breadcrumb.task": "Görev",
   "breadcrumb.event": "Olay",
   "breadcrumb.chat": "Sohbet",
-
   "metrics.notes": "Notlar",
   "metrics.openTasks": "Açık Görevler",
   "metrics.iocsTracked": "Takip Edilen IOC'ler",
   "metrics.eventsThisWeek": "Bu Haftaki Olaylar",
   "metrics.aiChats": "AI Sohbetleri",
-  "metrics.graphNodes": "Graf Düğümleri"
+  "metrics.graphNodes": "Graf Düğümleri",
+  "dashboard.backToExecView": "Yönetim Görünümüne Dön"
 }

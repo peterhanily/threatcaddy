@@ -29,7 +29,6 @@
   "view.colorModeEvents": "Sự kiện",
   "view.colorModeConfidence": "Độ tin cậy",
   "view.colorModeActors": "Tác nhân",
-
   "export.exportImport": "Xuất / Nhập",
   "export.exportTimelineJSON": "Xuất timeline JSON",
   "export.exportAllEventsJSON": "Xuất tất cả sự kiện JSON",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "Ánh xạ MITRE CSV",
   "export.exportFailed": "Xuất timeline thất bại",
-
   "eventCard.deleteEvent": "Xóa sự kiện",
   "eventCard.unstarEvent": "Bỏ đánh dấu sao sự kiện",
   "eventCard.starEvent": "Đánh dấu sao sự kiện",
   "eventCard.untitledEvent": "Sự kiện chưa có tiêu đề",
   "eventCard.assetCount": "{{count}} tài sản",
   "eventCard.assetCount_other": "{{count}} tài sản",
-
   "eventForm.title": "Tiêu đề",
   "eventForm.titlePlaceholder": "Tiêu đề sự kiện...",
   "eventForm.titleRequired": "Cần tiêu đề sự kiện",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "Dán dữ liệu nhật ký thô, JSON, v.v...",
   "eventForm.updateEvent": "Cập nhật sự kiện",
   "eventForm.createEvent": "Tạo sự kiện",
-
   "import.title": "Nhập timeline",
   "import.selectFile": "Chọn tệp JSON timeline",
   "import.createAsNew": "Tạo dưới dạng timeline mới",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} không thay đổi",
   "import.parseFailed": "Phân tích tệp thất bại",
   "import.importFailed": "Nhập thất bại",
-
   "feed.noEventsYet": "Chưa có sự kiện timeline",
   "feed.noEventsHint": "Nhấp \"Sự kiện mới\" để thêm sự kiện timeline",
   "feed.today": "Hôm nay",
   "feed.yesterday": "Hôm qua",
   "feed.eventCount": "{{count}} sự kiện",
   "feed.eventCount_other": "{{count}} sự kiện",
-
   "gantt.zoomIn": "Phóng to",
   "gantt.zoomOut": "Thu nhỏ",
   "gantt.fitAll": "Vừa tất cả",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(sự kiện điểm)",
   "gantt.tooltipSource": "Nguồn: {{source}}",
   "gantt.tooltipActor": "Tác nhân: {{actor}}",
-
   "map.mapped": "{{count}} đã ánh xạ",
   "map.doubleClickToPlace": "Nhấp đôi vào bản đồ để đặt sự kiện",
   "map.withoutLocation": "{{count}} không có vị trí",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "Bật đặt một lần nhấp",
   "map.unstar": "Bỏ đánh dấu sao",
   "map.star": "Đánh dấu sao",
-
   "heatmap.techniques": "Kỹ thuật:",
   "heatmap.eventsWithMitre": "Sự kiện có MITRE:",
   "heatmap.tacticsHit": "Chiến thuật đã dùng:",
@@ -143,16 +135,15 @@
   "heatmap.confidenceMedium": "Trung bình",
   "heatmap.confidenceHigh": "Cao",
   "heatmap.confidenceConfirmed": "Đã xác nhận",
-
   "filter.clear": "Xóa",
-
   "mitreCombo.searchPlaceholder": "Tìm kỹ thuật (vd. T1566, Phishing)...",
   "mitreCombo.addMore": "Thêm...",
-
   "mitreReport.techniquesPerTactic": "Kỹ thuật theo chiến thuật",
   "mitreReport.actorTTPSummary": "Tóm tắt TTP tác nhân",
   "mitreReport.noActorsMapped": "Không có tác nhân nào có kỹ thuật được ánh xạ.",
   "mitreReport.techniqueCount": "{{count}} kỹ thuật",
   "mitreReport.techniqueCount_other": "{{count}} kỹ thuật",
-  "mitreReport.techniqueCoverage": "Độ phủ kỹ thuật"
+  "mitreReport.techniqueCoverage": "Độ phủ kỹ thuật",
+  "emptyState": "Chưa có sự kiện dòng thời gian nào",
+  "createFirstHint": "Sử dụng nút + ở trên để thêm sự kiện đầu tiên"
 }

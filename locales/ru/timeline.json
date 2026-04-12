@@ -29,7 +29,6 @@
   "view.colorModeEvents": "События",
   "view.colorModeConfidence": "Уверенность",
   "view.colorModeActors": "Акторы",
-
   "export.exportImport": "Экспорт / Импорт",
   "export.exportTimelineJSON": "Экспорт хронологии JSON",
   "export.exportAllEventsJSON": "Экспорт всех событий JSON",
@@ -37,14 +36,12 @@
   "export.attackNavigatorJSON": "ATT&CK Navigator JSON",
   "export.mitreMappingsCSV": "MITRE Mappings CSV",
   "export.exportFailed": "Экспорт хронологии не удался",
-
   "eventCard.deleteEvent": "Удалить событие",
   "eventCard.unstarEvent": "Убрать из избранного",
   "eventCard.starEvent": "Добавить в избранное",
   "eventCard.untitledEvent": "Событие без названия",
   "eventCard.assetCount": "{{count}} актив",
   "eventCard.assetCount_other": "{{count}} активов",
-
   "eventForm.title": "Заголовок",
   "eventForm.titlePlaceholder": "Название события...",
   "eventForm.titleRequired": "Название события обязательно",
@@ -77,7 +74,6 @@
   "eventForm.rawDataPlaceholder": "Вставьте сырые данные журнала, JSON и т.д...",
   "eventForm.updateEvent": "Обновить событие",
   "eventForm.createEvent": "Создать событие",
-
   "import.title": "Импорт хронологии",
   "import.selectFile": "Выбрать JSON-файл хронологии",
   "import.createAsNew": "Создать как новую хронологию",
@@ -96,14 +92,12 @@
   "import.mergedSkipped": "{{count}} без изменений",
   "import.parseFailed": "Не удалось разобрать файл",
   "import.importFailed": "Импорт не удался",
-
   "feed.noEventsYet": "Событий хронологии пока нет",
   "feed.noEventsHint": "Нажмите «Новое событие» для добавления",
   "feed.today": "Сегодня",
   "feed.yesterday": "Вчера",
   "feed.eventCount": "{{count}} событие",
   "feed.eventCount_other": "{{count}} событий",
-
   "gantt.zoomIn": "Увеличить",
   "gantt.zoomOut": "Уменьшить",
   "gantt.fitAll": "Уместить всё",
@@ -115,7 +109,6 @@
   "gantt.pointEvent": "(точечное событие)",
   "gantt.tooltipSource": "Источник: {{source}}",
   "gantt.tooltipActor": "Актор: {{actor}}",
-
   "map.mapped": "{{count}} размещено",
   "map.doubleClickToPlace": "Двойной клик по карте для размещения событий",
   "map.withoutLocation": "{{count}} без местоположения",
@@ -124,7 +117,6 @@
   "map.enablePlacement": "Включить размещение одним кликом",
   "map.unstar": "Убрать из избранного",
   "map.star": "Добавить в избранное",
-
   "heatmap.techniques": "Техники:",
   "heatmap.eventsWithMitre": "События с MITRE:",
   "heatmap.tacticsHit": "Затронутые тактики:",
@@ -143,16 +135,15 @@
   "heatmap.confidenceMedium": "Средняя",
   "heatmap.confidenceHigh": "Высокая",
   "heatmap.confidenceConfirmed": "Подтверждено",
-
   "filter.clear": "Очистить",
-
   "mitreCombo.searchPlaceholder": "Поиск техник (например T1566, Phishing)...",
   "mitreCombo.addMore": "Добавить ещё...",
-
   "mitreReport.techniquesPerTactic": "Техники по тактикам",
   "mitreReport.actorTTPSummary": "Сводка TTP акторов",
   "mitreReport.noActorsMapped": "Ни один актор не имеет сопоставленных техник.",
   "mitreReport.techniqueCount": "{{count}} техника",
   "mitreReport.techniqueCount_other": "{{count}} техник",
-  "mitreReport.techniqueCoverage": "Охват техник"
+  "mitreReport.techniqueCoverage": "Охват техник",
+  "emptyState": "Событий на временной шкале пока нет",
+  "createFirstHint": "Используйте кнопку + выше, чтобы добавить первое событие"
 }

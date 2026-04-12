@@ -1,7 +1,6 @@
 {
   "title": "تنظیمات",
   "closeSettings": "بستن تنظیمات",
-
   "tabs.general": "عمومی",
   "tabs.appearance": "ظاهر",
   "tabs.ai": "هوش مصنوعی",
@@ -11,7 +10,6 @@
   "tabs.intel": "اطلاعات",
   "tabs.integrations": "یکپارچه‌سازی‌ها",
   "tabs.shortcuts": "میانبرها",
-
   "general.identity": "هویت شما",
   "general.displayName": "نام نمایشی",
   "general.displayNamePlaceholder": "نام شما (روی موجودیت‌هایی که ایجاد می‌کنید نمایش داده می‌شود)",
@@ -51,7 +49,6 @@
   "general.updateFailed": "دانلود به‌روزرسانی ناموفق بود. از https://threatcaddy.com آخرین نسخه را دریافت کنید.",
   "general.downloadStandalone": "دانلود مستقل",
   "general.privacy": "حریم خصوصی",
-
   "appearance.theme": "پوسته",
   "appearance.mode": "حالت",
   "appearance.dark": "تیره",
@@ -83,7 +80,6 @@
   "appearance.bgSaveFailed": "ذخیره تصویر ناموفق بود",
   "appearance.bgRemoved": "تصویر پس‌زمینه حذف شد",
   "appearance.bgRemoveFailed": "حذف تصویر ناموفق بود",
-
   "ai.title": "CaddyAI / LLM",
   "ai.anthropicKey": "کلید API Anthropic",
   "ai.openaiKey": "کلید API OpenAI",
@@ -135,14 +131,12 @@
   "ai.commandNamePlaceholder": "نام دستور (مثلاً mytriage)",
   "ai.commandDescPlaceholder": "توضیحات (در منوی slash نمایش داده می‌شود)",
   "ai.commandTemplatePlaceholder": "قالب پرامپت. از {{input}} برای آرگومان‌های کاربر استفاده کنید.\n\nمثال: این هشدار را برای IOCها تحلیل کنید و گزارش تریاژ ایجاد کنید:\n\n{{input}}",
-
   "agents.supervisor": "عامل ناظر",
   "agents.supervisorDesc": "تحلیل چندین تحقیق — IOCهای مشترک، پرونده‌های راکد و الگوهای سراسری را شناسایی می‌کند.",
   "agents.enableSupervisor": "فعال کردن ناظر",
   "agents.supervisorInterval": "هر {{minutes}} دقیقه اجرا می‌شود",
   "agents.supervisorAriaLabel": "فعال کردن عامل ناظر",
   "agents.interval": "بازه",
-
   "agents.hosts": "میزبان‌های عامل",
   "agents.hostsDesc": "میزبان‌های عامل خارجی (Claude Code، محیط‌های اجرای سفارشی) را که مهارت‌ها را از طریق REST API نمایش می‌دهند متصل کنید. مهارت‌های کشف شده به عنوان ابزارهای LLM در دسترس قرار می‌گیرند.",
   "agents.refreshAll": "بازنشانی همه",
@@ -159,7 +153,6 @@
   "agents.noSkillsCached": "مهارتی ذخیره نشده. روی «دریافت مهارت‌ها» کلیک کنید تا مهارت‌های موجود را کشف کنید.",
   "agents.skillsLastFetched": "{{count}} مهارت — آخرین دریافت {{date}}",
   "agents.params": "پارامترها: {{params}}",
-
   "data.exportImportTitle": "صدور و ورود",
   "data.exportJSON": "صدور پشتیبان JSON",
   "data.exportMarkdown": "صدور Markdown",
@@ -170,10 +163,9 @@
   "data.exportedNotes": "{{count}} یادداشت به عنوان Markdown صادر شد",
   "data.importedCounts": "{{notes}} یادداشت، {{tasks}} وظیفه، {{folders}} تحقیق، {{tags}} برچسب وارد شد",
   "data.importBackupTitle": "ورود پشتیبان",
-  "data.importBackupMessage": "این عمل تمام یادداشت‌ها، وظایف، پوشه‌ها و برچسب‌های فعلی شما را با داده‌های وارد شده جایگزین می‌کند. این عمل قابل بازگشت نیست.",
+  "data.importBackupMessage": "این عمل تمام یادداشت‌ها، وظایف، تحقیقات و برچسب‌های فعلی شما را با داده‌های وارد شده جایگزین می‌کند. این عمل قابل بازگشت نیست.",
   "data.importReplace": "ورود و جایگزینی",
   "data.importedMarkdown": "{{count}} یادداشت از Markdown وارد شد",
-
   "data.mdImportTitle": "ورود Markdown",
   "data.mdPreviewTitle": "پیش‌نمایش ورود",
   "data.mdCompleteTitle": "ورود تکمیل شد",
@@ -187,7 +179,6 @@
   "data.mdImportButton_other": "ورود {{count}} یادداشت",
   "data.mdImportedSuccess_one": "{{count}} یادداشت با موفقیت وارد شد",
   "data.mdImportedSuccess_other": "{{count}} یادداشت با موفقیت وارد شد",
-
   "encryption.title": "پشتیبان‌های رمزنگاری شده سرور",
   "encryption.connectPrompt": "برای استفاده از پشتیبان‌های رمزنگاری شده به سرور تیمی متصل شوید.",
   "encryption.description": "پشتیبان‌های محافظت شده با رمز عبور ذخیره شده در سرور. حتی مدیران نمی‌توانند آن‌ها را بخوانند.",
@@ -233,7 +224,6 @@
   "encryption.merge": "ادغام",
   "encryption.deleteConfirmTitle": "حذف پشتیبان",
   "encryption.deleteConfirmMessage": "این عمل این پشتیبان رمزنگاری شده را به طور دائمی از سرور حذف می‌کند. این عمل قابل بازگشت نیست.",
-
   "cloud.title": "پشتیبان ابری",
   "cloud.addDestination": "افزودن مقصد",
   "cloud.provider": "ارائه‌دهنده",
@@ -259,7 +249,6 @@
   "cloud.pushBackupMessage": "این عمل کل پایگاه داده شما را به {{count}} مقصد ابری بارگذاری می‌کند. ادامه دهید؟",
   "cloud.encryptedPushSuccess": "پشتیبان رمزنگاری شده با موفقیت ارسال شد",
   "cloud.pushSuccess": "پشتیبان با موفقیت ارسال شد",
-
   "templates.noteTemplates": "قالب‌های یادداشت",
   "templates.summary": "{{custom}} سفارشی، {{builtin}} داخلی",
   "templates.description": "قالب‌ها یادداشت‌ها را با محتوای ساختاریافته پر می‌کنند. قالب‌های داخلی را می‌توان کپی و سفارشی کرد.",
@@ -283,7 +272,6 @@
   "templates.createdToast": "قالب «{{name}}» ایجاد شد",
   "templates.deletedToast": "قالب «{{name}}» حذف شد",
   "templates.saveFailed": "ذخیره قالب ناموفق بود",
-
   "templates.playbooks": "Playbookهای تحقیق",
   "templates.playbooksDesc": "Playbookها تحقیقات جدید را با وظایف و یادداشت‌ها به طور خودکار پر می‌کنند. از آیکون کتاب در نوار کناری برای شروع از یک playbook استفاده کنید.",
   "templates.yourPlaybooks": "Playbookهای شما",
@@ -323,7 +311,6 @@
   "templates.playbookCreatedToast": "Playbook «{{name}}» ایجاد شد",
   "templates.playbookDeletedToast": "Playbook «{{name}}» حذف شد",
   "templates.playbookSaveFailed": "ذخیره playbook ناموفق بود",
-
   "intel.title": "پیکربندی اطلاعات تهدید",
   "intel.extractionBehavior": "رفتار استخراج",
   "intel.autoExtract": "استخراج خودکار IOCها از محتوا",
@@ -363,7 +350,6 @@
   "intel.addCustomRelType": "افزودن نوع رابطه سفارشی",
   "intel.configImported": "پیکربندی وارد شد",
   "intel.invalidConfigFile": "فایل پیکربندی JSON نامعتبر",
-
   "shortcuts.title": "میانبرهای صفحه‌کلید",
   "shortcuts.newNote": "یادداشت جدید / لکید سریع",
   "shortcuts.focusSearch": "فوکوس جستجو",
@@ -377,7 +363,6 @@
   "shortcuts.showShortcuts": "نمایش میانبرهای صفحه‌کلید",
   "shortcuts.switchView": "تغییر نمایش (یادداشت‌ها/وظایف/جدول زمانی/تخته سفید)",
   "shortcuts.closeModals": "بستن پنجره‌های مودال",
-
   "server.teamServer": "سرور تیمی",
   "server.connected": "متصل",
   "server.serverLabel": "سرور",
@@ -408,12 +393,11 @@
   "server.disconnectedToast": "از سرور قطع شد",
   "server.savedServers": "سرورهای ذخیره شده",
   "server.deleteSavedServer": "حذف سرور ذخیره شده",
-
   "server.onboarding.welcome": "به {{name}} خوش آمدید!",
   "server.onboarding.intro": "به سرور تیمی خود متصل هستید. اینجا چه کاری می‌توانید انجام دهید:",
   "server.onboarding.sharedInvestigations": "تحقیقات مشترک",
   "server.onboarding.sharedInvestigationsDesc": "در پرونده‌ها با تیم خود همکاری کنید — یادداشت‌ها، وظایف، جداول زمانی و IOCها را در زمان واقعی به اشتراک بگذارید.",
-  "server.onboarding.caddyShack": "CaddyShack",
+  "server.onboarding.caddyShack": "فید تیم",
   "server.onboarding.caddyShackDesc": "فید بحث تیمی برای SOC شما. به‌روزرسانی‌ها را ارسال کنید، یافته‌ها را به اشتراک بگذارید و به پست‌های همتیمی‌های خود واکنش نشان دهید.",
   "server.onboarding.realTimeSync": "همگام‌سازی در زمان واقعی",
   "server.onboarding.realTimeSyncDesc": "یادداشت‌ها، وظایف و IOCهای شما به طور خودکار در همه اعضای تیم متصل همگام‌سازی می‌شوند.",

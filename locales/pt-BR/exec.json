@@ -1,6 +1,6 @@
 {
   "dashboard.appName": "ThreatCaddy",
-  "dashboard.exec": "EXEC",
+  "dashboard.exec": "EXECUTIVO",
   "dashboard.switchToAnalyst": "Mudar para modo analista",
   "dashboard.overview": "Visão geral",
   "dashboard.cases": "Casos",
@@ -22,7 +22,6 @@
   "dashboard.untitledChat": "Chat sem título",
   "dashboard.general": "Geral",
   "dashboard.messagesCount": "{{count}} mensagens",
-
   "investigations.all": "Todas",
   "investigations.active": "Ativa",
   "investigations.closed": "Fechada",
@@ -33,7 +32,6 @@
   "investigations.events": "Eventos",
   "investigations.boards": "Quadros",
   "investigations.iocs": "IOCs",
-
   "detail.share": "Compartilhar",
   "detail.created": "Criada {{date}}",
   "detail.taskProgress": "Progresso das tarefas",
@@ -42,13 +40,11 @@
   "detail.todo": "{{count}} a fazer",
   "detail.recentActivity": "Atividade recente",
   "detail.openInAnalystMode": "Abrir no modo analista",
-
   "notes.untitled": "Sem título",
   "notes.created": "Criada {{date}}",
   "notes.updated": "Atualizada {{date}}",
   "notes.iocDetected": "{{count}} IOC detectado",
   "notes.iocsDetected": "{{count}} IOCs detectados",
-
   "tasks.untitled": "Sem título",
   "tasks.created": "Criada {{date}}",
   "tasks.updated": "Atualizada {{date}}",
@@ -60,14 +56,12 @@
   "tasks.inProgress": "Em andamento",
   "tasks.done": "Concluído",
   "tasks.comments": "Comentários ({{count}})",
-
   "events.untitled": "Sem título",
   "events.timestamp": "Timestamp {{date}}",
   "events.end": "Fim {{date}}",
   "events.source": "Fonte: {{source}}",
   "events.actor": "Ator:",
   "events.assets": "Ativos:",
-
   "iocs.created": "Criado {{date}}",
   "iocs.updated": "Atualizado {{date}}",
   "iocs.attribution": "Atribuição: {{value}}",
@@ -81,27 +75,22 @@
   "iocs.linkedTasksPlural": "{{count}} tarefas vinculadas",
   "iocs.linkedEvents": "{{count}} evento vinculado",
   "iocs.linkedEventsPlural": "{{count}} eventos vinculados",
-
   "chat.untitledChat": "Chat sem título",
   "chat.messagesCount": "{{count}} mensagens",
   "chat.created": "Criado {{date}}",
   "chat.noMessages": "Sem mensagens neste tópico",
-
   "global.noItemsFound": "Nenhum item encontrado",
   "global.unfiled": "Sem classificação",
-
   "entities.inFolder": "em {{name}}",
   "entities.noEntities": "Sem {{type}} nesta investigação",
   "entities.elementCount": "{{count}} elemento",
   "entities.elementCountPlural": "{{count}} elementos",
   "entities.openInAnalyst": "Abrir no analista",
-
   "activity.noRecentActivity": "Sem atividade recente",
   "activity.today": "Hoje",
   "activity.yesterday": "Ontem",
   "activity.thisWeek": "Esta semana",
   "activity.older": "Mais antigo",
-
   "share.title": "Compartilhar",
   "share.encryptWithPassword": "Criptografar com senha",
   "share.enterPassword": "Inserir senha...",
@@ -137,7 +126,6 @@
   "share.scopeIoc": "IOC",
   "share.scopeInvestigation": "Investigação",
   "share.scopeChat": "Chat",
-
   "share.shared": "COMPARTILHADO",
   "share.saveToThreatCaddy": "Salvar no ThreatCaddy",
   "share.saving": "Salvando...",
@@ -153,18 +141,14 @@
   "share.messageCountPlural": "{{count}} mensagens",
   "share.youLabel": "Você",
   "share.caddyAI": "CaddyAI",
-
   "search.filterPlaceholder": "Filtrar...",
-
   "graph.notes": "Notas",
   "graph.iocs": "IOCs",
   "graph.tasks": "Tarefas",
   "graph.events": "Eventos",
-
   "nav.prev": "Ant.",
   "nav.next": "Próx.",
   "nav.ofTotal": "{{current}} de {{total}}",
-
   "breadcrumb.investigations": "Investigações",
   "breadcrumb.overview": "Visão geral",
   "breadcrumb.allNotes": "Todas as notas",
@@ -177,11 +161,11 @@
   "breadcrumb.task": "Tarefa",
   "breadcrumb.event": "Evento",
   "breadcrumb.chat": "Chat",
-
   "metrics.notes": "Notas",
   "metrics.openTasks": "Tarefas abertas",
   "metrics.iocsTracked": "IOCs rastreados",
   "metrics.eventsThisWeek": "Eventos desta semana",
   "metrics.aiChats": "Chats de IA",
-  "metrics.graphNodes": "Nós do grafo"
+  "metrics.graphNodes": "Nós do grafo",
+  "dashboard.backToExecView": "Voltar à Visão executiva"
 }

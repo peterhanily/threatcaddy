@@ -1,6 +1,6 @@
 {
-  "view.title": "CaddyShack",
-  "view.connectToServer": "Połącz się z serwerem zespołu, aby korzystać z CaddyShack.",
+  "view.title": "Kanał zespołu",
+  "view.connectToServer": "Połącz się z serwerem zespołu, aby korzystać z Kanału zespołu.",
   "view.loading": "Ładowanie...",
   "view.noPostsYet": "Brak postów. Bądź pierwszym, który podzieli się aktualizacją!",
   "view.noTeamActivity": "Brak aktywności zespołu.",
@@ -11,16 +11,14 @@
   "view.all": "Wszystkie",
   "view.posts": "Posty",
   "view.activity": "Aktywność",
-
-  "view.onboarding.title": "Pierwsze kroki z CaddyShack",
+  "view.onboarding.title": "Pierwsze kroki z Kanałem zespołu",
   "view.onboarding.step1Title": "1. Wdróż serwer zespołu",
-  "view.onboarding.step1Desc": "CaddyShack wymaga serwera zespołu ThreatCaddy. Uruchom kontener Docker z README serwera.",
+  "view.onboarding.step1Desc": "Kanał zespołu wymaga serwera zespołu ThreatCaddy. Uruchom kontener Docker z README serwera.",
   "view.onboarding.step2Title": "2. Skonfiguruj adres URL serwera",
   "view.onboarding.step2Desc": "Przejdź do Ustawień i wpisz adres URL serwera zespołu, aby połączyć ThreatCaddy z Twoją instancją.",
   "view.onboarding.step3Title": "3. Zarejestruj się i zaloguj",
   "view.onboarding.step3Desc": "Utwórz konto na serwerze zespołu i zaloguj się, aby zacząć publikować, reagować i współpracować z zespołem.",
   "view.onboarding.gotIt": "Rozumiem",
-
   "composer.placeholder": "Co się dzieje?",
   "composer.slashHint": "Wpisz <kbd>/</kbd> dla poleceń",
   "composer.post": "Opublikuj",
@@ -31,7 +29,6 @@
   "composer.postCreated": "Post utworzony",
   "composer.failedToCreatePost": "Nie udało się utworzyć posta",
   "composer.failedToUploadFile": "Nie udało się przesłać pliku: {{name}}",
-
   "post.replyingTo": "Odpowiadając na",
   "post.unknown": "Nieznany",
   "post.justNow": "przed chwilą",
@@ -41,8 +38,7 @@
   "post.delete": "Usuń",
   "post.save": "Zapisz",
   "post.cancel": "Anuluj",
-
-  "reply.backToCaddyShack": "Powrót do CaddyShack",
+  "reply.backToCaddyShack": "Powrót do Kanału zespołu",
   "reply.loadingThread": "Ładowanie wątku...",
   "reply.postNotFound": "Post nie znaleziony.",
   "reply.writeReply": "Napisz odpowiedź...",
@@ -55,8 +51,7 @@
   "reply.failedDeletePost": "Nie udało się usunąć posta",
   "reply.failedEditPost": "Nie udało się edytować posta",
   "reply.failedPinStatus": "Nie udało się zaktualizować statusu przypięcia",
-
-  "profile.backToCaddyShack": "Powrót do CaddyShack",
+  "profile.backToCaddyShack": "Powrót do Kanału zespołu",
   "profile.loadingProfile": "Ładowanie profilu...",
   "profile.userNotFound": "Użytkownik nie znaleziony.",
   "profile.posts": "Posty",
@@ -66,7 +61,6 @@
   "profile.noLikes": "Brak polubionych postów.",
   "profile.noActivity": "Brak zarejestrowanej aktywności.",
   "profile.thisIsYou": "To jesteś ty",
-
   "notifications.title": "Powiadomienia",
   "notifications.new": "{{count}} nowych",
   "notifications.readAll": "Przeczytaj wszystkie",
@@ -88,7 +82,6 @@
   "notifications.failedToMarkRead": "Nie udało się oznaczyć powiadomienia jako przeczytane",
   "notifications.failedToMarkAllRead": "Nie udało się oznaczyć wszystkich jako przeczytane",
   "notifications.failedToClear": "Nie udało się wyczyścić powiadomień",
-
   "activity.justNow": "przed chwilą",
   "activity.minutesAgo": "{{count}} min. temu",
   "activity.hoursAgo": "{{count}} godz. temu",

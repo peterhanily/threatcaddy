@@ -15,12 +15,10 @@
   "builtinTemplate.cloudAccount.name": "Chi tiết tài khoản đám mây",
   "builtinTemplate.ociUser.name": "Chi tiết người dùng OCI",
   "builtinTemplate.ociTenancy.name": "Chi tiết tenancy OCI",
-
   "builtinTemplateCategory.general": "Chung",
   "builtinTemplateCategory.investigation": "Điều tra",
   "builtinTemplateCategory.incidentResponse": "Ứng phó sự cố",
   "builtinTemplateCategory.cloud": "Đám mây",
-
   "card": {
     "moveToTrash": "Chuyển vào thùng rác",
     "moveToTrashAria": "Chuyển ghi chú vào thùng rác",
@@ -170,5 +168,7 @@
     "categoryBlocks": "Khối",
     "categoryThreatIntel": "Tình báo mối đe dọa",
     "categoryInsert": "Chèn"
-  }
+  },
+  "emptyState": "Chưa có ghi chú nào — tạo một ghi chú để bắt đầu",
+  "createFirst": "Tạo ghi chú đầu tiên"
 }

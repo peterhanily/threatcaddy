@@ -44,7 +44,6 @@
   "quickCapture.createNote": "Створити нотатку",
   "quickCapture.customBadge": "власний",
   "skipToMainContent": "Перейти до основного вмісту",
-
   "createDropdown.createNew": "Створити новий...",
   "createDropdown.new": "Новий",
   "createDropdown.createItem": "Створити {{item}}",
@@ -56,7 +55,6 @@
   "createDropdown.ioc": "IOC",
   "createDropdown.openFile": "Відкрити файл",
   "createDropdown.importData": "Імпортувати дані",
-
   "shortcuts.title": "Комбінації клавіш",
   "shortcuts.general": "Загальні",
   "shortcuts.openSearch": "Відкрити пошук",
@@ -76,7 +74,6 @@
   "shortcuts.switchToTasks": "Перейти до завдань",
   "shortcuts.switchToTimeline": "Перейти до хронології",
   "shortcuts.switchToWhiteboards": "Перейти до дошок",
-
   "entityLinker.linkEntities": "Зв'язати об'єкти",
   "entityLinker.searchPlaceholder": "Пошук об'єктів для зв'язку...",
   "entityLinker.linked": "зв'язано",
@@ -85,7 +82,6 @@
   "entityLinker.note": "Нотатка",
   "entityLinker.task": "Завдання",
   "entityLinker.event": "Подія",
-
   "comments.label": "Коментарі",
   "comments.justNow": "щойно",
   "comments.minutesAgo": "{{count}} хв. тому",
@@ -97,7 +93,6 @@
   "comments.editComment": "Редагувати коментар",
   "comments.deleteComment": "Видалити коментар",
   "comments.addPlaceholder": "Додати коментар...",
-
   "sidebar.dashboard": "Панель керування",
   "sidebar.investigations": "Розслідування",
   "sidebar.notes": "Нотатки",
@@ -108,7 +103,7 @@
   "sidebar.graph": "Граф",
   "sidebar.activity": "Активність",
   "sidebar.caddyAI": "CaddyAI",
-  "sidebar.caddyShack": "CaddyShack",
+  "sidebar.caddyShack": "Стрічка команди",
   "sidebar.agentCaddy": "AgentCaddy",
   "sidebar.settings": "Налаштування",
   "sidebar.archive": "Архів",
@@ -123,7 +118,6 @@
   "sidebar.downloadStandalone": "Завантажити автономну версію",
   "sidebar.chromeExtension": "Розширення Chrome",
   "sidebar.privacy": "Конфіденційність",
-
   "header.toggleMenu": "Перемкнути меню",
   "header.toggleSidebar": "Перемкнути бічну панель",
   "header.localEdition": "Локальна версія",
@@ -146,7 +140,6 @@
   "header.privacy": "Конфіденційність",
   "header.saveBackup": "Зберегти резервну копію",
   "header.loadBackup": "Завантажити резервну копію",
-
   "serverError.VALIDATION_FAILED": "Помилка валідації",
   "serverError.EMAIL_ALREADY_REGISTERED": "Email вже зареєстровано",
   "serverError.INVALID_CREDENTIALS": "Неправильний email або пароль",
@@ -205,5 +198,18 @@
   "serverError.INVALID_WEBHOOK_SECRET": "Неправильний секрет вебхука",
   "serverError.RUN_NOT_FOUND": "Запуск не знайдено",
   "serverError.INTERNAL_ERROR": "Внутрішня помилка сервера",
-  "serverError.MISSING_BLOB": "Відсутні дані файлу"
+  "serverError.MISSING_BLOB": "Відсутні дані файлу",
+  "demoModal.title": "Ласкаво просимо до ThreatCaddy",
+  "demoModal.descriptionPrefix": "Зразкове розслідування",
+  "demoModal.descriptionSuffix": "було завантажено, щоб ви могли дослідити, як усе працює.",
+  "demoModal.whatYouCan": "Що ви можете зробити:",
+  "demoModal.browseItems": "Переглядати нотатки, завдання та події хронології",
+  "demoModal.viewGraph": "Переглядати граф розслідування та аналіз IOC",
+  "demoModal.tryWhiteboard": "Спробувати дошку та зв'язування сутностей",
+  "demoModal.useLinksPrefix": "Використовуйте",
+  "demoModal.useLinksSuffix": "для зв'язування між нотатками",
+  "demoModal.startExploring": "Почати дослідження",
+  "demoModal.guidedTour": "Пройти екскурсію",
+  "demoModal.deleteDemo": "Видалити демо та почати заново",
+  "demoModal.removeHint": "Ви можете видалити зразкові дані пізніше в Налаштуваннях."
 }
