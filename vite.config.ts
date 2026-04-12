@@ -29,6 +29,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,ico,woff,woff2}'],
         globIgnores: ['**/excalidraw-*', '**/locales/**', 'chunk-reload-guard.js'],
         navigateFallback: null,
+        skipWaiting: true,
+        clientsClaim: true,
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {

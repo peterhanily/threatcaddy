@@ -19,11 +19,22 @@
       msg.indexOf('Loading chunk') !== -1 ||
       msg.indexOf('dynamically imported module') !== -1 ||
       msg.indexOf('Failed to fetch dynamically imported module') !== -1 ||
-      msg.indexOf('Importing a module script failed') !== -1
+      msg.indexOf('Importing a module script failed') !== -1 ||
+      msg.indexOf('error loading dynamically imported module') !== -1 ||
+      msg.indexOf('Failed to load module script') !== -1
     );
   }
 
   function reload() {
+    // Replace the loading spinner with a brief "Updating..." message
+    var root = document.getElementById('root');
+    if (root) {
+      root.innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px">' +
+        '<div style="width:36px;height:36px;border:3px solid rgba(139,92,246,.25);border-top-color:#8b5cf6;border-radius:50%;animation:tc-spin .8s linear infinite"></div>' +
+        '<span style="color:#9ca3af;font-size:13px;font-family:system-ui,sans-serif">Updating ThreatCaddy\u2026</span>' +
+        '</div>';
+    }
     var u = new URL(location.href);
     u.searchParams.set('_r', Date.now().toString());
     location.replace(u.toString());
@@ -38,6 +49,6 @@
     if (isChunkFailure(reason && reason.message ? reason.message : reason) && shouldReload()) reload();
   });
 
-  // Clear guard after successful boot
+  // Clear guard after successful boot so future deploys can trigger reload
   setTimeout(function () { sessionStorage.removeItem(KEY); }, 8000);
 })();
