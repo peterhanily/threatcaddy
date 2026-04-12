@@ -1,19 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { goToApp, navigateToView, createQuickNote } from './fixtures';
+import { goToApp, navigateToView, createQuickNote, getSidebar } from './fixtures';
 
 test.describe('Note editing', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-    await page.evaluate(async () => {
-      const dbs = await indexedDB.databases();
-      for (const db of dbs) {
-        if (db.name) indexedDB.deleteDatabase(db.name);
-      }
-    });
     await goToApp(page);
   });
 
@@ -121,7 +110,7 @@ test.describe('Note editing', () => {
     await page.waitForTimeout(500);
 
     // Navigate to the trash view to verify the note is there
-    const sidebar = page.locator('aside[role="navigation"]');
+    const sidebar = getSidebar(page);
     const trashNav = sidebar.getByRole('button', { name: /trash/i });
     await trashNav.click();
 

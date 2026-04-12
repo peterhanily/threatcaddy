@@ -1,27 +1,15 @@
 import { readFileSync } from 'fs';
 import { test, expect } from '@playwright/test';
-import { goToApp, createInvestigation, selectInvestigation, navigateToView, createQuickNote } from './fixtures';
+import { goToApp, createInvestigation, navigateToView, createQuickNote, getSidebar } from './fixtures';
 
 test.describe('Export and import', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-    await page.evaluate(async () => {
-      const dbs = await indexedDB.databases();
-      for (const db of dbs) {
-        if (db.name) indexedDB.deleteDatabase(db.name);
-      }
-    });
     await goToApp(page);
   });
 
   test('export JSON backup via settings', async ({ page }) => {
     // Create some data first
     await createInvestigation(page, 'Export Test Case');
-    await selectInvestigation(page, 'Export Test Case');
     await navigateToView(page, 'Notes');
     await createQuickNote(page);
 
@@ -31,11 +19,9 @@ test.describe('Export and import', () => {
     await page.waitForTimeout(1_500);
 
     // Open settings
-    const sidebar = page.locator('aside[role="navigation"]');
-    const settingsButton = sidebar.getByText('Settings').or(
-      sidebar.getByRole('button', { name: /settings/i })
-    );
-    await settingsButton.first().click();
+    const sidebar = getSidebar(page);
+    const settingsButton = sidebar.getByRole('button', { name: /settings/i });
+    await settingsButton.click();
 
     // Navigate to the Data tab in settings
     const dataTab = page.getByText('Data').or(
@@ -77,11 +63,9 @@ test.describe('Export and import', () => {
 
   test('import JSON button exists and opens file dialog', async ({ page }) => {
     // Open settings
-    const sidebar = page.locator('aside[role="navigation"]');
-    const settingsButton = sidebar.getByText('Settings').or(
-      sidebar.getByRole('button', { name: /settings/i })
-    );
-    await settingsButton.first().click();
+    const sidebar = getSidebar(page);
+    const settingsButton = sidebar.getByRole('button', { name: /settings/i });
+    await settingsButton.click();
 
     // Navigate to the Data tab in settings
     const dataTab = page.getByText('Data').or(

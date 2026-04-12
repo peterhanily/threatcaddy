@@ -17,9 +17,7 @@ export async function dismissInitialOverlays(page: Page) {
 
 /**
  * Navigate to the app and wait for it to be ready.
- * Clears IndexedDB before the app's JS loads to ensure a clean state.
- * Since ThreatCaddy is a local-first SPA with no auth required for local use,
- * we simply navigate to the base URL.
+ * Each Playwright test gets a fresh browser context, so no need to clear storage.
  */
 export async function goToApp(page: Page) {
   await page.goto('/');
@@ -27,33 +25,37 @@ export async function goToApp(page: Page) {
 }
 
 /**
- * Create a new investigation (folder) via the sidebar.
- * Returns the name used.
+ * Create a new investigation via the Investigations hub.
+ * Navigates to Investigations view, clicks "New Investigation", fills in the modal.
  */
 export async function createInvestigation(page: Page, name: string) {
-  // Ensure sidebar is expanded (look for the "Investigations" header text)
-  const sidebar = page.locator('aside[role="navigation"]');
-  await expect(sidebar).toBeVisible();
+  // Navigate to Investigations view
+  await navigateToView(page, 'Investigations');
 
-  // Click the "New" button in the sidebar to open the investigation name input
-  const newButton = sidebar.getByRole('button', { name: /^New$/ });
+  // Click "New Investigation" button in the hub
+  const newButton = page.getByRole('button', { name: /New Investigation/i });
   await newButton.click();
 
-  // Type the investigation name into the input
-  const nameInput = sidebar.getByPlaceholder('Investigation name');
+  // Fill in the investigation name in the modal
+  const nameInput = page.getByPlaceholder('e.g. Operation Midnight Storm');
+  await expect(nameInput).toBeVisible({ timeout: 5_000 });
   await nameInput.fill(name);
-  await nameInput.press('Enter');
 
-  // Wait for the investigation to appear in the sidebar
-  await expect(sidebar.getByText(name)).toBeVisible({ timeout: 5_000 });
+  // Click "Create Investigation" in the modal (scoped to the dialog to avoid strict mode violation)
+  const modal = page.getByLabel('New Investigation');
+  const createButton = modal.getByRole('button', { name: /Create Investigation/i });
+  await createButton.click();
+
+  // Wait for the investigation to load (the app navigates into it)
+  await page.waitForTimeout(1_000);
 }
 
 /**
- * Select an investigation by clicking it in the sidebar.
+ * Select an investigation by navigating to the Investigations hub and clicking it.
  */
 export async function selectInvestigation(page: Page, name: string) {
-  const sidebar = page.locator('aside[role="navigation"]');
-  await sidebar.getByText(name).click();
+  await navigateToView(page, 'Investigations');
+  await page.getByText(name).first().click();
 }
 
 /**
@@ -61,13 +63,13 @@ export async function selectInvestigation(page: Page, name: string) {
  * Uses "Quick Note" which creates a note immediately.
  */
 export async function createQuickNote(page: Page) {
-  // Click the "New" dropdown button in the header
+  // Click the "New" dropdown button in the header (aria-label is "Create new...")
   const header = page.locator('header[data-tour="header"]');
-  const newDropdown = header.getByRole('button', { name: 'Create new' });
+  const newDropdown = header.getByRole('button', { name: /Create new/i });
   await newDropdown.click();
 
-  // Click "Quick Note" in the dropdown
-  await page.getByText('Quick Note').click();
+  // Click "Quick Note" in the dropdown menu
+  await page.getByRole('menuitem', { name: /Quick Note/i }).click();
 }
 
 /**
@@ -75,28 +77,36 @@ export async function createQuickNote(page: Page) {
  */
 export async function openNewTaskForm(page: Page) {
   const header = page.locator('header[data-tour="header"]');
-  const newDropdown = header.getByRole('button', { name: 'Create new' });
+  const newDropdown = header.getByRole('button', { name: /Create new/i });
   await newDropdown.click();
-  await page.getByText('Task', { exact: true }).click();
+  await page.getByRole('menuitem', { name: /Task/i }).click();
 }
 
 /**
  * Navigate to a specific view tab via the sidebar.
+ * The sidebar nav items use role="button" with text labels.
  */
 export async function navigateToView(
   page: Page,
-  view: 'Dashboard' | 'Notes' | 'Tasks' | 'Timeline' | 'Whiteboards' | 'IOCs' | 'Graph' | 'Activity' | 'CaddyShack' | 'CaddyAI',
+  view: 'Dashboard' | 'Investigations' | 'Notes' | 'Tasks' | 'Timeline' | 'Whiteboards' | 'IOCs' | 'Graph' | 'Activity' | 'Team Feed' | 'CaddyAI' | 'AgentCaddy',
 ) {
-  const sidebar = page.locator('aside[role="navigation"] nav[aria-label="Views"]');
-  await sidebar.getByText(view, { exact: true }).click();
+  const viewsNav = page.locator('nav[aria-label="Views"]');
+  await viewsNav.getByRole('button', { name: view }).click();
 }
 
 /**
  * Open the search overlay via the header search bar.
  */
 export async function openSearch(page: Page) {
-  const searchButton = page.locator('header[data-tour="header"] button[data-tour="search"]');
+  const searchButton = page.locator('[data-tour="search"]');
   await searchButton.click();
   // Wait for the search overlay to appear
   await page.waitForSelector('input[type="text"]', { timeout: 3_000 });
+}
+
+/**
+ * Get a locator for the sidebar navigation.
+ */
+export function getSidebar(page: Page) {
+  return page.locator('nav[aria-label="Main navigation"]');
 }

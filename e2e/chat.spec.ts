@@ -3,17 +3,6 @@ import { goToApp, navigateToView } from './fixtures';
 
 test.describe('AI chat (CaddyAI)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-    await page.evaluate(async () => {
-      const dbs = await indexedDB.databases();
-      for (const db of dbs) {
-        if (db.name) indexedDB.deleteDatabase(db.name);
-      }
-    });
     await goToApp(page);
   });
 

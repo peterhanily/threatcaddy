@@ -1,25 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { goToApp, createInvestigation, selectInvestigation, navigateToView } from './fixtures';
+import { goToApp, createInvestigation, navigateToView } from './fixtures';
 
 test.describe('Timeline events', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-    await page.evaluate(async () => {
-      const dbs = await indexedDB.databases();
-      for (const db of dbs) {
-        if (db.name) indexedDB.deleteDatabase(db.name);
-      }
-    });
     await goToApp(page);
   });
 
   test('create a timeline event', async ({ page }) => {
     await createInvestigation(page, 'Timeline Test');
-    await selectInvestigation(page, 'Timeline Test');
     await navigateToView(page, 'Timeline');
 
     // Click the "New Event" button in the toolbar
@@ -56,7 +44,6 @@ test.describe('Timeline events', () => {
 
   test('star a timeline event', async ({ page }) => {
     await createInvestigation(page, 'Timeline Star Test');
-    await selectInvestigation(page, 'Timeline Star Test');
     await navigateToView(page, 'Timeline');
 
     // Create an event first
@@ -87,7 +74,6 @@ test.describe('Timeline events', () => {
 
   test('create event and verify it appears in feed with correct type', async ({ page }) => {
     await createInvestigation(page, 'Timeline Type Test');
-    await selectInvestigation(page, 'Timeline Type Test');
     await navigateToView(page, 'Timeline');
 
     // Create an event with a specific type

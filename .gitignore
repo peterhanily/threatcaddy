@@ -48,3 +48,5 @@ CLAUDE.md
 
 # Plans (local only)
 plans/
+playwright-report/
+test-results/

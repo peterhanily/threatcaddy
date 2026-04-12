@@ -1,25 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { goToApp, createInvestigation, selectInvestigation, navigateToView, createQuickNote } from './fixtures';
+import { goToApp, createInvestigation, navigateToView, createQuickNote, getSidebar } from './fixtures';
 
 test.describe('Tags', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-    await page.evaluate(async () => {
-      const dbs = await indexedDB.databases();
-      for (const db of dbs) {
-        if (db.name) indexedDB.deleteDatabase(db.name);
-      }
-    });
     await goToApp(page);
   });
 
   test('create a tag on a note and see it in the sidebar', async ({ page }) => {
     await createInvestigation(page, 'Tag Test Case');
-    await selectInvestigation(page, 'Tag Test Case');
     await navigateToView(page, 'Notes');
 
     // Create a note
@@ -47,7 +35,7 @@ test.describe('Tags', () => {
     await expect(page.getByText('phishing').first()).toBeVisible({ timeout: 5_000 });
 
     // The tag should also appear in the sidebar tag list
-    const sidebar = page.locator('aside[role="navigation"]');
+    const sidebar = getSidebar(page);
 
     // Expand the Tags section if collapsed
     const tagsToggle = sidebar.getByText('Tags');
@@ -59,7 +47,6 @@ test.describe('Tags', () => {
 
   test('create multiple tags on a note', async ({ page }) => {
     await createInvestigation(page, 'Multi Tag Test');
-    await selectInvestigation(page, 'Multi Tag Test');
     await navigateToView(page, 'Notes');
 
     // Create a note
@@ -90,14 +77,13 @@ test.describe('Tags', () => {
     await expect(page.getByText('c2-traffic').first()).toBeVisible({ timeout: 5_000 });
 
     // Both tags should appear in the sidebar
-    const sidebar = page.locator('aside[role="navigation"]');
+    const sidebar = getSidebar(page);
     await expect(sidebar.getByText('malware')).toBeVisible({ timeout: 5_000 });
     await expect(sidebar.getByText('c2-traffic')).toBeVisible({ timeout: 5_000 });
   });
 
   test('filter notes by clicking a tag in the sidebar', async ({ page }) => {
     await createInvestigation(page, 'Tag Filter Test');
-    await selectInvestigation(page, 'Tag Filter Test');
     await navigateToView(page, 'Notes');
 
     // Create first note with a tag
@@ -126,7 +112,7 @@ test.describe('Tags', () => {
     await expect(page.getByText('Unrelated Finding')).toBeVisible({ timeout: 5_000 });
 
     // Click the ransomware tag in the sidebar to filter
-    const sidebar = page.locator('aside[role="navigation"]');
+    const sidebar = getSidebar(page);
     const sidebarTag = sidebar.getByText('ransomware');
     if (await sidebarTag.isVisible({ timeout: 3_000 }).catch(() => false)) {
       await sidebarTag.click();

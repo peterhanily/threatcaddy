@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { goToApp, createInvestigation, selectInvestigation, navigateToView, createQuickNote, openNewTaskForm, openSearch } from './fixtures';
+import { goToApp, createInvestigation, navigateToView, createQuickNote, openNewTaskForm, openSearch, getSidebar } from './fixtures';
 
 test.describe('Onboarding and investigation flow', () => {
   test.describe('Demo mode', () => {
@@ -29,25 +29,16 @@ test.describe('Onboarding and investigation flow', () => {
       // Modal should close
       await expect(modalTitle).not.toBeVisible({ timeout: 5_000 });
 
-      // The sample investigation should be loaded in the sidebar
-      const sidebar = page.locator('aside[role="navigation"]');
-      await expect(sidebar.getByText('FERMENTED PERSISTENCE')).toBeVisible({ timeout: 5_000 });
+      // The sample investigation should be loaded — check by navigating to Investigations view
+      const sidebar = getSidebar(page);
+      await expect(sidebar).toBeVisible();
+      await navigateToView(page, 'Investigations');
+      await expect(page.getByText('FERMENTED PERSISTENCE')).toBeVisible({ timeout: 5_000 });
     });
   });
 
   test.describe('Investigation entity workflow', () => {
     test.beforeEach(async ({ page }) => {
-      await page.goto('/');
-      await page.evaluate(() => {
-        localStorage.clear();
-        sessionStorage.clear();
-      });
-      await page.evaluate(async () => {
-        const dbs = await indexedDB.databases();
-        for (const db of dbs) {
-          if (db.name) indexedDB.deleteDatabase(db.name);
-        }
-      });
       await goToApp(page);
     });
 
@@ -55,12 +46,12 @@ test.describe('Onboarding and investigation flow', () => {
       // Create a new investigation
       await createInvestigation(page, 'Test Phishing Case');
 
-      // Verify it appears in the sidebar
-      const sidebar = page.locator('aside[role="navigation"]');
-      await expect(sidebar.getByText('Test Phishing Case')).toBeVisible();
+      // Verify it appears in the Investigations hub
+      await navigateToView(page, 'Investigations');
+      await expect(page.getByText('Test Phishing Case')).toBeVisible({ timeout: 5_000 });
 
       // Select the investigation
-      await selectInvestigation(page, 'Test Phishing Case');
+      await page.getByText('Test Phishing Case').first().click();
 
       // Navigate to Notes view and create a note
       await navigateToView(page, 'Notes');
@@ -99,7 +90,6 @@ test.describe('Onboarding and investigation flow', () => {
     test('search finds created entities', async ({ page }) => {
       // Set up: create an investigation with a note
       await createInvestigation(page, 'Searchable Case');
-      await selectInvestigation(page, 'Searchable Case');
 
       await navigateToView(page, 'Notes');
       await createQuickNote(page);
@@ -128,7 +118,6 @@ test.describe('Onboarding and investigation flow', () => {
     test('can switch between views', async ({ page }) => {
       // Create an investigation so views have context
       await createInvestigation(page, 'View Navigation Test');
-      await selectInvestigation(page, 'View Navigation Test');
 
       // Navigate to Notes view
       await navigateToView(page, 'Notes');

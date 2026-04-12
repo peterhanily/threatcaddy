@@ -1,19 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { goToApp } from './fixtures';
+import { goToApp, getSidebar } from './fixtures';
 
 test.describe('Keyboard shortcuts', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-    await page.evaluate(async () => {
-      const dbs = await indexedDB.databases();
-      for (const db of dbs) {
-        if (db.name) indexedDB.deleteDatabase(db.name);
-      }
-    });
     await goToApp(page);
   });
 
@@ -68,10 +57,8 @@ test.describe('Keyboard shortcuts', () => {
     await page.waitForTimeout(500);
 
     // Open settings via the sidebar settings button
-    const sidebar = page.locator('aside[role="navigation"]');
-    const settingsButton = sidebar.getByText('Settings').or(
-      sidebar.getByRole('button', { name: /settings/i })
-    );
+    const sidebar = getSidebar(page);
+    const settingsButton = sidebar.getByRole('button', { name: /settings/i });
     if (await settingsButton.first().isVisible({ timeout: 2_000 }).catch(() => false)) {
       await settingsButton.first().click();
 

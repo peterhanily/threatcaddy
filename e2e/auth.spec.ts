@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { goToApp } from './fixtures';
+import { goToApp, getSidebar, createInvestigation, navigateToView } from './fixtures';
 
 test.describe('Authentication & local-first access', () => {
   // Each Playwright test gets a fresh browser context by default —
@@ -13,7 +13,7 @@ test.describe('Authentication & local-first access', () => {
     await expect(header).toBeVisible();
 
     // The sidebar navigation should be accessible
-    const sidebar = page.locator('aside[role="navigation"]');
+    const sidebar = getSidebar(page);
     await expect(sidebar).toBeVisible();
   });
 
@@ -21,54 +21,51 @@ test.describe('Authentication & local-first access', () => {
     await goToApp(page);
 
     // Open settings via the sidebar footer
-    const sidebar = page.locator('aside[role="navigation"]');
-    await sidebar.getByText('Settings').click();
+    const sidebar = getSidebar(page);
+    await sidebar.getByRole('button', { name: 'Settings' }).click();
 
     // Settings panel should be visible with the Server/Team section
-    await expect(page.getByText('Server / Team')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Team Server', { exact: true })).toBeVisible({ timeout: 5_000 });
   });
 
   test('server connection shows login/register UI when URL is provided', async ({ page }) => {
     await goToApp(page);
 
     // Open settings
-    const sidebar = page.locator('aside[role="navigation"]');
-    await sidebar.getByText('Settings').click();
+    const sidebar = getSidebar(page);
+    await sidebar.getByRole('button', { name: 'Settings' }).click();
 
     // The server connection section should show a URL input
     // Look for the connect/server URL input area
-    await expect(page.getByText('Server / Team')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Team Server', { exact: true })).toBeVisible({ timeout: 5_000 });
   });
 
   test('login with invalid server URL shows error gracefully', async ({ page }) => {
     await goToApp(page);
 
     // Open settings
-    const sidebar = page.locator('aside[role="navigation"]');
-    await sidebar.getByText('Settings').click();
-    await expect(page.getByText('Server / Team')).toBeVisible({ timeout: 5_000 });
+    const sidebar = getSidebar(page);
+    await sidebar.getByRole('button', { name: 'Settings' }).click();
+    await expect(page.getByText('Team Server', { exact: true })).toBeVisible({ timeout: 5_000 });
   });
 
   test('app preserves local data across page reloads', async ({ page }) => {
     await goToApp(page);
 
-    // Create an investigation
-    const sidebar = page.locator('aside[role="navigation"]');
-    const newButton = sidebar.getByRole('button', { name: /^New$/ });
-    await newButton.click();
+    // Create an investigation via the Investigations hub modal
+    await createInvestigation(page, 'Persistence Test');
 
-    const nameInput = sidebar.getByPlaceholder('Investigation name');
-    await nameInput.fill('Persistence Test');
-    await nameInput.press('Enter');
-
-    await expect(sidebar.getByText('Persistence Test')).toBeVisible({ timeout: 5_000 });
+    // Navigate to Investigations view to verify it exists
+    await navigateToView(page, 'Investigations');
+    const main = page.locator('#main-content');
+    await expect(main.getByText('Persistence Test').first()).toBeVisible({ timeout: 5_000 });
 
     // Reload the page
     await page.reload();
     await goToApp(page);
 
     // The investigation should still be there (IndexedDB persists)
-    const sidebarAfterReload = page.locator('aside[role="navigation"]');
-    await expect(sidebarAfterReload.getByText('Persistence Test')).toBeVisible({ timeout: 5_000 });
+    await navigateToView(page, 'Investigations');
+    await expect(main.getByText('Persistence Test').first()).toBeVisible({ timeout: 10_000 });
   });
 });

@@ -1,25 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { goToApp, createInvestigation, selectInvestigation, navigateToView } from './fixtures';
+import { goToApp, createInvestigation, navigateToView } from './fixtures';
 
 test.describe('Empty states', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-    await page.evaluate(async () => {
-      const dbs = await indexedDB.databases();
-      for (const db of dbs) {
-        if (db.name) indexedDB.deleteDatabase(db.name);
-      }
-    });
     await goToApp(page);
   });
 
   test('notes empty state shows CTA', async ({ page }) => {
     await createInvestigation(page, 'Empty Notes Test');
-    await selectInvestigation(page, 'Empty Notes Test');
     await navigateToView(page, 'Notes');
 
     // With no notes, the empty state should show the "Create your first note" button
@@ -32,7 +20,6 @@ test.describe('Empty states', () => {
 
   test('tasks empty state shows CTA', async ({ page }) => {
     await createInvestigation(page, 'Empty Tasks Test');
-    await selectInvestigation(page, 'Empty Tasks Test');
     await navigateToView(page, 'Tasks');
 
     // With no tasks, the empty state should be visible
@@ -45,7 +32,6 @@ test.describe('Empty states', () => {
 
   test('timeline empty state shows hint text', async ({ page }) => {
     await createInvestigation(page, 'Empty Timeline Test');
-    await selectInvestigation(page, 'Empty Timeline Test');
     await navigateToView(page, 'Timeline');
 
     // With no timeline events, the empty state should show the hint
@@ -58,7 +44,6 @@ test.describe('Empty states', () => {
 
   test('clicking notes empty state CTA creates a note', async ({ page }) => {
     await createInvestigation(page, 'Notes CTA Test');
-    await selectInvestigation(page, 'Notes CTA Test');
     await navigateToView(page, 'Notes');
 
     // Click the "Create your first note" button
@@ -83,7 +68,6 @@ test.describe('Empty states', () => {
 
   test('clicking tasks empty state CTA opens task form', async ({ page }) => {
     await createInvestigation(page, 'Tasks CTA Test');
-    await selectInvestigation(page, 'Tasks CTA Test');
     await navigateToView(page, 'Tasks');
 
     // Click the "Create your first task" button

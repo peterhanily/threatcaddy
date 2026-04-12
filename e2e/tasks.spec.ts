@@ -1,25 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { goToApp, createInvestigation, selectInvestigation, navigateToView, openNewTaskForm } from './fixtures';
+import { goToApp, createInvestigation, navigateToView, openNewTaskForm } from './fixtures';
 
 test.describe('Task lifecycle', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-    await page.evaluate(async () => {
-      const dbs = await indexedDB.databases();
-      for (const db of dbs) {
-        if (db.name) indexedDB.deleteDatabase(db.name);
-      }
-    });
     await goToApp(page);
   });
 
   test('create a task with title and description', async ({ page }) => {
     await createInvestigation(page, 'Task Lifecycle Test');
-    await selectInvestigation(page, 'Task Lifecycle Test');
     await navigateToView(page, 'Tasks');
 
     // Open new task form via the header dropdown
@@ -44,7 +32,6 @@ test.describe('Task lifecycle', () => {
 
   test('change task status via the form', async ({ page }) => {
     await createInvestigation(page, 'Task Status Test');
-    await selectInvestigation(page, 'Task Status Test');
     await navigateToView(page, 'Tasks');
 
     // Create a task first
@@ -73,7 +60,6 @@ test.describe('Task lifecycle', () => {
 
   test('change task priority', async ({ page }) => {
     await createInvestigation(page, 'Task Priority Test');
-    await selectInvestigation(page, 'Task Priority Test');
     await navigateToView(page, 'Tasks');
 
     // Create a task with high priority
@@ -100,7 +86,6 @@ test.describe('Task lifecycle', () => {
 
   test('switch between list and kanban view', async ({ page }) => {
     await createInvestigation(page, 'Task View Toggle');
-    await selectInvestigation(page, 'Task View Toggle');
     await navigateToView(page, 'Tasks');
 
     // Create a task so there is content to see
