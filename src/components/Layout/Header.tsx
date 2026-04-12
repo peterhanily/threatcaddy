@@ -1,5 +1,5 @@
 import { Menu, Search, Github, Download, Chrome, HardDriveDownload, FolderUp, HelpCircle, Shield, RefreshCw, ChevronDown, Briefcase } from 'lucide-react';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ThemeToggle } from '../Common/ThemeToggle';
 import { ScreenshareToggle } from '../Common/ScreenshareToggle';
@@ -8,11 +8,12 @@ import { cn } from '../../lib/utils';
 import { NotificationBell } from '../CaddyShack/NotificationBell';
 import { PresenceIndicator } from '../Common/PresenceIndicator';
 import type { PresenceUser } from '../../types';
+import { useUIModals } from '../../contexts/UIModalContext';
+import { useInvestigation } from '../../contexts/InvestigationContext';
 import logoSvgRaw from '/logo.svg?raw';
 const logoSvg = `data:image/svg+xml,${encodeURIComponent(logoSvgRaw)}`;
 
 interface HeaderProps {
-  onOpenSearch: () => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
   onQuickNote: () => void;
@@ -29,17 +30,12 @@ interface HeaderProps {
   onQuickSave: () => void;
   onQuickLoad: (file: File) => void;
   onStartTour?: () => void;
-  screenshareMaxLevel: string | null;
-  onScreenshareChange: (level: string | null) => void;
   effectiveClsLevels: string[];
-  selectedFolderName?: string;
-  selectedFolderColor?: string;
   presenceUsers?: PresenceUser[];
   addToast?: (type: 'success' | 'error' | 'info' | 'warning', message: string) => void;
 }
 
 export function Header({
-  onOpenSearch,
   theme,
   onToggleTheme,
   onQuickNote,
@@ -55,14 +51,16 @@ export function Header({
   onQuickSave,
   onQuickLoad,
   onStartTour,
-  screenshareMaxLevel,
-  onScreenshareChange,
   effectiveClsLevels,
-  selectedFolderName,
-  selectedFolderColor,
   presenceUsers,
   addToast,
 }: HeaderProps) {
+  const { screenshareMaxLevel, setScreenshareMaxLevel, setSearchOverlayOpen } = useUIModals();
+  const { selectedFolder } = useInvestigation();
+  const selectedFolderName = selectedFolder?.name;
+  const selectedFolderColor = selectedFolder?.color;
+  const onOpenSearch = useCallback(() => setSearchOverlayOpen(true), [setSearchOverlayOpen]);
+  const onScreenshareChange = setScreenshareMaxLevel;
   const { t } = useTranslation('common');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const helpMenuRef = useRef<HTMLDivElement>(null);

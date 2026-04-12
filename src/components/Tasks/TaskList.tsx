@@ -1,13 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ListChecks, CheckSquare, LayoutGrid, Plus, Filter, ArrowUpDown } from 'lucide-react';
-import type { Task, Note, TimelineEvent, TaskStatus, TaskViewMode, Tag, Folder, InvestigationMember } from '../../types';
+import type { Task, Note, TimelineEvent, TaskStatus, Tag, Folder, InvestigationMember } from '../../types';
 import { TaskItem } from './TaskItem';
 import { TaskForm } from './TaskForm';
 import { KanbanBoard } from './KanbanBoard';
 import { Modal } from '../Common/Modal';
 import { cn } from '../../lib/utils';
 import { Virtuoso } from 'react-virtuoso';
+import { useNavigation } from '../../contexts/NavigationContext';
+import { useInvestigation } from '../../contexts/InvestigationContext';
 
 interface TaskListProps {
   tasks: Task[];
@@ -21,15 +23,10 @@ interface TaskListProps {
   onRestoreTask?: (id: string) => void;
   onToggleArchiveTask?: (id: string) => void;
   onCreateTask: (data: Partial<Task>) => void;
-  viewMode: TaskViewMode;
-  onViewModeChange: (mode: TaskViewMode) => void;
   getTasksByStatus: (status: TaskStatus) => Task[];
   allNotes?: Note[];
   allTimelineEvents?: TimelineEvent[];
   scopeLabel?: string;
-  selectedFolderId?: string;
-  openNewForm?: boolean;
-  onNewFormOpened?: () => void;
   members?: InvestigationMember[];
   currentUserId?: string;
 }
@@ -46,18 +43,15 @@ export function TaskListView({
   onRestoreTask,
   onToggleArchiveTask,
   onCreateTask,
-  viewMode,
-  onViewModeChange,
   getTasksByStatus,
   allNotes,
   allTimelineEvents,
   scopeLabel,
-  selectedFolderId,
-  openNewForm,
-  onNewFormOpened,
   members,
   currentUserId,
 }: TaskListProps) {
+  const { taskViewMode: viewMode, setTaskViewMode: onViewModeChange, pendingNewTask: openNewForm, setPendingNewTask } = useNavigation();
+  const { selectedFolderId } = useInvestigation();
   const { t } = useTranslation('tasks');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showNewTask, setShowNewTask] = useState(false);
@@ -67,8 +61,8 @@ export function TaskListView({
     if (!openNewForm) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncing external prop to local modal state
     setShowNewTask(true);
-    onNewFormOpened?.();
-  }, [openNewForm, onNewFormOpened]);
+    setPendingNewTask(false);
+  }, [openNewForm, setPendingNewTask]);
   const [statusFilter, setStatusFilter] = useState<TaskStatus | ''>('');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('');
   const [sortBy, setSortBy] = useState<'order' | 'dueDate' | 'priority' | 'updatedAt'>('order');

@@ -43,6 +43,20 @@ vi.mock('../db', () => ({
   },
 }));
 
+vi.mock('../contexts/NavigationContext', () => ({
+  useNavigation: () => ({
+    selectedChatThreadId: 't1',
+    setSelectedChatThreadId: vi.fn(),
+  }),
+}));
+
+vi.mock('../contexts/InvestigationContext', () => ({
+  useInvestigation: () => ({
+    selectedFolderId: undefined,
+    selectedFolder: undefined,
+  }),
+}));
+
 vi.mock('../lib/utils', () => ({
   cn: (...args: (string | boolean | undefined | null)[]) => args.filter(Boolean).join(' '),
   formatDate: vi.fn((ts: number) => new Date(ts).toLocaleDateString()),
@@ -283,8 +297,6 @@ describe('ChatView', () => {
     render(
       <ToastProvider><ChatView
         threads={threads}
-        selectedThreadId="t1"
-        onSelectThread={vi.fn()}
         onCreateThread={vi.fn(async () => makeThread())}
         onUpdateThread={vi.fn()}
         onAddMessage={vi.fn(async () => {})}
@@ -303,7 +315,6 @@ describe('ChatView', () => {
     render(
       <ToastProvider><ChatView
         threads={[]}
-        onSelectThread={vi.fn()}
         onCreateThread={vi.fn(async () => makeThread())}
         onUpdateThread={vi.fn()}
         onAddMessage={vi.fn(async () => {})}
@@ -320,7 +331,6 @@ describe('ChatView', () => {
     render(
       <ToastProvider><ChatView
         threads={[]}
-        onSelectThread={vi.fn()}
         onCreateThread={vi.fn(async () => makeThread())}
         onUpdateThread={vi.fn()}
         onAddMessage={vi.fn(async () => {})}

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, Check, X, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { ChatThread, ChatMessage, LLMProvider, Settings, Folder, ToolUseBlock } from '../../types';
+import type { ChatThread, ChatMessage, LLMProvider, Settings, ToolUseBlock } from '../../types';
 import { ClsSelect } from '../Common/ClsSelect';
 import { ClsBadge } from '../Common/ClsBadge';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
@@ -27,6 +27,8 @@ import { supportsVision, describeImage } from '../../lib/image-ocr';
 import { resolveRoutingMode } from '../../lib/llm-router';
 import type { ChatAttachment } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigation } from '../../contexts/NavigationContext';
+import { useInvestigation } from '../../contexts/InvestigationContext';
 
 /** Strip tool call JSON from streaming content (local LLMs output tool calls as text). */
 // Regexes hoisted to module scope — compiled once, not per render frame
@@ -46,16 +48,12 @@ function cleanStreamingContent(text: string): string {
 
 interface ChatViewProps {
   threads: ChatThread[];
-  selectedThreadId?: string;
-  onSelectThread: (id: string) => void;
   onCreateThread: (partial?: Partial<ChatThread>) => Promise<ChatThread>;
   onUpdateThread: (id: string, updates: Partial<ChatThread>) => void;
   onAddMessage: (threadId: string, message: ChatMessage) => Promise<void>;
   onTrashThread: (id: string) => void;
   onShareThread?: (thread: ChatThread) => void;
   settings: Settings;
-  selectedFolderId?: string;
-  selectedFolder?: Folder;
   onEntitiesChanged?: () => void;
   onNavigateToEntity?: (type: string, id: string) => void;
   onOpenSettings?: (tab?: string) => void;
@@ -63,20 +61,18 @@ interface ChatViewProps {
 
 export function ChatView({
   threads,
-  selectedThreadId,
-  onSelectThread,
   onCreateThread,
   onUpdateThread,
   onAddMessage,
   onTrashThread,
   onShareThread,
   settings,
-  selectedFolderId,
-  selectedFolder,
   onEntitiesChanged,
   onNavigateToEntity,
   onOpenSettings,
 }: ChatViewProps) {
+  const { selectedChatThreadId: selectedThreadId, setSelectedChatThreadId: onSelectThread } = useNavigation();
+  const { selectedFolderId, selectedFolder } = useInvestigation();
   const { extensionAvailable, streamingContent, isStreaming, error, toolActivity, sendAgentRequest, abort } = useLLM();
   const { t } = useTranslation('chat');
   const { addToast } = useToast();

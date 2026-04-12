@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useEffect, useRef, lazy, Suspense, type ReactNode } from 'react';
+import { useCallback, useMemo, useEffect, useRef, lazy, Suspense, memo, type ReactNode } from 'react';
 import { AppLayout } from './components/Layout/AppLayout';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
@@ -370,8 +370,10 @@ type AppInnerProps = {
 
 // ─── AppInner ─────────────────────────────────────────────────────────
 // Consumes context hooks, contains filtering, callbacks, and JSX
+// Wrapped with React.memo so it only re-renders when its props actually change,
+// preventing cascading re-renders when unrelated hooks in AppDataLayer update.
 
-function AppInner({
+const AppInner = memo(function AppInner({
   settings, updateSettings, toggleTheme,
   addToast, tt,
   notes, tasks, timeline,
@@ -400,10 +402,10 @@ function AppInner({
     activeView, setActiveView, selectedNoteId, setSelectedNoteId,
     selectedTimelineId, setSelectedTimelineId, selectedWhiteboardId, setSelectedWhiteboardId,
     selectedChatThreadId, setSelectedChatThreadId,
-    sort, setSort, editorMode, setEditorMode, taskViewMode, setTaskViewMode,
-    graphLayout, setGraphLayout, noteListWidth, noteListCollapsed,
+    sort, setSort, editorMode, setEditorMode,
+    noteListWidth, noteListCollapsed,
     noteListDragging, notesContainerRef, noteNavGraceRef,
-    pendingNewTask, setPendingNewTask, pendingNewEvent, setPendingNewEvent,
+    setPendingNewTask, pendingNewEvent, setPendingNewEvent,
     navigateTo, handleNoteListDragStart, toggleNoteListCollapse, handleToggleEditorMode,
     initialDeepLink,
   } = nav;
@@ -435,7 +437,7 @@ function AppInner({
     showShortcutsPanel, setShowShortcutsPanel,
     mobileSidebarOpen, setMobileSidebarOpen,
     forceAnalystMode, setForceAnalystMode,
-    screenshareMaxLevel, setScreenshareMaxLevel,
+    screenshareMaxLevel,
     pendingImportFile, setPendingImportFile,
     shareLinkPayload, setShareLinkPayload,
     shareData, setShareData,
@@ -1474,7 +1476,6 @@ function AppInner({
         header={
           <ErrorBoundary region="header">
           <Header
-            onOpenSearch={() => setSearchOverlayOpen(true)}
             theme={settings.theme}
             onToggleTheme={toggleTheme}
             onQuickNote={handleNewNote}
@@ -1491,10 +1492,6 @@ function AppInner({
             onQuickSave={handleQuickSave}
             onQuickLoad={handleQuickLoad}
             onStartTour={() => tour.start(activeView)}
-            selectedFolderName={selectedFolder?.name}
-            selectedFolderColor={selectedFolder?.color}
-            screenshareMaxLevel={screenshareMaxLevel}
-            onScreenshareChange={setScreenshareMaxLevel}
             effectiveClsLevels={effectiveClsLevels}
             presenceUsers={presenceUsers}
             addToast={addToast}
@@ -1795,15 +1792,10 @@ function AppInner({
             onRestoreTask={loggedRestoreTask}
             onToggleArchiveTask={loggedToggleArchiveTask}
             onCreateTask={(data) => loggedCreateTask({ ...data, folderId: data.folderId ?? selectedFolderId, clsLevel: data.clsLevel ?? selectedFolder?.clsLevel })}
-            viewMode={taskViewMode}
-            onViewModeChange={setTaskViewMode}
             getTasksByStatus={(status) => tasks.getTasksByStatus(status, selectedFolderId)}
             allNotes={screensafeNotes}
             allTimelineEvents={screensafeTimelineEvents}
             scopeLabel={selectedFolder?.name}
-            selectedFolderId={selectedFolderId}
-            openNewForm={pendingNewTask}
-            onNewFormOpened={() => setPendingNewTask(false)}
             members={investigationMembers}
             currentUserId={auth.user?.id}
           />
@@ -1933,13 +1925,9 @@ function AppInner({
             tasks={screensafeTasks}
             timelineEvents={screensafeTimelineEvents}
             settings={settings}
-            layout={graphLayout}
-            onLayoutChange={setGraphLayout}
             scopedNotes={investigationNotes}
             scopedTasks={investigationTasks}
             scopedTimelineEvents={investigationTimelineEvents}
-            selectedFolderId={selectedFolderId}
-            selectedFolderName={selectedFolder?.name}
             onNavigateToNote={(id) => { setSelectedNoteId(id); setSelectedFolderId(undefined); setSelectedTag(undefined); setShowTrash(false); setShowArchive(false); navigateTo('notes', { selectedNoteId: id }); }}
             onNavigateToTask={() => { setSelectedFolderId(undefined); setSelectedTag(undefined); navigateTo('tasks'); }}
             onNavigateToTimelineEvent={(id) => { const ev = timeline.events.find((e) => e.id === id); if (ev) { setSelectedTimelineId(ev.timelineId); navigateTo('timeline', { selectedTimelineId: ev.timelineId }); } else { navigateTo('timeline'); } }}
@@ -1952,16 +1940,12 @@ function AppInner({
         <div className={activeView === 'chat' && !showSettings ? 'flex flex-1 overflow-hidden' : 'hidden'}>
           <ChatView
             threads={ssFilteredChatThreads}
-            selectedThreadId={selectedChatThreadId}
-            onSelectThread={setSelectedChatThreadId}
             onCreateThread={loggedCreateChatThread}
             onUpdateThread={chatsHook.updateThread}
             onAddMessage={chatsHook.addMessage}
             onTrashThread={loggedTrashChatThread}
             onShareThread={handleShareChatThread}
             settings={settings}
-            selectedFolderId={selectedFolderId}
-            selectedFolder={selectedFolder}
             onEntitiesChanged={() => { notes.reload(); tasks.reload(); timeline.reload(); standaloneIOCsHook.reload(); chatsHook.reload(); }}
             onNavigateToEntity={(type, id) => {
               if (type === 'note') { setSelectedNoteId(id); navigateTo('notes', { selectedNoteId: id }); }
@@ -2273,4 +2257,4 @@ function AppInner({
     )}
     </ScreenshareContext.Provider>
   );
-}
+});

@@ -10,6 +10,8 @@ import { GraphIOCEditDialog } from './GraphIOCEditDialog';
 import { GraphLinkDialog } from './GraphLinkDialog';
 import type { LayoutName } from './GraphCanvas';
 import { getLegendEntries } from '../../lib/graph-icons';
+import { useNavigation } from '../../contexts/NavigationContext';
+import { useInvestigation } from '../../contexts/InvestigationContext';
 
 const GraphCanvas = React.lazy(() => import('./GraphCanvas'));
 
@@ -20,8 +22,6 @@ interface GraphViewProps {
   tasks: Task[];
   timelineEvents: TimelineEvent[];
   settings: Settings;
-  layout?: LayoutName;
-  onLayoutChange?: (layout: LayoutName) => void;
   onNavigateToNote: (id: string) => void;
   onNavigateToTask: (id: string) => void;
   onNavigateToTimelineEvent: (id: string) => void;
@@ -31,8 +31,6 @@ interface GraphViewProps {
   scopedNotes?: Note[];
   scopedTasks?: Task[];
   scopedTimelineEvents?: TimelineEvent[];
-  selectedFolderId?: string;
-  selectedFolderName?: string;
   visible?: boolean;
 }
 
@@ -46,11 +44,11 @@ const ALL_EDGE_TYPES: { key: EdgeTypeFilter; labelKey: string; color: string }[]
   { key: 'entity-link', labelKey: 'view.entityLinks', color: '#22c55e' },
 ];
 
-export function GraphView({ notes, tasks, timelineEvents, settings, layout: externalLayout, onLayoutChange, onNavigateToNote, onNavigateToTask, onNavigateToTimelineEvent, onUpdateNote, onUpdateTask, onUpdateEvent, scopedNotes, scopedTasks, scopedTimelineEvents, selectedFolderId, selectedFolderName, visible = true }: GraphViewProps) {
+export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateToNote, onNavigateToTask, onNavigateToTimelineEvent, onUpdateNote, onUpdateTask, onUpdateEvent, scopedNotes, scopedTasks, scopedTimelineEvents, visible = true }: GraphViewProps) {
   const { t } = useTranslation('graph');
-  const [internalLayout, setInternalLayout] = useState<LayoutName>('cose-bilkent');
-  const layout = externalLayout ?? internalLayout;
-  const handleLayoutChange = onLayoutChange ?? setInternalLayout;
+  const { graphLayout: layout, setGraphLayout: handleLayoutChange } = useNavigation();
+  const { selectedFolderId, selectedFolder } = useInvestigation();
+  const selectedFolderName = selectedFolder?.name;
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [scopeMode, setScopeMode] = useState<'investigation' | 'global'>('investigation');
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);

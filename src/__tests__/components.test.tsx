@@ -16,6 +16,21 @@ vi.mock('../contexts/AuthContext', () => ({
   useAuth: () => ({ connected: false, user: null, serverUrl: null }),
 }));
 
+vi.mock('../contexts/UIModalContext', () => ({
+  useUIModals: () => ({
+    screenshareMaxLevel: null,
+    setScreenshareMaxLevel: vi.fn(),
+    setSearchOverlayOpen: vi.fn(),
+  }),
+}));
+
+vi.mock('../contexts/InvestigationContext', () => ({
+  useInvestigation: () => ({
+    selectedFolder: undefined,
+    selectedFolderId: undefined,
+  }),
+}));
+
 describe('Modal', () => {
   it('renders nothing when closed', () => {
     const { container } = render(
@@ -184,7 +199,6 @@ describe('NoteCard', () => {
 
 describe('Header', () => {
   const defaultProps = {
-    onOpenSearch: () => {},
     theme: 'dark' as const,
     onToggleTheme: () => {},
     onQuickNote: () => {},
@@ -197,8 +211,6 @@ describe('Header', () => {
     sidebarCollapsed: false,
     onQuickSave: () => {},
     onQuickLoad: () => {},
-    screenshareMaxLevel: null,
-    onScreenshareChange: () => {},
     effectiveClsLevels: ['TLP:CLEAR', 'TLP:GREEN', 'TLP:AMBER', 'TLP:AMBER+STRICT', 'TLP:RED'],
   };
 
