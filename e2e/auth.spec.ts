@@ -2,14 +2,8 @@ import { test, expect } from '@playwright/test';
 import { goToApp } from './fixtures';
 
 test.describe('Authentication & local-first access', () => {
-  test.beforeEach(async ({ page }) => {
-    // Clear IndexedDB and localStorage for a fresh start
-    await page.goto('/');
-    await page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-    });
-  });
+  // Each Playwright test gets a fresh browser context by default —
+  // no need to manually clear storage. Dexie creates a fresh DB in each context.
 
   test('app loads without authentication required (local-first)', async ({ page }) => {
     await goToApp(page);

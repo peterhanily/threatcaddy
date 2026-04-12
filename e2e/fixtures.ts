@@ -17,6 +17,7 @@ export async function dismissInitialOverlays(page: Page) {
 
 /**
  * Navigate to the app and wait for it to be ready.
+ * Clears IndexedDB before the app's JS loads to ensure a clean state.
  * Since ThreatCaddy is a local-first SPA with no auth required for local use,
  * we simply navigate to the base URL.
  */
