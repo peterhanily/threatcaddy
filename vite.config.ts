@@ -2,6 +2,51 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { rename, mkdir } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
+
+/**
+ * Post-build: move non-English locales and Excalidraw CJK fonts to dist/optional/.
+ * This keeps the main deploy lean (~22MB → ~6MB) while preserving the files
+ * for users who download a language pack.
+ *
+ * The i18n HTTP backend gracefully falls back to English when a locale 404s.
+ */
+function stripOptionalAssets(): Plugin {
+  return {
+    name: 'strip-optional-assets',
+    apply: 'build',
+    async closeBundle() {
+      const distDir = resolve('dist')
+      const optDir = resolve(distDir, 'optional')
+
+      // Move non-English locale directories
+      const localesDir = resolve(distDir, 'locales')
+      if (existsSync(localesDir)) {
+        const optLocales = resolve(optDir, 'locales')
+        await mkdir(optLocales, { recursive: true })
+
+        const { readdir } = await import('node:fs/promises')
+        const langs = await readdir(localesDir)
+        for (const lang of langs) {
+          if (lang === 'en') continue
+          const src = resolve(localesDir, lang)
+          const dest = resolve(optLocales, lang)
+          await rename(src, dest).catch(() => {})
+        }
+      }
+
+      // Move Excalidraw CJK font (Xiaolai = 16MB)
+      const xiaolaiDir = resolve(distDir, 'fonts', 'Xiaolai')
+      if (existsSync(xiaolaiDir)) {
+        const optFonts = resolve(optDir, 'fonts')
+        await mkdir(optFonts, { recursive: true })
+        await rename(xiaolaiDir, resolve(optFonts, 'Xiaolai')).catch(() => {})
+      }
+    },
+  }
+}
 
 function cloudflareAnalytics(): Plugin {
   return {
@@ -21,6 +66,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     cloudflareAnalytics(),
+    stripOptionalAssets(),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: false,
