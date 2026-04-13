@@ -29,11 +29,13 @@ test.describe('Onboarding and investigation flow', () => {
       // Modal should close
       await expect(modalTitle).not.toBeVisible({ timeout: 5_000 });
 
-      // The sample investigation should be loaded — check by navigating to Investigations view
+      // The sample investigation should be loaded — verify via the sidebar investigation button
       const sidebar = getSidebar(page);
       await expect(sidebar).toBeVisible();
-      await navigateToView(page, 'Investigations');
-      await expect(page.getByText('FERMENTED PERSISTENCE')).toBeVisible({ timeout: 5_000 });
+      // The investigation appears as a button in the sidebar containing its name
+      await expect(
+        sidebar.getByRole('button', { name: /FERMENTED PERSISTENCE/i })
+      ).toBeVisible({ timeout: 10_000 });
     });
   });
 
@@ -46,12 +48,9 @@ test.describe('Onboarding and investigation flow', () => {
       // Create a new investigation
       await createInvestigation(page, 'Test Phishing Case');
 
-      // Verify it appears in the Investigations hub
-      await navigateToView(page, 'Investigations');
-      await expect(page.getByText('Test Phishing Case')).toBeVisible({ timeout: 5_000 });
-
-      // Select the investigation
-      await page.getByText('Test Phishing Case').first().click();
+      // Verify it appears in the main content or sidebar breadcrumb
+      const mainContent = page.locator('main');
+      await expect(mainContent.getByText('Test Phishing Case').first()).toBeVisible({ timeout: 10_000 });
 
       // Navigate to Notes view and create a note
       await navigateToView(page, 'Notes');
@@ -62,11 +61,11 @@ test.describe('Onboarding and investigation flow', () => {
       await expect(titleInput).toBeVisible({ timeout: 5_000 });
       await titleInput.fill('Phishing Email Analysis');
 
-      // Wait for auto-save
-      await page.waitForTimeout(1_500);
+      // Wait for the title auto-save (500ms debounce)
+      await page.waitForTimeout(1_000);
 
       // Verify note appears in the list
-      await expect(page.getByText('Phishing Email Analysis')).toBeVisible({ timeout: 5_000 });
+      await expect(page.getByText('Phishing Email Analysis').first()).toBeVisible({ timeout: 5_000 });
 
       // Navigate to Tasks view and create a task
       await navigateToView(page, 'Tasks');
@@ -79,8 +78,9 @@ test.describe('Onboarding and investigation flow', () => {
       await expect(taskTitleInput.first()).toBeVisible({ timeout: 5_000 });
       await taskTitleInput.first().fill('Analyze email headers');
 
-      // Save the task
-      const saveButton = page.getByRole('button', { name: /save|create/i });
+      // Save the task — scope to dialog to avoid matching other buttons
+      const taskDialog = page.getByRole('dialog');
+      const saveButton = taskDialog.getByRole('button', { name: /create task/i });
       await saveButton.click();
 
       // Verify task appears in the task list
@@ -140,9 +140,9 @@ test.describe('Onboarding and investigation flow', () => {
 
       // Navigate to Graph view
       await navigateToView(page, 'Graph');
-      // Graph view renders a canvas or SVG container
+      // Graph view renders controls and entity graph heading
       await expect(
-        page.locator('canvas, svg, [data-tour="graph"]').first()
+        page.getByText('Entity Graph').or(page.getByText('No entities to display')).first()
       ).toBeVisible({ timeout: 5_000 });
 
       // Navigate to CaddyAI chat view

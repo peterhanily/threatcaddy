@@ -16,27 +16,22 @@ test.describe('Timeline events', () => {
     await newEventButton.click();
 
     // The event creation modal should appear — fill in the title
-    const titleInput = page.getByPlaceholder(/event title/i);
+    const dialog = page.getByRole('dialog', { name: /create event/i });
+    await expect(dialog).toBeVisible({ timeout: 5_000 });
+
+    const titleInput = dialog.getByPlaceholder(/event title/i);
     await expect(titleInput).toBeVisible({ timeout: 5_000 });
     await titleInput.fill('Initial compromise detected');
 
     // Fill in description
-    const descriptionInput = page.locator('textarea').filter({ hasText: '' }).first();
+    const descriptionInput = dialog.locator('textarea').first();
     if (await descriptionInput.isVisible({ timeout: 2_000 }).catch(() => false)) {
       await descriptionInput.fill('Phishing email delivered to user inbox');
     }
 
-    // Select event type if the dropdown is accessible
-    const eventTypeSelect = page.locator('select').filter({ has: page.locator('option[value="initial-access"]') });
-    if (await eventTypeSelect.isVisible({ timeout: 1_000 }).catch(() => false)) {
-      await eventTypeSelect.selectOption('initial-access');
-    }
-
-    // Submit the form
-    const saveButton = page.getByRole('button', { name: /create event/i }).or(
-      page.getByRole('button', { name: /save/i })
-    );
-    await saveButton.first().click();
+    // Submit the form — scoped to the dialog
+    const saveButton = dialog.getByRole('button', { name: /create event/i });
+    await saveButton.click();
 
     // The event should appear in the timeline feed
     await expect(page.getByText('Initial compromise detected')).toBeVisible({ timeout: 5_000 });
@@ -50,25 +45,26 @@ test.describe('Timeline events', () => {
     const newEventButton = page.getByRole('button', { name: /new event/i });
     await newEventButton.click();
 
-    const titleInput = page.getByPlaceholder(/event title/i);
+    const dialog = page.getByRole('dialog', { name: /create event/i });
+    await expect(dialog).toBeVisible({ timeout: 5_000 });
+
+    const titleInput = dialog.getByPlaceholder(/event title/i);
     await expect(titleInput).toBeVisible({ timeout: 5_000 });
     await titleInput.fill('Key evidence found');
 
-    const saveButton = page.getByRole('button', { name: /create event/i }).or(
-      page.getByRole('button', { name: /save/i })
-    );
-    await saveButton.first().click();
+    const saveButton = dialog.getByRole('button', { name: /create event/i });
+    await saveButton.click();
 
     // The event should appear in the feed
     await expect(page.getByText('Key evidence found')).toBeVisible({ timeout: 5_000 });
 
-    // Find and click the star button on the event card
-    const starButton = page.getByRole('button', { name: /star event/i });
+    // Find and click the star button on the event card (use exact match to avoid parent card)
+    const starButton = page.getByRole('button', { name: 'Star event', exact: true });
     await expect(starButton).toBeVisible({ timeout: 3_000 });
     await starButton.click();
 
     // After starring, the button should now say "Unstar event"
-    const unstarButton = page.getByRole('button', { name: /unstar event/i });
+    const unstarButton = page.getByRole('button', { name: 'Unstar event', exact: true });
     await expect(unstarButton).toBeVisible({ timeout: 3_000 });
   });
 
@@ -80,20 +76,21 @@ test.describe('Timeline events', () => {
     const newEventButton = page.getByRole('button', { name: /new event/i });
     await newEventButton.click();
 
-    const titleInput = page.getByPlaceholder(/event title/i);
+    const dialog = page.getByRole('dialog', { name: /create event/i });
+    await expect(dialog).toBeVisible({ timeout: 5_000 });
+
+    const titleInput = dialog.getByPlaceholder(/event title/i);
     await expect(titleInput).toBeVisible({ timeout: 5_000 });
     await titleInput.fill('Lateral movement to domain controller');
 
     // Fill source field if visible
-    const sourceInput = page.getByPlaceholder(/source/i);
+    const sourceInput = dialog.getByPlaceholder(/source/i);
     if (await sourceInput.isVisible({ timeout: 1_000 }).catch(() => false)) {
       await sourceInput.fill('EDR Telemetry');
     }
 
-    const saveButton = page.getByRole('button', { name: /create event/i }).or(
-      page.getByRole('button', { name: /save/i })
-    );
-    await saveButton.first().click();
+    const saveButton = dialog.getByRole('button', { name: /create event/i });
+    await saveButton.click();
 
     // Verify the event appears in the feed
     await expect(page.getByText('Lateral movement to domain controller')).toBeVisible({ timeout: 5_000 });

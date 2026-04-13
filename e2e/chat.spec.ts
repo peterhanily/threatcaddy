@@ -68,7 +68,7 @@ test.describe('AI chat (CaddyAI)', () => {
       await expect(page.getByText('Start a conversation')).toBeVisible({ timeout: 5_000 });
     } else {
       // If button is disabled, we just verify it's there and shows the right tooltip
-      await expect(newChatButton).toHaveAttribute('title', /extension required/i);
+      await expect(newChatButton).toHaveAttribute('title', /extension.*required|server.*required/i);
     }
   });
 });

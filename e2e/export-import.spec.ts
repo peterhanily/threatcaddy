@@ -24,12 +24,9 @@ test.describe('Export and import', () => {
     await settingsButton.click();
 
     // Navigate to the Data tab in settings
-    const dataTab = page.getByText('Data').or(
-      page.getByRole('button', { name: /data/i })
-    );
-    if (await dataTab.first().isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await dataTab.first().click();
-    }
+    const dataTab = page.getByRole('tab', { name: /data/i });
+    await expect(dataTab).toBeVisible({ timeout: 3_000 });
+    await dataTab.click();
 
     // Find the "Export JSON Backup" button
     const exportButton = page.getByRole('button', { name: /export json/i }).or(
@@ -68,19 +65,16 @@ test.describe('Export and import', () => {
     await settingsButton.click();
 
     // Navigate to the Data tab in settings
-    const dataTab = page.getByText('Data').or(
-      page.getByRole('button', { name: /data/i })
-    );
-    if (await dataTab.first().isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await dataTab.first().click();
-    }
+    const dataTab = page.getByRole('tab', { name: /data/i });
+    await expect(dataTab).toBeVisible({ timeout: 3_000 });
+    await dataTab.click();
 
     // Verify the "Import JSON Backup" button/label exists
     const importButton = page.getByText(/import json/i);
     await expect(importButton.first()).toBeVisible({ timeout: 5_000 });
 
-    // The import button contains a hidden file input — verify it exists
-    const fileInput = page.locator('input[type="file"][accept=".json"]');
+    // The import button contains a hidden file input — verify it exists (scope to settings panel)
+    const fileInput = page.getByLabel('Import JSON Backup');
     await expect(fileInput).toBeAttached();
   });
 

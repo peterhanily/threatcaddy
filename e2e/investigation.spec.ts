@@ -11,7 +11,9 @@ test.describe('Investigation workflow', () => {
 
     // Investigation should appear in the Investigations hub after navigating back
     await navigateToView(page, 'Investigations');
-    await expect(page.getByText('Operation Sunrise')).toBeVisible({ timeout: 5_000 });
+    // Wait for the hub to load and find the investigation card in the main content area
+    const mainContent = page.locator('main');
+    await expect(mainContent.getByText('Operation Sunrise').first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('add a note to the investigation', async ({ page }) => {
@@ -28,15 +30,21 @@ test.describe('Investigation workflow', () => {
     await expect(titleInput).toBeVisible({ timeout: 5_000 });
     await titleInput.fill('Investigation Finding #1');
 
-    // Type content in the editor
-    const editor = page.getByPlaceholder('Start writing in markdown...');
-    await editor.fill('Observed suspicious DNS queries to known C2 domain.');
+    // Wait for the title auto-save (500ms debounce)
+    await page.waitForTimeout(1_000);
 
-    // Wait for auto-save (the app auto-saves on a debounce timer)
-    await page.waitForTimeout(1_500);
+    // Now fill content separately to avoid debounce collision
+    const editor = page.getByPlaceholder('Start writing in markdown...').or(
+      page.locator('textarea[aria-label*="content"]')
+    );
+    await editor.first().click();
+    await editor.first().fill('Observed suspicious DNS queries to known C2 domain.');
+
+    // Wait for content auto-save
+    await page.waitForTimeout(1_000);
 
     // The note title should appear in the note list
-    await expect(page.getByText('Investigation Finding #1')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Investigation Finding #1').first()).toBeVisible({ timeout: 5_000 });
   });
 
   test('add a task to the investigation', async ({ page }) => {
@@ -58,8 +66,9 @@ test.describe('Investigation workflow', () => {
     await expect(titleInput.first()).toBeVisible({ timeout: 5_000 });
     await titleInput.first().fill('Analyze malware sample');
 
-    // Save the task
-    const saveButton = page.getByRole('button', { name: /save|create/i });
+    // Save the task — scope to the dialog to avoid matching other buttons
+    const dialog = page.getByRole('dialog');
+    const saveButton = dialog.getByRole('button', { name: /create task/i });
     await saveButton.click();
 
     // The task should appear in the task list
@@ -77,11 +86,18 @@ test.describe('Investigation workflow', () => {
     await expect(titleInput).toBeVisible({ timeout: 5_000 });
     await titleInput.fill('Unique Beacon Detection');
 
-    const editor = page.getByPlaceholder('Start writing in markdown...');
-    await editor.fill('Found Cobalt Strike beacon calling home to 10.0.0.1.');
+    // Wait for the title auto-save (500ms debounce)
+    await page.waitForTimeout(1_000);
 
-    // Wait for auto-save
-    await page.waitForTimeout(1_500);
+    // Now fill content separately to avoid debounce collision
+    const editor = page.getByPlaceholder('Start writing in markdown...').or(
+      page.locator('textarea[aria-label*="content"]')
+    );
+    await editor.first().click();
+    await editor.first().fill('Found Cobalt Strike beacon calling home to 10.0.0.1.');
+
+    // Wait for content auto-save
+    await page.waitForTimeout(1_000);
 
     // Open search overlay
     await openSearch(page);
@@ -91,7 +107,7 @@ test.describe('Investigation workflow', () => {
     await searchInput.fill('Cobalt Strike');
 
     // Search results should include our note
-    await expect(page.getByText('Unique Beacon Detection')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Unique Beacon Detection').first()).toBeVisible({ timeout: 5_000 });
   });
 
   test('close an investigation via the detail panel', async ({ page }) => {

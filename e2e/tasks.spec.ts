@@ -40,11 +40,12 @@ test.describe('Task lifecycle', () => {
     await expect(titleInput).toBeVisible({ timeout: 5_000 });
     await titleInput.fill('Status change task');
 
-    // Set status to "in-progress" before saving
-    const statusSelect = page.locator('select').filter({ has: page.locator('option[value="in-progress"]') }).first();
+    // Set status to "in-progress" before saving — scope to dialog
+    const createDialog = page.getByRole('dialog');
+    const statusSelect = createDialog.locator('select').filter({ has: page.locator('option[value="in-progress"]') }).first();
     await statusSelect.selectOption('in-progress');
 
-    const createButton = page.getByRole('button', { name: /create task/i });
+    const createButton = createDialog.getByRole('button', { name: /create task/i });
     await createButton.click();
 
     // The task should appear in the list
@@ -54,7 +55,8 @@ test.describe('Task lifecycle', () => {
     await page.getByText('Status change task').click();
 
     // In the edit modal, the status select should show "in-progress"
-    const editStatusSelect = page.locator('select').filter({ has: page.locator('option[value="in-progress"]') }).first();
+    const editDialog = page.getByRole('dialog');
+    const editStatusSelect = editDialog.locator('select').filter({ has: page.locator('option[value="in-progress"]') }).first();
     await expect(editStatusSelect).toHaveValue('in-progress');
   });
 
@@ -117,10 +119,12 @@ test.describe('Task lifecycle', () => {
     // The task should be visible in one of the kanban columns
     await expect(page.getByText('View toggle task')).toBeVisible();
 
-    // Verify all three column headers are present
-    await expect(page.getByText('To Do')).toBeVisible();
-    await expect(page.getByText('In Progress')).toBeVisible();
-    await expect(page.getByText('Done')).toBeVisible();
+    // Verify all three kanban column groups are present
+    const kanban = page.getByRole('region', { name: /kanban/i });
+    await expect(kanban).toBeVisible({ timeout: 5_000 });
+    await expect(kanban.getByRole('group', { name: /to do/i })).toBeVisible();
+    await expect(kanban.getByRole('group', { name: /in progress/i })).toBeVisible();
+    await expect(kanban.getByRole('group', { name: /done/i })).toBeVisible();
 
     // Switch back to list view
     await listViewButton.click();

@@ -15,12 +15,18 @@ test.describe('Note editing', () => {
     await expect(titleInput).toBeVisible({ timeout: 5_000 });
     await titleInput.fill('Markdown Test Note');
 
-    // Type markdown content
-    const editor = page.getByPlaceholder('Start writing in markdown...');
-    await editor.fill('# Heading\n\n**Bold text** and *italic text*\n\n- List item 1\n- List item 2\n\n```\ncode block\n```');
+    // Wait for the title auto-save to complete (500ms debounce)
+    await page.waitForTimeout(1_000);
 
-    // Wait for auto-save
-    await page.waitForTimeout(1_500);
+    // Now fill in the content (separate from title to avoid debounce collision)
+    const editor = page.getByPlaceholder('Start writing in markdown...').or(
+      page.locator('textarea[aria-label*="content"]')
+    );
+    await editor.first().click();
+    await editor.first().fill('# Heading\n\n**Bold text** and *italic text*\n\n- List item 1\n- List item 2\n\n```\ncode block\n```');
+
+    // Wait for content auto-save
+    await page.waitForTimeout(1_000);
 
     // Switch to preview mode to verify markdown rendering
     const previewButton = page.getByRole('button', { name: /preview/i }).or(
@@ -34,7 +40,7 @@ test.describe('Note editing', () => {
     }
 
     // The note should appear in the note list
-    await expect(page.getByText('Markdown Test Note')).toBeVisible();
+    await expect(page.getByText('Markdown Test Note').first()).toBeVisible({ timeout: 5_000 });
   });
 
   test('edit note title', async ({ page }) => {
@@ -100,8 +106,8 @@ test.describe('Note editing', () => {
     // Wait for auto-save
     await page.waitForTimeout(1_500);
 
-    // Click the trash button in the note editor
-    const trashButton = page.getByRole('button', { name: /move note to trash/i });
+    // Click the trash button in the note editor toolbar (the last one, not in the note card)
+    const trashButton = page.getByRole('button', { name: /move note to trash/i }).last();
     await expect(trashButton).toBeVisible({ timeout: 3_000 });
     await trashButton.click();
 
