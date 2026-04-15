@@ -66,6 +66,17 @@ export function markReclaimPending(deploymentId: string): Promise<boolean> {
   return transition(deploymentId, 'reclaim-pending', 'client heartbeat resumed');
 }
 
+/** Called when the client's heartbeat recovers before the server took over —
+ *  handoff-pending → client. Idempotent: already-client is fine. */
+export async function markClientRecovered(deploymentId: string): Promise<boolean> {
+  const d = await db.agentDeployments.get(deploymentId);
+  if (!d) return false;
+  const s = d.handoffState ?? 'client';
+  if (s === 'client') return true;
+  if (s === 'handoff-pending') return transition(deploymentId, 'client', 'heartbeat recovered before server takeover');
+  return false;
+}
+
 /**
  * Reconciliation hook — called once during the 'reclaim-pending' state.
  *

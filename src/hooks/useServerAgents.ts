@@ -8,8 +8,18 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { AgentDeployment, AgentProfile } from '../types';
 import { db } from '../db';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  markHandoffPending,
+  markReclaimPending,
+  markClientRecovered,
+  reconcileAfterHandoff,
+} from '../lib/agent-handoff';
 
 const HEARTBEAT_INTERVAL_MS = 30_000; // 30 seconds
+/** Consecutive heartbeat failures before we flip deployments to handoff-pending.
+ *  Two misses = ~60s gap, well under the server's 90s grace so we stop the
+ *  local loop *before* the server starts its takeover. */
+const HEARTBEAT_FAIL_THRESHOLD = 2;
 
 interface UseServerAgentsOptions {
   investigationId?: string;
@@ -35,6 +45,11 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
   const [error, setError] = useState<string | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mountedRef = useRef(true);
+  /** Consecutive heartbeat failures — resets on success. */
+  const failureCountRef = useRef(0);
+  /** Deployment IDs that we last flipped into handoff-pending, so we know
+   *  which ones to recover when a heartbeat succeeds. */
+  const pendingHandoffIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     mountedRef.current = true;
@@ -135,8 +150,47 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
       try {
         const result = await apiCall('/heartbeat', 'POST', { investigationId });
         if (!mountedRef.current) return;
+
+        // Heartbeat succeeded — reset failure counter.
+        failureCountRef.current = 0;
+
+        // Recover any deployments we pre-emptively flipped to handoff-pending
+        // during the prior failure window but that the server never claimed.
+        if (pendingHandoffIdsRef.current.size > 0 && !result.serverWasRunning) {
+          for (const id of pendingHandoffIdsRef.current) {
+            await markClientRecovered(id).catch(err => console.warn('[useServerAgents] markClientRecovered failed:', err));
+          }
+          pendingHandoffIdsRef.current.clear();
+        }
+
         if (result.serverWasRunning) {
           setServerRunning(false);
+          // Handoff happened: deployments are implicitly in 'server' (or should
+          // be). Drive each through reclaim-pending → client so shouldBlockNewCycle
+          // gates the local loop until reconciliation runs.
+          const currentDeployments = await db.agentDeployments
+            .where('investigationId').equals(investigationId)
+            .toArray();
+          for (const d of currentDeployments) {
+            // If we were tracking a pre-emptive handoff-pending for this id,
+            // drive the full cycle; otherwise force-mark server then reclaim so
+            // the state machine is consistent regardless of where we started.
+            if (d.handoffState !== 'server') {
+              // Bring it into the server state via the legal edges available.
+              if (!d.handoffState || d.handoffState === 'client') {
+                await markHandoffPending(d.id).catch(() => {});
+              }
+              if ((await db.agentDeployments.get(d.id))?.handoffState === 'handoff-pending') {
+                // Fabricate the server → reclaim path since we never observed
+                // the real server-side transition.
+                await db.agentDeployments.update(d.id, { handoffState: 'server', updatedAt: Date.now() });
+              }
+            }
+            await markReclaimPending(d.id).catch(() => {});
+            await reconcileAfterHandoff(d.id).catch(err => console.warn('[useServerAgents] reconcile failed:', err));
+          }
+          pendingHandoffIdsRef.current.clear();
+
           // Pull server-created actions
           try {
             const actionsResult = await apiCall(`/actions/${investigationId}`, 'GET');
@@ -167,6 +221,25 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
         }
       } catch (err) {
         if (mountedRef.current) setError((err as Error).message);
+        // Consecutive-failure tracking: after HEARTBEAT_FAIL_THRESHOLD misses
+        // (~60s), pre-emptively flip deployments into handoff-pending so the
+        // local cycle loop stops before the server's 90s grace elapses.
+        failureCountRef.current += 1;
+        if (failureCountRef.current >= HEARTBEAT_FAIL_THRESHOLD) {
+          try {
+            const currentDeployments = await db.agentDeployments
+              .where('investigationId').equals(investigationId)
+              .toArray();
+            for (const d of currentDeployments) {
+              if ((d.handoffState ?? 'client') === 'client') {
+                const ok = await markHandoffPending(d.id);
+                if (ok) pendingHandoffIdsRef.current.add(d.id);
+              }
+            }
+          } catch (hfErr) {
+            console.warn('[useServerAgents] failed to mark handoff-pending:', hfErr);
+          }
+        }
       }
     };
 

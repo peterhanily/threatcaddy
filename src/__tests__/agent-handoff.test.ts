@@ -6,6 +6,7 @@ import {
   markHandoffPending,
   markServerOwned,
   markReclaimPending,
+  markClientRecovered,
   reconcileAfterHandoff,
   shouldBlockNewCycle,
 } from '../lib/agent-handoff';
@@ -85,13 +86,22 @@ describe('agent-handoff state machine', () => {
 
   it('allows the rollback edge handoff-pending → client (client recovers before takeover)', async () => {
     await seed(fixture({ handoffState: 'handoff-pending' }));
-    // Simulated by marking-server-owned should succeed but then we test going
-    // back: direct transition handoff-pending→client is legal per the table.
-    await db.agentDeployments.update('dep-1', { handoffState: 'handoff-pending' });
-    // Use the low-level path by re-invoking markHandoffPending from 'client'
-    // isn't allowed (we're already in handoff-pending), so test the rollback
-    // via a successful reconciliation path instead — covered above.
-    // Here we just assert that shouldBlockNewCycle correctly gates it.
     expect(shouldBlockNewCycle((await db.agentDeployments.get('dep-1'))!)).toBe(true);
+    expect(await markClientRecovered('dep-1')).toBe(true);
+    const d = await db.agentDeployments.get('dep-1');
+    expect(d?.handoffState).toBe('client');
+    expect(shouldBlockNewCycle(d!)).toBe(false);
+  });
+
+  it('markClientRecovered is idempotent from client state', async () => {
+    await seed(fixture({ handoffState: 'client' }));
+    expect(await markClientRecovered('dep-1')).toBe(true);
+    expect((await db.agentDeployments.get('dep-1'))?.handoffState).toBe('client');
+  });
+
+  it('markClientRecovered refuses illegal source states (server, reclaim-pending)', async () => {
+    await seed(fixture({ handoffState: 'server' }));
+    expect(await markClientRecovered('dep-1')).toBe(false);
+    expect((await db.agentDeployments.get('dep-1'))?.handoffState).toBe('server');
   });
 });
