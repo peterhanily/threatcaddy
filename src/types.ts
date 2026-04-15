@@ -1069,6 +1069,11 @@ export interface AgentAction {
   status: AgentActionStatus;
   resultSummary?: string;
   severity?: AgentActionSeverity;
+  /** Idempotency fingerprint (deploymentId:cycleStartedAt:toolName:argHash) —
+   *  when a tool is re-invoked with the same key, the prior result is replayed
+   *  instead of re-executing. Prevents double-writes on client crashes and
+   *  on client↔server handoff boundaries. */
+  idempotencyKey?: string;
   createdAt: number;
   executedAt?: number;
   reviewedAt?: number;
@@ -1225,6 +1230,17 @@ export interface AgentDeployment {
   serverBotConfigId?: string;
   /** Whether server-side mode is enabled for this deployment */
   serverSideEnabled?: boolean;
+  /** Explicit handoff state machine:
+   *   client          — this client owns the cycle loop (default)
+   *   handoff-pending — heartbeat lapsed; server is about to take over
+   *   server          — server bot is running cycles
+   *   reclaim-pending — client is back online and reconciling state
+   *  Replaces the implicit timestamp-only signal in HeartbeatManager. */
+  handoffState?: 'client' | 'handoff-pending' | 'server' | 'reclaim-pending';
+  /** Wall-clock time of the last successful client-side reconciliation after
+   *  a server-owned window — used to gate the agent from starting a new cycle
+   *  on stale local state. */
+  lastReconciledAt?: number;
   /** Competitive mode: cooperative (share work), competitive (independent analysis), independent (assigned tasks only) */
   competitiveness?: 'cooperative' | 'competitive' | 'independent';
   /** Shift state: active agents run cycles, resting agents don't */

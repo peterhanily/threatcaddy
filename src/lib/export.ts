@@ -434,6 +434,7 @@ function sanitizeAgentAction(raw: unknown): AgentAction | null {
     status: (VALID_AGENT_ACTION_STATUSES.includes(status) ? status : 'pending') as AgentAction['status'],
     resultSummary: r.resultSummary != null ? str(r.resultSummary) : undefined,
     severity: r.severity != null && VALID_AGENT_SEVERITIES.includes(str(r.severity)) ? str(r.severity) as AgentAction['severity'] : undefined,
+    idempotencyKey: r.idempotencyKey != null ? str(r.idempotencyKey) : undefined,
     createdAt: num(r.createdAt, Date.now()),
     executedAt: r.executedAt != null ? num(r.executedAt) : undefined,
     reviewedAt: r.reviewedAt != null ? num(r.reviewedAt) : undefined,
@@ -485,11 +486,14 @@ function sanitizeAgentProfile(raw: unknown): Record<string, unknown> | null {
   };
 }
 
+const VALID_HANDOFF_STATES = ['client', 'handoff-pending', 'server', 'reclaim-pending'];
+
 function sanitizeAgentDeployment(raw: unknown): Record<string, unknown> | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   if (typeof r.id !== 'string' || typeof r.investigationId !== 'string' || typeof r.profileId !== 'string') return null;
   const status = str(r.status, 'idle');
+  const handoffState = r.handoffState != null ? str(r.handoffState) : undefined;
   return {
     id: str(r.id), investigationId: str(r.investigationId), profileId: str(r.profileId),
     supervisorDeploymentId: r.supervisorDeploymentId != null ? str(r.supervisorDeploymentId) : undefined,
@@ -497,6 +501,8 @@ function sanitizeAgentDeployment(raw: unknown): Record<string, unknown> | null {
     status: VALID_AGENT_STATUSES.includes(status) ? status : 'idle',
     lastRunAt: r.lastRunAt != null ? num(r.lastRunAt) : undefined,
     order: num(r.order, 0),
+    handoffState: handoffState && VALID_HANDOFF_STATES.includes(handoffState) ? handoffState : undefined,
+    lastReconciledAt: r.lastReconciledAt != null ? num(r.lastReconciledAt) : undefined,
     createdAt: num(r.createdAt, Date.now()), updatedAt: num(r.updatedAt, Date.now()),
   };
 }

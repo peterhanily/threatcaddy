@@ -14,7 +14,7 @@ import { db } from '../db';
 import { nanoid } from 'nanoid';
 import type { AgentAction, AgentCycleOutcome, AgentCycleSummary, AgentEntityRef, AgentPolicy, AgentProfile, AgentDeployment, ChatThread, ChatMessage, Folder, Settings, ContentBlock, ToolUseBlock, LLMProvider } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
-import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from './llm-tool-defs';
+import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
 import { executeTool } from './llm-tools';
 import { shouldAutoApprove, getToolActionClass } from './caddy-agent-policy';
 import { resolveRoutingMode, sendViaExtension, sendViaServer, sendDirectToLocal } from './llm-router';
@@ -415,6 +415,29 @@ const ENTITY_WRITE_TOOLS: Record<string, AgentEntityRef['type']> = {
   create_timeline_event: 'timeline', update_timeline_event: 'timeline',
 };
 
+/** Compute a per-cycle idempotency key for a tool invocation.
+ *  Same deployment + cycle + tool + input = same key → prior result is replayed
+ *  instead of re-executing. Prevents double-writes on client crashes and on
+ *  client↔server handoff boundaries. Keys are bounded so IndexedDB stays happy. */
+function makeIdempotencyKey(
+  deploymentId: string | undefined,
+  cycleStartedAt: number,
+  toolName: string,
+  input: unknown,
+): string {
+  let inputStr: string;
+  try { inputStr = JSON.stringify(input ?? {}); } catch { inputStr = String(input); }
+  // 32-bit FNV-1a — fast, no crypto dep, collision-resistant enough within a
+  // single deployment's lifetime. The deployment+cycle prefix keeps the
+  // namespace scoped so cross-deployment collisions are irrelevant.
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < inputStr.length; i++) {
+    hash ^= inputStr.charCodeAt(i);
+    hash = (hash + ((hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24))) >>> 0;
+  }
+  return `${deploymentId || 'anon'}:${cycleStartedAt}:${toolName}:${hash.toString(16).padStart(8, '0')}`;
+}
+
 /** First sentence of a body of text, clipped for summary display. */
 function firstSentence(text: string, max = 180): string {
   const cleaned = text.replace(/\s+/g, ' ').trim();
@@ -791,6 +814,36 @@ async function _runAgentCycleInner(
         const autoApprove = shouldAutoApprove(toolCall.name, policy);
 
         if (autoApprove) {
+          // Idempotency: for write tools only, check whether this exact
+          // invocation already executed (same deployment+cycle+tool+input).
+          // Replays happen on client crashes and on client↔server handoff —
+          // returning the cached result keeps effects single-shot.
+          const isWrite = isWriteTool(toolCall.name);
+          const idempotencyKey = isWrite
+            ? makeIdempotencyKey(deployment?.id, cycleStartedAt, toolCall.name, toolCall.input)
+            : undefined;
+          if (idempotencyKey) {
+            const prior = await db.agentActions
+              .where('[investigationId+status]').equals([folder.id, 'executed'])
+              .filter(a => a.idempotencyKey === idempotencyKey)
+              .first();
+            if (prior) {
+              toolHistogram[toolCall.name] = toolHistogram[toolCall.name] || 0; // already bumped above
+              toolResults.push({
+                type: 'tool_result',
+                tool_use_id: toolCall.id,
+                content: JSON.stringify({
+                  status: 'replayed_idempotent',
+                  message: 'Prior execution of this exact call found — skipping re-execution. Existing result:',
+                  prior: prior.resultSummary,
+                  priorActionId: prior.id,
+                }),
+                is_error: false,
+              });
+              continue;
+            }
+          }
+
           // Auto-execute
           onProgress?.(`Executing ${toolCall.name}...`);
           let result: { result: string; isError: boolean };
@@ -821,6 +874,7 @@ async function _runAgentCycleInner(
             status: result.isError ? 'failed' : 'executed',
             resultSummary: result.result.substring(0, 500),
             severity: 'info',
+            idempotencyKey,
             createdAt: Date.now(),
             executedAt: Date.now(),
           };

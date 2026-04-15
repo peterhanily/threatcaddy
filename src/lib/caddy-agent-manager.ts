@@ -7,6 +7,7 @@ import { db } from '../db';
 import type { AgentCycleOutcome, AgentDeployment, AgentMetrics, AgentProfile, Folder, Settings } from '../types';
 import { runAgentCycle, type AgentCycleResult } from './caddy-agent';
 import { BUILTIN_AGENT_PROFILES } from './builtin-agent-profiles';
+import { shouldBlockNewCycle } from './agent-handoff';
 
 export interface MultiAgentCycleResult {
   deploymentResults: Map<string, AgentCycleResult>;
@@ -36,7 +37,12 @@ export async function runMultiAgentCycle(
     .between([folder.id, -Infinity], [folder.id, Infinity])
     .toArray();
 
-  const activeDeployments = deployments.filter(d => d.status !== 'paused' && d.shift !== 'resting');
+  // Skip deployments the server owns or that haven't finished reconciling after
+  // a handoff — starting a cycle on those would race against the server or act
+  // on stale local state.
+  const activeDeployments = deployments.filter(
+    d => d.status !== 'paused' && d.shift !== 'resting' && !shouldBlockNewCycle(d),
+  );
 
   if (activeDeployments.length === 0) {
     return { deploymentResults: new Map(), errors: ['No active agent deployments'] };
