@@ -25,6 +25,8 @@ export interface Note {
   parentNoteId?: string;
   /** If true, this note acts as a folder/container for child notes */
   isFolder?: boolean;
+  /** Set true when an observer-role agent created this note — analyst should review before it's trusted as investigation output. */
+  reviewRequired?: boolean;
   createdBy?: string;
   updatedBy?: string;
   createdAt: number;
@@ -990,8 +992,11 @@ export interface PresenceUser {
 
 // ─── CaddyAgent Types ─────────────────────────────────────────
 
-/** Action class for policy decisions — maps tools to approval categories. */
-export type AgentActionClass = 'read' | 'enrich' | 'fetch' | 'create' | 'modify';
+/** Action class for policy decisions — maps tools to approval categories.
+ *  `delegate` is internal team coordination (lead→specialist task handoff, self-reflection)
+ *  and is always auto-approved; it bypasses the standard create/modify toggles so a
+ *  locked-down policy does not silently break the delegation workflow. */
+export type AgentActionClass = 'read' | 'enrich' | 'fetch' | 'create' | 'modify' | 'delegate';
 
 /** Per-investigation agent policy controlling what requires human approval. */
 export interface AgentPolicy {

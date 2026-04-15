@@ -20,6 +20,10 @@ import { parseToolCallsFromText } from './caddy-agent';
 const SUPERVISOR_FOLDER_NAME = 'CaddyAgent Supervisor';
 const SUPERVISOR_THREAD_TITLE = 'Supervisor Audit Trail';
 const MAX_SUPERVISOR_TURNS = 5;
+/** Hard cap on notes retained in the Supervisor folder — rolling deletion of oldest. */
+const SUPERVISOR_NOTE_RETENTION = 200;
+/** Max create_note calls the supervisor is allowed to make within one cycle. */
+const SUPERVISOR_NOTES_PER_CYCLE = 3;
 
 /** Tools the supervisor is allowed to use — includes write tools for cross-investigation coordination. */
 const SUPERVISOR_TOOLS = new Set([
@@ -223,6 +227,27 @@ export async function runSupervisorCycle(
     return { findings: ['Skipped: fewer than 2 active investigations to compare.'], escalations: [] };
   }
 
+  // Rolling retention: keep the newest SUPERVISOR_NOTE_RETENTION notes, soft-trash the rest.
+  // Prevents the supervisor folder from becoming a perf sink or drowning the dashboard.
+  try {
+    const supervisorNotes = await db.notes
+      .where('folderId').equals(supervisorFolder.id)
+      .and(n => !n.trashed && !n.isFolder)
+      .toArray();
+    if (supervisorNotes.length > SUPERVISOR_NOTE_RETENTION) {
+      const toTrash = supervisorNotes
+        .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+        .slice(0, supervisorNotes.length - SUPERVISOR_NOTE_RETENTION);
+      const now = Date.now();
+      for (const n of toTrash) {
+        await db.notes.update(n.id, { trashed: true, trashedAt: now, updatedAt: now });
+      }
+      onProgress?.(`Retention: trashed ${toTrash.length} old supervisor notes`);
+    }
+  } catch (retErr) {
+    console.warn('[supervisor] retention sweep failed:', retErr);
+  }
+
   const systemPrompt = SUPERVISOR_SYSTEM_PROMPT + await buildInvestigationContext(supervisorFolder);
 
   const messages: { role: 'user' | 'assistant'; content: string | ContentBlock[] }[] = [
@@ -231,6 +256,7 @@ export async function runSupervisorCycle(
 
   const findings: string[] = [];
   const escalations: EscalationEvent[] = [];
+  let notesCreatedThisCycle = 0;
 
   try {
     for (let turn = 0; turn < MAX_SUPERVISOR_TURNS; turn++) {
@@ -271,7 +297,23 @@ export async function runSupervisorCycle(
         assistantContent.push(toolCall);
         onProgress?.(`Executing ${toolCall.name}...`);
 
+        // Per-cycle note quota: prevents a runaway supervisor from spamming the folder.
+        if (toolCall.name === 'create_note' && notesCreatedThisCycle >= SUPERVISOR_NOTES_PER_CYCLE) {
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: toolCall.id,
+            content: JSON.stringify({
+              error: `Supervisor create_note quota exhausted (${SUPERVISOR_NOTES_PER_CYCLE}/cycle). Consolidate remaining findings into one of the notes you already wrote.`,
+            }),
+            is_error: true,
+          });
+          continue;
+        }
+
         const result = await executeTool(toolCall, supervisorFolder.id);
+        if (toolCall.name === 'create_note' && !result.isError) {
+          notesCreatedThisCycle++;
+        }
         toolResults.push({
           type: 'tool_result',
           tool_use_id: toolCall.id,

@@ -83,15 +83,18 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
   notify_human: 'create',
   declare_war_bridge: 'create',
 
-  // Delegation tools (lead agent only)
-  delegate_task: 'create',
-  review_completed_task: 'modify',
+  // Delegation tools (lead agent only) — 'delegate' class is always auto-approved
+  // so a locked-down create/modify policy cannot silently break lead→specialist handoff.
+  delegate_task: 'delegate',
+  review_completed_task: 'delegate',
   list_agent_activity: 'read',
+  reflect_on_performance: 'delegate',
+  read_soul: 'read',
+  // Executive tools remain gated under the user's create/modify toggles
+  // because they change team composition (spawn/dismiss) or define new profiles.
   spawn_agent: 'create',
   define_specialist: 'create',
   dismiss_agent: 'modify',
-  reflect_on_performance: 'create',
-  read_soul: 'read',
 };
 
 /** Get the action class for a tool name. Defaults to 'modify' for unknown tools. */
@@ -126,11 +129,12 @@ export function getToolActionClass(toolName: string): AgentActionClass {
 export function shouldAutoApprove(toolName: string, policy: AgentPolicy): boolean {
   const actionClass = getToolActionClass(toolName);
   switch (actionClass) {
-    case 'read':    return policy.autoApproveReads;
-    case 'enrich':  return policy.autoApproveEnrich;
-    case 'fetch':   return policy.autoApproveFetch ?? policy.autoApproveEnrich;
-    case 'create':  return policy.autoApproveCreate;
-    case 'modify':  return policy.autoApproveModify;
-    default:        return false;
+    case 'read':     return policy.autoApproveReads;
+    case 'enrich':   return policy.autoApproveEnrich;
+    case 'fetch':    return policy.autoApproveFetch ?? policy.autoApproveEnrich;
+    case 'create':   return policy.autoApproveCreate;
+    case 'modify':   return policy.autoApproveModify;
+    case 'delegate': return true;
+    default:         return false;
   }
 }

@@ -165,6 +165,7 @@ export function sanitizeNote(raw: unknown): Note | null {
     iocTypes: Array.isArray(r.iocTypes) ? strArr(r.iocTypes).filter((t) => VALID_IOC_TYPES.includes(t)) as Note['iocTypes'] : undefined,
     parentNoteId: r.parentNoteId != null ? str(r.parentNoteId) : undefined,
     isFolder: r.isFolder === true ? true : undefined,
+    reviewRequired: r.reviewRequired === true ? true : undefined,
     clsLevel: r.clsLevel != null ? str(r.clsLevel) : undefined,
     linkedNoteIds: Array.isArray(r.linkedNoteIds) ? strArr(r.linkedNoteIds) : undefined,
     linkedTaskIds: Array.isArray(r.linkedTaskIds) ? strArr(r.linkedTaskIds) : undefined,

@@ -216,11 +216,13 @@ export async function executeTool(
   } catch { operatorName = _settings.displayName || 'Analyst'; }
 
   // Push creator context (stack-based for concurrent agent safety)
+  let agentRole: string | undefined;
   if (agentContext?.profileId) {
     const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
     const profile = BUILTIN_AGENT_PROFILES.find(p => p.id === agentContext.profileId)
       || await db.agentProfiles.get(agentContext.profileId);
     const agentLabel = profile ? `${profile.icon || '🤖'} ${profile.name}` : agentContext.profileId;
+    agentRole = profile?.role;
     _creatorStack.push(`agent:${agentLabel} (${operatorName})`);
   } else {
     _creatorStack.push(operatorName);
@@ -297,6 +299,28 @@ export async function executeTool(
         }
       }
     }
+
+    // Observer-role agents produce advisory notes only — route them through a
+    // review queue so analysts vet stakeholder commentary before it's trusted
+    // as investigation output.
+    if (name === 'create_note' && agentRole === 'observer') {
+      try {
+        const parsed = JSON.parse(result);
+        if (parsed?.success && parsed.id) {
+          const existing = await db.notes.get(parsed.id);
+          if (existing) {
+            const tags = Array.from(new Set([...(existing.tags || []), 'needs-review']));
+            await db.notes.update(parsed.id, { reviewRequired: true, tags, updatedAt: Date.now() });
+            parsed.reviewRequired = true;
+            parsed.message = 'Note created and flagged for analyst review (observer-authored).';
+            result = JSON.stringify(parsed);
+          }
+        }
+      } catch {
+        // Result wasn't JSON or didn't have an id — nothing to flag.
+      }
+    }
+
     return { result, isError: false };
   } catch (err) {
     return { result: JSON.stringify({ error: String((err as Error).message || err) }), isError: true };
@@ -1524,10 +1548,15 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
 // ── Agent Soul ───────────────────────────────────────────────────────
 
 async function executeReflectOnPerformance(inp: Record<string, unknown>, profileId?: string): Promise<string> {
-  const lesson = String(inp.lesson || '').trim();
-  const strength = inp.strength ? String(inp.strength).trim() : undefined;
-  const weakness = inp.weakness ? String(inp.weakness).trim() : undefined;
-  const identity = inp.identity ? String(inp.identity).trim() : undefined;
+  // Length caps match the render-time sanitizer so the agent's free-form reflection
+  // cannot balloon the cross-investigation system prompt.
+  const clipSoul = (s: string, max: number) =>
+    // eslint-disable-next-line no-control-regex -- intentional: strip control chars from agent-authored text
+    s.replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+  const lesson = clipSoul(String(inp.lesson || ''), 300);
+  const strength = inp.strength ? clipSoul(String(inp.strength), 100) : undefined;
+  const weakness = inp.weakness ? clipSoul(String(inp.weakness), 100) : undefined;
+  const identity = inp.identity ? clipSoul(String(inp.identity), 500) : undefined;
   if (!lesson) return JSON.stringify({ error: 'lesson is required' });
 
   // Find the calling agent's profile via explicit context or fallback
