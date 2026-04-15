@@ -6,7 +6,7 @@
 
 import { db } from '../db';
 import { nanoid } from 'nanoid';
-import type { AgentDeployment, AgentMeeting, AgentProfile, ChatThread, ChatMessage, Folder, Settings, ContentBlock, ToolUseBlock, LLMProvider } from '../types';
+import type { AgentDeployment, AgentMeeting, AgentProfile, ChatThread, ChatMessage, Folder, Settings, ContentBlock, ToolUseBlock, LLMProvider, MeetingPurpose, MeetingStructuredOutput } from '../types';
 import { TOOL_DEFINITIONS } from './llm-tool-defs';
 import { buildSystemPrompt } from './llm-tools';
 import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-router';
@@ -18,6 +18,10 @@ export interface AgentMeetingResult {
   minutesNoteId?: string;
   roundsCompleted: number;
   error?: string;
+  /** Structured artifact (when purpose is scoped). */
+  structuredOutput?: MeetingStructuredOutput;
+  /** Per-participant final confidence (1-5). */
+  participantConfidence?: Record<string, number>;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -89,10 +93,94 @@ async function resolveProfile(profileId: string): Promise<AgentProfile | undefin
 
 // ── Meeting Orchestrator ────────────────────────────────────────────────
 
-const DEFAULT_MAX_ROUNDS = 3;
+/** Hard round cap. The MAD literature (arXiv 2509.05396, Free-MAD) shows
+ *  accuracy degrades after ~2 rounds from sycophancy/conformity. 2 is the
+ *  default for every meeting; freeform callers can still override via
+ *  maxRounds, but structured purposes are force-capped at 2. */
+const DEFAULT_MAX_ROUNDS = 2;
+/** Confidence threshold (1-5) at which a participant is considered "done". */
+const CONFIDENCE_DONE_THRESHOLD = 4;
+/** Per-message truncation when summary fails — ensures we never silently drop middle content. */
+const FALLBACK_MESSAGE_TRUNCATE_CHARS = 600;
+
+/** Parse a "[[confidence=N]]" tag from the tail of an agent's contribution.
+ *  Returns N clamped to 1-5, or undefined if not found. */
+function parseConfidenceTag(text: string): number | undefined {
+  const m = text.match(/\[\[confidence\s*=\s*([1-5])\]\]/i);
+  if (!m) return undefined;
+  const n = parseInt(m[1], 10);
+  return Number.isFinite(n) ? Math.max(1, Math.min(5, n)) : undefined;
+}
+
+/** Strip the confidence tag from displayed text. */
+function stripConfidenceTag(text: string): string {
+  return text.replace(/\[\[confidence\s*=\s*[1-5]\]\]/gi, '').trim();
+}
+
+/** Instruction block appended to every participant's prompt describing the
+ *  expected response format for structured termination. */
+const PARTICIPANT_CONFIDENCE_INSTRUCTION = `
+Rules:
+- Be concise — 2-4 short paragraphs max.
+- Build on what others have said. Don't repeat points already made.
+- Focus strictly on your area of expertise.
+- End your contribution with a tag on its own line: [[confidence=N]] where N=1-5
+  (1 = "I still have a lot to add", 5 = "I have nothing more to contribute").
+  The meeting ends early when all participants report >=${CONFIDENCE_DONE_THRESHOLD}.`;
+
+/** Purpose-specific instruction block injected at the top of every
+ *  participant's system prompt so each round is scoped to the goal. */
+function purposeInstruction(purpose: MeetingPurpose, agenda: string): string {
+  switch (purpose) {
+    case 'redTeamReview':
+      return `\n\nMeeting purpose: **RED TEAM REVIEW**. Adversarially challenge the claim/plan in the agenda. Identify weak points, attack assumptions, cite counter-evidence. Your goal is to find failure modes, not to agree.\n\nAgenda claim/plan: ${agenda}`;
+    case 'dissentSynthesis':
+      return `\n\nMeeting purpose: **DISSENT SYNTHESIS**. State your position clearly with evidence. Engage with conflicting positions from others. The final synthesizer will reconcile positions — your job is to make your reasoning legible, not to reach consensus.\n\nAgenda: ${agenda}`;
+    case 'signOff':
+      return `\n\nMeeting purpose: **SIGN-OFF**. Vote approve/reject/needs-more-info on the proposed action. If rejecting, list concrete blockers. If approving, list conditions. Do not discuss alternatives — decide on the proposal as stated.\n\nProposal: ${agenda}`;
+    case 'freeform':
+    default:
+      return '';
+  }
+}
+
+/** Synthesizer prompt that produces the structured JSON artifact for a purpose. */
+function synthesizerPrompt(purpose: MeetingPurpose, agenda: string, rounds: number): string {
+  const header = `The meeting has concluded after ${rounds} round(s). As the synthesizer, produce a single JSON object matching the schema below, then a short human-readable markdown summary. Output exactly two sections: first a \`\`\`json code block, then a \`## Summary\` markdown block. Do not add anything outside these.`;
+  switch (purpose) {
+    case 'redTeamReview':
+      return `${header}\n\nSchema:\n{\n  "purpose": "redTeamReview",\n  "verdict": "holds" | "revise" | "reject",\n  "attackedClaims": string[],\n  "counterEvidence": string[],\n  "weakPoints": string[]\n}\n\nAgenda: ${agenda}`;
+    case 'dissentSynthesis':
+      return `${header}\n\nSchema:\n{\n  "purpose": "dissentSynthesis",\n  "positions": [{ "agent": string, "position": string, "evidence": string }],\n  "reconciled": string,\n  "unresolved": string[]\n}\n\nAgenda: ${agenda}`;
+    case 'signOff':
+      return `${header}\n\nSchema:\n{\n  "purpose": "signOff",\n  "decision": "approved" | "rejected" | "needs-more-info",\n  "approvers": string[],\n  "blockers": string[],\n  "conditions": string[]\n}\n\nProposal: ${agenda}`;
+    case 'freeform':
+    default:
+      return `${header}\n\nSchema:\n{\n  "purpose": "freeform",\n  "summary": string,\n  "keyPoints": string[],\n  "actionItems": string[]\n}\n\nAgenda: ${agenda}`;
+  }
+}
+
+/** Extract the JSON block from the synthesizer's response. Returns undefined if absent/invalid. */
+function parseSynthesizerJson(text: string, purpose: MeetingPurpose): MeetingStructuredOutput | undefined {
+  const match = text.match(/```json\s*\n?([\s\S]*?)\n?```/);
+  if (!match) return undefined;
+  try {
+    const parsed = JSON.parse(match[1]);
+    if (!parsed || typeof parsed !== 'object') return undefined;
+    // Coerce to the right purpose (LLM may omit it) and accept whatever fields are there.
+    return { purpose, ...parsed } as MeetingStructuredOutput;
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * Run an agent meeting: agents discuss in turn, then produce meeting minutes.
+ *
+ * @param purpose controls the system prompt shape and the final structured output.
+ *   For 'freeform' (the default) behavior is back-compatible with pre-Phase-4
+ *   callers. For any other purpose rounds are hard-capped at
+ *   DEFAULT_MAX_ROUNDS regardless of maxRounds.
  */
 export async function runAgentMeeting(
   folder: Folder,
@@ -102,8 +190,14 @@ export async function runAgentMeeting(
   agenda: string,
   maxRounds?: number,
   onProgress?: (speaker: string, status: string) => void,
+  purpose: MeetingPurpose = 'freeform',
 ): Promise<AgentMeetingResult> {
-  const rounds = maxRounds || DEFAULT_MAX_ROUNDS;
+  const requestedRounds = maxRounds || DEFAULT_MAX_ROUNDS;
+  // Force-cap structured meetings at the default — research shows accuracy
+  // degrades past ~2 rounds of MAD. Freeform callers may request more (legacy).
+  const rounds = purpose === 'freeform'
+    ? Math.min(requestedRounds, 3)
+    : Math.min(requestedRounds, DEFAULT_MAX_ROUNDS);
 
   // Resolve provider (same fallback as agent cycle)
   const serverConnected = !!settings.serverUrl;
@@ -178,6 +272,7 @@ export async function runAgentMeeting(
     status: 'in-progress',
     roundsCompleted: 0,
     maxRounds: rounds,
+    purpose,
     createdAt: Date.now(),
   };
   await db.agentMeetings.add(meeting);
@@ -188,8 +283,13 @@ export async function runAgentMeeting(
     // Build conversation in the shared thread
     const conversationMessages: { role: 'user' | 'assistant'; content: string | ContentBlock[] }[] = [];
 
-    // Initial agenda message
-    const agendaMsg = `Meeting Agenda: ${agenda}\n\nParticipants: ${participants.map(p => `${p.profile.icon || ''} ${p.profile.name} (${p.profile.role})`).join(', ')}\n\nEach participant will share their perspective. Be concise and constructive. Build on what others have said. If you have nothing new to add, say "No further input."`;
+    // Initial agenda message. Purpose framing and the confidence-tag protocol
+    // are both embedded here so every participant sees the termination rule
+    // before their first turn.
+    const purposeBanner = purpose === 'freeform'
+      ? ''
+      : `\n\n**Meeting type:** ${purpose} (scoped — max ${rounds} rounds)`;
+    const agendaMsg = `Meeting Agenda: ${agenda}${purposeBanner}\n\nParticipants: ${participants.map(p => `${p.profile.icon || ''} ${p.profile.name} (${p.profile.role})`).join(', ')}\n\nEach participant speaks in turn. Be concise and constructive. End your contribution with a confidence tag: [[confidence=N]] where N=1-5 (1=much more to add, 5=nothing more to contribute). The meeting ends early when all participants report confidence >=${CONFIDENCE_DONE_THRESHOLD}.`;
 
     conversationMessages.push({ role: 'user', content: agendaMsg });
 
@@ -205,16 +305,21 @@ export async function runAgentMeeting(
       t.updatedAt = Date.now();
     });
 
-    // Rounds
+    // Rounds — terminate when every participant reports confidence >= threshold,
+    // or when we hit the round cap. Per-participant confidence is tracked across
+    // rounds and reset on each round so a participant can still escalate if new
+    // material arrives from others.
     let completedRounds = 0;
+    const participantConfidence: Record<string, number> = {};
     for (let round = 0; round < rounds; round++) {
-      let anyNewInput = false;
+      const roundConfidence: Record<string, number> = {};
 
-      // Summarize older messages if conversation exceeds budget (preserve coherence)
+      // Summarize older messages if conversation exceeds budget (preserve coherence).
+      // If summarization fails, we truncate each middle message instead of splicing
+      // them away — this guarantees we never silently drop content.
       const totalChars = conversationMessages.reduce((sum, m) => sum + (typeof m.content === 'string' ? m.content.length : 200), 0);
       if (totalChars > CONVERSATION_BUDGET_CHARS && conversationMessages.length > 6) {
         onProgress?.('system', 'Summarizing earlier discussion...');
-        // Keep first 2 (agenda + context) and last 4 messages; summarize the middle
         const head = conversationMessages.slice(0, 2);
         const tail = conversationMessages.slice(-4);
         const middle = conversationMessages.slice(2, -4);
@@ -230,31 +335,30 @@ export async function runAgentMeeting(
           const summaryMsg = { role: 'assistant' as const, content: `[MEETING SUMMARY — earlier rounds]\n${summaryResponse.content}` };
           conversationMessages.splice(0, conversationMessages.length, ...head, summaryMsg, ...tail);
         } catch (err) {
-          // Fallback to old splice behavior if summarization fails
-          console.error('[AgentMeeting] Failed to summarize conversation for budget trimming:', err);
-          const keep = Math.max(6, Math.floor(conversationMessages.length / 2));
-          conversationMessages.splice(2, conversationMessages.length - keep);
+          // Fallback: truncate each middle message to a fixed length rather than
+          // silently discarding them. Preserves coherence + the audit trail.
+          console.warn('[AgentMeeting] Summary failed — falling back to per-message truncation:', err);
+          const truncatedMiddle = middle.map(m => {
+            if (typeof m.content !== 'string') return m;
+            if (m.content.length <= FALLBACK_MESSAGE_TRUNCATE_CHARS) return m;
+            return { ...m, content: m.content.slice(0, FALLBACK_MESSAGE_TRUNCATE_CHARS) + '… [truncated to preserve budget]' };
+          });
+          conversationMessages.splice(0, conversationMessages.length, ...head, ...truncatedMiddle, ...tail);
         }
       }
 
-      for (const { profile } of participants) {
+      for (const { deployment, profile } of participants) {
         onProgress?.(profile.name, `Round ${round + 1}/${rounds}`);
 
         try {
-          const systemPrompt = `${baseContext}
+          const systemPrompt = `${baseContext}${purposeInstruction(purpose, agenda)}
 
 ## Meeting Context
 
 You are **${profile.name}** (${profile.role}), participating in a team meeting about this investigation.
 
 Your expertise: ${profile.description || profile.systemPrompt.substring(0, 200)}
-
-Rules:
-- Be concise — 2-4 paragraphs max per contribution.
-- Build on what others have said. Don't repeat points already made.
-- If you have nothing new to add, say exactly: "No further input."
-- Focus on your area of expertise.
-- Propose concrete next steps when possible.`;
+${PARTICIPANT_CONFIDENCE_INSTRUCTION}`;
 
           const response = await callLLM({
             provider, model,
@@ -263,13 +367,20 @@ Rules:
             useServerProxy, endpoint,
           });
 
-          const content = `**${profile.icon || ''} ${profile.name}:** ${response.content}`;
+          const confidence = parseConfidenceTag(response.content);
+          if (confidence !== undefined) {
+            roundConfidence[deployment.id] = confidence;
+            participantConfidence[deployment.id] = confidence;
+          }
+          const displayContent = stripConfidenceTag(response.content);
+          const content = `**${profile.icon || ''} ${profile.name}:** ${displayContent}${confidence !== undefined ? ` _(confidence ${confidence}/5)_` : ''}`;
 
-          // Add to conversation
-          conversationMessages.push({ role: 'assistant', content });
+          // Add to conversation (keep confidence tag hidden from next speakers
+          // so they don't mimic it; they see the natural prose only).
+          conversationMessages.push({ role: 'assistant', content: `**${profile.name}:** ${displayContent}` });
           conversationMessages.push({ role: 'user', content: 'Next participant, please share your perspective.' });
 
-          // Add to thread
+          // Audit thread keeps the full tag for analyst review.
           const chatMsg: ChatMessage = {
             id: nanoid(),
             role: 'assistant',
@@ -280,11 +391,6 @@ Rules:
             t.messages.push(chatMsg);
             t.updatedAt = Date.now();
           });
-
-          // Check if this agent had anything new to say
-          if (!response.content.toLowerCase().includes('no further input')) {
-            anyNewInput = true;
-          }
         } catch (err) {
           console.error(`[meeting] Agent ${profile.name} failed in round ${round + 1}:`, err);
           const errorContent = `**${profile.icon || ''} ${profile.name}:** _(failed to respond: ${(err as Error).message?.substring(0, 100) || 'unknown error'})_`;
@@ -293,55 +399,55 @@ Rules:
       }
 
       completedRounds = round + 1;
-      await db.agentMeetings.update(meetingId, { roundsCompleted: completedRounds });
+      await db.agentMeetings.update(meetingId, { roundsCompleted: completedRounds, participantConfidence });
 
-      // If nobody had new input, end early
-      if (!anyNewInput) break;
+      // Early termination: every participant self-reported confidence >= threshold
+      // in this round. Participants who failed to respond are ignored in the check.
+      const reportedCount = Object.keys(roundConfidence).length;
+      const allDone = reportedCount >= participants.length
+        && Object.values(roundConfidence).every(c => c >= CONFIDENCE_DONE_THRESHOLD);
+      if (allDone) {
+        onProgress?.('system', `All participants report confidence >=${CONFIDENCE_DONE_THRESHOLD} — ending early`);
+        break;
+      }
     }
 
-    // Generate meeting minutes using the lead agent (or first participant)
+    // Synthesizer pass: the lead produces a structured JSON artifact per the
+    // purpose's schema, plus a short markdown summary. For freeform meetings
+    // we still force the same shape (JSON + summary) so artifacts are uniform.
     onProgress?.('Meeting', 'Generating minutes...');
 
     const leadProfile = participants.find(p => p.profile.role === 'executive' || p.profile.role === 'lead')?.profile || participants[0].profile;
 
-    const minutesPrompt = `The meeting has concluded after ${completedRounds} round(s). As ${leadProfile.name}, write concise meeting minutes in markdown format:
-
-## Meeting Minutes — ${new Date().toISOString().split('T')[0]}
-
-**Agenda:** ${agenda}
-**Participants:** [list names]
-
-### Key Points
-[bullet points of main discussion items]
-
-### Decisions
-[any decisions made]
-
-### Action Items
-[specific next steps with assigned agent]
-
-### Open Questions
-[unresolved items]`;
-
+    const minutesPrompt = synthesizerPrompt(purpose, agenda, completedRounds);
     conversationMessages.push({ role: 'user', content: minutesPrompt });
 
     const minutesResponse = await callLLM({
       provider, model,
       messages: conversationMessages,
       apiKey,
-      systemPrompt: `${baseContext}\n\nYou are ${leadProfile.name}. Write clear, structured meeting minutes.`,
+      systemPrompt: `${baseContext}\n\nYou are ${leadProfile.name}, the synthesizer for this meeting. Produce exactly the JSON block + markdown summary requested — no extra commentary.`,
       useServerProxy, endpoint,
     });
+
+    const structuredOutput = parseSynthesizerJson(minutesResponse.content, purpose);
+    const confidenceBlock = Object.keys(participantConfidence).length
+      ? `\n\n**Final participant confidence:**\n${Object.entries(participantConfidence).map(([id, c]) => {
+          const p = participants.find(pp => pp.deployment.id === id);
+          return `- ${p?.profile.name || id}: ${c}/5`;
+        }).join('\n')}`
+      : '';
+    const noteContent = `# ${purpose === 'freeform' ? 'Meeting Minutes' : `${purpose} — ${agenda.substring(0, 60)}`}\n\n**Purpose:** ${purpose}\n**Rounds:** ${completedRounds}/${rounds}\n**Participants:** ${participants.map(p => p.profile.name).join(', ')}\n${confidenceBlock}\n\n${minutesResponse.content}`;
 
     // Create minutes note
     const noteId = nanoid();
     const now = Date.now();
     await db.notes.add({
       id: noteId,
-      title: `Meeting Minutes: ${agenda.substring(0, 60)}`,
-      content: minutesResponse.content,
+      title: `${purpose === 'freeform' ? 'Meeting' : purpose}: ${agenda.substring(0, 60)}`,
+      content: noteContent,
       folderId: folder.id,
-      tags: ['agent-meeting', 'meeting-minutes'],
+      tags: ['agent-meeting', 'meeting-minutes', `meeting-purpose:${purpose}`],
       pinned: false,
       archived: false,
       trashed: false,
@@ -355,10 +461,17 @@ Rules:
       status: 'completed',
       minutesNoteId: noteId,
       roundsCompleted: completedRounds,
+      structuredOutput,
+      participantConfidence,
       completedAt: Date.now(),
     });
 
-    return { meetingId, threadId, minutesNoteId: noteId, roundsCompleted: completedRounds };
+    return {
+      meetingId, threadId, minutesNoteId: noteId,
+      roundsCompleted: completedRounds,
+      structuredOutput,
+      participantConfidence,
+    };
   } catch (err) {
     await db.agentMeetings.update(meetingId, { status: 'failed' });
     return { meetingId, threadId, roundsCompleted: 0, error: String((err as Error).message || err) };

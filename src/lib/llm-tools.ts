@@ -797,6 +797,11 @@ async function executeCallMeeting(inp: Record<string, unknown>, folderId?: strin
   const agenda = String(inp.agenda || '');
   if (!agenda) return JSON.stringify({ error: 'agenda is required' });
 
+  // Purpose validation — fall back to freeform for unknown values.
+  const rawPurpose = inp.purpose ? String(inp.purpose) : 'freeform';
+  const validPurposes = new Set(['redTeamReview', 'dissentSynthesis', 'signOff', 'freeform']);
+  const purpose = validPurposes.has(rawPurpose) ? rawPurpose : 'freeform';
+
   // Rate limit: check how many meetings today
   // Check rate limit from investigation policy (0 or undefined = unlimited)
   const folder = await db.folders.get(folderId);
@@ -812,20 +817,22 @@ async function executeCallMeeting(inp: Record<string, unknown>, folderId?: strin
     }
   }
 
-  // Meeting will be triggered by the agent manager on next cycle — store as a pending meeting request
+  // Meeting will be triggered by the agent manager on next cycle — store as a
+  // pending meeting request. The purpose is tagged so the scheduler can pick
+  // it up when it runs runAgentMeeting().
   const noteId = nanoid();
   await db.notes.add({
     id: noteId,
     title: `Meeting Request: ${agenda.substring(0, 60)}`,
-    content: `## Agent Meeting Requested\n\n**Agenda:** ${agenda}\n**Requested at:** ${new Date().toISOString()}\n\nThis meeting was requested by an agent and will be facilitated during the next agent cycle.`,
+    content: `## Agent Meeting Requested\n\n**Purpose:** ${purpose}\n**Agenda:** ${agenda}\n**Requested at:** ${new Date().toISOString()}\n\nThis meeting was requested by an agent and will be facilitated during the next agent cycle.`,
     folderId,
-    tags: ['agent-meeting', 'meeting-request'],
+    tags: ['agent-meeting', 'meeting-request', `meeting-purpose:${purpose}`],
     pinned: false, archived: false, trashed: false,
     createdBy: 'agent:lead',
     createdAt: Date.now(), updatedAt: Date.now(),
   });
 
-  return JSON.stringify({ success: true, noteId, message: `Meeting requested with agenda: ${agenda}. Will be scheduled on next cycle.` });
+  return JSON.stringify({ success: true, noteId, purpose, message: `Meeting requested (purpose: ${purpose}). Will be scheduled on next cycle.` });
 }
 
 async function executeNotifyHuman(inp: Record<string, unknown>, folderId?: string): Promise<string> {

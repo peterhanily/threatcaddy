@@ -1236,6 +1236,20 @@ export interface AgentDeployment {
   updatedAt: number;
 }
 
+/** Why a meeting was called — drives structured output + prompt shaping.
+ *  - redTeamReview: adversarial review of a claim/plan; verdict = holds|revise|reject
+ *  - dissentSynthesis: reconcile conflicting agent positions into one view
+ *  - signOff: approval gate before a high-impact action; produces decision + conditions
+ *  - freeform: legacy/unscoped discussion (not recommended — rounds degrade accuracy) */
+export type MeetingPurpose = 'redTeamReview' | 'dissentSynthesis' | 'signOff' | 'freeform';
+
+/** Structured artifact produced by a meeting (shape depends on purpose). */
+export type MeetingStructuredOutput =
+  | { purpose: 'redTeamReview'; verdict: 'holds' | 'revise' | 'reject'; attackedClaims: string[]; counterEvidence: string[]; weakPoints: string[] }
+  | { purpose: 'dissentSynthesis'; positions: Array<{ agent: string; position: string; evidence?: string }>; reconciled: string; unresolved: string[] }
+  | { purpose: 'signOff'; decision: 'approved' | 'rejected' | 'needs-more-info'; approvers: string[]; blockers: string[]; conditions: string[] }
+  | { purpose: 'freeform'; summary: string; keyPoints: string[]; actionItems: string[] };
+
 /** A collaborative meeting between deployed agents. */
 export interface AgentMeeting {
   id: string;
@@ -1250,6 +1264,12 @@ export interface AgentMeeting {
   status: 'in-progress' | 'completed' | 'failed';
   roundsCompleted: number;
   maxRounds: number;
+  /** Meeting purpose — drives structured output + prompt. Defaults to 'freeform' for legacy callers. */
+  purpose?: MeetingPurpose;
+  /** Structured artifact produced at the end of a scoped meeting. */
+  structuredOutput?: MeetingStructuredOutput;
+  /** Confidence (1-5) each participant self-reported on their final turn. */
+  participantConfidence?: Record<string, number>;
   createdAt: number;
   completedAt?: number;
 }

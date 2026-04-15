@@ -698,12 +698,13 @@ export const DELEGATION_TOOL_DEFINITIONS = [
   },
   {
     name: 'call_meeting',
-    description: 'Schedule and run an agent meeting with a specific agenda. All deployed agents participate. Rate-limited by investigation policy. Only available to Lead agents.',
+    description: 'Schedule an agent meeting with a structured purpose. Research (arXiv 2509.05396, Free-MAD) shows free-form multi-agent debate DEGRADES accuracy past ~2 rounds — use a scoped purpose: "redTeamReview" (adversarially challenge a plan/claim), "dissentSynthesis" (reconcile conflicting positions), "signOff" (approve/reject a proposal). "freeform" is legacy. Structured meetings are hard-capped at 2 rounds and produce a JSON artifact. Rate-limited by investigation policy. Only available to Lead agents.',
     input_schema: {
       type: 'object' as const,
       properties: {
-        agenda: { type: 'string', description: 'Meeting agenda — what should agents discuss?' },
-        maxRounds: { type: 'number', description: 'Number of discussion rounds (default 2)' },
+        agenda: { type: 'string', description: 'Meeting agenda — for structured purposes, state the claim/plan/proposal as tersely as possible.' },
+        purpose: { type: 'string', enum: ['redTeamReview', 'dissentSynthesis', 'signOff', 'freeform'], description: 'Meeting purpose (default "freeform"). Prefer a structured purpose — freeform rounds often drift.' },
+        maxRounds: { type: 'number', description: 'Number of discussion rounds (default 2, hard-capped at 2 for structured purposes).' },
       },
       required: ['agenda'],
     },

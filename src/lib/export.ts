@@ -501,18 +501,33 @@ function sanitizeAgentDeployment(raw: unknown): Record<string, unknown> | null {
   };
 }
 
+const VALID_MEETING_PURPOSES = ['redTeamReview', 'dissentSynthesis', 'signOff', 'freeform'];
+
 function sanitizeAgentMeeting(raw: unknown): Record<string, unknown> | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   if (typeof r.id !== 'string' || typeof r.investigationId !== 'string') return null;
   const status = str(r.status, 'completed');
+  const purpose = str(r.purpose, 'freeform');
+  const participantConfidence = (r.participantConfidence && typeof r.participantConfidence === 'object' && !Array.isArray(r.participantConfidence))
+    ? Object.fromEntries(
+        Object.entries(r.participantConfidence as Record<string, unknown>)
+          .filter(([, v]) => typeof v === 'number')
+          .map(([k, v]) => [k, Math.max(1, Math.min(5, Number(v)))])
+      )
+    : undefined;
   return {
     id: str(r.id), investigationId: str(r.investigationId),
     participantDeploymentIds: Array.isArray(r.participantDeploymentIds) ? r.participantDeploymentIds.filter((d: unknown) => typeof d === 'string') : [],
     threadId: str(r.threadId, ''), agenda: str(r.agenda, ''),
     minutesNoteId: r.minutesNoteId != null ? str(r.minutesNoteId) : undefined,
     status: VALID_MEETING_STATUSES.includes(status) ? status : 'completed',
-    roundsCompleted: num(r.roundsCompleted, 0), maxRounds: num(r.maxRounds, 3),
+    roundsCompleted: num(r.roundsCompleted, 0), maxRounds: num(r.maxRounds, 2),
+    purpose: VALID_MEETING_PURPOSES.includes(purpose) ? purpose : 'freeform',
+    // structuredOutput: trust-but-carry — the shape depends on purpose and is
+    // produced by a synthesizer LLM, so we round-trip it as an opaque object.
+    structuredOutput: (r.structuredOutput && typeof r.structuredOutput === 'object') ? r.structuredOutput : undefined,
+    participantConfidence,
     createdAt: num(r.createdAt, Date.now()), completedAt: r.completedAt != null ? num(r.completedAt) : undefined,
   };
 }
