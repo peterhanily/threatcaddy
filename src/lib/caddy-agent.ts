@@ -424,6 +424,73 @@ function firstSentence(text: string, max = 180): string {
   return candidate.length > max ? candidate.slice(0, max - 1) + '…' : candidate.trim();
 }
 
+/** Minimal shape for tool definitions used by the allowlist builder. */
+export interface NamedToolDef { name: string }
+
+/**
+ * Pure function that computes the effective tool set for an agent cycle.
+ *
+ * Keeps the LLM-visible `availableTools` and the runtime `effectiveAllowedTools`
+ * perfectly in sync. Separated from the cycle loop so it can be unit-tested
+ * without spinning up the full agent pipeline.
+ *
+ * Invariants:
+ *   - A specialist never sees delegation or executive tools.
+ *   - An observer only sees reads + explicitly-allowed create tools.
+ *   - A lead/executive's role-granted tools bypass their profile.allowedTools.
+ *   - Runtime allowlist === names of availableTools.
+ */
+export function buildAgentToolset(opts: {
+  profile?: { role?: string; allowedTools?: string[] };
+  baseTools: readonly NamedToolDef[];
+  delegationTools: readonly NamedToolDef[];
+  executiveTools: readonly NamedToolDef[];
+  hostTools: readonly NamedToolDef[];
+  getActionClass: (name: string) => string;
+}): { availableTools: NamedToolDef[]; effectiveAllowedTools: Set<string> } {
+  const { profile, baseTools, delegationTools, executiveTools, hostTools, getActionClass } = opts;
+
+  if (!profile) {
+    const all: NamedToolDef[] = [...baseTools, ...hostTools];
+    return { availableTools: all, effectiveAllowedTools: new Set(all.map(t => t.name)) };
+  }
+
+  const profileAllow = profile.allowedTools?.length ? new Set(profile.allowedTools) : null;
+
+  const filteredBase: NamedToolDef[] = profileAllow
+    ? baseTools.filter(t => profileAllow.has(t.name))
+    : [...baseTools];
+
+  const roleAllowsHosts = profile.role !== 'observer';
+  const matchingHostTools: NamedToolDef[] = roleAllowsHosts
+    ? (profileAllow ? hostTools.filter(t => profileAllow.has(t.name)) : [...hostTools])
+    : [];
+
+  let roleTools: NamedToolDef[] = [];
+  if (profile.role === 'executive') roleTools = [...delegationTools, ...executiveTools];
+  else if (profile.role === 'lead') roleTools = [...delegationTools];
+
+  let combined: NamedToolDef[] = [...filteredBase, ...matchingHostTools, ...roleTools];
+
+  if (profile.role === 'observer') {
+    const explicitlyAllowed = profileAllow ?? new Set<string>();
+    combined = combined.filter(t => {
+      const cls = getActionClass(t.name);
+      return cls === 'read' || (cls === 'create' && explicitlyAllowed.has(t.name));
+    });
+  }
+
+  const seen = new Set<string>();
+  const availableTools: NamedToolDef[] = [];
+  for (const t of combined) {
+    if (seen.has(t.name)) continue;
+    seen.add(t.name);
+    availableTools.push(t);
+  }
+
+  return { availableTools, effectiveAllowedTools: new Set(availableTools.map(t => t.name)) };
+}
+
 /** Render the "what I did" bullets from a per-cycle tool histogram. */
 function renderWhatIDid(
   toolHistogram: Record<string, number>,
@@ -569,38 +636,18 @@ async function _runAgentCycleInner(
   const autoExecuted: AgentAction[] = [];
   const proposed: AgentAction[] = [];
 
-  // Filter tools by profile's allowedTools (if set), add delegation tools for lead agents
-  let availableTools = profile?.allowedTools?.length
-    ? TOOL_DEFINITIONS.filter(t => profile.allowedTools!.includes(t.name))
-    : [...TOOL_DEFINITIONS];
-
-  if (profile?.role === 'executive') {
-    // Executives get delegation + executive tools (dismiss, spawn, define, soul)
-    availableTools = [...availableTools, ...DELEGATION_TOOL_DEFINITIONS, ...EXECUTIVE_TOOL_DEFINITIONS] as typeof TOOL_DEFINITIONS;
-  } else if (profile?.role === 'lead') {
-    // Leads get delegation tools only (delegate, review, meetings) — no dismiss/spawn
-    availableTools = [...availableTools, ...DELEGATION_TOOL_DEFINITIONS] as typeof TOOL_DEFINITIONS;
-  } else if (profile?.role === 'observer') {
-    // Observer agents get read tools + explicitly allowed create tools (e.g., create_note for advisory notes)
-    const explicitlyAllowed = new Set(profile.allowedTools || []);
-    availableTools = availableTools.filter(t => {
-      const cls = getToolActionClass(t.name);
-      return cls === 'read' || (cls === 'create' && explicitlyAllowed.has(t.name));
-    });
-  }
-
-  // Append dynamic host skill tools (respect observer read-only restriction)
+  // Effective tool allowlist — one source of truth for both the LLM prompt
+  // and the runtime gate. See buildAgentToolset for the invariants.
   const hostTools = getHostToolDefinitions(settings);
-  if (hostTools.length > 0 && profile?.role !== 'observer') {
-    if (!profile?.allowedTools?.length) {
-      availableTools = [...availableTools, ...hostTools] as typeof TOOL_DEFINITIONS;
-    } else {
-      const matching = hostTools.filter(t => profile.allowedTools!.includes(t.name));
-      if (matching.length > 0) {
-        availableTools = [...availableTools, ...matching] as typeof TOOL_DEFINITIONS;
-      }
-    }
-  }
+  const { availableTools: availableToolsRaw, effectiveAllowedTools } = buildAgentToolset({
+    profile,
+    baseTools: TOOL_DEFINITIONS,
+    delegationTools: DELEGATION_TOOL_DEFINITIONS,
+    executiveTools: EXECUTIVE_TOOL_DEFINITIONS,
+    hostTools,
+    getActionClass: getToolActionClass,
+  });
+  const availableTools = availableToolsRaw as typeof TOOL_DEFINITIONS;
 
   // ── Per-cycle telemetry ───────────────────────────────────────────────
   const cycleStartedAt = Date.now();
@@ -712,8 +759,11 @@ async function _runAgentCycleInner(
         assistantContent.push(toolCall);
         toolHistogram[toolCall.name] = (toolHistogram[toolCall.name] || 0) + 1;
 
-        // Runtime authorization: enforce allowedTools restriction
-        if (profile?.allowedTools?.length && !profile.allowedTools.includes(toolCall.name)) {
+        // Runtime authorization: enforce the effective allowed set (profile
+        // allowlist ∪ role-granted tools ∪ allowed host tools). This must match
+        // the prompt-time filter exactly so a role-granted tool like delegate_task
+        // is never rejected at runtime after being offered to the LLM.
+        if (profile && !effectiveAllowedTools.has(toolCall.name)) {
           errorHistogram[toolCall.name] = (errorHistogram[toolCall.name] || 0) + 1;
           toolResults.push({
             type: 'tool_result', tool_use_id: toolCall.id,
