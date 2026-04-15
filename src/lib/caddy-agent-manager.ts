@@ -4,7 +4,7 @@
  */
 
 import { db } from '../db';
-import type { AgentDeployment, AgentMetrics, AgentProfile, Folder, Settings } from '../types';
+import type { AgentCycleOutcome, AgentDeployment, AgentMetrics, AgentProfile, Folder, Settings } from '../types';
 import { runAgentCycle, type AgentCycleResult } from './caddy-agent';
 import { BUILTIN_AGENT_PROFILES } from './builtin-agent-profiles';
 
@@ -83,15 +83,45 @@ export async function runMultiAgentCycle(
       const newStatus = result.error ? 'error'
         : result.proposed.length > 0 ? 'waiting'
         : 'idle';
-      const prev = deployment.metrics || { cyclesRun: 0, toolCallsExecuted: 0, toolCallsProposed: 0, tasksCompleted: 0, tasksRejected: 0, tokensUsed: { input: 0, output: 0 }, lastCycleAt: 0 };
+      const prev = deployment.metrics || {
+        cyclesRun: 0, toolCallsExecuted: 0, toolCallsProposed: 0,
+        tasksCompleted: 0, tasksRejected: 0,
+        tokensUsed: { input: 0, output: 0 }, lastCycleAt: 0,
+      };
+      const summary = result.summary;
+
+      // Merge cycle histograms into cumulative deployment histograms
+      const mergeHist = (base: Record<string, number> | undefined, delta: Record<string, number> | undefined): Record<string, number> => {
+        const out: Record<string, number> = { ...(base || {}) };
+        if (delta) for (const [k, v] of Object.entries(delta)) out[k] = (out[k] || 0) + v;
+        return out;
+      };
+
+      const prevByOutcome: Record<AgentCycleOutcome, number> = {
+        success: 0, timeout: 0, error: 0, policyDenied: 0,
+        ...(prev.cyclesByOutcome || {}),
+      };
+      if (summary) {
+        prevByOutcome[summary.outcome] = (prevByOutcome[summary.outcome] || 0) + 1;
+      }
+
       const metrics: AgentMetrics = {
         cyclesRun: prev.cyclesRun + 1,
         toolCallsExecuted: prev.toolCallsExecuted + result.autoExecuted.length,
         toolCallsProposed: prev.toolCallsProposed + result.proposed.length,
         tasksCompleted: prev.tasksCompleted,
         tasksRejected: prev.tasksRejected,
-        tokensUsed: prev.tokensUsed, // Token tracking requires provider-level usage reporting; accumulates when available
+        tokensUsed: summary
+          ? {
+              input: prev.tokensUsed.input + summary.tokens.input,
+              output: prev.tokensUsed.output + summary.tokens.output,
+            }
+          : prev.tokensUsed,
         lastCycleAt: Date.now(),
+        costUSD: (prev.costUSD || 0) + (summary?.costUSD || 0),
+        toolCallHistogram: mergeHist(prev.toolCallHistogram, summary?.toolHistogram),
+        errorHistogram: mergeHist(prev.errorHistogram, summary?.errorHistogram),
+        cyclesByOutcome: prevByOutcome,
       };
       await db.agentDeployments.update(deployment.id, {
         status: newStatus,

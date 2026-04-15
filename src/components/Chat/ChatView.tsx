@@ -7,6 +7,7 @@ import { ClsSelect } from '../Common/ClsSelect';
 import { ClsBadge } from '../Common/ClsBadge';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { ChatMessageBubble } from './ChatMessage';
+import { AgentCycleSummaryCard } from '../Agent/AgentCycleSummaryCard';
 import { ChatInput } from './ChatInput';
 import { useLLM } from '../../hooks/useLLM';
 import { DEFAULT_MODEL_PER_PROVIDER } from '../../lib/models';
@@ -1131,6 +1132,9 @@ export function ChatView({
                       hasCheckpoint={checkpointMessageIds.has(msg.id)}
                       onRegenerate={msg.role === 'assistant' ? handleRegenerate : undefined}
                     />
+                    {msg.agentCycleSummary && (
+                      <AgentCycleSummaryCard summary={msg.agentCycleSummary} />
+                    )}
                   </div>
                 )}
                 components={{

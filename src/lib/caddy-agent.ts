@@ -12,7 +12,7 @@
 
 import { db } from '../db';
 import { nanoid } from 'nanoid';
-import type { AgentAction, AgentPolicy, AgentProfile, AgentDeployment, ChatThread, ChatMessage, Folder, Settings, ContentBlock, ToolUseBlock, LLMProvider } from '../types';
+import type { AgentAction, AgentCycleOutcome, AgentCycleSummary, AgentEntityRef, AgentPolicy, AgentProfile, AgentDeployment, ChatThread, ChatMessage, Folder, Settings, ContentBlock, ToolUseBlock, LLMProvider } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
 import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS } from './llm-tool-defs';
 import { executeTool } from './llm-tools';
@@ -20,6 +20,7 @@ import { shouldAutoApprove, getToolActionClass } from './caddy-agent-policy';
 import { resolveRoutingMode, sendViaExtension, sendViaServer, sendDirectToLocal } from './llm-router';
 import { DEFAULT_MODEL_PER_PROVIDER, MODEL_PROVIDER_MAP } from './models';
 import { getHostToolDefinitions } from './agent-hosts';
+import { calculateCost } from './model-pricing';
 
 // ── Tool Timeouts ─────────────────────────────────────────────────────
 
@@ -116,11 +117,14 @@ export interface AgentCycleResult {
   proposed: AgentAction[];
   threadId: string;
   error?: string;
+  /** Structured summary emitted to the audit thread at cycle end. */
+  summary?: AgentCycleSummary;
 }
 
 interface LLMResponse {
   content: string;
   toolCalls: ToolUseBlock[];
+  usage?: { input: number; output: number };
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -347,7 +351,7 @@ function callLLM(opts: {
 
     const callbacks = {
       onChunk: (content: string) => { if (accumulated.length < 200_000) { accumulated += content; } opts.onStream?.(content); },
-      onDone: (_stopReason: string, contentBlocks: unknown[]) => {
+      onDone: (_stopReason: string, contentBlocks: unknown[], usage?: { input: number; output: number }) => {
         const blocks = contentBlocks as ContentBlock[];
         let toolCalls = blocks.filter(
           (b): b is ToolUseBlock => b.type === 'tool_use' && !!b.id && !!b.name && typeof b.input === 'object'
@@ -361,7 +365,7 @@ function callLLM(opts: {
           }
         }
 
-        resolve({ content: accumulated, toolCalls });
+        resolve({ content: accumulated, toolCalls, usage });
       },
       onError: (error: string) => {
         reject(new Error(`LLM request failed (${opts.provider}/${opts.model}${opts.useServerProxy ? ' via server' : ''}): ${error || 'unknown error'}`));
@@ -389,6 +393,39 @@ function callLLM(opts: {
 // ── Main Cycle ──────────────────────────────────────────────────────────
 
 const MAX_AGENT_TURNS = 6;
+
+/** Maps write-tool names to the entity type they mutate. Used for read-only enforcement and cycle-summary entity refs. */
+const ENTITY_WRITE_TOOLS: Record<string, AgentEntityRef['type']> = {
+  create_note: 'note', update_note: 'note', create_task: 'task', update_task: 'task',
+  create_ioc: 'ioc', update_ioc: 'ioc', bulk_create_iocs: 'ioc',
+  create_timeline_event: 'timeline', update_timeline_event: 'timeline',
+};
+
+/** First sentence of a body of text, clipped for summary display. */
+function firstSentence(text: string, max = 180): string {
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  if (!cleaned) return '';
+  const match = cleaned.match(/^.{10,}?[.!?](?:\s|$)/);
+  const candidate = match ? match[0] : cleaned;
+  return candidate.length > max ? candidate.slice(0, max - 1) + '…' : candidate.trim();
+}
+
+/** Render the "what I did" bullets from a per-cycle tool histogram. */
+function renderWhatIDid(
+  toolHistogram: Record<string, number>,
+  autoExecuted: number,
+  proposed: number,
+): string[] {
+  const bullets: string[] = [];
+  const sorted = Object.entries(toolHistogram).sort((a, b) => b[1] - a[1]);
+  for (const [name, count] of sorted.slice(0, 5)) {
+    bullets.push(count > 1 ? `${name} ×${count}` : name);
+  }
+  if (autoExecuted) bullets.unshift(`${autoExecuted} action${autoExecuted === 1 ? '' : 's'} executed`);
+  if (proposed)     bullets.push(`${proposed} proposed for review`);
+  if (bullets.length === 0) bullets.push('no tool activity');
+  return bullets;
+}
 
 /**
  * Run a single agent cycle for an investigation.
@@ -551,6 +588,57 @@ async function _runAgentCycleInner(
     }
   }
 
+  // ── Per-cycle telemetry ───────────────────────────────────────────────
+  const cycleStartedAt = Date.now();
+  const toolHistogram: Record<string, number> = {};
+  const errorHistogram: Record<string, number> = {};
+  const entitiesTouched: AgentEntityRef[] = [];
+  let tokensIn = 0;
+  let tokensOut = 0;
+  let turnsUsed = 0;
+  let lastAssistantText = '';
+  let outcome: AgentCycleOutcome = 'success';
+
+  /** Build + persist the cycle summary message, then return it. */
+  const finalizeSummary = async (finalOutcome: AgentCycleOutcome, errorMsg?: string): Promise<AgentCycleSummary> => {
+    const tokens = { input: tokensIn, output: tokensOut };
+    const costUSD = calculateCost(model, tokensIn, tokensOut);
+    const summary: AgentCycleSummary = {
+      startedAt: cycleStartedAt,
+      durationMs: Date.now() - cycleStartedAt,
+      whyThisCycle: firstSentence(lastAssistantText) || (finalOutcome === 'success' ? 'Cycle complete.' : errorMsg || 'Cycle ended.'),
+      whatIDid: renderWhatIDid(toolHistogram, autoExecuted.length, proposed.length),
+      entitiesTouched,
+      tokens,
+      costUSD,
+      toolCalls: { executed: autoExecuted.length, proposed: proposed.length },
+      toolHistogram: { ...toolHistogram },
+      errorHistogram: { ...errorHistogram },
+      turns: turnsUsed,
+      outcome: finalOutcome,
+      error: errorMsg,
+      provider,
+      model,
+    };
+    try {
+      const summaryMessage: ChatMessage = {
+        id: nanoid(),
+        role: 'assistant',
+        content: `**${agentIcon} ${agentName} — cycle ${finalOutcome === 'success' ? 'complete' : finalOutcome}** · ${summary.whatIDid.join(', ')}`,
+        createdAt: Date.now(),
+        tokenCount: tokens,
+        agentCycleSummary: summary,
+      };
+      await db.chatThreads.where('id').equals(threadId).modify((thread: ChatThread) => {
+        thread.messages.push(summaryMessage);
+        thread.updatedAt = Date.now();
+      });
+    } catch (persistErr) {
+      console.warn('[caddy-agent] failed to persist cycle summary:', persistErr);
+    }
+    return summary;
+  };
+
   try {
     onProgress?.(`${agentName} starting (${provider}/${model}, ${availableTools.length} tools)...`);
 
@@ -568,6 +656,14 @@ async function _runAgentCycleInner(
         endpoint,
         onStream,
       });
+
+      // Accumulate cycle telemetry
+      turnsUsed = turn + 1;
+      if (response.usage) {
+        tokensIn += response.usage.input;
+        tokensOut += response.usage.output;
+      }
+      if (response.content) lastAssistantText = response.content;
 
       // Log the assistant's response to the audit thread with agent identity
       const assistantMessage: ChatMessage = {
@@ -600,9 +696,11 @@ async function _runAgentCycleInner(
 
       for (const toolCall of response.toolCalls) {
         assistantContent.push(toolCall);
+        toolHistogram[toolCall.name] = (toolHistogram[toolCall.name] || 0) + 1;
 
         // Runtime authorization: enforce allowedTools restriction
         if (profile?.allowedTools?.length && !profile.allowedTools.includes(toolCall.name)) {
+          errorHistogram[toolCall.name] = (errorHistogram[toolCall.name] || 0) + 1;
           toolResults.push({
             type: 'tool_result', tool_use_id: toolCall.id,
             content: JSON.stringify({ error: `Tool "${toolCall.name}" is not in this agent's allowed tools.` }),
@@ -612,13 +710,9 @@ async function _runAgentCycleInner(
         }
 
         // Runtime authorization: enforce readOnlyEntityTypes
-        const ENTITY_WRITE_TOOLS: Record<string, string> = {
-          create_note: 'note', update_note: 'note', create_task: 'task', update_task: 'task',
-          create_ioc: 'ioc', update_ioc: 'ioc', bulk_create_iocs: 'ioc',
-          create_timeline_event: 'timeline', update_timeline_event: 'timeline',
-        };
         const entityType = ENTITY_WRITE_TOOLS[toolCall.name];
         if (entityType && profile?.readOnlyEntityTypes?.includes(entityType)) {
+          errorHistogram[toolCall.name] = (errorHistogram[toolCall.name] || 0) + 1;
           toolResults.push({
             type: 'tool_result', tool_use_id: toolCall.id,
             content: JSON.stringify({ error: `Cannot modify "${entityType}" entities — read-only restriction.` }),
@@ -666,6 +760,17 @@ async function _runAgentCycleInner(
           };
           await db.agentActions.add(action);
           autoExecuted.push(action);
+
+          if (result.isError) {
+            errorHistogram[toolCall.name] = (errorHistogram[toolCall.name] || 0) + 1;
+          } else if (entityType) {
+            const input = toolCall.input as Record<string, unknown>;
+            const rawLabel = (input.title || input.value || input.name || '') as string;
+            const label = typeof rawLabel === 'string' && rawLabel.trim()
+              ? rawLabel.trim().substring(0, 80)
+              : undefined;
+            entitiesTouched.push({ type: entityType, label });
+          }
 
           toolResults.push({
             type: 'tool_result',
@@ -726,6 +831,7 @@ async function _runAgentCycleInner(
       );
       if (allPending && toolResults.length > 0) {
         onProgress?.(`${agentName}: all actions require approval — pausing`);
+        outcome = 'policyDenied';
         break;
       }
 
@@ -742,11 +848,14 @@ async function _runAgentCycleInner(
     });
 
     onProgress?.('Cycle complete');
-    return { autoExecuted, proposed, threadId };
+    const summary = await finalizeSummary(outcome);
+    return { autoExecuted, proposed, threadId, summary };
   } catch (err) {
     const errorMsg = String((err as Error).message || err);
     await db.folders.update(folder.id, { agentStatus: 'error' });
-    return { autoExecuted, proposed, threadId, error: errorMsg };
+    const errorOutcome: AgentCycleOutcome = /timed out/i.test(errorMsg) ? 'timeout' : 'error';
+    const summary = await finalizeSummary(errorOutcome, errorMsg);
+    return { autoExecuted, proposed, threadId, error: errorMsg, summary };
   }
 }
 

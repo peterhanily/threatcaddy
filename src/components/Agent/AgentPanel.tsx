@@ -13,6 +13,7 @@ import { AgentProfilePicker } from './AgentProfilePicker';
 import { AgentMeetingPanel } from './AgentMeetingPanel';
 import { MODELS } from '../../lib/models';
 import { BUILTIN_AGENT_PROFILES } from '../../lib/builtin-agent-profiles';
+import { formatUSD } from '../../lib/model-pricing';
 
 const ACTION_PAGE_SIZE = 100;
 
@@ -437,13 +438,35 @@ export function AgentPanel({
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium text-text-primary">{p.name}</div>
                         <div className="text-[10px] text-text-muted">{p.role}{d.supervisorDeploymentId ? ' · supervised' : ''}</div>
-                        {d.metrics && d.metrics.cyclesRun > 0 && (
-                          <div className="text-[9px] text-text-muted flex gap-2 mt-0.5">
-                            <span>{d.metrics.cyclesRun} cycles</span>
-                            <span>{d.metrics.toolCallsExecuted} exec</span>
-                            <span>{d.metrics.toolCallsProposed} proposed</span>
-                          </div>
-                        )}
+                        {d.metrics && d.metrics.cyclesRun > 0 && (() => {
+                          const m = d.metrics;
+                          const topTool = m.toolCallHistogram
+                            ? Object.entries(m.toolCallHistogram).sort((a, b) => b[1] - a[1])[0]
+                            : undefined;
+                          const totalTokens = m.tokensUsed.input + m.tokensUsed.output;
+                          return (
+                            <>
+                              <div className="text-[9px] text-text-muted flex gap-2 mt-0.5">
+                                <span>{m.cyclesRun} cycles</span>
+                                <span>{m.toolCallsExecuted} exec</span>
+                                <span>{m.toolCallsProposed} proposed</span>
+                              </div>
+                              {(m.costUSD || totalTokens > 0 || topTool) && (
+                                <div className="text-[9px] text-text-muted flex gap-2 mt-0.5">
+                                  {m.costUSD != null && m.costUSD > 0 && (
+                                    <span title={`${m.tokensUsed.input.toLocaleString()} in / ${m.tokensUsed.output.toLocaleString()} out`}>
+                                      {formatUSD(m.costUSD)}
+                                    </span>
+                                  )}
+                                  {totalTokens > 0 && (
+                                    <span>{totalTokens >= 1000 ? `${Math.round(totalTokens / 1000)}k` : totalTokens} tok</span>
+                                  )}
+                                  {topTool && <span title="Most-used tool">{topTool[0]} ×{topTool[1]}</span>}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                       <span className={cn('text-[9px] px-1.5 py-0.5 rounded',
                         d.status === 'running' && 'bg-accent-blue/10 text-accent-blue',

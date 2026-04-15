@@ -638,6 +638,8 @@ export interface ChatMessage {
   tokenCount?: { input: number; output: number };
   /** Image attachments sent with this message */
   attachments?: ChatAttachment[];
+  /** Structured agent cycle summary — set on the final audit message of a cycle. */
+  agentCycleSummary?: AgentCycleSummary;
 }
 
 export interface ChatAttachment {
@@ -1113,6 +1115,9 @@ export interface AgentSoul {
   updatedAt: number;
 }
 
+/** Cycle outcome classification for metrics bucketing. */
+export type AgentCycleOutcome = 'success' | 'timeout' | 'error' | 'policyDenied';
+
 /** Performance metrics tracked per agent deployment. */
 export interface AgentMetrics {
   cyclesRun: number;
@@ -1122,6 +1127,55 @@ export interface AgentMetrics {
   tasksRejected: number;
   tokensUsed: { input: number; output: number };
   lastCycleAt: number;
+  /** Cumulative cost in USD (provider-reported token usage × model pricing). */
+  costUSD?: number;
+  /** Count of tool calls by tool name (cumulative across cycles). */
+  toolCallHistogram?: Record<string, number>;
+  /** Count of tool errors by tool name (cumulative across cycles). */
+  errorHistogram?: Record<string, number>;
+  /** Cumulative cycle outcome bucket counts. */
+  cyclesByOutcome?: Record<AgentCycleOutcome, number>;
+}
+
+/** Reference to an entity touched during a cycle, for audit summaries. */
+export interface AgentEntityRef {
+  type: 'note' | 'task' | 'ioc' | 'timeline' | 'folder' | 'other';
+  id?: string;
+  /** Short human-readable label. */
+  label?: string;
+}
+
+/** Structured per-cycle summary, emitted at cycle end and persisted on the audit ChatMessage. */
+export interface AgentCycleSummary {
+  /** ISO-like timestamp the cycle started. */
+  startedAt: number;
+  /** Milliseconds elapsed. */
+  durationMs: number;
+  /** One-line rationale — first sentence of the agent's final assistant turn, or fallback. */
+  whyThisCycle: string;
+  /** Short bullets describing what the agent accomplished this cycle. */
+  whatIDid: string[];
+  /** Entities created or modified. */
+  entitiesTouched: AgentEntityRef[];
+  /** Token counts for this cycle. */
+  tokens: { input: number; output: number };
+  /** Cost for this cycle in USD. */
+  costUSD: number;
+  /** Number of tool calls auto-executed and proposed this cycle. */
+  toolCalls: { executed: number; proposed: number };
+  /** Per-tool breakdown for this cycle. */
+  toolHistogram: Record<string, number>;
+  /** Per-tool error counts for this cycle. */
+  errorHistogram: Record<string, number>;
+  /** LLM turns consumed this cycle. */
+  turns: number;
+  /** Cycle outcome classification. */
+  outcome: AgentCycleOutcome;
+  /** Error message if outcome !== 'success'. */
+  error?: string;
+  /** Provider + model used. */
+  provider: string;
+  model: string;
 }
 
 /** An agent profile deployed to a specific investigation. */
