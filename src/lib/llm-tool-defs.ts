@@ -659,13 +659,14 @@ export const DELEGATION_TOOL_DEFINITIONS = [
   },
   {
     name: 'review_completed_task',
-    description: 'Review a completed task for quality. If quality is poor, move it back to todo with feedback. Creates an after-action note documenting what went wrong. For serious failures, flags for human operator review. Only available to Lead agents.',
+    description: 'Review a completed task for quality. If quality is "needs-redo" or "serious-failure" you MUST provide requestedDelta: a specific, concrete change the specialist must make (not boilerplate — e.g. "re-run enrich_ioc with shodan enabled", "add MITRE T1071 mapping to the timeline event"). After 3 rejections the task auto-escalates to a human and agents can no longer re-claim it. Only available to Lead agents.',
     input_schema: {
       type: 'object' as const,
       properties: {
         taskId: { type: 'string', description: 'ID of the completed task to review' },
         quality: { type: 'string', enum: ['good', 'needs-redo', 'serious-failure'], description: 'Assessment of the work quality' },
         feedback: { type: 'string', description: 'Detailed feedback explaining the assessment' },
+        requestedDelta: { type: 'string', description: 'REQUIRED when rejecting. Concrete change the specialist must make — specific, actionable, different from the previous attempt. Minimum 20 characters.' },
       },
       required: ['taskId', 'quality', 'feedback'],
     },

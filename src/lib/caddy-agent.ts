@@ -658,6 +658,7 @@ async function _runAgentCycleInner(
   let tokensOut = 0;
   let turnsUsed = 0;
   let lastAssistantText = '';
+  let tasksEscalated = 0;
   let outcome: AgentCycleOutcome = 'success';
 
   /** Build + persist the cycle summary message, then return it. */
@@ -680,6 +681,7 @@ async function _runAgentCycleInner(
       error: errorMsg,
       provider,
       model,
+      tasksEscalated,
     };
     try {
       const summaryMessage: ChatMessage = {
@@ -834,6 +836,18 @@ async function _runAgentCycleInner(
               ? rawLabel.trim().substring(0, 80)
               : undefined;
             entitiesTouched.push({ type: entityType, label });
+          }
+
+          // Watch for task escalation signals so the cycle summary + metrics
+          // surface "stuck delegation" immediately instead of waiting for a
+          // human to notice the pinned note.
+          if (!result.isError && toolCall.name === 'review_completed_task') {
+            try {
+              const parsed = JSON.parse(result.result);
+              if (parsed?.escalated === true) tasksEscalated++;
+            } catch {
+              // Non-JSON result — nothing to track.
+            }
           }
 
           toolResults.push({

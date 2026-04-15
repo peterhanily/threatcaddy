@@ -230,6 +230,25 @@ export async function executeTool(
 
   try {
     let result: string;
+
+    // Escalated tasks are off-limits to all agents until a human intervenes.
+    // Keeps stuck delegation loops from immediately re-opening an escalation.
+    if (agentRole && (name === 'update_task' || name === 'delete_task')) {
+      const targetId = String((inp as Record<string, unknown>).id || '');
+      if (targetId) {
+        const existing = await db.tasks.get(targetId);
+        if (existing?.escalated) {
+          return {
+            result: JSON.stringify({
+              error: `Task "${existing.title}" has been escalated to a human (${existing.rejectionCount || 0} rejections). Agents cannot modify escalated tasks — wait for analyst intervention.`,
+              escalated: true,
+            }),
+            isError: true,
+          };
+        }
+      }
+    }
+
     switch (name) {
       case 'search_notes':            result = await executeSearchNotes(inp, folderId); break;
       case 'search_all':              result = await executeSearchAll(inp, folderId); break;
@@ -262,7 +281,7 @@ export async function executeTool(
       case 'compare_investigations':        result = await executeCompareInvestigations(inp); break;
       case 'enrich_ioc':                    result = await executeEnrichIOC(inp, folderId); break;
       case 'list_integrations':             result = await executeListIntegrations(inp); break;
-      case 'review_completed_task':          result = await executeReviewCompletedTask(inp, folderId); break;
+      case 'review_completed_task':          result = await executeReviewCompletedTask(inp, folderId, agentContext?.profileId); break;
       case 'delegate_task':                 result = await executeDelegateTask(inp, folderId); break;
       case 'list_agent_activity':           result = await executeListAgentActivity(inp, folderId); break;
       case 'update_knowledge':               result = await executeUpdateKnowledge(inp, folderId); break;
@@ -331,10 +350,24 @@ export async function executeTool(
 
 // ── Review Tool ──────────────────────────────────────────────────────
 
-async function executeReviewCompletedTask(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+/** Auto-escalate after this many rejections. Keeps the lead↔specialist reject
+ *  loop bounded — without this, a stuck pair can spin forever (MAST paper's
+ *  #1 inter-agent failure mode). */
+const REJECTION_ESCALATION_THRESHOLD = 3;
+/** Minimum length of requestedDelta on rejection — blocks boilerplate "please try again". */
+const MIN_REQUESTED_DELTA_CHARS = 20;
+/** Max rejection entries retained on the task. */
+const REJECTION_HISTORY_CAP = 10;
+
+async function executeReviewCompletedTask(
+  inp: Record<string, unknown>,
+  folderId?: string,
+  reviewerProfileId?: string,
+): Promise<string> {
   const taskId = String(inp.taskId || '');
   const quality = String(inp.quality || '');
   const feedback = String(inp.feedback || '');
+  const requestedDelta = inp.requestedDelta ? String(inp.requestedDelta).trim() : '';
 
   if (!taskId || !quality || !feedback) {
     return JSON.stringify({ error: 'taskId, quality, and feedback are required' });
@@ -344,45 +377,54 @@ async function executeReviewCompletedTask(inp: Record<string, unknown>, folderId
   if (!task) return JSON.stringify({ error: `Task not found: ${taskId}` });
 
   if (quality === 'good') {
-    // Task passes review — no action needed
     return JSON.stringify({ success: true, taskId, quality: 'good', message: 'Task approved. Good work.' });
   }
 
-  if (quality === 'needs-redo') {
-    // Move task back to todo with feedback
-    await db.tasks.update(taskId, {
-      status: 'todo',
-      description: `${task.description || ''}\n\n---\n**Review Feedback (needs redo):** ${feedback}`,
-      updatedAt: Date.now(),
-      updatedBy: 'agent:lead-reviewer',
-    });
-
-    // Create after-action note
-    const noteId = nanoid();
-    await db.notes.add({
-      id: noteId,
-      title: `After-Action: ${task.title}`,
-      content: `## After-Action Review\n\n**Task:** ${task.title}\n**Verdict:** Needs Redo\n**Feedback:** ${feedback}\n\nThe task has been moved back to todo for rework.`,
-      folderId,
-      tags: ['agent-review', 'after-action'],
-      pinned: false, archived: false, trashed: false,
-      createdBy: getCreator() || 'agent:lead-reviewer',
-      createdAt: Date.now(), updatedAt: Date.now(),
-    });
-
-    // Inject feedback into the responsible agent's working memory
-    await injectAgentFeedback(task, folderId, feedback, 'needs-redo');
-
-    return JSON.stringify({ success: true, taskId, quality: 'needs-redo', noteId, message: 'Task returned to todo with feedback. After-action note created.' });
+  if (quality !== 'needs-redo' && quality !== 'serious-failure') {
+    return JSON.stringify({ error: `Invalid quality value: ${quality}. Use: good, needs-redo, serious-failure` });
   }
 
-  if (quality === 'serious-failure') {
-    // Move task back, create escalation note, flag for human
+  // Reject path — require a structured delta so reviews give actionable direction,
+  // not boilerplate. This is the single most important guardrail against a
+  // stuck lead↔specialist loop.
+  if (requestedDelta.length < MIN_REQUESTED_DELTA_CHARS) {
+    return JSON.stringify({
+      error: `requestedDelta is required when rejecting and must be at least ${MIN_REQUESTED_DELTA_CHARS} characters. Describe the specific concrete change the specialist must make — not boilerplate. Current length: ${requestedDelta.length}.`,
+    });
+  }
+  // Reject identical delta as the last rejection (forces the reviewer to evolve
+  // their ask instead of re-sending the same feedback).
+  const priorHistory = task.rejectionHistory || [];
+  const lastDelta = priorHistory[priorHistory.length - 1]?.requestedDelta;
+  if (lastDelta && lastDelta.toLowerCase() === requestedDelta.toLowerCase()) {
+    return JSON.stringify({
+      error: 'requestedDelta is identical to the previous rejection. If the specialist still cannot produce the right output, escalate (quality=serious-failure) or accept the work — do not re-send the same instructions.',
+    });
+  }
+
+  const rejection: { at: number; byAgentId?: string; quality: 'needs-redo' | 'serious-failure'; reason: string; requestedDelta: string } = {
+    at: Date.now(),
+    byAgentId: reviewerProfileId,
+    quality: quality as 'needs-redo' | 'serious-failure',
+    reason: feedback,
+    requestedDelta,
+  };
+
+  const newRejectionCount = (task.rejectionCount || 0) + 1;
+  const newHistory = [...priorHistory, rejection].slice(-REJECTION_HISTORY_CAP);
+
+  // Escalation: serious-failure is always immediate; otherwise trigger at the threshold.
+  const escalate = quality === 'serious-failure' || newRejectionCount >= REJECTION_ESCALATION_THRESHOLD;
+
+  if (escalate) {
     await db.tasks.update(taskId, {
       status: 'todo',
       priority: 'high',
-      description: `${task.description || ''}\n\n---\n**⚠️ SERIOUS FAILURE — Flagged for Human Review**\n${feedback}`,
-      tags: [...(task.tags || []), 'escalated', 'needs-human-review'],
+      description: `${task.description || ''}\n\n---\n**⚠️ ESCALATED — Human Review Required**\nAfter ${newRejectionCount} rejection(s), this task was auto-escalated.\n**Most-recent requestedDelta:** ${requestedDelta}\n**Latest feedback:** ${feedback}`,
+      tags: Array.from(new Set([...(task.tags || []), 'escalated', 'needs-human-review'])),
+      rejectionCount: newRejectionCount,
+      rejectionHistory: newHistory,
+      escalated: true,
       updatedAt: Date.now(),
       updatedBy: 'agent:lead-reviewer',
     });
@@ -391,20 +433,62 @@ async function executeReviewCompletedTask(inp: Record<string, unknown>, folderId
     await db.notes.add({
       id: noteId,
       title: `⚠️ Escalation: ${task.title}`,
-      content: `## Serious Failure — Human Review Required\n\n**Task:** ${task.title}\n**Feedback:** ${feedback}\n\nThis task has been flagged for human operator review due to serious quality issues. The task has been returned to todo with high priority.`,
+      content: `## Escalation — Human Review Required\n\n**Task:** ${task.title}\n**Reason:** ${quality === 'serious-failure' ? 'Serious failure (escalated immediately)' : `${newRejectionCount} rejections — automatic escalation`}\n**Latest feedback:** ${feedback}\n**Requested change:** ${requestedDelta}\n\n### Rejection history\n${newHistory.map((r, i) => `${i + 1}. [${new Date(r.at).toISOString()}] ${r.quality}: ${r.requestedDelta}`).join('\n')}\n\nAgents can no longer re-claim this task until a human intervenes (set escalated=false or close the task).`,
       folderId,
       tags: ['agent-review', 'escalation', 'needs-human-review'],
       pinned: true, archived: false, trashed: false,
+      reviewRequired: true,
       createdBy: getCreator() || 'agent:lead-reviewer',
       createdAt: Date.now(), updatedAt: Date.now(),
     });
 
-    await injectAgentFeedback(task, folderId, feedback, 'serious-failure');
+    await injectAgentFeedback(task, folderId, feedback, quality);
 
-    return JSON.stringify({ success: true, taskId, quality: 'serious-failure', noteId, message: 'Task escalated. Pinned escalation note created for human review.' });
+    return JSON.stringify({
+      success: true,
+      taskId,
+      quality,
+      noteId,
+      escalated: true,
+      rejectionCount: newRejectionCount,
+      message: `Task auto-escalated after ${newRejectionCount} rejection(s). Pinned note created; human intervention required.`,
+    });
   }
 
-  return JSON.stringify({ error: `Invalid quality value: ${quality}. Use: good, needs-redo, serious-failure` });
+  // Non-escalating rejection: send back to todo with rich feedback.
+  await db.tasks.update(taskId, {
+    status: 'todo',
+    description: `${task.description || ''}\n\n---\n**Review ${newRejectionCount} of ${REJECTION_ESCALATION_THRESHOLD} (needs redo):**\n**Requested change:** ${requestedDelta}\n**Feedback:** ${feedback}`,
+    rejectionCount: newRejectionCount,
+    rejectionHistory: newHistory,
+    updatedAt: Date.now(),
+    updatedBy: 'agent:lead-reviewer',
+  });
+
+  const noteId = nanoid();
+  await db.notes.add({
+    id: noteId,
+    title: `After-Action ${newRejectionCount}/${REJECTION_ESCALATION_THRESHOLD}: ${task.title}`,
+    content: `## After-Action Review\n\n**Task:** ${task.title}\n**Verdict:** Needs Redo (rejection ${newRejectionCount}/${REJECTION_ESCALATION_THRESHOLD})\n**Requested change:** ${requestedDelta}\n**Feedback:** ${feedback}\n\nOne more rejection will auto-escalate this task to a human.`,
+    folderId,
+    tags: ['agent-review', 'after-action'],
+    pinned: false, archived: false, trashed: false,
+    createdBy: getCreator() || 'agent:lead-reviewer',
+    createdAt: Date.now(), updatedAt: Date.now(),
+  });
+
+  await injectAgentFeedback(task, folderId, `${requestedDelta}\n\n${feedback}`, 'needs-redo');
+
+  return JSON.stringify({
+    success: true,
+    taskId,
+    quality: 'needs-redo',
+    noteId,
+    escalated: false,
+    rejectionCount: newRejectionCount,
+    remainingBeforeEscalation: REJECTION_ESCALATION_THRESHOLD - newRejectionCount,
+    message: `Task returned to todo. Rejection ${newRejectionCount}/${REJECTION_ESCALATION_THRESHOLD}.`,
+  });
 }
 
 /** Inject review feedback into the responsible agent's working memory so it learns from mistakes. */

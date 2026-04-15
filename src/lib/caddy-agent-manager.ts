@@ -122,6 +122,7 @@ export async function runMultiAgentCycle(
         toolCallHistogram: mergeHist(prev.toolCallHistogram, summary?.toolHistogram),
         errorHistogram: mergeHist(prev.errorHistogram, summary?.errorHistogram),
         cyclesByOutcome: prevByOutcome,
+        tasksEscalated: (prev.tasksEscalated || 0) + (summary?.tasksEscalated || 0),
       };
       await db.agentDeployments.update(deployment.id, {
         status: newStatus,

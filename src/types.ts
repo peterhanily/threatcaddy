@@ -79,6 +79,19 @@ export interface ChecklistItem {
   done: boolean;
 }
 
+/** A recorded rejection when a lead agent sends a task back for redo. */
+export interface TaskRejection {
+  at: number;
+  /** Lead agent profile ID that rejected the work */
+  byAgentId?: string;
+  /** Quality verdict that caused the rejection */
+  quality: 'needs-redo' | 'serious-failure';
+  /** Free-form reasoning the reviewer gave (displayed in the after-action note) */
+  reason: string;
+  /** Structured concrete change the specialist must make — required to reject. */
+  requestedDelta: string;
+}
+
 /** An actionable task within an investigation, with status tracking and kanban support. */
 export interface Task {
   id: string;
@@ -105,6 +118,12 @@ export interface Task {
   assigneeId?: string;
   createdBy?: string;
   updatedBy?: string;
+  /** Lead-agent rejection count — incremented each time review_completed_task sends it back. */
+  rejectionCount?: number;
+  /** Full history of rejections (bounded; newest appended). */
+  rejectionHistory?: TaskRejection[];
+  /** Auto-escalated to a human after too many rejections — agents can no longer re-claim. */
+  escalated?: boolean;
   createdAt: number;
   updatedAt: number;
   completedAt?: number;
@@ -1140,6 +1159,8 @@ export interface AgentMetrics {
   errorHistogram?: Record<string, number>;
   /** Cumulative cycle outcome bucket counts. */
   cyclesByOutcome?: Record<AgentCycleOutcome, number>;
+  /** Tasks this deployment auto-escalated to a human (after N rejections). */
+  tasksEscalated?: number;
 }
 
 /** Reference to an entity touched during a cycle, for audit summaries. */
@@ -1181,6 +1202,8 @@ export interface AgentCycleSummary {
   /** Provider + model used. */
   provider: string;
   model: string;
+  /** Number of tasks this cycle escalated to a human (via review_completed_task). */
+  tasksEscalated?: number;
 }
 
 /** An agent profile deployed to a specific investigation. */

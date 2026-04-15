@@ -464,6 +464,11 @@ export function AgentPanel({
                                   {topTool && <span title="Most-used tool">{topTool[0]} ×{topTool[1]}</span>}
                                 </div>
                               )}
+                              {m.tasksEscalated != null && m.tasksEscalated > 0 && (
+                                <div className="text-[9px] text-accent-amber flex gap-1 mt-0.5" title="Tasks this agent auto-escalated to a human after 3 rejections — needs analyst review.">
+                                  <AlertTriangle size={10} /> {m.tasksEscalated} escalated to human
+                                </div>
+                              )}
                             </>
                           );
                         })()}
