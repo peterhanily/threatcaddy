@@ -139,6 +139,7 @@
   "header.standalone": "Standalone",
   "header.chromeExtension": "Chrome Extension",
   "header.privacy": "Privacy",
+  "header.caddylabs": "CaddyLabs",
   "header.saveBackup": "Save Backup",
   "header.loadBackup": "Load Backup",
   "serverError.VALIDATION_FAILED": "Validation failed",
