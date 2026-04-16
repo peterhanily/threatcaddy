@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "misal perkaya IOC, buat timeline, cari pergerakan lateral",
   "panel.focusAreasHint": "Area yang harus difokuskan agen, dipisahkan dengan koma",
   "panel.configureAISettings": "Konfigurasikan Pengaturan AI",
-
   "builtinProfile.leadAnalyst.name": "Analis Utama",
   "builtinProfile.leadAnalyst.description": "Orkestrator — mendelegasikan pekerjaan, meninjau hasil, mendorong investigasi ke depan.",
   "builtinProfile.iocEnricher.name": "Pengaya IOC",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "Dampak bisnis — prioritas pemulihan, perencanaan kelangsungan, solusi sementara operasional.",
   "builtinProfile.patternHunter.name": "Pemburu Pola",
   "builtinProfile.patternHunter.description": "Deteksi pola lintas investigasi — IOC bersama, infrastruktur umum, korelasi kampanye.",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} agen aktif{{suffix}}",
   "dashboard.noActiveAgents": "Tidak ada agen aktif",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "Investigasi dengan Aktivitas Agen",
   "dashboard.recentAgentActivity": "Aktivitas Agen Terbaru",
   "dashboard.auto": "otomatis",
-
   "action.expandAction": "{{action}} Perluas detail tindakan {{toolName}}",
   "action.collapseAction": "{{action}} Ciutkan detail tindakan {{toolName}}",
   "action.input": "Masukan",
@@ -147,7 +144,6 @@
   "action.editAction": "Edit masukan {{toolName}}",
   "action.reject": "Tolak",
   "action.rejectAction": "Tolak tindakan {{toolName}}",
-
   "profile.agentProfiles": "Profil Agen",
   "profile.customAndBuiltin": "{{custom}} kustom, {{builtin}} bawaan",
   "profile.yourProfiles": "Profil Anda",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "Prompt sistem — instruksi untuk perilaku agen ini...",
   "profile.saving": "Menyimpan...",
   "profile.update": "Perbarui",
-
   "meeting.agentMeetings": "Rapat Agen",
   "meeting.shiftHandoff": "Pergantian Shift",
   "meeting.shiftHandoffTitle": "Agen keluar memberikan briefing kepada agen masuk, kemudian menukar status shift",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "Deploy 2+ profil agen untuk memulai rapat.",
   "meeting.viewMinutes": "Lihat notulen",
   "meeting.viewDiscussion": "Lihat diskusi",
-  "meeting.roundsCompleted": "{{count}} putaran{{suffix}}"
+  "meeting.roundsCompleted": "{{count}} putaran{{suffix}}",
+  "builtinProfile.hypothesisWriter.name": "Penulis Hipotesis",
+  "builtinProfile.hypothesisWriter.description": "Menghasilkan teori kerja yang dapat difalsifikasi dari kasus — klaim, bukti (mendukung/menentang), kepercayaan, cara menguji — sebagai catatan terstruktur."
 }

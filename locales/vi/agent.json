@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "vd. làm phong phú IOC, xây dựng timeline, tìm kiếm di chuyển ngang",
   "panel.focusAreasHint": "Các lĩnh vực tác nhân nên tập trung, cách nhau bằng dấu phẩy",
   "panel.configureAISettings": "Cấu hình cài đặt AI",
-
   "builtinProfile.leadAnalyst.name": "Trưởng phân tích",
   "builtinProfile.leadAnalyst.description": "Điều phối viên — ủy thác công việc, xem xét kết quả, thúc đẩy điều tra tiến triển.",
   "builtinProfile.iocEnricher.name": "Làm phong phú IOC",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "Tác động kinh doanh — ưu tiên khôi phục, lập kế hoạch liên tục, giải pháp vận hành tạm thời.",
   "builtinProfile.patternHunter.name": "Thợ săn mẫu",
   "builtinProfile.patternHunter.description": "Phát hiện mẫu liên điều tra — IOC chung, cơ sở hạ tầng chung, tương quan chiến dịch.",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} tác nhân hoạt động{{suffix}}",
   "dashboard.noActiveAgents": "Không có tác nhân hoạt động",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "Điều tra có hoạt động tác nhân",
   "dashboard.recentAgentActivity": "Hoạt động tác nhân gần đây",
   "dashboard.auto": "tự động",
-
   "action.expandAction": "{{action}} Mở rộng chi tiết hành động {{toolName}}",
   "action.collapseAction": "{{action}} Thu gọn chi tiết hành động {{toolName}}",
   "action.input": "Đầu vào",
@@ -147,7 +144,6 @@
   "action.editAction": "Chỉnh sửa đầu vào {{toolName}}",
   "action.reject": "Từ chối",
   "action.rejectAction": "Từ chối hành động {{toolName}}",
-
   "profile.agentProfiles": "Hồ sơ tác nhân",
   "profile.customAndBuiltin": "{{custom}} tùy chỉnh, {{builtin}} tích hợp sẵn",
   "profile.yourProfiles": "Hồ sơ của bạn",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "Nhắc lệnh hệ thống — hướng dẫn cho hành vi của tác nhân này...",
   "profile.saving": "Đang lưu...",
   "profile.update": "Cập nhật",
-
   "meeting.agentMeetings": "Cuộc họp tác nhân",
   "meeting.shiftHandoff": "Bàn giao ca",
   "meeting.shiftHandoffTitle": "Tác nhân ra đi briefing cho tác nhân đến, sau đó hoán đổi trạng thái ca",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "Triển khai 2+ hồ sơ tác nhân để bắt đầu cuộc họp.",
   "meeting.viewMinutes": "Xem biên bản",
   "meeting.viewDiscussion": "Xem thảo luận",
-  "meeting.roundsCompleted": "{{count}} vòng{{suffix}}"
+  "meeting.roundsCompleted": "{{count}} vòng{{suffix}}",
+  "builtinProfile.hypothesisWriter.name": "Người Viết Giả Thuyết",
+  "builtinProfile.hypothesisWriter.description": "Tạo các giả thuyết làm việc có thể bác bỏ về vụ việc — tuyên bố, bằng chứng (ủng hộ/phản đối), độ tin cậy, cách kiểm tra — dưới dạng ghi chú có cấu trúc."
 }

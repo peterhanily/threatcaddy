@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "ex. enriquecer IOCs, construir cronologia, buscar movimento lateral",
   "panel.focusAreasHint": "Áreas separadas por vírgulas nas quais o agente deve se concentrar",
   "panel.configureAISettings": "Configurar ajustes de IA",
-
   "builtinProfile.leadAnalyst.name": "Analista principal",
   "builtinProfile.leadAnalyst.description": "Coordenador — delega trabalho, revisa resultados, conduz a investigação.",
   "builtinProfile.iocEnricher.name": "Enriquecedor de IOC",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "Impacto nos negócios — prioridades de recuperação, planejamento de continuidade, soluções operacionais.",
   "builtinProfile.patternHunter.name": "Caçador de padrões",
   "builtinProfile.patternHunter.description": "Detecção de padrões entre investigações — IOCs comuns, infraestrutura compartilhada, correlação de campanhas.",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} agente(s) ativo(s){{suffix}}",
   "dashboard.noActiveAgents": "Nenhum agente ativo",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "Investigações com atividade de agentes",
   "dashboard.recentAgentActivity": "Atividade recente de agentes",
   "dashboard.auto": "auto",
-
   "action.expandAction": "{{action}} Expandir detalhes da ação {{toolName}}",
   "action.collapseAction": "{{action}} Recolher detalhes da ação {{toolName}}",
   "action.input": "Entrada",
@@ -147,7 +144,6 @@
   "action.editAction": "Editar entrada {{toolName}}",
   "action.reject": "Rejeitar",
   "action.rejectAction": "Rejeitar ação {{toolName}}",
-
   "profile.agentProfiles": "Perfis de agentes",
   "profile.customAndBuiltin": "{{custom}} personalizado(s), {{builtin}} integrado(s)",
   "profile.yourProfiles": "Seus perfis",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "Prompt do sistema — instruções para o comportamento deste agente...",
   "profile.saving": "Salvando...",
   "profile.update": "Atualizar",
-
   "meeting.agentMeetings": "Reuniões de agentes",
   "meeting.shiftHandoff": "Troca de turno",
   "meeting.shiftHandoffTitle": "Os agentes que saem fazem briefing para os entrantes, depois trocam os estados de turno",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "Implante 2+ perfis de agentes para iniciar uma reunião.",
   "meeting.viewMinutes": "Ver atas",
   "meeting.viewDiscussion": "Ver discussão",
-  "meeting.roundsCompleted": "{{count}} rodada(s){{suffix}}"
+  "meeting.roundsCompleted": "{{count}} rodada(s){{suffix}}",
+  "builtinProfile.hypothesisWriter.name": "Redator de Hipóteses",
+  "builtinProfile.hypothesisWriter.description": "Gera teorias de trabalho falsificáveis do caso — alegação, evidências (a favor/contra), confiança, como testar — como notas estruturadas."
 }

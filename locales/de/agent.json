@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "z.B. IOCs anreichern, Zeitleiste erstellen, nach lateraler Bewegung suchen",
   "panel.focusAreasHint": "Kommagetrennte Bereiche, auf die der Agent sich konzentrieren soll",
   "panel.configureAISettings": "KI-Einstellungen konfigurieren",
-
   "builtinProfile.leadAnalyst.name": "Leitender Analyst",
   "builtinProfile.leadAnalyst.description": "Koordinator — delegiert Arbeit, überprüft Ergebnisse, treibt die Untersuchung voran.",
   "builtinProfile.iocEnricher.name": "IOC-Anreicherung",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "Geschäftliche Auswirkungen — Wiederherstellungsprioritäten, Kontinuitätsplanung, operative Workarounds.",
   "builtinProfile.patternHunter.name": "Muster-Jäger",
   "builtinProfile.patternHunter.description": "Fallübergreifende Mustererkennung — gemeinsame IOCs, gemeinsame Infrastruktur, Kampagnenkorrelation.",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} aktiver Agent{{suffix}}",
   "dashboard.noActiveAgents": "Keine aktiven Agenten",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "Untersuchungen mit Agentenaktivität",
   "dashboard.recentAgentActivity": "Aktuelle Agentenaktivität",
   "dashboard.auto": "auto",
-
   "action.expandAction": "{{action}} {{toolName}}-Aktionsdetails ausklappen",
   "action.collapseAction": "{{action}} {{toolName}}-Aktionsdetails einklappen",
   "action.input": "Eingabe",
@@ -147,7 +144,6 @@
   "action.editAction": "{{toolName}}-Eingabe bearbeiten",
   "action.reject": "Ablehnen",
   "action.rejectAction": "{{toolName}}-Aktion ablehnen",
-
   "profile.agentProfiles": "Agenten-Profile",
   "profile.customAndBuiltin": "{{custom}} benutzerdefiniert, {{builtin}} integriert",
   "profile.yourProfiles": "Ihre Profile",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "System-Prompt — Anweisungen für das Verhalten dieses Agenten...",
   "profile.saving": "Wird gespeichert...",
   "profile.update": "Aktualisieren",
-
   "meeting.agentMeetings": "Agenten-Besprechungen",
   "meeting.shiftHandoff": "Schichtwechsel",
   "meeting.shiftHandoffTitle": "Ausscheidende Agenten briefen einkommende Agenten und tauschen dann den Schichtstatus",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "Mindestens 2 Agenten-Profile einsetzen, um eine Besprechung zu starten.",
   "meeting.viewMinutes": "Protokoll anzeigen",
   "meeting.viewDiscussion": "Diskussion anzeigen",
-  "meeting.roundsCompleted": "{{count}} Runde(n){{suffix}}"
+  "meeting.roundsCompleted": "{{count}} Runde(n){{suffix}}",
+  "builtinProfile.hypothesisWriter.name": "Hypothesenautor",
+  "builtinProfile.hypothesisWriter.description": "Erstellt falsifizierbare Arbeitshypothesen zum Fall — Behauptung, Beweise (für/gegen), Vertrauen, Testmethode — als strukturierte Notizen."
 }

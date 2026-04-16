@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "es. arricchisci IOC, costruisci timeline, ricerca movimenti laterali",
   "panel.focusAreasHint": "Aree su cui l'agente dovrebbe concentrarsi, separate da virgola",
   "panel.configureAISettings": "Configura impostazioni AI",
-
   "builtinProfile.leadAnalyst.name": "Analista principale",
   "builtinProfile.leadAnalyst.description": "Orchestratore — delega lavoro, rivede risultati, porta avanti le indagini.",
   "builtinProfile.iocEnricher.name": "Arricchitore IOC",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "Impatto aziendale — priorità di recupero, pianificazione continuità, soluzioni operative temporanee.",
   "builtinProfile.patternHunter.name": "Cacciatore di pattern",
   "builtinProfile.patternHunter.description": "Rilevamento pattern cross-indagine — IOC condivisi, infrastruttura comune, correlazioni campagne.",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} agenti attivi{{suffix}}",
   "dashboard.noActiveAgents": "Nessun agente attivo",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "Indagini con attività agente",
   "dashboard.recentAgentActivity": "Attività agente recente",
   "dashboard.auto": "automatico",
-
   "action.expandAction": "{{action}} Espandi dettagli azione {{toolName}}",
   "action.collapseAction": "{{action}} Comprimi dettagli azione {{toolName}}",
   "action.input": "Input",
@@ -147,7 +144,6 @@
   "action.editAction": "Modifica input {{toolName}}",
   "action.reject": "Rifiuta",
   "action.rejectAction": "Rifiuta azione {{toolName}}",
-
   "profile.agentProfiles": "Profili agente",
   "profile.customAndBuiltin": "{{custom}} personalizzati, {{builtin}} integrati",
   "profile.yourProfiles": "I tuoi profili",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "Prompt di sistema — istruzioni per il comportamento di questo agente...",
   "profile.saving": "Salvataggio...",
   "profile.update": "Aggiorna",
-
   "meeting.agentMeetings": "Riunioni agente",
   "meeting.shiftHandoff": "Cambio turno",
   "meeting.shiftHandoffTitle": "L'agente uscente fa un briefing a quello entrante, poi scambiano gli stati del turno",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "Distribuisci 2+ profili agente per avviare una riunione.",
   "meeting.viewMinutes": "Visualizza verbale",
   "meeting.viewDiscussion": "Visualizza discussione",
-  "meeting.roundsCompleted": "{{count}} turni{{suffix}}"
+  "meeting.roundsCompleted": "{{count}} turni{{suffix}}",
+  "builtinProfile.hypothesisWriter.name": "Autore di Ipotesi",
+  "builtinProfile.hypothesisWriter.description": "Genera teorie di lavoro falsificabili del caso — affermazione, prove (a favore/contro), confidenza, come testare — come note strutturate."
 }

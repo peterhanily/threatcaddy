@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "例：IOCのエンリッチ、タイムライン構築、横展開の調査",
   "panel.focusAreasHint": "エージェントが重点を置くべきエリアをカンマ区切りで入力",
   "panel.configureAISettings": "AI設定を構成",
-
   "builtinProfile.leadAnalyst.name": "リードアナリスト",
   "builtinProfile.leadAnalyst.description": "オーケストレーター——作業を委任し、出力をレビューし、調査を推進します。",
   "builtinProfile.iocEnricher.name": "IOC Enricher",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "事業への影響——復旧優先順位、継続計画、運用上の代替手段。",
   "builtinProfile.patternHunter.name": "パターンハンター",
   "builtinProfile.patternHunter.description": "調査横断のパターン検出——共有 IOC、共通インフラ、キャンペーン相関。",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} 件のアクティブエージェント{{suffix}}",
   "dashboard.noActiveAgents": "アクティブエージェントなし",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "エージェントアクティビティのある調査",
   "dashboard.recentAgentActivity": "最近のエージェントアクティビティ",
   "dashboard.auto": "自動",
-
   "action.expandAction": "{{action}} {{toolName}} アクション詳細を展開",
   "action.collapseAction": "{{action}} {{toolName}} アクション詳細を折り畳む",
   "action.input": "入力",
@@ -147,7 +144,6 @@
   "action.editAction": "{{toolName}} の入力を編集",
   "action.reject": "拒否",
   "action.rejectAction": "{{toolName}} アクションを拒否",
-
   "profile.agentProfiles": "エージェントプロファイル",
   "profile.customAndBuiltin": "カスタム {{custom}}、組み込み {{builtin}}",
   "profile.yourProfiles": "マイプロファイル",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "システムプロンプト——このエージェントの動作の指示...",
   "profile.saving": "保存中...",
   "profile.update": "更新",
-
   "meeting.agentMeetings": "エージェントミーティング",
   "meeting.shiftHandoff": "シフト引き継ぎ",
   "meeting.shiftHandoffTitle": "退席エージェントが着席エージェントに引き継ぎ、シフト状態を入れ替えます",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "ミーティングを開始するには 2 つ以上のエージェントプロファイルをデプロイしてください。",
   "meeting.viewMinutes": "議事録を表示",
   "meeting.viewDiscussion": "議論を表示",
-  "meeting.roundsCompleted": "{{count}} ラウンド{{suffix}}"
+  "meeting.roundsCompleted": "{{count}} ラウンド{{suffix}}",
+  "builtinProfile.hypothesisWriter.name": "仮説ライター",
+  "builtinProfile.hypothesisWriter.description": "事件に関する反証可能な作業仮説を生成します — 主張、証拠（賛成/反対）、信頼度、検証方法 — 構造化されたノートとして。"
 }

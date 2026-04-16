@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "bijv. IOC's verrijken, tijdlijn bouwen, laterale beweging zoeken",
   "panel.focusAreasHint": "Kommagescheiden gebieden waarop de agent zich moet richten",
   "panel.configureAISettings": "AI-instellingen configureren",
-
   "builtinProfile.leadAnalyst.name": "Hoofdanalist",
   "builtinProfile.leadAnalyst.description": "Orkestrator — delegeert werk, beoordeelt output, stuurt onderzoek vooruit.",
   "builtinProfile.iocEnricher.name": "IOC Enricher",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "Bedrijfsimpact — herstelprioritering, continuïteitsplanning, operationele omwegen.",
   "builtinProfile.patternHunter.name": "Patroonspeurneus",
   "builtinProfile.patternHunter.description": "Patroondetectie over onderzoeken heen — gedeelde IOC's, gemeenschappelijke infrastructuur, campagnecorrelatie.",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} actieve agent(en)",
   "dashboard.noActiveAgents": "Geen actieve agenten",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "Onderzoeken met agentactiviteit",
   "dashboard.recentAgentActivity": "Recente agentactiviteit",
   "dashboard.auto": "auto",
-
   "action.expandAction": "{{action}} Details van actie {{toolName}} uitvouwen",
   "action.collapseAction": "{{action}} Details van actie {{toolName}} samenvouwen",
   "action.input": "Invoer",
@@ -147,7 +144,6 @@
   "action.editAction": "Invoer {{toolName}} bewerken",
   "action.reject": "Afwijzen",
   "action.rejectAction": "Actie {{toolName}} afwijzen",
-
   "profile.agentProfiles": "Agentprofielen",
   "profile.customAndBuiltin": "{{custom}} aangepast, {{builtin}} ingebouwd",
   "profile.yourProfiles": "Uw profielen",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "Systeemprompt — instructies voor het gedrag van deze agent...",
   "profile.saving": "Opslaan...",
   "profile.update": "Bijwerken",
-
   "meeting.agentMeetings": "Agentvergaderingen",
   "meeting.shiftHandoff": "Dienst¬overdracht",
   "meeting.shiftHandoffTitle": "Vertrekkende agenten briefen inkomende agenten, daarna wisselen ze dienststatus",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "Implementeer 2+ agentprofielen om een vergadering te starten.",
   "meeting.viewMinutes": "Notulen bekijken",
   "meeting.viewDiscussion": "Discussie bekijken",
-  "meeting.roundsCompleted": "{{count}} ronde(s)"
+  "meeting.roundsCompleted": "{{count}} ronde(s)",
+  "builtinProfile.hypothesisWriter.name": "Hypotheseschrijver",
+  "builtinProfile.hypothesisWriter.description": "Genereert falsifieerbare werkhypothesen over de zaak — claim, bewijs (voor/tegen), vertrouwen, hoe te testen — als gestructureerde notities."
 }

@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "напр., збагатити IOC, побудувати хронологію, шукати бічне переміщення",
   "panel.focusAreasHint": "Сфери через кому, на яких агент має зосередитись",
   "panel.configureAISettings": "Налаштувати параметри ШІ",
-
   "builtinProfile.leadAnalyst.name": "Провідний аналітик",
   "builtinProfile.leadAnalyst.description": "Оркестратор — делегує роботу, перевіряє результати, просуває розслідування.",
   "builtinProfile.iocEnricher.name": "IOC Enricher",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "Вплив на бізнес — пріоритети відновлення, планування безперервності, операційні обхідні шляхи.",
   "builtinProfile.patternHunter.name": "Мисливець за паттернами",
   "builtinProfile.patternHunter.description": "Виявлення паттернів між розслідуваннями — спільні IOC, спільна інфраструктура, кореляція кампаній.",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} активний агент(ів)",
   "dashboard.noActiveAgents": "Немає активних агентів",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "Розслідування з активністю агентів",
   "dashboard.recentAgentActivity": "Остання активність агентів",
   "dashboard.auto": "авто",
-
   "action.expandAction": "{{action}} Розгорнути деталі дії {{toolName}}",
   "action.collapseAction": "{{action}} Згорнути деталі дії {{toolName}}",
   "action.input": "Вхідні дані",
@@ -147,7 +144,6 @@
   "action.editAction": "Редагувати вхідні дані {{toolName}}",
   "action.reject": "Відхилити",
   "action.rejectAction": "Відхилити дію {{toolName}}",
-
   "profile.agentProfiles": "Профілі агентів",
   "profile.customAndBuiltin": "{{custom}} користувацьких, {{builtin}} вбудованих",
   "profile.yourProfiles": "Ваші профілі",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "Системний промпт — інструкції для поведінки цього агента...",
   "profile.saving": "Збереження...",
   "profile.update": "Оновити",
-
   "meeting.agentMeetings": "Наради агентів",
   "meeting.shiftHandoff": "Передача зміни",
   "meeting.shiftHandoffTitle": "Агенти, що йдуть, інструктують тих, що приходять, потім міняються станами зміни",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "Розгорніть 2+ профілі агентів для початку наради.",
   "meeting.viewMinutes": "Переглянути протокол",
   "meeting.viewDiscussion": "Переглянути обговорення",
-  "meeting.roundsCompleted": "{{count}} раунд(ів)"
+  "meeting.roundsCompleted": "{{count}} раунд(ів)",
+  "builtinProfile.hypothesisWriter.name": "Автор гіпотез",
+  "builtinProfile.hypothesisWriter.description": "Створює фальсифіковані робочі гіпотези щодо справи — твердження, докази (за/проти), впевненість, як перевірити — у вигляді структурованих нотаток."
 }

@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "np. wzbogać IOC, zbuduj oś czasu, szukaj ruchu bocznego",
   "panel.focusAreasHint": "Obszary oddzielone przecinkami, na których agent powinien się skupić",
   "panel.configureAISettings": "Skonfiguruj ustawienia AI",
-
   "builtinProfile.leadAnalyst.name": "Główny analityk",
   "builtinProfile.leadAnalyst.description": "Orkiestrator — deleguje pracę, weryfikuje wyniki, prowadzi dochodzenie naprzód.",
   "builtinProfile.iocEnricher.name": "IOC Enricher",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "Wpływ na działalność — priorytety odzyskiwania, planowanie ciągłości, operacyjne obejścia.",
   "builtinProfile.patternHunter.name": "Łowca wzorców",
   "builtinProfile.patternHunter.description": "Wykrywanie wzorców między dochodzeniami — wspólne IOC, wspólna infrastruktura, korelacja kampanii.",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} aktywny agent(ów)",
   "dashboard.noActiveAgents": "Brak aktywnych agentów",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "Dochodzenia z aktywnością agentów",
   "dashboard.recentAgentActivity": "Ostatnia aktywność agentów",
   "dashboard.auto": "auto",
-
   "action.expandAction": "{{action}} Rozwiń szczegóły działania {{toolName}}",
   "action.collapseAction": "{{action}} Zwiń szczegóły działania {{toolName}}",
   "action.input": "Dane wejściowe",
@@ -147,7 +144,6 @@
   "action.editAction": "Edytuj dane wejściowe {{toolName}}",
   "action.reject": "Odrzuć",
   "action.rejectAction": "Odrzuć działanie {{toolName}}",
-
   "profile.agentProfiles": "Profile agentów",
   "profile.customAndBuiltin": "{{custom}} niestandardowych, {{builtin}} wbudowanych",
   "profile.yourProfiles": "Twoje profile",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "Prompt systemowy — instrukcje dotyczące zachowania agenta...",
   "profile.saving": "Zapisywanie...",
   "profile.update": "Aktualizuj",
-
   "meeting.agentMeetings": "Spotkania agentów",
   "meeting.shiftHandoff": "Przekazanie zmiany",
   "meeting.shiftHandoffTitle": "Odchodzący agenci instruują przychodzących, następnie wymieniają stany zmian",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "Wdróż 2+ profile agentów, aby rozpocząć spotkanie.",
   "meeting.viewMinutes": "Wyświetl protokół",
   "meeting.viewDiscussion": "Wyświetl dyskusję",
-  "meeting.roundsCompleted": "{{count}} runda/rundy"
+  "meeting.roundsCompleted": "{{count}} runda/rundy",
+  "builtinProfile.hypothesisWriter.name": "Autor Hipotez",
+  "builtinProfile.hypothesisWriter.description": "Generuje falsyfikowalne teorie robocze sprawy — twierdzenie, dowody (za/przeciw), pewność, jak przetestować — w postaci ustrukturyzowanych notatek."
 }

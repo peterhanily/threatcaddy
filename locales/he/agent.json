@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "למשל: העשר IOCs, בנה ציר זמן, חפש תנועה רוחבית",
   "panel.focusAreasHint": "תחומים מופרדים בפסיק שהסוכן צריך להתמקד בהם",
   "panel.configureAISettings": "הגדר הגדרות AI",
-
   "builtinProfile.leadAnalyst.name": "אנליסט ראשי",
   "builtinProfile.leadAnalyst.description": "מתאם — מאציל עבודה, בוחן פלט, מקדם חקירה.",
   "builtinProfile.iocEnricher.name": "מעשיר IOC",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "השפעה עסקית — עדיפויות שחזור, תכנון המשכיות, פתרונות עבודה תפעוליים.",
   "builtinProfile.patternHunter.name": "גלאי דפוסים",
   "builtinProfile.patternHunter.description": "זיהוי דפוסים בין חקירות — IOCs משותפים, תשתית משותפת, קישור קמפיינים.",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} סוכן פעיל",
   "dashboard.noActiveAgents": "אין סוכנים פעילים",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "חקירות עם פעילות סוכן",
   "dashboard.recentAgentActivity": "פעילות סוכן אחרונה",
   "dashboard.auto": "אוטומטי",
-
   "action.expandAction": "{{action}} הרחב פרטי פעולת {{toolName}}",
   "action.collapseAction": "{{action}} כווץ פרטי פעולת {{toolName}}",
   "action.input": "קלט",
@@ -147,7 +144,6 @@
   "action.editAction": "ערוך קלט {{toolName}}",
   "action.reject": "דחה",
   "action.rejectAction": "דחה פעולת {{toolName}}",
-
   "profile.agentProfiles": "פרופילי סוכן",
   "profile.customAndBuiltin": "{{custom}} מותאמים, {{builtin}} מובנים",
   "profile.yourProfiles": "הפרופילים שלך",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "הוראות מערכת — הנחיות להתנהגות הסוכן...",
   "profile.saving": "שומר...",
   "profile.update": "עדכן",
-
   "meeting.agentMeetings": "פגישות סוכן",
   "meeting.shiftHandoff": "מסירת משמרת",
   "meeting.shiftHandoffTitle": "סוכנים יוצאים מעדכנים נכנסים, ואז מחליפים מצבי משמרת",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "פרוס 2+ פרופילי סוכן להתחלת פגישה.",
   "meeting.viewMinutes": "צפה בפרוטוקול",
   "meeting.viewDiscussion": "צפה בדיון",
-  "meeting.roundsCompleted": "{{count}} סבב(ים)"
+  "meeting.roundsCompleted": "{{count}} סבב(ים)",
+  "builtinProfile.hypothesisWriter.name": "כותב השערות",
+  "builtinProfile.hypothesisWriter.description": "מייצר תיאוריות עבודה הניתנות להפרכה לגבי המקרה — טענה, ראיות (בעד/נגד), ביטחון, כיצד לבדוק — כהערות מובנות."
 }

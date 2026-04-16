@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "예: IOC 보강, 타임라인 구축, 횡방향 이동 탐지",
   "panel.focusAreasHint": "에이전트가 집중해야 할 영역을 쉼표로 구분",
   "panel.configureAISettings": "AI 설정 구성",
-
   "builtinProfile.leadAnalyst.name": "수석 분석가",
   "builtinProfile.leadAnalyst.description": "오케스트레이터——작업 위임, 출력 검토, 조사 추진.",
   "builtinProfile.iocEnricher.name": "IOC Enricher",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "비즈니스 영향——복구 우선순위, 연속성 계획, 운영 대안.",
   "builtinProfile.patternHunter.name": "패턴 헌터",
   "builtinProfile.patternHunter.description": "조사 간 패턴 탐지——공유 IOC, 공통 인프라, 캠페인 상관관계.",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "활성 에이전트 {{count}}개{{suffix}}",
   "dashboard.noActiveAgents": "활성 에이전트 없음",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "에이전트 활동이 있는 조사",
   "dashboard.recentAgentActivity": "최근 에이전트 활동",
   "dashboard.auto": "자동",
-
   "action.expandAction": "{{action}} {{toolName}} 작업 세부 정보 펼치기",
   "action.collapseAction": "{{action}} {{toolName}} 작업 세부 정보 접기",
   "action.input": "입력",
@@ -147,7 +144,6 @@
   "action.editAction": "{{toolName}} 입력 편집",
   "action.reject": "거부",
   "action.rejectAction": "{{toolName}} 작업 거부",
-
   "profile.agentProfiles": "에이전트 프로필",
   "profile.customAndBuiltin": "사용자 정의 {{custom}}개, 기본 제공 {{builtin}}개",
   "profile.yourProfiles": "내 프로필",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "시스템 프롬프트——이 에이전트의 동작 지침...",
   "profile.saving": "저장 중...",
   "profile.update": "업데이트",
-
   "meeting.agentMeetings": "에이전트 회의",
   "meeting.shiftHandoff": "교대 인계",
   "meeting.shiftHandoffTitle": "퇴근 에이전트가 출근 에이전트에게 인계하고 교대 상태를 교환합니다",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "회의를 시작하려면 2개 이상의 에이전트 프로필을 배포하세요.",
   "meeting.viewMinutes": "회의록 보기",
   "meeting.viewDiscussion": "토론 보기",
-  "meeting.roundsCompleted": "{{count}} 라운드{{suffix}}"
+  "meeting.roundsCompleted": "{{count}} 라운드{{suffix}}",
+  "builtinProfile.hypothesisWriter.name": "가설 작성자",
+  "builtinProfile.hypothesisWriter.description": "사건에 대한 반증 가능한 작업 가설을 생성합니다 — 주장, 증거(찬성/반대), 신뢰도, 테스트 방법 — 구조화된 노트로."
 }
