@@ -144,20 +144,26 @@ export function purposeInstruction(purpose: MeetingPurpose, agenda: string): str
   }
 }
 
+/** Static JSON schemas for each meeting purpose. Interned at module load so
+ *  a meeting end doesn't re-allocate 4 multi-line template strings on every call. */
+const SYNTHESIZER_SCHEMAS: Record<MeetingPurpose, string> = {
+  redTeamReview:
+    '{\n  "purpose": "redTeamReview",\n  "verdict": "holds" | "revise" | "reject",\n  "attackedClaims": string[],\n  "counterEvidence": string[],\n  "weakPoints": string[]\n}',
+  dissentSynthesis:
+    '{\n  "purpose": "dissentSynthesis",\n  "positions": [{ "agent": string, "position": string, "evidence": string }],\n  "reconciled": string,\n  "unresolved": string[]\n}',
+  signOff:
+    '{\n  "purpose": "signOff",\n  "decision": "approved" | "rejected" | "needs-more-info",\n  "approvers": string[],\n  "blockers": string[],\n  "conditions": string[]\n}',
+  freeform:
+    '{\n  "purpose": "freeform",\n  "summary": string,\n  "keyPoints": string[],\n  "actionItems": string[]\n}',
+};
+
+const SYNTHESIZER_INSTRUCTIONS =
+  'As the synthesizer, produce a single JSON object matching the schema below, then a short human-readable markdown summary. Output exactly two sections: first a ```json code block, then a `## Summary` markdown block. Do not add anything outside these.';
+
 /** Synthesizer prompt that produces the structured JSON artifact for a purpose. */
 export function synthesizerPrompt(purpose: MeetingPurpose, agenda: string, rounds: number): string {
-  const header = `The meeting has concluded after ${rounds} round(s). As the synthesizer, produce a single JSON object matching the schema below, then a short human-readable markdown summary. Output exactly two sections: first a \`\`\`json code block, then a \`## Summary\` markdown block. Do not add anything outside these.`;
-  switch (purpose) {
-    case 'redTeamReview':
-      return `${header}\n\nSchema:\n{\n  "purpose": "redTeamReview",\n  "verdict": "holds" | "revise" | "reject",\n  "attackedClaims": string[],\n  "counterEvidence": string[],\n  "weakPoints": string[]\n}\n\nAgenda: ${agenda}`;
-    case 'dissentSynthesis':
-      return `${header}\n\nSchema:\n{\n  "purpose": "dissentSynthesis",\n  "positions": [{ "agent": string, "position": string, "evidence": string }],\n  "reconciled": string,\n  "unresolved": string[]\n}\n\nAgenda: ${agenda}`;
-    case 'signOff':
-      return `${header}\n\nSchema:\n{\n  "purpose": "signOff",\n  "decision": "approved" | "rejected" | "needs-more-info",\n  "approvers": string[],\n  "blockers": string[],\n  "conditions": string[]\n}\n\nProposal: ${agenda}`;
-    case 'freeform':
-    default:
-      return `${header}\n\nSchema:\n{\n  "purpose": "freeform",\n  "summary": string,\n  "keyPoints": string[],\n  "actionItems": string[]\n}\n\nAgenda: ${agenda}`;
-  }
+  const agendaLabel = purpose === 'signOff' ? 'Proposal' : 'Agenda';
+  return `The meeting has concluded after ${rounds} round(s). ${SYNTHESIZER_INSTRUCTIONS}\n\nSchema:\n${SYNTHESIZER_SCHEMAS[purpose]}\n\n${agendaLabel}: ${agenda}`;
 }
 
 /** Extract the JSON block from the synthesizer's response. Returns undefined if absent/invalid. */

@@ -228,21 +228,24 @@ export async function runSupervisorCycle(
   }
 
   // Rolling retention: keep the newest SUPERVISOR_NOTE_RETENTION notes, soft-trash the rest.
-  // Prevents the supervisor folder from becoming a perf sink or drowning the dashboard.
+  // Walks the [folderId+updatedAt] index in reverse — no full-table sort, no per-note
+  // update round-trip. Bulk modify runs in a single IDB transaction.
   try {
-    const supervisorNotes = await db.notes
-      .where('folderId').equals(supervisorFolder.id)
-      .and(n => !n.trashed && !n.isFolder)
-      .toArray();
-    if (supervisorNotes.length > SUPERVISOR_NOTE_RETENTION) {
-      const toTrash = supervisorNotes
-        .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
-        .slice(0, supervisorNotes.length - SUPERVISOR_NOTE_RETENTION);
+    const toTrashIds: string[] = [];
+    let kept = 0;
+    await db.notes
+      .where('[folderId+updatedAt]')
+      .between([supervisorFolder.id, -Infinity], [supervisorFolder.id, Infinity])
+      .reverse()
+      .each(n => {
+        if (n.trashed || n.isFolder) return;
+        if (kept < SUPERVISOR_NOTE_RETENTION) { kept++; return; }
+        toTrashIds.push(n.id);
+      });
+    if (toTrashIds.length > 0) {
       const now = Date.now();
-      for (const n of toTrash) {
-        await db.notes.update(n.id, { trashed: true, trashedAt: now, updatedAt: now });
-      }
-      onProgress?.(`Retention: trashed ${toTrash.length} old supervisor notes`);
+      await db.notes.where('id').anyOf(toTrashIds).modify({ trashed: true, trashedAt: now, updatedAt: now });
+      onProgress?.(`Retention: trashed ${toTrashIds.length} old supervisor notes`);
     }
   } catch (retErr) {
     console.warn('[supervisor] retention sweep failed:', retErr);

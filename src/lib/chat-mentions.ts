@@ -29,12 +29,21 @@ export async function searchMentions(
 ): Promise<MentionSuggestion[]> {
   const q = query.toLowerCase();
 
+  // Pre-filter cap — large enough to give "most recent matching" fidelity but
+  // bounded so the global (no folderId) path doesn't full-scan the notes or
+  // IOCs table on every keystroke.
+  const GLOBAL_RECENT_CAP = 200;
+
   if (type === 'note') {
-    let notes = folderId
-      ? await db.notes.where('folderId').equals(folderId).and(n => !n.trashed).toArray()
-      : await db.notes.filter(n => !n.trashed).toArray();
+    let notes;
+    if (folderId) {
+      notes = await db.notes.where('folderId').equals(folderId).and(n => !n.trashed).toArray();
+      notes.sort((a, b) => b.updatedAt - a.updatedAt);
+    } else {
+      // Walk the updatedAt index in reverse; Dexie stops after the limit is met.
+      notes = await db.notes.orderBy('updatedAt').reverse().filter(n => !n.trashed).limit(GLOBAL_RECENT_CAP).toArray();
+    }
     if (q) notes = notes.filter(n => n.title.toLowerCase().includes(q));
-    notes.sort((a, b) => b.updatedAt - a.updatedAt);
     return notes.slice(0, limit).map(n => ({
       type: 'note',
       id: n.id,
@@ -44,11 +53,14 @@ export async function searchMentions(
   }
 
   if (type === 'ioc') {
-    let iocs = folderId
-      ? await db.standaloneIOCs.where('folderId').equals(folderId).and(i => !i.trashed).toArray()
-      : await db.standaloneIOCs.filter(i => !i.trashed).toArray();
+    let iocs;
+    if (folderId) {
+      iocs = await db.standaloneIOCs.where('folderId').equals(folderId).and(i => !i.trashed).toArray();
+      iocs.sort((a, b) => b.updatedAt - a.updatedAt);
+    } else {
+      iocs = await db.standaloneIOCs.orderBy('updatedAt').reverse().filter(i => !i.trashed).limit(GLOBAL_RECENT_CAP).toArray();
+    }
     if (q) iocs = iocs.filter(i => i.value.toLowerCase().includes(q) || i.type.toLowerCase().includes(q));
-    iocs.sort((a, b) => b.updatedAt - a.updatedAt);
     return iocs.slice(0, limit).map(i => ({
       type: 'ioc',
       id: i.id,

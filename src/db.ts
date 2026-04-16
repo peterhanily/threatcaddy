@@ -205,6 +205,12 @@ db.version(27).stores({
   notes: 'id, title, folderId, pinned, archived, trashed, createdAt, updatedAt, *tags, *iocTypes, createdBy, [folderId+updatedAt], *linkedNoteIds, *linkedTaskIds, *linkedTimelineEventIds, parentNoteId',
 });
 
+// Version 28: Composite index on agentDeployments for ExecDashboard roll-ups
+// that filter by running+active without loading the whole table.
+db.version(28).stores({
+  agentDeployments: 'id, investigationId, profileId, status, createdAt, [investigationId+status], [investigationId+order], [status+shift]',
+});
+
 // Encryption-at-rest middleware (transparent to all CRUD hooks)
 installEncryptionMiddleware(db);
 

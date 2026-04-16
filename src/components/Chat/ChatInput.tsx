@@ -114,6 +114,13 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
   const [mentionIndex, setMentionIndex] = useState(0);
   const [mentionPhase, setMentionPhase] = useState<'category' | 'search'>('category');
   const mentionMenuRef = useRef<HTMLDivElement>(null);
+  /** Debounce handle for the searchMentions call. Reset on every keystroke so
+   *  only the last 200ms-quiescent query hits Dexie — avoids a full-table scan
+   *  per character when the global (no folderId) mention path is used. */
+  const mentionSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (mentionSearchTimerRef.current) clearTimeout(mentionSearchTimerRef.current);
+  }, []);
 
   // Detect @-mention trigger
   useEffect(() => {
@@ -137,7 +144,10 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
       setMentionOpen(true);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setMentionIndex(0);
-      searchMentions(type, query, folderId).then(setMentionResults).catch(console.error);
+      if (mentionSearchTimerRef.current) clearTimeout(mentionSearchTimerRef.current);
+      mentionSearchTimerRef.current = setTimeout(() => {
+        searchMentions(type, query, folderId).then(setMentionResults).catch(console.error);
+      }, 200);
       return;
     }
 
