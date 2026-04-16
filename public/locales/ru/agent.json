@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "например, обогатить IOC, построить хронологию, найти горизонтальное перемещение",
   "panel.focusAreasHint": "Области через запятую, на которых агент должен сосредоточиться",
   "panel.configureAISettings": "Настроить параметры ИИ",
-
   "builtinProfile.leadAnalyst.name": "Ведущий аналитик",
   "builtinProfile.leadAnalyst.description": "Оркестратор — делегирует работу, проверяет результаты, продвигает расследование.",
   "builtinProfile.iocEnricher.name": "IOC Enricher",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "Влияние на бизнес — приоритеты восстановления, планирование непрерывности, операционные обходные пути.",
   "builtinProfile.patternHunter.name": "Охотник за паттернами",
   "builtinProfile.patternHunter.description": "Обнаружение паттернов между расследованиями — общие IOC, общая инфраструктура, корреляция кампаний.",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} активный агент(ов)",
   "dashboard.noActiveAgents": "Нет активных агентов",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "Расследования с активностью агентов",
   "dashboard.recentAgentActivity": "Недавняя активность агентов",
   "dashboard.auto": "авто",
-
   "action.expandAction": "{{action}} Развернуть детали действия {{toolName}}",
   "action.collapseAction": "{{action}} Свернуть детали действия {{toolName}}",
   "action.input": "Входные данные",
@@ -147,7 +144,6 @@
   "action.editAction": "Редактировать входные данные {{toolName}}",
   "action.reject": "Отклонить",
   "action.rejectAction": "Отклонить действие {{toolName}}",
-
   "profile.agentProfiles": "Профили агентов",
   "profile.customAndBuiltin": "{{custom}} пользовательских, {{builtin}} встроенных",
   "profile.yourProfiles": "Ваши профили",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "Системный промпт — инструкции для поведения этого агента...",
   "profile.saving": "Сохранение...",
   "profile.update": "Обновить",
-
   "meeting.agentMeetings": "Совещания агентов",
   "meeting.shiftHandoff": "Передача смены",
   "meeting.shiftHandoffTitle": "Уходящие агенты инструктируют входящих, затем меняются состояниями смены",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "Разверните 2+ профиля агентов для начала совещания.",
   "meeting.viewMinutes": "Просмотреть протокол",
   "meeting.viewDiscussion": "Просмотреть обсуждение",
-  "meeting.roundsCompleted": "{{count}} раунд(ов)"
+  "meeting.roundsCompleted": "{{count}} раунд(ов)",
+  "builtinProfile.hypothesisWriter.name": "Автор гипотез",
+  "builtinProfile.hypothesisWriter.description": "Создаёт фальсифицируемые рабочие гипотезы по делу — утверждение, доказательства (за/против), уверенность, как проверить — в виде структурированных заметок."
 }

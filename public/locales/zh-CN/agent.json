@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "例如：丰富 IOC、构建时间线、寻找横向移动",
   "panel.focusAreasHint": "逗号分隔的代理应关注的领域",
   "panel.configureAISettings": "配置 AI 设置",
-
   "builtinProfile.leadAnalyst.name": "首席分析师",
   "builtinProfile.leadAnalyst.description": "编排者——分配工作、审查输出、推动调查进展。",
   "builtinProfile.iocEnricher.name": "IOC Enricher",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "业务影响——恢复优先级、连续性规划、运营变通方案。",
   "builtinProfile.patternHunter.name": "模式猎手",
   "builtinProfile.patternHunter.description": "跨调查模式检测——共享 IOC、公共基础设施、活动关联。",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} 个活跃代理{{suffix}}",
   "dashboard.noActiveAgents": "无活跃代理",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "有代理活动的调查",
   "dashboard.recentAgentActivity": "近期代理活动",
   "dashboard.auto": "自动",
-
   "action.expandAction": "{{action}} 展开 {{toolName}} 操作详情",
   "action.collapseAction": "{{action}} 折叠 {{toolName}} 操作详情",
   "action.input": "输入",
@@ -147,7 +144,6 @@
   "action.editAction": "编辑 {{toolName}} 输入",
   "action.reject": "拒绝",
   "action.rejectAction": "拒绝 {{toolName}} 操作",
-
   "profile.agentProfiles": "代理配置文件",
   "profile.customAndBuiltin": "{{custom}} 个自定义，{{builtin}} 个内置",
   "profile.yourProfiles": "您的配置文件",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "系统提示——此代理行为的说明...",
   "profile.saving": "保存中...",
   "profile.update": "更新",
-
   "meeting.agentMeetings": "代理会议",
   "meeting.shiftHandoff": "班次交接",
   "meeting.shiftHandoffTitle": "离职代理向接任代理交接，然后交换班次状态",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "部署 2 个以上代理配置文件以开始会议。",
   "meeting.viewMinutes": "查看会议记录",
   "meeting.viewDiscussion": "查看讨论",
-  "meeting.roundsCompleted": "{{count}} 轮{{suffix}}"
+  "meeting.roundsCompleted": "{{count}} 轮{{suffix}}",
+  "builtinProfile.hypothesisWriter.name": "假设作者",
+  "builtinProfile.hypothesisWriter.description": "为案件生成可证伪的工作假设——主张、证据（支持/反对）、信心度、如何测试——作为结构化笔记。"
 }

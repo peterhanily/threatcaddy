@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "مثلاً غنی‌سازی IOC، ساخت جدول زمانی، جستجوی حرکت جانبی",
   "panel.focusAreasHint": "حوزه‌هایی که عامل باید روی آن‌ها تمرکز کند، با کاما جدا شوند",
   "panel.configureAISettings": "پیکربندی تنظیمات AI",
-
   "builtinProfile.leadAnalyst.name": "تحلیلگر ارشد",
   "builtinProfile.leadAnalyst.description": "هماهنگ‌کننده — تفویض کار، بررسی خروجی، پیشبرد تحقیق.",
   "builtinProfile.iocEnricher.name": "غنی‌ساز IOC",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "تأثیر کسب‌وکار — اولویت‌های بازیابی، برنامه‌ریزی تداوم، راه‌حل‌های عملیاتی.",
   "builtinProfile.patternHunter.name": "شکارچی الگو",
   "builtinProfile.patternHunter.description": "تشخیص الگو در تحقیقات متقاطع — IOCهای مشترک، زیرساخت مشترک، همبستگی کمپین.",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} عامل فعال",
   "dashboard.noActiveAgents": "هیچ عامل فعالی وجود ندارد",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "تحقیقات با فعالیت عاملی",
   "dashboard.recentAgentActivity": "فعالیت اخیر عامل",
   "dashboard.auto": "خودکار",
-
   "action.expandAction": "{{action}} بسط جزئیات اقدام {{toolName}}",
   "action.collapseAction": "{{action}} جمع‌آوری جزئیات اقدام {{toolName}}",
   "action.input": "ورودی",
@@ -147,7 +144,6 @@
   "action.editAction": "ویرایش ورودی {{toolName}}",
   "action.reject": "رد",
   "action.rejectAction": "رد اقدام {{toolName}}",
-
   "profile.agentProfiles": "پروفایل‌های عامل",
   "profile.customAndBuiltin": "{{custom}} سفارشی، {{builtin}} داخلی",
   "profile.yourProfiles": "پروفایل‌های شما",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "پرامپت سیستم — دستورالعمل‌های رفتار این عامل...",
   "profile.saving": "در حال ذخیره...",
   "profile.update": "به‌روزرسانی",
-
   "meeting.agentMeetings": "جلسات عامل",
   "meeting.shiftHandoff": "تحویل شیفت",
   "meeting.shiftHandoffTitle": "عاملان خروجی، عاملان ورودی را آموزش می‌دهند، سپس وضعیت شیفت جابجا می‌شود",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "برای شروع جلسه ۲+ پروفایل عامل مستقر کنید.",
   "meeting.viewMinutes": "مشاهده صورتجلسه",
   "meeting.viewDiscussion": "مشاهده بحث",
-  "meeting.roundsCompleted": "{{count}} دور"
+  "meeting.roundsCompleted": "{{count}} دور",
+  "builtinProfile.hypothesisWriter.name": "نویسنده فرضیه",
+  "builtinProfile.hypothesisWriter.description": "نظریه‌های کاری ابطال‌پذیری از پرونده تولید می‌کند — ادعا، شواهد (له/علیه)، اعتماد، نحوه آزمایش — به‌صورت یادداشت‌های ساختاریافته."
 }

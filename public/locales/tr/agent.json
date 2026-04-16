@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "örn. IOC'leri zenginleştir, zaman çizelgesi oluştur, yanal hareketi ara",
   "panel.focusAreasHint": "Ajanın odaklanması gereken virgülle ayrılmış alanlar",
   "panel.configureAISettings": "AI Ayarlarını Yapılandır",
-
   "builtinProfile.leadAnalyst.name": "Baş Analist",
   "builtinProfile.leadAnalyst.description": "Düzenleyici — çalışmaları delege eder, çıktıları inceler, soruşturmayı ilerletir.",
   "builtinProfile.iocEnricher.name": "IOC Zenginleştirici",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "İş etkisi — kurtarma öncelikleri, süreklilik planlaması, operasyonel geçici çözümler.",
   "builtinProfile.patternHunter.name": "Örüntü Avcısı",
   "builtinProfile.patternHunter.description": "Çapraz soruşturma örüntü tespiti — paylaşılan IOC'ler, ortak altyapı, kampanya korelasyonu.",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} aktif ajan{{suffix}}",
   "dashboard.noActiveAgents": "Aktif ajan yok",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "Ajan Etkinliği Olan Soruşturmalar",
   "dashboard.recentAgentActivity": "Son Ajan Etkinliği",
   "dashboard.auto": "otomatik",
-
   "action.expandAction": "{{action}} {{toolName}} işlem ayrıntılarını genişlet",
   "action.collapseAction": "{{action}} {{toolName}} işlem ayrıntılarını daralt",
   "action.input": "Girdi",
@@ -147,7 +144,6 @@
   "action.editAction": "{{toolName}} girdisini düzenle",
   "action.reject": "Reddet",
   "action.rejectAction": "{{toolName}} işlemini reddet",
-
   "profile.agentProfiles": "Ajan Profilleri",
   "profile.customAndBuiltin": "{{custom}} özel, {{builtin}} yerleşik",
   "profile.yourProfiles": "Profilleriniz",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "Sistem istemi — bu ajanın davranışına ilişkin talimatlar...",
   "profile.saving": "Kaydediliyor...",
   "profile.update": "Güncelle",
-
   "meeting.agentMeetings": "Ajan Toplantıları",
   "meeting.shiftHandoff": "Vardiya Devri",
   "meeting.shiftHandoffTitle": "Giden ajanlar gelen ajanlara brifing verir, ardından vardiya durumları değiştirilir",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "Toplantı başlatmak için 2+ ajan profili dağıtın.",
   "meeting.viewMinutes": "Tutanakları görüntüle",
   "meeting.viewDiscussion": "Tartışmayı görüntüle",
-  "meeting.roundsCompleted": "{{count}} tur{{suffix}}"
+  "meeting.roundsCompleted": "{{count}} tur{{suffix}}",
+  "builtinProfile.hypothesisWriter.name": "Hipotez Yazarı",
+  "builtinProfile.hypothesisWriter.description": "Davanın yanlışlanabilir çalışma teorilerini üretir — iddia, kanıt (lehte/aleyhte), güven, nasıl test edilir — yapılandırılmış notlar olarak."
 }

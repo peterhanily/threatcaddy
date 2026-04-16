@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "जैसे IOC संवर्धन, टाइमलाइन निर्माण, पार्श्व आंदोलन शिकार",
   "panel.focusAreasHint": "एजेंट को किन क्षेत्रों पर ध्यान देना चाहिए, कॉमा से अलग करें",
   "panel.configureAISettings": "AI सेटिंग कॉन्फ़िगर करें",
-
   "builtinProfile.leadAnalyst.name": "लीड विश्लेषक",
   "builtinProfile.leadAnalyst.description": "समन्वयक — कार्य सौंपें, आउटपुट समीक्षा करें, जाँच आगे बढ़ाएं।",
   "builtinProfile.iocEnricher.name": "IOC संवर्धक",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "व्यावसायिक प्रभाव — पुनर्प्राप्ति प्राथमिकताएं, निरंतरता योजना, परिचालन समाधान।",
   "builtinProfile.patternHunter.name": "पैटर्न हंटर",
   "builtinProfile.patternHunter.description": "क्रॉस-जाँच पैटर्न पहचान — साझा IOCs, साझा इंफ्रास्ट्रक्चर, अभियान सहसंबंध।",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} सक्रिय एजेंट",
   "dashboard.noActiveAgents": "कोई सक्रिय एजेंट नहीं",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "एजेंट गतिविधि वाली जाँचें",
   "dashboard.recentAgentActivity": "हालिया एजेंट गतिविधि",
   "dashboard.auto": "स्वतः",
-
   "action.expandAction": "{{action}} क्रिया {{toolName}} विवरण विस्तृत करें",
   "action.collapseAction": "{{action}} क्रिया {{toolName}} विवरण संकुचित करें",
   "action.input": "इनपुट",
@@ -147,7 +144,6 @@
   "action.editAction": "{{toolName}} इनपुट संपादित करें",
   "action.reject": "अस्वीकृत करें",
   "action.rejectAction": "{{toolName}} क्रिया अस्वीकृत करें",
-
   "profile.agentProfiles": "एजेंट प्रोफ़ाइल",
   "profile.customAndBuiltin": "{{custom}} कस्टम, {{builtin}} बिल्टइन",
   "profile.yourProfiles": "आपके प्रोफ़ाइल",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "सिस्टम प्रॉम्प्ट — इस एजेंट के व्यवहार निर्देश...",
   "profile.saving": "सहेजा जा रहा है...",
   "profile.update": "अपडेट करें",
-
   "meeting.agentMeetings": "एजेंट मीटिंग",
   "meeting.shiftHandoff": "शिफ्ट हैंडऑफ",
   "meeting.shiftHandoffTitle": "आउटगोइंग एजेंट इनकमिंग एजेंट को ब्रीफ करते हैं, फिर शिफ्ट स्थिति बदलती है",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "मीटिंग शुरू करने के लिए 2+ एजेंट प्रोफ़ाइल तैनात करें।",
   "meeting.viewMinutes": "मिनट देखें",
   "meeting.viewDiscussion": "चर्चा देखें",
-  "meeting.roundsCompleted": "{{count}} राउंड"
+  "meeting.roundsCompleted": "{{count}} राउंड",
+  "builtinProfile.hypothesisWriter.name": "परिकल्पना लेखक",
+  "builtinProfile.hypothesisWriter.description": "मामले की मिथ्याकरणीय कार्यशील सिद्धांत उत्पन्न करता है — दावा, प्रमाण (पक्ष/विपक्ष), विश्वास, परीक्षण कैसे करें — संरचित नोट्स के रूप में।"
 }

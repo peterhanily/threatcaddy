@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "مثل: إثراء IOCs، بناء الجدول الزمني، البحث عن الحركة الجانبية",
   "panel.focusAreasHint": "مجالات مفصولة بفاصلة يجب أن يركز عليها الوكيل",
   "panel.configureAISettings": "تهيئة إعدادات الذكاء الاصطناعي",
-
   "builtinProfile.leadAnalyst.name": "المحلل الرئيسي",
   "builtinProfile.leadAnalyst.description": "المنسق — يفوّض العمل ويراجع المخرجات ويدفع التحقيق للأمام.",
   "builtinProfile.iocEnricher.name": "مُثري IOC",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "التأثير على الأعمال — أولويات الاسترداد، تخطيط الاستمرارية، الحلول التشغيلية البديلة.",
   "builtinProfile.patternHunter.name": "صائد الأنماط",
   "builtinProfile.patternHunter.description": "اكتشاف الأنماط عبر التحقيقات — IOCs المشتركة والبنية التحتية المشتركة وربط الحملات.",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "{{count}} وكيل نشط",
   "dashboard.noActiveAgents": "لا يوجد وكلاء نشطون",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "التحقيقات ذات نشاط الوكيل",
   "dashboard.recentAgentActivity": "نشاط الوكيل الأخير",
   "dashboard.auto": "تلقائي",
-
   "action.expandAction": "{{action}} توسيع تفاصيل إجراء {{toolName}}",
   "action.collapseAction": "{{action}} طي تفاصيل إجراء {{toolName}}",
   "action.input": "الإدخال",
@@ -147,7 +144,6 @@
   "action.editAction": "تعديل إدخال {{toolName}}",
   "action.reject": "رفض",
   "action.rejectAction": "رفض إجراء {{toolName}}",
-
   "profile.agentProfiles": "ملفات تعريف الوكيل",
   "profile.customAndBuiltin": "{{custom}} مخصص، {{builtin}} مدمج",
   "profile.yourProfiles": "ملفاتك الشخصية",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "تعليمات النظام — إرشادات لسلوك هذا الوكيل...",
   "profile.saving": "جارٍ الحفظ...",
   "profile.update": "تحديث",
-
   "meeting.agentMeetings": "اجتماعات الوكيل",
   "meeting.shiftHandoff": "تسليم الوردية",
   "meeting.shiftHandoffTitle": "يُحيط الوكلاء الصادرون الوكلاء الواردين، ثم يتبادلون حالات الوردية",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "انشر ملفَّي تعريف وكيل أو أكثر لبدء اجتماع.",
   "meeting.viewMinutes": "عرض المحضر",
   "meeting.viewDiscussion": "عرض النقاش",
-  "meeting.roundsCompleted": "{{count}} جولة"
+  "meeting.roundsCompleted": "{{count}} جولة",
+  "builtinProfile.hypothesisWriter.name": "كاتب الفرضيات",
+  "builtinProfile.hypothesisWriter.description": "يولّد نظريات عمل قابلة للتفنيد للقضية — ادعاء، أدلة (مع/ضد)، ثقة، كيفية الاختبار — كملاحظات منظمة."
 }

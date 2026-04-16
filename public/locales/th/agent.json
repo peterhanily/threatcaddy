@@ -82,7 +82,6 @@
   "panel.focusAreasPlaceholder": "เช่น เสริม IOC สร้างไทม์ไลน์ ค้นหาการเคลื่อนที่ภายใน",
   "panel.focusAreasHint": "พื้นที่ที่เอเจนต์ควรโฟกัส คั่นด้วยเครื่องหมายจุลภาค",
   "panel.configureAISettings": "กำหนดค่าการตั้งค่า AI",
-
   "builtinProfile.leadAnalyst.name": "นักวิเคราะห์หลัก",
   "builtinProfile.leadAnalyst.description": "ผู้ประสานงาน——มอบหมายงาน ตรวจสอบผลลัพธ์ ขับเคลื่อนการสืบสวน",
   "builtinProfile.iocEnricher.name": "IOC Enricher",
@@ -119,7 +118,6 @@
   "builtinProfile.businessContinuity.description": "ผลกระทบต่อธุรกิจ——ลำดับความสำคัญในการกู้คืน การวางแผนความต่อเนื่อง การแก้ปัญหาเชิงปฏิบัติการ",
   "builtinProfile.patternHunter.name": "นักล่ารูปแบบ",
   "builtinProfile.patternHunter.description": "การตรวจจับรูปแบบข้ามการสืบสวน——IOC ที่ใช้ร่วมกัน โครงสร้างพื้นฐานทั่วไป ความสัมพันธ์ของแคมเปญ",
-
   "dashboard.agentCaddy": "AgentCaddy",
   "dashboard.activeAgents": "เอเจนต์ที่ทำงานอยู่ {{count}} ตัว{{suffix}}",
   "dashboard.noActiveAgents": "ไม่มีเอเจนต์ที่ทำงานอยู่",
@@ -134,7 +132,6 @@
   "dashboard.investigationsWithAgentActivity": "การสืบสวนที่มีกิจกรรมเอเจนต์",
   "dashboard.recentAgentActivity": "กิจกรรมเอเจนต์ล่าสุด",
   "dashboard.auto": "อัตโนมัติ",
-
   "action.expandAction": "{{action}} ขยายรายละเอียดการดำเนินการ {{toolName}}",
   "action.collapseAction": "{{action}} ยุบรายละเอียดการดำเนินการ {{toolName}}",
   "action.input": "ข้อมูลเข้า",
@@ -147,7 +144,6 @@
   "action.editAction": "แก้ไขข้อมูลเข้า {{toolName}}",
   "action.reject": "ปฏิเสธ",
   "action.rejectAction": "ปฏิเสธการดำเนินการ {{toolName}}",
-
   "profile.agentProfiles": "โปรไฟล์เอเจนต์",
   "profile.customAndBuiltin": "กำหนดเอง {{custom}} รายการ, ในตัว {{builtin}} รายการ",
   "profile.yourProfiles": "โปรไฟล์ของคุณ",
@@ -196,7 +192,6 @@
   "profile.systemPromptPlaceholder": "System prompt——คำสั่งสำหรับพฤติกรรมของเอเจนต์นี้...",
   "profile.saving": "กำลังบันทึก...",
   "profile.update": "อัปเดต",
-
   "meeting.agentMeetings": "การประชุมเอเจนต์",
   "meeting.shiftHandoff": "การส่งต่อกะ",
   "meeting.shiftHandoffTitle": "เอเจนต์ที่ออกจะบรีฟเอเจนต์ที่เข้ามา แล้วสลับสถานะกะ",
@@ -209,5 +204,7 @@
   "meeting.deploy2Plus": "ติดตั้งโปรไฟล์เอเจนต์อย่างน้อย 2 รายการเพื่อเริ่มการประชุม",
   "meeting.viewMinutes": "ดูรายงานการประชุม",
   "meeting.viewDiscussion": "ดูการอภิปราย",
-  "meeting.roundsCompleted": "{{count}} รอบ{{suffix}}"
+  "meeting.roundsCompleted": "{{count}} รอบ{{suffix}}",
+  "builtinProfile.hypothesisWriter.name": "ผู้เขียนสมมติฐาน",
+  "builtinProfile.hypothesisWriter.description": "สร้างทฤษฎีการทำงานที่หักล้างได้สำหรับคดี — ข้ออ้าง หลักฐาน (สนับสนุน/คัดค้าน) ความเชื่อมั่น วิธีทดสอบ — เป็นบันทึกที่มีโครงสร้าง"
 }
