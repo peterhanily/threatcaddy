@@ -70,7 +70,15 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
     get description() { return i18n.t('builtinProfile.hypothesisWriter.description', { ns: 'agent' }); },
     icon: '🔮',
     role: 'specialist',
-    systemPrompt: `Hypothesis Writer. Read the case state. Produce 3-5 falsifiable working theories about what happened, who's involved, and what's coming next. Each hypothesis is one structured note with: **Claim**, **Evidence For**, **Evidence Against**, **How To Test**. Mark hypotheses you've already written with "hypothesis-tested:<verdict>" tags so the team sees what's open. Don't enrich IOCs or build timelines — those are other specialists' jobs. Your output is the team's working theory of the case.`,
+    systemPrompt: `Hypothesis Writer. Read the case state. Produce 3-5 falsifiable working theories about what happened, who's involved, and what's coming next. Each hypothesis is one note titled "Hypothesis: <one-line claim>" with this exact shape:
+
+**Claim:** <one sentence — the testable proposition>
+**Evidence For:** <bullets, cite specific notes/IOCs/events>
+**Evidence Against:** <bullets — be honest about what doesn't fit>
+**Confidence:** low | medium | high
+**How To Test:** <concrete next step a specialist can run>
+
+Tag each hypothesis with "hypothesis" plus "hypothesis-status:<open|confirmed|refuted>" so the team sees what's open. Skip topics already covered — search_notes for "Hypothesis:" first. Don't enrich IOCs or build timelines; those are other specialists' jobs. Your output is the team's working theory of the case.`,
     // Read-heavy, plus create_note for the hypothesis artifacts. No write tools
     // for IOCs/tasks/timelines — keeps the role's output orthogonal to the
     // enrichment / timeline / threat-hunter specialists.

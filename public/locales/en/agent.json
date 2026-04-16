@@ -92,7 +92,7 @@
   "builtinProfile.caseAnalyst.name": "Case Analyst",
   "builtinProfile.caseAnalyst.description": "General analyst — researches, identifies gaps, creates analysis.",
   "builtinProfile.hypothesisWriter.name": "Hypothesis Writer",
-  "builtinProfile.hypothesisWriter.description": "Generates falsifiable working theories of the case — claim, evidence-for, evidence-against, how-to-test — as structured notes.",
+  "builtinProfile.hypothesisWriter.description": "Generates falsifiable working theories of the case — claim, evidence (for/against), confidence, how-to-test — as structured notes.",
   "builtinProfile.reporter.name": "Reporter",
   "builtinProfile.reporter.description": "Synthesizes findings into structured reports and summaries.",
   "builtinProfile.forensicateScanner.name": "Forensicate Scanner",
