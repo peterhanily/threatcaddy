@@ -466,6 +466,17 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 {t('general.privacy')}
               </a>
             </div>
+            <p className="flex items-center gap-1.5 text-xs text-gray-600 pt-3">
+              <FlaskConical size={12} />
+              <a
+                href="https://caddylabs.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-gray-400 transition-colors"
+              >
+                {t('general.caddylabsTagline')}
+              </a>
+            </p>
           </div>
         </div>
       )}

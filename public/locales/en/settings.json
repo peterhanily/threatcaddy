@@ -44,6 +44,7 @@
   "general.about": "About",
   "general.aboutDesc": "ThreatCaddy v1.0 — Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs. All data stored locally in your browser using IndexedDB.",
   "general.aboutLocalFirst": "Local-first. Your data stays in your browser unless you connect a self-hosted server.",
+  "general.caddylabsTagline": "This is a CaddyLabs tool, made with love in Ireland.",
   "general.github": "GitHub",
   "general.update": "Update",
   "general.updateFailed": "Failed to download update. Visit https://threatcaddy.com to get the latest version.",

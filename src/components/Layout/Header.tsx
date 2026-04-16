@@ -1,4 +1,4 @@
-import { Menu, Search, Github, Download, Chrome, HardDriveDownload, FolderUp, HelpCircle, Shield, RefreshCw, ChevronDown, Briefcase } from 'lucide-react';
+import { Menu, Search, Github, Download, Chrome, HardDriveDownload, FolderUp, HelpCircle, Shield, RefreshCw, ChevronDown, Briefcase, FlaskConical } from 'lucide-react';
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ThemeToggle } from '../Common/ThemeToggle';
@@ -246,6 +246,17 @@ export function Header({
             >
               <Shield size={14} />
               {t('header.privacy')}
+            </a>
+            <div className="h-px bg-gray-800 mx-2 my-1" />
+            <a
+              href="https://caddylabs.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors no-underline"
+              onClick={() => setHelpMenuOpen(false)}
+            >
+              <FlaskConical size={14} />
+              {t('header.caddylabs')}
             </a>
           </div>
         )}
