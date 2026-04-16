@@ -47,6 +47,9 @@ app.post('/register', async (c) => {
   if (!body.investigationId || !body.deployments?.length) {
     return c.json({ error: 'investigationId and deployments required' }, 400);
   }
+  if (!(await checkInvestigationAccess(user.id, body.investigationId, 'editor'))) {
+    return c.json({ error: 'No access to this investigation' }, 403);
+  }
   if (body.deployments.length > 50) {
     return c.json({ error: 'Too many deployments in a single request (max 50)' }, 400);
   }
@@ -116,14 +119,29 @@ app.post('/register', async (c) => {
 // ─── Unregister server-side agents ──────────────────────────────
 
 app.post('/unregister', async (c) => {
+  const user = c.get('user' as never) as { id: string };
   const body = await c.req.json<{ investigationId?: string; deploymentIds?: string[] }>();
 
   if (body.deploymentIds?.length) {
     for (const depId of body.deploymentIds) {
+      const [bot] = await db.select({ id: botConfigs.id, scopeFolderIds: botConfigs.scopeFolderIds })
+        .from(botConfigs)
+        .where(and(eq(botConfigs.sourceType, 'caddy-agent'), eq(botConfigs.sourceDeploymentId, depId)))
+        .limit(1);
+      if (!bot) continue;
+      const scopes = Array.isArray(bot.scopeFolderIds) ? (bot.scopeFolderIds as string[]) : [];
+      for (const folderId of scopes) {
+        if (!(await checkInvestigationAccess(user.id, folderId, 'editor'))) {
+          return c.json({ error: 'No access to one or more investigations for this deployment' }, 403);
+        }
+      }
       await db.delete(botConfigs)
         .where(and(eq(botConfigs.sourceType, 'caddy-agent'), eq(botConfigs.sourceDeploymentId, depId)));
     }
   } else if (body.investigationId) {
+    if (!(await checkInvestigationAccess(user.id, body.investigationId, 'editor'))) {
+      return c.json({ error: 'No access to this investigation' }, 403);
+    }
     // Delete all caddy-agent bots for this investigation
     const bots = await db.select({ id: botConfigs.id, scopeFolderIds: botConfigs.scopeFolderIds })
       .from(botConfigs)
@@ -146,6 +164,10 @@ app.post('/heartbeat', async (c) => {
   const user = c.get('user' as never) as { id: string };
   const body = await c.req.json<{ investigationId: string }>();
   if (!body.investigationId) return c.json({ error: 'investigationId required' }, 400);
+
+  if (!(await checkInvestigationAccess(user.id, body.investigationId))) {
+    return c.json({ error: 'No access to this investigation' }, 403);
+  }
 
   const result = await heartbeatManager.recordHeartbeat(body.investigationId, user.id);
   return c.json({ ok: true, ...result });

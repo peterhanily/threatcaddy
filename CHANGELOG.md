@@ -16,6 +16,11 @@
 - **Hypothesis Writer profile** — replaces the old generalist Case Analyst persona. Generates 3-5 falsifiable working theories of the case as structured notes with claim, evidence (for/against), confidence, and how-to-test. Tagged with `hypothesis-status:<open|confirmed|refuted>` so the Lead can filter open theories.
 - **Settings: CaddyLabs branding** — info dropdown gains a "CaddyLabs" link to caddylabs.io (Flask icon); Settings About block adds a tagline ("This is a CaddyLabs tool, made with love and tokens in Ireland.") with the link, translated across all 20 locales.
 
+### Security
+
+- **Server `/api/caddy-agents` authZ closures** — `/register`, `/unregister`, and `/heartbeat` now require `checkInvestigationAccess` before mutating bot configs or heartbeat rows. The April 12 audit covered `/status`, `/actions`, `/approve`, `/reject`, and `/trigger`; these three were missed and allowed an authenticated user to register/deregister server-side bots for investigations they couldn't read. `/unregister` by `deploymentIds` now re-checks access per-deployment's scope folders.
+- **Agent Host error-body redaction** — `fetchHostSkills` in `src/lib/agent-hosts.ts` now strips `Bearer <token>`, `Authorization` headers, and common credential keys (`api_key`, `access_token`, `secret`, `password`) from upstream HTTP error bodies before raising them into tool results or audit logs. Upstream servers that echo the caller's auth header in 401/403 responses can no longer leak it through agent tool output. Error body also capped at 500 chars.
+
 ### Fixes
 
 - **Keyboard shortcuts** — Synced shortcuts across both UI panels (Ctrl+/ modal and Settings), added missing entries (`Ctrl+O`, `Ctrl+\``, `Ctrl+/`, `Ctrl+B/I`)

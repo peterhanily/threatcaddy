@@ -12,6 +12,19 @@ import type { AgentHost, AgentHostSkill, Settings } from '../types';
 
 const SKILLS_TIMEOUT_MS = 30_000;
 const EXECUTE_TIMEOUT_MS = 60_000;
+const MAX_ERROR_BODY_CHARS = 500;
+
+/**
+ * Strip bearer tokens, authorization headers, and credential-like params from a
+ * string before surfacing it to the LLM or audit log. Upstream servers have been
+ * observed to echo the caller's Authorization header in error bodies.
+ */
+function redactAuth(s: string): string {
+  return s
+    .replace(/Authorization\s*:\s*Bearer\s+\S+/gi, 'Authorization: Bearer [redacted]')
+    .replace(/Bearer\s+[A-Za-z0-9\-._~+/=]+/g, 'Bearer [redacted]')
+    .replace(/(["']?(?:api[_-]?key|access[_-]?token|token|secret|password)["']?\s*[:=]\s*["']?)[^"'\s,}]+/gi, '$1[redacted]');
+}
 
 // ── Skill Discovery ──────────────────────────────────────────────────
 
@@ -29,7 +42,10 @@ export async function fetchHostSkills(host: AgentHost): Promise<AgentHostSkill[]
 
   try {
     const resp = await fetch(url, { headers, signal: controller.signal });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text().catch(() => '')}`);
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => '');
+      throw new Error(`HTTP ${resp.status}: ${redactAuth(body).slice(0, MAX_ERROR_BODY_CHARS)}`);
+    }
 
     const data = await resp.json();
     if (!Array.isArray(data)) throw new Error('Expected JSON array of skills');
