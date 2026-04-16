@@ -404,5 +404,10 @@
   "server.onboarding.presence": "Obecność",
   "server.onboarding.presenceDesc": "Zobacz kto jest online i nad jakimi dochodzeniami pracuje.",
   "server.onboarding.getStarted": "Zacznij",
-  "general.caddylabsTagline": "Narzędzie CaddyLabs — stworzone z miłością i tokenami w Irlandii."
+  "general.caddylabsTagline": "Narzędzie CaddyLabs — stworzone z miłością i tokenami w Irlandii.",
+  "agents.hostDeleteConfirm": "Usunąć hosta agenta \"{{name}}\"? Buforowane umiejętności zostaną utracone.",
+  "agents.bearerTokenPlaceholder": "Token Bearer",
+  "agents.disableHost": "Wyłącz {{name}}",
+  "agents.enableHost": "Włącz {{name}}",
+  "agents.deleteHost": "Usuń {{name}}"
 }

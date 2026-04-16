@@ -404,5 +404,10 @@
   "server.onboarding.presence": "การแสดงตัวตน",
   "server.onboarding.presenceDesc": "ดูว่าใครออนไลน์และกำลังทำงานกับการสืบสวนใด",
   "server.onboarding.getStarted": "เริ่มต้น",
-  "general.caddylabsTagline": "นี่คือเครื่องมือของ CaddyLabs สร้างขึ้นด้วยความรักและโทเค็นในไอร์แลนด์"
+  "general.caddylabsTagline": "นี่คือเครื่องมือของ CaddyLabs สร้างขึ้นด้วยความรักและโทเค็นในไอร์แลนด์",
+  "agents.hostDeleteConfirm": "ลบโฮสต์เอเจนต์ \"{{name}}\"? ทักษะที่แคชไว้จะสูญหาย",
+  "agents.bearerTokenPlaceholder": "โทเค็น Bearer",
+  "agents.disableHost": "ปิดใช้งาน {{name}}",
+  "agents.enableHost": "เปิดใช้งาน {{name}}",
+  "agents.deleteHost": "ลบ {{name}}"
 }

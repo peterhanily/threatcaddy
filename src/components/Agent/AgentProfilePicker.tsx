@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Plus, Minus, Wrench, Users } from 'lucide-react';
 import type { AgentProfile, AgentDeployment } from '../../types';
 import { cn } from '../../lib/utils';
@@ -17,6 +18,7 @@ interface AgentProfilePickerProps {
 }
 
 export function AgentProfilePicker({ profiles, deployments, onDeployMultiple, onCreateProfile, onClose }: AgentProfilePickerProps) {
+  const { t } = useTranslation('agent');
   const [selections, setSelections] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
@@ -57,33 +59,33 @@ export function AgentProfilePicker({ profiles, deployments, onDeployMultiple, on
 
   // Group profiles by category
   const groups = useMemo(() => {
-    const g: { label: string; profiles: AgentProfile[] }[] = [];
+    const g: { labelKey: string; profiles: AgentProfile[] }[] = [];
     const exec = profiles.filter(p => p.role === 'executive' || p.role === 'lead');
     const spec = profiles.filter(p => p.role === 'specialist');
     const obs = profiles.filter(p => p.role === 'observer');
-    if (exec.length) g.push({ label: 'Leadership', profiles: exec });
-    if (spec.length) g.push({ label: 'Specialists', profiles: spec });
-    if (obs.length) g.push({ label: 'Stakeholders & Advisors', profiles: obs });
+    if (exec.length) g.push({ labelKey: 'picker.leadership', profiles: exec });
+    if (spec.length) g.push({ labelKey: 'picker.specialists', profiles: spec });
+    if (obs.length) g.push({ labelKey: 'picker.stakeholders', profiles: obs });
     return g;
   }, [profiles]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Deploy Agents">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={t('picker.deployAgents')}>
       <div className="bg-bg-deep border border-border-subtle rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden flex flex-col max-h-[80vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle shrink-0">
           <div>
-            <h3 className="text-sm font-semibold text-text-primary">Deploy Agents</h3>
-            <p className="text-[10px] text-text-muted">Select profiles and quantities to deploy</p>
+            <h3 className="text-sm font-semibold text-text-primary">{t('picker.deployAgents')}</h3>
+            <p className="text-[10px] text-text-muted">{t('picker.subtitle')}</p>
           </div>
-          <button onClick={onClose} className="text-text-muted hover:text-text-secondary" aria-label="Close"><X size={16} /></button>
+          <button onClick={onClose} className="text-text-muted hover:text-text-secondary" aria-label={t('picker.close')}><X size={16} /></button>
         </div>
 
         {/* Profile list */}
         <div className="flex-1 overflow-auto p-4 space-y-4">
           {groups.map(group => (
-            <div key={group.label}>
-              <div className="text-[10px] text-text-muted uppercase tracking-wide mb-1.5">{group.label}</div>
+            <div key={group.labelKey}>
+              <div className="text-[10px] text-text-muted uppercase tracking-wide mb-1.5">{t(group.labelKey)}</div>
               <div className="space-y-1.5">
                 {group.profiles.map(profile => {
                   const selected = selections.has(profile.id);
@@ -100,7 +102,7 @@ export function AgentProfilePicker({ profiles, deployments, onDeployMultiple, on
                         <div className="text-xs font-medium text-text-primary">{profile.name}</div>
                         <div className="text-[10px] text-text-muted truncate">{profile.description?.substring(0, 70)}</div>
                       </div>
-                      {existing > 0 && <span className="text-[9px] text-text-muted shrink-0">{existing} active</span>}
+                      {existing > 0 && <span className="text-[9px] text-text-muted shrink-0">{t('picker.activeCount', { count: existing })}</span>}
                       {selected && (
                         <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                           <button onClick={() => setCount(profile.id, count - 1)} className="w-5 h-5 flex items-center justify-center rounded bg-surface-raised hover:bg-bg-hover text-text-muted"><Minus size={10} /></button>
@@ -119,7 +121,7 @@ export function AgentProfilePicker({ profiles, deployments, onDeployMultiple, on
             <button onClick={onCreateProfile}
               className="w-full flex items-center gap-2 p-2 rounded-lg border border-dashed border-border-medium hover:bg-surface-raised transition-colors">
               <Wrench size={14} className="text-text-muted" />
-              <span className="text-xs text-text-secondary">Create Custom Profile</span>
+              <span className="text-xs text-text-secondary">{t('picker.createCustomProfile')}</span>
             </button>
           )}
         </div>
@@ -127,12 +129,12 @@ export function AgentProfilePicker({ profiles, deployments, onDeployMultiple, on
         {/* Footer */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-border-subtle shrink-0">
           <span className="text-xs text-text-muted">
-            {totalSelected > 0 ? `${totalSelected} agent${totalSelected !== 1 ? 's' : ''} selected` : 'Select profiles to deploy'}
+            {totalSelected > 0 ? t('picker.agentsSelected', { count: totalSelected }) : t('picker.selectProfilesToDeploy')}
           </span>
           <button onClick={handleDeploy} disabled={totalSelected === 0}
             className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-medium bg-accent-blue text-white hover:bg-accent-blue/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
             <Users size={12} />
-            Deploy {totalSelected > 0 ? `(${totalSelected})` : ''}
+            {t('picker.deploy')} {totalSelected > 0 ? `(${totalSelected})` : ''}
           </button>
         </div>
       </div>

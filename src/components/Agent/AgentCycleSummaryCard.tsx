@@ -5,16 +5,17 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronRight, AlertTriangle, Check, Clock, Ban, CircleAlert } from 'lucide-react';
 import type { AgentCycleSummary, AgentCycleOutcome } from '../../types';
 import { cn } from '../../lib/utils';
 import { formatUSD } from '../../lib/model-pricing';
 
-const OUTCOME_META: Record<AgentCycleOutcome, { label: string; color: string; Icon: typeof Check }> = {
-  success:      { label: 'complete',      color: 'text-accent-green',       Icon: Check        },
-  timeout:      { label: 'timed out',     color: 'text-accent-amber',       Icon: Clock        },
-  error:        { label: 'error',         color: 'text-red-400',            Icon: AlertTriangle },
-  policyDenied: { label: 'approval-gated', color: 'text-accent-amber',      Icon: Ban          },
+const OUTCOME_META: Record<AgentCycleOutcome, { labelKey: string; color: string; Icon: typeof Check }> = {
+  success:      { labelKey: 'cycleSummary.outcomeSuccess',      color: 'text-accent-green',  Icon: Check        },
+  timeout:      { labelKey: 'cycleSummary.outcomeTimeout',      color: 'text-accent-amber',  Icon: Clock        },
+  error:        { labelKey: 'cycleSummary.outcomeError',        color: 'text-red-400',       Icon: AlertTriangle },
+  policyDenied: { labelKey: 'cycleSummary.outcomePolicyDenied', color: 'text-accent-amber',  Icon: Ban          },
 };
 
 function formatTokens(n: number): string {
@@ -36,12 +37,14 @@ interface AgentCycleSummaryCardProps {
 }
 
 export function AgentCycleSummaryCard({ summary, defaultExpanded = false }: AgentCycleSummaryCardProps) {
+  const { t } = useTranslation('agent');
   const [expanded, setExpanded] = useState(defaultExpanded);
   const meta = OUTCOME_META[summary.outcome];
   const Icon = meta.Icon;
   const histogramEntries = Object.entries(summary.toolHistogram).sort((a, b) => b[1] - a[1]);
   const errorEntries = Object.entries(summary.errorHistogram).sort((a, b) => b[1] - a[1]);
   const totalTokens = summary.tokens.input + summary.tokens.output;
+  const totalErrors = errorEntries.reduce((s, [, c]) => s + c, 0);
 
   return (
     <div className="my-2 border border-border-subtle rounded-lg bg-surface text-xs overflow-hidden">
@@ -52,7 +55,7 @@ export function AgentCycleSummaryCard({ summary, defaultExpanded = false }: Agen
       >
         {expanded ? <ChevronDown size={14} className="shrink-0 text-text-muted" /> : <ChevronRight size={14} className="shrink-0 text-text-muted" />}
         <Icon size={14} className={cn('shrink-0', meta.color)} />
-        <span className={cn('font-medium shrink-0', meta.color)}>{meta.label}</span>
+        <span className={cn('font-medium shrink-0', meta.color)}>{t(meta.labelKey)}</span>
         <span className="text-text-muted shrink-0">·</span>
         <span className="text-text-secondary truncate flex-1" title={summary.whyThisCycle}>{summary.whyThisCycle}</span>
         <span className="text-text-muted shrink-0 flex gap-2 ml-2">
@@ -67,7 +70,7 @@ export function AgentCycleSummaryCard({ summary, defaultExpanded = false }: Agen
           {/* Bullets */}
           {summary.whatIDid.length > 0 && (
             <div>
-              <div className="text-[10px] uppercase tracking-wide text-text-muted mb-1">What the agent did</div>
+              <div className="text-[10px] uppercase tracking-wide text-text-muted mb-1">{t('cycleSummary.whatIDid')}</div>
               <ul className="space-y-0.5">
                 {summary.whatIDid.map((b, i) => (
                   <li key={i} className="text-text-secondary flex gap-1.5"><span className="text-text-muted">·</span>{b}</li>
@@ -79,13 +82,13 @@ export function AgentCycleSummaryCard({ summary, defaultExpanded = false }: Agen
           {/* Tool histogram */}
           {histogramEntries.length > 0 && (
             <div>
-              <div className="text-[10px] uppercase tracking-wide text-text-muted mb-1">Tool calls ({summary.toolCalls.executed} exec, {summary.toolCalls.proposed} proposed)</div>
+              <div className="text-[10px] uppercase tracking-wide text-text-muted mb-1">{t('cycleSummary.toolCalls', { executed: summary.toolCalls.executed, proposed: summary.toolCalls.proposed })}</div>
               <div className="flex flex-wrap gap-1">
                 {histogramEntries.map(([name, count]) => (
                   <span
                     key={name}
                     className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-raised text-text-secondary"
-                    title={summary.errorHistogram[name] ? `${summary.errorHistogram[name]} error(s)` : undefined}
+                    title={summary.errorHistogram[name] ? t('cycleSummary.errorsTitle', { count: summary.errorHistogram[name] }) : undefined}
                   >
                     {name}
                     {count > 1 && <span className="text-text-muted">×{count}</span>}
@@ -99,7 +102,7 @@ export function AgentCycleSummaryCard({ summary, defaultExpanded = false }: Agen
           {/* Entities touched */}
           {summary.entitiesTouched.length > 0 && (
             <div>
-              <div className="text-[10px] uppercase tracking-wide text-text-muted mb-1">Entities touched</div>
+              <div className="text-[10px] uppercase tracking-wide text-text-muted mb-1">{t('cycleSummary.entitiesTouched')}</div>
               <div className="flex flex-wrap gap-1">
                 {summary.entitiesTouched.slice(0, 12).map((ent, i) => (
                   <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-surface-raised text-text-secondary">
@@ -108,7 +111,7 @@ export function AgentCycleSummaryCard({ summary, defaultExpanded = false }: Agen
                   </span>
                 ))}
                 {summary.entitiesTouched.length > 12 && (
-                  <span className="text-text-muted">+{summary.entitiesTouched.length - 12} more</span>
+                  <span className="text-text-muted">{t('cycleSummary.moreCount', { count: summary.entitiesTouched.length - 12 })}</span>
                 )}
               </div>
             </div>
@@ -117,12 +120,12 @@ export function AgentCycleSummaryCard({ summary, defaultExpanded = false }: Agen
           {/* Telemetry footer */}
           <div className="flex flex-wrap gap-3 text-[10px] text-text-muted pt-1 border-t border-border-subtle">
             <span>{summary.provider}/{summary.model}</span>
-            <span>{summary.turns} turn{summary.turns === 1 ? '' : 's'}</span>
+            <span>{t('cycleSummary.turns', { count: summary.turns })}</span>
             {summary.tokens.input > 0 && (
-              <span>{formatTokens(summary.tokens.input)} in / {formatTokens(summary.tokens.output)} out</span>
+              <span>{t('cycleSummary.tokensInOut', { in: formatTokens(summary.tokens.input), out: formatTokens(summary.tokens.output) })}</span>
             )}
-            {errorEntries.length > 0 && (
-              <span className="text-red-400">{errorEntries.reduce((s, [, c]) => s + c, 0)} tool error{errorEntries.reduce((s, [, c]) => s + c, 0) === 1 ? '' : 's'}</span>
+            {totalErrors > 0 && (
+              <span className="text-red-400">{t('cycleSummary.toolErrors', { count: totalErrors })}</span>
             )}
             {summary.error && (
               <span className="text-red-400 truncate max-w-[360px]" title={summary.error}>{summary.error}</span>

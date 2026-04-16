@@ -404,5 +404,10 @@
   "server.onboarding.presence": "נוכחות",
   "server.onboarding.presenceDesc": "ראה מי מחובר ועל אילו חקירות הם עובדים.",
   "server.onboarding.getStarted": "התחל",
-  "general.caddylabsTagline": "זהו כלי של CaddyLabs, נוצר באהבה וטוקנים באירלנד."
+  "general.caddylabsTagline": "זהו כלי של CaddyLabs, נוצר באהבה וטוקנים באירלנד.",
+  "agents.hostDeleteConfirm": "למחוק את מארח הסוכן \"{{name}}\"? יכולות שמורות יאבדו.",
+  "agents.bearerTokenPlaceholder": "אסימון Bearer",
+  "agents.disableHost": "השבת {{name}}",
+  "agents.enableHost": "הפעל {{name}}",
+  "agents.deleteHost": "מחק {{name}}"
 }

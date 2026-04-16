@@ -21,6 +21,10 @@
 - **Server `/api/caddy-agents` authZ closures** — `/register`, `/unregister`, and `/heartbeat` now require `checkInvestigationAccess` before mutating bot configs or heartbeat rows. The April 12 audit covered `/status`, `/actions`, `/approve`, `/reject`, and `/trigger`; these three were missed and allowed an authenticated user to register/deregister server-side bots for investigations they couldn't read. `/unregister` by `deploymentIds` now re-checks access per-deployment's scope folders.
 - **Agent Host error-body redaction** — `fetchHostSkills` in `src/lib/agent-hosts.ts` now strips `Bearer <token>`, `Authorization` headers, and common credential keys (`api_key`, `access_token`, `secret`, `password`) from upstream HTTP error bodies before raising them into tool results or audit logs. Upstream servers that echo the caller's auth header in 401/403 responses can no longer leak it through agent tool output. Error body also capped at 500 chars.
 
+### i18n
+
+- **AgentCaddy UI fully translated across 20 locales** — Phase 0-5 hardening shipped new surface area (`AgentCycleSummaryCard`, `AgentMeetingPanel` purpose picker, `AgentProfilePicker` deploy modal, `AgentPanel` approval-flow toasts + reconciliation banner, `AgentHostsConfig` form) that was English-only. 56 `agent.json` keys and 5 `settings.json` keys added and translated — outcome labels (complete/timed out/error/approval-gated), meeting purposes (red-team/dissent synthesis/sign-off/freeform) + hints, "Server ran N actions while away" banner, all error toasts, all picker group labels and buttons. `_one`/`_other` plural forms for counts. `OUTCOME_META` keys and `PURPOSES` arrays refactored to resolve labels at render time.
+
 ### Integrity
 
 - **Idempotency key stability across property reordering** — `makeIdempotencyKey` now canonicalizes object property order before hashing, so `{a:1,b:2}` and `{b:2,a:1}` produce the same key. Without this, an LLM that re-emitted the same tool call with a different field order across a handoff boundary would defeat dedup and double-write. Array order is still sequence-sensitive by design. 6 unit tests lock the behavior.

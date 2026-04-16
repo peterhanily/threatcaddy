@@ -404,5 +404,10 @@
   "server.onboarding.presence": "Kehadiran",
   "server.onboarding.presenceDesc": "Lihat siapa yang online dan investigasi apa yang sedang mereka kerjakan.",
   "server.onboarding.getStarted": "Mulai",
-  "general.caddylabsTagline": "Ini adalah alat CaddyLabs, dibuat dengan cinta dan token di Irlandia."
+  "general.caddylabsTagline": "Ini adalah alat CaddyLabs, dibuat dengan cinta dan token di Irlandia.",
+  "agents.hostDeleteConfirm": "Hapus host agen \"{{name}}\"? Skill yang di-cache akan hilang.",
+  "agents.bearerTokenPlaceholder": "Token Bearer",
+  "agents.disableHost": "Nonaktifkan {{name}}",
+  "agents.enableHost": "Aktifkan {{name}}",
+  "agents.deleteHost": "Hapus {{name}}"
 }

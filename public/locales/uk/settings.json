@@ -404,5 +404,10 @@
   "server.onboarding.presence": "Присутність",
   "server.onboarding.presenceDesc": "Дивіться, хто онлайн та над якими розслідуваннями вони працюють.",
   "server.onboarding.getStarted": "Почати",
-  "general.caddylabsTagline": "Це інструмент CaddyLabs, створений з любов'ю та токенами в Ірландії."
+  "general.caddylabsTagline": "Це інструмент CaddyLabs, створений з любов'ю та токенами в Ірландії.",
+  "agents.hostDeleteConfirm": "Видалити хост агента «{{name}}»? Кешовані навички буде втрачено.",
+  "agents.bearerTokenPlaceholder": "Токен Bearer",
+  "agents.disableHost": "Вимкнути {{name}}",
+  "agents.enableHost": "Увімкнути {{name}}",
+  "agents.deleteHost": "Видалити {{name}}"
 }

@@ -404,5 +404,10 @@
   "server.onboarding.presence": "حضور",
   "server.onboarding.presenceDesc": "ببینید چه کسی آنلاین است و روی چه تحقیقاتی کار می‌کند.",
   "server.onboarding.getStarted": "شروع کنید",
-  "general.caddylabsTagline": "این ابزاری از CaddyLabs است که با عشق و توکن در ایرلند ساخته شده است."
+  "general.caddylabsTagline": "این ابزاری از CaddyLabs است که با عشق و توکن در ایرلند ساخته شده است.",
+  "agents.hostDeleteConfirm": "میزبان عامل \"{{name}}\" حذف شود؟ مهارت‌های کش شده از بین خواهند رفت.",
+  "agents.bearerTokenPlaceholder": "توکن Bearer",
+  "agents.disableHost": "غیرفعال کردن {{name}}",
+  "agents.enableHost": "فعال کردن {{name}}",
+  "agents.deleteHost": "حذف {{name}}"
 }

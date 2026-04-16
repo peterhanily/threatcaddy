@@ -153,7 +153,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
             <input
               className={inputClass}
               type="password"
-              placeholder="Bearer token"
+              placeholder={t('agents.bearerTokenPlaceholder')}
               value={formApiKey}
               onChange={e => setFormApiKey(e.target.value)}
             />
@@ -164,7 +164,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
               disabled={!formName || !formUrl}
               className="text-xs px-3 py-1 rounded bg-accent-blue text-white hover:bg-accent-blue/80 disabled:opacity-40 transition-colors"
             >
-              Add Host
+              {t('agents.addHost')}
             </button>
             <button
               onClick={() => setAdding(false)}
@@ -220,14 +220,14 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
                   className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${host.enabled ? 'bg-accent-blue' : 'bg-gray-600'}`}
                   role="switch"
                   aria-checked={host.enabled}
-                  aria-label={`${host.enabled ? 'Disable' : 'Enable'} ${host.displayName}`}
+                  aria-label={t(host.enabled ? 'agents.disableHost' : 'agents.enableHost', { name: host.displayName })}
                 >
                   <span className={`inline-block h-2.5 w-2.5 rounded-full bg-white transition-transform ${host.enabled ? 'translate-x-[14px]' : 'translate-x-[3px]'}`} />
                 </button>
                 <button
                   onClick={() => removeHost(host.id)}
                   className="text-text-muted hover:text-red-400 transition-colors"
-                  aria-label={`Delete ${host.displayName}`}
+                  aria-label={t('agents.deleteHost', { name: host.displayName })}
                 >
                   <Trash2 size={12} />
                 </button>

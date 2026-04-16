@@ -404,5 +404,10 @@
   "server.onboarding.presence": "Presença",
   "server.onboarding.presenceDesc": "Veja quem está online e em quais investigações estão trabalhando.",
   "server.onboarding.getStarted": "Começar",
-  "general.caddylabsTagline": "Uma ferramenta CaddyLabs, feita com amor e tokens na Irlanda."
+  "general.caddylabsTagline": "Uma ferramenta CaddyLabs, feita com amor e tokens na Irlanda.",
+  "agents.hostDeleteConfirm": "Excluir o host do agente \"{{name}}\"? As habilidades em cache serão perdidas.",
+  "agents.bearerTokenPlaceholder": "Token Bearer",
+  "agents.disableHost": "Desativar {{name}}",
+  "agents.enableHost": "Ativar {{name}}",
+  "agents.deleteHost": "Excluir {{name}}"
 }

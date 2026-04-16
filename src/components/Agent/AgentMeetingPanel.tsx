@@ -10,19 +10,20 @@ import { cn, formatDate } from '../../lib/utils';
 import { db } from '../../db';
 import { runAgentMeeting, runHandoffCall } from '../../lib/caddy-agent-meeting';
 
-/** Valid meeting purposes surfaced in the UI. Kept in sync with MeetingPurpose. */
-const PURPOSES: { value: MeetingPurpose; label: string; hint: string }[] = [
-  { value: 'redTeamReview',    label: 'Red-team review',   hint: 'Adversarially challenge a claim/plan' },
-  { value: 'dissentSynthesis', label: 'Dissent synthesis', hint: 'Reconcile conflicting agent positions' },
-  { value: 'signOff',          label: 'Sign-off',          hint: 'Approve/reject a proposed action' },
-  { value: 'freeform',         label: 'Freeform (legacy)', hint: 'Unscoped — accuracy degrades past 2 rounds' },
+/** Valid meeting purposes surfaced in the UI. Kept in sync with MeetingPurpose.
+ *  Labels/hints resolved at render time via i18n so all 21 locales work. */
+const PURPOSE_KEYS: { value: MeetingPurpose; labelKey: string; hintKey: string }[] = [
+  { value: 'redTeamReview',    labelKey: 'meeting.purposeRedTeamReview',    hintKey: 'meeting.purposeRedTeamReviewHint' },
+  { value: 'dissentSynthesis', labelKey: 'meeting.purposeDissentSynthesis', hintKey: 'meeting.purposeDissentSynthesisHint' },
+  { value: 'signOff',          labelKey: 'meeting.purposeSignOff',          hintKey: 'meeting.purposeSignOffHint' },
+  { value: 'freeform',         labelKey: 'meeting.purposeFreeform',         hintKey: 'meeting.purposeFreeformHint' },
 ];
 
 /** Parse the purpose tag ("meeting-purpose:X") from a meeting-request note. */
 function parsePurposeFromNote(note: Note): MeetingPurpose {
   const tag = (note.tags || []).find(t => t.startsWith('meeting-purpose:'));
   const raw = tag ? tag.split(':')[1] : 'freeform';
-  const valid = PURPOSES.map(p => p.value) as string[];
+  const valid = PURPOSE_KEYS.map(p => p.value) as string[];
   return (valid.includes(raw) ? raw : 'freeform') as MeetingPurpose;
 }
 
@@ -168,7 +169,7 @@ export function AgentMeetingPanel({
         <div className="border border-accent-amber/30 rounded-lg bg-accent-amber/5 p-2 space-y-1">
           <div className="flex items-center gap-1.5 text-[10px] text-accent-amber font-medium">
             <Inbox size={11} />
-            <span>{pendingRequests.length} pending meeting request{pendingRequests.length === 1 ? '' : 's'} from agents</span>
+            <span>{t('meeting.pendingRequests', { count: pendingRequests.length })}</span>
           </div>
           {pendingRequests.slice(0, 3).map(req => {
             const reqPurpose = parsePurposeFromNote(req);
@@ -181,18 +182,18 @@ export function AgentMeetingPanel({
                   onClick={() => handleRunRequest(req)}
                   disabled={!canMeet}
                   className="shrink-0 text-[9px] px-1.5 py-0.5 rounded bg-accent-blue text-white hover:bg-accent-blue/90 disabled:opacity-50"
-                  title="Run this meeting"
-                >Run</button>
+                  title={t('meeting.runThisMeeting')}
+                >{t('meeting.run')}</button>
                 <button
                   onClick={() => handleDismissRequest(req)}
                   className="shrink-0 text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Dismiss request"
+                  title={t('meeting.dismissRequest')}
                 ><X size={10} /></button>
               </div>
             );
           })}
           {pendingRequests.length > 3 && (
-            <div className="text-[9px] text-text-muted pl-1">+{pendingRequests.length - 3} more</div>
+            <div className="text-[9px] text-text-muted pl-1">{t('meeting.moreCount', { count: pendingRequests.length - 3 })}</div>
           )}
         </div>
       )}
@@ -209,14 +210,14 @@ export function AgentMeetingPanel({
             className="w-full text-xs bg-surface border border-border-subtle rounded px-2 py-1.5 text-text-primary placeholder:text-text-muted/50 resize-none focus:outline-none focus:border-accent-blue/50"
           />
           <div className="flex items-center gap-2">
-            <label className="text-[10px] text-text-muted shrink-0">Purpose</label>
+            <label className="text-[10px] text-text-muted shrink-0">{t('meeting.purpose')}</label>
             <select
               value={purpose}
               onChange={e => setPurpose(e.target.value as MeetingPurpose)}
               className="flex-1 text-[10px] bg-surface border border-border-subtle rounded px-1.5 py-0.5 text-text-primary"
-              title={PURPOSES.find(p => p.value === purpose)?.hint}
+              title={t(PURPOSE_KEYS.find(p => p.value === purpose)?.hintKey || '')}
             >
-              {PURPOSES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+              {PURPOSE_KEYS.map(p => <option key={p.value} value={p.value}>{t(p.labelKey)}</option>)}
             </select>
           </div>
           <div className="flex items-center justify-between">
@@ -230,7 +231,7 @@ export function AgentMeetingPanel({
                 {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
               </select>
               {purpose !== 'freeform' && maxRounds > 2 && (
-                <span className="text-[9px] text-accent-amber" title="Structured purposes are hard-capped at 2 rounds">capped to 2</span>
+                <span className="text-[9px] text-accent-amber" title={t('meeting.cappedTo2Title')}>{t('meeting.cappedTo2')}</span>
               )}
             </div>
             <button

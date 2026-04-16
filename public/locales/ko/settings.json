@@ -404,5 +404,10 @@
   "server.onboarding.presence": "프레즌스",
   "server.onboarding.presenceDesc": "누가 온라인이고 어떤 조사를 하고 있는지 확인합니다.",
   "server.onboarding.getStarted": "시작하기",
-  "general.caddylabsTagline": "CaddyLabs의 도구입니다. 아일랜드에서 사랑과 토큰으로 만들었습니다."
+  "general.caddylabsTagline": "CaddyLabs의 도구입니다. 아일랜드에서 사랑과 토큰으로 만들었습니다.",
+  "agents.hostDeleteConfirm": "에이전트 호스트 \"{{name}}\"을(를) 삭제하시겠습니까? 캐시된 스킬이 손실됩니다.",
+  "agents.bearerTokenPlaceholder": "Bearer 토큰",
+  "agents.disableHost": "{{name}} 비활성화",
+  "agents.enableHost": "{{name}} 활성화",
+  "agents.deleteHost": "{{name}} 삭제"
 }

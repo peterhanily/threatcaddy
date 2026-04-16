@@ -404,5 +404,10 @@
   "server.onboarding.presence": "Präsenz",
   "server.onboarding.presenceDesc": "Sehen Sie, wer online ist und an welchen Untersuchungen er arbeitet.",
   "server.onboarding.getStarted": "Loslegen",
-  "general.caddylabsTagline": "Ein CaddyLabs-Tool — mit Liebe und Tokens in Irland gemacht."
+  "general.caddylabsTagline": "Ein CaddyLabs-Tool — mit Liebe und Tokens in Irland gemacht.",
+  "agents.hostDeleteConfirm": "Agent-Host \"{{name}}\" löschen? Zwischengespeicherte Skills gehen verloren.",
+  "agents.bearerTokenPlaceholder": "Bearer-Token",
+  "agents.disableHost": "{{name}} deaktivieren",
+  "agents.enableHost": "{{name}} aktivieren",
+  "agents.deleteHost": "{{name}} löschen"
 }

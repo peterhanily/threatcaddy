@@ -404,5 +404,10 @@
   "server.onboarding.presence": "Varlık",
   "server.onboarding.presenceDesc": "Kimin çevrimiçi olduğunu ve hangi soruşturmalarda çalıştığını görün.",
   "server.onboarding.getStarted": "Başlayın",
-  "general.caddylabsTagline": "Bir CaddyLabs aracı — İrlanda'da sevgi ve token'larla yapıldı."
+  "general.caddylabsTagline": "Bir CaddyLabs aracı — İrlanda'da sevgi ve token'larla yapıldı.",
+  "agents.hostDeleteConfirm": "Ajan sunucusu \"{{name}}\" silinsin mi? Önbelleğe alınmış beceriler kaybedilecek.",
+  "agents.bearerTokenPlaceholder": "Bearer belirteci",
+  "agents.disableHost": "{{name}} devre dışı bırak",
+  "agents.enableHost": "{{name}} etkinleştir",
+  "agents.deleteHost": "{{name}} sil"
 }

@@ -404,5 +404,10 @@
   "server.onboarding.presence": "Présence",
   "server.onboarding.presenceDesc": "Voyez qui est en ligne et sur quelles enquêtes il/elle travaille.",
   "server.onboarding.getStarted": "Commencer",
-  "general.caddylabsTagline": "Un outil CaddyLabs, conçu avec amour et tokens en Irlande."
+  "general.caddylabsTagline": "Un outil CaddyLabs, conçu avec amour et tokens en Irlande.",
+  "agents.hostDeleteConfirm": "Supprimer l'hôte d'agent « {{name}} » ? Les compétences en cache seront perdues.",
+  "agents.bearerTokenPlaceholder": "Jeton Bearer",
+  "agents.disableHost": "Désactiver {{name}}",
+  "agents.enableHost": "Activer {{name}}",
+  "agents.deleteHost": "Supprimer {{name}}"
 }

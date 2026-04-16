@@ -404,5 +404,10 @@
   "server.onboarding.presence": "التواجد",
   "server.onboarding.presenceDesc": "اعرف من هو متصل وما التحقيقات التي يعملون عليها.",
   "server.onboarding.getStarted": "ابدأ",
-  "general.caddylabsTagline": "هذه أداة من CaddyLabs، صُنعت بحب ورموز في أيرلندا."
+  "general.caddylabsTagline": "هذه أداة من CaddyLabs، صُنعت بحب ورموز في أيرلندا.",
+  "agents.hostDeleteConfirm": "حذف مضيف الوكيل \"{{name}}\"؟ سيتم فقدان المهارات المخزنة مؤقتاً.",
+  "agents.bearerTokenPlaceholder": "رمز Bearer",
+  "agents.disableHost": "تعطيل {{name}}",
+  "agents.enableHost": "تمكين {{name}}",
+  "agents.deleteHost": "حذف {{name}}"
 }

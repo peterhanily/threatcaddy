@@ -404,5 +404,10 @@
   "server.onboarding.presence": "プレゼンス",
   "server.onboarding.presenceDesc": "誰がオンラインで、どの調査に取り組んでいるかを確認します。",
   "server.onboarding.getStarted": "開始する",
-  "general.caddylabsTagline": "これはCaddyLabsのツールです。アイルランドで愛とトークンを込めて作られました。"
+  "general.caddylabsTagline": "これはCaddyLabsのツールです。アイルランドで愛とトークンを込めて作られました。",
+  "agents.hostDeleteConfirm": "エージェントホスト「{{name}}」を削除しますか？キャッシュされたスキルは失われます。",
+  "agents.bearerTokenPlaceholder": "Bearer トークン",
+  "agents.disableHost": "{{name}} を無効化",
+  "agents.enableHost": "{{name}} を有効化",
+  "agents.deleteHost": "{{name}} を削除"
 }

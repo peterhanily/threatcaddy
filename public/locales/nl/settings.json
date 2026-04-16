@@ -404,5 +404,10 @@
   "server.onboarding.presence": "Aanwezigheid",
   "server.onboarding.presenceDesc": "Bekijk wie er online is en aan welke onderzoeken ze werken.",
   "server.onboarding.getStarted": "Aan de slag",
-  "general.caddylabsTagline": "Een CaddyLabs-tool, met liefde en tokens gemaakt in Ierland."
+  "general.caddylabsTagline": "Een CaddyLabs-tool, met liefde en tokens gemaakt in Ierland.",
+  "agents.hostDeleteConfirm": "Agent-host \"{{name}}\" verwijderen? Gecachte vaardigheden gaan verloren.",
+  "agents.bearerTokenPlaceholder": "Bearer-token",
+  "agents.disableHost": "{{name}} uitschakelen",
+  "agents.enableHost": "{{name}} inschakelen",
+  "agents.deleteHost": "{{name}} verwijderen"
 }

@@ -167,7 +167,7 @@ export function AgentPanel({
       await loadActions();
       onEntitiesChanged?.();
     } catch (err) {
-      setLocalError(`Approve failed: ${(err as Error).message}`);
+      setLocalError(t('panel.approveFailed', { message: (err as Error).message }));
     }
   };
 
@@ -179,7 +179,7 @@ export function AgentPanel({
       await loadActions();
       onEntitiesChanged?.();
     } catch (err) {
-      setLocalError(`Execute with edits failed: ${(err as Error).message}`);
+      setLocalError(t('panel.executeWithEditsFailed', { message: (err as Error).message }));
     }
   };
 
@@ -188,7 +188,7 @@ export function AgentPanel({
       await rejectAction(action.id);
       await loadActions();
     } catch (err) {
-      setLocalError(`Reject failed: ${(err as Error).message}`);
+      setLocalError(t('panel.rejectFailed', { message: (err as Error).message }));
     }
   };
 
@@ -197,12 +197,12 @@ export function AgentPanel({
     try {
       const result = await bulkApproveActions(folder.id);
       if (result.failed > 0) {
-        setLocalError(`Approved ${result.executed}, failed ${result.failed}`);
+        setLocalError(t('panel.bulkApproveResult', { executed: result.executed, failed: result.failed }));
       }
       await loadActions();
       onEntitiesChanged?.();
     } catch (err) {
-      setLocalError(`Bulk approve failed: ${(err as Error).message}`);
+      setLocalError(t('panel.bulkApproveFailed', { message: (err as Error).message }));
     }
   };
 
@@ -295,7 +295,7 @@ export function AgentPanel({
           )}
           {folder.agentEnabled && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-green/10 text-accent-green">
-              auto
+              {t('panel.auto')}
             </span>
           )}
         </div>
@@ -497,7 +497,8 @@ export function AgentPanel({
                                 if (!r || r.acknowledged || dismissedReconciliations.has(d.id)) return null;
                                 const topTool = Object.entries(r.toolHistogram).sort((a, b) => b[1] - a[1])[0];
                                 const count = r.serverActionCount;
-                                const title = `Server bot ran ${count} action${count === 1 ? '' : 's'} while this tab was offline${topTool ? ` — top tool: ${topTool[0]} ×${topTool[1]}` : ''}. Review the audit thread or dismiss.`;
+                                const topToolSuffix = topTool ? t('panel.topToolSuffix', { name: topTool[0], count: topTool[1] }) : '';
+                                const title = t('panel.serverRanActionsTitle', { count, topToolSuffix });
                                 return (
                                   <div
                                     className="text-[9px] text-accent-blue flex items-center gap-1 mt-0.5"
@@ -505,13 +506,13 @@ export function AgentPanel({
                                   >
                                     <Server size={10} />
                                     <span>
-                                      Server ran {count} action{count === 1 ? '' : 's'} while away
+                                      {t('panel.serverRanActions', { count })}
                                       {topTool && ` (${topTool[0]}×${topTool[1]})`}
                                     </span>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); void handleDismissReconciliation(d.id); }}
                                       className="ml-auto text-text-muted hover:text-text-primary"
-                                      aria-label="Dismiss handoff summary"
+                                      aria-label={t('panel.dismissHandoffSummary')}
                                     >
                                       <X size={10} />
                                     </button>

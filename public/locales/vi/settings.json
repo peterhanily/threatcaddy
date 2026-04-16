@@ -404,5 +404,10 @@
   "server.onboarding.presence": "Hiện diện",
   "server.onboarding.presenceDesc": "Xem ai đang trực tuyến và họ đang làm việc trên điều tra nào.",
   "server.onboarding.getStarted": "Bắt đầu",
-  "general.caddylabsTagline": "Đây là công cụ CaddyLabs, được tạo ra với tình yêu và token ở Ireland."
+  "general.caddylabsTagline": "Đây là công cụ CaddyLabs, được tạo ra với tình yêu và token ở Ireland.",
+  "agents.hostDeleteConfirm": "Xóa host tác nhân \"{{name}}\"? Các kỹ năng đã cache sẽ mất.",
+  "agents.bearerTokenPlaceholder": "Mã Bearer",
+  "agents.disableHost": "Tắt {{name}}",
+  "agents.enableHost": "Bật {{name}}",
+  "agents.deleteHost": "Xóa {{name}}"
 }

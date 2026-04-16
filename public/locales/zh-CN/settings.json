@@ -404,5 +404,10 @@
   "server.onboarding.presence": "在线状态",
   "server.onboarding.presenceDesc": "查看谁在线以及他们正在处理哪些调查。",
   "server.onboarding.getStarted": "开始使用",
-  "general.caddylabsTagline": "这是 CaddyLabs 的工具，在爱尔兰用爱与 Token 制成。"
+  "general.caddylabsTagline": "这是 CaddyLabs 的工具，在爱尔兰用爱与 Token 制成。",
+  "agents.hostDeleteConfirm": "删除代理主机 \"{{name}}\"？缓存的技能将丢失。",
+  "agents.bearerTokenPlaceholder": "Bearer 令牌",
+  "agents.disableHost": "禁用 {{name}}",
+  "agents.enableHost": "启用 {{name}}",
+  "agents.deleteHost": "删除 {{name}}"
 }
