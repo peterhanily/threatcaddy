@@ -183,3 +183,125 @@ describe('reconcileAfterHandoff summary', () => {
     expect(await acknowledgeReconciliation('dep-1')).toBe(false);
   });
 });
+
+describe('handoff state machine — end-to-end sequences', () => {
+  beforeEach(async () => {
+    await db.agentDeployments.clear();
+    await db.agentActions.clear();
+  });
+
+  async function seedAction(id: string, toolName: string, createdAt: number) {
+    await db.agentActions.add({
+      id,
+      investigationId: 'inv-1',
+      threadId: 't1',
+      toolName,
+      toolInput: {},
+      rationale: '',
+      status: 'executed',
+      createdAt,
+      executedAt: createdAt,
+    });
+  }
+
+  /** Simulates the full happy-path heartbeat-failure → server-takeover →
+   *  client-resume → reconcile cycle in the order useServerAgents drives it. */
+  it('full takeover-and-resume sequence produces a valid acknowledged reconciliation', async () => {
+    await seed(fixture());
+    expect(shouldBlockNewCycle((await db.agentDeployments.get('dep-1'))!)).toBe(false);
+
+    // Heartbeat fails twice — useServerAgents flips deployment to handoff-pending.
+    expect(await markHandoffPending('dep-1')).toBe(true);
+    expect(shouldBlockNewCycle((await db.agentDeployments.get('dep-1'))!)).toBe(true);
+
+    // Server accepts ownership and runs some actions.
+    expect(await markServerOwned('dep-1')).toBe(true);
+    await seedAction('s1', 'enrich_ioc', 1000);
+    await seedAction('s2', 'create_note', 2000);
+    await seedAction('s3', 'create_note', 3000);
+
+    // Client heartbeat resumes — useServerAgents pulls actions, transitions
+    // through reclaim-pending, then calls reconcile with the pulled IDs.
+    expect(await markReclaimPending('dep-1')).toBe(true);
+    const result = await reconcileAfterHandoff('dep-1', { serverActionIds: ['s1', 's2', 's3'] });
+    expect(result.ok).toBe(true);
+
+    // Final state: client owns it, banner is unacknowledged, summary is correct.
+    let d = await db.agentDeployments.get('dep-1');
+    expect(d?.handoffState).toBe('client');
+    expect(shouldBlockNewCycle(d!)).toBe(false);
+    expect(d?.lastHandoffReconciliation?.serverActionCount).toBe(3);
+    expect(d?.lastHandoffReconciliation?.toolHistogram).toEqual({ enrich_ioc: 1, create_note: 2 });
+    expect(d?.lastHandoffReconciliation?.acknowledged).toBe(false);
+    expect(d?.lastReconciledAt).toBeGreaterThan(0);
+
+    // Analyst dismisses the banner.
+    expect(await acknowledgeReconciliation('dep-1')).toBe(true);
+    d = await db.agentDeployments.get('dep-1');
+    expect(d?.lastHandoffReconciliation?.acknowledged).toBe(true);
+  });
+
+  /** The recovery edge: heartbeat lapses but resumes before the server takes
+   *  over. No reconciliation should be recorded. */
+  it('client-recovers-before-server-takeover sequence skips reconciliation', async () => {
+    await seed(fixture());
+
+    expect(await markHandoffPending('dep-1')).toBe(true);
+    expect(shouldBlockNewCycle((await db.agentDeployments.get('dep-1'))!)).toBe(true);
+
+    expect(await markClientRecovered('dep-1')).toBe(true);
+    const d = await db.agentDeployments.get('dep-1');
+    expect(d?.handoffState).toBe('client');
+    expect(shouldBlockNewCycle(d!)).toBe(false);
+    expect(d?.lastHandoffReconciliation).toBeUndefined();
+    expect(d?.lastReconciledAt).toBeUndefined();
+  });
+
+  /** Two takeovers in a row: each one should overwrite the previous
+   *  reconciliation, and the banner should re-appear unacknowledged. */
+  it('a second takeover overwrites the previous reconciliation summary', async () => {
+    await seed(fixture());
+    await markHandoffPending('dep-1');
+    await markServerOwned('dep-1');
+    await seedAction('first', 'create_note', 1000);
+    await markReclaimPending('dep-1');
+    await reconcileAfterHandoff('dep-1', { serverActionIds: ['first'] });
+    await acknowledgeReconciliation('dep-1');
+    expect((await db.agentDeployments.get('dep-1'))?.lastHandoffReconciliation?.acknowledged).toBe(true);
+
+    // Second takeover with different actions
+    await markHandoffPending('dep-1');
+    await markServerOwned('dep-1');
+    await seedAction('second-a', 'update_ioc', 4000);
+    await seedAction('second-b', 'update_ioc', 5000);
+    await markReclaimPending('dep-1');
+    await reconcileAfterHandoff('dep-1', { serverActionIds: ['second-a', 'second-b'] });
+
+    const d = await db.agentDeployments.get('dep-1');
+    expect(d?.lastHandoffReconciliation?.serverActionCount).toBe(2);
+    expect(d?.lastHandoffReconciliation?.toolHistogram).toEqual({ update_ioc: 2 });
+    expect(d?.lastHandoffReconciliation?.acknowledged).toBe(false); // re-banner
+    expect(d?.lastHandoffReconciliation?.serverActionIds).toEqual(['second-a', 'second-b']);
+  });
+
+  /** The cycle gate stays engaged at every blocking state and disengages
+   *  exactly when the deployment returns to client. Walks every state. */
+  it('shouldBlockNewCycle flips at the right edges through the full cycle', async () => {
+    await seed(fixture());
+    const at = async (state: string) => {
+      const d = await db.agentDeployments.get('dep-1');
+      expect(d?.handoffState ?? 'client').toBe(state);
+      return d!;
+    };
+
+    expect(shouldBlockNewCycle(await at('client'))).toBe(false);
+    await markHandoffPending('dep-1');
+    expect(shouldBlockNewCycle(await at('handoff-pending'))).toBe(true);
+    await markServerOwned('dep-1');
+    expect(shouldBlockNewCycle(await at('server'))).toBe(true);
+    await markReclaimPending('dep-1');
+    expect(shouldBlockNewCycle(await at('reclaim-pending'))).toBe(true);
+    await reconcileAfterHandoff('dep-1', { serverActionIds: [] });
+    expect(shouldBlockNewCycle(await at('client'))).toBe(false);
+  });
+});
