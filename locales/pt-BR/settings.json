@@ -403,5 +403,6 @@
   "server.onboarding.realTimeSyncDesc": "Suas notas, tarefas e IOCs sincronizam automaticamente entre todos os membros da equipe conectados.",
   "server.onboarding.presence": "Presença",
   "server.onboarding.presenceDesc": "Veja quem está online e em quais investigações estão trabalhando.",
-  "server.onboarding.getStarted": "Começar"
+  "server.onboarding.getStarted": "Começar",
+  "general.caddylabsTagline": "Uma ferramenta CaddyLabs, feita com amor e tokens na Irlanda."
 }

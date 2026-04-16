@@ -403,5 +403,6 @@
   "server.onboarding.realTimeSyncDesc": "노트, 태스크, IOC가 연결된 모든 팀원 간에 자동으로 동기화됩니다.",
   "server.onboarding.presence": "프레즌스",
   "server.onboarding.presenceDesc": "누가 온라인이고 어떤 조사를 하고 있는지 확인합니다.",
-  "server.onboarding.getStarted": "시작하기"
+  "server.onboarding.getStarted": "시작하기",
+  "general.caddylabsTagline": "CaddyLabs의 도구입니다. 아일랜드에서 사랑과 토큰으로 만들었습니다."
 }

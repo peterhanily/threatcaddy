@@ -211,5 +211,7 @@
   "demoModal.startExploring": "एक्सप्लोर करना शुरू करें",
   "demoModal.guidedTour": "गाइडेड टूर लें",
   "demoModal.deleteDemo": "डेमो हटाएं और नए सिरे से शुरू करें",
-  "demoModal.removeHint": "आप बाद में सेटिंग्स में नमूना डेटा हटा सकते हैं।"
+  "demoModal.removeHint": "आप बाद में सेटिंग्स में नमूना डेटा हटा सकते हैं।",
+  "error.unexpectedDetail": "एक अप्रत्याशित त्रुटि हुई।",
+  "header.caddylabs": "CaddyLabs"
 }

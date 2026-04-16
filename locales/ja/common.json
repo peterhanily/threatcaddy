@@ -211,5 +211,7 @@
   "demoModal.startExploring": "探索を始める",
   "demoModal.guidedTour": "ガイドツアーを開始",
   "demoModal.deleteDemo": "デモを削除して最初から始める",
-  "demoModal.removeHint": "サンプルデータは後で設定から削除できます。"
+  "demoModal.removeHint": "サンプルデータは後で設定から削除できます。",
+  "error.unexpectedDetail": "予期しないエラーが発生しました。",
+  "header.caddylabs": "CaddyLabs"
 }

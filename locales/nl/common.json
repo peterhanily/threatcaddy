@@ -211,5 +211,7 @@
   "demoModal.startExploring": "Begin met verkennen",
   "demoModal.guidedTour": "Volg de rondleiding",
   "demoModal.deleteDemo": "Demo verwijderen & opnieuw beginnen",
-  "demoModal.removeHint": "U kunt de voorbeeldgegevens later verwijderen in Instellingen."
+  "demoModal.removeHint": "U kunt de voorbeeldgegevens later verwijderen in Instellingen.",
+  "error.unexpectedDetail": "Er is een onverwachte fout opgetreden.",
+  "header.caddylabs": "CaddyLabs"
 }

@@ -403,5 +403,6 @@
   "server.onboarding.realTimeSyncDesc": "您的笔记、任务和 IOC 在所有连接的团队成员之间自动同步。",
   "server.onboarding.presence": "在线状态",
   "server.onboarding.presenceDesc": "查看谁在线以及他们正在处理哪些调查。",
-  "server.onboarding.getStarted": "开始使用"
+  "server.onboarding.getStarted": "开始使用",
+  "general.caddylabsTagline": "这是 CaddyLabs 的工具，在爱尔兰用爱与 Token 制成。"
 }

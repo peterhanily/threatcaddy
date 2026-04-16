@@ -317,5 +317,6 @@
   "demoModal.startExploring": "탐색 시작",
   "demoModal.guidedTour": "가이드 투어 시작",
   "demoModal.deleteDemo": "데모 삭제 및 새로 시작",
-  "demoModal.removeHint": "나중에 설정에서 샘플 데이터를 제거할 수 있습니다."
+  "demoModal.removeHint": "나중에 설정에서 샘플 데이터를 제거할 수 있습니다.",
+  "header.caddylabs": "CaddyLabs"
 }

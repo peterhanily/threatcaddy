@@ -211,5 +211,7 @@
   "demoModal.startExploring": "Mulai Menjelajahi",
   "demoModal.guidedTour": "Ikuti Tur Panduan",
   "demoModal.deleteDemo": "Hapus Demo & Mulai Baru",
-  "demoModal.removeHint": "Anda dapat menghapus data sampel nanti di Pengaturan."
+  "demoModal.removeHint": "Anda dapat menghapus data sampel nanti di Pengaturan.",
+  "error.unexpectedDetail": "Terjadi kesalahan yang tidak terduga.",
+  "header.caddylabs": "CaddyLabs"
 }

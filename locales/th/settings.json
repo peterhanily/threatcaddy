@@ -403,5 +403,6 @@
   "server.onboarding.realTimeSyncDesc": "บันทึก งาน และ IOC จะซิงค์โดยอัตโนมัติในสมาชิกทีมทั้งหมดที่เชื่อมต่อ",
   "server.onboarding.presence": "การแสดงตัวตน",
   "server.onboarding.presenceDesc": "ดูว่าใครออนไลน์และกำลังทำงานกับการสืบสวนใด",
-  "server.onboarding.getStarted": "เริ่มต้น"
+  "server.onboarding.getStarted": "เริ่มต้น",
+  "general.caddylabsTagline": "นี่คือเครื่องมือของ CaddyLabs สร้างขึ้นด้วยความรักและโทเค็นในไอร์แลนด์"
 }

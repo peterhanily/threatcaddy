@@ -403,5 +403,6 @@
   "server.onboarding.realTimeSyncDesc": "Catatan, tugas, dan IOC Anda disinkronkan secara otomatis di semua anggota tim yang terhubung.",
   "server.onboarding.presence": "Kehadiran",
   "server.onboarding.presenceDesc": "Lihat siapa yang online dan investigasi apa yang sedang mereka kerjakan.",
-  "server.onboarding.getStarted": "Mulai"
+  "server.onboarding.getStarted": "Mulai",
+  "general.caddylabsTagline": "Ini adalah alat CaddyLabs, dibuat dengan cinta dan token di Irlandia."
 }

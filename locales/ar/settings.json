@@ -403,5 +403,6 @@
   "server.onboarding.realTimeSyncDesc": "تتزامن ملاحظاتك ومهامك وIOCs تلقائيًا عبر جميع أعضاء الفريق المتصلين.",
   "server.onboarding.presence": "التواجد",
   "server.onboarding.presenceDesc": "اعرف من هو متصل وما التحقيقات التي يعملون عليها.",
-  "server.onboarding.getStarted": "ابدأ"
+  "server.onboarding.getStarted": "ابدأ",
+  "general.caddylabsTagline": "هذه أداة من CaddyLabs، صُنعت بحب ورموز في أيرلندا."
 }

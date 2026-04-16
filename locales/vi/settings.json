@@ -403,5 +403,6 @@
   "server.onboarding.realTimeSyncDesc": "Ghi chú, nhiệm vụ và IOC của bạn tự động đồng bộ trên tất cả thành viên nhóm đã kết nối.",
   "server.onboarding.presence": "Hiện diện",
   "server.onboarding.presenceDesc": "Xem ai đang trực tuyến và họ đang làm việc trên điều tra nào.",
-  "server.onboarding.getStarted": "Bắt đầu"
+  "server.onboarding.getStarted": "Bắt đầu",
+  "general.caddylabsTagline": "Đây là công cụ CaddyLabs, được tạo ra với tình yêu và token ở Ireland."
 }

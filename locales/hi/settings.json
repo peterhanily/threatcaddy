@@ -403,5 +403,6 @@
   "server.onboarding.realTimeSyncDesc": "आपके नोट्स, कार्य और IOCs सभी कनेक्टेड टीम सदस्यों में स्वतः सिंक होते हैं।",
   "server.onboarding.presence": "उपस्थिति",
   "server.onboarding.presenceDesc": "देखें कौन ऑनलाइन है और वे कौन सी जाँचें कर रहे हैं।",
-  "server.onboarding.getStarted": "शुरू करें"
+  "server.onboarding.getStarted": "शुरू करें",
+  "general.caddylabsTagline": "यह एक CaddyLabs टूल है, जिसे प्यार और टोकन के साथ आयरलैंड में बनाया गया है।"
 }
