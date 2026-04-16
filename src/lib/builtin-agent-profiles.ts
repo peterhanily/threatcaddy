@@ -62,14 +62,25 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
     updatedAt: 0,
   },
   {
+    // Profile id retained as 'ap-case-analyst' so existing user deployments keep
+    // resolving — only the persona and toolset are reframed (per profile audit
+    // 2026-04-16: the old generalist overlapped Lead Analyst's fallback).
     id: 'ap-case-analyst',
-    get name() { return i18n.t('builtinProfile.caseAnalyst.name', { ns: 'agent' }); },
-    get description() { return i18n.t('builtinProfile.caseAnalyst.description', { ns: 'agent' }); },
-    icon: '🧠',
+    get name() { return i18n.t('builtinProfile.hypothesisWriter.name', { ns: 'agent' }); },
+    get description() { return i18n.t('builtinProfile.hypothesisWriter.description', { ns: 'agent' }); },
+    icon: '🔮',
     role: 'specialist',
-    systemPrompt: `General analyst. Read investigation, identify gaps, research via fetch_url/enrich_ioc. Create analysis notes with hypotheses. Create follow-up tasks. Link related entities. If case is empty, research the topic and create initial intelligence. Every cycle must produce new output.`,
-    allowedTools: undefined,
-    policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true, seriousness: 50, verbosity: 60, creativity: 60, riskTolerance: 50 },
+    systemPrompt: `Hypothesis Writer. Read the case state. Produce 3-5 falsifiable working theories about what happened, who's involved, and what's coming next. Each hypothesis is one structured note with: **Claim**, **Evidence For**, **Evidence Against**, **How To Test**. Mark hypotheses you've already written with "hypothesis-tested:<verdict>" tags so the team sees what's open. Don't enrich IOCs or build timelines — those are other specialists' jobs. Your output is the team's working theory of the case.`,
+    // Read-heavy, plus create_note for the hypothesis artifacts. No write tools
+    // for IOCs/tasks/timelines — keeps the role's output orthogonal to the
+    // enrichment / timeline / threat-hunter specialists.
+    allowedTools: [
+      'get_investigation_summary', 'search_notes', 'read_note', 'search_all',
+      'list_iocs', 'read_ioc', 'list_tasks', 'read_task',
+      'list_timeline_events', 'read_timeline_event', 'analyze_graph',
+      'create_note',
+    ],
+    policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: false, autoApproveCreate: true, seriousness: 70, verbosity: 60, creativity: 70, riskTolerance: 30 },
     priority: 15,
     source: 'builtin',
     createdAt: 0,
@@ -197,7 +208,13 @@ Create analysis notes. If no specialists deployed, do all work yourself. Be spec
 
   // ── Cross-Case Analysis ───────────────────────────────────────
   {
-    id: 'ap-pattern-hunter', get name() { return i18n.t('builtinProfile.patternHunter.name', { ns: 'agent' }); }, icon: '🔗', role: 'lead',
+    // Role moved from 'lead' to 'specialist' (profile audit 2026-04-16):
+    // Pattern Hunter's job is cross-case detection, not orchestration.
+    // executeDelegateTask scopes tasks to a single folderId, so the lead-only
+    // delegation tools couldn't usefully delegate cross-case findings to the
+    // right investigation. create_task is still in allowedTools — follow-ups
+    // land in Pattern Hunter's current scope, which is honest.
+    id: 'ap-pattern-hunter', get name() { return i18n.t('builtinProfile.patternHunter.name', { ns: 'agent' }); }, icon: '🔗', role: 'specialist',
     get description() { return i18n.t('builtinProfile.patternHunter.description', { ns: 'agent' }); },
     systemPrompt: `You are the Pattern Hunter. Work across ALL investigations to find connections. Use list_investigations to survey the caseload. Use compare_investigations to find shared IOCs and TTPs. Use search_across_investigations to find common indicators. Document patterns as notes. Create tasks for investigation teams when patterns are found. Flag potential campaign connections.`,
     allowedTools: ['list_investigations', 'get_investigation_details', 'search_across_investigations', 'compare_investigations', 'get_investigation_summary', 'list_iocs', 'search_notes', 'create_note', 'create_task'],

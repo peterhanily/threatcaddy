@@ -105,7 +105,7 @@ const FALLBACK_MESSAGE_TRUNCATE_CHARS = 600;
 
 /** Parse a "[[confidence=N]]" tag from the tail of an agent's contribution.
  *  Returns N clamped to 1-5, or undefined if not found. */
-function parseConfidenceTag(text: string): number | undefined {
+export function parseConfidenceTag(text: string): number | undefined {
   const m = text.match(/\[\[confidence\s*=\s*([1-5])\]\]/i);
   if (!m) return undefined;
   const n = parseInt(m[1], 10);
@@ -113,7 +113,7 @@ function parseConfidenceTag(text: string): number | undefined {
 }
 
 /** Strip the confidence tag from displayed text. */
-function stripConfidenceTag(text: string): string {
+export function stripConfidenceTag(text: string): string {
   return text.replace(/\[\[confidence\s*=\s*[1-5]\]\]/gi, '').trim();
 }
 
@@ -130,7 +130,7 @@ Rules:
 
 /** Purpose-specific instruction block injected at the top of every
  *  participant's system prompt so each round is scoped to the goal. */
-function purposeInstruction(purpose: MeetingPurpose, agenda: string): string {
+export function purposeInstruction(purpose: MeetingPurpose, agenda: string): string {
   switch (purpose) {
     case 'redTeamReview':
       return `\n\nMeeting purpose: **RED TEAM REVIEW**. Adversarially challenge the claim/plan in the agenda. Identify weak points, attack assumptions, cite counter-evidence. Your goal is to find failure modes, not to agree.\n\nAgenda claim/plan: ${agenda}`;
@@ -145,7 +145,7 @@ function purposeInstruction(purpose: MeetingPurpose, agenda: string): string {
 }
 
 /** Synthesizer prompt that produces the structured JSON artifact for a purpose. */
-function synthesizerPrompt(purpose: MeetingPurpose, agenda: string, rounds: number): string {
+export function synthesizerPrompt(purpose: MeetingPurpose, agenda: string, rounds: number): string {
   const header = `The meeting has concluded after ${rounds} round(s). As the synthesizer, produce a single JSON object matching the schema below, then a short human-readable markdown summary. Output exactly two sections: first a \`\`\`json code block, then a \`## Summary\` markdown block. Do not add anything outside these.`;
   switch (purpose) {
     case 'redTeamReview':
@@ -161,14 +161,16 @@ function synthesizerPrompt(purpose: MeetingPurpose, agenda: string, rounds: numb
 }
 
 /** Extract the JSON block from the synthesizer's response. Returns undefined if absent/invalid. */
-function parseSynthesizerJson(text: string, purpose: MeetingPurpose): MeetingStructuredOutput | undefined {
+export function parseSynthesizerJson(text: string, purpose: MeetingPurpose): MeetingStructuredOutput | undefined {
   const match = text.match(/```json\s*\n?([\s\S]*?)\n?```/);
   if (!match) return undefined;
   try {
     const parsed = JSON.parse(match[1]);
     if (!parsed || typeof parsed !== 'object') return undefined;
-    // Coerce to the right purpose (LLM may omit it) and accept whatever fields are there.
-    return { purpose, ...parsed } as MeetingStructuredOutput;
+    // Force the caller's purpose to win — the LLM sometimes omits it or returns
+    // the wrong one, and downstream code relies on this matching the requested
+    // schema. Spread parsed FIRST, then overwrite purpose.
+    return { ...parsed, purpose } as MeetingStructuredOutput;
   } catch {
     return undefined;
   }
