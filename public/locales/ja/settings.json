@@ -403,5 +403,6 @@
   "server.onboarding.realTimeSyncDesc": "ノート、タスク、IOCは接続されたすべてのチームメンバー間で自動同期します。",
   "server.onboarding.presence": "プレゼンス",
   "server.onboarding.presenceDesc": "誰がオンラインで、どの調査に取り組んでいるかを確認します。",
-  "server.onboarding.getStarted": "開始する"
+  "server.onboarding.getStarted": "開始する",
+  "general.caddylabsTagline": "これはCaddyLabsのツールです。アイルランドで愛とトークンを込めて作られました。"
 }

@@ -403,5 +403,6 @@
   "server.onboarding.realTimeSyncDesc": "Uw notities, taken en IOC's worden automatisch gesynchroniseerd over alle verbonden teamleden.",
   "server.onboarding.presence": "Aanwezigheid",
   "server.onboarding.presenceDesc": "Bekijk wie er online is en aan welke onderzoeken ze werken.",
-  "server.onboarding.getStarted": "Aan de slag"
+  "server.onboarding.getStarted": "Aan de slag",
+  "general.caddylabsTagline": "Een CaddyLabs-tool, met liefde en tokens gemaakt in Ierland."
 }

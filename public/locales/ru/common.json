@@ -211,5 +211,7 @@
   "demoModal.startExploring": "Начать исследование",
   "demoModal.guidedTour": "Пройти экскурсию",
   "demoModal.deleteDemo": "Удалить демо и начать заново",
-  "demoModal.removeHint": "Вы можете удалить примеры данных позже в Настройках."
+  "demoModal.removeHint": "Вы можете удалить примеры данных позже в Настройках.",
+  "error.unexpectedDetail": "Произошла непредвиденная ошибка.",
+  "header.caddylabs": "CaddyLabs"
 }

@@ -403,5 +403,6 @@
   "server.onboarding.realTimeSyncDesc": "یادداشت‌ها، وظایف و IOCهای شما به طور خودکار در همه اعضای تیم متصل همگام‌سازی می‌شوند.",
   "server.onboarding.presence": "حضور",
   "server.onboarding.presenceDesc": "ببینید چه کسی آنلاین است و روی چه تحقیقاتی کار می‌کند.",
-  "server.onboarding.getStarted": "شروع کنید"
+  "server.onboarding.getStarted": "شروع کنید",
+  "general.caddylabsTagline": "این ابزاری از CaddyLabs است که با عشق و توکن در ایرلند ساخته شده است."
 }

@@ -211,5 +211,7 @@
   "demoModal.startExploring": "Keşfetmeye Başla",
   "demoModal.guidedTour": "Rehberli Tura Katıl",
   "demoModal.deleteDemo": "Demoyu Sil ve Sıfırdan Başla",
-  "demoModal.removeHint": "Örnek verileri daha sonra Ayarlar'dan kaldırabilirsiniz."
+  "demoModal.removeHint": "Örnek verileri daha sonra Ayarlar'dan kaldırabilirsiniz.",
+  "error.unexpectedDetail": "Beklenmedik bir hata oluştu.",
+  "header.caddylabs": "CaddyLabs"
 }

@@ -212,5 +212,6 @@
   "demoModal.startExploring": "ابدأ الاستكشاف",
   "demoModal.guidedTour": "خذ الجولة الإرشادية",
   "demoModal.deleteDemo": "حذف العرض التوضيحي والبدء من جديد",
-  "demoModal.removeHint": "يمكنك إزالة البيانات النموذجية لاحقًا في الإعدادات."
+  "demoModal.removeHint": "يمكنك إزالة البيانات النموذجية لاحقًا في الإعدادات.",
+  "header.caddylabs": "CaddyLabs"
 }

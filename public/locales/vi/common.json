@@ -211,5 +211,7 @@
   "demoModal.startExploring": "Bắt đầu khám phá",
   "demoModal.guidedTour": "Tham gia chuyến tham quan hướng dẫn",
   "demoModal.deleteDemo": "Xóa bản demo & Bắt đầu mới",
-  "demoModal.removeHint": "Bạn có thể xóa dữ liệu mẫu sau trong Cài đặt."
+  "demoModal.removeHint": "Bạn có thể xóa dữ liệu mẫu sau trong Cài đặt.",
+  "error.unexpectedDetail": "Đã xảy ra lỗi không mong muốn.",
+  "header.caddylabs": "CaddyLabs"
 }

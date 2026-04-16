@@ -403,5 +403,6 @@
   "server.onboarding.realTimeSyncDesc": "ההערות, המשימות וה-IOCs שלך מסתנכרנים אוטומטית בכל חברי הצוות המחוברים.",
   "server.onboarding.presence": "נוכחות",
   "server.onboarding.presenceDesc": "ראה מי מחובר ועל אילו חקירות הם עובדים.",
-  "server.onboarding.getStarted": "התחל"
+  "server.onboarding.getStarted": "התחל",
+  "general.caddylabsTagline": "זהו כלי של CaddyLabs, נוצר באהבה וטוקנים באירלנד."
 }

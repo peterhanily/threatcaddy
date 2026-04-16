@@ -403,5 +403,6 @@
   "server.onboarding.realTimeSyncDesc": "Notlarınız, görevleriniz ve IOC'leriniz tüm bağlı ekip üyelerinde otomatik olarak senkronize edilir.",
   "server.onboarding.presence": "Varlık",
   "server.onboarding.presenceDesc": "Kimin çevrimiçi olduğunu ve hangi soruşturmalarda çalıştığını görün.",
-  "server.onboarding.getStarted": "Başlayın"
+  "server.onboarding.getStarted": "Başlayın",
+  "general.caddylabsTagline": "Bir CaddyLabs aracı — İrlanda'da sevgi ve token'larla yapıldı."
 }

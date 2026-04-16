@@ -211,5 +211,7 @@
   "demoModal.startExploring": "شروع کاوش",
   "demoModal.guidedTour": "تور راهنما را شروع کنید",
   "demoModal.deleteDemo": "حذف دمو و شروع تازه",
-  "demoModal.removeHint": "می‌توانید داده‌های نمونه را بعداً در تنظیمات حذف کنید."
+  "demoModal.removeHint": "می‌توانید داده‌های نمونه را بعداً در تنظیمات حذف کنید.",
+  "error.unexpectedDetail": "خطای غیرمنتظره‌ای رخ داد.",
+  "header.caddylabs": "CaddyLabs"
 }

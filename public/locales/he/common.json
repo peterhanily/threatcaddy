@@ -211,5 +211,7 @@
   "demoModal.startExploring": "התחילו לחקור",
   "demoModal.guidedTour": "צאו לסיור מודרך",
   "demoModal.deleteDemo": "מחיקת הדמו והתחלה מחדש",
-  "demoModal.removeHint": "ניתן להסיר את נתוני הדוגמה מאוחר יותר בהגדרות."
+  "demoModal.removeHint": "ניתן להסיר את נתוני הדוגמה מאוחר יותר בהגדרות.",
+  "error.unexpectedDetail": "אירעה שגיאה לא צפויה.",
+  "header.caddylabs": "CaddyLabs"
 }
