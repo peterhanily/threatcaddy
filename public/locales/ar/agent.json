@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "تم تحديد {{count}} وكلاء",
   "picker.selectProfilesToDeploy": "اختر الملفات الشخصية للنشر",
   "picker.deploy": "نشر",
-  "picker.activeCount": "{{count}} نشط"
+  "picker.activeCount": "{{count}} نشط",
+  "panel.loadMore": "تحميل المزيد من الإجراءات",
+  "cycleSummary.expand": "إظهار تفاصيل الدورة",
+  "cycleSummary.collapse": "إخفاء تفاصيل الدورة"
 }

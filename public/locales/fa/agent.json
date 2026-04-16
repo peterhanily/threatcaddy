@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "{{count}} عامل انتخاب شده",
   "picker.selectProfilesToDeploy": "پروفایل‌ها را برای استقرار انتخاب کنید",
   "picker.deploy": "استقرار",
-  "picker.activeCount": "{{count}} فعال"
+  "picker.activeCount": "{{count}} فعال",
+  "panel.loadMore": "بارگذاری اقدامات بیشتر",
+  "cycleSummary.expand": "نمایش جزئیات چرخه",
+  "cycleSummary.collapse": "پنهان کردن جزئیات چرخه"
 }

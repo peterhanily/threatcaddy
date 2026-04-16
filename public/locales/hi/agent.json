@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "{{count}} एजेंट चयनित",
   "picker.selectProfilesToDeploy": "तैनात करने के लिए प्रोफ़ाइल चुनें",
   "picker.deploy": "तैनात करें",
-  "picker.activeCount": "{{count}} सक्रिय"
+  "picker.activeCount": "{{count}} सक्रिय",
+  "panel.loadMore": "अधिक क्रियाएँ लोड करें",
+  "cycleSummary.expand": "चक्र विवरण दिखाएँ",
+  "cycleSummary.collapse": "चक्र विवरण छिपाएँ"
 }

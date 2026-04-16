@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "{{count}} Agenten ausgewählt",
   "picker.selectProfilesToDeploy": "Profile zum Bereitstellen auswählen",
   "picker.deploy": "Bereitstellen",
-  "picker.activeCount": "{{count}} aktiv"
+  "picker.activeCount": "{{count}} aktiv",
+  "panel.loadMore": "Weitere Aktionen laden",
+  "cycleSummary.expand": "Zyklus-Details anzeigen",
+  "cycleSummary.collapse": "Zyklus-Details ausblenden"
 }

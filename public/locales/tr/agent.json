@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "{{count}} ajan seçildi",
   "picker.selectProfilesToDeploy": "Dağıtılacak profilleri seçin",
   "picker.deploy": "Dağıt",
-  "picker.activeCount": "{{count}} aktif"
+  "picker.activeCount": "{{count}} aktif",
+  "panel.loadMore": "Daha fazla işlem yükle",
+  "cycleSummary.expand": "Döngü ayrıntılarını göster",
+  "cycleSummary.collapse": "Döngü ayrıntılarını gizle"
 }

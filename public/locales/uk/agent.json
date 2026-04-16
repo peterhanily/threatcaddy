@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "Обрано {{count}} агентів",
   "picker.selectProfilesToDeploy": "Виберіть профілі для розгортання",
   "picker.deploy": "Розгорнути",
-  "picker.activeCount": "{{count}} активних"
+  "picker.activeCount": "{{count}} активних",
+  "panel.loadMore": "Завантажити більше дій",
+  "cycleSummary.expand": "Показати деталі циклу",
+  "cycleSummary.collapse": "Сховати деталі циклу"
 }

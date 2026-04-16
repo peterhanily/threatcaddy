@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "Đã chọn {{count}} tác nhân",
   "picker.selectProfilesToDeploy": "Chọn hồ sơ để triển khai",
   "picker.deploy": "Triển khai",
-  "picker.activeCount": "{{count}} hoạt động"
+  "picker.activeCount": "{{count}} hoạt động",
+  "panel.loadMore": "Tải thêm hành động",
+  "cycleSummary.expand": "Hiện chi tiết chu kỳ",
+  "cycleSummary.collapse": "Ẩn chi tiết chu kỳ"
 }

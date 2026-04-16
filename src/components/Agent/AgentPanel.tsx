@@ -56,6 +56,7 @@ export function AgentPanel({
   const { t } = useTranslation('agent');
   const [actions, setActions] = useState<AgentAction[]>([]);
   const [hasMore, setHasMore] = useState(false);
+  const [pageCount, setPageCount] = useState(1);
   const [localError, setLocalError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'executed' | 'rejected'>('all');
   const [showSettings, setShowSettings] = useState(false);
@@ -116,15 +117,16 @@ export function AgentPanel({
   const [agentTasks, setAgentTasks] = useState<Task[]>([]);
 
   const loadActions = useCallback(async () => {
+    const currentLimit = ACTION_PAGE_SIZE * pageCount;
     const results = await db.agentActions
       .where('[investigationId+createdAt]')
       .between([folder.id, -Infinity], [folder.id, Infinity])
       .reverse()
-      .limit(ACTION_PAGE_SIZE + 1)
+      .limit(currentLimit + 1)
       .toArray();
 
-    setHasMore(results.length > ACTION_PAGE_SIZE);
-    setActions(results.slice(0, ACTION_PAGE_SIZE));
+    setHasMore(results.length > currentLimit);
+    setActions(results.slice(0, currentLimit));
 
     // Also load agent-related tasks
     const allTasks = await db.tasks.where('folderId').equals(folder.id).toArray();
@@ -134,7 +136,10 @@ export function AgentPanel({
       const order: Record<string, number> = { 'todo': 0, 'in-progress': 1, 'done': 2 };
       return (order[a.status] ?? 3) - (order[b.status] ?? 3);
     }));
-  }, [folder.id]);
+  }, [folder.id, pageCount]);
+
+  // Reset pagination when switching investigations
+  useEffect(() => { setPageCount(1); }, [folder.id]);
 
   useEffect(() => {
     loadActions();
@@ -434,7 +439,14 @@ export function AgentPanel({
                 onReject={action.status === 'pending' ? handleReject : undefined}
                 onViewReasoning={handleViewReasoning} />
             ))}
-            {hasMore && <p className="text-center text-[10px] text-text-muted py-1">{t('panel.showingLatest', { count: ACTION_PAGE_SIZE })}</p>}
+            {hasMore && (
+              <button
+                onClick={() => setPageCount(c => c + 1)}
+                className="w-full text-center text-[10px] text-accent-blue hover:bg-accent-blue/5 py-1.5 rounded transition-colors"
+              >
+                {t('panel.loadMore')}
+              </button>
+            )}
           </div>
         </div>
       )}

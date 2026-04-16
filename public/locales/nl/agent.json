@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "{{count}} agenten geselecteerd",
   "picker.selectProfilesToDeploy": "Selecteer profielen om uit te rollen",
   "picker.deploy": "Uitrollen",
-  "picker.activeCount": "{{count}} actief"
+  "picker.activeCount": "{{count}} actief",
+  "panel.loadMore": "Meer acties laden",
+  "cycleSummary.expand": "Cyclusdetails weergeven",
+  "cycleSummary.collapse": "Cyclusdetails verbergen"
 }

@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "{{count}}개 에이전트 선택됨",
   "picker.selectProfilesToDeploy": "배포할 프로필 선택",
   "picker.deploy": "배포",
-  "picker.activeCount": "{{count}}개 활성"
+  "picker.activeCount": "{{count}}개 활성",
+  "panel.loadMore": "작업 더 불러오기",
+  "cycleSummary.expand": "주기 세부정보 표시",
+  "cycleSummary.collapse": "주기 세부정보 숨기기"
 }

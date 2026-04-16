@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "已选择 {{count}} 个代理",
   "picker.selectProfilesToDeploy": "选择要部署的配置文件",
   "picker.deploy": "部署",
-  "picker.activeCount": "{{count}} 活跃"
+  "picker.activeCount": "{{count}} 活跃",
+  "panel.loadMore": "加载更多操作",
+  "cycleSummary.expand": "显示周期详情",
+  "cycleSummary.collapse": "隐藏周期详情"
 }

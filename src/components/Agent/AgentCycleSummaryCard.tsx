@@ -52,6 +52,7 @@ export function AgentCycleSummaryCard({ summary, defaultExpanded = false }: Agen
         onClick={() => setExpanded(v => !v)}
         className="w-full flex items-center gap-2 px-3 py-2 hover:bg-surface-raised text-left"
         aria-expanded={expanded}
+        aria-label={t(expanded ? 'cycleSummary.collapse' : 'cycleSummary.expand')}
       >
         {expanded ? <ChevronDown size={14} className="shrink-0 text-text-muted" /> : <ChevronRight size={14} className="shrink-0 text-text-muted" />}
         <Icon size={14} className={cn('shrink-0', meta.color)} />

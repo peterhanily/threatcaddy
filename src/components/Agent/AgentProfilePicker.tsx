@@ -3,7 +3,7 @@
  * Supports deploying multiple profiles at once with quantity per profile.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Plus, Minus, Wrench, Users } from 'lucide-react';
 import type { AgentProfile, AgentDeployment } from '../../types';
@@ -20,6 +20,16 @@ interface AgentProfilePickerProps {
 export function AgentProfilePicker({ profiles, deployments, onDeployMultiple, onCreateProfile, onClose }: AgentProfilePickerProps) {
   const { t } = useTranslation('agent');
   const [selections, setSelections] = useState<Map<string, number>>(new Map());
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  // Capture the element that had focus before open, move focus onto the modal,
+  // restore focus on unmount.
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+    return () => { previousFocusRef.current?.focus?.(); };
+  }, []);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -78,7 +88,7 @@ export function AgentProfilePicker({ profiles, deployments, onDeployMultiple, on
             <h3 className="text-sm font-semibold text-text-primary">{t('picker.deployAgents')}</h3>
             <p className="text-[10px] text-text-muted">{t('picker.subtitle')}</p>
           </div>
-          <button onClick={onClose} className="text-text-muted hover:text-text-secondary" aria-label={t('picker.close')}><X size={16} /></button>
+          <button ref={closeButtonRef} onClick={onClose} className="text-text-muted hover:text-text-secondary" aria-label={t('picker.close')}><X size={16} /></button>
         </div>
 
         {/* Profile list */}

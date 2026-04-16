@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "{{count}} エージェント選択済み",
   "picker.selectProfilesToDeploy": "デプロイするプロファイルを選択",
   "picker.deploy": "デプロイ",
-  "picker.activeCount": "{{count}} アクティブ"
+  "picker.activeCount": "{{count}} アクティブ",
+  "panel.loadMore": "アクションをさらに読み込む",
+  "cycleSummary.expand": "サイクルの詳細を表示",
+  "cycleSummary.collapse": "サイクルの詳細を非表示"
 }

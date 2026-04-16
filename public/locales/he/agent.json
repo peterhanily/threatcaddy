@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "{{count}} סוכנים נבחרו",
   "picker.selectProfilesToDeploy": "בחר פרופילים לפריסה",
   "picker.deploy": "פרוס",
-  "picker.activeCount": "{{count}} פעיל"
+  "picker.activeCount": "{{count}} פעיל",
+  "panel.loadMore": "טען פעולות נוספות",
+  "cycleSummary.expand": "הצג פרטי מחזור",
+  "cycleSummary.collapse": "הסתר פרטי מחזור"
 }

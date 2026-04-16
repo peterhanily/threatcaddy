@@ -83,6 +83,7 @@
   "panel.focusAreasHint": "Comma-separated areas the agent should focus on",
   "panel.configureAISettings": "Configure AI Settings",
   "panel.auto": "auto",
+  "panel.loadMore": "Load more actions",
   "panel.approveFailed": "Approve failed: {{message}}",
   "panel.executeWithEditsFailed": "Execute with edits failed: {{message}}",
   "panel.rejectFailed": "Reject failed: {{message}}",
@@ -257,6 +258,8 @@
   "cycleSummary.toolErrors_one": "{{count}} tool error",
   "cycleSummary.toolErrors_other": "{{count}} tool errors",
   "cycleSummary.tokensInOut": "{{in}} in / {{out}} out",
+  "cycleSummary.expand": "Show cycle details",
+  "cycleSummary.collapse": "Hide cycle details",
 
   "picker.deployAgents": "Deploy Agents",
   "picker.subtitle": "Select profiles and quantities to deploy",

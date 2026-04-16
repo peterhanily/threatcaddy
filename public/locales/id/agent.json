@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "{{count}} agen dipilih",
   "picker.selectProfilesToDeploy": "Pilih profil untuk diterapkan",
   "picker.deploy": "Terapkan",
-  "picker.activeCount": "{{count}} aktif"
+  "picker.activeCount": "{{count}} aktif",
+  "panel.loadMore": "Muat tindakan lainnya",
+  "cycleSummary.expand": "Tampilkan detail siklus",
+  "cycleSummary.collapse": "Sembunyikan detail siklus"
 }

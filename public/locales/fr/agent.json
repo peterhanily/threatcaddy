@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "{{count}} agents sélectionnés",
   "picker.selectProfilesToDeploy": "Sélectionnez les profils à déployer",
   "picker.deploy": "Déployer",
-  "picker.activeCount": "{{count}} actif"
+  "picker.activeCount": "{{count}} actif",
+  "panel.loadMore": "Charger plus d'actions",
+  "cycleSummary.expand": "Afficher les détails du cycle",
+  "cycleSummary.collapse": "Masquer les détails du cycle"
 }

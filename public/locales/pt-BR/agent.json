@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "{{count}} agentes selecionados",
   "picker.selectProfilesToDeploy": "Selecione perfis para implantar",
   "picker.deploy": "Implantar",
-  "picker.activeCount": "{{count}} ativo"
+  "picker.activeCount": "{{count}} ativo",
+  "panel.loadMore": "Carregar mais ações",
+  "cycleSummary.expand": "Mostrar detalhes do ciclo",
+  "cycleSummary.collapse": "Ocultar detalhes do ciclo"
 }

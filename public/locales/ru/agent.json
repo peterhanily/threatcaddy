@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "Выбрано {{count}} агентов",
   "picker.selectProfilesToDeploy": "Выберите профили для развёртывания",
   "picker.deploy": "Развернуть",
-  "picker.activeCount": "{{count}} активных"
+  "picker.activeCount": "{{count}} активных",
+  "panel.loadMore": "Загрузить больше действий",
+  "cycleSummary.expand": "Показать подробности цикла",
+  "cycleSummary.collapse": "Скрыть подробности цикла"
 }

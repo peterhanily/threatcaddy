@@ -262,5 +262,8 @@
   "picker.agentsSelected_other": "เลือกเอเจนต์ {{count}} รายการ",
   "picker.selectProfilesToDeploy": "เลือกโปรไฟล์ที่จะปรับใช้",
   "picker.deploy": "ปรับใช้",
-  "picker.activeCount": "{{count}} ใช้งาน"
+  "picker.activeCount": "{{count}} ใช้งาน",
+  "panel.loadMore": "โหลดการกระทำเพิ่มเติม",
+  "cycleSummary.expand": "แสดงรายละเอียดรอบ",
+  "cycleSummary.collapse": "ซ่อนรายละเอียดรอบ"
 }
