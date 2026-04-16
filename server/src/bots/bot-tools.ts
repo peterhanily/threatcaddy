@@ -243,7 +243,7 @@ const createTimelineEventTool: BotTool = {
 
 const postToFeedTool: BotTool = {
   name: 'post_to_feed',
-  description: 'Post a message to the CaddyShack feed. Optionally scoped to an investigation.',
+  description: 'Post a message to the Team Feed. Optionally scoped to an investigation.',
   parameters: {
     type: 'object',
     properties: {

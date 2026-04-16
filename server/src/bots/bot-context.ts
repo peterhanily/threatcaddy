@@ -472,7 +472,7 @@ export class BotExecutionContext {
     return id;
   }
 
-  // ─── Feed (CaddyShack) ───────────────────────────────────────
+  // ─── Team Feed (route path + table name retain the CaddyShack codename) ─
 
   async postToFeed(content: string, folderId?: string): Promise<string> {
     this.requireCapability('post_to_feed');

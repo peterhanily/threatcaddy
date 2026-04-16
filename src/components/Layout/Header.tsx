@@ -10,7 +10,10 @@ import { PresenceIndicator } from '../Common/PresenceIndicator';
 import type { PresenceUser } from '../../types';
 import { useUIModals } from '../../contexts/UIModalContext';
 import { useInvestigation } from '../../contexts/InvestigationContext';
-import logoSvgRaw from '/logo.svg?raw';
+// Relative path (not the leading-slash public-dir URL) so Vite 7.3.2's
+// tightened FS sandbox resolves this through the filesystem plugin in
+// both build and test. `?raw` inlines the SVG string either way.
+import logoSvgRaw from '../../../public/logo.svg?raw';
 const logoSvg = `data:image/svg+xml,${encodeURIComponent(logoSvgRaw)}`;
 
 interface HeaderProps {

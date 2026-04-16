@@ -111,7 +111,7 @@ Deploy a team of AI analysts that run autonomously in the background, enriching 
 | 👑 Lead Analyst | Leadership | Case orchestration, task delegation, quality review |
 | 🔍 IOC Enricher | Specialist | VirusTotal, AbuseIPDB, Shodan enrichment |
 | 📅 Timeline Builder | Specialist | Date extraction, ATT&CK tactic mapping, narrative creation |
-| 🧠 Case Analyst | Specialist | General analysis, hypothesis creation, follow-up tasking |
+| 🧠 Hypothesis Writer | Specialist | Falsifiable working theories — claim, evidence (for/against), confidence, how-to-test |
 | 🎯 Threat Hunter | Specialist | Hypothesis-driven hunting, behavioral pattern detection |
 | 🦠 Malware Analyst | Specialist | Hash analysis, C2 extraction, family identification |
 | 🌐 Network Forensics | Specialist | Network IOCs, C2 infrastructure, lateral movement |

@@ -21,6 +21,18 @@
 - **Server `/api/caddy-agents` authZ closures** — `/register`, `/unregister`, and `/heartbeat` now require `checkInvestigationAccess` before mutating bot configs or heartbeat rows. The April 12 audit covered `/status`, `/actions`, `/approve`, `/reject`, and `/trigger`; these three were missed and allowed an authenticated user to register/deregister server-side bots for investigations they couldn't read. `/unregister` by `deploymentIds` now re-checks access per-deployment's scope folders.
 - **Agent Host error-body redaction** — `fetchHostSkills` in `src/lib/agent-hosts.ts` now strips `Bearer <token>`, `Authorization` headers, and common credential keys (`api_key`, `access_token`, `secret`, `password`) from upstream HTTP error bodies before raising them into tool results or audit logs. Upstream servers that echo the caller's auth header in 401/403 responses can no longer leak it through agent tool output. Error body also capped at 500 chars.
 
+### Security (Phase 6–7)
+
+- **Dependency bumps past CVE advisories** — `dompurify` `^3.3.3` → `^3.4.0` (patches `ADD_TAGS` bypass, GHSA-39q2-94rc-95cp); `vite` `^7.3.1` → `^7.3.2` (patches plugin sandbox escape, GHSA-4w7w-66w2-5vf9). The Vite 7.3.2 sandbox tighten denied the previous `/logo.svg?raw` leading-slash import in `Header.tsx`; switched to a filesystem-relative path so the import resolves through the FS plugin in both build and test.
+- **Idempotency key — FNV-1a → SHA-256 truncated** — `makeIdempotencyKey` now hashes canonical JSON with Web Crypto (`crypto.subtle.digest('SHA-256')`) and takes the first 64 bits as hex. Removes the 2^32 birthday risk of the old non-crypto FNV-1a and neutralises any crafted-collision angle from adversarial tool outputs reflected back into later calls. Function is now async; the single call site in the cycle loop adds `await`. 7 tests (one new — asserts the 16-hex truncation format).
+- **Agent soul hardening** — tightened per-field caps in the soul-injection block (identity 500→200, lessons 300→150, strengths/weaknesses 100→80) so a compromised soul carries less payload room. Added a word-neutralization pass that replaces imperative prompt-injection conjuring words (`ignore`, `disregard`, `override`, `system`, `assistant`, `user`, `instruction`, `forget`) with `·` before rendering into the system prompt. Boundary markers restyled with balanced `<<<AGENT_SOUL>>>` fences.
+
+### Documentation (Phase 6)
+
+- **README profile table** — Case Analyst → Hypothesis Writer, aligned with the 2026-04-16 profile audit.
+- **Server: CaddyShack → Team Feed** in user-facing tool description (`bot-tools.ts`) and code comment (`bot-context.ts`). The route path, database table, and internal module names keep the CaddyShack codename — those are API contracts with existing deployments.
+- **Wiki drift swept** — `projects/threatcaddy.md`, `concepts/local-first-architecture.md`, `concepts/caddy-suite.md`, `concepts/agentcaddy-system.md`: Dexie schema `v25` → `v28`, Case Analyst → Hypothesis Writer in the specialist tiers, test count refreshed to 2,138+.
+
 ### Performance
 
 - **`chat-mentions` no longer full-scans on every keystroke** — the global (no `folderId`) mention search previously did `db.notes.filter(n => !n.trashed).toArray()` on each `@`-typed character. Switched to `orderBy('updatedAt').reverse().filter().limit(200)` which walks the existing `updatedAt` index and stops after 200 hits. Same change on `standaloneIOCs`. Added a 200ms debounce in `ChatInput` so fast typing only fires the last query.
