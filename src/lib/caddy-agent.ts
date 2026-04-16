@@ -415,18 +415,29 @@ const ENTITY_WRITE_TOOLS: Record<string, AgentEntityRef['type']> = {
   create_timeline_event: 'timeline', update_timeline_event: 'timeline',
 };
 
+/** Recursively serialize a value to JSON with deterministic key order so that
+ *  `{a:1,b:2}` and `{b:2,a:1}` hash identically. The LLM can legitimately
+ *  re-emit the same tool call with a different property order across a handoff
+ *  boundary, which would otherwise defeat idempotency dedup. */
+function canonicalJSON(v: unknown): string {
+  if (v === null || typeof v !== 'object') return JSON.stringify(v);
+  if (Array.isArray(v)) return '[' + v.map(canonicalJSON).join(',') + ']';
+  const keys = Object.keys(v as Record<string, unknown>).sort();
+  return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalJSON((v as Record<string, unknown>)[k])).join(',') + '}';
+}
+
 /** Compute a per-cycle idempotency key for a tool invocation.
  *  Same deployment + cycle + tool + input = same key → prior result is replayed
  *  instead of re-executing. Prevents double-writes on client crashes and on
  *  client↔server handoff boundaries. Keys are bounded so IndexedDB stays happy. */
-function makeIdempotencyKey(
+export function makeIdempotencyKey(
   deploymentId: string | undefined,
   cycleStartedAt: number,
   toolName: string,
   input: unknown,
 ): string {
   let inputStr: string;
-  try { inputStr = JSON.stringify(input ?? {}); } catch { inputStr = String(input); }
+  try { inputStr = canonicalJSON(input ?? {}); } catch { inputStr = String(input); }
   // 32-bit FNV-1a — fast, no crypto dep, collision-resistant enough within a
   // single deployment's lifetime. The deployment+cycle prefix keeps the
   // namespace scoped so cross-deployment collisions are irrelevant.

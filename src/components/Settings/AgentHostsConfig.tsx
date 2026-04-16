@@ -50,9 +50,12 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
   }, [formName, formDisplayName, formUrl, formApiKey, hosts, updateHosts]);
 
   const removeHost = useCallback((id: string) => {
+    const host = hosts.find(h => h.id === id);
+    if (!host) return;
+    if (!confirm(t('agents.hostDeleteConfirm', { name: host.displayName }))) return;
     updateHosts(hosts.filter(h => h.id !== id));
     if (expandedId === id) setExpandedId(null);
-  }, [hosts, expandedId, updateHosts]);
+  }, [hosts, expandedId, updateHosts, t]);
 
   const toggleEnabled = useCallback((id: string) => {
     updateHosts(hosts.map(h => h.id === id ? { ...h, enabled: !h.enabled } : h));

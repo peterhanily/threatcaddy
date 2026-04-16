@@ -75,6 +75,13 @@ export function AgentPanel({
       onFolderChanged?.();
     } catch (err) {
       console.warn('[AgentPanel] acknowledgeReconciliation failed:', err);
+      // Revert optimistic dismissal so the user can retry. Without this, client
+      // shows dismissed while server still has the reconciliation unacknowledged.
+      setDismissedReconciliations(prev => {
+        const next = new Set(prev);
+        next.delete(deploymentId);
+        return next;
+      });
     }
   };
 

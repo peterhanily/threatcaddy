@@ -142,6 +142,7 @@
   "agents.hostsDesc": "Connect external agent hosts (Claude Code, custom runtimes) that expose skills via REST API. Discovered skills become available as LLM tools.",
   "agents.refreshAll": "Refresh All",
   "agents.addHost": "Add Host",
+  "agents.hostDeleteConfirm": "Delete agent host \"{{name}}\"? Cached skills will be lost.",
   "agents.hostsEmpty": "No agent hosts configured. Click \"Add Host\" to connect an external agent runtime.",
   "agents.nameSlug": "Name (slug)",
   "agents.displayName": "Display Name",
