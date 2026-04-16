@@ -166,36 +166,18 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
         if (result.serverWasRunning) {
           setServerRunning(false);
           // Handoff happened: deployments are implicitly in 'server' (or should
-          // be). Drive each through reclaim-pending → client so shouldBlockNewCycle
-          // gates the local loop until reconciliation runs.
+          // be). We must pull server-created actions BEFORE reconciling so the
+          // reconcile summary has the right IDs to display.
           const currentDeployments = await db.agentDeployments
             .where('investigationId').equals(investigationId)
             .toArray();
-          for (const d of currentDeployments) {
-            // If we were tracking a pre-emptive handoff-pending for this id,
-            // drive the full cycle; otherwise force-mark server then reclaim so
-            // the state machine is consistent regardless of where we started.
-            if (d.handoffState !== 'server') {
-              // Bring it into the server state via the legal edges available.
-              if (!d.handoffState || d.handoffState === 'client') {
-                await markHandoffPending(d.id).catch(() => {});
-              }
-              if ((await db.agentDeployments.get(d.id))?.handoffState === 'handoff-pending') {
-                // Fabricate the server → reclaim path since we never observed
-                // the real server-side transition.
-                await db.agentDeployments.update(d.id, { handoffState: 'server', updatedAt: Date.now() });
-              }
-            }
-            await markReclaimPending(d.id).catch(() => {});
-            await reconcileAfterHandoff(d.id).catch(err => console.warn('[useServerAgents] reconcile failed:', err));
-          }
-          pendingHandoffIdsRef.current.clear();
 
-          // Pull server-created actions
+          // Pull server-created actions first and remember their IDs so we can
+          // attribute them to the reconcile summary below.
+          const newServerActionIds: string[] = [];
           try {
             const actionsResult = await apiCall(`/actions/${investigationId}`, 'GET');
             if (actionsResult.actions?.length > 0) {
-              // Merge into local agentActions
               for (const action of actionsResult.actions) {
                 const existing = await db.agentActions.get(action.id);
                 if (!existing) {
@@ -214,10 +196,33 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
                     executedAt: action.executedAt ? new Date(action.executedAt).getTime() : undefined,
                     reviewedAt: action.reviewedAt ? new Date(action.reviewedAt).getTime() : undefined,
                   });
+                  newServerActionIds.push(action.id);
                 }
               }
             }
-          } catch { /* non-critical */ }
+          } catch { /* non-critical — reconcile will fall back to the time-window path */ }
+
+          for (const d of currentDeployments) {
+            // Drive through the state machine. If we were tracking a pre-emptive
+            // handoff-pending, the normal transitions apply; otherwise fabricate
+            // the server-ownership bit since we never saw the real edge.
+            if (d.handoffState !== 'server') {
+              if (!d.handoffState || d.handoffState === 'client') {
+                await markHandoffPending(d.id).catch(() => {});
+              }
+              if ((await db.agentDeployments.get(d.id))?.handoffState === 'handoff-pending') {
+                await db.agentDeployments.update(d.id, { handoffState: 'server', updatedAt: Date.now() });
+              }
+            }
+            await markReclaimPending(d.id).catch(() => {});
+            // Attribute each deployment's share of the pulled actions to its
+            // reconciliation. If the server API didn't disambiguate per
+            // deployment, pass the full set — the summary is per-deployment but
+            // the actions are scoped to the investigation anyway.
+            await reconcileAfterHandoff(d.id, { serverActionIds: newServerActionIds })
+              .catch(err => console.warn('[useServerAgents] reconcile failed:', err));
+          }
+          pendingHandoffIdsRef.current.clear();
         }
       } catch (err) {
         if (mountedRef.current) setError((err as Error).message);

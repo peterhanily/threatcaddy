@@ -20,7 +20,7 @@
  */
 
 import { db } from '../db';
-import type { AgentDeployment } from '../types';
+import type { AgentAction, AgentDeployment, HandoffReconciliation } from '../types';
 
 type HandoffState = NonNullable<AgentDeployment['handoffState']>;
 
@@ -80,33 +80,76 @@ export async function markClientRecovered(deploymentId: string): Promise<boolean
 /**
  * Reconciliation hook — called once during the 'reclaim-pending' state.
  *
- * The stub below marks the deployment reconciled and transitions back to
- * 'client'. Once a server-version API exists, replace the body with:
- *   1. Fetch server entity versions for this investigation
- *   2. Diff against local entity versions
- *   3. Apply last-write-wins (or surface conflicts to the user)
- *   4. Only then transition to 'client'
+ * Summarizes what the server did while it owned the deployment and stores it
+ * as a `HandoffReconciliation` on the deployment so the UI can surface a
+ * "here's what happened while you were away" banner until the analyst
+ * acknowledges it.
  *
- * Until then: the local store is already being synced by the existing
- * sync-engine, so this hook just seals the state machine. Leaving the
- * hook here keeps the call site stable when the full reconciler lands.
+ * The server-side entity-version diff (conflict detection, last-write-wins)
+ * is still a TODO — it needs a server-side version API. When that lands, it
+ * replaces or augments the summary here. Until then we rely on the existing
+ * sync-engine to have brought local state up to date; this hook turns the
+ * state machine into user-visible signal, not just internal bookkeeping.
  */
-export async function reconcileAfterHandoff(deploymentId: string): Promise<{ ok: boolean; reason?: string }> {
+export async function reconcileAfterHandoff(
+  deploymentId: string,
+  opts: { serverActionIds?: string[] } = {},
+): Promise<{ ok: boolean; reason?: string; reconciliation?: HandoffReconciliation }> {
   const d = await db.agentDeployments.get(deploymentId);
   if (!d) return { ok: false, reason: 'deployment not found' };
   if (d.handoffState !== 'reclaim-pending') {
     return { ok: false, reason: `reconcile requested while in state ${d.handoffState || 'client'}` };
   }
 
-  // TODO(phase-5-followup): server-version-diff reconciliation lands here.
-  // For now we trust the sync-engine to have brought local state up to date.
+  // Build the summary from whatever server actions were passed in, or from
+  // any agentActions on this investigation created after the last reconcile
+  // marker (fallback path for heartbeats that didn't pull explicit IDs).
+  const ids = opts.serverActionIds ?? [];
+  let actions: AgentAction[] = [];
+  if (ids.length > 0) {
+    actions = (await Promise.all(ids.map(id => db.agentActions.get(id))))
+      .filter((a): a is AgentAction => !!a);
+  } else {
+    const since = d.lastReconciledAt ?? 0;
+    actions = await db.agentActions
+      .where('[investigationId+createdAt]')
+      .between([d.investigationId, since], [d.investigationId, Infinity])
+      .filter(a => a.status === 'executed')
+      .toArray();
+  }
+
+  const toolHistogram: Record<string, number> = {};
+  for (const a of actions) {
+    toolHistogram[a.toolName] = (toolHistogram[a.toolName] || 0) + 1;
+  }
+
+  const reconciliation: HandoffReconciliation = {
+    at: Date.now(),
+    serverActionCount: actions.length,
+    serverActionIds: actions.map(a => a.id),
+    toolHistogram,
+    acknowledged: false,
+  };
 
   await db.agentDeployments.update(deploymentId, {
     handoffState: 'client',
     lastReconciledAt: Date.now(),
+    lastHandoffReconciliation: reconciliation,
     updatedAt: Date.now(),
   });
-  return { ok: true };
+  return { ok: true, reconciliation };
+}
+
+/** Mark the most recent HandoffReconciliation on a deployment as acknowledged,
+ *  which clears the banner. Called from the AgentPanel dismiss action. */
+export async function acknowledgeReconciliation(deploymentId: string): Promise<boolean> {
+  const d = await db.agentDeployments.get(deploymentId);
+  if (!d?.lastHandoffReconciliation) return false;
+  await db.agentDeployments.update(deploymentId, {
+    lastHandoffReconciliation: { ...d.lastHandoffReconciliation, acknowledged: true },
+    updatedAt: Date.now(),
+  });
+  return true;
 }
 
 /** True when the deployment is in a state where a new cycle should not start

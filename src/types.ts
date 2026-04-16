@@ -1211,6 +1211,23 @@ export interface AgentCycleSummary {
   tasksEscalated?: number;
 }
 
+/** Summary of what happened during a server-owned window, surfaced to the
+ *  analyst after the client reclaims the deployment. Until acknowledged, it
+ *  drives a banner on the deployment card. */
+export interface HandoffReconciliation {
+  /** Wall-clock time the reconciliation was recorded. */
+  at: number;
+  /** Number of agent actions the server executed during the window. */
+  serverActionCount: number;
+  /** IDs of those actions (already merged into local db.agentActions). Empty
+   *  when the reconciliation was triggered without a server-actions pull. */
+  serverActionIds: string[];
+  /** Per-tool count of what the server ran, for one-glance summary display. */
+  toolHistogram: Record<string, number>;
+  /** Has the analyst acknowledged the reconciliation? Dismisses the banner. */
+  acknowledged: boolean;
+}
+
 /** An agent profile deployed to a specific investigation. */
 export interface AgentDeployment {
   id: string;
@@ -1241,6 +1258,9 @@ export interface AgentDeployment {
    *  a server-owned window — used to gate the agent from starting a new cycle
    *  on stale local state. */
   lastReconciledAt?: number;
+  /** Summary of the most recent handoff, shown to the analyst as a "here's
+   *  what happened while your tab was asleep" banner until acknowledged. */
+  lastHandoffReconciliation?: HandoffReconciliation;
   /** Competitive mode: cooperative (share work), competitive (independent analysis), independent (assigned tasks only) */
   competitiveness?: 'cooperative' | 'competitive' | 'independent';
   /** Shift state: active agents run cycles, resting agents don't */

@@ -488,6 +488,25 @@ function sanitizeAgentProfile(raw: unknown): Record<string, unknown> | null {
 
 const VALID_HANDOFF_STATES = ['client', 'handoff-pending', 'server', 'reclaim-pending'];
 
+function sanitizeHandoffReconciliation(raw: unknown): Record<string, unknown> | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const r = raw as Record<string, unknown>;
+  const ids = Array.isArray(r.serverActionIds) ? r.serverActionIds.filter((i): i is string => typeof i === 'string') : [];
+  const hist = (r.toolHistogram && typeof r.toolHistogram === 'object' && !Array.isArray(r.toolHistogram))
+    ? Object.fromEntries(
+        Object.entries(r.toolHistogram as Record<string, unknown>)
+          .filter(([, v]) => typeof v === 'number')
+      )
+    : {};
+  return {
+    at: num(r.at, Date.now()),
+    serverActionCount: num(r.serverActionCount, ids.length),
+    serverActionIds: ids,
+    toolHistogram: hist,
+    acknowledged: r.acknowledged === true,
+  };
+}
+
 function sanitizeAgentDeployment(raw: unknown): Record<string, unknown> | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
@@ -503,6 +522,7 @@ function sanitizeAgentDeployment(raw: unknown): Record<string, unknown> | null {
     order: num(r.order, 0),
     handoffState: handoffState && VALID_HANDOFF_STATES.includes(handoffState) ? handoffState : undefined,
     lastReconciledAt: r.lastReconciledAt != null ? num(r.lastReconciledAt) : undefined,
+    lastHandoffReconciliation: sanitizeHandoffReconciliation(r.lastHandoffReconciliation),
     createdAt: num(r.createdAt, Date.now()), updatedAt: num(r.updatedAt, Date.now()),
   };
 }

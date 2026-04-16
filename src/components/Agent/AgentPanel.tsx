@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Bot, Play, CheckCheck, Loader2, AlertTriangle, X, Settings as SettingsIcon, ChevronDown, ChevronRight, Key, Puzzle, Plus,
+  Bot, Play, CheckCheck, Loader2, AlertTriangle, X, Settings as SettingsIcon, ChevronDown, ChevronRight, Key, Puzzle, Plus, Server,
 } from 'lucide-react';
 import type { AgentAction, AgentPolicy, AgentProfile, AgentDeployment, Folder, AgentStatus, Settings, Task } from '../../types';
 import { DEFAULT_AGENT_POLICY } from '../../types';
 import { cn, formatDate, postMessageOrigin } from '../../lib/utils';
 import { db } from '../../db';
 import { executeApprovedAction, rejectAction, bulkApproveActions } from '../../lib/caddy-agent';
+import { acknowledgeReconciliation } from '../../lib/agent-handoff';
 import { AgentActionCard } from './AgentActionCard';
 import { AgentProfilePicker } from './AgentProfilePicker';
 import { AgentMeetingPanel } from './AgentMeetingPanel';
@@ -61,6 +62,21 @@ export function AgentPanel({
   const [confirmBulk, setConfirmBulk] = useState(false);
   const [showProfilePicker, setShowProfilePicker] = useState(false);
   const [activeTab, setActiveTab] = useState<'inbox' | 'agents' | 'tasks' | 'logs'>('inbox');
+  /** Client-side set of deployment IDs where the analyst has dismissed the
+   *  handoff-reconciliation banner. Persisted via acknowledgeReconciliation()
+   *  on the deployment, but tracked here for instant UI feedback before the
+   *  parent re-fetches deployments. */
+  const [dismissedReconciliations, setDismissedReconciliations] = useState<Set<string>>(new Set());
+
+  const handleDismissReconciliation = async (deploymentId: string) => {
+    setDismissedReconciliations(prev => new Set([...prev, deploymentId]));
+    try {
+      await acknowledgeReconciliation(deploymentId);
+      onFolderChanged?.();
+    } catch (err) {
+      console.warn('[AgentPanel] acknowledgeReconciliation failed:', err);
+    }
+  };
 
   // Detect extension availability
   const [extensionAvailable, setExtensionAvailable] = useState(false);
@@ -469,6 +485,32 @@ export function AgentPanel({
                                   <AlertTriangle size={10} /> {m.tasksEscalated} escalated to human
                                 </div>
                               )}
+                              {(() => {
+                                const r = d.lastHandoffReconciliation;
+                                if (!r || r.acknowledged || dismissedReconciliations.has(d.id)) return null;
+                                const topTool = Object.entries(r.toolHistogram).sort((a, b) => b[1] - a[1])[0];
+                                const count = r.serverActionCount;
+                                const title = `Server bot ran ${count} action${count === 1 ? '' : 's'} while this tab was offline${topTool ? ` — top tool: ${topTool[0]} ×${topTool[1]}` : ''}. Review the audit thread or dismiss.`;
+                                return (
+                                  <div
+                                    className="text-[9px] text-accent-blue flex items-center gap-1 mt-0.5"
+                                    title={title}
+                                  >
+                                    <Server size={10} />
+                                    <span>
+                                      Server ran {count} action{count === 1 ? '' : 's'} while away
+                                      {topTool && ` (${topTool[0]}×${topTool[1]})`}
+                                    </span>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); void handleDismissReconciliation(d.id); }}
+                                      className="ml-auto text-text-muted hover:text-text-primary"
+                                      aria-label="Dismiss handoff summary"
+                                    >
+                                      <X size={10} />
+                                    </button>
+                                  </div>
+                                );
+                              })()}
                             </>
                           );
                         })()}
