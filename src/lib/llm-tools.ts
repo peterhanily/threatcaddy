@@ -306,7 +306,7 @@ export async function executeTool(
       case 'define_specialist':              result = await executeDefineSpecialist(inp, folderId); break;
       case 'dismiss_agent':                  result = await executeDismissAgent(inp, folderId); break;
       case 'reflect_on_performance':         result = await executeReflectOnPerformance(inp, agentContext?.profileId); break;
-      case 'read_soul':                      result = await executeReadSoul(agentContext?.profileId); break;
+      case 'read_soul':                      result = await executeReadSoul(inp, agentContext?.profileId, agentRole); break;
       case 'forensicate_scan':              result = await executeForensicateScan({ text: String(inp.text || ''), threshold: inp.threshold ? Number(inp.threshold) : undefined }); break;
       default: {
         // Dynamic skill tools: local:<skill> or host:<name>:<skill>
@@ -1729,19 +1729,53 @@ async function executeReflectOnPerformance(inp: Record<string, unknown>, profile
   });
 }
 
-async function executeReadSoul(profileId?: string): Promise<string> {
+async function executeReadSoul(
+  input: Record<string, unknown>,
+  profileId?: string,
+  agentRole?: string,
+): Promise<string> {
+  // Souls only persist on db.agentProfiles (builtin records are read-only),
+  // so resolve to the user-DB record when both a builtin and a user profile
+  // share an id — otherwise the builtin (no soul) wins the merge order.
+  const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
+  const userProfiles = await db.agentProfiles.toArray();
+  const userById = new Map(userProfiles.map(p => [p.id, p]));
+  const allProfiles: AgentProfile[] = [
+    ...BUILTIN_AGENT_PROFILES.map(b => userById.get(b.id) ?? b),
+    ...userProfiles.filter(u => !BUILTIN_AGENT_PROFILES.some(b => b.id === u.id)),
+  ];
+
+  const requestedName = typeof input.agentName === 'string' ? input.agentName.trim() : '';
   let profile;
-  if (profileId) {
-    const allProfiles = await getAllAgentProfiles();
+  let isPeerRead = false;
+
+  if (requestedName) {
+    // Peer-read: only executives may inspect another agent's soul.
+    if (agentRole && agentRole !== 'executive') {
+      return JSON.stringify({
+        error: `Only executive agents can read another agent's soul (your role: ${agentRole}). Omit agentName to read your own soul.`,
+      });
+    }
+    const lower = requestedName.toLowerCase();
+    profile = allProfiles.find(p => p.name.toLowerCase() === lower)
+      || allProfiles.find(p => p.name.toLowerCase().includes(lower));
+    if (!profile) {
+      return JSON.stringify({ error: `Agent profile not found: "${requestedName}"` });
+    }
+    isPeerRead = !!profileId && profile.id !== profileId;
+  } else if (profileId) {
     profile = allProfiles.find(p => p.id === profileId);
   }
+
   if (!profile) {
+    // Legacy fallback: no caller context — surface the most recently active
+    // deployment's profile. Used by ad-hoc tool invocations outside an agent
+    // cycle (e.g. CaddyAI chat invoking the tool on behalf of the analyst).
     const deployments = await db.agentDeployments.toArray();
     const activeDeployment = deployments
       .filter(d => d.shift === 'active' && d.status !== 'error')
       .sort((a, b) => (b.lastRunAt || 0) - (a.lastRunAt || 0))[0];
     if (!activeDeployment) return JSON.stringify({ error: 'No active agent deployment found' });
-    const allProfiles = await getAllAgentProfiles();
     profile = allProfiles.find(p => p.id === activeDeployment.profileId);
   }
   if (!profile) return JSON.stringify({ error: 'Agent profile not found' });
@@ -1749,13 +1783,17 @@ async function executeReadSoul(profileId?: string): Promise<string> {
   if (!profile.soul) {
     return JSON.stringify({
       profile: profile.name,
+      isPeerRead,
       soul: null,
-      message: 'No soul yet — use reflect_on_performance to build your persistent identity.',
+      message: isPeerRead
+        ? `${profile.name} has no soul yet — they have not run reflect_on_performance.`
+        : 'No soul yet — use reflect_on_performance to build your persistent identity.',
     });
   }
 
   return JSON.stringify({
     profile: profile.name,
+    isPeerRead,
     soul: {
       identity: profile.soul.identity,
       lessons: profile.soul.lessons.slice(0, 10),

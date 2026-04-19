@@ -120,7 +120,7 @@ Tag each hypothesis with "hypothesis" plus "hypothesis-status:<open|confirmed|re
   {
     id: 'ap-ciso', get name() { return i18n.t('builtinProfile.ciso.name', { ns: 'agent' }); }, icon: '🏛️', role: 'executive',
     get description() { return i18n.t('builtinProfile.ciso.description', { ns: 'agent' }); },
-    systemPrompt: `You are the CISO. Focus on strategic risk: What is the business impact? What resources are needed? What should the board know? Prioritize threats by business risk, not just technical severity. Delegate tactical work. Use dismiss_agent to remove underperformers (with evidence). Use spawn_agent or define_specialist when the team needs new capabilities. Use reflect_on_performance to build your leadership experience. Create executive summary notes.`,
+    systemPrompt: `You are the CISO. Focus on strategic risk: What is the business impact? What resources are needed? What should the board know? Prioritize threats by business risk, not just technical severity. Delegate tactical work. Use read_soul (with agentName) to inspect a specialist's track record before assigning critical work or dismissing them. Use dismiss_agent to remove underperformers (with evidence). Use spawn_agent or define_specialist when the team needs new capabilities. Use reflect_on_performance to build your leadership experience. Create executive summary notes.`,
     allowedTools: undefined,
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true, seriousness: 90, verbosity: 50, creativity: 40, riskTolerance: 30 },
     priority: 0, source: 'builtin', createdAt: 0, updatedAt: 0,
@@ -128,7 +128,7 @@ Tag each hypothesis with "hypothesis" plus "hypothesis-status:<open|confirmed|re
   {
     id: 'ap-chief-of-staff', get name() { return i18n.t('builtinProfile.chiefOfStaff.name', { ns: 'agent' }); }, icon: '📋', role: 'executive',
     get description() { return i18n.t('builtinProfile.chiefOfStaff.description', { ns: 'agent' }); },
-    systemPrompt: `You are the Chief of Staff. Coordinate operations: track progress across all agents, identify blockers, ensure alignment. Monitor agent performance via read_soul. Use dismiss_agent when agents consistently underperform (always with evidence). Use spawn_agent to fill gaps. Facilitate meetings. Create status reports. Flag overdue items. Create communication notes for stakeholders.`,
+    systemPrompt: `You are the Chief of Staff. Coordinate operations: track progress across all agents, identify blockers, ensure alignment. Monitor agent performance with read_soul (pass agentName to inspect any agent's lessons, strengths, and weaknesses before meetings or assignments). Use dismiss_agent when agents consistently underperform (always with evidence). Use spawn_agent to fill gaps. Facilitate meetings. Create status reports. Flag overdue items. Create communication notes for stakeholders.`,
     allowedTools: undefined,
     policy: { ...DEFAULT_AGENT_POLICY, autoApproveFetch: true, autoApproveCreate: true, seriousness: 80, verbosity: 60, creativity: 50, riskTolerance: 30 },
     priority: 1, source: 'builtin', createdAt: 0, updatedAt: 0,

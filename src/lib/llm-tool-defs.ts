@@ -799,10 +799,12 @@ export const EXECUTIVE_TOOL_DEFINITIONS = [
   },
   {
     name: 'read_soul',
-    description: 'Read your persistent soul — your identity, lessons, strengths, weaknesses, and lifetime performance metrics. Use at the start of each investigation to remember who you are.',
+    description: 'Read a persistent soul — identity, lessons, strengths, weaknesses, and lifetime metrics. Without arguments, reads your own soul (use at the start of each investigation to remember who you are). Executives (CISO, Chief of Staff) may pass `agentName` to inspect another agent\'s soul before a meeting, dismissal, or assignment decision.',
     input_schema: {
       type: 'object' as const,
-      properties: {},
+      properties: {
+        agentName: { type: 'string', description: 'Optional: profile name of another agent whose soul you want to read (e.g. "Threat Hunter"). Executive-only — non-executives are restricted to their own soul.' },
+      },
       required: [],
     },
   },
