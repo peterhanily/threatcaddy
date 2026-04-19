@@ -280,7 +280,7 @@ export function BulkIOCImportModal({
                         key={s}
                         type="button"
                         onClick={() => addTag(s)}
-                        className="w-full text-left px-2 py-1 text-xs text-gray-300 hover:bg-gray-700"
+                        className="w-full text-start px-2 py-1 text-xs text-gray-300 hover:bg-gray-700"
                       >
                         {s}
                       </button>
@@ -322,10 +322,10 @@ export function BulkIOCImportModal({
               <table className="w-full text-xs">
                 <thead className="sticky top-0 bg-gray-900 z-10">
                   <tr className="border-b border-gray-800">
-                    <th className="text-left text-gray-500 font-medium py-2 px-2">{t('bulkImport.previewValue')}</th>
-                    <th className="text-left text-gray-500 font-medium py-2 px-2 w-28">{t('bulkImport.previewType')}</th>
-                    <th className="text-left text-gray-500 font-medium py-2 px-2 w-28">{t('bulkImport.previewConfidence')}</th>
-                    <th className="text-right text-gray-500 font-medium py-2 px-2 w-10"></th>
+                    <th className="text-start text-gray-500 font-medium py-2 px-2">{t('bulkImport.previewValue')}</th>
+                    <th className="text-start text-gray-500 font-medium py-2 px-2 w-28">{t('bulkImport.previewType')}</th>
+                    <th className="text-start text-gray-500 font-medium py-2 px-2 w-28">{t('bulkImport.previewConfidence')}</th>
+                    <th className="text-end text-gray-500 font-medium py-2 px-2 w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -360,7 +360,7 @@ export function BulkIOCImportModal({
                             ))}
                           </select>
                         </td>
-                        <td className="py-1.5 px-2 text-right">
+                        <td className="py-1.5 px-2 text-end">
                           <button
                             onClick={() => removeParsed(i)}
                             className="p-0.5 rounded text-gray-600 hover:text-red-400 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100"

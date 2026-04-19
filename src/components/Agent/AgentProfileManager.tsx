@@ -33,16 +33,16 @@ export function AgentProfileManager({
     <div>
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 w-full text-left mb-2"
+        className="flex items-center gap-2 w-full text-start mb-2"
       >
         {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <Bot size={16} className="text-accent-blue" />
         <span className="text-sm font-semibold text-text-secondary">{t('profile.agentProfiles')}</span>
-        <span className="text-xs text-text-muted ml-auto">{t('profile.customAndBuiltin', { custom: userProfiles.length, builtin: builtinProfiles.length })}</span>
+        <span className="text-xs text-text-muted ms-auto">{t('profile.customAndBuiltin', { custom: userProfiles.length, builtin: builtinProfiles.length })}</span>
       </button>
 
       {expanded && (
-        <div className="space-y-3 ml-6">
+        <div className="space-y-3 ms-6">
           {/* User profiles */}
           {userProfiles.length > 0 && (
             <div>
@@ -251,13 +251,13 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
               {profile.soul.strengths.length > 0 && (
                 <div>
                   <span className="text-[9px] text-accent-green">Strengths:</span>
-                  <span className="text-[10px] text-text-muted ml-1">{profile.soul.strengths.slice(0, 5).join(', ')}</span>
+                  <span className="text-[10px] text-text-muted ms-1">{profile.soul.strengths.slice(0, 5).join(', ')}</span>
                 </div>
               )}
               {profile.soul.weaknesses.length > 0 && (
                 <div>
                   <span className="text-[9px] text-accent-amber">Improve:</span>
-                  <span className="text-[10px] text-text-muted ml-1">{profile.soul.weaknesses.slice(0, 5).join(', ')}</span>
+                  <span className="text-[10px] text-text-muted ms-1">{profile.soul.weaknesses.slice(0, 5).join(', ')}</span>
                 </div>
               )}
               {profile.soul.lessons.length > 0 && (
@@ -265,7 +265,7 @@ function ProfileRow({ profile, isBuiltin, onEdit, onDelete, onDuplicate }: {
                   <span className="text-[9px] text-text-muted">Recent lessons ({profile.soul.lessons.length}):</span>
                   <ul className="mt-0.5 space-y-0.5">
                     {profile.soul.lessons.slice(0, 3).map((l, i) => (
-                      <li key={i} className="text-[10px] text-text-muted pl-2 border-l border-border-subtle">{l.substring(0, 150)}</li>
+                      <li key={i} className="text-[10px] text-text-muted ps-2 border-l border-border-subtle">{l.substring(0, 150)}</li>
                     ))}
                   </ul>
                 </div>

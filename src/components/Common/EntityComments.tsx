@@ -116,7 +116,7 @@ export function EntityComments({ comments, onUpdate }: EntityCommentsProps) {
                 <>
                   <div className="flex-1 min-w-0">
                     {c.userName && (
-                      <span className="text-[10px] text-accent font-medium mr-1.5">{c.userName}</span>
+                      <span className="text-[10px] text-accent font-medium me-1.5">{c.userName}</span>
                     )}
                     <p className="text-xs text-gray-300 whitespace-pre-wrap break-words">{c.content}</p>
                   </div>

@@ -63,9 +63,9 @@ function MessageBubble({ role, content, createdAt }: { role: 'user' | 'assistant
       <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${isUser ? 'bg-accent/20' : 'bg-purple-500/20'}`}>
         {isUser ? <User size={14} className="text-accent" /> : <Bot size={14} className="text-purple-400" />}
       </div>
-      <div className={`flex-1 min-w-0 ${isUser ? 'text-right' : ''}`}>
+      <div className={`flex-1 min-w-0 ${isUser ? 'text-end' : ''}`}>
         <div
-          className={`inline-block text-left rounded-xl px-3 py-2 text-sm max-w-full ${isUser ? 'bg-accent/10 text-text-primary' : 'bg-bg-raised text-text-primary'} markdown-preview`}
+          className={`inline-block text-start rounded-xl px-3 py-2 text-sm max-w-full ${isUser ? 'bg-accent/10 text-text-primary' : 'bg-bg-raised text-text-primary'} markdown-preview`}
           dangerouslySetInnerHTML={{ __html: html }}
         />
         <p className="text-[9px] text-text-muted mt-0.5">{formatFullDate(createdAt)}</p>

@@ -129,7 +129,7 @@ export function InlineNameGenerator({ onCreateInvestigation, onCancel }: InlineN
           title={`Comedy: ${levelInfo.label}`}
           aria-label={`Comedy level: ${levelInfo.label}`}
         >
-          <Zap size={10} className="inline mr-0.5" />
+          <Zap size={10} className="inline me-0.5" />
           {levelInfo.label}
         </button>
         <button

@@ -332,7 +332,7 @@ export function StandaloneIOCList({
             {showBulkStatusMenu && (
               <div className="absolute top-full left-0 mt-1 z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-xl py-1 w-44">
                 {STATUS_OPTIONS.map(s => (
-                  <button key={s} onClick={() => handleBulkSetStatus(s)} className="w-full px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800 text-left flex items-center gap-2">
+                  <button key={s} onClick={() => handleBulkSetStatus(s)} className="w-full px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800 text-start flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: STATUS_COLORS[s] }} />
                     {STATUS_LABELS[s] || s}
                   </button>
@@ -347,7 +347,7 @@ export function StandaloneIOCList({
             {showBulkConfidenceMenu && (
               <div className="absolute top-full left-0 mt-1 z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-xl py-1 w-36">
                 {CONFIDENCE_OPTIONS.map(c => (
-                  <button key={c} onClick={() => handleBulkSetConfidence(c)} className="w-full px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800 text-left flex items-center gap-2">
+                  <button key={c} onClick={() => handleBulkSetConfidence(c)} className="w-full px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800 text-start flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CONFIDENCE_LEVELS[c].color }} />
                     {CONFIDENCE_LEVELS[c].label}
                   </button>
@@ -369,7 +369,7 @@ export function StandaloneIOCList({
           <button onClick={() => setShowBulkEnrich(true)} className="flex items-center gap-1 px-2 py-1 rounded bg-amber-900/20 text-amber-400 hover:bg-amber-900/40 text-xs">
             <Zap size={12} /> Enrich
           </button>
-          <button onClick={() => setSelectedIds(new Set())} className="ml-auto text-xs text-gray-500 hover:text-gray-300 px-2 py-1">Clear selection</button>
+          <button onClick={() => setSelectedIds(new Set())} className="ms-auto text-xs text-gray-500 hover:text-gray-300 px-2 py-1">Clear selection</button>
         </div>
       )}
 
@@ -382,7 +382,7 @@ export function StandaloneIOCList({
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
             placeholder="Filter by value..."
-            className="w-full pl-8 pr-8 py-1.5 rounded-md bg-gray-800 border border-gray-700 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-gray-600"
+            className="w-full ps-8 pe-8 py-1.5 rounded-md bg-gray-800 border border-gray-700 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-gray-600"
           />
           {searchText && (
             <button
@@ -395,7 +395,7 @@ export function StandaloneIOCList({
         </div>
 
         <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wide mr-1">{t('iocList.statusFilterLabel')}</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-wide me-1">{t('iocList.statusFilterLabel')}</span>
           <button
             onClick={() => setStatusFilter(null)}
             className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
@@ -427,7 +427,7 @@ export function StandaloneIOCList({
         </div>
 
         <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wide mr-1">{t('iocList.confidenceFilterLabel')}</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-wide me-1">{t('iocList.confidenceFilterLabel')}</span>
           <button
             onClick={() => setConfidenceFilter(null)}
             className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
@@ -459,7 +459,7 @@ export function StandaloneIOCList({
         </div>
 
         <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wide mr-1">{t('iocList.typeFilterLabel')}</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-wide me-1">{t('iocList.typeFilterLabel')}</span>
           {ALL_IOC_TYPES.map(type => {
             const info = IOC_TYPE_LABELS[type];
             const active = typeFilter.includes(type);
@@ -528,18 +528,18 @@ export function StandaloneIOCList({
               }}
               fixedHeaderContent={() => (
                 <tr className="border-b border-gray-800 bg-gray-900">
-                  <th className="text-left text-gray-500 font-medium py-2 pr-1 w-8">
+                  <th className="text-start text-gray-500 font-medium py-2 pe-1 w-8">
                     <input type="checkbox" checked={filteredSortedIOCs.length > 0 && selectedIds.size === filteredSortedIOCs.length} onChange={toggleSelectAll} className="rounded border-gray-600 bg-gray-800 text-accent focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 cursor-pointer" aria-label={t('iocList.selectAllAria')} />
                   </th>
-                  <SortHeader field="value" label={t('iocList.valueHeader')} className="text-left text-gray-500 font-medium py-2 pr-2" />
-                  <SortHeader field="type" label={t('iocList.typeHeader')} className="text-left text-gray-500 font-medium py-2 px-2" />
-                  <SortHeader field="confidence" label={t('iocList.confidenceHeader')} className="text-left text-gray-500 font-medium py-2 px-2" />
-                  <SortHeader field="iocStatus" label={t('iocList.statusHeader')} className="text-left text-gray-500 font-medium py-2 px-2" />
-                  <SortHeader field="attribution" label={t('iocList.attributionHeader')} className="text-left text-gray-500 font-medium py-2 px-2" />
-                  <th className="text-left text-gray-500 font-medium py-2 px-2" title={t('iocForm.classificationLabel')}>{t('iocList.clsHeader')}</th>
-                  {hasAnyEnrichment && <th className="text-left text-gray-500 font-medium py-2 px-2">{t('iocList.labelsHeader')}</th>}
-                  <SortHeader field="updatedAt" label={t('iocList.updatedHeader')} className="text-left text-gray-500 font-medium py-2 px-2" />
-                  <th className="text-right text-gray-500 font-medium py-2 pl-2">{t('iocList.actionsHeader')}</th>
+                  <SortHeader field="value" label={t('iocList.valueHeader')} className="text-start text-gray-500 font-medium py-2 pe-2" />
+                  <SortHeader field="type" label={t('iocList.typeHeader')} className="text-start text-gray-500 font-medium py-2 px-2" />
+                  <SortHeader field="confidence" label={t('iocList.confidenceHeader')} className="text-start text-gray-500 font-medium py-2 px-2" />
+                  <SortHeader field="iocStatus" label={t('iocList.statusHeader')} className="text-start text-gray-500 font-medium py-2 px-2" />
+                  <SortHeader field="attribution" label={t('iocList.attributionHeader')} className="text-start text-gray-500 font-medium py-2 px-2" />
+                  <th className="text-start text-gray-500 font-medium py-2 px-2" title={t('iocForm.classificationLabel')}>{t('iocList.clsHeader')}</th>
+                  {hasAnyEnrichment && <th className="text-start text-gray-500 font-medium py-2 px-2">{t('iocList.labelsHeader')}</th>}
+                  <SortHeader field="updatedAt" label={t('iocList.updatedHeader')} className="text-start text-gray-500 font-medium py-2 px-2" />
+                  <th className="text-end text-gray-500 font-medium py-2 ps-2">{t('iocList.actionsHeader')}</th>
                 </tr>
               )}
               itemContent={(_index, ioc) => {
@@ -549,10 +549,10 @@ export function StandaloneIOCList({
                 const clsColor = ioc.clsLevel ? CLS_COLORS[ioc.clsLevel] || '#6b7280' : undefined;
                 return (
                   <>
-                    <td className="py-2 pr-1 w-8">
+                    <td className="py-2 pe-1 w-8">
                       <input type="checkbox" checked={selectedIds.has(ioc.id)} onChange={() => toggleSelect(ioc.id)} className="rounded border-gray-600 bg-gray-800 text-accent focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 cursor-pointer" aria-label={`Select IOC ${ioc.value}`} />
                     </td>
-                    <td className="py-2 pr-2 text-gray-200 font-mono max-w-[240px] truncate">{ioc.value}</td>
+                    <td className="py-2 pe-2 text-gray-200 font-mono max-w-[240px] truncate">{ioc.value}</td>
                     <td className="py-2 px-2">
                       <span
                         className="text-[10px] px-1.5 py-0.5 rounded"
@@ -600,7 +600,7 @@ export function StandaloneIOCList({
                       </td>
                     )}
                     <td className="py-2 px-2 text-gray-500">{formatDate(ioc.updatedAt)}</td>
-                    <td className="py-2 pl-2">
+                    <td className="py-2 ps-2">
                       <div className="flex items-center justify-end gap-1 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                         {ioc.trashed ? (
                           <>

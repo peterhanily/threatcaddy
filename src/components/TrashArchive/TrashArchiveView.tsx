@@ -77,7 +77,7 @@ function EntitySection({
         <span>{label}</span>
         <span className="text-xs text-gray-500 tabular-nums">({count})</span>
       </button>
-      {open && <div className="mt-1 space-y-1 pl-2">{children}</div>}
+      {open && <div className="mt-1 space-y-1 ps-2">{children}</div>}
     </div>
   );
 }
@@ -244,7 +244,7 @@ export function TrashArchiveView({
         {isTrash && totalCount > 0 && (
           <button
             onClick={() => setShowEmptyConfirm(true)}
-            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm font-medium transition-colors"
+            className="ms-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 text-sm font-medium transition-colors"
           >
             <Trash2 size={14} />
             {t('emptyAllTrash')}

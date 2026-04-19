@@ -843,7 +843,7 @@ export function ChatView({
                 onDragStart={(e) => e.dataTransfer.setData('text/plain', thread.id)}
                 className={cn(
                   'group flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors border-b border-border-subtle',
-                  indented && 'pl-7',
+                  indented && 'ps-7',
                   selectedThreadId === thread.id
                     ? 'bg-bg-active text-text-primary'
                     : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
@@ -975,7 +975,7 @@ export function ChatView({
               {/* Mobile back button */}
               <button
                 onClick={() => onSelectThread('')}
-                className="md:hidden p-1.5 -ml-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="md:hidden p-1.5 -ms-1.5 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                 aria-label={t('view.backToThreads')}
               >
                 <ArrowLeft size={18} />
@@ -1016,11 +1016,11 @@ export function ChatView({
                   <Pencil size={12} className="shrink-0 text-text-muted opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity" />
                 </button>
               )}
-              <div className="flex items-center gap-1 ml-auto shrink-0">
+              <div className="flex items-center gap-1 ms-auto shrink-0">
                 <button
                   onClick={toggleMode}
                   className={cn(
-                    'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors mr-1',
+                    'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors me-1',
                     threadMode === 'plan'
                       ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
                       : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
@@ -1033,7 +1033,7 @@ export function ChatView({
                 <button
                   onClick={() => setYoloMode(!yoloMode)}
                   className={cn(
-                    'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors mr-1',
+                    'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors me-1',
                     yoloMode
                       ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20'
                       : 'bg-surface-raised border-border-subtle text-text-muted hover:text-text-secondary'
@@ -1045,7 +1045,7 @@ export function ChatView({
                 </button>
                 {threadTokenTotal > 0 && (
                   <span className={cn(
-                    'text-[10px] font-mono px-1.5 py-0.5 rounded border mr-1',
+                    'text-[10px] font-mono px-1.5 py-0.5 rounded border me-1',
                     settings.llmTokenBudget && threadTokenTotal > settings.llmTokenBudget
                       ? 'text-red-400 bg-red-500/10 border-red-500/20'
                       : settings.llmTokenBudget && threadTokenTotal > settings.llmTokenBudget * 0.8
@@ -1056,12 +1056,12 @@ export function ChatView({
                   </span>
                 )}
                 {activeLoops.length > 0 && (
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple/10 border border-purple/20 text-[10px] text-purple mr-1">
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple/10 border border-purple/20 text-[10px] text-purple me-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-purple animate-pulse" />
                     {t('view.loopCount', { count: activeLoops.length })}
                     <button
                       onClick={() => stopAllForThread(activeThread.id)}
-                      className="ml-0.5 hover:text-red-400 transition-colors"
+                      className="ms-0.5 hover:text-red-400 transition-colors"
                       title={t('view.stopAllLoops')}
                     >
                       <Square size={10} />
@@ -1145,7 +1145,7 @@ export function ChatView({
                       )}
                       {/* Tool activity indicators during streaming */}
                       {isStreaming && toolActivity.length > 0 && streamingThreadRef.current === selectedThreadId && (
-                        <div className="ml-2 mb-2 space-y-1">
+                        <div className="ms-2 mb-2 space-y-1">
                           {toolActivity.filter(ta => ta.status !== 'running').length > 0 && (
                             <div className="flex flex-wrap gap-1">
                               {toolActivity.filter(ta => ta.status !== 'running').map((ta) => (

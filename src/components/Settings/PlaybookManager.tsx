@@ -137,7 +137,7 @@ export function PlaybookManager({
       </div>
 
       {expanded && (
-        <div className="space-y-3 pl-1">
+        <div className="space-y-3 ps-1">
           <p className="text-xs text-gray-500">
             {t('templates.playbooksDesc')}
           </p>
@@ -284,7 +284,7 @@ export function PlaybookManager({
                     <X size={12} />
                   </button>
                 </div>
-                <div className="flex gap-2 pl-6">
+                <div className="flex gap-2 ps-6">
                   <input
                     value={step.phase || ''}
                     onChange={(e) => updateStep(idx, { phase: e.target.value })}
@@ -309,7 +309,7 @@ export function PlaybookManager({
                 <textarea
                   value={step.content}
                   onChange={(e) => updateStep(idx, { content: e.target.value })}
-                  className="w-full pl-6 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent h-16 resize-y"
+                  className="w-full ps-6 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent h-16 resize-y"
                   placeholder={step.entityType === 'task' ? t('templates.taskDescPlaceholder') : t('templates.noteContentPlaceholder')}
                   aria-label={`Step ${idx + 1} content`}
                 />

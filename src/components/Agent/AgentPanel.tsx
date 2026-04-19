@@ -373,7 +373,7 @@ export function AgentPanel({
             )}
           >
             {tab.label}
-            {tab.badge > 0 && <span className={cn('ml-1 text-[10px]', tab.key === 'inbox' ? 'text-accent-amber' : 'text-text-muted')}>({tab.badge})</span>}
+            {tab.badge > 0 && <span className={cn('ms-1 text-[10px]', tab.key === 'inbox' ? 'text-accent-amber' : 'text-text-muted')}>({tab.badge})</span>}
           </button>
         ))}
       </div>
@@ -411,7 +411,7 @@ export function AgentPanel({
               {(['all', 'pending', 'executed', 'rejected'] as const).map(f => (
                 <button key={f} role="tab" aria-selected={filter === f} onClick={() => setFilter(f)}
                   className={cn('text-[10px] px-1.5 py-0.5 rounded capitalize', filter === f ? 'bg-surface-raised text-text-primary font-medium' : 'text-text-muted hover:text-text-secondary')}
-                >{f}{f === 'pending' && pendingCount > 0 && <span className="ml-0.5 text-accent-amber">({pendingCount})</span>}</button>
+                >{f}{f === 'pending' && pendingCount > 0 && <span className="ms-0.5 text-accent-amber">({pendingCount})</span>}</button>
               ))}
             </div>
             {pendingCount > 0 && (confirmBulk ? (
@@ -523,7 +523,7 @@ export function AgentPanel({
                                     </span>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); void handleDismissReconciliation(d.id); }}
-                                      className="ml-auto text-text-muted hover:text-text-primary"
+                                      className="ms-auto text-text-muted hover:text-text-primary"
                                       aria-label={t('panel.dismissHandoffSummary')}
                                     >
                                       <X size={10} />
@@ -710,7 +710,7 @@ function PolicyEditor({ folder, settings, onFolderChanged }: { folder: Folder; s
             aria-label={`Auto-approve ${label}: ${description}`}
             onClick={() => updatePolicy({ [key]: !localPolicy[key] })}
             className={cn(
-              'flex items-center gap-2 text-left px-2 py-1.5 rounded border transition-colors',
+              'flex items-center gap-2 text-start px-2 py-1.5 rounded border transition-colors',
               localPolicy[key]
                 ? 'border-accent-green/30 bg-accent-green/5'
                 : 'border-border-subtle bg-surface',
@@ -747,7 +747,7 @@ function PolicyEditor({ folder, settings, onFolderChanged }: { folder: Folder; s
           onChange={(e) => updatePolicy({ intervalMinutes: parseInt(e.target.value) })}
           className="flex-1 h-1 accent-accent-blue"
         />
-        <span className="text-xs text-text-secondary w-12 text-right">{localPolicy.intervalMinutes || 5}m</span>
+        <span className="text-xs text-text-secondary w-12 text-end">{localPolicy.intervalMinutes || 5}m</span>
       </div>
 
       {/* Focus areas */}

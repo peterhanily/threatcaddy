@@ -63,7 +63,7 @@ export function TimelineSubList({
         Timelines
         <button
           onClick={(e) => { e.stopPropagation(); setShowNew(true); }}
-          className="ml-auto p-0.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors"
+          className="ms-auto p-0.5 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors"
           aria-label="Create timeline"
           title="Create timeline"
         >

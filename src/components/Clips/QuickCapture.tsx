@@ -97,7 +97,7 @@ export function QuickCapture({ open, onClose, onCapture, folders = [], defaultFo
                 >
                   {tpl.icon && <span>{tpl.icon}</span>}
                   {tpl.name}
-                  {tpl.source === 'user' && <span className="text-[9px] text-accent/60 ml-0.5">{t('quickCapture.customBadge')}</span>}
+                  {tpl.source === 'user' && <span className="text-[9px] text-accent/60 ms-0.5">{t('quickCapture.customBadge')}</span>}
                 </button>
               ))}
             </div>

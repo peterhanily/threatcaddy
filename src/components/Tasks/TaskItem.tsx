@@ -85,7 +85,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
 
       <button
         onClick={() => onSelect(task.id)}
-        className="flex-1 text-left min-w-0"
+        className="flex-1 text-start min-w-0"
       >
         <span className={cn('text-sm truncate block', task.completed ? 'text-gray-500 line-through' : 'text-gray-200')}>
           {task.title || t('item.untitled')}
@@ -106,7 +106,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
           >
             <CheckSquare size={10} />
             {task.checklist!.filter(c => c.done).length}/{task.checklist!.length}
-            <ChevronDown size={8} className={cn('ml-0.5 transition-transform', checklistOpen && 'rotate-180')} />
+            <ChevronDown size={8} className={cn('ms-0.5 transition-transform', checklistOpen && 'rotate-180')} />
           </button>
         )}
         {(task.iocAnalysis?.iocs.filter((i) => !i.dismissed).length ?? 0) > 0 && (
@@ -214,7 +214,7 @@ export const TaskItem = React.memo(function TaskItem({ task, onToggleComplete, o
           <button
             key={item.id}
             onClick={(e) => { e.stopPropagation(); toggleChecklistItem(item.id); }}
-            className="flex items-center gap-2 w-full text-left py-0.5 group/cl hover:bg-bg-hover rounded px-1 -mx-1 transition-colors"
+            className="flex items-center gap-2 w-full text-start py-0.5 group/cl hover:bg-bg-hover rounded px-1 -mx-1 transition-colors"
           >
             {item.done
               ? <CheckSquare size={13} className="text-green-400 shrink-0" />

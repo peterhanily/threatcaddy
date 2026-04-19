@@ -123,7 +123,7 @@ function InputField({
     <div className="space-y-1">
       <label className="text-xs text-gray-400">
         {label}
-        {required && <span className="text-red-400 ml-0.5">*</span>}
+        {required && <span className="text-red-400 ms-0.5">*</span>}
       </label>
       {textarea ? (
         <textarea

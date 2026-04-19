@@ -179,7 +179,7 @@ export function InvestigationsHub({
               placeholder={t('hub.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-border-subtle bg-bg-deep text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-purple/50"
+              className="w-full ps-8 pe-3 py-1.5 rounded-lg border border-border-subtle bg-bg-deep text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-purple/50"
             />
           </div>
           <div className="flex items-center gap-1">

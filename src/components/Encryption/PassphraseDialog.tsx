@@ -156,7 +156,7 @@ export function PassphraseDialog({ onUnlocked }: PassphraseDialogProps) {
               onChange={(e) => setPassphrase(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && passphrase && handleUnlock()}
               placeholder={t('passphrase.passphrasePlaceholder')}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 pr-10 text-sm text-gray-200 focus:outline-none focus:border-accent"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 pe-10 text-sm text-gray-200 focus:outline-none focus:border-accent"
               autoFocus
             />
             <button

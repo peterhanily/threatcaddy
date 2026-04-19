@@ -138,7 +138,7 @@ export function TagInput({ selectedTags, allTags, onChange, onCreateTag }: TagIn
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => addTag(tag.name)}
                   onMouseEnter={() => setHighlightIdx(idx)}
-                  className={`w-full text-left px-3 py-1.5 text-xs text-gray-300 flex items-center gap-2 ${idx === highlightIdx ? 'bg-gray-700' : 'hover:bg-gray-700'}`}
+                  className={`w-full text-start px-3 py-1.5 text-xs text-gray-300 flex items-center gap-2 ${idx === highlightIdx ? 'bg-gray-700' : 'hover:bg-gray-700'}`}
                 >
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
                   {tag.name}

@@ -73,7 +73,7 @@ export function MitreReport({ events }: MitreReportProps) {
         <div className="space-y-1.5">
           {tacticCounts.map(({ tactic, count }) => (
             <div key={tactic.id} className="flex items-center gap-2">
-              <span className="w-32 text-right text-[11px] text-gray-400 truncate shrink-0" title={tactic.name}>
+              <span className="w-32 text-end text-[11px] text-gray-400 truncate shrink-0" title={tactic.name}>
                 {tactic.name}
               </span>
               <div className="flex-1 h-5 bg-gray-800 rounded-sm overflow-hidden">
@@ -84,7 +84,7 @@ export function MitreReport({ events }: MitreReportProps) {
                   />
                 )}
               </div>
-              <span className="w-6 text-right text-[11px] font-mono text-gray-400 shrink-0">
+              <span className="w-6 text-end text-[11px] font-mono text-gray-400 shrink-0">
                 {count}
               </span>
             </div>

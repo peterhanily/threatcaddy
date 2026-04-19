@@ -76,7 +76,7 @@ function ToolCallBlock({ tc }: { tc: ToolCallRecord }) {
     )}>
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1.5 w-full px-2.5 py-1.5 text-left hover:bg-bg-hover/50 rounded-lg transition-colors"
+        className="flex items-center gap-1.5 w-full px-2.5 py-1.5 text-start hover:bg-bg-hover/50 rounded-lg transition-colors"
       >
         <ChevronRight
           size={12}
@@ -85,7 +85,7 @@ function ToolCallBlock({ tc }: { tc: ToolCallRecord }) {
         <span className="font-mono font-medium text-purple shrink-0">{tc.name}</span>
         <span className="text-text-muted truncate flex-1 min-w-0">{summarizeInput(tc.input, t('tool.noInput'))}</span>
         <span className={cn(
-          'shrink-0 ml-1 max-w-[200px] truncate',
+          'shrink-0 ms-1 max-w-[200px] truncate',
           tc.isError ? 'text-red-400' : 'text-emerald-400'
         )}>
           {resultPreview}
@@ -375,7 +375,7 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({ role, content
           </>
         )}
         {isStreaming && (
-          <span className="inline-block w-1.5 h-4 bg-purple/60 rounded-sm animate-pulse ml-0.5 align-text-bottom" />
+          <span className="inline-block w-1.5 h-4 bg-purple/60 rounded-sm animate-pulse ms-0.5 align-text-bottom" />
         )}
         {/* Token count badge */}
         {tokenCount && !isStreaming && (

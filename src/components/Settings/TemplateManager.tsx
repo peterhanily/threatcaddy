@@ -111,7 +111,7 @@ export function TemplateManager({
       </div>
 
       {expanded && (
-        <div className="space-y-3 pl-1">
+        <div className="space-y-3 ps-1">
           <p className="text-xs text-gray-500">
             {t('templates.description')}
           </p>

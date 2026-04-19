@@ -397,7 +397,7 @@ export function SearchOverlay({
                     <button
                       onClick={() => { setSearchFolderId(undefined); setFolderQuery(''); setFolderDropdownOpen(false); }}
                       className={cn(
-                        'w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center gap-2',
+                        'w-full text-start px-3 py-1.5 text-xs transition-colors flex items-center gap-2',
                         !searchFolderId ? 'bg-accent/10 text-accent' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
                       )}
                     >
@@ -409,7 +409,7 @@ export function SearchOverlay({
                         key={f.id}
                         onClick={() => { setSearchFolderId(f.id); setFolderQuery(''); setFolderDropdownOpen(false); }}
                         className={cn(
-                          'w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center gap-2 min-w-0',
+                          'w-full text-start px-3 py-1.5 text-xs transition-colors flex items-center gap-2 min-w-0',
                           searchFolderId === f.id ? 'bg-accent/10 text-accent' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
                         )}
                       >
@@ -441,7 +441,7 @@ export function SearchOverlay({
                   mode === 'regex' ? 'Enter regex pattern...' :
                   'title:contains("foo") AND tags:contains("bar")...'
                 }
-                className="w-full pl-9 pr-8 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-sm"
+                className="w-full ps-9 pe-8 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-sm"
               />
               {query && (
                 <button
@@ -472,10 +472,10 @@ export function SearchOverlay({
               {t('clear')}
             </button>
             {error && (
-              <span className="text-xs text-red-400 ml-2">{error}</span>
+              <span className="text-xs text-red-400 ms-2">{error}</span>
             )}
             {debouncedQuery && !error && (
-              <span className="text-xs text-gray-500 ml-auto">
+              <span className="text-xs text-gray-500 ms-auto">
                 {results.filter(r => activeTypes.has(r.type)).length} result{results.filter(r => activeTypes.has(r.type)).length !== 1 ? 's' : ''}
               </span>
             )}
@@ -483,7 +483,7 @@ export function SearchOverlay({
 
           {/* Type filter chips */}
           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-            <span className="text-[10px] text-gray-600 mr-1">{t('types')}:</span>
+            <span className="text-[10px] text-gray-600 me-1">{t('types')}:</span>
             {(['note', 'clip', 'task', 'timeline', 'whiteboard', 'ioc', 'chat'] as SearchResultType[]).map((type) => {
               const Icon = TYPE_ICONS[type];
               const active = activeTypes.has(type);
@@ -604,7 +604,7 @@ export function SearchOverlay({
                       onMouseEnter={() => setActiveIndex(idx)}
                       aria-label={`${t(TYPE_LABEL_KEYS[result.type])}: ${result.title}`}
                       className={cn(
-                        'w-full text-left px-3 py-2 flex items-start gap-3 transition-colors cursor-pointer',
+                        'w-full text-start px-3 py-2 flex items-start gap-3 transition-colors cursor-pointer',
                         idx === activeIndex ? 'bg-accent/10' : 'hover:bg-gray-800/50'
                       )}
                     >
@@ -671,13 +671,13 @@ export function SearchOverlay({
                     <span className="truncate max-w-[120px]">{s.label}</span>
                     <span
                       onClick={(e) => { e.stopPropagation(); setEditingSearchId(s.id); setEditingSearchLabel(s.label); }}
-                      className="text-gray-600 hover:text-accent ml-0.5 hidden group-hover:inline-flex"
+                      className="text-gray-600 hover:text-accent ms-0.5 hidden group-hover:inline-flex"
                     >
                       <Pencil size={10} />
                     </span>
                     <span
                       onClick={(e) => { e.stopPropagation(); deleteSearch(s.id); }}
-                      className="text-gray-600 hover:text-red-400 ml-0.5"
+                      className="text-gray-600 hover:text-red-400 ms-0.5"
                     >
                       <X size={10} />
                     </span>
@@ -686,7 +686,7 @@ export function SearchOverlay({
               ))}
               <button
                 onClick={clearAll}
-                className="text-xs text-gray-600 hover:text-red-400 transition-colors ml-auto"
+                className="text-xs text-gray-600 hover:text-red-400 transition-colors ms-auto"
               >
                 {t('clearAll')}
               </button>

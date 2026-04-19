@@ -75,7 +75,7 @@ export function KeyboardShortcutsPanel({ open, onClose }: KeyboardShortcutsPanel
                   className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-bg-hover transition-colors"
                 >
                   <span className="text-sm text-text-secondary">{shortcut.description}</span>
-                  <kbd className="ml-4 shrink-0 px-2 py-0.5 rounded bg-bg-deep border border-border-medium text-xs font-mono text-text-muted">
+                  <kbd className="ms-4 shrink-0 px-2 py-0.5 rounded bg-bg-deep border border-border-medium text-xs font-mono text-text-muted">
                     {shortcut.keys}
                   </kbd>
                 </div>

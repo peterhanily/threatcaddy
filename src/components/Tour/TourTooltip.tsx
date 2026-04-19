@@ -191,7 +191,7 @@ export function TourTooltip({
         )}
         <button
           onClick={onNext}
-          className="px-3 py-1.5 text-xs rounded-lg bg-accent hover:bg-accent-hover text-white transition-colors ml-auto"
+          className="px-3 py-1.5 text-xs rounded-lg bg-accent hover:bg-accent-hover text-white transition-colors ms-auto"
         >
           {isLast ? t('finish') : t('next')}
         </button>

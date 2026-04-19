@@ -312,13 +312,13 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
                     <button
                       key={u.id}
                       onClick={() => insertMention(u)}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--bg-secondary)] flex items-center gap-2 transition-colors"
+                      className="w-full px-3 py-2 text-start text-sm hover:bg-[var(--bg-secondary)] flex items-center gap-2 transition-colors"
                     >
                       <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs">
                         {u.displayName[0]?.toUpperCase()}
                       </div>
                       <span className="text-[var(--text-primary)]">{u.displayName}</span>
-                      <span className="text-[var(--text-tertiary)] text-xs ml-auto">{u.email}</span>
+                      <span className="text-[var(--text-tertiary)] text-xs ms-auto">{u.email}</span>
                     </button>
                   ))}
                 </div>
@@ -329,7 +329,7 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
       </div>
 
       {/* Actions bar — no divider line */}
-      <div className="flex items-center gap-1 px-3 pb-2.5 ml-12">
+      <div className="flex items-center gap-1 px-3 pb-2.5 ms-12">
         <button
           onClick={() => fileInputRef.current?.click()}
           className="p-1.5 rounded-full hover:bg-blue-500/10 text-blue-400 transition-colors"
@@ -350,7 +350,7 @@ export function PostComposer({ folderId, parentId, replyToId, placeholder, initi
           clsLevels={settings?.tiClsLevels}
         />
         <div className="flex-1" />
-        <span className="text-[11px] text-[var(--text-tertiary)] mr-2 select-none">
+        <span className="text-[11px] text-[var(--text-tertiary)] me-2 select-none">
           Type <kbd className="px-1 py-0.5 rounded bg-[var(--bg-tertiary)] text-[10px] font-mono">/</kbd> for commands
         </span>
         <button

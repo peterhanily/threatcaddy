@@ -91,7 +91,7 @@ export function TimelineImportModal({ open, onClose, timelines, selectedTimeline
             type="file"
             accept=".json"
             onChange={handleFileSelect}
-            className="block w-full text-xs text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600"
+            className="block w-full text-xs text-gray-400 file:me-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-gray-700 file:text-gray-200 hover:file:bg-gray-600"
           />
         </div>
 

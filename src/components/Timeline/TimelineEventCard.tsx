@@ -36,7 +36,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
     <button
       onClick={() => onSelect(event.id)}
       className={cn(
-        'w-full text-left p-3 rounded-lg border transition-colors group',
+        'w-full text-start p-3 rounded-lg border transition-colors group',
         active
           ? 'bg-accent/10 border-accent/30'
           : 'bg-bg-raised border-border-subtle hover:bg-bg-hover hover:border-border-medium'
@@ -63,7 +63,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
         >
           {confidenceInfo.label}
         </span>
-        <div className="ml-auto flex items-center gap-0.5 shrink-0">
+        <div className="ms-auto flex items-center gap-0.5 shrink-0">
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(event.id); }}

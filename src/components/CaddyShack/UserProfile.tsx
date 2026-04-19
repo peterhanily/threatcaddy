@@ -130,7 +130,7 @@ export function UserProfile({ userId, currentUserId, onBack, onUserClick }: User
             <t.icon size={15} />
             {t.label}
             {t.count !== undefined && (
-              <span className="text-xs text-[var(--text-tertiary)] ml-0.5">{t.count}</span>
+              <span className="text-xs text-[var(--text-tertiary)] ms-0.5">{t.count}</span>
             )}
           </button>
         ))}

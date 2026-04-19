@@ -99,7 +99,7 @@ export function SlashCommandMenu({ commands, activeIndex, position, onSelect, me
                 <button
                   key={cmd.id}
                   data-index={index}
-                  className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-sm transition-colors ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-start text-sm transition-colors ${
                     index === activeIndex ? 'bg-gray-700 text-gray-100' : 'text-gray-300 hover:bg-gray-700/50'
                   }`}
                   onMouseDown={(e) => {
@@ -110,7 +110,7 @@ export function SlashCommandMenu({ commands, activeIndex, position, onSelect, me
                   <Icon size={16} className="shrink-0 text-gray-400" />
                   <div className="min-w-0">
                     <span className="font-medium">{cmd.label}</span>
-                    <span className="ml-2 text-xs text-gray-500">{cmd.description}</span>
+                    <span className="ms-2 text-xs text-gray-500">{cmd.description}</span>
                   </div>
                 </button>
               );

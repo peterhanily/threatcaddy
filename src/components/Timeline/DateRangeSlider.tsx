@@ -211,7 +211,7 @@ export function DateRangeSlider({ events, dateStart, dateEnd, onChange }: DateRa
     <div className="px-3 py-1.5 border-b border-gray-800">
       {/* Slider row */}
       <div className="flex items-center gap-2">
-        <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0 select-none tabular-nums text-right">
+        <span className="text-[10px] text-gray-400 whitespace-nowrap shrink-0 select-none tabular-nums text-end">
           {formatLabel(displayStartTs)}
         </span>
         <div
@@ -287,7 +287,7 @@ export function DateRangeSlider({ events, dateStart, dateEnd, onChange }: DateRa
       </div>
       {/* Tick labels row */}
       {ticks.length > 0 && (
-        <div className="relative ml-[110px] mr-[110px] h-3.5 select-none pointer-events-none">
+        <div className="relative ms-[110px] me-[110px] h-3.5 select-none pointer-events-none">
           {ticks.map((tick) => (
             <span
               key={tick.frac}

@@ -97,7 +97,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
               onClick={refreshAll}
               className="text-[10px] px-2 py-0.5 rounded bg-surface-raised text-text-muted hover:text-text-primary transition-colors"
             >
-              <RefreshCw size={10} className="inline mr-1" />
+              <RefreshCw size={10} className="inline me-1" />
               {t('agents.refreshAll')}
             </button>
           )}
@@ -105,7 +105,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
             onClick={() => setAdding(!adding)}
             className="text-[10px] px-2 py-0.5 rounded bg-accent-blue/20 text-accent-blue hover:bg-accent-blue/30 transition-colors"
           >
-            <Plus size={10} className="inline mr-1" />
+            <Plus size={10} className="inline me-1" />
             {t('agents.addHost')}
           </button>
         </div>
@@ -212,7 +212,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
                   disabled={testingId === host.id}
                   className="text-[10px] px-2 py-0.5 rounded bg-surface-raised text-text-muted hover:text-text-primary disabled:opacity-40 transition-colors"
                 >
-                  {testingId === host.id ? <Loader2 size={10} className="inline mr-1 animate-spin" /> : <RefreshCw size={10} className="inline mr-1" />}
+                  {testingId === host.id ? <Loader2 size={10} className="inline me-1 animate-spin" /> : <RefreshCw size={10} className="inline me-1" />}
                   {t('agents.fetchSkills')}
                 </button>
                 <button

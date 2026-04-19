@@ -177,7 +177,7 @@ export function InvestigationDetailPanel({
 
             {/* Closure details (visible when status is closed) */}
             {status === 'closed' && (
-              <div className="mt-3 pl-2 border-l-2 border-gray-700 space-y-3">
+              <div className="mt-3 ps-2 border-l-2 border-gray-700 space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">{t('detail.resolutionLabel')}</label>
                   <select
@@ -357,7 +357,7 @@ export function InvestigationDetailPanel({
               <button
                 onClick={() => onToggleSync(folder.id, !!folder.localOnly)}
                 className={cn(
-                  'flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border transition-colors text-left',
+                  'flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg border transition-colors text-start',
                   folder.localOnly
                     ? 'bg-gray-800/50 border-gray-700 hover:border-gray-600'
                     : 'bg-purple/5 border-purple/30 hover:border-purple/50'
@@ -456,7 +456,7 @@ export function InvestigationDetailPanel({
               {onDelete && (
                 <button
                   onClick={() => setShowConfirmDelete(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-sm text-red-400 transition-colors ml-auto"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-sm text-red-400 transition-colors ms-auto"
                 >
                   <Trash2 size={14} />
                   {t('detail.delete')}

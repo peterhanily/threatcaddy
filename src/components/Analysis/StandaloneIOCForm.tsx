@@ -194,7 +194,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
 
         {/* Value */}
         <div>
-          <label className="block text-xs text-gray-400 mb-1">{t('iocForm.valueLabel')}<span className="text-red-400 ml-0.5">*</span></label>
+          <label className="block text-xs text-gray-400 mb-1">{t('iocForm.valueLabel')}<span className="text-red-400 ms-0.5">*</span></label>
           <input
             type="text"
             autoFocus
@@ -310,7 +310,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
                     key={s}
                     type="button"
                     onClick={() => addTag(s)}
-                    className="w-full text-left px-2 py-1 text-xs text-gray-300 hover:bg-gray-700"
+                    className="w-full text-start px-2 py-1 text-xs text-gray-300 hover:bg-gray-700"
                   >
                     {s}
                   </button>
@@ -331,7 +331,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
                     {DEFAULT_RELATIONSHIP_TYPES[rel.relationshipType]?.label || rel.relationshipType}
                   </span>
                   <span className="text-xs text-gray-300 font-mono truncate">{rel.targetIOCId}</span>
-                  <button type="button" onClick={() => removeRelationship(i)} className="ml-auto p-0.5 text-gray-600 hover:text-red-400">
+                  <button type="button" onClick={() => removeRelationship(i)} className="ms-auto p-0.5 text-gray-600 hover:text-red-400">
                     <Trash2 size={12} />
                   </button>
                 </div>
@@ -389,7 +389,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
           <div>
             <label className="block text-xs text-gray-400 mb-1">
               {t('iocForm.enrichmentLabelsLabel')}
-              <span className="ml-1 text-[9px] text-gray-600 font-normal">{t('iocForm.enrichmentLabelsExperimental')}</span>
+              <span className="ms-1 text-[9px] text-gray-600 font-normal">{t('iocForm.enrichmentLabelsExperimental')}</span>
             </label>
             <EnrichmentLabels enrichment={editingIOC.enrichment} compact={false} />
           </div>
@@ -408,7 +408,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
                       const prev = arr[i + 1] as Record<string, unknown> | undefined;
                       const ts = snap.ts as number | undefined;
                       return (
-                        <div key={i} className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] border-l-2 border-gray-700 pl-2">
+                        <div key={i} className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] border-l-2 border-gray-700 ps-2">
                           {ts && (
                             <span className="text-gray-500 w-full">
                               {new Date(ts).toLocaleString(currentLocale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -425,7 +425,7 @@ export function StandaloneIOCForm({ open, onClose, onSubmit, folders, defaultFol
                                   <span className="text-gray-500">{key}:</span>{' '}
                                   <span className={changed ? 'text-amber-400' : ''}>{display}</span>
                                   {changed && (
-                                    <span className="text-gray-600 ml-0.5">({t('iocForm.prevValue', { value: String(prevVal) })})</span>
+                                    <span className="text-gray-600 ms-0.5">({t('iocForm.prevValue', { value: String(prevVal) })})</span>
                                   )}
                                 </span>
                               );

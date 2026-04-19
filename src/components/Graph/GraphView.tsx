@@ -230,7 +230,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
             <span className="text-xs font-semibold text-gray-300">{t('view.entityGraph')}</span>
             <button
               onClick={() => setSidebarCollapsed(true)}
-              className="ml-auto p-0.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
+              className="ms-auto p-0.5 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800"
               title={t('view.collapseSidebar')}
               aria-label={t('view.expandSidebar')}
             >
@@ -243,7 +243,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('view.searchNodes')}
-              className="w-full pl-7 pr-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-accent"
+              className="w-full ps-7 pe-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-accent"
             />
           </div>
         </div>
@@ -286,7 +286,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
               />
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
               <span className="text-gray-300">{t(labelKey)}</span>
-              <span className="text-gray-600 ml-auto">{nodeTypeCounts[key]}</span>
+              <span className="text-gray-600 ms-auto">{nodeTypeCounts[key]}</span>
             </label>
           ))}
         </div>
@@ -399,7 +399,7 @@ export function GraphView({ notes, tasks, timelineEvents, settings, onNavigateTo
         ) : (
           <Suspense fallback={
             <div className="flex items-center justify-center h-full text-gray-500">
-              <Loader2 size={24} className="animate-spin mr-2" />
+              <Loader2 size={24} className="animate-spin me-2" />
               <span className="text-sm">{t('view.loadingGraph')}</span>
             </div>
           }>

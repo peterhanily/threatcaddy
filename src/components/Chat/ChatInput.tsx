@@ -353,7 +353,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
                   aria-selected={i === slashIndex}
                   onMouseDown={(e) => { e.preventDefault(); selectSlashCommand(cmd.command); }}
                   className={cn(
-                    'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors',
+                    'w-full flex items-center gap-2.5 px-3 py-2 text-start transition-colors',
                     i === slashIndex ? 'bg-purple/20' : 'hover:bg-bg-hover'
                   )}
                 >
@@ -361,7 +361,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
                   <span className="text-xs font-mono text-text-primary">{cmd.command}</span>
                   <span className="text-xs text-text-secondary">{cmd.description}</span>
                   {cmd.placeholder && (
-                    <span className="text-xs text-text-muted ml-auto">{cmd.placeholder}</span>
+                    <span className="text-xs text-text-muted ms-auto">{cmd.placeholder}</span>
                   )}
                 </button>
               );
@@ -383,7 +383,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
                   aria-selected={i === mentionIndex}
                   onMouseDown={(e) => { e.preventDefault(); selectMentionCategory(cat.type); }}
                   className={cn(
-                    'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors',
+                    'w-full flex items-center gap-2.5 px-3 py-2 text-start transition-colors',
                     i === mentionIndex ? 'bg-purple/20' : 'hover:bg-bg-hover'
                   )}
                 >
@@ -399,7 +399,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
                   aria-selected={i === mentionIndex}
                   onMouseDown={(e) => { e.preventDefault(); selectMentionItem(item); }}
                   className={cn(
-                    'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors',
+                    'w-full flex items-center gap-2.5 px-3 py-2 text-start transition-colors',
                     i === mentionIndex ? 'bg-purple/20' : 'hover:bg-bg-hover'
                   )}
                 >
@@ -433,7 +433,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
                   {img.name || t('input.imageLabel', { index: i + 1 })}
                 </span>
               ))}
-              <button onClick={onClearImages} className="text-[10px] text-text-muted hover:text-red-400 ml-1">{t('input.clearImages')}</button>
+              <button onClick={onClearImages} className="text-[10px] text-text-muted hover:text-red-400 ms-1">{t('input.clearImages')}</button>
             </div>
           )}
           {/* Thinking indicator */}

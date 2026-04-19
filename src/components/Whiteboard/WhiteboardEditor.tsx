@@ -164,7 +164,7 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
             <div className="absolute right-0 top-full mt-1 z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[160px]">
               <button
                 onClick={() => handleFolderChange(undefined)}
-                className={cn('w-full text-left px-3 py-1.5 text-xs hover:bg-gray-800', !whiteboard.folderId && 'text-accent')}
+                className={cn('w-full text-start px-3 py-1.5 text-xs hover:bg-gray-800', !whiteboard.folderId && 'text-accent')}
               >
                 No investigation
               </button>
@@ -172,7 +172,7 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
                 <button
                   key={f.id}
                   onClick={() => handleFolderChange(f.id)}
-                  className={cn('w-full text-left px-3 py-1.5 text-xs hover:bg-gray-800', whiteboard.folderId === f.id && 'text-accent')}
+                  className={cn('w-full text-start px-3 py-1.5 text-xs hover:bg-gray-800', whiteboard.folderId === f.id && 'text-accent')}
                 >
                   {f.name}
                 </button>

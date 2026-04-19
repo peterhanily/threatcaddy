@@ -235,7 +235,7 @@ function KPIConfigModal({
                 key={metric}
                 onClick={() => toggle(metric)}
                 disabled={draft.length >= 8}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded bg-gray-800/50 border border-gray-700/50 text-left hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded bg-gray-800/50 border border-gray-700/50 text-start hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: KPI_COLORS[metric] }} />
                 <span className="flex-1 text-sm text-gray-400">{KPI_METRIC_LABELS[metric]}</span>

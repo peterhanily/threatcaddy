@@ -117,13 +117,13 @@ function ExportDropdown({ events, selectedTimelineId, timelines, onImportClick }
         <div className="absolute right-0 top-full mt-1 z-30 w-52 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1">
           <button
             onClick={handleTimelineExport}
-            className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
+            className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
           >
             {selectedTimelineId ? t('export.exportTimelineJSON') : t('export.exportAllEventsJSON')}
           </button>
           <button
             onClick={() => { setOpen(false); onImportClick(); }}
-            className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+            className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-1.5"
           >
             <Upload size={12} />
             {t('export.importTimeline')}
@@ -131,13 +131,13 @@ function ExportDropdown({ events, selectedTimelineId, timelines, onImportClick }
           <div className="border-t border-gray-700 my-1" />
           <button
             onClick={handleNavigatorExport}
-            className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
+            className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
           >
             {t('export.attackNavigatorJSON')}
           </button>
           <button
             onClick={handleCSVExport}
-            className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
+            className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
           >
             {t('export.mitreMappingsCSV')}
           </button>
@@ -259,7 +259,7 @@ export function TimelineView({
         </span>
         <span className="text-sm font-medium text-gray-300 sm:hidden">{events.length}</span>
 
-        <div className="flex items-center gap-0.5 ml-2">
+        <div className="flex items-center gap-0.5 ms-2">
           <button
             onClick={() => setViewMode('feed')}
             className={cn('p-1 rounded', viewMode === 'feed' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
@@ -304,7 +304,7 @@ export function TimelineView({
 
         {/* Color mode pills — heatmap only */}
         {viewMode === 'heatmap' && (
-          <div className="flex items-center gap-0.5 ml-2">
+          <div className="flex items-center gap-0.5 ms-2">
             {colorModes.map((m) => (
               <button
                 key={m.key}
@@ -322,7 +322,7 @@ export function TimelineView({
           </div>
         )}
 
-        <div className="flex items-center gap-1 ml-2 flex-1 min-w-0 max-w-xs">
+        <div className="flex items-center gap-1 ms-2 flex-1 min-w-0 max-w-xs">
           <Search size={14} className="text-gray-500 shrink-0" />
           <input
             value={searchQuery}
@@ -360,7 +360,7 @@ export function TimelineView({
 
         <button
           onClick={() => setShowNewEvent(true)}
-          className="ml-auto flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
+          className="ms-auto flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
           aria-label={t('view.newEventAria')}
         >
           <Plus size={14} />

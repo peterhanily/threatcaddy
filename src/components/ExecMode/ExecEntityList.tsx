@@ -80,7 +80,7 @@ export function ExecEntityList({
 
       <div className="flex flex-col gap-1.5">
         {mode === 'notes' && notes.map((note) => (
-          <button key={note.id} onClick={() => onSelectNote?.(note.id)} className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-left">
+          <button key={note.id} onClick={() => onSelectNote?.(note.id)} className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-start">
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-text-primary truncate">{note.title || 'Untitled'}</p>
               <p className="text-[10px] text-text-muted mt-0.5">{formatDate(note.updatedAt)}</p>
@@ -91,7 +91,7 @@ export function ExecEntityList({
         ))}
 
         {mode === 'tasks' && tasks.map((task) => (
-          <button key={task.id} onClick={() => onSelectTask?.(task.id)} className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-left">
+          <button key={task.id} onClick={() => onSelectTask?.(task.id)} className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-start">
             <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: PRIORITY_COLORS[task.priority] || '#6b7280' }} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-text-primary truncate">{task.title || 'Untitled'}</p>
@@ -104,7 +104,7 @@ export function ExecEntityList({
         {mode === 'events' && events.map((event) => {
           const typeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType];
           return (
-            <button key={event.id} onClick={() => onSelectEvent?.(event.id)} className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-left">
+            <button key={event.id} onClick={() => onSelectEvent?.(event.id)} className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-start">
               <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: typeInfo?.color ?? '#6b7280' }} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-text-primary truncate">{event.title || 'Untitled'}</p>
@@ -137,7 +137,7 @@ export function ExecEntityList({
           const typeInfo = IOC_TYPE_LABELS[ioc.type];
           const confInfo = CONFIDENCE_LEVELS[ioc.confidence];
           return (
-            <button key={ioc.id} onClick={() => onSelectIOC?.(ioc.id)} className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-left">
+            <button key={ioc.id} onClick={() => onSelectIOC?.(ioc.id)} className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-start">
               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: typeInfo?.color + '22', color: typeInfo?.color }}>{typeInfo?.label}</span>
               <p className="text-xs font-mono text-text-primary flex-1 min-w-0 truncate">{ioc.value}</p>
               <span className="text-[9px] px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: confInfo?.color + '22', color: confInfo?.color }}>{confInfo?.label}</span>

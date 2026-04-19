@@ -508,7 +508,7 @@ export function ExecDashboard({
             {threads.length === 0 && <p className="text-sm text-text-muted text-center py-8">{t('dashboard.noChatThreads')}</p>}
             {threads.map((chat) => (
               <button key={chat.id} onClick={() => setDrillDown({ screen: 'chatDetail', chatId: chat.id })}
-                className="bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-left flex items-center gap-3">
+                className="bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-start flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-text-primary truncate">{chat.title || t('dashboard.untitledChat')}</p>
                   <p className="text-[10px] text-text-muted mt-0.5">

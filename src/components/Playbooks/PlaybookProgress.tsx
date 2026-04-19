@@ -48,7 +48,7 @@ export function PlaybookProgress({ execution, steps, onToggleStep, onUpdateStepN
       {/* Header with progress */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-800/50 transition-colors"
+        className="w-full flex items-center gap-2 px-3 py-2 text-start hover:bg-gray-800/50 transition-colors"
       >
         {expanded ? <ChevronDown size={14} className="text-gray-500 shrink-0" /> : <ChevronRight size={14} className="text-gray-500 shrink-0" />}
         <span className="text-xs font-medium text-gray-300 truncate flex-1">

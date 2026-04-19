@@ -129,7 +129,7 @@ export function InvestigationCard({
     <button
       onClick={() => onOpen(folderId)}
       className={cn(
-        'w-full text-left rounded-lg border transition-all duration-200 cursor-pointer',
+        'w-full text-start rounded-lg border transition-all duration-200 cursor-pointer',
         'hover:scale-[1.01] hover:shadow-lg',
         active
           ? 'border-purple bg-purple/5 shadow-md'
@@ -223,7 +223,7 @@ export function InvestigationCard({
 
         {/* Description */}
         {description && (
-          <p className="text-xs text-text-secondary mt-1.5 line-clamp-2 ml-0.5">
+          <p className="text-xs text-text-secondary mt-1.5 line-clamp-2 ms-0.5">
             {description}
           </p>
         )}

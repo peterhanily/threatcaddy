@@ -193,7 +193,7 @@ export function AgentMeetingPanel({
             );
           })}
           {pendingRequests.length > 3 && (
-            <div className="text-[9px] text-text-muted pl-1">{t('meeting.moreCount', { count: pendingRequests.length - 3 })}</div>
+            <div className="text-[9px] text-text-muted ps-1">{t('meeting.moreCount', { count: pendingRequests.length - 3 })}</div>
           )}
         </div>
       )}

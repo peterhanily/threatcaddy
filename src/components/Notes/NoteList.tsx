@@ -135,10 +135,10 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
               </button>
               {showExportMenu && (
                 <div className="absolute right-0 top-full mt-1 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
-                  <button onClick={() => handleBulkExport('flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">{t('list.exportJSONFlat')}</button>
-                  <button onClick={() => handleBulkExport('flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('list.exportCSVFlat')}</button>
-                  <button onClick={() => handleBulkExport('json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('list.exportJSONGrouped')}</button>
-                  <button onClick={() => handleBulkExport('csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">{t('list.exportCSVGrouped')}</button>
+                  <button onClick={() => handleBulkExport('flat-json')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">{t('list.exportJSONFlat')}</button>
+                  <button onClick={() => handleBulkExport('flat-csv')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('list.exportCSVFlat')}</button>
+                  <button onClick={() => handleBulkExport('json')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('list.exportJSONGrouped')}</button>
+                  <button onClick={() => handleBulkExport('csv')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">{t('list.exportCSVGrouped')}</button>
                 </div>
               )}
             </div>
@@ -158,7 +158,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                   <button
                     key={value}
                     onClick={() => { onSortChange(value); setShowSortMenu(false); }}
-                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 ${sort === value ? 'text-accent' : 'text-gray-300'}`}
+                    className={`w-full text-start px-3 py-1.5 text-xs hover:bg-gray-700 ${sort === value ? 'text-accent' : 'text-gray-300'}`}
                   >
                     {label}
                   </button>
@@ -258,7 +258,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
               const isSubNote = !!note.parentNoteId;
               const childCount = note.isFolder ? (childCountMap.get(note.id) || 0) : 0;
               return (
-                <div className={cn('pb-1.5', isSubNote && 'ml-4')}>
+                <div className={cn('pb-1.5', isSubNote && 'ms-4')}>
                   {note.isFolder ? (() => {
                     const iconTag = note.tags?.find(t => t.startsWith('icon:'));
                     const folderIcon = iconTag ? iconTag.replace('icon:', '') : (expandedFolders.has(note.id) ? '📂' : '📁');
@@ -285,7 +285,7 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
                         }
                       }}
                       className={cn(
-                        'group w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-colors cursor-pointer',
+                        'group w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-start transition-colors cursor-pointer',
                         selectedId === note.id ? 'bg-purple/10 border border-purple/30' : 'hover:bg-bg-hover border border-transparent',
                       )}
                     >

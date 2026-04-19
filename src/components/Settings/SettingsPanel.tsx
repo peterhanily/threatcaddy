@@ -33,7 +33,7 @@ function SystemPromptEditor({ value, onChange }: { value?: string; onChange: (v:
       <div className="flex items-center justify-between">
         <button
           onClick={() => setExpanded(!expanded)}
-          className="text-sm text-gray-300 font-medium hover:text-gray-100 transition-colors text-left"
+          className="text-sm text-gray-300 font-medium hover:text-gray-100 transition-colors text-start"
         >
           {t('ai.systemPrompt')} {expanded ? '▾' : '▸'}
         </button>
@@ -350,7 +350,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                   ))}
                 </select>
               </div>
-              <p className="text-[10px] text-gray-500 text-right">{t('general.languageHelp')}</p>
+              <p className="text-[10px] text-gray-500 text-end">{t('general.languageHelp')}</p>
             </div>
           </div>
 
@@ -609,7 +609,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                     const val = parseInt(e.target.value, 10);
                     if (!isNaN(val) && val >= 6) onUpdateSettings({ llmMaxContextMessages: val });
                   }}
-                  className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent text-right"
+                  className="w-20 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent text-end"
                 />
               </div>
               <p className="text-[10px] text-gray-600">
@@ -628,7 +628,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                     onUpdateSettings({ llmTokenBudget: isNaN(val) || val <= 0 ? undefined : val });
                   }}
                   placeholder={t('ai.tokenBudgetPlaceholder')}
-                  className="w-28 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent text-right"
+                  className="w-28 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-accent text-end"
                 />
               </div>
               <p className="text-[10px] text-gray-600">
@@ -713,7 +713,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                   onChange={(e) => onUpdateSettings({ agentSupervisorIntervalMinutes: parseInt(e.target.value) })}
                   className="flex-1 h-1 accent-accent-blue"
                 />
-                <span className="text-xs text-gray-400 w-12 text-right">{settings.agentSupervisorIntervalMinutes || 30}m</span>
+                <span className="text-xs text-gray-400 w-12 text-end">{settings.agentSupervisorIntervalMinutes || 30}m</span>
               </div>
             )}
           </div>

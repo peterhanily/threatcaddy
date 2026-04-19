@@ -234,8 +234,8 @@ export function ShareReceiver({ encodedData, theme, onDismiss, onSave }: ShareRe
                   className={cn(
                     'rounded-xl px-4 py-2.5 text-sm leading-relaxed',
                     msg.role === 'user'
-                      ? 'bg-purple/20 text-text-primary ml-8'
-                      : 'bg-bg-raised text-text-primary mr-8 border border-border-subtle'
+                      ? 'bg-purple/20 text-text-primary ms-8'
+                      : 'bg-bg-raised text-text-primary me-8 border border-border-subtle'
                   )}
                 >
                   <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted block mb-1">

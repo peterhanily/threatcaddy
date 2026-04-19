@@ -15,7 +15,7 @@ export function ExecSearchBar({ value, onChange, placeholder = 'Filter...' }: Ex
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-bg-raised rounded-lg pl-8 pr-8 py-2 text-sm text-text-primary placeholder:text-text-muted border border-border-subtle focus:border-accent focus:outline-none"
+        className="w-full bg-bg-raised rounded-lg ps-8 pe-8 py-2 text-sm text-text-primary placeholder:text-text-muted border border-border-subtle focus:border-accent focus:outline-none"
       />
       {value && (
         <button onClick={() => onChange('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-text-muted active:text-text-primary">

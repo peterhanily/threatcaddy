@@ -162,7 +162,7 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
         {unmappedCount > 0 && (
           <span className="text-gray-600">&middot; {t('map.withoutLocation', { count: unmappedCount })}</span>
         )}
-        <div className="ml-auto">
+        <div className="ms-auto">
           {onCreateEventAtLocation && (
             <button
               onClick={() => setPlaceMode(!placeMode)}
@@ -270,7 +270,7 @@ export function TimelineMap({ events, onSelect, onToggleStar, onDelete, onCreate
                             <Trash2 size={14} />
                           </button>
                         )}
-                        <span className="ml-auto text-[10px] opacity-40 font-mono">
+                        <span className="ms-auto text-[10px] opacity-40 font-mono">
                           {(event.latitude as number).toFixed(3)}, {(event.longitude as number).toFixed(3)}
                         </span>
                       </div>

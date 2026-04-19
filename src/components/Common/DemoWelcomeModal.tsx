@@ -20,7 +20,7 @@ export function DemoWelcomeModal({ open, onClose, onStartTour, onDeleteDemo }: D
 
         <div className="text-sm text-gray-400 space-y-1.5">
           <p className="font-medium text-gray-300">{t('demoModal.whatYouCan')}</p>
-          <ul className="list-disc pl-5 space-y-1">
+          <ul className="list-disc ps-5 space-y-1">
             <li>{t('demoModal.browseItems')}</li>
             <li>{t('demoModal.viewGraph')}</li>
             <li>{t('demoModal.tryWhiteboard')}</li>

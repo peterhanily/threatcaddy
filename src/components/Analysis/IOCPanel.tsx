@@ -257,10 +257,10 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
         {iocCount > 0 && (
           <span className="text-[10px] bg-accent/20 text-accent px-1.5 py-0.5 rounded-full">{iocCount}</span>
         )}
-        <label className="relative inline-flex items-center cursor-pointer ml-1">
+        <label className="relative inline-flex items-center cursor-pointer ms-1">
           <input type="checkbox" checked={showDefanged} onChange={() => setShowDefanged(!showDefanged)} className="sr-only peer" />
           <div className="w-7 h-4 bg-gray-700 peer-checked:bg-accent/60 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3" />
-          <span className="ml-1.5 text-[10px] text-gray-500 peer-checked:text-accent select-none">{t('iocPanel.defangToggle')}</span>
+          <span className="ms-1.5 text-[10px] text-gray-500 peer-checked:text-accent select-none">{t('iocPanel.defangToggle')}</span>
         </label>
         <button
           onClick={analyze}
@@ -346,17 +346,17 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                       )}
                     </div>
                   </div>
-                  <button onClick={handleCopyToClipboard} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 flex items-center gap-1.5">
+                  <button onClick={handleCopyToClipboard} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 flex items-center gap-1.5">
                     <Clipboard size={11} />
                     {t('iocPanel.copyToClipboard')}
                   </button>
                   <div className="border-t border-gray-700" />
-                  <button onClick={() => handleExport('flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportJsonFlat')}</button>
-                  <button onClick={() => handleExport('flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportCsvFlat')}</button>
-                  <button onClick={() => handleExport('json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportJsonGrouped')}</button>
-                  <button onClick={() => handleExport('csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportCsvGrouped')}</button>
-                  <button onClick={() => handleExport('stix')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportStix')}</button>
-                  <button onClick={() => handleExport('misp')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">{t('iocPanel.exportMisp')}</button>
+                  <button onClick={() => handleExport('flat-json')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportJsonFlat')}</button>
+                  <button onClick={() => handleExport('flat-csv')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportCsvFlat')}</button>
+                  <button onClick={() => handleExport('json')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportJsonGrouped')}</button>
+                  <button onClick={() => handleExport('csv')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportCsvGrouped')}</button>
+                  <button onClick={() => handleExport('stix')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.exportStix')}</button>
+                  <button onClick={() => handleExport('misp')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-b-lg">{t('iocPanel.exportMisp')}</button>
                 </div>
               )}
             </div>
@@ -439,7 +439,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                     <div className="flex items-center gap-1 py-1">
                       <button
                         onClick={() => toggleType(type)}
-                        className="flex items-center gap-2 flex-1 text-left"
+                        className="flex items-center gap-2 flex-1 text-start"
                       >
                         {isCollapsed ? <ChevronRight size={12} className="text-gray-500" /> : <ChevronDown size={12} className="text-gray-500" />}
                         <span className="text-xs font-medium" style={{ color }}>{label}</span>
@@ -484,19 +484,19 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                         </button>
                         {exportForType === type && (
                           <div className="absolute right-0 top-full mt-1 w-36 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
-                            <button onClick={() => handleCategoryExport(type, 'flat-json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">{t('iocPanel.jsonFlat')}</button>
-                            <button onClick={() => handleCategoryExport(type, 'flat-csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.csvFlat')}</button>
-                            <button onClick={() => handleCategoryExport(type, 'json')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.jsonGrouped')}</button>
-                            <button onClick={() => handleCategoryExport(type, 'csv')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.csvGrouped')}</button>
-                            <button onClick={() => handleCategoryExport(type, 'stix')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.stix')}</button>
-                            <button onClick={() => handleCategoryExport(type, 'misp')} className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.mispEvent')}</button>
+                            <button onClick={() => handleCategoryExport(type, 'flat-json')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg">{t('iocPanel.jsonFlat')}</button>
+                            <button onClick={() => handleCategoryExport(type, 'flat-csv')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.csvFlat')}</button>
+                            <button onClick={() => handleCategoryExport(type, 'json')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.jsonGrouped')}</button>
+                            <button onClick={() => handleCategoryExport(type, 'csv')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.csvGrouped')}</button>
+                            <button onClick={() => handleCategoryExport(type, 'stix')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.stix')}</button>
+                            <button onClick={() => handleCategoryExport(type, 'misp')} className="w-full text-start px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700">{t('iocPanel.mispEvent')}</button>
                             <button
                               onClick={() => {
                                 setExportForType(null);
                                 handlePushCategory(type);
                               }}
                               disabled={!cloudBackupConfigured || cloudPushing}
-                              className={cn('w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 rounded-b-lg disabled:opacity-50', cloudBackupConfigured ? 'text-accent' : 'text-gray-500')}
+                              className={cn('w-full text-start px-3 py-1.5 text-xs hover:bg-gray-700 rounded-b-lg disabled:opacity-50', cloudBackupConfigured ? 'text-accent' : 'text-gray-500')}
                             >
                               {t('iocPanel.pushToCloudFlat')}
                             </button>
@@ -505,7 +505,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                       </div>
                     </div>
                     {attributionForType === type && (
-                      <div className="flex items-end gap-1 ml-4 mb-1">
+                      <div className="flex items-end gap-1 ms-4 mb-1">
                         <div className="flex-1">
                           <AttributionComboInput
                             value={attributionInput}
@@ -526,7 +526,7 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
                       </div>
                     )}
                     {!isCollapsed && (
-                      <div className="space-y-1 ml-4 mt-1">
+                      <div className="space-y-1 ms-4 mt-1">
                         {iocs.map((ioc) => (
                           <IOCItem
                             key={ioc.id}
@@ -552,14 +552,14 @@ export function IOCPanel({ item, onUpdate, onClose, attributionActors, threatInt
               <div>
                 <button
                   onClick={() => setShowDismissed(!showDismissed)}
-                  className="flex items-center gap-2 w-full text-left py-1"
+                  className="flex items-center gap-2 w-full text-start py-1"
                 >
                   {showDismissed ? <ChevronDown size={12} className="text-gray-500" /> : <ChevronRight size={12} className="text-gray-500" />}
                   <span className="text-xs font-medium text-gray-500">{t('iocPanel.dismissed')}</span>
                   <span className="text-[10px] text-gray-600">({dismissedIOCs.length})</span>
                 </button>
                 {showDismissed && (
-                  <div className="space-y-1 ml-4 mt-1">
+                  <div className="space-y-1 ms-4 mt-1">
                     {dismissedIOCs.map((ioc) => (
                       <IOCItem
                         key={ioc.id}

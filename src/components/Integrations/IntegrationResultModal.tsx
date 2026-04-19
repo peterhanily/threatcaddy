@@ -46,7 +46,7 @@ export function IntegrationResultModal({ open, onClose, run }: IntegrationResult
           <div className="flex items-center gap-2">
             {statusIcon}
             <span className={`text-sm font-medium capitalize ${statusColor}`}>{run.status}</span>
-            <span className="text-xs text-gray-500 ml-auto">
+            <span className="text-xs text-gray-500 ms-auto">
               {formatDuration(run.durationMs)}
             </span>
           </div>
@@ -115,7 +115,7 @@ export function IntegrationResultModal({ open, onClose, run }: IntegrationResult
                     key={idx}
                     className="flex items-start gap-2 text-[10px] font-mono"
                   >
-                    <span className="text-gray-600 shrink-0 w-14 text-right">
+                    <span className="text-gray-600 shrink-0 w-14 text-end">
                       {entry.durationMs != null ? formatDuration(entry.durationMs) : ''}
                     </span>
                     <span

@@ -128,7 +128,7 @@ export function MitreComboInput({ value, onChange }: MitreComboInputProps) {
             <button
               type="button"
               onClick={() => removeId(id)}
-              className="hover:opacity-70 ml-0.5"
+              className="hover:opacity-70 ms-0.5"
             >
               <X size={12} />
             </button>
@@ -166,7 +166,7 @@ export function MitreComboInput({ value, onChange }: MitreComboInputProps) {
             >
               <span className="font-mono text-xs text-teal-400 shrink-0">{tech.id}</span>
               <span className="text-xs truncate">{tech.name}</span>
-              <span className="ml-auto flex gap-1 shrink-0">
+              <span className="ms-auto flex gap-1 shrink-0">
                 {tech.tactics.slice(0, 3).map((tac) => (
                   <span
                     key={tac}

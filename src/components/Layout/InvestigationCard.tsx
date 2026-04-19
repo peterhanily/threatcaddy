@@ -35,7 +35,7 @@ export function InvestigationCard({ folder, counts, onEditFolder, synced }: Inve
     <button
       onClick={() => onEditFolder(folder.id)}
       className={cn(
-        'w-full text-left bg-bg-raised border border-border-subtle rounded-lg p-3',
+        'w-full text-start bg-bg-raised border border-border-subtle rounded-lg p-3',
         'hover:border-border-medium transition-colors cursor-pointer'
       )}
     >
@@ -56,7 +56,7 @@ export function InvestigationCard({ folder, counts, onEditFolder, synced }: Inve
       </div>
 
       {/* Meta row */}
-      <div className="flex items-center gap-2 mt-1 ml-[18px]">
+      <div className="flex items-center gap-2 mt-1 ms-[18px]">
         <span className={cn('text-[10px] font-medium uppercase tracking-wide', statusTextColor)}>
           {statusLabel}
         </span>

@@ -79,7 +79,7 @@ export function LinkAutocompleteMenu({ items, activeIndex, position, onSelect, m
           <button
             key={item.id}
             data-index={index}
-            className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-sm transition-colors ${
+            className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-start text-sm transition-colors ${
               index === activeIndex ? 'bg-gray-700 text-gray-100' : 'text-gray-300 hover:bg-gray-700/50'
             }`}
             onMouseDown={(e) => {

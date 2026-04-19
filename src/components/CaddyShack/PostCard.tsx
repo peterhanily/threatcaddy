@@ -67,7 +67,7 @@ export function PostCard({
     >
       {/* Reply-to label */}
       {post.replyToAuthorName && (
-        <div className="text-xs text-[var(--text-tertiary)] mb-1.5 ml-12">
+        <div className="text-xs text-[var(--text-tertiary)] mb-1.5 ms-12">
           Replying to <span className="text-blue-400">@{post.replyToAuthorName}</span>
         </div>
       )}
@@ -110,19 +110,19 @@ export function PostCard({
                   <div className="absolute right-0 top-7 z-50 bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl shadow-lg py-1.5 min-w-[150px]">
                     <button
                       onClick={(e) => { e.stopPropagation(); setEditing(true); setShowMenu(false); }}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--bg-secondary)] flex items-center gap-2.5 text-[var(--text-secondary)]"
+                      className="w-full px-3 py-2 text-start text-sm hover:bg-[var(--bg-secondary)] flex items-center gap-2.5 text-[var(--text-secondary)]"
                     >
                       <Edit3 size={14} /> {t('post.edit')}
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); onPin?.(post.id, !post.pinned); setShowMenu(false); }}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--bg-secondary)] flex items-center gap-2.5 text-[var(--text-secondary)]"
+                      className="w-full px-3 py-2 text-start text-sm hover:bg-[var(--bg-secondary)] flex items-center gap-2.5 text-[var(--text-secondary)]"
                     >
                       <Pin size={14} /> {post.pinned ? t('post.unpin') : t('post.pin')}
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); onDelete?.(post.id); setShowMenu(false); }}
-                      className="w-full px-3 py-2 text-left text-sm hover:bg-[var(--bg-secondary)] text-red-400 flex items-center gap-2.5"
+                      className="w-full px-3 py-2 text-start text-sm hover:bg-[var(--bg-secondary)] text-red-400 flex items-center gap-2.5"
                     >
                       <Trash2 size={14} /> {t('post.delete')}
                     </button>

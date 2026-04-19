@@ -371,7 +371,7 @@ export function DataImportModal({
                     const mapping = columnMappings.get(header) || 'ignore';
                     const color = MAPPING_COLORS[mapping];
                     return (
-                      <th key={header} className="text-left p-1.5 border-b border-gray-700 whitespace-nowrap">
+                      <th key={header} className="text-start p-1.5 border-b border-gray-700 whitespace-nowrap">
                         <div className="flex flex-col gap-1">
                           <span className="text-gray-300 font-medium">{header}</span>
                           <div className="flex items-center gap-1">

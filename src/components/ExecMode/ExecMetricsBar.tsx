@@ -46,7 +46,7 @@ export function ExecMetricsBar({ allNotes, allTasks, allEvents, allIOCs, allChat
         <button
           key={m.key}
           onClick={m.onTap}
-          className={`${m.bg} rounded-xl p-3 min-h-[80px] flex flex-col justify-center text-left active:opacity-80 transition-opacity`}
+          className={`${m.bg} rounded-xl p-3 min-h-[80px] flex flex-col justify-center text-start active:opacity-80 transition-opacity`}
         >
           <m.icon size={18} className={m.color} />
           <span className={`text-2xl font-bold mt-1 ${m.color}`}>{m.value}</span>

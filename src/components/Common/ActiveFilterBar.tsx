@@ -67,7 +67,7 @@ export function ActiveFilterBar({ folderName, folderColor, folderStatus, tagName
         </span>
       )}
       {playbookExecution && pbTotal > 0 && (
-        <span className="flex items-center gap-1.5 ml-1" title={`${playbookExecution.templateName}: ${pbCompleted}/${pbTotal} steps`}>
+        <span className="flex items-center gap-1.5 ms-1" title={`${playbookExecution.templateName}: ${pbCompleted}/${pbTotal} steps`}>
           <div className="w-16 h-1.5 bg-gray-700 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all"
@@ -82,7 +82,7 @@ export function ActiveFilterBar({ folderName, folderColor, folderStatus, tagName
       )}
       <button
         onClick={onClear}
-        className="ml-auto px-2 py-0.5 rounded text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
+        className="ms-auto px-2 py-0.5 rounded text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
         aria-label="Show all"
         title="Show all"
       >

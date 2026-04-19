@@ -1439,7 +1439,7 @@ const AppInner = memo(function AppInner({
           <span className="text-text-secondary">Analyst Mode — optimized for desktop</span>
           <button
             onClick={() => setForceAnalystMode(false)}
-            className="text-accent font-medium ml-2 whitespace-nowrap"
+            className="text-accent font-medium ms-2 whitespace-nowrap"
           >
             {tExec('dashboard.backToExecView')}
           </button>

@@ -180,7 +180,7 @@ export function EntityLinker({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t('entityLinker.searchPlaceholder')}
-                className="w-full pl-7 pr-2 py-1.5 bg-gray-900 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-accent"
+                className="w-full ps-7 pe-2 py-1.5 bg-gray-900 border border-gray-700 rounded text-xs text-gray-200 focus:outline-none focus:border-accent"
               />
             </div>
           </div>
@@ -200,7 +200,7 @@ export function EntityLinker({
                       type="button"
                       onClick={() => toggleLink(item.type, item.id)}
                       className={cn(
-                        'w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs hover:bg-gray-700 transition-colors',
+                        'w-full flex items-center gap-2 px-2 py-1.5 text-start text-xs hover:bg-gray-700 transition-colors',
                         linked && 'bg-gray-700/50',
                       )}
                     >

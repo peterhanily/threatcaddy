@@ -152,7 +152,7 @@ function ConfigForm({
         <div key={field.key} className="space-y-1">
           <label className="text-xs text-gray-400">
             {field.label}
-            {field.required && <span className="text-red-400 ml-0.5">*</span>}
+            {field.required && <span className="text-red-400 ms-0.5">*</span>}
           </label>
           {field.description && (
             <p className="text-[10px] text-gray-600">{field.description}</p>
@@ -196,7 +196,7 @@ function ConfigForm({
                 autoComplete="off"
                 data-1p-ignore
                 data-lpignore="true"
-                className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent pr-16"
+                className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent pe-16"
               />
               <button
                 type="button"
@@ -581,7 +581,7 @@ function CatalogTab({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={t('catalog.searchIntegrations')}
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent"
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg ps-9 pe-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent"
         />
       </div>
 
@@ -992,7 +992,7 @@ function HistoryTab({
           <div key={run.id} className="bg-gray-800 border border-gray-700 rounded-lg p-3">
             <button
               onClick={() => setExpandedRunId(isExpanded ? null : run.id)}
-              className="flex items-center gap-3 w-full text-left"
+              className="flex items-center gap-3 w-full text-start"
             >
               {statusIcon(run.status)}
               <div className="flex-1 min-w-0">
@@ -1032,7 +1032,7 @@ function HistoryTab({
                     key={idx}
                     className="flex items-start gap-2 text-[10px] font-mono"
                   >
-                    <span className="text-gray-600 shrink-0 w-16 text-right">
+                    <span className="text-gray-600 shrink-0 w-16 text-end">
                       {entry.durationMs != null ? formatDuration(entry.durationMs) : ''}
                     </span>
                     <span
@@ -1245,7 +1245,7 @@ export function IntegrationPanel() {
           >
             {tab.label}
             {tab.count > 0 && (
-              <span className="ml-1.5 text-[10px] text-gray-600">{tab.count}</span>
+              <span className="ms-1.5 text-[10px] text-gray-600">{tab.count}</span>
             )}
           </button>
         ))}

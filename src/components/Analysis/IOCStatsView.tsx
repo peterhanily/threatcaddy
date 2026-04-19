@@ -446,11 +446,11 @@ export function IOCStatsView({
                   const pct = ((count / uniqueIOCs.length) * 100).toFixed(1);
                   return (
                     <div key={type} className="flex items-center gap-2">
-                      <span className="w-20 text-right text-[11px] text-gray-400 truncate shrink-0">{info.label}</span>
+                      <span className="w-20 text-end text-[11px] text-gray-400 truncate shrink-0">{info.label}</span>
                       <div className="flex-1 h-6 bg-gray-800/60 rounded overflow-hidden">
                         <div className="h-full rounded transition-all" style={{ width: `${(count / byType.max) * 100}%`, backgroundColor: info.color + '55' }} />
                       </div>
-                      <span className="w-16 text-right text-[11px] font-mono text-gray-400 shrink-0">{count} <span className="text-gray-600">({pct}%)</span></span>
+                      <span className="w-16 text-end text-[11px] font-mono text-gray-400 shrink-0">{count} <span className="text-gray-600">({pct}%)</span></span>
                     </div>
                   );
                 })}
@@ -465,11 +465,11 @@ export function IOCStatsView({
                   const pct = ((count / uniqueIOCs.length) * 100).toFixed(1);
                   return (
                     <div key={level} className="flex items-center gap-2">
-                      <span className="w-20 text-right text-[11px] text-gray-400 shrink-0">{info.label}</span>
+                      <span className="w-20 text-end text-[11px] text-gray-400 shrink-0">{info.label}</span>
                       <div className="flex-1 h-6 bg-gray-800/60 rounded overflow-hidden">
                         <div className="h-full rounded transition-all" style={{ width: `${(count / uniqueIOCs.length) * 100}%`, backgroundColor: info.color + '55' }} />
                       </div>
-                      <span className="w-16 text-right text-[11px] font-mono text-gray-400 shrink-0">{count} <span className="text-gray-600">({pct}%)</span></span>
+                      <span className="w-16 text-end text-[11px] font-mono text-gray-400 shrink-0">{count} <span className="text-gray-600">({pct}%)</span></span>
                     </div>
                   );
                 })}
@@ -494,17 +494,17 @@ export function IOCStatsView({
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-gray-800">
-                      <th className="text-left text-gray-500 font-medium py-1.5 pr-4">Actor</th>
-                      <th className="text-right text-gray-500 font-medium py-1.5 px-2">IOCs</th>
-                      <th className="text-left text-gray-500 font-medium py-1.5 pl-4">Top Types</th>
+                      <th className="text-start text-gray-500 font-medium py-1.5 pe-4">Actor</th>
+                      <th className="text-end text-gray-500 font-medium py-1.5 px-2">IOCs</th>
+                      <th className="text-start text-gray-500 font-medium py-1.5 ps-4">Top Types</th>
                     </tr>
                   </thead>
                   <tbody>
                     {displayedActors.map((actor) => (
                       <tr key={actor.name} className="border-b border-gray-800/50">
-                        <td className="py-1.5 pr-4 text-purple-400 font-medium">{actor.name}</td>
-                        <td className="py-1.5 px-2 text-right text-gray-300 tabular-nums">{actor.count}</td>
-                        <td className="py-1.5 pl-4">
+                        <td className="py-1.5 pe-4 text-purple-400 font-medium">{actor.name}</td>
+                        <td className="py-1.5 px-2 text-end text-gray-300 tabular-nums">{actor.count}</td>
+                        <td className="py-1.5 ps-4">
                           <div className="flex gap-1">
                             {actor.topTypes.map((t) => (
                               <span key={t} className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: getTypeInfo(t).color + '22', color: getTypeInfo(t).color }}>
@@ -533,11 +533,11 @@ export function IOCStatsView({
               <div className="space-y-1.5">
                 {overTime.map((bucket, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="w-20 text-right text-[11px] text-gray-400 truncate shrink-0">{bucket.label}</span>
+                    <span className="w-20 text-end text-[11px] text-gray-400 truncate shrink-0">{bucket.label}</span>
                     <div className="flex-1 h-5 bg-gray-800/60 rounded overflow-hidden">
                       <div className="h-full bg-accent/50 rounded transition-all" style={{ width: `${bucket.pct}%` }} />
                     </div>
-                    <span className="w-6 text-right text-[11px] font-mono text-gray-400 shrink-0">{bucket.count}</span>
+                    <span className="w-6 text-end text-[11px] font-mono text-gray-400 shrink-0">{bucket.count}</span>
                   </div>
                 ))}
               </div>
@@ -551,11 +551,11 @@ export function IOCStatsView({
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-gray-800">
-                      <th className="text-left text-gray-500 font-medium py-1.5 pr-2">Value</th>
-                      <th className="text-left text-gray-500 font-medium py-1.5 px-2">Type</th>
-                      <th className="text-right text-gray-500 font-medium py-1.5 px-2">Entities</th>
-                      <th className="text-left text-gray-500 font-medium py-1.5 px-2">Confidence</th>
-                      <th className="text-left text-gray-500 font-medium py-1.5 pl-2">Attribution</th>
+                      <th className="text-start text-gray-500 font-medium py-1.5 pe-2">Value</th>
+                      <th className="text-start text-gray-500 font-medium py-1.5 px-2">Type</th>
+                      <th className="text-end text-gray-500 font-medium py-1.5 px-2">Entities</th>
+                      <th className="text-start text-gray-500 font-medium py-1.5 px-2">Confidence</th>
+                      <th className="text-start text-gray-500 font-medium py-1.5 ps-2">Attribution</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -564,19 +564,19 @@ export function IOCStatsView({
                       const confInfo = getConfInfo(ioc.confidence);
                       return (
                         <tr key={i} className="border-b border-gray-800/50">
-                          <td className="py-1.5 pr-2 text-gray-200 font-mono max-w-[200px] truncate">{ioc.value}</td>
+                          <td className="py-1.5 pe-2 text-gray-200 font-mono max-w-[200px] truncate">{ioc.value}</td>
                           <td className="py-1.5 px-2">
                             <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: typeInfo.color + '22', color: typeInfo.color }}>
                               {typeInfo.label}
                             </span>
                           </td>
-                          <td className="py-1.5 px-2 text-right text-gray-300 tabular-nums">{ioc.entityCount}</td>
+                          <td className="py-1.5 px-2 text-end text-gray-300 tabular-nums">{ioc.entityCount}</td>
                           <td className="py-1.5 px-2">
                             <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: confInfo.color + '22', color: confInfo.color }}>
                               {confInfo.label}
                             </span>
                           </td>
-                          <td className="py-1.5 pl-2 text-gray-400">{ioc.attribution || '--'}</td>
+                          <td className="py-1.5 ps-2 text-gray-400">{ioc.attribution || '--'}</td>
                         </tr>
                       );
                     })}
@@ -639,7 +639,7 @@ function Header({
         <Search size={16} />
         <span className="text-sm font-medium text-gray-200">IOC Analysis</span>
         {selectedFolderId && (
-          <div className="flex rounded-lg overflow-hidden border border-gray-700 ml-2">
+          <div className="flex rounded-lg overflow-hidden border border-gray-700 ms-2">
             <button
               onClick={() => setScopeMode('investigation')}
               className={`px-2 py-0.5 text-[10px] font-medium transition-colors ${scopeMode === 'investigation' ? 'bg-accent/20 text-accent' : 'text-gray-500 hover:text-gray-300'}`}
@@ -655,7 +655,7 @@ function Header({
           </div>
         )}
         <span className="text-xs text-gray-500">({uniqueIOCCount} unique)</span>
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="ms-auto flex items-center gap-1.5">
           {onSTIXImport && (
             <button onClick={onSTIXImport} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 text-xs font-medium transition-colors">
               STIX
@@ -1050,7 +1050,7 @@ function AllIOCsTab({
                       {isColVisible(col.key) && <span className="text-white text-[8px]">&#10003;</span>}
                     </span>
                     <span className="text-gray-300">{col.label}</span>
-                    {col.hiddenByDefault && <span className="text-[9px] text-gray-600 ml-auto">hidden</span>}
+                    {col.hiddenByDefault && <span className="text-[9px] text-gray-600 ms-auto">hidden</span>}
                   </button>
                 ))}
                 <div className="border-t border-gray-700 mt-1 pt-1 px-3">
@@ -1204,7 +1204,7 @@ function AllIOCsTab({
                     <button
                       key={s}
                       onClick={() => handleBulkSetStatus(s)}
-                      className="w-full px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800 text-left flex items-center gap-2"
+                      className="w-full px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800 text-start flex items-center gap-2"
                     >
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: STATUS_COLORS[s] }} />
                       {STATUS_LABELS[s]}
@@ -1232,7 +1232,7 @@ function AllIOCsTab({
                       <button
                         key={c}
                         onClick={() => handleBulkSetConfidence(c)}
-                        className="w-full px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800 text-left flex items-center gap-2"
+                        className="w-full px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800 text-start flex items-center gap-2"
                       >
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: info.color }} />
                         {info.label}
@@ -1280,7 +1280,7 @@ function AllIOCsTab({
 
           <button
             onClick={() => setSelectedIds(new Set())}
-            className="ml-auto text-xs text-gray-500 hover:text-gray-300 px-2 py-1"
+            className="ms-auto text-xs text-gray-500 hover:text-gray-300 px-2 py-1"
           >
             Clear selection
           </button>
@@ -1296,7 +1296,7 @@ function AllIOCsTab({
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
             placeholder="Filter by value or source..."
-            className="w-full pl-8 pr-8 py-1.5 rounded-md bg-gray-800 border border-gray-700 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-gray-600"
+            className="w-full ps-8 pe-8 py-1.5 rounded-md bg-gray-800 border border-gray-700 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-gray-600"
           />
           {searchText && (
             <button onClick={() => setSearchText('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
@@ -1306,7 +1306,7 @@ function AllIOCsTab({
         </div>
 
         <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wide mr-1">Source</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-wide me-1">Source</span>
           {(['all', 'note', 'task', 'event', 'standalone'] as const).map(s => {
             const active = sourceFilter === s;
             const labels: Record<string, string> = { all: 'All', note: 'Notes', task: 'Tasks', event: 'Events', standalone: 'Standalone' };
@@ -1330,7 +1330,7 @@ function AllIOCsTab({
         </div>
 
         <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wide mr-1">Status</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-wide me-1">Status</span>
           <button
             onClick={() => setStatusFilter(null)}
             className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
@@ -1362,7 +1362,7 @@ function AllIOCsTab({
         </div>
 
         <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wide mr-1">Confidence</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-wide me-1">Confidence</span>
           <button
             onClick={() => setConfidenceFilter(null)}
             className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
@@ -1394,7 +1394,7 @@ function AllIOCsTab({
         </div>
 
         <div className="flex items-center gap-1 flex-wrap">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wide mr-1">Type</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-wide me-1">Type</span>
           {ALL_IOC_TYPES.map(type => {
             const info = getTypeInfo(type);
             const active = typeFilter.includes(type);
@@ -1459,7 +1459,7 @@ function AllIOCsTab({
               }}
               fixedHeaderContent={() => (
                 <tr className="border-b border-gray-800 bg-gray-900">
-                  <th className="text-left text-gray-500 font-medium py-2 pr-1 w-8">
+                  <th className="text-start text-gray-500 font-medium py-2 pe-1 w-8">
                     <input
                       type="checkbox"
                       checked={filteredSortedRows.length > 0 && selectedIds.size === filteredSortedRows.length}
@@ -1467,19 +1467,19 @@ function AllIOCsTab({
                       className="rounded border-gray-600 bg-gray-800 text-accent focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 cursor-pointer"
                     />
                   </th>
-                  <SortHeader field="value" label="Value" className="text-left text-gray-500 font-medium py-2 pr-2" />
-                  {isColVisible('type') && <SortHeader field="type" label="Type" className="text-left text-gray-500 font-medium py-2 px-2" />}
-                  {isColVisible('confidence') && <SortHeader field="confidence" label="Confidence" className="text-left text-gray-500 font-medium py-2 px-2" />}
-                  {isColVisible('source') && <SortHeader field="source" label="Source" className="text-left text-gray-500 font-medium py-2 px-2" />}
-                  {isColVisible('iocStatus') && <SortHeader field="iocStatus" label="Status" className="text-left text-gray-500 font-medium py-2 px-2" />}
-                  {isColVisible('attribution') && <SortHeader field="attribution" label="Attribution" className="text-left text-gray-500 font-medium py-2 px-2" />}
-                  {isColVisible('clsLevel') && <th className="text-left text-gray-500 font-medium py-2 px-2" title="Classification">CLS</th>}
-                  {isColVisible('updatedAt') && <th className="text-left text-gray-500 font-medium py-2 px-2">Updated</th>}
-                  {isColVisible('analystNotes') && <th className="text-left text-gray-500 font-medium py-2 px-2">Notes</th>}
-                  {isColVisible('tags') && <th className="text-left text-gray-500 font-medium py-2 px-2">Tags</th>}
-                  {isColVisible('firstSeen') && <th className="text-left text-gray-500 font-medium py-2 px-2">First Seen</th>}
-                  {isColVisible('labels') && <th className="text-left text-gray-500 font-medium py-2 px-2">Labels</th>}
-                  <th className="text-right text-gray-500 font-medium py-2 pl-2">Actions</th>
+                  <SortHeader field="value" label="Value" className="text-start text-gray-500 font-medium py-2 pe-2" />
+                  {isColVisible('type') && <SortHeader field="type" label="Type" className="text-start text-gray-500 font-medium py-2 px-2" />}
+                  {isColVisible('confidence') && <SortHeader field="confidence" label="Confidence" className="text-start text-gray-500 font-medium py-2 px-2" />}
+                  {isColVisible('source') && <SortHeader field="source" label="Source" className="text-start text-gray-500 font-medium py-2 px-2" />}
+                  {isColVisible('iocStatus') && <SortHeader field="iocStatus" label="Status" className="text-start text-gray-500 font-medium py-2 px-2" />}
+                  {isColVisible('attribution') && <SortHeader field="attribution" label="Attribution" className="text-start text-gray-500 font-medium py-2 px-2" />}
+                  {isColVisible('clsLevel') && <th className="text-start text-gray-500 font-medium py-2 px-2" title="Classification">CLS</th>}
+                  {isColVisible('updatedAt') && <th className="text-start text-gray-500 font-medium py-2 px-2">Updated</th>}
+                  {isColVisible('analystNotes') && <th className="text-start text-gray-500 font-medium py-2 px-2">Notes</th>}
+                  {isColVisible('tags') && <th className="text-start text-gray-500 font-medium py-2 px-2">Tags</th>}
+                  {isColVisible('firstSeen') && <th className="text-start text-gray-500 font-medium py-2 px-2">First Seen</th>}
+                  {isColVisible('labels') && <th className="text-start text-gray-500 font-medium py-2 px-2">Labels</th>}
+                  <th className="text-end text-gray-500 font-medium py-2 ps-2">Actions</th>
                 </tr>
               )}
               itemContent={(_index, row) => {
@@ -1496,7 +1496,7 @@ function AllIOCsTab({
                 const clsColor = clsLevel ? CLS_COLORS[clsLevel] || '#6b7280' : undefined;
                 return (
                   <>
-                    <td className="py-2 pr-1 w-8">
+                    <td className="py-2 pe-1 w-8">
                       <input
                         type="checkbox"
                         checked={selectedIds.has(row.id)}
@@ -1504,7 +1504,7 @@ function AllIOCsTab({
                         className="rounded border-gray-600 bg-gray-800 text-accent focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 cursor-pointer"
                       />
                     </td>
-                    <td className="py-2 pr-2 text-gray-200 font-mono max-w-[220px] truncate">{row.value}</td>
+                    <td className="py-2 pe-2 text-gray-200 font-mono max-w-[220px] truncate">{row.value}</td>
                     {isColVisible('type') && (
                       <td className="py-2 px-2">
                         <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: typeInfo.color + '22', color: typeInfo.color }}>
@@ -1583,7 +1583,7 @@ function AllIOCsTab({
                         <EnrichmentLabels enrichment={si?.enrichment} maxVisible={4} compact />
                       </td>
                     )}
-                    <td className="py-2 pl-2">
+                    <td className="py-2 ps-2">
                       <div className="flex items-center justify-end gap-1 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                         {row.sourceType === 'standalone' && row.standaloneIOC ? (
                           <>

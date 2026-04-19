@@ -60,7 +60,7 @@ export function FieldDiffView({ diffs }: FieldDiffViewProps) {
     <div className="space-y-1.5 text-sm">
       {diffs.map((d) => (
         <div key={d.field} className="flex items-baseline gap-2 text-xs">
-          <span className="text-gray-500 font-medium shrink-0 w-20 text-right">{d.label}:</span>
+          <span className="text-gray-500 font-medium shrink-0 w-20 text-end">{d.label}:</span>
           <span className="bg-red-900/30 text-red-300 line-through px-1 rounded truncate max-w-[40%]">
             {d.oldValue || '(empty)'}
           </span>

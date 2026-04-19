@@ -73,7 +73,7 @@ export function KanbanBoard({ getTasksByStatus, onToggleComplete, onSelect, onDe
             <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-800">
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} aria-hidden="true" />
               <span className="text-sm font-medium text-gray-300">{label}</span>
-              <span className="text-xs text-gray-500 ml-auto">{tasks.length}</span>
+              <span className="text-xs text-gray-500 ms-auto">{tasks.length}</span>
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
               {tasks.map((task) => (

@@ -64,7 +64,7 @@ export function SupervisorSummary({ onOpenSupervisor }: { onOpenSupervisor?: (fo
     <div className="mb-6">
       <button
         onClick={() => supervisorFolderId && onOpenSupervisor?.(supervisorFolderId)}
-        className="w-full text-left rounded-lg border border-accent-blue/20 bg-accent-blue/5 hover:bg-accent-blue/10 transition-colors p-3 group"
+        className="w-full text-start rounded-lg border border-accent-blue/20 bg-accent-blue/5 hover:bg-accent-blue/10 transition-colors p-3 group"
       >
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-2">

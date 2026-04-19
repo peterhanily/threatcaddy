@@ -120,7 +120,7 @@ export function ExecIOCView({ ioc, allIOCs, onShare, currentIndex, totalCount, o
           <h3 className="text-sm font-semibold text-text-primary mb-2">{t('iocs.comments', { count: ioc.comments.length })}</h3>
           <div className="flex flex-col gap-2">
             {ioc.comments.map((comment) => (
-              <div key={comment.id} className="border-l-2 border-border-subtle pl-3">
+              <div key={comment.id} className="border-l-2 border-border-subtle ps-3">
                 <p className="text-xs text-text-secondary">{comment.content}</p>
                 <p className="text-[10px] text-text-muted mt-0.5">{formatFullDate(comment.createdAt)}</p>
               </div>

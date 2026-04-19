@@ -80,7 +80,7 @@ export function ConflictDialog({ conflicts, onResolve, onResolveAll, onClose }: 
                 ? 'All conflicts resolved'
                 : `${unresolvedConflicts.length} sync ${unresolvedConflicts.length === 1 ? 'conflict' : 'conflicts'}`}
               {resolvedIds.size > 0 && unresolvedConflicts.length > 0 && (
-                <span className="text-amber-400/50 ml-1">({resolvedIds.size} resolved)</span>
+                <span className="text-amber-400/50 ms-1">({resolvedIds.size} resolved)</span>
               )}
             </span>
             <div className="flex items-center gap-1">

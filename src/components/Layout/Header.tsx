@@ -109,7 +109,7 @@ export function Header({
       </button>
 
       {typeof __STANDALONE__ !== 'undefined' && __STANDALONE__ ? (
-        <div className="flex items-center gap-1.5 sm:gap-2.5 mr-1 sm:mr-2">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 me-1 sm:me-2">
           <img src={logoSvg} alt="ThreatCaddy" className="w-6 h-6 sm:w-7 sm:h-7" />
           <div className="hidden sm:flex flex-col leading-none">
             <span className="text-lg font-bold tracking-tight">
@@ -119,7 +119,7 @@ export function Header({
           </div>
         </div>
       ) : (
-        <a href="https://threatcaddy.com" className="flex items-center gap-1.5 sm:gap-2.5 mr-1 sm:mr-2 no-underline" title="threatcaddy.com">
+        <a href="https://threatcaddy.com" className="flex items-center gap-1.5 sm:gap-2.5 me-1 sm:me-2 no-underline" title="threatcaddy.com">
           <img src={logoSvg} alt="ThreatCaddy" className="w-6 h-6 sm:w-7 sm:h-7" />
           <span className="text-lg font-bold tracking-tight hidden sm:inline">
             <span className="text-accent">Threat</span><span className="text-gray-200">Caddy</span>
@@ -142,12 +142,12 @@ export function Header({
       <button
         data-tour="search"
         onClick={onOpenSearch}
-        className="flex items-center gap-2 flex-1 max-w-md pl-3 pr-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-500 hover:text-gray-400 hover:border-gray-600 text-sm transition-colors cursor-pointer"
+        className="flex items-center gap-2 flex-1 max-w-md ps-3 pe-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-500 hover:text-gray-400 hover:border-gray-600 text-sm transition-colors cursor-pointer"
         title={selectedFolderName ? t('header.searchInFolder', { name: selectedFolderName }) + ' (Ctrl+K)' : t('header.searchAll') + ' (Ctrl+K)'}
       >
         <Search size={16} />
         <span className="hidden sm:inline truncate">{selectedFolderName ? t('header.searchInFolderEllipsis', { name: selectedFolderName }) : t('header.searchAllEllipsis')}</span>
-        <kbd className="hidden sm:inline ml-auto text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-500 border border-gray-600 font-mono shrink-0">Ctrl+K</kbd>
+        <kbd className="hidden sm:inline ms-auto text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-500 border border-gray-600 font-mono shrink-0">Ctrl+K</kbd>
       </button>
 
       {/* Help dropdown — hidden on mobile, shown on md+ (U13) */}
@@ -167,7 +167,7 @@ export function Header({
             {onStartTour && (
               <button
                 onClick={() => { onStartTour(); setHelpMenuOpen(false); }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 text-start text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors"
               >
                 <HelpCircle size={14} />
                 {t('header.startTour')}
@@ -212,7 +212,7 @@ export function Header({
                     addToast?.('error', t('header.updateFailed'));
                   }
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 text-start text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors"
               >
                 <RefreshCw size={14} />
                 {t('header.update')}
@@ -265,7 +265,7 @@ export function Header({
         )}
       </div>
 
-      <div className="flex items-center gap-1 ml-auto">
+      <div className="flex items-center gap-1 ms-auto">
         <CreateDropdown
           onQuickNote={onQuickNote}
           onNewNote={onNewNote}

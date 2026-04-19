@@ -255,7 +255,7 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
           {matching.length === 0 ? (
             <button
               onClick={() => { setOpen(false); onOpenSettings?.(); }}
-              className="w-full text-left px-3 py-3 text-xs text-gray-400 hover:bg-gray-700 transition-colors"
+              className="w-full text-start px-3 py-3 text-xs text-gray-400 hover:bg-gray-700 transition-colors"
             >
               <p>{t('run.noIntegrationsForType')}</p>
               <p className="text-amber-500/80 mt-1">{t('run.setupIntegrations')}</p>
@@ -265,7 +265,7 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
               <button
                 key={installation.id}
                 onClick={() => handleRun(installation.id, template.id)}
-                className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-700 hover:text-gray-100 transition-colors flex items-center gap-2"
+                className="w-full text-start px-3 py-2 text-xs text-gray-300 hover:bg-gray-700 hover:text-gray-100 transition-colors flex items-center gap-2"
               >
                 <div
                   className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-white shrink-0"

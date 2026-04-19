@@ -217,9 +217,9 @@ export function MISPImportModal({
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-gray-900">
                     <tr className="border-b border-gray-800">
-                      <th className="text-left text-gray-500 font-medium py-1.5 px-2">Value</th>
-                      <th className="text-left text-gray-500 font-medium py-1.5 px-2 w-20">Type</th>
-                      <th className="text-left text-gray-500 font-medium py-1.5 px-2 w-20">Confidence</th>
+                      <th className="text-start text-gray-500 font-medium py-1.5 px-2">Value</th>
+                      <th className="text-start text-gray-500 font-medium py-1.5 px-2 w-20">Type</th>
+                      <th className="text-start text-gray-500 font-medium py-1.5 px-2 w-20">Confidence</th>
                     </tr>
                   </thead>
                   <tbody>

@@ -91,7 +91,7 @@ export function ActivityLogView({ entries, getFiltered, onClear }: ActivityLogVi
         <Activity size={18} className="text-accent" />
         <span className="text-sm font-medium text-gray-200">{t('title')}</span>
         <span className="text-xs text-gray-500">({filtered.length})</span>
-        <div className="ml-auto">
+        <div className="ms-auto">
           <button
             onClick={() => setShowConfirmClear(true)}
             disabled={entries.length === 0}

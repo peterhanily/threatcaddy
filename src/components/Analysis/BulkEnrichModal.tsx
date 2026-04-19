@@ -440,7 +440,7 @@ export function BulkEnrichModal({
                   />
                   <span className="text-xs text-gray-300 group-hover:text-gray-100 transition-colors">
                     {t('bulkEnrich.skipAlreadyEnriched')}
-                    <span className="text-gray-500 ml-1">({skippableCount})</span>
+                    <span className="text-gray-500 ms-1">({skippableCount})</span>
                   </span>
                 </label>
               )}
@@ -454,7 +454,7 @@ export function BulkEnrichModal({
                 />
                 <span className="text-xs text-gray-300 group-hover:text-gray-100 transition-colors">
                   {t('bulkEnrich.createNotes')}
-                  <span className="text-gray-500 ml-1">{t('bulkEnrich.createNotesHint')}</span>
+                  <span className="text-gray-500 ms-1">{t('bulkEnrich.createNotesHint')}</span>
                 </span>
               </label>
 
@@ -510,7 +510,7 @@ export function BulkEnrichModal({
                         <span className="text-gray-400 font-mono truncate max-w-[200px]">
                           {ioc?.value || r.iocId}
                         </span>
-                        <span className="text-gray-600 ml-auto shrink-0">
+                        <span className="text-gray-600 ms-auto shrink-0">
                           {r.integrationResults.filter((ir) => ir.status === 'success').length}/
                           {r.integrationResults.length}
                         </span>

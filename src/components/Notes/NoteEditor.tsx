@@ -854,7 +854,7 @@ export function NoteEditor({
           <label className="relative inline-flex items-center cursor-pointer" title={defangPreview ? t('editor.showOriginalIOCs') : t('editor.defangIOCs')}>
             <input type="checkbox" checked={defangPreview} onChange={() => setDefangPreview(!defangPreview)} className="sr-only peer" />
             <div className="w-7 h-4 bg-gray-700 peer-checked:bg-accent/60 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3" />
-            <span className="ml-1.5 text-[10px] text-gray-500 peer-checked:text-accent select-none">{t('editor.defang')}</span>
+            <span className="ms-1.5 text-[10px] text-gray-500 peer-checked:text-accent select-none">{t('editor.defang')}</span>
           </label>
         )}
 
@@ -931,14 +931,14 @@ export function NoteEditor({
                 <button
                   onClick={() => { if (cloud.syncing) return; cloud.shareNote(note, clipsFolderId); logActivity('sync', 'share', `Shared note "${note.title}"`, note.id, note.title); setShowShareMenu(false); }}
                   disabled={cloud.syncing}
-                  className="w-full px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-50"
+                  className="w-full px-3 py-1.5 text-start text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-50"
                 >
                   {t('editor.shareNote')}
                 </button>
                 <button
                   onClick={() => { if (cloud.syncing) return; cloud.shareIOCReport(note); logActivity('sync', 'share-ioc-report', `Shared IOC report for "${note.title}"`, note.id, note.title); setShowShareMenu(false); }}
                   disabled={cloud.syncing}
-                  className="w-full px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-50"
+                  className="w-full px-3 py-1.5 text-start text-sm text-gray-200 hover:bg-gray-700 disabled:opacity-50"
                 >
                   {t('editor.shareIOCReport')}
                 </button>
@@ -947,7 +947,7 @@ export function NoteEditor({
           </div>
         )}
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ms-auto flex items-center gap-2">
           {shareMessage && (
             <span className={cn('text-xs', shareMessage.type === 'success' ? 'text-green-400' : 'text-red-400')} role="status">
               {shareMessage.text}
@@ -1049,7 +1049,7 @@ export function NoteEditor({
               {/* Line number gutter — heights match textarea line wrapping */}
               <div
                 ref={gutterRef}
-                className="shrink-0 pt-2 sm:pt-4 pr-2 pl-2 text-right select-none overflow-hidden font-mono border-r border-gray-800"
+                className="shrink-0 pt-2 sm:pt-4 pe-2 ps-2 text-end select-none overflow-hidden font-mono border-r border-gray-800"
                 style={{ minWidth: '2.5rem', fontSize: '12px' }}
                 aria-hidden="true"
               >{lines.map((_, i) => (
@@ -1074,7 +1074,7 @@ export function NoteEditor({
                   }, 0);
                 }}
                 onKeyDown={handleEditorKeyDown}
-                className="note-editor flex-1 w-full p-2 sm:p-4 pl-1 bg-transparent text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-0 border-none text-sm leading-relaxed"
+                className="note-editor flex-1 w-full p-2 sm:p-4 ps-1 bg-transparent text-gray-200 placeholder-gray-600 focus:outline-none focus:ring-0 border-none text-sm leading-relaxed"
                 placeholder={t('editor.contentPlaceholder')}
                 readOnly={note.trashed}
                 aria-label={t('editor.contentAria')}
@@ -1246,7 +1246,7 @@ export function NoteEditor({
                   <button
                     key={bl.id}
                     onClick={() => onNavigateToNote?.(bl.id)}
-                    className="block w-full text-left text-xs text-accent hover:text-accent-hover hover:bg-gray-800/50 px-2 py-1 rounded truncate"
+                    className="block w-full text-start text-xs text-accent hover:text-accent-hover hover:bg-gray-800/50 px-2 py-1 rounded truncate"
                   >
                     {bl.title || t('common:untitled')}
                   </button>

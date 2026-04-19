@@ -141,7 +141,7 @@ export function PlaybookPicker({ open, onClose, playbooks, onSelect, applyToExis
               <button
                 key={pb.id}
                 onClick={() => setSelectedPlaybook(pb)}
-                className="w-full flex items-center gap-3 p-3 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 transition-colors text-left"
+                className="w-full flex items-center gap-3 p-3 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 transition-colors text-start"
               >
                 {pb.icon && <span className="text-lg">{pb.icon}</span>}
                 <div className="flex-1 min-w-0">

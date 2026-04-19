@@ -167,7 +167,7 @@ export function MitreHeatmap({ events, colorMode, onTechniqueClick }: MitreHeatm
           ))}
         </div>
         {maxLabel && (
-          <span className="ml-auto text-[10px] text-gray-600">{maxLabel}</span>
+          <span className="ms-auto text-[10px] text-gray-600">{maxLabel}</span>
         )}
       </div>
 
@@ -197,7 +197,7 @@ export function MitreHeatmap({ events, colorMode, onTechniqueClick }: MitreHeatm
                       type="button"
                       disabled={!clickable}
                       onClick={() => clickable && onTechniqueClick(tech.id)}
-                      className={`text-left px-1.5 py-1 rounded-sm transition-colors ${
+                      className={`text-start px-1.5 py-1 rounded-sm transition-colors ${
                         clickable ? 'cursor-pointer hover:ring-1 hover:ring-gray-500' : 'cursor-default'
                       }`}
                       style={{ backgroundColor: color.bg }}

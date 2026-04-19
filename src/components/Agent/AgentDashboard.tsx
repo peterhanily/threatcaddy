@@ -141,7 +141,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
               <h1 className="text-lg font-bold text-text-primary">{t('dashboard.agentCaddy')}</h1>
               <p className="text-xs text-text-muted">
                 {activeAgents > 0 ? t('dashboard.activeAgents', { count: activeAgents, suffix: activeAgents !== 1 ? 's' : '' }) : t('dashboard.noActiveAgents')}
-                {totalPending > 0 && <span className="text-accent-amber ml-2">{t('dashboard.pendingCount', { count: totalPending })}</span>}
+                {totalPending > 0 && <span className="text-accent-amber ms-2">{t('dashboard.pendingCount', { count: totalPending })}</span>}
               </p>
             </div>
           </div>
@@ -151,7 +151,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
           <div className="text-center py-16 text-text-muted">
             <Bot size={48} className="mx-auto mb-4 opacity-20" />
             <p className="text-sm mb-3">{t('dashboard.getStarted')}</p>
-            <div className="text-xs text-left space-y-2 max-w-xs">
+            <div className="text-xs text-start space-y-2 max-w-xs">
               <div className="flex gap-2">
                 <span className="text-accent-blue font-bold shrink-0">1.</span>
                 <span>Open an investigation and go to the <strong>AgentCaddy</strong> tab</span>
@@ -189,7 +189,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
                     <button
                       key={note.id}
                       onClick={() => supervisorFolderId && onOpenInvestigation(supervisorFolderId)}
-                      className="w-full text-left rounded-lg border border-border-subtle bg-surface hover:bg-surface-raised transition-colors p-3 group"
+                      className="w-full text-start rounded-lg border border-border-subtle bg-surface hover:bg-surface-raised transition-colors p-3 group"
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-medium text-text-primary truncate flex-1">{note.title}</span>
@@ -216,7 +216,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
                     <button
                       key={folder.id}
                       onClick={() => onOpenInvestigation(folder.id)}
-                      className="text-left rounded-lg border border-border-subtle bg-surface hover:bg-surface-raised transition-colors p-3 group"
+                      className="text-start rounded-lg border border-border-subtle bg-surface hover:bg-surface-raised transition-colors p-3 group"
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -272,7 +272,7 @@ export function AgentDashboard({ folders, onOpenInvestigation, onOpenSettings }:
                       <button
                         key={action.id}
                         onClick={() => onOpenInvestigation(action.investigationId)}
-                        className="w-full flex items-center gap-2 text-left px-2 py-1.5 rounded hover:bg-surface-raised transition-colors group"
+                        className="w-full flex items-center gap-2 text-start px-2 py-1.5 rounded hover:bg-surface-raised transition-colors group"
                       >
                         <Icon size={11} className={cn(color, 'shrink-0')} />
                         <code className="text-[10px] text-text-primary font-mono shrink-0">{action.toolName}</code>

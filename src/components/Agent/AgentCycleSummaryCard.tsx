@@ -50,7 +50,7 @@ export function AgentCycleSummaryCard({ summary, defaultExpanded = false }: Agen
     <div className="my-2 border border-border-subtle rounded-lg bg-surface text-xs overflow-hidden">
       <button
         onClick={() => setExpanded(v => !v)}
-        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-surface-raised text-left"
+        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-surface-raised text-start"
         aria-expanded={expanded}
         aria-label={t(expanded ? 'cycleSummary.collapse' : 'cycleSummary.expand')}
       >
@@ -59,7 +59,7 @@ export function AgentCycleSummaryCard({ summary, defaultExpanded = false }: Agen
         <span className={cn('font-medium shrink-0', meta.color)}>{t(meta.labelKey)}</span>
         <span className="text-text-muted shrink-0">·</span>
         <span className="text-text-secondary truncate flex-1" title={summary.whyThisCycle}>{summary.whyThisCycle}</span>
-        <span className="text-text-muted shrink-0 flex gap-2 ml-2">
+        <span className="text-text-muted shrink-0 flex gap-2 ms-2">
           <span>{formatDuration(summary.durationMs)}</span>
           {totalTokens > 0 && <span>{formatTokens(totalTokens)} tok</span>}
           {summary.costUSD > 0 && <span>{formatUSD(summary.costUSD)}</span>}

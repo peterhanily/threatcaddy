@@ -50,7 +50,7 @@ export const NavItem = React.memo(function NavItem({
         />
       )}
       {icon}
-      <span className="truncate flex-1 text-left">{label}</span>
+      <span className="truncate flex-1 text-start">{label}</span>
       {scopedColor && (
         <span
           className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -116,7 +116,7 @@ export const InvestigationListItem = React.memo(function InvestigationListItem({
       )}
     >
       <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', statusColor)} />
-      <span className="truncate flex-1 text-left text-[12px]">{folder.name}</span>
+      <span className="truncate flex-1 text-start text-[12px]">{folder.name}</span>
       {synced && (
         <span title="Synced with team server">
           <Cloud size={10} className="shrink-0 text-purple/60" />
@@ -210,7 +210,7 @@ export const CollapsedIcon = React.memo(function CollapsedIcon({
           </span>
         )}
       </button>
-      <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 rounded bg-bg-raised border border-border-medium text-xs text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-50 shadow-lg">
+      <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ms-2 px-2 py-1 rounded bg-bg-raised border border-border-medium text-xs text-text-primary whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-50 shadow-lg">
         {label}
       </div>
     </div>

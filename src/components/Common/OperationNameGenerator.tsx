@@ -237,7 +237,7 @@ export function OperationNameGenerator({ open, onClose, onCreateInvestigation }:
                   ))}
                 </div>
               </div>
-              <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-700 text-gray-500 hover:text-gray-300 transition-colors ml-2 flex-shrink-0" aria-label="Close">
+              <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-700 text-gray-500 hover:text-gray-300 transition-colors ms-2 flex-shrink-0" aria-label="Close">
                 <X size={18} />
               </button>
             </div>
@@ -330,7 +330,7 @@ export function OperationNameGenerator({ open, onClose, onCreateInvestigation }:
                     {/* Grip ball — red, glossy */}
                     <div className="w-8 h-8 -mt-0.5 rounded-full bg-gradient-to-br from-red-400 via-red-500 to-red-700 shadow-lg shadow-red-500/40 border border-red-400/50 group-hover:from-red-300 group-hover:via-red-400 group-hover:to-red-600 transition-colors overflow-hidden">
                       {/* Glossy highlight */}
-                      <div className="w-3 h-2 mt-1.5 ml-1.5 rounded-full bg-white/30" />
+                      <div className="w-3 h-2 mt-1.5 ms-1.5 rounded-full bg-white/30" />
                     </div>
                   </div>
                 </button>

@@ -74,13 +74,13 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
       </div>
 
       {/* Rationale preview */}
-      <p className="text-xs text-text-muted mt-1.5 line-clamp-2 pl-6">
+      <p className="text-xs text-text-muted mt-1.5 line-clamp-2 ps-6">
         {action.rationale.substring(0, 200)}
       </p>
 
       {/* Expanded details */}
       {expanded && (
-        <div className="mt-2 pl-6 space-y-2">
+        <div className="mt-2 ps-6 space-y-2">
           <div>
             <span className="text-[10px] text-text-muted uppercase tracking-wide">{t('action.input')}</span>
             <pre className="text-xs text-text-secondary bg-surface-raised rounded p-2 mt-0.5 overflow-auto max-h-32">
@@ -126,7 +126,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
 
       {/* Edit mode for modifying tool input before approve */}
       {editing && isPending && (
-        <div className="mt-2 pl-6 space-y-1.5">
+        <div className="mt-2 ps-6 space-y-1.5">
           <textarea
             maxLength={10000}
             value={editJson}
@@ -153,7 +153,7 @@ export function AgentActionCard({ action, onApprove, onEditApprove, onReject, on
 
       {/* Action buttons for pending items */}
       {isPending && !editing && (onApprove || onReject) && (
-        <div className="flex items-center gap-2 mt-2 pl-6">
+        <div className="flex items-center gap-2 mt-2 ps-6">
           {onApprove && (
             <button
               onClick={() => onApprove(action)}

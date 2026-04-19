@@ -177,7 +177,7 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
                   <button
                     key={tool.view}
                     onClick={() => onViewChange(tool.view)}
-                    className="group rounded-lg border border-border-subtle bg-bg-raised p-3 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-border-medium text-left"
+                    className="group rounded-lg border border-border-subtle bg-bg-raised p-3 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-border-medium text-start"
                     style={{
                       borderLeftWidth: '3px',
                       borderLeftColor: tool.color,

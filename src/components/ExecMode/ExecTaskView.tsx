@@ -83,7 +83,7 @@ export function ExecTaskView({ task, onShare, currentIndex, totalCount, onNaviga
           <h3 className="text-sm font-semibold text-text-primary mb-2">{t('tasks.comments', { count: task.comments.length })}</h3>
           <div className="flex flex-col gap-2">
             {task.comments.map((comment) => (
-              <div key={comment.id} className="border-l-2 border-border-subtle pl-3">
+              <div key={comment.id} className="border-l-2 border-border-subtle ps-3">
                 <p className="text-xs text-text-secondary">{comment.text}</p>
                 <p className="text-[10px] text-text-muted mt-0.5">{formatFullDate(comment.createdAt)}</p>
               </div>

@@ -95,7 +95,7 @@ export function ExecInvestigationList({ folders, allNotes, allTasks, allEvents, 
             <button
               key={folder.id}
               onClick={() => onSelect(folder.id)}
-              className="bg-bg-raised rounded-xl p-4 text-left active:bg-bg-hover transition-colors"
+              className="bg-bg-raised rounded-xl p-4 text-start active:bg-bg-hover transition-colors"
             >
               {/* Name + status */}
               <div className="flex items-center gap-2">

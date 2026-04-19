@@ -218,7 +218,7 @@ export function TimelineGantt({ events, onSelect, onToggleStar: _onToggleStar }:
           <Layers size={10} />
           {t('gantt.group')}
         </button>
-        <span className="ml-auto text-[10px] text-gray-600">{t('gantt.eventCount', { count: sortedEvents.length })}</span>
+        <span className="ms-auto text-[10px] text-gray-600">{t('gantt.eventCount', { count: sortedEvents.length })}</span>
       </div>
 
       {/* Chart area */}

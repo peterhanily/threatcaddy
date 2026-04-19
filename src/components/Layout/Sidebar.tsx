@@ -242,7 +242,7 @@ export function Sidebar({
           {/* Clickable investigation card — opens settings */}
           <button
             onClick={() => setEditingFolderId(selectedFolder.id)}
-            className="w-full text-left rounded-lg border border-border-subtle bg-bg-raised hover:border-border-medium hover:bg-bg-hover transition-colors p-2 group"
+            className="w-full text-start rounded-lg border border-border-subtle bg-bg-raised hover:border-border-medium hover:bg-bg-hover transition-colors p-2 group"
             title={t('sidebar.investigationSettings')}
           >
             {selectedFolder.color && (

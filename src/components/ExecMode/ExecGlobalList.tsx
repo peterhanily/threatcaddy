@@ -69,7 +69,7 @@ export function ExecGlobalList({
 
       {mode === 'notes' && notes.map((note) => (
         <button key={note.id} onClick={() => onSelectNote?.(note.id, note.folderId || '')}
-          className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-left">
+          className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-start">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-text-primary truncate">{note.title || 'Untitled'}</p>
             <p className="text-[10px] text-text-muted mt-0.5">
@@ -83,7 +83,7 @@ export function ExecGlobalList({
 
       {mode === 'tasks' && tasks.map((task) => (
         <button key={task.id} onClick={() => onSelectTask?.(task.id, task.folderId || '')}
-          className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-left">
+          className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-start">
           <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: PRIORITY_COLORS[task.priority] || '#6b7280' }} />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-text-primary truncate">{task.title || 'Untitled'}</p>
@@ -99,7 +99,7 @@ export function ExecGlobalList({
         const typeInfo = TIMELINE_EVENT_TYPE_LABELS[event.eventType];
         return (
           <button key={event.id} onClick={() => onSelectEvent?.(event.id, event.folderId || '')}
-            className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-left">
+            className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-start">
             <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: typeInfo?.color ?? '#6b7280' }} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-text-primary truncate">{event.title || 'Untitled'}</p>
@@ -117,7 +117,7 @@ export function ExecGlobalList({
         const confInfo = CONFIDENCE_LEVELS[ioc.confidence];
         return (
           <button key={ioc.id} onClick={() => onSelectIOC?.(ioc.id, ioc.folderId || '')}
-            className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-left">
+            className="flex items-center gap-3 bg-bg-raised rounded-xl px-4 py-3 active:bg-bg-hover text-start">
             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: typeInfo?.color + '22', color: typeInfo?.color }}>{typeInfo?.label}</span>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-mono text-text-primary truncate">{ioc.value}</p>

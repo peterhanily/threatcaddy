@@ -31,7 +31,7 @@ export const NoteCard = React.memo(function NoteCard({ note, active, onSelect, o
       draggable={draggable}
       onDragStart={onDragStart}
       className={cn(
-        'w-full text-left p-3 rounded-lg border transition-colors cursor-pointer group relative',
+        'w-full text-start p-3 rounded-lg border transition-colors cursor-pointer group relative',
         active
           ? 'bg-accent/10 border-accent/30'
           : 'bg-bg-raised border-border-subtle hover:bg-bg-hover hover:border-border-medium'
@@ -51,7 +51,7 @@ export const NoteCard = React.memo(function NoteCard({ note, active, onSelect, o
       {note.color && (
         <div className="w-full h-0.5 rounded-full mb-2" style={{ backgroundColor: note.color }} />
       )}
-      <div className={cn('flex items-start gap-2', onTrash && !note.trashed && 'pl-6')}>
+      <div className={cn('flex items-start gap-2', onTrash && !note.trashed && 'ps-6')}>
         <h3 className="font-medium text-sm text-gray-200 flex-1 truncate">
           {note.title || t('common:untitled')}
         </h3>

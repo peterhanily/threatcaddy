@@ -121,7 +121,7 @@ export function TaskListView({
         </span>
         <span className="text-sm font-medium text-gray-300 sm:hidden">{tasks.length}</span>
 
-        <div className="flex items-center gap-0.5 ml-1">
+        <div className="flex items-center gap-0.5 ms-1">
           <button
             onClick={() => onViewModeChange('list')}
             className={cn('p-1 rounded', viewMode === 'list' ? 'bg-gray-700 text-gray-200' : 'text-gray-500 hover:text-gray-300')}
@@ -141,7 +141,7 @@ export function TaskListView({
         </div>
 
         {viewMode === 'list' && (
-          <div className="flex items-center gap-1 ml-1">
+          <div className="flex items-center gap-1 ms-1">
             <Filter size={14} className="text-gray-500 hidden sm:block" />
             <select
               value={statusFilter}
@@ -154,7 +154,7 @@ export function TaskListView({
               <option value="in-progress">{t('status.inProgress')}</option>
               <option value="done">{t('status.done')}</option>
             </select>
-            <ArrowUpDown size={14} className="text-gray-500 hidden sm:block ml-1" />
+            <ArrowUpDown size={14} className="text-gray-500 hidden sm:block ms-1" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
@@ -185,7 +185,7 @@ export function TaskListView({
 
         <button
           onClick={() => setShowNewTask(true)}
-          className="ml-auto flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
+          className="ms-auto flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-white text-sm font-medium transition-colors"
           aria-label={t('list.newTaskAria')}
         >
           <Plus size={14} />
