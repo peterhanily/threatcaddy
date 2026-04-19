@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "انتقال به سطل زباله",
     "moveToTrashAria": "انتقال یادداشت به سطل زباله",
-    "createdBy": "ایجاد شده توسط {{name}}"
+    "createdBy": "ایجاد شده توسط {{name}}",
+    "needsReview": "نیاز به بازبینی",
+    "needsReviewTitle": "توسط عامل ناظر ایجاد شده — قبل از اعتماد به‌عنوان خروجی تحقیق بازبینی کنید"
   },
   "editor": {
     "backToList": "بازگشت به لیست",

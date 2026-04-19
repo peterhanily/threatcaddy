@@ -24,7 +24,9 @@
   "card": {
     "moveToTrash": "Move to trash",
     "moveToTrashAria": "Move note to trash",
-    "createdBy": "Created by {{name}}"
+    "createdBy": "Created by {{name}}",
+    "needsReview": "Needs review",
+    "needsReviewTitle": "Authored by an observer-role agent — review before trusting as investigation output"
   },
   "editor": {
     "backToList": "Back to list",

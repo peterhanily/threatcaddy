@@ -50,6 +50,7 @@ function SkeletonCard() {
 }
 
 function EmptyState({ message, showCreate, onCreate }: { message: string; showCreate?: boolean; onCreate?: () => void }) {
+  const { t } = useTranslation('investigations');
   return (
     <div className="flex flex-col items-center justify-center py-10 text-text-muted">
       <Briefcase size={28} className="mb-2 opacity-40" />
@@ -60,7 +61,7 @@ function EmptyState({ message, showCreate, onCreate }: { message: string; showCr
           className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple text-white hover:brightness-110 transition-all"
         >
           <Plus size={14} />
-          Create Investigation
+          {t('hub.createInvestigation')}
         </button>
       )}
     </div>
@@ -81,10 +82,11 @@ function SectionHeading({ title, count }: { title: string; count?: number }) {
 }
 
 function DisconnectedBanner() {
+  const { t } = useTranslation('investigations');
   return (
     <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border-subtle bg-bg-deep/50 text-text-muted text-xs mb-3">
       <WifiOff size={14} />
-      <span>Server disconnected — remote investigations unavailable</span>
+      <span>{t('hub.disconnected')}</span>
     </div>
   );
 }
@@ -192,7 +194,7 @@ export function InvestigationsHub({
                     : 'text-text-muted hover:bg-bg-deep hover:text-text-secondary'
                 )}
               >
-                {s.charAt(0).toUpperCase() + s.slice(1)}
+                {t(`hub.${s}`)}
               </button>
             ))}
           </div>
@@ -203,7 +205,7 @@ export function InvestigationsHub({
 
         {/* Section 1: My Investigations (purely local) */}
         <section className="mb-8">
-          <SectionHeading title="My Investigations" count={pureLocalFolders.length} />
+          <SectionHeading title={t('hub.myInvestigations')} count={pureLocalFolders.length} />
           {localLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <SkeletonCard />
@@ -234,7 +236,7 @@ export function InvestigationsHub({
             </div>
           ) : (
             <EmptyState
-              message="No local investigations"
+              message={t('hub.noLocal')}
               showCreate
               onCreate={onCreateInvestigation}
             />
@@ -244,7 +246,7 @@ export function InvestigationsHub({
         {/* Section: Archived (local-only) */}
         {archivedLocalFolders.length > 0 && (
           <section className="mb-8">
-            <SectionHeading title="Archived" count={archivedLocalFolders.length} />
+            <SectionHeading title={t('hub.archivedSection')} count={archivedLocalFolders.length} />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {archivedLocalFolders.map((f) => (
                 <InvestigationCard
@@ -271,7 +273,7 @@ export function InvestigationsHub({
 
         {/* Section 2: Synced Investigations */}
         <section className="mb-8">
-          <SectionHeading title="Synced Investigations" count={syncedLocalFolders.length} />
+          <SectionHeading title={t('hub.syncedInvestigations')} count={syncedLocalFolders.length} />
           {localLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <SkeletonCard />
@@ -307,13 +309,13 @@ export function InvestigationsHub({
               })}
             </div>
           ) : (
-            <EmptyState message="No synced investigations — sync a remote investigation to work offline" />
+            <EmptyState message={t('hub.noSynced')} />
           )}
         </section>
 
         {/* Section 3: Shared With Me (remote only) */}
         <section className="mb-8">
-          <SectionHeading title="Shared With Me" count={serverConnected ? remoteOnlyInvestigations.length : undefined} />
+          <SectionHeading title={t('hub.sharedWithMe')} count={serverConnected ? remoteOnlyInvestigations.length : undefined} />
           {!serverConnected ? (
             <DisconnectedBanner />
           ) : remoteLoading ? (
@@ -347,7 +349,7 @@ export function InvestigationsHub({
               ))}
             </div>
           ) : (
-            <EmptyState message="No shared investigations — ask a team member to invite you" />
+            <EmptyState message={t('hub.noShared')} />
           )}
         </section>
 

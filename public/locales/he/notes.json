@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "העבר לאשפה",
     "moveToTrashAria": "העבר הערה לאשפה",
-    "createdBy": "נוצר על ידי {{name}}"
+    "createdBy": "נוצר על ידי {{name}}",
+    "needsReview": "דורש סקירה",
+    "needsReviewTitle": "נכתב על ידי סוכן בתפקיד צופה — סקור לפני שתסתמך עליו כתוצר של החקירה"
   },
   "editor": {
     "backToList": "חזרה לרשימה",

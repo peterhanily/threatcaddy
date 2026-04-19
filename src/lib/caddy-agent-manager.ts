@@ -96,11 +96,20 @@ export async function runMultiAgentCycle(
       };
       const summary = result.summary;
 
-      // Merge cycle histograms into cumulative deployment histograms
+      // Merge cycle histograms into cumulative deployment histograms.
+      // Defensive cap: dynamic host:*/local:* skill names can proliferate when a
+      // user reconfigures skills; keep at most HIST_MAX_KEYS, dropping
+      // lowest-count keys when over the cap.
+      const HIST_MAX_KEYS = 100;
       const mergeHist = (base: Record<string, number> | undefined, delta: Record<string, number> | undefined): Record<string, number> => {
         const out: Record<string, number> = { ...(base || {}) };
         if (delta) for (const [k, v] of Object.entries(delta)) out[k] = (out[k] || 0) + v;
-        return out;
+        const keys = Object.keys(out);
+        if (keys.length <= HIST_MAX_KEYS) return out;
+        const sorted = keys.sort((a, b) => out[b] - out[a]).slice(0, HIST_MAX_KEYS);
+        const trimmed: Record<string, number> = {};
+        for (const k of sorted) trimmed[k] = out[k];
+        return trimmed;
       };
 
       const prevByOutcome: Record<AgentCycleOutcome, number> = {

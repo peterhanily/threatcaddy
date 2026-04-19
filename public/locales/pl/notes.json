@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "Przenieś do kosza",
     "moveToTrashAria": "Przenieś notatkę do kosza",
-    "createdBy": "Utworzone przez {{name}}"
+    "createdBy": "Utworzone przez {{name}}",
+    "needsReview": "Wymaga przeglądu",
+    "needsReviewTitle": "Utworzono przez agenta-obserwatora — przejrzyj, zanim potraktujesz jako wynik dochodzenia"
   },
   "editor": {
     "backToList": "Wróć do listy",

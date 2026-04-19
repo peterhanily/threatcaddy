@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pin, Trash2, Search } from 'lucide-react';
+import { Pin, Trash2, Search, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Note } from '../../types';
 import { formatDate, truncate, cn } from '../../lib/utils';
@@ -76,6 +76,15 @@ export const NoteCard = React.memo(function NoteCard({ note, active, onSelect, o
           </span>
         )}
         {note.clsLevel && <ClsBadge level={note.clsLevel} />}
+        {note.reviewRequired && (
+          <span
+            className="flex items-center gap-0.5 text-[10px] text-amber-300 bg-amber-500/15 px-1.5 rounded-full"
+            title={t('card.needsReviewTitle')}
+          >
+            <AlertTriangle size={9} />
+            {t('card.needsReview')}
+          </span>
+        )}
         {activeIOCCount > 0 && (
           <span className="flex items-center gap-0.5 text-[10px] text-accent/70 bg-accent/10 px-1.5 rounded-full">
             <Search size={9} />

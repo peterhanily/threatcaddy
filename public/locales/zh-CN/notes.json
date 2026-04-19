@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "移至回收站",
     "moveToTrashAria": "将笔记移至回收站",
-    "createdBy": "由 {{name}} 创建"
+    "createdBy": "由 {{name}} 创建",
+    "needsReview": "需要审核",
+    "needsReviewTitle": "由观察者角色的代理创建 — 在作为调查输出信任之前请审核"
   },
   "editor": {
     "backToList": "返回列表",

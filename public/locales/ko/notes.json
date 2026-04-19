@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "휴지통으로 이동",
     "moveToTrashAria": "노트를 휴지통으로 이동",
-    "createdBy": "{{name}}이/가 만듦"
+    "createdBy": "{{name}}이/가 만듦",
+    "needsReview": "검토 필요",
+    "needsReviewTitle": "관찰자 역할 에이전트가 작성 — 조사 결과로 신뢰하기 전에 검토하세요"
   },
   "editor": {
     "backToList": "목록으로 돌아가기",

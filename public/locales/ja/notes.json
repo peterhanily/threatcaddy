@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "ゴミ箱に移動",
     "moveToTrashAria": "ノートをゴミ箱に移動",
-    "createdBy": "{{name}} が作成"
+    "createdBy": "{{name}} が作成",
+    "needsReview": "要レビュー",
+    "needsReviewTitle": "オブザーバーロールのエージェントが作成 — 調査出力として信頼する前にレビューしてください"
   },
   "editor": {
     "backToList": "リストに戻る",

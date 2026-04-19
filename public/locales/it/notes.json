@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "Sposta nel cestino",
     "moveToTrashAria": "Sposta la nota nel cestino",
-    "createdBy": "Creato da {{name}}"
+    "createdBy": "Creato da {{name}}",
+    "needsReview": "Richiede revisione",
+    "needsReviewTitle": "Creata da un agente osservatore — verifica prima di considerarla un risultato dellʼindagine"
   },
   "editor": {
     "backToList": "Torna alla lista",

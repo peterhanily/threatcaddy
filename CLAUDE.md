@@ -7,7 +7,7 @@ ThreatCaddy is a client-side threat intelligence and incident response platform.
 ## Architecture
 
 - **SPA**: React + TypeScript + Vite + Tailwind. Entry: `src/App.tsx`
-- **Database**: Dexie (IndexedDB). Schema: `src/db.ts`. Currently version 27.
+- **Database**: Dexie (IndexedDB). Schema: `src/db.ts`. Currently version 28.
 - **Extension**: `extension/src/` — `background.js` (LLM streaming, fetch proxy, notifications), `bridge.js` (page↔extension message relay), `content.js` (capture UI)
 - **Team Server**: `server/` — Hono + Drizzle + PostgreSQL. Syncs investigations, runs server-side agents, manages bots.
 - **CaddyAI Chat**: `src/components/Chat/ChatView.tsx` + `src/hooks/useLLM.ts`. Human-driven conversational AI. Stays mounted in background when switching tabs.
@@ -98,10 +98,10 @@ When changing a profile's persona:
 
 ## When Adding New i18n Keys
 
-The app is translated into 20 languages. Whenever you add new keys to any `public/locales/en/*.json` or `extension/src/_locales/en/messages.json`:
+The app is translated into 21 languages. Whenever you add new keys to any `public/locales/en/*.json` or `extension/src/_locales/en/messages.json`:
 
 1. Add the English key/value as normal
-2. Run `pnpm translate:sync` to fill in the new keys across all 20 languages (only adds missing keys, preserves existing translations)
+2. Run `pnpm translate:sync` to fill in the new keys across all 21 languages (only adds missing keys, preserves existing translations)
 3. Commit the updated locale files alongside your code change
 
 To preview what's missing without translating: `pnpm translate:sync:dry`

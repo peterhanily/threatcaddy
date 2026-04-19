@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FileText, CheckSquare, Search, Clock, Layout, MessageSquare,
   Download, CloudOff, MoreVertical, Settings, Archive, Trash2, Loader2,
@@ -43,19 +44,19 @@ const STATUS_STYLES: Record<string, { dot: string; text: string }> = {
   archived: { dot: 'bg-accent-amber', text: 'text-accent-amber' },
 };
 
-const DATA_MODE_BADGE: Record<InvestigationDataMode, { label: string; classes: string }> = {
-  local:  { label: 'Local',    classes: 'bg-blue-500/15 text-blue-400' },
-  synced: { label: 'Synced',   classes: 'bg-green-500/15 text-green-400' },
-  remote: { label: 'Remote',   classes: 'bg-amber-500/15 text-amber-400' },
+const DATA_MODE_CLASSES: Record<InvestigationDataMode, string> = {
+  local:  'bg-blue-500/15 text-blue-400',
+  synced: 'bg-green-500/15 text-green-400',
+  remote: 'bg-amber-500/15 text-amber-400',
 };
 
 const ENTITY_STATS = [
-  { key: 'notes'       as const, label: 'Notes',   icon: FileText,      color: 'text-accent-blue',  bg: 'bg-accent-blue/10' },
-  { key: 'tasks'       as const, label: 'Tasks',   icon: CheckSquare,   color: 'text-accent-amber', bg: 'bg-accent-amber/10' },
-  { key: 'iocs'        as const, label: 'IOCs',    icon: Search,        color: 'text-accent-green', bg: 'bg-accent-green/10' },
-  { key: 'events'      as const, label: 'Events',  icon: Clock,         color: 'text-purple',       bg: 'bg-purple/10' },
-  { key: 'whiteboards' as const, label: 'Whiteboards',  icon: Layout,        color: 'text-accent-pink',  bg: 'bg-accent-pink/10' },
-  { key: 'chats'       as const, label: 'Chats',   icon: MessageSquare, color: 'text-purple',       bg: 'bg-purple/10' },
+  { key: 'notes'       as const, labelKey: 'card.entity.notes',       icon: FileText,      color: 'text-accent-blue',  bg: 'bg-accent-blue/10' },
+  { key: 'tasks'       as const, labelKey: 'card.entity.tasks',       icon: CheckSquare,   color: 'text-accent-amber', bg: 'bg-accent-amber/10' },
+  { key: 'iocs'        as const, labelKey: 'card.entity.iocs',        icon: Search,        color: 'text-accent-green', bg: 'bg-accent-green/10' },
+  { key: 'events'      as const, labelKey: 'card.entity.events',      icon: Clock,         color: 'text-purple',       bg: 'bg-purple/10' },
+  { key: 'whiteboards' as const, labelKey: 'card.entity.whiteboards', icon: Layout,        color: 'text-accent-pink',  bg: 'bg-accent-pink/10' },
+  { key: 'chats'       as const, labelKey: 'card.entity.chats',       icon: MessageSquare, color: 'text-purple',       bg: 'bg-purple/10' },
 ];
 
 export function InvestigationCard({
@@ -81,9 +82,11 @@ export function InvestigationCard({
   onDelete,
   syncing,
 }: InvestigationCardProps) {
+  const { t } = useTranslation('investigations');
   const sty = STATUS_STYLES[status] ?? STATUS_STYLES.active;
-  const modeBadge = DATA_MODE_BADGE[dataMode];
-  const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+  const statusLabel = t(`card.status.${status}`);
+  const dataModeLabel = t(`card.dataMode.${dataMode}`);
+  const dataModeClasses = DATA_MODE_CLASSES[dataMode];
 
   const formattedUpdate = updatedAt
     ? typeof updatedAt === 'number'
@@ -169,7 +172,8 @@ export function InvestigationCard({
                 onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setMenuOpen((v) => !v); } }}
                 className="p-0.5 rounded hover:bg-bg-deep transition-colors text-text-muted hover:text-text-secondary"
-                title="Actions"
+                title={t('card.actions')}
+                aria-label={t('card.actions')}
               >
                 <MoreVertical size={14} />
               </span>
@@ -181,7 +185,7 @@ export function InvestigationCard({
                       className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-deep hover:text-text-primary transition-colors"
                     >
                       <Settings size={12} />
-                      Settings
+                      {t('card.settings')}
                     </button>
                   )}
                   {(isLocal || isSynced) && status !== 'archived' && onArchive && (
@@ -190,7 +194,7 @@ export function InvestigationCard({
                       className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-deep hover:text-text-primary transition-colors"
                     >
                       <Archive size={12} />
-                      Archive
+                      {t('card.archive')}
                     </button>
                   )}
                   {(isLocal || isSynced) && status === 'archived' && onUnarchive && (
@@ -199,7 +203,7 @@ export function InvestigationCard({
                       className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-bg-deep hover:text-text-primary transition-colors"
                     >
                       <Archive size={12} />
-                      Unarchive
+                      {t('card.unarchive')}
                     </button>
                   )}
                   {(isLocal || isSynced) && onDelete && (
@@ -208,7 +212,7 @@ export function InvestigationCard({
                       className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10 transition-colors"
                     >
                       <Trash2 size={12} />
-                      Delete
+                      {t('card.delete')}
                     </button>
                   )}
                 </div>
@@ -249,7 +253,7 @@ export function InvestigationCard({
                   {val}
                 </span>
                 <span className="text-[8px] font-medium text-text-muted uppercase tracking-wide mt-0.5">
-                  {s.label}
+                  {t(s.labelKey)}
                 </span>
               </div>
             );
@@ -259,21 +263,21 @@ export function InvestigationCard({
         {/* Bottom row: data mode + role + updated + action */}
         <div className="flex items-center gap-2 mt-2.5 flex-wrap">
           {/* Data mode badge */}
-          <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded', modeBadge.classes)}>
-            {modeBadge.label}{dataMode === 'synced' ? ' \u2195' : ''}
+          <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded', dataModeClasses)}>
+            {dataModeLabel}{dataMode === 'synced' ? ' \u2195' : ''}
           </span>
 
           {/* Role badge */}
           {role && (
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-bg-deep text-text-secondary">
-              {role.charAt(0).toUpperCase() + role.slice(1)}
+              {t(`card.role.${role}`)}
             </span>
           )}
 
           {/* Member count */}
           {memberCount != null && memberCount > 0 && (
             <span className="text-[10px] font-mono text-text-muted">
-              {memberCount} member{memberCount !== 1 ? 's' : ''}
+              {t('card.members', { count: memberCount })}
             </span>
           )}
 
@@ -290,7 +294,7 @@ export function InvestigationCard({
           {syncing ? (
             <span className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-purple/15 text-purple shrink-0">
               <Loader2 size={10} className="animate-spin" />
-              Syncing...
+              {t('card.syncing')}
             </span>
           ) : (
             <>
@@ -301,10 +305,11 @@ export function InvestigationCard({
                   onClick={handleActionClick}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleActionClick(e as unknown as React.MouseEvent); } }}
                   className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-colors shrink-0"
-                  title="Sync locally"
+                  title={t('card.syncLocally')}
+                  aria-label={t('card.syncLocally')}
                 >
                   <Download size={10} />
-                  Sync
+                  {t('card.sync')}
                 </span>
               )}
               {dataMode === 'synced' && onUnsync && (
@@ -314,10 +319,11 @@ export function InvestigationCard({
                   onClick={handleActionClick}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleActionClick(e as unknown as React.MouseEvent); } }}
                   className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-text-muted/15 text-text-secondary hover:bg-text-muted/25 transition-colors shrink-0"
-                  title="Remove local copy"
+                  title={t('card.removeLocalCopy')}
+                  aria-label={t('card.removeLocalCopy')}
                 >
                   <CloudOff size={10} />
-                  Unsync
+                  {t('card.unsync')}
                 </span>
               )}
             </>

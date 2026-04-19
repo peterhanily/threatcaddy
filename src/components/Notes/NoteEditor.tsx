@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette, ArrowLeft, Upload, Briefcase, MessageSquare, Search, Lock, LockOpen, Share2, FileText, Download } from 'lucide-react';
+import { Pin, Archive, Trash2, RotateCcw, Eye, Edit3, Columns, ExternalLink, Palette, ArrowLeft, Upload, Briefcase, MessageSquare, Search, Lock, LockOpen, Share2, FileText, Download, AlertTriangle } from 'lucide-react';
 import type { Note, Task, TimelineEvent, Tag, Folder, EditorMode, Settings, NoteAnnotation } from '../../types';
 import { NOTE_COLORS } from '../../types';
 import { nanoid } from 'nanoid';
@@ -1010,6 +1010,15 @@ export function NoteEditor({
 
       {/* Title */}
       <div className="px-2 sm:px-4 pt-2 sm:pt-3 shrink-0">
+        {note.reviewRequired && (
+          <div
+            role="note"
+            className="mb-2 flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30"
+          >
+            <AlertTriangle size={12} className="shrink-0" />
+            <span>{t('card.needsReviewTitle')}</span>
+          </div>
+        )}
         <input
           ref={titleRef}
           type="text"
