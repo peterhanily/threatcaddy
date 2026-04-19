@@ -1287,15 +1287,70 @@ function normalizeName(s: string): string {
   return s.toLowerCase().replace(/[\s_-]+/g, '');
 }
 
-/** Get all agent profiles (builtin + user-created). Cached for 2s to avoid repeated DB reads. */
+/**
+ * Get all agent profiles (builtin + user-created). Cached for 2s.
+ *
+ * On id collision, the user-DB profile wins. Souls live on db.agentProfiles
+ * (see persistSoul); if we returned the builtin first, every caller doing
+ * `find(p => p.id === ...)` would silently see a soul-less profile even
+ * after the user has reflected.
+ */
 let _profilesCache: { profiles: AgentProfile[]; ts: number } | null = null;
 async function getAllAgentProfiles() {
   if (_profilesCache && Date.now() - _profilesCache.ts < 2000) return _profilesCache.profiles;
   const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
   const userProfiles = await db.agentProfiles.toArray();
-  const profiles = [...BUILTIN_AGENT_PROFILES, ...userProfiles];
+  const userById = new Map(userProfiles.map(p => [p.id, p]));
+  const profiles: AgentProfile[] = [
+    ...BUILTIN_AGENT_PROFILES.map(b => userById.get(b.id) ?? b),
+    ...userProfiles.filter(u => !BUILTIN_AGENT_PROFILES.some(b => b.id === u.id)),
+  ];
   _profilesCache = { profiles, ts: Date.now() };
   return profiles;
+}
+
+/**
+ * Persist a soul update to db.agentProfiles. Built-in profiles only live in
+ * BUILTIN_AGENT_PROFILES — until something writes a row, db.agentProfiles has
+ * no entry for them, and Dexie's Table.update() silently no-ops on missing
+ * keys. This helper does an upsert: try update first (preserves any other
+ * mutable fields a user may have edited), fall back to put with the full
+ * profile materialised from the in-memory record.
+ *
+ * Note: materialising a builtin to db.agentProfiles freezes its mutable
+ * fields (systemPrompt, allowedTools, etc.) at the time of first soul write.
+ * Future builtin updates won't propagate to that user. Acceptable trade-off
+ * vs the alternative (silently dropping every soul write); a separate souls
+ * table would be the proper fix and is tracked in the audit follow-up wiki.
+ */
+async function persistSoul(profile: AgentProfile, soul: AgentProfile['soul'], now: number): Promise<void> {
+  const updated = await db.agentProfiles.update(profile.id, { soul, updatedAt: now });
+  if (updated === 0) {
+    // Snapshot the i18n-resolved name/description at write time — getter-based
+    // builtin profiles can't be persisted as-is (the getters wouldn't survive
+    // structured-clone), so we copy the resolved primitives here.
+    await db.agentProfiles.put({
+      id: profile.id,
+      name: profile.name,
+      description: profile.description,
+      icon: profile.icon,
+      role: profile.role,
+      systemPrompt: profile.systemPrompt,
+      allowedTools: profile.allowedTools,
+      readOnlyEntityTypes: profile.readOnlyEntityTypes,
+      policy: profile.policy,
+      model: profile.model,
+      priority: profile.priority,
+      soul,
+      source: profile.source,
+      createdBy: profile.createdBy,
+      updatedBy: profile.updatedBy,
+      createdAt: profile.createdAt || now,
+      updatedAt: now,
+    });
+  }
+  // Invalidate the profiles cache so the next read sees the persisted soul.
+  _profilesCache = null;
 }
 
 // ── Agent Management (from CaddyAI chat) ─────────────────────────────
@@ -1600,7 +1655,7 @@ async function executeDismissAgent(inp: Record<string, unknown>, folderId?: stri
   // Penalize performance score
   soul.lifetimeMetrics.performanceScore = Math.max(0, soul.lifetimeMetrics.performanceScore - 15);
   soul.updatedAt = now;
-  await db.agentProfiles.update(targetProfile.id, { soul, updatedAt: now });
+  await persistSoul(targetProfile, soul, now);
 
   // Spawn replacement if requested
   let replacementResult = '';
@@ -1718,7 +1773,7 @@ async function executeReflectOnPerformance(inp: Record<string, unknown>, profile
       : 50,
   };
 
-  await db.agentProfiles.update(profile.id, { soul, updatedAt: Date.now() });
+  await persistSoul(profile, soul, Date.now());
 
   return JSON.stringify({
     success: true,
@@ -1734,17 +1789,10 @@ async function executeReadSoul(
   profileId?: string,
   agentRole?: string,
 ): Promise<string> {
-  // Souls only persist on db.agentProfiles (builtin records are read-only),
-  // so resolve to the user-DB record when both a builtin and a user profile
-  // share an id — otherwise the builtin (no soul) wins the merge order.
-  const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
-  const userProfiles = await db.agentProfiles.toArray();
-  const userById = new Map(userProfiles.map(p => [p.id, p]));
-  const allProfiles: AgentProfile[] = [
-    ...BUILTIN_AGENT_PROFILES.map(b => userById.get(b.id) ?? b),
-    ...userProfiles.filter(u => !BUILTIN_AGENT_PROFILES.some(b => b.id === u.id)),
-  ];
-
+  // getAllAgentProfiles already resolves user-DB profiles ahead of builtins
+  // on id collision, so souls written via persistSoul win over the soul-less
+  // builtin record.
+  const allProfiles = await getAllAgentProfiles();
   const requestedName = typeof input.agentName === 'string' ? input.agentName.trim() : '';
   let profile;
   let isPeerRead = false;
