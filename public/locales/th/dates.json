@@ -2,5 +2,9 @@
   "format.date": "{{date, date}}",
   "format.datetime": "{{date, datetime}}",
   "format.relative": "{{date, relative}}",
-  "format.time": "{{date, time}}"
+  "format.time": "{{date, time}}",
+  "justNow": "เมื่อสักครู่",
+  "minutesAgo": "{{count}} นาทีที่แล้ว",
+  "hoursAgo": "{{count}} ชั่วโมงที่แล้ว",
+  "daysAgo": "{{count}} วันที่แล้ว"
 }

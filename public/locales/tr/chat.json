@@ -103,6 +103,7 @@
     "branchTitle": "Konuşmayı buradan dallandır",
     "rewindTitle": "Bu mesaja geri al",
     "undoTitle": "Geri al: varlıkları bu işlemden önceki haline döndür",
+    "attachmentAlt": "Ek {{index}}",
     "attachmentAria": "Ek {{index}}",
     "tokenCount": "{{count}} token",
     "tokenCountTitle": "Girdi: {{input}} token, Çıktı: {{output}} token"

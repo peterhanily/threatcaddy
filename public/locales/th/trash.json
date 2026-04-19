@@ -20,5 +20,21 @@
   "filterNotes": "บันทึก",
   "filterTasks": "งาน",
   "filterEvents": "เหตุการณ์",
-  "filterChats": "แชท"
+  "filterChats": "แชท",
+  "trash": "ถังขยะ",
+  "archive": "เก็บถาวร",
+  "emptyAllTrash": "ล้างถังขยะทั้งหมด",
+  "autoDeleteHint": "รายการจะถูกลบอัตโนมัติหลัง 30 วัน",
+  "trashEmpty": "ถังขยะว่างเปล่า",
+  "archiveEmpty": "ที่เก็บถาวรว่างเปล่า",
+  "notes": "บันทึก",
+  "tasks": "งาน",
+  "timelineEvents": "เหตุการณ์ไทม์ไลน์",
+  "whiteboards": "ไวท์บอร์ด",
+  "iocs": "IOC",
+  "unarchive": "ยกเลิกการเก็บถาวร",
+  "moveToTrash": "ย้ายไปถังขยะ",
+  "emptyAllTitle": "ล้างถังขยะทั้งหมด",
+  "emptyAllMessage": "ลบ {{count}} รายการในถังขยะของทุกประเภทเอนทิตีอย่างถาวรใช่ไหม? การกระทำนี้ไม่สามารถยกเลิกได้",
+  "emptyAllConfirm": "ล้างถังขยะทั้งหมด"
 }
