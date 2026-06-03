@@ -14,7 +14,8 @@ import { DEFAULT_MODEL_PER_PROVIDER } from '../../lib/models';
 import { cn, formatDate } from '../../lib/utils';
 import { nanoid } from 'nanoid';
 import { TOOL_DEFINITIONS, buildSystemPrompt, executeTool, isWriteTool, fetchViaExtensionBridge } from '../../lib/llm-tools';
-import { getHostToolDefinitions } from '../../lib/agent-hosts';
+import { getHostToolDefinitions, executeHostSkill } from '../../lib/agent-hosts';
+import { parseCtiSlashCommand, planCtiSourceRequests, normalizeCtiSourceRunResult, renderCtiRunMarkdown } from '../../lib/cti-source-formatting';
 import { generateChatTitle } from '../../lib/chat-utils';
 import { truncateConversation, summarizeConversation, MAX_CONTEXT_MESSAGES } from '../../lib/chat-utils';
 import { db } from '../../db';
@@ -412,6 +413,40 @@ export function ChatView({
         createdAt: Date.now(),
       };
       await onAddMessage(activeThread.id, confirmMsg);
+      return;
+    }
+
+    // Intercept CTI source slash commands (/vt, /censys, /flashpoint, /cti, /all, …) —
+    // run allowlisted CTI Agent Host tools directly and render deterministic markdown (no LLM).
+    const ctiCommand = parseCtiSlashCommand(text);
+    if (ctiCommand) {
+      const availableToolNames = getHostToolDefinitions(settings).map((d) => d.name);
+      const { planned, skipped, validationErrors } = planCtiSourceRequests(ctiCommand, availableToolNames);
+      if (validationErrors.length > 0) {
+        await onAddMessage(activeThread.id, {
+          id: nanoid(),
+          role: 'assistant',
+          content: `${t('cti.invalidCommand')}\n\n${validationErrors.map((e) => `- ${e}`).join('\n')}`,
+          createdAt: Date.now(),
+        });
+        return;
+      }
+      const results = await Promise.all(planned.map(async (plan) => {
+        try {
+          const raw = await executeHostSkill(plan.tool, plan.input, settings);
+          return normalizeCtiSourceRunResult(plan, raw);
+        } catch (err) {
+          return normalizeCtiSourceRunResult(plan, (err as Error).message || String(err));
+        }
+      }));
+      await onAddMessage(activeThread.id, {
+        id: nanoid(),
+        role: 'assistant',
+        content: planned.length === 0 && skipped.length === 0
+          ? t('cti.noSources')
+          : renderCtiRunMarkdown(ctiCommand.target, results, skipped),
+        createdAt: Date.now(),
+      });
       return;
     }
 

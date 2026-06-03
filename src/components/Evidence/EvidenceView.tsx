@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import Papa from 'papaparse';
 import {
   AlertCircle,
@@ -106,6 +108,7 @@ export function EvidenceView({
   onOpenChat,
   onAnalyzeImage,
 }: EvidenceViewProps) {
+  const { t } = useTranslation('evidence');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inspectScrollRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -138,11 +141,11 @@ export function EvidenceView({
 
   const selectedItem = filteredItems.find((item) => item.id === selectedId) || filteredItems[0];
   const duplicateCount = useMemo(() => findDuplicateEvidenceItemIds(items, folderId).length, [folderId, items]);
-  const metadataRows = useMemo(() => selectedItem ? buildMetadataRows(selectedItem) : [], [selectedItem]);
+  const metadataRows = useMemo(() => selectedItem ? buildMetadataRows(selectedItem, t) : [], [selectedItem, t]);
   const extractedText = selectedItem ? getExtractedText(selectedItem.content) : '';
-  const tables = useMemo(() => selectedItem ? extractStructuredTables(selectedItem) : [], [selectedItem]);
+  const tables = useMemo(() => selectedItem ? extractStructuredTables(selectedItem, t) : [], [selectedItem, t]);
   const tableIOCCandidates = useMemo(() => selectedItem ? extractEvidenceTableIOCCandidates(selectedItem.content) : [], [selectedItem]);
-  const artifactSignals = useMemo(() => selectedItem ? buildArtifactSignals(selectedItem) : [], [selectedItem]);
+  const artifactSignals = useMemo(() => selectedItem ? buildArtifactSignals(selectedItem, t) : [], [selectedItem, t]);
   const rawInspect = useMemo(() => selectedItem ? capPreviewText(selectedItem.content, RAW_INSPECT_MAX_CHARS) : { text: '', truncated: false }, [selectedItem]);
   const readablePreview = useMemo(
     () => selectedItem ? buildReadableEvidencePreview(selectedItem, extractedText) : emptyReadablePreview(),
@@ -245,7 +248,7 @@ export function EvidenceView({
     const files = Array.from(fileList);
     if (!folderId || files.length === 0 || importing) return;
     if (files.length > MAX_EVIDENCE_IMPORT_FILES) {
-      setError(`Select up to ${MAX_EVIDENCE_IMPORT_FILES} evidence files at a time.`);
+      setError(t('toast.tooManyFiles', { count: MAX_EVIDENCE_IMPORT_FILES }));
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
@@ -256,7 +259,7 @@ export function EvidenceView({
       await onImportFiles(files);
     } catch (err) {
       console.error('Failed to import evidence:', err);
-      setError(formatEvidenceImportError(err));
+      setError(formatEvidenceImportError(err, t));
     } finally {
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -271,7 +274,7 @@ export function EvidenceView({
       await onDeduplicate();
     } catch (err) {
       console.error('Failed to deduplicate evidence:', err);
-      setError(err instanceof Error ? err.message : 'Evidence deduplication failed');
+      setError(err instanceof Error ? err.message : t('toast.dedupeFailed'));
     } finally {
       setDeduping(false);
     }
@@ -285,10 +288,10 @@ export function EvidenceView({
       const created = await onCreateTableIOCs(selectedItem, tableIOCCandidates);
       setCopiedKey('table-iocs-created');
       window.setTimeout(() => setCopiedKey((current) => current === 'table-iocs-created' ? null : current), 1400);
-      if (created === 0) setError('No new IOCs were added; matching IOCs may already exist in this investigation.');
+      if (created === 0) setError(t('toast.noNewIocs'));
     } catch (err) {
       console.error('Failed to create table IOCs:', err);
-      setError(err instanceof Error ? err.message : 'Table IOC creation failed');
+      setError(err instanceof Error ? err.message : t('toast.tableIocsFailed'));
     } finally {
       setCreatingTableIOCs(false);
     }
@@ -310,7 +313,7 @@ export function EvidenceView({
       setCopiedKey(key);
       window.setTimeout(() => setCopiedKey((current) => current === key ? null : current), 1400);
     } catch {
-      setError('Clipboard write failed.');
+      setError(t('toast.clipboardFailed'));
     }
   };
 
@@ -338,9 +341,9 @@ export function EvidenceView({
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <FileSearch size={20} className="text-accent-blue shrink-0" />
           <div className="min-w-0">
-            <h1 className="text-base font-semibold text-text-primary">Evidence</h1>
+            <h1 className="text-base font-semibold text-text-primary">{t('header.title')}</h1>
             <p className="text-xs text-text-muted truncate">
-              {folderName ? folderName : 'Select an investigation'}
+              {folderName ? folderName : t('header.selectInvestigation')}
             </p>
           </div>
         </div>
@@ -349,10 +352,10 @@ export function EvidenceView({
             onClick={() => void handleDeduplicate()}
             disabled={!folderId || !onDeduplicate || importing || deduping}
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border-subtle text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            title={duplicateCount > 0 ? `${duplicateCount} duplicate item${duplicateCount === 1 ? '' : 's'} detected` : 'Deduplicate evidence'}
+            title={duplicateCount > 0 ? t('actions.duplicatesDetected', { count: duplicateCount }) : t('actions.deduplicateTitle')}
           >
             {deduping ? <Loader2 size={14} className="animate-spin" /> : <CopyX size={14} />}
-            Deduplicate
+            {t('actions.deduplicate')}
             {duplicateCount > 0 && <span className="rounded bg-accent-blue/15 px-1 text-[10px] text-accent-blue">{duplicateCount}</span>}
           </button>
           <button
@@ -360,7 +363,7 @@ export function EvidenceView({
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border-subtle text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
           >
             <MessageSquare size={14} />
-            CaddyAI
+            {t('actions.caddyAI')}
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -373,7 +376,7 @@ export function EvidenceView({
             )}
           >
             {importing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-            {importing ? 'Importing' : 'Import'}
+            {importing ? t('actions.importing') : t('actions.import')}
           </button>
           <input
             ref={fileInputRef}
@@ -391,8 +394,8 @@ export function EvidenceView({
           <div className="h-full min-h-[320px] flex items-center justify-center">
             <div className="text-center max-w-sm">
               <FileSearch size={40} className="mx-auto mb-3 text-text-muted" />
-              <h2 className="text-sm font-semibold text-text-primary">No investigation selected</h2>
-              <p className="mt-1 text-xs text-text-muted">Open an investigation before importing evidence.</p>
+              <h2 className="text-sm font-semibold text-text-primary">{t('empty.noInvestigation')}</h2>
+              <p className="mt-1 text-xs text-text-muted">{t('empty.noInvestigationDesc')}</p>
             </div>
           </div>
         ) : (
@@ -410,15 +413,15 @@ export function EvidenceView({
                 <Upload size={18} />
               </div>
               <div className="min-w-0 flex-1 text-center sm:text-start">
-                <div className="text-sm font-medium text-text-primary">Drop evidence files here</div>
-                <div className="mt-0.5 text-xs text-text-muted">PDF, Word, RTF, Excel, CSV, JSON, XML, logs, text, and screenshots. Up to {MAX_EVIDENCE_IMPORT_FILES} files per import.</div>
+                <div className="text-sm font-medium text-text-primary">{t('dropzone.label')}</div>
+                <div className="mt-0.5 text-xs text-text-muted">{t('dropzone.hint', { count: MAX_EVIDENCE_IMPORT_FILES })}</div>
               </div>
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={importing}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border-subtle text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover disabled:opacity-50 transition-colors"
               >
-                Browse
+                {t('dropzone.browse')}
               </button>
             </div>
 
@@ -432,7 +435,7 @@ export function EvidenceView({
             <section>
               <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xs font-semibold uppercase text-text-muted">Imported Evidence</h2>
+                  <h2 className="text-xs font-semibold uppercase text-text-muted">{t('section.importedEvidence')}</h2>
                   <span className="text-xs text-text-muted">
                     {filteredItems.length === visibleItems.length ? visibleItems.length : `${filteredItems.length} / ${visibleItems.length}`}
                   </span>
@@ -442,14 +445,14 @@ export function EvidenceView({
                   <input
                     value={evidenceQuery}
                     onChange={(event) => setEvidenceQuery(event.target.value)}
-                    aria-label="Search imported evidence"
-                    placeholder="Search evidence"
+                    aria-label={t('search.ariaLabel')}
+                    placeholder={t('search.placeholder')}
                     className="w-full rounded-md border border-border-subtle bg-bg-surface py-1.5 ps-8 pe-8 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent-blue"
                   />
                   {evidenceQuery && (
                     <button
                       onClick={() => setEvidenceQuery('')}
-                      aria-label="Clear evidence search"
+                      aria-label={t('search.clear')}
                       className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-1 text-text-muted hover:text-text-primary hover:bg-bg-hover"
                     >
                       <X size={12} />
@@ -461,8 +464,8 @@ export function EvidenceView({
               {visibleItems.length === 0 ? (
                 <div className="rounded-lg border border-border-subtle bg-bg-surface p-8 text-center">
                   <FileText size={36} className="mx-auto mb-3 text-text-muted" />
-                  <h3 className="text-sm font-semibold text-text-primary">No evidence yet</h3>
-                  <p className="mt-1 text-xs text-text-muted">Imported files will appear here as source material for this investigation.</p>
+                  <h3 className="text-sm font-semibold text-text-primary">{t('empty.noEvidence')}</h3>
+                  <p className="mt-1 text-xs text-text-muted">{t('empty.noEvidenceDesc')}</p>
                 </div>
               ) : (
                 <div className="grid gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(380px,1.1fr)]">
@@ -470,8 +473,8 @@ export function EvidenceView({
                     {filteredItems.length === 0 ? (
                       <div className="rounded-lg border border-border-subtle bg-bg-surface p-8 text-center">
                         <Search size={32} className="mx-auto mb-3 text-text-muted" />
-                        <h3 className="text-sm font-semibold text-text-primary">No evidence matches</h3>
-                        <p className="mt-1 text-xs text-text-muted">Try a file name, tag, type, or text from the extracted content.</p>
+                        <h3 className="text-sm font-semibold text-text-primary">{t('empty.noMatches')}</h3>
+                        <p className="mt-1 text-xs text-text-muted">{t('empty.noMatchesDesc')}</p>
                       </div>
                     ) : filteredItems.map((item) => (
                       <article
@@ -498,12 +501,12 @@ export function EvidenceView({
                               )}
                             </div>
                             <p className="mt-1 text-xs text-text-muted line-clamp-2">
-                              {previewText(item.content)}
+                              {previewText(item.content, t)}
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-text-muted">
                               <span>{formatDate(item.updatedAt)}</span>
                               <span>{item.fileName}</span>
-                              {item.imageWidth && item.imageHeight && <span>{item.imageWidth} x {item.imageHeight}px</span>}
+                              {item.imageWidth && item.imageHeight && <span>{t('card.dimensions', { width: item.imageWidth, height: item.imageHeight })}</span>}
                             </div>
                           </div>
                           <button
@@ -514,7 +517,7 @@ export function EvidenceView({
                             className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border-subtle text-xs text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors shrink-0"
                           >
                             <Eye size={12} />
-                            Inspect
+                            {t('card.inspect')}
                           </button>
                         </div>
                       </article>
@@ -531,23 +534,23 @@ export function EvidenceView({
                               <span>{selectedItem.extractionStatus}</span>
                               <span>{formatBytes(selectedItem.size)}</span>
                               {selectedItem.linkedIOCIds && selectedItem.linkedIOCIds.length > 0 && (
-                                <span>{selectedItem.linkedIOCIds.length} IOC{selectedItem.linkedIOCIds.length === 1 ? '' : 's'}</span>
+                                <span>{t('inspect.iocCount', { count: selectedItem.linkedIOCIds.length })}</span>
                               )}
                             </div>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <button
-                              onClick={() => void handleCopy('metadata', renderMetadataText(selectedItem))}
-                              aria-label="Copy evidence metadata"
-                              title="Copy metadata"
+                              onClick={() => void handleCopy('metadata', renderMetadataText(selectedItem, t))}
+                              aria-label={t('actions.copyMetadataAria')}
+                              title={t('actions.copyMetadata')}
                               className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-bg-hover"
                             >
                               {copiedKey === 'metadata' ? <Check size={13} /> : <Copy size={13} />}
                             </button>
                             <button
                               onClick={() => void handleCopy('text', extractedText)}
-                              aria-label="Copy extracted text"
-                              title="Copy extracted text"
+                              aria-label={t('actions.copyTextAria')}
+                              title={t('actions.copyText')}
                               className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-bg-hover"
                             >
                               {copiedKey === 'text' ? <Check size={13} /> : <FileText size={13} />}
@@ -562,8 +565,8 @@ export function EvidenceView({
                               value={inspectQuery}
                               onChange={(event) => setInspectQuery(event.target.value)}
                               onKeyDown={handleInspectSearchKeyDown}
-                              aria-label="Search inspected evidence"
-                              placeholder="Search inside inspect"
+                              aria-label={t('inspectSearch.ariaLabel')}
+                              placeholder={t('inspectSearch.placeholder')}
                               className="w-full rounded-md border border-border-subtle bg-bg-primary py-1.5 ps-8 pe-16 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent-blue"
                             />
                             <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[10px] text-text-muted">
@@ -576,7 +579,7 @@ export function EvidenceView({
                             {inspectQuery && (
                               <button
                                 onClick={() => setInspectQuery('')}
-                                aria-label="Clear inspect search"
+                                aria-label={t('inspectSearch.clear')}
                                 className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-1 text-text-muted hover:text-text-primary hover:bg-bg-hover"
                               >
                                 <X size={12} />
@@ -587,8 +590,8 @@ export function EvidenceView({
                             type="button"
                             role="switch"
                             aria-checked={inspectFilterMode}
-                            aria-label="Filter inspect preview to matching lines and rows"
-                            title="Filter to matching lines and rows"
+                            aria-label={t('inspectSearch.filterAria')}
+                            title={t('inspectSearch.filterTitle')}
                             onClick={() => setInspectFilterMode((current) => !current)}
                             className={cn(
                               'relative h-7 w-11 shrink-0 rounded-full border transition-colors',
@@ -611,8 +614,8 @@ export function EvidenceView({
                               type="button"
                               onClick={() => handleInspectHitNavigation(-1)}
                               disabled={!compiledInspectSearch || inspectMatches === 0}
-                              aria-label="Previous inspect search result"
-                              title="Previous result"
+                              aria-label={t('inspectSearch.prevAria')}
+                              title={t('inspectSearch.prevTitle')}
                               className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               <ArrowUp size={13} />
@@ -621,8 +624,8 @@ export function EvidenceView({
                               type="button"
                               onClick={() => handleInspectHitNavigation(1)}
                               disabled={!compiledInspectSearch || inspectMatches === 0}
-                              aria-label="Next inspect search result"
-                              title="Next result"
+                              aria-label={t('inspectSearch.nextAria')}
+                              title={t('inspectSearch.nextTitle')}
                               className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               <ArrowDown size={13} />
@@ -648,26 +651,26 @@ export function EvidenceView({
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 text-xs font-semibold text-text-primary">
                                 <ImageIcon size={14} className="text-accent-blue" />
-                                Image Details
+                                {t('image.details')}
                               </div>
                               <div className="flex items-center gap-1">
                                 {hasRenderableImagePayload(selectedItem) && onAnalyzeImage && (
                                   <button
                                     onClick={() => onAnalyzeImage(selectedItem)}
-                                    aria-label="Analyze image with CaddyAI"
+                                    aria-label={t('image.analyzeAria')}
                                     className="inline-flex items-center gap-1.5 rounded-md border border-accent-blue/50 bg-accent-blue/10 px-2 py-1 text-[11px] text-accent-blue hover:bg-accent-blue/15"
                                   >
                                     <MessageSquare size={12} />
-                                    Analyze
+                                    {t('image.analyze')}
                                   </button>
                                 )}
                                 <button
-                                  onClick={() => void handleCopy('image-prompt', buildImageAnalysisPrompt(selectedItem))}
-                                  aria-label="Copy image analysis prompt"
+                                  onClick={() => void handleCopy('image-prompt', buildImageAnalysisPrompt(selectedItem, t))}
+                                  aria-label={t('image.copyPromptAria')}
                                   className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-2 py-1 text-[11px] text-text-secondary hover:text-text-primary hover:bg-bg-hover"
                                 >
                                   {copiedKey === 'image-prompt' ? <Check size={12} /> : <Copy size={12} />}
-                                  Prompt
+                                  {t('image.prompt')}
                                 </button>
                               </div>
                             </div>
@@ -681,7 +684,7 @@ export function EvidenceView({
                               </div>
                             ) : (
                               <div className="border border-border-subtle bg-bg-primary px-3 py-3 text-xs text-text-muted">
-                                Preview payload was not stored for this image.
+                                {t('image.noPayload')}
                               </div>
                             )}
                           </section>
@@ -692,26 +695,26 @@ export function EvidenceView({
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <div className="flex items-center gap-2 text-xs font-semibold text-text-primary">
                                 <Table2 size={14} className="text-accent-blue" />
-                                Table Preview
+                                {t('table.preview')}
                               </div>
                               <div className="flex flex-wrap items-center gap-2">
                                 <span className="text-[11px] text-text-muted">
-                                  {tableRows.length} / {activeTable.rows.length} rows, {activeTable.columnCount} columns
+                                  {t('table.rowsColumns', { shown: tableRows.length, total: activeTable.rows.length, columns: activeTable.columnCount })}
                                 </span>
                                 <select
                                   value={tableRowLimit}
                                   onChange={(event) => setTableRowLimit(Number(event.target.value))}
-                                  aria-label="Table preview row limit"
+                                  aria-label={t('table.rowLimitAria')}
                                   className="h-7 rounded-md border border-border-subtle bg-bg-primary px-2 text-[11px] text-text-secondary outline-none focus:border-accent-blue"
                                 >
                                   {TABLE_PREVIEW_LIMITS.map((limit) => (
-                                    <option key={limit} value={limit}>{limit} rows</option>
+                                    <option key={limit} value={limit}>{t('table.rowsOption', { count: limit })}</option>
                                   ))}
                                 </select>
                                 <button
                                   onClick={() => void handleCopy(`table-${activeTableIndex}`, renderTableText(activeTable))}
-                                  aria-label="Copy active table"
-                                  title="Copy active table"
+                                  aria-label={t('table.copyAria')}
+                                  title={t('table.copyTitle')}
                                   className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-bg-hover"
                                 >
                                   {copiedKey === `table-${activeTableIndex}` ? <Check size={12} /> : <Copy size={12} />}
@@ -742,7 +745,7 @@ export function EvidenceView({
                                   <tr>
                                     {activeTable.headers.slice(0, TABLE_PREVIEW_COLUMNS).map((header, index) => (
                                       <th key={`${header}-${index}`} className="border-b border-border-subtle px-2 py-1.5 font-medium">
-                                        {highlightText(header || `Column ${index + 1}`, compiledInspectSearch)}
+                                        {highlightText(header || t('table.columnFallback', { index: index + 1 }), compiledInspectSearch)}
                                       </th>
                                     ))}
                                     {activeTable.columnCount > TABLE_PREVIEW_COLUMNS && (
@@ -754,7 +757,7 @@ export function EvidenceView({
                                   {tableRows.length === 0 ? (
                                     <tr>
                                       <td className="px-2 py-3 text-text-muted" colSpan={Math.min(activeTable.columnCount, TABLE_PREVIEW_COLUMNS) || 1}>
-                                        {inspectFilterMode ? 'No rows match the current inspect filter.' : 'No rows to preview.'}
+                                        {inspectFilterMode ? t('table.noRowsMatch') : t('table.noRows')}
                                       </td>
                                     </tr>
                                   ) : tableRows.map((row, rowIndex) => (
@@ -774,7 +777,7 @@ export function EvidenceView({
                             </div>
                             {(activeTable.rows.length > tableRowLimit || tableRows.length === tableRowLimit) && (
                               <div className="text-[11px] text-text-muted">
-                                Preview is capped at {tableRowLimit} rows.
+                                {t('table.cappedAt', { count: tableRowLimit })}
                               </div>
                             )}
                           </section>
@@ -785,12 +788,12 @@ export function EvidenceView({
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <div className="flex items-center gap-2 text-xs font-semibold text-text-primary">
                                 <FileText size={14} className="text-accent-blue" />
-                                {readablePreviewTitle(selectedItem)}
+                                {readablePreviewTitle(selectedItem, t)}
                               </div>
                               <button
                                 onClick={() => void handleCopy('readable-preview', extractedText)}
-                                aria-label="Copy readable extracted text"
-                                title="Copy readable extracted text"
+                                aria-label={t('readable.copyAria')}
+                                title={t('readable.copyTitle')}
                                 className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-bg-hover"
                               >
                                 {copiedKey === 'readable-preview' ? <Check size={12} /> : <Copy size={12} />}
@@ -798,31 +801,32 @@ export function EvidenceView({
                             </div>
                             {readablePreview.lowConfidence && (
                               <div className="rounded-md border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-100">
-                                PDF text extraction looks low-confidence, likely because this PDF uses encoded fonts, scanned pages, or visual-only content. The readable view is showing only cleaner fragments; use OCR or CaddyAI vision for a faithful page read.
+                                {t('readable.lowConfidence')}
                               </div>
                             )}
                             <div className="space-y-3 text-xs leading-6 text-text-secondary">
                               {renderReadableTextPreview(
                                 inspectFilterMode && compiledInspectSearch
-                                  ? readableSearchPreview.text || 'No matching lines in the readable preview.'
-                                  : readablePreview.text || 'No clean readable text could be extracted for preview.',
+                                  ? readableSearchPreview.text || t('readable.noMatchingLines')
+                                  : readablePreview.text || t('readable.noCleanText'),
                                 compiledInspectSearch,
                                 inspectFilterMode || readablePreview.lowConfidence,
+                                t,
                               )}
                             </div>
                             {inspectFilterMode && compiledInspectSearch && (
                               <div className="rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-[11px] text-text-muted">
-                                Showing {readableSearchPreview.matchCount} of {readableSearchPreview.totalCount} visible line{readableSearchPreview.totalCount === 1 ? '' : 's'} that match the inspect filter.
+                                {t('readable.visibleMatches', { matchCount: readableSearchPreview.matchCount, count: readableSearchPreview.totalCount })}
                               </div>
                             )}
                             {readablePreview.hiddenNoisyText && (
                               <div className="rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-[11px] text-text-muted">
-                                Hidden noisy PDF extraction lines: showing {readablePreview.shownLines} cleaner fragment{readablePreview.shownLines === 1 ? '' : 's'} from {readablePreview.totalLines} extracted line{readablePreview.totalLines === 1 ? '' : 's'}.
+                                {t('readable.hiddenNoisy', { count: readablePreview.shownLines, total: readablePreview.totalLines, totalS: readablePreview.totalLines === 1 ? '' : 's' })}
                               </div>
                             )}
                             {readablePreview.truncated && (
                               <div className="rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-[11px] text-text-muted">
-                                Preview is showing the first {formatBytes(RAW_INSPECT_MAX_CHARS)} of extracted text to keep the inspect pane responsive. Copy extracted text for the full stored content.
+                                {t('readable.truncated', { size: formatBytes(RAW_INSPECT_MAX_CHARS) })}
                               </div>
                             )}
                           </section>
@@ -832,7 +836,7 @@ export function EvidenceView({
                           <section className="border-b border-border-subtle px-3 py-3 space-y-2">
                             <div className="flex items-center gap-2 text-xs font-semibold text-text-primary">
                               <FileSearch size={14} className="text-accent-blue" />
-                              Artifact Signals
+                              {t('signals.title')}
                             </div>
                             <div className="space-y-1">
                               {artifactSignals.map((signal, index) => (
@@ -849,13 +853,13 @@ export function EvidenceView({
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <div className="flex items-center gap-2 text-xs font-semibold text-text-primary">
                                 <Table2 size={14} className="text-accent-blue" />
-                                Table IOC Candidates
+                                {t('tableIOC.title')}
                               </div>
                               <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => void handleCopy('table-iocs', renderEvidenceTableIOCCandidatesText(tableIOCCandidates))}
-                                  aria-label="Copy table IOC candidates"
-                                  title="Copy table IOC candidates"
+                                  aria-label={t('tableIOC.copyAria')}
+                                  title={t('tableIOC.copyTitle')}
                                   className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-bg-hover"
                                 >
                                   {copiedKey === 'table-iocs' ? <Check size={12} /> : <Copy size={12} />}
@@ -867,7 +871,7 @@ export function EvidenceView({
                                     className="inline-flex items-center gap-1.5 rounded-md border border-accent-blue/50 bg-accent-blue/10 px-2 py-1 text-[11px] text-accent-blue hover:bg-accent-blue/15 disabled:opacity-60"
                                   >
                                     {creatingTableIOCs ? <Loader2 size={12} className="animate-spin" /> : copiedKey === 'table-iocs-created' ? <Check size={12} /> : <Plus size={12} />}
-                                    Add IOCs
+                                    {t('tableIOC.add')}
                                   </button>
                                 )}
                               </div>
@@ -880,13 +884,13 @@ export function EvidenceView({
                                     <code className="break-all text-xs text-text-primary">{candidate.value}</code>
                                   </div>
                                   <div className="mt-1 text-[11px] text-text-muted">
-                                    {candidate.sourceTable}, row {candidate.rowIndex}
+                                    {t('tableIOC.sourceRow', { source: candidate.sourceTable, row: candidate.rowIndex })}
                                   </div>
                                 </div>
                               ))}
                               {tableIOCCandidates.length > 12 && (
                                 <div className="text-[11px] text-text-muted">
-                                  Showing 12 of {tableIOCCandidates.length} candidates.
+                                  {t('tableIOC.showing', { count: tableIOCCandidates.length })}
                                 </div>
                               )}
                             </div>
@@ -896,30 +900,30 @@ export function EvidenceView({
                         {shouldHideRawLowConfidencePdf && !inspectFilterMode && (
                           <section className="px-3 py-3">
                             <div className="rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-[11px] leading-relaxed text-text-muted">
-                              Raw PDF extraction is hidden because it looks encoded or garbled. The readable preview above shows cleaner fragments only; use OCR or CaddyAI vision for the source-page view.
+                              {t('raw.hiddenLowConfidence')}
                             </div>
                           </section>
                         )}
 
                         {!shouldHideRawLowConfidencePdf && !(inspectFilterMode && shouldShowReadablePreview) && (
                           <section className="px-3 py-3">
-                            <div className="mb-2 text-xs font-semibold text-text-primary">Raw Inspect</div>
+                            <div className="mb-2 text-xs font-semibold text-text-primary">{t('raw.title')}</div>
                             <pre className="whitespace-pre-wrap break-words text-xs leading-relaxed text-text-secondary font-mono">
                               {highlightText(
                                 inspectFilterMode && compiledInspectSearch
-                                  ? rawInspectSearchPreview.text || 'No matching lines in raw inspect.'
+                                  ? rawInspectSearchPreview.text || t('raw.noMatchingLines')
                                   : rawInspect.text,
                                 shouldShowReadablePreview ? null : compiledInspectSearch,
                               )}
                             </pre>
                             {inspectFilterMode && compiledInspectSearch && (
                               <div className="mt-3 rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-[11px] text-text-muted">
-                                Showing {rawInspectSearchPreview.matchCount} of {rawInspectSearchPreview.totalCount} raw line{rawInspectSearchPreview.totalCount === 1 ? '' : 's'} that match the inspect filter.
+                                {t('raw.matches', { matchCount: rawInspectSearchPreview.matchCount, count: rawInspectSearchPreview.totalCount })}
                               </div>
                             )}
                             {rawInspect.truncated && (
                               <div className="mt-3 rounded-md border border-border-subtle bg-bg-primary px-3 py-2 text-[11px] text-text-muted">
-                                Raw inspect is showing the first {formatBytes(RAW_INSPECT_MAX_CHARS)} of this evidence item to keep the browser responsive. Copy extracted text for the full stored content.
+                                {t('raw.truncated', { size: formatBytes(RAW_INSPECT_MAX_CHARS) })}
                               </div>
                             )}
                           </section>
@@ -964,35 +968,35 @@ function evidenceSearchText(item: EvidenceItem): string {
   ].filter(Boolean).join('\n').toLowerCase();
 }
 
-function previewText(markdown: string): string {
+function previewText(markdown: string, t: TFunction): string {
   return markdown
     .replace(/^#.+$/gm, '')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/[#>*_`-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 260) || 'No extracted text preview available.';
+    .slice(0, 260) || t('preview.noText');
 }
 
-function buildMetadataRows(item: EvidenceItem): MetadataRow[] {
+function buildMetadataRows(item: EvidenceItem, t: TFunction): MetadataRow[] {
   return [
-    { label: 'File name', value: item.fileName },
-    { label: 'File type', value: item.fileType.toUpperCase() },
-    { label: 'MIME', value: item.mimeType || item.imageDataMimeType },
-    { label: 'Size', value: formatBytes(item.size) },
-    { label: 'Imported', value: formatDate(item.importedAt) },
-    { label: 'Modified', value: item.lastModified ? formatDate(item.lastModified) : undefined },
-    { label: 'Extraction', value: item.extractionStatus },
-    { label: 'Parts', value: `${item.chunkIndex || 1} of ${item.chunkCount || 1}` },
-    { label: 'Image dimensions', value: item.imageWidth && item.imageHeight ? `${item.imageWidth} x ${item.imageHeight}px` : undefined },
-    { label: 'Aspect ratio', value: item.imageAspectRatio },
-    { label: 'Pixels', value: item.imagePixelCount ? item.imagePixelCount.toLocaleString() : undefined },
-    { label: 'Preview payload', value: item.imageData ? 'Stored' : item.fileType === 'image' ? 'Metadata only' : undefined },
+    { label: t('meta.fileName'), value: item.fileName },
+    { label: t('meta.fileType'), value: item.fileType.toUpperCase() },
+    { label: t('meta.mime'), value: item.mimeType || item.imageDataMimeType },
+    { label: t('meta.size'), value: formatBytes(item.size) },
+    { label: t('meta.imported'), value: formatDate(item.importedAt) },
+    { label: t('meta.modified'), value: item.lastModified ? formatDate(item.lastModified) : undefined },
+    { label: t('meta.extraction'), value: item.extractionStatus },
+    { label: t('meta.parts'), value: t('meta.partsValue', { index: item.chunkIndex || 1, total: item.chunkCount || 1 }) },
+    { label: t('meta.imageDimensions'), value: item.imageWidth && item.imageHeight ? t('meta.imageDimensionsValue', { width: item.imageWidth, height: item.imageHeight }) : undefined },
+    { label: t('meta.aspectRatio'), value: item.imageAspectRatio },
+    { label: t('meta.pixels'), value: item.imagePixelCount ? item.imagePixelCount.toLocaleString() : undefined },
+    { label: t('meta.previewPayload'), value: item.imageData ? t('meta.previewPayloadStored') : item.fileType === 'image' ? t('meta.previewPayloadMetadataOnly') : undefined },
   ].filter((row) => row.value !== undefined);
 }
 
-function renderMetadataText(item: EvidenceItem): string {
-  return buildMetadataRows(item)
+function renderMetadataText(item: EvidenceItem, t: TFunction): string {
+  return buildMetadataRows(item, t)
     .map((row) => `${row.label}: ${row.value}`)
     .join('\n');
 }
@@ -1012,11 +1016,11 @@ function renderVisibleTableText(headers: string[], rows: string[][], columnCount
   ].join('\n');
 }
 
-function readablePreviewTitle(item: EvidenceItem): string {
-  if (item.fileType === 'pdf') return 'Readable PDF Text';
-  if (item.fileType === 'rtf') return 'Readable RTF Text';
-  if (item.fileType === 'doc' || item.fileType === 'docx') return 'Readable Document Text';
-  return 'Readable Text';
+function readablePreviewTitle(item: EvidenceItem, t: TFunction): string {
+  if (item.fileType === 'pdf') return t('readable.titlePdf');
+  if (item.fileType === 'rtf') return t('readable.titleRtf');
+  if (item.fileType === 'doc' || item.fileType === 'docx') return t('readable.titleDocument');
+  return t('readable.titleText');
 }
 
 function emptyReadablePreview(): ReadableEvidencePreview {
@@ -1058,12 +1062,12 @@ function buildReadableEvidencePreview(item: EvidenceItem, extractedText: string)
   };
 }
 
-function renderReadableTextPreview(text: string, search: CompiledInspectSearch | null, preserveLines = false): ReactNode[] {
+function renderReadableTextPreview(text: string, search: CompiledInspectSearch | null, preserveLines: boolean, t: TFunction): ReactNode[] {
   const blocks = buildReadableTextBlocks(text, preserveLines);
   if (blocks.length === 0) {
     return [(
       <p key="empty" className="text-xs leading-6 text-text-muted">
-        No clean readable text could be extracted for preview.
+        {t('readable.noCleanText')}
       </p>
     )];
   }
@@ -1192,7 +1196,7 @@ function splitReadableLines(text: string): string[] {
     .filter(Boolean);
 }
 
-function buildArtifactSignals(item: EvidenceItem): string[] {
+function buildArtifactSignals(item: EvidenceItem, t: TFunction): string[] {
   const signals: string[] = [];
   const warning = item.extractionWarning || '';
   const content = item.content || '';
@@ -1202,22 +1206,22 @@ function buildArtifactSignals(item: EvidenceItem): string[] {
     signals.push(warning);
   }
   if (/encoded|garbled|OCR|vision/i.test(warning)) {
-    signals.push('Readable text may be incomplete. Use OCR or CaddyAI vision analysis for visual pages, charts, screenshots, and scanned evidence.');
+    signals.push(t('signals.readableIncomplete'));
   }
   if (item.fileType === 'pdf') {
-    signals.push('PDF preview uses extracted selectable text. Page layout, rendered charts, graph axes, embedded images, and image-only table cells are not decoded into structured preview text.');
+    signals.push(t('signals.pdfPreview'));
     if (looksLikeLowConfidencePdfText(extracted)) {
-      signals.push('Extracted PDF text looks low-confidence and may reflect encoded fonts or visual-only page content. Prefer OCR or CaddyAI vision for this evidence.');
+      signals.push(t('signals.pdfLowConfidence'));
     }
     if (/chart|graph|figure|table|axis|legend/i.test(extracted)) {
-      signals.push('The extracted PDF text references visual or tabular material; verify the source page or use OCR/vision analysis for the actual graph, table, or chart content.');
+      signals.push(t('signals.pdfVisualReferences'));
     }
   }
   if (/^##\s+Workbook Artifacts\b/im.test(content)) {
-    signals.push('Workbook artifact metadata is present in the extracted evidence text.');
+    signals.push(t('signals.workbookArtifacts'));
   }
   if ((item.fileType === 'xlsx' || item.fileType === 'xls') && !signals.some((signal) => /chart|workbook/i.test(signal))) {
-    signals.push('Workbook cells are table-previewed. Embedded charts or images may need CaddyAI vision if they are not represented in cells.');
+    signals.push(t('signals.workbookCells'));
   }
 
   return [...new Set(signals)];
@@ -1229,41 +1233,41 @@ function getExtractedText(content: string): string {
   return parts.slice(1).join('\n## Extracted Text').trim();
 }
 
-function extractStructuredTables(item: EvidenceItem): TableEvidence[] {
+function extractStructuredTables(item: EvidenceItem, t: TFunction): TableEvidence[] {
   const body = getExtractedText(item.content);
   if (!body || /^No (?:extracted|OCR)/i.test(body.trim())) return [];
 
-  const sections = splitSheetSections(body);
+  const sections = splitSheetSections(body, t);
   const shouldParse = ['xlsx', 'xls', 'spreadsheet'].includes(item.fileType) || hasTabularRows(body);
   if (!shouldParse) return [];
 
-  const tableSections = sections.length > 0 ? sections : [{ title: item.fileType === 'spreadsheet' ? 'Table Preview' : 'Sheet 1', body }];
+  const tableSections = sections.length > 0 ? sections : [{ title: item.fileType === 'spreadsheet' ? t('table.defaultTitle') : t('table.sheetTitle'), body }];
   return tableSections
-    .map((section) => buildTableEvidence(section.title, section.body, item.fileName))
+    .map((section) => buildTableEvidence(section.title, section.body, item.fileName, t))
     .filter((table): table is TableEvidence => table !== null);
 }
 
-function splitSheetSections(body: string): Array<{ title: string; body: string }> {
+function splitSheetSections(body: string, t: TFunction): Array<{ title: string; body: string }> {
   const matches = Array.from(body.matchAll(/^##\s+(.+)$/gm));
   if (matches.length === 0) return [];
   return matches.map((match, index) => {
     const start = (match.index || 0) + match[0].length;
     const end = matches[index + 1]?.index ?? body.length;
     return {
-      title: match[1]?.trim() || `Sheet ${index + 1}`,
+      title: match[1]?.trim() || t('table.sheetFallback', { index: index + 1 }),
       body: body.slice(start, end).trim(),
     };
   });
 }
 
-function buildTableEvidence(title: string, body: string, fileName: string): TableEvidence | null {
+function buildTableEvidence(title: string, body: string, fileName: string, t: TFunction): TableEvidence | null {
   const parsedRows = parseDelimitedRows(body, fileName);
   if (parsedRows.length === 0) return null;
   const columnCount = Math.max(...parsedRows.map((row) => row.length), 1);
   const hasHeader = parsedRows.length > 1;
   const headers = hasHeader
-    ? normalizeRow(parsedRows[0], columnCount).map((header, index) => header || `Column ${index + 1}`)
-    : Array.from({ length: columnCount }, (_, index) => `Column ${index + 1}`);
+    ? normalizeRow(parsedRows[0], columnCount).map((header, index) => header || t('table.columnFallback', { index: index + 1 }))
+    : Array.from({ length: columnCount }, (_, index) => t('table.columnFallback', { index: index + 1 }));
   const rows = hasHeader ? parsedRows.slice(1) : parsedRows;
   return {
     title,
@@ -1576,21 +1580,21 @@ function capPreviewText(text: string, maxChars: number): { text: string; truncat
   return { text: text.slice(0, maxChars), truncated: true };
 }
 
-function formatEvidenceImportError(err: unknown): string {
-  const message = err instanceof Error ? err.message : 'Evidence import failed';
+function formatEvidenceImportError(err: unknown, t: TFunction): string {
+  const message = err instanceof Error ? err.message : t('toast.importFailed');
   if (/too much recursion|maximum call stack/i.test(message)) {
-    return 'Evidence import hit a browser recursion limit. Try importing fewer files, or convert very large Office/PDF evidence to CSV/text first.';
+    return t('toast.importRecursion');
   }
   return message;
 }
 
-function buildImageAnalysisPrompt(item: EvidenceItem): string {
+function buildImageAnalysisPrompt(item: EvidenceItem, t: TFunction): string {
   return [
-    `When this image is attached to CaddyAI, analyze the ThreatCaddy image evidence: ${item.fileName}`,
+    t('imagePrompt.intro', { fileName: item.fileName }),
     '',
-    'Identify what the image shows, transcribe visible text, extract any IOCs or security-relevant entities, and call out uncertainty.',
+    t('imagePrompt.instruction'),
     '',
-    'Evidence metadata:',
-    renderMetadataText(item),
+    t('imagePrompt.metadataLabel'),
+    renderMetadataText(item, t),
   ].join('\n');
 }

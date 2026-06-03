@@ -30,6 +30,8 @@ import { usePlaybooks } from './hooks/usePlaybooks';
 import { useIntegrations } from './hooks/useIntegrations';
 const PlaybookPicker = lazy(() => import('./components/Playbooks/PlaybookPicker').then(m => ({ default: m.PlaybookPicker })));
 const OperationNameGenerator = lazy(() => import('./components/Common/OperationNameGenerator').then(m => ({ default: m.OperationNameGenerator })));
+const EvidenceView = lazy(() => import('./components/Evidence/EvidenceView').then(m => ({ default: m.EvidenceView })));
+const ProductView = lazy(() => import('./components/Products/ProductView').then(m => ({ default: m.ProductView })));
 import { useActivityLog } from './hooks/useActivityLog';
 import { ActivityLogContext } from './hooks/ActivityLogContext';
 import { ScreenshareContext } from './hooks/ScreenshareContext';
@@ -49,6 +51,8 @@ const SearchOverlay = lazy(() => import('./components/Search/SearchOverlay').the
 import { extractIOCs, mergeIOCAnalysis } from './lib/ioc-extractor';
 import { autoEnrichImportedIOCs } from './lib/ioc-auto-enrichment';
 import { upsertIOCObservations } from './lib/ioc-observations';
+import { buildEvidenceItemDrafts, findDuplicateEvidenceItemIds } from './lib/evidence-import';
+import { parseProductBaselinePackage, PRODUCT_NOTE_TAG } from './lib/product-baselines';
 import { generateSampleInvestigation, isSampleEntity } from './lib/sample-investigation';
 import { db } from './db';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
@@ -971,6 +975,35 @@ const AppInner = memo(function AppInner({
     () => investigationMode === 'remote' ? remoteData.notes : selectedFolderId ? screensafeNotes.filter((n) => n.folderId === selectedFolderId) : screensafeNotes,
     [investigationMode, remoteData.notes, screensafeNotes, selectedFolderId]
   );
+  // Evidence + Products: folder-scoped derivations and import/dedup wiring
+  const investigationEvidenceItems = useMemo(
+    () => selectedFolderId ? evidenceItemsHook.evidenceItems.filter((e) => e.folderId === selectedFolderId) : evidenceItemsHook.evidenceItems,
+    [evidenceItemsHook.evidenceItems, selectedFolderId]
+  );
+  const productNotes = useMemo(
+    () => investigationNotes.filter((n) => n.tags?.includes(PRODUCT_NOTE_TAG)),
+    [investigationNotes]
+  );
+  const productBaselines = useMemo(
+    () => noteTemplatesHook.templates.filter((tpl) => tpl.productBaseline),
+    [noteTemplatesHook.templates]
+  );
+  const handleImportEvidence = useCallback(async (files: File[]) => {
+    const drafts = (await Promise.all(files.map((file) => buildEvidenceItemDrafts(file, { folderName: selectedFolder?.name })))).flat();
+    const created = await Promise.all(drafts.map((draft) => evidenceItemsHook.createEvidenceItem({ ...draft, folderId: selectedFolderId })));
+    await evidenceItemsHook.reload();
+    return created;
+  }, [evidenceItemsHook, selectedFolderId, selectedFolder?.name]);
+  const handleDeduplicateEvidence = useCallback(async () => {
+    const dupeIds = findDuplicateEvidenceItemIds(evidenceItemsHook.evidenceItems, selectedFolderId);
+    for (const id of dupeIds) await evidenceItemsHook.deleteEvidenceItem(id);
+    if (dupeIds.length > 0) await evidenceItemsHook.reload();
+    return dupeIds.length;
+  }, [evidenceItemsHook, selectedFolderId]);
+  const handleImportBaseline = useCallback(async (json: string, fileName: string) => {
+    const parsed = parseProductBaselinePackage(json, fileName);
+    return noteTemplatesHook.createTemplate(parsed);
+  }, [noteTemplatesHook]);
   const investigationTasks = useMemo(
     () => investigationMode === 'remote' ? remoteData.tasks : selectedFolderId ? screensafeTasks.filter((t) => t.folderId === selectedFolderId) : screensafeTasks,
     [investigationMode, remoteData.tasks, screensafeTasks, selectedFolderId]
@@ -1764,6 +1797,25 @@ const AppInner = memo(function AppInner({
             selectedWhiteboardId={selectedWhiteboardId ?? null}
             onWhiteboardSelect={(id) => setSelectedWhiteboardId(id ?? undefined)}
             settings={settings}
+          />
+        ) : activeView === 'evidence' ? (
+          <EvidenceView
+            folderId={selectedFolderId}
+            folderName={selectedFolder?.name}
+            items={investigationEvidenceItems}
+            onImportFiles={handleImportEvidence}
+            onDeduplicate={handleDeduplicateEvidence}
+            onOpenChat={() => setActiveView('chat')}
+          />
+        ) : activeView === 'products' ? (
+          <ProductView
+            folderName={selectedFolder?.name}
+            products={productNotes}
+            baselines={productBaselines}
+            onOpenSourceNote={(id) => { setSelectedNoteId(id); setActiveView('notes'); }}
+            onOpenChat={() => setActiveView('chat')}
+            onImportBaseline={handleImportBaseline}
+            onUpdateBaseline={noteTemplatesHook.updateTemplate}
           />
         ) : activeView === 'chat' ? (
           null

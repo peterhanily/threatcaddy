@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Bot, Clipboard, Download, FileOutput, FilePenLine, FileText, Layers, Printer, Search, Settings2, Upload, X } from 'lucide-react';
 import type { Note, NoteTemplate } from '../../types';
 import { formatDate } from '../../lib/utils';
@@ -27,6 +28,7 @@ export function ProductView({
   onImportBaseline,
   onUpdateBaseline,
 }: ProductViewProps) {
+  const { t } = useTranslation('products');
   const [query, setQuery] = useState('');
   const [baselineManagerOpen, setBaselineManagerOpen] = useState(false);
   const [selectedBaselineId, setSelectedBaselineId] = useState<string | null>(baselines[0]?.id ?? null);
@@ -92,7 +94,7 @@ export function ProductView({
       const templateBacked = buildTemplateBackedDocxBlob(selectedProduct, selectedProductBaseline);
       downloadBlob(templateBacked || buildDocxBlob(selectedProduct.title, selectedProductHtml), `${safeFilename(selectedProduct.title)}.docx`);
     } catch (error) {
-      setBaselineError(error instanceof Error ? error.message : 'Failed to render DOCX from the attached baseline template.');
+      setBaselineError(error instanceof Error ? error.message : t('baseline.docxRenderError'));
       downloadBlob(buildDocxBlob(selectedProduct.title, selectedProductHtml), `${safeFilename(selectedProduct.title)}.docx`);
     }
   };
@@ -109,7 +111,7 @@ export function ProductView({
   };
 
   const handleCopyBaselinePrompt = async (baseline: NoteTemplate) => {
-    const prompt = `Use the "${baseline.name}" product baseline to render a finished product for the active investigation. Keep it customer-ready, preserve source notes, and create the product as a tagged product note.`;
+    const prompt = t('manager.copyPromptText', { name: baseline.name });
     try {
       await navigator.clipboard?.writeText(prompt);
     } catch {
@@ -127,9 +129,9 @@ export function ProductView({
       const imported = await onImportBaseline(await file.text(), file.name);
       setSelectedBaselineId(imported.id);
       setBaselineManagerOpen(true);
-      setBaselineMessage(`Imported ${imported.name}`);
+      setBaselineMessage(t('baseline.importSuccess', { name: imported.name }));
     } catch (error) {
-      setBaselineError(error instanceof Error ? error.message : 'Failed to import product baseline package.');
+      setBaselineError(error instanceof Error ? error.message : t('baseline.importError'));
     }
   };
 
@@ -147,7 +149,7 @@ export function ProductView({
           role: 'docx-template' as const,
           mimeType: file.type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           data: arrayBufferToBase64(await file.arrayBuffer()),
-          notes: 'Attached DOCX template used for baseline-backed product export.',
+          notes: t('manager.docxTemplateNotes'),
         },
       ];
       await onUpdateBaseline(selectedBaseline.id, {
@@ -161,9 +163,9 @@ export function ProductView({
           assets,
         },
       });
-      setBaselineMessage(`Attached DOCX template ${file.name}`);
+      setBaselineMessage(t('baseline.docxAttachSuccess', { name: file.name }));
     } catch (error) {
-      setBaselineError(error instanceof Error ? error.message : 'Failed to attach DOCX template.');
+      setBaselineError(error instanceof Error ? error.message : t('baseline.docxAttachError'));
     }
   };
 
@@ -173,9 +175,9 @@ export function ProductView({
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <FileOutput size={20} className="text-accent-blue shrink-0" />
           <div className="min-w-0">
-            <h1 className="text-base font-semibold text-text-primary">Products</h1>
+            <h1 className="text-base font-semibold text-text-primary">{t('header.title')}</h1>
             <p className="text-xs text-text-muted truncate">
-              {folderName ? folderName : 'Generated reports, notes, and deliverables'}
+              {folderName ? folderName : t('header.subtitle')}
             </p>
           </div>
         </div>
@@ -183,7 +185,7 @@ export function ProductView({
           {onImportBaseline && (
             <label className="inline-flex cursor-pointer items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border-subtle text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors">
               <Upload size={14} />
-              Import Baseline
+              {t('header.importBaseline')}
               <input
                 ref={baselineInputRef}
                 type="file"
@@ -198,14 +200,14 @@ export function ProductView({
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border-subtle text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
           >
             <Settings2 size={14} />
-            Baselines
+            {t('header.baselines')}
           </button>
           <button
             onClick={onOpenChat}
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border-subtle text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
           >
             <Bot size={14} />
-            CaddyAI
+            {t('header.caddyAI')}
           </button>
         </div>
       </header>
@@ -217,14 +219,14 @@ export function ProductView({
               <div>
                 <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
                   <Layers size={16} className="text-accent-blue" />
-                  Product Baselines
+                  {t('baselines.title')}
                 </div>
                 <p className="mt-1 max-w-2xl text-xs text-text-muted">
-                  Jinja-compatible baselines define repeatable report structures. CaddyAI can render these with investigation notes, IOCs, evidence, timelines, and analyst-provided fields.
+                  {t('baselines.description')}
                 </p>
               </div>
               <span className="rounded-md bg-accent-blue/10 px-2 py-1 text-xs text-accent-blue">
-                {baselines.length} baseline{baselines.length === 1 ? '' : 's'}
+                {t('baselines.count', { count: baselines.length })}
               </span>
             </div>
             {(baselineMessage || baselineError) && (
@@ -235,12 +237,12 @@ export function ProductView({
             <div className="mt-3 grid gap-2 md:grid-cols-2">
               {baselines.length === 0 ? (
                 <div className="rounded-md border border-dashed border-border-subtle bg-bg-primary px-3 py-4 text-xs text-text-muted md:col-span-2">
-                  Import a product baseline package to make it available to CaddyAI and product rendering.
+                  {t('baselines.empty')}
                 </div>
               ) : baselines.map((baseline) => (
                 <article key={baseline.id} className="rounded-md border border-border-subtle bg-bg-primary px-3 py-2">
                   <div className="flex items-center gap-2">
-                    <span className="rounded bg-bg-raised px-1.5 py-0.5 text-[10px] text-text-muted">{baseline.icon || 'TPL'}</span>
+                    <span className="rounded bg-bg-raised px-1.5 py-0.5 text-[10px] text-text-muted">{baseline.icon || t('baselines.defaultIcon')}</span>
                     <h3 className="min-w-0 flex-1 truncate text-xs font-semibold text-text-primary">{baseline.name}</h3>
                     <button
                       onClick={() => {
@@ -249,7 +251,7 @@ export function ProductView({
                       }}
                       className="rounded px-1.5 py-0.5 text-[10px] font-medium text-accent-blue hover:bg-accent-blue/10"
                     >
-                      Preview
+                      {t('baselines.preview')}
                     </button>
                   </div>
                   {baseline.description && (
@@ -269,7 +271,7 @@ export function ProductView({
           <section>
             <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
-                <h2 className="text-xs font-semibold uppercase text-text-muted">Generated Products</h2>
+                <h2 className="text-xs font-semibold uppercase text-text-muted">{t('products.heading')}</h2>
                 <span className="text-xs text-text-muted">
                   {filteredProducts.length === products.length ? products.length : `${filteredProducts.length} / ${products.length}`}
                 </span>
@@ -279,14 +281,14 @@ export function ProductView({
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  aria-label="Search products"
-                  placeholder="Search products"
+                  aria-label={t('search.ariaLabel')}
+                  placeholder={t('search.placeholder')}
                   className="w-full rounded-md border border-border-subtle bg-bg-surface py-1.5 ps-8 pe-8 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent-blue"
                 />
                 {query && (
                   <button
                     onClick={() => setQuery('')}
-                    aria-label="Clear product search"
+                    aria-label={t('search.clearAriaLabel')}
                     className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-1 text-text-muted hover:text-text-primary hover:bg-bg-hover"
                   >
                     <X size={12} />
@@ -298,14 +300,14 @@ export function ProductView({
             {products.length === 0 ? (
               <div className="rounded-lg border border-border-subtle bg-bg-surface p-8 text-center">
                 <FileOutput size={36} className="mx-auto mb-3 text-text-muted" />
-                <h3 className="text-sm font-semibold text-text-primary">No products yet</h3>
-                <p className="mt-1 text-xs text-text-muted">Ask CaddyAI to render a product baseline to create a draft report here.</p>
+                <h3 className="text-sm font-semibold text-text-primary">{t('empty.noProducts')}</h3>
+                <p className="mt-1 text-xs text-text-muted">{t('empty.noProductsDesc')}</p>
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="rounded-lg border border-border-subtle bg-bg-surface p-8 text-center">
                 <Search size={32} className="mx-auto mb-3 text-text-muted" />
-                <h3 className="text-sm font-semibold text-text-primary">No products match</h3>
-                <p className="mt-1 text-xs text-text-muted">Try a product title, tag, or phrase from the draft.</p>
+                <h3 className="text-sm font-semibold text-text-primary">{t('empty.noMatch')}</h3>
+                <p className="mt-1 text-xs text-text-muted">{t('empty.noMatchDesc')}</p>
               </div>
             ) : (
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -317,7 +319,7 @@ export function ProductView({
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="line-clamp-2 text-sm font-medium text-text-primary">{product.title}</h3>
-                        <p className="mt-1 line-clamp-3 text-xs text-text-muted">{previewProduct(product.content)}</p>
+                        <p className="mt-1 line-clamp-3 text-xs text-text-muted">{previewProduct(product.content, t('card.noPreview'))}</p>
                         <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-text-muted">
                           <span>{formatDate(product.updatedAt)}</span>
                           {product.tags.filter((tag) => tag !== 'product').slice(0, 3).map((tag) => (
@@ -332,14 +334,14 @@ export function ProductView({
                         className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
                       >
                         <FileText size={13} />
-                        Preview Product
+                        {t('card.previewProduct')}
                       </button>
                       <button
                         onClick={() => onOpenSourceNote(product.id)}
                         className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
                       >
                         <FilePenLine size={13} />
-                        Source Note
+                        {t('card.sourceNote')}
                       </button>
                     </div>
                   </article>
@@ -353,7 +355,7 @@ export function ProductView({
       <Modal
         open={baselineManagerOpen}
         onClose={() => setBaselineManagerOpen(false)}
-        title="Product Baselines"
+        title={t('manager.title')}
         extraWide
       >
         <div className="grid gap-4 lg:grid-cols-[minmax(220px,320px)_1fr]">
@@ -365,7 +367,7 @@ export function ProductView({
                 className={`w-full rounded-lg border p-3 text-left transition-colors ${selectedBaseline?.id === baseline.id ? 'border-accent-blue bg-accent-blue/10' : 'border-border-subtle bg-bg-surface hover:border-border-medium'}`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="rounded bg-bg-raised px-1.5 py-0.5 text-[10px] text-text-muted">{baseline.icon || 'TPL'}</span>
+                  <span className="rounded bg-bg-raised px-1.5 py-0.5 text-[10px] text-text-muted">{baseline.icon || t('baselines.defaultIcon')}</span>
                   <span className="min-w-0 flex-1 truncate text-xs font-semibold text-text-primary">{baseline.name}</span>
                 </div>
                 {baseline.description && (
@@ -394,7 +396,7 @@ export function ProductView({
                     {selectedBaseline.productBaseline && onUpdateBaseline && (
                       <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover">
                         <Upload size={13} />
-                        Attach DOCX
+                        {t('manager.attachDocx')}
                         <input
                           ref={docxTemplateInputRef}
                           type="file"
@@ -409,21 +411,21 @@ export function ProductView({
                       className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover"
                     >
                       <Clipboard size={13} />
-                      Copy Prompt
+                      {t('manager.copyPrompt')}
                     </button>
                     <button
                       onClick={handleDownloadBaselinePackage}
                       className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover"
                     >
                       <Download size={13} />
-                      Export Package
+                      {t('manager.exportPackage')}
                     </button>
                     <button
                       onClick={onOpenChat}
                       className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover"
                     >
                       <Bot size={13} />
-                      CaddyAI
+                      {t('header.caddyAI')}
                     </button>
                   </div>
                 </div>
@@ -437,24 +439,24 @@ export function ProductView({
                       <span className="rounded bg-bg-raised px-1.5 py-0.5">{selectedBaseline.productBaseline.renderer}</span>
                       <span className="rounded bg-bg-raised px-1.5 py-0.5">{selectedBaseline.productBaseline.visualFidelity}</span>
                       {hasDocxTemplateAsset(selectedBaseline) && (
-                        <span className="rounded bg-green-500/10 px-1.5 py-0.5 text-green-400">DOCX template attached</span>
+                        <span className="rounded bg-green-500/10 px-1.5 py-0.5 text-green-400">{t('manager.docxTemplateAttached')}</span>
                       )}
                     </div>
                     {selectedBaseline.productBaseline.sourceDocuments && selectedBaseline.productBaseline.sourceDocuments.length > 0 && (
                       <p className="mt-2">
-                        Baseline sources: {selectedBaseline.productBaseline.sourceDocuments.map((doc) => doc.name).join(', ')}
+                        {t('manager.baselineSources', { names: selectedBaseline.productBaseline.sourceDocuments.map((doc) => doc.name).join(', ') })}
                       </p>
                     )}
                     {selectedBaseline.productBaseline.testFixtures && selectedBaseline.productBaseline.testFixtures.length > 0 && (
                       <p className="mt-1">
-                        Test fixtures: {selectedBaseline.productBaseline.testFixtures.map((fixture) => fixture.name).join(', ')}
+                        {t('manager.testFixtures', { names: selectedBaseline.productBaseline.testFixtures.map((fixture) => fixture.name).join(', ') })}
                       </p>
                     )}
                   </div>
                 )}
               </>
             ) : (
-              <div className="p-8 text-center text-sm text-text-muted">No product baselines available.</div>
+              <div className="p-8 text-center text-sm text-text-muted">{t('manager.noBaselines')}</div>
             )}
           </div>
         </div>
@@ -463,14 +465,14 @@ export function ProductView({
       <Modal
         open={selectedProduct !== null}
         onClose={() => setSelectedProductId(null)}
-        title={selectedProduct?.title || 'Product Preview'}
+        title={selectedProduct?.title || t('preview.title')}
         extraWide
       >
         {selectedProduct && (
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border-subtle bg-bg-surface px-3 py-2">
               <div className="flex flex-wrap items-center gap-2 text-[11px] text-text-muted">
-                <span>Updated {formatDate(selectedProduct.updatedAt)}</span>
+                <span>{t('preview.updated', { date: formatDate(selectedProduct.updatedAt) })}</span>
                 {selectedProduct.tags.filter((tag) => tag !== 'product').slice(0, 6).map((tag) => (
                   <span key={tag} className="rounded bg-bg-raised px-1.5 py-0.5">{tag}</span>
                 ))}
@@ -481,28 +483,28 @@ export function ProductView({
                   className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover"
                 >
                   <Download size={13} />
-                  DOCX
+                  {t('preview.docx')}
                 </button>
                 <button
                   onClick={handleDownloadMarkdown}
                   className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover"
                 >
                   <Download size={13} />
-                  Markdown
+                  {t('preview.markdown')}
                 </button>
                 <button
                   onClick={handlePrintProduct}
                   className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover"
                 >
                   <Printer size={13} />
-                  Print
+                  {t('preview.print')}
                 </button>
                 <button
                   onClick={() => onOpenSourceNote(selectedProduct.id)}
                   className="inline-flex items-center gap-1.5 rounded-md border border-border-subtle px-2.5 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover"
                 >
                   <FilePenLine size={13} />
-                  Source
+                  {t('preview.source')}
                 </button>
               </div>
             </div>
@@ -519,14 +521,14 @@ export function ProductView({
   );
 }
 
-function previewProduct(markdown: string): string {
+function previewProduct(markdown: string, fallback: string): string {
   return markdown
     .replace(/^#.+$/gm, '')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/[#>*_`|-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 260) || 'No product preview available.';
+    .slice(0, 260) || fallback;
 }
 
 function safeFilename(value: string): string {

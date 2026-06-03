@@ -89,6 +89,7 @@
   "activityCategory.folder": "Investigation",
   "activityCategory.tag": "Tag",
   "activityCategory.ioc": "IOC",
+  "activityCategory.evidence": "Evidence",
   "activityCategory.sync": "Sync",
   "activityCategory.data": "Data",
   "activityCategory.chat": "Chat",

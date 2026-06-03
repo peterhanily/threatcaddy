@@ -3,7 +3,7 @@ import {
   FileText, ListChecks, Clock, Trash2, Briefcase,
   Archive, Settings as SettingsIcon,
   PanelLeftClose, PanelLeft, Github, Download, Chrome, PenTool, Activity, Network, Search, Shield,
-  LayoutDashboard, MessageSquare, MessagesSquare, ChevronLeft, Bot,
+  LayoutDashboard, MessageSquare, MessagesSquare, ChevronLeft, Bot, Paperclip, FileOutput,
 } from 'lucide-react';
 import type { Timeline, Whiteboard, ViewMode } from '../../types';
 import { cn } from '../../lib/utils';
@@ -104,6 +104,8 @@ export function Sidebar({
     { view: 'tasks', icon: ListChecks, label: t('sidebar.tasks'), badge: investigationScopedCounts ? investigationScopedCounts.tasks : taskCounts.total, badgeColor: 'bg-accent-amber', dataTour: 'tasks' },
     { view: 'timeline', icon: Clock, label: t('sidebar.timeline'), badge: investigationScopedCounts ? investigationScopedCounts.events : timelineCounts?.total, badgeColor: 'bg-accent-green', dataTour: 'timeline' },
     { view: 'whiteboard', icon: PenTool, label: t('sidebar.whiteboards'), badge: investigationScopedCounts ? investigationScopedCounts.whiteboards : whiteboardCount, dataTour: 'whiteboards' },
+    { view: 'evidence', icon: Paperclip, label: t('sidebar.evidence') },
+    { view: 'products', icon: FileOutput, label: t('sidebar.products') },
     { view: 'ioc-stats', icon: Search, label: t('sidebar.iocs'), badge: investigationScopedCounts ? investigationScopedCounts.iocs : undefined, badgeColor: 'bg-accent-green' },
     { view: 'graph', icon: Network, label: t('sidebar.graph') },
     { view: 'activity', icon: Activity, label: t('sidebar.activity'), dataTour: 'activity' },
@@ -368,6 +370,20 @@ export function Sidebar({
             scopedColor={selectedFolder?.color || undefined}
           />
         </div>
+        <NavItem
+          icon={<Paperclip size={16} />}
+          label={t('sidebar.evidence')}
+          active={activeView === 'evidence'}
+          onClick={() => nav(() => navToView('evidence'))}
+          scopedColor={selectedFolder?.color || undefined}
+        />
+        <NavItem
+          icon={<FileOutput size={16} />}
+          label={t('sidebar.products')}
+          active={activeView === 'products'}
+          onClick={() => nav(() => navToView('products'))}
+          scopedColor={selectedFolder?.color || undefined}
+        />
 
         <div className="h-1.5" />
 

@@ -1,0 +1,54 @@
+{
+  "header.title": "Products",
+  "header.subtitle": "Generated reports, notes, and deliverables",
+  "header.importBaseline": "Import Baseline",
+  "header.baselines": "Baselines",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "Product Baselines",
+  "baselines.description": "Jinja-compatible baselines define repeatable report structures. CaddyAI can render these with investigation notes, IOCs, evidence, timelines, and analyst-provided fields.",
+  "baselines.count_one": "{{count}} baseline",
+  "baselines.count_other": "{{count}} baselines",
+  "baselines.empty": "Import a product baseline package to make it available to CaddyAI and product rendering.",
+  "baselines.preview": "Preview",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "Imported {{name}}",
+  "baseline.importError": "Failed to import product baseline package.",
+  "baseline.docxAttachSuccess": "Attached DOCX template {{name}}",
+  "baseline.docxAttachError": "Failed to attach DOCX template.",
+  "baseline.docxRenderError": "Failed to render DOCX from the attached baseline template.",
+
+  "products.heading": "Generated Products",
+  "search.placeholder": "Search products",
+  "search.ariaLabel": "Search products",
+  "search.clearAriaLabel": "Clear product search",
+
+  "empty.noProducts": "No products yet",
+  "empty.noProductsDesc": "Ask CaddyAI to render a product baseline to create a draft report here.",
+  "empty.noMatch": "No products match",
+  "empty.noMatchDesc": "Try a product title, tag, or phrase from the draft.",
+
+  "card.previewProduct": "Preview Product",
+  "card.sourceNote": "Source Note",
+  "card.noPreview": "No product preview available.",
+
+  "manager.title": "Product Baselines",
+  "manager.attachDocx": "Attach DOCX",
+  "manager.copyPrompt": "Copy Prompt",
+  "manager.exportPackage": "Export Package",
+  "manager.docxTemplateAttached": "DOCX template attached",
+  "manager.baselineSources": "Baseline sources: {{names}}",
+  "manager.testFixtures": "Test fixtures: {{names}}",
+  "manager.noBaselines": "No product baselines available.",
+
+  "manager.copyPromptText": "Use the \"{{name}}\" product baseline to render a finished product for the active investigation. Keep it customer-ready, preserve source notes, and create the product as a tagged product note.",
+  "manager.docxTemplateNotes": "Attached DOCX template used for baseline-backed product export.",
+
+  "preview.title": "Product Preview",
+  "preview.updated": "Updated {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "Print",
+  "preview.source": "Source"
+}

@@ -52,8 +52,8 @@ const LANGUAGES = [
 
 const NAMESPACES = [
   'activity', 'agent', 'analysis', 'caddyshack', 'chat', 'common',
-  'dashboard', 'dates', 'encryption', 'exec', 'graph', 'import',
-  'integrations', 'investigations', 'labels', 'notes', 'playbooks',
+  'dashboard', 'dates', 'encryption', 'evidence', 'exec', 'graph', 'import',
+  'integrations', 'investigations', 'labels', 'notes', 'playbooks', 'products',
   'search', 'settings', 'tasks', 'timeline', 'toast', 'tour', 'trash', 'whiteboard',
 ];
 

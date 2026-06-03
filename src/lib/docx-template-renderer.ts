@@ -682,12 +682,19 @@ function stripMarkdownInline(value: string): string {
     .trim();
 }
 
+// Decompression-bomb guard. A product-baseline DOCX asset is already bounded to
+// MAX_PRODUCT_BASELINE_ASSET_DATA (~20MB) *compressed*; cap the *inflated* output so a
+// crafted template cannot expand to an out-of-memory payload when rendering.
+const MAX_DOCX_ENTRY_BYTES = 64 * 1024 * 1024; // 64MB per zip entry
+const MAX_DOCX_TOTAL_BYTES = 192 * 1024 * 1024; // 192MB across all entries
+
 function unzip(bytes: Uint8Array): ZipEntry[] {
   const view = dataView(bytes);
   const eocdOffset = findEndOfCentralDirectory(view);
   const totalEntries = view.getUint16(eocdOffset + 10, true);
   let centralOffset = view.getUint32(eocdOffset + 16, true);
   const entries: ZipEntry[] = [];
+  let totalUncompressed = 0;
 
   for (let index = 0; index < totalEntries; index += 1) {
     if (view.getUint32(centralOffset, true) !== CENTRAL_DIRECTORY_SIGNATURE) {
@@ -695,6 +702,14 @@ function unzip(bytes: Uint8Array): ZipEntry[] {
     }
     const method = view.getUint16(centralOffset + 10, true);
     const compressedSize = view.getUint32(centralOffset + 20, true);
+    const uncompressedSize = view.getUint32(centralOffset + 24, true);
+    if (uncompressedSize > MAX_DOCX_ENTRY_BYTES) {
+      throw new Error('Template DOCX entry exceeds the maximum allowed size.');
+    }
+    totalUncompressed += uncompressedSize;
+    if (totalUncompressed > MAX_DOCX_TOTAL_BYTES) {
+      throw new Error('Template DOCX exceeds the maximum allowed uncompressed size.');
+    }
     const nameLength = view.getUint16(centralOffset + 28, true);
     const extraLength = view.getUint16(centralOffset + 30, true);
     const commentLength = view.getUint16(centralOffset + 32, true);
@@ -718,7 +733,15 @@ function readLocalEntry(bytes: Uint8Array, offset: number, compressedSize: numbe
   const dataStart = offset + 30 + nameLength + extraLength;
   const compressed = bytes.slice(dataStart, dataStart + compressedSize);
   if (method === 0) return compressed;
-  if (method === 8) return inflateRaw(compressed);
+  if (method === 8) {
+    // Bound the inflated output as a second line of defence against a header that
+    // under-declares its uncompressed size (the declared size is pre-checked in unzip).
+    const inflated = inflateRaw(compressed);
+    if (inflated.length > MAX_DOCX_ENTRY_BYTES) {
+      throw new Error('Template DOCX entry exceeds the maximum allowed size.');
+    }
+    return inflated;
+  }
   throw new Error(`Unsupported DOCX compression method: ${method}`);
 }
 

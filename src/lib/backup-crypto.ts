@@ -32,6 +32,7 @@ export interface BackupPayload {
     timelines?: unknown[];
     whiteboards?: unknown[];
     standaloneIOCs?: unknown[];
+    evidenceItems?: unknown[];
     chatThreads?: unknown[];
     agentActions?: unknown[];
     agentProfiles?: unknown[];

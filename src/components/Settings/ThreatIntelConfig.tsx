@@ -262,8 +262,8 @@ export function ThreatIntelConfig() {
 
         <div className="flex items-center justify-between gap-4">
           <div>
-            <label className="text-sm text-gray-300">Auto-check imported IOCs</label>
-            <p className="text-[10px] text-gray-600">Runs enabled VirusTotal integrations after IOC creation.</p>
+            <label className="text-sm text-gray-300">{t('intel.autoEnrich.toggleLabel')}</label>
+            <p className="text-[10px] text-gray-600">{t('intel.autoEnrich.toggleDesc')}</p>
           </div>
           <button
             onClick={() => updateSettings({ tiAutoEnrichImportedIOCs: settings.tiAutoEnrichImportedIOCs !== true })}
@@ -278,8 +278,8 @@ export function ThreatIntelConfig() {
         {settings.tiAutoEnrichImportedIOCs === true && (
           <div className="flex items-center justify-between">
             <div>
-              <label className="text-sm text-gray-400">Auto-check limit</label>
-              <p className="text-[10px] text-gray-600">Maximum imported IOCs to check per batch.</p>
+              <label className="text-sm text-gray-400">{t('intel.autoEnrich.limitLabel')}</label>
+              <p className="text-[10px] text-gray-600">{t('intel.autoEnrich.limitDesc')}</p>
             </div>
             <select
               value={settings.tiAutoEnrichImportedIOCMax ?? 50}
