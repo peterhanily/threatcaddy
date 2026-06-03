@@ -256,14 +256,14 @@ describe('Bot routes — /api/bots', () => {
     it('should 400 on invalid JSON body', async () => {
       const res = await rawReq('POST', '/api/bots', '{bad!!', {});
       expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: 'Invalid JSON body' });
+      expect(await res.json()).toEqual({ error: 'Invalid JSON body', code: 'INVALID_JSON_BODY' });
     });
 
     it('should 400 on validation error', async () => {
       mockBotService.validateBotCreate.mockReturnValue('name is required');
       const res = await req('POST', '/api/bots', {});
       expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: 'name is required' });
+      expect(await res.json()).toEqual({ error: 'name is required', code: 'VALIDATION_FAILED' });
     });
   });
 
@@ -290,13 +290,13 @@ describe('Bot routes — /api/bots', () => {
       mockBotService.validateBotUpdate.mockReturnValue({ error: 'invalid field' });
       const res = await req('PATCH', '/api/bots/b1', { bad: true });
       expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: 'invalid field' });
+      expect(await res.json()).toEqual({ error: 'invalid field', code: 'VALIDATION_FAILED' });
     });
 
     it('should 400 on invalid JSON body', async () => {
       const res = await rawReq('PATCH', '/api/bots/b1', 'not json', {});
       expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: 'Invalid JSON body' });
+      expect(await res.json()).toEqual({ error: 'Invalid JSON body', code: 'INVALID_JSON_BODY' });
     });
   });
 
@@ -354,7 +354,7 @@ describe('Bot routes — /api/bots', () => {
       mockBotService.triggerBot.mockResolvedValue({ error: 'Bot is disabled' });
       const res = await req('POST', '/api/bots/b1/trigger');
       expect(res.status).toBe(400);
-      expect(await res.json()).toEqual({ error: 'Bot is disabled' });
+      expect(await res.json()).toEqual({ error: 'Bot is disabled', code: 'VALIDATION_FAILED' });
     });
   });
 

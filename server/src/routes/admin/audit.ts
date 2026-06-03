@@ -11,7 +11,10 @@ const app = new Hono();
 
 app.get('/api/audit-log', requireAdminAuth, async (c) => {
   const page = Math.max(1, parseInt(c.req.query('page') || '1', 10) || 1);
-  const pageSize = Math.min(200, Math.max(1, parseInt(c.req.query('pageSize') || '50', 10) || 50));
+  // Clamp pageSize to [1, 200]. Parse first, then clamp — using `|| 50` here would
+  // treat an explicit pageSize=0 as falsy and snap it to 50 instead of the minimum 1.
+  const pageSizeRaw = parseInt(c.req.query('pageSize') || '50', 10);
+  const pageSize = Math.min(200, Math.max(1, Number.isNaN(pageSizeRaw) ? 50 : pageSizeRaw));
   const userId = c.req.query('userId');
   const category = c.req.query('category');
   const action = c.req.query('action');

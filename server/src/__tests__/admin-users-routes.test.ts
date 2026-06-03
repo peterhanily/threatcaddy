@@ -559,7 +559,7 @@ describe('POST /admin/api/users', () => {
     });
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toBe('Display name required');
+    expect(body.error).toBe('Display name required and must be 100 characters or fewer');
   });
 
   it('rejects missing display name', async () => {
@@ -575,7 +575,7 @@ describe('POST /admin/api/users', () => {
     });
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toBe('Display name required');
+    expect(body.error).toBe('Display name required and must be 100 characters or fewer');
   });
 
   it('rejects short password (less than 8 chars)', async () => {
