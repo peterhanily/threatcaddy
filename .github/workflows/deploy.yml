@@ -1,0 +1,63 @@
+name: Deploy to GitHub Pages
+
+# Publishes the built app to the `gh-pages` branch (which serves threatcaddy.com).
+#
+# Triggers:
+#   - push to main  → deploys automatically. GitHub natively SKIPS this workflow
+#     when the commit message contains "[skip ci]", so routine [skip ci] commits
+#     do NOT deploy (and don't burn Actions minutes). Omit [skip ci] (or use the
+#     manual run below) when you want a push to publish.
+#   - workflow_dispatch → one-click manual deploy from the Actions tab, anytime.
+#
+# This mirrors `pnpm run deploy` (build + standalone + gh-pages push) and keeps
+# the classic "Pages from branch" setup, so no repo Pages-source change is needed.
+# CNAME is preserved automatically via public/CNAME → dist/CNAME.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-gh-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build app
+        run: pnpm build
+        env:
+          VITE_CF_BEACON_TOKEN: ${{ secrets.VITE_CF_BEACON_TOKEN }}
+
+      - name: Build standalone single-file bundle
+        run: pnpm build:single
+
+      - name: Assemble deploy artifact
+        run: |
+          cp dist-single/index.html dist/threatcaddy-standalone.html
+          touch dist/.nojekyll
+
+      - name: Publish to gh-pages
+        run: >-
+          npx gh-pages
+          -d dist
+          --dotfiles
+          -u "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          -m "Deploy ${{ github.sha }} [skip ci]"
