@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "In Papierkorb verschieben",
     "moveToTrashAria": "Notiz in Papierkorb verschieben",
-    "createdBy": "Erstellt von {{name}}"
+    "createdBy": "Erstellt von {{name}}",
+    "needsReview": "Überprüfung erforderlich",
+    "needsReviewTitle": "Von einem Beobachter-Agenten erstellt — vor Verwendung als Untersuchungsergebnis prüfen"
   },
   "editor": {
     "backToList": "Zurück zur Liste",

@@ -135,5 +135,9 @@
     "link": "查找并链接相关实体",
     "loop": "安排定期提示",
     "stoploop": "停止后台循环"
+  },
+  "cti": {
+    "invalidCommand": "无法运行该 CTI 命令:",
+    "noSources": "未配置任何 CTI Agent Host 源。请在“设置 → AI → Agent Hosts”下添加一个 CTI host 以使用此命令。"
   }
 }

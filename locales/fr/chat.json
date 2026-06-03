@@ -135,5 +135,9 @@
     "link": "Trouver et lier des entités connexes",
     "loop": "Planifier une invite récurrente",
     "stoploop": "Arrêter les boucles en arrière-plan"
+  },
+  "cti": {
+    "invalidCommand": "Cette commande CTI n'a pas pu être exécutée :",
+    "noSources": "Aucune source CTI Agent Host n'est configurée. Ajoutez un hôte CTI sous Paramètres → AI → Agent Hosts pour utiliser cette commande."
   }
 }

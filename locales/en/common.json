@@ -100,6 +100,8 @@
   "sidebar.tasks": "Tasks",
   "sidebar.timeline": "Timeline",
   "sidebar.whiteboards": "Whiteboards",
+  "sidebar.evidence": "Evidence",
+  "sidebar.products": "Products",
   "sidebar.iocs": "IOCs",
   "sidebar.graph": "Graph",
   "sidebar.activity": "Activity",

@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "Çöpe taşı",
     "moveToTrashAria": "Notu çöpe taşı",
-    "createdBy": "{{name}} tarafından oluşturuldu"
+    "createdBy": "{{name}} tarafından oluşturuldu",
+    "needsReview": "Gözden geçirilmeli",
+    "needsReviewTitle": "Gözlemci rolündeki ajan tarafından oluşturuldu — soruşturma çıktısı olarak güvenmeden önce gözden geçirin"
   },
   "editor": {
     "backToList": "Listeye dön",

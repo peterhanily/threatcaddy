@@ -1,0 +1,54 @@
+{
+  "header.title": "Produtos",
+  "header.subtitle": "Relatórios, notas e entregáveis gerados",
+  "header.importBaseline": "Importar Modelo Base",
+  "header.baselines": "Modelos Base",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "Modelos Base de Produto",
+  "baselines.description": "Modelos base compatíveis com Jinja definem estruturas de relatório reutilizáveis. O CaddyAI pode renderizá-los com notas da investigação, IOCs, evidências, linhas do tempo e campos fornecidos pelo analista.",
+  "baselines.count_one": "{{count}} modelo base",
+  "baselines.count_other": "{{count}} modelos base",
+  "baselines.empty": "Importe um pacote de modelo base de produto para torná-lo disponível ao CaddyAI e à renderização de produtos.",
+  "baselines.preview": "Pré-visualizar",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "{{name}} importado",
+  "baseline.importError": "Falha ao importar o pacote de modelo base de produto.",
+  "baseline.docxAttachSuccess": "Modelo DOCX {{name}} anexado",
+  "baseline.docxAttachError": "Falha ao anexar o modelo DOCX.",
+  "baseline.docxRenderError": "Falha ao renderizar o DOCX a partir do modelo base anexado.",
+
+  "products.heading": "Produtos Gerados",
+  "search.placeholder": "Buscar produtos",
+  "search.ariaLabel": "Buscar produtos",
+  "search.clearAriaLabel": "Limpar busca de produtos",
+
+  "empty.noProducts": "Ainda não há produtos",
+  "empty.noProductsDesc": "Peça ao CaddyAI para renderizar um modelo base de produto para criar um rascunho de relatório aqui.",
+  "empty.noMatch": "Nenhum produto corresponde",
+  "empty.noMatchDesc": "Tente um título de produto, tag ou frase do rascunho.",
+
+  "card.previewProduct": "Pré-visualizar Produto",
+  "card.sourceNote": "Nota de Origem",
+  "card.noPreview": "Nenhuma pré-visualização de produto disponível.",
+
+  "manager.title": "Modelos Base de Produto",
+  "manager.attachDocx": "Anexar DOCX",
+  "manager.copyPrompt": "Copiar Prompt",
+  "manager.exportPackage": "Exportar Pacote",
+  "manager.docxTemplateAttached": "Modelo DOCX anexado",
+  "manager.baselineSources": "Fontes do modelo base: {{names}}",
+  "manager.testFixtures": "Fixtures de teste: {{names}}",
+  "manager.noBaselines": "Nenhum modelo base de produto disponível.",
+
+  "manager.copyPromptText": "Use o modelo base de produto \"{{name}}\" para renderizar um produto finalizado para a investigação ativa. Mantenha-o pronto para o cliente, preserve as notas de origem e crie o produto como uma nota de produto marcada com tag.",
+  "manager.docxTemplateNotes": "Modelo DOCX anexado usado para exportação de produto baseada em modelo base.",
+
+  "preview.title": "Pré-visualização do Produto",
+  "preview.updated": "Atualizado em {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "Imprimir",
+  "preview.source": "Origem"
+}

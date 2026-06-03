@@ -135,5 +135,9 @@
     "link": "Encontrar e vincular entidades relacionadas",
     "loop": "Agendar um prompt recorrente",
     "stoploop": "Parar loops em segundo plano"
+  },
+  "cti": {
+    "invalidCommand": "Esse comando CTI não pôde ser executado:",
+    "noSources": "Nenhuma fonte de Agent Host de CTI está configurada. Adicione um host de CTI em Configurações → IA → Agent Hosts para usar este comando."
   }
 }

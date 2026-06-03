@@ -1,0 +1,54 @@
+{
+  "header.title": "Продукти",
+  "header.subtitle": "Згенеровані звіти, нотатки та результати",
+  "header.importBaseline": "Імпортувати базовий шаблон",
+  "header.baselines": "Базові шаблони",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "Базові шаблони продуктів",
+  "baselines.description": "Сумісні з Jinja базові шаблони визначають повторювані структури звітів. CaddyAI може рендерити їх із нотатками розслідування, IOC, доказами, хронологіями та полями, наданими аналітиком.",
+  "baselines.count_one": "{{count}} базовий шаблон",
+  "baselines.count_other": "{{count}} базових шаблонів",
+  "baselines.empty": "Імпортуйте пакет базового шаблону продукту, щоб зробити його доступним для CaddyAI та рендерингу продуктів.",
+  "baselines.preview": "Попередній перегляд",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "Імпортовано {{name}}",
+  "baseline.importError": "Не вдалося імпортувати пакет базового шаблону продукту.",
+  "baseline.docxAttachSuccess": "Прикріплено шаблон DOCX {{name}}",
+  "baseline.docxAttachError": "Не вдалося прикріпити шаблон DOCX.",
+  "baseline.docxRenderError": "Не вдалося відрендерити DOCX із прикріпленого базового шаблону.",
+
+  "products.heading": "Згенеровані продукти",
+  "search.placeholder": "Пошук продуктів",
+  "search.ariaLabel": "Пошук продуктів",
+  "search.clearAriaLabel": "Очистити пошук продуктів",
+
+  "empty.noProducts": "Продуктів ще немає",
+  "empty.noProductsDesc": "Попросіть CaddyAI відрендерити базовий шаблон продукту, щоб створити тут чернетку звіту.",
+  "empty.noMatch": "Немає продуктів за збігом",
+  "empty.noMatchDesc": "Спробуйте назву продукту, тег або фразу з чернетки.",
+
+  "card.previewProduct": "Попередній перегляд продукту",
+  "card.sourceNote": "Вихідна нотатка",
+  "card.noPreview": "Попередній перегляд продукту недоступний.",
+
+  "manager.title": "Базові шаблони продуктів",
+  "manager.attachDocx": "Прикріпити DOCX",
+  "manager.copyPrompt": "Копіювати запит",
+  "manager.exportPackage": "Експортувати пакет",
+  "manager.docxTemplateAttached": "Шаблон DOCX прикріплено",
+  "manager.baselineSources": "Джерела базового шаблону: {{names}}",
+  "manager.testFixtures": "Тестові фікстури: {{names}}",
+  "manager.noBaselines": "Базові шаблони продуктів недоступні.",
+
+  "manager.copyPromptText": "Використайте базовий шаблон продукту \"{{name}}\", щоб відрендерити готовий продукт для активного розслідування. Зберігайте його готовим для клієнта, збережіть вихідні нотатки та створіть продукт як позначену тегом нотатку продукту.",
+  "manager.docxTemplateNotes": "Прикріплений шаблон DOCX, що використовується для експорту продукту на основі базового шаблону.",
+
+  "preview.title": "Попередній перегляд продукту",
+  "preview.updated": "Оновлено {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "Друк",
+  "preview.source": "Джерело"
+}

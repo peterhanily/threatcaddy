@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "ट्रैश में भेजें",
     "moveToTrashAria": "नोट को ट्रैश में भेजें",
-    "createdBy": "{{name}} द्वारा बनाया गया"
+    "createdBy": "{{name}} द्वारा बनाया गया",
+    "needsReview": "समीक्षा आवश्यक",
+    "needsReviewTitle": "पर्यवेक्षक एजेंट द्वारा लिखित — जाँच आउटपुट पर भरोसा करने से पहले समीक्षा करें"
   },
   "editor": {
     "backToList": "सूची पर वापस",

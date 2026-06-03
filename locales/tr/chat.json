@@ -103,6 +103,7 @@
     "branchTitle": "Konuşmayı buradan dallandır",
     "rewindTitle": "Bu mesaja geri al",
     "undoTitle": "Geri al: varlıkları bu işlemden önceki haline döndür",
+    "attachmentAlt": "Ek {{index}}",
     "attachmentAria": "Ek {{index}}",
     "tokenCount": "{{count}} token",
     "tokenCountTitle": "Girdi: {{input}} token, Çıktı: {{output}} token"
@@ -135,5 +136,9 @@
     "link": "İlgili varlıkları bul ve bağla",
     "loop": "Yinelenen istem zamanla",
     "stoploop": "Arka plan döngülerini durdur"
+  },
+  "cti": {
+    "invalidCommand": "Bu CTI komutu çalıştırılamadı:",
+    "noSources": "Yapılandırılmış CTI Agent Host kaynağı yok. Bu komutu kullanmak için Ayarlar → AI → Agent Hosts altına bir CTI host'u ekleyin."
   }
 }

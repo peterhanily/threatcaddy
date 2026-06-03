@@ -11,5 +11,17 @@
   "noWhiteboardsHint": "새 화이트보드를 만들어 다이어그램과 시각적 조사를 시작하세요",
   "lastModified": "{{date}}에 마지막으로 수정됨",
   "restore": "복원",
-  "moveToTrash": "휴지통으로 이동"
+  "moveToTrash": "휴지통으로 이동",
+  "new": "새로 만들기",
+  "createHint": "새로 만들어 그리기를 시작하세요",
+  "loadingWhiteboard": "화이트보드 불러오는 중...",
+  "deleteTitle": "화이트보드 삭제",
+  "deleteMessage": "이 화이트보드는 영구 삭제됩니다. 이 작업은 취소할 수 없습니다.",
+  "deleteConfirm": "화이트보드 삭제",
+  "elements": "{{count}}개 요소",
+  "element": "{{count}}개 요소",
+  "rename": "이름 변경",
+  "archive": "보관",
+  "unarchive": "보관 해제",
+  "deletePermanently": "영구 삭제"
 }

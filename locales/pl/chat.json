@@ -135,5 +135,9 @@
     "link": "Znajdź i połącz powiązane obiekty",
     "loop": "Zaplanuj cykliczny prompt",
     "stoploop": "Zatrzymaj pętle w tle"
+  },
+  "cti": {
+    "invalidCommand": "Nie udało się wykonać tego polecenia CTI:",
+    "noSources": "Nie skonfigurowano żadnych źródeł CTI Agent Host. Dodaj host CTI w Ustawienia → AI → Agent Hosts, aby użyć tego polecenia."
   }
 }

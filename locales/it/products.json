@@ -1,0 +1,54 @@
+{
+  "header.title": "Products",
+  "header.subtitle": "Report, note e deliverable generati",
+  "header.importBaseline": "Importa baseline",
+  "header.baselines": "Baseline",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "Baseline dei prodotti",
+  "baselines.description": "Le baseline compatibili con Jinja definiscono strutture di report ripetibili. CaddyAI può renderizzarle con note dell'indagine, IOC, evidence, timeline e campi forniti dall'analista.",
+  "baselines.count_one": "{{count}} baseline",
+  "baselines.count_other": "{{count}} baseline",
+  "baselines.empty": "Importa un pacchetto di baseline del prodotto per renderlo disponibile a CaddyAI e al rendering dei prodotti.",
+  "baselines.preview": "Anteprima",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "{{name}} importato",
+  "baseline.importError": "Importazione del pacchetto di baseline del prodotto non riuscita.",
+  "baseline.docxAttachSuccess": "Modello DOCX {{name}} allegato",
+  "baseline.docxAttachError": "Impossibile allegare il modello DOCX.",
+  "baseline.docxRenderError": "Impossibile renderizzare il DOCX dal modello di baseline allegato.",
+
+  "products.heading": "Prodotti generati",
+  "search.placeholder": "Cerca nei prodotti",
+  "search.ariaLabel": "Cerca nei prodotti",
+  "search.clearAriaLabel": "Cancella la ricerca nei prodotti",
+
+  "empty.noProducts": "Ancora nessun prodotto",
+  "empty.noProductsDesc": "Chiedi a CaddyAI di renderizzare una baseline del prodotto per creare qui una bozza di report.",
+  "empty.noMatch": "Nessun prodotto corrispondente",
+  "empty.noMatchDesc": "Prova un titolo, un tag o una frase del prodotto dalla bozza.",
+
+  "card.previewProduct": "Anteprima prodotto",
+  "card.sourceNote": "Nota di origine",
+  "card.noPreview": "Nessuna anteprima del prodotto disponibile.",
+
+  "manager.title": "Baseline dei prodotti",
+  "manager.attachDocx": "Allega DOCX",
+  "manager.copyPrompt": "Copia prompt",
+  "manager.exportPackage": "Esporta pacchetto",
+  "manager.docxTemplateAttached": "Modello DOCX allegato",
+  "manager.baselineSources": "Origini baseline: {{names}}",
+  "manager.testFixtures": "Fixture di test: {{names}}",
+  "manager.noBaselines": "Nessuna baseline del prodotto disponibile.",
+
+  "manager.copyPromptText": "Usa la baseline del prodotto \"{{name}}\" per renderizzare un prodotto finito per l'indagine attiva. Mantienilo pronto per il cliente, preserva le note di origine e crea il prodotto come nota di prodotto con tag.",
+  "manager.docxTemplateNotes": "Modello DOCX allegato utilizzato per l'esportazione del prodotto basata su baseline.",
+
+  "preview.title": "Anteprima prodotto",
+  "preview.updated": "Aggiornato {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "Stampa",
+  "preview.source": "Origine"
+}

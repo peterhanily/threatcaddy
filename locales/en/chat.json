@@ -1,4 +1,8 @@
 {
+  "cti": {
+    "invalidCommand": "That CTI command couldn't be run:",
+    "noSources": "No CTI Agent Host sources are configured. Add a CTI host under Settings → AI → Agent Hosts to use this command."
+  },
   "view": {
     "newChat": "New Chat",
     "newFolder": "New investigation",

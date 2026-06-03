@@ -404,5 +404,14 @@
   "server.onboarding.presence": "Presencia",
   "server.onboarding.presenceDesc": "Vea quién está en línea y en qué investigaciones están trabajando.",
   "server.onboarding.getStarted": "Comenzar",
-  "general.caddylabsTagline": "Una herramienta de CaddyLabs, hecha con amor y tokens en Irlanda."
+  "general.caddylabsTagline": "Una herramienta de CaddyLabs, hecha con amor y tokens en Irlanda.",
+  "agents.hostDeleteConfirm": "¿Eliminar el host del agente \"{{name}}\"? Se perderán las habilidades en caché.",
+  "agents.bearerTokenPlaceholder": "Token Bearer",
+  "agents.disableHost": "Desactivar {{name}}",
+  "agents.enableHost": "Activar {{name}}",
+  "agents.deleteHost": "Eliminar {{name}}",
+  "intel.autoEnrich.toggleLabel": "Comprobar automáticamente los IOCs importados",
+  "intel.autoEnrich.toggleDesc": "Ejecuta las integraciones de VirusTotal habilitadas tras la creación de un IOC.",
+  "intel.autoEnrich.limitLabel": "Límite de comprobación automática",
+  "intel.autoEnrich.limitDesc": "Número máximo de IOCs importados a comprobar por lote."
 }

@@ -213,5 +213,7 @@
   "demoModal.deleteDemo": "Demo verwijderen & opnieuw beginnen",
   "demoModal.removeHint": "U kunt de voorbeeldgegevens later verwijderen in Instellingen.",
   "error.unexpectedDetail": "Er is een onverwachte fout opgetreden.",
-  "header.caddylabs": "CaddyLabs"
+  "header.caddylabs": "CaddyLabs",
+  "sidebar.evidence": "Bewijsmateriaal",
+  "sidebar.products": "Producten"
 }

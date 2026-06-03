@@ -4,7 +4,6 @@
   "closureResolution.escalated": "ส่งต่อแล้ว",
   "closureResolution.duplicate": "ซ้ำกัน",
   "closureResolution.inconclusive": "ไม่ชัดเจน",
-
   "kpiMetric.open-investigations": "การสืบสวนที่กำลังดำเนินการ",
   "kpiMetric.closed-this-month": "ปิดเดือนนี้",
   "kpiMetric.avg-investigation-age": "อายุเฉลี่ยของการสืบสวน",
@@ -14,7 +13,6 @@
   "kpiMetric.notes-created-week": "บันทึกที่สร้างสัปดาห์นี้",
   "kpiMetric.timeline-events-week": "เหตุการณ์ไทม์ไลน์สัปดาห์นี้",
   "kpiMetric.overdue-tasks": "งานที่เกินกำหนด",
-
   "iocTableColumn.value": "ค่า",
   "iocTableColumn.type": "ประเภท",
   "iocTableColumn.confidence": "ความเชื่อมั่น",
@@ -28,7 +26,6 @@
   "iocTableColumn.firstSeen": "พบครั้งแรก",
   "iocTableColumn.labels": "ป้ายกำกับ",
   "iocTableColumn.assignee": "ผู้รับผิดชอบ",
-
   "iocType.ipv4": "IPv4",
   "iocType.ipv6": "IPv6",
   "iocType.domain": "โดเมน",
@@ -42,17 +39,14 @@
   "iocType.yara-rule": "YARA Rule",
   "iocType.sigma-rule": "Sigma Rule",
   "iocType.file-path": "เส้นทางไฟล์",
-
   "iocStatus.active": "ใช้งานอยู่",
   "iocStatus.resolved": "แก้ไขแล้ว",
   "iocStatus.false-positive": "ผลบวกปลอม",
   "iocStatus.under-investigation": "อยู่ระหว่างการสืบสวน",
-
   "confidence.low": "ต่ำ",
   "confidence.medium": "ปานกลาง",
   "confidence.high": "สูง",
   "confidence.confirmed": "ยืนยันแล้ว",
-
   "timelineEventType.initial-access": "การเข้าถึงครั้งแรก",
   "timelineEventType.execution": "การดำเนินการ",
   "timelineEventType.persistence": "ความต่อเนื่อง",
@@ -72,7 +66,6 @@
   "timelineEventType.communication": "การสื่อสาร",
   "timelineEventType.evidence": "หลักฐาน",
   "timelineEventType.other": "อื่นๆ",
-
   "noteColor.none": "ไม่มี",
   "noteColor.red": "แดง",
   "noteColor.orange": "ส้ม",
@@ -81,7 +74,6 @@
   "noteColor.blue": "น้ำเงิน",
   "noteColor.purple": "ม่วง",
   "noteColor.pink": "ชมพู",
-
   "activityCategory.note": "บันทึก",
   "activityCategory.task": "งาน",
   "activityCategory.timeline": "ไทม์ไลน์",
@@ -93,13 +85,11 @@
   "activityCategory.data": "ข้อมูล",
   "activityCategory.chat": "แชท",
   "activityCategory.agent-bridge": "เอเจนต์",
-
   "sessionDuration.every-load": "ทุกครั้งที่โหลดหน้า",
   "sessionDuration.tab-close": "จนกว่าจะปิดแท็บ",
   "sessionDuration.1h": "1 ชั่วโมง",
   "sessionDuration.8h": "8 ชั่วโมง",
   "sessionDuration.24h": "24 ชั่วโมง",
-
   "field.title": "ชื่อเรื่อง",
   "field.content": "เนื้อหา",
   "field.description": "คำอธิบาย",
@@ -112,7 +102,6 @@
   "field.category": "หมวดหมู่",
   "field.timestamp": "เวลาประทับ",
   "field.source": "แหล่งที่มา",
-
   "mapping.timestamp": "เวลาประทับ",
   "mapping.event-title": "ชื่อเหตุการณ์",
   "mapping.event-description": "คำอธิบาย",
@@ -132,13 +121,12 @@
   "mapping.ioc-cve": "IOC: CVE",
   "mapping.ioc-file-path": "IOC: เส้นทางไฟล์",
   "mapping.ignore": "ละเว้น",
-
   "mentionCategory.note": "บันทึก",
   "mentionCategory.ioc": "IOC",
   "mentionCategory.investigation": "การสืบสวน",
-
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
-  "model.group.mistral": "Mistral"
+  "model.group.mistral": "Mistral",
+  "activityCategory.evidence": "หลักฐาน"
 }

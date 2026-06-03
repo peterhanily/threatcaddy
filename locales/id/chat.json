@@ -135,5 +135,9 @@
     "link": "Temukan dan tautkan entitas terkait",
     "loop": "Jadwalkan prompt berulang",
     "stoploop": "Hentikan loop latar belakang"
+  },
+  "cti": {
+    "invalidCommand": "Perintah CTI itu tidak dapat dijalankan:",
+    "noSources": "Tidak ada sumber CTI Agent Host yang dikonfigurasi. Tambahkan host CTI di Pengaturan → AI → Agent Hosts untuk menggunakan perintah ini."
   }
 }

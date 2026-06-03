@@ -213,5 +213,7 @@
   "demoModal.deleteDemo": "Xóa bản demo & Bắt đầu mới",
   "demoModal.removeHint": "Bạn có thể xóa dữ liệu mẫu sau trong Cài đặt.",
   "error.unexpectedDetail": "Đã xảy ra lỗi không mong muốn.",
-  "header.caddylabs": "CaddyLabs"
+  "header.caddylabs": "CaddyLabs",
+  "sidebar.evidence": "Bằng chứng",
+  "sidebar.products": "Sản phẩm"
 }

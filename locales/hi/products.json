@@ -1,0 +1,54 @@
+{
+  "header.title": "उत्पाद",
+  "header.subtitle": "जनरेट की गई रिपोर्ट, नोट्स और डिलीवरेबल्स",
+  "header.importBaseline": "बेसलाइन आयात करें",
+  "header.baselines": "बेसलाइन",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "उत्पाद बेसलाइन",
+  "baselines.description": "Jinja-संगत बेसलाइन दोहराने योग्य रिपोर्ट संरचनाएं परिभाषित करती हैं। CaddyAI इन्हें जाँच नोट्स, IOCs, साक्ष्य, टाइमलाइन और विश्लेषक द्वारा प्रदान किए गए फ़ील्ड के साथ रेंडर कर सकता है।",
+  "baselines.count_one": "{{count}} बेसलाइन",
+  "baselines.count_other": "{{count}} बेसलाइन",
+  "baselines.empty": "CaddyAI और उत्पाद रेंडरिंग के लिए उपलब्ध कराने हेतु एक उत्पाद बेसलाइन पैकेज आयात करें।",
+  "baselines.preview": "पूर्वावलोकन",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "{{name}} आयातित हुआ",
+  "baseline.importError": "उत्पाद बेसलाइन पैकेज आयात करने में विफल।",
+  "baseline.docxAttachSuccess": "DOCX टेम्पलेट {{name}} संलग्न किया गया",
+  "baseline.docxAttachError": "DOCX टेम्पलेट संलग्न करने में विफल।",
+  "baseline.docxRenderError": "संलग्न बेसलाइन टेम्पलेट से DOCX रेंडर करने में विफल।",
+
+  "products.heading": "जनरेट किए गए उत्पाद",
+  "search.placeholder": "उत्पाद खोजें",
+  "search.ariaLabel": "उत्पाद खोजें",
+  "search.clearAriaLabel": "उत्पाद खोज साफ करें",
+
+  "empty.noProducts": "अभी तक कोई उत्पाद नहीं",
+  "empty.noProductsDesc": "यहां ड्राफ्ट रिपोर्ट बनाने के लिए CaddyAI से एक उत्पाद बेसलाइन रेंडर करने को कहें।",
+  "empty.noMatch": "कोई उत्पाद मेल नहीं खाता",
+  "empty.noMatchDesc": "ड्राफ्ट से कोई उत्पाद शीर्षक, टैग, या वाक्यांश आज़माएं।",
+
+  "card.previewProduct": "उत्पाद पूर्वावलोकन",
+  "card.sourceNote": "स्रोत नोट",
+  "card.noPreview": "कोई उत्पाद पूर्वावलोकन उपलब्ध नहीं।",
+
+  "manager.title": "उत्पाद बेसलाइन",
+  "manager.attachDocx": "DOCX संलग्न करें",
+  "manager.copyPrompt": "प्रॉम्प्ट कॉपी करें",
+  "manager.exportPackage": "पैकेज निर्यात करें",
+  "manager.docxTemplateAttached": "DOCX टेम्पलेट संलग्न",
+  "manager.baselineSources": "बेसलाइन स्रोत: {{names}}",
+  "manager.testFixtures": "टेस्ट फिक्स्चर: {{names}}",
+  "manager.noBaselines": "कोई उत्पाद बेसलाइन उपलब्ध नहीं।",
+
+  "manager.copyPromptText": "सक्रिय जाँच के लिए एक तैयार उत्पाद रेंडर करने हेतु \"{{name}}\" उत्पाद बेसलाइन का उपयोग करें। इसे ग्राहक-तैयार रखें, स्रोत नोट्स को संरक्षित करें, और उत्पाद को एक टैग किए गए उत्पाद नोट के रूप में बनाएं।",
+  "manager.docxTemplateNotes": "बेसलाइन-समर्थित उत्पाद निर्यात के लिए उपयोग किया गया संलग्न DOCX टेम्पलेट।",
+
+  "preview.title": "उत्पाद पूर्वावलोकन",
+  "preview.updated": "{{date}} को अपडेट किया गया",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "प्रिंट करें",
+  "preview.source": "स्रोत"
+}

@@ -213,5 +213,7 @@
   "demoModal.deleteDemo": "Demo löschen & neu beginnen",
   "demoModal.removeHint": "Sie können die Beispieldaten später in den Einstellungen entfernen.",
   "error.unexpectedDetail": "Ein unerwarteter Fehler ist aufgetreten.",
-  "header.caddylabs": "CaddyLabs"
+  "header.caddylabs": "CaddyLabs",
+  "sidebar.evidence": "Beweismittel",
+  "sidebar.products": "Produkte"
 }

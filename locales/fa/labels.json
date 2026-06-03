@@ -4,7 +4,6 @@
   "closureResolution.escalated": "ارتقا یافته",
   "closureResolution.duplicate": "تکراری",
   "closureResolution.inconclusive": "نامشخص",
-
   "kpiMetric.open-investigations": "تحقیقات باز",
   "kpiMetric.closed-this-month": "بسته شده این ماه",
   "kpiMetric.avg-investigation-age": "میانگین سن تحقیق",
@@ -14,7 +13,6 @@
   "kpiMetric.notes-created-week": "یادداشت‌های ایجاد شده (هفته)",
   "kpiMetric.timeline-events-week": "رویدادهای جدول زمانی (هفته)",
   "kpiMetric.overdue-tasks": "وظایف تاخیر داشته",
-
   "iocTableColumn.value": "مقدار",
   "iocTableColumn.type": "نوع",
   "iocTableColumn.confidence": "اطمینان",
@@ -28,7 +26,6 @@
   "iocTableColumn.firstSeen": "اولین مشاهده",
   "iocTableColumn.labels": "برچسب‌ها",
   "iocTableColumn.assignee": "مسئول",
-
   "iocType.ipv4": "IPv4",
   "iocType.ipv6": "IPv6",
   "iocType.domain": "دامنه",
@@ -42,17 +39,14 @@
   "iocType.yara-rule": "قانون YARA",
   "iocType.sigma-rule": "قانون SIGMA",
   "iocType.file-path": "مسیر فایل",
-
   "iocStatus.active": "فعال",
   "iocStatus.resolved": "حل شده",
   "iocStatus.false-positive": "مثبت کاذب",
   "iocStatus.under-investigation": "در حال بررسی",
-
   "confidence.low": "پایین",
   "confidence.medium": "متوسط",
   "confidence.high": "بالا",
   "confidence.confirmed": "تایید شده",
-
   "timelineEventType.initial-access": "دسترسی اولیه",
   "timelineEventType.execution": "اجرا",
   "timelineEventType.persistence": "پایداری",
@@ -72,7 +66,6 @@
   "timelineEventType.communication": "ارتباط",
   "timelineEventType.evidence": "شواهد",
   "timelineEventType.other": "دیگر",
-
   "noteColor.none": "هیچ‌کدام",
   "noteColor.red": "قرمز",
   "noteColor.orange": "نارنجی",
@@ -81,7 +74,6 @@
   "noteColor.blue": "آبی",
   "noteColor.purple": "بنفش",
   "noteColor.pink": "صورتی",
-
   "activityCategory.note": "یادداشت",
   "activityCategory.task": "وظیفه",
   "activityCategory.timeline": "جدول زمانی",
@@ -93,13 +85,11 @@
   "activityCategory.data": "داده",
   "activityCategory.chat": "چت",
   "activityCategory.agent-bridge": "عامل",
-
   "sessionDuration.every-load": "در هر بارگذاری صفحه",
   "sessionDuration.tab-close": "تا زمان بستن برگه",
   "sessionDuration.1h": "۱ ساعت",
   "sessionDuration.8h": "۸ ساعت",
   "sessionDuration.24h": "۲۴ ساعت",
-
   "field.title": "عنوان",
   "field.content": "محتوا",
   "field.description": "توضیحات",
@@ -112,7 +102,6 @@
   "field.category": "دسته‌بندی",
   "field.timestamp": "زمان‌نشان",
   "field.source": "منبع",
-
   "mapping.timestamp": "زمان‌نشان",
   "mapping.event-title": "عنوان رویداد",
   "mapping.event-description": "توضیحات",
@@ -132,13 +121,12 @@
   "mapping.ioc-cve": "IOC: CVE",
   "mapping.ioc-file-path": "IOC: مسیر فایل",
   "mapping.ignore": "نادیده گرفتن",
-
   "mentionCategory.note": "یادداشت‌ها",
   "mentionCategory.ioc": "IOCها",
   "mentionCategory.investigation": "تحقیقات",
-
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
-  "model.group.mistral": "Mistral"
+  "model.group.mistral": "Mistral",
+  "activityCategory.evidence": "شواهد"
 }

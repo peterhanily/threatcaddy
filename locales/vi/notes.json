@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "Chuyển vào thùng rác",
     "moveToTrashAria": "Chuyển ghi chú vào thùng rác",
-    "createdBy": "Tạo bởi {{name}}"
+    "createdBy": "Tạo bởi {{name}}",
+    "needsReview": "Cần xem xét",
+    "needsReviewTitle": "Được tạo bởi tác nhân quan sát — hãy xem xét trước khi tin tưởng làm kết quả điều tra"
   },
   "editor": {
     "backToList": "Quay lại danh sách",

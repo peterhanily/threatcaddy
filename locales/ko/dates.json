@@ -2,5 +2,9 @@
   "format.date": "{{date, date}}",
   "format.datetime": "{{date, datetime}}",
   "format.relative": "{{date, relative}}",
-  "format.time": "{{date, time}}"
+  "format.time": "{{date, time}}",
+  "justNow": "방금 전",
+  "minutesAgo": "{{count}}분 전",
+  "hoursAgo": "{{count}}시간 전",
+  "daysAgo": "{{count}}일 전"
 }

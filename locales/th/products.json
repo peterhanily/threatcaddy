@@ -1,0 +1,54 @@
+{
+  "header.title": "ผลิตภัณฑ์",
+  "header.subtitle": "รายงาน บันทึก และผลงานส่งมอบที่สร้างขึ้น",
+  "header.importBaseline": "นำเข้าต้นแบบ",
+  "header.baselines": "ต้นแบบ",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "ต้นแบบผลิตภัณฑ์",
+  "baselines.description": "ต้นแบบที่เข้ากันได้กับ Jinja กำหนดโครงสร้างรายงานที่ทำซ้ำได้ CaddyAI สามารถเรนเดอร์สิ่งเหล่านี้ด้วยบันทึกการสืบสวน, IOC, หลักฐาน, ไทม์ไลน์ และฟิลด์ที่นักวิเคราะห์ระบุ",
+  "baselines.count_one": "{{count}} ต้นแบบ",
+  "baselines.count_other": "{{count}} ต้นแบบ",
+  "baselines.empty": "นำเข้าแพ็กเกจต้นแบบผลิตภัณฑ์เพื่อให้พร้อมใช้งานกับ CaddyAI และการเรนเดอร์ผลิตภัณฑ์",
+  "baselines.preview": "ตัวอย่าง",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "นำเข้า {{name}} แล้ว",
+  "baseline.importError": "ไม่สามารถนำเข้าแพ็กเกจต้นแบบผลิตภัณฑ์ได้",
+  "baseline.docxAttachSuccess": "แนบเทมเพลต DOCX {{name}} แล้ว",
+  "baseline.docxAttachError": "ไม่สามารถแนบเทมเพลต DOCX ได้",
+  "baseline.docxRenderError": "ไม่สามารถเรนเดอร์ DOCX จากเทมเพลตต้นแบบที่แนบมาได้",
+
+  "products.heading": "ผลิตภัณฑ์ที่สร้างขึ้น",
+  "search.placeholder": "ค้นหาผลิตภัณฑ์",
+  "search.ariaLabel": "ค้นหาผลิตภัณฑ์",
+  "search.clearAriaLabel": "ล้างการค้นหาผลิตภัณฑ์",
+
+  "empty.noProducts": "ยังไม่มีผลิตภัณฑ์",
+  "empty.noProductsDesc": "ขอให้ CaddyAI เรนเดอร์ต้นแบบผลิตภัณฑ์เพื่อสร้างร่างรายงานที่นี่",
+  "empty.noMatch": "ไม่มีผลิตภัณฑ์ที่ตรงกัน",
+  "empty.noMatchDesc": "ลองค้นด้วยชื่อผลิตภัณฑ์ แท็ก หรือวลีจากร่าง",
+
+  "card.previewProduct": "ดูตัวอย่างผลิตภัณฑ์",
+  "card.sourceNote": "บันทึกต้นทาง",
+  "card.noPreview": "ไม่มีตัวอย่างผลิตภัณฑ์",
+
+  "manager.title": "ต้นแบบผลิตภัณฑ์",
+  "manager.attachDocx": "แนบ DOCX",
+  "manager.copyPrompt": "คัดลอกพรอมต์",
+  "manager.exportPackage": "ส่งออกแพ็กเกจ",
+  "manager.docxTemplateAttached": "แนบเทมเพลต DOCX แล้ว",
+  "manager.baselineSources": "แหล่งต้นแบบ: {{names}}",
+  "manager.testFixtures": "ฟิกซ์เจอร์ทดสอบ: {{names}}",
+  "manager.noBaselines": "ไม่มีต้นแบบผลิตภัณฑ์",
+
+  "manager.copyPromptText": "ใช้ต้นแบบผลิตภัณฑ์ \"{{name}}\" เพื่อเรนเดอร์ผลิตภัณฑ์ที่เสร็จสมบูรณ์สำหรับการสืบสวนที่ใช้งานอยู่ ทำให้พร้อมส่งมอบแก่ลูกค้า รักษาบันทึกต้นทาง และสร้างผลิตภัณฑ์เป็นบันทึกผลิตภัณฑ์ที่ติดแท็ก",
+  "manager.docxTemplateNotes": "เทมเพลต DOCX ที่แนบมาใช้สำหรับการส่งออกผลิตภัณฑ์ที่อิงต้นแบบ",
+
+  "preview.title": "ตัวอย่างผลิตภัณฑ์",
+  "preview.updated": "อัปเดตเมื่อ {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "พิมพ์",
+  "preview.source": "ต้นทาง"
+}

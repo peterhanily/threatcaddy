@@ -1,0 +1,54 @@
+{
+  "header.title": "제품",
+  "header.subtitle": "생성된 보고서, 노트 및 산출물",
+  "header.importBaseline": "베이스라인 가져오기",
+  "header.baselines": "베이스라인",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "제품 베이스라인",
+  "baselines.description": "Jinja 호환 베이스라인은 반복 가능한 보고서 구조를 정의합니다. CaddyAI는 조사 노트, IOC, 증거, 타임라인 및 분석가가 제공한 필드로 이를 렌더링할 수 있습니다.",
+  "baselines.count_one": "베이스라인 {{count}}개",
+  "baselines.count_other": "베이스라인 {{count}}개",
+  "baselines.empty": "제품 베이스라인 패키지를 가져와 CaddyAI 및 제품 렌더링에서 사용할 수 있도록 하세요.",
+  "baselines.preview": "미리보기",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "{{name}} 가져옴",
+  "baseline.importError": "제품 베이스라인 패키지 가져오기에 실패했습니다.",
+  "baseline.docxAttachSuccess": "DOCX 템플릿 {{name}} 첨부됨",
+  "baseline.docxAttachError": "DOCX 템플릿 첨부에 실패했습니다.",
+  "baseline.docxRenderError": "첨부된 베이스라인 템플릿에서 DOCX 렌더링에 실패했습니다.",
+
+  "products.heading": "생성된 제품",
+  "search.placeholder": "제품 검색",
+  "search.ariaLabel": "제품 검색",
+  "search.clearAriaLabel": "제품 검색 지우기",
+
+  "empty.noProducts": "아직 제품이 없습니다",
+  "empty.noProductsDesc": "CaddyAI에 제품 베이스라인을 렌더링하도록 요청하여 여기에 초안 보고서를 만드세요.",
+  "empty.noMatch": "일치하는 제품이 없습니다",
+  "empty.noMatchDesc": "제품 제목, 태그 또는 초안의 문구로 검색해 보세요.",
+
+  "card.previewProduct": "제품 미리보기",
+  "card.sourceNote": "원본 노트",
+  "card.noPreview": "사용 가능한 제품 미리보기가 없습니다.",
+
+  "manager.title": "제품 베이스라인",
+  "manager.attachDocx": "DOCX 첨부",
+  "manager.copyPrompt": "프롬프트 복사",
+  "manager.exportPackage": "패키지 내보내기",
+  "manager.docxTemplateAttached": "DOCX 템플릿 첨부됨",
+  "manager.baselineSources": "베이스라인 소스: {{names}}",
+  "manager.testFixtures": "테스트 픽스처: {{names}}",
+  "manager.noBaselines": "사용 가능한 제품 베이스라인이 없습니다.",
+
+  "manager.copyPromptText": "\"{{name}}\" 제품 베이스라인을 사용하여 활성 조사에 대한 완성된 제품을 렌더링하세요. 고객에게 제공할 수 있는 상태로 유지하고, 원본 노트를 보존하며, 제품을 태그가 지정된 제품 노트로 만드세요.",
+  "manager.docxTemplateNotes": "베이스라인 기반 제품 내보내기에 사용되는 첨부된 DOCX 템플릿입니다.",
+
+  "preview.title": "제품 미리보기",
+  "preview.updated": "{{date}} 업데이트됨",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "인쇄",
+  "preview.source": "소스"
+}

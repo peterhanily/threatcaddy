@@ -404,5 +404,14 @@
   "server.onboarding.presence": "Hiện diện",
   "server.onboarding.presenceDesc": "Xem ai đang trực tuyến và họ đang làm việc trên điều tra nào.",
   "server.onboarding.getStarted": "Bắt đầu",
-  "general.caddylabsTagline": "Đây là công cụ CaddyLabs, được tạo ra với tình yêu và token ở Ireland."
+  "general.caddylabsTagline": "Đây là công cụ CaddyLabs, được tạo ra với tình yêu và token ở Ireland.",
+  "agents.hostDeleteConfirm": "Xóa host tác nhân \"{{name}}\"? Các kỹ năng đã cache sẽ mất.",
+  "agents.bearerTokenPlaceholder": "Mã Bearer",
+  "agents.disableHost": "Tắt {{name}}",
+  "agents.enableHost": "Bật {{name}}",
+  "agents.deleteHost": "Xóa {{name}}",
+  "intel.autoEnrich.toggleLabel": "Tự động kiểm tra IOC đã nhập",
+  "intel.autoEnrich.toggleDesc": "Chạy các tích hợp VirusTotal đã bật sau khi tạo IOC.",
+  "intel.autoEnrich.limitLabel": "Giới hạn tự động kiểm tra",
+  "intel.autoEnrich.limitDesc": "Số IOC đã nhập tối đa được kiểm tra mỗi lô."
 }

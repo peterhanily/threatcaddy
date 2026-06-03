@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "Naar prullenbak",
     "moveToTrashAria": "Notitie naar prullenbak verplaatsen",
-    "createdBy": "Aangemaakt door {{name}}"
+    "createdBy": "Aangemaakt door {{name}}",
+    "needsReview": "Beoordeling nodig",
+    "needsReviewTitle": "Aangemaakt door een waarnemer-agent — controleer voordat je hierop vertrouwt als onderzoeksuitkomst"
   },
   "editor": {
     "backToList": "Terug naar lijst",

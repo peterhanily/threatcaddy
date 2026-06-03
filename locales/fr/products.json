@@ -1,0 +1,54 @@
+{
+  "header.title": "Produits",
+  "header.subtitle": "Rapports, notes et livrables générés",
+  "header.importBaseline": "Importer une référence",
+  "header.baselines": "Références",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "Références de produit",
+  "baselines.description": "Les références compatibles Jinja définissent des structures de rapport reproductibles. CaddyAI peut les rendre avec les notes d'enquête, les IOC, les preuves, les chronologies et les champs fournis par l'analyste.",
+  "baselines.count_one": "{{count}} référence",
+  "baselines.count_other": "{{count}} références",
+  "baselines.empty": "Importez un paquet de référence de produit pour le rendre disponible à CaddyAI et au rendu de produit.",
+  "baselines.preview": "Aperçu",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "{{name}} importé",
+  "baseline.importError": "Échec de l'importation du paquet de référence de produit.",
+  "baseline.docxAttachSuccess": "Modèle DOCX {{name}} joint",
+  "baseline.docxAttachError": "Échec de la jonction du modèle DOCX.",
+  "baseline.docxRenderError": "Échec du rendu DOCX à partir du modèle de référence joint.",
+
+  "products.heading": "Produits générés",
+  "search.placeholder": "Rechercher des produits",
+  "search.ariaLabel": "Rechercher des produits",
+  "search.clearAriaLabel": "Effacer la recherche de produits",
+
+  "empty.noProducts": "Aucun produit pour le moment",
+  "empty.noProductsDesc": "Demandez à CaddyAI de rendre une référence de produit pour créer un brouillon de rapport ici.",
+  "empty.noMatch": "Aucun produit correspondant",
+  "empty.noMatchDesc": "Essayez un titre de produit, une étiquette ou une expression issue du brouillon.",
+
+  "card.previewProduct": "Aperçu du produit",
+  "card.sourceNote": "Note source",
+  "card.noPreview": "Aucun aperçu de produit disponible.",
+
+  "manager.title": "Références de produit",
+  "manager.attachDocx": "Joindre un DOCX",
+  "manager.copyPrompt": "Copier l'invite",
+  "manager.exportPackage": "Exporter le paquet",
+  "manager.docxTemplateAttached": "Modèle DOCX joint",
+  "manager.baselineSources": "Sources de référence : {{names}}",
+  "manager.testFixtures": "Jeux de test : {{names}}",
+  "manager.noBaselines": "Aucune référence de produit disponible.",
+
+  "manager.copyPromptText": "Utilisez la référence de produit « {{name}} » pour rendre un produit fini pour l'enquête active. Gardez-le prêt à être remis au client, préservez les notes sources, et créez le produit sous forme de note de produit étiquetée.",
+  "manager.docxTemplateNotes": "Modèle DOCX joint utilisé pour l'export de produit basé sur une référence.",
+
+  "preview.title": "Aperçu du produit",
+  "preview.updated": "Mis à jour le {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "Imprimer",
+  "preview.source": "Source"
+}

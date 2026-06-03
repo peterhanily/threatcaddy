@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "ย้ายไปถังขยะ",
     "moveToTrashAria": "ย้ายบันทึกไปถังขยะ",
-    "createdBy": "สร้างโดย {{name}}"
+    "createdBy": "สร้างโดย {{name}}",
+    "needsReview": "ต้องการตรวจสอบ",
+    "needsReviewTitle": "สร้างโดยเอเจนต์ผู้สังเกต — ตรวจสอบก่อนเชื่อถือเป็นผลลัพธ์ของการสืบสวน"
   },
   "editor": {
     "backToList": "กลับไปรายการ",

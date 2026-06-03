@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "نقل إلى المهملات",
     "moveToTrashAria": "نقل الملاحظة إلى المهملات",
-    "createdBy": "أنشأه {{name}}"
+    "createdBy": "أنشأه {{name}}",
+    "needsReview": "يحتاج إلى مراجعة",
+    "needsReviewTitle": "تم إنشاؤها بواسطة وكيل بدور المراقب — راجع قبل الاعتماد عليها كمخرج للتحقيق"
   },
   "editor": {
     "backToList": "العودة إلى القائمة",

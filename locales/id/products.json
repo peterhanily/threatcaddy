@@ -1,0 +1,54 @@
+{
+  "header.title": "Produk",
+  "header.subtitle": "Laporan, catatan, dan keluaran yang dihasilkan",
+  "header.importBaseline": "Impor Baseline",
+  "header.baselines": "Baseline",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "Baseline Produk",
+  "baselines.description": "Baseline yang kompatibel dengan Jinja mendefinisikan struktur laporan yang dapat diulang. CaddyAI dapat merendernya dengan catatan investigasi, IOC, bukti, lini masa, dan bidang yang disediakan analis.",
+  "baselines.count_one": "{{count}} baseline",
+  "baselines.count_other": "{{count}} baseline",
+  "baselines.empty": "Impor paket baseline produk agar tersedia untuk CaddyAI dan perenderan produk.",
+  "baselines.preview": "Pratinjau",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "Mengimpor {{name}}",
+  "baseline.importError": "Gagal mengimpor paket baseline produk.",
+  "baseline.docxAttachSuccess": "Templat DOCX {{name}} dilampirkan",
+  "baseline.docxAttachError": "Gagal melampirkan templat DOCX.",
+  "baseline.docxRenderError": "Gagal merender DOCX dari templat baseline yang dilampirkan.",
+
+  "products.heading": "Produk yang Dihasilkan",
+  "search.placeholder": "Cari produk",
+  "search.ariaLabel": "Cari produk",
+  "search.clearAriaLabel": "Bersihkan pencarian produk",
+
+  "empty.noProducts": "Belum ada produk",
+  "empty.noProductsDesc": "Minta CaddyAI merender baseline produk untuk membuat draf laporan di sini.",
+  "empty.noMatch": "Tidak ada produk yang cocok",
+  "empty.noMatchDesc": "Coba judul produk, tag, atau frasa dari draf.",
+
+  "card.previewProduct": "Pratinjau Produk",
+  "card.sourceNote": "Catatan Sumber",
+  "card.noPreview": "Tidak ada pratinjau produk tersedia.",
+
+  "manager.title": "Baseline Produk",
+  "manager.attachDocx": "Lampirkan DOCX",
+  "manager.copyPrompt": "Salin Prompt",
+  "manager.exportPackage": "Ekspor Paket",
+  "manager.docxTemplateAttached": "Templat DOCX dilampirkan",
+  "manager.baselineSources": "Sumber baseline: {{names}}",
+  "manager.testFixtures": "Fixture pengujian: {{names}}",
+  "manager.noBaselines": "Tidak ada baseline produk tersedia.",
+
+  "manager.copyPromptText": "Gunakan baseline produk \"{{name}}\" untuk merender produk jadi bagi investigasi yang aktif. Jaga agar siap untuk pelanggan, pertahankan catatan sumber, dan buat produk sebagai catatan produk yang ditandai.",
+  "manager.docxTemplateNotes": "Templat DOCX yang dilampirkan digunakan untuk ekspor produk berbasis baseline.",
+
+  "preview.title": "Pratinjau Produk",
+  "preview.updated": "Diperbarui {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "Cetak",
+  "preview.source": "Sumber"
+}

@@ -4,7 +4,6 @@
   "closureResolution.escalated": "הוסלם",
   "closureResolution.duplicate": "כפול",
   "closureResolution.inconclusive": "לא חד-משמעי",
-
   "kpiMetric.open-investigations": "חקירות פתוחות",
   "kpiMetric.closed-this-month": "נסגרו החודש",
   "kpiMetric.avg-investigation-age": "גיל חקירה ממוצע",
@@ -14,7 +13,6 @@
   "kpiMetric.notes-created-week": "הערות שנוצרו (שבוע)",
   "kpiMetric.timeline-events-week": "אירועי ציר זמן (שבוע)",
   "kpiMetric.overdue-tasks": "משימות באיחור",
-
   "iocTableColumn.value": "ערך",
   "iocTableColumn.type": "סוג",
   "iocTableColumn.confidence": "ביטחון",
@@ -28,7 +26,6 @@
   "iocTableColumn.firstSeen": "נראה לראשונה",
   "iocTableColumn.labels": "תוויות",
   "iocTableColumn.assignee": "אחראי",
-
   "iocType.ipv4": "IPv4",
   "iocType.ipv6": "IPv6",
   "iocType.domain": "דומיין",
@@ -42,17 +39,14 @@
   "iocType.yara-rule": "כלל YARA",
   "iocType.sigma-rule": "כלל SIGMA",
   "iocType.file-path": "נתיב קובץ",
-
   "iocStatus.active": "פעיל",
   "iocStatus.resolved": "נפתר",
   "iocStatus.false-positive": "חיובי כוזב",
   "iocStatus.under-investigation": "בחקירה",
-
   "confidence.low": "נמוך",
   "confidence.medium": "בינוני",
   "confidence.high": "גבוה",
   "confidence.confirmed": "מאושר",
-
   "timelineEventType.initial-access": "גישה ראשונית",
   "timelineEventType.execution": "ביצוע",
   "timelineEventType.persistence": "התמדה",
@@ -72,7 +66,6 @@
   "timelineEventType.communication": "תקשורת",
   "timelineEventType.evidence": "ראיות",
   "timelineEventType.other": "אחר",
-
   "noteColor.none": "ללא",
   "noteColor.red": "אדום",
   "noteColor.orange": "כתום",
@@ -81,7 +74,6 @@
   "noteColor.blue": "כחול",
   "noteColor.purple": "סגול",
   "noteColor.pink": "ורוד",
-
   "activityCategory.note": "הערה",
   "activityCategory.task": "משימה",
   "activityCategory.timeline": "ציר זמן",
@@ -93,13 +85,11 @@
   "activityCategory.data": "נתונים",
   "activityCategory.chat": "צ'אט",
   "activityCategory.agent-bridge": "סוכן",
-
   "sessionDuration.every-load": "בכל טעינת עמוד",
   "sessionDuration.tab-close": "עד סגירת הלשונית",
   "sessionDuration.1h": "שעה אחת",
   "sessionDuration.8h": "8 שעות",
   "sessionDuration.24h": "24 שעות",
-
   "field.title": "כותרת",
   "field.content": "תוכן",
   "field.description": "תיאור",
@@ -112,7 +102,6 @@
   "field.category": "קטגוריה",
   "field.timestamp": "חותמת זמן",
   "field.source": "מקור",
-
   "mapping.timestamp": "חותמת זמן",
   "mapping.event-title": "כותרת אירוע",
   "mapping.event-description": "תיאור",
@@ -132,13 +121,12 @@
   "mapping.ioc-cve": "IOC: CVE",
   "mapping.ioc-file-path": "IOC: נתיב קובץ",
   "mapping.ignore": "התעלם",
-
   "mentionCategory.note": "הערות",
   "mentionCategory.ioc": "IOCs",
   "mentionCategory.investigation": "חקירות",
-
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
-  "model.group.mistral": "Mistral"
+  "model.group.mistral": "Mistral",
+  "activityCategory.evidence": "ראיות"
 }

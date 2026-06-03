@@ -135,5 +135,9 @@
     "link": "Encontrar y vincular entidades relacionadas",
     "loop": "Programar un aviso recurrente",
     "stoploop": "Detener bucles en segundo plano"
+  },
+  "cti": {
+    "invalidCommand": "No se pudo ejecutar ese comando de CTI:",
+    "noSources": "No hay configuradas fuentes de Agent Host de CTI. Añade un host de CTI en Ajustes → IA → Agent Hosts para usar este comando."
   }
 }

@@ -404,5 +404,14 @@
   "server.onboarding.presence": "उपस्थिति",
   "server.onboarding.presenceDesc": "देखें कौन ऑनलाइन है और वे कौन सी जाँचें कर रहे हैं।",
   "server.onboarding.getStarted": "शुरू करें",
-  "general.caddylabsTagline": "यह एक CaddyLabs टूल है, जिसे प्यार और टोकन के साथ आयरलैंड में बनाया गया है।"
+  "general.caddylabsTagline": "यह एक CaddyLabs टूल है, जिसे प्यार और टोकन के साथ आयरलैंड में बनाया गया है।",
+  "agents.hostDeleteConfirm": "एजेंट होस्ट \"{{name}}\" हटाएँ? कैश्ड कौशल खो जाएँगे।",
+  "agents.bearerTokenPlaceholder": "Bearer टोकन",
+  "agents.disableHost": "{{name}} अक्षम करें",
+  "agents.enableHost": "{{name}} सक्षम करें",
+  "agents.deleteHost": "{{name}} हटाएँ",
+  "intel.autoEnrich.toggleLabel": "आयातित IOCs स्वतः जाँचें",
+  "intel.autoEnrich.toggleDesc": "IOC निर्माण के बाद सक्षम VirusTotal एकीकरण चलाता है।",
+  "intel.autoEnrich.limitLabel": "स्वतः-जाँच सीमा",
+  "intel.autoEnrich.limitDesc": "प्रति बैच जाँचने हेतु आयातित IOCs की अधिकतम संख्या।"
 }

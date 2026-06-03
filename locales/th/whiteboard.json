@@ -11,5 +11,17 @@
   "noWhiteboardsHint": "สร้างไวท์บอร์ดใหม่เพื่อเริ่มสร้างไดอะแกรมและการสืบสวนด้วยภาพ",
   "lastModified": "แก้ไขล่าสุดเมื่อ {{date}}",
   "restore": "กู้คืน",
-  "moveToTrash": "ย้ายไปถังขยะ"
+  "moveToTrash": "ย้ายไปถังขยะ",
+  "new": "ใหม่",
+  "createHint": "สร้างใหม่เพื่อเริ่มวาด",
+  "loadingWhiteboard": "กำลังโหลดไวท์บอร์ด...",
+  "deleteTitle": "ลบไวท์บอร์ด",
+  "deleteMessage": "ไวท์บอร์ดนี้จะถูกลบอย่างถาวร การกระทำนี้ไม่สามารถยกเลิกได้",
+  "deleteConfirm": "ลบไวท์บอร์ด",
+  "elements": "{{count}} องค์ประกอบ",
+  "element": "{{count}} องค์ประกอบ",
+  "rename": "เปลี่ยนชื่อ",
+  "archive": "เก็บถาวร",
+  "unarchive": "ยกเลิกการเก็บถาวร",
+  "deletePermanently": "ลบอย่างถาวร"
 }

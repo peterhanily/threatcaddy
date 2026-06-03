@@ -4,7 +4,6 @@
   "closureResolution.escalated": "Yükseltildi",
   "closureResolution.duplicate": "Yinelenen",
   "closureResolution.inconclusive": "Sonuçsuz",
-
   "kpiMetric.open-investigations": "Açık Soruşturmalar",
   "kpiMetric.closed-this-month": "Bu Ay Kapanan",
   "kpiMetric.avg-investigation-age": "Ort. Soruşturma Yaşı",
@@ -14,7 +13,6 @@
   "kpiMetric.notes-created-week": "Oluşturulan Notlar (Hafta)",
   "kpiMetric.timeline-events-week": "Zaman Çizelgesi Olayları (Hafta)",
   "kpiMetric.overdue-tasks": "Gecikmiş Görevler",
-
   "iocTableColumn.value": "Değer",
   "iocTableColumn.type": "Tür",
   "iocTableColumn.confidence": "Güven",
@@ -28,7 +26,6 @@
   "iocTableColumn.firstSeen": "İlk Görülme",
   "iocTableColumn.labels": "Etiketler",
   "iocTableColumn.assignee": "Atanan",
-
   "iocType.ipv4": "IPv4",
   "iocType.ipv6": "IPv6",
   "iocType.domain": "Alan Adı",
@@ -42,17 +39,14 @@
   "iocType.yara-rule": "YARA Kuralı",
   "iocType.sigma-rule": "SIGMA Kuralı",
   "iocType.file-path": "Dosya Yolu",
-
   "iocStatus.active": "Aktif",
   "iocStatus.resolved": "Çözümlendi",
   "iocStatus.false-positive": "Yanlış Pozitif",
   "iocStatus.under-investigation": "Soruşturma Altında",
-
   "confidence.low": "Düşük",
   "confidence.medium": "Orta",
   "confidence.high": "Yüksek",
   "confidence.confirmed": "Onaylandı",
-
   "timelineEventType.initial-access": "İlk Erişim",
   "timelineEventType.execution": "Yürütme",
   "timelineEventType.persistence": "Kalıcılık",
@@ -72,7 +66,6 @@
   "timelineEventType.communication": "İletişim",
   "timelineEventType.evidence": "Kanıt",
   "timelineEventType.other": "Diğer",
-
   "noteColor.none": "Yok",
   "noteColor.red": "Kırmızı",
   "noteColor.orange": "Turuncu",
@@ -81,7 +74,6 @@
   "noteColor.blue": "Mavi",
   "noteColor.purple": "Mor",
   "noteColor.pink": "Pembe",
-
   "activityCategory.note": "Not",
   "activityCategory.task": "Görev",
   "activityCategory.timeline": "Zaman Çizelgesi",
@@ -93,13 +85,11 @@
   "activityCategory.data": "Veri",
   "activityCategory.chat": "Sohbet",
   "activityCategory.agent-bridge": "Ajan",
-
   "sessionDuration.every-load": "Her sayfa yüklemesinde",
   "sessionDuration.tab-close": "Sekme kapatılana kadar",
   "sessionDuration.1h": "1 saat",
   "sessionDuration.8h": "8 saat",
   "sessionDuration.24h": "24 saat",
-
   "field.title": "Başlık",
   "field.content": "İçerik",
   "field.description": "Açıklama",
@@ -112,7 +102,6 @@
   "field.category": "Kategori",
   "field.timestamp": "Zaman Damgası",
   "field.source": "Kaynak",
-
   "mapping.timestamp": "Zaman Damgası",
   "mapping.event-title": "Olay Başlığı",
   "mapping.event-description": "Açıklama",
@@ -132,13 +121,12 @@
   "mapping.ioc-cve": "IOC: CVE",
   "mapping.ioc-file-path": "IOC: Dosya Yolu",
   "mapping.ignore": "Yoksay",
-
   "mentionCategory.note": "Notlar",
   "mentionCategory.ioc": "IOC'ler",
   "mentionCategory.investigation": "Soruşturmalar",
-
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
-  "model.group.mistral": "Mistral"
+  "model.group.mistral": "Mistral",
+  "activityCategory.evidence": "Kanıt"
 }

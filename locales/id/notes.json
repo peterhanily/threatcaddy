@@ -22,7 +22,9 @@
   "card": {
     "moveToTrash": "Pindah ke sampah",
     "moveToTrashAria": "Pindahkan catatan ke sampah",
-    "createdBy": "Dibuat oleh {{name}}"
+    "createdBy": "Dibuat oleh {{name}}",
+    "needsReview": "Perlu ditinjau",
+    "needsReviewTitle": "Dibuat oleh agen pengamat — tinjau sebelum dipercaya sebagai keluaran investigasi"
   },
   "editor": {
     "backToList": "Kembali ke daftar",

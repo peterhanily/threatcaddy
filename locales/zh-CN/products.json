@@ -1,0 +1,54 @@
+{
+  "header.title": "产物",
+  "header.subtitle": "生成的报告、笔记和交付物",
+  "header.importBaseline": "导入基线",
+  "header.baselines": "基线",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "产物基线",
+  "baselines.description": "兼容 Jinja 的基线定义了可重复使用的报告结构。CaddyAI 可以结合调查笔记、IOC、证据、时间线和分析师提供的字段来渲染这些基线。",
+  "baselines.count_one": "{{count}} 个基线",
+  "baselines.count_other": "{{count}} 个基线",
+  "baselines.empty": "导入产物基线包,使其可供 CaddyAI 和产物渲染使用。",
+  "baselines.preview": "预览",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "已导入 {{name}}",
+  "baseline.importError": "导入产物基线包失败。",
+  "baseline.docxAttachSuccess": "已附加 DOCX 模板 {{name}}",
+  "baseline.docxAttachError": "附加 DOCX 模板失败。",
+  "baseline.docxRenderError": "从附加的基线模板渲染 DOCX 失败。",
+
+  "products.heading": "已生成的产物",
+  "search.placeholder": "搜索产物",
+  "search.ariaLabel": "搜索产物",
+  "search.clearAriaLabel": "清除产物搜索",
+
+  "empty.noProducts": "暂无产物",
+  "empty.noProductsDesc": "请让 CaddyAI 渲染一个产物基线,以在此处创建报告草稿。",
+  "empty.noMatch": "无匹配的产物",
+  "empty.noMatchDesc": "请尝试产物标题、标签或草稿中的短语。",
+
+  "card.previewProduct": "预览产物",
+  "card.sourceNote": "源笔记",
+  "card.noPreview": "没有可用的产物预览。",
+
+  "manager.title": "产物基线",
+  "manager.attachDocx": "附加 DOCX",
+  "manager.copyPrompt": "复制提示词",
+  "manager.exportPackage": "导出包",
+  "manager.docxTemplateAttached": "已附加 DOCX 模板",
+  "manager.baselineSources": "基线来源:{{names}}",
+  "manager.testFixtures": "测试夹具:{{names}}",
+  "manager.noBaselines": "没有可用的产物基线。",
+
+  "manager.copyPromptText": "使用“{{name}}”产物基线为当前调查渲染一份完成的产物。请保持其可直接交付给客户,保留源笔记,并将该产物创建为带标签的产物笔记。",
+  "manager.docxTemplateNotes": "用于基于基线的产物导出的已附加 DOCX 模板。",
+
+  "preview.title": "产物预览",
+  "preview.updated": "更新于 {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "打印",
+  "preview.source": "源"
+}

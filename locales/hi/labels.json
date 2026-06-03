@@ -4,7 +4,6 @@
   "closureResolution.escalated": "एस्कलेट किया गया",
   "closureResolution.duplicate": "डुप्लिकेट",
   "closureResolution.inconclusive": "अनिर्णायक",
-
   "kpiMetric.open-investigations": "खुली जाँचें",
   "kpiMetric.closed-this-month": "इस महीने बंद",
   "kpiMetric.avg-investigation-age": "औसत जाँच आयु",
@@ -14,7 +13,6 @@
   "kpiMetric.notes-created-week": "बनाए गए नोट्स (सप्ताह)",
   "kpiMetric.timeline-events-week": "टाइमलाइन इवेंट (सप्ताह)",
   "kpiMetric.overdue-tasks": "विलंबित कार्य",
-
   "iocTableColumn.value": "मान",
   "iocTableColumn.type": "प्रकार",
   "iocTableColumn.confidence": "विश्वसनीयता",
@@ -28,7 +26,6 @@
   "iocTableColumn.firstSeen": "पहली बार देखा",
   "iocTableColumn.labels": "लेबल",
   "iocTableColumn.assignee": "असाइनी",
-
   "iocType.ipv4": "IPv4",
   "iocType.ipv6": "IPv6",
   "iocType.domain": "डोमेन",
@@ -42,17 +39,14 @@
   "iocType.yara-rule": "YARA नियम",
   "iocType.sigma-rule": "Sigma नियम",
   "iocType.file-path": "फ़ाइल पाथ",
-
   "iocStatus.active": "सक्रिय",
   "iocStatus.resolved": "हल किया गया",
   "iocStatus.false-positive": "गलत सकारात्मक",
   "iocStatus.under-investigation": "जाँच के अंतर्गत",
-
   "confidence.low": "निम्न",
   "confidence.medium": "मध्यम",
   "confidence.high": "उच्च",
   "confidence.confirmed": "पुष्टि",
-
   "timelineEventType.initial-access": "प्रारंभिक पहुँच",
   "timelineEventType.execution": "निष्पादन",
   "timelineEventType.persistence": "दृढ़ता",
@@ -72,7 +66,6 @@
   "timelineEventType.communication": "संचार",
   "timelineEventType.evidence": "साक्ष्य",
   "timelineEventType.other": "अन्य",
-
   "noteColor.none": "कोई नहीं",
   "noteColor.red": "लाल",
   "noteColor.orange": "नारंगी",
@@ -81,7 +74,6 @@
   "noteColor.blue": "नीला",
   "noteColor.purple": "बैंगनी",
   "noteColor.pink": "गुलाबी",
-
   "activityCategory.note": "नोट",
   "activityCategory.task": "कार्य",
   "activityCategory.timeline": "टाइमलाइन",
@@ -93,13 +85,11 @@
   "activityCategory.data": "डेटा",
   "activityCategory.chat": "चैट",
   "activityCategory.agent-bridge": "एजेंट",
-
   "sessionDuration.every-load": "हर पेज लोड पर",
   "sessionDuration.tab-close": "टैब बंद होने तक",
   "sessionDuration.1h": "1 घंटा",
   "sessionDuration.8h": "8 घंटे",
   "sessionDuration.24h": "24 घंटे",
-
   "field.title": "शीर्षक",
   "field.content": "सामग्री",
   "field.description": "विवरण",
@@ -112,7 +102,6 @@
   "field.category": "श्रेणी",
   "field.timestamp": "टाइमस्टैम्प",
   "field.source": "स्रोत",
-
   "mapping.timestamp": "टाइमस्टैम्प",
   "mapping.event-title": "इवेंट शीर्षक",
   "mapping.event-description": "विवरण",
@@ -132,13 +121,12 @@
   "mapping.ioc-cve": "IOC: CVE",
   "mapping.ioc-file-path": "IOC: फ़ाइल पाथ",
   "mapping.ignore": "अनदेखा करें",
-
   "mentionCategory.note": "नोट्स",
   "mentionCategory.ioc": "IOCs",
   "mentionCategory.investigation": "जाँचें",
-
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
-  "model.group.mistral": "Mistral"
+  "model.group.mistral": "Mistral",
+  "activityCategory.evidence": "साक्ष्य"
 }

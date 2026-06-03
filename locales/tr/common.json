@@ -213,5 +213,7 @@
   "demoModal.deleteDemo": "Demoyu Sil ve Sıfırdan Başla",
   "demoModal.removeHint": "Örnek verileri daha sonra Ayarlar'dan kaldırabilirsiniz.",
   "error.unexpectedDetail": "Beklenmedik bir hata oluştu.",
-  "header.caddylabs": "CaddyLabs"
+  "header.caddylabs": "CaddyLabs",
+  "sidebar.evidence": "Kanıt",
+  "sidebar.products": "Ürünler"
 }
