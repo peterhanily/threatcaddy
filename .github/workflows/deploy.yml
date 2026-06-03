@@ -55,11 +55,15 @@ jobs:
           touch dist/.nojekyll
 
       - name: Publish to gh-pages
-        # Note: the committer name must not contain "[bot]" brackets — gh-pages'
-        # -u parser rejects them.
+        # gh-pages does its own clone/push and ignores actions/checkout's persisted
+        # credentials, so the token must be embedded in the remote URL via -r.
+        # The committer name must not contain "[bot]" brackets (gh-pages -u parser).
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: >-
           npx gh-pages
           -d dist
           --dotfiles
+          -r "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
           -u "github-actions <github-actions@users.noreply.github.com>"
           -m "Deploy ${{ github.sha }} [skip ci]"
