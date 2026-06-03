@@ -256,8 +256,12 @@ export function ChatView({
     const provider = activeThread.provider;
     const useServerProxy = effectiveRoute === 'server';
 
+    // CTI slash commands run allowlisted host tools directly (no LLM call), so they
+    // must NOT be gated behind the LLM API-key / token-budget checks below.
+    const isDirectCtiCommand = parseCtiSlashCommand(text) !== null;
+
     // Validate API key (skip when routing through server — server has its own keys)
-    if (!useServerProxy) {
+    if (!useServerProxy && !isDirectCtiCommand) {
       if (provider === 'local' && !settings.llmLocalEndpoint) {
         setLocalError(t('view.errorNoLocalEndpoint'));
         setErrorHasSettingsLink(true);
@@ -273,7 +277,7 @@ export function ChatView({
     const apiKey = useServerProxy ? 'server-proxy' : getApiKeyForProvider(provider, settings);
 
     // Hard token budget cap — prevent sending when over budget
-    if (settings.llmTokenBudget && threadTokenTotalRef.current > settings.llmTokenBudget) {
+    if (!isDirectCtiCommand && settings.llmTokenBudget && threadTokenTotalRef.current > settings.llmTokenBudget) {
       setLocalError(t('view.errorOverBudget', `Token budget exceeded (${threadTokenTotalRef.current.toLocaleString()} / ${settings.llmTokenBudget.toLocaleString()}). Start a new thread or increase the budget in Settings > AI.`));
       return;
     }
