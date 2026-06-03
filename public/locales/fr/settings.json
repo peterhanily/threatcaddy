@@ -409,5 +409,9 @@
   "agents.bearerTokenPlaceholder": "Jeton Bearer",
   "agents.disableHost": "Désactiver {{name}}",
   "agents.enableHost": "Activer {{name}}",
-  "agents.deleteHost": "Supprimer {{name}}"
+  "agents.deleteHost": "Supprimer {{name}}",
+  "intel.autoEnrich.toggleLabel": "Vérifier automatiquement les IOC importés",
+  "intel.autoEnrich.toggleDesc": "Exécute les intégrations VirusTotal activées après la création d'un IOC.",
+  "intel.autoEnrich.limitLabel": "Limite de vérification automatique",
+  "intel.autoEnrich.limitDesc": "Nombre maximal d'IOC importés à vérifier par lot."
 }

@@ -409,5 +409,9 @@
   "agents.bearerTokenPlaceholder": "Token Bearer",
   "agents.disableHost": "Disattiva {{name}}",
   "agents.enableHost": "Attiva {{name}}",
-  "agents.deleteHost": "Elimina {{name}}"
+  "agents.deleteHost": "Elimina {{name}}",
+  "intel.autoEnrich.toggleLabel": "Verifica automaticamente gli IOC importati",
+  "intel.autoEnrich.toggleDesc": "Esegue le integrazioni VirusTotal abilitate dopo la creazione di un IOC.",
+  "intel.autoEnrich.limitLabel": "Limite di verifica automatica",
+  "intel.autoEnrich.limitDesc": "Numero massimo di IOC importati da verificare per batch."
 }

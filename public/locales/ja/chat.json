@@ -135,5 +135,9 @@
     "link": "関連エンティティを見つけてリンク",
     "loop": "定期プロンプトをスケジュール",
     "stoploop": "バックグラウンドループを停止"
+  },
+  "cti": {
+    "invalidCommand": "その CTI コマンドは実行できませんでした:",
+    "noSources": "CTI Agent Host のソースが設定されていません。このコマンドを使用するには、設定 → AI → Agent Hosts で CTI ホストを追加してください。"
   }
 }

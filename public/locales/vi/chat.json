@@ -135,5 +135,9 @@
     "link": "Tìm và liên kết các thực thể liên quan",
     "loop": "Lên lịch nhắc lặp lại",
     "stoploop": "Dừng vòng lặp nền"
+  },
+  "cti": {
+    "invalidCommand": "Không thể chạy lệnh CTI đó:",
+    "noSources": "Chưa cấu hình nguồn CTI Agent Host nào. Hãy thêm một CTI host trong Cài đặt → AI → Agent Hosts để sử dụng lệnh này."
   }
 }

@@ -1,0 +1,54 @@
+{
+  "header.title": "成果物",
+  "header.subtitle": "生成されたレポート、ノート、納品物",
+  "header.importBaseline": "ベースラインをインポート",
+  "header.baselines": "ベースライン",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "成果物ベースライン",
+  "baselines.description": "Jinja 互換のベースラインは、再利用可能なレポート構造を定義します。CaddyAI はこれらを調査ノート、IOC、証拠、タイムライン、アナリストが提供したフィールドとともにレンダリングできます。",
+  "baselines.count_one": "{{count}} 件のベースライン",
+  "baselines.count_other": "{{count}} 件のベースライン",
+  "baselines.empty": "成果物ベースラインパッケージをインポートして、CaddyAI と成果物レンダリングで利用できるようにします。",
+  "baselines.preview": "プレビュー",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "{{name}} をインポートしました",
+  "baseline.importError": "成果物ベースラインパッケージのインポートに失敗しました。",
+  "baseline.docxAttachSuccess": "DOCX テンプレート {{name}} を添付しました",
+  "baseline.docxAttachError": "DOCX テンプレートの添付に失敗しました。",
+  "baseline.docxRenderError": "添付されたベースラインテンプレートからの DOCX レンダリングに失敗しました。",
+
+  "products.heading": "生成された成果物",
+  "search.placeholder": "成果物を検索",
+  "search.ariaLabel": "成果物を検索",
+  "search.clearAriaLabel": "成果物検索をクリア",
+
+  "empty.noProducts": "成果物はまだありません",
+  "empty.noProductsDesc": "CaddyAI に成果物ベースラインのレンダリングを依頼して、ここにドラフトレポートを作成してください。",
+  "empty.noMatch": "一致する成果物がありません",
+  "empty.noMatchDesc": "成果物のタイトル、タグ、またはドラフトのフレーズで検索してみてください。",
+
+  "card.previewProduct": "成果物をプレビュー",
+  "card.sourceNote": "ソースノート",
+  "card.noPreview": "利用可能な成果物プレビューがありません。",
+
+  "manager.title": "成果物ベースライン",
+  "manager.attachDocx": "DOCX を添付",
+  "manager.copyPrompt": "プロンプトをコピー",
+  "manager.exportPackage": "パッケージをエクスポート",
+  "manager.docxTemplateAttached": "DOCX テンプレートを添付しました",
+  "manager.baselineSources": "ベースラインソース: {{names}}",
+  "manager.testFixtures": "テストフィクスチャ: {{names}}",
+  "manager.noBaselines": "利用可能な成果物ベースラインがありません。",
+
+  "manager.copyPromptText": "「{{name}}」成果物ベースラインを使用して、アクティブな調査の完成した成果物をレンダリングしてください。顧客に提出できる状態を保ち、ソースノートを保持し、タグ付けされた成果物ノートとして成果物を作成してください。",
+  "manager.docxTemplateNotes": "ベースラインに基づく成果物エクスポートに使用される、添付された DOCX テンプレート。",
+
+  "preview.title": "成果物のプレビュー",
+  "preview.updated": "更新日時 {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "印刷",
+  "preview.source": "ソース"
+}

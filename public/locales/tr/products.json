@@ -1,0 +1,54 @@
+{
+  "header.title": "Ürünler",
+  "header.subtitle": "Oluşturulan raporlar, notlar ve çıktılar",
+  "header.importBaseline": "Taban Şablonu İçe Aktar",
+  "header.baselines": "Taban Şablonları",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "Ürün Taban Şablonları",
+  "baselines.description": "Jinja uyumlu taban şablonları yinelenebilir rapor yapıları tanımlar. CaddyAI bunları soruşturma notları, IOC'ler, kanıtlar, zaman çizelgeleri ve analist tarafından sağlanan alanlarla işleyebilir.",
+  "baselines.count_one": "{{count}} taban şablonu",
+  "baselines.count_other": "{{count}} taban şablonu",
+  "baselines.empty": "Bir ürün taban şablonu paketini CaddyAI ve ürün işlemeye kullanılabilir hale getirmek için içe aktarın.",
+  "baselines.preview": "Önizleme",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "{{name}} içe aktarıldı",
+  "baseline.importError": "Ürün taban şablonu paketi içe aktarılamadı.",
+  "baseline.docxAttachSuccess": "{{name}} DOCX şablonu eklendi",
+  "baseline.docxAttachError": "DOCX şablonu eklenemedi.",
+  "baseline.docxRenderError": "Ekli taban şablonundan DOCX işlenemedi.",
+
+  "products.heading": "Oluşturulan Ürünler",
+  "search.placeholder": "Ürün ara",
+  "search.ariaLabel": "Ürün ara",
+  "search.clearAriaLabel": "Ürün aramasını temizle",
+
+  "empty.noProducts": "Henüz ürün yok",
+  "empty.noProductsDesc": "Burada bir taslak rapor oluşturmak için CaddyAI'den bir ürün taban şablonu işlemesini isteyin.",
+  "empty.noMatch": "Eşleşen ürün yok",
+  "empty.noMatchDesc": "Taslaktan bir ürün başlığı, etiket ya da ifade deneyin.",
+
+  "card.previewProduct": "Ürünü Önizle",
+  "card.sourceNote": "Kaynak Not",
+  "card.noPreview": "Ürün önizlemesi mevcut değil.",
+
+  "manager.title": "Ürün Taban Şablonları",
+  "manager.attachDocx": "DOCX Ekle",
+  "manager.copyPrompt": "İstemi Kopyala",
+  "manager.exportPackage": "Paketi Dışa Aktar",
+  "manager.docxTemplateAttached": "DOCX şablonu eklendi",
+  "manager.baselineSources": "Taban şablonu kaynakları: {{names}}",
+  "manager.testFixtures": "Test düzenekleri: {{names}}",
+  "manager.noBaselines": "Kullanılabilir ürün taban şablonu yok.",
+
+  "manager.copyPromptText": "Etkin soruşturma için tamamlanmış bir ürün işlemek üzere \"{{name}}\" ürün taban şablonunu kullanın. Müşteriye hazır halde tutun, kaynak notları koruyun ve ürünü etiketlenmiş bir ürün notu olarak oluşturun.",
+  "manager.docxTemplateNotes": "Taban şablonu destekli ürün dışa aktarımı için kullanılan ekli DOCX şablonu.",
+
+  "preview.title": "Ürün Önizlemesi",
+  "preview.updated": "Güncellendi {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "Yazdır",
+  "preview.source": "Kaynak"
+}

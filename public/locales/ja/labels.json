@@ -4,7 +4,6 @@
   "closureResolution.escalated": "エスカレート",
   "closureResolution.duplicate": "重複",
   "closureResolution.inconclusive": "結論なし",
-
   "kpiMetric.open-investigations": "進行中の調査",
   "kpiMetric.closed-this-month": "今月クローズ",
   "kpiMetric.avg-investigation-age": "平均調査期間",
@@ -14,7 +13,6 @@
   "kpiMetric.notes-created-week": "今週作成したノート",
   "kpiMetric.timeline-events-week": "今週のタイムラインイベント",
   "kpiMetric.overdue-tasks": "期限超過タスク",
-
   "iocTableColumn.value": "値",
   "iocTableColumn.type": "タイプ",
   "iocTableColumn.confidence": "信頼度",
@@ -28,7 +26,6 @@
   "iocTableColumn.firstSeen": "初回確認",
   "iocTableColumn.labels": "ラベル",
   "iocTableColumn.assignee": "担当者",
-
   "iocType.ipv4": "IPv4",
   "iocType.ipv6": "IPv6",
   "iocType.domain": "ドメイン",
@@ -42,17 +39,14 @@
   "iocType.yara-rule": "YARAルール",
   "iocType.sigma-rule": "SIGMAルール",
   "iocType.file-path": "ファイルパス",
-
   "iocStatus.active": "アクティブ",
   "iocStatus.resolved": "解決済み",
   "iocStatus.false-positive": "誤検知",
   "iocStatus.under-investigation": "調査中",
-
   "confidence.low": "低",
   "confidence.medium": "中",
   "confidence.high": "高",
   "confidence.confirmed": "確認済み",
-
   "timelineEventType.initial-access": "初期アクセス",
   "timelineEventType.execution": "実行",
   "timelineEventType.persistence": "永続化",
@@ -72,7 +66,6 @@
   "timelineEventType.communication": "通信",
   "timelineEventType.evidence": "証拠",
   "timelineEventType.other": "その他",
-
   "noteColor.none": "なし",
   "noteColor.red": "赤",
   "noteColor.orange": "オレンジ",
@@ -81,7 +74,6 @@
   "noteColor.blue": "青",
   "noteColor.purple": "紫",
   "noteColor.pink": "ピンク",
-
   "activityCategory.note": "ノート",
   "activityCategory.task": "タスク",
   "activityCategory.timeline": "タイムライン",
@@ -93,13 +85,11 @@
   "activityCategory.data": "データ",
   "activityCategory.chat": "チャット",
   "activityCategory.agent-bridge": "エージェント",
-
   "sessionDuration.every-load": "ページ読み込みごと",
   "sessionDuration.tab-close": "タブを閉じるまで",
   "sessionDuration.1h": "1時間",
   "sessionDuration.8h": "8時間",
   "sessionDuration.24h": "24時間",
-
   "field.title": "タイトル",
   "field.content": "コンテンツ",
   "field.description": "説明",
@@ -112,7 +102,6 @@
   "field.category": "カテゴリー",
   "field.timestamp": "タイムスタンプ",
   "field.source": "ソース",
-
   "mapping.timestamp": "タイムスタンプ",
   "mapping.event-title": "イベントタイトル",
   "mapping.event-description": "説明",
@@ -132,13 +121,12 @@
   "mapping.ioc-cve": "IOC: CVE",
   "mapping.ioc-file-path": "IOC: ファイルパス",
   "mapping.ignore": "無視",
-
   "mentionCategory.note": "ノート",
   "mentionCategory.ioc": "IOC",
   "mentionCategory.investigation": "調査",
-
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
-  "model.group.mistral": "Mistral"
+  "model.group.mistral": "Mistral",
+  "activityCategory.evidence": "証拠"
 }

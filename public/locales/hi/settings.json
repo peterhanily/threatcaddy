@@ -409,5 +409,9 @@
   "agents.bearerTokenPlaceholder": "Bearer टोकन",
   "agents.disableHost": "{{name}} अक्षम करें",
   "agents.enableHost": "{{name}} सक्षम करें",
-  "agents.deleteHost": "{{name}} हटाएँ"
+  "agents.deleteHost": "{{name}} हटाएँ",
+  "intel.autoEnrich.toggleLabel": "आयातित IOCs स्वतः जाँचें",
+  "intel.autoEnrich.toggleDesc": "IOC निर्माण के बाद सक्षम VirusTotal एकीकरण चलाता है।",
+  "intel.autoEnrich.limitLabel": "स्वतः-जाँच सीमा",
+  "intel.autoEnrich.limitDesc": "प्रति बैच जाँचने हेतु आयातित IOCs की अधिकतम संख्या।"
 }

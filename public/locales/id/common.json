@@ -213,5 +213,7 @@
   "demoModal.deleteDemo": "Hapus Demo & Mulai Baru",
   "demoModal.removeHint": "Anda dapat menghapus data sampel nanti di Pengaturan.",
   "error.unexpectedDetail": "Terjadi kesalahan yang tidak terduga.",
-  "header.caddylabs": "CaddyLabs"
+  "header.caddylabs": "CaddyLabs",
+  "sidebar.evidence": "Bukti",
+  "sidebar.products": "Produk"
 }

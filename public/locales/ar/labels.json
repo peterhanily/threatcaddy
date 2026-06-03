@@ -4,7 +4,6 @@
   "closureResolution.escalated": "مُصعَّد",
   "closureResolution.duplicate": "مكرر",
   "closureResolution.inconclusive": "غير حاسم",
-
   "kpiMetric.open-investigations": "التحقيقات المفتوحة",
   "kpiMetric.closed-this-month": "مغلقة هذا الشهر",
   "kpiMetric.avg-investigation-age": "متوسط عمر التحقيق",
@@ -14,7 +13,6 @@
   "kpiMetric.notes-created-week": "الملاحظات المنشأة (الأسبوع)",
   "kpiMetric.timeline-events-week": "أحداث الجدول الزمني (الأسبوع)",
   "kpiMetric.overdue-tasks": "المهام المتأخرة",
-
   "iocTableColumn.value": "القيمة",
   "iocTableColumn.type": "النوع",
   "iocTableColumn.confidence": "الثقة",
@@ -28,7 +26,6 @@
   "iocTableColumn.firstSeen": "أول ظهور",
   "iocTableColumn.labels": "التسميات",
   "iocTableColumn.assignee": "المسند إليه",
-
   "iocType.ipv4": "IPv4",
   "iocType.ipv6": "IPv6",
   "iocType.domain": "نطاق",
@@ -42,17 +39,14 @@
   "iocType.yara-rule": "قاعدة YARA",
   "iocType.sigma-rule": "قاعدة SIGMA",
   "iocType.file-path": "مسار الملف",
-
   "iocStatus.active": "نشط",
   "iocStatus.resolved": "تم الحل",
   "iocStatus.false-positive": "إيجابي كاذب",
   "iocStatus.under-investigation": "قيد التحقيق",
-
   "confidence.low": "منخفض",
   "confidence.medium": "متوسط",
   "confidence.high": "عالٍ",
   "confidence.confirmed": "مؤكَّد",
-
   "timelineEventType.initial-access": "الوصول الأولي",
   "timelineEventType.execution": "التنفيذ",
   "timelineEventType.persistence": "الثبات",
@@ -72,7 +66,6 @@
   "timelineEventType.communication": "التواصل",
   "timelineEventType.evidence": "الأدلة",
   "timelineEventType.other": "أخرى",
-
   "noteColor.none": "لا شيء",
   "noteColor.red": "أحمر",
   "noteColor.orange": "برتقالي",
@@ -81,7 +74,6 @@
   "noteColor.blue": "أزرق",
   "noteColor.purple": "بنفسجي",
   "noteColor.pink": "وردي",
-
   "activityCategory.note": "ملاحظة",
   "activityCategory.task": "مهمة",
   "activityCategory.timeline": "جدول زمني",
@@ -93,13 +85,11 @@
   "activityCategory.data": "بيانات",
   "activityCategory.chat": "دردشة",
   "activityCategory.agent-bridge": "وكيل",
-
   "sessionDuration.every-load": "عند كل تحميل للصفحة",
   "sessionDuration.tab-close": "حتى إغلاق التبويبة",
   "sessionDuration.1h": "ساعة واحدة",
   "sessionDuration.8h": "8 ساعات",
   "sessionDuration.24h": "24 ساعة",
-
   "field.title": "العنوان",
   "field.content": "المحتوى",
   "field.description": "الوصف",
@@ -112,7 +102,6 @@
   "field.category": "الفئة",
   "field.timestamp": "الطابع الزمني",
   "field.source": "المصدر",
-
   "mapping.timestamp": "الطابع الزمني",
   "mapping.event-title": "عنوان الحدث",
   "mapping.event-description": "الوصف",
@@ -132,13 +121,12 @@
   "mapping.ioc-cve": "IOC: CVE",
   "mapping.ioc-file-path": "IOC: مسار الملف",
   "mapping.ignore": "تجاهل",
-
   "mentionCategory.note": "الملاحظات",
   "mentionCategory.ioc": "IOCs",
   "mentionCategory.investigation": "التحقيقات",
-
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
-  "model.group.mistral": "Mistral"
+  "model.group.mistral": "Mistral",
+  "activityCategory.evidence": "الأدلة"
 }

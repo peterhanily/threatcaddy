@@ -213,5 +213,7 @@
   "demoModal.guidedTour": "خذ الجولة الإرشادية",
   "demoModal.deleteDemo": "حذف العرض التوضيحي والبدء من جديد",
   "demoModal.removeHint": "يمكنك إزالة البيانات النموذجية لاحقًا في الإعدادات.",
-  "header.caddylabs": "CaddyLabs"
+  "header.caddylabs": "CaddyLabs",
+  "sidebar.evidence": "الأدلة",
+  "sidebar.products": "المنتجات"
 }

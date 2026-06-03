@@ -135,5 +135,9 @@
     "link": "Verwandte Entitäten finden und verknüpfen",
     "loop": "Wiederkehrende Eingabeaufforderung planen",
     "stoploop": "Hintergrundschleifen stoppen"
+  },
+  "cti": {
+    "invalidCommand": "Dieser CTI-Befehl konnte nicht ausgeführt werden:",
+    "noSources": "Es sind keine CTI-Agent-Host-Quellen konfiguriert. Fügen Sie unter Einstellungen → AI → Agent Hosts einen CTI-Host hinzu, um diesen Befehl zu verwenden."
   }
 }

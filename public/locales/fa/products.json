@@ -1,0 +1,54 @@
+{
+  "header.title": "محصولات",
+  "header.subtitle": "گزارش‌ها، یادداشت‌ها و تحویل‌دادنی‌های تولیدشده",
+  "header.importBaseline": "وارد کردن خط‌پایه",
+  "header.baselines": "خطوط پایه",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "خطوط پایه محصول",
+  "baselines.description": "خطوط پایه سازگار با Jinja ساختارهای گزارش تکرارپذیر را تعریف می‌کنند. CaddyAI می‌تواند این‌ها را با یادداشت‌های تحقیق، IOCها، شواهد، خطوط زمانی و فیلدهای ارائه‌شده توسط تحلیلگر رندر کند.",
+  "baselines.count_one": "{{count}} خط‌پایه",
+  "baselines.count_other": "{{count}} خط‌پایه",
+  "baselines.empty": "یک بسته خط‌پایه محصول را وارد کنید تا برای CaddyAI و رندر محصول در دسترس قرار گیرد.",
+  "baselines.preview": "پیش‌نمایش",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "{{name}} وارد شد",
+  "baseline.importError": "وارد کردن بسته خط‌پایه محصول ناموفق بود.",
+  "baseline.docxAttachSuccess": "قالب DOCX پیوست شد {{name}}",
+  "baseline.docxAttachError": "پیوست کردن قالب DOCX ناموفق بود.",
+  "baseline.docxRenderError": "رندر DOCX از قالب خط‌پایه پیوست‌شده ناموفق بود.",
+
+  "products.heading": "محصولات تولیدشده",
+  "search.placeholder": "جستجوی محصولات",
+  "search.ariaLabel": "جستجوی محصولات",
+  "search.clearAriaLabel": "پاک کردن جستجوی محصول",
+
+  "empty.noProducts": "هنوز محصولی وجود ندارد",
+  "empty.noProductsDesc": "از CaddyAI بخواهید یک خط‌پایه محصول را رندر کند تا یک پیش‌نویس گزارش در اینجا ایجاد شود.",
+  "empty.noMatch": "هیچ محصولی مطابقت ندارد",
+  "empty.noMatchDesc": "یک عنوان محصول، برچسب یا عبارتی از پیش‌نویس را امتحان کنید.",
+
+  "card.previewProduct": "پیش‌نمایش محصول",
+  "card.sourceNote": "یادداشت منبع",
+  "card.noPreview": "هیچ پیش‌نمایش محصولی در دسترس نیست.",
+
+  "manager.title": "خطوط پایه محصول",
+  "manager.attachDocx": "پیوست DOCX",
+  "manager.copyPrompt": "کپی اعلان",
+  "manager.exportPackage": "صدور بسته",
+  "manager.docxTemplateAttached": "قالب DOCX پیوست شد",
+  "manager.baselineSources": "منابع خط‌پایه: {{names}}",
+  "manager.testFixtures": "داده‌های آزمون: {{names}}",
+  "manager.noBaselines": "هیچ خط‌پایه محصولی در دسترس نیست.",
+
+  "manager.copyPromptText": "از خط‌پایه محصول «{{name}}» برای رندر یک محصول نهایی برای تحقیق فعال استفاده کنید. آن را آماده ارائه به مشتری نگه دارید، یادداشت‌های منبع را حفظ کنید و محصول را به‌عنوان یک یادداشت محصول برچسب‌گذاری‌شده ایجاد کنید.",
+  "manager.docxTemplateNotes": "قالب DOCX پیوست‌شده که برای صدور محصول مبتنی بر خط‌پایه استفاده می‌شود.",
+
+  "preview.title": "پیش‌نمایش محصول",
+  "preview.updated": "به‌روزرسانی‌شده {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "چاپ",
+  "preview.source": "منبع"
+}

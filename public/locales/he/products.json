@@ -1,0 +1,54 @@
+{
+  "header.title": "מוצרים",
+  "header.subtitle": "דוחות, הערות ותוצרים שנוצרו",
+  "header.importBaseline": "ייבא בסיס",
+  "header.baselines": "בסיסים",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "בסיסי מוצר",
+  "baselines.description": "בסיסים תואמי Jinja מגדירים מבני דוח שניתנים לחזרה. CaddyAI יכול לעבד אותם עם הערות חקירה, IOCs, ראיות, צירי זמן ושדות שסופקו על ידי האנליסט.",
+  "baselines.count_one": "בסיס {{count}}",
+  "baselines.count_other": "{{count}} בסיסים",
+  "baselines.empty": "ייבא חבילת בסיס מוצר כדי להפוך אותה לזמינה עבור CaddyAI ועיבוד מוצרים.",
+  "baselines.preview": "תצוגה מקדימה",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "{{name}} יובא",
+  "baseline.importError": "ייבוא חבילת בסיס המוצר נכשל.",
+  "baseline.docxAttachSuccess": "תבנית DOCX {{name}} צורפה",
+  "baseline.docxAttachError": "צירוף תבנית DOCX נכשל.",
+  "baseline.docxRenderError": "עיבוד DOCX מתבנית הבסיס המצורפת נכשל.",
+
+  "products.heading": "מוצרים שנוצרו",
+  "search.placeholder": "חיפוש מוצרים",
+  "search.ariaLabel": "חיפוש מוצרים",
+  "search.clearAriaLabel": "נקה חיפוש מוצרים",
+
+  "empty.noProducts": "אין מוצרים עדיין",
+  "empty.noProductsDesc": "בקש מ-CaddyAI לעבד בסיס מוצר כדי ליצור טיוטת דוח כאן.",
+  "empty.noMatch": "אין מוצרים תואמים",
+  "empty.noMatchDesc": "נסה כותרת מוצר, תגית, או ביטוי מהטיוטה.",
+
+  "card.previewProduct": "תצוגה מקדימה של מוצר",
+  "card.sourceNote": "הערת מקור",
+  "card.noPreview": "אין תצוגה מקדימה של מוצר.",
+
+  "manager.title": "בסיסי מוצר",
+  "manager.attachDocx": "צרף DOCX",
+  "manager.copyPrompt": "העתק הנחיה",
+  "manager.exportPackage": "ייצא חבילה",
+  "manager.docxTemplateAttached": "תבנית DOCX מצורפת",
+  "manager.baselineSources": "מקורות בסיס: {{names}}",
+  "manager.testFixtures": "מתקני בדיקה: {{names}}",
+  "manager.noBaselines": "אין בסיסי מוצר זמינים.",
+
+  "manager.copyPromptText": "השתמש בבסיס המוצר \"{{name}}\" כדי לעבד מוצר מוגמר עבור החקירה הפעילה. שמור עליו מוכן ללקוח, שמר על הערות המקור, וצור את המוצר כהערת מוצר מתויגת.",
+  "manager.docxTemplateNotes": "תבנית DOCX מצורפת המשמשת לייצוא מוצר מבוסס בסיס.",
+
+  "preview.title": "תצוגה מקדימה של מוצר",
+  "preview.updated": "עודכן {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "הדפס",
+  "preview.source": "מקור"
+}

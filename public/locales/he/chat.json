@@ -135,5 +135,9 @@
     "link": "מצא וקשר ישויות קשורות",
     "loop": "תזמן פרומפט חוזר",
     "stoploop": "עצור לולאות ברקע"
+  },
+  "cti": {
+    "invalidCommand": "לא ניתן היה להריץ את פקודת ה-CTI:",
+    "noSources": "לא הוגדרו מקורות CTI Agent Host. הוסף מארח CTI תחת Settings → AI → Agent Hosts כדי להשתמש בפקודה זו."
   }
 }

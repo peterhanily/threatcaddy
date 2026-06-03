@@ -4,7 +4,6 @@
   "closureResolution.escalated": "已升级",
   "closureResolution.duplicate": "重复",
   "closureResolution.inconclusive": "无定论",
-
   "kpiMetric.open-investigations": "进行中的调查",
   "kpiMetric.closed-this-month": "本月已关闭",
   "kpiMetric.avg-investigation-age": "平均调查时长",
@@ -14,7 +13,6 @@
   "kpiMetric.notes-created-week": "本周创建的笔记",
   "kpiMetric.timeline-events-week": "本周时间线事件",
   "kpiMetric.overdue-tasks": "逾期任务",
-
   "iocTableColumn.value": "值",
   "iocTableColumn.type": "类型",
   "iocTableColumn.confidence": "置信度",
@@ -28,7 +26,6 @@
   "iocTableColumn.firstSeen": "首次发现",
   "iocTableColumn.labels": "标签",
   "iocTableColumn.assignee": "受指派人",
-
   "iocType.ipv4": "IPv4",
   "iocType.ipv6": "IPv6",
   "iocType.domain": "域名",
@@ -42,17 +39,14 @@
   "iocType.yara-rule": "YARA 规则",
   "iocType.sigma-rule": "SIGMA 规则",
   "iocType.file-path": "文件路径",
-
   "iocStatus.active": "活跃",
   "iocStatus.resolved": "已解决",
   "iocStatus.false-positive": "误报",
   "iocStatus.under-investigation": "调查中",
-
   "confidence.low": "低",
   "confidence.medium": "中",
   "confidence.high": "高",
   "confidence.confirmed": "已确认",
-
   "timelineEventType.initial-access": "初始访问",
   "timelineEventType.execution": "执行",
   "timelineEventType.persistence": "持久化",
@@ -72,7 +66,6 @@
   "timelineEventType.communication": "通信",
   "timelineEventType.evidence": "证据",
   "timelineEventType.other": "其他",
-
   "noteColor.none": "无",
   "noteColor.red": "红色",
   "noteColor.orange": "橙色",
@@ -81,7 +74,6 @@
   "noteColor.blue": "蓝色",
   "noteColor.purple": "紫色",
   "noteColor.pink": "粉色",
-
   "activityCategory.note": "笔记",
   "activityCategory.task": "任务",
   "activityCategory.timeline": "时间线",
@@ -93,13 +85,11 @@
   "activityCategory.data": "数据",
   "activityCategory.chat": "聊天",
   "activityCategory.agent-bridge": "代理",
-
   "sessionDuration.every-load": "每次页面加载",
   "sessionDuration.tab-close": "直到关闭标签页",
   "sessionDuration.1h": "1 小时",
   "sessionDuration.8h": "8 小时",
   "sessionDuration.24h": "24 小时",
-
   "field.title": "标题",
   "field.content": "内容",
   "field.description": "描述",
@@ -112,7 +102,6 @@
   "field.category": "分类",
   "field.timestamp": "时间戳",
   "field.source": "来源",
-
   "mapping.timestamp": "时间戳",
   "mapping.event-title": "事件标题",
   "mapping.event-description": "描述",
@@ -132,13 +121,12 @@
   "mapping.ioc-cve": "IOC: CVE",
   "mapping.ioc-file-path": "IOC: 文件路径",
   "mapping.ignore": "忽略",
-
   "mentionCategory.note": "笔记",
   "mentionCategory.ioc": "IOC",
   "mentionCategory.investigation": "调查",
-
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
-  "model.group.mistral": "Mistral"
+  "model.group.mistral": "Mistral",
+  "activityCategory.evidence": "证据"
 }

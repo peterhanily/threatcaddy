@@ -409,5 +409,9 @@
   "agents.bearerTokenPlaceholder": "Bearer belirteci",
   "agents.disableHost": "{{name}} devre dışı bırak",
   "agents.enableHost": "{{name}} etkinleştir",
-  "agents.deleteHost": "{{name}} sil"
+  "agents.deleteHost": "{{name}} sil",
+  "intel.autoEnrich.toggleLabel": "İçe aktarılan IOC'leri otomatik denetle",
+  "intel.autoEnrich.toggleDesc": "IOC oluşturulduktan sonra etkin VirusTotal entegrasyonlarını çalıştırır.",
+  "intel.autoEnrich.limitLabel": "Otomatik denetim sınırı",
+  "intel.autoEnrich.limitDesc": "Toplu işlem başına denetlenecek en fazla içe aktarılmış IOC sayısı."
 }

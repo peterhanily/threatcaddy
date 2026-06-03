@@ -409,5 +409,9 @@
   "agents.bearerTokenPlaceholder": "Mã Bearer",
   "agents.disableHost": "Tắt {{name}}",
   "agents.enableHost": "Bật {{name}}",
-  "agents.deleteHost": "Xóa {{name}}"
+  "agents.deleteHost": "Xóa {{name}}",
+  "intel.autoEnrich.toggleLabel": "Tự động kiểm tra IOC đã nhập",
+  "intel.autoEnrich.toggleDesc": "Chạy các tích hợp VirusTotal đã bật sau khi tạo IOC.",
+  "intel.autoEnrich.limitLabel": "Giới hạn tự động kiểm tra",
+  "intel.autoEnrich.limitDesc": "Số IOC đã nhập tối đa được kiểm tra mỗi lô."
 }

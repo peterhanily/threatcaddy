@@ -318,5 +318,7 @@
   "demoModal.guidedTour": "เริ่มทัวร์นำชม",
   "demoModal.deleteDemo": "ลบเดโมและเริ่มใหม่",
   "demoModal.removeHint": "คุณสามารถลบข้อมูลตัวอย่างได้ภายหลังในการตั้งค่า",
-  "header.caddylabs": "CaddyLabs"
+  "header.caddylabs": "CaddyLabs",
+  "sidebar.evidence": "หลักฐาน",
+  "sidebar.products": "ผลิตภัณฑ์"
 }

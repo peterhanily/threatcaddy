@@ -1,0 +1,54 @@
+{
+  "header.title": "Produkty",
+  "header.subtitle": "Wygenerowane raporty, notatki i materiały",
+  "header.importBaseline": "Importuj szablon bazowy",
+  "header.baselines": "Szablony bazowe",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "Szablony bazowe produktów",
+  "baselines.description": "Szablony bazowe zgodne z Jinja definiują powtarzalne struktury raportów. CaddyAI może renderować je z notatkami śledztwa, IOC, dowodami, osiami czasu i polami dostarczonymi przez analityka.",
+  "baselines.count_one": "{{count}} szablon bazowy",
+  "baselines.count_other": "{{count}} szablonów bazowych",
+  "baselines.empty": "Zaimportuj pakiet szablonu bazowego produktu, aby udostępnić go CaddyAI i renderowaniu produktów.",
+  "baselines.preview": "Podgląd",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "Zaimportowano {{name}}",
+  "baseline.importError": "Nie udało się zaimportować pakietu szablonu bazowego produktu.",
+  "baseline.docxAttachSuccess": "Dołączono szablon DOCX {{name}}",
+  "baseline.docxAttachError": "Nie udało się dołączyć szablonu DOCX.",
+  "baseline.docxRenderError": "Nie udało się wyrenderować DOCX z dołączonego szablonu bazowego.",
+
+  "products.heading": "Wygenerowane produkty",
+  "search.placeholder": "Szukaj produktów",
+  "search.ariaLabel": "Szukaj produktów",
+  "search.clearAriaLabel": "Wyczyść wyszukiwanie produktów",
+
+  "empty.noProducts": "Brak produktów",
+  "empty.noProductsDesc": "Poproś CaddyAI o wyrenderowanie szablonu bazowego produktu, aby utworzyć tutaj szkic raportu.",
+  "empty.noMatch": "Brak pasujących produktów",
+  "empty.noMatchDesc": "Spróbuj wpisać tytuł produktu, tag lub frazę ze szkicu.",
+
+  "card.previewProduct": "Podgląd produktu",
+  "card.sourceNote": "Notatka źródłowa",
+  "card.noPreview": "Brak dostępnego podglądu produktu.",
+
+  "manager.title": "Szablony bazowe produktów",
+  "manager.attachDocx": "Dołącz DOCX",
+  "manager.copyPrompt": "Kopiuj prompt",
+  "manager.exportPackage": "Eksportuj pakiet",
+  "manager.docxTemplateAttached": "Dołączono szablon DOCX",
+  "manager.baselineSources": "Źródła szablonu bazowego: {{names}}",
+  "manager.testFixtures": "Dane testowe: {{names}}",
+  "manager.noBaselines": "Brak dostępnych szablonów bazowych produktów.",
+
+  "manager.copyPromptText": "Użyj szablonu bazowego produktu „{{name}}”, aby wyrenderować gotowy produkt dla aktywnego śledztwa. Utrzymaj go w stanie gotowym dla klienta, zachowaj notatki źródłowe i utwórz produkt jako otagowaną notatkę produktu.",
+  "manager.docxTemplateNotes": "Dołączony szablon DOCX używany do eksportu produktu opartego na szablonie bazowym.",
+
+  "preview.title": "Podgląd produktu",
+  "preview.updated": "Zaktualizowano {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "Drukuj",
+  "preview.source": "Źródło"
+}

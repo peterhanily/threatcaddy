@@ -1,0 +1,54 @@
+{
+  "header.title": "المنتجات",
+  "header.subtitle": "التقارير والملاحظات والمخرجات المُنشأة",
+  "header.importBaseline": "استيراد خط أساس",
+  "header.baselines": "خطوط الأساس",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "خطوط أساس المنتجات",
+  "baselines.description": "تحدّد خطوط الأساس المتوافقة مع Jinja هياكل تقارير قابلة للتكرار. يمكن لـ CaddyAI عرضها مع ملاحظات التحقيق وIOCs والأدلة والجداول الزمنية والحقول التي يوفّرها المحلّل.",
+  "baselines.count_one": "{{count}} خط أساس",
+  "baselines.count_other": "{{count}} خط أساس",
+  "baselines.empty": "استورد حزمة خط أساس منتج لجعلها متاحة لـ CaddyAI ولعرض المنتجات.",
+  "baselines.preview": "معاينة",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "تم استيراد {{name}}",
+  "baseline.importError": "فشل استيراد حزمة خط أساس المنتج.",
+  "baseline.docxAttachSuccess": "تم إرفاق قالب DOCX ‏{{name}}",
+  "baseline.docxAttachError": "فشل إرفاق قالب DOCX.",
+  "baseline.docxRenderError": "فشل عرض DOCX من قالب خط الأساس المرفق.",
+
+  "products.heading": "المنتجات المُنشأة",
+  "search.placeholder": "البحث في المنتجات",
+  "search.ariaLabel": "البحث في المنتجات",
+  "search.clearAriaLabel": "مسح البحث في المنتجات",
+
+  "empty.noProducts": "لا توجد منتجات بعد",
+  "empty.noProductsDesc": "اطلب من CaddyAI عرض خط أساس منتج لإنشاء مسودة تقرير هنا.",
+  "empty.noMatch": "لا توجد منتجات مطابقة",
+  "empty.noMatchDesc": "جرّب عنوان منتج أو وسمًا أو عبارة من المسودة.",
+
+  "card.previewProduct": "معاينة المنتج",
+  "card.sourceNote": "ملاحظة المصدر",
+  "card.noPreview": "لا تتوفر معاينة للمنتج.",
+
+  "manager.title": "خطوط أساس المنتجات",
+  "manager.attachDocx": "إرفاق DOCX",
+  "manager.copyPrompt": "نسخ الموجِّه",
+  "manager.exportPackage": "تصدير الحزمة",
+  "manager.docxTemplateAttached": "تم إرفاق قالب DOCX",
+  "manager.baselineSources": "مصادر خط الأساس: {{names}}",
+  "manager.testFixtures": "تجهيزات الاختبار: {{names}}",
+  "manager.noBaselines": "لا توجد خطوط أساس منتجات متاحة.",
+
+  "manager.copyPromptText": "استخدم خط أساس المنتج \"{{name}}\" لعرض منتج نهائي للتحقيق النشط. اجعله جاهزًا للعميل، واحفظ ملاحظات المصدر، وأنشئ المنتج كملاحظة منتج موسومة.",
+  "manager.docxTemplateNotes": "قالب DOCX مرفق يُستخدم لتصدير المنتجات المدعومة بخط الأساس.",
+
+  "preview.title": "معاينة المنتج",
+  "preview.updated": "تم التحديث {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "طباعة",
+  "preview.source": "المصدر"
+}

@@ -1,0 +1,54 @@
+{
+  "header.title": "Productos",
+  "header.subtitle": "Informes, notas y entregables generados",
+  "header.importBaseline": "Importar plantilla base",
+  "header.baselines": "Plantillas base",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "Plantillas base de productos",
+  "baselines.description": "Las plantillas base compatibles con Jinja definen estructuras de informes reutilizables. CaddyAI puede renderizarlas con notas de investigación, IOCs, pruebas, líneas de tiempo y campos proporcionados por el analista.",
+  "baselines.count_one": "{{count}} plantilla base",
+  "baselines.count_other": "{{count}} plantillas base",
+  "baselines.empty": "Importa un paquete de plantilla base de producto para ponerlo a disposición de CaddyAI y de la renderización de productos.",
+  "baselines.preview": "Vista previa",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "{{name}} importado",
+  "baseline.importError": "No se pudo importar el paquete de plantilla base de producto.",
+  "baseline.docxAttachSuccess": "Plantilla DOCX {{name}} adjuntada",
+  "baseline.docxAttachError": "No se pudo adjuntar la plantilla DOCX.",
+  "baseline.docxRenderError": "No se pudo renderizar el DOCX a partir de la plantilla base adjuntada.",
+
+  "products.heading": "Productos generados",
+  "search.placeholder": "Buscar productos",
+  "search.ariaLabel": "Buscar productos",
+  "search.clearAriaLabel": "Borrar búsqueda de productos",
+
+  "empty.noProducts": "Aún no hay productos",
+  "empty.noProductsDesc": "Pide a CaddyAI que renderice una plantilla base de producto para crear aquí un borrador de informe.",
+  "empty.noMatch": "Ningún producto coincide",
+  "empty.noMatchDesc": "Prueba con un título de producto, etiqueta o frase del borrador.",
+
+  "card.previewProduct": "Vista previa del producto",
+  "card.sourceNote": "Nota de origen",
+  "card.noPreview": "No hay vista previa del producto disponible.",
+
+  "manager.title": "Plantillas base de productos",
+  "manager.attachDocx": "Adjuntar DOCX",
+  "manager.copyPrompt": "Copiar indicación",
+  "manager.exportPackage": "Exportar paquete",
+  "manager.docxTemplateAttached": "Plantilla DOCX adjuntada",
+  "manager.baselineSources": "Fuentes de la plantilla base: {{names}}",
+  "manager.testFixtures": "Datos de prueba: {{names}}",
+  "manager.noBaselines": "No hay plantillas base de productos disponibles.",
+
+  "manager.copyPromptText": "Usa la plantilla base de producto \"{{name}}\" para renderizar un producto terminado para la investigación activa. Mantenlo listo para el cliente, conserva las notas de origen y crea el producto como una nota de producto etiquetada.",
+  "manager.docxTemplateNotes": "Plantilla DOCX adjuntada usada para la exportación de productos basados en plantillas base.",
+
+  "preview.title": "Vista previa del producto",
+  "preview.updated": "Actualizado {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "Imprimir",
+  "preview.source": "Fuente"
+}

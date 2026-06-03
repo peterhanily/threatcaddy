@@ -213,5 +213,7 @@
   "demoModal.deleteDemo": "Удалить демо и начать заново",
   "demoModal.removeHint": "Вы можете удалить примеры данных позже в Настройках.",
   "error.unexpectedDetail": "Произошла непредвиденная ошибка.",
-  "header.caddylabs": "CaddyLabs"
+  "header.caddylabs": "CaddyLabs",
+  "sidebar.evidence": "Доказательства",
+  "sidebar.products": "Продукты"
 }

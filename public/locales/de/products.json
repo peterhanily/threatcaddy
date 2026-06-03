@@ -1,0 +1,54 @@
+{
+  "header.title": "Produkte",
+  "header.subtitle": "Generierte Berichte, Notizen und Ergebnisse",
+  "header.importBaseline": "Baseline importieren",
+  "header.baselines": "Baselines",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "Produkt-Baselines",
+  "baselines.description": "Jinja-kompatible Baselines definieren wiederverwendbare Berichtsstrukturen. CaddyAI kann diese mit Ermittlungsnotizen, IOCs, Beweismitteln, Zeitleisten und von Analysten bereitgestellten Feldern rendern.",
+  "baselines.count_one": "{{count}} Baseline",
+  "baselines.count_other": "{{count}} Baselines",
+  "baselines.empty": "Importieren Sie ein Produkt-Baseline-Paket, um es CaddyAI und dem Produkt-Rendering zur Verfügung zu stellen.",
+  "baselines.preview": "Vorschau",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "{{name}} importiert",
+  "baseline.importError": "Import des Produkt-Baseline-Pakets fehlgeschlagen.",
+  "baseline.docxAttachSuccess": "DOCX-Vorlage {{name}} angehängt",
+  "baseline.docxAttachError": "Anhängen der DOCX-Vorlage fehlgeschlagen.",
+  "baseline.docxRenderError": "Rendern von DOCX aus der angehängten Baseline-Vorlage fehlgeschlagen.",
+
+  "products.heading": "Generierte Produkte",
+  "search.placeholder": "Produkte suchen",
+  "search.ariaLabel": "Produkte suchen",
+  "search.clearAriaLabel": "Produktsuche zurücksetzen",
+
+  "empty.noProducts": "Noch keine Produkte",
+  "empty.noProductsDesc": "Bitten Sie CaddyAI, eine Produkt-Baseline zu rendern, um hier einen Berichtsentwurf zu erstellen.",
+  "empty.noMatch": "Keine passenden Produkte",
+  "empty.noMatchDesc": "Versuchen Sie einen Produkttitel, ein Tag oder einen Ausdruck aus dem Entwurf.",
+
+  "card.previewProduct": "Produktvorschau",
+  "card.sourceNote": "Quellnotiz",
+  "card.noPreview": "Keine Produktvorschau verfügbar.",
+
+  "manager.title": "Produkt-Baselines",
+  "manager.attachDocx": "DOCX anhängen",
+  "manager.copyPrompt": "Prompt kopieren",
+  "manager.exportPackage": "Paket exportieren",
+  "manager.docxTemplateAttached": "DOCX-Vorlage angehängt",
+  "manager.baselineSources": "Baseline-Quellen: {{names}}",
+  "manager.testFixtures": "Test-Fixtures: {{names}}",
+  "manager.noBaselines": "Keine Produkt-Baselines verfügbar.",
+
+  "manager.copyPromptText": "Verwenden Sie die Produkt-Baseline \"{{name}}\", um ein fertiges Produkt für die aktive Ermittlung zu rendern. Halten Sie es kundenfertig, bewahren Sie die Quellnotizen und erstellen Sie das Produkt als getaggte Produktnotiz.",
+  "manager.docxTemplateNotes": "Angehängte DOCX-Vorlage für den Baseline-gestützten Produktexport.",
+
+  "preview.title": "Produktvorschau",
+  "preview.updated": "Aktualisiert {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "Drucken",
+  "preview.source": "Quelle"
+}

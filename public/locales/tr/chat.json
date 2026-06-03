@@ -136,5 +136,9 @@
     "link": "İlgili varlıkları bul ve bağla",
     "loop": "Yinelenen istem zamanla",
     "stoploop": "Arka plan döngülerini durdur"
+  },
+  "cti": {
+    "invalidCommand": "Bu CTI komutu çalıştırılamadı:",
+    "noSources": "Yapılandırılmış CTI Agent Host kaynağı yok. Bu komutu kullanmak için Ayarlar → AI → Agent Hosts altına bir CTI host'u ekleyin."
   }
 }

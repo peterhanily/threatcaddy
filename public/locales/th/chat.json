@@ -55,7 +55,6 @@
   "slashCommand.enrich": "เสริมข้อมูล IOC",
   "slashCommand.timeline": "วิเคราะห์ไทม์ไลน์",
   "slashCommand.hunt": "รันงานล่าภัยคุกคาม",
-
   "view.newFolder": "การสืบสวนใหม่",
   "view.folderNamePlaceholder": "ชื่อการสืบสวน...",
   "view.noThreadsYet": "ยังไม่มีเธรดแชท",
@@ -129,7 +128,6 @@
   "view.onboardingStep3Title": "3. เปิดใช้งานสิทธิ์",
   "view.onboardingStep3Desc": "ในป๊อปอัพส่วนขยาย เปิด \"อนุญาต CaddyAI\" สำหรับการเข้าถึงผู้ให้บริการ AI และ \"อนุญาตการดึง URL\" สำหรับเครื่องมือ /fetch",
   "view.onboardingDismiss": "เข้าใจแล้ว",
-
   "input.noApiKeys": "ไม่ได้กำหนดค่า API keys — เพิ่มในการตั้งค่า → AI/LLM",
   "input.extensionStatus": "ส่วนขยาย",
   "input.localLlmStatus": "Local LLM",
@@ -150,7 +148,6 @@
   "input.sendMessage": "ส่งข้อความ (Enter)",
   "input.noMatchesFound": "ไม่พบการจับคู่",
   "input.imageLabel": "รูปภาพ {{index}}",
-
   "message.sources": "แหล่งที่มา",
   "message.branchTitle": "แยกแขนงการสนทนาจากตรงนี้",
   "message.rewindTitle": "ย้อนกลับไปยังข้อความนี้",
@@ -158,7 +155,6 @@
   "message.attachmentAlt": "ไฟล์แนบ {{index}}",
   "message.tokenCount": "{{count}} โทเค็น",
   "message.tokenCountTitle": "อินพุต: {{input}} โทเค็น, เอาต์พุต: {{output}} โทเค็น",
-
   "tool.noInput": "(ไม่มีอินพุต)",
   "tool.errorPrefix": "ข้อผิดพลาด: {{message}}",
   "tool.resultCount_one": "{{count}} ผลลัพธ์",
@@ -171,7 +167,6 @@
   "tool.doneEmpty": "เสร็จสิ้น (ผลลัพธ์ว่าง)",
   "tool.inputLabel": "อินพุต:",
   "tool.resultLabel": "ผลลัพธ์:",
-
   "slash.fetch": "ดึง URL ลงในบันทึก",
   "slash.search": "ค้นหาบันทึกของคุณ",
   "slash.note": "สร้างบันทึกใหม่",
@@ -184,5 +179,9 @@
   "slash.graph": "วิเคราะห์ความสัมพันธ์ของเอนทิตี",
   "slash.link": "ค้นหาและเชื่อมโยงเอนทิตีที่เกี่ยวข้อง",
   "slash.loop": "กำหนดเวลาพรอมต์ที่เกิดขึ้นซ้ำ",
-  "slash.stoploop": "หยุดลูปพื้นหลัง"
+  "slash.stoploop": "หยุดลูปพื้นหลัง",
+  "cti": {
+    "invalidCommand": "ไม่สามารถเรียกใช้คำสั่ง CTI นั้นได้:",
+    "noSources": "ยังไม่ได้กำหนดค่าแหล่ง CTI Agent Host เพิ่ม CTI host ในเมนู การตั้งค่า → AI → Agent Hosts เพื่อใช้คำสั่งนี้"
+  }
 }

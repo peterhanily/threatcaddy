@@ -213,5 +213,7 @@
   "demoModal.deleteDemo": "デモを削除して最初から始める",
   "demoModal.removeHint": "サンプルデータは後で設定から削除できます。",
   "error.unexpectedDetail": "予期しないエラーが発生しました。",
-  "header.caddylabs": "CaddyLabs"
+  "header.caddylabs": "CaddyLabs",
+  "sidebar.evidence": "証拠",
+  "sidebar.products": "成果物"
 }

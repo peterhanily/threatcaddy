@@ -409,5 +409,9 @@
   "agents.bearerTokenPlaceholder": "رمز Bearer",
   "agents.disableHost": "تعطيل {{name}}",
   "agents.enableHost": "تمكين {{name}}",
-  "agents.deleteHost": "حذف {{name}}"
+  "agents.deleteHost": "حذف {{name}}",
+  "intel.autoEnrich.toggleLabel": "التحقّق التلقائي من IOCs المستوردة",
+  "intel.autoEnrich.toggleDesc": "يشغّل عمليات تكامل VirusTotal المُفعَّلة بعد إنشاء IOC.",
+  "intel.autoEnrich.limitLabel": "حد التحقّق التلقائي",
+  "intel.autoEnrich.limitDesc": "أقصى عدد من IOCs المستوردة للتحقّق منها لكل دفعة."
 }

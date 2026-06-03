@@ -1,0 +1,54 @@
+{
+  "header.title": "Producten",
+  "header.subtitle": "Gegenereerde rapporten, notities en deliverables",
+  "header.importBaseline": "Baseline importeren",
+  "header.baselines": "Baselines",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "Productbaselines",
+  "baselines.description": "Jinja-compatibele baselines definiëren herbruikbare rapportstructuren. CaddyAI kan deze weergeven met onderzoeksnotities, IOC's, bewijsmateriaal, tijdlijnen en door de analist aangeleverde velden.",
+  "baselines.count_one": "{{count}} baseline",
+  "baselines.count_other": "{{count}} baselines",
+  "baselines.empty": "Importeer een productbaselinepakket om het beschikbaar te maken voor CaddyAI en productweergave.",
+  "baselines.preview": "Voorbeeld",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "{{name}} geïmporteerd",
+  "baseline.importError": "Importeren van productbaselinepakket mislukt.",
+  "baseline.docxAttachSuccess": "DOCX-sjabloon {{name}} gekoppeld",
+  "baseline.docxAttachError": "Koppelen van DOCX-sjabloon mislukt.",
+  "baseline.docxRenderError": "Weergeven van DOCX vanuit het gekoppelde baselinesjabloon mislukt.",
+
+  "products.heading": "Gegenereerde producten",
+  "search.placeholder": "Producten zoeken",
+  "search.ariaLabel": "Producten zoeken",
+  "search.clearAriaLabel": "Productzoekopdracht wissen",
+
+  "empty.noProducts": "Nog geen producten",
+  "empty.noProductsDesc": "Vraag CaddyAI om een productbaseline weer te geven om hier een conceptrapport aan te maken.",
+  "empty.noMatch": "Geen overeenkomende producten",
+  "empty.noMatchDesc": "Probeer een producttitel, tag of zin uit het concept.",
+
+  "card.previewProduct": "Productvoorbeeld",
+  "card.sourceNote": "Bronnotitie",
+  "card.noPreview": "Geen productvoorbeeld beschikbaar.",
+
+  "manager.title": "Productbaselines",
+  "manager.attachDocx": "DOCX koppelen",
+  "manager.copyPrompt": "Prompt kopiëren",
+  "manager.exportPackage": "Pakket exporteren",
+  "manager.docxTemplateAttached": "DOCX-sjabloon gekoppeld",
+  "manager.baselineSources": "Baselinebronnen: {{names}}",
+  "manager.testFixtures": "Testfixtures: {{names}}",
+  "manager.noBaselines": "Geen productbaselines beschikbaar.",
+
+  "manager.copyPromptText": "Gebruik de productbaseline \"{{name}}\" om een afgewerkt product weer te geven voor het actieve onderzoek. Houd het klaar voor de klant, behoud bronnotities en maak het product aan als een getagde productnotitie.",
+  "manager.docxTemplateNotes": "Gekoppeld DOCX-sjabloon dat wordt gebruikt voor baseline-ondersteunde productexport.",
+
+  "preview.title": "Productvoorbeeld",
+  "preview.updated": "Bijgewerkt {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "Afdrukken",
+  "preview.source": "Bron"
+}

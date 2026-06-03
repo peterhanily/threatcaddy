@@ -409,5 +409,9 @@
   "agents.bearerTokenPlaceholder": "โทเค็น Bearer",
   "agents.disableHost": "ปิดใช้งาน {{name}}",
   "agents.enableHost": "เปิดใช้งาน {{name}}",
-  "agents.deleteHost": "ลบ {{name}}"
+  "agents.deleteHost": "ลบ {{name}}",
+  "intel.autoEnrich.toggleLabel": "ตรวจสอบ IOC ที่นำเข้าโดยอัตโนมัติ",
+  "intel.autoEnrich.toggleDesc": "เรียกใช้การผสานรวม VirusTotal ที่เปิดใช้งานหลังจากสร้าง IOC",
+  "intel.autoEnrich.limitLabel": "ขีดจำกัดการตรวจสอบอัตโนมัติ",
+  "intel.autoEnrich.limitDesc": "จำนวน IOC ที่นำเข้าสูงสุดที่จะตรวจสอบต่อชุด"
 }

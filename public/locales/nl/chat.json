@@ -135,5 +135,9 @@
     "link": "Gerelateerde objecten zoeken en koppelen",
     "loop": "Terugkerende prompt plannen",
     "stoploop": "Achtergrondlussen stoppen"
+  },
+  "cti": {
+    "invalidCommand": "Die CTI-opdracht kon niet worden uitgevoerd:",
+    "noSources": "Er zijn geen CTI Agent Host-bronnen geconfigureerd. Voeg een CTI-host toe onder Instellingen → AI → Agent Hosts om deze opdracht te gebruiken."
   }
 }

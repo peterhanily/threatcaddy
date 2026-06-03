@@ -4,7 +4,6 @@
   "closureResolution.escalated": "에스컬레이션됨",
   "closureResolution.duplicate": "중복",
   "closureResolution.inconclusive": "결론 없음",
-
   "kpiMetric.open-investigations": "진행 중인 조사",
   "kpiMetric.closed-this-month": "이번 달 종료",
   "kpiMetric.avg-investigation-age": "평균 조사 기간",
@@ -14,7 +13,6 @@
   "kpiMetric.notes-created-week": "이번 주 생성된 노트",
   "kpiMetric.timeline-events-week": "이번 주 타임라인 이벤트",
   "kpiMetric.overdue-tasks": "기한 초과 태스크",
-
   "iocTableColumn.value": "값",
   "iocTableColumn.type": "유형",
   "iocTableColumn.confidence": "신뢰도",
@@ -28,7 +26,6 @@
   "iocTableColumn.firstSeen": "최초 발견",
   "iocTableColumn.labels": "레이블",
   "iocTableColumn.assignee": "담당자",
-
   "iocType.ipv4": "IPv4",
   "iocType.ipv6": "IPv6",
   "iocType.domain": "도메인",
@@ -42,17 +39,14 @@
   "iocType.yara-rule": "YARA 규칙",
   "iocType.sigma-rule": "Sigma 규칙",
   "iocType.file-path": "파일 경로",
-
   "iocStatus.active": "활성",
   "iocStatus.resolved": "해결됨",
   "iocStatus.false-positive": "오탐",
   "iocStatus.under-investigation": "조사 중",
-
   "confidence.low": "낮음",
   "confidence.medium": "중간",
   "confidence.high": "높음",
   "confidence.confirmed": "확인됨",
-
   "timelineEventType.initial-access": "초기 접근",
   "timelineEventType.execution": "실행",
   "timelineEventType.persistence": "지속성",
@@ -72,7 +66,6 @@
   "timelineEventType.communication": "통신",
   "timelineEventType.evidence": "증거",
   "timelineEventType.other": "기타",
-
   "noteColor.none": "없음",
   "noteColor.red": "빨강",
   "noteColor.orange": "주황",
@@ -81,7 +74,6 @@
   "noteColor.blue": "파랑",
   "noteColor.purple": "보라",
   "noteColor.pink": "분홍",
-
   "activityCategory.note": "노트",
   "activityCategory.task": "태스크",
   "activityCategory.timeline": "타임라인",
@@ -93,13 +85,11 @@
   "activityCategory.data": "데이터",
   "activityCategory.chat": "채팅",
   "activityCategory.agent-bridge": "에이전트",
-
   "sessionDuration.every-load": "페이지 로드마다",
   "sessionDuration.tab-close": "탭 닫을 때까지",
   "sessionDuration.1h": "1시간",
   "sessionDuration.8h": "8시간",
   "sessionDuration.24h": "24시간",
-
   "field.title": "제목",
   "field.content": "콘텐츠",
   "field.description": "설명",
@@ -112,7 +102,6 @@
   "field.category": "카테고리",
   "field.timestamp": "타임스탬프",
   "field.source": "출처",
-
   "mapping.timestamp": "타임스탬프",
   "mapping.event-title": "이벤트 제목",
   "mapping.event-description": "설명",
@@ -132,13 +121,12 @@
   "mapping.ioc-cve": "IOC: CVE",
   "mapping.ioc-file-path": "IOC: 파일 경로",
   "mapping.ignore": "무시",
-
   "mentionCategory.note": "노트",
   "mentionCategory.ioc": "IOC",
   "mentionCategory.investigation": "조사",
-
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
-  "model.group.mistral": "Mistral"
+  "model.group.mistral": "Mistral",
+  "activityCategory.evidence": "증거"
 }

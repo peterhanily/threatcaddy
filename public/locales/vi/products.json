@@ -1,0 +1,54 @@
+{
+  "header.title": "Sản phẩm",
+  "header.subtitle": "Báo cáo, ghi chú và sản phẩm bàn giao đã tạo",
+  "header.importBaseline": "Nhập mẫu cơ sở",
+  "header.baselines": "Mẫu cơ sở",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "Mẫu cơ sở sản phẩm",
+  "baselines.description": "Các mẫu cơ sở tương thích với Jinja định nghĩa cấu trúc báo cáo có thể tái sử dụng. CaddyAI có thể kết xuất chúng cùng với ghi chú điều tra, IOC, bằng chứng, timeline và các trường do nhà phân tích cung cấp.",
+  "baselines.count_one": "{{count}} mẫu cơ sở",
+  "baselines.count_other": "{{count}} mẫu cơ sở",
+  "baselines.empty": "Nhập một gói mẫu cơ sở sản phẩm để cung cấp cho CaddyAI và việc kết xuất sản phẩm.",
+  "baselines.preview": "Xem trước",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "Đã nhập {{name}}",
+  "baseline.importError": "Không nhập được gói mẫu cơ sở sản phẩm.",
+  "baseline.docxAttachSuccess": "Đã đính kèm mẫu DOCX {{name}}",
+  "baseline.docxAttachError": "Không đính kèm được mẫu DOCX.",
+  "baseline.docxRenderError": "Không kết xuất được DOCX từ mẫu cơ sở đã đính kèm.",
+
+  "products.heading": "Sản phẩm đã tạo",
+  "search.placeholder": "Tìm kiếm sản phẩm",
+  "search.ariaLabel": "Tìm kiếm sản phẩm",
+  "search.clearAriaLabel": "Xóa tìm kiếm sản phẩm",
+
+  "empty.noProducts": "Chưa có sản phẩm nào",
+  "empty.noProductsDesc": "Yêu cầu CaddyAI kết xuất một mẫu cơ sở sản phẩm để tạo bản nháp báo cáo ở đây.",
+  "empty.noMatch": "Không có sản phẩm nào khớp",
+  "empty.noMatchDesc": "Thử tiêu đề sản phẩm, thẻ hoặc cụm từ từ bản nháp.",
+
+  "card.previewProduct": "Xem trước sản phẩm",
+  "card.sourceNote": "Ghi chú nguồn",
+  "card.noPreview": "Không có bản xem trước sản phẩm.",
+
+  "manager.title": "Mẫu cơ sở sản phẩm",
+  "manager.attachDocx": "Đính kèm DOCX",
+  "manager.copyPrompt": "Sao chép lời nhắc",
+  "manager.exportPackage": "Xuất gói",
+  "manager.docxTemplateAttached": "Đã đính kèm mẫu DOCX",
+  "manager.baselineSources": "Nguồn mẫu cơ sở: {{names}}",
+  "manager.testFixtures": "Dữ liệu kiểm thử: {{names}}",
+  "manager.noBaselines": "Không có mẫu cơ sở sản phẩm nào.",
+
+  "manager.copyPromptText": "Sử dụng mẫu cơ sở sản phẩm \"{{name}}\" để kết xuất một sản phẩm hoàn chỉnh cho cuộc điều tra đang hoạt động. Giữ cho sản phẩm sẵn sàng bàn giao cho khách hàng, bảo toàn các ghi chú nguồn, và tạo sản phẩm dưới dạng ghi chú sản phẩm được gắn thẻ.",
+  "manager.docxTemplateNotes": "Mẫu DOCX đã đính kèm được dùng cho việc xuất sản phẩm dựa trên mẫu cơ sở.",
+
+  "preview.title": "Xem trước sản phẩm",
+  "preview.updated": "Đã cập nhật {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "In",
+  "preview.source": "Nguồn"
+}

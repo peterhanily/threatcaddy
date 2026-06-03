@@ -1,0 +1,54 @@
+{
+  "header.title": "Продукты",
+  "header.subtitle": "Сгенерированные отчёты, заметки и результаты",
+  "header.importBaseline": "Импортировать шаблон",
+  "header.baselines": "Шаблоны",
+  "header.caddyAI": "CaddyAI",
+
+  "baselines.title": "Шаблоны продуктов",
+  "baselines.description": "Совместимые с Jinja шаблоны задают повторяемые структуры отчётов. CaddyAI может отрисовать их с заметками расследования, IOC, доказательствами, таймлайнами и полями, предоставленными аналитиком.",
+  "baselines.count_one": "{{count}} шаблон",
+  "baselines.count_other": "{{count}} шаблонов",
+  "baselines.empty": "Импортируйте пакет шаблона продукта, чтобы сделать его доступным для CaddyAI и отрисовки продуктов.",
+  "baselines.preview": "Предпросмотр",
+  "baselines.defaultIcon": "TPL",
+
+  "baseline.importSuccess": "Импортировано: {{name}}",
+  "baseline.importError": "Не удалось импортировать пакет шаблона продукта.",
+  "baseline.docxAttachSuccess": "Прикреплён шаблон DOCX {{name}}",
+  "baseline.docxAttachError": "Не удалось прикрепить шаблон DOCX.",
+  "baseline.docxRenderError": "Не удалось отрисовать DOCX из прикреплённого шаблона.",
+
+  "products.heading": "Сгенерированные продукты",
+  "search.placeholder": "Поиск по продуктам",
+  "search.ariaLabel": "Поиск по продуктам",
+  "search.clearAriaLabel": "Очистить поиск по продуктам",
+
+  "empty.noProducts": "Продуктов пока нет",
+  "empty.noProductsDesc": "Попросите CaddyAI отрисовать шаблон продукта, чтобы создать здесь черновик отчёта.",
+  "empty.noMatch": "Нет совпадающих продуктов",
+  "empty.noMatchDesc": "Попробуйте заголовок продукта, тег или фразу из черновика.",
+
+  "card.previewProduct": "Предпросмотр продукта",
+  "card.sourceNote": "Исходная заметка",
+  "card.noPreview": "Предпросмотр продукта недоступен.",
+
+  "manager.title": "Шаблоны продуктов",
+  "manager.attachDocx": "Прикрепить DOCX",
+  "manager.copyPrompt": "Копировать запрос",
+  "manager.exportPackage": "Экспортировать пакет",
+  "manager.docxTemplateAttached": "Шаблон DOCX прикреплён",
+  "manager.baselineSources": "Источники шаблона: {{names}}",
+  "manager.testFixtures": "Тестовые фикстуры: {{names}}",
+  "manager.noBaselines": "Шаблоны продуктов недоступны.",
+
+  "manager.copyPromptText": "Используйте шаблон продукта «{{name}}», чтобы отрисовать готовый продукт для активного расследования. Сохраните его готовым для клиента, сохраните исходные заметки и создайте продукт как заметку-продукт с тегом.",
+  "manager.docxTemplateNotes": "Прикреплённый шаблон DOCX, используемый для экспорта продукта на основе шаблона.",
+
+  "preview.title": "Предпросмотр продукта",
+  "preview.updated": "Обновлено {{date}}",
+  "preview.docx": "DOCX",
+  "preview.markdown": "Markdown",
+  "preview.print": "Печать",
+  "preview.source": "Источник"
+}

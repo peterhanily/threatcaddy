@@ -4,7 +4,6 @@
   "closureResolution.escalated": "Đã leo thang",
   "closureResolution.duplicate": "Trùng lặp",
   "closureResolution.inconclusive": "Không kết luận được",
-
   "kpiMetric.open-investigations": "Điều tra đang mở",
   "kpiMetric.closed-this-month": "Đã đóng tháng này",
   "kpiMetric.avg-investigation-age": "Tuổi trung bình điều tra",
@@ -14,7 +13,6 @@
   "kpiMetric.notes-created-week": "Ghi chú đã tạo (tuần)",
   "kpiMetric.timeline-events-week": "Sự kiện timeline (tuần)",
   "kpiMetric.overdue-tasks": "Nhiệm vụ trễ hạn",
-
   "iocTableColumn.value": "Giá trị",
   "iocTableColumn.type": "Loại",
   "iocTableColumn.confidence": "Độ tin cậy",
@@ -28,7 +26,6 @@
   "iocTableColumn.firstSeen": "Lần đầu thấy",
   "iocTableColumn.labels": "Nhãn",
   "iocTableColumn.assignee": "Được giao cho",
-
   "iocType.ipv4": "IPv4",
   "iocType.ipv6": "IPv6",
   "iocType.domain": "Tên miền",
@@ -42,17 +39,14 @@
   "iocType.yara-rule": "Quy tắc YARA",
   "iocType.sigma-rule": "Quy tắc Sigma",
   "iocType.file-path": "Đường dẫn tệp",
-
   "iocStatus.active": "Đang hoạt động",
   "iocStatus.resolved": "Đã giải quyết",
   "iocStatus.false-positive": "Dương tính giả",
   "iocStatus.under-investigation": "Đang điều tra",
-
   "confidence.low": "Thấp",
   "confidence.medium": "Trung bình",
   "confidence.high": "Cao",
   "confidence.confirmed": "Đã xác nhận",
-
   "timelineEventType.initial-access": "Truy cập ban đầu",
   "timelineEventType.execution": "Thực thi",
   "timelineEventType.persistence": "Duy trì",
@@ -72,7 +66,6 @@
   "timelineEventType.communication": "Truyền thông",
   "timelineEventType.evidence": "Bằng chứng",
   "timelineEventType.other": "Khác",
-
   "noteColor.none": "Không có",
   "noteColor.red": "Đỏ",
   "noteColor.orange": "Cam",
@@ -81,7 +74,6 @@
   "noteColor.blue": "Xanh dương",
   "noteColor.purple": "Tím",
   "noteColor.pink": "Hồng",
-
   "activityCategory.note": "Ghi chú",
   "activityCategory.task": "Nhiệm vụ",
   "activityCategory.timeline": "Timeline",
@@ -93,13 +85,11 @@
   "activityCategory.data": "Dữ liệu",
   "activityCategory.chat": "Trò chuyện",
   "activityCategory.agent-bridge": "Tác nhân",
-
   "sessionDuration.every-load": "Mỗi lần tải trang",
   "sessionDuration.tab-close": "Cho đến khi đóng tab",
   "sessionDuration.1h": "1 giờ",
   "sessionDuration.8h": "8 giờ",
   "sessionDuration.24h": "24 giờ",
-
   "field.title": "Tiêu đề",
   "field.content": "Nội dung",
   "field.description": "Mô tả",
@@ -112,7 +102,6 @@
   "field.category": "Danh mục",
   "field.timestamp": "Timestamp",
   "field.source": "Nguồn",
-
   "mapping.timestamp": "Timestamp",
   "mapping.event-title": "Tiêu đề sự kiện",
   "mapping.event-description": "Mô tả",
@@ -132,13 +121,12 @@
   "mapping.ioc-cve": "IOC: CVE",
   "mapping.ioc-file-path": "IOC: Đường dẫn tệp",
   "mapping.ignore": "Bỏ qua",
-
   "mentionCategory.note": "Ghi chú",
   "mentionCategory.ioc": "IOC",
   "mentionCategory.investigation": "Điều tra",
-
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
-  "model.group.mistral": "Mistral"
+  "model.group.mistral": "Mistral",
+  "activityCategory.evidence": "Bằng chứng"
 }

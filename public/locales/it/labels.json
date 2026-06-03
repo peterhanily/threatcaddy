@@ -4,7 +4,6 @@
   "closureResolution.escalated": "Escalato",
   "closureResolution.duplicate": "Duplicato",
   "closureResolution.inconclusive": "Non conclusivo",
-
   "kpiMetric.open-investigations": "Indagini aperte",
   "kpiMetric.closed-this-month": "Chiuse questo mese",
   "kpiMetric.avg-investigation-age": "Età media indagine",
@@ -14,7 +13,6 @@
   "kpiMetric.notes-created-week": "Note create (settimana)",
   "kpiMetric.timeline-events-week": "Eventi timeline (settimana)",
   "kpiMetric.overdue-tasks": "Attività in ritardo",
-
   "iocTableColumn.value": "Valore",
   "iocTableColumn.type": "Tipo",
   "iocTableColumn.confidence": "Affidabilità",
@@ -28,7 +26,6 @@
   "iocTableColumn.firstSeen": "Prima vista",
   "iocTableColumn.labels": "Etichette",
   "iocTableColumn.assignee": "Assegnato",
-
   "iocType.ipv4": "IPv4",
   "iocType.ipv6": "IPv6",
   "iocType.domain": "Dominio",
@@ -42,17 +39,14 @@
   "iocType.yara-rule": "Regola YARA",
   "iocType.sigma-rule": "Regola SIGMA",
   "iocType.file-path": "Percorso file",
-
   "iocStatus.active": "Attivo",
   "iocStatus.resolved": "Risolto",
   "iocStatus.false-positive": "Falso positivo",
   "iocStatus.under-investigation": "Sotto indagine",
-
   "confidence.low": "Bassa",
   "confidence.medium": "Media",
   "confidence.high": "Alta",
   "confidence.confirmed": "Confermata",
-
   "timelineEventType.initial-access": "Accesso iniziale",
   "timelineEventType.execution": "Esecuzione",
   "timelineEventType.persistence": "Persistenza",
@@ -72,7 +66,6 @@
   "timelineEventType.communication": "Comunicazione",
   "timelineEventType.evidence": "Prova",
   "timelineEventType.other": "Altro",
-
   "noteColor.none": "Nessuno",
   "noteColor.red": "Rosso",
   "noteColor.orange": "Arancione",
@@ -81,7 +74,6 @@
   "noteColor.blue": "Blu",
   "noteColor.purple": "Viola",
   "noteColor.pink": "Rosa",
-
   "activityCategory.note": "Nota",
   "activityCategory.task": "Attività",
   "activityCategory.timeline": "Timeline",
@@ -93,13 +85,11 @@
   "activityCategory.data": "Dati",
   "activityCategory.chat": "Chat",
   "activityCategory.agent-bridge": "Agente",
-
   "sessionDuration.every-load": "Ad ogni caricamento pagina",
   "sessionDuration.tab-close": "Fino alla chiusura della scheda",
   "sessionDuration.1h": "1 ora",
   "sessionDuration.8h": "8 ore",
   "sessionDuration.24h": "24 ore",
-
   "field.title": "Titolo",
   "field.content": "Contenuto",
   "field.description": "Descrizione",
@@ -112,7 +102,6 @@
   "field.category": "Categoria",
   "field.timestamp": "Timestamp",
   "field.source": "Fonte",
-
   "mapping.timestamp": "Timestamp",
   "mapping.event-title": "Titolo evento",
   "mapping.event-description": "Descrizione",
@@ -132,13 +121,12 @@
   "mapping.ioc-cve": "IOC: CVE",
   "mapping.ioc-file-path": "IOC: Percorso file",
   "mapping.ignore": "Ignora",
-
   "mentionCategory.note": "Nota",
   "mentionCategory.ioc": "IOC",
   "mentionCategory.investigation": "Indagine",
-
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
-  "model.group.mistral": "Mistral"
+  "model.group.mistral": "Mistral",
+  "activityCategory.evidence": "Evidence"
 }

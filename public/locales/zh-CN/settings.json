@@ -409,5 +409,9 @@
   "agents.bearerTokenPlaceholder": "Bearer 令牌",
   "agents.disableHost": "禁用 {{name}}",
   "agents.enableHost": "启用 {{name}}",
-  "agents.deleteHost": "删除 {{name}}"
+  "agents.deleteHost": "删除 {{name}}",
+  "intel.autoEnrich.toggleLabel": "自动检查导入的 IOC",
+  "intel.autoEnrich.toggleDesc": "在创建 IOC 后运行已启用的 VirusTotal 集成。",
+  "intel.autoEnrich.limitLabel": "自动检查上限",
+  "intel.autoEnrich.limitDesc": "每批次最多检查的已导入 IOC 数量。"
 }

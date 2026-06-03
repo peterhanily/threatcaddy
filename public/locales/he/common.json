@@ -213,5 +213,7 @@
   "demoModal.deleteDemo": "מחיקת הדמו והתחלה מחדש",
   "demoModal.removeHint": "ניתן להסיר את נתוני הדוגמה מאוחר יותר בהגדרות.",
   "error.unexpectedDetail": "אירעה שגיאה לא צפויה.",
-  "header.caddylabs": "CaddyLabs"
+  "header.caddylabs": "CaddyLabs",
+  "sidebar.evidence": "ראיות",
+  "sidebar.products": "מוצרים"
 }

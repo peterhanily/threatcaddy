@@ -213,5 +213,7 @@
   "demoModal.deleteDemo": "حذف دمو و شروع تازه",
   "demoModal.removeHint": "می‌توانید داده‌های نمونه را بعداً در تنظیمات حذف کنید.",
   "error.unexpectedDetail": "خطای غیرمنتظره‌ای رخ داد.",
-  "header.caddylabs": "CaddyLabs"
+  "header.caddylabs": "CaddyLabs",
+  "sidebar.evidence": "شواهد",
+  "sidebar.products": "محصولات"
 }

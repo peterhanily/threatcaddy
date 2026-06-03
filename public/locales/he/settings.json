@@ -409,5 +409,9 @@
   "agents.bearerTokenPlaceholder": "אסימון Bearer",
   "agents.disableHost": "השבת {{name}}",
   "agents.enableHost": "הפעל {{name}}",
-  "agents.deleteHost": "מחק {{name}}"
+  "agents.deleteHost": "מחק {{name}}",
+  "intel.autoEnrich.toggleLabel": "בדיקה אוטומטית של IOCs מיובאים",
+  "intel.autoEnrich.toggleDesc": "מריץ אינטגרציות VirusTotal מופעלות לאחר יצירת IOC.",
+  "intel.autoEnrich.limitLabel": "מגבלת בדיקה אוטומטית",
+  "intel.autoEnrich.limitDesc": "מספר ה-IOCs המיובאים המרבי לבדיקה בכל אצווה."
 }

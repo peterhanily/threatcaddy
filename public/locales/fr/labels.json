@@ -4,7 +4,6 @@
   "closureResolution.escalated": "Escaladé",
   "closureResolution.duplicate": "Doublon",
   "closureResolution.inconclusive": "Non concluant",
-
   "kpiMetric.open-investigations": "Enquêtes ouvertes",
   "kpiMetric.closed-this-month": "Fermées ce mois",
   "kpiMetric.avg-investigation-age": "Âge moyen des enquêtes",
@@ -14,7 +13,6 @@
   "kpiMetric.notes-created-week": "Notes créées (semaine)",
   "kpiMetric.timeline-events-week": "Événements de chronologie (semaine)",
   "kpiMetric.overdue-tasks": "Tâches en retard",
-
   "iocTableColumn.value": "Valeur",
   "iocTableColumn.type": "Type",
   "iocTableColumn.confidence": "Confiance",
@@ -28,7 +26,6 @@
   "iocTableColumn.firstSeen": "Première vue",
   "iocTableColumn.labels": "Libellés",
   "iocTableColumn.assignee": "Responsable",
-
   "iocType.ipv4": "IPv4",
   "iocType.ipv6": "IPv6",
   "iocType.domain": "Domaine",
@@ -42,17 +39,14 @@
   "iocType.yara-rule": "Règle YARA",
   "iocType.sigma-rule": "Règle Sigma",
   "iocType.file-path": "Chemin de fichier",
-
   "iocStatus.active": "Actif",
   "iocStatus.resolved": "Résolu",
   "iocStatus.false-positive": "Faux positif",
   "iocStatus.under-investigation": "Sous enquête",
-
   "confidence.low": "Faible",
   "confidence.medium": "Moyen",
   "confidence.high": "Élevé",
   "confidence.confirmed": "Confirmé",
-
   "timelineEventType.initial-access": "Accès initial",
   "timelineEventType.execution": "Exécution",
   "timelineEventType.persistence": "Persistance",
@@ -72,7 +66,6 @@
   "timelineEventType.communication": "Communication",
   "timelineEventType.evidence": "Preuve",
   "timelineEventType.other": "Autre",
-
   "noteColor.none": "Aucune",
   "noteColor.red": "Rouge",
   "noteColor.orange": "Orange",
@@ -81,7 +74,6 @@
   "noteColor.blue": "Bleu",
   "noteColor.purple": "Violet",
   "noteColor.pink": "Rose",
-
   "activityCategory.note": "Note",
   "activityCategory.task": "Tâche",
   "activityCategory.timeline": "Chronologie",
@@ -93,13 +85,11 @@
   "activityCategory.data": "Données",
   "activityCategory.chat": "Chat",
   "activityCategory.agent-bridge": "Agent",
-
   "sessionDuration.every-load": "À chaque chargement de page",
   "sessionDuration.tab-close": "Jusqu'à la fermeture de l'onglet",
   "sessionDuration.1h": "1 heure",
   "sessionDuration.8h": "8 heures",
   "sessionDuration.24h": "24 heures",
-
   "field.title": "Titre",
   "field.content": "Contenu",
   "field.description": "Description",
@@ -112,7 +102,6 @@
   "field.category": "Catégorie",
   "field.timestamp": "Horodatage",
   "field.source": "Source",
-
   "mapping.timestamp": "Horodatage",
   "mapping.event-title": "Titre de l'événement",
   "mapping.event-description": "Description",
@@ -122,23 +111,22 @@
   "mapping.confidence": "Confiance",
   "mapping.actor": "Acteur",
   "mapping.asset": "Actif",
-  "mapping.ioc-ipv4": "IOC\u00a0: IPv4",
-  "mapping.ioc-domain": "IOC\u00a0: Domaine",
-  "mapping.ioc-url": "IOC\u00a0: URL",
-  "mapping.ioc-email": "IOC\u00a0: E-mail",
-  "mapping.ioc-md5": "IOC\u00a0: MD5",
-  "mapping.ioc-sha1": "IOC\u00a0: SHA-1",
-  "mapping.ioc-sha256": "IOC\u00a0: SHA-256",
-  "mapping.ioc-cve": "IOC\u00a0: CVE",
-  "mapping.ioc-file-path": "IOC\u00a0: Chemin de fichier",
+  "mapping.ioc-ipv4": "IOC : IPv4",
+  "mapping.ioc-domain": "IOC : Domaine",
+  "mapping.ioc-url": "IOC : URL",
+  "mapping.ioc-email": "IOC : E-mail",
+  "mapping.ioc-md5": "IOC : MD5",
+  "mapping.ioc-sha1": "IOC : SHA-1",
+  "mapping.ioc-sha256": "IOC : SHA-256",
+  "mapping.ioc-cve": "IOC : CVE",
+  "mapping.ioc-file-path": "IOC : Chemin de fichier",
   "mapping.ignore": "Ignorer",
-
   "mentionCategory.note": "Notes",
   "mentionCategory.ioc": "IOCs",
   "mentionCategory.investigation": "Enquêtes",
-
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
-  "model.group.mistral": "Mistral"
+  "model.group.mistral": "Mistral",
+  "activityCategory.evidence": "Preuves"
 }

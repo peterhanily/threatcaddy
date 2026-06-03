@@ -135,5 +135,9 @@
     "link": "Trova e collega entità correlate",
     "loop": "Pianifica prompt ripetuto",
     "stoploop": "Ferma loop in background"
+  },
+  "cti": {
+    "invalidCommand": "Non è stato possibile eseguire quel comando CTI:",
+    "noSources": "Nessuna origine CTI Agent Host è configurata. Aggiungi un host CTI in Impostazioni → AI → Agent Hosts per usare questo comando."
   }
 }

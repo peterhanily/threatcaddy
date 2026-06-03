@@ -55,7 +55,6 @@
   "slashCommand.enrich": "IOC 보강",
   "slashCommand.timeline": "타임라인 분석",
   "slashCommand.hunt": "위협 헌팅 작업 실행",
-
   "view.newFolder": "새 조사",
   "view.folderNamePlaceholder": "조사 이름...",
   "view.noThreadsYet": "아직 채팅 스레드가 없습니다",
@@ -129,7 +128,6 @@
   "view.onboardingStep3Title": "3. 권한 활성화",
   "view.onboardingStep3Desc": "확장 팝업에서 AI 공급자 액세스를 위해 \"CaddyAI 허용\"을 활성화하고 /fetch 도구를 위해 \"URL 가져오기 허용\"을 활성화하세요.",
   "view.onboardingDismiss": "확인",
-
   "input.noApiKeys": "API 키가 구성되지 않았습니다 — 설정 → AI/LLM에서 추가하세요",
   "input.extensionStatus": "확장",
   "input.localLlmStatus": "로컬 LLM",
@@ -150,7 +148,6 @@
   "input.sendMessage": "메시지 보내기 (Enter)",
   "input.noMatchesFound": "일치하는 항목 없음",
   "input.imageLabel": "이미지 {{index}}",
-
   "message.sources": "출처",
   "message.branchTitle": "여기에서 대화 분기",
   "message.rewindTitle": "이 메시지로 되감기",
@@ -158,7 +155,6 @@
   "message.attachmentAlt": "첨부 파일 {{index}}",
   "message.tokenCount": "{{count}}개 토큰",
   "message.tokenCountTitle": "입력: {{input}} 토큰, 출력: {{output}} 토큰",
-
   "tool.noInput": "(입력 없음)",
   "tool.errorPrefix": "오류: {{message}}",
   "tool.resultCount_one": "{{count}}개 결과",
@@ -171,7 +167,6 @@
   "tool.doneEmpty": "완료 (빈 결과)",
   "tool.inputLabel": "입력:",
   "tool.resultLabel": "결과:",
-
   "slash.fetch": "URL을 노트에 가져오기",
   "slash.search": "노트 검색",
   "slash.note": "새 노트 만들기",
@@ -184,5 +179,9 @@
   "slash.graph": "엔티티 관계 분석",
   "slash.link": "관련 엔티티 찾기 및 연결",
   "slash.loop": "반복 프롬프트 예약",
-  "slash.stoploop": "백그라운드 루프 중지"
+  "slash.stoploop": "백그라운드 루프 중지",
+  "cti": {
+    "invalidCommand": "해당 CTI 명령을 실행할 수 없습니다:",
+    "noSources": "구성된 CTI Agent Host 소스가 없습니다. 이 명령을 사용하려면 설정 → AI → Agent Hosts에서 CTI 호스트를 추가하세요."
+  }
 }

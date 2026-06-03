@@ -4,7 +4,6 @@
   "closureResolution.escalated": "Dieskalasi",
   "closureResolution.duplicate": "Duplikat",
   "closureResolution.inconclusive": "Tidak Meyakinkan",
-
   "kpiMetric.open-investigations": "Investigasi Terbuka",
   "kpiMetric.closed-this-month": "Ditutup Bulan Ini",
   "kpiMetric.avg-investigation-age": "Usia Investigasi Rata-rata",
@@ -14,7 +13,6 @@
   "kpiMetric.notes-created-week": "Catatan Dibuat (Minggu)",
   "kpiMetric.timeline-events-week": "Kejadian Timeline (Minggu)",
   "kpiMetric.overdue-tasks": "Tugas Terlambat",
-
   "iocTableColumn.value": "Nilai",
   "iocTableColumn.type": "Jenis",
   "iocTableColumn.confidence": "Kepercayaan",
@@ -28,7 +26,6 @@
   "iocTableColumn.firstSeen": "Pertama Terlihat",
   "iocTableColumn.labels": "Label",
   "iocTableColumn.assignee": "Ditugaskan",
-
   "iocType.ipv4": "IPv4",
   "iocType.ipv6": "IPv6",
   "iocType.domain": "Domain",
@@ -42,17 +39,14 @@
   "iocType.yara-rule": "Aturan YARA",
   "iocType.sigma-rule": "Aturan SIGMA",
   "iocType.file-path": "Path File",
-
   "iocStatus.active": "Aktif",
   "iocStatus.resolved": "Terselesaikan",
   "iocStatus.false-positive": "Positif Palsu",
   "iocStatus.under-investigation": "Dalam Investigasi",
-
   "confidence.low": "Rendah",
   "confidence.medium": "Sedang",
   "confidence.high": "Tinggi",
   "confidence.confirmed": "Dikonfirmasi",
-
   "timelineEventType.initial-access": "Akses Awal",
   "timelineEventType.execution": "Eksekusi",
   "timelineEventType.persistence": "Persistensi",
@@ -72,7 +66,6 @@
   "timelineEventType.communication": "Komunikasi",
   "timelineEventType.evidence": "Bukti",
   "timelineEventType.other": "Lainnya",
-
   "noteColor.none": "Tidak ada",
   "noteColor.red": "Merah",
   "noteColor.orange": "Oranye",
@@ -81,7 +74,6 @@
   "noteColor.blue": "Biru",
   "noteColor.purple": "Ungu",
   "noteColor.pink": "Merah Muda",
-
   "activityCategory.note": "Catatan",
   "activityCategory.task": "Tugas",
   "activityCategory.timeline": "Timeline",
@@ -93,13 +85,11 @@
   "activityCategory.data": "Data",
   "activityCategory.chat": "Obrolan",
   "activityCategory.agent-bridge": "Agen",
-
   "sessionDuration.every-load": "Setiap halaman dimuat",
   "sessionDuration.tab-close": "Sampai tab ditutup",
   "sessionDuration.1h": "1 jam",
   "sessionDuration.8h": "8 jam",
   "sessionDuration.24h": "24 jam",
-
   "field.title": "Judul",
   "field.content": "Konten",
   "field.description": "Deskripsi",
@@ -112,7 +102,6 @@
   "field.category": "Kategori",
   "field.timestamp": "Timestamp",
   "field.source": "Sumber",
-
   "mapping.timestamp": "Timestamp",
   "mapping.event-title": "Judul Kejadian",
   "mapping.event-description": "Deskripsi",
@@ -132,13 +121,12 @@
   "mapping.ioc-cve": "IOC: CVE",
   "mapping.ioc-file-path": "IOC: Path File",
   "mapping.ignore": "Abaikan",
-
   "mentionCategory.note": "Catatan",
   "mentionCategory.ioc": "IOC",
   "mentionCategory.investigation": "Investigasi",
-
   "model.group.anthropic": "Anthropic",
   "model.group.openai": "OpenAI",
   "model.group.google": "Google",
-  "model.group.mistral": "Mistral"
+  "model.group.mistral": "Mistral",
+  "activityCategory.evidence": "Bukti"
 }
