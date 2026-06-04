@@ -51,7 +51,14 @@ export function truncate(text: string, maxLength: number): string {
 
 export function isOverdue(dueDate?: string): boolean {
   if (!dueDate) return false;
-  const due = new Date(dueDate);
+  // Parse a YYYY-MM-DD prefix as a LOCAL calendar day. `new Date('YYYY-MM-DD')`
+  // parses as UTC midnight, which misaligns with the local setHours() below and
+  // makes a task due *today* read as overdue in any timezone behind UTC.
+  const ymd = /^(\d{4})-(\d{2})-(\d{2})/.exec(dueDate);
+  const due = ymd
+    ? new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]))
+    : new Date(dueDate);
+  if (Number.isNaN(due.getTime())) return false;
   due.setHours(23, 59, 59, 999);
   return due.getTime() < Date.now();
 }

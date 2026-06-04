@@ -93,7 +93,10 @@ describe('isOverdue', () => {
   });
 
   it('returns false for today', () => {
-    const today = new Date().toISOString().split('T')[0];
+    // Use the LOCAL calendar date (isOverdue compares in local time); toISOString
+    // would give the UTC date, which can differ near midnight in non-UTC zones.
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     expect(isOverdue(today)).toBe(false);
   });
 });
