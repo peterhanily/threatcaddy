@@ -410,7 +410,7 @@
   "agents.disableHost": "Desativar {{name}}",
   "agents.enableHost": "Ativar {{name}}",
   "agents.deleteHost": "Excluir {{name}}",
-  "intel.autoEnrich.toggleLabel": "Verificar automaticamente IOCs importados",
+  "intel.autoEnrich.toggleLabel": "Verificar automaticamente novos IOCs",
   "intel.autoEnrich.toggleDesc": "Executa as integrações do VirusTotal habilitadas após a criação do IOC.",
   "intel.autoEnrich.limitLabel": "Limite de verificação automática",
   "intel.autoEnrich.limitDesc": "Número máximo de IOCs importados a verificar por lote."

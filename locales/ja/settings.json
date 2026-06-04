@@ -410,7 +410,7 @@
   "agents.disableHost": "{{name}} を無効化",
   "agents.enableHost": "{{name}} を有効化",
   "agents.deleteHost": "{{name}} を削除",
-  "intel.autoEnrich.toggleLabel": "インポートした IOC を自動チェック",
+  "intel.autoEnrich.toggleLabel": "新しい IOC を自動チェック",
   "intel.autoEnrich.toggleDesc": "IOC の作成後、有効になっている VirusTotal 連携を実行します。",
   "intel.autoEnrich.limitLabel": "自動チェックの上限",
   "intel.autoEnrich.limitDesc": "1 バッチあたりにチェックするインポート済み IOC の最大数。"
