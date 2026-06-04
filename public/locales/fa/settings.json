@@ -410,7 +410,7 @@
   "agents.disableHost": "غیرفعال کردن {{name}}",
   "agents.enableHost": "فعال کردن {{name}}",
   "agents.deleteHost": "حذف {{name}}",
-  "intel.autoEnrich.toggleLabel": "بررسی خودکار IOCهای واردشده",
+  "intel.autoEnrich.toggleLabel": "بررسی خودکار IOCهای جدید",
   "intel.autoEnrich.toggleDesc": "پس از ایجاد IOC، یکپارچه‌سازی‌های فعال VirusTotal را اجرا می‌کند.",
   "intel.autoEnrich.limitLabel": "حد بررسی خودکار",
   "intel.autoEnrich.limitDesc": "حداکثر تعداد IOCهای واردشده برای بررسی در هر دسته."

@@ -62,6 +62,17 @@ async function markSkipped(ioc: StandaloneIOC): Promise<void> {
   });
 }
 
+// Stamp the final 'checked' status, replacing the tag set so the earlier
+// 'queued' marker can't linger (persistIOCIntegrationUpdate unions tags, and a
+// successful run may not emit an update-ioc step at all).
+async function markChecked(ioc: StandaloneIOC): Promise<void> {
+  const latest = await db.standaloneIOCs.get(ioc.id);
+  await db.standaloneIOCs.update(ioc.id, {
+    tags: nextTags(latest?.tags || ioc.tags, 'checked'),
+    updatedAt: Date.now(),
+  });
+}
+
 export async function autoEnrichImportedIOCs(
   iocs: StandaloneIOC[],
   options: AutoEnrichOptions,
@@ -127,6 +138,7 @@ export async function autoEnrichImportedIOCs(
 
       if (run.status === 'success') {
         stats.enriched += 1;
+        await markChecked(ioc);
       } else {
         stats.errors += 1;
         await markError(ioc);

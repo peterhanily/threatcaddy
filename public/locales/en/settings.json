@@ -356,7 +356,7 @@
   "intel.addCustomRelType": "Add Custom Relationship Type",
   "intel.configImported": "Config imported",
   "intel.invalidConfigFile": "Invalid JSON config file",
-  "intel.autoEnrich.toggleLabel": "Auto-check imported IOCs",
+  "intel.autoEnrich.toggleLabel": "Auto-check new IOCs",
   "intel.autoEnrich.toggleDesc": "Runs enabled VirusTotal integrations after IOC creation.",
   "intel.autoEnrich.limitLabel": "Auto-check limit",
   "intel.autoEnrich.limitDesc": "Maximum imported IOCs to check per batch.",
