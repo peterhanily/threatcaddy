@@ -101,6 +101,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+          # This job uses npm, not pnpm; setup-node@v5 auto-caches the root
+          # packageManager (pnpm) by default, which fails without pnpm installed.
+          package-manager-cache: false
       - name: Install server dependencies
         run: cd server && npm ci
       - name: Typecheck server
@@ -114,6 +117,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+          # This job uses npm, not pnpm; disable setup-node@v5's default pnpm
+          # package-manager cache (auto-detected from the root packageManager).
+          package-manager-cache: false
       - name: Build extension and verify zips are up to date
         run: |
           cd extension
