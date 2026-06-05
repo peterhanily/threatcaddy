@@ -38,7 +38,7 @@
   "general.notifications.bot": "Bot alerts",
   "general.notifications.botDesc": "Automated bot notifications",
   "general.sampleData": "Sample Data",
-  "general.sampleDataDesc": "Load a pre-built APT investigation (Operation FERMENTED PERSISTENCE) to explore ThreatCaddy's features. Includes notes, tasks, timeline events, IOCs, and a whiteboard.",
+  "general.sampleDataDesc": "Load a pre-built APT investigation (Operation FERMENTED PERSISTENCE) to explore ThreatCaddy's features. Includes notes, tasks, timeline events, IOCs (with VirusTotal enrichment), evidence files, a product baseline + bulletin, and a whiteboard.",
   "general.removeSample": "Remove Sample Investigation",
   "general.loadSample": "Load Sample Investigation",
   "general.about": "About",
