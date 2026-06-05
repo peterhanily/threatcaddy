@@ -1294,6 +1294,8 @@ const AppInner = memo(function AppInner({
     await db.tasks.bulkPut(data.tasks);
     await db.timelineEvents.bulkPut(data.timelineEvents);
     await db.standaloneIOCs.bulkPut(data.standaloneIOCs);
+    await db.evidenceItems.bulkPut(data.evidenceItems);
+    await db.noteTemplates.bulkPut(data.noteTemplates);
     await db.whiteboards.bulkPut([data.whiteboard]);
     if (data.chatThreads) await db.chatThreads.bulkPut(data.chatThreads);
     // Reload all hooks
@@ -1302,7 +1304,7 @@ const AppInner = memo(function AppInner({
     setSelectedFolderId('sample-investigation');
     navigateTo('notes');
     setSelectedNoteId(data.notes[0]?.id);
-    activityLog.log('data', 'import', 'Loaded sample investigation "Operation DARK GLACIER"');
+    activityLog.log('data', 'import', 'Loaded sample investigation "Operation FERMENTED PERSISTENCE"');
     addToast('success', tt('investigation.sampleLoaded'));
   }, [handleImportComplete, navigateTo, activityLog, setSelectedFolderId, addToast]);
 
@@ -1312,6 +1314,7 @@ const AppInner = memo(function AppInner({
     // which is far cheaper than .toArray() + in-memory filter + bulkDelete.
     const tables = [
       db.notes, db.tasks, db.timelineEvents, db.standaloneIOCs,
+      db.evidenceItems, db.noteTemplates,
       db.whiteboards, db.timelines, db.tags, db.chatThreads,
     ] as const;
     await Promise.all(
@@ -1325,7 +1328,7 @@ const AppInner = memo(function AppInner({
     if (selectedFolderId === 'sample-investigation') {
       setSelectedFolderId(undefined);
     }
-    activityLog.log('data', 'delete', 'Removed sample investigation "Operation DARK GLACIER"');
+    activityLog.log('data', 'delete', 'Removed sample investigation "Operation FERMENTED PERSISTENCE"');
     addToast('success', tt('investigation.sampleRemoved'));
   }, [handleImportComplete, selectedFolderId, activityLog, setSelectedFolderId, addToast]);
 
