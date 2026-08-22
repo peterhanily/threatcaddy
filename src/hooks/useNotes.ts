@@ -47,7 +47,10 @@ export function useNotes(folderId?: string) {
   // Bounded LRU cache of full note content keyed by note id (used by search when content isn't in state)
   const contentCacheRef = useRef(createLRUCache<string, string>(CONTENT_CACHE_MAX));
   const mountedRef = useRef(true);
-  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const loadNotes = useCallback(async () => {
     const allNotes = folderId
