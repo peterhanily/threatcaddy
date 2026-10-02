@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useStandaloneIOCs } from '../hooks/useStandaloneIOCs';
 import { db } from '../db';
 
@@ -306,7 +306,7 @@ describe('useStandaloneIOCs', () => {
     await db.standaloneIOCs.add(oldIOC);
 
     const { result } = renderHook(() => useStandaloneIOCs());
-    await act(async () => {});
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
     // Old trashed IOC should have been purged
     expect(result.current.iocs.find(i => i.id === 'old-trashed')).toBeUndefined();

@@ -8,29 +8,35 @@ const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
 
 function createSelectChain(rows: Record<string, unknown>[] = []) {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {
+  const chain: Record<string, unknown> = {
+    rows,
     from: vi.fn(),
     where: vi.fn(),
     limit: vi.fn().mockResolvedValue(rows),
     then: vi.fn((resolve: (v: unknown) => void) => resolve(rows)),
   };
-  chain.from.mockReturnValue(chain);
-  chain.where.mockReturnValue(chain);
+  (chain.from as ReturnType<typeof vi.fn>).mockReturnValue(chain);
+  (chain.where as ReturnType<typeof vi.fn>).mockReturnValue(chain);
   return chain;
 }
 
 
 function createUpdateChain(returningRows: Record<string, unknown>[] = [{ id: 'test' }]) {
+  let values: Record<string, unknown> = {};
   const chain = {
-    set: vi.fn().mockReturnThis(),
+    set: vi.fn((data: Record<string, unknown>) => { values = data; return chain; }),
     where: vi.fn().mockReturnThis(),
-    returning: vi.fn().mockResolvedValue(returningRows),
+    returning: vi.fn(async () => {
+      const selected = mockSelect.mock.results.at(-1)?.value.rows as Record<string, unknown>[] ?? [];
+      return returningRows.map(row => ({ ...selected.find(item => item.id === row.id), ...values, ...row }));
+    }),
   };
   return chain;
 }
 
 // ─── Mocks ───────────────────────────────────────────────────────
 const mockTxDb = {
+  execute: async () => [],
   select: (...args: unknown[]) => mockSelect(...args),
   insert: (...args: unknown[]) => mockInsert(...args),
   update: (...args: unknown[]) => mockUpdate(...args),
@@ -68,6 +74,7 @@ vi.mock('../db/schema.js', () => {
     whiteboards: makeTable('whiteboards'),
     standaloneIOCs: makeTable('standaloneIOCs'),
     chatThreads: makeTable('chatThreads'),
+    evidenceItems: makeTable('evidenceItems'),
     investigationMembers: makeTable('investigationMembers'),
   };
 });
@@ -82,7 +89,7 @@ vi.mock('../bots/event-bus.js', () => ({
 }));
 
 // ─── Dynamic imports after mocks ─────────────────────────────────
-let processPush: (changes: SyncChange[], userId: string) => Promise<SyncResult[]>;
+let processPush: (changes: SyncChange[], userId: string, options?: { trustedInternal: boolean }) => Promise<SyncResult[]>;
 let lookupEntityFolderId: (tableName: string, entityId: string) => Promise<string | undefined>;
 
 beforeEach(async () => {
@@ -111,7 +118,7 @@ describe('processPush delete broadcast scenarios', () => {
       entityId: 'note-1',
     }];
 
-    const results = await processPush(changes, 'user-1');
+    const results = await processPush(changes, 'user-1', { trustedInternal: true });
 
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({
@@ -144,7 +151,7 @@ describe('processPush delete broadcast scenarios', () => {
       entityId: 'note-2',
     }];
 
-    await processPush(changes, 'user-del');
+    await processPush(changes, 'user-del', { trustedInternal: true });
 
     // emitEntityEvent should be called with the folderId from existing record
     expect(mockEmitEntityEvent).toHaveBeenCalledTimes(1);
@@ -173,7 +180,7 @@ describe('processPush delete broadcast scenarios', () => {
       entityId: 'tag-1',
     }];
 
-    const results = await processPush(changes, 'user-1');
+    const results = await processPush(changes, 'user-1', { trustedInternal: true });
 
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({
@@ -219,7 +226,7 @@ describe('processPush delete broadcast scenarios', () => {
       { table: 'tasks', op: 'delete', entityId: 'task-b' },
     ];
 
-    const results = await processPush(changes, 'user-batch');
+    const results = await processPush(changes, 'user-batch', { trustedInternal: true });
 
     expect(results).toHaveLength(2);
     expect(results[0]).toMatchObject({ table: 'notes', entityId: 'note-a', status: 'accepted', serverVersion: 2 });
@@ -227,33 +234,16 @@ describe('processPush delete broadcast scenarios', () => {
     expect(mockEmitEntityEvent).toHaveBeenCalledTimes(2);
   });
 
-  it('delete followed by put of same entity uses pre-fetched version (batch check)', async () => {
-    // With batched existence checks, both changes share the same pre-fetched record.
-    // The delete bumps version 5→6 in the DB, but the put still sees version 5
-    // from the pre-fetched map. Since clientVersion (6) !== serverVersion (5),
-    // the put results in a conflict.
-    const existingRow = { id: 'note-rc', version: 5, folderId: 'f-rc', title: 'Old' };
-
-    // Single batch select for table 'notes' — returns the existing row
-    const selectChain = createSelectChain([existingRow]);
-    mockSelect.mockReturnValue(selectChain);
-
-    const updateChainDel = createUpdateChain([{ id: 'note-rc' }]);
-    mockUpdate.mockReturnValue(updateChainDel);
-
+  it('rejects repeated entity identities without emitting changes', async () => {
     const changes: SyncChange[] = [
-      { table: 'notes', op: 'delete', entityId: 'note-rc' },
-      { table: 'notes', op: 'put', entityId: 'note-rc', data: { title: 'Reborn', folderId: 'f-rc' }, clientVersion: 6 },
+      { table: 'notes', op: 'delete', entityId: 'note-1', clientVersion: 1 },
+      { table: 'notes', op: 'put', entityId: 'note-1', clientVersion: 1, data: { title: 'Edited' } },
     ];
-
-    const results = await processPush(changes, 'user-rc');
-
-    expect(results).toHaveLength(2);
-    // First: delete accepted (version bumped from 5 to 6)
-    expect(results[0]).toMatchObject({ table: 'notes', entityId: 'note-rc', status: 'accepted', serverVersion: 6 });
-    // Second: put conflicts because pre-fetched serverVersion (5) !== clientVersion (6)
-    expect(results[1]).toMatchObject({ table: 'notes', entityId: 'note-rc', status: 'conflict', serverVersion: 5 });
+    await expect(processPush(changes, 'user-1')).rejects.toThrow('Duplicate');
+    expect(mockEmitEntityEvent).not.toHaveBeenCalled();
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
+
 });
 
 // ═════════════════════════════════════════════════════════════════
@@ -330,7 +320,7 @@ describe('emitEntityEvent on delete operations', () => {
       entityId: 'note-ev1',
     }];
 
-    await processPush(changes, 'user-ev');
+    await processPush(changes, 'user-ev', { trustedInternal: true });
 
     expect(mockEmitEntityEvent).toHaveBeenCalledTimes(1);
     const [op, table, entityId, folderId, userId, isNew] = mockEmitEntityEvent.mock.calls[0];
@@ -352,7 +342,7 @@ describe('emitEntityEvent on delete operations', () => {
       entityId: 'gone-note',
     }];
 
-    await processPush(changes, 'user-ev');
+    await processPush(changes, 'user-ev', { trustedInternal: true });
 
     // Non-existent entity delete is accepted gracefully but no event emitted
     expect(mockEmitEntityEvent).not.toHaveBeenCalled();
@@ -373,7 +363,7 @@ describe('emitEntityEvent on delete operations', () => {
       entityId: 'tl-1',
     }];
 
-    await processPush(changes, 'user-ev');
+    await processPush(changes, 'user-ev', { trustedInternal: true });
 
     expect(mockEmitEntityEvent).toHaveBeenCalledTimes(1);
     expect(mockEmitEntityEvent).toHaveBeenCalledWith(
@@ -411,7 +401,7 @@ describe('emitEntityEvent on delete operations', () => {
       { table: 'tasks', op: 'delete', entityId: 't-mix' },
     ];
 
-    await processPush(changes, 'user-batch-ev');
+    await processPush(changes, 'user-batch-ev', { trustedInternal: true });
 
     expect(mockEmitEntityEvent).toHaveBeenCalledTimes(2);
 

@@ -7,6 +7,22 @@ import { db } from '../db';
 describe('useChats', () => {
   beforeEach(async () => {
     await db.chatThreads.clear();
+    await db.folders.clear();
+  });
+
+  it('cleans parent-chat and folder thread references when permanently deleting', async () => {
+    const { result } = renderHook(() => useChats());
+    await act(async () => {});
+    let parentId = '';
+    await act(async () => {
+      parentId = (await result.current.createThread({ title: 'Parent', isFolder: true })).id;
+      await result.current.createThread({ title: 'Child', parentThreadId: parentId });
+    });
+    await db.folders.add({ id: 'case', name: 'Case', order: 0, createdAt: 1, agentThreadId: parentId });
+    await act(async () => { await result.current.deleteThread(parentId); });
+    expect((await db.chatThreads.toArray())[0].parentThreadId).toBeUndefined();
+    expect((await db.folders.get('case'))?.agentThreadId).toBeUndefined();
+    expect((await db.folders.get('case'))?.updatedAt).toBeGreaterThan(1);
   });
 
   it('starts with empty threads', async () => {

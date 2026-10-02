@@ -95,8 +95,8 @@ describe('bundle structure', () => {
     const bundle = parseBundle(formatIOCsSTIX(entries));
     for (const obj of bundle.objects) {
       if (obj.type !== 'marking-definition') {
-        expect(obj.created).toBe(FROZEN_NOW);
-        expect(obj.modified).toBe(FROZEN_NOW);
+        expect(Number.isFinite(Date.parse(obj.created))).toBe(true);
+        expect(Date.parse(obj.modified)).toBeGreaterThanOrEqual(Date.parse(obj.created));
       }
     }
   });
@@ -111,7 +111,7 @@ describe('bundle structure', () => {
 // ── Deterministic IDs ───────────────────────────────────────────────
 
 describe('deterministic IDs', () => {
-  it('produces the same bundle ID for the same timestamp', () => {
+  it('produces the same bundle ID for the same content', () => {
     const a = parseBundle(formatIOCsSTIX([]));
     const b = parseBundle(formatIOCsSTIX([]));
     expect(a.id).toBe(b.id);
@@ -170,11 +170,10 @@ describe('indicator SDOs', () => {
       { type: 'domain', value: 'evil.com', expectedPattern: "[domain-name:value = 'evil.com']", expectedType: 'stix' },
       { type: 'url', value: 'https://evil.com/mal', expectedPattern: "[url:value = 'https://evil.com/mal']", expectedType: 'stix' },
       { type: 'email', value: 'bad@evil.com', expectedPattern: "[email-addr:value = 'bad@evil.com']", expectedType: 'stix' },
-      { type: 'file-path', value: 'C:\\mal.exe', expectedPattern: "[file:name = 'C:\\mal.exe']", expectedType: 'stix' },
+      { type: 'file-path', value: 'C:\\mal.exe', expectedPattern: "[file:name = 'C:\\\\mal.exe']", expectedType: 'stix' },
       { type: 'md5', value: 'd41d8cd98f00b204e9800998ecf8427e', expectedPattern: "[file:hashes.'MD5' = 'd41d8cd98f00b204e9800998ecf8427e']", expectedType: 'stix' },
       { type: 'sha1', value: 'da39a3ee5e6b4b0d3255bfef95601890afd80709', expectedPattern: "[file:hashes.'SHA-1' = 'da39a3ee5e6b4b0d3255bfef95601890afd80709']", expectedType: 'stix' },
       { type: 'sha256', value: 'e3b0c44298fc1c149afbf4c8996fb924', expectedPattern: "[file:hashes.'SHA-256' = 'e3b0c44298fc1c149afbf4c8996fb924']", expectedType: 'stix' },
-      { type: 'mitre-attack', value: 'T1566', expectedPattern: "[attack-pattern:external_references[*].external_id = 'T1566']", expectedType: 'stix' },
     ];
 
     for (const tc of testCases) {

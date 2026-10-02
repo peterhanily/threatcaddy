@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "rootDir": "." },
+  "include": ["integration/**/*.ts", "vitest.integration.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}

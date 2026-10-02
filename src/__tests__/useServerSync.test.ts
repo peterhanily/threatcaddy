@@ -29,6 +29,7 @@ const mockSetWSClient = vi.fn();
 const mockSetConflictHandler = vi.fn();
 const mockSetRemoteChangeHandler = vi.fn();
 const mockSetReadyHandler = vi.fn();
+const mockSetErrorHandler = vi.fn();
 const mockResolveConflicts = vi.fn();
 const mockSync = vi.fn();
 const mockApplyRemoteChange = vi.fn();
@@ -41,6 +42,8 @@ vi.mock('../lib/sync-engine', () => ({
     setConflictHandler: (handler: unknown) => mockSetConflictHandler(handler),
     setRemoteChangeHandler: (handler: unknown) => mockSetRemoteChangeHandler(handler),
     setReadyHandler: (handler: unknown) => mockSetReadyHandler(handler),
+    setErrorHandler: (handler: unknown) => mockSetErrorHandler(handler),
+    setWorkspaceIdentity: vi.fn(),
     resolveConflicts: (...args: unknown[]) => mockResolveConflicts(...args),
     sync: () => mockSync(),
     applyRemoteChange: (...args: unknown[]) => mockApplyRemoteChange(...args),
@@ -107,6 +110,15 @@ describe('useServerSync', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockWSConstructorArgs.length = 0;
+  });
+
+  it('surfaces sync errors and captures edits while a signed-in server is offline', async () => {
+    const auth = { ...makeAuth({ connected: false }), user: { id: 'u1' } };
+    const { result } = renderHook(() => useServerSync(auth, makeReloadFns()));
+    await flushPromises();
+    expect(mockEnableSync).toHaveBeenCalled();
+    act(() => mockSetErrorHandler.mock.calls[0][0]('Sync paused; edits retained'));
+    expect(result.current.syncError).toBe('Sync paused; edits retained');
   });
 
   it('establishes connection when auth is connected', async () => {
@@ -218,8 +230,8 @@ describe('useServerSync', () => {
     // Set up some conflicts
     const handler = mockSetConflictHandler.mock.calls[0][0] as (conflicts: unknown[]) => void;
     const conflicts = [
-      { entityId: 'e1', table: 'notes' },
-      { entityId: 'e2', table: 'tasks' },
+      { entityId: 'e1', table: 'notes', status: 'conflict' },
+      { entityId: 'e2', table: 'tasks', status: 'conflict' },
     ];
 
     await act(async () => {
@@ -231,11 +243,11 @@ describe('useServerSync', () => {
     });
 
     expect(mockResolveConflicts).toHaveBeenCalledWith(
-      [{ entityId: 'e1', table: 'notes' }],
+      [{ entityId: 'e1', table: 'notes', status: 'conflict' }],
       'mine',
     );
     expect(result.current.syncConflicts).toHaveLength(1);
-    expect(result.current.syncConflicts[0]).toEqual({ entityId: 'e2', table: 'tasks' });
+    expect(result.current.syncConflicts[0]).toEqual({ entityId: 'e2', table: 'tasks', status: 'conflict' });
   });
 
   it('resolves all conflicts at once', async () => {
@@ -247,8 +259,8 @@ describe('useServerSync', () => {
 
     const handler = mockSetConflictHandler.mock.calls[0][0] as (conflicts: unknown[]) => void;
     const conflicts = [
-      { entityId: 'e1', table: 'notes' },
-      { entityId: 'e2', table: 'tasks' },
+      { entityId: 'e1', table: 'notes', status: 'conflict' },
+      { entityId: 'e2', table: 'tasks', status: 'conflict' },
     ];
 
     await act(async () => {

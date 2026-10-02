@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { Shield, ShieldOff, KeyRound, Clock, AlertTriangle } from 'lucide-react';
 import { Modal } from '../Common/Modal';
 import { EncryptionSetup } from './EncryptionSetup';
+import { LegacyDataCleanup } from './LegacyDataCleanup';
+import { LegacyDataRecovery } from './LegacyDataRecovery';
+import { getLegacyCleanupStatus } from '../../lib/db-migration';
 import { useToast } from '../../contexts/ToastContext';
 import {
   deriveWrappingKey,
@@ -75,6 +78,7 @@ export function EncryptionSettings() {
   const handleDisable = async () => {
     setDisableError('');
     setDisabling(true);
+    let keyVerified = false;
     try {
       const meta = getEncryptionMeta();
       if (!meta) return;
@@ -82,6 +86,11 @@ export function EncryptionSettings() {
       const wrappedKey = base64ToArrayBuffer(meta.wrappedKey);
       const wrappingKey = await deriveWrappingKey(disablePass, salt);
       await unwrapMasterKey(wrappedKey, wrappingKey); // verifies passphrase
+      keyVerified = true;
+
+      if ((await getLegacyCleanupStatus()).exists) {
+        throw new Error(t('legacy.beforeDisable'));
+      }
 
       await decryptAllExistingData(db, setDisableProgress);
       clearEncryptionMeta();
@@ -89,8 +98,10 @@ export function EncryptionSettings() {
       setShowDisable(false);
       setDisablePass('');
       addToast('info', tt('encryption.disabled'));
-    } catch {
-      setDisableError(t('settings.wrongPassphrase'));
+    } catch (error) {
+      setDisableError(keyVerified
+        ? t('settings.disableFailed', { defaultValue: 'Data conversion failed; your key and encryption metadata have been retained. Retry to finish: {{error}}', error: error instanceof Error ? error.message : String(error) })
+        : t('settings.wrongPassphrase'));
       setDisabling(false);
     }
   };
@@ -165,6 +176,9 @@ export function EncryptionSettings() {
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-gray-300">{t('settings.encryption')}</h3>
+      <p className="text-xs text-gray-500">{t('settings.metadataNotice', { defaultValue: 'Content and saved copies are encrypted. IDs, tags, timestamps, status, authorship and relationships remain visible as metadata. Encryption does not protect an unlocked browser session.' })}</p>
+      <LegacyDataCleanup />
+      <LegacyDataRecovery />
 
       {!isSecureContext() && (
         <div className="flex items-start gap-2 p-2 rounded bg-yellow-900/30 border border-yellow-700/50 text-yellow-400 text-xs">

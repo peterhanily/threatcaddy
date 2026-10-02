@@ -1,461 +1,215 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { SyncChange, SyncResult } from '../types.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SyncChange } from '../types.js';
 
-// Mock the db module before importing the sync service
-const mockSelect = vi.fn();
-const mockInsert = vi.fn();
-const mockUpdate = vi.fn();
-const mockDelete = vi.fn();
-
-// Chain builders for drizzle-style queries
-// The select chain must be thenable at any point (drizzle queries are awaitable
-// whether or not .limit() is called), so we add a .then() to the chain itself.
-function createSelectChain(rows: Record<string, unknown>[] = []) {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {
-    from: vi.fn(),
-    where: vi.fn(),
-    limit: vi.fn().mockResolvedValue(rows),
-    then: vi.fn((resolve: (v: unknown) => void) => resolve(rows)),
-  };
-  chain.from.mockReturnValue(chain);
-  chain.where.mockReturnValue(chain);
-  return chain;
-}
-
-function createInsertChain(returningRows: Record<string, unknown>[] = [{ id: 'test' }]) {
-  const chain = {
-    values: vi.fn().mockReturnThis(),
-    returning: vi.fn().mockResolvedValue(returningRows),
-    onConflictDoNothing: vi.fn().mockResolvedValue(undefined),
-  };
-  return chain;
-}
-
-function createUpdateChain(returningRows: Record<string, unknown>[] = [{ id: 'test' }]) {
-  const chain = {
-    set: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    returning: vi.fn().mockResolvedValue(returningRows),
-  };
-  return chain;
-}
-
-const mockTxDb = {
-  select: (...args: unknown[]) => mockSelect(...args),
-  insert: (...args: unknown[]) => mockInsert(...args),
-  update: (...args: unknown[]) => mockUpdate(...args),
-  delete: (...args: unknown[]) => mockDelete(...args),
-};
-
-vi.mock('../db/index.js', () => ({
-  db: {
-    ...mockTxDb,
-    transaction: vi.fn(async (fn: (tx: typeof mockTxDb) => Promise<unknown>) => fn(mockTxDb)),
-  },
+const state = vi.hoisted(() => ({
+  rows: [] as unknown[][],
+  returned: [] as unknown[][],
+  inserts: [] as Record<string, unknown>[],
+  updates: [] as Record<string, unknown>[],
+  inTransaction: false,
+  commitError: false,
+  writeErrorAt: 0,
+  writeCount: 0,
+  events: vi.fn(),
 }));
-
-vi.mock('../db/schema.js', () => {
-  const makeTable = (name: string, hasFolderId = true) => {
-    const t: Record<string, unknown> = {
-      id: { name: 'id' },
-      version: { name: 'version' },
-      updatedAt: { name: 'updated_at' },
-      createdAt: { name: 'created_at' },
-      createdBy: { name: 'created_by' },
-      updatedBy: { name: 'updated_by' },
-      deletedAt: { name: 'deleted_at' },
+vi.mock('../db/index.js', () => {
+  const chain = () => {
+    const query: Record<string, unknown> = {};
+    for (const key of ['from', 'where', 'limit', 'for', 'orderBy']) query[key] = () => query;
+    query.then = (resolve: (rows: unknown[]) => unknown, reject: (error: unknown) => unknown) =>
+      Promise.resolve(state.rows.shift() ?? []).then(resolve, reject);
+    return query;
+  };
+  const write = (collection: Record<string, unknown>[]) => {
+    const query = {
+      values: (value: Record<string, unknown>) => { collection.push(value); return query; },
+      set: (value: Record<string, unknown>) => { collection.push(value); return query; },
+      where: () => query,
+      onConflictDoNothing: async () => undefined,
+      returning: async () => {
+        if (++state.writeCount === state.writeErrorAt) throw new Error('Constraint failure');
+        return state.returned.shift() ?? [];
+      },
     };
-    if (hasFolderId) t.folderId = { name: 'folder_id' };
-    return t;
+    return query;
   };
-  return {
-    notes: makeTable('notes'),
-    tasks: makeTable('tasks'),
-    folders: makeTable('folders'),
-    tags: makeTable('tags', false),
-    timelineEvents: makeTable('timelineEvents'),
-    timelines: makeTable('timelines', false),
-    whiteboards: makeTable('whiteboards'),
-    standaloneIOCs: makeTable('standaloneIOCs'),
-    chatThreads: makeTable('chatThreads'),
-    investigationMembers: makeTable('investigationMembers'),
+  const database = {
+    select: chain,
+    execute: vi.fn(async () => []),
+    insert: () => write(state.inserts),
+    update: () => write(state.updates),
   };
+  return { db: { ...database, transaction: async (run: (tx: typeof database) => Promise<unknown>) => {
+    state.inTransaction = true;
+    try {
+      const result = await run(database);
+      if (state.commitError) throw new Error('Commit failure');
+      return result;
+    } finally { state.inTransaction = false; }
+  } } };
+});
+vi.mock('../bots/event-bus.js', () => ({ emitEntityEvent: (...args: unknown[]) => state.events(state.inTransaction, ...args) }));
+vi.mock('../lib/logger.js', () => ({ logger: { warn: vi.fn(), error: vi.fn() } }));
+
+import { processPush, lookupEntityFolderId, pullChanges } from '../services/sync-service.js';
+
+beforeEach(() => {
+  state.rows.length = 0; state.returned.length = 0;
+  state.inserts.length = 0; state.updates.length = 0;
+  state.inTransaction = false; state.commitError = false;
+  state.writeErrorAt = 0; state.writeCount = 0; state.events.mockClear();
 });
 
-vi.mock('../lib/logger.js', () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-}));
+describe('transactional sync writes', () => {
+  const current = { id: 'note-1', folderId: 'folder-1', title: 'Saved', content: 'Existing content', version: 3 };
+  const patch: SyncChange = { table: 'notes', entityId: current.id, op: 'put', data: { title: 'Edited' }, clientVersion: 3 };
 
-// Dynamic import after mocks are set up
-let processPush: (changes: SyncChange[], userId: string) => Promise<SyncResult[]>;
-let pullChanges: (since: string, folderIds?: string[]) => Promise<{ changes: Record<string, unknown>[]; serverTimestamp: string }>;
-let lookupEntityFolderId: (tableName: string, entityId: string) => Promise<string | undefined>;
+  it('creates a new record with server-managed attribution and revision', async () => {
+    state.rows.push([]);
+    state.returned.push([{ ...current, version: 1 }]);
+    const [result] = await processPush([{ ...patch, clientVersion: 0, data: { title: 'Created', version: 99, createdBy: 'ignored' } }], 'user-1');
+    expect(result).toMatchObject({ status: 'accepted', serverVersion: 1 });
+    expect(state.inserts[0]).toMatchObject({ id: current.id, title: 'Created', version: 1, createdBy: 'user-1' });
+  });
 
-beforeEach(async () => {
-  vi.resetAllMocks();
-  const mod = await import('../services/sync-service.js');
-  processPush = mod.processPush;
-  pullChanges = mod.pullChanges;
-  lookupEntityFolderId = mod.lookupEntityFolderId;
+  it.each(['put', 'delete'] as const)('applies %s only with its acknowledged revision', async op => {
+    state.rows.push([current]);
+    state.returned.push([{ ...current, title: 'Edited', version: 4 }]);
+    const [result] = await processPush([{ ...patch, op }], 'user-1');
+    expect(result).toMatchObject({ status: 'accepted', serverVersion: 4 });
+    expect(state.updates[0]).toMatchObject({ version: 4, updatedBy: 'user-1' });
+    if (op === 'delete') expect(state.updates[0].deletedAt).toBeInstanceOf(Date);
+    expect(state.events.mock.calls[0][0]).toBe(false);
+  });
+
+  it.each([
+    ['put', undefined], ['put', 2], ['put', 0],
+    ['delete', undefined], ['delete', 2], ['delete', 0],
+  ] as const)('returns the current record for %s with baseline %s', async (op, clientVersion) => {
+    state.rows.push([current]);
+    const [result] = await processPush([{ ...patch, op, clientVersion }], 'user-1');
+    expect(result).toMatchObject({ status: 'conflict', serverVersion: 3, serverData: current });
+    expect(state.updates).toEqual([]);
+    expect(state.events).not.toHaveBeenCalled();
+  });
+
+  it('does not silently recreate a removed record from an old revision', async () => {
+    state.rows.push([]);
+    expect((await processPush([patch], 'user-1'))[0].status).toBe('conflict');
+    expect(state.inserts).toEqual([]);
+  });
+
+  it('rejects an oversized field instead of acknowledging a silently dropped value', async () => {
+    state.rows.push([current]);
+    await expect(processPush([{ ...patch, data: { content: 'Ordinary note text '.repeat(30_000) } }], 'user-1'))
+      .rejects.toThrow('exceeds the supported value limits');
+    expect(state.updates).toEqual([]);
+    expect(state.events).not.toHaveBeenCalled();
+  });
+
+  it('allows a trusted internal field patch without replacing unspecified content', async () => {
+    state.rows.push([current]);
+    state.returned.push([{ ...current, title: 'Edited', version: 4 }]);
+    await processPush([{ ...patch, clientVersion: undefined }], 'bot-1', { trustedInternal: true });
+    expect(state.updates[0]).toMatchObject({ title: 'Edited', version: 4 });
+    expect(state.updates[0]).not.toHaveProperty('content');
+  });
+
+  it('propagates later SQL failures and publishes no events from the failed batch', async () => {
+    state.rows.push([], []);
+    state.returned.push([{ ...current, version: 1 }]);
+    state.writeErrorAt = 2;
+    await expect(processPush([
+      { ...patch, clientVersion: 0 },
+      { ...patch, entityId: 'note-2', clientVersion: 0 },
+    ], 'user-1')).rejects.toThrow('Constraint failure');
+    expect(state.events).not.toHaveBeenCalled();
+  });
+
+  it('publishes no events when commit fails', async () => {
+    state.rows.push([current]);
+    state.returned.push([{ ...current, version: 4 }]);
+    state.commitError = true;
+    await expect(processPush([patch], 'user-1')).rejects.toThrow('Commit failure');
+    expect(state.events).not.toHaveBeenCalled();
+  });
+
+  it('creates ownership before children in the same transaction', async () => {
+    state.rows.push([{ active: true, role: 'analyst' }], [], [], []);
+    state.returned.push([{ id: 'new-folder', name: 'New', version: 1 }], [{ id: 'child', folderId: 'new-folder', version: 1 }]);
+    const result = await processPush([
+      { table: 'notes', entityId: 'child', op: 'put', clientVersion: 0, data: { title: 'Child', folderId: 'new-folder' } },
+      { table: 'folders', entityId: 'new-folder', op: 'put', clientVersion: 0, data: { name: 'New' } },
+    ], 'user-1', { authorize: true });
+    expect(result.map(row => row.status)).toEqual(['accepted', 'accepted']);
+    expect(state.inserts[1]).toMatchObject({ folderId: 'new-folder', userId: 'user-1', role: 'owner' });
+  });
+
+  it('rejects a user without current write membership before returning record contents', async () => {
+    state.rows.push([{ active: true, role: 'analyst' }], [], [current]);
+    expect(await processPush([patch], 'user-1', { authorize: true })).toEqual([{ table: 'notes', entityId: current.id, status: 'rejected' }]);
+    expect(state.updates).toEqual([]);
+  });
+
+  it('rejects duplicate identities before any writes', async () => {
+    await expect(processPush([patch, patch], 'user-1')).rejects.toThrow('Duplicate');
+    expect(state.updates).toEqual([]);
+  });
+
+  it('rejects unknown tables before any writes', async () => {
+    await expect(processPush([{ ...patch, table: 'unknown' }], 'user-1')).rejects.toThrow('Unknown table');
+  });
 });
 
-describe('sync-service', () => {
-  describe('processPush', () => {
-    it('should insert a new entity when it does not exist', async () => {
-      // First select: entity doesn't exist
-      const selectChain = createSelectChain([]);
-      mockSelect.mockReturnValue(selectChain);
+describe('evidence preview sync contract', () => {
+  it.each([undefined, 'application/pdf', 'image/tiff', 7])('rejects preview MIME %s before acknowledging bytes', async imageDataMimeType => {
+    state.rows.push([]);
+    await expect(processPush([{ table: 'evidenceItems', entityId: 'image', op: 'put', clientVersion: 0,
+      data: { imageData: 'YQ==', imageDataMimeType } }], 'user')).rejects.toThrow('MIME type');
+    expect(state.inserts).toEqual([]);
+    expect(state.events).not.toHaveBeenCalled();
+  });
+  it('normalizes a supported MIME and retains existing MIME for an image-only PATCH', async () => {
+    state.rows.push([]);
+    state.returned.push([{ id: 'image', version: 1 }]);
+    await processPush([{ table: 'evidenceItems', entityId: 'image', op: 'put', clientVersion: 0,
+      data: { imageData: 'YQ==', imageDataMimeType: ' IMAGE/PNG ' } }], 'user');
+    expect(state.inserts[0].imageDataMimeType).toBe('image/png');
+    state.rows.push([{ id: 'image', version: 1, imageData: 'YQ==', imageDataMimeType: 'image/png' }]);
+    state.returned.push([{ id: 'image', version: 2 }]);
+    await processPush([{ table: 'evidenceItems', entityId: 'image', op: 'put', clientVersion: 1, data: { imageData: 'Yg==' } }], 'user');
+    expect(state.updates[0].imageData).toBe('Yg==');
+  });
+  it('rejects removing the MIME while retaining bytes, but permits explicit preview removal', async () => {
+    const current = { id: 'image', version: 1, imageData: 'YQ==', imageDataMimeType: 'image/png' };
+    state.rows.push([current]);
+    await expect(processPush([{ table: 'evidenceItems', entityId: 'image', op: 'put', clientVersion: 1,
+      data: { imageDataMimeType: null } }], 'user')).rejects.toThrow('MIME type');
+    state.rows.push([current]); state.returned.push([{ ...current, version: 2 }]);
+    expect((await processPush([{ table: 'evidenceItems', entityId: 'image', op: 'put', clientVersion: 1,
+      data: { imageData: null, imageDataMimeType: null } }], 'user'))[0].status).toBe('accepted');
+  });
+});
 
-      // Insert — returning() returns the inserted row
-      const insertedRow = { id: 'note-1', title: 'Test Note', version: 1 };
-      const insertChain = createInsertChain([insertedRow]);
-      mockInsert.mockReturnValue(insertChain);
-
-      const changes: SyncChange[] = [{
-        table: 'notes',
-        op: 'put',
-        entityId: 'note-1',
-        data: { title: 'Test Note', folderId: 'folder-1' },
-      }];
-
-      const results = await processPush(changes, 'user-1');
-
-      expect(results).toHaveLength(1);
-      expect(results[0]).toMatchObject({
-        table: 'notes',
-        entityId: 'note-1',
-        status: 'accepted',
-        serverVersion: 1,
-      });
-      expect(mockInsert).toHaveBeenCalled();
-    });
-
-    it('should update an existing entity when versions match', async () => {
-      const existingRow = { id: 'note-1', title: 'Old Title', version: 3 };
-
-      // Select: entity exists
-      const selectChain = createSelectChain([existingRow]);
-      mockSelect.mockReturnValue(selectChain);
-
-      // Update returns the full updated row via .returning()
-      const updatedRow = { id: 'note-1', title: 'New Title', version: 4 };
-      const updateChain = createUpdateChain([updatedRow]);
-      mockUpdate.mockReturnValue(updateChain);
-
-      const changes: SyncChange[] = [{
-        table: 'notes',
-        op: 'put',
-        entityId: 'note-1',
-        data: { title: 'New Title' },
-        clientVersion: 3,
-      }];
-
-      const results = await processPush(changes, 'user-1');
-
-      expect(results).toHaveLength(1);
-      expect(results[0]).toMatchObject({
-        table: 'notes',
-        entityId: 'note-1',
-        status: 'accepted',
-        serverVersion: 4,
-      });
-    });
-
-    it('should detect conflict when client version does not match server', async () => {
-      const existingRow = { id: 'note-1', title: 'Server Title', version: 5 };
-
-      const selectChain = createSelectChain([existingRow]);
-      mockSelect.mockReturnValue(selectChain);
-
-      const changes: SyncChange[] = [{
-        table: 'notes',
-        op: 'put',
-        entityId: 'note-1',
-        data: { title: 'Client Title' },
-        clientVersion: 3, // Doesn't match server version 5
-      }];
-
-      const results = await processPush(changes, 'user-1');
-
-      expect(results).toHaveLength(1);
-      expect(results[0]).toMatchObject({
-        table: 'notes',
-        entityId: 'note-1',
-        status: 'conflict',
-        serverVersion: 5,
-        serverData: existingRow,
-      });
-      // Should not have attempted update
-      expect(mockUpdate).not.toHaveBeenCalled();
-    });
-
-    it('should soft-delete an existing entity', async () => {
-      const existingRow = { id: 'note-1', title: 'To Delete', version: 2 };
-
-      const selectChain = createSelectChain([existingRow]);
-      mockSelect.mockReturnValue(selectChain);
-
-      const updateChain = createUpdateChain([{ id: 'note-1' }]);
-      mockUpdate.mockReturnValue(updateChain);
-
-      const changes: SyncChange[] = [{
-        table: 'notes',
-        op: 'delete',
-        entityId: 'note-1',
-      }];
-
-      const results = await processPush(changes, 'user-1');
-
-      expect(results).toHaveLength(1);
-      expect(results[0]).toMatchObject({
-        table: 'notes',
-        entityId: 'note-1',
-        status: 'accepted',
-        serverVersion: 3,
-      });
-      expect(mockUpdate).toHaveBeenCalled();
-    });
-
-    it('should accept delete for non-existent entity gracefully', async () => {
-      const selectChain = createSelectChain([]);
-      mockSelect.mockReturnValue(selectChain);
-
-      const changes: SyncChange[] = [{
-        table: 'notes',
-        op: 'delete',
-        entityId: 'gone-note',
-      }];
-
-      const results = await processPush(changes, 'user-1');
-
-      expect(results).toHaveLength(1);
-      expect(results[0]).toMatchObject({
-        table: 'notes',
-        entityId: 'gone-note',
-        status: 'accepted',
-      });
-      expect(mockUpdate).not.toHaveBeenCalled();
-    });
-
-    it('should strip server-managed fields from client data', async () => {
-      const selectChain = createSelectChain([]);
-      mockSelect.mockReturnValue(selectChain);
-
-      const insertedRow = { id: 'note-2', version: 1 };
-      const insertChain = createInsertChain([insertedRow]);
-      mockInsert.mockReturnValue(insertChain);
-
-      const changes: SyncChange[] = [{
-        table: 'notes',
-        op: 'put',
-        entityId: 'note-2',
-        data: {
-          title: 'Clean',
-          version: 999,       // Should be stripped
-          createdBy: 'hacker', // Should be stripped
-          createdAt: 0,        // Should be stripped
-          id: 'fake-id',       // Should be stripped
-        },
-      }];
-
-      const results = await processPush(changes, 'user-1');
-      expect(results[0].status).toBe('accepted');
-
-      // Verify insert was called with clean data (no server-managed fields)
-      const insertValues = insertChain.values.mock.calls[0][0];
-      expect(insertValues.title).toBe('Clean');
-      expect(insertValues.version).toBe(1);           // Server-set, not 999
-      expect(insertValues.createdBy).toBe('user-1');   // Server-set, not 'hacker'
-    });
-
-    it('should handle multiple changes in a batch', async () => {
-      // First change: new entity
-      const selectChain1 = createSelectChain([]);
-      const insertedRow = { id: 'note-new', version: 1 };
-      const insertChain1 = createInsertChain([insertedRow]);
-      // Second change: existing entity
-      const existingRow = { id: 'task-1', version: 1 };
-      const selectChain2 = createSelectChain([existingRow]);
-      const updatedRow = { id: 'task-1', version: 2 };
-      const updateChain = createUpdateChain([updatedRow]);
-
-      // Set up sequential mock returns
-      let selectCallCount = 0;
-      mockSelect.mockImplementation(() => {
-        selectCallCount++;
-        if (selectCallCount <= 1) return selectChain1; // call 1 for first change (insert uses .returning() now)
-        return selectChain2;                            // calls 2+ for second change
-      });
-      mockInsert.mockReturnValue(insertChain1);
-      mockUpdate.mockReturnValue(updateChain);
-
-      selectChain2.limit
-        .mockResolvedValueOnce([existingRow]);
-
-      const changes: SyncChange[] = [
-        { table: 'notes', op: 'put', entityId: 'note-new', data: { title: 'New' } },
-        { table: 'tasks', op: 'put', entityId: 'task-1', data: { title: 'Updated' }, clientVersion: 1 },
-      ];
-
-      const results = await processPush(changes, 'user-1');
-
-      expect(results).toHaveLength(2);
-      expect(results[0].status).toBe('accepted');
-      expect(results[1].status).toBe('accepted');
-    });
-
-    it('should detect concurrent modification (optimistic lock failure)', async () => {
-      // Batch existence check returns the existing row (version 3)
-      const existingRow = { id: 'note-1', version: 3 };
-      const selectChain = createSelectChain([existingRow]);
-      mockSelect.mockReturnValue(selectChain);
-
-      // Update returns empty (another writer bumped the version between batch check and update)
-      const updateChain = createUpdateChain([]);
-      mockUpdate.mockReturnValue(updateChain);
-
-      // Re-fetch after failed optimistic lock returns the new version
-      const currentRow = { id: 'note-1', version: 4, title: 'Concurrent Edit' };
-      selectChain.limit
-        .mockResolvedValueOnce([currentRow]);
-
-      const changes: SyncChange[] = [{
-        table: 'notes',
-        op: 'put',
-        entityId: 'note-1',
-        data: { title: 'My Edit' },
-        clientVersion: 3,
-      }];
-
-      const results = await processPush(changes, 'user-1');
-
-      expect(results).toHaveLength(1);
-      expect(results[0]).toMatchObject({
-        status: 'conflict',
-        serverVersion: 4,
-      });
-    });
-
-    it('should return conflict on DB error', async () => {
-      mockSelect.mockImplementation(() => {
-        throw new Error('DB connection lost');
-      });
-
-      const changes: SyncChange[] = [{
-        table: 'notes',
-        op: 'put',
-        entityId: 'note-err',
-        data: { title: 'Fail' },
-      }];
-
-      const results = await processPush(changes, 'user-1');
-      expect(results[0].status).toBe('conflict');
-    });
-
-    it('should throw for unknown table names', async () => {
-      const changes: SyncChange[] = [{
-        table: 'malicious_table',
-        op: 'put',
-        entityId: 'x',
-        data: {},
-      }];
-
-      // getTable throws before the try-catch for unknown tables
-      await expect(processPush(changes, 'user-1')).rejects.toThrow('Unknown table');
-    });
+describe('legacy sync compatibility and folder lookup', () => {
+  it('returns a folder for normal and soft-deleted records', async () => {
+    state.rows.push([{ folderId: 'folder-1', deletedAt: new Date() }]);
+    expect(await lookupEntityFolderId('notes', 'note-1')).toBe('folder-1');
   });
 
-  describe('pullChanges', () => {
-    it('should pull changes from accessible folders', async () => {
-      const note = { id: 'n1', table: 'notes', title: 'Hello', deletedAt: null };
-
-      const selectChain = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue([note]),
-      };
-      mockSelect.mockReturnValue(selectChain);
-
-      const result = await pullChanges('2024-01-01T00:00:00Z', ['folder-1']);
-
-      expect(result.changes).toBeDefined();
-      expect(result.serverTimestamp).toBeDefined();
-      expect(typeof result.serverTimestamp).toBe('string');
-    });
-
-    it('should skip folder-scoped tables when no folderIds provided', async () => {
-      const tagRow = { id: 't1', name: 'malware', deletedAt: null };
-
-      const selectChain = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue([tagRow]),
-      };
-      mockSelect.mockReturnValue(selectChain);
-
-      const result = await pullChanges('2024-01-01T00:00:00Z', []);
-
-      // Should only get global tables (tags, timelines), not folder-scoped ones
-      expect(result.changes).toBeDefined();
-    });
-
-    it('should send soft-deleted entities as delete ops', async () => {
-      const deletedNote = { id: 'n2', table: 'notes', deletedAt: new Date() };
-
-      const selectChain = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue([deletedNote]),
-      };
-      mockSelect.mockReturnValue(selectChain);
-
-      const result = await pullChanges('2024-01-01T00:00:00Z', ['folder-1']);
-
-      const deleteOps = result.changes.filter(c => c.op === 'delete');
-      expect(deleteOps.length).toBeGreaterThanOrEqual(0);
-      // Deleted entities should have op='delete'
-      for (const c of result.changes) {
-        if (c.deletedAt) {
-          expect(c.op).toBe('delete');
-        }
-      }
-    });
+  it('returns no folder for missing records and global catalogs', async () => {
+    state.rows.push([]);
+    expect(await lookupEntityFolderId('notes', 'missing')).toBeUndefined();
+    expect(await lookupEntityFolderId('tags', 'tag-1')).toBeUndefined();
   });
 
-  describe('lookupEntityFolderId', () => {
-    it('should return folderId for an existing entity', async () => {
-      const selectChain = createSelectChain([{ folderId: 'folder-42' }]);
-      mockSelect.mockReturnValue(selectChain);
+  it('includes only shared catalogs when there are no memberships', async () => {
+    state.rows.push([{ id: 'tag-1', name: 'Tag' }], []);
+    expect((await pullChanges('2000-01-01', [])).changes).toEqual([{ table: 'tags', op: 'put', id: 'tag-1', name: 'Tag' }]);
+  });
 
-      const result = await lookupEntityFolderId('notes', 'note-1');
-      expect(result).toBe('folder-42');
-    });
-
-    it('should return undefined for non-existent entity', async () => {
-      const selectChain = createSelectChain([]);
-      mockSelect.mockReturnValue(selectChain);
-
-      const result = await lookupEntityFolderId('notes', 'ghost');
-      expect(result).toBeUndefined();
-    });
-
-    it('should return undefined for unknown table', async () => {
-      const result = await lookupEntityFolderId('nonexistent', 'id-1');
-      expect(result).toBeUndefined();
-    });
-
-    it('should return undefined for tables without folderId', async () => {
-      const result = await lookupEntityFolderId('tags', 'tag-1');
-      expect(result).toBeUndefined();
-    });
-
-    it('should handle DB errors gracefully', async () => {
-      const selectChain = {
-        from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        limit: vi.fn().mockRejectedValue(new Error('DB error')),
-      };
-      mockSelect.mockReturnValue(selectChain);
-
-      const result = await lookupEntityFolderId('notes', 'note-err');
-      expect(result).toBeUndefined();
-    });
+  it('represents soft-deleted catalog records as deletes', async () => {
+    state.rows.push([{ id: 'tag-1', deletedAt: new Date() }], []);
+    expect((await pullChanges('2000-01-01', [])).changes).toEqual([{ table: 'tags', op: 'delete', id: 'tag-1' }]);
   });
 });

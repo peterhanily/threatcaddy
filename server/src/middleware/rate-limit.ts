@@ -1,4 +1,5 @@
 import type { Context, Next } from 'hono';
+import { isIP } from 'node:net';
 
 interface RateLimitEntry {
   count: number;
@@ -19,20 +20,32 @@ function normalizeIP(ip: string): string {
   return ip.toLowerCase();
 }
 
-function getClientIp(c: Context): string {
-  // Only trust proxy headers behind a reverse proxy (opt-in via TRUST_PROXY)
-  if (process.env.TRUST_PROXY === '1') {
-    const forwarded = c.req.header('x-forwarded-for')?.split(',').pop()?.trim();
-    if (forwarded) return forwarded;
-    const realIp = c.req.header('x-real-ip');
-    if (realIp) return realIp;
-  }
+export function proxyConfiguration(env = process.env): { enabled: boolean; peers: Set<string> } {
+  const value = (env.TRUST_PROXY ?? '0').trim().toLowerCase();
+  if (!['0', '1', 'false', 'true'].includes(value)) throw new Error('TRUST_PROXY must be true/false or 1/0');
+  const peers = (env.TRUSTED_PROXY_IPS ?? '127.0.0.1,::1').split(',').map(ip => ip.trim()).filter(Boolean);
+  if (peers.some(ip => !isIP(ip))) throw new Error('TRUSTED_PROXY_IPS must contain exact IP addresses, not hostnames or CIDRs');
+  return { enabled: value === '1' || value === 'true', peers: new Set(peers.map(normalizeIP)) };
+}
 
-  // Use actual connection remote address
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const env = c.env as any;
-  const remoteAddr: string | undefined = env?.incoming?.socket?.remoteAddress;
-  return remoteAddr || 'unknown';
+export function getClientIp(c: Context): string {
+  const remote = (c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined)?.incoming?.socket?.remoteAddress;
+  if (!remote || !isIP(remote)) return 'unknown';
+  const address = normalizeIP(remote);
+  const config = proxyConfiguration();
+  // Forwarding only has meaning when the immediate connection is a known proxy.
+  if (!config.enabled || !config.peers.has(address)) return address;
+  const forwarded = c.req.header('x-forwarded-for');
+  if (forwarded) {
+    const chain = forwarded.split(',').map(ip => ip.trim());
+    if (chain.some(ip => !isIP(ip))) return address;
+    for (const hop of chain.reverse().map(normalizeIP)) {
+      if (!config.peers.has(hop)) return hop;
+    }
+    return chain.length ? normalizeIP(chain[chain.length - 1]) : address;
+  }
+  const realIp = c.req.header('x-real-ip')?.trim();
+  return realIp && isIP(realIp) ? normalizeIP(realIp) : address;
 }
 
 /**

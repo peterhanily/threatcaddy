@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 
+// HTTP handlers mock current identity lookup; real PostgreSQL account invalidation is covered by integration tests.
+vi.mock('../services/admin-session-service.js', () => ({
+  adminSessionVersion: () => '',
+  revokeAdminSessions: vi.fn(),
+  getActiveAdmin: vi.fn(async (id: string) => ({ id, username: 'testadmin', passwordHash: 'fixture-admin-hash' })),
+}));
+
+
 // ─── Hoisted mock state ────────────────────────────────────────
 
 const { selectQueue, insertQueue, updateQueue, deleteQueue, makeThenableChain } = vi.hoisted(() => {
@@ -29,6 +37,13 @@ const { selectQueue, insertQueue, updateQueue, deleteQueue, makeThenableChain } 
 
   return { selectQueue, insertQueue, updateQueue, deleteQueue, makeThenableChain };
 });
+
+// Account mutation internals are exercised against PostgreSQL in integration/authorization.integration.test.ts.
+vi.mock('../services/session-service.js', () => ({
+  updateUsersAndRevokeSessions: vi.fn(async () => updateQueue.shift() ?? []),
+  revokeUserSessions: vi.fn(async () => ((deleteQueue.shift() ?? []) as unknown[]).length),
+  revokeAllSessions: vi.fn(async () => ((deleteQueue.shift() ?? []) as unknown[]).length),
+}));
 
 // ─── Mock the shared module ────────────────────────────────────
 
@@ -111,7 +126,7 @@ function jsonReq(method: string, path: string, body?: unknown, headers?: Record<
 }
 
 async function getAdminToken(id = 'admin-1', username = 'testadmin'): Promise<string> {
-  return signAdminToken(id, username);
+  return signAdminToken(id, username, 'fixture-admin-hash');
 }
 
 // ─── Tests ──────────────────────────────────────────────────────

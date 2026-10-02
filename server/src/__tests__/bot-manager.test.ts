@@ -96,6 +96,23 @@ beforeEach(async () => {
 
 describe('BotManager', () => {
   describe('loadBot / unloadBot', () => {
+    it('refuses to load or execute a persisted handoff even when it is enabled', async () => {
+      const manager = new BotManager();
+      await manager.loadBot(makeBotConfig({ id: 'contained', sourceType: 'caddy-agent', enabled: true, triggers: { schedule: '*/5 * * * *' }, config: {} }));
+      expect(manager.getLoadedBots()).toEqual([]);
+      await manager.executeBot('contained', 'manual');
+      expect(manager.getLoadedBots()).toEqual([]);
+      await manager.shutdown();
+    });
+
+    it('unloads a previously loaded bot when its new config carries unsupported policy', async () => {
+      const manager = new BotManager();
+      await manager.loadBot(makeBotConfig({ id: 'contained' }));
+      await manager.loadBot(makeBotConfig({ id: 'contained', config: { allowedTools: ['read_note'], agentPolicy: { autoApproveReads: false } } }));
+      expect(manager.getLoadedBots()).toEqual([]);
+      await manager.shutdown();
+    });
+
     it('loadBot stores config and bot instance', async () => {
       const manager = new BotManager();
       const config = makeBotConfig({ id: 'b1', name: 'Test Bot' });

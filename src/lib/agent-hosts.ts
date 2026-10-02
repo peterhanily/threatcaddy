@@ -9,6 +9,11 @@
  */
 
 import type { AgentHost, AgentHostSkill, Settings } from '../types';
+import { getDynamicToolActionClass, normalizeHostActionClass } from './caddy-agent-policy';
+import { workspaceStorageKey } from './workspace-profiles';
+import { assertConfiguredConnection } from './connection-policy';
+import { readBoundedText } from './bounded-response';
+import { cancellableRequest } from './request-cancellation';
 
 const SKILLS_TIMEOUT_MS = 30_000;
 const EXECUTE_TIMEOUT_MS = 60_000;
@@ -37,17 +42,19 @@ export async function fetchHostSkills(host: AgentHost): Promise<AgentHostSkill[]
   const headers: Record<string, string> = { 'Accept': 'application/json' };
   if (host.apiKey) headers['Authorization'] = `Bearer ${host.apiKey}`;
 
-  const controller = new AbortController();
+  const lifecycle = cancellableRequest();
+  const { controller } = lifecycle;
   const timer = setTimeout(() => controller.abort(), SKILLS_TIMEOUT_MS);
 
   try {
+    assertConfiguredConnection(url);
     const resp = await fetch(url, { headers, signal: controller.signal });
     if (!resp.ok) {
-      const body = await resp.text().catch(() => '');
+      const body = await readBoundedText(resp, 4096).catch(() => '');
       throw new Error(`HTTP ${resp.status}: ${redactAuth(body).slice(0, MAX_ERROR_BODY_CHARS)}`);
     }
 
-    const data = await resp.json();
+    const data = JSON.parse(await readBoundedText(resp, 1_000_000));
     if (!Array.isArray(data)) throw new Error('Expected JSON array of skills');
 
     // Validate each skill has at minimum name + description
@@ -62,10 +69,11 @@ export async function fetchHostSkills(host: AgentHost): Promise<AgentHostSkill[]
       name: s.name,
       description: s.description.substring(0, 500),
       parameters: s.parameters || { type: 'object' as const, properties: {}, required: [] },
-      actionClass: s.actionClass,
+      actionClass: normalizeHostActionClass(s.actionClass),
     }));
   } finally {
     clearTimeout(timer);
+    lifecycle.dispose();
   }
 }
 
@@ -131,8 +139,9 @@ export async function executeHostSkill(
   toolName: string,
   input: Record<string, unknown>,
   settings?: Settings,
+  signal?: AbortSignal,
 ): Promise<string> {
-  const s: Settings = settings || JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+  const s: Settings = settings || JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-settings')) || '{}');
 
   // local:<skill> — route to the local LLM endpoint
   if (toolName.startsWith('local:')) {
@@ -140,7 +149,7 @@ export async function executeHostSkill(
     if (!s.llmLocalEndpoint) return JSON.stringify({ error: 'No local LLM endpoint configured. Set it in Settings > AI.' });
 
     const baseUrl = s.llmLocalEndpoint.replace(/\/+$/, '').replace(/\/v1\/?$/, '');
-    return await callHostExecute(baseUrl, s.llmLocalApiKey, skillName, input, 'Local Agent');
+    return await callHostExecute(baseUrl, s.llmLocalApiKey, skillName, input, 'Local Agent', signal);
   }
 
   // host:<name>:<skill> — route to a named agent host
@@ -157,7 +166,7 @@ export async function executeHostSkill(
   if (!host) return JSON.stringify({ error: `Agent host not found: ${hostName}. Configure in Settings > AI > Agent Hosts.` });
   if (!host.enabled) return JSON.stringify({ error: `Agent host "${host.displayName}" is disabled.` });
 
-  return await callHostExecute(host.url, host.apiKey, skillName, input, host.displayName);
+  return await callHostExecute(host.url, host.apiKey, skillName, input, host.displayName, signal);
 }
 
 /** Shared POST /execute call for both local and named hosts. */
@@ -167,15 +176,19 @@ async function callHostExecute(
   skillName: string,
   input: Record<string, unknown>,
   displayName: string,
+  signal?: AbortSignal,
 ): Promise<string> {
   const url = `${baseUrl.replace(/\/+$/, '')}/execute`;
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (apiKey && apiKey !== 'local') headers['Authorization'] = `Bearer ${apiKey}`;
 
-  const controller = new AbortController();
+  const lifecycle = cancellableRequest(signal);
+  const { controller } = lifecycle;
   const timer = setTimeout(() => controller.abort(), EXECUTE_TIMEOUT_MS);
 
   try {
+    if (controller.signal.aborted) throw new DOMException('Cancelled', 'AbortError');
+    assertConfiguredConnection(url);
     const resp = await fetch(url, {
       method: 'POST',
       headers,
@@ -187,14 +200,15 @@ async function callHostExecute(
       return JSON.stringify({ error: `${displayName} returned HTTP ${resp.status}` });
     }
 
-    return await resp.text();
+    return await readBoundedText(resp);
   } catch (err) {
     if ((err as Error).name === 'AbortError') {
-      return JSON.stringify({ error: `${displayName} timed out after ${EXECUTE_TIMEOUT_MS / 1000}s` });
+      return JSON.stringify({ error: `${displayName} request was cancelled or timed out. Remote completion is unknown; do not automatically retry.` });
     }
     return JSON.stringify({ error: `${displayName} execution failed: ${(err as Error).message}` });
   } finally {
     clearTimeout(timer);
+    lifecycle.dispose();
   }
 }
 
@@ -202,28 +216,8 @@ async function callHostExecute(
 
 /**
  * Look up the action class for a host/local skill tool from cached settings.
- * Returns the skill's declared actionClass, or 'fetch' as default.
+ * Returns the validated action class, or 'modify' when metadata is unavailable.
  */
 export function getHostSkillActionClass(toolName: string): string {
-  const settings: Settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
-
-  // local:<skill>
-  if (toolName.startsWith('local:')) {
-    const skillName = toolName.slice(6);
-    const skill = (settings.llmLocalSkills || []).find(s => s.name === skillName);
-    return skill?.actionClass || 'modify';
-  }
-
-  // host:<name>:<skill>
-  const parts = toolName.split(':');
-  if (parts.length >= 3) {
-    const hostName = parts[1];
-    const skillName = parts.slice(2).join(':');
-    const hosts: AgentHost[] = settings.agentHosts || [];
-    const host = hosts.find(h => h.name === hostName);
-    const skill = host?.skills.find(s => s.name === skillName);
-    return skill?.actionClass || 'modify';
-  }
-
-  return 'modify';
+  return getDynamicToolActionClass(toolName);
 }

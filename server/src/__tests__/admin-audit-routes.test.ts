@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 
+// HTTP handlers mock current identity lookup; real PostgreSQL account invalidation is covered by integration tests.
+vi.mock('../services/admin-session-service.js', () => ({
+  adminSessionVersion: () => '',
+  revokeAdminSessions: vi.fn(),
+  getActiveAdmin: vi.fn(async (id: string) => ({ id, username: 'testadmin', passwordHash: 'fixture-admin-hash' })),
+}));
+
+
 // ─── Hoisted mock state ────────────────────────────────────────
 
 const {
@@ -104,7 +112,7 @@ function authHeader(token: string): Record<string, string> {
 }
 
 async function getAdminToken(id = 'admin-1', username = 'testadmin'): Promise<string> {
-  return signAdminToken(id, username);
+  return signAdminToken(id, username, 'fixture-admin-hash');
 }
 
 // ─── Tests ─────────────────────────────────────────────────────

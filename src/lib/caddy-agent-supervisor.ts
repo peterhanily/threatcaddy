@@ -9,11 +9,14 @@
 import { db } from '../db';
 import { nanoid } from 'nanoid';
 import type { Folder, Settings, ChatThread, ChatMessage, ContentBlock, ToolUseBlock, LLMProvider } from '../types';
-import { TOOL_DEFINITIONS } from './llm-tool-defs';
+import { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
 import { executeTool, buildSystemPrompt } from './llm-tools';
 import { resolveRoutingMode, sendViaExtension, sendViaServer } from './llm-router';
-import { postMessageOrigin } from './utils';
+import { notifyDesktop } from './desktop-notifications';
 import { parseToolCallsFromText } from './caddy-agent';
+import { SUPERVISOR_TOOLS, SUPERVISOR_ACTION_PROFILE, getSupervisorToolPermission, validateSupervisorDispatch } from './supervisor-tool-policy';
+import { queueAgentAction } from './agent-action-approval';
+import { toolExecutionError, type ToolExecutionResult } from './llm-tool-execution';
 
 // ── Constants ───────────────────────────────────────────────────────────
 
@@ -24,21 +27,6 @@ const MAX_SUPERVISOR_TURNS = 5;
 const SUPERVISOR_NOTE_RETENTION = 200;
 /** Max create_note calls the supervisor is allowed to make within one cycle. */
 const SUPERVISOR_NOTES_PER_CYCLE = 3;
-
-/** Tools the supervisor is allowed to use — includes write tools for cross-investigation coordination. */
-const SUPERVISOR_TOOLS = new Set([
-  'list_investigations',
-  'get_investigation_details',
-  'search_across_investigations',
-  'compare_investigations',
-  'get_investigation_summary',
-  'list_iocs',
-  'search_notes',
-  'create_note',
-  'create_task',
-  'link_entities',
-  'update_ioc',
-]);
 
 const SUPERVISOR_TOOL_DEFS = TOOL_DEFINITIONS.filter(t => SUPERVISOR_TOOLS.has(t.name));
 
@@ -153,8 +141,7 @@ IMPORTANT: Use write tools judiciously. Only create tasks and links when finding
 /** Get or create the Supervisor system investigation. */
 async function ensureSupervisorFolder(): Promise<Folder> {
   const existing = await db.folders
-    .where('name')
-    .equals(SUPERVISOR_FOLDER_NAME)
+    .filter(folder => folder.name === SUPERVISOR_FOLDER_NAME)
     .first();
 
   if (existing) return existing;
@@ -291,7 +278,7 @@ export async function runSupervisorCycle(
 
       if (response.toolCalls.length === 0) break;
 
-      // Execute all tool calls (supervisor only uses read tools + create_note)
+      // Authorize every returned call independently of the model-visible tools.
       const toolResults: ContentBlock[] = [];
       const assistantContent: ContentBlock[] = [];
       if (response.content) assistantContent.push({ type: 'text', text: response.content });
@@ -313,7 +300,37 @@ export async function runSupervisorCycle(
           continue;
         }
 
-        const result = await executeTool(toolCall, supervisorFolder.id);
+        const permission = await getSupervisorToolPermission(toolCall, supervisorFolder.id);
+        let result: ToolExecutionResult;
+        if (permission.kind === 'denied') {
+          result = toolExecutionError(permission.error);
+        } else if (permission.kind === 'approval-required') {
+          await queueAgentAction({
+            investigationId: permission.investigationId,
+            threadId,
+            agentConfigId: SUPERVISOR_ACTION_PROFILE,
+            toolName: toolCall.name,
+            toolInput: toolCall.input as Record<string, unknown>,
+            rationale: response.content || 'Supervisor proposed action',
+            severity: 'warning',
+          });
+          result = { result: JSON.stringify({ status: 'pending_approval', message: 'This action requires analyst approval and has been queued for review.' }), isError: false };
+        } else {
+          result = await executeTool(toolCall, supervisorFolder.id, undefined, {
+            allowedTools: SUPERVISOR_TOOLS,
+            validateScope: call => validateSupervisorDispatch(call, supervisorFolder.id),
+          });
+          if (isWriteTool(toolCall.name)) {
+            await db.agentActions.add({
+              id: nanoid(), investigationId: permission.investigationId, threadId, agentConfigId: SUPERVISOR_ACTION_PROFILE,
+              toolName: toolCall.name, toolInput: toolCall.input as Record<string, unknown>,
+              rationale: response.content || 'Supervisor action approved by investigation policy',
+              status: result.isError ? 'failed' : 'executed', resultSummary: result.result.substring(0, 500),
+              createdAt: Date.now(), executedAt: Date.now(),
+            });
+          }
+        }
+        // Count queued notes too so later approval cannot exceed the cycle quota.
         if (toolCall.name === 'create_note' && !result.isError) {
           notesCreatedThisCycle++;
         }
@@ -365,19 +382,12 @@ async function buildInvestigationContext(folder: Folder): Promise<string> {
 
 /**
  * Send a desktop notification via the Chrome extension.
- * Falls back silently if extension is not available.
+ * A rejected or unavailable desktop notification produces an in-app fallback.
  */
 export function sendEscalationNotification(escalation: EscalationEvent): void {
-  try {
-    window.postMessage({
-      type: 'TC_SEND_NOTIFICATION',
-      payload: {
-        title: `CaddyAgent: ${escalation.title}`.substring(0, 200),
-        message: escalation.detail.substring(0, 500),
-        severity: escalation.severity,
-      },
-    }, postMessageOrigin());
-  } catch {
-    // Extension not available — silently fail
-  }
+  void notifyDesktop({
+    title: ('CaddyAgent: ' + escalation.title).substring(0, 200),
+    message: escalation.detail.substring(0, 500),
+    severity: escalation.severity,
+  });
 }

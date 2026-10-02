@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { nanoid } from 'nanoid';
 import type { Settings, AgentHost, AgentHostSkill } from '../../types';
 import { fetchHostSkills } from '../../lib/agent-hosts';
+import { normalizeHostActionClass } from '../../lib/caddy-agent-policy';
 
 interface AgentHostsConfigProps {
   settings: Settings;
@@ -269,7 +270,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
 function SkillRow({ skill, hostName }: { skill: AgentHostSkill; hostName: string }) {
   const toolName = `host:${hostName}:${skill.name}`;
   const paramNames = Object.keys(skill.parameters?.properties || {});
-  const actionClass = skill.actionClass || 'fetch';
+  const actionClass = normalizeHostActionClass(skill.actionClass);
   const classColor = actionClass === 'read' ? 'text-green-400' : actionClass === 'modify' ? 'text-amber-400' : 'text-blue-400';
 
   return (

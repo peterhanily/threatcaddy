@@ -14,7 +14,9 @@ export function useAgentProfiles() {
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
-    const profiles = await db.agentProfiles.orderBy('name').toArray();
+    // Names are encrypted at rest and cannot be sorted by an IndexedDB index.
+    const profiles = await db.agentProfiles.toArray();
+    profiles.sort((a, b) => a.name.localeCompare(b.name));
     setUserProfiles(profiles);
     setLoading(false);
   }, []);

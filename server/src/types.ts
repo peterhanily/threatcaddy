@@ -11,6 +11,8 @@ export interface AuthUser {
   role: string;
   displayName: string;
   avatarUrl: string | null;
+  sessionFamily?: string;
+  tokenExpiresAt?: number;
 }
 
 export type ServerRole = 'admin' | 'analyst' | 'viewer';
@@ -31,6 +33,7 @@ export interface SyncResult {
   serverVersion?: number;
   serverData?: Record<string, unknown>;
   serverRecord?: Record<string, unknown>;
+  previousFolderId?: string;
 }
 
 // WebSocket message types

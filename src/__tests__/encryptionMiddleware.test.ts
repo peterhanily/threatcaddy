@@ -82,7 +82,7 @@ afterEach(() => {
 // ── ENCRYPTED_FIELDS constant ───────────────────────────────────────
 
 describe('ENCRYPTED_FIELDS', () => {
-  it('covers all 10 tables', () => {
+  it('covers every persisted content table and leaves sync metadata queryable', () => {
     const tables = Object.keys(ENCRYPTED_FIELDS);
     expect(tables).toContain('notes');
     expect(tables).toContain('tasks');
@@ -96,7 +96,10 @@ describe('ENCRYPTED_FIELDS', () => {
     expect(tables).toContain('standaloneIOCs');
     expect(tables).toContain('installedIntegrations');
     expect(tables).toContain('integrationRuns');
-    expect(tables).toHaveLength(12);
+    expect(tables.sort()).toEqual(db.tables.map(table => table.name).filter(name => !['_syncMeta', '_localMigrations'].includes(name)).sort());
+    expect(ENCRYPTED_FIELDS._syncQueue).toEqual(['data']);
+    expect(ENCRYPTED_FIELDS._syncMeta).toBeUndefined();
+    expect(ENCRYPTED_FIELDS._localMigrations).toBeUndefined();
   });
 
   it('notes table encrypts sensitive fields', () => {

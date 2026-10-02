@@ -66,6 +66,8 @@
     "shareIOCReport": "Share IOC Report",
     "merged": "Merged",
     "saved": "Saved",
+    "saveFailed": "Changes could not be saved. Your draft is kept in this tab; retry before closing it.",
+    "retrySave": "Retry save",
     "restore": "Restore",
     "restoreAria": "Restore note from trash",
     "moveToTrash": "Move to trash",

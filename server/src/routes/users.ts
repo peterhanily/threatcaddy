@@ -2,8 +2,8 @@ import { Hono } from 'hono';
 import { eq, and, ilike, or, desc, inArray, count } from 'drizzle-orm';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { db } from '../db/index.js';
-import { users, posts, investigationMembers, sessions, reactions, activityLog } from '../db/schema.js';
-import { disconnectUser } from '../ws/handler.js';
+import { users, posts, investigationMembers, reactions, activityLog } from '../db/schema.js';
+import { updateUsersAndRevokeSessions } from '../services/session-service.js';
 import type { AuthUser } from '../types.js';
 import { ErrorCodes } from '../types/error-codes.js';
 
@@ -225,7 +225,10 @@ app.patch('/:id', requireRole('admin'), async (c) => {
     }
     updates.role = body.role;
   }
-  if (body.active !== undefined) updates.active = body.active;
+  if (body.active !== undefined) {
+    if (typeof body.active !== 'boolean') return c.json({ error: 'Invalid active value' }, 400);
+    updates.active = body.active;
+  }
   if (body.displayName) {
     if (typeof body.displayName !== 'string' || body.displayName.trim().length > 100) {
       return c.json({ error: 'Display name must be a string of 100 characters or fewer' }, 400);
@@ -233,7 +236,8 @@ app.patch('/:id', requireRole('admin'), async (c) => {
     updates.displayName = body.displayName.trim();
   }
 
-  await db.update(users).set(updates).where(eq(users.id, userId));
+  if (body.role !== undefined || body.active !== undefined) await updateUsersAndRevokeSessions([userId], updates);
+  else await db.update(users).set(updates).where(eq(users.id, userId));
 
   return c.json({ ok: true });
 });
@@ -248,11 +252,7 @@ app.delete('/:id', requireRole('admin'), async (c) => {
     return c.json({ error: 'Cannot deactivate yourself', code: ErrorCodes.CANNOT_DEACTIVATE_SELF }, 400);
   }
 
-  await db.update(users).set({ active: false, updatedAt: new Date() }).where(eq(users.id, userId));
-  // Invalidate all sessions so refresh tokens stop working
-  await db.delete(sessions).where(eq(sessions.userId, userId));
-  // Force-disconnect all WebSocket connections
-  disconnectUser(userId);
+  await updateUsersAndRevokeSessions([userId], { active: false, updatedAt: new Date() });
 
   return c.json({ ok: true });
 });

@@ -1,3 +1,4 @@
+import { workspaceStorageKey } from '../lib/workspace-profiles';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { nanoid } from 'nanoid';
 import type { SearchQuery } from '../lib/search';
@@ -9,7 +10,7 @@ import {
   type ServerSavedSearch,
 } from '../lib/server-api';
 
-const STORAGE_KEY = 'threatcaddy-saved-searches';
+const STORAGE_KEY = workspaceStorageKey('threatcaddy-saved-searches');
 const MAX_SAVED = 20;
 
 export interface SavedSearch {

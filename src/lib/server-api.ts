@@ -1,6 +1,7 @@
 import type { Post, Notification, InvestigationMember } from '../types';
 import type { ActivityEntry } from '../components/CaddyShack/ActivityCard';
 import i18n from '../i18n';
+import { cancelServerRequests, fetchServerResponse } from './server-response';
 
 type GetTokenFn = () => Promise<string | null>;
 type InvalidateTokenFn = () => void;
@@ -8,6 +9,7 @@ type InvalidateTokenFn = () => void;
 let _getToken: GetTokenFn = async () => null;
 let _invalidateToken: InvalidateTokenFn = () => {};
 let _serverUrl: string | null = null;
+let _configurationGeneration = 0;
 
 // ─── API Response Types ──────────────────────────────────────────
 
@@ -43,6 +45,7 @@ export interface InvestigationListItem {
     events: number;
     whiteboards: number;
     chats: number;
+    evidence?: number;
   };
   memberCount: number;
 }
@@ -65,6 +68,9 @@ export interface LLMConfig {
 export interface SyncPullResult {
   changes: Array<Record<string, unknown> & { table: string; op: 'put' | 'delete'; id: string }>;
   serverTimestamp: string;
+  cursor?: string;
+  generation?: string;
+  hasMore?: boolean;
 }
 
 // Snapshot returns entity arrays keyed by table name
@@ -90,6 +96,8 @@ export function configureServerApi(
   getToken: GetTokenFn,
   invalidateToken?: InvalidateTokenFn,
 ) {
+  cancelServerRequests();
+  ++_configurationGeneration;
   _serverUrl = serverUrl;
   _getToken = getToken;
   _invalidateToken = invalidateToken || (() => {});
@@ -99,16 +107,21 @@ export function configureServerApi(
 async function apiError(resp: Response, fallback: string): Promise<Error> {
   try {
     const body = await resp.json();
-    return new Error(body.error || body.message || fallback);
+    return Object.assign(new Error(body.error || body.message || fallback), { code: body.code });
   } catch {
     return new Error(fallback);
   }
 }
 
 async function apiFetch(path: string, opts: RequestInit = {}, _retry = false): Promise<Response> {
-  if (!_serverUrl) throw new Error('Not connected to server');
-
-  const token = await _getToken();
+  const serverUrl = _serverUrl, getToken = _getToken, invalidateToken = _invalidateToken;
+  const generation = _configurationGeneration;
+  const assertCurrent = () => {
+    if (generation !== _configurationGeneration) throw new Error('Server connection changed; request cancelled');
+  };
+  if (!serverUrl) throw new Error('Not connected to server');
+  const token = await getToken();
+  assertCurrent();
   const headers: Record<string, string> = {
     ...(opts.headers as Record<string, string> || {}),
   };
@@ -121,25 +134,20 @@ async function apiFetch(path: string, opts: RequestInit = {}, _retry = false): P
     headers['Content-Type'] = headers['Content-Type'] || 'application/json';
   }
 
-  // Apply a 30s timeout to non-streaming requests that don't already carry a signal
-  let timeoutController: AbortController | undefined;
-  let timeoutTimer: ReturnType<typeof setTimeout> | undefined;
-  if (!opts.signal) {
-    timeoutController = new AbortController();
-    timeoutTimer = setTimeout(() => timeoutController!.abort(), 30_000);
-  }
-  const resp = await fetch(`${_serverUrl}${path}`, {
-    ...opts,
-    headers,
-    signal: opts.signal ?? timeoutController?.signal,
+  const resp = await fetchServerResponse(`${serverUrl}${path}`, { ...opts, headers }, {
+    current: () => generation === _configurationGeneration,
+    maxBytes: path.startsWith('/api/backups/') ? 101 * 1024 * 1024 : 32 * 1024 * 1024,
+    timeoutMs: 30_000,
   });
-  clearTimeout(timeoutTimer);
+  assertCurrent();
 
   // On 401, invalidate the cached token so getAccessToken triggers a refresh,
   // then retry the request once with the fresh token.
   if (resp.status === 401 && !_retry) {
-    _invalidateToken();
-    const freshToken = await _getToken();
+    await resp.body?.cancel();
+    invalidateToken();
+    const freshToken = await getToken();
+    assertCurrent();
     if (freshToken) {
       return apiFetch(path, opts, true);
     }
@@ -200,22 +208,28 @@ export interface SyncResult {
   status: 'accepted' | 'conflict' | 'rejected';
   serverVersion?: number;
   serverData?: Record<string, unknown>;
+  localData?: Record<string, unknown>;
 }
 
-export async function syncPush(changes: SyncChange[]): Promise<{ results: SyncResult[] }> {
+export async function syncPush(changes: SyncChange[], generation: string): Promise<{ results: SyncResult[] }> {
   const resp = await apiFetch('/api/sync/push', {
     method: 'POST',
-    body: JSON.stringify({ changes }),
+    body: JSON.stringify({ changes, generation }),
   });
   if (!resp.ok) throw await apiError(resp, 'Sync push failed');
   return resp.json();
 }
 
-export async function syncPull(since: string, folderId?: string): Promise<SyncPullResult> {
+export async function syncPull(since: string, folderId?: string, cursor?: string, generation?: string): Promise<SyncPullResult> {
   const params = new URLSearchParams({ since });
   if (folderId) params.set('folderId', folderId);
+  if (cursor !== undefined) params.set('cursor', cursor);
+  if (generation !== undefined) params.set('generation', generation);
   const resp = await apiFetch(`/api/sync/pull?${params}`);
-  if (!resp.ok) throw new Error('Sync pull failed');
+  if (!resp.ok) {
+    const detail = await resp.json().catch(() => ({}));
+    throw Object.assign(new Error(detail.error || 'Sync pull failed'), { code: detail.code });
+  }
   return resp.json();
 }
 
@@ -384,8 +398,12 @@ export async function streamLLMChat(
   onError: (error: string) => void,
   signal?: AbortSignal
 ) {
-  const token = await _getToken();
-  const resp = await fetch(`${_serverUrl}/api/llm/chat`, {
+  const serverUrl = _serverUrl, getToken = _getToken;
+  const generation = _configurationGeneration;
+  if (!serverUrl) throw new Error('Not connected to server');
+  const token = await getToken();
+  if (generation !== _configurationGeneration) throw new Error('Server connection changed; request cancelled');
+  const resp = await fetchServerResponse(`${serverUrl}/api/llm/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -393,7 +411,7 @@ export async function streamLLMChat(
     },
     body: JSON.stringify(data),
     signal,
-  });
+  }, { current: () => generation === _configurationGeneration, maxBytes: 8 * 1024 * 1024, timeoutMs: 180_000 });
 
   if (!resp.ok) {
     const err = await resp.text();
@@ -403,13 +421,17 @@ export async function streamLLMChat(
 
   const reader = resp.body?.getReader();
   if (!reader) { onError('No response body'); return; }
+  if (generation !== _configurationGeneration) { await reader.cancel(); return; }
   const decoder = new TextDecoder();
   let buffer = '';
 
+  try {
   while (true) {
     const { done, value } = await reader.read();
+    if (generation !== _configurationGeneration) { await reader.cancel(); return; }
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
+    if (buffer.length > 1_000_000) throw new Error('Server stream frame exceeds the supported size limit');
 
     const lines = buffer.split('\n');
     buffer = lines.pop() || '';
@@ -427,6 +449,7 @@ export async function streamLLMChat(
       } catch (e) { console.warn('Failed to parse SSE event:', e); }
     }
   }
+  } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
 }
 
 // ─── Audit ──────────────────────────────────────────────────────

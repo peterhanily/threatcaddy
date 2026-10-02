@@ -63,6 +63,11 @@ export async function selectInvestigation(page: Page, name: string) {
  * Uses "Quick Note" which creates a note immediately.
  */
 export async function createQuickNote(page: Page) {
+  const previousNoteId = await page.evaluate(() => {
+    const navigation = JSON.parse(sessionStorage.getItem('threatcaddy-nav-state') ?? '{}');
+    return navigation.selectedNoteId as string | undefined;
+  });
+
   // Click the "New" dropdown button in the header (aria-label is "Create new...")
   const header = page.locator('header[data-tour="header"]');
   const newDropdown = header.getByRole('button', { name: /Create new/i });
@@ -70,6 +75,17 @@ export async function createQuickNote(page: Page) {
 
   // Click "Quick Note" in the dropdown menu
   await page.getByRole('menuitem', { name: /Quick Note/i }).click();
+
+  // Creation persists the note before selecting it. The previous editor remains
+  // visible during that work, so visibility alone can fill the previous note.
+  // Wait for the new selection's committed navigation state and editor reset.
+  await page.waitForFunction((previousId) => {
+    const navigation = JSON.parse(sessionStorage.getItem('threatcaddy-nav-state') ?? '{}');
+    return navigation.view === 'notes'
+      && typeof navigation.selectedNoteId === 'string'
+      && navigation.selectedNoteId !== previousId;
+  }, previousNoteId);
+  await expect(page.getByPlaceholder('Note title...')).toHaveValue('Untitled Note');
 }
 
 /**

@@ -1,25 +1,28 @@
 import { Hono } from 'hono';
+import { createMiddleware } from 'hono/factory';
 import { eq, and, count, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { requireAuth } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
 import { db } from '../db/index.js';
-import { investigationMembers, folders, users, notes, tasks, timelineEvents, whiteboards, standaloneIOCs, chatThreads, posts, files, notifications } from '../db/schema.js';
+import { investigationMembers, folders, users, notes, tasks, timelineEvents, whiteboards, standaloneIOCs, chatThreads, evidenceItems, posts, files, notifications } from '../db/schema.js';
 import { createNotification } from '../services/notification-service.js';
 import { logActivity } from '../services/audit-service.js';
-import { revokeUserFolderAccess, broadcastToUser } from '../ws/handler.js';
+import { revokeUserFolderAccess, revokeFolderAccess, broadcastToUser } from '../ws/handler.js';
 import { getEntityCounts, getEntityCountsBatch } from '../services/sync-service.js';
 import type { AuthUser } from '../types.js';
 import { ErrorCodes } from '../types/error-codes.js';
-import { unlink } from 'node:fs/promises';
-import { join } from 'node:path';
-import { logger } from '../lib/logger.js';
+import { lockStorage, removeCommittedBlobs } from '../services/storage-policy.js';
 
 const FILE_STORAGE_PATH = process.env.FILE_STORAGE_PATH || '/data/files';
 
 const app = new Hono<{ Variables: { user: AuthUser } }>();
 
 app.use('*', requireAuth);
+const requireInvestigationWrite = createMiddleware<{ Variables: { user: AuthUser } }>(async (c, next) => {
+  if (c.get('user').role === 'viewer') return c.json({ error: 'Insufficient permissions', code: ErrorCodes.INSUFFICIENT_PERMISSIONS }, 403);
+  await next();
+});
 
 // GET /api/investigations — list investigations the user has access to
 app.get('/', async (c) => {
@@ -78,7 +81,7 @@ app.get('/', async (c) => {
       createdAt: m.folderCreatedAt,
       updatedAt: m.folderUpdatedAt,
     },
-    entityCounts: entityCountsMap.get(m.folderId) ?? { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0 },
+    entityCounts: entityCountsMap.get(m.folderId) ?? { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0, evidence: 0 },
     memberCount: m.memberCount,
   }));
 
@@ -140,6 +143,7 @@ app.get('/:id/summary', async (c) => {
       db.select({ latest: sql<string>`max(${timelineEvents.updatedAt})` }).from(timelineEvents).where(eq(timelineEvents.folderId, folderId)),
       db.select({ latest: sql<string>`max(${whiteboards.updatedAt})` }).from(whiteboards).where(eq(whiteboards.folderId, folderId)),
       db.select({ latest: sql<string>`max(${chatThreads.updatedAt})` }).from(chatThreads).where(eq(chatThreads.folderId, folderId)),
+      db.select({ latest: sql<string>`max(${evidenceItems.updatedAt})` }).from(evidenceItems).where(eq(evidenceItems.folderId, folderId)),
     ]),
   ]);
 
@@ -193,7 +197,7 @@ app.get('/:id/members', async (c) => {
 });
 
 // POST /api/investigations/:id/members — add member
-app.post('/:id/members', async (c) => {
+app.post('/:id/members', requireInvestigationWrite, async (c) => {
   const user = c.get('user');
   const folderId = c.req.param('id');
   const body = await c.req.json();
@@ -261,7 +265,7 @@ app.post('/:id/members', async (c) => {
 });
 
 // PATCH /api/investigations/:id/members/:userId — update member role
-app.patch('/:id/members/:userId', async (c) => {
+app.patch('/:id/members/:userId', requireInvestigationWrite, async (c) => {
   const user = c.get('user');
   const folderId = c.req.param('id');
   const targetUserId = c.req.param('userId');
@@ -303,6 +307,7 @@ app.patch('/:id/members/:userId', async (c) => {
     return c.json({ error: 'Member not found', code: ErrorCodes.MEMBER_NOT_FOUND }, 404);
   }
 
+  revokeUserFolderAccess(targetUserId, folderId);
   return c.json({ ok: true });
 });
 
@@ -314,6 +319,7 @@ app.delete('/:id/members/:userId', async (c) => {
 
   // Users can remove themselves, or owners can remove others
   if (user.id !== targetUserId) {
+    if (user.role === 'viewer') return c.json({ error: 'Insufficient permissions', code: ErrorCodes.INSUFFICIENT_PERMISSIONS }, 403);
     const requesterMembership = await db
       .select()
       .from(investigationMembers)
@@ -359,7 +365,7 @@ app.delete('/:id/members/:userId', async (c) => {
 });
 
 // DELETE /api/investigations/:id — delete investigation (owner only)
-app.delete('/:id', async (c) => {
+app.delete('/:id', requireInvestigationWrite, async (c) => {
   const user = c.get('user');
   const folderId = c.req.param('id');
 
@@ -378,31 +384,28 @@ app.delete('/:id', async (c) => {
     return c.json({ error: 'Investigation not found', code: ErrorCodes.INVESTIGATION_NOT_FOUND }, 404);
   }
 
-  // Delete files from disk
-  const folderFiles = await db.select({ storagePath: files.storagePath, thumbnailPath: files.thumbnailPath })
-    .from(files).where(eq(files.folderId, folderId));
-  for (const f of folderFiles) {
-    try { await unlink(join(FILE_STORAGE_PATH, f.storagePath)); } catch (err) { logger.warn('Failed to unlink file', { path: f.storagePath, error: String(err) }); }
-    if (f.thumbnailPath) {
-      try { await unlink(join(FILE_STORAGE_PATH, f.thumbnailPath)); } catch (err) { logger.warn('Failed to unlink file', { path: f.thumbnailPath, error: String(err) }); }
-    }
-  }
-
-  // Delete all content atomically
-  await db.transaction(async (tx) => {
+  // Remove references atomically; disk cleanup must never precede commit.
+  const folderFiles = await db.transaction(async (tx) => {
+    await lockStorage(tx);
+    const records = await tx.select({ storagePath: files.storagePath, thumbnailPath: files.thumbnailPath })
+      .from(files).where(eq(files.folderId, folderId));
     await tx.delete(notes).where(eq(notes.folderId, folderId));
     await tx.delete(tasks).where(eq(tasks.folderId, folderId));
     await tx.delete(timelineEvents).where(eq(timelineEvents.folderId, folderId));
     await tx.delete(whiteboards).where(eq(whiteboards.folderId, folderId));
     await tx.delete(standaloneIOCs).where(eq(standaloneIOCs.folderId, folderId));
     await tx.delete(chatThreads).where(eq(chatThreads.folderId, folderId));
+    await tx.delete(evidenceItems).where(eq(evidenceItems.folderId, folderId));
     await tx.delete(posts).where(eq(posts.folderId, folderId));
     await tx.delete(files).where(eq(files.folderId, folderId));
     await tx.delete(notifications).where(eq(notifications.folderId, folderId));
     await tx.delete(investigationMembers).where(eq(investigationMembers.folderId, folderId));
     await tx.delete(folders).where(eq(folders.id, folderId));
+    return records;
   });
 
+  revokeFolderAccess(folderId);
+  const cleanupPending = await removeCommittedBlobs(FILE_STORAGE_PATH, folderFiles);
   await logActivity({
     userId: user.id,
     category: 'investigation',
@@ -411,11 +414,11 @@ app.delete('/:id', async (c) => {
     folderId,
   });
 
-  return c.json({ ok: true });
+  return c.json({ ok: true, cleanupPending });
 });
 
 // POST /api/investigations/:id/invite — invite by email
-app.post('/:id/invite', async (c) => {
+app.post('/:id/invite', requireInvestigationWrite, async (c) => {
   const user = c.get('user');
   const folderId = c.req.param('id');
   const body = await c.req.json();

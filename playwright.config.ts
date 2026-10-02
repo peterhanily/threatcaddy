@@ -18,11 +18,16 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
   webServer: {
-    command: 'pnpm build && pnpm preview --port 4173',
+    // CI tests the same assembled artifact that it publishes after verification.
+    command: process.env.PLAYWRIGHT_SKIP_BUILD === '1'
+      ? 'pnpm preview --port 4173 --strictPort'
+      : 'pnpm build && pnpm preview --port 4173 --strictPort',
     url: 'http://localhost:4173',
     reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
+    timeout: 120_000,
   },
 });

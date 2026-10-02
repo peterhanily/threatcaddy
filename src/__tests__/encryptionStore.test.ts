@@ -103,6 +103,13 @@ describe('clearEncryptionMeta', () => {
 });
 
 describe('isEncryptionEnabled', () => {
+  it('keeps a workspace locked when metadata is corrupt or incomplete', () => {
+    for (const raw of ['invalid', '{}', 'null']) {
+      localStorage.setItem('threatcaddy-encryption', raw);
+      expect(isEncryptionEnabled()).toBe(true);
+      expect(getEncryptionMeta()).toBeNull();
+    }
+  });
   it('returns false when no metadata', () => {
     expect(isEncryptionEnabled()).toBe(false);
   });

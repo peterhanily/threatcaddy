@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useToast } from '../../contexts/ToastContext';
 import type { StandaloneIOC, Folder, Tag } from '../../types';
 import { parseMISPEvent } from '../../lib/misp-import';
+import { downloadFile } from '../../lib/export';
+import { importDuplicateKey } from '../../lib/interchange-import';
 
 interface ImportResults {
   created: number;
@@ -39,6 +41,7 @@ export function MISPImportModal({
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [eventTitle, setEventTitle] = useState('');
   const [eventTags, setEventTags] = useState<string[]>([]);
+  const [originalSource, setOriginalSource] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -52,6 +55,7 @@ export function MISPImportModal({
       setParseErrors([]);
       setEventTitle('');
       setEventTags([]);
+      setOriginalSource('');
     }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [open, defaultFolderId]);
@@ -74,15 +78,18 @@ export function MISPImportModal({
     if (fileInputRef.current) fileInputRef.current.value = '';
 
     try {
+      if (file.size > 32 * 1024 * 1024) throw new Error('Import file exceeds 32 MiB; retain the original and split it before importing.');
       const text = await file.text();
+      setOriginalSource(text);
       const result = parseMISPEvent(text);
       setParsedIOCs(result.iocs);
       setParseErrors(result.errors);
       setEventTitle(result.eventTitle);
       setEventTags(result.tags);
       setStep('preview');
-    } catch {
-      setParseErrors(['Failed to read file']);
+    } catch (error) {
+      setParseErrors([error instanceof Error ? error.message : 'Failed to read file']);
+      setStep('preview');
     }
   };
 
@@ -92,11 +99,11 @@ export function MISPImportModal({
     let skipped = 0;
     let failed = 0;
 
-    const existingSet = new Set(existingIOCs.map((ioc) => `${ioc.type}::${ioc.value}`));
+    const existingSet = new Set(existingIOCs.map(importDuplicateKey));
 
     for (const ioc of parsedIOCs) {
       if (!ioc.type || !ioc.value) { failed++; continue; }
-      const key = `${ioc.type}::${ioc.value}`;
+      const key = importDuplicateKey(ioc);
       if (existingSet.has(key)) { skipped++; continue; }
 
       try {
@@ -212,6 +219,7 @@ export function MISPImportModal({
               </div>
             )}
 
+            {originalSource && <button type="button" className="text-xs text-accent underline" onClick={() => downloadFile(originalSource, 'original-misp-event.json', 'application/json')}>Save original event, including unsupported attributes</button>}
             {parsedIOCs.length > 0 && (
               <div className="max-h-48 overflow-y-auto border border-gray-800 rounded-lg">
                 <table className="w-full text-xs">

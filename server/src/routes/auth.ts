@@ -1,16 +1,17 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { eq, asc } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
-import { users, sessions, allowedEmails } from '../db/schema.js';
-import { requireAuth, signAccessToken } from '../middleware/auth.js';
-import { getRegistrationMode, getSessionSettings, ADMIN_SYSTEM_USER_ID } from '../services/admin-secret.js';
+import { users } from '../db/schema.js';
+import { requireAuth } from '../middleware/auth.js';
+import { getRegistrationMode, ADMIN_SYSTEM_USER_ID } from '../services/admin-secret.js';
 import { logActivity } from '../services/audit-service.js';
 import { isLocked, recordFailedAttempt, resetAttempts } from '../services/login-limiter.js';
 import type { AuthUser } from '../types.js';
 import { ErrorCodes } from '../types/error-codes.js';
+import { createTokenPair, rotateRefreshToken, revokeSessionFamily, updateUsersAndRevokeSessions, SessionAuthorizationError } from '../services/session-service.js';
 
 const app = new Hono<{ Variables: { user: AuthUser } }>();
 
@@ -35,43 +36,6 @@ const updateProfileSchema = z.object({
   avatarUrl: z.string().url().nullish(),
 });
 
-async function createTokenPair(user: AuthUser, opts?: { tokenFamily?: string; rotationCounter?: number }) {
-  const accessToken = await signAccessToken(user);
-  const refreshTokenId = nanoid(32);
-  const tokenFamily = opts?.tokenFamily ?? nanoid(16);
-  const rotationCounter = opts?.rotationCounter ?? 0;
-
-  const settings = await getSessionSettings();
-  const expiresAt = new Date(Date.now() + settings.ttlHours * 60 * 60 * 1000);
-
-  // Enforce max sessions per user
-  if (settings.maxPerUser > 0) {
-    const existing = await db
-      .select({ id: sessions.id })
-      .from(sessions)
-      .where(eq(sessions.userId, user.id))
-      .orderBy(asc(sessions.createdAt));
-
-    const excess = existing.length - settings.maxPerUser + 1;
-    if (excess > 0) {
-      const toDelete = existing.slice(0, excess);
-      for (const s of toDelete) {
-        await db.delete(sessions).where(eq(sessions.id, s.id));
-      }
-    }
-  }
-
-  await db.insert(sessions).values({
-    id: refreshTokenId,
-    userId: user.id,
-    tokenFamily,
-    rotationCounter,
-    expiresAt,
-  });
-
-  return { accessToken, refreshToken: refreshTokenId };
-}
-
 // POST /api/auth/register
 app.post('/register', async (c) => {
   const body = await c.req.json();
@@ -94,13 +58,12 @@ app.post('/register', async (c) => {
     return c.json({ error: 'Email already registered', code: ErrorCodes.EMAIL_ALREADY_REGISTERED }, 409);
   }
 
-  // Invite-only gate
+  // An email allowlist is not proof that this requester owns the mailbox.
+  // Until a verified one-time invitation flow exists, closed registration uses
+  // administrator-provisioned accounts only.
   const mode = await getRegistrationMode();
   if (mode === 'invite') {
-    const allowed = await db.select().from(allowedEmails).where(eq(allowedEmails.email, email)).limit(1);
-    if (allowed.length === 0) {
-      return c.json({ error: 'Registration is invite-only. Contact an admin.', code: ErrorCodes.REGISTRATION_INVITE_ONLY }, 403);
-    }
+    return c.json({ error: 'Self-registration is closed. Ask an administrator to provision your account; an email allowlist is not an invitation credential.', code: ErrorCodes.REGISTRATION_INVITE_ONLY }, 403);
   }
 
   const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
@@ -121,13 +84,8 @@ app.post('/register', async (c) => {
     updatedAt: now,
   });
 
-  // Consume invite if in invite mode
-  if (mode === 'invite') {
-    await db.delete(allowedEmails).where(eq(allowedEmails.email, email));
-  }
-
   const user: AuthUser = { id: userId, email, role, displayName, avatarUrl: null };
-  const tokens = await createTokenPair(user);
+  const tokens = await createTokenPair(user.id, passwordHash);
 
   await logActivity({ userId, category: 'auth', action: 'register', detail: 'User registered' });
 
@@ -199,7 +157,12 @@ app.post('/login', async (c) => {
     displayName: user.displayName,
     avatarUrl: user.avatarUrl,
   };
-  const tokens = await createTokenPair(authUser);
+  let tokens;
+  try { tokens = await createTokenPair(authUser.id, user.passwordHash); }
+  catch (error) {
+    if (error instanceof SessionAuthorizationError) return c.json({ error: 'Credentials changed. Sign in again.', code: ErrorCodes.INVALID_CREDENTIALS }, 401);
+    throw error;
+  }
 
   await logActivity({ userId: user.id, category: 'auth', action: 'login', detail: 'User logged in' });
 
@@ -217,80 +180,23 @@ app.post('/refresh', async (c) => {
     return c.json({ error: 'Missing refresh token', code: ErrorCodes.INVALID_REFRESH_TOKEN }, 400);
   }
 
-  const session = await db.select().from(sessions).where(eq(sessions.id, refreshToken)).limit(1);
-  if (session.length === 0) {
-    // Token not found — check if it belongs to a known family (reuse detection).
-    // A replayed token that was already rotated means potential token theft.
-    // We can't check family directly here since the token is gone, but this
-    // path is the normal "invalid token" case. The real reuse detection happens
-    // if a token family has a newer rotation counter than expected.
-    return c.json({ error: 'Invalid refresh token', code: ErrorCodes.INVALID_REFRESH_TOKEN }, 401);
+  if (typeof refreshToken !== 'string') return c.json({ error: 'Invalid refresh token', code: ErrorCodes.INVALID_REFRESH_TOKEN }, 400);
+  const result = await rotateRefreshToken(refreshToken);
+  if ('error' in result) {
+    const code = result.error === 'reuse' ? ErrorCodes.REFRESH_TOKEN_REUSE
+      : result.error === 'expired' ? ErrorCodes.REFRESH_TOKEN_EXPIRED
+      : result.error === 'disabled' ? ErrorCodes.ACCOUNT_DISABLED : ErrorCodes.INVALID_REFRESH_TOKEN;
+    if (result.error === 'reuse' && result.userId) await logActivity({ userId: result.userId, category: 'auth', action: 'token.reuse_detected', detail: 'Refresh token reuse detected; session family revoked.' });
+    return c.json({ error: 'Session no longer valid. Sign in again.', code }, 401);
   }
-
-  const s = session[0];
-  if (new Date() > s.expiresAt) {
-    await db.delete(sessions).where(eq(sessions.id, s.id));
-    return c.json({ error: 'Refresh token expired', code: ErrorCodes.REFRESH_TOKEN_EXPIRED }, 401);
-  }
-
-  // Reuse detection: if there's another session in this family with a higher
-  // rotation counter, this token was already rotated — likely stolen.
-  if (s.tokenFamily) {
-    const newerInFamily = await db
-      .select({ id: sessions.id })
-      .from(sessions)
-      .where(eq(sessions.tokenFamily, s.tokenFamily))
-      .limit(2);
-
-    // If there are multiple sessions with the same family, the old token was
-    // replayed after rotation. Revoke the entire family.
-    if (newerInFamily.length > 1) {
-      await db.delete(sessions).where(eq(sessions.tokenFamily, s.tokenFamily));
-      await logActivity({
-        userId: s.userId,
-        category: 'auth',
-        action: 'token.reuse_detected',
-        detail: `Refresh token reuse detected for family ${s.tokenFamily}. All sessions in family revoked.`,
-      });
-      return c.json({ error: 'Refresh token reuse detected. All sessions revoked for security.', code: ErrorCodes.REFRESH_TOKEN_REUSE }, 401);
-    }
-  }
-
-  // Rotate: delete old session, create new one in same family
-  await db.delete(sessions).where(eq(sessions.id, s.id));
-
-  const user = await db.select().from(users).where(eq(users.id, s.userId)).limit(1);
-  if (user.length === 0 || !user[0].active) {
-    return c.json({ error: 'User not found or disabled', code: ErrorCodes.ACCOUNT_DISABLED }, 401);
-  }
-
-  const u = user[0];
-  const authUser: AuthUser = {
-    id: u.id,
-    email: u.email,
-    role: u.role,
-    displayName: u.displayName,
-    avatarUrl: u.avatarUrl,
-  };
-  const tokens = await createTokenPair(authUser, {
-    tokenFamily: s.tokenFamily ?? undefined,
-    rotationCounter: (s.rotationCounter ?? 0) + 1,
-  });
-
-  return c.json({
-    ...tokens,
-    user: { id: u.id, email: u.email, displayName: u.displayName, role: u.role, avatarUrl: u.avatarUrl },
-  });
+  return c.json(result);
 });
 
 // POST /api/auth/logout
 app.post('/logout', requireAuth, async (c) => {
   const authUser = c.get('user');
-  const body = await c.req.json();
-  const { refreshToken } = body;
-  if (refreshToken) {
-    await db.delete(sessions).where(eq(sessions.id, refreshToken));
-  }
+  if (!authUser.sessionFamily) return c.json({ error: 'Invalid session', code: ErrorCodes.INVALID_REFRESH_TOKEN }, 401);
+  await revokeSessionFamily(authUser.id, authUser.sessionFamily);
   await logActivity({ userId: authUser.id, category: 'auth', action: 'logout', detail: 'User logged out' });
   return c.json({ ok: true });
 });
@@ -351,10 +257,11 @@ app.post('/change-password', requireAuth, async (c) => {
   }
 
   const newHash = await argon2.hash(parsed.data.newPassword, { type: argon2.argon2id });
-  await db.update(users).set({ passwordHash: newHash, updatedAt: new Date() }).where(eq(users.id, authUser.id));
-
-  // Invalidate all existing sessions for this user
-  await db.delete(sessions).where(eq(sessions.userId, authUser.id));
+  try { await updateUsersAndRevokeSessions([authUser.id], { passwordHash: newHash, updatedAt: new Date() }, result[0].passwordHash); }
+  catch (error) {
+    if (error instanceof SessionAuthorizationError) return c.json({ error: 'Credentials changed. Sign in again.', code: ErrorCodes.INVALID_CREDENTIALS }, 401);
+    throw error;
+  }
 
   return c.json({ ok: true });
 });

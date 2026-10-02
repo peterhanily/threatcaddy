@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Dexie from 'dexie';
 import { db } from '../db';
+import { deleteEntitiesWithReferences } from '../lib/entity-relations';
 import type { TimelineEvent, TimelineEventType } from '../types';
 import { nanoid } from 'nanoid';
 import { purgeOldTrash } from '../lib/trash-purge';
@@ -73,22 +74,7 @@ export function useTimeline(folderId?: string) {
 
   const deleteEvent = useCallback(async (id: string) => {
     try {
-      await db.transaction('rw', [db.timelineEvents, db.notes, db.tasks], async () => {
-        await db.timelineEvents.delete(id);
-        // Batch orphan link cleanup: collect affected entities then update in bulk
-        const [linkedNotes, linkedTasks] = await Promise.all([
-          db.notes.where('linkedTimelineEventIds').equals(id).toArray(),
-          db.tasks.where('linkedTimelineEventIds').equals(id).toArray(),
-        ]);
-        const ops: Promise<unknown>[] = [];
-        for (const n of linkedNotes) {
-          ops.push(db.notes.update(n.id, { linkedTimelineEventIds: (n.linkedTimelineEventIds ?? []).filter(eid => eid !== id) }));
-        }
-        for (const t of linkedTasks) {
-          ops.push(db.tasks.update(t.id, { linkedTimelineEventIds: (t.linkedTimelineEventIds ?? []).filter(eid => eid !== id) }));
-        }
-        await Promise.all(ops);
-      });
+      await deleteEntitiesWithReferences({ timelineEvents: [id] });
     } catch (err) {
       console.error('Failed to delete timeline event:', err);
       throw err;
@@ -113,23 +99,7 @@ export function useTimeline(folderId?: string) {
     const trashedIds = events.filter((e) => e.trashed).map((e) => e.id);
     if (trashedIds.length === 0) return;
     try {
-      await db.transaction('rw', [db.timelineEvents, db.notes, db.tasks], async () => {
-        await db.timelineEvents.bulkDelete(trashedIds);
-        // Use MultiEntry index to find only affected records (avoids full table scan)
-        const idSet = new Set(trashedIds);
-        const [affectedNotes, affectedTasks] = await Promise.all([
-          db.notes.where('linkedTimelineEventIds').anyOf(trashedIds).distinct().toArray(),
-          db.tasks.where('linkedTimelineEventIds').anyOf(trashedIds).distinct().toArray(),
-        ]);
-        const ops: Promise<unknown>[] = [];
-        for (const n of affectedNotes) {
-          ops.push(db.notes.update(n.id, { linkedTimelineEventIds: (n.linkedTimelineEventIds ?? []).filter(eid => !idSet.has(eid)) }));
-        }
-        for (const t of affectedTasks) {
-          ops.push(db.tasks.update(t.id, { linkedTimelineEventIds: (t.linkedTimelineEventIds ?? []).filter(eid => !idSet.has(eid)) }));
-        }
-        await Promise.all(ops);
-      });
+      await deleteEntitiesWithReferences({ timelineEvents: trashedIds });
     } catch (err) {
       console.error('Failed to empty event trash:', err);
       throw err;

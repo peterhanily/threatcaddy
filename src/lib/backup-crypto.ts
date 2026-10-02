@@ -16,13 +16,17 @@ export interface EncryptedBackupBlob {
 }
 
 export interface BackupPayload {
-  version: 1;
+  version: 1 | 2;
   type: 'full' | 'differential';
   scope: 'all' | 'investigation' | 'entity';
   scopeId?: string;
   parentBackupId?: string;
   createdAt: number;
   lastBackupAt?: number;
+  /** Version 2 differentials bind the exact full parent and both scoped states. */
+  baseFingerprint?: string;
+  baseStateFingerprint?: string;
+  resultFingerprint?: string;
   data: {
     notes?: unknown[];
     tasks?: unknown[];
@@ -47,6 +51,43 @@ export interface BackupPayload {
   deletedIds?: Record<string, string[]>;
 }
 
+/** Canonical JSON, matching JSON backup serialization while ignoring key order. */
+export function canonicalBackupJSON(value: unknown): string {
+  function canonical(item: unknown): unknown {
+    if (Array.isArray(item)) return item.map(canonical);
+    if (item && typeof item === 'object') return Object.fromEntries(
+      Object.entries(item).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+        .map(([key, entry]) => [key, canonical(entry)]),
+    );
+    return item;
+  }
+  return JSON.stringify(canonical(JSON.parse(JSON.stringify(value))));
+}
+
+function orderedData(data: BackupPayload['data']): BackupPayload['data'] {
+  return Object.fromEntries(Object.entries(data).map(([name, rows]) => [name,
+    [...(rows ?? [])].sort((a, b) => {
+      const left = String((a as { id?: unknown })?.id);
+      const right = String((b as { id?: unknown })?.id);
+      return left < right ? -1 : left > right ? 1 : 0;
+    }),
+  ]));
+}
+
+async function fingerprint(value: unknown): Promise<string> {
+  const bytes = new TextEncoder().encode(canonicalBackupJSON(value));
+  const hash = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(hash)].map(value => value.toString(16).padStart(2, '0')).join('');
+}
+
+export function backupFingerprint(payload: BackupPayload): Promise<string> {
+  return fingerprint({ ...payload, data: orderedData(payload.data) });
+}
+
+export function backupStateFingerprint(payload: Pick<BackupPayload, 'scope' | 'scopeId' | 'data'>): Promise<string> {
+  return fingerprint({ scope: payload.scope, scopeId: payload.scopeId, data: orderedData(payload.data) });
+}
+
 async function deriveBackupKey(password: string, salt: ArrayBuffer): Promise<CryptoKey> {
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
@@ -64,7 +105,7 @@ async function deriveBackupKey(password: string, salt: ArrayBuffer): Promise<Cry
   );
 }
 
-export async function encryptBackup(password: string, payload: BackupPayload): Promise<EncryptedBackupBlob> {
+export async function encryptBackup<T extends object>(password: string, payload: T): Promise<EncryptedBackupBlob> {
   const salt = generateSalt();
   const saltBuf = base64ToArrayBuffer(salt);
   const key = await deriveBackupKey(password, saltBuf);
@@ -87,7 +128,7 @@ export async function encryptBackup(password: string, payload: BackupPayload): P
   };
 }
 
-export async function decryptBackup(password: string, blob: EncryptedBackupBlob): Promise<BackupPayload> {
+export async function decryptBackup<T = BackupPayload>(password: string, blob: EncryptedBackupBlob): Promise<T> {
   if (blob.v !== 1) throw new Error('Unsupported backup format version');
 
   const saltBuf = base64ToArrayBuffer(blob.salt);
@@ -108,5 +149,5 @@ export async function decryptBackup(password: string, blob: EncryptedBackupBlob)
   }
 
   const plaintext = new TextDecoder().decode(plainBuf);
-  return JSON.parse(plaintext) as BackupPayload;
+  return JSON.parse(plaintext) as T;
 }

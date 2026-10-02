@@ -13,6 +13,9 @@ import { executeTool } from './llm-tools';
 import { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
 import { db } from '../db';
 import type { ToolUseBlock } from '../types';
+import { isEncryptionEnabled, getEncryptionMeta } from './encryptionStore';
+import { ENCRYPTION_COVERAGE_VERSION, getSessionKey } from './encryptionMiddleware';
+import { isWorkspaceInitialized } from './workspace-initialization';
 
 interface ThreatCaddyBridge {
   /** Execute a CaddyAI tool by name with JSON input. Requires valid nonce. Returns JSON string. */
@@ -44,6 +47,13 @@ function validateNonce(nonce: string): void {
   }
 }
 
+function requireReadyWorkspace(): void {
+  const metadata = getEncryptionMeta();
+  if (!isWorkspaceInitialized() || (isEncryptionEnabled() && (!getSessionKey() || !metadata || metadata.transition || (metadata.coverageVersion ?? 1) < ENCRYPTION_COVERAGE_VERSION))) {
+    throw new Error('Unlock the workspace and finish preparing its data before using the agent bridge.');
+  }
+}
+
 async function logBridgeCall(toolName: string, folderId: string | undefined, isError: boolean) {
   try {
     await db.activityLog.add({
@@ -64,6 +74,7 @@ const bridge: ThreatCaddyBridge = {
 
   async exec(nonce: string, toolName: string, input: Record<string, unknown> = {}): Promise<string> {
     validateNonce(nonce);
+    requireReadyWorkspace();
     const toolUse: ToolUseBlock = {
       type: 'tool_use',
       id: `agent-${Date.now()}`,
@@ -85,15 +96,18 @@ const bridge: ThreatCaddyBridge = {
   },
 
   folderId(): string | undefined {
+    requireReadyWorkspace();
     return activeFolderId;
   },
 
   setFolderId(nonce: string, id: string | undefined): void {
     validateNonce(nonce);
+    requireReadyWorkspace();
     activeFolderId = id;
   },
 
   async investigations(): Promise<string> {
+    requireReadyWorkspace();
     const folders = await db.folders.toArray();
     return JSON.stringify(folders.map(f => ({
       id: f.id,

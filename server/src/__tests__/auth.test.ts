@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
+const { currentUser } = vi.hoisted(() => ({ currentUser: { value: null as Record<string, unknown> | null } }));
+vi.mock('../db/index.js', () => ({ db: { select: () => { const chain = { from: () => chain, innerJoin: () => chain, where: () => chain, limit: async () => currentUser.value ? [currentUser.value] : [] }; return chain; } } }));
 import * as jose from 'jose';
 
 describe('auth middleware', () => {
-  let signAccessToken: (user: { id: string; email: string; role: string; displayName: string; avatarUrl: string | null }) => Promise<string>;
+  let signAccessToken: (user: { id: string; email: string; role: string; displayName: string; avatarUrl: string | null }, family: string) => Promise<string>;
   let verifyAccessToken: (token: string) => Promise<{ id: string; email: string; role: string; displayName: string; avatarUrl: string | null }>;
   let privateKey: jose.KeyLike;
   let publicKey: jose.KeyLike;
@@ -31,10 +33,11 @@ describe('auth middleware', () => {
       avatarUrl: null,
     };
 
-    const token = await signAccessToken(user);
+    const token = await signAccessToken(user, 'test-family');
     expect(typeof token).toBe('string');
     expect(token.split('.')).toHaveLength(3);
 
+    currentUser.value = user;
     const verified = await verifyAccessToken(token);
     expect(verified.id).toBe(user.id);
     expect(verified.email).toBe(user.email);
@@ -86,7 +89,7 @@ describe('auth middleware', () => {
       avatarUrl: 'https://example.com/avatar.png',
     };
 
-    const token = await signAccessToken(user);
+    const token = await signAccessToken(user, 'test-family');
     const { payload } = await jose.jwtVerify(token, publicKey);
 
     expect(payload.sub).toBe(user.id);

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
+vi.mock('../services/storage-policy.js', () => ({ lockStorage: vi.fn().mockResolvedValue(undefined),
+  assertStorageCapacity: vi.fn().mockResolvedValue(undefined), StorageQuotaError: class extends Error {} }));
 
 // ---------------------------------------------------------------------------
 // Queue-based thenable chain helpers
@@ -54,13 +56,15 @@ const mockUser = {
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('../db/index.js', () => ({
-  db: {
+vi.mock('../db/index.js', () => {
+  const db = {
     select: vi.fn(() => makeThenableChain(selectQueue)),
     insert: vi.fn(() => makeThenableChain(insertQueue)),
     delete: vi.fn(() => makeThenableChain(deleteQueue)),
-  },
-}));
+    execute: vi.fn().mockResolvedValue([]),
+  };
+  return { db: { ...db, transaction: vi.fn((work: (tx: typeof db) => unknown) => work(db)) } };
+});
 
 vi.mock('../db/schema.js', () => {
   const col = (name: string) => ({ name });
@@ -102,6 +106,10 @@ const mockMkdir = vi.fn().mockResolvedValue(undefined);
 const mockWriteFile = vi.fn().mockResolvedValue(undefined);
 const mockReadFile = vi.fn().mockResolvedValue(Buffer.from('encrypted-data'));
 const mockUnlink = vi.fn().mockResolvedValue(undefined);
+const mockStat = vi.fn().mockResolvedValue({ size: 14 });
+const mockRealpath = vi.fn().mockImplementation(async (path: string) => path);
+const mockStream = vi.fn();
+vi.mock('node:fs', () => ({ createReadStream: (...args: unknown[]) => mockStream(...args) }));
 
 vi.mock('node:fs/promises', () => ({
   default: {
@@ -114,6 +122,8 @@ vi.mock('node:fs/promises', () => ({
   writeFile: (...args: unknown[]) => mockWriteFile(...args),
   readFile: (...args: unknown[]) => mockReadFile(...args),
   unlink: (...args: unknown[]) => mockUnlink(...args),
+  stat: (...args: unknown[]) => mockStat(...args),
+  realpath: (...args: unknown[]) => mockRealpath(...args),
 }));
 
 vi.mock('nanoid', () => ({
@@ -178,7 +188,7 @@ function backupIdStubs(n: number) {
 // Tests
 // ---------------------------------------------------------------------------
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
   selectQueue.length = 0;
   insertQueue.length = 0;
@@ -187,10 +197,51 @@ beforeEach(() => {
   mockWriteFile.mockResolvedValue(undefined);
   mockReadFile.mockResolvedValue(Buffer.from('encrypted-data'));
   mockUnlink.mockResolvedValue(undefined);
+  mockStat.mockResolvedValue({ size: 14 });
+  mockRealpath.mockImplementation(async (path: string) => path);
+  const { Readable } = await import('node:stream');
+  mockStream.mockImplementation(() => Readable.from([Buffer.from('encrypted-data')]));
   app = buildApp();
 });
 
 describe('Backup routes — /api/backups', () => {
+  it('compensates a failed record insert by removing only its newly created blob', async () => {
+    selectQueue.push([]);
+    insertQueue.push(new Error('Temporary database failure'));
+    const response = await app.request('/api/backups', { method: 'POST', headers: authHeader(), body: makeUploadFormData() });
+    expect(response.status).toBe(500);
+    expect(mockUnlink).toHaveBeenCalledWith(mockWriteFile.mock.calls[0][0]);
+  });
+
+  it.each(['null', '[]'])('rejects non-object metadata %s before writing', async metadata => {
+    selectQueue.push([]);
+    const response = await app.request('/api/backups', { method: 'POST', headers: authHeader(), body: makeUploadFormData({}, true, metadata) });
+    expect(response.status).toBe(400);
+    expect(mockWriteFile).not.toHaveBeenCalled();
+  });
+
+  it('requires an owned matching parent for a differential upload', async () => {
+    selectQueue.push([], []);
+    const response = await app.request('/api/backups', { method: 'POST', headers: authHeader(),
+      body: makeUploadFormData({ name: 'Daily', type: 'differential', scope: 'all', parentBackupId: 'missing-parent' }) });
+    expect(response.status).toBe(400);
+    expect(mockWriteFile).not.toHaveBeenCalled();
+  });
+
+  it('retains a parent with dependent backups', async () => {
+    selectQueue.push([{ id: 'parent', storagePath: 'backups/parent.enc' }], [{ id: 'child' }]);
+    const response = await app.request('/api/backups/parent', { method: 'DELETE', headers: authHeader() });
+    expect(response.status).toBe(409);
+    expect(mockUnlink).not.toHaveBeenCalled();
+  });
+
+  it('keeps the blob when deleting its database record fails', async () => {
+    selectQueue.push([{ id: 'parent', storagePath: 'backups/parent.enc' }], []);
+    deleteQueue.push(new Error('Temporary database failure'));
+    const response = await app.request('/api/backups/parent', { method: 'DELETE', headers: authHeader() });
+    expect(response.status).toBe(500);
+    expect(mockUnlink).not.toHaveBeenCalled();
+  });
   // ----------------------------------------------------------------
   //  Auth required on all endpoints
   // ----------------------------------------------------------------
@@ -384,6 +435,7 @@ describe('Backup routes — /api/backups', () => {
 
     it('includes optional fields like scopeId and parentBackupId', async () => {
       selectQueue.push([]);
+      selectQueue.push([{ id: 'parent-1', userId: mockUser.id, scope: 'investigation', scopeId: 'inv-123' }]);
       insertQueue.push([]);
 
       const formData = makeUploadFormData({
@@ -491,7 +543,9 @@ describe('Backup routes — /api/backups', () => {
       expect(contentType).toMatch(/octet-stream/);
       const disposition = res.headers.get('content-disposition');
       expect(disposition).toContain('backup-1.enc');
-      expect(mockReadFile).toHaveBeenCalled();
+      expect(mockReadFile).not.toHaveBeenCalled();
+      expect(mockStream).toHaveBeenCalled();
+      expect(res.headers.get('cache-control')).toBe('private, no-store');
 
       const arrayBuf = await res.arrayBuffer();
       expect(Buffer.from(arrayBuf).toString()).toBe('encrypted-data');
@@ -517,7 +571,7 @@ describe('Backup routes — /api/backups', () => {
         createdAt: '2026-03-07T12:00:00Z',
       };
       selectQueue.push([backup]);
-      mockReadFile.mockRejectedValue(new Error('ENOENT: no such file'));
+      mockStat.mockRejectedValue(new Error('ENOENT: no such file'));
 
       const res = await app.request('/api/backups/backup-1', {
         headers: authHeader(),

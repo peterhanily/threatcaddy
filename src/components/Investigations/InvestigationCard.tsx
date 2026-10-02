@@ -126,8 +126,8 @@ export function InvestigationCard({
   };
 
   return (
-    <button
-      onClick={() => onOpen(folderId)}
+    <div role="group" aria-label={name}
+      onClick={(e) => { if (!(e.target as HTMLElement).closest('button, a, input')) onOpen(folderId); }}
       className={cn(
         'w-full text-start rounded-lg border transition-all duration-200 cursor-pointer',
         'hover:scale-[1.01] hover:shadow-lg',
@@ -156,9 +156,9 @@ export function InvestigationCard({
             className={cn('w-2 h-2 rounded-full shrink-0', sty.dot)}
             style={status === 'active' ? { animation: 'status-pulse 2s ease-in-out infinite' } : undefined}
           />
-          <span className="text-sm font-semibold text-text-primary truncate flex-1">
+          <button type="button" onClick={() => onOpen(folderId)} className="text-start text-sm font-semibold text-text-primary truncate flex-1">
             {name}
-          </span>
+          </button>
           <span className={cn('text-[10px] font-medium uppercase tracking-wide shrink-0', sty.text)}>
             {statusLabel}
           </span>
@@ -166,17 +166,14 @@ export function InvestigationCard({
           {/* Context menu */}
           {showMenuButton && (
             <div ref={menuRef} className="relative shrink-0">
-              <span
-                role="button"
-                tabIndex={0}
+              <button type="button"
                 onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setMenuOpen((v) => !v); } }}
                 className="p-0.5 rounded hover:bg-bg-deep transition-colors text-text-muted hover:text-text-secondary"
                 title={t('card.actions')}
                 aria-label={t('card.actions')}
               >
                 <MoreVertical size={14} />
-              </span>
+              </button>
               {menuOpen && (
                 <div className="absolute right-0 top-full mt-1 z-50 w-40 rounded-lg border border-border-subtle bg-bg-raised shadow-xl py-1">
                   {onSettings && (
@@ -299,37 +296,31 @@ export function InvestigationCard({
           ) : (
             <>
               {dataMode === 'remote' && onSync && (
-                <span
-                  role="button"
-                  tabIndex={0}
+                <button type="button"
                   onClick={handleActionClick}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleActionClick(e as unknown as React.MouseEvent); } }}
                   className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 transition-colors shrink-0"
                   title={t('card.syncLocally')}
                   aria-label={t('card.syncLocally')}
                 >
                   <Download size={10} />
                   {t('card.sync')}
-                </span>
+                </button>
               )}
               {dataMode === 'synced' && onUnsync && (
-                <span
-                  role="button"
-                  tabIndex={0}
+                <button type="button"
                   onClick={handleActionClick}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleActionClick(e as unknown as React.MouseEvent); } }}
                   className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-text-muted/15 text-text-secondary hover:bg-text-muted/25 transition-colors shrink-0"
                   title={t('card.removeLocalCopy')}
                   aria-label={t('card.removeLocalCopy')}
                 >
                   <CloudOff size={10} />
                   {t('card.unsync')}
-                </span>
+                </button>
               )}
             </>
           )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }

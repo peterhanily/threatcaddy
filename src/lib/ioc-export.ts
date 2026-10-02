@@ -3,9 +3,12 @@ import type { IOCEntry, ConfidenceLevel } from '../types';
 export interface IOCExportEntry {
   clipTitle: string;
   sourceUrl?: string;
-  iocs: IOCEntry[];
+  iocs: (IOCEntry & { createdAt?: number; updatedAt?: number })[];
   tags?: string[];
   entityClsLevel?: string;
+  /** Source entity revision timestamps, not export wall-clock time. */
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export interface ThreatIntelExportConfig {

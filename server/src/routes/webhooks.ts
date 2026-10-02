@@ -1,6 +1,6 @@
 /**
  * Webhook ingest endpoint — accepts alerts from SIEMs, SOAR platforms, and
- * other external systems. Auto-creates investigations and triggers agents.
+ * other external systems. Creates attributed alerts and owned investigations.
  *
  * Auth: Bearer token or X-Webhook-Secret header (configured via WEBHOOK_INGEST_SECRET env var).
  * No JWT required — this is designed for machine-to-machine integration.
@@ -18,16 +18,18 @@
  *   ],
  *   "investigationId": "abc123",  // optional — add to existing investigation
  *   "tags": ["phishing"],         // optional — tags for the investigation
- *   "triggerAgents": true          // optional — auto-start agents (default: true)
+ *   "triggerAgents": true          // retained for compatibility; server handoff is unavailable
  * }
  */
 
 import { Hono } from 'hono';
 import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
-import { folders, notes, standaloneIOCs, botConfigs } from '../db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { folders, notes, standaloneIOCs, users, investigationMembers } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
 import { logger } from '../lib/logger.js';
+import { checkInvestigationAccess } from '../middleware/access.js';
+import { HANDOFF_UNAVAILABLE } from '../bots/handoff-policy.js';
 import { timingSafeEqual, createHmac } from 'node:crypto';
 
 const app = new Hono();
@@ -114,6 +116,10 @@ function sanitizeStr(s: unknown, maxLen: number): string {
   return s.trim().replace(/[\x00-\x1f]/g, '').substring(0, maxLen);
 }
 
+class IngestAuthorizationError extends Error {
+  constructor(message: string, readonly status: 403 | 503) { super(message); }
+}
+
 app.post('/ingest', async (c) => {
   let body: IngestPayload;
   try {
@@ -123,6 +129,9 @@ app.post('/ingest', async (c) => {
   } catch {
     return c.json({ error: 'Invalid JSON body' }, 400);
   }
+
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return c.json({ error: 'Invalid ingest payload' }, 400);
+  if (body.iocs !== undefined && !Array.isArray(body.iocs)) return c.json({ error: 'iocs must be an array' }, 400);
 
   // Strict type + length validation
   const source = sanitizeStr(body.source, MAX_SOURCE_LEN);
@@ -134,31 +143,21 @@ app.post('/ingest', async (c) => {
   const description = sanitizeStr(body.description, 5000);
   const tags = Array.isArray(body.tags) ? body.tags.filter((t): t is string => typeof t === 'string' && t.length < 100).slice(0, 20) : [];
 
+  const ownerId = process.env.WEBHOOK_INGEST_OWNER_ID;
+  if (!ownerId) return c.json({ error: 'Webhook ingest requires WEBHOOK_INGEST_OWNER_ID for an active analyst or administrator' }, 503);
+  const [owner] = await db.select({ id: users.id, active: users.active, role: users.role, email: users.email })
+    .from(users).where(eq(users.id, ownerId)).limit(1);
+  if (!owner || !owner.active || !['admin', 'analyst'].includes(owner.role) || owner.email.endsWith('@threatcaddy.internal')) {
+    return c.json({ error: 'Configured ingestion owner is not an active analyst or administrator' }, 503);
+  }
   const now = new Date();
-  let folderId = body.investigationId;
-  let created = false;
-
-  // Find or create investigation
-  if (folderId) {
-    if (typeof folderId !== 'string') return c.json({ error: 'investigationId must be a string' }, 400);
+  const created = !body.investigationId;
+  const folderId = body.investigationId || nanoid();
+  if (typeof folderId !== 'string') return c.json({ error: 'investigationId must be a string' }, 400);
+  if (!created) {
     const existing = await db.select({ id: folders.id }).from(folders).where(eq(folders.id, folderId)).limit(1);
-    if (existing.length === 0) {
-      return c.json({ error: `Investigation not found` }, 404);
-    }
-  } else {
-    folderId = nanoid();
-    const severityIcon = severity === 'critical' ? '🚨' : severity === 'high' ? '⚠️' : severity === 'medium' ? '🔶' : '📋';
-    await db.insert(folders).values({
-      id: folderId,
-      name: `${severityIcon} ${title}`.substring(0, 200),
-      description: description || `Auto-created from ${source} alert`,
-      status: 'active',
-      tags: JSON.stringify([...tags, `source:${source}`, 'auto-ingested']),
-      createdAt: now,
-      updatedAt: now,
-    });
-    created = true;
-    logger.info('Webhook ingest: created investigation', { folderId, source, title });
+    if (!existing.length) return c.json({ error: 'Investigation not found' }, 404);
+    if (!await checkInvestigationAccess(ownerId, folderId, 'editor')) return c.json({ error: 'Configured ingestion owner cannot edit this investigation' }, 403);
   }
 
   // Create alert note
@@ -173,84 +172,75 @@ app.post('/ingest', async (c) => {
     body.raw ? `## Raw Alert Data\n\`\`\`json\n${JSON.stringify(body.raw, null, 2).substring(0, 5000)}\n\`\`\`` : '',
   ].filter(Boolean).join('\n');
 
-  await db.insert(notes).values({
-    id: noteId,
-    folderId,
-    title: `[${source.toUpperCase()}] ${title}`.substring(0, 200),
-    content: noteContent,
-    tags: JSON.stringify(['alert', `source:${source}`, `severity:${severity}`]),
-    pinned: severity === 'critical' || severity === 'high',
-    trashed: false,
-    archived: false,
-    version: 1,
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  // Batch-insert IOCs
   let iocCount = 0;
-  if (body.iocs?.length) {
-    const VALID_CONFIDENCES = new Set(['low', 'medium', 'high', 'confirmed']);
-    const iocValues = body.iocs.slice(0, 100)
-      .filter(ioc => typeof ioc.type === 'string' && typeof ioc.value === 'string' && ioc.type && ioc.value)
-      .map(ioc => ({
-        id: nanoid(),
-        folderId: folderId!,
-        type: sanitizeStr(ioc.type, 50),
-        value: sanitizeStr(ioc.value, MAX_IOC_VALUE_LEN),
-        confidence: (VALID_CONFIDENCES.has(ioc.confidence || '') ? ioc.confidence : 'medium') as 'low' | 'medium' | 'high' | 'confirmed',
-        analystNotes: `Auto-extracted from ${source} alert`,
-        tags: JSON.stringify(['auto-ingested', `source:${source}`]),
-        iocStatus: 'new',
+  try {
+    await db.transaction(async tx => {
+      const [currentOwner] = await tx.select({ active: users.active, role: users.role, email: users.email })
+        .from(users).where(eq(users.id, ownerId)).for('share');
+      if (!currentOwner || !currentOwner.active || !['admin', 'analyst'].includes(currentOwner.role)
+          || currentOwner.email.endsWith('@threatcaddy.internal')) throw new IngestAuthorizationError('Configured ingestion owner is no longer eligible', 503);
+      if (!created && !await checkInvestigationAccess(ownerId, folderId, 'editor', tx)) throw new IngestAuthorizationError('Configured ingestion owner can no longer edit this investigation', 403);
+      if (created) {
+        const severityIcon = severity === 'critical' ? '🚨' : severity === 'high' ? '⚠️' : severity === 'medium' ? '🔶' : '📋';
+        await tx.insert(folders).values({
+          id: folderId, name: `${severityIcon} ${title}`.substring(0, 200),
+          description: description || `Auto-created from ${source} alert`, status: 'active',
+          tags: [...tags, `source:${source}`, 'auto-ingested'],
+          createdBy: ownerId, updatedBy: ownerId, createdAt: now, updatedAt: now,
+        });
+        await tx.insert(investigationMembers).values({ id: nanoid(), folderId, userId: ownerId, role: 'owner', joinedAt: now });
+      }
+      await tx.insert(notes).values({
+        id: noteId,
+        folderId,
+        title: `[${source.toUpperCase()}] ${title}`.substring(0, 200),
+        content: noteContent,
+        tags: ['alert', `source:${source}`, `severity:${severity}`],
+        createdBy: ownerId, updatedBy: ownerId,
+        pinned: severity === 'critical' || severity === 'high',
         trashed: false,
         archived: false,
         version: 1,
         createdAt: now,
         updatedAt: now,
-      }));
+      });
 
-    if (iocValues.length > 0) {
-      await db.insert(standaloneIOCs).values(iocValues);
-      iocCount = iocValues.length;
-    }
-  }
+      // Batch-insert IOCs
+      if (body.iocs?.length) {
+        const VALID_CONFIDENCES = new Set(['low', 'medium', 'high', 'confirmed']);
+        const iocValues = body.iocs.slice(0, 100)
+          .filter(ioc => ioc && typeof ioc.type === 'string' && typeof ioc.value === 'string' && ioc.type && ioc.value)
+          .map(ioc => ({
+            id: nanoid(),
+            folderId: folderId!,
+            type: sanitizeStr(ioc.type, 50),
+            value: sanitizeStr(ioc.value, MAX_IOC_VALUE_LEN),
+            confidence: (VALID_CONFIDENCES.has(ioc.confidence || '') ? ioc.confidence : 'medium') as 'low' | 'medium' | 'high' | 'confirmed',
+            analystNotes: `Auto-extracted from ${source} alert`,
+            tags: ['auto-ingested', `source:${source}`],
+            createdBy: ownerId, updatedBy: ownerId,
+            iocStatus: 'new',
+            trashed: false,
+            archived: false,
+            version: 1,
+            createdAt: now,
+            updatedAt: now,
+          }));
 
-  // Trigger agents — find bots scoped to this investigation OR with global scope
-  const triggerAgents = body.triggerAgents !== false;
-  let agentsTriggered = 0;
-  if (triggerAgents) {
-    try {
-      const { botManager } = await import('../bots/bot-manager.js');
-      const bots = await db.select()
-        .from(botConfigs)
-        .where(and(eq(botConfigs.sourceType, 'caddy-agent'), eq(botConfigs.enabled, true)));
-
-      const matchingBots = bots.filter(b =>
-        b.scopeType === 'global' ||
-        (Array.isArray(b.scopeFolderIds) && (b.scopeFolderIds as string[]).includes(folderId!))
-      );
-
-      // Actually trigger each matching bot
-      for (const bot of matchingBots) {
-        botManager.executeBot(bot.id, 'webhook', undefined, {
-          source,
-          title,
-          severity,
-          investigationId: folderId,
-          alertNoteId: noteId,
-        }).catch(err => {
-          logger.error('Webhook ingest: bot execution failed', { botId: bot.id, error: String(err) });
-        });
+        if (iocValues.length > 0) {
+          await tx.insert(standaloneIOCs).values(iocValues);
+          iocCount = iocValues.length;
+        }
       }
-      agentsTriggered = matchingBots.length;
 
-      if (agentsTriggered > 0) {
-        logger.info('Webhook ingest: triggered agents', { folderId, agents: agentsTriggered });
-      }
-    } catch (err) {
-      logger.warn('Webhook ingest: failed to trigger agents', { error: String(err) });
-    }
+    });
+  } catch (error) {
+    if (error instanceof IngestAuthorizationError) return c.json({ error: error.message }, error.status);
+    throw error;
   }
+  if (created) logger.info('Webhook ingest: created owned investigation', { folderId, source });
+  // Handoff execution is deliberately unavailable until policy parity is implemented.
+  const agentsTriggered = 0;
 
   return c.json({
     ok: true,
@@ -259,6 +249,8 @@ app.post('/ingest', async (c) => {
     noteId,
     iocs: iocCount,
     agentsTriggered,
+    agentExecutionAvailable: false,
+    ...(body.triggerAgents !== false ? { agentExecutionReason: HANDOFF_UNAVAILABLE } : {}),
     message: created
       ? `Investigation created with ${iocCount} IOCs. ${agentsTriggered} agents triggered.`
       : `Alert added to existing investigation. ${iocCount} IOCs created. ${agentsTriggered} agents triggered.`,

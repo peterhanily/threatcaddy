@@ -1,3 +1,4 @@
+import { workspaceStorageKey } from '../../lib/workspace-profiles';
 import { useState, useCallback } from 'react';
 import DOMPurify from 'dompurify';
 import { Github, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw, Plus, Pencil, Wrench, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
@@ -19,6 +20,8 @@ import { ServerBackup } from './ServerBackup';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { EncryptionSettings } from '../Encryption/EncryptionSettings';
 import { ServerConnection } from './ServerConnection';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
+import { SyncRecoveryPanel } from './SyncRecoveryPanel';
 import { IntegrationPanel } from '../Integrations/IntegrationPanel';
 import { AppearanceSettings } from './AppearanceSettings';
 
@@ -265,16 +268,18 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
       {activeTab === 'general' && (
         <div className="space-y-6" role="tabpanel" id="settings-panel-general" aria-labelledby="settings-tab-general">
           {/* Team Server */}
+          <WorkspaceSwitcher />
           <ServerConnection
             settings={settings}
             onUpdateSettings={onUpdateSettings}
           />
+          <SyncRecoveryPanel />
 
           {/* Identity */}
           {(() => {
             let teamName: string | undefined;
             try {
-              const stored = JSON.parse(localStorage.getItem('threatcaddy-auth') || 'null');
+              const stored = JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-auth')) || 'null');
               teamName = stored?.user?.displayName;
             } catch { /* ignore */ }
             return (

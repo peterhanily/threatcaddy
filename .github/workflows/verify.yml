@@ -1,0 +1,325 @@
+name: Required verification
+
+on:
+  workflow_call:
+    outputs:
+      source-sha:
+        description: Exact source revision checked by all jobs
+        value: ${{ jobs.gate.outputs.source-sha }}
+      client-artifact-id:
+        description: Immutable client artifact from this verification run
+        value: ${{ jobs.gate.outputs.client-artifact-id }}
+      server-artifact-id:
+        description: Immutable tested server image from this verification run
+        value: ${{ jobs.gate.outputs.server-artifact-id }}
+
+permissions:
+  contents: read
+
+env:
+  CI: 'true'
+
+# Action pins verified against signed upstream release commits on 2026-09-07.
+# Keep verification read-only and free of application/registry deployment secrets.
+# In particular, Pages and CI build identical analytics defaults.
+jobs:
+  audit:
+    name: Audit (${{ matrix.project }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [root, server, extension]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - name: Audit the complete lockfile (high and critical block publication)
+        env:
+          PROJECT: ${{ matrix.project }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Include build dependencies: extension's entire graph is dev-only.
+          # Registry outages and malformed responses also fail this required job.
+          if [ "$PROJECT" = root ]; then
+            pnpm audit --audit-level=high --json > dependency-audit.json
+          else
+            npm --prefix "$PROJECT" audit --audit-level=high --json > dependency-audit.json
+          fi
+      - name: Preserve advisory or registry-failure evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: audit-${{ matrix.project }}-${{ github.sha }}
+          path: dependency-audit.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  client-checks:
+    name: Client lint and unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm test:run
+
+  client-artifact:
+    name: Client builds and cross-browser workflows
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - run: pnpm build
+      - run: pnpm build:single
+      - name: Assemble the exact artifact to test and publish
+        run: |
+          cp dist-single/index.html dist/threatcaddy-standalone.html
+          touch dist/.nojekyll
+      - name: Browser acceptance against the assembled build
+        run: pnpm test:e2e
+        env:
+          PLAYWRIGHT_SKIP_BUILD: '1'
+      - name: Copied standalone HTML acceptance
+        run: pnpm exec playwright test --config playwright.standalone.config.ts
+      - name: Preserve browser evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: browser-results-${{ github.sha }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Package tested client with source identity and digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          mkdir verified-client
+          tar -cf verified-client/client.tar -C dist .
+          printf '%s\n' "$GITHUB_SHA" > verified-client/source-sha.txt
+          cd verified-client
+          sha256sum client.tar > client.tar.sha256
+      - id: upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: verified-client-${{ github.sha }}
+          path: verified-client/
+          if-no-files-found: error
+          retention-days: 7
+
+  server-checks:
+    name: Server build and unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - run: npm --prefix server ci
+      - run: npm --prefix server run build
+      - run: npm --prefix server test
+
+  database:
+    name: Real PostgreSQL migration and packaged startup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17.9
+        env:
+          POSTGRES_USER: tc_test
+          POSTGRES_PASSWORD: tc_test_password
+          POSTGRES_DB: threatcaddy_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tc_test -d threatcaddy_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - run: npm --prefix server ci
+      - run: npm --prefix server run build
+      - name: Typecheck PostgreSQL integration fixtures
+        run: npm --prefix server run test:integration:types
+      - name: Run migration and compiled-artifact acceptance fixtures
+        run: npm --prefix server run test:integration
+        env:
+          TEST_DATABASE_URL: postgres://tc_test:tc_test_password@127.0.0.1:5432/threatcaddy_test
+
+  server-artifact:
+    name: Server container build, startup and restart
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    services:
+      postgres:
+        image: postgres:17.9
+        env:
+          POSTGRES_USER: tc_test
+          POSTGRES_PASSWORD: tc_test_password
+          POSTGRES_DB: threatcaddy_test_image
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tc_test -d threatcaddy_test_image"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Build image once, without registry credentials
+        run: |
+          mkdir verified-server
+          docker build --iidfile verified-server/server-image.id --tag threatcaddy-server:verify \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" ./server
+      - name: Boot and restart the image against an empty test database
+        run: node scripts/ci-verify-server-image.mjs
+        env:
+          TEST_SERVER_IMAGE: threatcaddy-server:verify
+          TEST_DATABASE_URL: postgres://tc_test:tc_test_password@127.0.0.1:5432/threatcaddy_test_image
+      - name: Package tested image with source identity and digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          docker save --output verified-server/server-image.tar threatcaddy-server:verify
+          printf '%s\n' "$GITHUB_SHA" > verified-server/source-sha.txt
+          cd verified-server
+          sha256sum server-image.tar > server-image.tar.sha256
+      - id: upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: verified-server-${{ github.sha }}
+          path: verified-server/
+          if-no-files-found: error
+          compression-level: 1
+          retention-days: 7
+
+  extension:
+    name: Extension checks and packages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - run: pnpm install --frozen-lockfile
+      - run: npm --prefix extension ci
+      - name: Run extension utility tests with the locked root Vitest
+        working-directory: extension
+        run: ../node_modules/.bin/vitest run --config vitest.config.js
+      - name: Build extension and verify committed packages
+        working-directory: extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run build
+          npm run package:chrome
+          npm run package:firefox
+          for browser in chrome firefox; do
+            committed="$RUNNER_TEMP/ext-committed-$browser"
+            built="$RUNNER_TEMP/ext-built-$browser"
+            mkdir -p "$committed" "$built"
+            unzip -o "threatcaddy-$browser.zip" -d "$committed" > /dev/null
+            unzip -o "dist/threatcaddy-$browser.zip" -d "$built" > /dev/null
+            # Retain the existing generated-PNG comparison exception. Installed
+            # icon/rendering verification remains a separate installed-browser check.
+            diff -rq --exclude='*.png' "$committed" "$built"
+            test -f "$committed/assets/icon.svg"
+            test -f "$built/assets/icon.svg"
+          done
+
+  gate:
+    name: Publication gate
+    if: always()
+    needs: [audit, client-checks, client-artifact, server-checks, database, server-artifact, extension]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      source-sha: ${{ steps.verified.outputs.source-sha }}
+      client-artifact-id: ${{ steps.verified.outputs.client-artifact-id }}
+      server-artifact-id: ${{ steps.verified.outputs.server-artifact-id }}
+    steps:
+      - name: Require every check and both immutable artifacts
+        id: verified
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          CLIENT_ARTIFACT_ID: ${{ needs.client-artifact.outputs.artifact-id }}
+          SERVER_ARTIFACT_ID: ${{ needs.server-artifact.outputs.artifact-id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'JS'
+          import { appendFileSync } from 'node:fs';
+          const failed = Object.entries(JSON.parse(process.env.RESULTS))
+            .filter(([, job]) => job.result !== 'success').map(([name]) => name);
+          if (failed.length) throw new Error(`Publication blocked: ${failed.join(', ')}`);
+          if (!process.env.CLIENT_ARTIFACT_ID || !process.env.SERVER_ARTIFACT_ID) {
+            throw new Error('Publication blocked: verified artifact missing');
+          }
+          appendFileSync(process.env.GITHUB_OUTPUT,
+            `source-sha=${process.env.GITHUB_SHA}\n` +
+            `client-artifact-id=${process.env.CLIENT_ARTIFACT_ID}\n` +
+            `server-artifact-id=${process.env.SERVER_ARTIFACT_ID}\n`);
+          JS

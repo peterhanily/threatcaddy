@@ -3,7 +3,8 @@
  * whether a tool call should be auto-executed or proposed for human approval.
  */
 
-import type { AgentActionClass, AgentPolicy } from '../types';
+import type { AgentActionClass, AgentPolicy, Settings } from '../types';
+import { workspaceStorageKey } from './workspace-profiles';
 
 /** Map every tool to its action class for policy decisions. */
 const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
@@ -97,29 +98,37 @@ const TOOL_ACTION_CLASS: Record<string, AgentActionClass> = {
   dismiss_agent: 'modify',
 };
 
+/** Remote skills cannot grant themselves the trusted internal delegation class. */
+export function normalizeHostActionClass(value: unknown): AgentActionClass {
+  return value === 'read' || value === 'enrich' || value === 'fetch' || value === 'create' || value === 'modify'
+    ? value
+    : 'modify';
+}
+
+/** Resolve dynamic tool effects conservatively, including missing/stale settings. */
+export function getDynamicToolActionClass(toolName: string, settings?: Settings): AgentActionClass {
+  try {
+    const stored: Settings = settings ?? JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-settings')) || '{}');
+    if (toolName.startsWith('local:')) {
+      const skill = stored.llmLocalSkills?.find(s => s.name === toolName.slice(6));
+      return normalizeHostActionClass(skill?.actionClass);
+    }
+    const [, hostName, ...skillParts] = toolName.split(':');
+    const host = stored.agentHosts?.find(h => h.name === hostName);
+    const skill = host?.skills?.find(s => s.name === skillParts.join(':'));
+    return normalizeHostActionClass(skill?.actionClass);
+  } catch {
+    return 'modify';
+  }
+}
+
 /** Get the action class for a tool name. Defaults to 'modify' for unknown tools. */
 export function getToolActionClass(toolName: string): AgentActionClass {
-  if (TOOL_ACTION_CLASS[toolName]) return TOOL_ACTION_CLASS[toolName];
+  if (Object.prototype.hasOwnProperty.call(TOOL_ACTION_CLASS, toolName)) return TOOL_ACTION_CLASS[toolName];
 
   // Dynamic skill tools — resolve from cached skill metadata in Settings
   if (toolName.startsWith('host:') || toolName.startsWith('local:')) {
-    try {
-      const settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
-      if (toolName.startsWith('local:')) {
-        const skillName = toolName.slice(6);
-        const skill = (settings.llmLocalSkills || []).find((s: { name: string }) => s.name === skillName);
-        return (skill?.actionClass as AgentActionClass) || 'modify';
-      }
-      const parts = toolName.split(':');
-      if (parts.length >= 3) {
-        const hostName = parts[1];
-        const skillName = parts.slice(2).join(':');
-        const host = (settings.agentHosts || []).find((h: { name: string }) => h.name === hostName);
-        const skill = host?.skills?.find((s: { name: string }) => s.name === skillName);
-        return (skill?.actionClass as AgentActionClass) || 'modify';
-      }
-    } catch { /* fall through */ }
-    return 'modify';
+    return getDynamicToolActionClass(toolName);
   }
 
   return 'modify';

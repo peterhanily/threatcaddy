@@ -141,6 +141,41 @@
       "when": 1742700000000,
       "tag": "0019_add_composite_filter_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1772583118973,
+      "tag": "0020_runtime_schema_completion",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1772583119973,
+      "tag": "0021_durable_sync_cursor",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1772583120973,
+      "tag": "0022_sync_revision_continuity",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1772583121973,
+      "tag": "0023_sync_assets_generation",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1772583122973,
+      "tag": "0024_ioc_provenance",
+      "breakpoints": true
     }
   ]
 }

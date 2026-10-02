@@ -5,7 +5,7 @@
   "allInvestigations": "All Investigations",
   "all": "All",
   "filterInvestigations": "Filter investigations...",
-  "simplePlaceholder": "Search notes, tasks, timeline, whiteboards, IOCs, chats...",
+  "simplePlaceholder": "Search notes, tasks, timeline, whiteboards, IOCs, chats, evidence...",
   "regexPlaceholder": "Enter regex pattern...",
   "advancedPlaceholder": "title:contains(\"foo\") AND tags:contains(\"bar\")...",
   "saveSearch": "Save Search",
@@ -27,5 +27,6 @@
   "timelineEvents": "Timeline Events",
   "whiteboards": "Whiteboards",
   "iocs": "IOCs",
-  "chatThreads": "Chat Threads"
+  "chatThreads": "Chat Threads",
+  "evidence": "Evidence"
 }

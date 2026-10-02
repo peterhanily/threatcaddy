@@ -1,6 +1,15 @@
 import { db } from '../db';
+import { notifyDesktop } from './desktop-notifications';
 import { nanoid } from 'nanoid';
 import type { Folder, ToolUseBlock, Settings, AgentProfile } from '../types';
+import { getToolExecutionError, normalizeToolResult, toolExecutionError, type ToolExecutionConstraints, type ToolExecutionResult } from './llm-tool-execution';
+import { getReadOnlyEntityError } from './tool-entity-policy';
+import { workspaceStorageKey } from './workspace-profiles';
+import Dexie from 'dexie';
+import { getToolBinding, isDynamicTool } from './tool-binding';
+import { cancellableRequest } from './request-cancellation';
+import { readBoundedText } from './bounded-response';
+import { assertConfiguredConnection } from './connection-policy';
 
 // Re-export definitions so existing consumers don't break
 export { TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
@@ -198,20 +207,61 @@ function getCreator(): string | undefined { return _creatorStack.length > 0 ? _c
 
 // ── Dispatcher ─────────────────────────────────────────────────────────
 
+const atomicLocalTools = new Set(['create_note', 'update_note', 'create_task', 'update_task', 'create_ioc', 'update_ioc',
+  'bulk_create_iocs', 'create_timeline_event', 'update_timeline_event', 'link_entities', 'generate_report',
+  'create_in_investigation', 'create_note_folder', 'delete_note_folder', 'move_to_folder']);
+
 export async function executeTool(
   toolUse: ToolUseBlock,
   folderId?: string,
   agentContext?: { profileId?: string; deploymentId?: string },
-): Promise<{ result: string; isError: boolean }> {
+  constraints?: ToolExecutionConstraints,
+): Promise<ToolExecutionResult> {
+  if (!constraints?.signal || !atomicLocalTools.has(toolUse.name)) return dispatchTool(toolUse, folderId, agentContext, constraints);
+  try {
+    return await db.transaction('rw', db.tables, async () => {
+      const transaction = Dexie.currentTransaction;
+      const abort = () => { try { transaction?.abort(); } catch { /* Already settled. */ } };
+      constraints.signal!.addEventListener('abort', abort, { once: true });
+      try {
+        constraints.signal!.throwIfAborted();
+        const result = await dispatchTool(toolUse, folderId, agentContext, constraints);
+        constraints.signal!.throwIfAborted();
+        if (result.isError) { transaction?.abort(); return result; }
+        return result;
+      } finally { constraints.signal!.removeEventListener('abort', abort); }
+    });
+  } catch (error) {
+    return toolExecutionError(constraints.signal.aborted ? 'Tool execution was cancelled; local changes rolled back.' : error instanceof Error ? error.message : 'Tool write failed.');
+  }
+}
+
+async function dispatchTool(
+  toolUse: ToolUseBlock,
+  folderId?: string,
+  agentContext?: { profileId?: string; deploymentId?: string },
+  constraints?: ToolExecutionConstraints,
+): Promise<ToolExecutionResult> {
+  if (constraints) {
+    const error = getToolExecutionError(toolUse, constraints) ?? await constraints.validateScope?.(toolUse);
+    if (error) return toolExecutionError(error);
+  }
   const { name, input } = toolUse;
   const inp = input as Record<string, unknown>;
   // Read settings once per tool call instead of per-function
-  const _settings: Settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+  const _settings: Settings = JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-settings')) || '{}');
+  if (isDynamicTool(name)) {
+    try {
+      if (!constraints?.toolBinding || constraints.toolBinding !== await getToolBinding(toolUse, folderId, constraints.readOnly ? 'plan' : 'act', _settings)) {
+        return toolExecutionError('Tool configuration, arguments, mode or scope changed. Request a new approval before executing it.');
+      }
+    } catch (error) { return toolExecutionError(error instanceof Error ? error.message : 'Tool configuration is unavailable.'); }
+  }
 
   // Resolve the human operator's name (used for both human and agent attribution)
   let operatorName = 'Analyst';
   try {
-    const stored = JSON.parse(localStorage.getItem('threatcaddy-auth') || 'null');
+    const stored = JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-auth')) || 'null');
     operatorName = stored?.user?.displayName || _settings.displayName || 'Analyst';
   } catch { operatorName = _settings.displayName || 'Analyst'; }
 
@@ -219,8 +269,11 @@ export async function executeTool(
   let agentRole: string | undefined;
   if (agentContext?.profileId) {
     const { BUILTIN_AGENT_PROFILES } = await import('./builtin-agent-profiles');
-    const profile = BUILTIN_AGENT_PROFILES.find(p => p.id === agentContext.profileId)
-      || await db.agentProfiles.get(agentContext.profileId);
+    const profile = await db.agentProfiles.get(agentContext.profileId)
+      || BUILTIN_AGENT_PROFILES.find(p => p.id === agentContext.profileId);
+    if (!profile) return toolExecutionError('The agent profile is no longer available.');
+    const restriction = getReadOnlyEntityError(toolUse, profile.readOnlyEntityTypes);
+    if (restriction) return toolExecutionError(restriction);
     const agentLabel = profile ? `${profile.icon || '🤖'} ${profile.name}` : agentContext.profileId;
     agentRole = profile?.role;
     _creatorStack.push(`agent:${agentLabel} (${operatorName})`);
@@ -230,6 +283,7 @@ export async function executeTool(
 
   try {
     let result: string;
+    if (constraints?.signal?.aborted) return toolExecutionError('Tool execution was cancelled.');
 
     // Escalated tasks are off-limits to all agents until a human intervenes.
     // Keeps stuck delegation loops from immediately re-opening an escalation.
@@ -279,20 +333,20 @@ export async function executeTool(
       case 'search_across_investigations':  result = await executeSearchAcrossInvestigations(inp); break;
       case 'create_in_investigation':       result = await executeCreateInInvestigation(inp); break;
       case 'compare_investigations':        result = await executeCompareInvestigations(inp); break;
-      case 'enrich_ioc':                    result = await executeEnrichIOC(inp, folderId); break;
+      case 'enrich_ioc':                    result = await executeEnrichIOC(inp, folderId, constraints?.signal); break;
       case 'list_integrations':             result = await executeListIntegrations(inp); break;
       case 'review_completed_task':          result = await executeReviewCompletedTask(inp, folderId, agentContext?.profileId); break;
       case 'delegate_task':                 result = await executeDelegateTask(inp, folderId); break;
       case 'list_agent_activity':           result = await executeListAgentActivity(inp, folderId); break;
       case 'update_knowledge':               result = await executeUpdateKnowledge(inp, folderId); break;
       case 'recall_knowledge':               result = await executeRecallKnowledge(inp, folderId); break;
-      case 'ask_human':                     result = await executeAskHuman(inp, folderId); break;
-      case 'run_remote_command':            result = await executeRunRemoteCommand(inp, folderId, _settings); break;
-      case 'query_siem':                    result = await executeQuerySiem(inp, _settings); break;
-      case 'create_ticket':                 result = await executeCreateTicket(inp, folderId, _settings); break;
+      case 'ask_human':                     result = await executeAskHuman(inp, folderId, constraints?.signal); break;
+      case 'run_remote_command':            result = JSON.stringify({ error: 'Remote command execution is unavailable in this deployment.' }); break;
+      case 'query_siem':                    result = await executeQuerySiem(inp, _settings, constraints?.signal); break;
+      case 'create_ticket':                 result = await executeCreateTicket(inp, folderId, _settings, constraints?.signal); break;
       case 'call_meeting':                  result = await executeCallMeeting(inp, folderId); break;
-      case 'notify_human':                   result = await executeNotifyHuman(inp, folderId); break;
-      case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId); break;
+      case 'notify_human':                   result = await executeNotifyHuman(inp, folderId, constraints?.signal); break;
+      case 'declare_war_bridge':             result = await executeDeclareWarBridge(inp, folderId, constraints?.signal); break;
       case 'ingest_alert':                   result = await executeIngestAlert(inp, folderId); break;
       case 'deploy_agent':                   result = await executeDeployAgent(inp, folderId); break;
       case 'stop_agent':                     result = await executeStopAgent(inp, folderId); break;
@@ -312,7 +366,7 @@ export async function executeTool(
         // Dynamic skill tools: local:<skill> or host:<name>:<skill>
         if (name.startsWith('host:') || name.startsWith('local:')) {
           const { executeHostSkill } = await import('./agent-hosts');
-          result = await executeHostSkill(name, inp, _settings);
+          result = await executeHostSkill(name, inp, _settings, constraints?.signal);
         } else {
           result = JSON.stringify({ error: `Unknown tool: ${name}` });
         }
@@ -340,7 +394,7 @@ export async function executeTool(
       }
     }
 
-    return { result, isError: false };
+    return normalizeToolResult(result);
   } catch (err) {
     return { result: JSON.stringify({ error: String((err as Error).message || err) }), isError: true };
   } finally {
@@ -640,7 +694,7 @@ async function executeListAgentActivity(inp: Record<string, unknown>, folderId?:
 
 // ── Integration / Enrichment Tools ────────────────────────────────────
 
-async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal): Promise<string> {
   const iocId = String(inp.iocId || '');
   if (!iocId) return JSON.stringify({ error: 'iocId is required' });
 
@@ -683,6 +737,7 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string)
 
   for (const { installation, template } of matching) {
     try {
+      signal?.throwIfAborted();
       const executor = new IntegrationExecutor();
       const run = await executor.run(
         template,
@@ -693,6 +748,7 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string)
         },
         {
           onCreateEntity: async (type, fields) => {
+            signal?.throwIfAborted();
             const entityId = nanoid();
             if (type === 'note') {
               await db.notes.add({
@@ -720,13 +776,16 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string)
             return entityId;
           },
           onUpdateEntity: async (type, id, fields) => {
+            signal?.throwIfAborted();
             if (type === 'ioc' || type === 'standaloneIOC') {
               await db.standaloneIOCs.update(id, { ...fields, updatedAt: Date.now() });
             }
           },
         },
+        signal,
       );
 
+      signal?.throwIfAborted();
       await db.integrationRuns.add(run);
 
       results.push({
@@ -735,6 +794,7 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string)
         summary: run.outputSummary || `${run.entitiesCreated} created, ${run.entitiesUpdated} updated`,
       });
     } catch (err) {
+      if (signal?.aborted) return JSON.stringify({ error: 'Enrichment cancelled. Completed remote operations or earlier outputs may remain; no further writes were started.', results });
       results.push({
         name: template.name,
         status: 'error',
@@ -835,7 +895,7 @@ async function executeCallMeeting(inp: Record<string, unknown>, folderId?: strin
   return JSON.stringify({ success: true, noteId, purpose, message: `Meeting requested (purpose: ${purpose}). Will be scheduled on next cycle.` });
 }
 
-async function executeNotifyHuman(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeNotifyHuman(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal): Promise<string> {
   const message = String(inp.message || '');
   const severity = String(inp.severity || 'warning');
   if (!message) return JSON.stringify({ error: 'message is required' });
@@ -856,18 +916,12 @@ async function executeNotifyHuman(inp: Record<string, unknown>, folderId?: strin
   });
 
   // Also trigger desktop notification via extension
-  try {
-    const { postMessageOrigin } = await import('./utils');
-    window.postMessage({
-      type: 'TC_SEND_NOTIFICATION',
-      payload: { title: `AgentCaddy: ${severity.toUpperCase()}`, message: message.substring(0, 200), severity },
-    }, postMessageOrigin());
-  } catch { /* extension may not be available */ }
+  const desktopNotificationAccepted = await notifyDesktop({ title: `AgentCaddy: ${severity.toUpperCase()}`, message: message.substring(0, 200), severity }, signal);
 
-  return JSON.stringify({ success: true, noteId, severity, message: 'Human notified. Pinned alert note created.' });
+  return JSON.stringify({ success: true, noteId, severity, desktopNotificationAccepted, message: 'In-app alert note created.' });
 }
 
-async function executeDeclareWarBridge(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeDeclareWarBridge(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal): Promise<string> {
   if (!folderId) return JSON.stringify({ error: 'No investigation context' });
   const situation = String(inp.situation || '');
   const immediateActions = String(inp.immediateActions || '');
@@ -887,17 +941,11 @@ async function executeDeclareWarBridge(inp: Record<string, unknown>, folderId?: 
   });
 
   // Desktop notification
-  try {
-    const { postMessageOrigin } = await import('./utils');
-    window.postMessage({
-      type: 'TC_SEND_NOTIFICATION',
-      payload: { title: '🚨 WAR BRIDGE DECLARED', message: situation.substring(0, 200), severity: 'critical' },
-    }, postMessageOrigin());
-  } catch { /* extension may not be available */ }
+  const desktopNotificationAccepted = await notifyDesktop({ title: '🚨 WAR BRIDGE DECLARED', message: situation.substring(0, 200), severity: 'critical' }, signal);
 
   return JSON.stringify({
-    success: true, noteId,
-    message: 'War bridge declared. Critical escalation note pinned. Human operator notified. All agents should prioritize this situation.',
+    success: true, noteId, desktopNotificationAccepted,
+    message: 'War bridge declared. Critical escalation note pinned for human review. All agents should prioritize this situation.',
   });
 }
 
@@ -976,7 +1024,7 @@ async function executeRecallKnowledge(inp: Record<string, unknown>, folderId?: s
 
 // ── Agent-Human Collaboration ─────────────────────────────────────────
 
-async function executeAskHuman(inp: Record<string, unknown>, folderId?: string): Promise<string> {
+async function executeAskHuman(inp: Record<string, unknown>, folderId?: string, signal?: AbortSignal): Promise<string> {
   const question = String(inp.question || '');
   const context = String(inp.context || '');
   const options = String(inp.options || '');
@@ -1026,16 +1074,11 @@ async function executeAskHuman(inp: Record<string, unknown>, folderId?: string):
   });
 
   // Desktop notification
-  try {
-    const { postMessageOrigin } = await import('./utils');
-    window.postMessage({
-      type: 'TC_SEND_NOTIFICATION',
-      payload: { title: 'Agent needs your input', message: question.substring(0, 200), severity: 'warning' },
-    }, postMessageOrigin());
-  } catch { /* ignore */ }
+  const desktopNotificationAccepted = await notifyDesktop({ title: 'Agent needs your input', message: question.substring(0, 200), severity: 'warning' }, signal);
 
   return JSON.stringify({
     status: 'question_pending',
+    desktopNotificationAccepted,
     actionId,
     message: 'Question sent to human operator. The response will be available in your next cycle via working memory.',
   });
@@ -1043,70 +1086,46 @@ async function executeAskHuman(inp: Record<string, unknown>, folderId?: string):
 
 // ── External System Tools ─────────────────────────────────────────────
 
-async function executeRunRemoteCommand(inp: Record<string, unknown>, folderId?: string, settings?: Settings): Promise<string> {
-  const host = String(inp.host || '');
-  const command = String(inp.command || '');
-  const reason = String(inp.reason || '');
-  if (!host || !command) return JSON.stringify({ error: 'host and command are required' });
-
-  try {
-    const s = settings || JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
-    if (!s.serverUrl) return JSON.stringify({ error: 'Team server required for remote command execution. Configure in Settings > Team Server.' });
-
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    // Add auth token if server connection has one stored
-    const token = localStorage.getItem('threatcaddy-server-token');
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const execController = new AbortController();
-    const execTimer = setTimeout(() => execController.abort(), 30_000);
-    const resp = await fetch(`${s.serverUrl}/api/caddy-agents/exec`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ host, command, reason, folderId }),
-      signal: execController.signal,
-    });
-    clearTimeout(execTimer);
-    if (!resp.ok) return JSON.stringify({ error: `Server ${resp.status}: ${(await resp.text().catch(() => '')).substring(0, 300)}` });
-    return await resp.text();
-  } catch (err) {
-    return JSON.stringify({ error: `Remote execution failed: ${(err as Error).message}` });
-  }
-}
-
-async function executeQuerySiem(inp: Record<string, unknown>, settings?: Settings): Promise<string> {
+async function executeQuerySiem(inp: Record<string, unknown>, settings?: Settings, signal?: AbortSignal): Promise<string> {
   const query = String(inp.query || '');
   const timeRange = String(inp.timeRange || '24h');
   const maxResults = Math.min(Number(inp.maxResults) || 50, 200);
   if (!query) return JSON.stringify({ error: 'query is required' });
 
+  const request = cancellableRequest(signal);
+  const timer = setTimeout(() => request.controller.abort(), 30_000);
   try {
-    const s = settings || JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+    request.signal.throwIfAborted();
+    const s = settings || JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-settings')) || '{}');
     if (!(s as Record<string, unknown>).siemEndpoint) {
       return JSON.stringify({ error: 'No SIEM configured. Add siemEndpoint in Settings > Integrations.', query, timeRange });
     }
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if ((s as Record<string, unknown>).siemApiKey) headers['Authorization'] = `Bearer ${(s as Record<string, unknown>).siemApiKey}`;
 
-    const siemController = new AbortController();
-    const siemTimer = setTimeout(() => siemController.abort(), 30_000);
-    const resp = await fetch((s as Record<string, unknown>).siemEndpoint as string, { method: 'POST', headers, body: JSON.stringify({ query, timeRange, maxResults }), signal: siemController.signal });
-    clearTimeout(siemTimer);
+    const endpoint = (s as Record<string, unknown>).siemEndpoint as string;
+    assertConfiguredConnection(endpoint);
+    const resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify({ query, timeRange, maxResults }), signal: request.signal });
     if (!resp.ok) return JSON.stringify({ error: `SIEM ${resp.status}`, query });
-    return await resp.text();
+    const result = await readBoundedText(resp);
+    request.signal.throwIfAborted();
+    return result;
   } catch (err) {
     return JSON.stringify({ error: `SIEM query failed: ${(err as Error).message}`, query });
-  }
+  } finally { clearTimeout(timer); request.dispose(); }
 }
 
-async function executeCreateTicket(inp: Record<string, unknown>, folderId?: string, settings?: Settings): Promise<string> {
+async function executeCreateTicket(inp: Record<string, unknown>, folderId?: string, settings?: Settings, signal?: AbortSignal): Promise<string> {
   const title = String(inp.title || '');
   const description = String(inp.description || '');
   const priority = String(inp.priority || 'medium');
   if (!title || !description) return JSON.stringify({ error: 'title and description are required' });
 
+  const request = cancellableRequest(signal);
+  const timer = setTimeout(() => request.controller.abort(), 30_000);
   try {
-    const s = (settings || JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}')) as Record<string, unknown>;
+    request.signal.throwIfAborted();
+    const s = (settings || JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-settings')) || '{}')) as Record<string, unknown>;
     if (!s.ticketEndpoint) {
       // Fallback: create local task
       const taskId = nanoid();
@@ -1121,20 +1140,20 @@ async function executeCreateTicket(inp: Record<string, unknown>, folderId?: stri
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (s.ticketApiKey) headers['Authorization'] = `Bearer ${s.ticketApiKey}`;
 
-    const ticketController = new AbortController();
-    const ticketTimer = setTimeout(() => ticketController.abort(), 30_000);
+    assertConfiguredConnection(s.ticketEndpoint as string);
     const resp = await fetch(s.ticketEndpoint as string, {
       method: 'POST', headers,
       body: JSON.stringify({ title, description, priority, assignee: inp.assignee ? String(inp.assignee) : undefined }),
-      signal: ticketController.signal,
+      signal: request.signal,
     });
-    clearTimeout(ticketTimer);
     if (!resp.ok) return JSON.stringify({ error: `Ticketing system ${resp.status}` });
-    const result = await resp.json();
+    const result = JSON.parse(await readBoundedText(resp));
+    request.signal.throwIfAborted();
     return JSON.stringify({ success: true, external: true, ticketId: result.id || result.key, message: 'External ticket created.' });
   } catch (err) {
+    if (request.signal.aborted) return JSON.stringify({ error: 'Ticket creation cancelled or timed out. Remote completion is unknown; check the ticketing system before retrying.' });
     return JSON.stringify({ error: `Ticket creation failed: ${(err as Error).message}` });
-  }
+  } finally { clearTimeout(timer); request.dispose(); }
 }
 
 // ── Alert Ingestion ──────────────────────────────────────────────────

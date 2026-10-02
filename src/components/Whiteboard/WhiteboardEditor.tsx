@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Excalidraw, MainMenu, exportToBlob } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 
 // Self-host fonts — prevent CDN fallback to esm.sh
 if (typeof window !== 'undefined') {
-  (window as unknown as Record<string, unknown>).EXCALIDRAW_ASSET_PATH = '/';
+  (window as unknown as Record<string, unknown>).EXCALIDRAW_ASSET_PATH = new URL(import.meta.env.BASE_URL, window.location.href).href;
 }
 import { ArrowLeft, Briefcase, Trash2, Image } from 'lucide-react';
-import { markPending, clearPending } from '../../lib/pending-changes';
+import { useEntityDraft } from '../../hooks/useEntityDraft';
 import type { Whiteboard, Tag, Folder, Settings } from '../../types';
 import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types';
 import { TagInput } from '../Common/TagInput';
@@ -19,7 +20,7 @@ interface WhiteboardEditorProps {
   whiteboard: Whiteboard;
   allTags: Tag[];
   folders: Folder[];
-  onUpdate: (id: string, updates: Partial<Whiteboard>) => void;
+  onUpdate: (id: string, updates: Partial<Whiteboard>) => void | Promise<void>;
   onCreateTag: (name: string) => Promise<Tag>;
   onBack: () => void;
   onDelete?: (id: string) => void;
@@ -31,69 +32,58 @@ function pickAppState(appState: Record<string, unknown>): Record<string, unknown
   return { zoom, scrollX, scrollY, theme };
 }
 
+const CANVAS_UI_OPTIONS = { canvasActions: {
+  loadScene: false, saveToActiveFile: false, export: { saveFileToDisk: true },
+} };
+
 export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdate, onCreateTag, onBack, onDelete, settings }: WhiteboardEditorProps) {
-  const [name, setName] = useState(whiteboard.name);
-  const [saved, setSaved] = useState(false);
+  const { t } = useTranslation('whiteboard');
+  const draft = useEntityDraft<Whiteboard>('whiteboard', whiteboard.id, onUpdate);
+  const draftController = draft.controller;
+  const [name, setName] = useState(draft.patch.name ?? whiteboard.name);
+  const saved = draft.status === 'saved';
   const [showFolderSelect, setShowFolderSelect] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const savedTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const excalidrawSaveRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const excalidrawApiRef = useRef<ExcalidrawImperativeAPI | null>(null);
+  const lastScene = useRef<{ key: string; elements: string; appState: string; files: string } | undefined>(undefined);
+  const sceneKey = `${whiteboard.id}:${draft.discardVersion ?? 0}`;
+  const setExcalidrawApi = useCallback((api: ExcalidrawImperativeAPI) => { excalidrawApiRef.current = api; }, []);
 
   useEffect(() => {
+    const retainedName = draftController.getSnapshot().patch.name;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setName(whiteboard.name);
-  }, [whiteboard.id, whiteboard.name]);
-
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) { clearTimeout(saveTimeoutRef.current); clearPending(); }
-      if (excalidrawSaveRef.current) { clearTimeout(excalidrawSaveRef.current); clearPending(); }
-      clearTimeout(savedTimeoutRef.current);
-    };
-  }, []);
-
-  const flashSaved = useCallback(() => {
-    setSaved(true);
-    clearTimeout(savedTimeoutRef.current);
-    savedTimeoutRef.current = setTimeout(() => setSaved(false), 1500);
-  }, []);
+    setName(typeof retainedName === 'string' ? retainedName : whiteboard.name);
+  }, [whiteboard.id, whiteboard.name, draftController]);
 
   const handleNameChange = (value: string) => {
     setName(value);
-    clearTimeout(saveTimeoutRef.current);
-    markPending();
-    saveTimeoutRef.current = setTimeout(() => {
-      clearPending();
-      onUpdate(whiteboard.id, { name: value });
-      flashSaved();
-    }, 500);
+    draftController.queue({ name: value });
   };
 
-  const handleExcalidrawChange = useCallback((elements: readonly unknown[], appState: Record<string, unknown>) => {
-    clearTimeout(excalidrawSaveRef.current);
-    markPending();
-    excalidrawSaveRef.current = setTimeout(() => {
-      clearPending();
-      onUpdate(whiteboard.id, {
-        elements: JSON.stringify(elements),
-        appState: JSON.stringify(pickAppState(appState)),
-      });
-      flashSaved();
-    }, 500);
-  }, [whiteboard.id, onUpdate, flashSaved]);
+  const handleExcalidrawChange = useCallback((elements: readonly unknown[], appState: Record<string, unknown>, files: Record<string, unknown> = {}) => {
+    const next = {
+      elements: JSON.stringify(elements),
+      appState: JSON.stringify(pickAppState(appState)),
+      files: JSON.stringify(files),
+    };
+    // Excalidraw emits onChange after its own prop/UI updates as well as edits.
+    // Publishing an identical draft causes a parent render and another onChange.
+    // Compare only persisted scene state, not transient selection/cursor state.
+    const previous = lastScene.current;
+    if (previous?.key === sceneKey && previous.elements === next.elements
+      && previous.appState === next.appState && previous.files === next.files) return;
+    lastScene.current = { key: sceneKey, ...next };
+    draftController.queue(next);
+  }, [draftController, sceneKey]);
 
   const handleTagsChange = useCallback((tags: string[]) => {
-    onUpdate(whiteboard.id, { tags });
-    flashSaved();
-  }, [whiteboard.id, onUpdate, flashSaved]);
+    draftController.queue({ tags }, 0);
+  }, [draftController]);
 
   const handleFolderChange = useCallback((folderId?: string) => {
-    onUpdate(whiteboard.id, { folderId });
+    draftController.queue({ folderId }, 0);
     setShowFolderSelect(false);
-    flashSaved();
-  }, [whiteboard.id, onUpdate, flashSaved]);
+  }, [draftController]);
 
   const handleExportPNG = useCallback(async () => {
     const api = excalidrawApiRef.current;
@@ -117,17 +107,24 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
     }
   }, [whiteboard.name]);
 
-  // Parse initial data
-  let initialElements: unknown[] = [];
-  try { initialElements = JSON.parse(whiteboard.elements); } catch (e) { console.warn('Failed to parse whiteboard elements:', e); }
-
-  let initialAppState: Record<string, unknown> = {};
-  if (whiteboard.appState) {
-    try { initialAppState = pickAppState(JSON.parse(whiteboard.appState)); } catch (e) { console.warn('Failed to parse whiteboard appState:', e); }
-  }
-
-  // Detect theme from document
+  const retainedElements = draft.patch.elements ?? whiteboard.elements;
+  const retainedFiles = draft.patch.files ?? whiteboard.files;
+  const retainedAppState = draft.patch.appState ?? whiteboard.appState;
   const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  const initialData = useMemo(() => {
+    let elements: unknown[] = [];
+    let appState: Record<string, unknown> = {};
+    let files: Record<string, unknown> = {};
+    try { elements = JSON.parse(retainedElements); } catch (e) { console.warn('Failed to parse whiteboard elements:', e); }
+    if (retainedFiles) {
+      try { files = JSON.parse(retainedFiles); } catch (e) { console.warn('Failed to parse whiteboard files:', e); }
+    }
+    if (retainedAppState) {
+      try { appState = pickAppState(JSON.parse(retainedAppState)); } catch (e) { console.warn('Failed to parse whiteboard appState:', e); }
+    }
+    return { elements: elements as never, files: files as never,
+      appState: { ...appState, theme: isDark ? 'dark' : 'light' } as never };
+  }, [retainedElements, retainedFiles, retainedAppState, isDark]);
 
   const currentFolder = folders.find((f) => f.id === whiteboard.folderId);
 
@@ -182,7 +179,7 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
         </div>
         <ClsSelect
           value={whiteboard.clsLevel}
-          onChange={(clsLevel) => { onUpdate(whiteboard.id, { clsLevel }); flashSaved(); }}
+          onChange={(clsLevel) => { draftController.queue({ clsLevel }, 0); }}
           clsLevels={settings?.tiClsLevels}
         />
         <button
@@ -205,6 +202,13 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
         )}
       </div>
 
+      {draft.status === 'error' && (
+        <div role="alert" className="flex items-center gap-3 px-3 py-2 text-sm text-red-300 bg-red-950/30">
+          <span>{t('saveFailed')}</span>
+          <button className="underline shrink-0" onClick={() => { void draftController.retry(); }}>{t('retrySave')}</button>
+        </div>
+      )}
+
       {/* Tags */}
       <div className="px-3 py-1.5 border-b border-gray-800 shrink-0">
         <TagInput
@@ -219,23 +223,11 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
       <div className="flex-1 min-h-0 relative">
         <div className="absolute inset-0">
           <Excalidraw
-            key={whiteboard.id}
-            excalidrawAPI={(api) => { excalidrawApiRef.current = api; }}
-            initialData={{
-              elements: initialElements as never,
-              appState: {
-                ...initialAppState,
-                theme: isDark ? 'dark' : 'light',
-              } as never,
-            }}
+            key={sceneKey}
+            excalidrawAPI={setExcalidrawApi}
+            initialData={initialData}
             onChange={handleExcalidrawChange as never}
-            UIOptions={{
-              canvasActions: {
-                loadScene: false,
-                saveToActiveFile: false,
-                export: { saveFileToDisk: true },
-              },
-            }}
+            UIOptions={CANVAS_UI_OPTIONS}
           >
             {/* Custom menu without social links (GitHub, X, Discord) */}
             <MainMenu>
@@ -252,7 +244,9 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
       <ConfirmDialog
         open={showConfirmDelete}
         onClose={() => setShowConfirmDelete(false)}
-        onConfirm={() => onDelete?.(whiteboard.id)}
+        onConfirm={async () => {
+          if (await draftController.flush()) onDelete?.(whiteboard.id);
+        }}
         title="Delete Whiteboard"
         message="This whiteboard will be permanently deleted. This cannot be undone."
         confirmLabel="Delete Whiteboard"

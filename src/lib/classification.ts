@@ -1,4 +1,5 @@
 import { DEFAULT_CLS_LEVELS } from '../types';
+export { STIX_TLP_MARKING_DEFS } from './stix-common-objects';
 
 /** Tailwind-compatible style classes for a classification level badge. */
 export interface ClsBadgeStyle {
@@ -51,62 +52,11 @@ export function resolveIOCClsLevel(iocLevel?: string, entityLevel?: string, defa
   return iocLevel || entityLevel || defaultLevel || '';
 }
 
-/**
- * Official OASIS STIX 2.1 marking-definition objects for the Traffic Light Protocol.
- * UUIDs are the canonical ones from the STIX 2.1 specification.
- */
-export const STIX_TLP_MARKING_DEFS: Record<string, {
-  type: 'marking-definition';
-  spec_version: '2.1';
-  id: string;
-  created: string;
-  definition_type: 'tlp';
-  name: string;
-  definition: { tlp: string };
-}> = {
-  'TLP:CLEAR': {
-    type: 'marking-definition',
-    spec_version: '2.1',
-    id: 'marking-definition--94868c89-83c2-464b-929b-a1a8aa3c8487',
-    created: '2022-10-01T00:00:00.000Z',
-    definition_type: 'tlp',
-    name: 'TLP:CLEAR',
-    definition: { tlp: 'clear' },
-  },
-  'TLP:GREEN': {
-    type: 'marking-definition',
-    spec_version: '2.1',
-    id: 'marking-definition--bab4a63c-afd4-4e03-b846-b75e0496be71',
-    created: '2022-10-01T00:00:00.000Z',
-    definition_type: 'tlp',
-    name: 'TLP:GREEN',
-    definition: { tlp: 'green' },
-  },
-  'TLP:AMBER': {
-    type: 'marking-definition',
-    spec_version: '2.1',
-    id: 'marking-definition--55d920b0-5e8b-4f79-9ee9-91f868d9b421',
-    created: '2022-10-01T00:00:00.000Z',
-    definition_type: 'tlp',
-    name: 'TLP:AMBER',
-    definition: { tlp: 'amber' },
-  },
-  'TLP:AMBER+STRICT': {
-    type: 'marking-definition',
-    spec_version: '2.1',
-    id: 'marking-definition--939a9414-2ddd-4d32-a0cd-b7571b03f430',
-    created: '2022-10-01T00:00:00.000Z',
-    definition_type: 'tlp',
-    name: 'TLP:AMBER+STRICT',
-    definition: { tlp: 'amber+strict' },
-  },
-  'TLP:RED': {
-    type: 'marking-definition',
-    spec_version: '2.1',
-    id: 'marking-definition--e828b379-4e03-4974-9ac4-e53a884c97c1',
-    created: '2022-10-01T00:00:00.000Z',
-    definition_type: 'tlp',
-    name: 'TLP:RED',
-    definition: { tlp: 'red' },
-  },
-};
+/** Combining handling restrictions never selects the weaker of duplicate labels. */
+export function conservativeClsLevel(levels: Array<string | undefined>): string | undefined {
+  const unique = [...new Set(levels.filter((v): v is string => !!v))];
+  if (!unique.length) return undefined;
+  const unknown = unique.filter(level => !DEFAULT_CLS_LEVELS.includes(level));
+  if (unknown.length) return unique.join(' & ');
+  return unique.reduce((a, b) => DEFAULT_CLS_LEVELS.indexOf(a) >= DEFAULT_CLS_LEVELS.indexOf(b) ? a : b);
+}

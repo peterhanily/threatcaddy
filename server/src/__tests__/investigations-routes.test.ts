@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
+import { removeCommittedBlobs } from '../services/storage-policy.js';
+vi.mock('../services/storage-policy.js', () => ({ lockStorage: vi.fn(), removeCommittedBlobs: vi.fn().mockResolvedValue(0) }));
+
+// HTTP handlers mock current identity lookup; real PostgreSQL account invalidation is covered by integration tests.
+vi.mock('../services/admin-session-service.js', () => ({
+  adminSessionVersion: () => '',
+  revokeAdminSessions: vi.fn(),
+  getActiveAdmin: vi.fn(async (id: string) => ({ id, username: 'testadmin', passwordHash: 'fixture-admin-hash' })),
+}));
+
 
 // ─── Hoisted mock state ────────────────────────────────────────
 
@@ -61,6 +71,7 @@ vi.mock('../routes/admin/shared.js', async () => {
     whiteboards: { id: 'id', folderId: 'folder_id' },
     standaloneIOCs: { id: 'id', folderId: 'folder_id' },
     chatThreads: { id: 'id', folderId: 'folder_id' },
+    evidenceItems: { id: 'id', folderId: 'folder_id' },
     posts: { id: 'id', folderId: 'folder_id' },
     files: { id: 'id', folderId: 'folder_id', storagePath: 'storage_path', thumbnailPath: 'thumbnail_path' },
     notifications: { id: 'id', folderId: 'folder_id' },
@@ -108,7 +119,7 @@ function jsonReq(method: string, path: string, body?: unknown, headers?: Record<
 }
 
 async function getAdminToken(id = 'admin-1', username = 'testadmin'): Promise<string> {
-  return signAdminToken(id, username);
+  return signAdminToken(id, username, 'fixture-admin-hash');
 }
 
 // ─── Tests ──────────────────────────────────────────────────────
@@ -217,6 +228,7 @@ describe('GET /admin/api/investigations/:id/detail', () => {
     selectQueue.push([{ count: 8 }]);
     selectQueue.push([{ count: 1 }]);
     selectQueue.push([{ count: 4 }]);
+    selectQueue.push([{ count: 6 }]);
 
     const res = await app.request('/admin/api/investigations/inv-1/detail', {
       headers: authHeader(token),
@@ -228,6 +240,7 @@ describe('GET /admin/api/investigations/:id/detail', () => {
     expect(body.entityCounts.notes).toBe(5);
     expect(body.entityCounts.tasks).toBe(3);
     expect(body.entityCounts.files).toBe(4);
+    expect(body.entityCounts.evidenceItems).toBe(6);
   });
 
   it('returns 404 when investigation does not exist', async () => {
@@ -437,6 +450,7 @@ describe('DELETE /admin/api/investigations/:id/content', () => {
     ]);
     // Delete operations (notes, tasks, events, whiteboards, iocs, chats, posts, files, notifications, members)
     for (let i = 0; i < 10; i++) deleteQueue.push([]);
+    deleteQueue.push([{ id: 'evidence-fixture' }]);
     // Delete folder itself
     deleteQueue.push(undefined);
 
@@ -446,6 +460,17 @@ describe('DELETE /admin/api/investigations/:id/content', () => {
     const body = await res.json();
     expect(body.ok).toBe(true);
     expect(body.deleted).toBeDefined();
+    expect(body.deleted.evidenceItems).toBe(1);
+    expect(removeCommittedBlobs).toHaveBeenCalledWith('/data/files', [{ storagePath: 'file1.pdf', thumbnailPath: 'file1_thumb.webp' }]);
+  });
+
+  it('retains all managed blobs when the purge transaction fails', async () => {
+    const token = await getAdminToken();
+    selectQueue.push([{ name: 'Case Alpha' }], [{ storagePath: 'retained.pdf', thumbnailPath: null }]);
+    deleteQueue.push(new Error('Ordinary database transaction failure'));
+    const res = await app.request(jsonReq('DELETE', '/admin/api/investigations/inv-1/content', { confirmName: 'Case Alpha' }, authHeader(token)));
+    expect(res.status).toBe(500);
+    expect(removeCommittedBlobs).not.toHaveBeenCalled();
   });
 
   it('returns 400 when confirmation name does not match', async () => {

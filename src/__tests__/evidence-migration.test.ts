@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { db } from '../db';
+import { db, runWorkspaceContentMigrations } from '../db';
 import type { Note } from '../types';
+import { encryptField, generateMasterKey, isEncryptedEnvelope } from '../lib/crypto';
+import { setSessionKey } from '../lib/encryptionMiddleware';
+import { clearEncryptionMeta, setEncryptionMeta } from '../lib/encryptionStore';
 
 // ─────────────────────────────────────────────────────────────────────
 // Regression coverage for the live v29→v32 evidence migration in db.ts.
@@ -138,6 +141,7 @@ function createV28DB(notes: Partial<Note>[]): Promise<void> {
  */
 async function runMigration(): Promise<void> {
   await db.open();
+  await runWorkspaceContentMigrations();
 }
 
 function makeNote(overrides: Partial<Note> & { id: string }): Partial<Note> {
@@ -157,18 +161,40 @@ function makeNote(overrides: Partial<Note> & { id: string }): Partial<Note> {
 // ── Setup / teardown: clean DB per test ─────────────────────────────
 
 beforeEach(async () => {
+  setSessionKey(null);
+  clearEncryptionMeta();
   // The real `db` was opened at v32 on import. Close it and wipe the database
   // so each test can recreate the v28 state from scratch.
   await resetDatabase();
 });
 
 afterEach(async () => {
+  setSessionKey(null);
+  clearEncryptionMeta();
   await resetDatabase();
 });
 
 // ── Tests ────────────────────────────────────────────────────────────
 
 describe('v29→v32 evidence migration (non-destructive)', () => {
+  it('opens structural upgrades while locked, then converts content only after unlock', async () => {
+    const key = await generateMasterKey();
+    const original = makeNote({ id: 'encrypted-evidence', title: 'Evidence - source.txt', content: '# Evidence: source.txt\n\nReadable content', tags: ['evidence', 'source:file'] });
+    const encrypted = { ...original, title: await encryptField(original.title, key), content: await encryptField(original.content, key) };
+    await createV28DB([encrypted as unknown as Partial<Note>]);
+    setEncryptionMeta({ version: 1, salt: '', wrappedKey: '', recoverySalt: '', recoveryWrappedKey: '', enabledAt: 1 });
+    await db.open();
+    expect(db.verno).toBe(33);
+    expect(await db.evidenceItems.count()).toBe(0);
+    await expect(runWorkspaceContentMigrations()).rejects.toThrow('Unlock');
+    expect(isEncryptedEnvelope((await db.notes.get('encrypted-evidence'))?.content)).toBe(true);
+    setSessionKey(key);
+    await runWorkspaceContentMigrations();
+    expect((await db.notes.get('encrypted-evidence'))?.content).toBe(original.content);
+    expect((await db.evidenceItems.get('encrypted-evidence'))?.content).toContain('Readable content');
+    expect(await db.table('_localMigrations').get('content-v1')).toBeDefined();
+  });
+
   it('Case 1: promotes a true legacy evidence note AND keeps the source note', async () => {
     await createV28DB([
       makeNote({
@@ -339,10 +365,10 @@ describe('v29→v32 evidence migration (non-destructive)', () => {
     expect(itemsAfterSecond).toEqual(['analyst-extraction', 'ev-true']);
   });
 
-  it('reaches schema version 32 after the upgrade', async () => {
+  it('reaches structural schema version 33 before keyed content migration', async () => {
     await createV28DB([makeNote({ id: 'plain', tags: [] })]);
     await runMigration();
-    expect(db.verno).toBe(32);
+    expect(db.verno).toBe(33);
   });
 
   it('full chain: a realistic mix survives — every seeded note is still present', async () => {

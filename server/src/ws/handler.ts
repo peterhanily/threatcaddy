@@ -4,6 +4,7 @@ import { checkInvestigationAccess } from '../middleware/access.js';
 import { updatePresence, removePresence, getPresence } from './presence.js';
 import { logger } from '../lib/logger.js';
 import type { AuthUser } from '../types.js';
+import { onSessionRevocation } from '../services/session-events.js';
 
 const MAX_WS_MESSAGE_SIZE = 64 * 1024; // 64 KB
 const MAX_CONNECTIONS_PER_USER = 10;
@@ -19,6 +20,9 @@ interface ConnectedClient {
   pingTimer: ReturnType<typeof setInterval>;
   msgCount: number;
   msgWindowStart: number;
+  token: string;
+  expiryTimer: ReturnType<typeof setTimeout>;
+  authorizationRevision: number;
 }
 
 const clients = new Map<WSContext, ConnectedClient>();
@@ -28,19 +32,24 @@ const userConnections = new Map<string, Set<WSContext>>();
 const folderSubscribers = new Map<string, Set<WSContext>>();
 // Pending auth: ws → timeout timer (connections not yet authenticated)
 const pendingAuth = new Map<WSContext, ReturnType<typeof setTimeout>>();
+const authenticating = new Map<WSContext, symbol>();
+let authenticationEpoch = 0;
 // Per-user message rate limiting (sliding window)
 const userMsgCounts = new Map<string, { count: number; windowStart: number }>();
 
 export function handleWSConnection(ws: WSContext) {
   // Give client 5 seconds to send auth message
   const timer = setTimeout(() => {
-    pendingAuth.delete(ws);
-    try { ws.close(4001, 'Authentication timeout'); } catch { /* noop */ }
+    closeClient(ws, 4001, 'Authentication timeout');
   }, 5000);
   pendingAuth.set(ws, timer);
 }
 
-function registerClient(ws: WSContext, user: AuthUser): boolean {
+function registerClient(ws: WSContext, user: AuthUser, token: string): boolean {
+  if (!user.sessionFamily || !user.tokenExpiresAt || user.tokenExpiresAt <= Date.now() || user.email.endsWith('@threatcaddy.internal')) {
+    try { ws.close(4001, 'Session expired'); } catch { /* noop */ }
+    return false;
+  }
   // Enforce per-user connection limit
   const existing = userConnections.get(user.id);
   if (existing && existing.size >= MAX_CONNECTIONS_PER_USER) {
@@ -56,12 +65,14 @@ function registerClient(ws: WSContext, user: AuthUser): boolean {
     pingTimer: null as unknown as ReturnType<typeof setInterval>,
     msgCount: 0,
     msgWindowStart: Date.now(),
+    token,
+    expiryTimer: setTimeout(() => closeClient(ws, 4001, 'Session expired'), user.tokenExpiresAt - Date.now()),
+    authorizationRevision: 0,
   };
 
   client.pingTimer = setInterval(() => {
     if (!client.alive) {
-      clearInterval(client.pingTimer);
-      try { ws.close(4002, 'Ping timeout'); } catch { /* noop */ }
+      closeClient(ws, 4002, 'Ping timeout');
       return;
     }
     client.alive = false;
@@ -86,20 +97,29 @@ export async function handleWSMessage(ws: WSContext, data: string) {
 
   // Handle auth for unauthenticated connections
   if (pendingAuth.has(ws)) {
+    if (authenticating.has(ws)) return;
     const timer = pendingAuth.get(ws)!;
-    clearTimeout(timer);
-    pendingAuth.delete(ws);
+    const attempt = Symbol('authentication');
+    const epoch = authenticationEpoch;
+    authenticating.set(ws, attempt);
 
     try {
       const msg = JSON.parse(data);
-      if (msg.type !== 'auth' || !msg.token) {
+      if (msg.type !== 'auth' || typeof msg.token !== 'string' || !msg.token) {
         try { ws.close(4001, 'First message must be auth'); } catch { /* noop */ }
         return;
       }
       const user = await verifyAccessToken(msg.token);
-      registerClient(ws, user);
+      if (authenticating.get(ws) === attempt) {
+        if (authenticationEpoch === epoch) registerClient(ws, user, msg.token);
+        else closeClient(ws, 4001, 'Session changed during authentication');
+      }
     } catch {
       try { ws.close(4001, 'Authentication failed'); } catch { /* noop */ }
+    } finally {
+      clearTimeout(timer);
+      pendingAuth.delete(ws);
+      authenticating.delete(ws);
     }
     return;
   }
@@ -147,6 +167,7 @@ export async function handleWSMessage(ws: WSContext, data: string) {
 
   try {
     const msg = JSON.parse(data);
+    if (!await authorizeClient(client)) return;
 
     switch (msg.type) {
       case 'pong': {
@@ -158,15 +179,14 @@ export async function handleWSMessage(ws: WSContext, data: string) {
         const folderId = msg.folderId as string;
         if (folderId && typeof folderId === 'string' && folderId.length < 128) {
           // Verify folder access before subscribing
+          const revision = client.authorizationRevision;
           const hasAccess = await checkInvestigationAccess(client.user.id, folderId, 'viewer');
+          if (clients.get(ws) !== client || revision !== client.authorizationRevision) break;
           if (!hasAccess) {
             sendTo(ws, { type: 'error', message: 'No access to this investigation' });
             break;
           }
-          client.subscribedFolders.add(folderId);
-          let subs = folderSubscribers.get(folderId);
-          if (!subs) { subs = new Set(); folderSubscribers.set(folderId, subs); }
-          subs.add(ws);
+          addSubscription(client, folderId);
           // Send current presence
           const presence = getPresence(folderId);
           sendTo(ws, { type: 'presence', folderId, users: presence });
@@ -177,12 +197,9 @@ export async function handleWSMessage(ws: WSContext, data: string) {
       case 'unsubscribe': {
         const folderId = msg.folderId as string;
         if (folderId) {
-          client.subscribedFolders.delete(folderId);
-          const subs = folderSubscribers.get(folderId);
-          if (subs) { subs.delete(ws); if (subs.size === 0) folderSubscribers.delete(folderId); }
-          removePresence(folderId, client.user.id);
+          removeSubscription(client, folderId);
           // Broadcast updated presence
-          broadcastPresence(folderId);
+          await broadcastPresence(folderId);
         }
         break;
       }
@@ -190,7 +207,7 @@ export async function handleWSMessage(ws: WSContext, data: string) {
       case 'presence-update': {
         const folderId = msg.folderId as string;
         // Only allow presence updates for folders the client is subscribed to
-        if (folderId && client.subscribedFolders.has(folderId)) {
+        if (folderId && client.subscribedFolders.has(folderId) && await authorizeClient(client, folderId)) {
           const view = typeof msg.view === 'string' ? msg.view.slice(0, 64) : 'unknown';
           const entityId = typeof msg.entityId === 'string' ? msg.entityId.slice(0, 128) : undefined;
           updatePresence(
@@ -201,25 +218,14 @@ export async function handleWSMessage(ws: WSContext, data: string) {
             view,
             entityId
           );
-          broadcastPresence(folderId);
+          await broadcastPresence(folderId);
         }
         break;
       }
 
       case 'entity-change-preview': {
-        // Relay as entity-change to other clients for optimistic real-time sync
-        const { table, entityId, op, data } = msg as {
-          table?: string; entityId?: string; op?: string; data?: Record<string, unknown>;
-        };
-        if (!table || !entityId || !op) break;
-        // Require a folderId — never broadcast globally from client messages
-        const dataFolderId = data?.folderId as string | undefined;
-        if (!dataFolderId || !client.subscribedFolders.has(dataFolderId)) break;
-        // Verify sender has editor access to the folder
-        const canEdit = await checkInvestigationAccess(client.user.id, dataFolderId, 'editor');
-        if (!canEdit) break;
-        const relayMsg = { type: 'entity-change', table, entityId, op, data };
-        broadcastToFolder(dataFolderId, relayMsg, client.user.id);
+        // Older clients still send optimistic previews. Only committed server
+        // mutations may produce entity-change messages that peers persist.
         break;
       }
     }
@@ -228,60 +234,65 @@ export async function handleWSMessage(ws: WSContext, data: string) {
   }
 }
 
+function addSubscription(client: ConnectedClient, folderId: string) {
+  client.subscribedFolders.add(folderId);
+  let subscribers = folderSubscribers.get(folderId);
+  if (!subscribers) { subscribers = new Set(); folderSubscribers.set(folderId, subscribers); }
+  subscribers.add(client.ws);
+}
+
+function removeSubscription(client: ConnectedClient, folderId: string) {
+  client.subscribedFolders.delete(folderId);
+  const subscribers = folderSubscribers.get(folderId);
+  if (subscribers) { subscribers.delete(client.ws); if (!subscribers.size) folderSubscribers.delete(folderId); }
+  const others = userConnections.get(client.user.id);
+  if (![...(others ?? [])].some(ws => ws !== client.ws && clients.get(ws)?.subscribedFolders.has(folderId))) removePresence(folderId, client.user.id);
+}
+
+function closeClient(ws: WSContext, code: number, reason: string) {
+  handleWSClose(ws);
+  try { ws.close(code, reason); } catch { /* noop */ }
+}
+
+async function authorizeClient(client: ConnectedClient, folderId?: string, role: 'viewer' | 'editor' = 'viewer'): Promise<boolean> {
+  if (clients.get(client.ws) !== client) return false;
+  if (!client.user.tokenExpiresAt || client.user.tokenExpiresAt <= Date.now()) { closeClient(client.ws, 4001, 'Session expired'); return false; }
+  const revision = client.authorizationRevision;
+  try {
+    const user = await verifyAccessToken(client.token);
+    if (user.id !== client.user.id || user.sessionFamily !== client.user.sessionFamily) throw new Error('Session identity changed');
+    if (clients.get(client.ws) !== client || revision !== client.authorizationRevision) return false;
+    client.user = user;
+    if (folderId && (!client.subscribedFolders.has(folderId) || !await checkInvestigationAccess(user.id, folderId, role))) {
+      revokeUserFolderAccess(user.id, folderId);
+      return false;
+    }
+    return clients.get(client.ws) === client && revision === client.authorizationRevision
+      && (!folderId || client.subscribedFolders.has(folderId));
+  } catch {
+    closeClient(client.ws, 4001, 'Session revoked');
+    return false;
+  }
+}
+
 export function handleWSClose(ws: WSContext) {
-  // Clean up pending auth if connection closes before auth
   const authTimer = pendingAuth.get(ws);
-  if (authTimer) {
-    clearTimeout(authTimer);
-    pendingAuth.delete(ws);
-  }
-
+  if (authTimer) clearTimeout(authTimer);
+  pendingAuth.delete(ws);
+  authenticating.delete(ws);
   const client = clients.get(ws);
-  if (client) {
-    clearInterval(client.pingTimer);
-
-    // Only remove presence from folders where no other connection from this user is subscribed
-    for (const folderId of client.subscribedFolders) {
-      let otherSubscribed = false;
-      const conns = userConnections.get(client.user.id);
-      if (conns) {
-        for (const otherWs of conns) {
-          if (otherWs === ws) continue;
-          const otherClient = clients.get(otherWs);
-          if (otherClient && otherClient.subscribedFolders.has(folderId)) {
-            otherSubscribed = true;
-            break;
-          }
-        }
-      }
-      if (!otherSubscribed) {
-        removePresence(folderId, client.user.id);
-      }
-    }
-
-    // Remove from folder subscriber index
-    for (const folderId of client.subscribedFolders) {
-      const subs = folderSubscribers.get(folderId);
-      if (subs) { subs.delete(ws); if (subs.size === 0) folderSubscribers.delete(folderId); }
-    }
-
-    // Broadcast updated presence for all folders this client was in
-    for (const folderId of client.subscribedFolders) {
-      broadcastPresence(folderId);
-    }
-
-    // Remove from user connections
-    const conns = userConnections.get(client.user.id);
-    if (conns) {
-      conns.delete(ws);
-      if (conns.size === 0) {
-        userConnections.delete(client.user.id);
-        userMsgCounts.delete(client.user.id);
-      }
-    }
-
-    clients.delete(ws);
+  if (!client) return;
+  clients.delete(ws);
+  clearInterval(client.pingTimer);
+  clearTimeout(client.expiryTimer);
+  const folders = [...client.subscribedFolders];
+  for (const folderId of folders) removeSubscription(client, folderId);
+  const connections = userConnections.get(client.user.id);
+  if (connections) {
+    connections.delete(ws);
+    if (!connections.size) { userConnections.delete(client.user.id); userMsgCounts.delete(client.user.id); }
   }
+  for (const folderId of folders) void broadcastPresence(folderId);
 }
 
 function sendTo(ws: WSContext, msg: unknown) {
@@ -290,76 +301,66 @@ function sendTo(ws: WSContext, msg: unknown) {
   } catch { /* client disconnected */ }
 }
 
-function broadcastPresence(folderId: string) {
-  const subs = folderSubscribers.get(folderId);
-  if (!subs) return;
-  const presence = getPresence(folderId);
-  // Pre-stringify once for all recipients
-  const json = JSON.stringify({ type: 'presence', folderId, users: presence });
-
-  for (const ws of subs) {
-    sendTo(ws, json);
-  }
+async function broadcastPresence(folderId: string) {
+  await broadcastToFolder(folderId, { type: 'presence', folderId, users: getPresence(folderId) });
 }
 
-// Broadcast entity changes to all clients subscribed to a folder (except sender)
-export function broadcastToFolder(folderId: string, msg: unknown, excludeUserId?: string) {
-  const subs = folderSubscribers.get(folderId);
-  if (!subs) return;
-  // Pre-stringify once for all recipients
+// Revalidate each recipient against current database authorization before delivering investigation data.
+export async function broadcastToFolder(folderId: string, msg: unknown, excludeUserId?: string) {
+  const subscribers = [...(folderSubscribers.get(folderId) ?? [])];
   const json = typeof msg === 'string' ? msg : JSON.stringify(msg);
-  for (const ws of subs) {
+  await Promise.all(subscribers.map(async ws => {
     const client = clients.get(ws);
-    if (client && client.user.id !== excludeUserId) {
-      sendTo(ws, json);
-    }
-  }
+    if (client && client.user.id !== excludeUserId && client.subscribedFolders.has(folderId)
+      && await authorizeClient(client, folderId)) sendTo(ws, json);
+  }));
 }
 
-// Broadcast to all connected clients
-export function broadcastGlobal(msg: unknown, excludeUserId?: string) {
+export async function broadcastGlobal(msg: unknown, excludeUserId?: string) {
   const json = typeof msg === 'string' ? msg : JSON.stringify(msg);
-  for (const [, client] of clients) {
-    if (client.user.id !== excludeUserId) {
-      sendTo(client.ws, json);
-    }
-  }
+  await Promise.all([...clients.values()].map(async client => {
+    if (client.user.id !== excludeUserId && await authorizeClient(client)) sendTo(client.ws, json);
+  }));
 }
 
-// Broadcast to a specific user (all their connections)
-export function broadcastToUser(userId: string, msg: unknown) {
-  const conns = userConnections.get(userId);
-  if (conns) {
-    const json = typeof msg === 'string' ? msg : JSON.stringify(msg);
-    for (const ws of conns) {
-      sendTo(ws, json);
-    }
-  }
+export async function broadcastToUser(userId: string, msg: unknown) {
+  const json = typeof msg === 'string' ? msg : JSON.stringify(msg);
+  await Promise.all([...(userConnections.get(userId) ?? [])].map(async ws => {
+    const client = clients.get(ws);
+    if (client && await authorizeClient(client)) sendTo(ws, json);
+  }));
 }
 
-// Force-unsubscribe a user from a folder (called when member is removed)
 export function revokeUserFolderAccess(userId: string, folderId: string) {
-  const conns = userConnections.get(userId);
-  if (!conns) return;
-  for (const ws of conns) {
+  for (const ws of userConnections.get(userId) ?? []) {
     const client = clients.get(ws);
-    if (client && client.subscribedFolders.has(folderId)) {
-      client.subscribedFolders.delete(folderId);
-      removePresence(folderId, userId);
-      sendTo(ws, { type: 'access-revoked', folderId });
-    }
+    if (!client) continue;
+    client.authorizationRevision++;
+    const subscribed = client.subscribedFolders.has(folderId);
+    removeSubscription(client, folderId);
+    if (subscribed) sendTo(ws, { type: 'access-revoked', folderId });
   }
-  broadcastPresence(folderId);
+  void broadcastPresence(folderId);
 }
 
-// Force-disconnect all connections for a user (called when user is deactivated)
-export function disconnectUser(userId: string) {
-  const conns = userConnections.get(userId);
-  if (!conns) return;
-  for (const ws of conns) {
-    try { ws.close(4004, 'Account deactivated'); } catch { /* noop */ }
+export function revokeFolderAccess(folderId: string) {
+  const userIds = new Set([...clients.values()].map(client => client.user.id));
+  for (const userId of userIds) revokeUserFolderAccess(userId, folderId);
+}
+
+export function disconnectUser(userId: string, family?: string) {
+  for (const ws of [...(userConnections.get(userId) ?? [])]) {
+    const client = clients.get(ws);
+    if (client && (!family || client.user.sessionFamily === family)) closeClient(ws, 4004, 'Session revoked');
   }
 }
+
+onSessionRevocation(event => {
+  authenticationEpoch++;
+  if ('all' in event) {
+    for (const userId of [...userConnections.keys()]) disconnectUser(userId);
+  } else disconnectUser(event.userId, event.family);
+});
 
 // Periodic WS connection stats (every 5 minutes)
 const wsStatsInterval = setInterval(() => {

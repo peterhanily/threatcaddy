@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { db } from '../db/index.js';
 import { serverSettings, folders, investigationMembers, users, adminUsers } from '../db/schema.js';
 import { logger } from '../lib/logger.js';
+import { revokeAdminSessions } from './admin-session-service.js';
 
 export const ADMIN_SYSTEM_USER_ID = '__system_admin__';
 
@@ -267,7 +268,7 @@ export async function createAdminUser(username: string, displayName: string, pas
   return { id, username: username.toLowerCase().trim(), displayName: displayName.trim() };
 }
 
-export async function verifyAdminUser(username: string, password: string): Promise<{ id: string; username: string; displayName: string } | null> {
+export async function verifyAdminUser(username: string, password: string): Promise<{ id: string; username: string; displayName: string; passwordHash: string } | null> {
   const rows = await db.select().from(adminUsers)
     .where(and(eq(adminUsers.username, username.toLowerCase().trim()), eq(adminUsers.active, true)))
     .limit(1);
@@ -281,7 +282,7 @@ export async function verifyAdminUser(username: string, password: string): Promi
   }
   // Update last login
   await db.update(adminUsers).set({ lastLoginAt: new Date() }).where(eq(adminUsers.id, user.id));
-  return { id: user.id, username: user.username, displayName: user.displayName };
+  return { id: user.id, username: user.username, displayName: user.displayName, passwordHash: user.passwordHash };
 }
 
 export async function verifyAdminUserById(id: string, password: string): Promise<boolean> {
@@ -298,17 +299,20 @@ export async function verifyAdminUserById(id: string, password: string): Promise
 
 export async function updateAdminUser(id: string, updates: { displayName?: string; active?: boolean }): Promise<boolean> {
   const result = await db.update(adminUsers).set(updates).where(eq(adminUsers.id, id)).returning({ id: adminUsers.id });
+  if (updates.active !== undefined) revokeAdminSessions(id);
   return result.length > 0;
 }
 
 export async function changeAdminUserPassword(id: string, newPassword: string): Promise<boolean> {
   const hash = await argon2.hash(newPassword, { type: argon2.argon2id });
   const result = await db.update(adminUsers).set({ passwordHash: hash }).where(eq(adminUsers.id, id)).returning({ id: adminUsers.id });
+  revokeAdminSessions(id);
   return result.length > 0;
 }
 
 export async function deleteAdminUser(id: string): Promise<boolean> {
   const result = await db.delete(adminUsers).where(eq(adminUsers.id, id)).returning({ id: adminUsers.id });
+  revokeAdminSessions(id);
   return result.length > 0;
 }
 

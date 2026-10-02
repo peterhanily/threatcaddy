@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { timingSafeEqual, createHmac } from 'node:crypto';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { checkInvestigationAccess } from '../middleware/access.js';
 import { botManager } from '../bots/bot-manager.js';
 import { logger } from '../lib/logger.js';
 import {
@@ -9,8 +10,30 @@ import {
   listBots, getBot, getBotRuns, getBotRunDetail, auditBotAction,
 } from '../services/bot-service.js';
 import { ErrorCodes } from '../types/error-codes.js';
+import type { AuthUser } from '../types.js';
 
 const app = new Hono();
+
+// A config can describe every investigation in its scope. Require access to all
+// of them, and keep global or unverifiable scopes visible only to administrators.
+function botVisibility(user: Pick<AuthUser, 'id' | 'role'>) {
+  const memberships = new Map<string, Promise<boolean>>();
+  return async (bot: { scopeType: string; scopeFolderIds: unknown }): Promise<boolean> => {
+    if (user.role === 'admin') return true;
+    if (user.role !== 'analyst' || bot.scopeType !== 'investigation'
+      || !Array.isArray(bot.scopeFolderIds) || bot.scopeFolderIds.length === 0
+      || !bot.scopeFolderIds.every(id => typeof id === 'string' && id.length > 0)) return false;
+    for (const folderId of new Set(bot.scopeFolderIds as string[])) {
+      let access = memberships.get(folderId);
+      if (!access) {
+        access = checkInvestigationAccess(user.id, folderId, 'viewer');
+        memberships.set(folderId, access);
+      }
+      if (!await access) return false;
+    }
+    return true;
+  };
+}
 
 // All bot routes require auth, except webhook endpoint (uses its own secret)
 app.use('*', async (c, next) => {
@@ -24,15 +47,23 @@ app.use('*', async (c, next) => {
 // ─── List all bot configs ───────────────────────────────────────
 
 app.get('/', requireRole('admin', 'analyst'), async (c) => {
-  return c.json({ bots: await listBots() });
+  const user = c.get('user' as never) as AuthUser;
+  const bots = await listBots();
+  const canRead = botVisibility(user);
+  const visible = await Promise.all(bots.map(canRead));
+  return c.json({ bots: bots.filter((_, index) => visible[index]).map(bot => (
+    // Last errors may describe a run from a previous, broader scope.
+    user.role === 'admin' ? bot : { ...bot, lastError: null }
+  )) });
 });
 
 // ─── Get a single bot config ────────────────────────────────────
 
 app.get('/:id', requireRole('admin', 'analyst'), async (c) => {
+  const user = c.get('user' as never) as AuthUser;
   const bot = await getBot(c.req.param('id'));
-  if (!bot) return c.json({ error: 'Bot not found', code: ErrorCodes.BOT_NOT_FOUND }, 404);
-  return c.json({ bot });
+  if (!bot || !await botVisibility(user)(bot)) return c.json({ error: 'Bot not found', code: ErrorCodes.BOT_NOT_FOUND }, 404);
+  return c.json({ bot: user.role === 'admin' ? bot : { ...bot, lastError: null } });
 });
 
 // ─── Create a new bot ───────────────────────────────────────────
@@ -76,6 +107,7 @@ app.post('/:id/enable', requireRole('admin'), async (c) => {
   const user = c.get('user' as never) as { id: string };
   const bot = await enableBot(c.req.param('id'));
   if (!bot) return c.json({ error: 'Bot not found', code: ErrorCodes.BOT_NOT_FOUND }, 404);
+  if ('error' in bot) return c.json({ error: bot.error }, 409);
 
   await auditBotAction(user.id, 'enable', bot.name, `Enabled bot "${bot.name}"`, c.req.param('id'));
   return c.json({ ok: true, enabled: true });
@@ -164,13 +196,15 @@ app.delete('/:id', requireRole('admin'), async (c) => {
 
 // ─── Bot run history ────────────────────────────────────────────
 
-app.get('/:id/runs', requireRole('admin', 'analyst'), async (c) => {
+// Runs lack immutable investigation provenance. A bot's current scope cannot
+// authorize historical outputs after its scope changes, so history is admin-only.
+app.get('/:id/runs', requireRole('admin'), async (c) => {
   const limit = Math.min(Math.max(1, parseInt(c.req.query('limit') || '50', 10) || 50), 100);
   const runs = await getBotRuns(c.req.param('id'), limit);
   return c.json({ runs });
 });
 
-app.get('/:id/runs/:runId', requireRole('admin', 'analyst'), async (c) => {
+app.get('/:id/runs/:runId', requireRole('admin'), async (c) => {
   const run = await getBotRunDetail(c.req.param('runId'));
   if (!run || run.botConfigId !== c.req.param('id')) {
     return c.json({ error: 'Run not found', code: ErrorCodes.RUN_NOT_FOUND }, 404);

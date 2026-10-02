@@ -4,14 +4,14 @@ Backend API server for ThreatCaddy. Handles authentication, real-time sync, soci
 
 ## Prerequisites
 
-- Node.js 22+
+- Node.js 24.21.0 (the pinned 24.x runtime) and npm 11.19.x
 - PostgreSQL 17+
 
 ## Setup
 
 ```bash
 cd server
-npm install
+npm ci
 ```
 
 Create a `.env` file:
@@ -33,6 +33,10 @@ TRUST_PROXY=false
 # Admin
 ADMIN_SECRET=changeme
 
+# Required persistent encryption key; generate once with: openssl rand -hex 32
+# Preserve the existing effective key when upgrading; do not replace it casually.
+BOT_MASTER_KEY=
+
 # File storage
 FILE_STORAGE_PATH=./data/files
 
@@ -42,6 +46,10 @@ OPENAI_API_KEY=
 GEMINI_API_KEY=
 MISTRAL_API_KEY=
 ```
+
+Supply these values through the process environment or your deployment secret
+manager; the server does not automatically load a local `.env` file. Replace
+all example credentials before startup.
 
 Generate JWT keys:
 
@@ -54,9 +62,8 @@ Create the database:
 
 ```bash
 createdb threatcaddy
-npm run db:push    # push schema directly
-# or
-npm run db:migrate # run migrations
+npm run build
+npm run db:migrate # run the packaged, journal-validated migrations
 ```
 
 Start the server:
@@ -65,6 +72,13 @@ Start the server:
 npm run dev   # development with auto-reload
 npm run build && npm start  # production
 ```
+
+Run one server instance per database. Before upgrading or restoring an existing
+installation, read [migration recovery](docs/migration-recovery.md),
+[credential recovery](docs/credential-recovery.md),
+[sync history recovery](docs/sync-recovery.md), and
+[runtime operations](docs/runtime-operations.md). Production builds omit emitted
+tests, fixtures, and source maps; unit and integration checks still run separately.
 
 ## Environment Variables
 
@@ -83,7 +97,7 @@ npm run build && npm start  # production
 | `OPENAI_API_KEY` | No | — | OpenAI API key |
 | `GEMINI_API_KEY` | No | — | Google AI API key for Gemini models |
 | `MISTRAL_API_KEY` | No | — | Mistral API key |
-| `BOT_MASTER_KEY` | No | auto-generated | AES-256 master key for encrypting bot secrets (generate: `openssl rand -base64 32`) |
+| `BOT_MASTER_KEY` | Yes | — | Stable 32–1024-character key for encrypted bot credentials (new installation: `openssl rand -hex 32`); preserve the existing key exactly |
 | `BOT_EXECUTION_TIMEOUT_MS` | No | `300000` | Max execution time per bot run (ms) — default 5 minutes |
 | `BOT_MAX_CONCURRENT_RUNS` | No | `10` | Max concurrent bot executions |
 | `SANDBOX_PYTHON_IMAGE` | No | `python:3.12-slim` | Docker image for Python code execution |
@@ -109,7 +123,7 @@ npm run build && npm start  # production
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/push` | Push entity changes |
-| GET | `/pull` | Pull changes since timestamp |
+| GET | `/pull` | Pull commit-ordered cursor changes with a history generation |
 | GET | `/snapshot/:folderId` | Full folder snapshot |
 
 ### Investigations (`/api/investigations`)

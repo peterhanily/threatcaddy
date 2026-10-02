@@ -1,81 +1,62 @@
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
-// fs/promises imported dynamically in stripHeavyAssets to avoid top-level await
-import { existsSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { applyDeploymentPolicy, type DeploymentPolicy } from './src/lib/deployment-policy'
 
-/**
- * Post-build: remove Excalidraw CJK font (Xiaolai = 16MB) from dist.
- * Chinese text rendering in whiteboards requires this font, but it's
- * too large to include in every deploy. Non-English locale files stay
- * in dist/ — they're lazy-loaded by i18next and only fetched when the
- * user switches language.
- */
-function stripHeavyAssets(): Plugin {
+function deploymentPolicy(policy: DeploymentPolicy): Plugin {
   return {
-    name: 'strip-heavy-assets',
-    apply: 'build',
-    async closeBundle() {
-      const xiaolaiDir = resolve('dist', 'fonts', 'Xiaolai')
-      if (existsSync(xiaolaiDir)) {
-        const { rm } = await import('node:fs/promises')
-        await rm(xiaolaiDir, { recursive: true }).catch(() => {})
-      }
-    },
-  }
-}
-
-function cloudflareAnalytics(): Plugin {
-  return {
-    name: 'cloudflare-analytics',
+    name: 'explicit-deployment-policy',
     transformIndexHtml(html, ctx) {
-      if (ctx.server) return html // skip in dev
-      return html.replace(
-        '</body>',
-        `<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "beb9b5eaaaaf4808a367502ada8fd179"}'></script><!-- End Cloudflare Web Analytics -->\n</body>`
-      )
+      return applyDeploymentPolicy(html, { ...policy, analyticsToken: ctx.server ? undefined : policy.analyticsToken })
     },
   }
 }
 
-export default defineConfig({
+/** Excalidraw always appends a public CDN fallback for relative font URIs.
+ * Its absolute-URL path is local-only, and is available even before the
+ * editor module initializes EXCALIDRAW_ASSET_PATH. */
+function selfHostedFontAssets(): Plugin {
+  let base = './';
+  return {
+    name: 'self-hosted-font-assets',
+    enforce: 'pre',
+    configResolved(config) { base = config.base; },
+    transform(source, id) {
+      if (!id.includes('/@excalidraw/excalidraw/') || !/\.js(?:\?|$)/.test(id)) return null;
+      const code = source.replace(/(['"])(\.?\/fonts\/[^'"\n]+\.woff2)\1/g, (_match, _quote: string, uri: string) => {
+        const path = resolve(__dirname, 'public', uri.replace(/^\.?\//, ''));
+        if (!existsSync(path)) throw new Error(`Missing packaged font: ${uri}`);
+        return `new URL(${JSON.stringify(uri)},new URL(${JSON.stringify(base)},window.location.href)).href`;
+      });
+      return { code, map: null };
+    },
+  };
+}
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), 'VITE_');
+  return {
   plugins: [
+    selfHostedFontAssets(),
     react(),
     tailwindcss(),
-    cloudflareAnalytics(),
-    stripHeavyAssets(),
+    deploymentPolicy({ analyticsToken: env.VITE_CF_ANALYTICS_TOKEN, connectOrigins: env.VITE_CONNECT_ORIGINS }),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: false,
       injectRegister: 'auto',
       workbox: {
-        // Only precache the critical-path assets needed for first render.
-        // Heavy lazy-loaded chunks (mermaid, cytoscape, leaflet, katex, etc.)
-        // are cached at runtime on first use via runtimeCaching below.
-        globPatterns: ['assets/**/*.{js,css}', '*.{ico,js}'],
-        globIgnores: [
-          '**/excalidraw-*',           // Whiteboard editor (1.1MB)
-          '**/locales/**',             // i18n locale files (cached separately)
-          'chunk-reload-guard.js',
-          '**/flowchart-elk-*',        // Mermaid flowchart-elk (1.4MB)
-          '**/subset-*',              // Mermaid shared subset (1.7MB)
-          '**/sequenceDiagram-*',      // Mermaid sequence (82KB)
-          '**/ganttDiagram-*',         // Mermaid gantt (59KB)
-          '**/c4Diagram-*',            // Mermaid C4 (67KB)
-          '**/createText-*',           // Mermaid text (59KB)
-          '**/cytoscape-*',            // Graph library (507KB)
-          '**/leaflet-*',             // Map library (163KB)
-          '**/katex-*',               // Math rendering (255KB)
-          '**/WhiteboardEditor-*',     // Whiteboard CSS (142KB)
-          '**/search.worker-*',        // Search web worker (260KB)
-          '**/SettingsPanel-*',        // Settings (lazy, 195KB)
-          '**/IOCStatsView-*',         // IOC stats (lazy, 85KB)
-          '**/TimelineView-*',         // Timeline (lazy, 73KB)
-          '**/ChatView-*',             // Chat (lazy, 68KB)
-        ],
-        navigateFallback: null,
+        // Cache the built module graph and English fallback together. Manual
+        // chunking shares dependencies between nominally lazy features; a
+        // filename exclusion can otherwise break even a basic offline reload.
+        // Preserve all packaged font subsets, including Xiaolai CJK, so first
+        // use of a script offline does not depend on a previously warmed CDN.
+        globPatterns: ['index.html', 'logo.svg', 'manifest.json', 'locales/en/*.json', 'assets/**/*.{js,css}', 'fonts/**/*.woff2', 'licenses/*.txt', '*.{ico,js}'],
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/\/(?:api|ws)(?:\/|$)/],
         skipWaiting: true,
         clientsClaim: true,
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
@@ -89,7 +70,7 @@ export default defineConfig({
             handler: 'NetworkOnly',
           },
           {
-            // Cache locale JSON files after first fetch
+            // English fallback is precached; other locales are cached on use.
             urlPattern: /\/locales\/[^/]+\/[^/]+\.json$/,
             handler: 'CacheFirst',
             options: {
@@ -134,4 +115,5 @@ export default defineConfig({
       },
     },
   },
+  }
 })

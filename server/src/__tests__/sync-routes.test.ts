@@ -1,937 +1,144 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
-
-// ── vi.hoisted so mock fns are available in vi.mock factories ─────────────────
-
-const {
-  selectQueue,
-  insertQueue,
-  deleteQueue,
-  mockDb,
-  mockCheckAccess,
-  mockProcessPush,
-  mockPullChanges,
-  mockGetSnapshot,
-  mockLookupEntityFolderId,
-  mockBulkLookupEntityFolderIds,
-  mockLogActivity,
-  mockLogActivityBatch,
-  mockBroadcastToFolder,
-  mockLogger,
-} = vi.hoisted(() => {
-  const selectQueue: unknown[] = [];
-  const insertQueue: unknown[] = [];
-  const deleteQueue: unknown[] = [];
-
-  function makeThenableChain(queue: unknown[]) {
-    const chain: Record<string, unknown> = {};
-    const resolve = () => {
-      const val = queue.shift();
-      return val instanceof Error ? Promise.reject(val) : Promise.resolve(val ?? []);
-    };
-    for (const method of [
-      'from',
-      'leftJoin',
-      'innerJoin',
-      'where',
-      'orderBy',
-      'limit',
-      'groupBy',
-      'set',
-      'values',
-      'returning',
-      'onConflictDoNothing',
-    ]) {
-      chain[method] = vi.fn(() => chain);
-    }
-    chain.then = (
-      onFulfilled?: (v: unknown) => unknown,
-      onRejected?: (e: unknown) => unknown,
-    ) => {
-      return resolve().then(onFulfilled, onRejected);
-    };
-    chain.catch = (onRejected?: (e: unknown) => unknown) => {
-      return resolve().catch(onRejected);
-    };
-    return chain;
-  }
-
-  return {
-    selectQueue,
-    insertQueue,
-    deleteQueue,
-    makeThenableChain,
-    mockDb: {
-      select: vi.fn(() => makeThenableChain(selectQueue)),
-      insert: vi.fn(() => makeThenableChain(insertQueue)),
-      delete: vi.fn(() => makeThenableChain(deleteQueue)),
-    },
-    mockCheckAccess: vi.fn(),
-    mockProcessPush: vi.fn(),
-    mockPullChanges: vi.fn(),
-    mockGetSnapshot: vi.fn(),
-    mockLookupEntityFolderId: vi.fn(),
-    mockBulkLookupEntityFolderIds: vi.fn(),
-    mockLogActivity: vi.fn(),
-    mockLogActivityBatch: vi.fn(),
-    mockBroadcastToFolder: vi.fn(),
-    mockLogger: {
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      debug: vi.fn(),
-    },
-  };
-});
-
-// ── Mock: db ──────────────────────────────────────────────────────────────────
-
-vi.mock('../db/index.js', () => ({
-  db: mockDb,
+const mocks = vi.hoisted(() => ({
+  push: vi.fn(), pull: vi.fn(), cursor: vi.fn(), snapshot: vi.fn(), access: vi.fn(), broadcast: vi.fn(), audit: vi.fn(),
+  user: { id: 'user-1', role: 'analyst' } as { id: string; role: string } | null,
 }));
-
-// ── Mock: db/schema ───────────────────────────────────────────────────────────
-
-vi.mock('../db/schema.js', () => ({
-  folders: { id: 'id', name: 'name' },
-  investigationMembers: {
-    id: 'id',
-    folderId: 'folderId',
-    userId: 'userId',
-    role: 'role',
+vi.mock('../middleware/auth.js', () => ({
+  requireAuth: async (c: { set: (name: string, value: unknown) => void; json: (body: unknown, status: number) => Response }, next: () => Promise<void>) => {
+    if (!mocks.user) return c.json({ error: 'Unauthorized' }, 401);
+    c.set('user', mocks.user); return next();
+  },
+  requireRole: (...roles: string[]) => async (c: { get: (key: string) => { role: string }; json: (body: unknown, status: number) => Response }, next: () => Promise<void>) =>
+    roles.includes(c.get('user').role) ? next() : c.json({ error: 'Forbidden' }, 403),
+}));
+vi.mock('../middleware/access.js', () => ({ checkInvestigationAccess: mocks.access }));
+vi.mock('../services/sync-service.js', () => ({
+  processPush: mocks.push, pullChanges: mocks.pull, pullCursorChanges: mocks.cursor, getSnapshot: mocks.snapshot,
+  SyncWriteValidationError: class extends Error {},
+  SyncReadError: class extends Error {
+    constructor(message: string, public status: number, public resetRequired = false) { super(message); }
   },
 }));
-
-// ── Mock: drizzle-orm ─────────────────────────────────────────────────────────
-
-vi.mock('drizzle-orm', () => ({
-  eq: vi.fn((_col: unknown, _val: unknown) => ({ _col, _val })),
-  inArray: vi.fn((_col: unknown, _vals: unknown) => ({ _col, _vals })),
-}));
-
-// ── Mock: requireAuth middleware ───────────────────────────────────────────────
-
-vi.mock('../middleware/auth.js', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  requireAuth: vi.fn(async (c: any, next: () => Promise<void>) => {
-    const authHeader = c.req.header('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-    const token = authHeader.replace('Bearer ', '');
-    if (token === 'valid-token') {
-      c.set('user', {
-        id: 'user-1',
-        email: 'test@example.com',
-        role: 'analyst',
-        displayName: 'Test User',
-        avatarUrl: null,
-      });
-    } else if (token === 'user2-token') {
-      c.set('user', {
-        id: 'user-2',
-        email: 'user2@example.com',
-        role: 'analyst',
-        displayName: 'User Two',
-        avatarUrl: null,
-      });
-    } else {
-      return c.json({ error: 'Unauthorized' }, 401);
-    }
-    await next();
-  }),
-}));
-
-// ── Mock: checkInvestigationAccess ────────────────────────────────────────────
-
-vi.mock('../middleware/access.js', () => ({
-  checkInvestigationAccess: mockCheckAccess,
-}));
-
-// ── Mock: sync-service ────────────────────────────────────────────────────────
-
-vi.mock('../services/sync-service.js', () => ({
-  processPush: mockProcessPush,
-  pullChanges: mockPullChanges,
-  getSnapshot: mockGetSnapshot,
-  lookupEntityFolderId: mockLookupEntityFolderId,
-  bulkLookupEntityFolderIds: mockBulkLookupEntityFolderIds,
-}));
-
-// ── Mock: audit-service ───────────────────────────────────────────────────────
-
-vi.mock('../services/audit-service.js', () => ({
-  logActivity: mockLogActivity,
-  logActivityBatch: mockLogActivityBatch,
-}));
-
-// ── Mock: ws/handler ──────────────────────────────────────────────────────────
-
-vi.mock('../ws/handler.js', () => ({
-  broadcastToFolder: mockBroadcastToFolder,
-}));
-
-// ── Mock: logger ──────────────────────────────────────────────────────────────
-
-vi.mock('../lib/logger.js', () => ({
-  logger: mockLogger,
-}));
-
-// ── Mock: nanoid ──────────────────────────────────────────────────────────────
-
-vi.mock('nanoid', () => ({
-  nanoid: vi.fn(() => 'mock-nanoid-id'),
-}));
-
-// ── Import route module (after mocks) ─────────────────────────────────────────
+vi.mock('../services/audit-service.js', () => ({ logActivityBatch: mocks.audit }));
+vi.mock('../ws/handler.js', () => ({ broadcastToFolder: mocks.broadcast }));
+vi.mock('../db/index.js', () => ({ db: { select: () => ({ from: () => ({ where: async () => [{ folderId: 'folder-1' }] }) }) } }));
 
 import syncRoutes from '../routes/sync.js';
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function buildApp() {
-  const app = new Hono();
-  app.route('/api/sync', syncRoutes);
-  return app;
+import { SyncReadError, SyncWriteValidationError } from '../services/sync-service.js';
+const app = new Hono().route('/api/sync', syncRoutes);
+const put = { table: 'notes', op: 'put', entityId: 'note-1', clientVersion: 3, data: { title: 'Edited', folderId: 'folder-1' } };
+const record = { id: 'note-1', title: 'Edited', folderId: 'folder-1', version: 4 };
+function push(changes: unknown) {
+  return app.request('/api/sync/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ changes, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' }) });
 }
+beforeEach(() => {
+  vi.resetAllMocks(); mocks.user = { id: 'user-1', role: 'analyst' };
+  mocks.access.mockResolvedValue(true);
+  mocks.push.mockResolvedValue([{ table: 'notes', entityId: 'note-1', status: 'accepted', serverVersion: 4, serverRecord: record }]);
+  mocks.pull.mockResolvedValue({ changes: [], serverTimestamp: '2026-01-01T00:00:00Z' });
+});
 
-function jsonReq(
-  method: string,
-  path: string,
-  body?: unknown,
-  token?: string,
-) {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  const init: RequestInit = { method, headers };
-  if (body !== undefined) {
-    init.body = JSON.stringify(body);
-  }
-  return new Request(`http://localhost${path}`, init);
-}
-
-function getReq(path: string, token?: string) {
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  return new Request(`http://localhost${path}`, { method: 'GET', headers });
-}
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
-describe('sync routes', () => {
-  let app: Hono;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    selectQueue.length = 0;
-    insertQueue.length = 0;
-    deleteQueue.length = 0;
-    app = buildApp();
-
-    // Sensible defaults
-    mockProcessPush.mockResolvedValue([]);
-    mockPullChanges.mockResolvedValue({ changes: [], serverNow: Date.now() });
-    mockGetSnapshot.mockResolvedValue({ changes: [] });
-    mockCheckAccess.mockResolvedValue(true);
-    mockLookupEntityFolderId.mockResolvedValue(null);
-    // Bulk lookup delegates to the per-entity mock by default
-    mockBulkLookupEntityFolderIds.mockImplementation(
-      async (items: Array<{ table: string; entityId: string }>) => {
-        const map = new Map<string, string>();
-        for (const item of items) {
-          const folderId = await mockLookupEntityFolderId(item.table, item.entityId);
-          if (folderId) map.set(`${item.table}:${item.entityId}`, folderId);
-        }
-        return map;
-      },
-    );
-    mockLogActivity.mockResolvedValue(undefined);
-    mockLogActivityBatch.mockResolvedValue(undefined);
-    mockBroadcastToFolder.mockReturnValue(undefined);
+describe('sync HTTP write boundary', () => {
+  it('requires authentication and a server write role', async () => {
+    mocks.user = null; expect((await push([put])).status).toBe(401);
+    mocks.user = { id: 'viewer', role: 'viewer' }; expect((await push([put])).status).toBe(403);
+    expect(mocks.push).not.toHaveBeenCalled();
   });
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // Authentication on all endpoints
-  // ────────────────────────────────────────────────────────────────────────────
-
-  describe('authentication', () => {
-    it('POST /push returns 401 without auth header', async () => {
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes: [] }),
-      );
-      expect(res.status).toBe(401);
-    });
-
-    it('POST /push returns 401 with invalid token', async () => {
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes: [] }, 'bad-token'),
-      );
-      expect(res.status).toBe(401);
-    });
-
-    it('GET /pull returns 401 without auth header', async () => {
-      const res = await app.request(getReq('/api/sync/pull?since=0'));
-      expect(res.status).toBe(401);
-    });
-
-    it('GET /snapshot/:folderId returns 401 without auth header', async () => {
-      const res = await app.request(
-        getReq('/api/sync/snapshot/folder-123'),
-      );
-      expect(res.status).toBe(401);
-    });
+  it.each([null, {}, [{ ...put, op: 'unknown' }], [put, put], [{ ...put, clientVersion: -1 }], [{ ...put, data: undefined }], Array.from({ length: 501 }, (_, index) => ({ ...put, entityId: String(index) }))])('rejects invalid or ambiguous batches before service writes', async changes => {
+    expect((await push(changes)).status).toBe(400);
+    expect(mocks.push).not.toHaveBeenCalled();
   });
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // POST /push
-  // ────────────────────────────────────────────────────────────────────────────
-
-  describe('POST /push', () => {
-    it('returns { results: [] } for empty changes array', async () => {
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes: [] }, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      const body = await res.json();
-      expect(body.results).toEqual([]);
-    });
-
-    it('accepts authorized changes for folder-scoped tables', async () => {
-      const changes = [
-        {
-          table: 'threats',
-          op: 'put',
-          entityId: 'threat-1',
-          data: { name: 'test threat', folderId: 'folder-1' },
-        },
-      ];
-
-      // bulkLookupEntityFolderIds returns folderId for the entity
-      mockBulkLookupEntityFolderIds.mockResolvedValue(
-        new Map([['threats:threat-1', 'folder-1']]),
-      );
-      // 1st membership query (all memberships)
-      selectQueue.push([{ folderId: 'folder-1' }]);
-      // 2nd membership query (with roles)
-      selectQueue.push([{ folderId: 'folder-1', role: 'editor' }]);
-      mockProcessPush.mockResolvedValue([
-        { table: 'threats', entityId: 'threat-1', status: 'accepted', serverVersion: 2 },
-      ]);
-
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      const body = await res.json();
-      expect(body.results).toHaveLength(1);
-      expect(body.results[0].status).toBe('accepted');
-    });
-
-    it('rejects unauthorized changes with status rejected', async () => {
-      const changes = [
-        {
-          table: 'threats',
-          op: 'put',
-          entityId: 'threat-1',
-          data: { name: 'modified', folderId: 'folder-1' },
-        },
-      ];
-
-      mockBulkLookupEntityFolderIds.mockResolvedValue(
-        new Map([['threats:threat-1', 'folder-1']]),
-      );
-      // User has no memberships → no access
-      selectQueue.push([]);
-      selectQueue.push([]);
-
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      const body = await res.json();
-      expect(body.results).toHaveLength(1);
-      expect(body.results[0].status).toBe('rejected');
-    });
-
-    it('uses entityId as folderId for folders table (no lookupEntityFolderId call)', async () => {
-      const changes = [
-        {
-          table: 'folders',
-          op: 'put',
-          entityId: 'folder-99',
-          data: { name: 'renamed folder' },
-        },
-      ];
-
-      // bulkLookupEntityFolderIds not called for folders table
-      mockBulkLookupEntityFolderIds.mockResolvedValue(new Map());
-      // 1st membership query
-      selectQueue.push([{ folderId: 'folder-99' }]);
-      // 2nd membership query (with roles) — user has editor access to folder-99
-      selectQueue.push([{ folderId: 'folder-99', role: 'editor' }]);
-      // batch folder-existence check (folders table put) — folder exists
-      selectQueue.push([{ id: 'folder-99' }]);
-      mockProcessPush.mockResolvedValue([
-        { table: 'folders', entityId: 'folder-99', status: 'accepted', serverVersion: 2 },
-      ]);
-
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      // The route uses in-memory Set for access (no checkInvestigationAccess call)
-      expect(mockLookupEntityFolderId).not.toHaveBeenCalled();
-    });
-
-    it('tags table is always authorized without access check', async () => {
-      const changes = [
-        {
-          table: 'tags',
-          op: 'put',
-          entityId: 'tag-1',
-          data: { name: 'new tag' },
-        },
-      ];
-
-      // tags are global — no folder lookup needed
-      mockBulkLookupEntityFolderIds.mockResolvedValue(new Map());
-      // membership queries still run (route always fetches them)
-      selectQueue.push([]);
-      selectQueue.push([]);
-      mockProcessPush.mockResolvedValue([
-        { table: 'tags', entityId: 'tag-1', status: 'accepted', serverVersion: 1 },
-      ]);
-
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      const body = await res.json();
-      expect(body.results[0].status).toBe('accepted');
-      expect(mockCheckAccess).not.toHaveBeenCalled();
-      expect(mockLookupEntityFolderId).not.toHaveBeenCalled();
-    });
-
-    it('timelines table is always authorized without access check', async () => {
-      const changes = [
-        {
-          table: 'timelines',
-          op: 'put',
-          entityId: 'tl-1',
-          data: { name: 'timeline' },
-        },
-      ];
-
-      // timelines are global — no folder lookup needed
-      mockBulkLookupEntityFolderIds.mockResolvedValue(new Map());
-      // membership queries still run
-      selectQueue.push([]);
-      selectQueue.push([]);
-      mockProcessPush.mockResolvedValue([
-        { table: 'timelines', entityId: 'tl-1', status: 'accepted', serverVersion: 1 },
-      ]);
-
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      expect(mockCheckAccess).not.toHaveBeenCalled();
-    });
-
-    it('allows creating a NEW folder even without prior access', async () => {
-      const changes = [
-        {
-          table: 'folders',
-          op: 'put' as const,
-          entityId: 'new-folder-1',
-          data: { id: 'new-folder-1', name: 'My new investigation' },
-        },
-      ];
-
-      mockBulkLookupEntityFolderIds.mockResolvedValue(new Map());
-      // User has no memberships (no prior access)
-      selectQueue.push([]);
-      selectQueue.push([]);
-      // batch folder-existence check — folder does NOT exist (new create)
-      selectQueue.push([]);
-      mockProcessPush.mockResolvedValue([
-        { table: 'folders', entityId: 'new-folder-1', status: 'accepted', serverVersion: 1 },
-      ]);
-      // insert for owner membership
-      insertQueue.push([]);
-
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      const body = await res.json();
-      expect(body.results[0].status).toBe('accepted');
-    });
-
-    it('auto-creates owner membership when a new folder is created (serverVersion=1)', async () => {
-      const changes = [
-        {
-          table: 'folders',
-          op: 'put' as const,
-          entityId: 'brand-new-folder',
-          data: { id: 'brand-new-folder', name: 'brand new' },
-        },
-      ];
-
-      mockBulkLookupEntityFolderIds.mockResolvedValue(new Map());
-      // No memberships (new folder, no prior access)
-      selectQueue.push([]);
-      selectQueue.push([]);
-      // batch folder-existence check — folder does NOT exist
-      selectQueue.push([]);
-      mockProcessPush.mockResolvedValue([
-        { table: 'folders', entityId: 'brand-new-folder', status: 'accepted', serverVersion: 1 },
-      ]);
-      insertQueue.push([]);
-
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      expect(mockDb.insert).toHaveBeenCalled();
-    });
-
-    it('does NOT auto-create membership when folder update has serverVersion > 1', async () => {
-      const changes = [
-        {
-          table: 'folders',
-          op: 'put' as const,
-          entityId: 'existing-folder',
-          data: { name: 'updated name' },
-        },
-      ];
-
-      mockBulkLookupEntityFolderIds.mockResolvedValue(new Map());
-      // User has editor access to existing-folder
-      selectQueue.push([{ folderId: 'existing-folder' }]);
-      selectQueue.push([{ folderId: 'existing-folder', role: 'editor' }]);
-      // batch folder-existence check — folder exists
-      selectQueue.push([{ id: 'existing-folder' }]);
-      mockProcessPush.mockResolvedValue([
-        { table: 'folders', entityId: 'existing-folder', status: 'accepted', serverVersion: 3 },
-      ]);
-
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      expect(mockDb.insert).not.toHaveBeenCalled();
-    });
-
-    it('broadcasts accepted changes via WebSocket with folderId', async () => {
-      const changes = [
-        {
-          table: 'threats',
-          op: 'put' as const,
-          entityId: 'threat-1',
-          data: { name: 'threat', folderId: 'folder-1' },
-        },
-      ];
-
-      mockBulkLookupEntityFolderIds.mockResolvedValue(
-        new Map([['threats:threat-1', 'folder-1']]),
-      );
-      selectQueue.push([{ folderId: 'folder-1' }]);
-      selectQueue.push([{ folderId: 'folder-1', role: 'editor' }]);
-      mockProcessPush.mockResolvedValue([
-        { table: 'threats', entityId: 'threat-1', status: 'accepted', serverVersion: 2 },
-      ]);
-
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      expect(mockBroadcastToFolder).toHaveBeenCalledWith(
-        'folder-1',
-        expect.objectContaining({
-          type: 'entity-change',
-          table: 'threats',
-          op: 'put',
-          entityId: 'threat-1',
-          updatedBy: 'user-1',
-        }),
-        'user-1',
-      );
-    });
-
-    it('logs activity for each accepted change', async () => {
-      const changes = [
-        {
-          table: 'threats',
-          op: 'put' as const,
-          entityId: 'threat-1',
-          data: { name: 'threat', folderId: 'folder-1' },
-        },
-      ];
-
-      mockBulkLookupEntityFolderIds.mockResolvedValue(
-        new Map([['threats:threat-1', 'folder-1']]),
-      );
-      selectQueue.push([{ folderId: 'folder-1' }]);
-      selectQueue.push([{ folderId: 'folder-1', role: 'editor' }]);
-      mockProcessPush.mockResolvedValue([
-        { table: 'threats', entityId: 'threat-1', status: 'accepted', serverVersion: 2 },
-      ]);
-
-      await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(mockLogActivityBatch).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            userId: 'user-1',
-            action: 'update',
-            itemId: 'threat-1',
-            folderId: 'folder-1',
-          }),
-        ]),
-      );
-    });
-
-    it('does not log activity for rejected changes', async () => {
-      const changes = [
-        {
-          table: 'threats',
-          op: 'put' as const,
-          entityId: 'threat-1',
-          data: { name: 'threat', folderId: 'folder-1' },
-        },
-      ];
-
-      mockBulkLookupEntityFolderIds.mockResolvedValue(
-        new Map([['threats:threat-1', 'folder-1']]),
-      );
-      // No memberships → no access
-      selectQueue.push([]);
-      selectQueue.push([]);
-
-      await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(mockLogActivity).not.toHaveBeenCalled();
-      expect(mockLogActivityBatch).not.toHaveBeenCalled();
-    });
-
-    it('handles mixed authorized and unauthorized changes', async () => {
-      const changes = [
-        {
-          table: 'threats',
-          op: 'put' as const,
-          entityId: 'threat-1',
-          data: { folderId: 'folder-1' },
-        },
-        {
-          table: 'threats',
-          op: 'put' as const,
-          entityId: 'threat-2',
-          data: { folderId: 'folder-2' },
-        },
-      ];
-
-      mockBulkLookupEntityFolderIds.mockResolvedValue(
-        new Map([
-          ['threats:threat-1', 'folder-1'],
-          ['threats:threat-2', 'folder-2'],
-        ]),
-      );
-      // User only has editor access to folder-1, not folder-2
-      selectQueue.push([{ folderId: 'folder-1' }]);
-      selectQueue.push([{ folderId: 'folder-1', role: 'editor' }]);
-      mockProcessPush.mockResolvedValue([
-        { table: 'threats', entityId: 'threat-1', status: 'accepted', serverVersion: 2 },
-      ]);
-
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      const body = await res.json();
-      expect(body.results).toHaveLength(2);
-      expect(body.results[0].status).toBe('accepted');
-      expect(body.results[1].status).toBe('rejected');
-    });
-
-    it('authorizes each folder-scoped change via membership set', async () => {
-      const changes = [
-        {
-          table: 'threats',
-          op: 'put' as const,
-          entityId: 'threat-a',
-          data: { folderId: 'folder-1' },
-        },
-        {
-          table: 'threats',
-          op: 'put' as const,
-          entityId: 'threat-b',
-          data: { folderId: 'folder-1' },
-        },
-      ];
-
-      mockBulkLookupEntityFolderIds.mockResolvedValue(
-        new Map([
-          ['threats:threat-a', 'folder-1'],
-          ['threats:threat-b', 'folder-1'],
-        ]),
-      );
-      selectQueue.push([{ folderId: 'folder-1' }]);
-      selectQueue.push([{ folderId: 'folder-1', role: 'editor' }]);
-      mockProcessPush.mockResolvedValue([
-        { table: 'threats', entityId: 'threat-a', status: 'accepted', serverVersion: 2 },
-        { table: 'threats', entityId: 'threat-b', status: 'accepted', serverVersion: 2 },
-      ]);
-
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      const body = await res.json();
-      // Both changes should be accepted since user has editor access to folder-1
-      expect(body.results).toHaveLength(2);
-      expect(body.results[0].status).toBe('accepted');
-      expect(body.results[1].status).toBe('accepted');
-    });
-
-    it('rejects folder-scoped entity with no folderId found', async () => {
-      const changes = [
-        {
-          table: 'threats',
-          op: 'delete' as const,
-          entityId: 'nonexistent-threat',
-        },
-      ];
-
-      // bulkLookup returns empty map (entity not found)
-      mockBulkLookupEntityFolderIds.mockResolvedValue(new Map());
-      selectQueue.push([]);
-      selectQueue.push([]);
-
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      const body = await res.json();
-      expect(body.results[0].status).toBe('rejected');
-    });
-
-    it('rejects update to existing folder without editor access', async () => {
-      const changes = [
-        {
-          table: 'folders',
-          op: 'put' as const,
-          entityId: 'existing-folder',
-          data: { name: 'hacked name' },
-        },
-      ];
-
-      mockBulkLookupEntityFolderIds.mockResolvedValue(new Map());
-      // User has no memberships → no editor access
-      selectQueue.push([]);
-      selectQueue.push([]);
-      // batch folder-existence check — folder exists (so it's not a create)
-      selectQueue.push([{ id: 'existing-folder' }]);
-
-      const res = await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      const body = await res.json();
-      expect(body.results[0].status).toBe('rejected');
-    });
-
-    it('maps delete op to action delete in logActivity', async () => {
-      const changes = [
-        {
-          table: 'threats',
-          op: 'delete' as const,
-          entityId: 'threat-1',
-        },
-      ];
-
-      mockBulkLookupEntityFolderIds.mockResolvedValue(
-        new Map([['threats:threat-1', 'folder-1']]),
-      );
-      selectQueue.push([{ folderId: 'folder-1' }]);
-      selectQueue.push([{ folderId: 'folder-1', role: 'editor' }]);
-      mockProcessPush.mockResolvedValue([
-        {
-          table: 'threats',
-          entityId: 'threat-1',
-          status: 'accepted',
-          serverVersion: 3,
-          serverRecord: { folderId: 'folder-1' },
-        },
-      ]);
-
-      await app.request(
-        jsonReq('POST', '/api/sync/push', { changes }, 'valid-token'),
-      );
-      expect(mockLogActivityBatch).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            action: 'delete',
-          }),
-        ]),
-      );
-    });
+  it('accepts an empty batch without a transaction', async () => {
+    expect(await (await push([])).json()).toEqual({ results: [] });
+    expect(mocks.push).not.toHaveBeenCalled();
   });
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // GET /pull
-  // ────────────────────────────────────────────────────────────────────────────
-
-  describe('GET /pull', () => {
-    it('returns 400 without since query parameter', async () => {
-      const res = await app.request(
-        getReq('/api/sync/pull', 'valid-token'),
-      );
-      expect(res.status).toBe(400);
-      const body = await res.json();
-      expect(body.error).toMatch(/since/i);
-    });
-
-    it('pulls changes since timestamp without folderId (all memberships)', async () => {
-      const since = String(Date.now() - 60000);
-      selectQueue.push([
-        { folderId: 'folder-1' },
-        { folderId: 'folder-2' },
-      ]);
-      const mockResult = { changes: [{ id: 'c1' }], serverNow: Date.now() };
-      mockPullChanges.mockResolvedValue(mockResult);
-
-      const res = await app.request(
-        getReq(`/api/sync/pull?since=${since}`, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      expect(mockPullChanges).toHaveBeenCalledWith(since, ['folder-1', 'folder-2'], undefined);
-    });
-
-    it('pulls changes scoped to folderId when provided', async () => {
-      const since = String(Date.now() - 60000);
-      mockCheckAccess.mockResolvedValue(true);
-      const mockResult = { changes: [{ id: 'c1' }], serverNow: Date.now() };
-      mockPullChanges.mockResolvedValue(mockResult);
-
-      const res = await app.request(
-        getReq(`/api/sync/pull?since=${since}&folderId=folder-1`, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      expect(mockCheckAccess).toHaveBeenCalledWith('user-1', 'folder-1', 'viewer');
-      expect(mockPullChanges).toHaveBeenCalledWith(since, ['folder-1'], undefined);
-    });
-
-    it('returns 403 when pulling with folderId the user has no access to', async () => {
-      const since = String(Date.now() - 60000);
-      mockCheckAccess.mockResolvedValue(false);
-
-      const res = await app.request(
-        getReq(`/api/sync/pull?since=${since}&folderId=forbidden-folder`, 'valid-token'),
-      );
-      expect(res.status).toBe(403);
-      const body = await res.json();
-      expect(body.error).toBeDefined();
-    });
-
-    it('returns empty changes when user has no memberships and no folderId', async () => {
-      const since = String(Date.now() - 60000);
-      selectQueue.push([]);
-      mockPullChanges.mockResolvedValue({ changes: [], serverNow: Date.now() });
-
-      const res = await app.request(
-        getReq(`/api/sync/pull?since=${since}`, 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      expect(mockPullChanges).toHaveBeenCalledWith(since, [], undefined);
-    });
+  it('delegates current authorization and revisions to the write transaction', async () => {
+    expect((await push([put])).status).toBe(200);
+    expect(mocks.push).toHaveBeenCalledWith([put], 'user-1', { authorize: true, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' });
+    expect(mocks.broadcast).toHaveBeenCalledWith('folder-1', expect.objectContaining({ type: 'entity-change', data: record }), 'user-1');
+    expect(mocks.audit).toHaveBeenCalledOnce();
   });
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // GET /snapshot/:folderId
-  // ────────────────────────────────────────────────────────────────────────────
+  it('does not enable internal trust from request fields', async () => {
+    await push([{ ...put, trustedInternal: true }]);
+    expect(mocks.push).toHaveBeenCalledWith([put], 'user-1', { authorize: true, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' });
+  });
 
-  describe('GET /snapshot/:folderId', () => {
-    it('returns snapshot data for authorized viewer', async () => {
-      const snapshotData = {
-        changes: [
-          { table: 'threats', entityId: 'threat-1', data: { name: 'a threat' } },
-          { table: 'mitigations', entityId: 'mit-1', data: { name: 'a mitigation' } },
-        ],
-      };
-      mockCheckAccess.mockResolvedValue(true);
-      mockGetSnapshot.mockResolvedValue(snapshotData);
+  it('returns a clear validation failure when a field exceeds sync limits', async () => {
+    mocks.push.mockRejectedValue(new SyncWriteValidationError('Sync field content exceeds the supported value limits'));
+    const response = await push([put]);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: 'Sync field content exceeds the supported value limits' });
+    expect(mocks.broadcast).not.toHaveBeenCalled();
+  });
 
-      const res = await app.request(
-        getReq('/api/sync/snapshot/folder-1', 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      const body = await res.json();
-      expect(body.changes).toHaveLength(2);
-    });
+  it.each(['conflict', 'rejected'])('does not broadcast or audit a %s result', async status => {
+    mocks.push.mockResolvedValue([{ table: 'notes', entityId: 'note-1', status }]);
+    expect((await push([put])).status).toBe(200);
+    expect(mocks.broadcast).not.toHaveBeenCalled();
+    expect(mocks.audit).not.toHaveBeenCalled();
+  });
 
-    it('checks viewer access on snapshot', async () => {
-      mockCheckAccess.mockResolvedValue(true);
-      mockGetSnapshot.mockResolvedValue({ changes: [] });
+  it('sends a removal to the previous folder and confirmed data only to the destination', async () => {
+    mocks.push.mockResolvedValue([{ table: 'notes', entityId: 'note-1', status: 'accepted', serverRecord: record, previousFolderId: 'previous-folder' }]);
+    await push([put]);
+    expect(mocks.broadcast.mock.calls[0]).toEqual(['previous-folder', { type: 'entity-change', table: 'notes', op: 'delete', entityId: 'note-1', updatedBy: 'user-1' }, 'user-1']);
+    expect(mocks.broadcast.mock.calls[1][0]).toBe('folder-1');
+    expect(mocks.broadcast.mock.calls[1][1].data).toEqual(record);
+  });
 
-      await app.request(
-        getReq('/api/sync/snapshot/folder-1', 'valid-token'),
-      );
+  it('broadcasts folder changes to their own subscribers', async () => {
+    mocks.push.mockResolvedValue([{ table: 'folders', entityId: 'folder-1', status: 'accepted', serverRecord: { id: 'folder-1', version: 2 } }]);
+    await push([{ table: 'folders', entityId: 'folder-1', op: 'put', clientVersion: 1, data: { name: 'Renamed' } }]);
+    expect(mocks.broadcast.mock.calls[0][0]).toBe('folder-1');
+  });
+});
 
-      expect(mockCheckAccess).toHaveBeenCalledWith('user-1', 'folder-1', 'viewer');
-    });
+describe('sync HTTP read boundary', () => {
+  it('passes the authenticated identity and explicit page scope to cursor reads', async () => {
+    const page = { changes: [], cursor: '42', hasMore: false, serverTimestamp: '2026-01-01' };
+    mocks.cursor.mockResolvedValue(page);
+    const response = await app.request('/api/sync/pull?cursor=12&limit=50&folderId=folder-1&metadataOnly=true');
+    expect(response.status).toBe(200); expect(await response.json()).toEqual(page);
+    expect(mocks.cursor).toHaveBeenCalledWith('12', 'user-1', { limit: 50, folderId: 'folder-1', metadataOnly: true });
+  });
 
-    it('returns 403 if user has no viewer access to folder', async () => {
-      mockCheckAccess.mockResolvedValue(false);
+  it('returns an explicit reset instruction for a future cursor', async () => {
+    mocks.cursor.mockRejectedValue(new SyncReadError('Restart synchronization', 409, true));
+    const response = await app.request('/api/sync/pull?cursor=99');
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: 'SYNC_CURSOR_RESET', resetRequired: true });
+  });
 
-      const res = await app.request(
-        getReq('/api/sync/snapshot/secret-folder', 'valid-token'),
-      );
-      expect(res.status).toBe(403);
-      const body = await res.json();
-      expect(body.error).toBeDefined();
-    });
+  it('retains full-resync compatibility for a timestamp-only client', async () => {
+    expect((await app.request('/api/sync/pull?since=2026-01-01')).status).toBe(200);
+    expect(mocks.pull).toHaveBeenCalledWith('2026-01-01', ['folder-1'], undefined);
+  });
 
-    it('returns empty snapshot for folder with no data', async () => {
-      mockCheckAccess.mockResolvedValue(true);
-      mockGetSnapshot.mockResolvedValue({ changes: [] });
+  it.each(['0', '-1', '1001', 'not-a-number'])('rejects invalid page limit %s', async limit => {
+    expect((await app.request('/api/sync/pull?cursor=0&limit=' + limit)).status).toBe(400);
+    expect(mocks.cursor).not.toHaveBeenCalled();
+  });
 
-      const res = await app.request(
-        getReq('/api/sync/snapshot/empty-folder', 'valid-token'),
-      );
-      expect(res.status).toBe(200);
-      const body = await res.json();
-      expect(body.changes).toHaveLength(0);
-    });
+  it('requires a cursor or a legacy timestamp', async () => {
+    expect((await app.request('/api/sync/pull')).status).toBe(400);
+  });
 
-    it('passes folderId to getSnapshot service', async () => {
-      mockCheckAccess.mockResolvedValue(true);
-      mockGetSnapshot.mockResolvedValue({ changes: [] });
+  it('requires investigation membership for snapshots and legacy scoped reads', async () => {
+    mocks.access.mockResolvedValue(false);
+    expect((await app.request('/api/sync/snapshot/folder-1')).status).toBe(403);
+    expect((await app.request('/api/sync/pull?since=2026-01-01&folderId=folder-1')).status).toBe(403);
+    expect(mocks.snapshot).not.toHaveBeenCalled();
+    expect(mocks.pull).not.toHaveBeenCalled();
+  });
 
-      await app.request(
-        getReq('/api/sync/snapshot/folder-xyz', 'valid-token'),
-      );
-
-      expect(mockGetSnapshot).toHaveBeenCalledWith('folder-xyz');
-    });
-
-    it('uses correct user context with user2-token', async () => {
-      mockCheckAccess.mockResolvedValue(true);
-      mockGetSnapshot.mockResolvedValue({ changes: [] });
-
-      await app.request(
-        getReq('/api/sync/snapshot/folder-1', 'user2-token'),
-      );
-
-      expect(mockCheckAccess).toHaveBeenCalledWith('user-2', 'folder-1', 'viewer');
-    });
+  it('returns an authorized snapshot', async () => {
+    mocks.snapshot.mockResolvedValue({ notes: [record] });
+    const response = await app.request('/api/sync/snapshot/folder-1');
+    expect(response.status).toBe(200); expect(await response.json()).toEqual({ notes: [record] });
   });
 });

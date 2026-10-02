@@ -4,14 +4,12 @@
   "version": "1.0.0",
   "description": "__MSG_appDescription__",
   "default_locale": "en",
-
   "browser_specific_settings": {
     "gecko": {
       "id": "threatcaddy@threatcaddy.com",
       "strict_min_version": "109.0"
     }
   },
-
   "permissions": [
     "contextMenus",
     "storage",
@@ -19,16 +17,11 @@
     "scripting",
     "tabs"
   ],
-
-  "host_permissions": [
-    "http://localhost/*",
-    "http://127.0.0.1/*"
-  ],
-
   "background": {
-    "scripts": ["background.js"]
+    "scripts": [
+      "background.js"
+    ]
   },
-
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -37,45 +30,23 @@
       "128": "assets/icon-128.png"
     }
   },
-
   "icons": {
     "16": "assets/icon-16.png",
     "48": "assets/icon-48.png",
     "128": "assets/icon-128.png"
   },
-
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
-
   "optional_permissions": [
     "https://api.anthropic.com/*",
     "https://api.openai.com/*",
     "https://generativelanguage.googleapis.com/*",
     "https://api.mistral.ai/*",
     "*://*/*",
-    "file:///*"
+    "file:///*",
+    "notifications"
   ],
-
-  "content_scripts": [{
-    "matches": [
-      "https://threatcaddy.com/*",
-      "https://www.threatcaddy.com/*",
-      "http://localhost/*",
-      "http://localhost:3000/*",
-      "http://localhost:4173/*",
-      "http://localhost:5173/*",
-      "http://localhost:8080/*",
-      "http://127.0.0.1/*",
-      "http://127.0.0.1:3000/*",
-      "http://127.0.0.1:4173/*",
-      "http://127.0.0.1:5173/*",
-      "http://127.0.0.1:8080/*"
-    ],
-    "js": ["bridge.js"],
-    "run_at": "document_idle"
-  }],
-
   "commands": {
     "capture-selection": {
       "suggested_key": {

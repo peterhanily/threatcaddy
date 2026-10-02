@@ -1,3 +1,4 @@
+import { workspaceStorageKey } from './lib/workspace-profiles';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import HttpBackend from 'i18next-http-backend';
@@ -73,7 +74,7 @@ export const RTL_LANGS = new Set(['ar', 'he', 'fa']);
 
 function getInitialLanguage(): string {
   try {
-    const raw = localStorage.getItem('threatcaddy-settings');
+    const raw = localStorage.getItem(workspaceStorageKey('threatcaddy-settings'));
     if (raw) {
       const s = JSON.parse(raw) as Record<string, unknown>;
       if (typeof s.language === 'string' && s.language) return s.language;

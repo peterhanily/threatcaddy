@@ -50,6 +50,9 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
   /** Deployment IDs that we last flipped into handoff-pending, so we know
    *  which ones to recover when a heartbeat succeeds. */
   const pendingHandoffIdsRef = useRef<Set<string>>(new Set());
+  const deploymentsRef = useRef(deployments);
+
+  useEffect(() => { deploymentsRef.current = deployments; }, [deployments]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -71,10 +74,41 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
     clearTimeout(timer);
     if (!resp.ok) {
       const text = await resp.text().catch(() => '');
+      try {
+        const unavailable = JSON.parse(text);
+        if (unavailable.serverExecutionAvailable === false) return unavailable;
+      } catch { /* ordinary error response below */ }
       throw new Error(`Server ${resp.status}: ${text.substring(0, 200)}`);
     }
     return resp.json();
   }, [serverUrl, getAccessToken]);
+
+  const handleUnavailable = useCallback(async (result: { serverExecutionAvailable?: boolean; reason?: string; error?: string }) => {
+    if (result.serverExecutionAvailable !== false) return false;
+    if (mountedRef.current) {
+      setServerRegistered(false);
+      setServerRunning(false);
+      setError(result.reason || result.error || 'Server execution is unavailable.');
+    }
+    if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+    heartbeatRef.current = null;
+    failureCountRef.current = 0;
+    pendingHandoffIdsRef.current.clear();
+    // An unavailable server must not implicitly hand an active deployment back
+    // to the browser. Preserve its ownership state and require an explicit run.
+    await db.transaction('rw', db.agentDeployments, async () => {
+      for (const deployment of deploymentsRef.current) {
+        const current = await db.agentDeployments.get(deployment.id);
+        if (!current) continue;
+        if (!current.serverSideEnabled && (!current.handoffState || current.handoffState === 'client')) continue;
+        // Repeated unavailable responses (including stale in-flight requests)
+        // must not keep rewriting already-paused deployments or restart effects.
+        if (!current.serverSideEnabled && current.status === 'paused') continue;
+        await db.agentDeployments.update(current.id, { serverSideEnabled: false, status: 'paused', updatedAt: Date.now() });
+      }
+    });
+    return true;
+  }, []);
 
   const registerServerAgents = useCallback(async () => {
     if (!investigationId || deployments.length === 0) return;
@@ -105,6 +139,7 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
         }).filter(Boolean),
       };
       const result = await apiCall('/register', 'POST', body);
+      if (await handleUnavailable(result)) return;
       if (mountedRef.current) {
         setServerRegistered(true);
         // Store botConfigIds on deployments
@@ -117,7 +152,7 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
     } finally {
       if (mountedRef.current) setRegistering(false);
     }
-  }, [investigationId, deployments, profiles, apiCall]);
+  }, [investigationId, deployments, profiles, apiCall, handleUnavailable]);
 
   const unregisterServerAgents = useCallback(async () => {
     if (!investigationId) return;
@@ -150,6 +185,7 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
       try {
         const result = await apiCall('/heartbeat', 'POST', { investigationId });
         if (!mountedRef.current) return;
+        if (await handleUnavailable(result)) return;
 
         // Heartbeat succeeded — reset failure counter.
         failureCountRef.current = 0;
@@ -258,20 +294,21 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
         heartbeatRef.current = null;
       }
     };
-  }, [enabled, serverRegistered, investigationId, serverUrl, apiCall]);
+  }, [enabled, serverRegistered, investigationId, serverUrl, apiCall, handleUnavailable]);
 
   // Check initial status
   useEffect(() => {
     if (!investigationId || !serverUrl) return;
     apiCall(`/status/${investigationId}`, 'GET')
-      .then(result => {
+      .then(async result => {
+        if (await handleUnavailable(result)) return;
         if (mountedRef.current) {
           setServerRegistered(result.registered);
           setServerRunning(result.serverRunning);
         }
       })
       .catch(() => {});
-  }, [investigationId, serverUrl, apiCall]);
+  }, [investigationId, serverUrl, apiCall, handleUnavailable]);
 
   return {
     serverRegistered,

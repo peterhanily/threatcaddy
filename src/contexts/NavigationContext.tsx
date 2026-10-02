@@ -1,3 +1,4 @@
+import { workspaceStorageKey } from '../lib/workspace-profiles';
 /* eslint-disable react-refresh/only-export-components -- context + provider + hook co-located by design */
 import {
   createContext,
@@ -27,7 +28,7 @@ import { useNavigationHistory, type NavState } from '../hooks/useNavigationHisto
 // Module-level initialization (runs once at import time)
 // ---------------------------------------------------------------------------
 
-const NAV_STORAGE_KEY = 'threatcaddy-nav-state';
+const NAV_STORAGE_KEY = workspaceStorageKey('threatcaddy-nav-state');
 
 function loadNavState(): NavState | null {
   try {
@@ -172,7 +173,7 @@ export function NavigationProvider({
     savedNavState?.selectedWhiteboardId,
   );
   const [selectedChatThreadId, setSelectedChatThreadId] = useState<string | undefined>(
-    () => sessionStorage.getItem('tc-chat-thread') ?? undefined,
+    () => sessionStorage.getItem(workspaceStorageKey('tc-chat-thread')) ?? undefined,
   );
 
   // -- UI state --
@@ -346,9 +347,9 @@ export function NavigationProvider({
 
   useEffect(() => {
     if (selectedChatThreadId) {
-      sessionStorage.setItem('tc-chat-thread', selectedChatThreadId);
+      sessionStorage.setItem(workspaceStorageKey('tc-chat-thread'), selectedChatThreadId);
     } else {
-      sessionStorage.removeItem('tc-chat-thread');
+      sessionStorage.removeItem(workspaceStorageKey('tc-chat-thread'));
     }
   }, [selectedChatThreadId]);
 

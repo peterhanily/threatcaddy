@@ -1,3 +1,4 @@
+import { validateMasterKey } from './bots/secret-store.js';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger as honoLogger } from 'hono/logger';
@@ -6,7 +7,7 @@ import { compress } from 'hono/compress';
 import { serve } from '@hono/node-server';
 import { createNodeWebSocket } from '@hono/node-ws';
 import { sql as drizzleSql, lt } from 'drizzle-orm';
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { migrateDatabase } from './db/migrate.js';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { access, readFile } from 'node:fs/promises';
@@ -36,10 +37,13 @@ import { initAdminKey } from './middleware/admin-auth.js';
 import { handleWSConnection, handleWSMessage, handleWSClose } from './ws/handler.js';
 import { db, sql as pgSql } from './db/index.js';
 import { sessions } from './db/schema.js';
-import { rateLimiter } from './middleware/rate-limit.js';
+import { rateLimiter, proxyConfiguration } from './middleware/rate-limit.js';
+import { apiBodyLimit } from './middleware/api-body-limit.js';
 import { requestId } from './middleware/request-id.js';
 import { globalErrorHandler } from './middleware/error-handler.js';
 import { logger } from './lib/logger.js';
+import { acquireRuntimeLease } from './services/runtime-lease.js';
+import { reconcileStorage, storageLimits } from './services/storage-policy.js';
 
 const app = new Hono();
 app.onError(globalErrorHandler);
@@ -85,9 +89,7 @@ app.use('*', redactingLogger);
 app.use('*', compress());
 
 // Body limits — file/backup routes get larger limits, other API routes get 1 MB
-app.use('/api/files/*', bodyLimit({ maxSize: 50 * 1024 * 1024 }));
-app.use('/api/backups/*', bodyLimit({ maxSize: 100 * 1024 * 1024 }));
-app.use('/api/*', bodyLimit({ maxSize: 1024 * 1024 }));
+app.use('/api/*', apiBodyLimit);
 
 // Rate limiting
 app.use('/api/auth/login', rateLimiter({ windowMs: 60_000, max: 10 }));
@@ -110,7 +112,7 @@ app.use('/api/caddy-agents/unregister', rateLimiter({ windowMs: 60_000, max: 10 
 // Read version once at startup
 let serverVersion = 'unknown';
 try {
-  const pkgPath = resolve(dirname(fileURLToPath(import.meta.url)), '../../package.json');
+  const pkgPath = resolve(dirname(fileURLToPath(import.meta.url)), '../package.json');
   const pkgRaw = await readFile(pkgPath, 'utf-8');
   serverVersion = (JSON.parse(pkgRaw) as { version?: string }).version ?? 'unknown';
 } catch { /* leave as unknown */ }
@@ -159,7 +161,7 @@ app.get('/health', async (c) => {
 // Public server info (no auth required — needed by CaddyShack)
 app.get('/api/server/info', async (c) => {
   const serverName = await getServerName();
-  return c.json({ serverName });
+  return c.json({ serverName, capabilities: { agentCaddyServerHandoff: false } });
 });
 
 // API routes
@@ -243,21 +245,22 @@ async function main() {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
 
-  if (process.env.NODE_ENV === 'production' && !process.env.BOT_MASTER_KEY) {
-    logger.warn(
-      'BOT_MASTER_KEY is not set in production. Bot secrets will use a random key that ' +
-      'will NOT survive server restarts — any previously encrypted secrets will become unreadable. ' +
-      'Set BOT_MASTER_KEY to a stable 64-char hex string.',
-    );
-  }
+  validateMasterKey();
+  proxyConfiguration();
+  storageLimits();
+  const releaseRuntimeLease = await acquireRuntimeLease(process.env.DATABASE_URL!, () => {
+    logger.error('Runtime database lease was lost; refusing to continue single-instance work');
+    process.exit(1);
+  });
 
   // Run database migrations automatically on startup
   const __dirname = dirname(fileURLToPath(import.meta.url));
   const migrationsFolder = resolve(__dirname, 'db/migrations');
   logger.info(`Starting ThreatCaddy server v${serverVersion}`);
   logger.info('Running database migrations...', { migrationsFolder });
-  await migrate(db, { migrationsFolder });
+  await migrateDatabase(pgSql, migrationsFolder);
   logger.info('Database migrations complete — schema is up to date');
+  await db.transaction(tx => reconcileStorage(tx, process.env.FILE_STORAGE_PATH || '/data/files'));
 
   initAdminKey();
   await initAdminSecret();
@@ -265,6 +268,9 @@ async function main() {
   await initRegistrationMode();
   await initServerName();
   await backfillFolderOwners();
+
+  // No public or admin listener is ready until runtime initialization settles.
+  await botManager.init();
 
   const server = serve({
     fetch: app.fetch,
@@ -281,9 +287,6 @@ async function main() {
   }, (info) => {
     logger.info(`Admin panel running on http://localhost:${info.port}`, { port: info.port });
   });
-
-  // Initialize bot runtime
-  await botManager.init();
 
   // Start AgentCaddy heartbeat manager for server-side agent handoff
   heartbeatManager.setBotManager(botManager as never);
@@ -321,10 +324,11 @@ async function main() {
     clearInterval(sessionCleanup);
     clearInterval(dataPruning);
     heartbeatManager.stop();
-    await botManager.shutdown();
     server.close();
     adminServer.close();
+    await botManager.shutdown();
     await pgSql.end();
+    await releaseRuntimeLease();
     process.exit(0);
   };
 

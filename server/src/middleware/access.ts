@@ -1,7 +1,7 @@
 import { createMiddleware } from 'hono/factory';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../db/index.js';
-import { investigationMembers } from '../db/schema.js';
+import { investigationMembers, users } from '../db/schema.js';
 import type { AuthUser, InvestigationRole } from '../types.js';
 
 const ROLE_LEVELS: Record<string, number> = {
@@ -13,21 +13,25 @@ const ROLE_LEVELS: Record<string, number> = {
 export async function checkInvestigationAccess(
   userId: string,
   folderId: string,
-  minRole: InvestigationRole = 'viewer'
+  minRole: InvestigationRole = 'viewer',
+  database: Pick<typeof db, 'select'> = db,
 ): Promise<boolean> {
-  const member = await db
-    .select()
+  const member = await database
+    .select({ role: investigationMembers.role, serverRole: users.role })
     .from(investigationMembers)
+    .innerJoin(users, eq(users.id, investigationMembers.userId))
     .where(
       and(
         eq(investigationMembers.userId, userId),
-        eq(investigationMembers.folderId, folderId)
+        eq(investigationMembers.folderId, folderId),
+        eq(users.active, true),
       )
     )
     .limit(1);
 
   if (member.length === 0) return false;
-  return (ROLE_LEVELS[member[0].role] ?? 0) >= (ROLE_LEVELS[minRole] ?? 0);
+  if (minRole !== 'viewer' && member[0].serverRole === 'viewer') return false;
+  return (ROLE_LEVELS[member[0].role] ?? -1) >= (ROLE_LEVELS[minRole] ?? 0);
 }
 
 // Middleware that checks investigation access based on folderId param or body

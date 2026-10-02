@@ -2,6 +2,9 @@ import { db } from '../db';
 import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, EvidenceItem, ChatThread, ChatMessage, NoteTemplate, PlaybookTemplate, PlaybookStep, ExportData, TimelineExportData, TimelineEventType, ConfidenceLevel, IOCAnalysis, IOCEntry, IOCRelationship, TaskComment, NoteAnnotation, QuickLink, LLMProvider, IOCType, TemplateSource, PlaybookStepEntity, AgentAction, EvidenceExtractionStatus, EvidenceKind, ProductBaselineAsset, ProductBaselineMetadata, ProductBaselineSourceDocument, ProductBaselineTestFixture } from '../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS, IOC_TYPE_LABELS } from '../types';
 import { nanoid } from 'nanoid';
+import { workspaceStorageKey } from './workspace-profiles';
+import { ENTITY_RELATIONS, mapEntityReferences, type EntityRecord } from './entity-relations';
+import { withEntityDraftBarrier } from './entity-drafts';
 
 export async function exportJSON(): Promise<string> {
   // Load tables sequentially to reduce peak memory usage (avoids loading
@@ -27,7 +30,7 @@ export async function exportJSON(): Promise<string> {
   // Include quick links from settings if user has customized them
   let quickLinks: QuickLink[] | undefined;
   try {
-    const stored = localStorage.getItem('threatcaddy-settings');
+    const stored = localStorage.getItem(workspaceStorageKey('threatcaddy-settings'));
     if (stored) {
       const s = JSON.parse(stored);
       if (Array.isArray(s.quickLinks)) quickLinks = s.quickLinks;
@@ -65,6 +68,7 @@ const MAX_ITEMS = 100_000;
 /** Max string length for imported fields (matches server sync-service 500KB cap). */
 const MAX_IMPORT_STRING = 500_000;
 const MAX_IMPORT_IMAGE_DATA = 4_250_000;
+export const MAX_WHITEBOARD_FILES_BYTES = 8 * 1024 * 1024;
 const VALID_RASTER_IMAGE_MIME_TYPES = new Set([
   'image/png',
   'image/jpeg',
@@ -92,6 +96,12 @@ function bool(v: unknown, fallback = false): boolean {
 }
 function strArr(v: unknown): string[] {
   return Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string') : [];
+}
+function provenance(r: Record<string, unknown>): { createdBy?: string; updatedBy?: string } {
+  return {
+    createdBy: typeof r.createdBy === 'string' ? str(r.createdBy) : undefined,
+    updatedBy: typeof r.updatedBy === 'string' ? str(r.updatedBy) : undefined,
+  };
 }
 
 const VALID_IOC_TYPES = Object.keys(IOC_TYPE_LABELS) as string[];
@@ -126,6 +136,7 @@ function sanitizeIOCEntry(raw: unknown): IOCEntry | null {
     relationships: Array.isArray(r.relationships)
       ? (r.relationships as unknown[]).map(sanitizeIOCRelationship).filter((rel): rel is IOCRelationship => rel !== null)
       : undefined,
+    enrichment: sanitizeStandaloneIOCEnrichment(r.enrichment, num(r.firstSeen, Date.now())),
   };
 }
 
@@ -169,6 +180,7 @@ export function sanitizeNote(raw: unknown): Note | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   return {
+    ...provenance(r),
     id: str(r.id),
     title: str(r.title),
     content: str(r.content),
@@ -202,6 +214,7 @@ export function sanitizeTask(raw: unknown): Task | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   return {
+    ...provenance(r),
     id: str(r.id),
     title: str(r.title),
     description: r.description != null ? str(r.description) : undefined,
@@ -257,6 +270,14 @@ export function sanitizeFolder(raw: unknown): Folder | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   return {
+    ...provenance(r),
+    localOnly: r.localOnly === true ? true : undefined,
+    agentEnabled: typeof r.agentEnabled === 'boolean' ? r.agentEnabled : undefined,
+    agentPolicy: r.agentPolicy && typeof r.agentPolicy === 'object' && !Array.isArray(r.agentPolicy) ? r.agentPolicy as Folder['agentPolicy'] : undefined,
+    agentThreadId: typeof r.agentThreadId === 'string' ? str(r.agentThreadId) : undefined,
+    agentLastRunAt: typeof r.agentLastRunAt === 'number' ? num(r.agentLastRunAt) : undefined,
+    agentStatus: ['idle', 'running', 'waiting', 'paused', 'error'].includes(str(r.agentStatus)) ? str(r.agentStatus) as Folder['agentStatus'] : undefined,
+    playbookExecution: r.playbookExecution && typeof r.playbookExecution === 'object' && !Array.isArray(r.playbookExecution) ? r.playbookExecution as Folder['playbookExecution'] : undefined,
     id: str(r.id),
     name: str(r.name),
     icon: r.icon != null ? str(r.icon) : undefined,
@@ -285,6 +306,7 @@ export function sanitizeTag(raw: unknown): Tag | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   return {
+    ...provenance(r),
     id: str(r.id),
     name: str(r.name),
     color: str(r.color, '#6366f1'),
@@ -298,6 +320,7 @@ export function sanitizeTimelineEvent(raw: unknown): TimelineEvent | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   return {
+    ...provenance(r),
     id: str(r.id),
     timestamp: num(r.timestamp, Date.now()),
     timestampEnd: r.timestampEnd != null ? num(r.timestampEnd) : undefined,
@@ -349,10 +372,12 @@ export function sanitizeWhiteboard(raw: unknown): Whiteboard | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   return {
+    ...provenance(r),
     id: str(r.id),
     name: str(r.name),
-    elements: str(r.elements, '[]'),
-    appState: r.appState != null ? str(r.appState) : undefined,
+    elements: whiteboardJSON(r.elements ?? '[]', 'elements', MAX_IMPORT_STRING, true),
+    appState: r.appState != null ? whiteboardJSON(r.appState, 'appState', MAX_IMPORT_STRING) : undefined,
+    files: r.files != null ? whiteboardJSON(r.files, 'files', MAX_WHITEBOARD_FILES_BYTES) : undefined,
     folderId: r.folderId != null ? str(r.folderId) : undefined,
     tags: strArr(r.tags),
     clsLevel: r.clsLevel != null ? str(r.clsLevel) : undefined,
@@ -363,6 +388,16 @@ export function sanitizeWhiteboard(raw: unknown): Whiteboard | null {
     createdAt: num(r.createdAt, Date.now()),
     updatedAt: num(r.updatedAt, Date.now()),
   };
+}
+
+function whiteboardJSON(value: unknown, field: string, limit: number, array = false): string {
+  if (typeof value !== 'string' || new TextEncoder().encode(value).byteLength > limit) {
+    throw new Error(`Whiteboard ${field} exceeds its supported size or is not serialized JSON; nothing was imported.`);
+  }
+  let parsed: unknown;
+  try { parsed = JSON.parse(value); } catch { throw new Error(`Whiteboard ${field} contains invalid JSON.`); }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) !== array) throw new Error(`Whiteboard ${field} has an invalid JSON shape.`);
+  return value;
 }
 
 const VALID_LLM_PROVIDERS = ['anthropic', 'openai', 'gemini', 'mistral', 'local'];
@@ -428,7 +463,10 @@ function sanitizeStandaloneIOCEnrichmentRecord(raw: unknown, timestamp: number):
   const record: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(raw as Record<string, unknown>).slice(0, 100)) {
-    if (typeof value === 'string') record[key] = value.substring(0, MAX_IMPORT_STRING);
+    if (typeof value === 'string') {
+      if (value.length > MAX_IMPORT_STRING) throw new Error('IOC provenance exceeds the supported import size; keep the original export.');
+      record[key] = value;
+    }
     else if (typeof value === 'number' && isFinite(value)) record[key] = value;
     else if (typeof value === 'boolean') record[key] = value;
     else if (value == null) record[key] = value;
@@ -769,6 +807,7 @@ export function sanitizeChatThread(raw: unknown): ChatThread | null {
   const r = raw as Record<string, unknown>;
   const provider = str(r.provider, 'anthropic');
   return {
+    ...provenance(r),
     id: str(r.id),
     title: str(r.title),
     messages: Array.isArray(r.messages)
@@ -801,6 +840,7 @@ function sanitizeAgentAction(raw: unknown): AgentAction | null {
     threadId: str(r.threadId),
     agentConfigId: r.agentConfigId != null ? str(r.agentConfigId) : undefined,
     toolName: str(r.toolName),
+    toolBinding: r.toolBinding != null ? str(r.toolBinding) : undefined,
     toolInput: (r.toolInput && typeof r.toolInput === 'object' ? r.toolInput : {}) as Record<string, unknown>,
     rationale: str(r.rationale),
     status: (VALID_AGENT_ACTION_STATUSES.includes(status) ? status : 'pending') as AgentAction['status'],
@@ -886,6 +926,13 @@ function sanitizeAgentDeployment(raw: unknown): Record<string, unknown> | null {
   const status = str(r.status, 'idle');
   const handoffState = r.handoffState != null ? str(r.handoffState) : undefined;
   return {
+    policyOverrides: r.policyOverrides && typeof r.policyOverrides === 'object' ? r.policyOverrides : undefined,
+    metrics: r.metrics && typeof r.metrics === 'object' ? r.metrics : undefined,
+    serverBotConfigId: typeof r.serverBotConfigId === 'string' ? str(r.serverBotConfigId) : undefined,
+    serverSideEnabled: typeof r.serverSideEnabled === 'boolean' ? r.serverSideEnabled : undefined,
+    competitiveness: ['cooperative', 'competitive', 'independent'].includes(str(r.competitiveness)) ? str(r.competitiveness) : undefined,
+    shift: ['active', 'resting'].includes(str(r.shift)) ? str(r.shift) : undefined,
+    shiftStartedAt: typeof r.shiftStartedAt === 'number' ? num(r.shiftStartedAt) : undefined,
     id: str(r.id), investigationId: str(r.investigationId), profileId: str(r.profileId),
     supervisorDeploymentId: r.supervisorDeploymentId != null ? str(r.supervisorDeploymentId) : undefined,
     threadId: r.threadId != null ? str(r.threadId) : undefined,
@@ -1199,10 +1246,10 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
   // Restore quick links to settings if present in backup
   if (quickLinks.length > 0) {
     try {
-      const stored = localStorage.getItem('threatcaddy-settings');
+      const stored = localStorage.getItem(workspaceStorageKey('threatcaddy-settings'));
       const settings = stored ? JSON.parse(stored) : {};
       settings.quickLinks = quickLinks;
-      localStorage.setItem('threatcaddy-settings', JSON.stringify(settings));
+      localStorage.setItem(workspaceStorageKey('threatcaddy-settings'), JSON.stringify(settings));
     } catch { /* ignore */ }
   }
 
@@ -1227,7 +1274,8 @@ export async function importJSON(json: string): Promise<{ notes: number; tasks: 
 }
 
 export async function exportInvestigationJSON(folderId: string): Promise<string> {
-  const [folder, allNotes, allTasks, allTags, allEvents, allTimelines, allWhiteboards, allIOCs, allEvidenceItems, allChats, allAgentActions, allAgentDeployments, allAgentMeetings] = await Promise.all([
+  return db.transaction('r', [...Object.keys(ENTITY_RELATIONS).map(name => db.table(name)), db.tags], async () => {
+  const [folder, allNotes, allTasks, allTags, allEvents, allTimelines, allWhiteboards, allIOCs, allEvidenceItems, allChats, allAgentActions, allAgentDeployments, allAgentMeetings, allAgentProfiles] = await Promise.all([
     db.folders.get(folderId),
     db.notes.where('folderId').equals(folderId).toArray(),
     db.tasks.where('folderId').equals(folderId).toArray(),
@@ -1241,6 +1289,7 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
     db.agentActions.where('investigationId').equals(folderId).toArray(),
     db.agentDeployments.where('investigationId').equals(folderId).toArray(),
     db.agentMeetings.where('investigationId').equals(folderId).toArray(),
+    db.agentProfiles.toArray(),
   ]);
 
   if (!folder) throw new Error('Investigation not found');
@@ -1282,9 +1331,11 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
     agentActions: allAgentActions.length > 0 ? allAgentActions : undefined,
     agentDeployments: allAgentDeployments.length > 0 ? allAgentDeployments : undefined,
     agentMeetings: allAgentMeetings.length > 0 ? allAgentMeetings : undefined,
+    agentProfiles: allAgentProfiles.filter(profile => allAgentDeployments.some(deployment => deployment.profileId === profile.id)),
   };
 
   return JSON.stringify(data, null, 2);
+  });
 }
 
 export function exportNotesMarkdown(notes: Note[]): string {
@@ -1424,152 +1475,87 @@ export async function mergeTimelineInto(parsed: TimelineExportData, targetTimeli
 
 // --- Merge / Investigation import ---
 
-export async function importInvestigationJSON(json: string): Promise<{ folderId: string; notes: number; tasks: number; timelineEvents: number; standaloneIOCs: number; evidenceItems: number }> {
-  if (json.length > MAX_IMPORT_SIZE) {
-    throw new Error(`File too large (max ${MAX_IMPORT_SIZE / 1024 / 1024} MB)`);
-  }
-
+export async function importInvestigationJSON(json: string): Promise<{ folderId: string; notes: number; tasks: number; timelineEvents: number; standaloneIOCs: number; evidenceItems: number; warnings: string[] }> {
+  if (json.length > MAX_IMPORT_SIZE) throw new Error('File too large for an investigation import');
   const data = JSON.parse(json);
-  if (!data || typeof data !== 'object' || !Array.isArray(data.folders) || data.folders.length === 0) {
-    throw new Error('Invalid investigation export format');
-  }
-
-  // Sanitize and prepare data
+  if (!data || typeof data !== 'object' || !Array.isArray(data.folders) || data.folders.length !== 1) throw new Error('An investigation export must contain exactly one folder');
   const oldFolder = sanitizeFolder(data.folders[0]);
-  if (!oldFolder) throw new Error('Invalid folder data');
-
-  const newFolderId = nanoid();
-  const oldFolderId = oldFolder.id;
-
-  // Build ID remap: old ID -> new ID
-  const idMap = new Map<string, string>();
-  idMap.set(oldFolderId, newFolderId);
-
-  function remapId(oldId: string): string {
-    if (!idMap.has(oldId)) idMap.set(oldId, nanoid());
-    return idMap.get(oldId)!;
-  }
-
-  // Create folder with new ID
-  const newFolder: Folder = { ...oldFolder, id: newFolderId, name: `${oldFolder.name} (imported)` };
-  if (newFolder.timelineId) newFolder.timelineId = remapId(newFolder.timelineId);
-
-  // Sanitize entities and remap IDs
-  const allNotes = collapseEvidenceNoteSeries((data.notes || []).map(sanitizeNote).filter((n: Note | null): n is Note => n !== null && !!n.id));
-  const notes = allNotes.filter((note) => !isBackupEvidenceNote(note))
-    .map((n: Note) => {
-      const newId = remapId(n.id);
-      return {
-        ...n,
-        id: newId,
-        folderId: newFolderId,
-        linkedNoteIds: n.linkedNoteIds?.map(remapId),
-        linkedTaskIds: n.linkedTaskIds?.map(remapId),
-        linkedTimelineEventIds: n.linkedTimelineEventIds?.map(remapId),
-      };
-    });
-
-  const tasks = (data.tasks || []).map(sanitizeTask).filter((t: Task | null): t is Task => t !== null && !!t.id)
-    .map((t: Task) => {
-      const newId = remapId(t.id);
-      return {
-        ...t,
-        id: newId,
-        folderId: newFolderId,
-        linkedNoteIds: t.linkedNoteIds?.map(remapId),
-        linkedTaskIds: t.linkedTaskIds?.map(remapId),
-        linkedTimelineEventIds: t.linkedTimelineEventIds?.map(remapId),
-      };
-    });
-
-  const timelineEvents = (Array.isArray(data.timelineEvents) ? data.timelineEvents : [])
-    .map(sanitizeTimelineEvent)
-    .filter((e: TimelineEvent | null): e is TimelineEvent => e !== null && !!e.id)
-    .map((e: TimelineEvent) => ({
-      ...e,
-      id: remapId(e.id),
-      folderId: newFolderId,
-      timelineId: e.timelineId ? remapId(e.timelineId) : e.timelineId,
-      linkedNoteIds: e.linkedNoteIds?.map(remapId),
-      linkedTaskIds: e.linkedTaskIds?.map(remapId),
-    }));
-
-  let timelines = (Array.isArray(data.timelines) ? data.timelines : [])
-    .map(sanitizeTimeline)
-    .filter((t: Timeline | null): t is Timeline => t !== null && !!t.id)
-    .map((t: Timeline) => ({ ...t, id: remapId(t.id) }));
-
-  if (timelineEvents.length > 0 && timelines.length === 0) {
-    const defaultId = nanoid();
-    timelines = [{ id: defaultId, name: 'Default', order: 0, createdAt: Date.now(), updatedAt: Date.now() }];
-    for (const ev of timelineEvents) {
-      if (!ev.timelineId) ev.timelineId = defaultId;
-    }
-  }
-
-  const standaloneIOCs = (Array.isArray(data.standaloneIOCs) ? data.standaloneIOCs : [])
-    .map(sanitizeStandaloneIOC)
-    .filter((i: StandaloneIOC | null): i is StandaloneIOC => i !== null && !!i.id)
-    .map((i: StandaloneIOC) => ({
-      ...i,
-      id: remapId(i.id),
-      folderId: newFolderId,
-      linkedNoteIds: i.linkedNoteIds?.map(remapId),
-      linkedTaskIds: i.linkedTaskIds?.map(remapId),
-      linkedTimelineEventIds: i.linkedTimelineEventIds?.map(remapId),
-    }));
-
-  const evidenceItems = mergeEvidenceItemLists(
-    (Array.isArray(data.evidenceItems) ? data.evidenceItems : [])
-      .map(sanitizeEvidenceItem)
-      .filter((item: EvidenceItem | null): item is EvidenceItem => item !== null && !!item.id),
-    evidenceItemsFromNotes(allNotes),
-  )
-    .map((item: EvidenceItem) => ({
-      ...item,
-      id: remapId(item.id),
-      folderId: newFolderId,
-      linkedIOCIds: item.linkedIOCIds?.map(remapId),
-    }));
-
-  const whiteboards = (Array.isArray(data.whiteboards) ? data.whiteboards : [])
-    .map(sanitizeWhiteboard)
-    .filter((w: Whiteboard | null): w is Whiteboard => w !== null && !!w.id)
-    .map((w: Whiteboard) => ({ ...w, id: remapId(w.id), folderId: newFolderId }));
-
-  const chatThreads = (Array.isArray(data.chatThreads) ? data.chatThreads : [])
-    .map(sanitizeChatThread)
-    .filter((c: ChatThread | null): c is ChatThread => c !== null && !!c.id)
-    .map((c: ChatThread) => ({ ...c, id: remapId(c.id), folderId: newFolderId }));
-
-  const tags = (Array.isArray(data.tags) ? data.tags : [])
-    .map(sanitizeTag).filter((t: Tag | null): t is Tag => t !== null && !!t.id);
-
-  await db.transaction('rw', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents, db.timelines, db.whiteboards, db.standaloneIOCs, db.evidenceItems, db.chatThreads], async () => {
-    await db.folders.add(newFolder);
-    if (notes.length > 0) await db.notes.bulkAdd(notes);
-    if (tasks.length > 0) await db.tasks.bulkAdd(tasks);
-    if (timelineEvents.length > 0) await db.timelineEvents.bulkAdd(timelineEvents);
-    if (timelines.length > 0) await db.timelines.bulkAdd(timelines);
-    if (whiteboards.length > 0) await db.whiteboards.bulkAdd(whiteboards);
-    if (standaloneIOCs.length > 0) await db.standaloneIOCs.bulkAdd(standaloneIOCs);
-    if (evidenceItems.length > 0) await db.evidenceItems.bulkAdd(evidenceItems);
-    if (chatThreads.length > 0) await db.chatThreads.bulkAdd(chatThreads);
-    // Merge tags: only add new ones
-    for (const tag of tags) {
-      const existing = await db.tags.get(tag.id);
-      if (!existing) await db.tags.add(tag);
-    }
-  });
-
-  return {
-    folderId: newFolderId,
-    notes: notes.length,
-    tasks: tasks.length,
-    timelineEvents: timelineEvents.length,
-    standaloneIOCs: standaloneIOCs.length,
-    evidenceItems: evidenceItems.length,
+  if (!oldFolder?.id) throw new Error('Invalid folder data');
+  const rows = (name: string, sanitize: (raw: unknown) => unknown): EntityRecord[] => {
+    if (data[name] !== undefined && !Array.isArray(data[name])) throw new Error('Invalid entity collection: ' + name);
+    return (data[name] ?? []).map(sanitize).filter((row: unknown): row is EntityRecord => !!row && typeof row === 'object' && typeof (row as EntityRecord).id === 'string' && !!(row as EntityRecord).id);
   };
+  const allNotes = collapseEvidenceNoteSeries(rows('notes', sanitizeNote) as unknown as Note[]);
+  const collections: Record<string, EntityRecord[]> = {
+    folders: [oldFolder as unknown as EntityRecord],
+    notes: allNotes.filter(note => !isBackupEvidenceNote(note)) as unknown as EntityRecord[],
+    tasks: rows('tasks', sanitizeTask), timelineEvents: rows('timelineEvents', sanitizeTimelineEvent),
+    timelines: rows('timelines', sanitizeTimeline), whiteboards: rows('whiteboards', sanitizeWhiteboard),
+    standaloneIOCs: rows('standaloneIOCs', sanitizeStandaloneIOC),
+    evidenceItems: mergeEvidenceItemLists(rows('evidenceItems', sanitizeEvidenceItem) as unknown as EvidenceItem[], evidenceItemsFromNotes(allNotes)) as unknown as EntityRecord[],
+    chatThreads: rows('chatThreads', sanitizeChatThread), agentActions: rows('agentActions', sanitizeAgentAction),
+    agentProfiles: rows('agentProfiles', sanitizeAgentProfile), agentDeployments: rows('agentDeployments', sanitizeAgentDeployment),
+    agentMeetings: rows('agentMeetings', sanitizeAgentMeeting),
+  };
+  const maps = new Map<string, Map<string, string>>();
+  for (const [table, entities] of Object.entries(collections)) {
+    const map = new Map<string, string>();
+    for (const entity of entities) {
+      if (map.has(entity.id)) throw new Error('Duplicate ' + table + ' ID in investigation export');
+      map.set(entity.id, nanoid());
+      if (table !== 'folders' && (entity.folderId && entity.folderId !== oldFolder.id || entity.investigationId && entity.investigationId !== oldFolder.id)) throw new Error('Investigation export contains a record from another investigation');
+    }
+    maps.set(table, map);
+  }
+  const iocMap = new Map(maps.get('standaloneIOCs'));
+  for (const table of ['notes', 'tasks', 'timelineEvents']) for (const entity of collections[table]) {
+    const analysis = entity.iocAnalysis as IOCAnalysis | undefined;
+    for (const ioc of analysis?.iocs ?? []) if (!iocMap.has(ioc.id)) iocMap.set(ioc.id, nanoid());
+  }
+  maps.set('iocs', iocMap);
+  maps.set('playbookEntities', new Map([...maps.get('notes') ?? [], ...maps.get('tasks') ?? []]));
+  const folderId = maps.get('folders')?.get(oldFolder.id);
+  if (!folderId) throw new Error('Folder mapping missing');
+  const warnings = new Set<string>();
+  for (const [table, entities] of Object.entries(collections)) collections[table] = entities.map(entity => {
+    const row = mapEntityReferences(table, entity, (target, id, path) => {
+      const mapped = maps.get(target)?.get(id);
+      if (mapped) return mapped;
+      warnings.add('External reference retained unchanged: ' + table + '.' + path + ' → ' + id);
+      return id; // No invented IDs for records that are not in the export.
+    });
+    row.id = maps.get(table)?.get(entity.id) ?? entity.id;
+    if (['notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs', 'evidenceItems', 'chatThreads'].includes(table)) row.folderId = folderId;
+    const analysis = row.iocAnalysis as IOCAnalysis | undefined;
+    if (analysis) for (const ioc of analysis.iocs) ioc.id = iocMap.get(ioc.id) ?? ioc.id;
+    if (table === 'folders') {
+      row.name = String(row.name) + ' (imported)';
+      row.agentEnabled = false;
+      row.agentStatus = 'idle';
+    }
+    if (table === 'agentDeployments') {
+      row.status = 'idle'; row.shift = 'resting'; row.serverSideEnabled = false; row.handoffState = 'client';
+      delete row.serverBotConfigId;
+    }
+    if (table === 'agentActions' && ['approved', 'pending'].includes(String(row.status))) {
+      row.resultSummary = '[Portable import: original status ' + row.status + '; review and propose a new action before execution.] ' + (row.resultSummary ?? '');
+      row.status = 'rejected'; delete row.toolBinding; delete row.idempotencyKey;
+    }
+    if (table === 'agentMeetings' && row.participantConfidence && typeof row.participantConfidence === 'object') {
+      row.participantConfidence = Object.fromEntries(Object.entries(row.participantConfidence).map(([id, value]) => [maps.get('agentDeployments')?.get(id) ?? id, value]));
+    }
+    return row;
+  });
+  const tags = rows('tags', sanitizeTag);
+  await withEntityDraftBarrier(async () => db.transaction('rw', [...Object.keys(collections).map(name => db.table(name)), db.tags], async () => {
+    for (const [table, entities] of Object.entries(collections)) if (entities.length) await db.table(table).bulkAdd(entities);
+    for (const tag of tags) {
+      const existing = await db.tags.filter(candidate => candidate.name === tag.name).first();
+      if (!existing) await db.tags.add({ ...tag, id: nanoid() } as unknown as Tag);
+    }
+  }));
+  return { folderId, notes: collections.notes.length, tasks: collections.tasks.length, timelineEvents: collections.timelineEvents.length,
+    standaloneIOCs: collections.standaloneIOCs.length, evidenceItems: collections.evidenceItems.length, warnings: [...warnings] };
 }
 
 export interface MergeImportTableResult {

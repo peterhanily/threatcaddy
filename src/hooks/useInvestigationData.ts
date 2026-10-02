@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
 import { db } from '../db';
 import { syncSnapshot } from '../lib/server-api';
+import { sanitizeSyncBatch } from '../lib/sync-sanitize';
 import type {
   Note,
   Task,
@@ -8,6 +9,7 @@ import type {
   Whiteboard,
   StandaloneIOC,
   ChatThread,
+  EvidenceItem,
   InvestigationDataMode,
 } from '../types';
 
@@ -18,6 +20,7 @@ export interface InvestigationData {
   whiteboards: Whiteboard[];
   iocs: StandaloneIOC[];
   chats: ChatThread[];
+  evidence: EvidenceItem[];
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -31,6 +34,7 @@ const EMPTY: InvestigationData = {
   whiteboards: [],
   iocs: [],
   chats: [],
+  evidence: [],
   loading: false,
   error: null,
   refresh: async () => {},
@@ -47,12 +51,20 @@ export function useInvestigationData(
   const [whiteboards, setWhiteboards] = useState<Whiteboard[]>([]);
   const [iocs, setIOCs] = useState<StandaloneIOC[]>([]);
   const [chats, setChats] = useState<ChatThread[]>([]);
+  const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Track the current folderId to avoid stale updates from in-flight requests
-  const activeFolderRef = useRef(folderId);
-  activeFolderRef.current = folderId;
+  // Fence success, failure and loading updates across scope/mode changes,
+  // concurrent refreshes and unmount (not just successful responses).
+  const requestVersion = useRef(0);
+  const scope = useMemo(() => ({ folderId, mode }), [folderId, mode]);
+  const activeScope = useRef<typeof scope | null>(null);
+  useLayoutEffect(() => {
+    activeScope.current = scope;
+    ++requestVersion.current;
+    return () => { activeScope.current = null; };
+  }, [scope]);
 
   const clearData = useCallback(() => {
     setNotes([]);
@@ -61,23 +73,25 @@ export function useInvestigationData(
     setWhiteboards([]);
     setIOCs([]);
     setChats([]);
+    setEvidence([]);
   }, []);
 
-  const loadLocal = useCallback(async (id: string) => {
-    const [n, t, e, w, i, c] = await Promise.all([
+  const loadLocal = useCallback(async (id: string, current: () => boolean) => {
+    const [n, t, e, w, i, c, ev] = await Promise.all([
       db.notes.where('folderId').equals(id).toArray(),
       db.tasks.where('folderId').equals(id).toArray(),
       db.timelineEvents.where('folderId').equals(id).toArray(),
       db.whiteboards.where('folderId').equals(id).toArray(),
       db.standaloneIOCs.where('folderId').equals(id).toArray(),
       db.chatThreads.where('folderId').equals(id).toArray(),
+      db.evidenceItems.where('folderId').equals(id).toArray(),
     ]);
 
     // Filter out trashed and archived entities
     const filterActive = <T extends { trashed: boolean; archived: boolean }>(arr: T[]): T[] =>
       arr.filter((item) => !item.trashed && !item.archived);
 
-    if (activeFolderRef.current !== id) return;
+    if (!current()) return;
 
     setNotes(filterActive(n));
     setTasks(filterActive(t));
@@ -85,27 +99,38 @@ export function useInvestigationData(
     setWhiteboards(filterActive(w));
     setIOCs(filterActive(i));
     setChats(filterActive(c));
+    setEvidence(filterActive(ev));
   }, []);
 
-  const loadRemote = useCallback(async (id: string) => {
-    const snapshot = await syncSnapshot(id);
+  const loadRemote = useCallback(async (id: string, current: () => boolean) => {
+    const raw = await syncSnapshot(id);
+    const snapshot = Object.fromEntries(Object.entries(raw).map(([table, rows]) => [table,
+      sanitizeSyncBatch(table, rows as Record<string, unknown>[])]));
 
-    if (activeFolderRef.current !== id) return;
+    if (!current()) return;
 
     const filterActive = <T extends { trashed?: boolean; archived?: boolean }>(arr: T[]): T[] =>
       arr.filter((item) => !item.trashed && !item.archived);
 
-    setNotes(filterActive((snapshot.notes ?? []) as Note[]));
-    setTasks(filterActive((snapshot.tasks ?? []) as Task[]));
-    setEvents(filterActive((snapshot.timelineEvents ?? []) as TimelineEvent[]));
-    setWhiteboards(filterActive((snapshot.whiteboards ?? []) as Whiteboard[]));
-    setIOCs(filterActive((snapshot.standaloneIOCs ?? []) as StandaloneIOC[]));
-    setChats(filterActive((snapshot.chatThreads ?? []) as ChatThread[]));
+    setNotes(filterActive((snapshot.notes ?? []) as unknown as Note[]));
+    setTasks(filterActive((snapshot.tasks ?? []) as unknown as Task[]));
+    setEvents(filterActive((snapshot.timelineEvents ?? []) as unknown as TimelineEvent[]));
+    setWhiteboards(filterActive((snapshot.whiteboards ?? []) as unknown as Whiteboard[]));
+    setIOCs(filterActive((snapshot.standaloneIOCs ?? []) as unknown as StandaloneIOC[]));
+    setChats(filterActive((snapshot.chatThreads ?? []) as unknown as ChatThread[]));
+    setEvidence(filterActive((snapshot.evidenceItems ?? []) as unknown as EvidenceItem[]));
   }, []);
 
   const load = useCallback(async () => {
+    // A consumer may retain refresh across navigation/unmount. Such a callback
+    // must not promote its old folder/mode to the newest request owner.
+    if (activeScope.current !== scope) return;
+    const request = ++requestVersion.current;
+    const current = () => activeScope.current === scope && requestVersion.current === request;
     if (!folderId) {
       clearData();
+      setError(null);
+      setLoading(false);
       return;
     }
 
@@ -114,22 +139,24 @@ export function useInvestigationData(
 
     try {
       if (mode === 'remote') {
-        await loadRemote(folderId);
+        await loadRemote(folderId, current);
       } else {
-        await loadLocal(folderId);
+        await loadLocal(folderId, current);
       }
     } catch (err) {
+      if (!current()) return;
       const message = err instanceof Error ? err.message : 'Failed to load investigation data';
       setError(message);
       clearData();
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
-  }, [folderId, mode, loadLocal, loadRemote, clearData]);
+  }, [folderId, mode, loadLocal, loadRemote, clearData, scope]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    clearData();
+    void load();
+  }, [load, clearData]);
 
   return folderId
     ? {
@@ -139,6 +166,7 @@ export function useInvestigationData(
         whiteboards,
         iocs,
         chats,
+        evidence,
         loading,
         error,
         refresh: load,

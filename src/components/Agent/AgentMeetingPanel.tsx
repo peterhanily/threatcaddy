@@ -98,7 +98,7 @@ export function AgentMeetingPanel({
     onEntitiesChanged?.();
   };
 
-  const handleRunRequest = async (req: Note) => {
+  const handleRunRequest = useCallback(async (req: Note) => {
     if (deployments.length < 2) return;
     const reqPurpose = parsePurposeFromNote(req);
     const reqAgenda = parseAgendaFromNote(req);
@@ -111,7 +111,8 @@ export function AgentMeetingPanel({
         reqPurpose,
       );
       // Trash the request note so it doesn't linger as pending.
-      await db.notes.update(req.id, { trashed: true, trashedAt: Date.now(), updatedAt: Date.now() });
+      const trashedAt = Date.now();
+      await db.notes.update(req.id, { trashed: true, trashedAt, updatedAt: trashedAt });
     } catch (err) {
       console.error('[meeting-panel] run request failed:', err);
     } finally {
@@ -119,7 +120,7 @@ export function AgentMeetingPanel({
       setProgress('');
       onEntitiesChanged?.();
     }
-  };
+  }, [deployments, folder, settings, extensionAvailable, onEntitiesChanged]);
 
   const handleDismissRequest = async (req: Note) => {
     await db.notes.update(req.id, { trashed: true, trashedAt: Date.now(), updatedAt: Date.now() });

@@ -2,20 +2,22 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, Lock, AlertTriangle } from 'lucide-react';
 import { deriveWrappingKey, unwrapMasterKey, base64ToArrayBuffer, arrayBufferToBase64, exportKeyRaw } from '../../lib/crypto';
-import { getEncryptionMeta, getSessionDuration, cacheSessionKey, clearEncryptionMeta, clearSessionCache } from '../../lib/encryptionStore';
+import { getEncryptionMeta, getSessionDuration, cacheSessionKey, clearEncryptionMeta, clearSessionCache, isEncryptionEnabled } from '../../lib/encryptionStore';
 import { setSessionKey } from '../../lib/encryptionMiddleware';
+import { initializeWorkspace } from '../../lib/workspace-initialization';
 import { db } from '../../db';
 
 interface PassphraseDialogProps {
   onUnlocked: () => void;
+  initialError?: string;
 }
 
-export function PassphraseDialog({ onUnlocked }: PassphraseDialogProps) {
+export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDialogProps) {
   const { t } = useTranslation('encryption');
   const [passphrase, setPassphrase] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [useRecovery, setUseRecovery] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialError);
   const [unlocking, setUnlocking] = useState(false);
   const [showReset, setShowReset] = useState(false);
   const [confirmText, setConfirmText] = useState('');
@@ -24,14 +26,18 @@ export function PassphraseDialog({ onUnlocked }: PassphraseDialogProps) {
   const handleUnlock = async () => {
     setError('');
     setUnlocking(true);
+    let keyVerified = false;
     try {
       const meta = getEncryptionMeta();
-      if (!meta) return;
+      if (!meta) {
+        setError(t('passphrase.metadataUnavailable', { defaultValue: 'Encryption metadata could not be read. Restore it from a backup before opening this workspace.' }));
+        return;
+      }
       const saltB64 = useRecovery ? meta.recoverySalt : meta.salt;
       const wrappedB64 = useRecovery ? meta.recoveryWrappedKey : meta.wrappedKey;
       const salt = base64ToArrayBuffer(saltB64);
       const wrappedKey = base64ToArrayBuffer(wrappedB64);
-      const wrappingKey = await deriveWrappingKey(passphrase.trim(), salt);
+      const wrappingKey = await deriveWrappingKey(useRecovery ? passphrase.trim() : passphrase, salt);
 
       // Unwrap as extractable so we can cache the raw bytes
       const extractableKey = await crypto.subtle.unwrapKey(
@@ -42,16 +48,19 @@ export function PassphraseDialog({ onUnlocked }: PassphraseDialogProps) {
 
       const rawB64 = arrayBufferToBase64(rawBytes);
 
-      // Cache for session persistence
-      const duration = getSessionDuration();
-      cacheSessionKey(rawB64, duration);
-
       // Import as non-extractable for actual use
       const sessionKey = await unwrapMasterKey(wrappedKey, wrappingKey);
+      keyVerified = true;
       setSessionKey(sessionKey, rawB64);
+      await initializeWorkspace();
+      if (isEncryptionEnabled()) cacheSessionKey(rawB64, getSessionDuration());
       onUnlocked();
-    } catch {
-      setError(useRecovery ? t('passphrase.invalidRecoveryKey') : t('passphrase.wrongPassphrase'));
+    } catch (err) {
+      setSessionKey(null);
+      clearSessionCache();
+      setError(keyVerified
+        ? t('passphrase.prepareFailed', { defaultValue: 'Your key was accepted, but preparing the workspace failed: {{error}}. Unlock again to retry.', error: err instanceof Error ? err.message : String(err) })
+        : useRecovery ? t('passphrase.invalidRecoveryKey') : t('passphrase.wrongPassphrase'));
     } finally {
       setUnlocking(false);
     }

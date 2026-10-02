@@ -73,7 +73,7 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
   const eventComments = event?.comments ?? [];
 
   // Auto-extract IOCs on description changes (edit mode only)
-  useAutoIOCExtraction({
+  const extraction = useAutoIOCExtraction({
     entityId: event?.id,
     content: description,
     existingAnalysis: event?.iocAnalysis,
@@ -150,6 +150,8 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
 
   const iocTarget: IOCTarget | null = event ? {
     id: event.id,
+    createdAt: event.createdAt,
+    updatedAt: event.updatedAt,
     title,
     content: description,
     clsLevel: event.clsLevel,
@@ -164,6 +166,7 @@ export function TimelineEventForm({ event, folders, allTags, onCreateTag, onSave
   return (
     <div className="flex gap-0">
     <form onSubmit={handleSubmit} className="space-y-4 flex-1 min-w-0">
+      {extraction.error && <p role="alert" className="text-sm text-red-300">{extraction.error}</p>}
       <div>
         <label className={labelClass} htmlFor="event-title">{t('eventForm.title')}</label>
         <input

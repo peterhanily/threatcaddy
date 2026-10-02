@@ -45,6 +45,7 @@ export function useChatLoops(threadId?: string) {
     apiKey: string;
     systemPrompt: string;
     endpoint?: string;
+    useServerProxy?: boolean;
     onMessage: (threadId: string, message: ChatMessage) => Promise<void>;
   }) => {
     const intervalMs = parseInterval(opts.intervalStr);
@@ -57,6 +58,7 @@ export function useChatLoops(threadId?: string) {
       apiKey: opts.apiKey,
       systemPrompt: opts.systemPrompt,
       endpoint: opts.endpoint,
+      useServerProxy: opts.useServerProxy,
       onMessage: opts.onMessage,
     });
     return { id, intervalMs, formattedInterval: formatInterval(intervalMs) };

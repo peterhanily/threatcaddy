@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import cytoscape from 'cytoscape';
 // @ts-expect-error no type declarations for this package
 import coseBilkent from 'cytoscape-cose-bilkent';
@@ -25,13 +25,15 @@ export default function GraphCanvas({ data, layout, onSelectNode, onDoubleClickN
   const cyRef = useRef<cytoscape.Core | null>(null);
   // Stable refs for callbacks so cytoscape event handlers always use latest versions
   const onSelectNodeRef = useRef(onSelectNode);
-  onSelectNodeRef.current = onSelectNode;
   const onDoubleClickNodeRef = useRef(onDoubleClickNode);
-  onDoubleClickNodeRef.current = onDoubleClickNode;
   const onSelectMultiRef = useRef(onSelectMulti);
-  onSelectMultiRef.current = onSelectMulti;
   const onLinkNodesRef = useRef(onLinkNodes);
-  onLinkNodesRef.current = onLinkNodes;
+  useLayoutEffect(() => {
+    onSelectNodeRef.current = onSelectNode;
+    onDoubleClickNodeRef.current = onDoubleClickNode;
+    onSelectMultiRef.current = onSelectMulti;
+    onLinkNodesRef.current = onLinkNodes;
+  }, [onSelectNode, onDoubleClickNode, onSelectMulti, onLinkNodes]);
   // Drag-to-link state
   const linkDragSourceRef = useRef<string | null>(null);
   const linkDragActiveRef = useRef(false);

@@ -2,36 +2,52 @@
   "name": "threatcaddy-server",
   "version": "1.1.0",
   "type": "module",
+  "packageManager": "npm@11.19.0",
+  "engines": {
+    "node": ">=24.21.0 <25",
+    "npm": ">=11.19.0 <12"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && node scripts/package-build.mjs",
     "start": "node dist/index.js",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "node dist/db/migrate-cli.js",
+    "sync:rotate-history": "node dist/db/rotate-sync-history-cli.js",
     "db:push": "drizzle-kit push",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:integration:types": "tsc --project tsconfig.integration.json"
   },
   "dependencies": {
-    "@hono/node-server": "^1.14.0",
+    "@hono/node-server": "^1.19.17",
     "@hono/node-ws": "^1.1.0",
     "argon2": "^0.41.0",
     "croner": "^10.0.1",
-    "dockerode": "^4.0.9",
+    "dockerode": "^5.0.1",
     "drizzle-orm": "^0.45.1",
-    "hono": "^4.7.0",
+    "hono": "^4.13.12",
     "jose": "^5.10.0",
-    "nanoid": "^5.1.0",
+    "nanoid": "^5.1.16",
     "postgres": "^3.4.0",
-    "sharp": "^0.33.0",
+    "sharp": "^0.35.5",
     "ssh2": "^1.17.0",
     "zod": "^3.24.0"
+  },
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "^0.28.2"
+    },
+    "tsx": {
+      "esbuild": "^0.28.2"
+    }
   },
   "devDependencies": {
     "@types/dockerode": "^4.0.1",
     "@types/node": "^24.10.0",
     "@types/ssh2": "^1.15.5",
-    "drizzle-kit": "^0.30.0",
+    "drizzle-kit": "^0.31.11",
     "tsx": "^4.19.0",
     "typescript": "~5.9.3",
     "vitest": "^4.0.0"

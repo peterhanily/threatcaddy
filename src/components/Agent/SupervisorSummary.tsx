@@ -18,8 +18,7 @@ export function SupervisorSummary({ onOpenSupervisor }: { onOpenSupervisor?: (fo
   useEffect(() => {
     (async () => {
       const folder = await db.folders
-        .where('name')
-        .equals(SUPERVISOR_FOLDER_NAME)
+        .filter(folder => folder.name === SUPERVISOR_FOLDER_NAME)
         .first();
 
       if (!folder) return;

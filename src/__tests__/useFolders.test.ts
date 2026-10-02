@@ -6,6 +6,7 @@ import { db } from '../db';
 
 describe('useFolders', () => {
   beforeEach(async () => {
+    await db.table('_localMigrations').clear();
     await db.folders.clear();
     await db.notes.clear();
     await db.tasks.clear();
@@ -626,15 +627,15 @@ describe('useFolders', () => {
       });
       const folderId = result.current.folders[0].id;
 
-      // Archive it first
-      await act(async () => {
-        await result.current.archiveFolder(folderId);
-      });
-
       await db.notes.add({
         id: 'n1', title: 'Archived note', content: '', tags: [],
-        pinned: false, archived: true, trashed: false,
+        pinned: false, archived: false, trashed: false,
         folderId, createdAt: Date.now(), updatedAt: Date.now(),
+      });
+
+      // Only rows archived by this folder operation are reopened with it.
+      await act(async () => {
+        await result.current.archiveFolder(folderId);
       });
 
       await act(async () => {

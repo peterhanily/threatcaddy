@@ -1,10 +1,10 @@
 /**
- * Global tracker for unsaved changes. Editors increment on edit and
- * decrement after save. The beforeunload handler in App.tsx checks this
- * to warn users before losing in-progress work.
+ * One token per owner of unsaved work. Repeated edits and cleanup are
+ * idempotent; one editor cannot clear another editor's outstanding write.
+ * Tokens stay registered until persistence succeeds, including failed writes.
  */
-let pendingCount = 0;
+const pending = new Set<symbol>();
 
-export function markPending() { pendingCount++; }
-export function clearPending() { pendingCount = Math.max(0, pendingCount - 1); }
-export function hasPendingChanges() { return pendingCount > 0; }
+export function markPending(owner: symbol) { pending.add(owner); }
+export function clearPending(owner: symbol) { pending.delete(owner); }
+export function hasPendingChanges() { return pending.size > 0; }

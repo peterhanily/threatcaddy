@@ -159,8 +159,8 @@ describe('STIX_TLP_MARKING_DEFS', () => {
       expect(def.type).toBe('marking-definition');
       expect(def.spec_version).toBe('2.1');
       expect(def.id).toMatch(/^marking-definition--[0-9a-f-]+$/);
-      expect(def.definition_type).toBe('tlp');
-      expect(def.definition.tlp).toBeTruthy();
+      expect(def.extensions['extension-definition--60a3c5c5-0d10-413e-aab3-9e08dde9e88d'].extension_type).toBe('property-extension');
+      expect(def.extensions['extension-definition--60a3c5c5-0d10-413e-aab3-9e08dde9e88d'].tlp_2_0).toBeTruthy();
       expect(def.name).toMatch(/^TLP:/);
     }
   });

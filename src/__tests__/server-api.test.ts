@@ -32,6 +32,29 @@ describe('server-api', () => {
   // ─── configureServerApi ─────────────────────────────────────────
 
   describe('configureServerApi', () => {
+    it('does not deliver an old token to a newly configured server', async () => {
+      let finish!: (token: string) => void;
+      mockGetToken.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+      const pending = fetchMe();
+      configureServerApi('http://second-server', async () => 'second-token');
+      finish('first-token');
+      await expect(pending).rejects.toThrow('connection changed');
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('does not refresh another account after an old request returns 401', async () => {
+      let finish!: (response: unknown) => void;
+      mockFetch.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+      const pending = fetchMe();
+      await vi.waitFor(() => expect(finish).toBeDefined());
+      const invalidateOther = vi.fn();
+      configureServerApi('http://second-server', async () => 'second-token', invalidateOther);
+      finish({ status: 401, ok: false });
+      await expect(pending).rejects.toThrow('connection changed');
+      expect(invalidateOther).not.toHaveBeenCalled();
+      expect(mockInvalidateToken).not.toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
     it('sets the server URL so subsequent calls use it', async () => {
       await fetchMe();
       expect(mockFetch).toHaveBeenCalledWith(
@@ -241,12 +264,12 @@ describe('server-api', () => {
         json: () => Promise.resolve({ results: [{ entityId: 'e1', status: 'accepted' }] }),
       });
 
-      const result = await syncPush(changes);
+      const result = await syncPush(changes, 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
 
       const [url, opts] = mockFetch.mock.calls[0];
       expect(url).toBe('http://test-server/api/sync/push');
       expect(opts.method).toBe('POST');
-      expect(JSON.parse(opts.body)).toEqual({ changes });
+      expect(JSON.parse(opts.body)).toEqual({ changes, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' });
       expect(result.results[0].status).toBe('accepted');
     });
 
@@ -307,7 +330,7 @@ describe('server-api', () => {
         status: 500,
         json: () => Promise.resolve({}),
       });
-      await expect(syncPush([])).rejects.toThrow('Sync push failed');
+      await expect(syncPush([], 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')).rejects.toThrow('Sync push failed');
     });
   });
 });

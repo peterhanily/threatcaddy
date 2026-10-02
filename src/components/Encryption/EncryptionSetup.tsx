@@ -14,7 +14,7 @@ import {
   arrayBufferToBase64,
   base64ToArrayBuffer,
 } from '../../lib/crypto';
-import { setEncryptionMeta, getSessionDuration, cacheSessionKey, type EncryptionMetadata } from '../../lib/encryptionStore';
+import { setEncryptionMeta, getEncryptionMeta, getSessionDuration, cacheSessionKey, type EncryptionMetadata } from '../../lib/encryptionStore';
 import { setSessionKey, encryptAllExistingData } from '../../lib/encryptionMiddleware';
 import { db } from '../../db';
 
@@ -51,7 +51,7 @@ export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupPro
   };
 
   const handleClose = () => {
-    if (encrypting) return; // prevent closing during encryption
+    if (encrypting || getEncryptionMeta()?.transition) return;
     reset();
     onClose();
   };
@@ -103,6 +103,7 @@ export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupPro
         recoverySalt: recSaltStr,
         recoveryWrappedKey: arrayBufferToBase64(recWrappedKey),
         enabledAt: Date.now(),
+        transition: 'encrypting',
       };
       setEncryptionMeta(meta);
 
@@ -115,10 +116,10 @@ export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupPro
       const rawBytes = await exportKeyRaw(masterKey);
       const rawB64 = arrayBufferToBase64(rawBytes);
       setSessionKey(sessionMasterKey, rawB64);
-      cacheSessionKey(rawB64, getSessionDuration());
 
       // Encrypt all existing records
       await encryptAllExistingData(db, setProgress);
+      cacheSessionKey(rawB64, getSessionDuration());
 
       addToast('success', tt('encryption.enabled'));
       onEnabled();
@@ -250,6 +251,11 @@ export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupPro
                 : t('setup.countingRecords')}
             </p>
             {error && <p className="text-red-400 text-sm">{error}</p>}
+            {error && !encrypting && (
+              <button onClick={() => window.location.reload()} className="text-sm text-accent underline">
+                {t('setup.resumePreparation', { defaultValue: 'Reload and unlock to resume safely' })}
+              </button>
+            )}
           </>
         )}
       </div>

@@ -313,12 +313,12 @@ const fetchUrlTool: BotTool = {
 
 const sshExecTool: BotTool = {
   name: 'ssh_exec',
-  description: 'Execute a command on a remote host via SSH. The host must be in the bot\'s allowedHosts list. Credentials are resolved from bot config (never provided as arguments).',
+  description: 'Run a named preapproved operation on an allowed SSH host with a verified host key. Fixed executable, arguments, and credentials are resolved from bot config, never supplied by the agent.',
   parameters: {
     type: 'object',
     properties: {
       host: { type: 'string', description: 'Remote host to connect to (must be in allowedHosts)' },
-      command: { type: 'string', description: 'Shell command to execute' },
+      command: { type: 'string', description: 'Name of a preapproved sshOperations entry with fixed executable and arguments; not a shell command' },
       port: { type: 'number', description: 'SSH port (default 22)' },
       timeout: { type: 'number', description: 'Command timeout in ms (default 30000, max 120000)' },
     },

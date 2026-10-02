@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq, desc, and, gte, not, ilike, inArray } from 'drizzle-orm';
+import { eq, desc, and, gte, not, ilike } from 'drizzle-orm';
 import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
 import {
@@ -7,6 +7,7 @@ import {
   requireAdminAuth, logger, logAdminAction, getAdminId,
 } from './shared.js';
 import { changeAdminSecret } from '../../services/admin-secret.js';
+import { revokeUserSessions, revokeAllSessions, updateUsersAndRevokeSessions } from '../../services/session-service.js';
 
 const app = new Hono();
 
@@ -56,7 +57,8 @@ app.patch('/api/users/:id', requireAdminAuth, async (c) => {
     await logAdminAction(getAdminId(c), 'user.toggle-active', `${body.active ? 'Activated' : 'Deactivated'} ${target.email}`, { itemId: id });
   }
 
-  await db.update(users).set(updates).where(eq(users.id, id));
+  if (body.role !== undefined || body.active !== undefined) await updateUsersAndRevokeSessions([id], updates);
+  else await db.update(users).set(updates).where(eq(users.id, id));
 
   return c.json({ ok: true });
 });
@@ -71,7 +73,7 @@ app.post('/api/users/:id/reset-password', requireAdminAuth, async (c) => {
 
   const temporaryPassword = nanoid(16);
   const hash = await argon2.hash(temporaryPassword, { type: argon2.argon2id });
-  await db.update(users).set({ passwordHash: hash, updatedAt: new Date() }).where(eq(users.id, id));
+  await updateUsersAndRevokeSessions([id], { passwordHash: hash, updatedAt: new Date() });
 
   logger.info('Admin action: password reset', { targetUserId: id, targetEmail: user[0].email });
   await logAdminAction(getAdminId(c), 'user.reset-password', `Reset password for ${user[0].email}`, { itemId: id });
@@ -159,7 +161,7 @@ app.post('/api/users/bulk', requireAdminAuth, async (c) => {
     }
   }
 
-  const result = await db.update(users).set(updates).where(inArray(users.id, validIds)).returning({ id: users.id });
+  const result = await updateUsersAndRevokeSessions(validIds, updates);
   const affected = result.length;
 
   await logAdminAction(getAdminId(c), 'user.bulk', `Bulk ${action} on ${affected} user(s)${action === 'changeRole' ? ` to ${role}` : ''}`);
@@ -222,7 +224,7 @@ app.get('/api/users/:id/detail', requireAdminAuth, async (c) => {
     id: sessions.id,
     createdAt: sessions.createdAt,
     expiresAt: sessions.expiresAt,
-  }).from(sessions).where(and(eq(sessions.userId, id), gte(sessions.expiresAt, new Date())));
+  }).from(sessions).where(and(eq(sessions.userId, id), gte(sessions.expiresAt, new Date()), gte(sessions.rotationCounter, 0)));
 
   const memberships = await db.select({
     folderId: investigationMembers.folderId,
@@ -281,7 +283,7 @@ app.get('/api/sessions', requireAdminAuth, async (c) => {
     expiresAt: sessions.expiresAt,
   }).from(sessions)
     .leftJoin(users, eq(users.id, sessions.userId))
-    .where(gte(sessions.expiresAt, new Date()))
+    .where(and(gte(sessions.expiresAt, new Date()), gte(sessions.rotationCounter, 0)))
     .orderBy(desc(sessions.createdAt));
 
   return c.json({ sessions: activeSessions });
@@ -289,15 +291,15 @@ app.get('/api/sessions', requireAdminAuth, async (c) => {
 
 app.delete('/api/sessions/user/:userId', requireAdminAuth, async (c) => {
   const userId = c.req.param('userId');
-  const result = await db.delete(sessions).where(eq(sessions.userId, userId)).returning({ id: sessions.id });
-  await logAdminAction(getAdminId(c), 'session.force-logout', `Force-logged out user ${userId} (${result.length} sessions)`);
-  return c.json({ ok: true, deletedCount: result.length });
+  const deletedCount = await revokeUserSessions(userId);
+  await logAdminAction(getAdminId(c), 'session.force-logout', `Force-logged out user ${userId} (${deletedCount} sessions)`);
+  return c.json({ ok: true, deletedCount });
 });
 
 app.delete('/api/sessions/all', requireAdminAuth, async (c) => {
-  const result = await db.delete(sessions).returning({ id: sessions.id });
-  await logAdminAction(getAdminId(c), 'session.force-logout-all', `Force-logged out all users (${result.length} sessions)`);
-  return c.json({ ok: true, deletedCount: result.length });
+  const deletedCount = await revokeAllSessions();
+  await logAdminAction(getAdminId(c), 'session.force-logout-all', `Force-logged out all users (${deletedCount} sessions)`);
+  return c.json({ ok: true, deletedCount });
 });
 
 export default app;

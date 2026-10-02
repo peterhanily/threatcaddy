@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useEffect, useRef, lazy, Suspense, memo, type ReactNode } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, lazy, Suspense, memo, type ReactNode } from 'react';
 import { AppLayout } from './components/Layout/AppLayout';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
@@ -79,6 +79,7 @@ import type { ImportResult } from './lib/data-import';
 import { ToastProvider, useToast } from './contexts/ToastContext';
 import { useTranslation } from 'react-i18next';
 import { ToastContainer } from './components/Common/Toast';
+import { DraftRecoveryNotice } from './components/Common/DraftRecoveryNotice';
 import { generateInvestigationReport, printReport } from './lib/report';
 import { useIsMobile } from './hooks/useIsMobile';
 const ExecDashboard = lazy(() => import('./components/ExecMode/ExecDashboard').then(m => ({ default: m.ExecDashboard })));
@@ -92,11 +93,6 @@ const AgentDashboard = lazy(() => import('./components/Agent/AgentDashboard').th
 const ConflictDialog = lazy(() => import('./components/Common/ConflictDialog').then(m => ({ default: m.ConflictDialog })));
 const KeyboardShortcutsPanel = lazy(() => import('./components/Common/KeyboardShortcutsPanel').then(m => ({ default: m.KeyboardShortcutsPanel })));
 const ServerOnboardingModal = lazy(() => import('./components/Settings/ServerOnboardingModal').then(m => ({ default: m.ServerOnboardingModal })));
-import { installSyncHooks, initLocalOnlyFlags } from './lib/sync-middleware';
-
-// Install Dexie hooks once at module load so every write is captured
-installSyncHooks();
-initLocalOnlyFlags();
 import { useLoggedActions } from './hooks/useLoggedActions';
 import { useServerSync } from './hooks/useServerSync';
 import { useRemoteInvestigations } from './hooks/useRemoteInvestigations';
@@ -107,6 +103,7 @@ export default function App() {
     <AuthProvider>
       <ToastProvider>
         <AppDataLayer />
+        <DraftRecoveryNotice />
       </ToastProvider>
     </AuthProvider>
   );
@@ -143,13 +140,14 @@ function AppDataLayer() {
     refreshRemote();
   }, [refreshRemote]);
 
-  const { presenceUsers, syncConflicts, setSyncConflicts, handleResolveConflict, handleResolveAllConflicts } = useServerSync(auth, {
+  const { presenceUsers, syncConflicts, syncError, setSyncConflicts, handleResolveConflict, handleResolveAllConflicts } = useServerSync(auth, {
     notes: notes.reload,
     tasks: tasks.reload,
     timeline: timeline.reload,
     timelines: reloadTimelines,
     whiteboards: reloadWhiteboards,
     standaloneIOCs: standaloneIOCsHook.reload,
+    evidenceItems: evidenceItemsHook.reload,
     chats: chatsHook.reload,
     folders: reloadFolders,
     tags: reloadTags,
@@ -219,6 +217,7 @@ function AppDataLayer() {
           updateSettings={updateSettings}
           defaultView={safeDefaultView}
         >
+          {syncError && <div role="alert" className="fixed bottom-4 left-4 right-4 z-[100] rounded border border-amber-500 bg-gray-950 p-3 text-sm text-amber-100 shadow-lg">{syncError}</div>}
           <AppInner
             settings={settings}
             updateSettings={updateSettings}
@@ -411,6 +410,7 @@ const AppInner = memo(function AppInner({
   const inv = useInvestigation();
   const ui = useUIModals();
   const { t: tExec } = useTranslation('exec');
+  const [evidenceSearchSelection, setEvidenceSearchSelection] = useState<{ id: string; request: number }>();
 
   // Destructure frequently-used context values
   const {
@@ -941,6 +941,10 @@ const AppInner = memo(function AppInner({
     () => screenshareMaxLevel ? chatsHook.threads.filter((t) => !isAboveClsThreshold(t.clsLevel ?? undefined, screenshareMaxLevel, effectiveClsLevels)) : chatsHook.threads,
     [chatsHook.threads, screenshareMaxLevel, effectiveClsLevels]
   );
+  const screensafeEvidenceItems = useMemo(
+    () => screenshareMaxLevel ? evidenceItemsHook.evidenceItems.filter(item => !isAboveClsThreshold(item.clsLevel, screenshareMaxLevel, effectiveClsLevels)) : evidenceItemsHook.evidenceItems,
+    [evidenceItemsHook.evidenceItems, screenshareMaxLevel, effectiveClsLevels],
+  );
 
   // Folder-filtered + screenshare-safe (for NoteList, TaskList, TimelineView)
   // Use resolved arrays (which pick remote vs local) instead of raw filtered arrays
@@ -977,8 +981,9 @@ const AppInner = memo(function AppInner({
   );
   // Evidence + Products: folder-scoped derivations and import/dedup wiring
   const investigationEvidenceItems = useMemo(
-    () => selectedFolderId ? evidenceItemsHook.evidenceItems.filter((e) => e.folderId === selectedFolderId) : evidenceItemsHook.evidenceItems,
-    [evidenceItemsHook.evidenceItems, selectedFolderId]
+    () => investigationMode === 'remote' ? remoteData.evidence.filter(item => !screenshareMaxLevel || !isAboveClsThreshold(item.clsLevel, screenshareMaxLevel, effectiveClsLevels))
+      : selectedFolderId ? screensafeEvidenceItems.filter((e) => e.folderId === selectedFolderId) : screensafeEvidenceItems,
+    [investigationMode, remoteData.evidence, screenshareMaxLevel, effectiveClsLevels, screensafeEvidenceItems, selectedFolderId]
   );
   const productNotes = useMemo(
     () => investigationNotes.filter((n) => n.tags?.includes(PRODUCT_NOTE_TAG)),
@@ -1362,6 +1367,15 @@ const AppInner = memo(function AppInner({
     setShowArchive(false);
     navigateTo('notes', { selectedNoteId: id });
   }, [navigateTo, setSelectedFolderId]);
+
+  const handleSearchNavigateToEvidence = useCallback((id: string) => {
+    const item = screensafeEvidenceItems.find(item => item.id === id && !item.trashed && !item.archived);
+    if (!item) return;
+    setSelectedFolderId(item.folderId);
+    setSelectedTag(undefined); setShowTrash(false); setShowArchive(false);
+    setEvidenceSearchSelection(previous => ({ id, request: (previous?.request ?? 0) + 1 }));
+    navigateTo('evidence');
+  }, [screensafeEvidenceItems, navigateTo, setSelectedFolderId, setSelectedTag, setShowTrash, setShowArchive]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSearchNavigateToTask = useCallback((_id: string) => {
@@ -1803,6 +1817,8 @@ const AppInner = memo(function AppInner({
           />
         ) : activeView === 'evidence' ? (
           <EvidenceView
+            key={evidenceSearchSelection?.request}
+            initialSelectedId={evidenceSearchSelection?.id}
             folderId={selectedFolderId}
             folderName={selectedFolder?.name}
             items={investigationEvidenceItems}
@@ -1865,7 +1881,7 @@ const AppInner = memo(function AppInner({
               agentRunning={caddyAgent.running}
               agentProgress={caddyAgent.progress}
               agentStreamingContent={caddyAgent.streamingContent}
-              agentError={caddyAgent.error}
+              agentError={caddyAgent.error || serverAgents.error}
               agentStatus={caddyAgent.agentStatus}
               onRunOnce={caddyAgent.runOnce}
               onNavigateToChat={(threadId) => {
@@ -2183,7 +2199,10 @@ const AppInner = memo(function AppInner({
       <ConfirmDialog
         open={!!confirmUnsyncId}
         onClose={() => setConfirmUnsyncId(null)}
-        onConfirm={() => { if (confirmUnsyncId) handleUnsyncConfirmed(confirmUnsyncId); setConfirmUnsyncId(null); }}
+        onConfirm={() => {
+          if (confirmUnsyncId) void handleUnsyncConfirmed(confirmUnsyncId).then(() => setConfirmUnsyncId(null))
+            .catch(error => addToast('error', error instanceof Error ? error.message : 'Could not remove the offline copy.'));
+        }}
         title="Unsync Investigation"
         message="This will remove the local copy of this investigation. You can re-sync it later from the server."
         confirmLabel="Unsync"
@@ -2220,6 +2239,8 @@ const AppInner = memo(function AppInner({
         onNavigateToWhiteboard={handleSearchNavigateToWhiteboard}
         standaloneIOCs={screensafeStandaloneIOCs.filter((i) => !i.trashed && !i.archived)}
         chatThreads={screensafeChatThreads.filter((c) => !c.trashed && !c.archived)}
+        evidenceItems={screensafeEvidenceItems.filter(item => !item.trashed && !item.archived)}
+        onNavigateToEvidence={handleSearchNavigateToEvidence}
         onNavigateToIOC={handleSearchNavigateToIOC}
         onNavigateToChat={handleSearchNavigateToChat}
         selectedFolderId={selectedFolderId}
@@ -2289,9 +2310,9 @@ const AppInner = memo(function AppInner({
           }}
           onShareLink={handleShareInvestigationLink}
           serverConnected={auth.connected}
-          onToggleSync={(folderId, currentlyLocalOnly) => {
+          onToggleSync={async (folderId, currentlyLocalOnly) => {
             const newLocalOnly = !currentlyLocalOnly;
-            updateFolder(folderId, { localOnly: newLocalOnly });
+            await updateFolder(folderId, { localOnly: newLocalOnly });
             import('./lib/sync-middleware').then(({ markFolderLocalOnly }) => {
               markFolderLocalOnly(folderId, newLocalOnly);
             });

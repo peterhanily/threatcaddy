@@ -32,8 +32,12 @@ vi.mock('../db/index.js', () => ({
     insert: (...args: unknown[]) => mockDbInsert(...args),
     update: (...args: unknown[]) => mockDbUpdate(...args),
     delete: (...args: unknown[]) => mockDbDelete(...args),
+    transaction: (work: (tx: unknown) => unknown) => work({ insert: (...args: unknown[]) => mockDbInsert(...args),
+      select: (...args: unknown[]) => mockDbSelect(...args), delete: (...args: unknown[]) => mockDbDelete(...args) }),
   },
 }));
+vi.mock('../services/storage-policy.js', () => ({ lockStorage: vi.fn().mockResolvedValue(undefined),
+  assertStorageCapacity: vi.fn().mockResolvedValue(undefined), StorageQuotaError: class extends Error {} }));
 
 vi.mock('../db/schema.js', () => ({
   files: {
@@ -61,6 +65,7 @@ const mockReadFile = vi.fn();
 const mockStat = vi.fn();
 const mockMkdir = vi.fn().mockResolvedValue(undefined);
 const mockRealpath = vi.fn().mockImplementation((p: string) => Promise.resolve(p));
+const mockUnlink = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('node:fs/promises', () => ({
   writeFile: (...args: unknown[]) => mockWriteFile(...args),
@@ -68,6 +73,7 @@ vi.mock('node:fs/promises', () => ({
   stat: (...args: unknown[]) => mockStat(...args),
   mkdir: (...args: unknown[]) => mockMkdir(...args),
   realpath: (...args: unknown[]) => mockRealpath(...args),
+  unlink: (...args: unknown[]) => mockUnlink(...args),
 }));
 
 // Mock createReadStream and Readable.toWeb for streaming file downloads
@@ -145,6 +151,7 @@ beforeEach(() => {
   app = buildApp();
   chainSelect();
   chainInsert();
+  mockDbDelete.mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) });
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -179,7 +186,43 @@ describe('Auth requirements', () => {
 // 2. File upload (POST /api/files/upload)
 // ═══════════════════════════════════════════════════════════════
 
+describe('DELETE /api/files/:id', () => {
+  it('removes an owned attachment record before unlinking its managed blob', async () => {
+    mockLimit.mockResolvedValue([{ id: 'owned', uploadedBy: mockUser.id, folderId: null, storagePath: 'owned.bin', thumbnailPath: null }]);
+    const response = await app.request('/api/files/owned', { method: 'DELETE', headers: authHeader() });
+    expect(response.status).toBe(200);
+    expect(mockDbDelete).toHaveBeenCalledTimes(1);
+    expect(mockUnlink).toHaveBeenCalledWith('/data/files/owned.bin');
+    expect(mockDbDelete.mock.invocationCallOrder[0]).toBeLessThan(mockUnlink.mock.invocationCallOrder[0]);
+  });
+  it('does not remove another uploader attachment', async () => {
+    mockLimit.mockResolvedValue([{ id: 'other', uploadedBy: 'another-user', folderId: null }]);
+    expect((await app.request('/api/files/other', { method: 'DELETE', headers: authHeader() })).status).toBe(403);
+    expect(mockDbDelete).not.toHaveBeenCalled();
+    expect(mockUnlink).not.toHaveBeenCalled();
+  });
+});
+
 describe('POST /api/files/upload', () => {
+  it('rechecks scoped access after acquiring the storage lock', async () => {
+    mockCheckAccess.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    const form = new FormData();
+    form.append('file', new File(['ordinary note'], 'summary.txt', { type: 'text/plain' }));
+    form.append('folderId', 'removed-investigation');
+    const res = await app.request('/api/files/upload', { method: 'POST', headers: authHeader(), body: form });
+    expect(res.status).toBe(403);
+    expect(mockWriteFile).not.toHaveBeenCalled();
+    expect(mockDbInsert).not.toHaveBeenCalled();
+  });
+  it('removes the newly written blob when its record cannot be saved', async () => {
+    mockValues.mockRejectedValueOnce(new Error('Temporary database failure'));
+    const form = new FormData();
+    form.append('file', new File(['ordinary note'], 'summary.txt', { type: 'text/plain' }));
+    const res = await app.request('/api/files/upload', { method: 'POST', headers: authHeader(), body: form });
+    expect(res.status).toBe(500);
+    expect(mockWriteFile).toHaveBeenCalledTimes(1);
+    expect(mockUnlink).toHaveBeenCalledWith(mockWriteFile.mock.calls[0][0]);
+  });
   it('returns 400 when no file is provided', async () => {
     const formData = new FormData();
     const res = await app.request('/api/files/upload', {

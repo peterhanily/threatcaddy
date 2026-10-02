@@ -4,10 +4,20 @@ import { getToolsForCapabilities, toAnthropicTools, toOpenAITools } from '../bot
 import type { BotTool } from '../bot-tools.js';
 import type { BotEvent } from '../types.js';
 import { GenericBot } from './generic-bot.js';
+import { assertSupportedAgentPolicy } from '../handoff-policy.js';
+import { readProviderJSON } from '../../lib/bounded-http.js';
 
 const DEFAULT_MAX_ITERATIONS = 10;
 const MAX_RESPONSE_TOKENS = 4096;
 const MAX_MESSAGE_BUDGET_CHARS = 200_000; // ~50k tokens — trim old messages beyond this
+
+interface OpenAIToolCall { id: string; type: 'function'; function: { name: string; arguments: string } }
+interface AgentMessage {
+  role: 'user' | 'assistant' | 'tool';
+  content: string | unknown[];
+  tool_calls?: OpenAIToolCall[];
+  tool_call_id?: string;
+}
 
 /**
  * AgentBot: LLM-powered bot that runs a tool-calling loop.
@@ -46,6 +56,7 @@ export class AgentBot extends GenericBot {
 
   private async runAgentLoop(execCtx: BotExecutionContext, triggerContext: string): Promise<void> {
     const botConfig = this.config;
+    assertSupportedAgentPolicy(botConfig);
     const agentConfig = execCtx.getConfig();
 
     const provider = (agentConfig.llmProvider as string) || 'anthropic';
@@ -73,21 +84,22 @@ export class AgentBot extends GenericBot {
     const systemPrompt = this.buildSystemPrompt(customSystemPrompt, tools);
 
     // Initial user message with trigger context
-    const messages: Array<{ role: string; content: string | unknown[] }> = [
+    const messages: AgentMessage[] = [
       { role: 'user', content: triggerContext },
     ];
 
     // Agent loop
     for (let iteration = 0; iteration < maxIterations; iteration++) {
       // Check abort before each LLM call
-      if (botConfig.capabilities.length === 0) break; // safety
+      execCtx.checkAborted();
 
       // Sliding window: trim old messages if total size exceeds budget.
       // Keep the first user message (trigger context) and the most recent
       // messages, dropping middle tool call/result pairs.
       this.trimMessages(messages);
 
-      const response = await this.callLLM(provider, model, apiKey, systemPrompt, messages, tools);
+      const response = await this.callLLM(provider, model, apiKey, systemPrompt, messages, tools, execCtx.signal);
+      execCtx.checkAborted();
 
       if (provider === 'anthropic') {
         const result = await this.handleAnthropicResponse(response, toolMap, execCtx, messages);
@@ -140,24 +152,28 @@ export class AgentBot extends GenericBot {
     model: string,
     apiKey: string,
     systemPrompt: string,
-    messages: Array<{ role: string; content: string | unknown[] }>,
+    messages: AgentMessage[],
     tools: BotTool[],
+    lifecycleSignal: AbortSignal,
   ): Promise<unknown> {
+    const signal = AbortSignal.any([lifecycleSignal, AbortSignal.timeout(60_000)]);
+    signal.throwIfAborted();
     if (provider === 'anthropic') {
-      return this.callAnthropic(model, apiKey, systemPrompt, messages, tools);
+      return this.callAnthropic(model, apiKey, systemPrompt, messages, tools, signal);
     } else if (provider === 'openai') {
-      return this.callOpenAI(model, apiKey, systemPrompt, messages, tools);
+      return this.callOpenAI(model, apiKey, systemPrompt, messages, tools, signal);
     }
     // Fallback for non-tool-calling providers: just get text
-    return this.callGenericLLM(provider, model, apiKey, systemPrompt, messages);
+    return this.callGenericLLM(provider, model, apiKey, systemPrompt, messages, signal);
   }
 
   private async callAnthropic(
     model: string,
     apiKey: string,
     systemPrompt: string,
-    messages: Array<{ role: string; content: string | unknown[] }>,
+    messages: AgentMessage[],
     tools: BotTool[],
+    signal: AbortSignal,
   ): Promise<unknown> {
     const body: Record<string, unknown> = {
       model,
@@ -169,7 +185,7 @@ export class AgentBot extends GenericBot {
 
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      signal: AbortSignal.timeout(60_000),
+      signal,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
@@ -178,28 +194,24 @@ export class AgentBot extends GenericBot {
       body: JSON.stringify(body),
     });
 
-    if (!resp.ok) {
-      const errText = await resp.text();
-      throw new Error(`Anthropic API error ${resp.status}: ${errText}`);
-    }
-
-    return resp.json();
+    return readProviderJSON(resp, signal, 'Anthropic');
   }
 
   private async callOpenAI(
     model: string,
     apiKey: string,
     systemPrompt: string,
-    messages: Array<{ role: string; content: string | unknown[] }>,
+    messages: AgentMessage[],
     tools: BotTool[],
+    signal: AbortSignal,
   ): Promise<unknown> {
     const openaiMessages = [
       { role: 'system', content: systemPrompt },
       ...messages.map(m => ({
         role: m.role,
         content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
-        ...(m.role === 'assistant' && typeof m.content !== 'string' ? { tool_calls: (m as Record<string, unknown>).tool_calls } : {}),
-        ...(m.role === 'tool' ? { tool_call_id: (m as Record<string, unknown>).tool_call_id } : {}),
+        ...(m.role === 'assistant' && m.tool_calls ? { tool_calls: m.tool_calls } : {}),
+        ...(m.role === 'tool' ? { tool_call_id: m.tool_call_id } : {}),
       })),
     ];
 
@@ -212,7 +224,7 @@ export class AgentBot extends GenericBot {
 
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      signal: AbortSignal.timeout(60_000),
+      signal,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
@@ -220,12 +232,7 @@ export class AgentBot extends GenericBot {
       body: JSON.stringify(body),
     });
 
-    if (!resp.ok) {
-      const errText = await resp.text();
-      throw new Error(`OpenAI API error ${resp.status}: ${errText}`);
-    }
-
-    return resp.json();
+    return readProviderJSON(resp, signal, 'OpenAI');
   }
 
   private async callGenericLLM(
@@ -233,7 +240,8 @@ export class AgentBot extends GenericBot {
     model: string,
     apiKey: string,
     systemPrompt: string,
-    messages: Array<{ role: string; content: string | unknown[] }>,
+    messages: AgentMessage[],
+    signal: AbortSignal,
   ): Promise<unknown> {
     // Simple text-only call for non-tool-calling providers
     if (provider === 'gemini') {
@@ -245,25 +253,23 @@ export class AgentBot extends GenericBot {
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
-          signal: AbortSignal.timeout(60_000),
+          signal,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: systemPrompt }] } }),
         },
       );
-      if (!resp.ok) throw new Error(`Gemini API error ${resp.status}: ${await resp.text()}`);
-      return resp.json();
+      return readProviderJSON(resp, signal, 'Gemini');
     }
 
     if (provider === 'mistral') {
       const allMessages = [{ role: 'system', content: systemPrompt }, ...messages];
       const resp = await fetch('https://api.mistral.ai/v1/chat/completions', {
         method: 'POST',
-        signal: AbortSignal.timeout(60_000),
+        signal,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
         body: JSON.stringify({ model, messages: allMessages }),
       });
-      if (!resp.ok) throw new Error(`Mistral API error ${resp.status}: ${await resp.text()}`);
-      return resp.json();
+      return readProviderJSON(resp, signal, 'Mistral');
     }
 
     throw new Error(`Unsupported LLM provider for agent bot: ${provider}`);
@@ -273,7 +279,7 @@ export class AgentBot extends GenericBot {
     response: unknown,
     toolMap: Map<string, BotTool>,
     execCtx: BotExecutionContext,
-    messages: Array<{ role: string; content: string | unknown[] }>,
+    messages: AgentMessage[],
   ): Promise<{ continueLoop: boolean }> {
     const msg = response as {
       content: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }>;
@@ -301,6 +307,7 @@ export class AgentBot extends GenericBot {
     // Execute each tool and collect results
     const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
     for (const block of toolUseBlocks) {
+      execCtx.checkAborted();
       const tool = toolMap.get(block.name!);
       if (!tool) {
         toolResults.push({
@@ -325,6 +332,7 @@ export class AgentBot extends GenericBot {
         });
         logger.info(`AgentBot "${this.name}" tool call: ${block.name}`, { botId: this.id });
       } catch (err) {
+        execCtx.checkAborted();
         toolResults.push({
           type: 'tool_result',
           tool_use_id: block.id!,
@@ -348,14 +356,14 @@ export class AgentBot extends GenericBot {
     response: unknown,
     toolMap: Map<string, BotTool>,
     execCtx: BotExecutionContext,
-    messages: Array<{ role: string; content: string | unknown[] }>,
+    messages: AgentMessage[],
   ): Promise<{ continueLoop: boolean }> {
     const resp = response as {
       choices: Array<{
         message: {
           role: string;
           content: string | null;
-          tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }>;
+          tool_calls?: OpenAIToolCall[];
         };
         finish_reason: string;
       }>;
@@ -381,11 +389,12 @@ export class AgentBot extends GenericBot {
     messages.push({
       role: 'assistant',
       content: assistantMsg.content || '',
-      ...({ tool_calls: toolCalls } as Record<string, unknown>),
-    } as { role: string; content: string | unknown[] });
+      tool_calls: toolCalls,
+    });
 
     // Execute each tool and append results
     for (const tc of toolCalls) {
+      execCtx.checkAborted();
       const tool = toolMap.get(tc.function.name);
       let resultStr: string;
 
@@ -406,6 +415,7 @@ export class AgentBot extends GenericBot {
           });
           logger.info(`AgentBot "${this.name}" tool call: ${tc.function.name}`, { botId: this.id });
         } catch (err) {
+          execCtx.checkAborted();
           resultStr = JSON.stringify({ error: String(err) });
           execCtx.addLogEntry({
             ts: toolStart, type: 'tool_call', name: tc.function.name,
@@ -418,8 +428,8 @@ export class AgentBot extends GenericBot {
       messages.push({
         role: 'tool',
         content: resultStr,
-        ...({ tool_call_id: tc.id } as Record<string, unknown>),
-      } as { role: string; content: string | unknown[] });
+        tool_call_id: tc.id,
+      });
     }
 
     return { continueLoop: choice.finish_reason === 'tool_calls' };
@@ -430,9 +440,9 @@ export class AgentBot extends GenericBot {
    * Keeps the first message (trigger context) and trims from the middle,
    * preserving the most recent conversation turns.
    */
-  private trimMessages(messages: Array<{ role: string; content: string | unknown[] }>): void {
+  private trimMessages(messages: AgentMessage[]): void {
     const totalChars = messages.reduce((sum, m) => {
-      return sum + (typeof m.content === 'string' ? m.content.length : JSON.stringify(m.content).length);
+      return sum + JSON.stringify(m).length;
     }, 0);
 
     if (totalChars <= MAX_MESSAGE_BUDGET_CHARS || messages.length <= 3) return;
@@ -440,7 +450,12 @@ export class AgentBot extends GenericBot {
     // Keep first message (trigger) + last 4 messages (recent context)
     // Drop messages from index 1 to (length - 4)
     const keepTail = Math.min(4, messages.length - 1);
-    const dropCount = messages.length - 1 - keepTail;
+    let dropCount = messages.length - 1 - keepTail;
+    // Never start retained context with orphaned tool results. Anthropic packs
+    // results into a user message; OpenAI uses one tool-role message per result.
+    const isResult = (message: AgentMessage) => message.role === 'tool'
+      || Array.isArray(message.content) && message.content.some(block => (block as { type?: string })?.type === 'tool_result');
+    while (dropCount > 0 && isResult(messages[dropCount + 1])) dropCount--;
     if (dropCount > 0) {
       const summary = `[${dropCount} earlier messages trimmed to fit context budget]`;
       messages.splice(1, dropCount, { role: 'user', content: summary });

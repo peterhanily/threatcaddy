@@ -3,6 +3,7 @@ import { db } from '../db';
 import type { StandaloneIOC } from '../types';
 import { nanoid } from 'nanoid';
 import { purgeOldTrash } from '../lib/trash-purge';
+import { deleteEntitiesWithReferences } from '../lib/entity-relations';
 
 /** Manages standalone IOCs stored in IndexedDB -- create, update, bulk import, trash, and tag operations.
  * Pass `folderId` to scope the initial load to a single investigation (uses folderId index for performance).
@@ -55,7 +56,7 @@ export function useStandaloneIOCs(folderId?: string) {
   }, []);
 
   const deleteIOC = useCallback(async (id: string) => {
-    await db.standaloneIOCs.delete(id);
+    await deleteEntitiesWithReferences({ standaloneIOCs: [id] });
     setIOCs((prev) => prev.filter((i) => i.id !== id));
   }, []);
 
@@ -75,7 +76,7 @@ export function useStandaloneIOCs(folderId?: string) {
   const emptyTrashIOCs = useCallback(async () => {
     const trashedIds = iocs.filter((i) => i.trashed).map((i) => i.id);
     if (trashedIds.length === 0) return;
-    await db.standaloneIOCs.bulkDelete(trashedIds);
+    await deleteEntitiesWithReferences({ standaloneIOCs: trashedIds });
     setIOCs((prev) => prev.filter((i) => !i.trashed));
   }, [iocs]);
 

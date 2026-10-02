@@ -1,3 +1,4 @@
+import { HANDOFF_UNAVAILABLE, hasUnsupportedAgentPolicy } from '../bots/handoff-policy.js';
 import { nanoid } from 'nanoid';
 import { eq, desc } from 'drizzle-orm';
 import * as argon2 from 'argon2';
@@ -320,7 +321,7 @@ export async function createBot(input: BotCreateInput, createdBy: string): Promi
 
 /** Update a bot config. Returns the existing bot name for audit logging. */
 export async function updateBot(id: string, updates: Record<string, unknown>): Promise<{ name: string } | null> {
-  const rows = await db.select({ id: schema.botConfigs.id, name: schema.botConfigs.name, config: schema.botConfigs.config })
+  const rows = await db.select({ id: schema.botConfigs.id, name: schema.botConfigs.name, config: schema.botConfigs.config, sourceType: schema.botConfigs.sourceType })
     .from(schema.botConfigs).where(eq(schema.botConfigs.id, id)).limit(1);
   if (rows.length === 0) return null;
 
@@ -328,8 +329,10 @@ export async function updateBot(id: string, updates: Record<string, unknown>): P
   // back to the existing encrypted values so we don't destroy real secrets on edit
   if (updates.config && typeof updates.config === 'object') {
     const existingConfig = (rows[0].config || {}) as Record<string, unknown>;
-    updates.config = mergeSentinelSecrets(updates.config as Record<string, unknown>, existingConfig);
+    updates.config = encryptConfigSecrets(mergeSentinelSecrets(updates.config as Record<string, unknown>, existingConfig));
   }
+
+  if (hasUnsupportedAgentPolicy({ sourceType: rows[0].sourceType, config: (updates.config ?? rows[0].config ?? {}) as Record<string, unknown> })) updates.enabled = false;
 
   // Use returning() to get the full updated row, avoiding a re-SELECT in reloadBot
   const updatedRows = await db.update(schema.botConfigs).set(updates).where(eq(schema.botConfigs.id, id)).returning();
@@ -342,28 +345,43 @@ export async function updateBot(id: string, updates: Record<string, unknown>): P
 
 /** Replace sentinel redacted values with existing encrypted values from DB */
 export function mergeSentinelSecrets(newConfig: Record<string, unknown>, existingConfig: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(newConfig)) {
-    if (value === '***configured***') {
-      // Restore the existing encrypted value
-      result[key] = existingConfig[key] ?? '';
-    } else if (value === '***not set***') {
-      // Admin explicitly cleared this secret
-      result[key] = '';
-    } else if (value && typeof value === 'object' && !Array.isArray(value)) {
-      // Recurse into nested objects
-      const existingNested = (existingConfig[key] && typeof existingConfig[key] === 'object' && !Array.isArray(existingConfig[key]))
-        ? existingConfig[key] as Record<string, unknown> : {};
-      result[key] = mergeSentinelSecrets(value as Record<string, unknown>, existingNested);
-    } else {
-      result[key] = value;
+  function merge(value: unknown, existing: unknown): unknown {
+    if (value === '***configured***') return existing ?? '';
+    if (value === '***not set***') return '';
+    if (Array.isArray(value)) {
+      const old = Array.isArray(existing) ? existing : [];
+      return value.map((item, index) => {
+        // Array positions can change when an administrator reorders connections.
+        // Bind retained credentials to their stable target identity, not its index.
+        if (item && typeof item === 'object' && !Array.isArray(item) && JSON.stringify(item).includes('"***configured***"')) {
+          const record = item as Record<string, unknown>;
+          const identityKeys = ['id', 'hostId', 'integrationId', 'hostname', 'host', 'url']
+            .filter(key => typeof record[key] === 'string' && record[key]);
+          if (identityKeys.length) {
+            const matches = old.filter(candidate => candidate && typeof candidate === 'object'
+              && identityKeys.every(key => (candidate as Record<string, unknown>)[key] === record[key]));
+            if (matches.length !== 1) throw new Error('Cannot preserve redacted credentials for a changed or ambiguous connection. Re-enter its credentials.');
+            return merge(item, matches[0]);
+          }
+        }
+        return merge(item, old[index]);
+      });
     }
+    if (value && typeof value === 'object') {
+      const old = existing && typeof existing === 'object' ? existing as Record<string, unknown> : {};
+      return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, merge(child, old[key])]));
+    }
+    return value;
   }
-  return result;
+  return merge(newConfig, existingConfig) as Record<string, unknown>;
 }
 
 /** Enable a bot. Returns bot name or null if not found. */
-export async function enableBot(id: string): Promise<{ name: string } | null> {
+export async function enableBot(id: string): Promise<{ name: string } | { error: string } | null> {
+  const [existing] = await db.select({ config: schema.botConfigs.config, sourceType: schema.botConfigs.sourceType })
+    .from(schema.botConfigs).where(eq(schema.botConfigs.id, id)).limit(1);
+  if (!existing) return null;
+  if (hasUnsupportedAgentPolicy({ sourceType: existing.sourceType, config: (existing.config ?? {}) as Record<string, unknown> })) return { error: HANDOFF_UNAVAILABLE };
   const rows = await db.update(schema.botConfigs)
     .set({ enabled: true, updatedAt: new Date() })
     .where(eq(schema.botConfigs.id, id))
@@ -388,9 +406,10 @@ export async function disableBot(id: string): Promise<{ name: string } | null> {
 
 /** Trigger a bot manually. Returns { name } or { error } or null if not found. */
 export async function triggerBot(id: string): Promise<{ name: string } | { error: string } | null> {
-  const rows = await db.select({ id: schema.botConfigs.id, name: schema.botConfigs.name, enabled: schema.botConfigs.enabled })
+  const rows = await db.select({ id: schema.botConfigs.id, name: schema.botConfigs.name, enabled: schema.botConfigs.enabled, config: schema.botConfigs.config, sourceType: schema.botConfigs.sourceType })
     .from(schema.botConfigs).where(eq(schema.botConfigs.id, id)).limit(1);
   if (rows.length === 0) return null;
+  if (hasUnsupportedAgentPolicy({ sourceType: rows[0].sourceType, config: (rows[0].config ?? {}) as Record<string, unknown> })) return { error: HANDOFF_UNAVAILABLE };
   if (!rows[0].enabled) return { error: 'Bot is disabled' };
 
   botManager.executeBot(id, 'manual').catch(() => { /* fire-and-forget */ });

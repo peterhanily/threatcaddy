@@ -138,9 +138,7 @@ describe('mergeText', () => {
     it('reports conflict when both sides modify the same region differently', () => {
       // Both sides change the same word to different values
       const r = mergeText('The cat sat', 'The dog sat', 'The bird sat');
-      // diff-match-patch may still succeed in applying patches, but the
-      // result should be defined (either ok:true with best-effort merge or ok:false with conflict)
-      expect(r).toHaveProperty('ok');
+      expect(r).toEqual({ ok: false, conflict: true });
     });
 
     it('conflict result has ok: false and conflict: true when patches fail', () => {

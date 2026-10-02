@@ -4,6 +4,11 @@
   "description": "Browser extension for ThreatCaddy — quick capture notes from any page",
   "private": true,
   "type": "module",
+  "packageManager": "npm@11.19.0",
+  "engines": {
+    "node": ">=24.21.0 <25",
+    "npm": ">=11.19.0 <12"
+  },
   "scripts": {
     "generate:icons": "node scripts/generate-icons.js",
     "build": "npm run generate:icons && BROWSER=chrome node scripts/build.js && BROWSER=firefox node scripts/build.js",
@@ -11,11 +16,11 @@
     "build:firefox": "npm run generate:icons && BROWSER=firefox node scripts/build.js",
     "package:chrome": "cd dist/chrome && zip -r ../threatcaddy-chrome.zip .",
     "package:firefox": "cd dist/firefox && zip -r ../threatcaddy-firefox.zip .",
-    "test": "npx vitest run --config vitest.config.js",
-    "test:watch": "npx vitest --config vitest.config.js"
+    "test": "node ../node_modules/vitest/vitest.mjs run --config vitest.config.js",
+    "test:watch": "node ../node_modules/vitest/vitest.mjs --config vitest.config.js"
   },
   "devDependencies": {
     "esbuild": "^0.25.0",
-    "sharp": "^0.34.5"
+    "sharp": "^0.35.5"
   }
 }

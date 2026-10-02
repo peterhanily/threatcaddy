@@ -19,6 +19,7 @@ const {
     whiteboards: [],
     standaloneIOCs: [],
     chatThreads: [],
+    evidenceItems: [],
   };
 
   function makeWhereChain(dataRef: () => unknown[]) {
@@ -49,6 +50,7 @@ vi.mock('../db', () => ({
     whiteboards: makeWhereChain(() => mockDbTables.whiteboards),
     standaloneIOCs: makeWhereChain(() => mockDbTables.standaloneIOCs),
     chatThreads: makeWhereChain(() => mockDbTables.chatThreads),
+    evidenceItems: makeWhereChain(() => mockDbTables.evidenceItems),
   },
 }));
 
@@ -228,8 +230,9 @@ describe('useInvestigationData', () => {
       tasks: [{ id: 't1' }, { id: 't2' }],
       timelineEvents: [{ id: 'e1' }],
       whiteboards: [],
-      standaloneIOCs: [{ id: 'i1' }],
+      standaloneIOCs: [{ id: 'i1', type: 'domain', value: 'example.invalid' }],
       chatThreads: [{ id: 'c1' }],
+      evidenceItems: [{ id: 'evidence-1', fileName: 'fixture.txt', title: 'Fixture', content: 'Readable source' }],
     });
 
     const { result } = renderHook(() => useInvestigationData('folder-remote', 'remote'));
@@ -246,6 +249,7 @@ describe('useInvestigationData', () => {
     expect(result.current.iocs).toHaveLength(1);
     // chatThreads -> chats
     expect(result.current.chats).toHaveLength(1);
+    expect(result.current.evidence).toHaveLength(1);
     expect(result.current.isRemote).toBe(true);
   });
 

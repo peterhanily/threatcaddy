@@ -1,36 +1,14 @@
 import type { IOCType, ConfidenceLevel } from '../types';
+import { v5 as uuidv5 } from 'uuid';
+import { TLP2_EXTENSION } from './stix-common-objects';
 import type { IOCExportEntry, ThreatIntelExportConfig, IOCExportFilter } from './ioc-export';
 import { applyExportFilter } from './ioc-export';
 import { STIX_TLP_MARKING_DEFS, resolveIOCClsLevel } from './classification';
 
-// --- Deterministic UUID via FNV-1a hash ---
-
-function fnv1a(input: string): number {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return hash >>> 0;
-}
-
+// Stable semantic identity, using RFC-compatible UUIDv5 in the URL namespace.
 function deterministicUUID(namespace: string, value: string): string {
-  const h1 = fnv1a(`${namespace}:${value}:0`);
-  const h2 = fnv1a(`${namespace}:${value}:1`);
-  const h3 = fnv1a(`${namespace}:${value}:2`);
-  const h4 = fnv1a(`${namespace}:${value}:3`);
-  const hex = [
-    h1.toString(16).padStart(8, '0'),
-    h2.toString(16).padStart(8, '0'),
-    h3.toString(16).padStart(8, '0'),
-    h4.toString(16).padStart(8, '0'),
-  ].join('');
-  // Format as UUID v5-ish: 8-4-4-4-12
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+  return uuidv5(`${namespace}:${value}`, uuidv5.URL);
 }
-
-// --- Confidence mapping ---
-
 const CONFIDENCE_MAP: Record<ConfidenceLevel, number> = {
   low: 15,
   medium: 50,
@@ -42,7 +20,7 @@ const CONFIDENCE_MAP: Record<ConfidenceLevel, number> = {
 
 function stixPattern(type: IOCType, value: string): { pattern: string; pattern_type: string } | null {
   // Escape single quotes for STIX patterns
-  const escaped = value.replace(/'/g, "\\'");
+  const escaped = value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
   switch (type) {
     case 'ipv4':
@@ -64,7 +42,7 @@ function stixPattern(type: IOCType, value: string): { pattern: string; pattern_t
     case 'sha256':
       return { pattern: `[file:hashes.'SHA-256' = '${escaped}']`, pattern_type: 'stix' };
     case 'mitre-attack':
-      return { pattern: `[attack-pattern:external_references[*].external_id = '${escaped}']`, pattern_type: 'stix' };
+      return null; // ATT&CK techniques are Attack Pattern SDOs, not observable patterns.
     case 'yara-rule':
       return { pattern: value, pattern_type: 'yara' };
     case 'sigma-rule':
@@ -83,7 +61,7 @@ interface STIXObject {
   spec_version: string;
   id: string;
   created: string;
-  modified: string;
+  modified?: string;
   [key: string]: unknown;
 }
 
@@ -97,6 +75,17 @@ export interface STIXExportConfig extends ThreatIntelExportConfig {
   identityName?: string;
 }
 
+// Definition epoch for the generated attribution identity, not an analyst's account creation.
+const GENERATED_IDENTITY_EPOCH = '2026-10-02T00:00:00.000Z';
+function sourceTimes(ioc: IOCExportEntry['iocs'][number], entry: IOCExportEntry) {
+  const created = ioc.createdAt ?? ioc.firstSeen;
+  const modified = Math.max(created, ioc.updatedAt ?? entry.updatedAt ?? created);
+  if (![created, modified, ioc.firstSeen].every(value => Number.isFinite(value) && value >= 0 && value <= 8.64e15)) {
+    throw new Error('Cannot export an IOC with invalid source timestamps. Correct its source dates first.');
+  }
+  return { created: new Date(created).toISOString(), modified: new Date(modified).toISOString() };
+}
+
 // --- Main export ---
 
 export function formatIOCsSTIX(
@@ -104,10 +93,10 @@ export function formatIOCsSTIX(
   config: STIXExportConfig = {},
   filter?: IOCExportFilter,
 ): string {
-  const now = new Date().toISOString();
   const objects: STIXObject[] = [];
   const objectRefs: string[] = [];
   const referencedMarkingDefIds = new Set<string>();
+  const extraMarkings = new Map<string, STIXObject>();
 
   // Filter out dismissed IOCs (and apply export filter if provided)
   const activeEntries = applyExportFilter(entries, filter).map((e) => ({
@@ -122,8 +111,8 @@ export function formatIOCsSTIX(
     type: 'identity',
     spec_version: '2.1',
     id: identityId,
-    created: now,
-    modified: now,
+    created: GENERATED_IDENTITY_EPOCH,
+    modified: GENERATED_IDENTITY_EPOCH,
     name: identityName,
     identity_class: 'individual',
   });
@@ -134,32 +123,53 @@ export function formatIOCsSTIX(
   // 2. Indicator + Vulnerability SDOs
   for (const entry of activeEntries) {
     for (const ioc of entry.iocs) {
+      const timestamps = sourceTimes(ioc, entry);
       // Resolve TLP level for this IOC via cascade
       const resolvedLevel = resolveIOCClsLevel(ioc.clsLevel, entry.entityClsLevel, config.defaultClsLevel);
       const tlpKey = resolvedLevel.toUpperCase();
       const markingDef = STIX_TLP_MARKING_DEFS[tlpKey];
-      const markingRefs = markingDef ? [markingDef.id] : undefined;
+      const markingRefs: string[] = markingDef ? [markingDef.id] : [];
       if (markingDef) referencedMarkingDefIds.add(tlpKey);
+      if (resolvedLevel && !markingDef) {
+        const id = `marking-definition--${deterministicUUID('statement', resolvedLevel)}`;
+        markingRefs.push(id);
+        extraMarkings.set(id, { type: 'marking-definition', spec_version: '2.1', id,
+          created: '2022-10-01T00:00:00.000Z', definition_type: 'statement', definition: { statement: resolvedLevel } });
+      }
+      for (const provenance of ioc.enrichment?.stix ?? []) {
+        try {
+          const source = JSON.parse(String(provenance.object)) as Record<string, unknown>;
+          if (Array.isArray(source.object_marking_refs)) markingRefs.push(...source.object_marking_refs.filter((v): v is string => typeof v === 'string'));
+          // Conservatively promote granular restrictions to the whole newly serialized object.
+          if (Array.isArray(source.granular_markings)) for (const marking of source.granular_markings) {
+            if (marking && typeof marking.marking_ref === 'string') markingRefs.push(marking.marking_ref);
+          }
+          const defs: unknown = JSON.parse(String(provenance.markings));
+          if (Array.isArray(defs)) for (const def of defs) if (def?.type === 'marking-definition' && typeof def.id === 'string') extraMarkings.set(def.id, def);
+        } catch { throw new Error('Cannot export damaged STIX marking provenance. Restore the original source before exporting.'); }
+      }
 
       // CVEs → Vulnerability SDO
-      if (ioc.type === 'cve') {
-        const vulnId = `vulnerability--${deterministicUUID('vulnerability', ioc.value)}`;
+      if (ioc.type === 'cve' || ioc.type === 'mitre-attack') {
+        const objectType = ioc.type === 'cve' ? 'vulnerability' : 'attack-pattern';
+        const vulnId = `${objectType}--${deterministicUUID(objectType, ioc.value.toUpperCase())}`;
         iocIdToStixId.set(ioc.id, vulnId);
         const vuln: STIXObject = {
-          type: 'vulnerability',
+          type: objectType,
           spec_version: '2.1',
           id: vulnId,
-          created: now,
-          modified: now,
+          ...timestamps,
           name: ioc.value.toUpperCase(),
           external_references: [
             {
-              source_name: 'cve',
+              source_name: ioc.type,
               external_id: ioc.value.toUpperCase(),
             },
           ],
         };
-        if (markingRefs) vuln.object_marking_refs = markingRefs;
+        vuln.confidence = CONFIDENCE_MAP[ioc.confidence] ?? 50;
+        if (ioc.analystNotes) vuln.description = ioc.analystNotes;
+        if (markingRefs.length) vuln.object_marking_refs = [...new Set(markingRefs)];
         objects.push(vuln);
         objectRefs.push(vulnId);
         continue;
@@ -176,8 +186,7 @@ export function formatIOCsSTIX(
         type: 'indicator',
         spec_version: '2.1',
         id: indicatorId,
-        created: now,
-        modified: now,
+        ...timestamps,
         name: ioc.value.length > 80 ? `${ioc.value.slice(0, 77)}...` : ioc.value,
         indicator_types: ['malicious-activity'],
         pattern: patternInfo.pattern,
@@ -187,7 +196,7 @@ export function formatIOCsSTIX(
         created_by_ref: identityId,
       };
 
-      if (markingRefs) indicator.object_marking_refs = markingRefs;
+      if (markingRefs.length) indicator.object_marking_refs = [...new Set(markingRefs)];
 
       if (ioc.analystNotes) {
         indicator.description = ioc.analystNotes;
@@ -209,13 +218,17 @@ export function formatIOCsSTIX(
         const targetStixId = iocIdToStixId.get(rel.targetIOCId);
         if (!targetStixId) continue;
 
+        const sourceObjects = objects.filter(object => object.id === sourceStixId || object.id === targetStixId);
+        const created = sourceObjects.map(object => object.created).sort().at(-1) ?? sourceTimes(ioc, entry).created;
+        const modified = sourceObjects.map(object => object.modified ?? object.created).sort().at(-1) ?? created;
+
         const relId = `relationship--${deterministicUUID('relationship', `${sourceStixId}:${rel.relationshipType}:${targetStixId}`)}`;
         objects.push({
           type: 'relationship',
           spec_version: '2.1',
           id: relId,
-          created: now,
-          modified: now,
+          created,
+          modified,
           relationship_type: rel.relationshipType,
           source_ref: sourceStixId,
           target_ref: targetStixId,
@@ -229,16 +242,20 @@ export function formatIOCsSTIX(
   // 4. Report SDO
   if (objectRefs.length > 0) {
     const reportTitle = activeEntries.map((e) => e.clipTitle).join(', ') || 'IOC Report';
-    const reportId = `report--${deterministicUUID('report', reportTitle)}`;
+    // Different selection sets are distinct reports; repeated exports do not invent new versions.
+    const reportId = `report--${deterministicUUID('report', JSON.stringify([reportTitle, [...new Set(objectRefs)].sort()]))}`;
+    const sourceObjects = objects.filter(object => object.type !== 'identity');
+    const created = sourceObjects.map(object => object.created).sort()[0];
+    const modified = sourceObjects.map(object => object.modified ?? object.created).sort().at(-1) ?? created;
     objects.push({
       type: 'report',
       spec_version: '2.1',
       id: reportId,
-      created: now,
-      modified: now,
+      created,
+      modified,
       name: reportTitle,
       report_types: ['threat-report'],
-      published: now,
+      published: modified,
       object_refs: objectRefs,
       created_by_ref: identityId,
     });
@@ -253,11 +270,31 @@ export function formatIOCsSTIX(
     }
   }
 
+  // Merge duplicate semantic objects only after unioning all restrictions.
+  const uniqueObjects = new Map<string, STIXObject>();
+  for (const object of [...markingDefObjects, ...extraMarkings.values(), ...objects]) {
+    const existing = uniqueObjects.get(object.id);
+    if (existing) {
+      const refs = [...new Set([...(existing.object_marking_refs as string[] ?? []), ...(object.object_marking_refs as string[] ?? [])])];
+      if (refs.length) existing.object_marking_refs = refs;
+      if (typeof object.confidence === 'number' && typeof existing.confidence === 'number') existing.confidence = Math.min(object.confidence, existing.confidence);
+      existing.created = [existing.created, object.created].sort()[0];
+      if (existing.modified && object.modified) existing.modified = [existing.modified, object.modified].sort()[1];
+    } else uniqueObjects.set(object.id, object);
+  }
+  const allRefs = [...new Set([...uniqueObjects.values()].flatMap(o => o.object_marking_refs as string[] ?? []))];
+  // Reports and relationships disclose the same marked indicator graph.
+  for (const object of uniqueObjects.values()) {
+    if ((object.type === 'report' || object.type === 'relationship') && allRefs.length) object.object_marking_refs = allRefs;
+    if (Array.isArray(object.object_refs)) object.object_refs = [...new Set(object.object_refs)];
+  }
+  if (referencedMarkingDefIds.size) uniqueObjects.set(TLP2_EXTENSION.id, TLP2_EXTENSION);
+
   // 6. Bundle
   const bundle: STIXBundle = {
     type: 'bundle',
-    id: `bundle--${deterministicUUID('bundle', now)}`,
-    objects: [...markingDefObjects, ...objects],
+    id: `bundle--${deterministicUUID('bundle', JSON.stringify([...uniqueObjects.values()]))}`,
+    objects: [...uniqueObjects.values()],
   };
 
   return JSON.stringify(bundle, null, 2);

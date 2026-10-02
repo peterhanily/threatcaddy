@@ -2,8 +2,11 @@
  * Persisted encryption metadata in localStorage.
  */
 
-const STORAGE_KEY = 'threatcaddy-encryption';
-const SESSION_CACHE_KEY = 'threatcaddy-session-cache';
+import { workspaceStorageKey } from './workspace-profiles';
+
+export const encryptionStorageKey = workspaceStorageKey('threatcaddy-encryption');
+const STORAGE_KEY = encryptionStorageKey;
+const SESSION_CACHE_KEY = workspaceStorageKey('threatcaddy-session-cache');
 
 export type SessionDuration = 'every-load' | 'tab-close' | '1h' | '8h' | '24h';
 
@@ -28,13 +31,21 @@ export interface EncryptionMetadata {
   recoveryWrappedKey: string;  // base64, master key wrapped by recovery-derived key
   enabledAt: number;
   sessionDuration?: SessionDuration;
+  /** Content-field registry version durably converted in IndexedDB. */
+  coverageVersion?: number;
+  /** Retain wrapped keys until an interrupted conversion has finished. */
+  transition?: 'encrypting' | 'decrypting';
 }
 
 export function getEncryptionMeta(): EncryptionMetadata | null {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as EncryptionMetadata;
+    const value = JSON.parse(raw) as Partial<EncryptionMetadata> | null;
+    if (!value || value.version !== 1 || !Number.isFinite(value.enabledAt)
+      || !['salt', 'wrappedKey', 'recoverySalt', 'recoveryWrappedKey'].every(key => typeof value[key as keyof EncryptionMetadata] === 'string')
+      || (value.transition !== undefined && value.transition !== 'encrypting' && value.transition !== 'decrypting')) return null;
+    return value as EncryptionMetadata;
   } catch {
     return null;
   }
@@ -50,7 +61,8 @@ export function clearEncryptionMeta(): void {
 }
 
 export function isEncryptionEnabled(): boolean {
-  return getEncryptionMeta() !== null;
+  // Corrupt metadata must not silently unlock the workspace.
+  return localStorage.getItem(STORAGE_KEY) !== null;
 }
 
 export function getSessionDuration(): SessionDuration {

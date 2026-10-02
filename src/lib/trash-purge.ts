@@ -1,4 +1,5 @@
 import type { EntityTable } from 'dexie';
+import { deleteEntitiesWithReferences, ENTITY_RELATIONS } from './entity-relations';
 
 const TRASH_PURGE_DAYS = 30;
 
@@ -19,10 +20,12 @@ export async function purgeOldTrash<T extends Trashable>(
   const purgeThreshold = Date.now() - TRASH_PURGE_DAYS * 86400000;
   const toPurge = items.filter((item) => item.trashed && item.trashedAt && item.trashedAt < purgeThreshold);
   if (toPurge.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- IDType<T,'id'> is always string at runtime
-    await table.bulkDelete(toPurge.map((item) => item.id) as any);
+    if (!ENTITY_RELATIONS[table.name]) throw new Error('No safe purge lifecycle registered for ' + table.name);
+    await deleteEntitiesWithReferences({ [table.name]: toPurge.map(item => item.id) }, undefined, purgeThreshold);
   }
-  return toPurge.length > 0
-    ? items.filter((item) => !toPurge.some((p) => p.id === item.id))
-    : items;
+  if (!toPurge.length) return items;
+  // A record restored or edited while its queued purge waited must not vanish from the view.
+  const retained = new Map((await table.where('id').anyOf(toPurge.map(item => item.id)).toArray()).map(item => [item.id, item]));
+  const candidates = new Set(toPurge.map(item => item.id));
+  return items.flatMap(item => candidates.has(item.id) ? retained.get(item.id) ?? [] : item);
 }

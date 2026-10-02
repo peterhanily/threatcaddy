@@ -1,0 +1,146 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1772574243586,
+      "tag": "0000_blue_night_thrasher",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772582549844,
+      "tag": "0001_medical_roulette",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772583117973,
+      "tag": "0002_breezy_microbe",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1741100000000,
+      "tag": "0003_add_indexes_and_deleted_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1741200000000,
+      "tag": "0004_task_assignee_and_retention",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1741300000000,
+      "tag": "0005_add_created_by_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1741400000000,
+      "tag": "0006_backups_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1741500000000,
+      "tag": "0007_rename_images_to_attachments",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1741600000000,
+      "tag": "0008_add_posts_composite_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1741700000000,
+      "tag": "0009_add_activity_log_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1741800000000,
+      "tag": "0010_fk_cascade_and_nullable_fixes",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1741900000000,
+      "tag": "0011_add_bot_system",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1742000000000,
+      "tag": "0012_add_admin_users",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1742100000000,
+      "tag": "0013_admin_audit_fixes",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1742200000000,
+      "tag": "0014_add_bot_run_log",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1742300000000,
+      "tag": "0015_add_integration_templates",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1742400000000,
+      "tag": "0016_add_performance_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1742500000000,
+      "tag": "0017_collaboration_features",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1742600000000,
+      "tag": "0018_refresh_token_reuse_detection",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1742700000000,
+      "tag": "0019_add_composite_filter_indexes",
+      "breakpoints": true
+    }
+  ]
+}

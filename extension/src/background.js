@@ -1,90 +1,122 @@
 // Background service worker for ThreatCaddy extension
 
 const MAX_CAPTURES = 500;
+const APP_APPROVAL_KEY = 'approvedAppsV1';
+const POLICY_MAX_AGE = 24 * 60 * 60 * 1000;
+const MAX_FETCH_BYTES = 5 * 1024 * 1024;
+
+function appTargetKey(value) {
+  const url = new URL(value);
+  if (url.username || url.password) throw new Error('App addresses cannot contain credentials');
+  if (url.protocol === 'file:') { url.hash = ''; url.search = ''; return url.href; }
+  if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Use an HTTP(S) app or an exact standalone file');
+  return url.origin;
+}
+
+function isExtensionPage(sender) {
+  return sender.id === chrome.runtime.id && typeof sender.url === 'string'
+    && sender.url.startsWith(chrome.runtime.getURL('/')) && (!sender.frameId || sender.frameId === 0);
+}
+
+async function approvedSender(sender) {
+  if (sender.id !== chrome.runtime.id) throw new Error('Unrecognized extension sender');
+  if (isExtensionPage(sender)) return { internal: true, key: 'extension' };
+  if (sender.frameId !== 0 || !sender.tab?.url || !sender.url) throw new Error('Only an approved top-level app may use this feature');
+  const key = appTargetKey(sender.url);
+  if (appTargetKey(sender.tab.url) !== key) throw new Error('The app tab changed; reconnect from extension settings');
+  const stored = await chrome.storage.local.get([APP_APPROVAL_KEY]);
+  const approval = stored[APP_APPROVAL_KEY]?.[key];
+  if (!approval) throw new Error('Approve this exact app address in ThreatCaddy extension settings first');
+  return { key, approval, internal: false };
+}
+
+function publicFetchURL(value) {
+  const url = new URL(value);
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('Use a credential-free HTTP(S) URL');
+  const host = url.hostname.toLowerCase().replace(/\.$/, '');
+  // Public hostname policy shared by fetch and integration proxy. DNS cannot be
+  // pinned by a portable WebExtension; host permission remains a separate boundary.
+  if (!host.includes('.') || host.includes(':') || /^[\d.]+$/.test(host)
+    || ['.localhost', '.local', '.internal', '.home', '.lan'].some(suffix => host.endsWith(suffix))) {
+    throw new Error('Private, local, and literal-IP destinations are not allowed for web fetch or integration proxy');
+  }
+  return url;
+}
+
+async function readBoundedResponse(response, limit = MAX_FETCH_BYTES) {
+  const size = Number(response.headers.get('content-length'));
+  if (Number.isFinite(size) && size > limit) throw new Error('Response exceeds the 5 MiB limit');
+  if (!response.body) return '';
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let bytes = 0;
+  let result = '';
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > limit) throw new Error('Response exceeds the 5 MiB limit');
+      result += decoder.decode(value, { stream: true });
+    }
+    return result + decoder.decode();
+  } catch (error) { await reader.cancel().catch(() => {}); throw error; }
+  finally { reader.releaseLock(); }
+}
+async function boundedFetch(url, options, timeout) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal, redirect: 'error', credentials: 'omit' });
+    return { response, text: await readBoundedResponse(response) };
+  } finally { clearTimeout(timer); }
+}
 
 // ── Dynamic bridge.js registration (MV3) ────────────────────────────────
-// Static content_scripts only cover threatcaddy.com. For self-hosted,
-// localhost, or file:// targets we register bridge.js dynamically.
+// No app is implicitly trusted. Only explicitly paired targets receive a bridge.
+// HTTP(S) uses dynamic registration; exact approved files use tab injection.
 
 const DYNAMIC_BRIDGE_SCRIPT_ID = 'dynamic-bridge';
-const STATIC_BRIDGE_PATTERNS = new Set([
-  'https://threatcaddy.com/*',
-  'https://www.threatcaddy.com/*',
-]);
 
 function targetUrlToMatchPattern(targetUrl) {
-  if (!targetUrl) return null;
   try {
-    const parsed = new URL(targetUrl);
+    const key = appTargetKey(targetUrl);
+    const parsed = new URL(key);
     if (parsed.protocol === 'file:') return null;
-    if (!/^https?:$/.test(parsed.protocol)) return null;
-    const pattern = `${parsed.protocol}//${parsed.host}/*`;
-    return STATIC_BRIDGE_PATTERNS.has(pattern) ? null : pattern;
+    // Match patterns cannot consistently constrain ports across browsers.
+    // The background sender check and readiness handshake do constrain them.
+    return parsed.protocol + '//' + parsed.hostname + '/*';
   } catch { return null; }
 }
 
-async function registerBridgeForPattern(matchPattern) {
-  if (!matchPattern) return;
-  try {
-    const existing = await chrome.scripting.getRegisteredContentScripts(
-      { ids: [DYNAMIC_BRIDGE_SCRIPT_ID] }
-    );
-    if (existing.length > 0) {
-      if (existing[0].matches?.[0] === matchPattern) return; // already correct
-      await chrome.scripting.updateContentScripts([{
-        id: DYNAMIC_BRIDGE_SCRIPT_ID,
-        matches: [matchPattern], js: ['bridge.js'], runAt: 'document_idle',
-      }]);
-    } else {
-      await chrome.scripting.registerContentScripts([{
-        id: DYNAMIC_BRIDGE_SCRIPT_ID,
-        matches: [matchPattern], js: ['bridge.js'], runAt: 'document_idle',
-      }]);
-    }
-  } catch (err) { console.warn('Dynamic bridge registration failed:', err); }
-}
-
 async function unregisterDynamicBridge() {
-  try {
-    await chrome.scripting.unregisterContentScripts({ ids: [DYNAMIC_BRIDGE_SCRIPT_ID] });
-  } catch { /* not registered */ }
+  try { await chrome.scripting.unregisterContentScripts({ ids: [DYNAMIC_BRIDGE_SCRIPT_ID] }); }
+  catch { /* Not registered. */ }
 }
 
 async function syncBridgeRegistration() {
-  const { settings = {} } = await chrome.storage.local.get(['settings']);
-  const targetUrl = settings.targetUrl;
-  if (!targetUrl || targetUrl === 'https://threatcaddy.com'
-      || targetUrl === 'https://www.threatcaddy.com') {
-    await unregisterDynamicBridge();
-    return;
-  }
-  const pattern = targetUrlToMatchPattern(targetUrl);
-  if (pattern) await registerBridgeForPattern(pattern);
-  else await unregisterDynamicBridge();
+  const stored = await chrome.storage.local.get([APP_APPROVAL_KEY]);
+  const patterns = [...new Set(Object.keys(stored[APP_APPROVAL_KEY] ?? {}).map(targetUrlToMatchPattern).filter(Boolean))];
+  await unregisterDynamicBridge();
+  if (!patterns.length) return;
+  try {
+    await chrome.scripting.registerContentScripts([{
+      id: DYNAMIC_BRIDGE_SCRIPT_ID, matches: patterns, js: ['bridge.js'], runAt: 'document_idle', allFrames: false,
+    }]);
+  } catch (error) { console.warn('Approved app bridge registration failed:', error); }
 }
 
-// Sync on every SW startup
 syncBridgeRegistration();
-
-// Re-sync when settings change (user saves new target URL in clips page)
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.settings) syncBridgeRegistration();
+  if (area === 'local' && changes[APP_APPROVAL_KEY]) syncBridgeRegistration();
 });
 
-// Auto-inject bridge.js on file:// targets (can't use registerContentScripts for file://)
-// Injects on: pages matching configured file:// target, or pages with "threatcaddy" in the URL
-// (covers standalone HTML). Silently fails if file:// access is not granted.
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status !== 'complete' || !tab.url?.startsWith('file://')) return;
-  const { settings = {} } = await chrome.storage.local.get(['settings']);
-  const targetIsFile = settings.targetUrl?.startsWith('file://');
-  const matchesTarget = targetIsFile && (tab.url.startsWith(settings.targetUrl) || tab.url === settings.targetUrl);
-  const looksLikeThreatCaddy = /threatcaddy/i.test(tab.url);
-  if (matchesTarget || looksLikeThreatCaddy) {
-    try {
-      await chrome.scripting.executeScript({ target: { tabId }, files: ['bridge.js'] });
-    } catch { /* no file access or restricted page */ }
-  }
+  const stored = await chrome.storage.local.get([APP_APPROVAL_KEY]);
+  if (!stored[APP_APPROVAL_KEY]?.[appTargetKey(tab.url)]) return;
+  try { await chrome.scripting.executeScript({ target: { tabId }, files: ['bridge.js'] }); }
+  catch { /* File access was not granted. */ }
 });
 
 // Injected into the page to capture selection as markdown with inline images
@@ -440,14 +472,50 @@ function htmlToText(html) {
 
 // Handle messages from popup and content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (sender.id !== chrome.runtime.id) return;
+  (async () => {
+    if (sender.id === chrome.runtime.id && message.type === 'OPEN_CLIPS_PAGE') {
+      await chrome.tabs.create({ url: chrome.runtime.getURL('pages/clips.html') });
+      sendResponse({ success: true }); return;
+    }
+    const context = await approvedSender(sender);
+    const appMessages = ['PING', 'SET_PROXY_DOMAINS', 'FETCH_URL', 'PROXY_FETCH', 'SEND_NOTIFICATION'];
+    if (!context.internal && !appMessages.includes(message.type)) throw new Error('This operation is available only from the extension');
+    if (message.type === 'APPROVE_APP') {
+      const key = appTargetKey(message.targetUrl);
+      const stored = await chrome.storage.local.get([APP_APPROVAL_KEY, 'settings']);
+      const localLLMOrigin = message.localLLMUrl ? new URL(message.localLLMUrl).origin : undefined;
+      if (localLLMOrigin && !/^https?:\/\//.test(localLLMOrigin)) throw new Error('Local AI endpoint must be HTTP(S)');
+      if (message.localLLMUrl && (new URL(message.localLLMUrl).username || new URL(message.localLLMUrl).password)) throw new Error('Local AI endpoint must not contain credentials');
+      await chrome.storage.local.set({
+        [APP_APPROVAL_KEY]: { ...stored[APP_APPROVAL_KEY], [key]: { approvedAt: Date.now(), localLLMOrigin } },
+        settings: { ...stored.settings, targetUrl: message.targetUrl },
+      });
+      await syncBridgeRegistration();
+      await chrome.storage.local.remove('proxyPolicyV1:' + key);
+      sendResponse({ success: true });
+      return;
+    }
+    if (message.type === 'REVOKE_APPS') {
+      await chrome.storage.local.set({ [APP_APPROVAL_KEY]: {}, proxyPoliciesV1: {} });
+      sendResponse({ success: true });
+      return;
+    }
+    handleApprovedMessage(message, sender, sendResponse, context);
+  })().catch(error => sendResponse({ success: false, loaded: false, error: error.message }));
+  return true;
+});
+
+function handleApprovedMessage(message, sender, sendResponse, context) {
   if (message.type === 'SET_PROXY_DOMAINS') {
-    // Store allowed domains for proxy fetch validation
     const domains = Array.isArray(message.domains)
-      ? message.domains.filter((d) => typeof d === 'string' && d.length > 4 && d.length < 256 && d.includes('.') && !d.startsWith('.'))
+      ? [...new Set(message.domains.filter(d => typeof d === 'string' && d.length < 254).map(d => d.toLowerCase().replace(/\.$/, '')).filter(d => {
+        try { return publicFetchURL('https://' + d).hostname === d; } catch { return false; }
+      }))].slice(0, 100)
       : [];
-    chrome.storage.local.set({ proxyAllowedDomains: domains });
-    return;
+    // Separate storage keys prevent simultaneous app tabs overwriting each other's policy.
+    chrome.storage.local.set({ ['proxyPolicyV1:' + context.key]: { domains, updatedAt: Date.now(), approvedAt: context.approval?.approvedAt } })
+      .then(() => sendResponse({ success: true }), error => sendResponse({ success: false, error: error.message }));
+    return true;
   }
   if (message.type === 'PING') {
     sendResponse({ loaded: true });
@@ -455,7 +523,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Validate URL scheme
     let parsed;
     try {
-      parsed = new URL(message.url);
+      parsed = publicFetchURL(message.url);
     } catch {
       sendResponse({ success: false, error: chrome.i18n.getMessage('errorInvalidUrl') });
       return;
@@ -470,29 +538,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const origin = parsed.origin + '/*';
         const hasPermission = await chrome.permissions.contains({ origins: [origin] });
         if (!hasPermission) {
-          // Try to request it (works from service worker if triggered by user gesture chain)
-          const granted = await chrome.permissions.request({ origins: [origin] }).catch(() => false);
-          if (!granted) {
             sendResponse({
               success: false,
               error: chrome.i18n.getMessage('errorUrlPermissionRequired'),
             });
             return;
-          }
         }
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 15000);
-        const resp = await fetch(message.url, {
-          signal: controller.signal,
+        const { response: resp, text: html } = await boundedFetch(message.url, {
           headers: { 'Accept': 'text/html,application/xhtml+xml,*/*' },
-          redirect: 'follow',
-        });
-        clearTimeout(timer);
+        }, 15000);
         if (!resp.ok) {
           sendResponse({ success: false, error: `HTTP ${resp.status} ${resp.statusText}` });
           return;
         }
-        const html = await resp.text();
         const { title, content } = htmlToText(html);
         sendResponse({ success: true, title, content, url: message.url });
       } catch (err) {
@@ -508,7 +566,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Defense-in-depth: block private/internal IPs and validate against stored allowed domains.
     let parsed;
     try {
-      parsed = new URL(message.url);
+      parsed = publicFetchURL(message.url);
     } catch {
       sendResponse({ success: false, error: chrome.i18n.getMessage('errorInvalidUrl') });
       return;
@@ -517,56 +575,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: false, error: chrome.i18n.getMessage('errorHttpHttpsOnly') });
       return;
     }
-    // Block requests to private/internal hostnames (SSRF protection)
     const hostname = parsed.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
-        || hostname === '0.0.0.0' || hostname.endsWith('.local')
-        || hostname === 'metadata.google.internal'
-        || hostname === '169.254.169.254'
-        || hostname === '[::1]'
-        || /^::ffff:(127\.|0\.0\.0\.0|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.)/.test(hostname)
-        || /^0[xX]7[fF]\.|^0177\./.test(hostname)) {
-      sendResponse({ success: false, error: chrome.i18n.getMessage('errorBlockedInternal') });
-      return;
-    }
     (async () => {
       try {
         // Validate hostname against stored allowed proxy domains
-        const { proxyAllowedDomains = [] } = await chrome.storage.local.get(['proxyAllowedDomains']);
-        if (proxyAllowedDomains.length > 0) {
-          const allowed = proxyAllowedDomains.some((d) => {
-            // Reject bare TLDs (no dot = could match entire TLD like 'com')
-            if (!d.includes('.')) return false;
-            return hostname === d || hostname.endsWith('.' + d);
-          });
-          if (!allowed) {
+        const policyKey = 'proxyPolicyV1:' + context.key;
+        const stored = await chrome.storage.local.get([policyKey]);
+        const policy = stored[policyKey];
+        if (!policy || !Number.isFinite(policy.updatedAt) || policy.approvedAt !== context.approval?.approvedAt
+            || Date.now() - policy.updatedAt > POLICY_MAX_AGE || !policy.domains?.includes(hostname)) {
             sendResponse({ success: false, error: chrome.i18n.getMessage('errorBlockedDomain', [hostname]) });
             return;
-          }
         }
         // Ensure we have host permission
         const origin = parsed.origin + '/*';
         const hasPermission = await chrome.permissions.contains({ origins: [origin] });
         if (!hasPermission) {
-          const granted = await chrome.permissions.request({ origins: [origin] }).catch(() => false);
-          if (!granted) {
             sendResponse({ success: false, error: chrome.i18n.getMessage('errorHostPermissionRequired', [parsed.hostname]) });
             return;
-          }
         }
         const fetchOptions = {
           method: message.method || 'GET',
           headers: message.headers || {},
+          redirect: 'error',
+          credentials: 'omit',
         };
+        if (!['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(fetchOptions.method)) throw new Error('Unsupported HTTP method');
+        if (message.body && (typeof message.body !== 'string' || new TextEncoder().encode(message.body).byteLength > 1024 * 1024)) throw new Error('Request body exceeds 1 MiB');
         if (message.body && message.method !== 'GET') {
           fetchOptions.body = message.body;
         }
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 30000);
-        fetchOptions.signal = controller.signal;
-        const resp = await fetch(message.url, fetchOptions);
-        clearTimeout(timer);
-        const text = await resp.text();
+        const { response: resp, text } = await boundedFetch(message.url, fetchOptions, 30000);
         let data;
         try { data = JSON.parse(text); } catch { data = text; }
         const headers = {};
@@ -611,19 +650,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   } else if (message.type === 'SEND_NOTIFICATION') {
-    const iconPath = message.severity === 'critical'
-      ? 'icons/icon128.png'
-      : 'icons/icon128.png';
-    chrome.notifications.create({
+    (async () => {
+    if (!await chrome.permissions.contains({ permissions: ['notifications'] })) throw new Error('Desktop notifications are disabled. Enable them in extension settings; the in-app alert is retained.');
+    const id = await chrome.notifications.create({
       type: 'basic',
-      iconUrl: iconPath,
-      title: message.title || chrome.i18n.getMessage('notificationDefaultTitle'),
-      message: message.message || '',
+      iconUrl: chrome.runtime.getURL('assets/icon-128.png'),
+      title: String(message.title || chrome.i18n.getMessage('notificationDefaultTitle')).slice(0, 200),
+      message: String(message.message || '').slice(0, 500),
       priority: message.severity === 'critical' ? 2 : 1,
     });
-    sendResponse({ success: true });
+    if (!id) throw new Error('The browser did not accept the desktop notification');
+    sendResponse({ success: true, accepted: true, notificationId: id });
+    })().catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
   }
-});
+}
 
 // ── LLM Streaming via long-lived ports ─────────────────────────────────
 
@@ -632,10 +673,16 @@ chrome.runtime.onConnect.addListener((port) => {
 
   let abortController = new AbortController();
   let portDisconnected = false;
+  let running = false;
+  const approvalChanged = (changes, area) => {
+    if (area === 'local' && changes[APP_APPROVAL_KEY]) { abortController.abort(); port.disconnect(); }
+  };
+  chrome.storage.onChanged.addListener(approvalChanged);
 
   port.onDisconnect.addListener(() => {
     portDisconnected = true;
     abortController.abort();
+    chrome.storage.onChanged.removeListener(approvalChanged);
   });
 
   // Safe wrapper — silently drops messages if the port already disconnected
@@ -645,7 +692,18 @@ chrome.runtime.onConnect.addListener((port) => {
   }
 
   port.onMessage.addListener(async (payload) => {
+    let ownsRequest = false;
     try {
+      const context = await approvedSender(port.sender ?? {});
+      if (portDisconnected) return;
+      if (running) throw new Error('Only one request per streaming connection is allowed');
+      running = true;
+      ownsRequest = true;
+      if (context.internal) throw new Error('LLM streaming requires an approved app tab');
+      if (payload.provider === 'local') {
+        const origin = new URL(payload.endpoint || 'http://localhost:11434/v1').origin;
+        if (!context.approval.localLLMOrigin || origin !== context.approval.localLLMOrigin) throw new Error('Approve this local AI endpoint for this app in extension settings');
+      }
       if (payload.provider === 'anthropic') {
         await streamAnthropic(safeSend, payload, abortController.signal);
       } else if (payload.provider === 'openai') {
@@ -662,6 +720,8 @@ chrome.runtime.onConnect.addListener((port) => {
     } catch (err) {
       if (err.name === 'AbortError') return;
       safeSend({ type: 'error', error: err.message || chrome.i18n.getMessage('errorUnknown') });
+    } finally {
+      if (ownsRequest) running = false;
     }
   });
 });
@@ -708,6 +768,8 @@ async function streamAnthropic(send, payload, signal) {
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     signal,
+    redirect: 'error',
+    credentials: 'omit',
     headers: {
       'Content-Type': 'application/json',
       'anthropic-version': '2023-06-01',
@@ -884,6 +946,8 @@ async function streamOpenAICompatible(send, payload, signal, endpoint, headers, 
   const resp = await fetch(endpoint, {
     method: 'POST',
     signal,
+    redirect: 'error',
+    credentials: 'omit',
     headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify(body),
   });
@@ -1011,11 +1075,9 @@ async function streamLocal(send, payload, signal) {
   const base = (payload.endpoint || 'http://localhost:11434/v1').replace(/\/+$/, '');
   const endpoint = `${base}/chat/completions`;
 
-  // localhost/127.0.0.1 are in required host_permissions and don't need an extra check.
-  // Non-localhost local endpoints need the broad URL-fetching permission (*://*/*).
+  // Pairing the local endpoint and granting its browser host permission are separate checks.
   const parsed = new URL(endpoint);
-  const isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
-  if (!isLocalhost) {
+  {
     const origin = parsed.origin + '/*';
     const has = await chrome.permissions.contains({ origins: [origin] });
     if (!has) {
@@ -1085,6 +1147,8 @@ async function streamGemini(send, payload, signal) {
   const resp = await fetch(url, {
     method: 'POST',
     signal,
+    redirect: 'error',
+    credentials: 'omit',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify(body),
   });
@@ -1164,6 +1228,9 @@ async function streamGemini(send, payload, signal) {
 }
 
 async function sendToTarget(targetUrl, captures) {
+  const targetKey = appTargetKey(targetUrl);
+  const approved = await chrome.storage.local.get([APP_APPROVAL_KEY]);
+  if (!approved[APP_APPROVAL_KEY]?.[targetKey]) throw new Error('Approve this target in extension settings before sending captures');
   // Re-validate URL before opening (defense-in-depth; clips page also validates)
   try {
     const parsed = new URL(targetUrl);
@@ -1215,9 +1282,10 @@ async function sendToTarget(targetUrl, captures) {
     });
   });
 
-  // Proactively inject bridge.js — static content_scripts only cover threatcaddy.com,
-  // so for custom targets (self-hosted, localhost, file://) we must inject explicitly.
-  // bridge.js has a duplicate-injection guard so re-injection on threatcaddy.com is safe.
+  const currentTab = await chrome.tabs.get(tab.id);
+  if (appTargetKey(currentTab.url) !== targetKey) throw new Error('The target redirected to a different app; captures were not sent');
+  // Proactively inject the bridge into this explicitly approved target.
+  // Its duplicate-injection guard safely handles an already registered HTTP(S) bridge.
   try {
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['bridge.js'] });
   } catch { /* restricted page or missing host permission */ }

@@ -9,6 +9,7 @@ import type {
   InvestigationMember,
 } from '../types';
 import { db } from '../db';
+import { evictSyncedFolder } from '../lib/sync-cache';
 import { fetchInvestigationMembers } from '../lib/server-api';
 
 // ---------------------------------------------------------------------------
@@ -57,7 +58,7 @@ interface InvestigationContextValue {
   handleOpenInvestigation: (folderId: string, mode: InvestigationDataMode) => void;
   handleSyncLocally: (folderId: string) => void;
   handleUnsync: (folderId: string) => void;
-  handleUnsyncConfirmed: (folderId: string) => void;
+  handleUnsyncConfirmed: (folderId: string) => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -143,15 +144,7 @@ export function InvestigationProvider({
   const handleUnsyncConfirmed = useCallback(async (folderId: string) => {
     setSyncingFolderId(folderId);
     try {
-      await Promise.all([
-        db.notes.where('folderId').equals(folderId).delete(),
-        db.tasks.where('folderId').equals(folderId).delete(),
-        db.timelineEvents.where('folderId').equals(folderId).delete(),
-        db.whiteboards.where('folderId').equals(folderId).delete(),
-        db.standaloneIOCs.where('folderId').equals(folderId).delete(),
-        db.chatThreads.where('folderId').equals(folderId).delete(),
-      ]);
-      await db.folders.delete(folderId);
+      await evictSyncedFolder(folderId);
       if (selectedFolderId === folderId) {
         setSelectedFolderIdRaw(undefined);
       }

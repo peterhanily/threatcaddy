@@ -1,7 +1,8 @@
 import { nanoid } from 'nanoid';
 import { lookup } from 'node:dns/promises';
-import http from 'node:http';
-import https from 'node:https';
+import { createHash, timingSafeEqual } from 'node:crypto';
+import { requestPinned, withAbort } from '../lib/bounded-http.js';
+import { setTimeout as delay } from 'node:timers/promises';
 import { Client as SSHClient } from 'ssh2';
 import { eq, and, or, isNull, ilike, inArray } from 'drizzle-orm';
 import { executeCode, type CodeExecutionResult } from './sandbox.js';
@@ -104,11 +105,11 @@ export class BotExecutionContext {
 
   // ─── Abort Check ──────────────────────────────────────────────
 
-  private checkAborted(): void {
-    if (this.ctx.signal.aborted) {
-      throw new Error('Bot execution aborted');
-    }
+  checkAborted(): void {
+    this.ctx.signal.throwIfAborted();
   }
+
+  get signal(): AbortSignal { return this.ctx.signal; }
 
   // ─── Read Operations ──────────────────────────────────────────
 
@@ -345,7 +346,7 @@ export class BotExecutionContext {
     }
 
     const results = await processPush(
-      [{ table, op: 'put', entityId, data }],
+      [{ table, op: 'put', entityId, data, clientVersion: 0 }],
       this.ctx.botUserId,
     );
 
@@ -392,6 +393,9 @@ export class BotExecutionContext {
     const results = await processPush(
       [{ table, op: 'put', entityId, data, clientVersion }],
       this.ctx.botUserId,
+      // Built-in updates are field patches. If no observed revision is supplied,
+      // the service merges only these fields under its transaction writer lock.
+      { trustedInternal: true },
     );
 
     const result = results[0];
@@ -401,7 +405,12 @@ export class BotExecutionContext {
 
     this.ctx.entitiesUpdated++;
 
-    const folderId = existingFolderId || data.folderId as string | undefined;
+    const folderId = (result.serverRecord?.folderId as string | undefined) || existingFolderId;
+    if (existingFolderId && folderId && existingFolderId !== folderId) {
+      await broadcastToFolder(existingFolderId, {
+        type: 'entity-change', table, op: 'delete', entityId, updatedBy: this.ctx.botUserId,
+      }, this.ctx.botUserId);
+    }
     if (folderId) {
       broadcastToFolder(folderId, {
         type: 'entity-change',
@@ -540,80 +549,20 @@ export class BotExecutionContext {
     }
     const hostname = parsed.hostname;
 
-    // S5: Pre-flight DNS check + pin resolved IP to prevent TOCTOU DNS rebinding.
-    // We resolve DNS once, verify the IP is not private, then use a custom Agent
-    // with a lookup callback that returns the pre-resolved IP. This ensures the
-    // actual TCP connection goes to the same IP we checked, eliminating the
-    // rebinding window between check and fetch.
-    const resolved = await lookup(hostname);
+    // Resolve once and pin the checked address, retaining the hostname for TLS.
+    const signal = AbortSignal.any([this.ctx.signal, AbortSignal.timeout(30_000), ...(opts?.signal ? [opts.signal] : [])]);
+    const resolved = await withAbort(lookup(hostname), signal);
     const resolvedAddress = resolved.address;
     const resolvedFamily = resolved.family;
     if (isPrivateIP(resolvedAddress)) {
       throw new Error(`Bot "${this.ctx.botConfig.name}" blocked from accessing private IP ${resolvedAddress} (resolved from ${hostname})`);
     }
 
-    // Create a custom agent that pins the resolved IP
-    const pinnedLookup = (
-      _hostname: string,
-      _options: unknown,
-      callback: (err: Error | null, address: string, family: number) => void,
-    ) => {
-      callback(null, resolvedAddress, resolvedFamily);
-    };
-
-    // Use the appropriate agent based on protocol
-    const isHttps = parsed.protocol === 'https:';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const agent = isHttps
-      ? new https.Agent({ lookup: pinnedLookup as any })
-      : new http.Agent({ lookup: pinnedLookup as any });
-
+    this.checkAborted();
     this.ctx.apiCallsMade++;
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30_000);
-
-    // Link to bot abort signal
-    const onAbort = () => controller.abort();
-    this.ctx.signal.addEventListener('abort', onAbort, { once: true });
-
-    try {
-      // Use Node.js fetch with the dispatcher option to pin the resolved IP
-      // The undici-based fetch in Node.js doesn't support http.Agent directly,
-      // so we pass via the non-standard but widely supported approach
-      const fetchOpts: RequestInit & Record<string, unknown> = {
-        ...opts,
-        signal: controller.signal,
-        redirect: 'error',
-        headers: {
-          'User-Agent': 'ThreatCaddy-Bot/1.0',
-          ...opts?.headers,
-        },
-      };
-
-      // For Node.js built-in fetch, set the resolved IP in the URL directly
-      // while preserving the Host header for TLS SNI
-      const pinnedUrl = new URL(url);
-      pinnedUrl.hostname = resolvedAddress;
-      // Wrap IPv6 addresses in brackets
-      if (resolvedFamily === 6) {
-        pinnedUrl.hostname = `[${resolvedAddress}]`;
-      }
-
-      // Set Host header to original hostname (for TLS SNI and virtual hosting)
-      const headers = new Headers(fetchOpts.headers as HeadersInit | undefined);
-      if (!headers.has('Host')) {
-        headers.set('Host', hostname);
-      }
-      fetchOpts.headers = headers;
-
-      const response = await fetch(pinnedUrl.toString(), fetchOpts as RequestInit);
-      return response;
-    } finally {
-      clearTimeout(timeout);
-      this.ctx.signal.removeEventListener('abort', onAbort);
-      agent.destroy();
-    }
+    const headers = new Headers(opts?.headers);
+    if (!headers.has('user-agent')) headers.set('user-agent', 'ThreatCaddy-Bot/1.0');
+    return requestPinned(parsed, { address: resolvedAddress, family: resolvedFamily }, { ...opts, headers }, { signal });
   }
 
   // ─── SSH Execution (execute_remote) ─────────────────────────
@@ -623,8 +572,9 @@ export class BotExecutionContext {
     this.checkAborted();
 
     const config = this.ctx.botConfig;
-    const port = opts?.port || 22;
-    const timeout = Math.min(opts?.timeout || 30_000, 120_000);
+    const port = opts?.port ?? 22;
+    const timeout = Math.min(opts?.timeout ?? 30_000, 120_000);
+    if (!Number.isInteger(port) || port < 1 || port > 65535 || !Number.isFinite(timeout) || timeout <= 0) throw new Error('Invalid SSH port or timeout');
     const MAX_OUTPUT = 50 * 1024; // 50KB per stream
 
     // Validate host: must be non-empty, no control chars, no whitespace, no colons (IPv6 literals), no slashes
@@ -644,28 +594,20 @@ export class BotExecutionContext {
 
     // DNS resolve + private IP check (reuse SSRF guard)
     // Resolve FIRST, then verify the resolved address is allowed (prevents DNS rebinding)
-    const { address } = await lookup(host);
+    const { address } = await withAbort(lookup(host), AbortSignal.any([this.ctx.signal, AbortSignal.timeout(timeout)]));
     if (isPrivateIP(address)) {
       throw new Error(`Bot "${config.name}" blocked from SSH to private IP ${address} (resolved from ${host})`);
     }
 
-    // Block shell metacharacters to prevent command injection via prefix bypass
-    // e.g. allowedPrefixes=["ls"] must NOT allow "ls; rm -rf /" or "ls|cat /etc/passwd"
-    const SHELL_METACHARACTERS = /[;|&`$(){}[\]<>!\n\r\t*?~#]/;
-    if (SHELL_METACHARACTERS.test(command)) {
-      throw new Error(`Bot "${config.name}": command contains disallowed shell metacharacters (;|&\`$(){}[]<>!). Use simple commands without pipes or chaining.`);
+    const operations = this.getConfig().sshOperations as Record<string, { executable?: unknown; args?: unknown }> | undefined;
+    const operation = operations && Object.hasOwn(operations, command) ? operations[command] : undefined;
+    if (!operation || typeof operation.executable !== 'string' || !operation.executable.startsWith('/')
+      || !Array.isArray(operation.args) || operation.args.length > 50
+      || [operation.executable, ...operation.args].some(value => typeof value !== 'string' || value.length > 4096 || /[\0\r\n]/.test(value))) {
+      throw new Error('Configure a named sshOperations entry with an absolute executable and fixed string args; legacy command prefixes are not accepted.');
     }
-
-    // Command prefix allowlist — REQUIRED for SSH (no arbitrary commands allowed)
-    const allowedPrefixes = (this.getConfig().allowedCommandPrefixes as string[] | undefined) || [];
-    if (allowedPrefixes.length === 0) {
-      throw new Error(`Bot "${config.name}": allowedCommandPrefixes must be configured for SSH — arbitrary commands are not allowed`);
-    }
-    const cmdTrimmed = command.trimStart();
-    const allowed = allowedPrefixes.some(p => cmdTrimmed.startsWith(p));
-    if (!allowed) {
-      throw new Error(`Bot "${config.name}": command not allowed. Must start with one of: ${allowedPrefixes.join(', ')}`);
-    }
+    const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
+    const approvedCommand = [operation.executable, ...operation.args as string[]].map(quote).join(' ');
 
     // Resolve credentials from config
     const sshCreds = (this.getConfig().sshCredentials as Record<string, Record<string, string>> | undefined) || {};
@@ -673,6 +615,11 @@ export class BotExecutionContext {
     if (!hostCreds) {
       throw new Error(`Bot "${config.name}": no SSH credentials configured for host "${host}"`);
     }
+    const fingerprint = hostCreds.hostFingerprint;
+    if (!hostCreds.username || !/^SHA256:[A-Za-z0-9+/]{43}$/.test(fingerprint ?? '')) {
+      throw new Error('SSH credentials require an explicit username and verified SHA256 hostFingerprint.');
+    }
+    this.checkAborted();
 
     this.ctx.apiCallsMade++;
 
@@ -684,6 +631,7 @@ export class BotExecutionContext {
       const timer = setTimeout(() => {
         if (!resolved) {
           resolved = true;
+          this.ctx.signal.removeEventListener('abort', onAbort);
           conn.end();
           reject(new Error(`SSH command timed out after ${timeout}ms`));
         }
@@ -693,6 +641,7 @@ export class BotExecutionContext {
         if (!resolved) {
           resolved = true;
           clearTimeout(timer);
+          this.ctx.signal.removeEventListener('abort', onAbort);
           conn.end();
           reject(new Error('Bot execution aborted'));
         }
@@ -700,7 +649,8 @@ export class BotExecutionContext {
       this.ctx.signal.addEventListener('abort', onAbort, { once: true });
 
       conn.on('ready', () => {
-        conn.exec(command, (err, stream) => {
+        if (resolved || this.ctx.signal.aborted) { onAbort(); conn.end(); return; }
+        conn.exec(approvedCommand, (err, stream) => {
           if (err) {
             resolved = true;
             clearTimeout(timer);
@@ -739,14 +689,20 @@ export class BotExecutionContext {
           resolved = true;
           clearTimeout(timer);
           this.ctx.signal.removeEventListener('abort', onAbort);
+          conn.end();
           reject(new Error(`SSH connection failed: ${err.message}`));
         }
       });
 
       conn.connect({
-        host,
+        host: address,
         port,
-        username: hostCreds.username || 'root',
+        username: hostCreds.username,
+        hostVerifier: (key: Buffer) => {
+          const actual = Buffer.from(`SHA256:${createHash('sha256').update(key).digest('base64').replace(/=+$/, '')}`);
+          const expected = Buffer.from(fingerprint);
+          return actual.length === expected.length && timingSafeEqual(actual, expected);
+        },
         privateKey: hostCreds.privateKey || undefined,
         passphrase: hostCreds.passphrase || undefined,
         password: hostCreds.password || undefined,
@@ -793,7 +749,7 @@ export class BotExecutionContext {
 
     while (Date.now() - startTime < pollTimeout) {
       this.checkAborted();
-      await new Promise(r => setTimeout(r, backoff));
+      await delay(backoff, undefined, { signal: this.ctx.signal });
       pollCount++;
 
       const pollResponse = await this.fetchExternal(pollUrl, {

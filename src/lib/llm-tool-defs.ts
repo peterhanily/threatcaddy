@@ -1,3 +1,5 @@
+import { getToolActionClass } from './caddy-agent-policy';
+
 // ── LLM Tool Definitions (Anthropic format) ────────────────────────────
 
 export const TOOL_DEFINITIONS = [
@@ -812,57 +814,8 @@ export const EXECUTIVE_TOOL_DEFINITIONS = [
 
 // ── Write tool classification ──────────────────────────────────────────
 
-const WRITE_TOOLS = new Set([
-  'create_note', 'update_note',
-  'create_task', 'update_task',
-  'create_ioc', 'update_ioc', 'bulk_create_iocs',
-  'create_timeline_event', 'update_timeline_event',
-  'link_entities',
-  'generate_report',
-  'create_in_investigation',
-  'delegate_task',
-  'review_completed_task',
-  'call_meeting',
-  'notify_human',
-  'declare_war_bridge',
-  'enrich_ioc',
-  'run_remote_command',
-  'create_ticket',
-  'ingest_alert',
-  'update_knowledge',
-  'ask_human',
-  'create_note_folder',
-  'delete_note_folder',
-  'move_to_folder',
-  'spawn_agent',
-  'define_specialist',
-  'dismiss_agent',
-  'reflect_on_performance',
-  'deploy_agent',
-  'stop_agent',
-  'run_agent_cycle',
-]);
-
 export function isWriteTool(name: string): boolean {
-  if (WRITE_TOOLS.has(name)) return true;
-  // Host/local skills with 'modify' or 'create' action class are write tools
-  if (name.startsWith('host:') || name.startsWith('local:')) {
-    try {
-      const settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
-      if (name.startsWith('local:')) {
-        const skillName = name.slice(6);
-        const skill = (settings.llmLocalSkills || []).find((s: { name: string }) => s.name === skillName);
-        return skill?.actionClass === 'modify' || skill?.actionClass === 'create';
-      }
-      const parts = name.split(':');
-      if (parts.length >= 3) {
-        const hostName = parts[1];
-        const skillName = parts.slice(2).join(':');
-        const host = (settings.agentHosts || []).find((h: { name: string }) => h.name === hostName);
-        const skill = host?.skills?.find((s: { name: string }) => s.name === skillName);
-        return skill?.actionClass === 'modify' || skill?.actionClass === 'create';
-      }
-    } catch { /* fall through */ }
-  }
-  return false;
+  const actionClass = getToolActionClass(name);
+  // IOC enrichment persists its result even though it has a separate agent policy.
+  return name === 'enrich_ioc' || actionClass === 'create' || actionClass === 'modify' || actionClass === 'delegate';
 }

@@ -22,6 +22,69 @@ async function flush() {
 // ── Tests ────────────────────────────────────────────────────────────
 
 describe('useLLM', () => {
+  it.each(['replacement', 'unmount'] as const)('retains an in-flight tool outcome after request %s', async reason => {
+    const view = renderHook(() => useLLM());
+    let resolveTool!: (result: { result: string; isError: boolean }) => void;
+    let signal!: AbortSignal;
+    const executor = vi.fn((_tool, parent: AbortSignal) => { signal = parent; return new Promise<{ result: string; isError: boolean }>(resolve => { resolveTool = resolve; }); });
+    const originalComplete = vi.fn(); const successorComplete = vi.fn();
+    const opts = { provider: 'anthropic' as const, model: 'fixture', messages: [], apiKey: 'synthetic' };
+    let id = '';
+    act(() => { id = view.result.current.sendAgentRequest(opts, executor, originalComplete); });
+    await act(async () => { postToWindow({ type: 'TC_LLM_DONE', requestId: id, stopReason: 'tool_use', contentBlocks: [{ type: 'tool_use', id: 'pending-write', name: 'create_note', input: { title: 'Prepared summary' } }] }); await flush(); });
+    let successorId = '';
+    act(() => { if (reason === 'unmount') view.unmount(); else successorId = view.result.current.sendAgentRequest(opts, vi.fn(), successorComplete); });
+    expect(signal.aborted).toBe(true); expect(originalComplete).not.toHaveBeenCalled();
+    await act(async () => { resolveTool({ result: 'Cancelled; local changes rolled back.', isError: true }); await flush(); });
+    expect(originalComplete).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ error: 'Request cancelled.', toolCalls: [expect.objectContaining({ id: 'pending-write', isError: true })] }));
+    expect(successorComplete).not.toHaveBeenCalled();
+    if (reason === 'replacement') {
+      expect(view.result.current.activeRequestId).toBe(successorId);
+      await act(async () => { postToWindow({ type: 'TC_LLM_DONE', requestId: successorId, stopReason: 'end_turn', contentBlocks: [] }); await flush(); });
+      expect(successorComplete).toHaveBeenCalledOnce();
+    }
+  });
+
+  it('cancels a pending tool approval before a later write or another provider turn', async () => {
+    const { result } = renderHook(() => useLLM());
+    let receivedSignal: AbortSignal | undefined;
+    const executor = vi.fn((_tool, signal: AbortSignal) => new Promise<{ result: string; isError: boolean }>(resolve => {
+      receivedSignal = signal;
+      signal.addEventListener('abort', () => resolve({ result: 'Cancelled', isError: true }));
+    }));
+    const completed = vi.fn();
+    let id = '';
+    act(() => { id = result.current.sendAgentRequest({ provider: 'anthropic', model: 'fixture', messages: [{ role: 'user', content: 'Write summary' }], apiKey: 'key' }, executor, completed); });
+    await act(async () => {
+      postToWindow({ type: 'TC_LLM_DONE', requestId: id, stopReason: 'tool_use', contentBlocks: [
+        { type: 'tool_use', id: 'one', name: 'create_note', input: { title: 'First' } },
+        { type: 'tool_use', id: 'two', name: 'create_note', input: { title: 'Second' } },
+      ] });
+      await flush();
+    });
+    expect(executor).toHaveBeenCalledTimes(1);
+    await act(async () => { result.current.abort(); await flush(); });
+    expect(receivedSignal?.aborted).toBe(true);
+    expect(executor).toHaveBeenCalledTimes(1);
+    expect(result.current.isStreaming).toBe(false);
+    expect(completed).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ error: 'Request cancelled.', toolCalls: [expect.objectContaining({ id: 'one', isError: true })] }));
+  });
+
+  it('ignores missing correlation IDs and does not execute truncated tool output', async () => {
+    const { result } = renderHook(() => useLLM());
+    const executor = vi.fn();
+    const complete = vi.fn();
+    let id = '';
+    act(() => { id = result.current.sendAgentRequest({ provider: 'anthropic', model: 'fixture', messages: [], apiKey: 'key' }, executor, complete); });
+    await act(async () => {
+      postToWindow({ type: 'TC_LLM_CHUNK', content: 'Uncorrelated' });
+      postToWindow({ type: 'TC_LLM_DONE', requestId: id, stopReason: 'max_tokens', contentBlocks: [{ type: 'tool_use', id: 'one', name: 'create_note', input: {} }] });
+      await flush();
+    });
+    expect(executor).not.toHaveBeenCalled();
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({ content: '', toolCalls: [] }));
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -310,6 +373,7 @@ describe('useLLM', () => {
         name: 'search_notes',
         input: { query: 'test' },
       }),
+      expect.any(AbortSignal),
     );
   });
 

@@ -7,10 +7,8 @@ export type MergeResult =
   | { ok: false; conflict: true };
 
 /**
- * 3-way text merge: apply remote changes on top of local edits.
- * Computes patches from base→remote, applies them to local.
- * Returns { ok: true, merged } on success, { ok: false, conflict: true }
- * if any patch failed to apply cleanly.
+ * Merge only disjoint edits in base coordinates. Fuzzy patch success is not
+ * conflict detection: it can silently replace another author's changed text.
  */
 export function mergeText(base: string, local: string, remote: string): MergeResult {
   // Fast path: no remote change
@@ -20,15 +18,43 @@ export function mergeText(base: string, local: string, remote: string): MergeRes
   // Fast path: both made same change
   if (local === remote) return { ok: true, merged: local };
 
-  // Compute patches from base → remote, apply to local
-  const patches = dmp.patch_make(base, remote);
-  const [merged, results] = dmp.patch_apply(patches, local);
-
-  // Check if all patches applied cleanly
-  if (results.some(ok => !ok)) {
-    return { ok: false, conflict: true };
+  type Edit = { start: number; end: number; text: string };
+  const edits = (text: string): Edit[] => {
+    const result: Edit[] = [];
+    const diffs = dmp.diff_main(base, text);
+    dmp.diff_cleanupSemantic(diffs);
+    let offset = 0;
+    let edit: Edit | undefined;
+    for (const [op, value] of diffs) {
+      if (op === DiffMatchPatch.DIFF_EQUAL) {
+        edit = undefined;
+        offset += value.length;
+      } else {
+        if (!edit) { edit = { start: offset, end: offset, text: '' }; result.push(edit); }
+        if (op === DiffMatchPatch.DIFF_DELETE) { offset += value.length; edit.end = offset; }
+        else edit.text += value;
+      }
+    }
+    return result;
+  };
+  const combined = edits(local);
+  for (const remoteEdit of edits(remote)) {
+    let duplicate = false;
+    for (const localEdit of combined) {
+      if (localEdit.start === remoteEdit.start && localEdit.end === remoteEdit.end && localEdit.text === remoteEdit.text) {
+        duplicate = true;
+        break;
+      }
+      // Insertions at a changed boundary are ambiguous too; ask the user.
+      const overlaps = localEdit.start === localEdit.end || remoteEdit.start === remoteEdit.end
+        ? localEdit.start <= remoteEdit.end && remoteEdit.start <= localEdit.end
+        : localEdit.start < remoteEdit.end && remoteEdit.start < localEdit.end;
+      if (overlaps) return { ok: false, conflict: true };
+    }
+    if (!duplicate) combined.push(remoteEdit);
   }
-
+  let merged = base;
+  for (const edit of combined.sort((a, b) => b.start - a.start)) merged = merged.slice(0, edit.start) + edit.text + merged.slice(edit.end);
   return { ok: true, merged };
 }
 

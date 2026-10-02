@@ -5,7 +5,7 @@ export { db } from '../../db/index.js';
 export {
   users, folders, allowedEmails, sessions, activityLog,
   investigationMembers, notes, tasks, timelineEvents, whiteboards,
-  standaloneIOCs, chatThreads, posts, files, notifications,
+  standaloneIOCs, chatThreads, evidenceItems, posts, files, notifications,
   botConfigs, botRuns, adminUsers,
 } from '../../db/schema.js';
 export { requireAdminAuth } from '../../middleware/admin-auth.js';

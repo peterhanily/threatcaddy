@@ -91,36 +91,44 @@ test.describe('Tags', () => {
     const titleInput1 = page.getByPlaceholder('Note title...');
     await expect(titleInput1).toBeVisible({ timeout: 5_000 });
     await titleInput1.fill('Ransomware Analysis');
-    await page.waitForTimeout(1_500);
+    await expect(page.getByRole('heading', { name: 'Ransomware Analysis', exact: true })).toBeVisible();
 
     const tagInput = page.getByRole('combobox', { name: /add tag/i }).or(
       page.getByPlaceholder('Add tag...')
     );
     await tagInput.first().fill('ransomware');
     await tagInput.first().press('Enter');
-    await page.waitForTimeout(1_500);
+    const sidebar = getSidebar(page);
+    const sidebarTag = sidebar.getByText('ransomware', { exact: true });
+    await expect(sidebarTag).toBeVisible();
+    const taggedNoteCard = page.getByRole('heading', { name: 'Ransomware Analysis', exact: true }).locator('../..');
+    await expect(taggedNoteCard.getByText('ransomware', { exact: true })).toBeVisible();
 
     // Create second note without the tag
     await createQuickNote(page);
     const titleInput2 = page.getByPlaceholder('Note title...');
     await expect(titleInput2).toBeVisible({ timeout: 5_000 });
     await titleInput2.fill('Unrelated Finding');
-    await page.waitForTimeout(1_500);
 
     // Both notes should be visible
     await expect(page.getByText('Ransomware Analysis')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByText('Unrelated Finding')).toBeVisible({ timeout: 5_000 });
 
     // Click the ransomware tag in the sidebar to filter
-    const sidebar = getSidebar(page);
-    const sidebarTag = sidebar.getByText('ransomware');
-    if (await sidebarTag.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await sidebarTag.click();
+    await sidebarTag.click();
 
-      // After filtering, only the tagged note should be visible
-      await expect(page.getByText('Ransomware Analysis')).toBeVisible({ timeout: 5_000 });
-      // The untagged note should be hidden
-      await expect(page.getByText('Unrelated Finding')).not.toBeVisible({ timeout: 3_000 });
-    }
+    // After filtering, only the tagged note should be visible.
+    await expect(page.getByRole('heading', { name: 'Ransomware Analysis', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Unrelated Finding', exact: true })).not.toBeVisible();
+
+    // Reload resets the transient filter. Verify both titles and tag membership
+    // persisted, including the note that was hidden by the filter.
+    await page.reload();
+    await expect(sidebarTag).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Ransomware Analysis', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Unrelated Finding', exact: true })).toBeVisible();
+    await sidebarTag.click();
+    await expect(page.getByRole('heading', { name: 'Ransomware Analysis', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Unrelated Finding', exact: true })).not.toBeVisible();
   });
 });

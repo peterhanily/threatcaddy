@@ -53,6 +53,8 @@ export interface BotTriggerConfig {
 }
 
 export interface BotConfig {
+  sourceType?: string;
+  sourceDeploymentId?: string | null;
   id: string;
   userId: string;                // FK to users (the bot's user account)
   type: BotType;
@@ -140,6 +142,9 @@ export interface Bot {
 
   /** Handle a scheduled trigger */
   onSchedule?(ctx: BotContext): Promise<void>;
+
+  /** Explicit user-requested execution; implementations must not silently no-op. */
+  onManual?(ctx: BotContext): Promise<void>;
 
   /** Handle a webhook trigger */
   onWebhook?(ctx: BotContext, payload: Record<string, unknown>): Promise<void>;

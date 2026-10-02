@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useToast } from '../../contexts/ToastContext';
 import type { StandaloneIOC, Folder, Tag } from '../../types';
 import { parseSTIXBundle } from '../../lib/stix-import';
+import { downloadFile } from '../../lib/export';
+import { importDuplicateKey } from '../../lib/interchange-import';
 
 interface ImportResults {
   created: number;
@@ -39,6 +41,7 @@ export function STIXImportModal({
   const [parsedIOCs, setParsedIOCs] = useState<Partial<StandaloneIOC>[]>([]);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [relationshipCount, setRelationshipCount] = useState(0);
+  const [originalSource, setOriginalSource] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -51,6 +54,7 @@ export function STIXImportModal({
       setParsedIOCs([]);
       setParseErrors([]);
       setRelationshipCount(0);
+      setOriginalSource('');
     }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [open, defaultFolderId]);
@@ -73,14 +77,17 @@ export function STIXImportModal({
     if (fileInputRef.current) fileInputRef.current.value = '';
 
     try {
+      if (file.size > 32 * 1024 * 1024) throw new Error('Import file exceeds 32 MiB; retain the original and split it before importing.');
       const text = await file.text();
+      setOriginalSource(text);
       const result = parseSTIXBundle(text);
       setParsedIOCs(result.iocs);
       setParseErrors(result.errors);
       setRelationshipCount(result.relationships.length);
       setStep('preview');
-    } catch {
-      setParseErrors(['Failed to read file']);
+    } catch (error) {
+      setParseErrors([error instanceof Error ? error.message : 'Failed to read file']);
+      setStep('preview');
     }
   };
 
@@ -90,11 +97,11 @@ export function STIXImportModal({
     let skipped = 0;
     let failed = 0;
 
-    const existingSet = new Set(existingIOCs.map((ioc) => `${ioc.type}::${ioc.value}`));
+    const existingSet = new Set(existingIOCs.map(importDuplicateKey));
 
     for (const ioc of parsedIOCs) {
       if (!ioc.type || !ioc.value) { failed++; continue; }
-      const key = `${ioc.type}::${ioc.value}`;
+      const key = importDuplicateKey(ioc);
       if (existingSet.has(key)) { skipped++; continue; }
 
       try {
@@ -199,6 +206,8 @@ export function STIXImportModal({
             )}
 
             {/* Brief preview of IOCs */}
+            {originalSource && <button type="button" className="text-xs text-accent underline" onClick={() => downloadFile(originalSource, 'original-stix-bundle.json', 'application/json')}>Save original bundle, including unsupported objects and relationships</button>}
+            <p className="text-xs text-gray-400">Unknown markings remain restricted. Relationships are retained in the original bundle, not added to the workspace by this IOC-only import.</p>
             {parsedIOCs.length > 0 && (
               <div className="max-h-48 overflow-y-auto border border-gray-800 rounded-lg">
                 <table className="w-full text-xs">
@@ -207,6 +216,7 @@ export function STIXImportModal({
                       <th className="text-start text-gray-500 font-medium py-1.5 px-2">Value</th>
                       <th className="text-start text-gray-500 font-medium py-1.5 px-2 w-20">Type</th>
                       <th className="text-start text-gray-500 font-medium py-1.5 px-2 w-20">Confidence</th>
+                      <th className="text-start text-gray-500 font-medium py-1.5 px-2">Handling</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -215,6 +225,7 @@ export function STIXImportModal({
                         <td className="py-1 px-2 text-gray-200 font-mono truncate max-w-[200px]">{ioc.value}</td>
                         <td className="py-1 px-2 text-gray-400">{ioc.type}</td>
                         <td className="py-1 px-2 text-gray-400">{ioc.confidence}</td>
+                        <td className="py-1 px-2 text-gray-400">{ioc.clsLevel || 'Not specified'}</td>
                       </tr>
                     ))}
                   </tbody>

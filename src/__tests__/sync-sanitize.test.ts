@@ -36,10 +36,10 @@ describe('sync-sanitize', () => {
       expect(result!.createdAt).toBe(new Date('2025-01-01T00:00:00.000Z').getTime());
     });
 
-    it('passes through unknown table names unchanged', () => {
+    it('rejects internal and unknown table names from server data', () => {
       const data = { key: 'syncMeta', value: 'abc' };
       const result = sanitizeSyncEntity('_syncMeta', data);
-      expect(result).toEqual(data);
+      expect(result).toBeNull();
     });
 
     it('returns defaults for empty object (sanitizers fill in defaults)', () => {
@@ -165,10 +165,10 @@ describe('sync-sanitize', () => {
       expect(results[1].id).toBe('n2');
     });
 
-    it('passes through unknown tables unchanged', () => {
+    it('rejects batches for unknown tables', () => {
       const rows = [{ key: 'a' }, { key: 'b' }];
       const results = sanitizeSyncBatch('_internal', rows);
-      expect(results).toEqual(rows);
+      expect(results).toEqual([]);
     });
 
     it('filters out null results from invalid entries', () => {

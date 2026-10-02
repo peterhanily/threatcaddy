@@ -1,4 +1,29 @@
-import { pgTable, text, integer, boolean, timestamp, jsonb, unique, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, bigint, boolean, timestamp, jsonb, unique, index, check } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+
+// This singleton is locked until commit by every synced-table writer. Cursor
+// allocation and visibility therefore share an order across transactions.
+export const syncClock = pgTable('sync_clock', {
+  id: integer('id').primaryKey(),
+  cursor: bigint('cursor', { mode: 'bigint' }).notNull().default(sql`0`),
+  generation: text('generation').notNull().default(sql`(gen_random_uuid())::text`),
+}, (t) => ({ singleton: check('sync_clock_singleton', sql`${t.id} = 1`) }));
+
+export const syncChanges = pgTable('sync_changes', {
+  cursor: bigint('cursor', { mode: 'bigint' }).primaryKey(),
+  tableName: text('table_name').notNull(),
+  entityId: text('entity_id').notNull(),
+  folderId: text('folder_id'),
+  previousFolderId: text('previous_folder_id'),
+  op: text('op', { enum: ['put', 'delete'] }).notNull(),
+  record: jsonb('record').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  validOperation: check('sync_changes_op_check', sql`${t.op} IN ('put', 'delete')`),
+  idxSyncChangesFolderCursor: index('idx_sync_changes_folder_cursor').on(t.folderId, t.cursor),
+  idxSyncChangesPreviousFolderCursor: index('idx_sync_changes_previous_folder_cursor').on(t.previousFolderId, t.cursor),
+  idxSyncChangesEntityCursor: index('idx_sync_changes_entity_cursor').on(t.tableName, t.entityId, t.cursor),
+}));
 
 // ─── Users & Sessions ───────────────────────────────────────────
 
@@ -227,6 +252,7 @@ export const whiteboards = pgTable('whiteboards', {
   name: text('name').notNull(),
   elements: text('elements').notNull().default('[]'),
   appState: text('app_state'),
+  files: text('files'),
   folderId: text('folder_id'),
   tags: jsonb('tags').notNull().default([]),
   order: integer('order').notNull().default(0),
@@ -247,6 +273,48 @@ export const whiteboards = pgTable('whiteboards', {
   idxWhiteboardsFolderIdUpdatedAt: index('idx_whiteboards_folder_id_updated_at').on(t.folderId, t.updatedAt),
 }));
 
+export const evidenceItems = pgTable('evidence_items', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  folderId: text('folder_id'),
+  fileName: text('file_name').notNull(),
+  fileType: text('file_type').notNull(),
+  mimeType: text('mime_type'),
+  size: bigint('size', { mode: 'number' }).notNull().default(0),
+  lastModified: bigint('last_modified', { mode: 'number' }),
+  imageWidth: integer('image_width'),
+  imageHeight: integer('image_height'),
+  imageAspectRatio: text('image_aspect_ratio'),
+  imagePixelCount: bigint('image_pixel_count', { mode: 'number' }),
+  imageData: text('image_data'),
+  imageDataMimeType: text('image_data_mime_type'),
+  imageAnalysis: text('image_analysis'),
+  imageOcrText: text('image_ocr_text'),
+  content: text('content').notNull().default(''),
+  extractionStatus: text('extraction_status').notNull().default('metadata-only'),
+  extractionWarning: text('extraction_warning'),
+  importedAt: bigint('imported_at', { mode: 'number' }).notNull(),
+  chunkIndex: integer('chunk_index').notNull().default(1),
+  chunkCount: integer('chunk_count').notNull().default(1),
+  tags: jsonb('tags').notNull().default([]),
+  linkedIOCIds: jsonb('linked_ioc_ids').notNull().default([]),
+  clsLevel: text('cls_level'),
+  trashed: boolean('trashed').notNull().default(false),
+  trashedAt: timestamp('trashed_at', { withTimezone: true }),
+  archived: boolean('archived').notNull().default(false),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  createdBy: text('created_by').references(() => users.id, { onDelete: 'set null' }),
+  updatedBy: text('updated_by').references(() => users.id, { onDelete: 'set null' }),
+  version: integer('version').notNull().default(1),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull(),
+}, (t) => ({
+  idxEvidenceFolderId: index('idx_evidence_folder_id').on(t.folderId),
+  idxEvidenceUpdatedAt: index('idx_evidence_updated_at').on(t.updatedAt),
+  idxEvidenceCreatedBy: index('idx_evidence_created_by').on(t.createdBy),
+  idxEvidenceFolderUpdatedAt: index('idx_evidence_folder_updated_at').on(t.folderId, t.updatedAt),
+}));
+
 export const standaloneIOCs = pgTable('standalone_iocs', {
   id: text('id').primaryKey(),
   type: text('type').notNull(),
@@ -260,6 +328,7 @@ export const standaloneIOCs = pgTable('standalone_iocs', {
   folderId: text('folder_id'),
   tags: jsonb('tags').notNull().default([]),
   relationships: jsonb('relationships').default([]),
+  enrichment: jsonb('enrichment'),
   linkedNoteIds: jsonb('linked_note_ids').default([]),
   linkedTaskIds: jsonb('linked_task_ids').default([]),
   linkedTimelineEventIds: jsonb('linked_timeline_event_ids').default([]),

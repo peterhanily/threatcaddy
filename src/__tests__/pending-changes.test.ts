@@ -1,52 +1,34 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { markPending, clearPending, hasPendingChanges } from '../lib/pending-changes';
 
 describe('pending-changes', () => {
-  beforeEach(() => {
-    // Reset to zero by clearing until hasPendingChanges returns false
-    while (hasPendingChanges()) {
-      clearPending();
-    }
-  });
+  const first = Symbol('first editor');
+  const second = Symbol('second editor');
+  afterEach(() => { clearPending(first); clearPending(second); });
 
-  it('starts with no pending changes', () => {
-    expect(hasPendingChanges()).toBe(false);
-  });
+  it('starts clean', () => { expect(hasPendingChanges()).toBe(false); });
 
-  it('reports pending after markPending', () => {
-    markPending();
+  it('marks a typing burst once and clears after one acknowledged save', () => {
+    for (let i = 0; i < 100; i++) markPending(first);
     expect(hasPendingChanges()).toBe(true);
-  });
-
-  it('clears pending after clearPending', () => {
-    markPending();
-    clearPending();
+    clearPending(first);
     expect(hasPendingChanges()).toBe(false);
   });
 
-  it('tracks multiple pending changes', () => {
-    markPending();
-    markPending();
-    markPending();
+  it('keeps independent editors dirty when another editor saves or cleans up twice', () => {
+    markPending(first);
+    markPending(second);
+    clearPending(first);
+    clearPending(first);
     expect(hasPendingChanges()).toBe(true);
-
-    clearPending();
-    expect(hasPendingChanges()).toBe(true); // still 2 pending
-
-    clearPending();
-    expect(hasPendingChanges()).toBe(true); // still 1 pending
-
-    clearPending();
-    expect(hasPendingChanges()).toBe(false); // all cleared
+    clearPending(second);
+    expect(hasPendingChanges()).toBe(false);
   });
 
-  it('does not go below zero on extra clearPending calls', () => {
-    clearPending();
-    clearPending();
-    expect(hasPendingChanges()).toBe(false);
-
-    // Should still work correctly after over-clearing
-    markPending();
+  it('ignores unknown cleanup tokens', () => {
+    clearPending(first);
+    markPending(second);
+    clearPending(first);
     expect(hasPendingChanges()).toBe(true);
   });
 });

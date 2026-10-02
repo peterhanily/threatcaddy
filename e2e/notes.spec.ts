@@ -15,18 +15,14 @@ test.describe('Note editing', () => {
     await expect(titleInput).toBeVisible({ timeout: 5_000 });
     await titleInput.fill('Markdown Test Note');
 
-    // Wait for the title auto-save to complete (500ms debounce)
-    await page.waitForTimeout(1_000);
-
-    // Now fill in the content (separate from title to avoid debounce collision)
+    // Edit both fields consecutively; one draft save must retain both changes.
     const editor = page.getByPlaceholder('Start writing in markdown...').or(
       page.locator('textarea[aria-label*="content"]')
     );
     await editor.first().click();
     await editor.first().fill('# Heading\n\n**Bold text** and *italic text*\n\n- List item 1\n- List item 2\n\n```\ncode block\n```');
 
-    // Wait for content auto-save
-    await page.waitForTimeout(1_000);
+    await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible();
 
     // Switch to preview mode to verify markdown rendering
     const previewButton = page.getByRole('button', { name: /preview/i }).or(
@@ -41,6 +37,42 @@ test.describe('Note editing', () => {
 
     // The note should appear in the note list
     await expect(page.getByText('Markdown Test Note').first()).toBeVisible({ timeout: 5_000 });
+  });
+
+  test('persists both draft fields when navigating away immediately', async ({ page }) => {
+    await navigateToView(page, 'Notes');
+    await createQuickNote(page);
+    await page.getByPlaceholder('Note title...').fill('Navigation draft');
+    await page.getByPlaceholder('Start writing in markdown...').fill('Body written immediately before changing views.');
+    await navigateToView(page, 'Tasks');
+    await navigateToView(page, 'Notes');
+    await expect(page.getByRole('heading', { name: 'Navigation draft', exact: true })).toBeVisible();
+    await page.reload();
+    // Switching views clears the selection; reopen the persisted note to check
+    // its actual stored fields rather than assuming the editor stays selected.
+    await expect(page.getByRole('heading', { name: 'Navigation draft', exact: true })).toHaveCount(1);
+    await expect(page.getByText('Body written immediately before changing views.', { exact: true })).toHaveCount(1);
+    await page.getByRole('heading', { name: 'Navigation draft', exact: true }).click();
+    await expect(page.getByPlaceholder('Note title...')).toHaveValue('Navigation draft');
+    await expect(page.getByPlaceholder('Start writing in markdown...')).toHaveValue('Body written immediately before changing views.');
+  });
+
+  test('keeps edits on their original note when creating another immediately', async ({ page }) => {
+    await navigateToView(page, 'Notes');
+    await createQuickNote(page);
+    await page.getByPlaceholder('Note title...').fill('First draft note');
+    await page.getByPlaceholder('Start writing in markdown...').fill('First note body');
+    await createQuickNote(page);
+    await page.getByPlaceholder('Note title...').fill('Second draft note');
+    await page.getByPlaceholder('Start writing in markdown...').fill('Second note body');
+    await page.getByRole('heading', { name: 'First draft note', exact: true }).click();
+    await expect(page.getByPlaceholder('Note title...')).toHaveValue('First draft note');
+    await expect(page.getByPlaceholder('Start writing in markdown...')).toHaveValue('First note body');
+    await page.getByRole('heading', { name: 'Second draft note', exact: true }).click();
+    await expect(page.getByPlaceholder('Start writing in markdown...')).toHaveValue('Second note body');
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'First draft note', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Second draft note', exact: true })).toBeVisible();
   });
 
   test('edit note title', async ({ page }) => {

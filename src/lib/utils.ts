@@ -1,3 +1,4 @@
+import { workspaceStorageKey } from './workspace-profiles';
 import i18n from '../i18n';
 
 /** Returns the active locale for date/number formatting (falls back to browser default). */
@@ -89,11 +90,11 @@ export function postMessageOrigin(): string {
 /** Get the current user's display name for entity attribution. */
 export function getCurrentUserName(): string {
   try {
-    const auth = JSON.parse(localStorage.getItem('threatcaddy-auth') || 'null');
+    const auth = JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-auth')) || 'null');
     if (auth?.user?.displayName) return auth.user.displayName;
   } catch { /* ignore */ }
   try {
-    const settings = JSON.parse(localStorage.getItem('threatcaddy-settings') || '{}');
+    const settings = JSON.parse(localStorage.getItem(workspaceStorageKey('threatcaddy-settings')) || '{}');
     if (settings.displayName) return settings.displayName;
   } catch { /* ignore */ }
   return 'Analyst';

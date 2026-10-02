@@ -284,10 +284,29 @@ setupPermToggle('settings-url-toggle', 'settings-url-slider', ['*://*/*']);
 document.getElementById('settings-save-url').addEventListener('click', async () => {
   const url = document.getElementById('settings-target-url').value.trim();
   if (!url) return;
-  const { settings = {} } = await chrome.storage.local.get(['settings']);
-  settings.targetUrl = url;
-  await chrome.storage.local.set({ settings });
-  const saved = document.getElementById('settings-url-saved');
-  saved.classList.add('show');
-  setTimeout(() => saved.classList.remove('show'), 2000);
+  const status = document.getElementById('settings-approval-status');
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:', 'file:'].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error('Use an HTTP(S) app or exact standalone file without credentials');
+    const origins = [parsed.protocol === 'file:' ? 'file:///*' : parsed.protocol + '//' + parsed.hostname + '/*'];
+    const localLLMUrl = document.getElementById('settings-local-ai-url').value.trim();
+    if (localLLMUrl) {
+      const local = new URL(localLLMUrl);
+      if (!['http:', 'https:'].includes(local.protocol) || local.username || local.password) throw new Error('Local AI must use HTTP(S) without credentials in its URL');
+      origins.push(local.protocol + '//' + local.hostname + '/*');
+    }
+    if (!await chrome.permissions.request({ origins })) throw new Error('App access permission was denied');
+    const response = await chrome.runtime.sendMessage({ type: 'APPROVE_APP', targetUrl: url, localLLMUrl });
+    if (!response?.success) throw new Error(response?.error || 'App approval failed');
+    status.textContent = 'App approved. Reload the app tab to connect.';
+  } catch (error) { status.textContent = error.message; }
+});
+
+document.getElementById('settings-revoke-apps').addEventListener('click', async () => {
+  const response = await chrome.runtime.sendMessage({ type: 'REVOKE_APPS' });
+  document.getElementById('settings-approval-status').textContent = response?.success ? 'All app connections revoked.' : response?.error || 'Revocation failed';
+});
+document.getElementById('settings-notifications').addEventListener('click', async () => {
+  const granted = await chrome.permissions.request({ permissions: ['notifications'] }).catch(() => false);
+  document.getElementById('settings-approval-status').textContent = granted ? 'Desktop notifications enabled. Operating system settings may still suppress display.' : 'Desktop notifications were not enabled; in-app alerts remain available.';
 });

@@ -53,6 +53,10 @@ vi.mock('../db', () => ({
 vi.mock('../contexts/ToastContext', () => ({
   useToast: () => ({ addToast: vi.fn(), toasts: [], removeToast: vi.fn() }),
 }));
+// Storage-backed cleanup consent is covered separately by legacy-cleanup-ui.
+vi.mock('../components/Encryption/LegacyDataCleanup', () => ({ LegacyDataCleanup: () => null }));
+vi.mock('../components/Encryption/LegacyDataRecovery', () => ({ LegacyDataRecovery: () => null }));
+vi.mock('../lib/db-migration', () => ({ getLegacyCleanupStatus: vi.fn(async () => ({ exists: false, verified: false, records: 0 })) }));
 
 // Import after all mocks
 import { EncryptionSetup } from '../components/Encryption/EncryptionSetup';

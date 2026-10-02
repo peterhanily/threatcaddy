@@ -166,7 +166,7 @@ describe('NoteCard', () => {
 
   it('applies folder color left border when not active', () => {
     const { container } = render(<NoteCard note={note} active={false} onSelect={() => {}} folderColor="#ef4444" folderName="Clips" />);
-    const card = container.querySelector('div[role="button"]') as HTMLElement;
+    const card = container.querySelector('div[role="group"]') as HTMLElement;
     expect(card).toBeTruthy();
     // jsdom normalizes hex to rgb
     expect(card.style.borderLeftColor).toBe('rgb(239, 68, 68)');
@@ -175,7 +175,7 @@ describe('NoteCard', () => {
 
   it('does not apply folder color left border when active', () => {
     const { container } = render(<NoteCard note={note} active={true} onSelect={() => {}} folderColor="#ef4444" folderName="Clips" />);
-    const card = container.querySelector('div[role="button"]') as HTMLElement;
+    const card = container.querySelector('div[role="group"]') as HTMLElement;
     expect(card).toBeTruthy();
     expect(card.style.borderLeftColor).toBe('');
   });

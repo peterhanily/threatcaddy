@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Shield, Loader2, Trash2, Download, Upload, AlertCircle, CheckCircle, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '../../hooks/useSettings';
@@ -6,7 +6,8 @@ import { useToast } from '../../contexts/ToastContext';
 import { db } from '../../db';
 import { encryptBackup, decryptBackup, type BackupPayload, type EncryptedBackupBlob } from '../../lib/backup-crypto';
 import { buildFullBackupPayload, buildDifferentialPayload, countPayloadEntities } from '../../lib/backup-data';
-import { restoreFullReplace, restoreMerge, type RestoreResult } from '../../lib/backup-restore';
+import { previewRestore, restoreFullReplace, restoreMerge, type RestorePreview, type RestoreResult } from '../../lib/backup-restore';
+import { hasPendingEntityDrafts } from '../../lib/entity-drafts';
 import {
   createBackup, listBackups, downloadBackup, deleteBackup,
   type BackupMeta,
@@ -51,7 +52,15 @@ export function ServerBackup() {
   const [restoreStep, setRestoreStep] = useState<RestoreStep>('idle');
   const [restoreError, setRestoreError] = useState('');
   const [restorePayload, setRestorePayload] = useState<BackupPayload | null>(null);
+  const [restoreBase, setRestoreBase] = useState<BackupPayload | undefined>();
   const [restoreResult, setRestoreResult] = useState<RestoreResult | null>(null);
+  const [restoreMode, setRestoreMode] = useState<'replace' | 'merge'>('replace');
+  const [restorePreview, setRestorePreview] = useState<RestorePreview | null>(null);
+  const [restorePreviewBusy, setRestorePreviewBusy] = useState(false);
+  const restoreGeneration = useRef(0);
+  const previewGeneration = useRef(0);
+
+  useEffect(() => () => { restoreGeneration.current++; previewGeneration.current++; }, []);
 
   // Delete confirm
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -99,10 +108,12 @@ export function ServerBackup() {
       // 1. Collect data
       setCreateStep('collecting');
       let payload: BackupPayload;
-      if (backupType === 'differential' && latestFullBackup) {
-        const lastBackupAt = new Date(latestFullBackup.createdAt).getTime();
+      if (backupType === 'differential') {
+        if (!latestFullBackup) throw new Error('Create a full backup for this scope before a differential backup.');
+        const parentBlob = await downloadBackup(latestFullBackup.id);
+        const parent = await decryptBackup(password, JSON.parse(await parentBlob.text()) as EncryptedBackupBlob);
         payload = await buildDifferentialPayload(
-          scope, lastBackupAt, latestFullBackup.id,
+          scope, parent, latestFullBackup.id,
           scope === 'investigation' ? selectedFolderId : undefined,
         );
       } else {
@@ -122,11 +133,11 @@ export function ServerBackup() {
       await createBackup(
         {
           name: backupName,
-          type: backupType,
+          type: payload.type,
           scope,
           scopeId: scope === 'investigation' ? selectedFolderId : undefined,
           entityCount: countPayloadEntities(payload),
-          parentBackupId: backupType === 'differential' ? latestFullBackup?.id : undefined,
+          parentBackupId: payload.parentBackupId,
         },
         blob,
       );
@@ -143,22 +154,53 @@ export function ServerBackup() {
     }
   };
 
+  const prepareRestorePreview = async (payload: BackupPayload, mode: 'replace' | 'merge', parent = restoreBase) => {
+    const generation = restoreGeneration.current;
+    const previewId = ++previewGeneration.current;
+    const isCurrent = () => generation === restoreGeneration.current && previewId === previewGeneration.current;
+    setRestoreMode(mode);
+    setRestorePreview(null);
+    setRestorePreviewBusy(true);
+    setRestoreError('');
+    try {
+      const preview = await previewRestore(payload, mode, parent);
+      if (isCurrent()) setRestorePreview(preview);
+    } catch (err) {
+      if (isCurrent()) setRestoreError(err instanceof Error ? err.message : 'Restore preview failed');
+    } finally {
+      if (isCurrent()) setRestorePreviewBusy(false);
+    }
+  };
+
   const handleDecrypt = async () => {
     if (!restoreBackupId) return;
+    const generation = ++restoreGeneration.current;
     setRestoreError('');
 
     try {
       setRestoreStep('downloading');
       const blob = await downloadBackup(restoreBackupId);
       const text = await blob.text();
+      if (generation !== restoreGeneration.current) return;
 
       setRestoreStep('decrypting');
       const encrypted = JSON.parse(text) as EncryptedBackupBlob;
       const payload = await decryptBackup(restorePassword, encrypted);
+      let parent: BackupPayload | undefined;
+      if (payload.type === 'differential') {
+        if (payload.version !== 2 || !payload.parentBackupId) throw new Error('Legacy differential backups cannot be verified. Restore a full backup instead.');
+        const parentBlob = await downloadBackup(payload.parentBackupId);
+        parent = await decryptBackup(restorePassword, JSON.parse(await parentBlob.text()) as EncryptedBackupBlob);
+      }
+      if (generation !== restoreGeneration.current) return;
 
       setRestorePayload(payload);
+      setRestoreBase(parent);
+      setRestorePassword('');
       setRestoreStep('preview');
+      await prepareRestorePreview(payload, payload.type === 'differential' ? 'merge' : 'replace', parent);
     } catch (err) {
+      if (generation !== restoreGeneration.current) return;
       setRestoreError(err instanceof Error ? err.message : 'Decryption failed');
       setRestoreStep('error');
       addToast('error', tt('backup.decryptionFailed'));
@@ -166,23 +208,25 @@ export function ServerBackup() {
   };
 
   const handleRestore = async (mode: 'replace' | 'merge') => {
-    if (!restorePayload) return;
+    if (!restorePayload || !restorePreview || restorePreviewBusy) return;
     setRestoreError('');
     setRestoreStep('restoring');
 
     try {
       let result: RestoreResult;
       if (mode === 'replace') {
-        result = await restoreFullReplace(restorePayload);
+        result = await restoreFullReplace(restorePayload, restorePreview);
       } else {
-        result = await restoreMerge(restorePayload);
+        result = await restoreMerge(restorePayload, restorePreview, restoreBase);
       }
       setRestoreResult(result);
       setRestoreStep('done');
       addToast('success', tt('backup.serverRestored'));
+      if (!hasPendingEntityDrafts()) window.location.reload();
     } catch (err) {
       setRestoreError(err instanceof Error ? err.message : 'Restore failed');
-      setRestoreStep('error');
+      setRestorePreview(null);
+      setRestoreStep('preview');
       addToast('error', tt('backup.serverRestoreFailed'));
     }
   };
@@ -200,12 +244,17 @@ export function ServerBackup() {
   };
 
   const resetRestore = () => {
+    restoreGeneration.current++;
+    previewGeneration.current++;
     setRestoreBackupId(null);
     setRestorePassword('');
     setRestoreStep('idle');
     setRestoreError('');
     setRestorePayload(null);
+    setRestoreBase(undefined);
     setRestoreResult(null);
+    setRestorePreview(null);
+    setRestorePreviewBusy(false);
   };
 
   const inputClass = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent';
@@ -269,6 +318,9 @@ export function ServerBackup() {
               {!hasFullBackup ? t('encryption.differentialNeedsFullBackup') : t('encryption.typeDifferential')}
             </option>
           </select>
+          {backupType === 'differential' && <p className="text-xs text-gray-400 mt-1">
+            {t('encryption.differentialPasswordNotice', { defaultValue: 'Use the full backup’s password. Restore that matching full backup first before applying this differential.' })}
+          </p>}
         </div>
 
         <div>
@@ -340,6 +392,7 @@ export function ServerBackup() {
               </span>
               <button
                 onClick={() => { resetRestore(); setRestoreBackupId(b.id); }}
+                disabled={restoreStep === 'restoring'}
                 className="p-1 rounded text-gray-400 hover:text-accent"
                 title={t('encryption.restore')}
                 aria-label={t('encryption.restore')}
@@ -369,7 +422,7 @@ export function ServerBackup() {
         <div className="bg-gray-800/30 rounded-lg p-3 space-y-3 border border-gray-700">
           <div className="flex items-center justify-between">
             <h4 className="text-xs font-semibold text-gray-400">{t('encryption.restoreBackup')}</h4>
-            <button onClick={resetRestore} className="text-xs text-gray-500 hover:text-gray-300">{tc('cancel')}</button>
+            <button onClick={resetRestore} disabled={restoreStep === 'restoring'} className="text-xs text-gray-500 hover:text-gray-300">{tc('cancel')}</button>
           </div>
 
           {restoreStep === 'idle' && (
@@ -407,28 +460,52 @@ export function ServerBackup() {
                 <p>Created: <span className="text-gray-200">{new Date(restorePayload.createdAt).toLocaleString()}</span></p>
               </div>
 
-              {restorePayload.type === 'differential' ? (
-                <button
-                  onClick={() => handleRestore('merge')}
-                  className={`${btnClass} bg-accent hover:bg-accent-hover text-white`}
-                >
-                  {t('encryption.applyChanges')}
-                </button>
-              ) : (
+              {restorePayload.type === 'full' && (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleRestore('replace')}
-                    className={`${btnClass} bg-red-600/80 hover:bg-red-600 text-white`}
+                    onClick={() => prepareRestorePreview(restorePayload, 'replace')}
+                    disabled={restorePreviewBusy}
+                    aria-pressed={restoreMode === 'replace'}
+                    className={`${btnClass} bg-gray-700 hover:bg-gray-600 text-gray-200 disabled:opacity-50`}
                   >
-                    {t('encryption.replaceAll')}
+                    {t('encryption.replaceScope')}
                   </button>
                   <button
-                    onClick={() => handleRestore('merge')}
-                    className={`${btnClass} bg-gray-700 hover:bg-gray-600 text-gray-200`}
+                    onClick={() => prepareRestorePreview(restorePayload, 'merge')}
+                    disabled={restorePreviewBusy}
+                    aria-pressed={restoreMode === 'merge'}
+                    className={`${btnClass} bg-gray-700 hover:bg-gray-600 text-gray-200 disabled:opacity-50`}
                   >
                     {t('encryption.merge')}
                   </button>
                 </div>
+              )}
+              {restorePreviewBusy && <p role="status" className="text-xs text-gray-400">{t('encryption.preparingRestorePreview')}</p>}
+              {restorePreview && (
+                <div className="space-y-2 text-xs text-gray-300" aria-live="polite">
+                  <p>{t('encryption.restorePreviewStats', { added: restorePreview.added, updated: restorePreview.updated, deleted: restorePreview.deleted })}</p>
+                  <ul className="list-disc pl-4">
+                    {restorePreview.changes.map(change => (
+                      <li key={change.table}>{t('encryption.restoreTableChange', {
+                        ...change,
+                        table: t(`encryption.table.${change.table}`, { defaultValue: change.table.replace(/([A-Z])/g, ' $1').toLowerCase() }),
+                      })}</li>
+                    ))}
+                  </ul>
+                  {restorePreview.sharedPreserved > 0 && <p>{t('encryption.sharedPreserved', { count: restorePreview.sharedPreserved })}</p>}
+                  <p>{t(restoreMode === 'replace' ? 'encryption.restoreScopeNotice' : 'encryption.mergeScopeNotice')}</p>
+                  <button
+                    onClick={() => handleRestore(restoreMode)}
+                    className={`${btnClass} bg-red-600/80 hover:bg-red-600 text-white`}
+                  >
+                    {t('encryption.confirmRestore')}
+                  </button>
+                </div>
+              )}
+              {!restorePreview && !restorePreviewBusy && (
+                <button onClick={() => prepareRestorePreview(restorePayload, restoreMode)} className={`${btnClass} bg-gray-700 text-gray-200`}>
+                  {t('encryption.refreshRestorePreview')}
+                </button>
               )}
             </div>
           )}
@@ -446,6 +523,14 @@ export function ServerBackup() {
                 {t('encryption.restoreStats', { added: restoreResult.added, updated: restoreResult.updated, deleted: restoreResult.deleted })}
               </p>
               <p className="text-gray-500">{t('encryption.restoreTables', { tables: restoreResult.tables.join(', ') })}</p>
+              <p className="text-gray-300">{t('encryption.restorePendingDraftNotice')}</p>
+              <button
+                onClick={() => {
+                  if (hasPendingEntityDrafts()) setRestoreError(t('encryption.restorePendingDraftNotice'));
+                  else window.location.reload();
+                }}
+                className={`${btnClass} bg-gray-700 text-gray-200`}
+              >{t('encryption.reopenWorkspace')}</button>
             </div>
           )}
 

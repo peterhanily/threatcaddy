@@ -57,7 +57,9 @@ function dispatchLLMRequest(
   requestId: string,
   opts: SendRequestOptions,
   messages: SendRequestOptions['messages'],
+  signal: AbortSignal,
 ) {
+  if (signal.aborted) return;
   if (opts.useServerProxy) {
     // Route through server — the server response events will be picked up by
     // the existing message listener because sendViaServer posts TC_LLM_* events
@@ -69,6 +71,7 @@ function dispatchLLMRequest(
           window.postMessage({ type: 'TC_LLM_DONE', requestId, stopReason, contentBlocks, usage: usage || null }, postMessageOrigin()),
         onError: (error) => window.postMessage({ type: 'TC_LLM_ERROR', requestId, error }, postMessageOrigin()),
       },
+      signal,
     );
   } else if (opts.provider === 'local' && opts.endpoint) {
     // Local LLMs can be called directly without the extension
@@ -80,8 +83,17 @@ function dispatchLLMRequest(
           window.postMessage({ type: 'TC_LLM_DONE', requestId, stopReason, contentBlocks, usage: usage || null }, postMessageOrigin()),
         onError: (error) => window.postMessage({ type: 'TC_LLM_ERROR', requestId, error }, postMessageOrigin()),
       },
+      signal,
     );
   } else {
+    const abort = () => window.postMessage({ type: 'TC_LLM_ABORT', requestId }, postMessageOrigin());
+    const complete = (event: MessageEvent) => {
+      if (event.source === window && event.data?.requestId === requestId && ['TC_LLM_DONE', 'TC_LLM_ERROR'].includes(event.data.type)) cleanup();
+    };
+    const cleanup = () => { signal.removeEventListener('abort', abort); window.removeEventListener('message', complete); };
+    signal.addEventListener('abort', abort, { once: true });
+    signal.addEventListener('abort', cleanup, { once: true });
+    window.addEventListener('message', complete);
     window.postMessage({
       type: 'TC_LLM_REQUEST',
       requestId,
@@ -111,6 +123,7 @@ export function useLLM() {
   const onCompleteRef = useRef<((result: AgentResult) => void) | null>(null);
   const accumulatedRef = useRef('');
   const requestIdRef = useRef<string | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
   const rafRef = useRef<number | null>(null);
   const agentStateRef = useRef<{
     opts: SendRequestOptions;
@@ -119,16 +132,49 @@ export function useLLM() {
     totalUsage: TokenUsage;
     turn: number;
     aborted: boolean;
-    toolExecutor?: (toolUse: ToolUseBlock) => Promise<{ result: string; isError: boolean }>;
+    signal: AbortSignal;
+    pendingTools: number;
+    completeCancelled?: () => void;
+    toolExecutor?: (toolUse: ToolUseBlock, signal: AbortSignal) => Promise<{ result: string; isError: boolean }>;
   } | null>(null);
+
+  const cancelCurrent = useCallback((updateUI = true) => {
+    const rid = requestIdRef.current;
+    const state = agentStateRef.current;
+    if (!rid && !state) return;
+    if (state) state.aborted = true;
+    controllerRef.current?.abort();
+    window.postMessage({ type: 'TC_LLM_ABORT', requestId: rid }, postMessageOrigin());
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    const content = accumulatedRef.current;
+    const onComplete = onCompleteRef.current;
+    requestIdRef.current = null;
+    accumulatedRef.current = '';
+    agentStateRef.current = null;
+    onCompleteRef.current = null;
+    if (updateUI) { setActiveRequestId(null); setStreamingContent(''); }
+    // Replacement, Stop, and unmount share one finalizer. Capture this request's
+    // callback before a successor can replace it; wait for actual tool outcomes.
+    const completeCancelled = () => {
+      const toolCalls = state?.allToolCalls ?? [];
+      if (content || toolCalls.length) {
+        try {
+          void Promise.resolve(onComplete?.({ content, toolCalls: [...toolCalls], error: 'Request cancelled.' }))
+            .catch(error => console.error('Unable to persist cancelled chat result:', error));
+        } catch (error) { console.error('Unable to persist cancelled chat result:', error); }
+      }
+    };
+    if (state?.pendingTools) state.completeCancelled = completeCancelled;
+    else completeCancelled();
+  }, []);
 
   // Keep handleDone in a ref so the event listener always calls the latest version
   const handleDoneRef = useRef<((stopReason: string, contentBlocks: ContentBlock[], eventUsage?: TokenUsage) => void) | undefined>(undefined);
 
   // eslint-disable-next-line react-hooks/refs -- intentional: keep latest closure for event listener
   handleDoneRef.current = async (stopReason: string, contentBlocks: ContentBlock[], eventUsage?: TokenUsage) => {
+    const state = agentStateRef.current;
     try {
-      const state = agentStateRef.current;
       if (!state) {
         // No agentic state — simple completion
         const finalContent = accumulatedRef.current;
@@ -146,11 +192,10 @@ export function useLLM() {
       }
 
       // Check if there are tool_use blocks to handle
-      // Include blocks from max_tokens truncation — completed tool calls should still execute
       const toolUseBlocks = contentBlocks.filter(
         (b): b is ToolUseBlock => b.type === 'tool_use' && !!b.id && !!b.name && typeof b.input === 'object'
       );
-      const shouldContinue = (stopReason === 'tool_use' || stopReason === 'max_tokens') && toolUseBlocks.length > 0;
+      const shouldContinue = stopReason === 'tool_use' && toolUseBlocks.length > 0;
 
       if (!shouldContinue || state.turn >= MAX_TOOL_TURNS || state.aborted) {
         // Done — no more tool calls needed
@@ -168,6 +213,7 @@ export function useLLM() {
       const toolResults: ContentBlock[] = [];
 
       const executeSingleTool = async (toolUse: ToolUseBlock): Promise<ContentBlock> => {
+        if (state.aborted || state.signal.aborted) return { type: 'tool_result', tool_use_id: toolUse.id, content: 'Cancelled', is_error: true };
         const activity: ToolActivity = {
           id: toolUse.id,
           name: toolUse.name,
@@ -177,11 +223,11 @@ export function useLLM() {
         setToolActivity(prev => [...prev, activity]);
 
         let result: { result: string; isError: boolean };
-        if (state.toolExecutor) {
-          result = await state.toolExecutor(toolUse);
-        } else {
-          result = { result: JSON.stringify({ error: 'No tool executor configured' }), isError: true };
-        }
+        state.pendingTools++;
+        try {
+          result = state.toolExecutor ? await state.toolExecutor(toolUse, state.signal)
+            : { result: JSON.stringify({ error: 'No tool executor configured' }), isError: true };
+        } catch (error) { result = { result: JSON.stringify({ error: error instanceof Error ? error.message : 'Tool execution failed.' }), isError: true }; }
 
         state.allToolCalls.push({
           id: toolUse.id,
@@ -191,7 +237,12 @@ export function useLLM() {
           isError: result.isError,
         });
 
-        setToolActivity(prev =>
+        state.pendingTools--;
+        if (state.aborted && state.pendingTools === 0) {
+          state.completeCancelled?.();
+          state.completeCancelled = undefined;
+        }
+        if (!state.aborted) setToolActivity(prev =>
           prev.map(a => a.id === toolUse.id ? { ...a, status: result.isError ? 'error' : 'done', result: result.result } : a)
         );
 
@@ -258,14 +309,14 @@ export function useLLM() {
       requestIdRef.current = requestId;
       setActiveRequestId(requestId);
 
-      dispatchLLMRequest(requestId, state.opts, state.messages);
+      dispatchLLMRequest(requestId, state.opts, state.messages, state.signal);
     } catch (err) {
+      if (state?.aborted || (state && agentStateRef.current !== state)) return;
       console.error('useLLM: handleDone error', err);
       // Ensure we always clean up on error so the UI doesn't freeze
       setActiveRequestId(null);
       requestIdRef.current = null;
       setError(String((err as Error).message || err));
-      const state = agentStateRef.current;
       const finalContent = accumulatedRef.current;
       agentStateRef.current = null;
       // Deliver whatever we have
@@ -288,7 +339,7 @@ export function useLLM() {
       }
 
       if (event.data.type === 'TC_LLM_CHUNK') {
-        if (event.data.requestId && event.data.requestId !== requestIdRef.current) return;
+        if (!requestIdRef.current || event.data.requestId !== requestIdRef.current) return;
         if (accumulatedRef.current.length < MAX_STREAMING_CHARS) {
           accumulatedRef.current += event.data.content;
         }
@@ -303,7 +354,8 @@ export function useLLM() {
       }
 
       if (event.data.type === 'TC_LLM_DONE') {
-        if (event.data.requestId && event.data.requestId !== requestIdRef.current) return;
+        if (!requestIdRef.current || event.data.requestId !== requestIdRef.current) return;
+        requestIdRef.current = null; // Accept each completion only once.
         // Flush any pending RAF so final content is rendered
         if (rafRef.current) {
           cancelAnimationFrame(rafRef.current);
@@ -318,7 +370,7 @@ export function useLLM() {
       }
 
       if (event.data.type === 'TC_LLM_ERROR') {
-        if (event.data.requestId && event.data.requestId !== requestIdRef.current) return;
+        if (!requestIdRef.current || event.data.requestId !== requestIdRef.current) return;
         if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
         setError(event.data.error);
         setActiveRequestId(null);
@@ -342,15 +394,21 @@ export function useLLM() {
 
     window.addEventListener('message', handler);
     window.postMessage({ type: 'TC_EXTENSION_PING' }, postMessageOrigin());
-    return () => window.removeEventListener('message', handler);
-  }, []);
+    return () => {
+      window.removeEventListener('message', handler);
+      cancelCurrent(false);
+    };
+  }, [cancelCurrent]);
 
   const sendAgentRequest = useCallback((
     opts: SendRequestOptions,
-    toolExecutor: (toolUse: ToolUseBlock) => Promise<{ result: string; isError: boolean }>,
+    toolExecutor: (toolUse: ToolUseBlock, signal: AbortSignal) => Promise<{ result: string; isError: boolean }>,
     onComplete: (result: AgentResult) => void,
   ): string => {
     const requestId = nanoid();
+    cancelCurrent();
+    const controller = new AbortController();
+    controllerRef.current = controller;
     setError(null);
     setStreamingContent('');
     setToolActivity([]);
@@ -367,41 +425,22 @@ export function useLLM() {
       totalUsage: { input: 0, output: 0 },
       turn: 0,
       aborted: false,
+      signal: controller.signal,
+      pendingTools: 0,
       toolExecutor,
     };
 
-    dispatchLLMRequest(requestId, opts, opts.messages);
+    dispatchLLMRequest(requestId, opts, opts.messages, controller.signal);
 
     return requestId;
-  }, []);
+  }, [cancelCurrent]);
 
-  const abort = useCallback(() => {
-    const rid = requestIdRef.current;
-    if (rid) {
-      window.postMessage({ type: 'TC_LLM_ABORT', requestId: rid }, postMessageOrigin());
-      if (agentStateRef.current) {
-        agentStateRef.current.aborted = true;
-      }
-      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+  const abort = useCallback(() => cancelCurrent(), [cancelCurrent]);
 
-      // Capture before clearing
-      const content = accumulatedRef.current;
-      const toolCalls = agentStateRef.current?.allToolCalls || [];
-
-      setActiveRequestId(null);
-      requestIdRef.current = null;
-      setStreamingContent('');
-      accumulatedRef.current = '';
-
-      // Deliver whatever we have
-      if (content || toolCalls.length > 0) {
-        onCompleteRef.current?.({ content, toolCalls });
-      }
-
-      agentStateRef.current = null;
-      onCompleteRef.current = null;
-    }
-  }, []);
+  useEffect(() => {
+    window.addEventListener('workspace-will-switch', abort);
+    return () => window.removeEventListener('workspace-will-switch', abort);
+  }, [abort]);
 
   return {
     extensionAvailable,

@@ -1,182 +1,129 @@
-/**
- * Data collection for backup payloads — follows export.ts patterns.
- */
-
+/** Consistent full snapshots and verified, snapshot-based differential backups. */
 import { db } from '../db';
-import type { BackupPayload } from './backup-crypto';
+import { backupFingerprint, backupStateFingerprint, canonicalBackupJSON, type BackupPayload } from './backup-crypto';
+import { BACKUP_TABLES, investigationOf, parseEntityScope, type BackupTable } from './backup-tables';
+import { flushEntityDrafts } from './entity-drafts';
 
-// Helper: get a Dexie table by name, returning an untyped handle for dynamic access
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function getTable(name: string): any {
-  return (db as any)[name];
-}
-/* eslint-enable @typescript-eslint/no-explicit-any */
+export type BackupRow = Record<string, unknown> & { id: string };
+const INVESTIGATION_TABLES: BackupTable[] = [
+  'folders', 'notes', 'tasks', 'timelineEvents', 'whiteboards', 'standaloneIOCs',
+  'evidenceItems', 'chatThreads', 'agentActions', 'agentDeployments', 'agentMeetings',
+];
+const SHARED_TABLES = new Set<BackupTable>(['tags', 'timelines']);
 
-export async function buildFullBackupPayload(
-  scope: 'all' | 'investigation' | 'entity',
+/** The same scope projection is used for snapshot creation and restore checks. */
+export function selectBackupData(
+  rows: Map<BackupTable, BackupRow[]>,
+  scope: BackupPayload['scope'],
   scopeId?: string,
-): Promise<BackupPayload> {
-  const data: BackupPayload['data'] = {};
-
-  if (scope === 'all') {
-    const [notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, evidenceItems, chatThreads, agentActions, agentProfiles, agentDeployments, agentMeetings, noteTemplates, playbookTemplates, integrationTemplates, installedIntegrations, customSlashCommands] =
-      await Promise.all([
-        db.notes.toArray(),
-        db.tasks.toArray(),
-        db.folders.toArray(),
-        db.tags.toArray(),
-        db.timelineEvents.toArray(),
-        db.timelines.toArray(),
-        db.whiteboards.toArray(),
-        db.standaloneIOCs.toArray(),
-        db.evidenceItems.toArray(),
-        db.chatThreads.toArray(),
-        db.agentActions.toArray(),
-        db.agentProfiles.toArray(),
-        db.agentDeployments.toArray(),
-        db.agentMeetings.toArray(),
-        db.noteTemplates.toArray(),
-        db.playbookTemplates.toArray(),
-        db.integrationTemplates.toArray(),
-        db.installedIntegrations.toArray(),
-        db.customSlashCommands.toArray(),
-      ]);
-    Object.assign(data, { notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, evidenceItems, chatThreads, agentActions, agentProfiles, agentDeployments, agentMeetings, noteTemplates, playbookTemplates, integrationTemplates, installedIntegrations, customSlashCommands });
-  } else if (scope === 'investigation') {
-    if (!scopeId) throw new Error('scopeId required for investigation scope');
-    const [folder, notes, tasks, allTags, events, allTimelines, whiteboards, iocs, evidenceItems, chats, agentActions, agentDeployments, agentMeetings] = await Promise.all([
-      db.folders.get(scopeId),
-      db.notes.where('folderId').equals(scopeId).toArray(),
-      db.tasks.where('folderId').equals(scopeId).toArray(),
-      db.tags.toArray(),
-      db.timelineEvents.where('folderId').equals(scopeId).toArray(),
-      db.timelines.toArray(),
-      db.whiteboards.where('folderId').equals(scopeId).toArray(),
-      db.standaloneIOCs.where('folderId').equals(scopeId).toArray(),
-      db.evidenceItems.where('folderId').equals(scopeId).toArray(),
-      db.chatThreads.where('folderId').equals(scopeId).toArray(),
-      db.agentActions.where('investigationId').equals(scopeId).toArray(),
-      db.agentDeployments.where('investigationId').equals(scopeId).toArray(),
-      db.agentMeetings.where('investigationId').equals(scopeId).toArray(),
-    ]);
-    if (!folder) throw new Error('Investigation not found');
-
-    // Collect used tag names
-    const usedTagNames = new Set<string>();
-    for (const n of notes) n.tags.forEach((t: string) => usedTagNames.add(t));
-    for (const t of tasks) t.tags.forEach((tg: string) => usedTagNames.add(tg));
-    for (const e of events) e.tags.forEach((tg: string) => usedTagNames.add(tg));
-    for (const w of whiteboards) w.tags.forEach((tg: string) => usedTagNames.add(tg));
-    if (folder.tags) folder.tags.forEach((t: string) => usedTagNames.add(t));
-    const tags = allTags.filter((t) => usedTagNames.has(t.name));
-
-    // Include linked timelines
-    const timelineIds = new Set(events.map((e) => e.timelineId));
-    if (folder.timelineId) timelineIds.add(folder.timelineId);
-    const timelines = allTimelines.filter((t) => timelineIds.has(t.id));
-
-    Object.assign(data, {
-      notes, tasks, folders: [folder], tags, timelineEvents: events, timelines, whiteboards,
-      standaloneIOCs: iocs, evidenceItems, chatThreads: chats, agentActions, agentDeployments, agentMeetings,
-    });
-  } else if (scope === 'entity') {
-    if (!scopeId) throw new Error('scopeId required for entity scope');
-    const [tableName, entityId] = scopeId.split(':');
-    if (!tableName || !entityId) throw new Error('scopeId must be "tableName:entityId"');
-    const table = getTable(tableName);
-    if (!table) throw new Error(`Unknown table: ${tableName}`);
-    const entity = await table.get(entityId);
-    if (!entity) throw new Error(`Entity not found: ${scopeId}`);
-    data[tableName as keyof BackupPayload['data']] = [entity];
+  allowMissing = false,
+): BackupPayload['data'] {
+  if (scope === 'all') return Object.fromEntries(BACKUP_TABLES.map(name => [name, rows.get(name) ?? []]));
+  if (scope === 'entity') {
+    const { table, id } = parseEntityScope(scopeId);
+    const selected = (rows.get(table) ?? []).filter(row => row.id === id);
+    if (!allowMissing && !selected.length) throw new Error('Entity not found: ' + scopeId);
+    return { [table]: selected };
   }
+  if (scope !== 'investigation' || !scopeId?.trim()) throw new Error('scopeId required for investigation scope');
+  const selected = new Map(INVESTIGATION_TABLES.map(name => [name,
+    (rows.get(name) ?? []).filter(row => investigationOf(name, row) === scopeId),
+  ]));
+  if (!allowMissing && !selected.get('folders')?.length) throw new Error('Investigation not found');
+  const tagNames = new Set<string>();
+  const timelineIds = new Set<string>();
+  for (const records of selected.values()) for (const row of records) {
+    if (Array.isArray(row.tags)) for (const tag of row.tags) if (typeof tag === 'string') tagNames.add(tag);
+    if (typeof row.timelineId === 'string') timelineIds.add(row.timelineId);
+  }
+  selected.set('tags', (rows.get('tags') ?? []).filter(row => typeof row.name === 'string' && tagNames.has(row.name)));
+  selected.set('timelines', (rows.get('timelines') ?? []).filter(row => timelineIds.has(row.id)));
+  return Object.fromEntries(selected);
+}
 
-  return {
-    version: 1,
-    type: 'full',
-    scope,
-    scopeId,
-    createdAt: Date.now(),
-    data,
-  };
+async function collectSnapshot(scope: BackupPayload['scope'], scopeId?: string, allowMissing = false): Promise<BackupPayload> {
+  if ((await flushEntityDrafts()).some(saved => !saved)) throw new Error('Save or recover pending drafts before creating a backup.');
+  return db.transaction('r', BACKUP_TABLES.map(name => db.table(name)), async () => {
+    const createdAt = Date.now();
+    const rows = new Map<BackupTable, BackupRow[]>();
+    for (const name of BACKUP_TABLES) rows.set(name, await db.table(name).toArray());
+    return { version: 1, type: 'full', scope, scopeId, createdAt, data: selectBackupData(rows, scope, scopeId, allowMissing) };
+  });
+}
+
+export function buildFullBackupPayload(scope: BackupPayload['scope'], scopeId?: string): Promise<BackupPayload> {
+  return collectSnapshot(scope, scopeId);
+}
+
+/** A differential must start with a complete, unambiguous supported full base. */
+export function requireDifferentialBase(parent: BackupPayload, scope: BackupPayload['scope'], scopeId?: string): void {
+  if (!parent || parent.version !== 1 || parent.type !== 'full' || parent.scope !== scope || parent.scopeId !== scopeId
+    || !Number.isFinite(parent.createdAt) || !parent.data || typeof parent.data !== 'object' || Array.isArray(parent.data)
+    || (parent.deletedIds !== undefined && (!parent.deletedIds || typeof parent.deletedIds !== 'object'
+      || Array.isArray(parent.deletedIds) || Object.values(parent.deletedIds).some(ids => !Array.isArray(ids) || ids.length)))) {
+    throw new Error('Differential backup requires a full parent with the same scope.');
+  }
+  const names: BackupTable[] = scope === 'all' ? [...BACKUP_TABLES] : scope === 'entity' ? [parseEntityScope(scopeId).table]
+    : [...INVESTIGATION_TABLES, 'tags', 'timelines'];
+  if (Object.keys(parent.data).length !== names.length || names.some(name => !Array.isArray(parent.data[name]))) {
+    throw new Error('The parent does not contain a complete supported snapshot. Create a new full backup first.');
+  }
+  for (const name of names) {
+    const ids = new Set<string>();
+    for (const row of parent.data[name] ?? []) {
+      if (!row || typeof row !== 'object' || Array.isArray(row) || typeof (row as BackupRow).id !== 'string'
+        || !(row as BackupRow).id.trim() || ids.has((row as BackupRow).id)) throw new Error('Invalid records in the differential parent.');
+      const record = row as BackupRow;
+      ids.add(record.id);
+      if (scope === 'investigation' && !SHARED_TABLES.has(name) && investigationOf(name, record) !== scopeId) throw new Error('Parent record is outside the backup scope.');
+      if (scope === 'entity' && record.id !== parseEntityScope(scopeId).id) throw new Error('Parent record is outside the backup scope.');
+    }
+  }
 }
 
 export async function buildDifferentialPayload(
-  scope: 'all' | 'investigation' | 'entity',
-  lastBackupAt: number,
+  scope: BackupPayload['scope'],
+  parentPayload: BackupPayload,
   parentBackupId: string,
   scopeId?: string,
 ): Promise<BackupPayload> {
+  const parent = structuredClone(parentPayload);
+  requireDifferentialBase(parent, scope, scopeId);
+  if (!parentBackupId.trim()) throw new Error('Differential backup requires its parent backup ID.');
+  const current = await collectSnapshot(scope, scopeId, true);
   const data: BackupPayload['data'] = {};
   const deletedIds: Record<string, string[]> = {};
-
-  const tableNames = ['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'evidenceItems', 'chatThreads', 'agentActions', 'agentProfiles', 'agentDeployments', 'agentMeetings', 'noteTemplates', 'playbookTemplates', 'integrationTemplates', 'installedIntegrations', 'customSlashCommands'] as const;
-
-  for (const tableName of tableNames) {
-    const table = getTable(tableName);
-    const collection = table.where('updatedAt').above(lastBackupAt);
-
-    // For investigation scope, further filter by folderId where applicable
-    if (scope === 'investigation' && scopeId) {
-      const all: Array<{ id: string; folderId?: string }> = await collection.toArray();
-      const filtered = all.filter((item) => {
-        if ('folderId' in item) return item.folderId === scopeId;
-        return true; // tags, timelines don't have folderId — include if updated
-      });
-      data[tableName as keyof BackupPayload['data']] = filtered as unknown[];
-    } else {
-      data[tableName as keyof BackupPayload['data']] = await collection.toArray();
-    }
-
-    // Collect trashed entity IDs as tombstones
-    const trashed: Array<{ id: string; trashed?: boolean; folderId?: string }> = await table.filter(
-      (item: { trashed?: boolean; folderId?: string }) => {
-        if (!item.trashed) return false;
-        if (scope === 'investigation' && scopeId && 'folderId' in item) {
-          return item.folderId === scopeId;
+  for (const name of Object.keys(current.data) as BackupTable[]) {
+    const previous = new Map((parent.data[name] as BackupRow[]).map(row => [row.id, row]));
+    const rows = current.data[name] as BackupRow[];
+    const currentIds = new Set(rows.map(row => row.id));
+    const changed: BackupRow[] = [];
+    for (const row of rows) {
+      const old = previous.get(row.id);
+      if (!old || canonicalBackupJSON(old) !== canonicalBackupJSON(row)) {
+        if (old && scope === 'investigation' && SHARED_TABLES.has(name)) {
+          throw new Error('Shared tags or timelines changed since the parent. Create a new full backup for this investigation.');
         }
-        return scope === 'all';
-      },
-    ).toArray();
-
-    if (trashed.length > 0) {
-      deletedIds[tableName] = trashed.map((item) => item.id);
+        changed.push(row);
+      }
+    }
+    if (changed.length) data[name] = changed;
+    // Shared catalogs can stop being referenced by this scope without deletion.
+    if (scope !== 'investigation' || !SHARED_TABLES.has(name)) {
+      const removed = [...previous.keys()].filter(id => !currentIds.has(id));
+      if (removed.length) deletedIds[name] = removed;
     }
   }
-
   return {
-    version: 1,
-    type: 'differential',
-    scope,
-    scopeId,
-    parentBackupId,
-    createdAt: Date.now(),
-    lastBackupAt,
-    data,
-    deletedIds: Object.keys(deletedIds).length > 0 ? deletedIds : undefined,
+    version: 2, type: 'differential', scope, scopeId, parentBackupId,
+    createdAt: current.createdAt, lastBackupAt: parent.createdAt,
+    baseFingerprint: await backupFingerprint(parent),
+    baseStateFingerprint: await backupStateFingerprint(parent),
+    resultFingerprint: await backupStateFingerprint(current),
+    data, ...(Object.keys(deletedIds).length ? { deletedIds } : {}),
   };
 }
 
 export function countPayloadEntities(payload: BackupPayload): number {
-  let count = 0;
-  const data = payload.data;
-  if (data.notes) count += data.notes.length;
-  if (data.tasks) count += data.tasks.length;
-  if (data.folders) count += data.folders.length;
-  if (data.tags) count += data.tags.length;
-  if (data.timelineEvents) count += data.timelineEvents.length;
-  if (data.timelines) count += data.timelines.length;
-  if (data.whiteboards) count += data.whiteboards.length;
-  if (data.standaloneIOCs) count += data.standaloneIOCs.length;
-  if (data.evidenceItems) count += data.evidenceItems.length;
-  if (data.chatThreads) count += data.chatThreads.length;
-  if (data.agentActions) count += data.agentActions.length;
-  if (data.agentProfiles) count += data.agentProfiles.length;
-  if (data.agentDeployments) count += data.agentDeployments.length;
-  if (data.agentMeetings) count += data.agentMeetings.length;
-  if (data.noteTemplates) count += data.noteTemplates.length;
-  if (data.playbookTemplates) count += data.playbookTemplates.length;
-  if (data.integrationTemplates) count += data.integrationTemplates.length;
-  if (data.installedIntegrations) count += data.installedIntegrations.length;
-  if (data.customSlashCommands) count += data.customSlashCommands.length;
-  return count;
+  return Object.values(payload.data).reduce((count, rows) => count + (rows?.length ?? 0), 0);
 }

@@ -1,3 +1,4 @@
+import { assertSupportedAgentPolicy, hasUnsupportedAgentPolicy } from './handoff-policy.js';
 import { nanoid } from 'nanoid';
 import { eq, sql } from 'drizzle-orm';
 import { Cron } from 'croner';
@@ -28,6 +29,9 @@ export class BotManager {
   private activeRuns = 0;
   private initialized = false;
   private initializing = false;
+  private stopping = false;
+  private generations = new Map<string, number>();
+  private activeWork = new Set<Promise<void>>();
 
   /** Reverse index: event type → set of bot IDs that subscribe to that event */
   private eventTypeIndex = new Map<BotEventType, Set<string>>();
@@ -39,7 +43,7 @@ export class BotManager {
   private wildcardListener: ((event: BotEvent) => void) | null = null;
 
   /** Simple FIFO execution queue for when concurrency limit is hit */
-  private executionQueue: Array<() => void> = [];
+  private executionQueue: Array<{ botId: string; run: () => void; cancel: () => void }> = [];
 
   /** In-memory consecutive error counter for circuit breaker (avoids DB query on every error) */
   private consecutiveErrors = new Map<string, number>();
@@ -51,6 +55,7 @@ export class BotManager {
   async init(): Promise<void> {
     if (this.initialized || this.initializing) return;
     this.initializing = true;
+    this.stopping = false;
 
     try {
       const rows = await db.select().from(schema.botConfigs).where(eq(schema.botConfigs.enabled, true));
@@ -90,6 +95,8 @@ export class BotManager {
 
   /** Shut down all bots and clean up */
   async shutdown(): Promise<void> {
+    this.stopping = true;
+    for (const queued of this.executionQueue.splice(0)) queued.cancel();
     // Remove wildcard event listener
     if (this.wildcardListener) {
       botEventBus.offBotEvent('*', this.wildcardListener);
@@ -99,10 +106,14 @@ export class BotManager {
     // Abort all in-flight executions
     for (const controllers of this.activeAbortControllers.values()) {
       for (const controller of controllers) {
-        controller.abort();
+        controller.abort(new Error('Server is shutting down'));
       }
     }
     this.activeAbortControllers.clear();
+
+    // Keep concurrency accounting and run records alive until cancellation has
+    // actually settled; resetting the count earlier made late completions negative.
+    await Promise.allSettled([...this.activeWork]);
 
     for (const [id, bot] of this.bots) {
       try {
@@ -129,6 +140,14 @@ export class BotManager {
 
   /** Load and start a single bot from its config */
   async loadBot(config: BotConfig): Promise<void> {
+    const generation = (this.generations.get(config.id) ?? 0) + 1;
+    await this.unloadBot(config.id);
+    if (this.stopping || !config.enabled) return;
+    if (hasUnsupportedAgentPolicy(config)) {
+      await this.unloadBot(config.id);
+      logger.warn('Agent handoff remains disabled pending policy enforcement', { botId: config.id });
+      return;
+    }
     // Clean up prior state to prevent cron job leaks on reload
     const priorJob = this.cronJobs.get(config.id);
     if (priorJob) {
@@ -142,8 +161,17 @@ export class BotManager {
       }
     }
 
-    // Store config
+    const decrypted = decryptConfigSecrets(config.config);
+    const bot = createBotImplementation(config);
+    await bot.onInit(config);
+    if (this.stopping || this.generations.get(config.id) !== generation) {
+      await bot.onDestroy();
+      return;
+    }
+    // Publish initialized state together, after the generation check.
     this.configs.set(config.id, config);
+    this.bots.set(config.id, bot);
+    this.decryptedConfigs.set(config.id, decrypted);
 
     // Update event type reverse index
     if (config.triggers.events) {
@@ -161,12 +189,6 @@ export class BotManager {
     botRateLimiter.register(`bot:${config.id}:hour`, config.rateLimitPerHour, 60 * 60 * 1000);
     botRateLimiter.register(`bot:${config.id}:day`, config.rateLimitPerDay, 24 * 60 * 60 * 1000);
 
-    // Create and initialize bot implementation
-    const bot = createBotImplementation(config);
-    await bot.onInit(config);
-    this.bots.set(config.id, bot);
-    this.decryptedConfigs.set(config.id, decryptConfigSecrets(config.config));
-
     // Set up cron schedule if configured
     if (config.triggers.schedule) {
       this.setupSchedule(config);
@@ -177,20 +199,23 @@ export class BotManager {
 
   /** Unload a bot */
   async unloadBot(botId: string): Promise<void> {
+    this.generations.set(botId, (this.generations.get(botId) ?? 0) + 1);
+    this.executionQueue = this.executionQueue.filter(queued => {
+      if (queued.botId !== botId) return true;
+      queued.cancel();
+      return false;
+    });
     // Abort any in-flight executions for this bot
     const controllers = this.activeAbortControllers.get(botId);
     if (controllers) {
       for (const controller of controllers) {
-        controller.abort();
+        controller.abort(new Error('Bot was disabled, changed, or removed'));
       }
       this.activeAbortControllers.delete(botId);
     }
 
     const bot = this.bots.get(botId);
-    if (bot) {
-      await bot.onDestroy();
-      this.bots.delete(botId);
-    }
+    this.bots.delete(botId);
 
     const job = this.cronJobs.get(botId);
     if (job) {
@@ -215,6 +240,7 @@ export class BotManager {
     botRateLimiter.removeBuckets(botId);
     this.configs.delete(botId);
     this.decryptedConfigs.delete(botId);
+    if (bot) await bot.onDestroy();
   }
 
   /** Reload a bot (disable then re-enable with updated config).
@@ -302,7 +328,8 @@ export class BotManager {
     webhookPayload?: Record<string, unknown>,
   ): Promise<void> {
     const config = this.configs.get(botId);
-    if (!config || !config.enabled) return;
+    if (this.stopping || !config || !config.enabled) return;
+    assertSupportedAgentPolicy(config);
 
     // Concurrency limit — queue if at capacity, drop if queue is full
     if (this.activeRuns >= MAX_CONCURRENT_RUNS) {
@@ -326,7 +353,7 @@ export class BotManager {
       }
       this.stats.queued++;
       return new Promise<void>((resolve) => {
-        this.executionQueue.push(() => {
+        this.executionQueue.push({ botId, cancel: resolve, run: () => {
           // Rate-limit when dequeued so tokens aren't wasted on queued items that may never run
           if (!this.consumeRateTokens(botId)) {
             resolve();
@@ -334,8 +361,8 @@ export class BotManager {
             return;
           }
           this.activeRuns++;
-          this.executeBotInner(botId, trigger, event, webhookPayload).then(resolve, resolve);
-        });
+          this.startTrackedRun(botId, trigger, event, webhookPayload).then(resolve, resolve);
+        } });
       });
     }
 
@@ -343,7 +370,13 @@ export class BotManager {
     if (!this.consumeRateTokens(botId)) return;
 
     this.activeRuns++;
-    await this.executeBotInner(botId, trigger, event, webhookPayload);
+    await this.startTrackedRun(botId, trigger, event, webhookPayload);
+  }
+
+  private startTrackedRun(botId: string, trigger: BotTriggerType, event?: BotEvent, payload?: Record<string, unknown>): Promise<void> {
+    const work = this.executeBotInner(botId, trigger, event, payload).finally(() => this.activeWork.delete(work));
+    this.activeWork.add(work);
+    return work;
   }
 
   /** Check and consume rate limit tokens. Returns false if rate-limited. */
@@ -368,7 +401,7 @@ export class BotManager {
     webhookPayload?: Record<string, unknown>,
   ): Promise<void> {
     const config = this.configs.get(botId);
-    if (!config) {
+    if (this.stopping || !config?.enabled) {
       this.activeRuns--;
       this.drainQueue();
       return;
@@ -391,6 +424,7 @@ export class BotManager {
     let timeout: ReturnType<typeof setTimeout> | undefined;
     let runInserted = false;
     let ctx: BotContext | undefined;
+    let timedOut = false;
 
     try {
       // Create run record
@@ -403,6 +437,7 @@ export class BotManager {
         createdAt: new Date(),
       });
       runInserted = true;
+      abortController.signal.throwIfAborted();
 
       ctx = {
         botConfig: { ...config, config: this.decryptedConfigs.get(botId) || config.config },
@@ -419,7 +454,8 @@ export class BotManager {
 
       // Execution timeout
       timeout = setTimeout(() => {
-        abortController.abort();
+        timedOut = true;
+        abortController.abort(new Error('Bot execution deadline exceeded'));
       }, BOT_EXECUTION_TIMEOUT_MS);
 
       // Audit: bot run started (fire-and-forget — don't block execution)
@@ -441,21 +477,30 @@ export class BotManager {
       await botEventDepth.run(nextDepth, () =>
         botEventOrigins.run(origins, async () => {
           const bot = this.bots.get(botId);
-          if (bot) {
-            if (trigger === 'event' && event && bot.onEvent) {
-              await bot.onEvent(ctx!, event);
-            } else if (trigger === 'schedule' && bot.onSchedule) {
-              await bot.onSchedule(ctx!);
-            } else if (trigger === 'webhook' && webhookPayload && bot.onWebhook) {
-              await bot.onWebhook(ctx!, webhookPayload);
-            }
+          abortController.signal.throwIfAborted();
+          if (!bot || this.configs.get(botId) !== config) throw new Error('Bot runtime changed before dispatch');
+          switch (trigger) {
+            case 'event':
+              if (!event || !bot.onEvent) throw new Error('Event handler and context are required');
+              await bot.onEvent(ctx!, event); break;
+            case 'schedule':
+              if (!bot.onSchedule) throw new Error('Schedule handler is unavailable');
+              await bot.onSchedule(ctx!); break;
+            case 'webhook':
+              if (!webhookPayload || !bot.onWebhook) throw new Error('Webhook handler and payload are required');
+              await bot.onWebhook(ctx!, webhookPayload); break;
+            case 'manual':
+              if (!bot.onManual) throw new Error('Manual handler is unavailable');
+              await bot.onManual(ctx!); break;
+            default: { const unsupported: never = trigger; throw new Error(`Unsupported trigger: ${unsupported}`); }
           }
+          abortController.signal.throwIfAborted();
         }),
       );
     } catch (err) {
       if (abortController.signal.aborted) {
-        status = 'timeout';
-        error = `Bot execution timed out after ${BOT_EXECUTION_TIMEOUT_MS}ms`;
+        status = timedOut ? 'timeout' : 'cancelled';
+        error = timedOut ? `Bot execution timed out after ${BOT_EXECUTION_TIMEOUT_MS}ms` : 'Bot execution cancelled';
       } else {
         status = 'error';
         error = String(err);
@@ -509,7 +554,7 @@ export class BotManager {
 
         // Update in-memory config (best-effort cache)
         const updatedConfig = this.configs.get(botId);
-        if (updatedConfig) {
+        if (updatedConfig === config) {
           updatedConfig.runCount++;
           updatedConfig.lastRunAt = new Date();
           updatedConfig.lastError = error;
@@ -517,7 +562,7 @@ export class BotManager {
         }
 
         // Circuit breaker: in-memory counter avoids DB query on every error
-        if (status === 'error' || status === 'timeout') {
+        if (this.configs.get(botId) === config && (status === 'error' || status === 'timeout')) {
           const count = (this.consecutiveErrors.get(botId) || 0) + 1;
           this.consecutiveErrors.set(botId, count);
           if (count >= 5) {
@@ -534,7 +579,7 @@ export class BotManager {
               logger.error(`Failed to check circuit breaker for bot ${botId}`, { error: String(err) });
             }
           }
-        } else {
+        } else if (status === 'success') {
           this.consecutiveErrors.delete(botId);
         }
 
@@ -616,9 +661,9 @@ export class BotManager {
 
   /** Drain one item from the execution queue */
   private drainQueue(): void {
-    if (this.executionQueue.length > 0) {
+    if (!this.stopping && this.executionQueue.length > 0) {
       const next = this.executionQueue.shift()!;
-      next();
+      next.run();
     }
   }
 }

@@ -4,7 +4,6 @@ import './index.css'
 import './i18n' // Initialize i18next before React renders
 import { AppShell } from './components/Encryption/AppShell'
 import { migrateStorageKeys } from './lib/storage-migration'
-import { migrateIndexedDB } from './lib/db-migration'
 import { clipBuffer } from './lib/clipBuffer'
 import { installAgentBridge } from './lib/agent-bridge'
 import { installFileHandler } from './lib/file-handler'
@@ -27,8 +26,7 @@ migrateStorageKeys();
 // (which disrupts user flow), we rely on chunk-reload-guard.js to
 // detect actual chunk-load failures and reload only when necessary.
 
-// Run DB migration in the background — don't block first render
-migrateIndexedDB().catch(console.error);
+// AppShell opens/migrates the database only after an encryption key is available.
 
 // Surface unhandled promise rejections so they're visible in the console
 // rather than silently swallowed by the browser's default handler.

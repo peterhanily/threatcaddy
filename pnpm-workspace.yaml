@@ -1,2 +1,12 @@
 packages: []
-onlyBuiltDependencies: esbuild
+managePackageManagerVersions: true
+onlyBuiltDependencies:
+  - esbuild
+overrides:
+  # Upstream drawing/diagram packages pin older transitive releases. Keep each
+  # compatible API line patched; cover diagrams and whiteboards in acceptance.
+  'nanoid@3.3.3': '3.3.18'
+  '@excalidraw/mermaid-to-excalidraw>nanoid': '^5.1.16'
+  'lodash-es@<4.18.1': '4.18.1'
+  '@radix-ui/react-tabs@1.0.2': '1.1.21'
+  'tsx>esbuild': '^0.28.2'

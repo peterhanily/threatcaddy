@@ -8,7 +8,7 @@
  * - Stops when disabled, folder changes, or component unmounts
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import type { Folder, Settings, AgentStatus } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
 import { db } from '../db';
@@ -75,9 +75,11 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
   const mountedRef = useRef(true);
   const errorRetryCount = useRef(0);
 
-  // Keep refs current
-  folderRef.current = folder;
-  settingsRef.current = settings;
+  // External loop callbacks may observe only committed props, never an abandoned render.
+  useLayoutEffect(() => {
+    folderRef.current = folder;
+    settingsRef.current = settings;
+  }, [folder, settings]);
 
   // Track mount state
   useEffect(() => {
@@ -191,7 +193,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
         setProgress('');
       }
     }
-  }, [extensionAvailable, onEntitiesChanged]);
+  }, [extensionAvailable, onEntitiesChanged, updateAgentStatus]);
 
   const runOnce = useCallback(async () => {
     await executeCycle();
@@ -218,7 +220,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     });
     updateAgentStatus(newEnabled ? 'idle' : undefined);
     errorRetryCount.current = 0;
-  }, [folder]);
+  }, [folder, updateAgentStatus]);
 
   // Auto-repeat loop: schedule next cycle after completion
   useEffect(() => {

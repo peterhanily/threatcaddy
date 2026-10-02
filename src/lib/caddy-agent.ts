@@ -16,11 +16,16 @@ import type { AgentAction, AgentCycleOutcome, AgentCycleSummary, AgentEntityRef,
 import { DEFAULT_AGENT_POLICY } from '../types';
 import { TOOL_DEFINITIONS, DELEGATION_TOOL_DEFINITIONS, EXECUTIVE_TOOL_DEFINITIONS, isWriteTool } from './llm-tool-defs';
 import { executeTool } from './llm-tools';
+import { getReadOnlyEntityError, getToolEntityEffects } from './tool-entity-policy';
 import { shouldAutoApprove, getToolActionClass } from './caddy-agent-policy';
+import { queueAgentAction } from './agent-action-approval';
+import { SUPERVISOR_ACTION_PROFILE, SUPERVISOR_TOOLS, getSupervisorToolPermission } from './supervisor-tool-policy';
 import { resolveRoutingMode, sendViaExtension, sendViaServer, sendDirectToLocal } from './llm-router';
 import { DEFAULT_MODEL_PER_PROVIDER, MODEL_PROVIDER_MAP } from './models';
 import { getHostToolDefinitions } from './agent-hosts';
 import { calculateCost } from './model-pricing';
+import { cancellableRequest } from './request-cancellation';
+import { getToolBinding } from './tool-binding';
 
 // ── Tool Timeouts ─────────────────────────────────────────────────────
 
@@ -356,8 +361,12 @@ function callLLM(opts: {
   useServerProxy: boolean;
   endpoint?: string;
   onStream?: (text: string) => void;
+  signal?: AbortSignal;
 }): Promise<LLMResponse> {
+  const lifecycle = cancellableRequest(opts.signal);
   const llmPromise = new Promise<LLMResponse>((resolve, reject) => {
+    lifecycle.signal.addEventListener('abort', () => reject(new Error('LLM request was cancelled or timed out.')), { once: true });
+    if (lifecycle.signal.aborted) { reject(new Error('LLM request was cancelled.')); return; }
     let accumulated = '';
 
     const request = {
@@ -374,17 +383,9 @@ function callLLM(opts: {
       onChunk: (content: string) => { if (accumulated.length < 200_000) { accumulated += content; } opts.onStream?.(content); },
       onDone: (_stopReason: string, contentBlocks: unknown[], usage?: { input: number; output: number }) => {
         const blocks = contentBlocks as ContentBlock[];
-        let toolCalls = blocks.filter(
+        const toolCalls = _stopReason === 'tool_use' ? blocks.filter(
           (b): b is ToolUseBlock => b.type === 'tool_use' && !!b.id && !!b.name && typeof b.input === 'object'
-        );
-
-        // Fallback: if no structured tool calls but text contains tool_call patterns, parse them
-        if (toolCalls.length === 0 && accumulated) {
-          const parsed = parseToolCallsFromText(accumulated, opts.tools.map(t => t.name));
-          if (parsed.length > 0) {
-            toolCalls = parsed;
-          }
-        }
+        ) : [];
 
         resolve({ content: accumulated, toolCalls, usage });
       },
@@ -395,32 +396,25 @@ function callLLM(opts: {
 
     if (opts.provider === 'local' && opts.endpoint) {
       // Local LLM: direct fetch, bypass extension/server entirely
-      sendDirectToLocal(request, callbacks);
+      sendDirectToLocal(request, callbacks, lifecycle.signal);
     } else if (opts.useServerProxy) {
-      sendViaServer(request, callbacks);
+      sendViaServer(request, callbacks, lifecycle.signal);
     } else {
-      sendViaExtension(request, callbacks);
+      sendViaExtension(request, callbacks, lifecycle.signal);
     }
   });
 
   let timeoutId: ReturnType<typeof setTimeout>;
   const timeoutPromise = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => reject(new Error(`LLM request timed out after ${LLM_TIMEOUT_MS / 1000}s (${opts.provider}/${opts.model})`)), LLM_TIMEOUT_MS);
+    timeoutId = setTimeout(() => { lifecycle.controller.abort(); reject(new Error(`LLM request timed out after ${LLM_TIMEOUT_MS / 1000}s (${opts.provider}/${opts.model})`)); }, LLM_TIMEOUT_MS);
   });
 
-  return Promise.race([llmPromise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+  return Promise.race([llmPromise, timeoutPromise]).finally(() => { clearTimeout(timeoutId); lifecycle.dispose(); });
 }
 
 // ── Main Cycle ──────────────────────────────────────────────────────────
 
 const MAX_AGENT_TURNS = 6;
-
-/** Maps write-tool names to the entity type they mutate. Used for read-only enforcement and cycle-summary entity refs. */
-const ENTITY_WRITE_TOOLS: Record<string, AgentEntityRef['type']> = {
-  create_note: 'note', update_note: 'note', create_task: 'task', update_task: 'task',
-  create_ioc: 'ioc', update_ioc: 'ioc', bulk_create_iocs: 'ioc',
-  create_timeline_event: 'timeline', update_timeline_event: 'timeline',
-};
 
 /** Recursively serialize a value to JSON with deterministic key order so that
  *  `{a:1,b:2}` and `{b:2,a:1}` hash identically. The LLM can legitimately
@@ -561,13 +555,17 @@ export async function runAgentCycle(
   profile?: AgentProfile,
   deployment?: AgentDeployment,
   onStream?: (text: string) => void,
+  signal?: AbortSignal,
 ): Promise<AgentCycleResult> {
+  const lifecycle = cancellableRequest(signal);
   // Global concurrency limit — prevent runaway cost from many agents
   await acquireCycleLock();
   try {
-    return await _runAgentCycleInner(folder, settings, extensionAvailable, onProgress, profile, deployment, onStream);
+    lifecycle.signal.throwIfAborted();
+    return await _runAgentCycleInner(folder, settings, extensionAvailable, onProgress, profile, deployment, onStream, lifecycle.signal);
   } finally {
     releaseCycleLock();
+    lifecycle.dispose();
   }
 }
 
@@ -575,6 +573,7 @@ async function _runAgentCycleInner(
   folder: Folder, settings: Settings, extensionAvailable: boolean,
   onProgress?: (status: string) => void, profile?: AgentProfile,
   deployment?: AgentDeployment, onStream?: (text: string) => void,
+  signal?: AbortSignal,
 ): Promise<AgentCycleResult> {
   // Merge policies: profile policy > deployment overrides > folder policy > defaults
   const basePolicy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
@@ -747,6 +746,7 @@ async function _runAgentCycleInner(
     onProgress?.(`${agentName} starting (${provider}/${model}, ${availableTools.length} tools)...`);
 
     for (let turn = 0; turn < MAX_AGENT_TURNS; turn++) {
+      signal?.throwIfAborted();
       onProgress?.(`${agentName} thinking (turn ${turn + 1}/${MAX_AGENT_TURNS}, ${provider}/${model})...`);
 
       const response = await callLLM({
@@ -759,6 +759,7 @@ async function _runAgentCycleInner(
         useServerProxy,
         endpoint,
         onStream,
+        signal,
       });
 
       // Accumulate cycle telemetry
@@ -817,12 +818,14 @@ async function _runAgentCycleInner(
         }
 
         // Runtime authorization: enforce readOnlyEntityTypes
-        const entityType = ENTITY_WRITE_TOOLS[toolCall.name];
-        if (entityType && profile?.readOnlyEntityTypes?.includes(entityType)) {
+        signal?.throwIfAborted();
+        const entityRestriction = getReadOnlyEntityError(toolCall, profile?.readOnlyEntityTypes);
+        const entityType = getToolEntityEffects(toolCall).find(type => ['note', 'task', 'ioc', 'timeline', 'folder'].includes(type)) as AgentEntityRef['type'] | undefined;
+        if (entityRestriction) {
           errorHistogram[toolCall.name] = (errorHistogram[toolCall.name] || 0) + 1;
           toolResults.push({
             type: 'tool_result', tool_use_id: toolCall.id,
-            content: JSON.stringify({ error: `Cannot modify "${entityType}" entities — read-only restriction.` }),
+            content: JSON.stringify({ error: entityRestriction }),
             is_error: true,
           });
           continue;
@@ -830,6 +833,12 @@ async function _runAgentCycleInner(
 
         const actionClass = getToolActionClass(toolCall.name);
         const autoApprove = shouldAutoApprove(toolCall.name, policy);
+        let toolBinding: string | undefined;
+        try { toolBinding = await getToolBinding(toolCall, folder.id, 'act', settings); }
+        catch (error) {
+          toolResults.push({ type: 'tool_result', tool_use_id: toolCall.id, content: JSON.stringify({ error: error instanceof Error ? error.message : 'Tool configuration is unavailable.' }), is_error: true });
+          continue;
+        }
 
         if (autoApprove) {
           // Idempotency: for write tools only, check whether this exact
@@ -866,16 +875,18 @@ async function _runAgentCycleInner(
           onProgress?.(`Executing ${toolCall.name}...`);
           let result: { result: string; isError: boolean };
           try {
-            const toolPromise = executeTool(toolCall, folder.id, profile ? { profileId: profile.id, deploymentId: deployment?.id } : undefined);
+            const lifecycle = cancellableRequest(signal);
             const timeoutMs = TOOL_TIMEOUTS[toolCall.name] ?? DEFAULT_TOOL_TIMEOUT;
-            let timeoutId: ReturnType<typeof setTimeout>;
-            const toolTimeout = new Promise<never>((_, reject) => {
-              timeoutId = setTimeout(() => reject(new Error(`Tool ${toolCall.name} timed out after ${timeoutMs / 1000}s`)), timeoutMs);
-            });
+            const timeoutId = setTimeout(() => lifecycle.controller.abort(), timeoutMs);
             try {
-              result = await Promise.race([toolPromise, toolTimeout]);
+              // Await settlement: a timeout must not mark a still-running write
+              // failed and permit an overlapping retry of the same operation.
+              result = await executeTool(toolCall, folder.id, profile ? { profileId: profile.id, deploymentId: deployment?.id } : undefined, {
+                allowedTools: effectiveAllowedTools, signal: lifecycle.signal, toolBinding,
+              });
             } finally {
-              clearTimeout(timeoutId!);
+              clearTimeout(timeoutId);
+              lifecycle.dispose();
             }
           } catch (toolErr) {
             result = { result: JSON.stringify({ error: String((toolErr as Error).message || toolErr) }), isError: true };
@@ -888,6 +899,7 @@ async function _runAgentCycleInner(
             agentConfigId: profile?.id,
             toolName: toolCall.name,
             toolInput: toolCall.input as Record<string, unknown>,
+            toolBinding,
             rationale: response.content || 'Auto-approved by policy',
             status: result.isError ? 'failed' : 'executed',
             resultSummary: result.result.substring(0, 500),
@@ -929,15 +941,18 @@ async function _runAgentCycleInner(
             is_error: result.isError,
           });
         } else {
-          // Check for duplicate pending action (same tool + same input)
-          const inputJson = JSON.stringify(toolCall.input);
-          const existingDup = await db.agentActions
-            .where('[investigationId+status]')
-            .equals([folder.id, 'pending'])
-            .filter(a => a.toolName === toolCall.name && JSON.stringify(a.toolInput) === inputJson)
-            .first();
+          const { action, alreadyPending } = await queueAgentAction({
+            investigationId: folder.id,
+            threadId,
+            agentConfigId: profile?.id,
+            toolName: toolCall.name,
+            toolInput: toolCall.input as Record<string, unknown>,
+            toolBinding,
+            rationale: response.content || 'Agent proposed action',
+            severity: actionClass === 'modify' ? 'warning' : 'info',
+          });
 
-          if (existingDup) {
+          if (alreadyPending) {
             // Skip duplicate — tell the LLM it's already pending
             toolResults.push({
               type: 'tool_result',
@@ -948,20 +963,6 @@ async function _runAgentCycleInner(
             continue;
           }
 
-          // Propose for human approval
-          const action: AgentAction = {
-            id: nanoid(),
-            investigationId: folder.id,
-            threadId,
-            agentConfigId: profile?.id,
-            toolName: toolCall.name,
-            toolInput: toolCall.input as Record<string, unknown>,
-            rationale: response.content || 'Agent proposed action',
-            status: 'pending',
-            severity: actionClass === 'modify' ? 'warning' : 'info',
-            createdAt: Date.now(),
-          };
-          await db.agentActions.add(action);
           proposed.push(action);
 
           // Return a "pending approval" result so the LLM knows
@@ -1036,7 +1037,17 @@ export async function executeApprovedAction(action: AgentAction): Promise<{ resu
     input: action.toolInput,
   };
 
-  const result = await executeTool(toolUse, action.investigationId);
+  const result = await executeTool(toolUse, action.investigationId,
+    action.agentConfigId && action.agentConfigId !== SUPERVISOR_ACTION_PROFILE ? { profileId: action.agentConfigId } : undefined,
+    action.agentConfigId === SUPERVISOR_ACTION_PROFILE ? {
+      allowedTools: SUPERVISOR_TOOLS,
+      validateScope: async call => {
+        const permission = await getSupervisorToolPermission(call, action.investigationId);
+        if (permission.kind === 'denied') return permission.error;
+        if (permission.investigationId !== action.investigationId) return 'The action target moved to another investigation. Review a new proposal before applying it.';
+        // The analyst's explicit approval satisfies the remaining policy gate.
+      },
+    } : { allowedTools: new Set([action.toolName]), toolBinding: action.toolBinding });
 
   await db.agentActions.update(action.id, {
     status: result.isError ? 'failed' : 'executed',

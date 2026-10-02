@@ -11,8 +11,8 @@ import { logger } from '../lib/logger.js';
  * Legacy format (enc:<iv>:<authTag>:<ciphertext>) uses a static salt and is
  * still supported for decryption (backward compat).
  *
- * Master key source: BOT_MASTER_KEY env var (required in production).
- * If not set, a random key is generated for development (secrets won't survive restarts).
+ * Master key source: a stable, explicitly configured BOT_MASTER_KEY.
+ * No environment may persist credentials with an ephemeral fallback key.
  */
 
 const ALGORITHM = 'aes-256-gcm';
@@ -21,39 +21,44 @@ const AUTH_TAG_LENGTH = 16;
 const SALT_LENGTH = 32;
 const LEGACY_SALT = Buffer.from('threatcaddy-bot-secrets-v1');
 
-// Cache derived keys by salt hex to avoid re-deriving for the same salt
+// Bound decrypted-key retention; random salts used for encryption are not cached.
+const MAX_CACHED_KEYS = 128;
 const derivedKeyCache = new Map<string, Buffer>();
-
 let masterKeyStr: string | null = null;
 
-function getMasterKey(): string {
-  if (masterKeyStr) return masterKeyStr;
-  masterKeyStr = process.env.BOT_MASTER_KEY || null;
-  if (!masterKeyStr) {
-    const isProduction = process.env.NODE_ENV === 'production';
-    if (isProduction) {
-      logger.error(
-        '🚨 BOT_MASTER_KEY is not set in production! ' +
-        'Bot secrets will NOT survive server restarts. ' +
-        'Set BOT_MASTER_KEY to a stable 64-char hex string (openssl rand -hex 32).',
-      );
-    } else {
-      logger.warn(
-        'BOT_MASTER_KEY is not set — generating a random key. ' +
-        'Bot secrets will NOT survive server restarts. Set BOT_MASTER_KEY in production.',
-      );
-    }
-    masterKeyStr = randomBytes(32).toString('hex');
+/** Validate without normalizing the value: changing key bytes loses old ciphertext. */
+export function validateMasterKey(value = process.env.BOT_MASTER_KEY): string {
+  if (!value || value.trim() !== value || value.length < 32 || value.length > 1024) {
+    throw new Error('BOT_MASTER_KEY must be a stable configured key of 32–1024 characters without surrounding whitespace. Recommended: 64 hexadecimal characters. Preserve the existing key when upgrading.');
   }
-  return masterKeyStr;
+  return value;
 }
 
-function deriveKey(salt: Buffer): Buffer {
+function getMasterKey(): string {
+  const configured = validateMasterKey();
+  if (masterKeyStr && masterKeyStr !== configured) {
+    throw new Error('BOT_MASTER_KEY changed while the server was running. Use the documented offline key rotation procedure.');
+  }
+  masterKeyStr = configured;
+  return configured;
+}
+
+function deriveKey(salt: Buffer, cache = true): Buffer {
+  const master = getMasterKey();
   const cacheKey = salt.toString('hex');
   const cached = derivedKeyCache.get(cacheKey);
   if (cached) return cached;
-  const key = scryptSync(getMasterKey(), salt, 32);
-  derivedKeyCache.set(cacheKey, key);
+  const key = scryptSync(master, salt, 32);
+  if (cache) {
+    if (derivedKeyCache.size >= MAX_CACHED_KEYS) {
+      const oldest = derivedKeyCache.keys().next().value;
+      if (oldest !== undefined) {
+        derivedKeyCache.get(oldest)?.fill(0);
+        derivedKeyCache.delete(oldest);
+      }
+    }
+    derivedKeyCache.set(cacheKey, key);
+  }
   return key;
 }
 
@@ -61,7 +66,7 @@ function deriveKey(salt: Buffer): Buffer {
 export function encryptSecret(plaintext: string): string {
   // S3: Generate a random 32-byte salt per secret
   const salt = randomBytes(SALT_LENGTH);
-  const key = deriveKey(salt);
+  const key = deriveKey(salt, false);
   const iv = randomBytes(IV_LENGTH);
   const cipher = createCipheriv(ALGORITHM, key, iv, { authTagLength: AUTH_TAG_LENGTH });
 
@@ -117,83 +122,68 @@ export function decryptSecret(encrypted: string): string {
   return encrypted;
 }
 
-/**
- * Process a bot config object, encrypting any plaintext secret fields.
- * Convention: keys ending in 'Key', 'Secret', 'Token', or 'Password' are secrets.
- */
+const SENTINELS = new Set(['***configured***', '***not set***']);
+// Names consumed by bot runtimes, plus the supported legacy suffix convention.
+// Normalize separators so privateKey/private_key and authKey/auth_key agree.
+const SECRET_SUFFIXES = ['secret', 'password', 'token', 'apikey', 'authkey', 'privatekey', 'encryptionkey', 'passphrase', 'authorization'];
+export function isSecretField(key: string): boolean {
+  const normalized = key.toLowerCase().replace(/[_\-.]/g, '');
+  return SECRET_SUFFIXES.some(suffix => normalized.endsWith(suffix));
+}
+
+function mapConfig(value: unknown, key: string, transform: (value: unknown, key: string) => unknown): unknown {
+  if (Array.isArray(value)) return value.map(item => mapConfig(item, key, transform));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([name, child]) => [name, mapConfig(child, name, transform)]));
+  }
+  return transform(value, key);
+}
+
+/** Encrypt all supported plaintext credential fields, including nested arrays. */
 export function encryptConfigSecrets(config: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(config)) {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      // Recurse into nested objects
-      result[key] = encryptConfigSecrets(value as Record<string, unknown>);
-    } else if (isSecretField(key) && typeof value === 'string' && value && !isEncrypted(value)) {
-      // Don't re-encrypt redacted sentinel values — these come from the admin UI
-      // when editing a bot without changing the secret fields
-      if (value === '***configured***' || value === '***not set***') {
-        // Preserve the existing encrypted value — caller must merge with existing config
-        result[key] = value;
-      } else {
-        result[key] = encryptSecret(value);
-      }
-    } else {
-      result[key] = value;
+  return mapConfig(config, '', (value, key) => {
+    if (isSecretField(key) && typeof value === 'string' && value && !isEncrypted(value) && !SENTINELS.has(value)) {
+      return encryptSecret(value);
     }
-  }
-  return result;
+    return value;
+  }) as Record<string, unknown>;
 }
 
-/**
- * Process a bot config object, decrypting any encrypted secret fields.
- * Only call this in the bot runtime — never expose decrypted config via API.
- */
+/** Runtime only: decrypt ciphertext without exposing values or crypto errors in logs. */
 export function decryptConfigSecrets(config: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(config)) {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      // Recurse into nested objects
-      result[key] = decryptConfigSecrets(value as Record<string, unknown>);
-    } else if (typeof value === 'string' && isEncrypted(value)) {
-      try {
-        result[key] = decryptSecret(value);
-      } catch (err) {
-        logger.error('Failed to decrypt bot secret — this likely means the BOT_MASTER_KEY has changed or the value is corrupt', { key, error: String(err) });
-        throw new Error(`Decryption failed for secret field "${key}": ${String(err)}. Check that BOT_MASTER_KEY matches the key used at encryption time.`);
-      }
-    } else {
-      result[key] = value;
+  return mapConfig(config, '', (value, key) => {
+    if (typeof value !== 'string' || !isEncrypted(value)) return value;
+    try { return decryptSecret(value); }
+    catch {
+      logger.error('Failed to decrypt bot secret; verify the configured master key and stored ciphertext');
+      throw new Error(`Decryption failed for secret field "${key}". Verify BOT_MASTER_KEY and stored ciphertext.`);
     }
-  }
-  return result;
+  }) as Record<string, unknown>;
 }
 
-/**
- * Redact secret fields for API responses.
- * Returns config with secret values replaced by '***configured***' or '***not set***'.
- */
+/** Mask recognized secrets and ciphertext on every API configuration path. */
 export function redactConfigSecrets(config: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(config)) {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      // Recurse into nested objects
-      result[key] = redactConfigSecrets(value as Record<string, unknown>);
-    } else if (isSecretField(key)) {
-      result[key] = typeof value === 'string' && value.length > 0 ? '***configured***' : '***not set***';
-    } else {
-      result[key] = value;
+  return mapConfig(config, '', (value, key) => {
+    if (isSecretField(key) || (typeof value === 'string' && isEncrypted(value))) {
+      return typeof value === 'string' && value.length > 0 ? '***configured***' : '***not set***';
     }
-  }
-  return result;
+    return value;
+  }) as Record<string, unknown>;
 }
 
-/** Returns true if value is already encrypted (enc: or enc2: prefix). */
+/** Return field paths only for operator exposure review; never include credential values. */
+export function findPlaintextSecretPaths(config: Record<string, unknown>): string[] {
+  const paths: string[] = [];
+  function visit(value: unknown, key: string, path: string) {
+    if (Array.isArray(value)) return value.forEach((item, index) => visit(item, key, `${path}[${index}]`));
+    if (value && typeof value === 'object') {
+      for (const [name, child] of Object.entries(value)) visit(child, name, path ? `${path}.${name}` : name);
+    } else if (isSecretField(key) && typeof value === 'string' && value && !isEncrypted(value) && !SENTINELS.has(value)) paths.push(path);
+  }
+  visit(config, '', '');
+  return paths;
+}
+
 function isEncrypted(value: string): boolean {
   return value.startsWith('enc:') || value.startsWith('enc2:');
-}
-
-const SECRET_SUFFIXES = ['secret', 'password', 'token', 'apikey', 'api_key', 'auth_key', 'private_key', 'encryption_key'];
-
-function isSecretField(key: string): boolean {
-  const lower = key.toLowerCase();
-  return SECRET_SUFFIXES.some(suffix => lower.endsWith(suffix) || lower === suffix);
 }

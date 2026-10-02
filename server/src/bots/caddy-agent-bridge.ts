@@ -1,10 +1,11 @@
 /**
  * CaddyAgent Bridge — converts client-side AgentProfile + AgentDeployment
- * into a server-side BotConfig for the BotManager to execute.
+ * into disabled server-side metadata. This is not an execution transport.
  */
 
-import type { BotCapability, BotConfig, BotTriggerConfig } from './types';
+import type { BotConfig, BotTriggerConfig } from './types';
 import { nanoid } from 'nanoid';
+import { HANDOFF_UNAVAILABLE } from './handoff-policy.js';
 
 // ── Client types (subset needed for conversion) ─────────────────
 
@@ -34,45 +35,6 @@ interface AgentDeploymentInput {
   profileId: string;
   policyOverrides?: Partial<AgentProfileInput['policy']>;
   order: number;
-}
-
-// ── Tool → Capability mapping ───────────────────────────────────
-
-const TOOL_CAPABILITY_MAP: Record<string, BotCapability> = {
-  // Read tools
-  search_notes: 'read_entities', search_all: 'read_entities', read_note: 'read_entities',
-  read_task: 'read_entities', read_ioc: 'read_entities', read_timeline_event: 'read_entities',
-  list_tasks: 'read_entities', list_iocs: 'read_entities', list_timeline_events: 'read_entities',
-  get_investigation_summary: 'read_entities', analyze_graph: 'read_entities',
-  // Create tools
-  create_note: 'create_entities', create_task: 'create_entities', create_ioc: 'create_entities',
-  bulk_create_iocs: 'create_entities', create_timeline_event: 'create_entities',
-  generate_report: 'create_entities', create_in_investigation: 'create_entities', link_entities: 'create_entities',
-  // Update tools
-  update_note: 'update_entities', update_task: 'update_entities', update_ioc: 'update_entities',
-  update_timeline_event: 'update_entities',
-  // External
-  fetch_url: 'call_external_apis', enrich_ioc: 'call_external_apis', extract_iocs: 'read_entities',
-  // Cross-investigation
-  list_investigations: 'cross_investigation', get_investigation_details: 'cross_investigation',
-  search_across_investigations: 'cross_investigation', compare_investigations: 'cross_investigation',
-  // Delegation
-  delegate_task: 'create_entities', review_completed_task: 'update_entities',
-  list_agent_activity: 'read_entities', list_integrations: 'read_entities',
-};
-
-/** Derive the minimal set of BotCapabilities from a list of allowed tools. */
-function deriveCapabilities(allowedTools?: string[]): BotCapability[] {
-  if (!allowedTools || allowedTools.length === 0) {
-    // All tools → all standard capabilities
-    return ['read_entities', 'create_entities', 'update_entities', 'call_external_apis', 'cross_investigation'];
-  }
-  const caps = new Set<BotCapability>();
-  for (const tool of allowedTools) {
-    const cap = TOOL_CAPABILITY_MAP[tool];
-    if (cap) caps.add(cap);
-  }
-  return Array.from(caps);
 }
 
 /** Convert intervalMinutes to a cron expression. */
@@ -110,13 +72,14 @@ export function convertProfileToBotConfig(
     },
   };
 
-  const capabilities = deriveCapabilities(profile.allowedTools);
+  const capabilities: BotConfig['capabilities'] = [];
 
   const config: Record<string, unknown> = {
     systemPrompt: profile.systemPrompt.substring(0, 10_000),
     agentRole: profile.role,
     agentPolicy: mergedPolicy,
-    allowedTools: profile.allowedTools,
+    allowedTools: profile.allowedTools ?? [],
+    handoffDisabledReason: HANDOFF_UNAVAILABLE,
     readOnlyEntityTypes: profile.readOnlyEntityTypes,
     llmModel: profile.model || mergedPolicy.model,
     maxIterations: 6,
@@ -130,11 +93,11 @@ export function convertProfileToBotConfig(
       type: 'ai-agent',
       name: `AgentCaddy: ${profile.name}`,
       description: profile.description || `Server-side agent from profile: ${profile.name}`,
-      enabled: false, // Start disabled — HeartbeatManager enables when client goes away
+      enabled: false, // Execution is intentionally unavailable; heartbeat cannot enable it.
       triggers,
       config,
       capabilities,
-      allowedDomains: [], // No domain restriction for agent bots
+      allowedDomains: [], // Deny outbound access by default
       scopeType: 'investigation',
       scopeFolderIds: [deployment.investigationId],
       rateLimitPerHour: 30,

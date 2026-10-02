@@ -1,5 +1,8 @@
 import { createMiddleware } from 'hono/factory';
 import * as jose from 'jose';
+import { and, eq, gt, gte } from 'drizzle-orm';
+import { db } from '../db/index.js';
+import { users, sessions } from '../db/schema.js';
 import type { AuthUser } from '../types.js';
 
 let publicKey: jose.KeyLike | null = null;
@@ -22,13 +25,15 @@ export async function getPrivateKey(): Promise<jose.KeyLike> {
   return privateKey;
 }
 
-export async function signAccessToken(user: AuthUser): Promise<string> {
+export async function signAccessToken(user: AuthUser, sessionFamily: string): Promise<string> {
+  if (!sessionFamily) throw new Error('Access tokens require a session family');
   const key = await getPrivateKey();
   return new jose.SignJWT({
     sub: user.id,
     email: user.email,
     role: user.role,
     displayName: user.displayName,
+    sid: sessionFamily,
   })
     .setProtectedHeader({ alg: 'EdDSA' })
     .setIssuedAt()
@@ -38,13 +43,24 @@ export async function signAccessToken(user: AuthUser): Promise<string> {
 
 export async function verifyAccessToken(token: string): Promise<AuthUser> {
   const key = await getPublicKey();
-  const { payload } = await jose.jwtVerify(token, key);
+  const { payload } = await jose.jwtVerify(token, key, { algorithms: ['EdDSA'] });
+  if (typeof payload.sub !== 'string' || !payload.sub || typeof payload.sid !== 'string'
+    || !payload.sid || typeof payload.exp !== 'number' || !Number.isFinite(payload.exp)) {
+    throw new Error('Invalid session claims');
+  }
+  const [current] = await db.select({
+    id: users.id, email: users.email, role: users.role, displayName: users.displayName, avatarUrl: users.avatarUrl,
+  }).from(users).innerJoin(sessions, eq(sessions.userId, users.id)).where(and(
+    eq(users.id, payload.sub), eq(users.active, true), eq(sessions.tokenFamily, payload.sid),
+    gte(sessions.rotationCounter, 0), gt(sessions.expiresAt, new Date()),
+  )).limit(1);
+  if (!current || current.email.endsWith('@threatcaddy.internal') || !['admin', 'analyst', 'viewer'].includes(current.role)) {
+    throw new Error('Account or session is no longer authorized');
+  }
   return {
-    id: payload.sub as string,
-    email: payload.email as string,
-    role: payload.role as string,
-    displayName: payload.displayName as string,
-    avatarUrl: null,
+    ...current,
+    sessionFamily: payload.sid,
+    tokenExpiresAt: payload.exp * 1000,
   };
 }
 

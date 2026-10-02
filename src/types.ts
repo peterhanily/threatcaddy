@@ -41,6 +41,8 @@ export interface IOCTarget {
   clsLevel?: string;
   iocAnalysis?: IOCAnalysis;
   iocTypes?: IOCType[];
+  createdAt?: number;
+  updatedAt?: number;
 }
 
 export interface TaskComment {
@@ -313,7 +315,7 @@ export interface AgentHostSkill {
   name: string;
   description: string;
   parameters: { type: 'object'; properties: Record<string, unknown>; required?: string[] };
-  /** Hint for agent policy auto-approval. Default: 'fetch' */
+  /** Hint for agent policy auto-approval. Unknown/missing values require modify approval. */
   actionClass?: AgentActionClass;
 }
 
@@ -420,6 +422,8 @@ export interface IOCEntry {
   iocSubtype?: string;
   iocStatus?: string;
   clsLevel?: string;
+  /** Original interchange markings and source metadata, retained without reinterpretation. */
+  enrichment?: Record<string, Array<Record<string, unknown>>>;
   /**
    * @deprecated Use `relationships[]` instead. Retained for backward compatibility
    * with existing data. Legacy values are migrated at runtime in IOCItem.tsx and
@@ -575,6 +579,7 @@ export interface Whiteboard {
   name: string;
   elements: string;     // JSON.stringify(ExcalidrawElement[])
   appState?: string;    // JSON.stringify({zoom, scrollX, scrollY, theme})
+  files?: string;       // JSON.stringify(Excalidraw BinaryFiles, including image data URLs)
   folderId?: string;
   tags: string[];
   order: number;
@@ -777,6 +782,10 @@ export interface CheckpointEntity {
   entityId: string;
   /** null means the entity didn't exist before (was created by the tool) */
   data: Record<string, unknown> | null;
+  /** Exact committed postimage; absent on old, unsafe-to-restore checkpoints. */
+  after?: Record<string, unknown> | null;
+  /** Server revision known when the action committed. Changes invalidate undo. */
+  afterRevision?: number;
 }
 
 /** A user-defined slash command template for CaddyAI chat. */
@@ -1268,6 +1277,8 @@ export interface AgentAction {
   agentConfigId?: string;
   toolName: string;
   toolInput: Record<string, unknown>;
+  /** Digest of the approved dynamic tool target/configuration/call/scope. */
+  toolBinding?: string;
   rationale: string;
   status: AgentActionStatus;
   resultSummary?: string;

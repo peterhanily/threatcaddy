@@ -15,7 +15,7 @@ const {
       const val = queue.shift();
       return val instanceof Error ? Promise.reject(val) : Promise.resolve(val ?? []);
     };
-    for (const method of ['from', 'where', 'limit', 'orderBy', 'set', 'values', 'returning']) {
+    for (const method of ['from', 'innerJoin', 'where', 'limit', 'orderBy', 'set', 'values', 'returning']) {
       chain[method] = vi.fn(() => chain);
     }
     chain.then = (onFulfilled?: (v: unknown) => unknown, onRejected?: (e: unknown) => unknown) =>
@@ -37,6 +37,7 @@ const {
 vi.mock('../db/index.js', () => ({ db: mockDb }));
 
 vi.mock('../db/schema.js', () => ({
+  users: { id: 'id', active: 'active', role: 'role' },
   investigationMembers: {
     id: 'id',
     folderId: 'folderId',

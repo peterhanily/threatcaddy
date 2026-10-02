@@ -113,6 +113,7 @@ vi.mock('../db/schema.js', () => ({
   whiteboards: { folderId: 'folderId', updatedAt: 'updatedAt', deletedAt: 'deletedAt' },
   standaloneIOCs: { folderId: 'folderId', updatedAt: 'updatedAt', deletedAt: 'deletedAt' },
   chatThreads: { folderId: 'folderId', updatedAt: 'updatedAt', deletedAt: 'deletedAt' },
+  evidenceItems: { folderId: 'folderId', updatedAt: 'updatedAt', deletedAt: 'deletedAt' },
   posts: { folderId: 'folderId' },
   files: { folderId: 'folderId', storagePath: 'storagePath', thumbnailPath: 'thumbnailPath' },
   notifications: { folderId: 'folderId' },
@@ -514,6 +515,7 @@ describe('investigation user routes', () => {
         events: 0,
         whiteboards: 0,
         chats: 0,
+        evidence: 0,
       });
     });
   });
@@ -556,6 +558,8 @@ describe('investigation user routes', () => {
       selectQueue.push([{ latest: '2024-06-14T08:00:00Z' }]);
       selectQueue.push([{ latest: null }]);
       selectQueue.push([{ latest: '2024-05-01T00:00:00Z' }]);
+      // Evidence can be the newest activity in an investigation.
+      selectQueue.push([{ latest: '2024-06-16T12:00:00Z' }]);
 
       // Folder metadata (consumed after inner Promise.all thenables)
       selectQueue.push([
@@ -617,7 +621,7 @@ describe('investigation user routes', () => {
       expect(body.entityCounts.tasks).toBe(5);
       expect(body.members).toHaveLength(2);
       expect(body.members[0].displayName).toBe('Test User');
-      expect(body.lastActivity).toBeDefined();
+      expect(body.lastActivity).toBe('2024-06-16T12:00:00.000Z');
     });
 
     it('returns 404 when folder does not exist', async () => {
@@ -632,6 +636,7 @@ describe('investigation user routes', () => {
       selectQueue.push([{ latest: null }]);
       selectQueue.push([{ latest: null }]);
       // Folder metadata: empty (not found)
+      selectQueue.push([{ latest: null }]);
       selectQueue.push([]);
       // Members
       selectQueue.push([]);
@@ -749,6 +754,7 @@ describe('investigation user routes', () => {
         events: 0,
         whiteboards: 0,
         chats: 0,
+        evidence: 0,
       });
     });
 
@@ -756,6 +762,7 @@ describe('investigation user routes', () => {
       mockCheckAccess.mockResolvedValue(true);
 
       // Queue order: 6 last-activity first, then folder, then members
+      selectQueue.push([{ latest: null }]);
       selectQueue.push([{ latest: null }]);
       selectQueue.push([{ latest: null }]);
       selectQueue.push([{ latest: null }]);

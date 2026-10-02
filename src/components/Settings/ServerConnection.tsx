@@ -1,3 +1,4 @@
+import { workspaceStorageKey } from '../../lib/workspace-profiles';
 import { useState, useEffect } from 'react';
 import { Server, LogIn, LogOut, UserPlus, CheckCircle, XCircle, Wifi, WifiOff, RotateCw, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -6,7 +7,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { ServerProfiles } from './ServerProfiles';
 import { upsertServerProfile, type ServerProfile } from '../../lib/server-profiles';
 
-const LAST_SESSION_KEY = 'threatcaddy-last-session';
+const LAST_SESSION_KEY = workspaceStorageKey('threatcaddy-last-session');
 
 interface LastSession {
   serverUrl: string;

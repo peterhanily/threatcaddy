@@ -156,7 +156,7 @@ describe('indicator pattern parsing', () => {
     ]));
     expect(result.iocs).toHaveLength(1);
     expect(result.iocs[0].type).toBe('file-path');
-    expect(result.iocs[0].value).toBe('C:\\\\malware.exe');
+    expect(result.iocs[0].value).toBe('C:\\malware.exe');
   });
 
   it('handles escaped single quotes in patterns', () => {
@@ -167,13 +167,13 @@ describe('indicator pattern parsing', () => {
     expect(result.iocs[0].value).toBe("it's-evil.com");
   });
 
-  it('collects error for unparseable patterns', () => {
+  it('imports advertised YARA patterns without attempting STIX equality parsing', () => {
     const result = parseSTIXBundle(makeBundle([
       makeIndicator({ pattern: 'rule yara_test { condition: true }', pattern_type: 'yara' }),
     ]));
-    expect(result.iocs).toHaveLength(0);
-    expect(result.errors.length).toBeGreaterThan(0);
-    expect(result.errors[0]).toContain('Could not parse pattern');
+    expect(result.iocs).toHaveLength(1);
+    expect(result.iocs[0].type).toBe('yara-rule');
+    expect(result.errors).toHaveLength(0);
   });
 });
 
@@ -228,7 +228,7 @@ describe('TLP marking extraction', () => {
   it('extracts TLP:GREEN from known marking definition ID', () => {
     const result = parseSTIXBundle(makeBundle([
       makeIndicator({
-        object_marking_refs: ['marking-definition--bab4a63c-afd4-4e03-b846-b75e0496be71'],
+        object_marking_refs: ['marking-definition--bab4a63c-aed9-4cf5-a766-dfca5abac2bb'],
       }),
     ]));
     expect(result.iocs[0].clsLevel).toBe('TLP:GREEN');
@@ -247,7 +247,7 @@ describe('TLP marking extraction', () => {
         object_marking_refs: ['marking-definition--custom-1'],
       }),
     ]));
-    expect(result.iocs[0].clsLevel).toBe('TLP:AMBER');
+    expect(result.iocs[0].clsLevel).toBe('TLP1:AMBER');
   });
 
   it('sets no clsLevel when no marking refs', () => {
@@ -433,7 +433,7 @@ describe('complex bundle', () => {
 
     const ipIOC = result.iocs.find((i) => i.type === 'ipv4');
     expect(ipIOC?.value).toBe('10.0.0.1');
-    expect(ipIOC?.confidence).toBe('confirmed');
+    expect(ipIOC?.confidence).toBe('high');
     expect(ipIOC?.attribution).toBe('C2 Server');
     expect(ipIOC?.analystNotes).toBe('Primary C2');
     expect(ipIOC?.clsLevel).toBe('TLP:RED');

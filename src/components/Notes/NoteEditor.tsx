@@ -6,7 +6,7 @@ import { NOTE_COLORS } from '../../types';
 import { nanoid } from 'nanoid';
 import { extractIOCs, mergeIOCAnalysis } from '../../lib/ioc-extractor';
 import { mergeText, adjustCursor } from '../../lib/text-merge';
-import { markPending, clearPending } from '../../lib/pending-changes';
+import { useEntityDraft } from '../../hooks/useEntityDraft';
 import { ClsSelect } from '../Common/ClsSelect';
 import { MarkdownPreview } from './MarkdownPreview';
 import { TagInput } from '../Common/TagInput';
@@ -23,12 +23,10 @@ import { useLogActivity } from '../../hooks/ActivityLogContext';
 import { useAutoIOCExtraction } from '../../hooks/useAutoIOCExtraction';
 import { wordCount, formatFullDate, formatDate, cn, isSafeUrl } from '../../lib/utils';
 import { downloadFile } from '../../lib/export';
-import { InlineConflictBanner } from '../Common/InlineConflictBanner';
-import type { ConflictInfo } from '../Common/InlineConflictBanner';
 
 interface NoteEditorProps {
   note: Note;
-  onUpdate: (id: string, updates: Partial<Note>) => void;
+  onUpdate: (id: string, updates: Partial<Note>) => void | Promise<void>;
   onTrash: (id: string) => void;
   onRestore: (id: string) => void;
   onTogglePin: (id: string) => void;
@@ -72,15 +70,14 @@ export function NoteEditor({
   onSaveAsTemplate,
 }: NoteEditorProps) {
   const { t } = useTranslation('notes');
+  const draft = useEntityDraft<Note>('note', note.id, onUpdate);
+  const draftController = draft.controller;
   const iocCount = note.iocAnalysis?.iocs.filter((i) => !i.dismissed).length ?? 0;
-  const [title, setTitle] = useState(note.title);
-  const [content, setContent] = useState(note.content);
+  const [title, setTitle] = useState(draft.patch.title ?? note.title);
+  const [content, setContent] = useState(draft.patch.content ?? note.content);
   const [showColors, setShowColors] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const saved = draft.status === 'saved';
   const [mergeIndicator, setMergeIndicator] = useState<'merged' | null>(null);
-  const [inlineConflict, setInlineConflict] = useState<ConflictInfo | null>(null);
-  /** Stashed local content so user can recover it after accepting remote */
-  const stashedLocalRef = useRef<string | null>(null);
   const [showIOCPanel, setShowIOCPanel] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [shareMessage, setShareMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -96,19 +93,14 @@ export function NoteEditor({
   const gutterRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const slashMenuRef = useRef<HTMLDivElement>(null);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const savedTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const shareMsgTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const mergeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const baseContentRef = useRef(note.content);
   const baseTitleRef = useRef(note.title);
-  const lastSavedContentRef = useRef(note.content);
-  const lastSavedTitleRef = useRef(note.title);
   const prevNoteIdRef = useRef(note.id);
   const localContentRef = useRef(content);
-  localContentRef.current = content;
   const localTitleRef = useRef(title);
-  localTitleRef.current = title;
+  useEffect(() => { localContentRef.current = content; localTitleRef.current = title; }, [content, title]);
 
   // Line numbers — measure wrapped line heights to match textarea word-wrap (Sublime-style)
   const lines = useMemo(() => content.split('\n'), [content]);
@@ -210,11 +202,12 @@ export function NoteEditor({
   const [linkMenuPosition, setLinkMenuPosition] = useState({ top: 0, left: 0 });
 
   // Auto-extract IOCs on content changes
-  useAutoIOCExtraction({
+  const extraction = useAutoIOCExtraction({
     entityId: note.id,
     content,
     existingAnalysis: note.iocAnalysis,
-    onUpdate: (id, updates) => onUpdate(id, updates),
+    // Derived fields share the same recoverable draft and pending-write token.
+    onUpdate: (_id, updates) => { draftController.queue(updates, 0); },
     enabled: externalSettings?.tiAutoExtractEnabled !== false,
     enabledTypes: externalSettings?.tiEnabledIOCTypes,
     defaultConfidence: externalSettings?.tiDefaultConfidence,
@@ -226,34 +219,30 @@ export function NoteEditor({
   // Resizable: editor area ↔ IOC panel
   const editorIOC = useResizable({ initialRatio: 0.75, minRatio: 0.4, maxRatio: 0.85 });
 
-  const save = useCallback((updates: Partial<Note>) => {
-    onUpdate(note.id, updates);
-    if (updates.content !== undefined) {
-      lastSavedContentRef.current = updates.content;
-      baseContentRef.current = updates.content;
-    }
-    if (updates.title !== undefined) {
-      lastSavedTitleRef.current = updates.title;
-      baseTitleRef.current = updates.title;
-    }
-    setSaved(true);
-    clearTimeout(savedTimeoutRef.current);
-    savedTimeoutRef.current = setTimeout(() => setSaved(false), 1500);
-  }, [note.id, onUpdate]);
+  const scheduleSave = useCallback((updates: Partial<Note>) => {
+    draftController.queue(updates);
+  }, [draftController]);
+
+  useEffect(() => {
+    if (typeof draft.resolved?.title === 'string') setTitle(draft.resolved.title);
+    if (typeof draft.resolved?.content === 'string') setContent(draft.resolved.content);
+  }, [draft.resolved]);
+
+  useEffect(() => {
+    if (!draft.discardVersion) return;
+    setTitle(note.title);
+    setContent(note.content);
+  }, [draft.discardVersion, note.title, note.content]);
 
   useEffect(() => {
     // Note switched — full reset
     if (note.id !== prevNoteIdRef.current) {
-      clearTimeout(saveTimeoutRef.current);
       prevNoteIdRef.current = note.id;
       baseContentRef.current = note.content;
       baseTitleRef.current = note.title;
-      lastSavedContentRef.current = note.content;
-      lastSavedTitleRef.current = note.title;
-      setTitle(note.title);
-      setContent(note.content);
-      setInlineConflict(null);
-      stashedLocalRef.current = null;
+      const retained = draftController.getSnapshot().patch;
+      setTitle(typeof retained.title === 'string' ? retained.title : note.title);
+      setContent(typeof retained.content === 'string' ? retained.content : note.content);
       return;
     }
 
@@ -265,25 +254,17 @@ export function NoteEditor({
     if (note.content !== baseContentRef.current) {
       const local = localContentRef.current;
       const hasLocalEdits = local !== baseContentRef.current;
-      // Cancel any pending save — its closure has stale pre-merge content
-      clearTimeout(saveTimeoutRef.current);
-
       if (!hasLocalEdits) {
         // No unsaved local edits — accept remote
         setContent(note.content);
+        if (draftController.getSnapshot().patch.content !== undefined) {
+          mergedUpdates.content = note.content;
+        }
       } else {
         // Merge remote changes with local edits
         const result = mergeText(baseContentRef.current, local, note.content);
         if (!result.ok) {
-          // Patch conflict — stash local, accept remote, show inline conflict banner
-          stashedLocalRef.current = local;
-          setContent(note.content);
-          setInlineConflict({
-            entityId: note.id,
-            table: 'notes',
-            localContent: local,
-            remoteContent: note.content,
-          });
+          draftController.recordConflict('content', { base: baseContentRef.current, local, remote: note.content });
         } else if (result.merged !== local) {
           // Successful merge — adjust cursor and auto-save
           const textarea = textareaRef.current;
@@ -310,11 +291,13 @@ export function NoteEditor({
       const hasLocalTitleEdits = localTitle !== baseTitleRef.current;
       if (!hasLocalTitleEdits) {
         setTitle(note.title);
+        if (draftController.getSnapshot().patch.title !== undefined) {
+          mergedUpdates.title = note.title;
+        }
       } else {
         const result = mergeText(baseTitleRef.current, localTitle, note.title);
         if (!result.ok) {
-          // Patch conflict — accept remote
-          setTitle(note.title);
+          draftController.recordConflict('title', { base: baseTitleRef.current, local: localTitle, remote: note.title });
         } else if (result.merged !== localTitle) {
           // Adjust cursor in title input
           const input = titleRef.current;
@@ -335,14 +318,14 @@ export function NoteEditor({
       baseTitleRef.current = note.title;
     }
 
-    // Auto-save merged result and show indicator
+    // Rebase the accumulated patch without dropping unrelated dirty fields.
+    if (Object.keys(mergedUpdates).length) scheduleSave(mergedUpdates);
     if (contentMerged || titleMerged) {
-      save(mergedUpdates);
       setMergeIndicator('merged');
       clearTimeout(mergeTimeoutRef.current);
       mergeTimeoutRef.current = setTimeout(() => setMergeIndicator(null), 2000);
     }
-  }, [note.id, note.title, note.content, save]);
+  }, [note.id, note.title, note.content, draftController, scheduleSave]);
 
   // Auto-focus title for new/empty notes
   useEffect(() => {
@@ -353,28 +336,22 @@ export function NoteEditor({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note.id]);
 
-  // Cleanup pending timeouts on unmount
+  // The draft controller flushes persistence independently on unmount.
   useEffect(() => {
     return () => {
-      if (saveTimeoutRef.current) { clearTimeout(saveTimeoutRef.current); clearPending(); }
-      clearTimeout(savedTimeoutRef.current);
       clearTimeout(shareMsgTimeoutRef.current);
       clearTimeout(mergeTimeoutRef.current);
     };
   }, []);
 
-  const scheduleSave = useCallback((updates: Partial<Note>) => {
-    clearTimeout(saveTimeoutRef.current);
-    markPending();
-    saveTimeoutRef.current = setTimeout(() => { clearPending(); save(updates); }, 500);
-  }, [save]);
-
   const handleTitleChange = (value: string) => {
+    localTitleRef.current = value;
     setTitle(value);
     scheduleSave({ title: value });
   };
 
   const handleContentChange = useCallback((value: string) => {
+    localContentRef.current = value;
     setContent(value);
     scheduleSave({ content: value });
   }, [scheduleSave]);
@@ -977,36 +954,15 @@ export function NoteEditor({
         </div>
       </div>
 
-      {/* Inline conflict banner — shown when 3-way merge fails */}
-      {inlineConflict && (
-        <InlineConflictBanner
-          conflict={inlineConflict}
-          onAcceptTheirs={() => {
-            // Already showing remote content — just dismiss
-            setInlineConflict(null);
-            stashedLocalRef.current = null;
-            // Persist by saving
-            save({ content });
-          }}
-          onKeepMine={() => {
-            if (stashedLocalRef.current != null) {
-              setContent(stashedLocalRef.current);
-              save({ content: stashedLocalRef.current });
-            }
-            setInlineConflict(null);
-            stashedLocalRef.current = null;
-          }}
-          onManualMerge={() => {
-            // Insert both versions into the editor with conflict markers
-            if (stashedLocalRef.current != null) {
-              const merged = `<<<<<<< YOUR VERSION\n${stashedLocalRef.current}\n=======\n${content}\n>>>>>>> REMOTE VERSION`;
-              setContent(merged);
-            }
-            setInlineConflict(null);
-            stashedLocalRef.current = null;
-          }}
-        />
+      {draft.status === 'error' && (
+        <div role="alert" className="flex items-center gap-3 px-4 py-2 text-sm text-red-300 bg-red-950/30">
+          <span>{t('editor.saveFailed')}</span>
+          <button className="underline shrink-0" onClick={() => { void draftController.retry(); }}>
+            {t('editor.retrySave')}
+          </button>
+        </div>
       )}
+      {extraction?.error && <p role="alert" className="text-sm text-red-300 px-3">{extraction.error}</p>}
 
       {/* Title */}
       <div className="px-2 sm:px-4 pt-2 sm:pt-3 shrink-0">

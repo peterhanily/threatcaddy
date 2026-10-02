@@ -1,4 +1,6 @@
 import type { IOCType, ConfidenceLevel, StandaloneIOC } from '../types';
+import { conservativeClsLevel } from './classification';
+import { mergeImportedIOCs } from './interchange-import';
 
 // --- Result types ---
 
@@ -7,6 +9,7 @@ export interface MISPImportResult {
   iocs: Partial<StandaloneIOC>[];
   tags: string[];
   errors: string[];
+  preservedAttributes?: Record<string, unknown>[];
 }
 
 // --- Attribute type mapping ---
@@ -24,6 +27,9 @@ const MISP_TYPE_MAP: Record<string, IOCType> = {
   sha1: 'sha1',
   sha256: 'sha256',
   vulnerability: 'cve',
+  yara: 'yara-rule',
+  sigma: 'sigma-rule',
+  filename: 'file-path',
 };
 
 // Compound types where we extract the hash part after the pipe
@@ -31,7 +37,6 @@ const COMPOUND_HASH_TYPES: Record<string, IOCType> = {
   'filename|md5': 'md5',
   'filename|sha1': 'sha1',
   'filename|sha256': 'sha256',
-  'filename|sha512': 'sha256', // map to sha256 as closest available
 };
 
 function mapAttributeType(mispType: string): IOCType | null {
@@ -51,7 +56,7 @@ function extractAttributeValue(mispType: string, value: string): string {
 
   // For compound types, extract the hash part after the pipe
   if (COMPOUND_HASH_TYPES[lower] && value.includes('|')) {
-    return value.split('|')[1];
+    return value.slice(value.lastIndexOf('|') + 1);
   }
 
   // For ip-src/ip-dst, check if it looks like IPv6
@@ -73,16 +78,16 @@ function resolveIOCTypeForIP(mispType: string, value: string): IOCType {
 // --- TLP extraction ---
 
 function extractTLPFromTags(tags: Array<{ name: string }>): string | undefined {
+  const levels: string[] = [];
   for (const tag of tags) {
     const lower = tag.name.toLowerCase();
-    if (lower === 'tlp:white') return 'TLP:CLEAR';
-    if (lower === 'tlp:clear') return 'TLP:CLEAR';
-    if (lower === 'tlp:green') return 'TLP:GREEN';
-    if (lower === 'tlp:amber') return 'TLP:AMBER';
-    if (lower === 'tlp:amber+strict') return 'TLP:AMBER+STRICT';
-    if (lower === 'tlp:red') return 'TLP:RED';
+    if (lower === 'tlp:white') levels.push('TLP:CLEAR');
+    else if (lower.startsWith('tlp:')) levels.push(lower.toUpperCase());
+    else if (lower.startsWith('threatcaddy:classification=')) {
+      try { levels.push(JSON.parse(tag.name.slice('threatcaddy:classification='.length))); } catch { levels.push(`UNRESOLVED MISP TAG: ${tag.name}`); }
+    }
   }
-  return undefined;
+  return conservativeClsLevel(levels);
 }
 
 // --- Threat actor extraction ---
@@ -101,6 +106,7 @@ function extractThreatActorFromTags(tags: Array<{ name: string }>): string | und
 function parseEvent(event: Record<string, unknown>): MISPImportResult {
   const errors: string[] = [];
   const iocs: Partial<StandaloneIOC>[] = [];
+  const preservedAttributes: Record<string, unknown>[] = [];
 
   const eventTitle = typeof event.info === 'string' ? event.info : 'Untitled MISP Event';
 
@@ -111,7 +117,6 @@ function parseEvent(event: Record<string, unknown>): MISPImportResult {
   );
   const tagNames = validTags.map((t) => t.name);
 
-  const clsLevel = extractTLPFromTags(validTags);
   const threatActor = extractThreatActorFromTags(validTags);
 
   // Parse attributes
@@ -133,9 +138,10 @@ function parseEvent(event: Record<string, unknown>): MISPImportResult {
       continue;
     }
 
-    const iocType = mapAttributeType(mispType);
+    const iocType = mispType === 'text' && /^T\d{4}(?:\.\d{3})?$/.test(value) ? 'mitre-attack' : mapAttributeType(mispType);
     if (!iocType) {
       errors.push(`Unsupported MISP attribute type: ${mispType}`);
+      preservedAttributes.push(a);
       continue;
     }
 
@@ -145,22 +151,32 @@ function parseEvent(event: Record<string, unknown>): MISPImportResult {
       : iocType;
 
     const extractedValue = extractAttributeValue(mispType, value);
+    const attributeTags = Array.isArray(a.Tag) ? a.Tag.filter((tag): tag is { name: string } => !!tag && typeof tag === 'object' && typeof tag.name === 'string') : [];
+    const combinedTags = [...validTags, ...attributeTags];
+    const clsLevel = extractTLPFromTags(combinedTags);
+    const provenance = { source: 'misp', attribute: JSON.stringify(a), eventTags: JSON.stringify(validTags), eventTitle };
+    if (provenance.attribute.length > 500_000 || provenance.eventTags.length > 500_000) { preservedAttributes.push(a); errors.push('Attribute provenance exceeds editable limits; original retained.'); continue; }
+    const confidenceOrder = ['low', 'medium', 'high', 'confirmed'];
+    const importedConfidence = attributeTags.filter(tag => /^threatcaddy:confidence="(low|medium|high|confirmed)"$/.test(tag.name))
+      .map(tag => tag.name.split('"')[1]).sort((a, b) => confidenceOrder.indexOf(a) - confidenceOrder.indexOf(b))[0];
 
     const ioc: Partial<StandaloneIOC> = {
       type: finalType,
       value: extractedValue,
-      confidence: 'medium' as ConfidenceLevel,
+      confidence: (importedConfidence || 'medium') as ConfidenceLevel,
       tags: [],
+      enrichment: { misp: [provenance] },
     };
 
     if (comment) ioc.analystNotes = comment;
     if (clsLevel) ioc.clsLevel = clsLevel;
-    if (threatActor) ioc.attribution = threatActor;
+    const actor = extractThreatActorFromTags(attributeTags) || threatActor;
+    if (actor) ioc.attribution = actor;
 
     iocs.push(ioc);
   }
 
-  return { eventTitle, iocs, tags: tagNames, errors };
+  return { eventTitle, iocs: mergeImportedIOCs(iocs), tags: tagNames, errors, preservedAttributes };
 }
 
 // --- Main import function ---
@@ -195,6 +211,7 @@ export function parseMISPEvent(jsonString: string): MISPImportResult {
     const allTags: string[] = [];
     const allErrors: string[] = [];
     const titles: string[] = [];
+    const preservedAttributes: Record<string, unknown>[] = [];
 
     for (const item of data) {
       if (!item || typeof item !== 'object') continue;
@@ -207,13 +224,15 @@ export function parseMISPEvent(jsonString: string): MISPImportResult {
       allTags.push(...result.tags);
       allErrors.push(...result.errors);
       titles.push(result.eventTitle);
+      preservedAttributes.push(...result.preservedAttributes ?? []);
     }
 
     return {
       eventTitle: titles.join(', '),
-      iocs: allIocs,
+      iocs: mergeImportedIOCs(allIocs),
       tags: [...new Set(allTags)],
       errors: allErrors,
+      preservedAttributes,
     };
   }
 

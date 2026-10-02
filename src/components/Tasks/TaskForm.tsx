@@ -63,7 +63,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
   const comments = task?.comments ?? [];
 
   // Auto-extract IOCs on description changes (edit mode only)
-  useAutoIOCExtraction({
+  const extraction = useAutoIOCExtraction({
     entityId: task?.id,
     content: description,
     existingAnalysis: task?.iocAnalysis,
@@ -144,6 +144,8 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
 
   const iocTarget: IOCTarget | null = task ? {
     id: task.id,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
     title,
     content: description,
     clsLevel: task.clsLevel,
@@ -157,6 +159,7 @@ export function TaskForm({ task, folders, allTags, onCreateTag, onSave, onCancel
   return (
     <div className="flex gap-0">
       <form onSubmit={handleSubmit} className="space-y-4 flex-1 min-w-0">
+        {extraction.error && <p role="alert" className="text-sm text-red-300">{extraction.error}</p>}
         <div>
           <label className={labelClass} htmlFor="task-title">{t('form.titleLabel')}</label>
           <input

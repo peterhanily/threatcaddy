@@ -51,6 +51,7 @@ export async function executeCode(
   code: string,
   opts?: { timeout?: number; stdin?: string; signal?: AbortSignal },
 ): Promise<CodeExecutionResult> {
+  opts?.signal?.throwIfAborted();
   const langConfig = LANGUAGE_IMAGES[language];
   if (!langConfig) {
     throw new Error(`Unsupported language: ${language}. Supported: ${Object.keys(LANGUAGE_IMAGES).join(', ')}`);
@@ -91,10 +92,16 @@ export async function executeCode(
   let truncated = false;
   let stdoutBuf = '';
   let stderrBuf = '';
+  let killTimer: ReturnType<typeof setTimeout> | undefined;
+  const onAbort = () => {
+    timedOut = true;
+    void container.kill().catch(() => { /* already stopped */ });
+  };
 
   try {
     // Attach to streams before starting
     const stream = await container.attach({ stream: true, stdout: true, stderr: true, stdin: !!opts?.stdin });
+    opts?.signal?.throwIfAborted();
 
     const stdout = new PassThrough();
     const stderr = new PassThrough();
@@ -125,26 +132,19 @@ export async function executeCode(
     await container.start();
 
     // Timeout killer
-    const killTimer = setTimeout(async () => {
+    killTimer = setTimeout(async () => {
       timedOut = true;
       try { await container.kill(); } catch { /* already dead */ }
     }, timeoutS * 1000);
 
     // Abort signal integration
-    const onAbort = async () => {
-      timedOut = true;
-      try { await container.kill(); } catch { /* already dead */ }
-    };
     if (opts?.signal) {
       opts.signal.addEventListener('abort', onAbort as EventListener, { once: true });
+      if (opts.signal.aborted) onAbort();
     }
 
     // Wait for container to finish
     const waitResult = await container.wait();
-    clearTimeout(killTimer);
-    if (opts?.signal) {
-      opts.signal.removeEventListener('abort', onAbort as EventListener);
-    }
 
     // Give streams a moment to flush
     await new Promise(r => setTimeout(r, 100));
@@ -172,6 +172,9 @@ export async function executeCode(
       };
     }
     throw err;
+  } finally {
+    clearTimeout(killTimer);
+    opts?.signal?.removeEventListener('abort', onAbort as EventListener);
   }
 }
 

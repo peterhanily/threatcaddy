@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import { db } from '../db';
 import type { EvidenceItem } from '../types';
 import { purgeOldTrash } from '../lib/trash-purge';
+import { deleteEntitiesWithReferences } from '../lib/entity-relations';
 
 /** Manages imported evidence source material stored separately from notes. */
 export function useEvidenceItems(folderId?: string) {
@@ -24,6 +25,8 @@ export function useEvidenceItems(folderId?: string) {
   }, [folderId]);
 
   useEffect(() => {
+    // Initial IndexedDB hydration intentionally updates loading/data state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadEvidenceItems();
   }, [loadEvidenceItems]);
 
@@ -61,7 +64,7 @@ export function useEvidenceItems(folderId?: string) {
   }, []);
 
   const deleteEvidenceItem = useCallback(async (id: string) => {
-    await db.evidenceItems.delete(id);
+    await deleteEntitiesWithReferences({ evidenceItems: [id] });
     setEvidenceItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
@@ -81,7 +84,7 @@ export function useEvidenceItems(folderId?: string) {
   const emptyTrashEvidenceItems = useCallback(async () => {
     const trashedIds = evidenceItems.filter((item) => item.trashed).map((item) => item.id);
     if (trashedIds.length === 0) return;
-    await db.evidenceItems.bulkDelete(trashedIds);
+    await deleteEntitiesWithReferences({ evidenceItems: trashedIds });
     setEvidenceItems((prev) => prev.filter((item) => !item.trashed));
   }, [evidenceItems]);
 

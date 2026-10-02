@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { IOCAnalysis, IOCType } from '../types';
 import { extractIOCs, mergeIOCAnalysis } from '../lib/ioc-extractor';
 
@@ -6,7 +6,7 @@ interface UseAutoIOCExtractionOptions {
   entityId: string | undefined;
   content: string;
   existingAnalysis: IOCAnalysis | undefined;
-  onUpdate: (id: string, updates: { iocAnalysis: IOCAnalysis; iocTypes: IOCType[] }) => void;
+  onUpdate: (id: string, updates: { iocAnalysis: IOCAnalysis; iocTypes: IOCType[] }) => void | Promise<void>;
   enabled?: boolean;
   enabledTypes?: string[];
   defaultConfidence?: string;
@@ -28,6 +28,7 @@ export function useAutoIOCExtraction({
   debounceMs,
 }: UseAutoIOCExtractionOptions) {
   const prevContentRef = useRef(content);
+  const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const entityIdRef = useRef(entityId);
   const onUpdateRef = useRef(onUpdate);
@@ -58,24 +59,28 @@ export function useAutoIOCExtraction({
     // Skip if content hasn't actually changed (e.g. iocAnalysis update re-rendered parent, or initial mount)
     if (content === prevContentRef.current) return;
 
-    // Quick check: skip re-extraction if content changed by fewer than 20 characters
-    // (e.g., cursor movement or minor whitespace edits that won't introduce new IOCs)
-    const lengthDiff = Math.abs(content.length - prevContentRef.current.length);
     prevContentRef.current = content;
-    if (lengthDiff < 20) return;
 
     clearTimeout(timerRef.current);
     // Capture entityId at schedule time so we can detect stale firings
     const scheduledForId = entityId;
-    timerRef.current = setTimeout(() => {
+    timerRef.current = setTimeout(async () => {
       const currentId = entityIdRef.current;
       // Discard if entity changed since this extraction was scheduled
       if (!currentId || currentId !== scheduledForId) return;
       const fresh = extractIOCs(content, { enabledTypes: enabledTypesRef.current, defaultConfidence: defaultConfidenceRef.current });
       if (fresh.length === 0 && !existingAnalysisRef.current) return;
       const merged = mergeIOCAnalysis(existingAnalysisRef.current, fresh);
+      // Background extraction must not undo an analyst's explicit dismissal.
+      const dismissed = new Set(existingAnalysisRef.current?.iocs.filter(ioc => ioc.dismissed).map(ioc => `${ioc.type}:${ioc.value.toLowerCase()}`));
+      for (const ioc of merged.iocs) if (dismissed.has(`${ioc.type}:${ioc.value.toLowerCase()}`)) ioc.dismissed = true;
       const iocTypes = [...new Set(merged.iocs.filter((i) => !i.dismissed).map((i) => i.type))];
-      onUpdateRef.current(currentId, { iocAnalysis: merged, iocTypes });
+      try {
+        await onUpdateRef.current(currentId, { iocAnalysis: merged, iocTypes });
+        if (entityIdRef.current === currentId) setError(null);
+      } catch (failure) {
+        if (entityIdRef.current === currentId) setError(failure instanceof Error ? failure.message : 'IOC extraction could not be saved.');
+      }
     }, debounceMsRef.current ?? 2000);
 
     return () => clearTimeout(timerRef.current);
@@ -84,4 +89,5 @@ export function useAutoIOCExtraction({
   useEffect(() => {
     return () => clearTimeout(timerRef.current);
   }, []);
+  return { error };
 }

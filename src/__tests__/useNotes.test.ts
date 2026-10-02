@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { createElement, StrictMode } from 'react';
 import { useNotes } from '../hooks/useNotes';
 import { db } from '../db';
 
@@ -14,6 +15,39 @@ describe('useNotes', () => {
     // Wait for initial load
     await act(async () => {});
     expect(result.current.notes).toEqual([]);
+  });
+
+  it('loads preexisting notes and finishes loading under real StrictMode replay', async () => {
+    await db.notes.add({
+      id: 'strict-mode-note', title: 'Preexisting note', content: 'Persisted content', tags: [],
+      pinned: false, archived: false, trashed: false, createdAt: 1, updatedAt: 1,
+    });
+    const { result } = renderHook(() => useNotes(), {
+      wrapper: ({ children }) => createElement(StrictMode, null, children),
+    });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.notes).toEqual([expect.objectContaining({ id: 'strict-mode-note', content: 'Persisted content' })]);
+  });
+
+  it('suppresses a late load after unmount', async () => {
+    let finish!: (notes: []) => void;
+    const read = vi.spyOn(db.notes, 'toArray').mockReturnValueOnce(new Promise<[]>((resolve) => { finish = resolve; }) as ReturnType<typeof db.notes.toArray>);
+    try {
+      const { result, unmount } = renderHook(() => useNotes());
+      unmount();
+      await act(async () => { finish([]); });
+      expect(result.current.loading).toBe(true);
+    } finally { read.mockRestore(); }
+  });
+
+  it('rejects a save to a missing note without recreating it', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const { result } = renderHook(() => useNotes());
+      await act(async () => {});
+      await expect(result.current.updateNote('deleted-note', { content: 'Retained draft' })).rejects.toThrow('no longer exists');
+      expect(await db.notes.get('deleted-note')).toBeUndefined();
+    } finally { log.mockRestore(); }
   });
 
   it('creates a note with defaults', async () => {

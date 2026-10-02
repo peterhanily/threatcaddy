@@ -7,6 +7,7 @@ import { enableSync, disableSync } from '../lib/sync-middleware';
 import { WSClient } from '../lib/ws-client';
 
 interface AuthState {
+  user?: { id: string } | null;
   serverUrl: string | null;
   connected: boolean;
   getAccessToken: () => Promise<string | null>;
@@ -21,6 +22,7 @@ interface ReloadFns {
   timelines: () => void;
   whiteboards: () => void;
   standaloneIOCs: () => void;
+  evidenceItems?: () => void;
   chats: () => void;
   folders: () => void;
   tags: () => void;
@@ -35,14 +37,19 @@ interface ReloadFns {
 export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInvite?: (folderId: string) => void) {
   const [presenceUsers, setPresenceUsers] = useState<PresenceUser[]>([]);
   const [syncConflicts, setSyncConflicts] = useState<SyncResult[]>([]);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const wsClientRef = useRef<WSClient | null>(null);
 
   useEffect(() => {
     let active = true;
 
-    if (auth.serverUrl && auth.connected) {
+    if (auth.serverUrl && (auth.connected || auth.user)) {
       configureServerApi(auth.serverUrl, auth.getAccessToken, auth.invalidateAccessToken);
+      // Capture offline edits for a signed-in account even while transport is
+      // unreachable. Reconnection can then deliver the same durable queue.
       enableSync();
+      syncEngine.setErrorHandler(message => { if (active) setSyncError(message); });
+      syncEngine.setWorkspaceIdentity(auth.serverUrl, auth.user?.id ?? '');
       syncEngine.setConflictHandler((conflicts) => setSyncConflicts(conflicts));
       syncEngine.setReadyHandler(() => {
         // Hooks already loaded local data on mount — just signal that
@@ -60,6 +67,7 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
           if (tables.has('timelines')) reloadFns.timelines();
           if (tables.has('whiteboards')) reloadFns.whiteboards();
           if (tables.has('standaloneIOCs')) reloadFns.standaloneIOCs();
+          if (tables.has('evidenceItems')) reloadFns.evidenceItems?.();
           if (tables.has('chatThreads')) reloadFns.chats();
           if (tables.has('folders')) reloadFns.folders();
           if (tables.has('tags')) reloadFns.tags();
@@ -119,6 +127,7 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
         wsClientRef.current = null;
       }
       setPresenceUsers([]);
+      setSyncError(null);
     }
 
     return () => {
@@ -132,24 +141,28 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on scalar values, not object identity
-  }, [auth.serverUrl, auth.connected]);
+  }, [auth.serverUrl, auth.connected, auth.user?.id]);
 
-  const handleResolveConflict = useCallback(async (entityId: string, choice: 'mine' | 'theirs') => {
-    const conflict = syncConflicts.find((c) => c.entityId === entityId);
+  const handleResolveConflict = useCallback(async (entityId: string, choice: 'mine' | 'theirs', table?: string) => {
+    const matches = syncConflicts.filter(c => c.entityId === entityId && (table === undefined || c.table === table));
+    if (matches.length > 1) throw new Error('Choose a conflict by both entity type and identity.');
+    const conflict = matches[0];
     if (conflict) {
       await syncEngine.resolveConflicts([conflict], choice);
     }
-    setSyncConflicts((prev) => prev.filter((c) => c.entityId !== entityId));
+    setSyncConflicts((prev) => prev.filter(c => c !== conflict));
   }, [syncConflicts]);
 
   const handleResolveAllConflicts = useCallback(async (choice: 'mine' | 'theirs') => {
-    await syncEngine.resolveConflicts(syncConflicts, choice);
-    setSyncConflicts([]);
+    const resolvable = syncConflicts.filter(c => c.status === 'conflict');
+    await syncEngine.resolveConflicts(resolvable, choice);
+    setSyncConflicts(previous => previous.filter(c => !resolvable.includes(c)));
   }, [syncConflicts]);
 
   return {
     presenceUsers,
     syncConflicts,
+    syncError,
     setSyncConflicts,
     handleResolveConflict,
     handleResolveAllConflicts,

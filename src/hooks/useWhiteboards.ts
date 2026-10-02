@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { db } from '../db';
+import { deleteEntitiesWithReferences } from '../lib/entity-relations';
 import type { Whiteboard } from '../types';
 import { nanoid } from 'nanoid';
 import { purgeOldTrash } from '../lib/trash-purge';
@@ -43,14 +44,15 @@ export function useWhiteboards() {
 
   const updateWhiteboard = useCallback(async (id: string, updates: Partial<Whiteboard>) => {
     const patched = { ...updates, updatedAt: Date.now() };
-    await db.whiteboards.update(id, patched);
+    const updated = await db.whiteboards.update(id, patched);
+    if (!updated) throw new Error('This whiteboard no longer exists. The draft has not been saved.');
     setWhiteboards((prev) =>
       prev.map((w) => (w.id === id ? { ...w, ...patched } : w)).sort((a, b) => a.order - b.order)
     );
   }, []);
 
   const deleteWhiteboard = useCallback(async (id: string) => {
-    await db.whiteboards.delete(id);
+    await deleteEntitiesWithReferences({ whiteboards: [id] });
     setWhiteboards((prev) => prev.filter((w) => w.id !== id));
   }, []);
 
@@ -70,7 +72,7 @@ export function useWhiteboards() {
   const emptyTrashWhiteboards = useCallback(async () => {
     const trashedIds = whiteboards.filter((w) => w.trashed).map((w) => w.id);
     if (trashedIds.length === 0) return;
-    await db.whiteboards.bulkDelete(trashedIds);
+    await deleteEntitiesWithReferences({ whiteboards: trashedIds });
     setWhiteboards((prev) => prev.filter((w) => !w.trashed));
   }, [whiteboards]);
 

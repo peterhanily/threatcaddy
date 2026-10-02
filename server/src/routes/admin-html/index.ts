@@ -105,11 +105,12 @@ ${adminStyles()}
       <div class="setting-row">
         <label>Registration Mode</label>
         <select id="regModeSelect">
-          <option value="invite">Invite Only</option>
+          <option value="invite">Closed — administrator-provisioned accounts</option>
           <option value="open">Open</option>
         </select>
       </div>
       <div id="allowedEmailsSection" class="allowed-emails-section">
+        <p>Legacy email entries are retained for reference only. They do not authorize registration. Create accounts in the Users tab and deliver credentials through a trusted channel.</p>
         <div class="add-row">
           <input type="email" id="newEmailInput" placeholder="user@example.com">
           <button id="addEmailBtn" class="btn btn-primary btn-sm">Add</button>

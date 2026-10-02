@@ -34,6 +34,7 @@ import {
 } from '../../lib/evidence-ioc-candidates';
 
 interface EvidenceViewProps {
+  initialSelectedId?: string;
   folderId?: string;
   folderName?: string;
   items: EvidenceItem[];
@@ -99,6 +100,7 @@ const MIN_INSPECT_SEARCH_CHARS = 2;
 const VALID_RASTER_IMAGE_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/bmp', 'image/avif']);
 
 export function EvidenceView({
+  initialSelectedId,
   folderId,
   folderName,
   items,
@@ -116,7 +118,7 @@ export function EvidenceView({
   const [deduping, setDeduping] = useState(false);
   const [creatingTableIOCs, setCreatingTableIOCs] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId ?? null);
   const [evidenceQuery, setEvidenceQuery] = useState('');
   const [inspectQuery, setInspectQuery] = useState('');
   const [debouncedInspectQuery, setDebouncedInspectQuery] = useState('');

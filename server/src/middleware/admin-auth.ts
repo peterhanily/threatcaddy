@@ -1,6 +1,7 @@
 import { createMiddleware } from 'hono/factory';
 import * as jose from 'jose';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, createHmac } from 'node:crypto';
+import { getActiveAdmin, adminSessionVersion } from '../services/admin-session-service.js';
 
 const ADMIN_AUDIENCE = 'admin-panel';
 
@@ -12,9 +13,12 @@ export function initAdminKey(): void {
   adminKey = randomBytes(32);
 }
 
-export async function signAdminToken(adminUserId: string, adminUsername: string): Promise<string> {
+export async function signAdminToken(adminUserId: string, adminUsername: string, expectedPasswordHash: string): Promise<string> {
   if (!adminKey) throw new Error('Admin key not initialized');
-  return new jose.SignJWT({ username: adminUsername })
+  const version = adminSessionVersion(adminUserId);
+  const admin = await getActiveAdmin(adminUserId);
+  if (!admin || admin.passwordHash !== expectedPasswordHash) throw new Error('Admin account credentials changed');
+  return new jose.SignJWT({ username: adminUsername, sessionVersion: version, credentialVersion: createHmac('sha256', adminKey).update(admin.passwordHash).digest('base64url') })
     .setProtectedHeader({ alg: 'HS256' })
     .setAudience(ADMIN_AUDIENCE)
     .setSubject(adminUserId)
@@ -31,9 +35,12 @@ export const requireAdminAuth = createMiddleware(async (c, next) => {
   }
   const token = header.slice(7);
   try {
-    const { payload } = await jose.jwtVerify(token, adminKey, { audience: ADMIN_AUDIENCE });
-    c.set('adminUserId', payload.sub || '__system_admin__');
-    c.set('adminUsername', (payload as Record<string, unknown>).username || 'unknown');
+    const { payload } = await jose.jwtVerify(token, adminKey, { audience: ADMIN_AUDIENCE, algorithms: ['HS256'] });
+    if (!payload.sub) throw new Error('Missing admin identity');
+    const admin = await getActiveAdmin(payload.sub);
+    if (!admin || payload.sessionVersion !== adminSessionVersion(admin.id) || payload.credentialVersion !== createHmac('sha256', adminKey).update(admin.passwordHash).digest('base64url')) throw new Error('Admin credentials revoked');
+    c.set('adminUserId', admin.id);
+    c.set('adminUsername', admin.username);
   } catch {
     return c.json({ error: 'Invalid or expired admin token' }, 401);
   }

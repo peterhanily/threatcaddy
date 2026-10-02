@@ -2,14 +2,15 @@ import { Hono } from 'hono';
 import { randomBytes } from 'node:crypto';
 import { signAdminToken } from '../../middleware/admin-auth.js';
 import {
-  verifyBootstrapSecret, verifyAdminUser, verifyAdminUserById,
-  getAdminUserCount, createAdminUser, listAdminUsers,
+  verifyAdminUser, verifyAdminUserById,
+  createAdminUser, listAdminUsers,
   updateAdminUser, changeAdminUserPassword, deleteAdminUser,
 } from '../../services/admin-secret.js';
 import { getAdminHtml } from '../admin-html/index.js';
 import { logger } from '../../lib/logger.js';
 import { isLocked, recordFailedAttempt, resetAttempts } from '../../services/login-limiter.js';
 import { requireAdminAuth, logAdminAction, getAdminId } from './shared.js';
+import { bootstrapAdminUser, hasActiveAdmin } from '../../services/admin-session-service.js';
 
 import usersRouter from './users.js';
 import investigationsRouter from './investigations.js';
@@ -34,8 +35,7 @@ app.get('/', (c) => {
 // ─── Check if admin accounts exist (for UI to decide login vs setup) ─
 
 app.get('/api/setup-status', async (c) => {
-  const count = await getAdminUserCount();
-  return c.json({ hasAdminAccounts: count > 0 });
+  return c.json({ hasAdminAccounts: await hasActiveAdmin() });
 });
 
 // ─── Bootstrap: create first admin account using bootstrap secret ─
@@ -60,15 +60,13 @@ app.post('/api/bootstrap', async (c) => {
     return c.json({ error: 'Password must be at least 12 characters' }, 400);
   }
 
-  const valid = await verifyBootstrapSecret(bootstrapSecret);
-  if (!valid) {
-    logger.info('Admin bootstrap failed — invalid secret');
-    return c.json({ error: 'Invalid bootstrap secret' }, 401);
-  }
-
   try {
-    const admin = await createAdminUser(username, displayName, password);
-    const token = await signAdminToken(admin.id, admin.username);
+    const result = await bootstrapAdminUser(bootstrapSecret, username, displayName, password);
+    if ('error' in result) return result.error === 'configured'
+      ? c.json({ error: 'Administrator setup is already complete' }, 409)
+      : c.json({ error: 'Invalid bootstrap secret' }, 401);
+    const { admin } = result;
+    const token = await signAdminToken(admin.id, admin.username, result.passwordHash);
     logger.info('Admin account created via bootstrap', { username: admin.username });
     return c.json({ token, admin: { id: admin.id, username: admin.username, displayName: admin.displayName } });
   } catch (err: unknown) {
@@ -110,7 +108,9 @@ app.post('/api/login', async (c) => {
   }
 
   resetAttempts(username);
-  const token = await signAdminToken(admin.id, admin.username);
+  let token;
+  try { token = await signAdminToken(admin.id, admin.username, admin.passwordHash); }
+  catch { return c.json({ error: 'Credentials changed. Sign in again.' }, 401); }
   logger.info('Admin login successful', { username: admin.username, adminId: admin.id });
   return c.json({ token, admin: { id: admin.id, username: admin.username, displayName: admin.displayName } });
 });

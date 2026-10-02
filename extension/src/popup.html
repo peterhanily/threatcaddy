@@ -512,7 +512,13 @@
         <span style="font-size:11px;color:#9ca3af;" data-i18n="targetUrlDesc">The ThreatCaddy instance URL this extension connects to.</span>
       </div>
       <input type="text" id="settings-target-url" class="capture-title" data-i18n-placeholder="targetUrlPlaceholder" placeholder="https://threatcaddy.com" style="margin-bottom:4px;" />
-      <button id="settings-save-url" style="font-size:12px;padding:6px 12px;" data-i18n="save">Save</button>
+      <p style="font-size:11px;color:#9ca3af;">Approve only an app you trust. This exact origin (including its port), or exact standalone file, may use the extension's granted capabilities.</p>
+      <label for="settings-local-ai-url" style="font-size:11px;">Local AI endpoint origin (optional)</label>
+      <input type="url" id="settings-local-ai-url" class="capture-title" placeholder="http://localhost:11434" />
+      <button id="settings-save-url" style="font-size:12px;padding:6px 12px;">Approve app</button>
+      <button id="settings-revoke-apps" style="font-size:12px;padding:6px 12px;">Revoke all approved apps</button>
+      <button id="settings-notifications" style="font-size:12px;padding:6px 12px;">Enable desktop notifications</button>
+      <div id="settings-approval-status" role="status" style="font-size:11px;color:#9ca3af;"></div>
       <div id="settings-url-saved" class="save-success" data-i18n="saved">Saved!</div>
     </section>
 

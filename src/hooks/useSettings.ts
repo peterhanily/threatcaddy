@@ -1,10 +1,11 @@
+import { workspaceStorageKey } from '../lib/workspace-profiles';
 import { useState, useEffect, useCallback } from 'react';
 import type { Settings } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import { applyColorScheme } from '../lib/theme-schemes';
-import i18n, { RTL_LANGS } from '../i18n';
+import i18n, { RTL_LANGS, SUPPORTED_LANGUAGES } from '../i18n';
 
-const SETTINGS_KEY = 'threatcaddy-settings';
+const SETTINGS_KEY = workspaceStorageKey('threatcaddy-settings');
 
 function migrateSettings(raw: Record<string, unknown>): Record<string, unknown> {
   // Migrate flat tiIocSubtypes array → per-type map
@@ -81,11 +82,12 @@ export function useSettings() {
 
   // Apply language and text direction
   useEffect(() => {
-    const lang = settings.language ?? 'en';
+    const lang = SUPPORTED_LANGUAGES.some(({ code }) => code === settings.language) ? settings.language! : 'en';
     if (i18n.language !== lang) {
       i18n.changeLanguage(lang);
     }
     document.documentElement.dir = RTL_LANGS.has(lang) ? 'rtl' : 'ltr';
+    document.documentElement.lang = lang;
   }, [settings.language]);
 
   const updateSettings = useCallback((updates: Partial<Settings>) => {

@@ -1,151 +1,103 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { db } from '../db';
 import { purgeOldTrash } from '../lib/trash-purge';
-
-// ── Helpers ──────────────────────────────────────────────────────────
-
-interface TestItem {
-  id: string;
-  trashed: boolean;
-  trashedAt?: number;
-  title?: string;
-}
+import type { Note, Task } from '../types';
 
 const DAY_MS = 86_400_000;
 const NOW = Date.now();
-
-function makeItem(overrides: Partial<TestItem> = {}): TestItem {
-  return {
-    id: 'item-1',
-    trashed: false,
-    title: 'Test item',
-    ...overrides,
-  };
+function note(overrides: Partial<Note> = {}): Note {
+  return { id: 'note', title: 'Test note', content: '', tags: [], pinned: false,
+    trashed: false, archived: false, createdAt: NOW, updatedAt: NOW, ...overrides };
+}
+function task(overrides: Partial<Task> = {}): Task {
+  return { id: 'task', title: 'Test task', tags: [], status: 'todo', completed: false,
+    priority: 'none', order: 0, trashed: false, archived: false, createdAt: NOW, updatedAt: NOW, ...overrides };
+}
+async function purgeNotes(items: Note[]) {
+  await db.notes.bulkAdd(items);
+  return purgeOldTrash(items, db.notes);
 }
 
-function makeMockTable() {
-  return {
-    bulkDelete: vi.fn(async () => {}),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any;
-}
+describe('purgeOldTrash with the registered IndexedDB lifecycle', () => {
+  beforeEach(async () => { await Promise.all(db.tables.map(table => table.clear())); });
 
-// ── Tests ────────────────────────────────────────────────────────────
-
-describe('purgeOldTrash', () => {
-  let mockTable: ReturnType<typeof makeMockTable>;
-
-  beforeEach(() => {
-    mockTable = makeMockTable();
-    vi.clearAllMocks();
-  });
-
-  it('does not purge items trashed less than 30 days ago', async () => {
-    const item = makeItem({
-      id: 'recent',
-      trashed: true,
-      trashedAt: NOW - 15 * DAY_MS, // 15 days ago
-    });
-    const result = await purgeOldTrash([item], mockTable);
-    expect(mockTable.bulkDelete).not.toHaveBeenCalled();
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('recent');
-  });
-
-  it('purges items trashed 30 or more days ago', async () => {
-    const item = makeItem({
-      id: 'old',
-      trashed: true,
-      trashedAt: NOW - 31 * DAY_MS, // 31 days ago
-    });
-    const result = await purgeOldTrash([item], mockTable);
-    expect(mockTable.bulkDelete).toHaveBeenCalledWith(['old']);
-    expect(result).toHaveLength(0);
-  });
-
-  it('purges items trashed exactly 30 days ago', async () => {
-    const item = makeItem({
-      id: 'boundary',
-      trashed: true,
-      trashedAt: NOW - 30 * DAY_MS - 1, // just over 30 days
-    });
-    const result = await purgeOldTrash([item], mockTable);
-    expect(mockTable.bulkDelete).toHaveBeenCalledWith(['boundary']);
-    expect(result).toHaveLength(0);
-  });
-
-  it('skips trashed items with no trashedAt', async () => {
-    const item = makeItem({
-      id: 'no-date',
-      trashed: true,
-      // trashedAt is undefined
-    });
-    const result = await purgeOldTrash([item], mockTable);
-    expect(mockTable.bulkDelete).not.toHaveBeenCalled();
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('no-date');
-  });
-
-  it('never touches non-trashed items', async () => {
+  it('keeps recent, undated and non-trashed records', async () => {
     const items = [
-      makeItem({ id: 'active-1', trashed: false }),
-      makeItem({ id: 'active-2', trashed: false, trashedAt: NOW - 60 * DAY_MS }),
+      note({ id: 'recent', trashed: true, trashedAt: NOW - 15 * DAY_MS }),
+      note({ id: 'undated', trashed: true }),
+      note({ id: 'active', trashedAt: NOW - 60 * DAY_MS }),
     ];
-    const result = await purgeOldTrash(items, mockTable);
-    expect(mockTable.bulkDelete).not.toHaveBeenCalled();
-    expect(result).toHaveLength(2);
+    expect(await purgeNotes(items)).toEqual(items);
+    expect(await db.notes.count()).toBe(3);
   });
 
-  it('handles a mix of purge-eligible and non-eligible items', async () => {
+  it('purges records older than 30 days, including just over the boundary', async () => {
+    expect(await purgeNotes([
+      note({ id: 'old', trashed: true, trashedAt: NOW - 31 * DAY_MS }),
+      note({ id: 'boundary', trashed: true, trashedAt: NOW - 30 * DAY_MS - 1 }),
+    ])).toEqual([]);
+    expect(await db.notes.count()).toBe(0);
+  });
+
+  it('returns a mixed list without the purged records', async () => {
     const items = [
-      makeItem({ id: 'old-trashed', trashed: true, trashedAt: NOW - 40 * DAY_MS }),
-      makeItem({ id: 'recent-trashed', trashed: true, trashedAt: NOW - 5 * DAY_MS }),
-      makeItem({ id: 'active', trashed: false }),
-      makeItem({ id: 'no-date-trashed', trashed: true }),
+      note({ id: 'old', trashed: true, trashedAt: NOW - 40 * DAY_MS }),
+      note({ id: 'recent', trashed: true, trashedAt: NOW - 5 * DAY_MS }),
+      note({ id: 'active' }), note({ id: 'undated', trashed: true }),
     ];
-    const result = await purgeOldTrash(items, mockTable);
-    expect(mockTable.bulkDelete).toHaveBeenCalledWith(['old-trashed']);
-    expect(result).toHaveLength(3);
-    expect(result.map((r) => r.id).sort()).toEqual(['active', 'no-date-trashed', 'recent-trashed']);
+    expect((await purgeNotes(items)).map(row => row.id)).toEqual(['recent', 'active', 'undated']);
+    expect((await db.notes.toArray()).map(row => row.id).sort()).toEqual(['active', 'recent', 'undated']);
   });
 
-  it('handles empty item list', async () => {
-    const result = await purgeOldTrash([], mockTable);
-    expect(mockTable.bulkDelete).not.toHaveBeenCalled();
-    expect(result).toEqual([]);
+  it('accepts an empty list', async () => {
+    expect(await purgeOldTrash([], db.notes)).toEqual([]);
   });
 
-  it('bulk deletes multiple old items in one call', async () => {
-    const items = [
-      makeItem({ id: 'old-1', trashed: true, trashedAt: NOW - 35 * DAY_MS }),
-      makeItem({ id: 'old-2', trashed: true, trashedAt: NOW - 45 * DAY_MS }),
-      makeItem({ id: 'old-3', trashed: true, trashedAt: NOW - 90 * DAY_MS }),
-    ];
-    const result = await purgeOldTrash(items, mockTable);
-    expect(mockTable.bulkDelete).toHaveBeenCalledOnce();
-    expect(mockTable.bulkDelete).toHaveBeenCalledWith(['old-1', 'old-2', 'old-3']);
-    expect(result).toHaveLength(0);
+  it('deletes several old records and their reverse references atomically', async () => {
+    await db.tasks.add(task({ linkedNoteIds: ['old-1', 'old-2', 'retained'] }));
+    expect(await purgeNotes(['old-1', 'old-2'].map(id => note({ id, trashed: true, trashedAt: NOW - 40 * DAY_MS })))).toEqual([]);
+    expect((await db.tasks.get('task'))?.linkedNoteIds).toEqual(['retained']);
   });
 
-  // Test across different entity "types" (all use the same Trashable interface)
-  it('works for note-like entities', async () => {
-    const notes = [
-      { id: 'note-1', trashed: true, trashedAt: NOW - 31 * DAY_MS, title: 'Old note', content: 'foo' },
-      { id: 'note-2', trashed: false, title: 'Active note', content: 'bar' },
-    ];
-    const result = await purgeOldTrash(notes, mockTable);
-    expect(mockTable.bulkDelete).toHaveBeenCalledWith(['note-1']);
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('note-2');
+  it('handles task records through the same lifecycle', async () => {
+    const tasks = [task({ id: 'old', trashed: true, trashedAt: NOW - 60 * DAY_MS }),
+      task({ id: 'recent', trashed: true, trashedAt: NOW - 2 * DAY_MS })];
+    await db.tasks.bulkAdd(tasks);
+    expect((await purgeOldTrash(tasks, db.tasks)).map(row => row.id)).toEqual(['recent']);
+    expect(await db.tasks.get('old')).toBeUndefined();
   });
 
-  it('works for task-like entities', async () => {
-    const tasks = [
-      { id: 'task-1', trashed: true, trashedAt: NOW - 60 * DAY_MS, title: 'Done task' },
-      { id: 'task-2', trashed: true, trashedAt: NOW - 2 * DAY_MS, title: 'Recent task' },
-    ];
-    const result = await purgeOldTrash(tasks, mockTable);
-    expect(mockTable.bulkDelete).toHaveBeenCalledWith(['task-1']);
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('task-2');
+  it('serializes concurrent startup purges, including duplicate reloads', async () => {
+    const notes = [note({ trashed: true, trashedAt: NOW - 40 * DAY_MS })];
+    const tasks = [task({ trashed: true, trashedAt: NOW - 40 * DAY_MS })];
+    await db.notes.bulkAdd(notes);
+    await db.tasks.bulkAdd(tasks);
+    expect(await Promise.all([purgeOldTrash(notes, db.notes), purgeOldTrash(tasks, db.tasks), purgeOldTrash(notes, db.notes)])).toEqual([[], [], []]);
+    expect(await db.notes.count()).toBe(0);
+    expect(await db.tasks.count()).toBe(0);
+  });
+
+  it('rechecks the current row and preserves a restored record from a stale purge snapshot', async () => {
+    const old = note({ trashed: true, trashedAt: NOW - 40 * DAY_MS });
+    await db.notes.add(old);
+    await db.notes.update(old.id, { trashed: false, trashedAt: undefined, title: 'Restored' });
+    await db.tasks.add(task({ linkedNoteIds: [old.id] }));
+    const result = await purgeOldTrash([old], db.notes);
+    expect(result).toMatchObject([{ id: old.id, trashed: false, title: 'Restored' }]);
+    expect((await db.tasks.get('task'))?.linkedNoteIds).toEqual([old.id]);
+  });
+
+  it('does not leave partial reference cleanup if deletion fails', async () => {
+    await db.tasks.add(task({ linkedNoteIds: ['note'] }));
+    const old = note({ trashed: true, trashedAt: NOW - 40 * DAY_MS });
+    await db.notes.add(old);
+    const fail = () => { throw new Error('write failure'); };
+    db.tasks.hook('updating', fail);
+    try { await expect(purgeOldTrash([old], db.notes)).rejects.toThrow('write failure'); }
+    finally { db.tasks.hook('updating').unsubscribe(fail); }
+    expect(await db.notes.get(old.id)).toBeDefined();
+    expect((await db.tasks.get('task'))?.linkedNoteIds).toEqual([old.id]);
+    // A rejected lifecycle operation must not poison the queue.
+    expect(await purgeOldTrash([old], db.notes)).toEqual([]);
   });
 });

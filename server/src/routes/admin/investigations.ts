@@ -1,13 +1,13 @@
 import { Hono } from 'hono';
 import { eq, count, and, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { unlink } from 'node:fs/promises';
-import { join } from 'node:path';
+import { lockStorage, removeCommittedBlobs } from '../../services/storage-policy.js';
+import { revokeUserFolderAccess, revokeFolderAccess } from '../../ws/handler.js';
 import {
   db, users, folders, investigationMembers, notes, tasks,
   timelineEvents, whiteboards, standaloneIOCs, chatThreads, posts,
-  files, notifications,
-  requireAdminAuth, logger, logAdminAction, getAdminId, FILE_STORAGE_PATH,
+  files, notifications, evidenceItems,
+  requireAdminAuth, logAdminAction, getAdminId, FILE_STORAGE_PATH,
 } from './shared.js';
 
 const app = new Hono();
@@ -27,7 +27,7 @@ app.get('/api/investigations', requireAdminAuth, async (c) => {
       memberCount: sql<number>`(select count(*) from investigation_members where folder_id = ${folders.id})`.as('member_count'),
     })
     .from(folders)
-    .innerJoin(users, eq(users.id, folders.createdBy))
+    .leftJoin(users, eq(users.id, folders.createdBy))
     .orderBy(folders.createdAt);
 
   return c.json({ investigations: rows });
@@ -47,7 +47,7 @@ app.get('/api/investigations/:id/detail', requireAdminAuth, async (c) => {
     creatorName: users.displayName,
     creatorEmail: users.email,
   }).from(folders)
-    .innerJoin(users, eq(users.id, folders.createdBy))
+    .leftJoin(users, eq(users.id, folders.createdBy))
     .where(eq(folders.id, id)).limit(1);
 
   if (!folder) return c.json({ error: 'Investigation not found' }, 404);
@@ -71,6 +71,7 @@ app.get('/api/investigations/:id/detail', requireAdminAuth, async (c) => {
   const [iocCount] = await db.select({ count: count() }).from(standaloneIOCs).where(eq(standaloneIOCs.folderId, id));
   const [chatCount] = await db.select({ count: count() }).from(chatThreads).where(eq(chatThreads.folderId, id));
   const [fileCount] = await db.select({ count: count() }).from(files).where(eq(files.folderId, id));
+  const [evidenceCount] = await db.select({ count: count() }).from(evidenceItems).where(eq(evidenceItems.folderId, id));
 
   return c.json({
     investigation: folder,
@@ -83,6 +84,7 @@ app.get('/api/investigations/:id/detail', requireAdminAuth, async (c) => {
       standaloneIOCs: iocCount.count,
       chatThreads: chatCount.count,
       files: fileCount.count,
+      evidenceItems: evidenceCount.count,
     },
   });
 });
@@ -157,6 +159,7 @@ app.patch('/api/investigations/:id/members/:userId', requireAdminAuth, async (c)
 
   if (result.length === 0) return c.json({ error: 'Member not found' }, 404);
 
+  revokeUserFolderAccess(userId, folderId);
   await logAdminAction(getAdminId(c), 'investigation.update-member', `Changed member role to ${role}`, { folderId });
   return c.json({ ok: true });
 });
@@ -172,6 +175,7 @@ app.delete('/api/investigations/:id/members/:userId', requireAdminAuth, async (c
 
   if (result.length === 0) return c.json({ error: 'Member not found' }, 404);
 
+  revokeUserFolderAccess(userId, folderId);
   await logAdminAction(getAdminId(c), 'investigation.remove-member', `Removed member from investigation`, { folderId });
   return c.json({ ok: true });
 });
@@ -189,18 +193,11 @@ app.delete('/api/investigations/:id/content', requireAdminAuth, async (c) => {
     return c.json({ error: 'Confirmation name does not match' }, 400);
   }
 
-  // Delete files from disk first
-  const folderFiles = await db.select({ storagePath: files.storagePath, thumbnailPath: files.thumbnailPath })
-    .from(files).where(eq(files.folderId, folderId));
-  for (const f of folderFiles) {
-    try { await unlink(join(FILE_STORAGE_PATH, f.storagePath)); } catch (err) { logger.warn('Failed to unlink file', { path: f.storagePath, error: String(err) }); }
-    if (f.thumbnailPath) {
-      try { await unlink(join(FILE_STORAGE_PATH, f.thumbnailPath)); } catch (err) { logger.warn('Failed to unlink file', { path: f.thumbnailPath, error: String(err) }); }
-    }
-  }
-
-  // Hard delete all entities atomically
-  const deleted = await db.transaction(async (tx) => {
+  // Commit reference deletion before removing any managed bytes.
+  const { deleted, folderFiles } = await db.transaction(async (tx) => {
+    await lockStorage(tx);
+    const folderFiles = await tx.select({ storagePath: files.storagePath, thumbnailPath: files.thumbnailPath })
+      .from(files).where(eq(files.folderId, folderId));
     const counts: Record<string, number> = {};
     const delNotes = await tx.delete(notes).where(eq(notes.folderId, folderId)).returning({ id: notes.id });
     counts.notes = delNotes.length;
@@ -222,14 +219,18 @@ app.delete('/api/investigations/:id/content', requireAdminAuth, async (c) => {
     counts.notifications = delNotif.length;
     const delMembers = await tx.delete(investigationMembers).where(eq(investigationMembers.folderId, folderId)).returning({ id: investigationMembers.id });
     counts.members = delMembers.length;
+    const delEvidence = await tx.delete(evidenceItems).where(eq(evidenceItems.folderId, folderId)).returning({ id: evidenceItems.id });
+    counts.evidenceItems = delEvidence.length;
     // Delete the folder itself
     await tx.delete(folders).where(eq(folders.id, folderId));
-    return counts;
+    return { deleted: counts, folderFiles };
   });
 
+  revokeFolderAccess(folderId);
+  const cleanupPending = await removeCommittedBlobs(FILE_STORAGE_PATH, folderFiles);
   await logAdminAction(getAdminId(c), 'investigation.purge', `Purged and deleted investigation "${folder.name}"`, { folderId });
 
-  return c.json({ ok: true, deleted });
+  return c.json({ ok: true, deleted, cleanupPending });
 });
 
 export default app;

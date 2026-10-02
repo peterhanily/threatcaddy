@@ -24,10 +24,9 @@ export const NoteCard = React.memo(function NoteCard({ note, active, onSelect, o
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onSelect(note.id)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(note.id); } }}
+      role="group"
+      aria-label={note.title || t('common:untitled')}
+      onClick={(e) => { if (!(e.target as HTMLElement).closest('button, a, input')) onSelect(note.id); }}
       draggable={draggable}
       onDragStart={onDragStart}
       className={cn(
@@ -53,7 +52,7 @@ export const NoteCard = React.memo(function NoteCard({ note, active, onSelect, o
       )}
       <div className={cn('flex items-start gap-2', onTrash && !note.trashed && 'ps-6')}>
         <h3 className="font-medium text-sm text-gray-200 flex-1 truncate">
-          {note.title || t('common:untitled')}
+          <button type="button" className="text-start w-full truncate" onClick={() => onSelect(note.id)}>{note.title || t('common:untitled')}</button>
         </h3>
         {note.pinned && <Pin size={12} className="text-yellow-400 shrink-0 mt-0.5" />}
       </div>

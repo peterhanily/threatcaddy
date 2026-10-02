@@ -16,6 +16,21 @@ describe('useSettings', () => {
     expect(result.current.settings).toEqual(DEFAULT_SETTINGS);
   });
 
+  it('keeps document language and direction aligned with supported locale selection', () => {
+    const { result } = renderHook(() => useSettings());
+    expect(document.documentElement.lang).toBe('en');
+    expect(document.documentElement.dir).toBe('ltr');
+    act(() => result.current.updateSettings({ language: 'zh-CN' }));
+    expect(document.documentElement.lang).toBe('zh-CN');
+    expect(document.documentElement.dir).toBe('ltr');
+    act(() => result.current.updateSettings({ language: 'ar' }));
+    expect(document.documentElement.lang).toBe('ar');
+    expect(document.documentElement.dir).toBe('rtl');
+    act(() => result.current.updateSettings({ language: 'unsupported' }));
+    expect(document.documentElement.lang).toBe('en');
+    expect(document.documentElement.dir).toBe('ltr');
+  });
+
   it('loads persisted settings from localStorage', () => {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify({ theme: 'light', editorMode: 'preview' }));
     const { result } = renderHook(() => useSettings());

@@ -53,6 +53,7 @@ app.patch('/api/bots/:id', requireAdminAuth, async (c) => {
 app.post('/api/bots/:id/enable', requireAdminAuth, async (c) => {
   const bot = await enableBot(c.req.param('id'));
   if (!bot) return c.json({ error: 'Bot not found' }, 404);
+  if ('error' in bot) return c.json({ error: bot.error }, 409);
 
   await logAdminAction(getAdminId(c), 'bot.enable', `Enabled bot "${bot.name}"`, { itemId: c.req.param('id') });
   return c.json({ ok: true, enabled: true });

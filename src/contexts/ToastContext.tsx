@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components -- context + provider + hook co-located by design */
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, type ReactNode } from 'react';
 import { nanoid } from 'nanoid';
+import { DESKTOP_NOTIFICATION_FALLBACK, type DesktopNotification } from '../lib/desktop-notifications';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -35,6 +36,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [removeToast]);
 
   const value = useMemo(() => ({ toasts, addToast, removeToast }), [toasts, addToast, removeToast]);
+  useEffect(() => {
+    const fallback = (event: Event) => {
+      const detail = (event as CustomEvent<DesktopNotification>).detail;
+      addToast('warning', 'Desktop notification unavailable. ' + detail.title + ': ' + detail.message, 10000);
+    };
+    window.addEventListener(DESKTOP_NOTIFICATION_FALLBACK, fallback);
+    return () => window.removeEventListener(DESKTOP_NOTIFICATION_FALLBACK, fallback);
+  }, [addToast]);
 
   return (
     <ToastContext.Provider value={value}>

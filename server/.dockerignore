@@ -1,0 +1,20 @@
+# Docker receives only the inputs used by the production Dockerfile.
+**
+!package.json
+!package-lock.json
+!tsconfig.json
+!drizzle.config.ts
+!src/
+!src/**/
+!src/**/*.ts
+!src/db/migrations/*.sql
+!src/db/migrations/meta/_journal.json
+!scripts/
+!scripts/package-build.mjs
+
+# Tests are verified by separate CI jobs, never copied into the image build.
+src/**/__tests__/**
+src/**/__fixtures__/**
+src/**/fixtures/**
+src/**/*.test.ts
+src/**/*.spec.ts

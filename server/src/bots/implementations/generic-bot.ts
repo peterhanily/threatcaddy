@@ -42,6 +42,14 @@ export class GenericBot implements Bot {
     await this.handleWebhook(execCtx, payload);
   }
 
+  async onManual(ctx: BotContext): Promise<void> {
+    if (this.handleSchedule === GenericBot.prototype.handleSchedule) {
+      throw new Error(`Bot "${this.name}" requires an event or webhook payload; manual execution is not supported.`);
+    }
+    // Scheduled implementations expose the same complete task for Run now.
+    await this.handleSchedule(new BotExecutionContext(ctx));
+  }
+
   // ─── Overridable Handlers ────────────────────────────────────
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

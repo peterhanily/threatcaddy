@@ -99,8 +99,8 @@ describe('isWriteTool', () => {
     expect(isWriteTool('analyze_graph')).toBe(false);
   });
 
-  it('returns false for unknown tools', () => {
-    expect(isWriteTool('nonexistent')).toBe(false);
+  it('treats unknown effects conservatively', () => {
+    expect(isWriteTool('nonexistent')).toBe(true);
   });
 });
 
@@ -529,8 +529,9 @@ describe('executeTool — update tools', () => {
   });
 
   it('update_task returns error for missing task', async () => {
-    const { result } = await executeTool(makeToolUse('update_task', { id: 'nonexistent' }));
+    const { result, isError } = await executeTool(makeToolUse('update_task', { id: 'nonexistent' }));
     expect(JSON.parse(result).error).toContain('not found');
+    expect(isError).toBe(true);
   });
 });
 
@@ -826,7 +827,7 @@ describe('executeTool — extract_iocs', () => {
 describe('executeTool — error handling', () => {
   it('returns error for unknown tool', async () => {
     const { result, isError } = await executeTool(makeToolUse('nonexistent_tool'));
-    expect(isError).toBe(false);
+    expect(isError).toBe(true);
     expect(JSON.parse(result).error).toContain('Unknown tool');
   });
 });

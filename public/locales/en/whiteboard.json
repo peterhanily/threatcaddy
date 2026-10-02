@@ -4,6 +4,8 @@
   "noWhiteboards": "No whiteboards yet",
   "createHint": "Create one to start drawing",
   "loadingWhiteboard": "Loading whiteboard...",
+  "saveFailed": "Changes could not be saved. Your draft is kept in this tab; retry before closing it.",
+  "retrySave": "Retry save",
   "deleteTitle": "Delete Whiteboard",
   "deleteMessage": "This whiteboard will be permanently deleted. This cannot be undone.",
   "deleteConfirm": "Delete Whiteboard",

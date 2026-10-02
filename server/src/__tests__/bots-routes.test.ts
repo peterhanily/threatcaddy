@@ -4,7 +4,7 @@ import { createHmac } from 'node:crypto';
 
 // ── Hoisted mocks (must be declared via vi.hoisted to survive vi.mock hoisting) ──
 
-const { mockUser, mockBotManager, mockBotService, mockLogger } = vi.hoisted(() => {
+const { mockUser, mockBotManager, mockBotService, mockLogger, mockCheckInvestigationAccess } = vi.hoisted(() => {
   const mockUser = { current: { id: 'user-1', email: 'admin@test.com', role: 'admin' } as { id: string; email: string; role: string } | null };
   const mockBotManager = {
     getWebhookSecret: vi.fn(),
@@ -31,7 +31,7 @@ const { mockUser, mockBotManager, mockBotService, mockLogger } = vi.hoisted(() =
     error: vi.fn(),
     debug: vi.fn(),
   };
-  return { mockUser, mockBotManager, mockBotService, mockLogger };
+  return { mockUser, mockBotManager, mockBotService, mockLogger, mockCheckInvestigationAccess: vi.fn() };
 });
 
 // ── vi.mock calls (factories can only reference vi.hoisted variables) ──
@@ -60,6 +60,7 @@ vi.mock('../bots/bot-manager.js', () => ({
 }));
 
 vi.mock('../services/bot-service.js', () => mockBotService);
+vi.mock('../middleware/access.js', () => ({ checkInvestigationAccess: mockCheckInvestigationAccess }));
 
 vi.mock('../lib/logger.js', () => ({
   logger: mockLogger,
@@ -103,6 +104,7 @@ describe('Bot routes — /api/bots', () => {
     vi.clearAllMocks();
     mockUser.current = { id: 'user-1', email: 'admin@test.com', role: 'admin' };
     mockBotService.auditBotAction.mockResolvedValue(undefined);
+    mockCheckInvestigationAccess.mockResolvedValue(false);
     app = buildApp();
   });
 
@@ -197,14 +199,66 @@ describe('Bot routes — /api/bots', () => {
 
     it('should allow analyst to GET /api/bots/:id', async () => {
       mockUser.current = { id: 'u3', email: 'a@t.com', role: 'analyst' };
-      mockBotService.getBot.mockResolvedValue({ id: 'b1', name: 'Bot' });
+      mockBotService.getBot.mockResolvedValue({ id: 'b1', name: 'Bot', scopeType: 'investigation', scopeFolderIds: ['folder-1'] });
+      mockCheckInvestigationAccess.mockResolvedValue(true);
       expect((await req('GET', '/api/bots/b1')).status).toBe(200);
+      expect(mockCheckInvestigationAccess).toHaveBeenCalledWith('u3', 'folder-1', 'viewer');
     });
 
-    it('should allow analyst to GET /api/bots/:id/runs', async () => {
+    it.each(['/api/bots/b1/runs', '/api/bots/b1/runs/r1'])('keeps history without immutable investigation scope administrator-only: %s', async (path) => {
       mockUser.current = { id: 'u3', email: 'a@t.com', role: 'analyst' };
-      mockBotService.getBotRuns.mockResolvedValue([]);
-      expect((await req('GET', '/api/bots/b1/runs')).status).toBe(200);
+      expect((await req('GET', path)).status).toBe(403);
+      expect(mockBotService.getBotRuns).not.toHaveBeenCalled();
+      expect(mockBotService.getBotRunDetail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Investigation-scoped config visibility', () => {
+    beforeEach(() => {
+      mockUser.current = { id: 'analyst-1', email: 'analyst@example.com', role: 'analyst' };
+      mockCheckInvestigationAccess.mockImplementation(async (_userId: string, folderId: string) => folderId === 'shared');
+    });
+
+    it('lists only configs whose complete scope the analyst can read and withholds historical errors', async () => {
+      const scoped = { id: 'scoped', scopeType: 'investigation', scopeFolderIds: ['shared'], lastError: 'Historical run detail' };
+      mockBotService.listBots.mockResolvedValue([
+        scoped,
+        { id: 'mixed', scopeType: 'investigation', scopeFolderIds: ['shared', 'other'] },
+        { id: 'global', scopeType: 'global', scopeFolderIds: ['shared'] },
+        { id: 'empty', scopeType: 'investigation', scopeFolderIds: [] },
+      ]);
+      const res = await req('GET', '/api/bots');
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ bots: [{ ...scoped, lastError: null }] });
+    });
+
+    it.each([
+      { scopeType: 'investigation', scopeFolderIds: ['shared', 'other'] },
+      { scopeType: 'global', scopeFolderIds: ['shared'] },
+      { scopeType: 'investigation', scopeFolderIds: [] },
+      { scopeType: 'investigation', scopeFolderIds: null },
+    ])('does not disclose configs outside a fully authorized scope: %j', async (scope) => {
+      mockBotService.getBot.mockResolvedValue({ id: 'b1', ...scope });
+      expect((await req('GET', '/api/bots/b1')).status).toBe(404);
+    });
+
+    it('rechecks membership before each config read', async () => {
+      mockBotService.getBot.mockResolvedValue({ id: 'b1', scopeType: 'investigation', scopeFolderIds: ['shared'], lastError: 'Historical run detail' });
+      const allowed = await req('GET', '/api/bots/b1');
+      expect(allowed.status).toBe(200);
+      expect((await allowed.json()).bot.lastError).toBeNull();
+      mockCheckInvestigationAccess.mockResolvedValue(false);
+      expect((await req('GET', '/api/bots/b1')).status).toBe(404);
+    });
+
+    it('preserves administrator visibility of global configs and historical errors', async () => {
+      mockUser.current = { id: 'admin-1', email: 'admin@example.com', role: 'admin' };
+      const bot = { id: 'global', scopeType: 'global', scopeFolderIds: [], lastError: 'Historical run detail' };
+      mockBotService.getBot.mockResolvedValue(bot);
+      const res = await req('GET', '/api/bots/global');
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ bot });
+      expect(mockCheckInvestigationAccess).not.toHaveBeenCalled();
     });
   });
 

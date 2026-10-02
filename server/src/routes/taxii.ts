@@ -1,370 +1,150 @@
-/**
- * TAXII 2.1 Collection Server
- *
- * Implements a subset of the TAXII 2.1 specification (OASIS standard) to allow
- * external threat intelligence platforms, SIEMs, and SOAR tools to pull STIX 2.1
- * bundles of IOCs from ThreatCaddy investigations.
- *
- * Endpoints:
- *   GET /api/taxii/                   — Discovery (server info)
- *   GET /api/taxii/collections/       — List collections (one per investigation)
- *   GET /api/taxii/collections/:id/   — Collection metadata
- *   GET /api/taxii/collections/:id/objects/ — STIX bundle of IOCs
- *
- * Authentication: Bearer JWT (same as main API)
- * Content-Type: application/taxii+json;version=2.1
- */
-
+/** Read-only current-state TAXII 2.1 projection; no write/manifest/history API. */
 import { Hono } from 'hono';
-import { eq } from 'drizzle-orm';
+import { and, asc, eq, gt, gte, inArray, isNull, or, sql, getTableColumns } from 'drizzle-orm';
+import { createHash } from 'node:crypto';
 import { db } from '../db/index.js';
 import { folders, standaloneIOCs, investigationMembers } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
+import { stixIOC, stixRelationship, type STIXObject } from '../lib/stix-projection.js';
 import type { AuthUser } from '../types.js';
 
 const TAXII_MEDIA_TYPE = 'application/taxii+json;version=2.1';
 const STIX_MEDIA_TYPE = 'application/stix+json;version=2.1';
-
 const app = new Hono<{ Variables: { user: AuthUser } }>();
-
-// All TAXII endpoints require auth
 app.use('*', requireAuth);
-
-// Set TAXII content type on all responses
 app.use('*', async (c, next) => {
+  const accept = c.req.header('accept');
+  if (accept && !accept.split(',').some(value => /^(\*\/\*|application\/\*|application\/taxii\+json)(?:\s*;|$)/i.test(value.trim()))) {
+    return c.json({ title: 'Unsupported media type', description: `Use ${TAXII_MEDIA_TYPE}` }, 406, { 'Content-Type': TAXII_MEDIA_TYPE });
+  }
   await next();
-  // Objects endpoint returns STIX, all others return TAXII
-  if (c.req.path.endsWith('/objects/') || c.req.path.endsWith('/objects')) {
-    c.header('Content-Type', STIX_MEDIA_TYPE);
-  } else {
-    c.header('Content-Type', TAXII_MEDIA_TYPE);
-  }
+  c.header('Content-Type', TAXII_MEDIA_TYPE);
+  c.header('Cache-Control', 'private, no-store');
+});
+// Local-only investigations never enter the server schema/sync contract.
+const visibleFolder = (folder: typeof folders.$inferSelect) => !folder.deletedAt;
+const collection = (folder: typeof folders.$inferSelect) => ({ id: folder.id, title: folder.name,
+  description: folder.description || '', can_read: true, can_write: false, media_types: [STIX_MEDIA_TYPE] });
+const liveIOCs = (folderId: string) => and(eq(standaloneIOCs.folderId, folderId), isNull(standaloneIOCs.deletedAt),
+  eq(standaloneIOCs.trashed, false), eq(standaloneIOCs.archived, false));
+
+app.get('/', c => c.json({ title: 'ThreatCaddy TAXII Server', description: 'Read-only current-state investigation IOC export',
+  default: '/api/taxii/', api_roots: ['/api/taxii/'], versions: [TAXII_MEDIA_TYPE], max_content_length: 1024 * 1024 }));
+app.get('/collections/', async c => {
+  const memberships = await db.select({ folderId: investigationMembers.folderId }).from(investigationMembers)
+    .where(eq(investigationMembers.userId, c.get('user').id));
+  if (!memberships.length) return c.json({ collections: [] });
+  const rows = await db.select().from(folders).where(and(inArray(folders.id, memberships.map(row => row.folderId)),
+    isNull(folders.deletedAt))).orderBy(asc(folders.id));
+  return c.json({ collections: rows.filter(visibleFolder).map(collection) });
+});
+app.get('/collections/:id/', async c => {
+  const id = c.req.param('id');
+  if (!await checkInvestigationAccess(c.get('user').id, id)) return c.json({ title: 'No access to this collection' }, 403);
+  const [folder] = await db.select().from(folders).where(eq(folders.id, id)).limit(1);
+  if (!folder || !visibleFolder(folder)) return c.json({ title: 'Collection not found' }, 404);
+  return c.json(collection(folder));
 });
 
-// ── Deterministic UUID via FNV-1a (matches client-side stix-export.ts) ──
-
-function fnv1a(input: string): number {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return hash >>> 0;
+interface Position { date: string; id: string; offset: number }
+function decodeCursor(value: string, query: string): Position {
+  if (value.length > 2048 || !/^[A-Za-z0-9_-]+$/.test(value)) throw new Error('Invalid next cursor');
+  const item = JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as Position & { query: string };
+  if (item.query !== query || typeof item.id !== 'string' || item.id.length > 200 || !item.id
+    || typeof item.date !== 'string' || !Number.isFinite(Date.parse(item.date))
+    || !Number.isInteger(item.offset) || item.offset < 0 || item.offset > 10000) throw new Error('Invalid next cursor');
+  return item;
 }
-
-function deterministicUUID(namespace: string, value: string): string {
-  const h1 = fnv1a(`${namespace}:${value}:0`);
-  const h2 = fnv1a(`${namespace}:${value}:1`);
-  const h3 = fnv1a(`${namespace}:${value}:2`);
-  const h4 = fnv1a(`${namespace}:${value}:3`);
-  const hex = [
-    h1.toString(16).padStart(8, '0'),
-    h2.toString(16).padStart(8, '0'),
-    h3.toString(16).padStart(8, '0'),
-    h4.toString(16).padStart(8, '0'),
-  ].join('');
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
-}
-
-// ── STIX pattern builder ──
-
-/** Escape a value for safe inclusion in a STIX pattern single-quoted string. */
-function escapeStixValue(v: string): string {
-  return v.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-}
-
-/** IOC type format validators — reject values that don't match expected patterns. */
-const IOC_FORMAT_RE: Record<string, RegExp> = {
-  ipv4:         /^\d{1,3}(?:\.\d{1,3}){3}(?:\/\d{1,2})?$/,
-  ipv6:         /^[0-9a-fA-F:]+(?:\/\d{1,3})?$/,
-  domain:       /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*$/,
-  email:        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  md5:          /^[0-9a-fA-F]{32}$/,
-  sha1:         /^[0-9a-fA-F]{40}$/,
-  sha256:       /^[0-9a-fA-F]{64}$/,
-  'mitre-attack': /^[A-Z]{1,2}\d{4}(\.\d{3})?$/,
-};
-
-const IOC_PATTERN_MAP: Record<string, (v: string) => { pattern: string; pattern_type: string } | null> = {
-  ipv4:         (v) => ({ pattern: `[ipv4-addr:value = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
-  ipv6:         (v) => ({ pattern: `[ipv6-addr:value = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
-  domain:       (v) => ({ pattern: `[domain-name:value = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
-  url:          (v) => ({ pattern: `[url:value = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
-  email:        (v) => ({ pattern: `[email-addr:value = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
-  'file-path':  (v) => ({ pattern: `[file:name = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
-  md5:          (v) => ({ pattern: `[file:hashes.'MD5' = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
-  sha1:         (v) => ({ pattern: `[file:hashes.'SHA-1' = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
-  sha256:       (v) => ({ pattern: `[file:hashes.'SHA-256' = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
-  'mitre-attack': (v) => ({ pattern: `[attack-pattern:external_references[*].external_id = '${escapeStixValue(v)}']`, pattern_type: 'stix' }),
-  'yara-rule':  (v) => ({ pattern: v, pattern_type: 'yara' }),
-  'sigma-rule': (v) => ({ pattern: v, pattern_type: 'sigma' }),
-  cve:          () => null,
-};
-
-const CONFIDENCE_MAP: Record<string, number> = {
-  low: 15, medium: 50, high: 85, confirmed: 100,
-};
-
-const TLP_MARKING_DEFS: Record<string, { id: string; name: string }> = {
-  'TLP:CLEAR':        { id: 'marking-definition--94868c89-83c2-464b-929b-a1a8aa3c8487', name: 'TLP:CLEAR' },
-  'TLP:GREEN':        { id: 'marking-definition--bab4a63c-afd4-4e03-b846-b75e0496be71', name: 'TLP:GREEN' },
-  'TLP:AMBER':        { id: 'marking-definition--55d920b0-5e8b-4f79-9ee9-91f868d9b421', name: 'TLP:AMBER' },
-  'TLP:AMBER+STRICT': { id: 'marking-definition--939a9414-2ddd-4d32-a0cd-b7571b03f430', name: 'TLP:AMBER+STRICT' },
-  'TLP:RED':          { id: 'marking-definition--e828b379-4e03-4974-9ac4-e53a884c97c1', name: 'TLP:RED' },
-};
-
-interface STIXObject {
-  type: string;
-  spec_version: string;
-  id: string;
-  created: string;
-  modified: string;
-  [key: string]: unknown;
-}
-
-function buildSTIXBundle(iocs: typeof standaloneIOCs.$inferSelect[], investigationName: string) {
-  const now = new Date().toISOString();
-  const objects: STIXObject[] = [];
-  const objectRefs: string[] = [];
-  const referencedMarkings = new Set<string>();
-
-  // Identity SDO
-  const identityId = `identity--${deterministicUUID('identity', 'ThreatCaddy')}`;
-  objects.push({
-    type: 'identity',
-    spec_version: '2.1',
-    id: identityId,
-    created: now,
-    modified: now,
-    name: 'ThreatCaddy',
-    identity_class: 'organization',
-  });
-
-  const iocIdToStixId = new Map<string, string>();
-
-  for (const ioc of iocs) {
-    if (ioc.trashed || ioc.archived) continue;
-
-    // Validate IOC value format — skip malformed values to prevent pattern injection
-    const formatRe = IOC_FORMAT_RE[ioc.type];
-    if (formatRe && !formatRe.test(ioc.value)) continue;
-    const tlpKey = (ioc.clsLevel || '').toUpperCase();
-    const markingDef = TLP_MARKING_DEFS[tlpKey];
-    const markingRefs = markingDef ? [markingDef.id] : undefined;
-    if (markingDef) referencedMarkings.add(tlpKey);
-
-    // CVEs → Vulnerability SDO
-    if (ioc.type === 'cve') {
-      const vulnId = `vulnerability--${deterministicUUID('vulnerability', ioc.value)}`;
-      iocIdToStixId.set(ioc.id, vulnId);
-      const vuln: STIXObject = {
-        type: 'vulnerability',
-        spec_version: '2.1',
-        id: vulnId,
-        created: ioc.createdAt.toISOString(),
-        modified: ioc.updatedAt.toISOString(),
-        name: ioc.value.toUpperCase(),
-        external_references: [{ source_name: 'cve', external_id: ioc.value.toUpperCase() }],
-      };
-      if (markingRefs) vuln.object_marking_refs = markingRefs;
-      objects.push(vuln);
-      objectRefs.push(vulnId);
-      continue;
-    }
-
-    // Other IOCs → Indicator SDO
-    const patternFn = IOC_PATTERN_MAP[ioc.type];
-    const patternInfo = patternFn ? patternFn(ioc.value) : null;
-    if (!patternInfo) continue;
-
-    const indicatorId = `indicator--${deterministicUUID('indicator', `${ioc.type}:${ioc.value}`)}`;
-    iocIdToStixId.set(ioc.id, indicatorId);
-
-    const indicator: STIXObject = {
-      type: 'indicator',
-      spec_version: '2.1',
-      id: indicatorId,
-      created: ioc.createdAt.toISOString(),
-      modified: ioc.updatedAt.toISOString(),
-      name: ioc.value.length > 80 ? `${ioc.value.slice(0, 77)}...` : ioc.value,
-      indicator_types: ['malicious-activity'],
-      pattern: patternInfo.pattern,
-      pattern_type: patternInfo.pattern_type,
-      valid_from: ioc.createdAt.toISOString(),
-      confidence: CONFIDENCE_MAP[ioc.confidence] ?? 50,
-      created_by_ref: identityId,
-    };
-
-    if (markingRefs) indicator.object_marking_refs = markingRefs;
-    if (ioc.analystNotes) indicator.description = ioc.analystNotes;
-    if (ioc.attribution) indicator.labels = [ioc.attribution];
-
-    objects.push(indicator);
-    objectRefs.push(indicatorId);
-  }
-
-  // Relationship SDOs from IOC relationships
-  for (const ioc of iocs) {
-    const rels = (ioc.relationships ?? []) as Array<{ targetIOCId: string; relationshipType: string }>;
-    const sourceStixId = iocIdToStixId.get(ioc.id);
-    if (!sourceStixId || !rels.length) continue;
-
-    for (const rel of rels) {
-      const targetStixId = iocIdToStixId.get(rel.targetIOCId);
-      if (!targetStixId) continue;
-
-      const relId = `relationship--${deterministicUUID('relationship', `${sourceStixId}:${rel.relationshipType}:${targetStixId}`)}`;
-      objects.push({
-        type: 'relationship',
-        spec_version: '2.1',
-        id: relId,
-        created: now,
-        modified: now,
-        relationship_type: rel.relationshipType,
-        source_ref: sourceStixId,
-        target_ref: targetStixId,
-        created_by_ref: identityId,
-      });
-      objectRefs.push(relId);
-    }
-  }
-
-  // Report SDO
-  if (objectRefs.length > 0) {
-    const reportId = `report--${deterministicUUID('report', investigationName)}`;
-    objects.push({
-      type: 'report',
-      spec_version: '2.1',
-      id: reportId,
-      created: now,
-      modified: now,
-      name: investigationName,
-      report_types: ['threat-report'],
-      published: now,
-      object_refs: objectRefs,
-      created_by_ref: identityId,
-    });
-  }
-
-  // Prepend referenced TLP marking definitions
-  const markingObjects: STIXObject[] = [];
-  for (const key of referencedMarkings) {
-    const def = TLP_MARKING_DEFS[key];
-    if (def) {
-      markingObjects.push({
-        type: 'marking-definition',
-        spec_version: '2.1',
-        id: def.id,
-        created: '2017-01-20T00:00:00.000Z',
-        modified: '2017-01-20T00:00:00.000Z',
-        name: def.name,
-        definition_type: 'statement',
-        definition: { statement: `Copyright 2017, OASIS. ${def.name}` },
-      });
-    }
-  }
-
-  return {
-    type: 'bundle' as const,
-    id: `bundle--${deterministicUUID('bundle', `${investigationName}:${now}`)}`,
-    objects: [...markingObjects, ...objects],
-  };
-}
-
-// ── GET /api/taxii/ — Discovery ──
-
-app.get('/', (c) => {
-  return c.json({
-    title: 'ThreatCaddy TAXII Server',
-    description: 'TAXII 2.1 endpoint for ThreatCaddy threat intelligence',
-    default: '/api/taxii/',
-    api_roots: ['/api/taxii/'],
-  });
-});
-
-// ── GET /api/taxii/collections/ — List collections ──
-
-app.get('/collections/', async (c) => {
-  const user = c.get('user');
-
-  // Only show investigations the user is a member of
-  const memberships = await db
-    .select({ folderId: investigationMembers.folderId })
-    .from(investigationMembers)
-    .where(eq(investigationMembers.userId, user.id));
-
-  const folderIds = memberships.map(m => m.folderId);
-  if (folderIds.length === 0) {
-    return c.json({ collections: [] });
-  }
-
-  const allFolders = await db.select().from(folders);
-  const accessible = allFolders.filter(f => folderIds.includes(f.id));
-
-  return c.json({
-    collections: accessible.map(f => ({
-      id: f.id,
-      title: f.name,
-      description: f.description || '',
-      can_read: true,
-      can_write: false,
-      media_types: [STIX_MEDIA_TYPE],
-    })),
-  });
-});
-
-// ── GET /api/taxii/collections/:id/ — Collection metadata ──
-
-app.get('/collections/:id/', async (c) => {
-  const user = c.get('user');
+app.get('/collections/:id/objects/', async c => {
   const folderId = c.req.param('id');
-
-  const hasAccess = await checkInvestigationAccess(user.id, folderId);
-  if (!hasAccess) {
-    return c.json({ title: 'Error', description: 'No access to this collection' }, 403);
+  if (!await checkInvestigationAccess(c.get('user').id, folderId)) return c.json({ title: 'No access to this collection' }, 403);
+  const [folder] = await db.select().from(folders).where(eq(folders.id, folderId)).limit(1);
+  if (!folder || !visibleFolder(folder)) return c.json({ title: 'Collection not found' }, 404);
+  let limit: number, query: string;
+  let after: string | undefined, position: Position | undefined;
+  const filters: Record<string, string[]> = {};
+  try {
+    const params = new URL(c.req.url).searchParams;
+    const supported = new Set(['limit', 'next', 'added_after', 'match[id]', 'match[type]', 'match[version]', 'match[spec_version]']);
+    for (const key of params.keys()) if (!supported.has(key) || params.getAll(key).length !== 1) throw new Error('Unsupported or repeated query parameter');
+    const rawLimit = params.get('limit') ?? '100';
+    if (!/^[1-9]\d*$/.test(rawLimit) || !Number.isSafeInteger(Number(rawLimit))) throw new Error('limit must be a positive integer');
+    limit = Math.min(Number(rawLimit), 500);
+    const timestamp = params.get('added_after');
+    if (timestamp !== null) {
+      if (!/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(timestamp) || !Number.isFinite(Date.parse(timestamp))) throw new Error('Invalid added_after timestamp');
+      after = timestamp;
+    }
+    for (const field of ['id', 'type', 'version', 'spec_version']) {
+      const value = params.get(`match[${field}]`);
+      if (value !== null) {
+        if (!value || value.length > 10000 || value.split(',').some(item => !item.trim())) throw new Error('Invalid match filter');
+        filters[field] = value.split(',');
+      }
+    }
+    query = createHash('sha256').update(JSON.stringify([folderId, timestamp, filters])).digest('hex');
+    if (params.has('next')) position = decodeCursor(params.get('next')!, query);
+  } catch (error) { return c.json({ title: 'Invalid TAXII query', description: String(error) }, 400); }
+  const matches = (object: STIXObject) => (!filters.id || filters.id.includes(object.id))
+    && (!filters.type || filters.type.includes(object.type))
+    && (!filters.spec_version || filters.spec_version.includes('2.1'))
+    && (!filters.version || filters.version.some(version => ['last', 'all'].includes(version) || version === (object.modified ?? object.created)));
+  const output: Array<{ object: STIXObject; position: Position }> = [];
+  let scanned = 0, exhausted = false;
+  let bytes = 0, byteLimitReached = false;
+  let lastScanned = position;
+  let exclusive = false;
+  // Bound scans even for heavily filtered collections; callers follow more/next.
+  while (output.length <= limit && scanned < 1000 && !exhausted && !byteLimitReached) {
+    const boundary = position ? or(sql`${standaloneIOCs.updatedAt} > ${position.date}::timestamptz`,
+      and(sql`${standaloneIOCs.updatedAt} = ${position.date}::timestamptz`, (exclusive ? gt : gte)(standaloneIOCs.id, position.id))) : undefined;
+    const rows = await db.select({ ...getTableColumns(standaloneIOCs),
+      cursorDate: sql<string>`to_char(${standaloneIOCs.updatedAt} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
+    }).from(standaloneIOCs).where(and(liveIOCs(folderId), boundary,
+      after ? sql`${standaloneIOCs.updatedAt} > ${after}::timestamptz` : undefined)).orderBy(asc(standaloneIOCs.updatedAt), asc(standaloneIOCs.id)).limit(100);
+    if (!rows.length) { exhausted = true; break; }
+    for (const original of rows) {
+      const ioc = { ...original, clsLevel: original.clsLevel || folder.clsLevel };
+      scanned++;
+      const date = ioc.cursorDate;
+      const start = !exclusive && position?.id === ioc.id && position.date === date ? position.offset : 0;
+      let objects = stixIOC(ioc);
+      const relationships = Array.isArray(ioc.relationships) ? ioc.relationships as Array<{ targetIOCId?: string; relationshipType?: string }> : [];
+      if (relationships.length > 1000) return c.json({ title: 'IOC exceeds the supported relationship limit' }, 422);
+      const ids = [...new Set(relationships.map(rel => rel.targetIOCId).filter((id): id is string => typeof id === 'string' && !!id))];
+      if (objects.length && ids.length) {
+        const targets = await db.select().from(standaloneIOCs).where(and(liveIOCs(folderId), inArray(standaloneIOCs.id, ids)));
+        for (const rel of relationships) {
+          const target = targets.find(row => row.id === rel.targetIOCId && row.folderId === folderId);
+          if (target && typeof rel.relationshipType === 'string') objects.push(...stixRelationship(ioc,
+            { ...target, clsLevel: target.clsLevel || folder.clsLevel }, rel.relationshipType));
+        }
+      }
+      objects = objects.filter(matches);
+      for (let index = start; index < objects.length && output.length <= limit; index++) {
+        const size = Buffer.byteLength(JSON.stringify(objects[index]));
+        if (size > 8 * 1024 * 1024) return c.json({ title: 'A STIX object exceeds the 8 MiB page size' }, 422);
+        if (bytes + size > 8 * 1024 * 1024) { byteLimitReached = true; break; }
+        output.push({ object: objects[index], position: { date, id: ioc.id, offset: index + 1 } });
+        bytes += size;
+      }
+      lastScanned = { date, id: ioc.id, offset: objects.length };
+      if (output.length > limit || byteLimitReached) break;
+    }
+    if (output.length > limit || byteLimitReached) break;
+    if (rows.length < 100) { exhausted = true; break; }
+    position = lastScanned;
+    exclusive = true;
   }
-
-  const folder = await db.select().from(folders).where(eq(folders.id, folderId)).limit(1);
-  if (folder.length === 0) {
-    return c.json({ title: 'Error', description: 'Collection not found' }, 404);
+  const more = output.length > limit || byteLimitReached || !exhausted;
+  const delivered = output.slice(0, limit);
+  const continuation = output.length > limit || byteLimitReached ? delivered.at(-1)?.position : lastScanned;
+  if (delivered.length) {
+    c.header('X-TAXII-Date-Added-First', delivered[0].position.date);
+    c.header('X-TAXII-Date-Added-Last', delivered[delivered.length - 1].position.date);
   }
-
-  const f = folder[0];
-  return c.json({
-    id: f.id,
-    title: f.name,
-    description: f.description || '',
-    can_read: true,
-    can_write: false,
-    media_types: [STIX_MEDIA_TYPE],
-  });
+  return c.json({ objects: delivered.map(item => item.object), more,
+    ...(more && continuation ? { next: Buffer.from(JSON.stringify({ ...continuation, query })).toString('base64url') } : {}) });
 });
-
-// ── GET /api/taxii/collections/:id/objects/ — STIX bundle ──
-
-app.get('/collections/:id/objects/', async (c) => {
-  const user = c.get('user');
-  const folderId = c.req.param('id');
-
-  const hasAccess = await checkInvestigationAccess(user.id, folderId);
-  if (!hasAccess) {
-    return c.json({ title: 'Error', description: 'No access to this collection' }, 403);
-  }
-
-  const folder = await db.select().from(folders).where(eq(folders.id, folderId)).limit(1);
-  if (folder.length === 0) {
-    return c.json({ title: 'Error', description: 'Collection not found' }, 404);
-  }
-
-  // Fetch all IOCs for this investigation
-  const iocs = await db
-    .select()
-    .from(standaloneIOCs)
-    .where(eq(standaloneIOCs.folderId, folderId));
-
-  const bundle = buildSTIXBundle(iocs, folder[0].name);
-  return c.json(bundle);
-});
-
 export default app;

@@ -2,6 +2,14 @@ import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 import * as jose from 'jose';
 
+// HTTP handlers mock current identity lookup; real PostgreSQL account invalidation is covered by integration tests.
+vi.mock('../services/admin-session-service.js', () => ({
+  adminSessionVersion: () => '',
+  revokeAdminSessions: vi.fn(),
+  getActiveAdmin: vi.fn(async (id: string) => ({ id, username: 'testadmin', passwordHash: 'fixture-admin-hash' })),
+}));
+
+
 // ─── Mock services ──────────────────────────────────────────────
 
 const mockVerifyBootstrapSecret = vi.fn();
@@ -74,7 +82,7 @@ function buildApp() {
 
     try {
       const admin = await mockCreateAdminUser(username, displayName, password);
-      const token = await signAdminToken(admin.id, admin.username);
+      const token = await signAdminToken(admin.id, admin.username, 'fixture-admin-hash');
       return c.json({ token, admin: { id: admin.id, username: admin.username, displayName: admin.displayName } });
     } catch (err: unknown) {
       if (err instanceof Error && err.message.includes('unique')) {
@@ -98,7 +106,7 @@ function buildApp() {
       return c.json({ error: 'Invalid credentials' }, 401);
     }
 
-    const token = await signAdminToken(admin.id, admin.username);
+    const token = await signAdminToken(admin.id, admin.username, 'fixture-admin-hash');
     return c.json({ token, admin: { id: admin.id, username: admin.username, displayName: admin.displayName } });
   });
 
@@ -212,7 +220,7 @@ function jsonReq(method: string, path: string, body?: unknown, headers?: Record<
 }
 
 async function getAdminToken(id = 'admin-1', username = 'testadmin'): Promise<string> {
-  return signAdminToken(id, username);
+  return signAdminToken(id, username, 'fixture-admin-hash');
 }
 
 function authHeader(token: string): Record<string, string> {
@@ -236,28 +244,28 @@ beforeEach(() => {
 
 describe('Token signing and verification', () => {
   it('signAdminToken produces a valid JWT with 3 parts', async () => {
-    const token = await signAdminToken('user-1', 'alice');
+    const token = await signAdminToken('user-1', 'alice', 'fixture-admin-hash');
     expect(typeof token).toBe('string');
     expect(token.split('.')).toHaveLength(3);
   });
 
   it('token contains correct sub claim', async () => {
-    const decoded = jose.decodeJwt(await signAdminToken('user-42', 'bob'));
+    const decoded = jose.decodeJwt(await signAdminToken('user-42', 'bob', 'fixture-admin-hash'));
     expect(decoded.sub).toBe('user-42');
   });
 
   it('token contains correct username claim', async () => {
-    const decoded = jose.decodeJwt(await signAdminToken('u1', 'charlie'));
+    const decoded = jose.decodeJwt(await signAdminToken('u1', 'charlie', 'fixture-admin-hash'));
     expect(decoded.username).toBe('charlie');
   });
 
   it('token contains correct aud claim (admin-panel)', async () => {
-    const decoded = jose.decodeJwt(await signAdminToken('u1', 'dave'));
+    const decoded = jose.decodeJwt(await signAdminToken('u1', 'dave', 'fixture-admin-hash'));
     expect(decoded.aud).toBe('admin-panel');
   });
 
   it('token expires in 1 hour (3600s)', async () => {
-    const decoded = jose.decodeJwt(await signAdminToken('u1', 'eve'));
+    const decoded = jose.decodeJwt(await signAdminToken('u1', 'eve', 'fixture-admin-hash'));
     expect(decoded.exp).toBeDefined();
     expect(decoded.iat).toBeDefined();
     expect(decoded.exp! - decoded.iat!).toBe(3600);

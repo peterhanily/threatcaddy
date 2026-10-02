@@ -3,6 +3,7 @@ import { db } from '../db';
 import type { ChatThread, ChatMessage } from '../types';
 import { nanoid } from 'nanoid';
 import { purgeOldTrash } from '../lib/trash-purge';
+import { deleteEntitiesWithReferences } from '../lib/entity-relations';
 
 /** Ensure the DB connection is open (handles v14→v15 upgrade on first call). */
 async function ensureDB() {
@@ -122,7 +123,7 @@ export function useChats() {
 
   const deleteThread = useCallback(async (id: string) => {
     await ensureDB();
-    await db.chatThreads.delete(id);
+    await deleteEntitiesWithReferences({ chatThreads: [id] });
     messagesCacheRef.current.delete(id);
     setThreads((prev) => prev.filter((t) => t.id !== id));
   }, []);
@@ -144,7 +145,8 @@ export function useChats() {
     const trashedIds = threads.filter((t) => t.trashed).map((t) => t.id);
     if (trashedIds.length === 0) return;
     await ensureDB();
-    await db.chatThreads.bulkDelete(trashedIds);
+    await deleteEntitiesWithReferences({ chatThreads: trashedIds });
+    for (const id of trashedIds) messagesCacheRef.current.delete(id);
     setThreads((prev) => prev.filter((t) => !t.trashed));
   }, [threads]);
 

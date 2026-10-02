@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
@@ -7,14 +7,15 @@ import { db } from '../db/index.js';
 import { files } from '../db/schema.js';
 import type { AuthUser } from '../types.js';
 import { ErrorCodes } from '../types/error-codes.js';
-import { mkdir, writeFile, stat, realpath } from 'node:fs/promises';
+import { mkdir, writeFile, stat, realpath, unlink } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { logger } from '../lib/logger.js';
+import { MAX_FILE_BYTES } from '../middleware/api-body-limit.js';
+import { assertStorageCapacity, lockStorage, StorageQuotaError } from '../services/storage-policy.js';
 
 const STORAGE_PATH = process.env.FILE_STORAGE_PATH || '/data/files';
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 // MIME types safe to serve inline (no XSS risk)
 const SAFE_INLINE_MIME = /^(image\/(?!svg)[\w+-]+|video\/[\w+-]+|audio\/[\w+-]+|application\/pdf)$/;
@@ -72,7 +73,7 @@ app.post('/upload', requireRole('admin', 'analyst'), async (c) => {
   }
 
   const blob = file as File;
-  if (blob.size > MAX_FILE_SIZE) {
+  if (blob.size > MAX_FILE_BYTES) {
     return c.json({ error: 'File too large (max 50MB)', code: ErrorCodes.FILE_TOO_LARGE }, 413);
   }
 
@@ -141,33 +142,54 @@ app.post('/upload', requireRole('admin', 'analyst'), async (c) => {
     }
   }
 
-  await writeFile(storagePath, buffer);
-
-  // Generate thumbnail for images
   let thumbnailPath: string | null = null;
-  if (blob.type.startsWith('image/') && blob.type !== 'image/svg+xml') {
-    try {
-      const sharp = (await import('sharp')).default;
-      const thumbName = `${id}_thumb.webp`;
-      thumbnailPath = join(STORAGE_PATH, thumbName);
-      await sharp(buffer).resize(400, 400, { fit: 'inside' }).webp({ quality: 80 }).toFile(thumbnailPath);
-      thumbnailPath = thumbName;
-    } catch (err) {
-      logger.error('Thumbnail generation failed', { error: String(err) });
-      thumbnailPath = null;
-    }
-  }
+  const createdPaths: string[] = [];
+  try {
+    const denied = await db.transaction(async tx => {
+      await lockStorage(tx);
+      // A queued upload must not recreate a reference after investigation purge.
+      if (folderId && !await checkInvestigationAccess(user.id, folderId, 'editor', tx)) {
+        return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
+      }
+      await assertStorageCapacity(tx, user.id, blob.size + (blob.type.startsWith('image/') ? 1024 * 1024 : 0), STORAGE_PATH);
+      await writeFile(storagePath, buffer, { flag: 'wx' });
+      createdPaths.push(storagePath);
 
-  await db.insert(files).values({
-    id,
-    uploadedBy: user.id,
-    filename: blob.name,
-    mimeType: blob.type,
-    sizeBytes: blob.size,
-    storagePath: storageName,
-    thumbnailPath,
-    folderId,
-  });
+      // Generate thumbnail for images
+      if (blob.type.startsWith('image/') && blob.type !== 'image/svg+xml') {
+        try {
+          const sharp = (await import('sharp')).default;
+          const thumbName = `${id}_thumb.webp`;
+          thumbnailPath = join(STORAGE_PATH, thumbName);
+          await sharp(buffer).resize(400, 400, { fit: 'inside' }).webp({ quality: 80 }).toFile(thumbnailPath);
+          createdPaths.push(thumbnailPath);
+          thumbnailPath = thumbName;
+        } catch (err) {
+          logger.error('Thumbnail generation failed', { error: String(err) });
+          await unlink(join(STORAGE_PATH, `${id}_thumb.webp`)).catch(() => {});
+          thumbnailPath = null;
+        }
+      }
+
+      await tx.insert(files).values({
+        id,
+        uploadedBy: user.id,
+        filename: blob.name,
+        mimeType: blob.type,
+        sizeBytes: blob.size,
+        storagePath: storageName,
+        thumbnailPath,
+        folderId,
+      });
+    });
+    if (denied) return denied;
+  } catch (error) {
+    // These are newly generated paths owned by this upload, never existing files.
+    await Promise.all(createdPaths
+      .map(path => unlink(path).catch(cleanupError => logger.error('Failed to clean up uncommitted upload', { path, error: String(cleanupError) }))));
+    if (error instanceof StorageQuotaError) return c.json({ error: error.message, code: 'STORAGE_QUOTA_EXCEEDED' }, 507);
+    throw error;
+  }
 
   return c.json({
     id,
@@ -220,13 +242,13 @@ app.get('/:id', async (c) => {
   }
 
   try {
-    const fileStat = await stat(filePath);
+    const fileStat = await stat(resolvedFilePath);
     const safeName = sanitizeFilename(file.filename);
     const disposition = SAFE_INLINE_MIME.test(file.mimeType) ? 'inline' : 'attachment';
 
     logger.info('File download', { fileId, userId: user.id, filename: file.filename, folderId: file.folderId });
 
-    const stream = createReadStream(filePath);
+    const stream = createReadStream(resolvedFilePath);
     const webStream = Readable.toWeb(stream) as ReadableStream;
 
     return new Response(webStream, {
@@ -234,7 +256,7 @@ app.get('/:id', async (c) => {
         'Content-Type': file.mimeType,
         'Content-Length': fileStat.size.toString(),
         'Content-Disposition': `${disposition}; filename="${safeName}"`,
-        'Cache-Control': 'private, max-age=31536000, immutable',
+        'Cache-Control': 'private, no-store',
         'X-Content-Type-Options': 'nosniff',
       },
     });
@@ -280,20 +302,56 @@ app.get('/:id/thumbnail', async (c) => {
   }
 
   try {
-    await stat(thumbPath);
-    const stream = createReadStream(thumbPath);
+    await stat(resolvedThumbPath);
+    const stream = createReadStream(resolvedThumbPath);
     const webStream = Readable.toWeb(stream) as ReadableStream;
 
     return new Response(webStream, {
       headers: {
         'Content-Type': 'image/webp',
-        'Cache-Control': 'private, max-age=31536000, immutable',
+        'Cache-Control': 'private, no-store',
         'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch {
     return c.json({ error: 'Thumbnail not found on disk', code: ErrorCodes.THUMBNAIL_NOT_FOUND }, 404);
   }
+});
+
+// Explicit owner-authorized removal releases quota; deleting a note alone does
+// not imply permission to destroy shared evidence attachments.
+app.delete('/:id', requireRole('admin', 'analyst'), async c => {
+  const user = c.get('user');
+  const id = c.req.param('id');
+  const result = await db.transaction(async tx => {
+    await lockStorage(tx);
+    const [file] = await tx.select().from(files).where(eq(files.id, id)).limit(1);
+    if (!file) return c.json({ error: 'File not found', code: ErrorCodes.FILE_NOT_FOUND }, 404);
+    if (file.uploadedBy !== user.id || file.folderId && !await checkInvestigationAccess(user.id, file.folderId, 'editor', tx)) {
+      return c.json({ error: 'Only the uploader with current investigation access may delete this file', code: ErrorCodes.NO_ACCESS }, 403);
+    }
+    const base = await realpath(STORAGE_PATH);
+    const paths: string[] = [];
+    for (const relative of [file.storagePath, file.thumbnailPath].filter((path): path is string => !!path)) {
+      const candidate = resolve(base, relative);
+      if (!candidate.startsWith(base + '/')) return c.json({ error: 'Invalid file path', code: ErrorCodes.INVALID_FILE_PATH }, 403);
+      try {
+        const actual = await realpath(candidate);
+        if (!actual.startsWith(base + '/')) return c.json({ error: 'Invalid file path', code: ErrorCodes.INVALID_FILE_PATH }, 403);
+        paths.push(actual);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      }
+    }
+    await tx.delete(files).where(and(eq(files.id, id), eq(files.uploadedBy, user.id)));
+    return paths;
+  });
+  if (!Array.isArray(result)) return result;
+  let cleanupPending = false;
+  for (const path of result) {
+    await unlink(path).catch(error => { cleanupPending = true; logger.warn('Removed file record has a recoverable orphan blob', { id, error: String(error) }); });
+  }
+  return c.json({ ok: true, cleanupPending });
 });
 
 export default app;

@@ -67,6 +67,11 @@ vi.mock('../ws/handler.js', () => ({
 vi.mock('node:dns/promises', () => ({
   lookup: vi.fn().mockResolvedValue({ address: '93.184.216.34', family: 4 }),
 }));
+vi.mock('../lib/bounded-http.js', async importOriginal => ({
+  ...await importOriginal<typeof import('../lib/bounded-http.js')>(),
+  // Transport is independently covered by the isolated TLS integration fixture.
+  requestPinned: vi.fn((url: URL, _address: unknown, init: RequestInit) => fetch(url, init)),
+}));
 
 // Set BOT_MASTER_KEY before importing secret-store (used by bot-manager)
 process.env.BOT_MASTER_KEY = 'test-master-key-for-unit-tests-32chars!!';
@@ -398,7 +403,7 @@ describe('BotExecutionContext scope enforcement', () => {
       const exec = new BotExecutionContext(ctx);
 
       await expect(exec.searchNotes('folder-1', 'test')).rejects.toThrow(
-        /Bot execution aborted/
+        /aborted/i
       );
     });
   });

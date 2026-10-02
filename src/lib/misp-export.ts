@@ -1,6 +1,7 @@
 import type { IOCType, ConfidenceLevel } from '../types';
 import type { IOCExportEntry, ThreatIntelExportConfig, IOCExportFilter } from './ioc-export';
 import { applyExportFilter } from './ioc-export';
+import { conservativeClsLevel, resolveIOCClsLevel } from './classification';
 
 // --- IOC type -> MISP attribute type mapping (reverse of misp-import) ---
 
@@ -48,6 +49,7 @@ interface MISPAttribute {
   comment: string;
   to_ids: boolean;
   timestamp: string;
+  Tag: MISPTag[];
 }
 
 interface MISPTag {
@@ -119,11 +121,7 @@ export function formatIOCsMISP(
 
   const tags: MISPTag[] = [];
 
-  // Add TLP tag from default classification
-  if (config.defaultClsLevel) {
-    const tlpTag = TLP_TAG_MAP[config.defaultClsLevel.toUpperCase()];
-    if (tlpTag) tags.push({ name: tlpTag });
-  }
+  // Handling labels belong to attributes; a default is inherited, not event-wide.
 
   // Add attribution actor tags
   const actors = new Set<string>();
@@ -141,33 +139,44 @@ export function formatIOCsMISP(
 
   // Build attributes
   const attributes: MISPAttribute[] = [];
-  const seenValues = new Set<string>();
+  const seenValues = new Map<string, MISPAttribute>();
 
   for (const entry of activeEntries) {
     for (const ioc of entry.iocs) {
       const key = `${ioc.type}::${ioc.value}`;
-      if (seenValues.has(key)) continue;
-      seenValues.add(key);
 
       const mispType = TC_TO_MISP_TYPE[ioc.type];
       if (!mispType) continue;
 
-      // Per-IOC TLP tag (if different from default)
-      if (ioc.clsLevel) {
-        const iocTlpTag = TLP_TAG_MAP[ioc.clsLevel.toUpperCase()];
-        if (iocTlpTag && !tags.some((t) => t.name === iocTlpTag)) {
-          tags.push({ name: iocTlpTag });
-        }
+      const level = resolveIOCClsLevel(ioc.clsLevel, entry.entityClsLevel, config.defaultClsLevel);
+      const attributeTags: MISPTag[] = [{ name: `threatcaddy:confidence="${ioc.confidence}"` }];
+      if (level) attributeTags.push({ name: TLP_TAG_MAP[level.toUpperCase()] ?? `threatcaddy:classification=${JSON.stringify(level)}` });
+      for (const provenance of ioc.enrichment?.misp ?? []) {
+        try {
+          const original = JSON.parse(String(provenance.attribute));
+          const originalTags = [...(Array.isArray(original.Tag) ? original.Tag : []), ...JSON.parse(String(provenance.eventTags))];
+          for (const tag of originalTags) if (typeof tag?.name === 'string' && !tag.name.startsWith('threatcaddy:confidence=')) attributeTags.push({ name: tag.name });
+        } catch { throw new Error('Cannot export damaged MISP handling provenance. Restore the original source first.'); }
       }
-
-      attributes.push({
+      const prior = seenValues.get(key);
+      if (prior) {
+        prior.Tag = [...new Map([...prior.Tag, ...attributeTags].map(tag => [tag.name, tag])).values()];
+        // Keep every restriction; consumers selecting a single TLP also see the most restrictive first.
+        const strictest = conservativeClsLevel(prior.Tag.filter(tag => tag.name.startsWith('tlp:')).map(tag => tag.name.toUpperCase()));
+        if (strictest) prior.Tag.sort((a, b) => Number(b.name === strictest.toLowerCase()) - Number(a.name === strictest.toLowerCase()));
+        continue;
+      }
+      const attribute: MISPAttribute = {
         type: mispType,
         category: getMISPCategory(ioc.type),
         value: ioc.value,
         comment: ioc.analystNotes || '',
         to_ids: CONFIDENCE_TO_IDS_SCORE[ioc.confidence] >= 50,
         timestamp,
-      });
+        Tag: [...new Map(attributeTags.map(tag => [tag.name, tag])).values()],
+      };
+      attributes.push(attribute);
+      seenValues.set(key, attribute);
     }
   }
 

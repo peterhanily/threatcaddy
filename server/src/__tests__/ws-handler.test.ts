@@ -43,6 +43,8 @@ import {
   handleWSConnection,
   handleWSMessage,
   handleWSClose,
+  broadcastToFolder,
+  revokeUserFolderAccess,
 } from '../ws/handler.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -61,6 +63,8 @@ const TEST_USER = {
   role: 'analyst',
   displayName: 'Test User',
   avatarUrl: null,
+  sessionFamily: 'fixture-family',
+  tokenExpiresAt: Date.now() + 900_000,
 };
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -68,6 +72,56 @@ const TEST_USER = {
 describe('WebSocket Handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('expires an authenticated idle connection at the access-token deadline', async () => {
+    vi.useFakeTimers();
+    const ws = createMockWS();
+    try {
+      mockVerifyAccessToken.mockResolvedValue({ ...TEST_USER, tokenExpiresAt: Date.now() + 500 });
+      handleWSConnection(ws);
+      await handleWSMessage(ws, JSON.stringify({ type: 'auth', token: 'short-lived-token' }));
+      vi.advanceTimersByTime(501);
+      expect(ws.close).toHaveBeenCalledWith(4001, 'Session expired');
+      await broadcastToFolder('folder-1', { type: 'entity-change' });
+      expect(ws.send).not.toHaveBeenCalledWith(expect.stringContaining('entity-change'));
+    } finally { handleWSClose(ws); vi.useRealTimers(); }
+  });
+
+  it('keeps the authentication deadline active while database verification is pending', async () => {
+    vi.useFakeTimers();
+    const ws = createMockWS();
+    let finish!: (user: typeof TEST_USER) => void;
+    mockVerifyAccessToken.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    try {
+      handleWSConnection(ws);
+      const pending = handleWSMessage(ws, JSON.stringify({ type: 'auth', token: 'pending-token' }));
+      vi.advanceTimersByTime(5001);
+      expect(ws.close).toHaveBeenCalledWith(4001, 'Authentication timeout');
+      finish(TEST_USER);
+      await pending;
+      expect(ws.send).not.toHaveBeenCalledWith(expect.stringContaining('auth-ok'));
+    } finally { handleWSClose(ws); vi.useRealTimers(); }
+  });
+
+  it('does not restore a subscription whose access was revoked while its membership check was pending', async () => {
+    const ws = createMockWS();
+    mockVerifyAccessToken.mockResolvedValue(TEST_USER);
+    handleWSConnection(ws);
+    await handleWSMessage(ws, JSON.stringify({ type: 'auth', token: 'valid-token' }));
+    let resolveAccess!: (allowed: boolean) => void;
+    let started!: () => void;
+    const checking = new Promise<void>(resolve => { started = resolve; });
+    mockCheckInvestigationAccess.mockImplementationOnce(() => { started(); return new Promise<boolean>(resolve => { resolveAccess = resolve; }); });
+    const pending = handleWSMessage(ws, JSON.stringify({ type: 'subscribe', folderId: 'folder-1' }));
+    await checking;
+    revokeUserFolderAccess(TEST_USER.id, 'folder-1');
+    resolveAccess(true);
+    await pending;
+    vi.mocked(ws.send).mockClear();
+    await broadcastToFolder('folder-1', { type: 'entity-change' });
+    expect(ws.send).not.toHaveBeenCalled();
+    handleWSClose(ws);
   });
 
   describe('Auth timeout enforcement (5s)', () => {
@@ -202,7 +256,7 @@ describe('WebSocket Handler', () => {
   });
 
   describe('Entity-change broadcast to correct folders', () => {
-    it('relays entity-change-preview to folder subscribers', async () => {
+    it.each(['put', 'delete'])('waits for server confirmation before broadcasting an ordinary %s preview', async (op) => {
       mockVerifyAccessToken.mockResolvedValue(TEST_USER);
       mockCheckInvestigationAccess.mockResolvedValue(true);
 
@@ -218,12 +272,12 @@ describe('WebSocket Handler', () => {
       await handleWSMessage(wsReceiver, JSON.stringify({ type: 'auth', token: 'token2' }));
       await handleWSMessage(wsReceiver, JSON.stringify({ type: 'subscribe', folderId: 'folder-1' }));
 
-      mockVerifyAccessToken.mockResolvedValue(TEST_USER);
+      mockVerifyAccessToken.mockImplementation(async (token: string) => token === 'token2' ? user2 : TEST_USER);
       await handleWSMessage(wsSender, JSON.stringify({
         type: 'entity-change-preview',
         table: 'notes',
         entityId: 'note-1',
-        op: 'put',
+        op,
         data: { folderId: 'folder-1', title: 'Test' },
       }));
 
@@ -231,7 +285,12 @@ describe('WebSocket Handler', () => {
       const entityChanges = receiverCalls.filter(
         (call: unknown[]) => typeof call[0] === 'string' && call[0].includes('entity-change'),
       );
-      expect(entityChanges.length).toBeGreaterThan(0);
+      expect(entityChanges).toHaveLength(0);
+
+      const confirmed = { type: 'entity-change', table: 'notes', entityId: 'note-1', op, data: { id: 'note-1', folderId: 'folder-1', title: 'Saved note', version: 2 } };
+      await broadcastToFolder('folder-1', confirmed, TEST_USER.id);
+      expect(wsReceiver.send).toHaveBeenCalledWith(JSON.stringify(confirmed));
+      expect(wsSender.send).not.toHaveBeenCalledWith(JSON.stringify(confirmed));
 
       handleWSClose(wsSender);
       handleWSClose(wsReceiver);

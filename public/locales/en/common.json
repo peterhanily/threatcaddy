@@ -1,4 +1,13 @@
 {
+  "draftRecovery.message": "Some changes could not be saved. Drafts are kept only in this tab. Retry or download them before closing it.",
+  "draftRecovery.untitled": "Unsaved draft",
+  "draftRecovery.retry": "Retry save",
+  "draftRecovery.download": "Download draft",
+  "draftRecovery.discard": "Discard draft",
+  "draftRecovery.discardConfirm": "Discard this unsaved draft permanently? Download it first if you need a recovery copy.",
+  "draftRecovery.conflictField": "Review {{field}} conflict",
+  "draftRecovery.keepLocal": "Keep my {{field}}",
+  "draftRecovery.useRemote": "Use remote {{field}}",
   "appName": "ThreatCaddy",
   "save": "Save",
   "cancel": "Cancel",

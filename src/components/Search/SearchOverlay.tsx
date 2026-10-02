@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { Search, X, FileText, Paperclip, ListChecks, Clock, PenTool, Save, Briefcase, ChevronDown, Shield, MessageSquare, Calendar, Pencil } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { formatDate } from '../../lib/utils';
-import { unifiedSearch, type SearchMode, type SearchQuery, type SearchResult, type SearchResultType, type UnifiedSearchResult } from '../../lib/search';
+import { type SearchMode, type SearchQuery, type SearchResult, type SearchResultType, type UnifiedSearchResult } from '../../lib/search';
+import { SearchSession } from '../../lib/search-session';
+import { SEARCH_TYPES } from '../../lib/search-index';
 import { useSavedSearches } from '../../hooks/useSavedSearches';
-import type { Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ChatThread, Folder } from '../../types';
+import type { Note, Task, TimelineEvent, Whiteboard, StandaloneIOC, ChatThread, Folder, EvidenceItem } from '../../types';
 import { TagPills } from '../Common/TagPills';
 import SearchWorker from '../../workers/search.worker?worker';
 
@@ -23,6 +25,8 @@ interface SearchOverlayProps {
   onNavigateToWhiteboard?: (id: string) => void;
   standaloneIOCs?: StandaloneIOC[];
   chatThreads?: ChatThread[];
+  evidenceItems?: EvidenceItem[];
+  onNavigateToEvidence?: (id: string) => void;
   onNavigateToIOC?: (id: string) => void;
   onNavigateToChat?: (id: string) => void;
   selectedFolderId?: string;
@@ -41,6 +45,7 @@ const TYPE_ICONS: Record<SearchResultType, typeof FileText> = {
   whiteboard: PenTool,
   ioc: Shield,
   chat: MessageSquare,
+  evidence: Paperclip,
 };
 
 const TYPE_LABEL_KEYS: Record<SearchResultType, string> = {
@@ -51,6 +56,7 @@ const TYPE_LABEL_KEYS: Record<SearchResultType, string> = {
   whiteboard: 'whiteboards',
   ioc: 'iocs',
   chat: 'chatThreads',
+  evidence: 'evidence',
 };
 
 export function SearchOverlay({
@@ -67,6 +73,8 @@ export function SearchOverlay({
   onNavigateToWhiteboard,
   standaloneIOCs,
   chatThreads,
+  evidenceItems,
+  onNavigateToEvidence,
   onNavigateToIOC,
   onNavigateToChat,
   selectedFolderId,
@@ -81,7 +89,7 @@ export function SearchOverlay({
   const [searchFolderId, setSearchFolderId] = useState<string | undefined>(undefined);
   const [folderQuery, setFolderQuery] = useState('');
   const [folderDropdownOpen, setFolderDropdownOpen] = useState(false);
-  const [activeTypes, setActiveTypes] = useState<Set<SearchResultType>>(new Set(['note', 'clip', 'task', 'timeline', 'whiteboard', 'ioc', 'chat']));
+  const [activeTypes, setActiveTypes] = useState<Set<SearchResultType>>(new Set(SEARCH_TYPES));
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [dateField, setDateField] = useState<'createdAt' | 'updatedAt'>('createdAt');
@@ -158,65 +166,22 @@ export function SearchOverlay({
   }, [dateFrom, dateTo, dateField]);
 
   // Worker-based search
-  const workerRef = useRef<Worker | null>(null);
-  const requestIdRef = useRef(0);
+  const sessionRef = useRef<SearchSession | null>(null);
   const [searchResult, setSearchResult] = useState<UnifiedSearchResult>({ results: [] });
-  const workerSupported = useRef(true);
-
-  // Initialize worker once
+  // No indexing or structured cloning while the overlay is closed.
   useEffect(() => {
-    try {
-      const w = new SearchWorker();
-      w.onmessage = (e: MessageEvent<{ id: number; result: UnifiedSearchResult }>) => {
-        if (e.data.id === requestIdRef.current) {
-          setSearchResult(e.data.result);
-        }
-      };
-      workerRef.current = w;
-    } catch {
-      workerSupported.current = false;
-    }
-    return () => { workerRef.current?.terminate(); };
-  }, []);
-
-  // Send data to worker when source arrays change (heavy clone happens only on real data change, not scope change)
-  useEffect(() => {
-    if (!workerRef.current || !workerSupported.current) return;
-    workerRef.current.postMessage({
-      type: 'data',
-      notes,
-      tasks,
-      clipsFolderId,
-      timelineEvents,
-      whiteboards,
-      standaloneIOCs,
-      chatThreads,
-    });
-  }, [notes, tasks, clipsFolderId, timelineEvents, whiteboards, standaloneIOCs, chatThreads]);
+    if (!open) return;
+    const session = new SearchSession(() => new SearchWorker(), setSearchResult);
+    sessionRef.current = session;
+    return () => { session.dispose(); sessionRef.current = null; };
+  }, [open]);
 
   // Post lightweight query to worker when search or scope changes
   useEffect(() => {
-    if (!debouncedQuery.trim()) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: clearing results when query is empty
-      setSearchResult({ results: [] });
-      return;
-    }
-    const id = ++requestIdRef.current;
-    const searchQuery: SearchQuery = { mode, raw: debouncedQuery, dateFilter };
-    if (workerRef.current && workerSupported.current) {
-      workerRef.current.postMessage({ type: 'query', id, query: searchQuery, folderId: searchFolderId });
-    } else {
-      // Fallback: direct call (standalone/CSP issues) — filter inline
-      const fid = searchFolderId;
-      const n = fid ? notes.filter((x) => x.folderId === fid) : notes;
-      const t = fid ? tasks.filter((x) => x.folderId === fid) : tasks;
-      const ev = fid && timelineEvents ? timelineEvents.filter((x) => x.folderId === fid) : timelineEvents;
-      const wb = fid && whiteboards ? whiteboards.filter((x) => x.folderId === fid) : whiteboards;
-      const iocs = fid && standaloneIOCs ? standaloneIOCs.filter((x) => x.folderId === fid) : standaloneIOCs;
-      const chats = fid && chatThreads ? chatThreads.filter((x) => x.folderId === fid) : chatThreads;
-      setSearchResult(unifiedSearch(n, t, clipsFolderId, searchQuery, ev, wb, iocs, chats));
-    }
-  }, [notes, tasks, clipsFolderId, mode, debouncedQuery, dateFilter, timelineEvents, whiteboards, standaloneIOCs, chatThreads, searchFolderId]);
+    if (!open || !sessionRef.current) return;
+    sessionRef.current.update({ notes, tasks, clipsFolderId, timelineEvents, whiteboards, standaloneIOCs, chatThreads, evidenceItems });
+    sessionRef.current.search({ mode, raw: debouncedQuery, dateFilter }, searchFolderId);
+  }, [open, notes, tasks, clipsFolderId, mode, debouncedQuery, dateFilter, timelineEvents, whiteboards, standaloneIOCs, chatThreads, evidenceItems, searchFolderId]);
 
   const { results, error } = searchResult;
 
@@ -246,9 +211,10 @@ export function SearchOverlay({
     else if (result.type === 'whiteboard') onNavigateToWhiteboard?.(result.id);
     else if (result.type === 'ioc') onNavigateToIOC?.(result.id);
     else if (result.type === 'chat') onNavigateToChat?.(result.id);
+    else if (result.type === 'evidence') onNavigateToEvidence?.(result.id);
     else onNavigateToTask(result.id);
     onClose();
-  }, [onNavigateToNote, onNavigateToTask, onNavigateToTimeline, onNavigateToWhiteboard, onNavigateToIOC, onNavigateToChat, onClose]);
+  }, [onNavigateToNote, onNavigateToTask, onNavigateToTimeline, onNavigateToWhiteboard, onNavigateToIOC, onNavigateToChat, onNavigateToEvidence, onClose]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     // Don't intercept keys when the folder dropdown is open
@@ -319,11 +285,11 @@ export function SearchOverlay({
   const indexMap = useMemo(() => {
     const map = new Map<string, number>();
     let idx = 0;
-    for (const type of ['note', 'clip', 'task', 'timeline', 'whiteboard', 'ioc', 'chat'] as SearchResultType[]) {
+    for (const type of SEARCH_TYPES) {
       if (!activeTypes.has(type)) continue;
       const group = grouped[type];
       if (group) {
-        for (const r of group) { map.set(r.id, idx++); }
+        for (const r of group) { map.set(`${r.type}:${r.id}`, idx++); }
       }
     }
     return map;
@@ -484,7 +450,7 @@ export function SearchOverlay({
           {/* Type filter chips */}
           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
             <span className="text-[10px] text-gray-600 me-1">{t('types')}:</span>
-            {(['note', 'clip', 'task', 'timeline', 'whiteboard', 'ioc', 'chat'] as SearchResultType[]).map((type) => {
+            {SEARCH_TYPES.map((type) => {
               const Icon = TYPE_ICONS[type];
               const active = activeTypes.has(type);
               return (
@@ -583,7 +549,7 @@ export function SearchOverlay({
             </div>
           )}
 
-          {(['note', 'clip', 'task', 'timeline', 'whiteboard', 'ioc', 'chat'] as SearchResultType[]).map((type) => {
+          {SEARCH_TYPES.map((type) => {
             if (!activeTypes.has(type)) return null;
             const group = grouped[type];
             if (!group || group.length === 0) return null;
@@ -594,11 +560,11 @@ export function SearchOverlay({
                 </div>
                 {group.map((result) => {
                   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                  const idx = indexMap.get(result.id)!;
+                  const idx = indexMap.get(`${result.type}:${result.id}`)!;
                   const Icon = TYPE_ICONS[result.type];
                   return (
                     <button
-                      key={result.id}
+                      key={`${result.type}:${result.id}`}
                       data-index={idx}
                       onClick={() => handleSelect(result)}
                       onMouseEnter={() => setActiveIndex(idx)}

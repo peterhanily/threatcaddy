@@ -11,7 +11,7 @@ interface WhiteboardViewProps {
   folders: Folder[];
   allTags: Tag[];
   onCreateWhiteboard: (name?: string) => Promise<Whiteboard>;
-  onUpdateWhiteboard: (id: string, updates: Partial<Whiteboard>) => void;
+  onUpdateWhiteboard: (id: string, updates: Partial<Whiteboard>) => void | Promise<void>;
   onDeleteWhiteboard: (id: string) => void;
   onTrashWhiteboard?: (id: string) => void;
   onRestoreWhiteboard?: (id: string) => void;

@@ -1,6 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
 
+const sessionMocks = vi.hoisted(() => ({
+  create: vi.fn(async () => ({ accessToken: 'mock-access-token', refreshToken: 'mock-refresh-token' })),
+  rotate: vi.fn(),
+  revoke: vi.fn(async () => undefined),
+  update: vi.fn(async () => []),
+}));
+vi.mock('../services/session-service.js', () => ({
+  createTokenPair: sessionMocks.create,
+  rotateRefreshToken: sessionMocks.rotate,
+  revokeSessionFamily: sessionMocks.revoke,
+  updateUsersAndRevokeSessions: sessionMocks.update,
+  SessionAuthorizationError: class extends Error {},
+}));
+
 // ─── Hoisted mock state ────────────────────────────────────────
 
 const {
@@ -51,7 +65,7 @@ const {
 
 // ─── Mocks ─────────────────────────────────────────────────────
 
-const mockUser = { id: 'user-1', email: 'test@example.com', role: 'analyst', displayName: 'Test', avatarUrl: null };
+const mockUser = { id: 'user-1', email: 'test@example.com', role: 'analyst', displayName: 'Test', avatarUrl: null, sessionFamily: 'mock-family' };
 
 vi.mock('../db/index.js', () => ({
   db: {
@@ -174,6 +188,7 @@ let app: Hono;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  sessionMocks.rotate.mockResolvedValue({ error: 'invalid' });
   selectQueue.length = 0;
   insertQueue.length = 0;
   updateQueue.length = 0;
@@ -293,7 +308,7 @@ describe('POST /api/auth/register', () => {
     expect(res.status).toBe(403);
   });
 
-  it('allows registration in invite mode when email is in allowlist', async () => {
+  it('does not accept an email allowlist entry as invitation proof', async () => {
     mockGetRegistrationMode.mockResolvedValue('invite');
     // Check existing user — none
     selectQueue.push([]);
@@ -311,7 +326,9 @@ describe('POST /api/auth/register', () => {
     const res = await postJson(app, '/api/auth/register', {
       email: 'invited@example.com', password: 'SecureP@ss1', displayName: 'Inv',
     });
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ code: 'REGISTRATION_INVITE_ONLY' });
+    expect(mockArgon2Hash).not.toHaveBeenCalled();
   });
 });
 
@@ -412,6 +429,7 @@ describe('POST /api/auth/login', () => {
 
 describe('POST /api/auth/refresh', () => {
   it('rotates refresh token successfully', async () => {
+    sessionMocks.rotate.mockResolvedValueOnce({ accessToken: 'next-access', refreshToken: 'next-refresh', user: VALID_USER_ROW });
     // Find session
     selectQueue.push([{ id: 'old-refresh', userId: 'user-1', expiresAt: new Date(Date.now() + 86400000) }]);
     // Delete old session
@@ -438,6 +456,7 @@ describe('POST /api/auth/refresh', () => {
   });
 
   it('returns 401 for expired refresh token', async () => {
+    sessionMocks.rotate.mockResolvedValueOnce({ error: 'expired' });
     selectQueue.push([{ id: 'expired', userId: 'user-1', expiresAt: new Date(Date.now() - 86400000) }]);
     // Delete expired session
     deleteQueue.push([]);
@@ -452,6 +471,7 @@ describe('POST /api/auth/refresh', () => {
   });
 
   it('returns 401 when user is disabled during refresh', async () => {
+    sessionMocks.rotate.mockResolvedValueOnce({ error: 'disabled' });
     selectQueue.push([{ id: 'sess-1', userId: 'user-1', expiresAt: new Date(Date.now() + 86400000) }]);
     deleteQueue.push([]);
     selectQueue.push([{ ...VALID_USER_ROW, active: false }]);
@@ -473,6 +493,7 @@ describe('POST /api/auth/logout', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
+    expect(sessionMocks.revoke).toHaveBeenCalledWith('user-1', 'mock-family');
   });
 
   it('returns 401 without auth', async () => {
@@ -597,5 +618,6 @@ describe('POST /api/auth/change-password', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
+    expect(sessionMocks.update).toHaveBeenCalledWith(['user-1'], expect.objectContaining({ passwordHash: '$argon2-hashed' }), '$argon2-hashed');
   });
 });

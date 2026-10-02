@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { describe, it, expect, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useTimeline } from '../hooks/useTimeline';
 import { db } from '../db';
 
@@ -461,7 +461,7 @@ describe('useTimeline', () => {
     await db.timelineEvents.add(oldEvent);
 
     const { result } = renderHook(() => useTimeline());
-    await act(async () => {});
+    await waitFor(() => expect(result.current.loading).toBe(false));
 
     // Old trashed event should have been purged
     expect(result.current.events.find((e) => e.id === 'old-trashed')).toBeUndefined();

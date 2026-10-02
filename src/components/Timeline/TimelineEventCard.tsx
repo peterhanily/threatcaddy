@@ -33,8 +33,8 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
   const preview = event.description?.replace(/[#*`_[\]()>-]/g, '').trim() || '';
 
   return (
-    <button
-      onClick={() => onSelect(event.id)}
+    <div role="group" aria-label={event.title || t('eventCard.untitledEvent')}
+      onClick={(e) => { if (!(e.target as HTMLElement).closest('button, a, input')) onSelect(event.id); }}
       className={cn(
         'w-full text-start p-3 rounded-lg border transition-colors group',
         active
@@ -91,7 +91,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
 
       {/* Title */}
       <h3 className="font-medium text-sm text-gray-200 truncate mt-1.5">
-        {event.title || t('eventCard.untitledEvent')}
+        <button type="button" className="w-full text-start truncate" onClick={() => onSelect(event.id)}>{event.title || t('eventCard.untitledEvent')}</button>
       </h3>
 
       {/* Description preview */}
@@ -157,6 +157,6 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
         )}
         <TagPills tags={event.tags} />
       </div>
-    </button>
+    </div>
   );
 });

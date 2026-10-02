@@ -1,3 +1,4 @@
+import { workspaceStorageKey } from './workspace-profiles';
 export interface ServerProfile {
   id: string;
   label: string;
@@ -7,7 +8,7 @@ export interface ServerProfile {
   lastConnected?: string;
 }
 
-const PROFILES_KEY = 'threatcaddy-server-profiles';
+const PROFILES_KEY = workspaceStorageKey('threatcaddy-server-profiles');
 
 export function loadServerProfiles(): ServerProfile[] {
   try {

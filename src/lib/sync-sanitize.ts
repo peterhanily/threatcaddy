@@ -13,6 +13,7 @@ import {
   sanitizeWhiteboard,
   sanitizeStandaloneIOC,
   sanitizeChatThread,
+  sanitizeEvidenceItem,
 } from './export';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -28,6 +29,7 @@ const TABLE_SANITIZERS: Record<string, Sanitizer> = {
   whiteboards: sanitizeWhiteboard,
   standaloneIOCs: sanitizeStandaloneIOC,
   chatThreads: sanitizeChatThread,
+  evidenceItems: sanitizeEvidenceItem,
 };
 
 /** Timestamp fields the server may send as ISO strings instead of ms. */
@@ -61,15 +63,17 @@ function normalizeTimestamps(data: Record<string, unknown>): Record<string, unkn
 /**
  * Sanitize a single entity received from the sync server.
  * Returns the sanitized data, or null if the data is invalid.
- * Falls back to passthrough for unknown table names (e.g. _syncMeta).
+ * Unknown tables are never accepted from the network.
  */
 export function sanitizeSyncEntity(
   tableName: string,
   data: Record<string, unknown>,
 ): Record<string, unknown> | null {
   const sanitizer = TABLE_SANITIZERS[tableName];
-  if (!sanitizer) return data; // passthrough for internal tables
-  return sanitizer(normalizeTimestamps(data));
+  if (!sanitizer) return null;
+  const record = sanitizer(normalizeTimestamps(data));
+  if (record && Number.isSafeInteger(data.version) && (data.version as number) > 0) record.version = data.version;
+  return record;
 }
 
 /**
@@ -79,7 +83,5 @@ export function sanitizeSyncBatch(
   tableName: string,
   rows: Record<string, unknown>[],
 ): Record<string, unknown>[] {
-  const sanitizer = TABLE_SANITIZERS[tableName];
-  if (!sanitizer) return rows;
-  return rows.map((r) => sanitizer(normalizeTimestamps(r))).filter((r): r is Record<string, unknown> => r !== null);
+  return rows.map((r) => sanitizeSyncEntity(tableName, r)).filter((r): r is Record<string, unknown> => r !== null);
 }

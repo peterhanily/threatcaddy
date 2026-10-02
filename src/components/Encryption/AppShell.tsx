@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import App from '../../App';
 import { PassphraseDialog } from './PassphraseDialog';
-import { isEncryptionEnabled, getCachedSessionKey } from '../../lib/encryptionStore';
+import { isEncryptionEnabled, getCachedSessionKey, clearSessionCache, encryptionStorageKey } from '../../lib/encryptionStore';
 import { importSessionKey, base64ToArrayBuffer } from '../../lib/crypto';
-import { setSessionKey } from '../../lib/encryptionMiddleware';
+import { setSessionKey, getSessionKey } from '../../lib/encryptionMiddleware';
+import { initializeWorkspace } from '../../lib/workspace-initialization';
 
 function getInitialState() {
   if (!isEncryptionEnabled()) return { unlocked: true, cachedKey: null as string | null };
@@ -12,23 +13,44 @@ function getInitialState() {
 
 export function AppShell() {
   const [{ unlocked: initialUnlocked, cachedKey }] = useState(getInitialState);
-  const [ready, setReady] = useState(!cachedKey);
+  const [ready, setReady] = useState(!initialUnlocked && !cachedKey);
   const [isUnlocked, setIsUnlocked] = useState(initialUnlocked);
+  const [preparationError, setPreparationError] = useState('');
 
   // Try to restore session from cached key on mount
   useEffect(() => {
-    if (!cachedKey) return;
+    if (isEncryptionEnabled() && !cachedKey) return;
+    let active = true;
 
-    importSessionKey(base64ToArrayBuffer(cachedKey))
-      .then((key) => {
-        setSessionKey(key, cachedKey);
-        setIsUnlocked(true);
+    (cachedKey ? importSessionKey(base64ToArrayBuffer(cachedKey)) : Promise.resolve(null))
+      .then(async (key) => {
+        if (!active) return;
+        if (key && cachedKey) setSessionKey(key, cachedKey);
+        await initializeWorkspace();
+        if (active && (!isEncryptionEnabled() || getSessionKey())) setIsUnlocked(true);
       })
-      .catch(() => {
-        // Cached key invalid — fall through to passphrase dialog
+      .catch((error: unknown) => {
+        if (!active) return;
+        setSessionKey(null);
+        clearSessionCache();
+        setIsUnlocked(false);
+        setPreparationError(error instanceof Error ? error.message : String(error));
       })
-      .finally(() => setReady(true));
+      .finally(() => { if (active) setReady(true); });
+    return () => { active = false; };
   }, [cachedKey]);
+
+  useEffect(() => {
+    const changed = (event: StorageEvent) => {
+      if (event.key !== encryptionStorageKey) return;
+      setSessionKey(null);
+      clearSessionCache();
+      setIsUnlocked(false);
+      if (!isEncryptionEnabled()) setPreparationError('Encryption settings changed in another tab. Reload to prepare this workspace.');
+    };
+    window.addEventListener('storage', changed);
+    return () => window.removeEventListener('storage', changed);
+  }, []);
 
   if (!ready) {
     // Return a minimal placeholder that matches the app background to prevent a white flash
@@ -36,7 +58,13 @@ export function AppShell() {
   }
 
   if (!isUnlocked) {
-    return <PassphraseDialog onUnlocked={() => setIsUnlocked(true)} />;
+    if (!isEncryptionEnabled()) {
+      return <div className="min-h-screen bg-gray-950 p-6 text-gray-100" role="alert">
+        <p>{preparationError || 'The workspace could not be prepared.'}</p>
+        <button className="mt-4 underline" onClick={() => window.location.reload()}>Reload to retry</button>
+      </div>;
+    }
+    return <PassphraseDialog initialError={preparationError} onUnlocked={() => setIsUnlocked(true)} />;
   }
 
   return <App />;

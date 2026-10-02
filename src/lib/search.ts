@@ -9,7 +9,7 @@ export interface SearchQuery {
   dateFilter?: { field: 'createdAt' | 'updatedAt'; from?: number; to?: number };
 }
 
-export type SearchResultType = 'note' | 'clip' | 'task' | 'timeline' | 'whiteboard' | 'ioc' | 'chat';
+export type SearchResultType = 'note' | 'clip' | 'task' | 'timeline' | 'whiteboard' | 'ioc' | 'chat' | 'evidence';
 
 export interface SearchResult {
   id: string;
@@ -241,7 +241,7 @@ export function unifiedSearch(
   }
 
   // Sort by type group (notes, clips, tasks), then updatedAt desc
-  const typeOrder: Record<SearchResultType, number> = { note: 0, clip: 1, task: 2, timeline: 3, whiteboard: 4, ioc: 5, chat: 6 };
+  const typeOrder: Record<SearchResultType, number> = { note: 0, clip: 1, task: 2, timeline: 3, whiteboard: 4, ioc: 5, chat: 6, evidence: 7 };
   results.sort((a, b) => {
     const typeDiff = typeOrder[a.type] - typeOrder[b.type];
     if (typeDiff !== 0) return typeDiff;

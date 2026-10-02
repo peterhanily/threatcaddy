@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Dexie from 'dexie';
 import { db } from '../db';
+import { deleteEntitiesWithReferences } from '../lib/entity-relations';
 import type { Note, SortOption, SortDirection, IOCType } from '../types';
 import { nanoid } from 'nanoid';
 import { purgeOldTrash } from '../lib/trash-purge';
@@ -47,7 +48,10 @@ export function useNotes(folderId?: string) {
   // Bounded LRU cache of full note content keyed by note id (used by search when content isn't in state)
   const contentCacheRef = useRef(createLRUCache<string, string>(CONTENT_CACHE_MAX));
   const mountedRef = useRef(true);
-  useEffect(() => { return () => { mountedRef.current = false; }; }, []);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const loadNotes = useCallback(async () => {
     const allNotes = folderId
@@ -69,7 +73,6 @@ export function useNotes(folderId?: string) {
   }, [folderId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadNotes();
   }, [loadNotes]);
 
@@ -102,7 +105,8 @@ export function useNotes(folderId?: string) {
   const updateNote = useCallback(async (id: string, updates: Partial<Note>) => {
     const patched = { ...updates, updatedAt: Date.now() };
     try {
-      await db.notes.update(id, patched);
+      const updated = await db.notes.update(id, patched);
+      if (!updated) throw new Error('This note no longer exists. The draft has not been saved.');
     } catch (err) {
       console.error('Failed to update note:', err);
       throw err;
@@ -115,26 +119,7 @@ export function useNotes(folderId?: string) {
 
   const deleteNote = useCallback(async (id: string) => {
     try {
-      await db.transaction('rw', [db.notes, db.tasks, db.timelineEvents], async () => {
-        await db.notes.delete(id);
-        // Batch orphan link cleanup: collect IDs from affected tables then modify in bulk
-        const [linkedNotes, linkedTasks, linkedEvents] = await Promise.all([
-          db.notes.where('linkedNoteIds').equals(id).toArray(),
-          db.tasks.where('linkedNoteIds').equals(id).toArray(),
-          db.timelineEvents.where('linkedNoteIds').equals(id).toArray(),
-        ]);
-        const ops: Promise<unknown>[] = [];
-        for (const n of linkedNotes) {
-          ops.push(db.notes.update(n.id, { linkedNoteIds: (n.linkedNoteIds ?? []).filter(nid => nid !== id) }));
-        }
-        for (const t of linkedTasks) {
-          ops.push(db.tasks.update(t.id, { linkedNoteIds: (t.linkedNoteIds ?? []).filter(nid => nid !== id) }));
-        }
-        for (const e of linkedEvents) {
-          ops.push(db.timelineEvents.update(e.id, { linkedNoteIds: e.linkedNoteIds.filter(nid => nid !== id) }));
-        }
-        await Promise.all(ops);
-      });
+      await deleteEntitiesWithReferences({ notes: [id] });
     } catch (err) {
       console.error('Failed to delete note:', err);
       throw err;
@@ -245,28 +230,7 @@ export function useNotes(folderId?: string) {
     const trashedIds = notes.filter((n) => n.trashed).map((n) => n.id);
     if (trashedIds.length === 0) return;
     try {
-      await db.transaction('rw', [db.notes, db.tasks, db.timelineEvents], async () => {
-        await db.notes.bulkDelete(trashedIds);
-        // Use MultiEntry index to find only affected records (avoids full table scan)
-        const idSet = new Set(trashedIds);
-        const [affectedNotes, affectedTasks, affectedEvents] = await Promise.all([
-          db.notes.where('linkedNoteIds').anyOf(trashedIds).distinct().toArray(),
-          db.tasks.where('linkedNoteIds').anyOf(trashedIds).distinct().toArray(),
-          db.timelineEvents.where('linkedNoteIds').anyOf(trashedIds).distinct().toArray(),
-        ]);
-        const ops: Promise<unknown>[] = [];
-        for (const n of affectedNotes) {
-          ops.push(db.notes.update(n.id, { linkedNoteIds: n.linkedNoteIds!.filter(nid => !idSet.has(nid)) }));
-        }
-        for (const t of affectedTasks) {
-          ops.push(db.tasks.update(t.id, { linkedNoteIds: (t.linkedNoteIds ?? []).filter(nid => !idSet.has(nid)) }));
-        }
-        for (const e of affectedEvents) {
-          ops.push(db.timelineEvents.update(e.id, { linkedNoteIds: e.linkedNoteIds.filter(nid => !idSet.has(nid)) }));
-        }
-        await Promise.all(ops);
-      });
-        for (const id of trashedIds) contentCacheRef.current.delete(id);
+      await deleteEntitiesWithReferences({ notes: trashedIds });
     } catch (err) {
       console.error('Failed to empty trash:', err);
       throw err;

@@ -1,508 +1,223 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { db } from '../db';
 import type { BackupPayload, EncryptedBackupBlob } from '../lib/backup-crypto';
-
-// ── Mock ../db so backup-restore doesn't touch a real Dexie instance ──
-// vi.hoisted ensures these are available when the vi.mock factory runs
-// (vi.mock factories are hoisted above imports by vitest)
-
-const {
-  mockClear,
-  mockBulkAdd,
-  mockBulkDelete,
-  mockGet,
-  mockAdd,
-  mockPut,
-  mockTransaction,
-} = vi.hoisted(() => {
-  const mockClear = vi.fn().mockResolvedValue(undefined);
-  const mockBulkAdd = vi.fn().mockResolvedValue(undefined);
-  const mockBulkDelete = vi.fn().mockResolvedValue(undefined);
-  const mockGet = vi.fn().mockResolvedValue(undefined);
-  const mockAdd = vi.fn().mockResolvedValue(undefined);
-  const mockPut = vi.fn().mockResolvedValue(undefined);
-  const mockTransaction = vi.fn(async (_mode: string, _tables: any[], fn: () => Promise<void>) => {
-    await fn();
-  });
-  return { mockClear, mockBulkAdd, mockBulkDelete, mockGet, mockAdd, mockPut, mockTransaction };
-});
-
-vi.mock('../db', () => {
-  const table = () => ({
-    clear: mockClear,
-    bulkAdd: mockBulkAdd,
-    bulkDelete: mockBulkDelete,
-    get: mockGet,
-    add: mockAdd,
-    put: mockPut,
-  });
-  return {
-    db: {
-      transaction: mockTransaction,
-      notes: table(),
-      tasks: table(),
-      folders: table(),
-      tags: table(),
-      timelineEvents: table(),
-      timelines: table(),
-      whiteboards: table(),
-      standaloneIOCs: table(),
-      chatThreads: table(),
-    },
-  };
-});
-
-import { restoreFullReplace, restoreMerge } from '../lib/backup-restore';
-
-// ── Helpers ────────────────────────────────────────────────────────
+import { BACKUP_TABLES } from '../lib/backup-tables';
+import { buildDifferentialPayload, buildFullBackupPayload } from '../lib/backup-data';
+import { previewRestore, restoreFullReplace, restoreMerge } from '../lib/backup-restore';
 
 function makePayload(overrides: Partial<BackupPayload> = {}): BackupPayload {
-  return {
-    version: 1,
-    type: 'full',
-    scope: 'all',
-    createdAt: Date.now(),
-    data: {},
-    ...overrides,
-  };
+  return { version: 1, type: 'full', scope: 'all', createdAt: 10000, data: {}, ...overrides };
+}
+function makeNote(id: string, updatedAt = 1000, folderId?: string) {
+  return { id, title: `Note ${id}`, content: 'Preserved analyst text', tags: [], pinned: false,
+    archived: false, trashed: false, createdAt: 100, updatedAt, folderId };
+}
+function makeTask(id: string, updatedAt = 1000, folderId?: string) {
+  return { id, title: `Task ${id}`, completed: false, priority: 'none' as const, tags: [],
+    status: 'todo' as const, order: 0, trashed: false, archived: false, createdAt: 100, updatedAt, folderId };
+}
+async function snapshot() {
+  return Promise.all(BACKUP_TABLES.map(async name => [name, await db.table(name).toArray()]));
 }
 
-function makeNote(id: string, updatedAt: number) {
-  return {
-    id,
-    title: `Note ${id}`,
-    content: '',
-    tags: [],
-    pinned: false,
-    archived: false,
-    trashed: false,
-    createdAt: updatedAt - 1000,
-    updatedAt,
-  };
-}
-
-function makeTask(id: string, updatedAt: number) {
-  return {
-    id,
-    title: `Task ${id}`,
-    completed: false,
-    priority: 'none',
-    tags: [],
-    status: 'todo',
-    order: 0,
-    trashed: false,
-    archived: false,
-    createdAt: updatedAt - 1000,
-    updatedAt,
-  };
-}
-
-// ── restoreFullReplace ─────────────────────────────────────────────
-
-describe('restoreFullReplace', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    // Reset mock implementations to defaults
-    mockClear.mockResolvedValue(undefined);
-    mockBulkAdd.mockResolvedValue(undefined);
-    mockGet.mockResolvedValue(undefined);
-    mockAdd.mockResolvedValue(undefined);
-    mockPut.mockResolvedValue(undefined);
-    mockBulkDelete.mockResolvedValue(undefined);
-    mockTransaction.mockImplementation(async (_mode: string, _tables: any[], fn: () => Promise<void>) => {
-      await fn();
-    });
-  });
-
-  it('returns zero counts for empty payload', async () => {
-    const result = await restoreFullReplace(makePayload({ data: {} }));
-    expect(result.added).toBe(0);
-    expect(result.updated).toBe(0);
-    expect(result.deleted).toBe(0);
-    expect(result.tables).toEqual([]);
-  });
-
-  it('clears and bulk-adds notes', async () => {
-    const notes = [makeNote('n1', 1000), makeNote('n2', 2000)];
-    const result = await restoreFullReplace(makePayload({ data: { notes } }));
-
-    expect(result.added).toBe(2);
-    expect(result.tables).toContain('notes');
-    expect(mockClear).toHaveBeenCalled();
-    expect(mockBulkAdd).toHaveBeenCalledWith(notes);
-  });
-
-  it('clears and bulk-adds tasks', async () => {
-    const tasks = [makeTask('t1', 1000)];
-    const result = await restoreFullReplace(makePayload({ data: { tasks } }));
-
-    expect(result.added).toBe(1);
-    expect(result.tables).toContain('tasks');
-  });
-
-  it('processes multiple tables', async () => {
-    const notes = [makeNote('n1', 1000)];
-    const tasks = [makeTask('t1', 2000), makeTask('t2', 3000)];
-    const folders = [{ id: 'f1', name: 'Folder', order: 0, createdAt: 1000 }];
-
-    const result = await restoreFullReplace(makePayload({
-      data: { notes, tasks, folders: folders as any },
-    }));
-
-    expect(result.added).toBe(4);
-    expect(result.tables).toContain('notes');
-    expect(result.tables).toContain('tasks');
-    expect(result.tables).toContain('folders');
-  });
-
-  it('skips tables with empty arrays', async () => {
-    const result = await restoreFullReplace(makePayload({
-      data: { notes: [], tasks: [makeTask('t1', 1000)] },
-    }));
-
-    expect(result.added).toBe(1);
-    expect(result.tables).not.toContain('notes');
-    expect(result.tables).toContain('tasks');
-  });
-
-  it('always sets updated and deleted to 0', async () => {
-    const result = await restoreFullReplace(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-    }));
-
-    expect(result.updated).toBe(0);
-    expect(result.deleted).toBe(0);
-  });
-
-  it('wraps operations in a readwrite transaction', async () => {
-    await restoreFullReplace(makePayload({ data: { notes: [makeNote('n1', 1000)] } }));
-
-    expect(mockTransaction).toHaveBeenCalledWith(
-      'rw',
-      expect.any(Array),
-      expect.any(Function),
-    );
-  });
-
-  it('throws descriptive error on storage quota exceeded (DOMException)', async () => {
-    const quotaErr = new DOMException('Quota exceeded', 'QuotaExceededError');
-    mockTransaction.mockRejectedValueOnce(quotaErr);
-
-    await expect(restoreFullReplace(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-    }))).rejects.toThrow('Storage quota exceeded');
-  });
-
-  it('throws descriptive error on quota exceeded (string match)', async () => {
-    // DOMException.code is a read-only getter, so we test the string-based
-    // detection path instead (the source checks String(err) for "QuotaExceeded")
-    const quotaErr = new Error('QuotaExceeded: disk full');
-    mockTransaction.mockRejectedValueOnce(quotaErr);
-
-    await expect(restoreFullReplace(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-    }))).rejects.toThrow('Storage quota exceeded');
-  });
-
-  it('re-throws non-quota errors as-is', async () => {
-    const genericErr = new Error('Some other DB error');
-    mockTransaction.mockRejectedValueOnce(genericErr);
-
-    await expect(restoreFullReplace(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-    }))).rejects.toThrow('Some other DB error');
-  });
-
-  it('handles all synced table types', async () => {
-    const payload = makePayload({
-      data: {
-        notes: [makeNote('n1', 1000)],
-        tasks: [makeTask('t1', 1000)],
-        folders: [{ id: 'f1', name: 'F', order: 0, createdAt: 1000 }] as any,
-        tags: [{ id: 'tg1', name: 'tag', color: '#000' }] as any,
-        timelineEvents: [{ id: 'te1', timestamp: 1000 }] as any,
-        timelines: [{ id: 'tl1', name: 'TL', order: 0 }] as any,
-        whiteboards: [{ id: 'wb1', name: 'WB', elements: '[]' }] as any,
-        standaloneIOCs: [{ id: 'ioc1', type: 'ipv4', value: '1.2.3.4' }] as any,
-        chatThreads: [{ id: 'ct1', title: 'Chat' }] as any,
-      },
-    });
-
-    const result = await restoreFullReplace(payload);
-    expect(result.added).toBe(9);
-    expect(result.tables).toHaveLength(9);
+beforeEach(async () => {
+  await db.transaction('rw', BACKUP_TABLES.map(name => db.table(name)), async () => {
+    for (const name of BACKUP_TABLES) await db.table(name).clear();
   });
 });
 
-// ── restoreMerge ───────────────────────────────────────────────────
-
-describe('restoreMerge', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockClear.mockResolvedValue(undefined);
-    mockBulkAdd.mockResolvedValue(undefined);
-    mockGet.mockResolvedValue(undefined);
-    mockAdd.mockResolvedValue(undefined);
-    mockPut.mockResolvedValue(undefined);
-    mockBulkDelete.mockResolvedValue(undefined);
-    mockTransaction.mockImplementation(async (_mode: string, _tables: any[], fn: () => Promise<void>) => {
-      await fn();
-    });
+describe('restore with the real application Dexie schema', () => {
+  it('preserves absent tables but clears an explicitly empty table', async () => {
+    await db.notes.add(makeNote('n'));
+    await db.tasks.add(makeTask('t'));
+    expect(await restoreFullReplace(makePayload())).toEqual({ added: 0, updated: 0, deleted: 0, tables: [] });
+    const preview = await previewRestore(makePayload({ data: { notes: [] } }));
+    expect(preview).toMatchObject({ added: 0, updated: 0, deleted: 1 });
+    expect(await db.notes.count()).toBe(1);
+    const result = await restoreFullReplace(makePayload({ data: { notes: [] } }), preview);
+    expect(result).toMatchObject({ deleted: 1, tables: ['notes'] });
+    expect(await db.notes.count()).toBe(0);
+    expect(await db.tasks.get('t')).toEqual(makeTask('t'));
   });
 
-  it('returns zero counts for empty payload', async () => {
-    const result = await restoreMerge(makePayload({ data: {} }));
-    expect(result.added).toBe(0);
-    expect(result.updated).toBe(0);
-    expect(result.deleted).toBe(0);
-    expect(result.tables).toEqual([]);
+  it('replaces investigation A while retaining investigation B and shared metadata', async () => {
+    const a = { id: 'A', name: 'A', order: 0, createdAt: 100 };
+    const b = { id: 'B', name: 'B', order: 1, createdAt: 100, timelineId: 'shared' };
+    await db.folders.bulkAdd([a, b]);
+    await db.notes.bulkAdd([makeNote('a-old', 1000, 'A'), { ...makeNote('b', 1000, 'B'), tags: ['shared'] }]);
+    const sharedTag = { id: 'tag', name: 'shared', color: '#aabbcc' };
+    const sharedTimeline = { id: 'shared', name: 'Live timeline', order: 0, createdAt: 100, updatedAt: 1000 };
+    await db.tags.add(sharedTag);
+    await db.timelines.add(sharedTimeline);
+    const payload = makePayload({ scope: 'investigation', scopeId: 'A', data: {
+      folders: [{ ...a, name: 'Recovered A' }], notes: [makeNote('a-new', 500, 'A')], tasks: [],
+      tags: [{ ...sharedTag, color: '#000000' }], timelines: [{ ...sharedTimeline, name: 'Old title' }],
+    } });
+    const preview = await previewRestore(payload);
+    expect(preview).toMatchObject({ added: 1, updated: 1, deleted: 1, sharedPreserved: 2 });
+    await restoreFullReplace(payload, preview);
+    expect(await db.notes.get('a-old')).toBeUndefined();
+    expect(await db.notes.get('a-new')).toEqual(makeNote('a-new', 500, 'A'));
+    expect(await db.notes.get('b')).toEqual({ ...makeNote('b', 1000, 'B'), tags: ['shared'] });
+    expect(await db.folders.get('B')).toEqual(b);
+    expect(await db.tags.get('tag')).toEqual(sharedTag);
+    expect(await db.timelines.get('shared')).toEqual(sharedTimeline);
   });
 
-  it('adds items that do not exist in the database', async () => {
-    mockGet.mockResolvedValue(undefined); // not found
-    const notes = [makeNote('n1', 1000), makeNote('n2', 2000)];
-
-    const result = await restoreMerge(makePayload({ data: { notes } }));
-
-    expect(result.added).toBe(2);
-    expect(result.updated).toBe(0);
-    expect(mockAdd).toHaveBeenCalledTimes(2);
+  it('scopes empty agent and evidence tables by investigationId or folderId', async () => {
+    for (const name of ['agentActions', 'agentDeployments', 'agentMeetings', 'evidenceItems'] as const) {
+      const field = name === 'evidenceItems' ? 'folderId' : 'investigationId';
+      await db.table(name).bulkAdd([{ id: 'a', [field]: 'A' }, { id: 'b', [field]: 'B' }]);
+    }
+    await restoreFullReplace(makePayload({ scope: 'investigation', scopeId: 'A', data: {
+      agentActions: [], agentDeployments: [], agentMeetings: [], evidenceItems: [],
+    } }));
+    for (const name of ['agentActions', 'agentDeployments', 'agentMeetings', 'evidenceItems'] as const) {
+      expect((await db.table(name).toArray()).map(row => row.id)).toEqual(['b']);
+    }
   });
 
-  it('updates items when backup is newer (higher updatedAt)', async () => {
-    mockGet.mockResolvedValue({ id: 'n1', updatedAt: 500 }); // older
-    const notes = [makeNote('n1', 1000)]; // newer
-
-    const result = await restoreMerge(makePayload({ data: { notes } }));
-
-    expect(result.updated).toBe(1);
-    expect(result.added).toBe(0);
-    expect(mockPut).toHaveBeenCalledTimes(1);
-    expect(mockPut).toHaveBeenCalledWith(notes[0]);
+  it('replaces only the identified entity, including IDs containing colons', async () => {
+    await db.notes.bulkAdd([makeNote('one:part'), makeNote('two')]);
+    const payload = makePayload({ scope: 'entity', scopeId: 'notes:one:part', data: { notes: [{ ...makeNote('one:part'), title: 'Recovered' }] } });
+    expect((await buildFullBackupPayload('entity', 'notes:one:part')).data.notes).toEqual([makeNote('one:part')]);
+    await restoreFullReplace(payload);
+    expect((await db.notes.get('one:part'))?.title).toBe('Recovered');
+    expect(await db.notes.get('two')).toEqual(makeNote('two'));
   });
 
-  it('skips items when local is newer (higher updatedAt)', async () => {
-    mockGet.mockResolvedValue({ id: 'n1', updatedAt: 2000 }); // newer
-    const notes = [makeNote('n1', 1000)]; // older
-
-    const result = await restoreMerge(makePayload({ data: { notes } }));
-
-    expect(result.updated).toBe(0);
-    expect(result.added).toBe(0);
-    expect(mockPut).not.toHaveBeenCalled();
-    expect(mockAdd).not.toHaveBeenCalled();
+  it('can clear the selected entity without clearing its table', async () => {
+    await db.notes.bulkAdd([makeNote('one'), makeNote('two')]);
+    await restoreFullReplace(makePayload({ scope: 'entity', scopeId: 'notes:one', data: { notes: [] } }));
+    expect((await db.notes.toArray()).map(row => row.id)).toEqual(['two']);
   });
 
-  it('skips items when timestamps are equal', async () => {
-    mockGet.mockResolvedValue({ id: 'n1', updatedAt: 1000 }); // same
-    const notes = [makeNote('n1', 1000)]; // same
-
-    const result = await restoreMerge(makePayload({ data: { notes } }));
-
-    expect(result.updated).toBe(0);
-    expect(result.added).toBe(0);
+  it.each([
+    { data: { notes: [{ title: 'Missing ID' }] } },
+    { data: { notes: [makeNote('same'), makeNote('same')] } },
+    { data: { notes: 'not an array' } },
+    { data: { unknownTable: [] } },
+    { scope: 'investigation', data: { notes: [] } },
+    { scope: 'entity', scopeId: 'notes', data: {} },
+    { scope: 'entity', scopeId: 'notes:one', data: { notes: [makeNote('two')] } },
+    { scope: 'investigation', scopeId: 'A', data: { notes: [makeNote('b', 1000, 'B')] } },
+    { scope: 'investigation', scopeId: 'A', data: { agentProfiles: [] } },
+  ])('rejects an invalid complete plan before deleting any data: %j', async invalid => {
+    await db.notes.add(makeNote('preserved'));
+    const before = await snapshot();
+    await expect(restoreFullReplace(makePayload(invalid as any))).rejects.toThrow();
+    expect(await snapshot()).toEqual(before);
   });
 
-  it('handles mix of adds and updates', async () => {
-    mockGet
-      .mockResolvedValueOnce(undefined)       // n1: not found -> add
-      .mockResolvedValueOnce({ id: 'n2', updatedAt: 500 }); // n2: older -> update
-
-    const notes = [makeNote('n1', 1000), makeNote('n2', 1000)];
-    const result = await restoreMerge(makePayload({ data: { notes } }));
-
-    expect(result.added).toBe(1);
-    expect(result.updated).toBe(1);
+  it('refuses to claim an existing ID from a different investigation', async () => {
+    await db.notes.add(makeNote('shared-id', 1000, 'B'));
+    await expect(restoreFullReplace(makePayload({ scope: 'investigation', scopeId: 'A',
+      data: { notes: [makeNote('shared-id', 1000, 'A')] } }))).rejects.toThrow('another scope');
+    expect((await db.notes.get('shared-id'))?.folderId).toBe('B');
   });
 
-  it('skips items without an id', async () => {
-    const notes = [{ title: 'No ID', updatedAt: 1000 }] as any; // missing id
-
-    const result = await restoreMerge(makePayload({ data: { notes } }));
-
-    expect(result.added).toBe(0);
-    expect(result.updated).toBe(0);
-    expect(mockAdd).not.toHaveBeenCalled();
-    expect(mockGet).not.toHaveBeenCalled();
+  it('rejects a deletion that would break another investigation’s link', async () => {
+    await db.notes.bulkAdd([makeNote('a', 1000, 'A'), { ...makeNote('b', 1000, 'B'), linkedNoteIds: ['a'] }]);
+    const before = await snapshot();
+    await expect(restoreFullReplace(makePayload({ scope: 'investigation', scopeId: 'A', data: { notes: [] } })))
+      .rejects.toThrow('retained reference');
+    expect(await snapshot()).toEqual(before);
   });
 
-  it('applies tombstone deletions via deletedIds', async () => {
-    mockGet.mockResolvedValue(undefined);
-    const result = await restoreMerge(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-      deletedIds: { notes: ['n-deleted-1', 'n-deleted-2'] },
-    }));
-
-    expect(result.deleted).toBe(2);
-    expect(mockBulkDelete).toHaveBeenCalledWith(['n-deleted-1', 'n-deleted-2']);
+  it('protects references from newly restored rows too', async () => {
+    await db.notes.add(makeNote('old'));
+    await expect(restoreFullReplace(makePayload({ data: {
+      notes: [{ ...makeNote('new'), linkedNoteIds: ['old'] }],
+    } }))).rejects.toThrow('retained reference');
+    expect(await db.notes.get('old')).toBeDefined();
+    expect(await db.notes.get('new')).toBeUndefined();
   });
 
-  it('applies tombstone deletions for tables with no data items', async () => {
-    const result = await restoreMerge(makePayload({
-      data: {},
-      deletedIds: { tasks: ['t-del-1'] },
-    }));
-
-    expect(result.deleted).toBe(1);
-    expect(result.tables).toContain('tasks');
-    expect(mockBulkDelete).toHaveBeenCalledWith(['t-del-1']);
+  it('protects nested IOC and agent references using the shared relation registry', async () => {
+    const note = { ...makeNote('source'), iocAnalysis: { extractedAt: 1, iocs: [{ id: 'embedded', type: 'domain' as const,
+      value: 'example.test', confidence: 'high' as const, firstSeen: 1, dismissed: false }] } };
+    await db.notes.add(note);
+    await db.table('standaloneIOCs').add({ id: 'retained', relationships: [{ targetIOCId: 'embedded', relationshipType: 'related-to' }] });
+    await expect(restoreFullReplace(makePayload({ data: { notes: [makeNote('source')] } }))).rejects.toThrow('retained reference');
+    expect((await db.notes.get('source'))?.iocAnalysis?.iocs[0].id).toBe('embedded');
+    await db.table('agentProfiles').add({ id: 'profile' });
+    await db.table('agentDeployments').add({ id: 'deployment', profileId: 'profile' });
+    await expect(restoreFullReplace(makePayload({ data: { agentProfiles: [] } }))).rejects.toThrow('retained reference');
+    expect(await db.agentProfiles.get('profile')).toBeDefined();
   });
 
-  it('applies tombstone deletions alongside data items', async () => {
-    mockGet.mockResolvedValue(undefined); // not found -> add
-
-    const result = await restoreMerge(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-      deletedIds: { notes: ['n-old'] },
-    }));
-
-    expect(result.added).toBe(1);
-    expect(result.deleted).toBe(1);
-    expect(result.tables).toContain('notes');
+  it('refuses to rename a shared tag or delete a referenced tag', async () => {
+    await db.tags.add({ id: 'tag', name: 'keep', color: '#123456' });
+    await db.notes.add({ ...makeNote('n'), tags: ['keep'] });
+    await expect(restoreFullReplace(makePayload({ scope: 'investigation', scopeId: 'A',
+      data: { tags: [{ id: 'tag', name: 'renamed', color: '#000000' }] } }))).rejects.toThrow('different name');
+    await expect(restoreFullReplace(makePayload({ data: { tags: [] } }))).rejects.toThrow('tag still used');
+    expect((await db.tags.get('tag'))?.name).toBe('keep');
   });
 
-  it('tracks affected tables correctly', async () => {
-    mockGet.mockResolvedValue(undefined);
-    const result = await restoreMerge(makePayload({
-      data: {
-        notes: [makeNote('n1', 1000)],
-        tasks: [makeTask('t1', 1000)],
-      },
-    }));
-
-    expect(result.tables).toContain('notes');
-    expect(result.tables).toContain('tasks');
-    expect(result.tables).toHaveLength(2);
+  it('refuses a stale preview and requires a fresh review', async () => {
+    await db.notes.add(makeNote('n'));
+    const payload = makePayload({ data: { notes: [] } });
+    const preview = await previewRestore(payload);
+    await db.notes.update('n', { content: 'New analyst work', updatedAt: 2000 });
+    await expect(restoreFullReplace(payload, preview)).rejects.toThrow('Data changed after');
+    expect((await db.notes.get('n'))?.content).toBe('New analyst work');
+    await restoreFullReplace(payload, await previewRestore(payload));
+    expect(await db.notes.count()).toBe(0);
   });
 
-  it('does not duplicate table names when both items and deletedIds exist', async () => {
-    mockGet.mockResolvedValue(undefined);
-    const result = await restoreMerge(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-      deletedIds: { notes: ['n-del'] },
-    }));
-
-    const noteCount = result.tables.filter(t => t === 'notes').length;
-    expect(noteCount).toBe(1);
+  it('rolls all tables back when a later write fails', async () => {
+    await db.notes.add(makeNote('old'));
+    await db.tasks.add(makeTask('old-task'));
+    const before = await snapshot();
+    const fail = () => { throw new DOMException('Synthetic storage full', 'QuotaExceededError'); };
+    db.tasks.hook('creating', fail);
+    try {
+      await expect(restoreFullReplace(makePayload({ data: {
+        notes: [makeNote('new')], tasks: [makeTask('new-task')],
+      } }))).rejects.toThrow('rolled back');
+    } finally { db.tasks.hook('creating').unsubscribe(fail); }
+    expect(await snapshot()).toEqual(before);
   });
 
-  it('wraps operations in a readwrite transaction', async () => {
-    await restoreMerge(makePayload({ data: { notes: [makeNote('n1', 1000)] } }));
-
-    expect(mockTransaction).toHaveBeenCalledWith(
-      'rw',
-      expect.any(Array),
-      expect.any(Function),
-    );
+  it('merge adds new records, updates only newer revisions and retains newer local data', async () => {
+    await db.notes.bulkAdd([makeNote('newer', 3000), makeNote('older', 1000), makeNote('same', 2000)]);
+    const result = await restoreMerge(makePayload({ data: { notes: [
+      makeNote('newer', 2000), makeNote('older', 2000), makeNote('same', 2000), makeNote('new', 2000),
+    ] } }));
+    expect(result).toMatchObject({ added: 1, updated: 1, deleted: 0 });
+    expect((await db.notes.get('newer'))?.updatedAt).toBe(3000);
+    expect((await db.notes.get('older'))?.updatedAt).toBe(2000);
   });
 
-  it('throws descriptive error on storage quota exceeded', async () => {
-    const quotaErr = new DOMException('Quota exceeded', 'QuotaExceededError');
-    mockTransaction.mockRejectedValueOnce(quotaErr);
-
-    await expect(restoreMerge(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-    }))).rejects.toThrow('Storage quota exceeded');
+  it('rejects out-of-scope and contradictory differential deletions atomically', async () => {
+    await db.notes.bulkAdd([makeNote('a', 1000, 'A'), makeNote('b', 1000, 'B')]);
+    await db.folders.add({ id: 'A', name: 'A', order: 0, createdAt: 100 });
+    const parent = await buildFullBackupPayload('investigation', 'A');
+    const delta = await buildDifferentialPayload('investigation', parent, 'parent', 'A');
+    const before = await snapshot();
+    await expect(restoreMerge({ ...delta, deletedIds: { notes: ['b'] } }, undefined, parent)).rejects.toThrow('outside the backup scope');
+    await expect(restoreMerge({ ...delta, data: { notes: [makeNote('a', 2000, 'A')] }, deletedIds: { notes: ['a'] } }, undefined, parent))
+      .rejects.toThrow('both restores and deletes');
+    expect(await snapshot()).toEqual(before);
   });
 
-  it('re-throws non-quota errors as-is', async () => {
-    const genericErr = new Error('Constraint error');
-    mockTransaction.mockRejectedValueOnce(genericErr);
-
-    await expect(restoreMerge(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-    }))).rejects.toThrow('Constraint error');
+  it('counts only existing differential deletions and preserves other entities', async () => {
+    await db.notes.bulkAdd([makeNote('old'), makeNote('keep')]);
+    const parent = await buildFullBackupPayload('all');
+    await db.notes.delete('old');
+    const delta = await buildDifferentialPayload('all', parent, 'parent');
+    await restoreFullReplace(parent);
+    const result = await restoreMerge({ ...delta, deletedIds: { notes: ['old', 'absent'] } }, undefined, parent);
+    expect(result).toMatchObject({ deleted: 1, tables: ['notes'] });
+    expect(await db.notes.get('keep')).toBeDefined();
   });
 
-  it('handles existing items without updatedAt (no update)', async () => {
-    mockGet.mockResolvedValue({ id: 'n1' }); // no updatedAt field
-    const notes = [makeNote('n1', 1000)];
-
-    const result = await restoreMerge(makePayload({ data: { notes } }));
-
-    // The condition requires BOTH record.updatedAt AND existing.updatedAt to be truthy
-    expect(result.updated).toBe(0);
-    expect(result.added).toBe(0);
-  });
-
-  it('handles backup items without updatedAt (no update)', async () => {
-    mockGet.mockResolvedValue({ id: 'n1', updatedAt: 500 });
-    const notes = [{ id: 'n1', title: 'No updatedAt' }] as any; // missing updatedAt
-
-    const result = await restoreMerge(makePayload({ data: { notes } }));
-
-    expect(result.updated).toBe(0);
+  it('cannot export internal sync data through an entity table name', async () => {
+    await expect(buildFullBackupPayload('entity', '_syncQueue:1')).rejects.toThrow('supported table');
   });
 });
-
-// ── BackupPayload structure tests ──────────────────────────────────
-
-describe('BackupPayload structure', () => {
-  it('has the expected shape for a full backup', () => {
-    const payload: BackupPayload = {
-      version: 1,
-      type: 'full',
-      scope: 'all',
-      createdAt: Date.now(),
-      data: {
-        notes: [],
-        tasks: [],
-      },
-    };
-    expect(payload.version).toBe(1);
-    expect(payload.type).toBe('full');
-    expect(payload.scope).toBe('all');
-  });
-
-  it('has the expected shape for a differential backup', () => {
-    const payload: BackupPayload = {
-      version: 1,
-      type: 'differential',
-      scope: 'all',
-      parentBackupId: 'parent-123',
-      createdAt: Date.now(),
-      lastBackupAt: Date.now() - 86400000,
-      data: {
-        notes: [makeNote('n1', 1000)],
-      },
-      deletedIds: {
-        notes: ['n-deleted'],
-      },
-    };
-    expect(payload.type).toBe('differential');
-    expect(payload.parentBackupId).toBe('parent-123');
-    expect(payload.deletedIds?.notes).toEqual(['n-deleted']);
-  });
-
-  it('supports investigation-scoped backup', () => {
-    const payload: BackupPayload = {
-      version: 1,
-      type: 'full',
-      scope: 'investigation',
-      scopeId: 'folder-abc',
-      createdAt: Date.now(),
-      data: {},
-    };
-    expect(payload.scope).toBe('investigation');
-    expect(payload.scopeId).toBe('folder-abc');
-  });
-
-  it('supports entity-scoped backup', () => {
-    const payload: BackupPayload = {
-      version: 1,
-      type: 'full',
-      scope: 'entity',
-      scopeId: 'note-xyz',
-      createdAt: Date.now(),
-      data: {},
-    };
-    expect(payload.scope).toBe('entity');
-    expect(payload.scopeId).toBe('note-xyz');
-  });
-});
-
-// ── Encryption round-trip tests (backup-crypto) ────────────────────
-
 describe('backup encryption/decryption round-trip', () => {
   // These tests import the real crypto functions and exercise the
   // encrypt -> decrypt pipeline end-to-end using the Web Crypto API.
@@ -679,93 +394,3 @@ describe('backup encryption/decryption round-trip', () => {
 });
 
 // ── RestoreResult structure ────────────────────────────────────────
-
-describe('RestoreResult type', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockTransaction.mockImplementation(async (_mode: string, _tables: any[], fn: () => Promise<void>) => {
-      await fn();
-    });
-  });
-
-  it('full replace returns correct structure', async () => {
-    const result = await restoreFullReplace(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-    }));
-
-    expect(result).toHaveProperty('added');
-    expect(result).toHaveProperty('updated');
-    expect(result).toHaveProperty('deleted');
-    expect(result).toHaveProperty('tables');
-    expect(typeof result.added).toBe('number');
-    expect(typeof result.updated).toBe('number');
-    expect(typeof result.deleted).toBe('number');
-    expect(Array.isArray(result.tables)).toBe(true);
-  });
-
-  it('merge returns correct structure', async () => {
-    mockGet.mockResolvedValue(undefined);
-    const result = await restoreMerge(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-    }));
-
-    expect(result).toHaveProperty('added');
-    expect(result).toHaveProperty('updated');
-    expect(result).toHaveProperty('deleted');
-    expect(result).toHaveProperty('tables');
-  });
-});
-
-// ── isQuotaError edge cases ────────────────────────────────────────
-
-describe('quota error detection', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('detects QuotaExceededError by name', async () => {
-    const err = new DOMException('Storage full', 'QuotaExceededError');
-    mockTransaction.mockRejectedValueOnce(err);
-
-    await expect(restoreFullReplace(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-    }))).rejects.toThrow('Storage quota exceeded');
-  });
-
-  it('detects quota error by string containing "QuotaExceeded" (non-DOMException)', async () => {
-    // DOMException.code is read-only, so we test the String(err) fallback path
-    const err = { toString: () => 'QuotaExceeded: disk quota reached' };
-    mockTransaction.mockRejectedValueOnce(err);
-
-    await expect(restoreFullReplace(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-    }))).rejects.toThrow('Storage quota exceeded');
-  });
-
-  it('detects quota error by message substring "QuotaExceeded"', async () => {
-    const err = new Error('Something QuotaExceeded happened');
-    mockTransaction.mockRejectedValueOnce(err);
-
-    await expect(restoreFullReplace(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-    }))).rejects.toThrow('Storage quota exceeded');
-  });
-
-  it('detects quota error by message substring "storage quota"', async () => {
-    const err = new Error('storage quota reached');
-    mockTransaction.mockRejectedValueOnce(err);
-
-    await expect(restoreFullReplace(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-    }))).rejects.toThrow('Storage quota exceeded');
-  });
-
-  it('passes through non-quota errors for merge too', async () => {
-    const err = new TypeError('Cannot read property');
-    mockTransaction.mockRejectedValueOnce(err);
-
-    await expect(restoreMerge(makePayload({
-      data: { notes: [makeNote('n1', 1000)] },
-    }))).rejects.toThrow('Cannot read property');
-  });
-});
