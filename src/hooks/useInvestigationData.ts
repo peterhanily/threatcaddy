@@ -22,6 +22,7 @@ export interface InvestigationData {
   chats: ChatThread[];
   evidence: EvidenceItem[];
   loading: boolean;
+  loadedSuccessfully: boolean;
   error: string | null;
   refresh: () => Promise<void>;
   isRemote: boolean;
@@ -36,6 +37,7 @@ const EMPTY: InvestigationData = {
   chats: [],
   evidence: [],
   loading: false,
+  loadedSuccessfully: false,
   error: null,
   refresh: async () => {},
   isRemote: false,
@@ -59,6 +61,7 @@ export function useInvestigationData(
   // concurrent refreshes and unmount (not just successful responses).
   const requestVersion = useRef(0);
   const scope = useMemo(() => ({ folderId, mode }), [folderId, mode]);
+  const [successfulScope, setSuccessfulScope] = useState<typeof scope | null>(null);
   const activeScope = useRef<typeof scope | null>(null);
   useLayoutEffect(() => {
     activeScope.current = scope;
@@ -127,6 +130,7 @@ export function useInvestigationData(
     if (activeScope.current !== scope) return;
     const request = ++requestVersion.current;
     const current = () => activeScope.current === scope && requestVersion.current === request;
+    setSuccessfulScope(null);
     if (!folderId) {
       clearData();
       setError(null);
@@ -143,8 +147,10 @@ export function useInvestigationData(
       } else {
         await loadLocal(folderId, current);
       }
+      if (current()) setSuccessfulScope(scope);
     } catch (err) {
       if (!current()) return;
+      setSuccessfulScope(null);
       const message = err instanceof Error ? err.message : 'Failed to load investigation data';
       setError(message);
       clearData();
@@ -168,6 +174,9 @@ export function useInvestigationData(
         chats,
         evidence,
         loading,
+        // Scope equality invalidates readiness in the first render after navigation,
+        // before the loading effect runs. A failed read is never an empty success.
+        loadedSuccessfully: successfulScope === scope && !loading && error === null,
         error,
         refresh: load,
         isRemote: mode === 'remote',

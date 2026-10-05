@@ -32,8 +32,8 @@ interface SidebarProps {
   onRenameWhiteboard?: (id: string, name: string) => void;
   whiteboardCount?: number;
   onNavigate?: () => void;
-  onRenameTag?: (id: string, name: string) => void;
-  onDeleteTag?: (id: string) => void;
+  onRenameTag?: (id: string, name: string) => void | Promise<void>;
+  onDeleteTag?: (id: string) => void | Promise<void>;
   investigationScopedCounts?: { notes: number; tasks: number; events: number; whiteboards: number; iocs: number } | null;
   chatCount?: number;
   agentStatus?: 'idle' | 'running' | 'waiting' | 'paused' | 'error';

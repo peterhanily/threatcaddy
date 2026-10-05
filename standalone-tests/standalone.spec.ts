@@ -131,7 +131,7 @@ test('whiteboard raster bytes, CJK fonts and locale selection work without sibli
     });
   })).toBe(1);
   await page.reload();
-  await page.getByRole('heading', { name: 'Offline raster board', exact: true }).click();
+  // Hydration retains the selected editor; reload must not fall back to the list.
   await expect(page.getByPlaceholder('Whiteboard name')).toHaveValue('Offline raster board');
   // A retained file record alone is insufficient: require actual raster pixels
   // after reopening the whiteboard, not Excalidraw's missing-image placeholder.

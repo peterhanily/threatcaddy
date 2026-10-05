@@ -225,14 +225,14 @@ export function NotificationBell() {
   const groups = groupByDate(notifications);
 
   return (
-    <div className="relative">
+    <div className="md:relative">
       {/* Bell button */}
       <button
         onClick={() => {
           setOpen((v) => !v);
           if (!open) loadNotifications();
         }}
-        className="relative p-1.5 rounded-md hover:bg-gray-800/60 text-gray-400 hover:text-gray-200 transition-colors"
+        className="relative min-h-11 min-w-11 md:min-h-0 md:min-w-0 flex items-center justify-center p-1.5 rounded-md hover:bg-gray-800/60 text-gray-400 hover:text-gray-200 transition-colors"
         title="Notifications"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
         aria-expanded={open}
@@ -261,7 +261,7 @@ export function NotificationBell() {
           />
 
           <div
-            className="notif-dropdown-enter absolute right-0 top-9 z-50 w-[340px] max-h-[28rem] bg-gray-900 border border-gray-700/80 rounded-xl shadow-2xl shadow-black/40 overflow-hidden flex flex-col"
+            className="notif-dropdown-enter absolute start-2 end-2 md:start-auto md:end-0 top-full md:top-9 z-50 md:w-[340px] max-h-[28rem] bg-gray-900 border border-gray-700/80 rounded-xl shadow-2xl shadow-black/40 overflow-hidden flex flex-col"
             role="menu"
             aria-label="Notifications"
           >

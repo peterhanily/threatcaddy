@@ -1,6 +1,7 @@
 import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 import { useToast, type ToastType } from '../../contexts/ToastContext';
 import { cn } from '../../lib/utils';
+import { useScreenshare } from '../../hooks/ScreenshareContext';
 
 const ICON_MAP: Record<ToastType, typeof CheckCircle2> = {
   success: CheckCircle2,
@@ -18,6 +19,7 @@ const STYLE_MAP: Record<ToastType, string> = {
 
 export function ToastContainer() {
   const { toasts, removeToast } = useToast();
+  const { maxLevel } = useScreenshare();
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col-reverse gap-2 max-w-sm" role="region" aria-live="polite" aria-label="Notifications">
@@ -33,7 +35,7 @@ export function ToastContainer() {
             role="alert"
           >
             <Icon size={16} className="shrink-0 mt-0.5" />
-            <span className="flex-1 min-w-0">{toast.message}</span>
+            <span className="flex-1 min-w-0">{maxLevel ? 'Notification details are hidden while screensharing.' : toast.message}</span>
             <button
               onClick={() => removeToast(toast.id)}
               className="shrink-0 p-0.5 rounded hover:bg-white/10 transition-colors"

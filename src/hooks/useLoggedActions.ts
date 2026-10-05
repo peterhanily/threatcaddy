@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import type { Note, Task, TimelineEvent, StandaloneIOC, EvidenceItem, ChatThread, Folder, Tag, Timeline, Whiteboard } from '../types';
 
 import type { ActivityCategory, ActivityAction } from '../types';
+import type { NotePersistence } from './useNotes';
 
 type LogFn = (category: ActivityCategory, action: ActivityAction, detail: string, itemId?: string, itemTitle?: string) => void;
 
@@ -13,7 +14,7 @@ export function useLoggedActions(
   log: LogFn,
   notes: {
     notes: Note[];
-    createNote(p?: Partial<Note>): Promise<Note>;
+    createNote(p?: Partial<Note>, persist?: NotePersistence): Promise<Note>;
     trashNote(id: string): Promise<void>;
     restoreNote(id: string): Promise<void>;
     togglePin(id: string): Promise<void>;
@@ -98,8 +99,8 @@ export function useLoggedActions(
 ) {
   // ─── Notes ─────────────────────────────────────────────────────
 
-  const loggedCreateNote = useCallback(async (partial?: Partial<Note>) => {
-    const note = await notes.createNote(partial);
+  const loggedCreateNote = useCallback(async (partial?: Partial<Note>, persist?: NotePersistence) => {
+    const note = persist ? await notes.createNote(partial, persist) : await notes.createNote(partial);
     log('note', 'create', `Created note "${note.title}"`, note.id, note.title);
     return note;
   }, [notes, log]);

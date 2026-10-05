@@ -3,11 +3,13 @@ import { useTranslation } from 'react-i18next';
 import type { Whiteboard, Folder, Tag, Settings } from '../../types';
 import { WhiteboardList } from './WhiteboardList';
 import { Loader2 } from 'lucide-react';
+import { useScreenshare } from '../../hooks/ScreenshareContext';
 
 const WhiteboardEditor = React.lazy(() => import('./WhiteboardEditor'));
 
 interface WhiteboardViewProps {
   whiteboards: Whiteboard[];
+  loading?: boolean;
   folders: Folder[];
   allTags: Tag[];
   onCreateWhiteboard: (name?: string) => Promise<Whiteboard>;
@@ -24,6 +26,7 @@ interface WhiteboardViewProps {
 
 export function WhiteboardView({
   whiteboards,
+  loading = false,
   folders,
   allTags,
   onCreateWhiteboard,
@@ -38,14 +41,17 @@ export function WhiteboardView({
   settings,
 }: WhiteboardViewProps) {
   const { t } = useTranslation('whiteboard');
+  const { maxLevel } = useScreenshare();
   const selectedWhiteboard = selectedWhiteboardId ? whiteboards.find((w) => w.id === selectedWhiteboardId) : null;
 
-  // Auto-deselect if whiteboard was deleted
+  // Privacy filtering is temporary, not a deletion. Retain the underlying
+  // selection so disabling screenshare restores the same whiteboard and draft.
   useEffect(() => {
+    if (maxLevel !== null || loading) return;
     if (selectedWhiteboardId && !whiteboards.find((w) => w.id === selectedWhiteboardId)) {
       onWhiteboardSelect?.(null);
     }
-  }, [selectedWhiteboardId, whiteboards, onWhiteboardSelect]);
+  }, [selectedWhiteboardId, whiteboards, onWhiteboardSelect, maxLevel, loading]);
 
   const handleCreate = async () => {
     const wb = await onCreateWhiteboard();

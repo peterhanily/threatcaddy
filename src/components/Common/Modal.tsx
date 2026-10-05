@@ -1,6 +1,7 @@
-import { useEffect, useRef, useId, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
+import { useScreenshare } from '../../hooks/ScreenshareContext';
 
 interface ModalProps {
   open: boolean;
@@ -9,27 +10,35 @@ interface ModalProps {
   children: ReactNode;
   wide?: boolean;
   extraWide?: boolean;
+  /** Retain a hidden editor without its focus trap or scroll lock. */
+  suspended?: boolean;
 }
 
+const ModalSuspensionContext = createContext(false);
 const stack: HTMLElement[] = [];
 let priorOverflow = '';
+let priorFocus: HTMLElement | null = null;
+function availableForFocus(element: HTMLElement): boolean {
+  if (!element.isConnected || element.matches(':disabled')) return false;
+  for (let parent: HTMLElement | null = element; parent; parent = parent.parentElement) {
+    const style = getComputedStyle(parent);
+    if (parent.hidden || parent.hasAttribute('inert') || parent.getAttribute('aria-hidden') === 'true' || style.display === 'none' || style.visibility === 'hidden') return false;
+  }
+  return true;
+}
 function focusable(root: HTMLElement): HTMLElement[] {
-  return [...root.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])')].filter(element => {
-    if (element.matches(':disabled') || element.tabIndex < 0) return false;
-    for (let parent: HTMLElement | null = element; parent; parent = parent.parentElement) {
-      const style = getComputedStyle(parent);
-      if (parent.hidden || parent.hasAttribute('inert') || parent.getAttribute('aria-hidden') === 'true' || style.display === 'none' || style.visibility === 'hidden') return false;
-    }
-    return true;
-  });
+  return [...root.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [contenteditable="true"], [tabindex]:not([tabindex="-1"])')].filter(element => element.tabIndex >= 0 && availableForFocus(element));
 }
 
 function updateStack() {
   stack.forEach((element, index) => { element.style.zIndex = String(10000 + index); });
 }
 
-export function Modal({ open, onClose, title, children, wide, extraWide }: ModalProps) {
+export function Modal({ open, onClose, title, children, wide, extraWide, suspended: requestedSuspension = false }: ModalProps) {
   const { t } = useTranslation('common');
+  const { maxLevel } = useScreenshare();
+  const inheritedSuspension = useContext(ModalSuspensionContext);
+  const suspended = maxLevel !== null || requestedSuspension || inheritedSuspension;
   const overlayRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
 
@@ -39,9 +48,13 @@ export function Modal({ open, onClose, title, children, wide, extraWide }: Modal
 
   useEffect(() => {
     const el = overlayRef.current;
-    if (!open || !el) return;
+    if (!open || suspended || !el) return;
     const previousFocus = document.activeElement as HTMLElement;
-    if (!stack.length) { priorOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden'; }
+    if (!stack.length) {
+      priorOverflow = document.body.style.overflow;
+      priorFocus = previousFocus;
+      document.body.style.overflow = 'hidden';
+    }
     // Child effects can run first when dialogs open in the same React commit.
     const descendant = stack.findIndex(item => el.contains(item));
     if (descendant < 0) stack.push(el); else stack.splice(descendant, 0, el);
@@ -71,20 +84,34 @@ export function Modal({ open, onClose, title, children, wide, extraWide }: Modal
       const index = stack.indexOf(el);
       if (index >= 0) stack.splice(index, 1);
       updateStack();
-      if (!stack.length) document.body.style.overflow = priorOverflow;
-      if (wasTop) {
+      if (!stack.length) {
+        document.body.style.overflow = priorOverflow;
+        // A confirmed discard can remove the parent before the topmost child.
+        // Keep the original opener until the entire stack has closed.
+        const opener = priorFocus;
+        priorFocus = null;
+        if (opener && availableForFocus(opener)) opener.focus();
+      } else if (wasTop) {
         const next = stack.at(-1);
-        if (previousFocus?.isConnected && (!next || next.contains(previousFocus))) previousFocus.focus();
+        if (previousFocus && availableForFocus(previousFocus) && next?.contains(previousFocus)) previousFocus.focus();
         else if (next) (focusable(next)[0] ?? next).focus();
       }
     };
-  }, [open]);
+  }, [open, suspended]);
 
   if (!open) return null;
 
   return (
+    <ModalSuspensionContext.Provider value={suspended}>
     <div
       ref={overlayRef}
+      // Keep child forms mounted so a privacy toggle cannot discard edits.
+      // Inline display beats utility classes; inert also prevents interactions
+      // while the dialog is absent from the accessibility tree.
+      hidden={suspended}
+      inert={suspended}
+      aria-hidden={suspended || undefined}
+      style={suspended ? { display: 'none' } : undefined}
       tabIndex={-1}
       className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4"
       onClick={(e) => { if (e.target === overlayRef.current && stack.at(-1) === overlayRef.current) onClose(); }}
@@ -102,5 +129,6 @@ export function Modal({ open, onClose, title, children, wide, extraWide }: Modal
         <div className="p-4 overflow-y-auto">{children}</div>
       </div>
     </div>
+    </ModalSuspensionContext.Provider>
   );
 }

@@ -6,6 +6,7 @@ import {
   importProductBaselinePackage,
   listProductBaselines,
   normalizeProductRenderContextInput,
+  parseProductBaselinePackage,
   PRODUCT_BASELINE_PACKAGE_SCHEMA,
   PRODUCT_BASELINE_TAG,
   PRODUCT_NOTE_TAG,
@@ -22,6 +23,13 @@ describe('product baselines', () => {
     await db.standaloneIOCs.clear();
     await db.timelineEvents.clear();
     await db.evidenceItems.clear();
+  });
+
+  it('rejects oversized imported baseline content instead of silently truncating it', () => {
+    const pkg = { schemaVersion: PRODUCT_BASELINE_PACKAGE_SCHEMA, kind: 'product-baseline', baseline: { name: 'Fictional baseline', content: 'x'.repeat(500_001) } };
+    expect(() => parseProductBaselinePackage(JSON.stringify(pkg))).toThrow('has not been truncated');
+    pkg.baseline.content = 'x'.repeat(500_000);
+    expect(parseProductBaselinePackage(JSON.stringify(pkg)).content).toHaveLength(500_000);
   });
 
   it('renders a safe Jinja-compatible loop and conditional', () => {

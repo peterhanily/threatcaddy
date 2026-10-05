@@ -1,9 +1,9 @@
-import { useState, useCallback, useMemo, useEffect, useRef, lazy, Suspense, memo, type ReactNode } from 'react';
+import { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef, lazy, Suspense, memo, type ReactNode } from 'react';
 import { AppLayout } from './components/Layout/AppLayout';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
 import { NavigationProvider, useNavigation, savedNavState } from './contexts/NavigationContext';
-import { InvestigationProvider, useInvestigation } from './contexts/InvestigationContext';
+import { InvestigationProvider, InvestigationVisibilityScope, useInvestigation } from './contexts/InvestigationContext';
 import { UIModalProvider, useUIModals } from './contexts/UIModalContext';
 const NoteList = lazy(() => import('./components/Notes/NoteList').then(m => ({ default: m.NoteList })));
 const NoteEditor = lazy(() => import('./components/Notes/NoteEditor').then(m => ({ default: m.NoteEditor })));
@@ -36,11 +36,12 @@ import { useActivityLog } from './hooks/useActivityLog';
 import { ActivityLogContext } from './hooks/ActivityLogContext';
 import { ScreenshareContext } from './hooks/ScreenshareContext';
 import { getEffectiveClsLevels, isAboveClsThreshold } from './lib/classification';
+import { buildInvestigationVisibility } from './lib/investigation-visibility';
 import { clipBuffer } from './lib/clipBuffer';
 import { formatBytes, openFilePicker, getDroppedFiles, dispatchFile, type FileOpenDetail } from './lib/file-handler';
 import { hasPendingChanges } from './lib/pending-changes';
 import { useInvestigationData } from './hooks/useInvestigationData';
-import type { ConfidenceLevel, Note, StandaloneIOC, ChatThread } from './types';
+import type { ConfidenceLevel, Note, NoteTemplate, StandaloneIOC, ChatThread } from './types';
 import { DEFAULT_QUICK_LINKS } from './types';
 const DashboardView = lazy(() => import('./components/Dashboard/DashboardView').then(m => ({ default: m.DashboardView })));
 import { FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
@@ -53,6 +54,10 @@ import { autoEnrichImportedIOCs } from './lib/ioc-auto-enrichment';
 import { upsertIOCObservations } from './lib/ioc-observations';
 import { buildEvidenceItemDrafts, findDuplicateEvidenceItemIds } from './lib/evidence-import';
 import { parseProductBaselinePackage, PRODUCT_NOTE_TAG } from './lib/product-baselines';
+import { prepareProductComposerNote, type ProductComposerSnapshot } from './lib/product-composer';
+import { createProductComposerPersistence } from './lib/product-composer-persistence';
+import type { ProductComposerSaveInput } from './components/Products/ProductComposer';
+import { getActiveWorkspaceId } from './lib/workspace-profiles';
 import { generateSampleInvestigation, isSampleEntity } from './lib/sample-investigation';
 import { db } from './db';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
@@ -104,10 +109,14 @@ export default function App() {
     <AuthProvider>
       <ToastProvider>
         <AppDataLayer />
-        <DraftRecoveryNotice />
       </ToastProvider>
     </AuthProvider>
   );
+}
+
+function SyncErrorBanner({ error }: { error: string }) {
+  const { screenshareMaxLevel } = useUIModals();
+  return <div role="alert" className="fixed bottom-4 left-4 right-4 z-[100] rounded border border-amber-500 bg-gray-950 p-3 text-sm text-amber-100 shadow-lg">{screenshareMaxLevel ? 'Synchronization needs attention. Details are hidden during screensharing.' : error}</div>;
 }
 
 // ─── AppDataLayer ─────────────────────────────────────────────────────
@@ -121,7 +130,7 @@ function AppDataLayer() {
   const tasks = useTasks();
   const timeline = useTimeline();
   const { timelines, createTimeline, updateTimeline, deleteTimeline, reload: reloadTimelines } = useTimelines();
-  const { whiteboards, createWhiteboard, updateWhiteboard, deleteWhiteboard, trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard, emptyTrashWhiteboards, getFilteredWhiteboards, whiteboardCounts, reload: reloadWhiteboards } = useWhiteboards();
+  const { whiteboards, loading: whiteboardsLoading, createWhiteboard, updateWhiteboard, deleteWhiteboard, trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard, emptyTrashWhiteboards, getFilteredWhiteboards, whiteboardCounts, reload: reloadWhiteboards } = useWhiteboards();
   const standaloneIOCsHook = useStandaloneIOCs();
   const evidenceItemsHook = useEvidenceItems();
   const chatsHook = useChats();
@@ -132,6 +141,8 @@ function AppDataLayer() {
   const integrationsHook = useIntegrations();
 
   const activityLog = useActivityLog();
+  const [pendingReloads, setPendingReloads] = useState(0);
+  const [reloadFailed, setReloadFailed] = useState(false);
 
   // ─── Team Server Integration ───────────────────────────────────
   const auth = useAuth();
@@ -156,19 +167,18 @@ function AppDataLayer() {
   }, handleFolderInvite);
 
   /** Reload every data hook — use after bulk operations that touch multiple tables. */
-  const reloadAll = useCallback(() => {
-    reloadFolders();
-    notes.reload();
-    tasks.reload();
-    timeline.reload();
-    reloadTimelines();
-    reloadWhiteboards();
-    standaloneIOCsHook.reload();
-    evidenceItemsHook.reload();
-    chatsHook.reload();
-    reloadTags();
-    noteTemplatesHook.reload();
-    playbooksHook.reload();
+  const reloadAll = useCallback(async () => {
+    setPendingReloads(count => count + 1);
+    try {
+      const results = await Promise.allSettled([
+        reloadFolders(), notes.reload(), tasks.reload(), timeline.reload(), reloadTimelines(),
+        reloadWhiteboards(), standaloneIOCsHook.reload(), evidenceItemsHook.reload(), chatsHook.reload(),
+        reloadTags(), noteTemplatesHook.reload(), playbooksHook.reload(),
+      ]);
+      setReloadFailed(results.some(result => result.status === 'rejected'));
+    } finally {
+      setPendingReloads(count => count - 1);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reloadFolders, notes.reload, tasks.reload, timeline.reload, reloadTimelines, reloadWhiteboards, standaloneIOCsHook.reload, evidenceItemsHook.reload, chatsHook.reload, reloadTags, noteTemplatesHook.reload, playbooksHook.reload]);
 
@@ -218,7 +228,7 @@ function AppDataLayer() {
           updateSettings={updateSettings}
           defaultView={safeDefaultView}
         >
-          {syncError && <div role="alert" className="fixed bottom-4 left-4 right-4 z-[100] rounded border border-amber-500 bg-gray-950 p-3 text-sm text-amber-100 shadow-lg">{syncError}</div>}
+          {syncError && <SyncErrorBanner error={syncError} />}
           <AppInner
             settings={settings}
             updateSettings={updateSettings}
@@ -234,6 +244,8 @@ function AppDataLayer() {
             deleteTimeline={deleteTimeline}
             reloadTimelines={reloadTimelines}
             whiteboards={whiteboards}
+            whiteboardsLoading={whiteboardsLoading}
+            bulkDataLoading={pendingReloads > 0 || reloadFailed}
             createWhiteboard={createWhiteboard}
             updateWhiteboard={updateWhiteboard}
             deleteWhiteboard={deleteWhiteboard}
@@ -336,6 +348,8 @@ type AppInnerProps = {
   deleteTimeline: ReturnType<typeof useTimelines>['deleteTimeline'];
   reloadTimelines: ReturnType<typeof useTimelines>['reload'];
   whiteboards: ReturnType<typeof useWhiteboards>['whiteboards'];
+  whiteboardsLoading: boolean;
+  bulkDataLoading: boolean;
   createWhiteboard: ReturnType<typeof useWhiteboards>['createWhiteboard'];
   updateWhiteboard: ReturnType<typeof useWhiteboards>['updateWhiteboard'];
   deleteWhiteboard: ReturnType<typeof useWhiteboards>['deleteWhiteboard'];
@@ -392,17 +406,17 @@ const AppInner = memo(function AppInner({
   settings, updateSettings, toggleTheme,
   addToast, tt,
   notes, tasks, timeline,
-  timelines, createTimeline, updateTimeline, deleteTimeline, reloadTimelines,
-  whiteboards, createWhiteboard, updateWhiteboard, deleteWhiteboard,
+  timelines: allTimelines, createTimeline, updateTimeline, deleteTimeline, reloadTimelines,
+  whiteboards, whiteboardsLoading, bulkDataLoading, createWhiteboard, updateWhiteboard, deleteWhiteboard,
   trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard,
-  emptyTrashWhiteboards, getFilteredWhiteboards, whiteboardCounts, reloadWhiteboards,
+  emptyTrashWhiteboards, getFilteredWhiteboards, reloadWhiteboards,
   standaloneIOCsHook, evidenceItemsHook, chatsHook,
-  folders, foldersLoading, createFolder, findOrCreateFolder, updateFolder, deleteFolder,
+  folders: allFolders, foldersLoading, createFolder, findOrCreateFolder, updateFolder, deleteFolder,
   deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder, reloadFolders,
-  tags, createTag, updateTag, deleteTag, reloadTags,
+  tags: allTags, createTag, updateTag, deleteTag, reloadTags,
   noteTemplatesHook, playbooksHook, integrationsHook,
   activityLog, auth,
-  remoteInvestigations, remoteLoading,
+  remoteInvestigations: allRemoteInvestigations, remoteLoading,
   presenceUsers, syncConflicts, setSyncConflicts, handleResolveConflict, handleResolveAllConflicts,
   reloadAll, syncedFolderIds, isMobile,
 }: AppInnerProps) {
@@ -427,13 +441,13 @@ const AppInner = memo(function AppInner({
   } = nav;
 
   const {
-    selectedFolderId, setSelectedFolderId,
+    selectedFolderId: underlyingFolderId, setSelectedFolderId,
     investigationMode,
-    selectedTag, setSelectedTag,
+    selectedTag: underlyingTag, setSelectedTag,
     showTrash, setShowTrash, showArchive, setShowArchive,
     selectedIOCTypes, setSelectedIOCTypes,
     editingFolderId, setEditingFolderId,
-    selectedFolder, selectedTagObj, editingFolder,
+    selectedTagObj,
     investigationMembers,
     syncingFolderId, confirmUnsyncId, setConfirmUnsyncId,
     handleOpenInvestigation: ctxHandleOpenInvestigation, handleSyncLocally, handleUnsyncConfirmed, handleUnsync,
@@ -460,6 +474,42 @@ const AppInner = memo(function AppInner({
     showServerOnboarding, serverOnboardingName, dismissServerOnboarding,
     showFileEncryptionWarning, fileEncryptionDismissed, dismissFileEncryptionWarning,
   } = ui;
+
+  // Mutations own the real selection, not its temporarily redacted rendering.
+  const rawSelectedTagRef = useRef(underlyingTag);
+  useLayoutEffect(() => { rawSelectedTagRef.current = underlyingTag; }, [underlyingTag]);
+  const [pendingClipImports, setPendingClipImports] = useState(0);
+  // The editor stays mounted until an explicit save/discard, even if browser
+  // history changes the view or a resize crosses the mobile breakpoint.
+  const [productDraftFolderId, setProductDraftFolderId] = useState<string>();
+  const effectiveClsLevels = useMemo(() => getEffectiveClsLevels(settings.tiClsLevels), [settings.tiClsLevels]);
+  const privacyDataReady = !bulkDataLoading && pendingClipImports === 0 && !foldersLoading && !notes.loading && !tasks.loading && !timeline.loading
+    && !whiteboardsLoading && !standaloneIOCsHook.loading && chatsHook.loadedSuccessfully && evidenceItemsHook.loadedSuccessfully;
+  const visibility = useMemo(() => buildInvestigationVisibility({
+    folders: allFolders, remoteInvestigations: allRemoteInvestigations,
+    notes: notes.notes, tasks: tasks.tasks, timelineEvents: timeline.events, whiteboards,
+    standaloneIOCs: standaloneIOCsHook.iocs, chatThreads: chatsHook.threads, evidenceItems: evidenceItemsHook.evidenceItems,
+    maxLevel: screenshareMaxLevel, effectiveLevels: effectiveClsLevels, dataReady: privacyDataReady,
+  }), [allFolders, allRemoteInvestigations, notes.notes, tasks.tasks, timeline.events, whiteboards,
+    standaloneIOCsHook.iocs, chatsHook.threads, evidenceItemsHook.evidenceItems, screenshareMaxLevel, effectiveClsLevels, privacyDataReady]);
+  const folders = visibility.folders;
+  const remoteInvestigations = visibility.remoteInvestigations;
+  const selectedContextHidden = !!screenshareMaxLevel && !!underlyingFolderId
+    && (investigationMode === 'remote' || !visibility.visibleFolderIds.has(underlyingFolderId));
+  const selectedFolderId = selectedContextHidden ? undefined : underlyingFolderId;
+  const selectedFolder = folders.find(folder => folder.id === selectedFolderId);
+  const editingFolder = folders.find(folder => folder.id === editingFolderId);
+  const timelines = useMemo(() => allTimelines.filter(visibility.isTimelineVisible), [allTimelines, visibility]);
+  const tags = useMemo(() => {
+    if (!screenshareMaxLevel) return allTags;
+    const visibleTags = new Set([
+      ...notes.notes, ...tasks.tasks, ...timeline.events, ...whiteboards,
+      ...standaloneIOCsHook.iocs, ...chatsHook.threads, ...evidenceItemsHook.evidenceItems,
+    ].filter(visibility.isEntityVisible).flatMap(entity => entity.tags ?? []));
+    return allTags.filter(tag => visibleTags.has(tag.name));
+  }, [allTags, screenshareMaxLevel, visibility, notes.notes, tasks.tasks, timeline.events, whiteboards,
+    standaloneIOCsHook.iocs, chatsHook.threads, evidenceItemsHook.evidenceItems]);
+  const selectedTag = !screenshareMaxLevel || tags.some(tag => tag.name === underlyingTag) ? underlyingTag : undefined;
 
   // Wrap InvestigationContext's handleOpenInvestigation to add navigation
   // (InvestigationProvider can't receive navigateTo because NavigationProvider is nested inside it)
@@ -497,13 +547,13 @@ const AppInner = memo(function AppInner({
     notes,
     tasks,
     timeline,
-    { timelines, createTimeline, deleteTimeline },
+    { timelines: allTimelines, createTimeline, deleteTimeline },
     { whiteboards, createWhiteboard, deleteWhiteboard, trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard, emptyTrashWhiteboards, reload: reloadWhiteboards },
     standaloneIOCsHook,
     evidenceItemsHook,
     { createThread: chatsHook.createThread, reload: chatsHook.reload },
-    { folders, createFolder, deleteFolder, deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder },
-    { tags, createTag, deleteTag },
+    { folders: allFolders, createFolder, deleteFolder, deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder },
+    { tags: allTags, createTag, deleteTag },
   );
 
   const autoEnrichCreatedIOCs = useCallback((createdIOCs: StandaloneIOC[]) => {
@@ -573,8 +623,6 @@ const AppInner = memo(function AppInner({
     return () => window.removeEventListener('beforeunload', handler);
   }, []);
 
-  const effectiveClsLevels = useMemo(() => getEffectiveClsLevels(settings.tiClsLevels), [settings.tiClsLevels]);
-
   const loggedTrashChatThread = useCallback(async (id: string) => {
     const thread = chatsHook.threads.find((t) => t.id === id);
     await chatsHook.trashThread(id);
@@ -639,6 +687,7 @@ const AppInner = memo(function AppInner({
       const clips = event.data.clips;
       if (!Array.isArray(clips) || clips.length === 0) return;
 
+      setPendingClipImports(count => count + 1);
       try {
         const folderCache = new Map<string, typeof folders[0]>();
         let lastEntityType: string = 'note';
@@ -700,7 +749,7 @@ const AppInner = memo(function AppInner({
               clsLevel: clsLevel || folder.clsLevel,
               eventType: 'evidence',
               confidence: 'medium',
-              timelineId: timelines[0]?.id || '',
+              timelineId: allTimelines[0]?.id || '',
               iocAnalysis,
               iocTypes,
             });
@@ -747,6 +796,8 @@ const AppInner = memo(function AppInner({
       } catch (error) {
         console.error('Failed to import clips:', error);
         addToast('error', tt('clip.importFailed'));
+      } finally {
+        setPendingClipImports(count => count - 1);
       }
     };
 
@@ -755,7 +806,7 @@ const AppInner = memo(function AppInner({
     clipBuffer.flush();
     return () => window.removeEventListener('message', handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- setSelectedFolderId is stable; settings deps intentionally omitted to avoid re-registering handler
-  }, [findOrCreateFolder, loggedCreateNote, loggedCreateTask, loggedCreateEvent, timelines, navigateTo, addToast, setSelectedFolderId]);
+  }, [findOrCreateFolder, loggedCreateNote, loggedCreateTask, loggedCreateEvent, allTimelines, navigateTo, addToast, setSelectedFolderId]);
 
   // Handle files opened via PWA File Handling API (double-click .md on desktop)
   useEffect(() => {
@@ -775,7 +826,8 @@ const AppInner = memo(function AppInner({
         const note = await loggedCreateNote({
           title,
           content,
-          folderId: selectedFolderId,
+          folderId: underlyingFolderId,
+          clsLevel: allFolders.find(folder => folder.id === underlyingFolderId)?.clsLevel,
           sourceTitle: name,
           iocAnalysis,
           iocTypes,
@@ -791,7 +843,7 @@ const AppInner = memo(function AppInner({
     window.addEventListener('threatcaddy:file-open', handler);
     return () => window.removeEventListener('threatcaddy:file-open', handler);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- settings deps intentionally omitted
-  }, [loggedCreateNote, selectedFolderId, navigateTo, addToast]);
+  }, [loggedCreateNote, underlyingFolderId, allFolders, navigateTo, addToast]);
 
   // Global drag-and-drop for markdown/text files
   useEffect(() => {
@@ -912,87 +964,89 @@ const AppInner = memo(function AppInner({
 
   // Auto-deselect whiteboard when trashed/archived/filtered out
   useEffect(() => {
+    if (screenshareMaxLevel) return;
+    if (bulkDataLoading || (investigationMode === 'remote' ? !remoteData.loadedSuccessfully : whiteboardsLoading)) return;
     if (selectedWhiteboardId && !resolvedWhiteboards.find((w) => w.id === selectedWhiteboardId)) {
       setSelectedWhiteboardId(undefined);
     }
-  }, [selectedWhiteboardId, resolvedWhiteboards]);
+  }, [selectedWhiteboardId, resolvedWhiteboards, screenshareMaxLevel, bulkDataLoading, investigationMode, remoteData.loadedSuccessfully, whiteboardsLoading]);
 
   // Screenshare-safe: filter once on full arrays, derive folder-scoped and investigation-scoped from these
   const screensafeNotes = useMemo(
-    () => screenshareMaxLevel ? notes.notes.filter((n) => !isAboveClsThreshold(n.clsLevel, screenshareMaxLevel, effectiveClsLevels)) : notes.notes,
-    [notes.notes, screenshareMaxLevel, effectiveClsLevels]
+    () => notes.notes.filter(visibility.isEntityVisible),
+    [notes.notes, visibility]
   );
   const screensafeTasks = useMemo(
-    () => screenshareMaxLevel ? tasks.tasks.filter((t) => !isAboveClsThreshold(t.clsLevel, screenshareMaxLevel, effectiveClsLevels)) : tasks.tasks,
-    [tasks.tasks, screenshareMaxLevel, effectiveClsLevels]
+    () => tasks.tasks.filter(visibility.isEntityVisible),
+    [tasks.tasks, visibility]
   );
   const screensafeTimelineEvents = useMemo(
-    () => screenshareMaxLevel ? timeline.events.filter((e) => !isAboveClsThreshold(e.clsLevel, screenshareMaxLevel, effectiveClsLevels)) : timeline.events,
-    [timeline.events, screenshareMaxLevel, effectiveClsLevels]
+    () => timeline.events.filter(visibility.isEntityVisible),
+    [timeline.events, visibility]
   );
   const screensafeWhiteboards = useMemo(
-    () => screenshareMaxLevel ? whiteboards.filter((w) => !isAboveClsThreshold(w.clsLevel, screenshareMaxLevel, effectiveClsLevels)) : whiteboards,
-    [whiteboards, screenshareMaxLevel, effectiveClsLevels]
+    () => whiteboards.filter(visibility.isEntityVisible),
+    [whiteboards, visibility]
   );
   const screensafeStandaloneIOCs = useMemo(
-    () => screenshareMaxLevel ? standaloneIOCsHook.iocs.filter((i) => !isAboveClsThreshold(i.clsLevel, screenshareMaxLevel, effectiveClsLevels)) : standaloneIOCsHook.iocs,
-    [standaloneIOCsHook.iocs, screenshareMaxLevel, effectiveClsLevels]
+    () => standaloneIOCsHook.iocs.filter(visibility.isEntityVisible),
+    [standaloneIOCsHook.iocs, visibility]
   );
   const screensafeChatThreads = useMemo(
-    () => screenshareMaxLevel ? chatsHook.threads.filter((t) => !isAboveClsThreshold(t.clsLevel ?? undefined, screenshareMaxLevel, effectiveClsLevels)) : chatsHook.threads,
-    [chatsHook.threads, screenshareMaxLevel, effectiveClsLevels]
+    () => chatsHook.threads.filter(visibility.isEntityVisible),
+    [chatsHook.threads, visibility]
   );
   const screensafeEvidenceItems = useMemo(
-    () => screenshareMaxLevel ? evidenceItemsHook.evidenceItems.filter(item => !isAboveClsThreshold(item.clsLevel, screenshareMaxLevel, effectiveClsLevels)) : evidenceItemsHook.evidenceItems,
-    [evidenceItemsHook.evidenceItems, screenshareMaxLevel, effectiveClsLevels],
+    () => evidenceItemsHook.evidenceItems.filter(visibility.isEntityVisible),
+    [evidenceItemsHook.evidenceItems, visibility],
   );
 
   // Folder-filtered + screenshare-safe (for NoteList, TaskList, TimelineView)
   // Use resolved arrays (which pick remote vs local) instead of raw filtered arrays
   const ssFilteredNotes = useMemo(
-    () => screenshareMaxLevel ? resolvedNotes.filter((n) => !isAboveClsThreshold(n.clsLevel, screenshareMaxLevel, effectiveClsLevels)) : resolvedNotes,
-    [resolvedNotes, screenshareMaxLevel, effectiveClsLevels]
+    () => resolvedNotes.filter(visibility.isEntityVisible),
+    [resolvedNotes, visibility]
   );
   const ssFilteredTasks = useMemo(
-    () => screenshareMaxLevel ? resolvedTasks.filter((t) => !isAboveClsThreshold(t.clsLevel, screenshareMaxLevel, effectiveClsLevels)) : resolvedTasks,
-    [resolvedTasks, screenshareMaxLevel, effectiveClsLevels]
+    () => resolvedTasks.filter(visibility.isEntityVisible),
+    [resolvedTasks, visibility]
   );
   const ssFilteredTimelineEvents = useMemo(
-    () => screenshareMaxLevel ? resolvedTimelineEvents.filter((e) => !isAboveClsThreshold(e.clsLevel, screenshareMaxLevel, effectiveClsLevels)) : resolvedTimelineEvents,
-    [resolvedTimelineEvents, screenshareMaxLevel, effectiveClsLevels]
+    () => resolvedTimelineEvents.filter(visibility.isEntityVisible),
+    [resolvedTimelineEvents, visibility]
   );
   const ssFilteredWhiteboards = useMemo(
-    () => screenshareMaxLevel ? resolvedWhiteboards.filter((w) => !isAboveClsThreshold(w.clsLevel, screenshareMaxLevel, effectiveClsLevels)) : resolvedWhiteboards,
-    [resolvedWhiteboards, screenshareMaxLevel, effectiveClsLevels]
+    () => resolvedWhiteboards.filter(visibility.isEntityVisible),
+    [resolvedWhiteboards, visibility]
   );
   const ssFilteredStandaloneIOCs = useMemo(
-    () => screenshareMaxLevel ? resolvedStandaloneIOCs.filter((i) => !isAboveClsThreshold(i.clsLevel, screenshareMaxLevel, effectiveClsLevels)) : resolvedStandaloneIOCs,
-    [resolvedStandaloneIOCs, screenshareMaxLevel, effectiveClsLevels]
+    () => resolvedStandaloneIOCs.filter(visibility.isEntityVisible),
+    [resolvedStandaloneIOCs, visibility]
   );
   const ssFilteredChatThreads = useMemo(
-    () => screenshareMaxLevel ? resolvedChatThreads.filter((t) => !isAboveClsThreshold(t.clsLevel ?? undefined, screenshareMaxLevel, effectiveClsLevels)) : resolvedChatThreads,
-    [resolvedChatThreads, screenshareMaxLevel, effectiveClsLevels]
+    () => resolvedChatThreads.filter(visibility.isEntityVisible),
+    [resolvedChatThreads, visibility]
   );
 
   // Investigation-scoped arrays (for graph, IOC stats, search) — derive from screensafe,
   // or use remote data directly when in remote mode
   const investigationNotes = useMemo(
-    () => investigationMode === 'remote' ? remoteData.notes : selectedFolderId ? screensafeNotes.filter((n) => n.folderId === selectedFolderId) : screensafeNotes,
-    [investigationMode, remoteData.notes, screensafeNotes, selectedFolderId]
+    () => investigationMode === 'remote' ? remoteData.notes.filter(visibility.isEntityVisible) : selectedFolderId ? screensafeNotes.filter((n) => n.folderId === selectedFolderId) : screensafeNotes,
+    [investigationMode, remoteData.notes, visibility, screensafeNotes, selectedFolderId]
   );
   // Evidence + Products: folder-scoped derivations and import/dedup wiring
   const investigationEvidenceItems = useMemo(
-    () => investigationMode === 'remote' ? remoteData.evidence.filter(item => !screenshareMaxLevel || !isAboveClsThreshold(item.clsLevel, screenshareMaxLevel, effectiveClsLevels))
+    () => investigationMode === 'remote' ? remoteData.evidence.filter(visibility.isEntityVisible)
       : selectedFolderId ? screensafeEvidenceItems.filter((e) => e.folderId === selectedFolderId) : screensafeEvidenceItems,
-    [investigationMode, remoteData.evidence, screenshareMaxLevel, effectiveClsLevels, screensafeEvidenceItems, selectedFolderId]
+    [investigationMode, remoteData.evidence, visibility, screensafeEvidenceItems, selectedFolderId]
   );
   const productNotes = useMemo(
     () => investigationNotes.filter((n) => n.tags?.includes(PRODUCT_NOTE_TAG)),
     [investigationNotes]
   );
   const productBaselines = useMemo(
-    () => noteTemplatesHook.templates.filter((tpl) => tpl.productBaseline),
-    [noteTemplatesHook.templates]
+    () => noteTemplatesHook.templates.filter((tpl) => tpl.productBaseline && (!screenshareMaxLevel || !isAboveClsThreshold(tpl.clsLevel, screenshareMaxLevel, effectiveClsLevels))),
+    [noteTemplatesHook.templates, screenshareMaxLevel, effectiveClsLevels]
   );
   const handleImportEvidence = useCallback(async (files: File[]) => {
     const drafts = (await Promise.all(files.map((file) => buildEvidenceItemDrafts(file, { folderName: selectedFolder?.name })))).flat();
@@ -1011,21 +1065,69 @@ const AppInner = memo(function AppInner({
     return noteTemplatesHook.createTemplate(parsed);
   }, [noteTemplatesHook]);
   const investigationTasks = useMemo(
-    () => investigationMode === 'remote' ? remoteData.tasks : selectedFolderId ? screensafeTasks.filter((t) => t.folderId === selectedFolderId) : screensafeTasks,
-    [investigationMode, remoteData.tasks, screensafeTasks, selectedFolderId]
+    () => investigationMode === 'remote' ? remoteData.tasks.filter(visibility.isEntityVisible) : selectedFolderId ? screensafeTasks.filter((t) => t.folderId === selectedFolderId) : screensafeTasks,
+    [investigationMode, remoteData.tasks, visibility, screensafeTasks, selectedFolderId]
   );
   const investigationTimelineEvents = useMemo(
-    () => investigationMode === 'remote' ? remoteData.events : selectedFolderId ? screensafeTimelineEvents.filter((e) => e.folderId === selectedFolderId) : screensafeTimelineEvents,
-    [investigationMode, remoteData.events, screensafeTimelineEvents, selectedFolderId]
+    () => investigationMode === 'remote' ? remoteData.events.filter(visibility.isEntityVisible) : selectedFolderId ? screensafeTimelineEvents.filter((e) => e.folderId === selectedFolderId) : screensafeTimelineEvents,
+    [investigationMode, remoteData.events, visibility, screensafeTimelineEvents, selectedFolderId]
   );
   const investigationWhiteboards = useMemo(
-    () => investigationMode === 'remote' ? remoteData.whiteboards : selectedFolderId ? screensafeWhiteboards.filter((w) => w.folderId === selectedFolderId) : screensafeWhiteboards,
-    [investigationMode, remoteData.whiteboards, screensafeWhiteboards, selectedFolderId]
+    () => investigationMode === 'remote' ? remoteData.whiteboards.filter(visibility.isEntityVisible) : selectedFolderId ? screensafeWhiteboards.filter((w) => w.folderId === selectedFolderId) : screensafeWhiteboards,
+    [investigationMode, remoteData.whiteboards, visibility, screensafeWhiteboards, selectedFolderId]
   );
   const investigationStandaloneIOCs = useMemo(
-    () => investigationMode === 'remote' ? remoteData.iocs : selectedFolderId ? screensafeStandaloneIOCs.filter((i) => i.folderId === selectedFolderId) : screensafeStandaloneIOCs,
-    [investigationMode, remoteData.iocs, screensafeStandaloneIOCs, selectedFolderId]
+    () => investigationMode === 'remote' ? remoteData.iocs.filter(visibility.isEntityVisible) : selectedFolderId ? screensafeStandaloneIOCs.filter((i) => i.folderId === selectedFolderId) : screensafeStandaloneIOCs,
+    [investigationMode, remoteData.iocs, visibility, screensafeStandaloneIOCs, selectedFolderId]
   );
+
+  // The composer receives only this explicit, active, investigation-scoped
+  // presentation snapshot. It never queries the database for extra sources.
+  const productComposerSnapshot = useMemo<ProductComposerSnapshot | undefined>(() => {
+    if (!privacyDataReady || noteTemplatesHook.loading || investigationMode === 'remote' || !selectedFolder
+      || selectedFolder.status === 'archived' || selectedContextHidden || screenshareMaxLevel) return undefined;
+    const active = <T extends { folderId?: string; trashed: boolean; archived: boolean }>(rows: T[]) =>
+      rows.filter(row => row.folderId === selectedFolder.id && !row.trashed && !row.archived);
+    return {
+      folder: selectedFolder,
+      notes: active(investigationNotes).filter(note => !note.tags.includes(PRODUCT_NOTE_TAG)),
+      tasks: active(investigationTasks),
+      timelineEvents: active(investigationTimelineEvents),
+      iocs: active(investigationStandaloneIOCs),
+      evidence: active(investigationEvidenceItems),
+    };
+  }, [privacyDataReady, noteTemplatesHook.loading, investigationMode, selectedFolder, selectedContextHidden, screenshareMaxLevel,
+    investigationNotes, investigationTasks, investigationTimelineEvents, investigationStandaloneIOCs, investigationEvidenceItems]);
+  const productsViewActive = activeView === 'products' && !showSettings && !showTrash && !showArchive;
+  const productComposerActive = productsViewActive && investigationMode === 'local'
+    && (!productDraftFolderId || underlyingFolderId === productDraftFolderId);
+  const productComposerOwner = useRef<{ folderId?: string; ready: boolean; snapshot?: ProductComposerSnapshot } | null>(null);
+  useLayoutEffect(() => {
+    productComposerOwner.current = {
+      folderId: underlyingFolderId,
+      ready: productComposerActive && !!productComposerSnapshot && !screenshareMaxLevel,
+      snapshot: productComposerSnapshot,
+    };
+    return () => { productComposerOwner.current = null; };
+  }, [underlyingFolderId, productComposerActive, productComposerSnapshot, screenshareMaxLevel]);
+  const handleSaveProductDraft = useCallback(async (draft: ProductComposerSaveInput, origin: ProductComposerSnapshot, originBaseline?: NoteTemplate): Promise<Note> => {
+    const assertCurrentScope = () => {
+      if (!productComposerOwner.current?.ready || productComposerOwner.current.folderId !== origin.folder.id
+        || !productComposerSnapshot || productComposerOwner.current.snapshot !== productComposerSnapshot
+        || productComposerSnapshot.folder.id !== origin.folder.id) {
+        throw new Error('The investigation context changed. Resume the original investigation before saving.');
+      }
+    };
+    assertCurrentScope();
+    const patch = prepareProductComposerNote(draft, origin, originBaseline, effectiveClsLevels);
+    // Persist a new, explicitly-owned Note through the existing encrypted,
+    // synchronized, backup-compatible note path. Never overwrite a source.
+    // Cached React state is not a current classification authority across tabs.
+    // Read persisted sources and insert atomically through the normal note hook.
+    return loggedCreateNote(patch, createProductComposerPersistence({
+      input: draft, originSnapshot: origin, originBaseline, effectiveLevels: effectiveClsLevels, assertCurrentScope,
+    }));
+  }, [productComposerSnapshot, effectiveClsLevels, loggedCreateNote]);
 
   const investigationScopedCounts = useMemo(() => {
     if (!selectedFolderId) return null;
@@ -1055,16 +1157,16 @@ const AppInner = memo(function AppInner({
   // Timeline event counts per timeline
   const timelineEventCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const ev of timeline.events) {
+    for (const ev of screensafeTimelineEvents) {
       counts[ev.timelineId] = (counts[ev.timelineId] || 0) + 1;
     }
     return counts;
-  }, [timeline.events]);
+  }, [screensafeTimelineEvents]);
 
   // Selected note — use resolved notes (local or remote) so remote notes can be selected
   const selectedNote = useMemo(
-    () => resolvedNotes.find((n) => n.id === selectedNoteId),
-    [resolvedNotes, selectedNoteId]
+    () => ssFilteredNotes.find((n) => n.id === selectedNoteId),
+    [ssFilteredNotes, selectedNoteId]
   );
 
   // Auto-deselect when selected note is no longer in filtered list
@@ -1082,23 +1184,23 @@ const AppInner = memo(function AppInner({
 
   // Note counts (include all notes)
   const noteCounts = useMemo(() => ({
-    total: notes.notes.filter((n) => !n.trashed && !n.archived).length,
-    trashed: notes.notes.filter((n) => n.trashed).length,
-    archived: notes.notes.filter((n) => n.archived && !n.trashed).length,
-  }), [notes.notes]);
+    total: screensafeNotes.filter((n) => !n.trashed && !n.archived).length,
+    trashed: screensafeNotes.filter((n) => n.trashed).length,
+    archived: screensafeNotes.filter((n) => n.archived && !n.trashed).length,
+  }), [screensafeNotes]);
 
   // Combined trash/archive counts across all entity types
   const combinedTrashedCount = useMemo(() =>
-    noteCounts.trashed + tasks.taskCounts.trashed + timeline.eventCounts.trashed + whiteboardCounts.trashed + standaloneIOCsHook.iocCounts.trashed,
-    [noteCounts.trashed, tasks.taskCounts.trashed, timeline.eventCounts.trashed, whiteboardCounts.trashed, standaloneIOCsHook.iocCounts.trashed]
+    [...screensafeNotes, ...screensafeTasks, ...screensafeTimelineEvents, ...screensafeWhiteboards, ...screensafeStandaloneIOCs].filter(entity => entity.trashed).length,
+    [screensafeNotes, screensafeTasks, screensafeTimelineEvents, screensafeWhiteboards, screensafeStandaloneIOCs]
   );
   const combinedArchivedCount = useMemo(() =>
-    noteCounts.archived + tasks.taskCounts.archived + timeline.eventCounts.archived + whiteboardCounts.archived + standaloneIOCsHook.iocCounts.archived,
-    [noteCounts.archived, tasks.taskCounts.archived, timeline.eventCounts.archived, whiteboardCounts.archived, standaloneIOCsHook.iocCounts.archived]
+    [...screensafeNotes, ...screensafeTasks, ...screensafeTimelineEvents, ...screensafeWhiteboards, ...screensafeStandaloneIOCs].filter(entity => entity.archived && !entity.trashed).length,
+    [screensafeNotes, screensafeTasks, screensafeTimelineEvents, screensafeWhiteboards, screensafeStandaloneIOCs]
   );
 
   const handleNewNote = useCallback(async () => {
-    if (showQuickCapture) return;
+    if (showQuickCapture || selectedContextHidden) return;
     setShowTrash(false);
     setShowArchive(false);
     const folder = selectedFolderId ? folders.find((f) => f.id === selectedFolderId) : undefined;
@@ -1108,27 +1210,30 @@ const AppInner = memo(function AppInner({
     });
     setSelectedNoteId(note.id);
     navigateTo('notes', { selectedNoteId: note.id });
-  }, [loggedCreateNote, selectedFolderId, showQuickCapture, navigateTo, folders]);
+  }, [loggedCreateNote, selectedFolderId, selectedContextHidden, showQuickCapture, navigateTo, folders]);
 
   const handleNewTask = useCallback(async () => {
+    if (selectedContextHidden) return;
     setShowTrash(false);
     setShowArchive(false);
     setPendingNewTask(true);
     navigateTo('tasks');
-  }, [navigateTo]);
+  }, [navigateTo, selectedContextHidden]);
 
   const handleNewTimelineEvent = useCallback(() => {
+    if (selectedContextHidden) return;
     setShowTrash(false);
     setShowArchive(false);
     setPendingNewEvent(true);
     navigateTo('timeline');
-  }, [navigateTo]);
+  }, [navigateTo, selectedContextHidden]);
 
   const handleNewWhiteboard = useCallback(async () => {
+    if (selectedContextHidden) return;
     const wb = await loggedCreateWhiteboard(undefined, selectedFolderId);
     setSelectedWhiteboardId(wb.id);
     navigateTo('whiteboard', { selectedWhiteboardId: wb.id });
-  }, [loggedCreateWhiteboard, selectedFolderId, navigateTo]);
+  }, [loggedCreateWhiteboard, selectedFolderId, selectedContextHidden, navigateTo]);
 
   const handleNewIOC = useCallback(() => {
     setShowIOCForm(true);
@@ -1420,24 +1525,42 @@ const AppInner = memo(function AppInner({
 
   const sidebarProps = useMemo(() => ({
     noteCounts: { ...noteCounts, trashed: combinedTrashedCount, archived: combinedArchivedCount },
-    taskCounts: tasks.taskCounts,
-    timelineCounts: timeline.eventCounts,
+    taskCounts: {
+      total: screensafeTasks.filter(task => !task.trashed && !task.archived).length,
+      todo: screensafeTasks.filter(task => !task.trashed && !task.archived && task.status === 'todo').length,
+      'in-progress': screensafeTasks.filter(task => !task.trashed && !task.archived && task.status === 'in-progress').length,
+      done: screensafeTasks.filter(task => !task.trashed && !task.archived && task.status === 'done').length,
+    },
+    timelineCounts: {
+      total: screensafeTimelineEvents.filter(event => !event.trashed && !event.archived).length,
+      starred: screensafeTimelineEvents.filter(event => !event.trashed && !event.archived && event.starred).length,
+    },
     timelines,
     onCreateTimeline: (name: string) => loggedCreateTimeline(name),
     onDeleteTimeline: (id: string) => { loggedDeleteTimeline(id); if (selectedTimelineId === id) setSelectedTimelineId(undefined); },
     onRenameTimeline: (id: string, name: string) => updateTimeline(id, { name }),
     timelineEventCounts,
-    whiteboards,
+    whiteboards: screensafeWhiteboards,
     onCreateWhiteboard: (name?: string) => loggedCreateWhiteboard(name, selectedFolderId),
     onDeleteWhiteboard: (id: string) => { loggedDeleteWhiteboard(id); if (selectedWhiteboardId === id) setSelectedWhiteboardId(undefined); },
     onRenameWhiteboard: (id: string, name: string) => updateWhiteboard(id, { name }),
-    whiteboardCount: whiteboardCounts.total,
-    onRenameTag: (id: string, name: string) => updateTag(id, { name }),
-    onDeleteTag: loggedDeleteTag,
+    whiteboardCount: screensafeWhiteboards.filter(board => !board.trashed && !board.archived).length,
+    onRenameTag: async (id: string, name: string) => {
+      const oldName = allTags.find(tag => tag.id === id)?.name;
+      await updateTag(id, { name });
+      if (oldName !== undefined && rawSelectedTagRef.current === oldName) setSelectedTag(name.trim());
+      await reloadAll();
+    },
+    onDeleteTag: async (id: string) => {
+      const oldName = allTags.find(tag => tag.id === id)?.name;
+      await loggedDeleteTag(id);
+      if (oldName !== undefined && rawSelectedTagRef.current === oldName) setSelectedTag(undefined);
+      await reloadAll();
+    },
     investigationScopedCounts,
-    chatCount: chatsHook.threadCounts.total,
+    chatCount: screensafeChatThreads.filter(thread => !thread.trashed && !thread.archived).length,
     serverConnected: auth.connected,
-  }), [noteCounts, combinedTrashedCount, combinedArchivedCount, tasks.taskCounts, timeline.eventCounts, timelines, selectedTimelineId, loggedCreateTimeline, loggedDeleteTimeline, updateTimeline, timelineEventCounts, whiteboards, selectedFolderId, selectedWhiteboardId, loggedCreateWhiteboard, loggedDeleteWhiteboard, updateWhiteboard, whiteboardCounts, updateTag, loggedDeleteTag, investigationScopedCounts, chatsHook.threadCounts.total, auth.connected]);
+  }), [noteCounts, combinedTrashedCount, combinedArchivedCount, screensafeTasks, screensafeTimelineEvents, timelines, selectedTimelineId, loggedCreateTimeline, loggedDeleteTimeline, updateTimeline, timelineEventCounts, screensafeWhiteboards, selectedFolderId, selectedWhiteboardId, loggedCreateWhiteboard, loggedDeleteWhiteboard, updateWhiteboard, allTags, setSelectedTag, updateTag, loggedDeleteTag, reloadAll, investigationScopedCounts, screensafeChatThreads, auth.connected]);
 
   // CaddyAgent hook — manages auto-repeating loop
   const caddyAgent = useCaddyAgent({
@@ -1465,6 +1588,7 @@ const AppInner = memo(function AppInner({
     };
   }, [editingFolderId, notes.notes, tasks.tasks, timeline.events, whiteboards]);
 
+  const screenshareViewHidden = !!screenshareMaxLevel && (selectedContextHidden || showSettings || ['activity', 'agent', 'caddyshack', 'chat'].includes(activeView));
   const filterBar = (selectedFolderId || selectedTag) ? (
     <ActiveFilterBar
       folderName={selectedFolder?.name}
@@ -1479,7 +1603,9 @@ const AppInner = memo(function AppInner({
   ) : null;
 
   // Share receiver — early return on all devices
-  if (shareData) {
+  // A same-document share link must not replace an unsaved composer. Defer
+  // receiving it until the analyst explicitly saves or discards the draft.
+  if (shareData && !screenshareMaxLevel && !productDraftFolderId) {
     return (
       <ShareReceiver
         encodedData={shareData}
@@ -1500,9 +1626,10 @@ const AppInner = memo(function AppInner({
   }
 
   // Mobile exec mode — replace entire UI with executive dashboard
-  if (isMobile && !forceAnalystMode) {
+  if (isMobile && !forceAnalystMode && !screenshareMaxLevel && !productDraftFolderId) {
     return (
       <ScreenshareContext.Provider value={screenshareCtx}>
+      <InvestigationVisibilityScope folders={folders} tags={tags}>
       <ActivityLogContext.Provider value={activityLog.log}>
         <ErrorBoundary region="exec-dashboard">
         <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500">Loading…</div>}>
@@ -1515,7 +1642,7 @@ const AppInner = memo(function AppInner({
           allIOCs={screensafeStandaloneIOCs}
           allTimelines={timelines}
           allTags={tags}
-          allChatThreads={chatsHook.threads}
+          allChatThreads={screensafeChatThreads}
           activityEntries={activityLog.entries}
           theme={settings.theme}
           onToggleTheme={toggleTheme}
@@ -1530,12 +1657,15 @@ const AppInner = memo(function AppInner({
         </ErrorBoundary>
       </ActivityLogContext.Provider>
       <ToastContainer />
+      <DraftRecoveryNotice />
+      </InvestigationVisibilityScope>
       </ScreenshareContext.Provider>
     );
   }
 
   return (
     <ScreenshareContext.Provider value={screenshareCtx}>
+    <InvestigationVisibilityScope folders={folders} tags={tags}>
     <ActivityLogContext.Provider value={activityLog.log}>
       {/* Analyst mode banner on mobile */}
       {isMobile && forceAnalystMode && (
@@ -1597,7 +1727,7 @@ const AppInner = memo(function AppInner({
             onQuickLoad={handleQuickLoad}
             onStartTour={() => tour.start(activeView)}
             effectiveClsLevels={effectiveClsLevels}
-            presenceUsers={presenceUsers}
+            presenceUsers={screenshareMaxLevel ? [] : presenceUsers}
             addToast={addToast}
           />
           </ErrorBoundary>
@@ -1617,7 +1747,24 @@ const AppInner = memo(function AppInner({
       >
         <ErrorBoundary region="main-content">
         <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500">Loading…</div>}>
-        <div className={(activeView === 'graph' || activeView === 'chat') && !showSettings && !showTrash && !showArchive ? 'hidden' : 'flex flex-col flex-1 overflow-hidden'}>
+        {productDraftFolderId && !productComposerActive && !screenshareMaxLevel && (
+          <div role="status" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border-subtle bg-bg-surface px-4 py-2 text-sm text-text-secondary">
+            <span>Unsaved product draft retained in this tab.</span>
+            <button className="min-h-11 rounded border border-border-medium px-3 py-2 hover:bg-bg-hover" onClick={() => {
+              ctxHandleOpenInvestigation(productDraftFolderId, 'local');
+              setShowTrash(false); setShowArchive(false);
+              navigateTo('products', { selectedFolderId: productDraftFolderId });
+            }}>Resume draft</button>
+          </div>
+        )}
+        {screenshareViewHidden && (
+          <div role="status" className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-text-secondary">
+            <p>This view is hidden while screensharing.</p>
+            <button className="rounded border border-border-medium px-3 py-2 hover:bg-bg-hover" onClick={() => { setSelectedFolderId(undefined); setSelectedTag(undefined); closeSettings(); navigateTo('investigations'); }}>Browse visible investigations</button>
+          </div>
+        )}
+        <div hidden={screenshareViewHidden} inert={screenshareViewHidden} aria-hidden={screenshareViewHidden || undefined} style={screenshareViewHidden ? { display: 'none' } : undefined} className="flex flex-1 flex-col overflow-hidden">
+        <div className={(activeView === 'graph' || activeView === 'chat' || activeView === 'products') && !showSettings && !showTrash && !showArchive ? 'hidden' : 'flex flex-col flex-1 overflow-hidden'}>
         {filterBar}
         {investigationMode === 'remote' && selectedFolderId && (
           <div className="mx-4 mt-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm flex items-center justify-between">
@@ -1694,7 +1841,7 @@ const AppInner = memo(function AppInner({
             onDeleteThreadPermanently={chatsHook.deleteThread}
             onTrashThread={chatsHook.trashThread}
             onUnarchiveThread={chatsHook.restoreThread}
-            onEmptyAllTrash={async () => { await emptyAllTrash(); addToast('success', tt('investigation.trashEmptied')); }}
+            onEmptyAllTrash={async () => { if (screenshareMaxLevel) { addToast('info', 'Turn off screenshare mode before emptying all trash.'); return; } await emptyAllTrash(); addToast('success', tt('investigation.trashEmptied')); }}
           />
         ) : activeView === 'dashboard' ? (
           <DashboardView
@@ -1777,7 +1924,7 @@ const AppInner = memo(function AppInner({
             onRestoreEvent={loggedRestoreEvent}
             onToggleArchiveEvent={loggedToggleArchiveEvent}
             onToggleStar={loggedToggleStar}
-            getFilteredEvents={timeline.getFilteredEvents}
+            getFilteredEvents={(filters) => timeline.getFilteredEvents(filters).filter(visibility.isEntityVisible)}
             timelines={timelines}
             selectedTimelineId={selectedTimelineId}
             onTimelineReload={reloadTimelines}
@@ -1790,6 +1937,7 @@ const AppInner = memo(function AppInner({
         ) : activeView === 'whiteboard' ? (
           <WhiteboardView
             whiteboards={ssFilteredWhiteboards}
+            loading={bulkDataLoading || (investigationMode === 'remote' ? !remoteData.loadedSuccessfully : whiteboardsLoading)}
             folders={folders}
             allTags={tags}
             onCreateWhiteboard={(name?: string) => loggedCreateWhiteboard(name, selectedFolderId)}
@@ -1815,15 +1963,7 @@ const AppInner = memo(function AppInner({
             onOpenChat={() => setActiveView('chat')}
           />
         ) : activeView === 'products' ? (
-          <ProductView
-            folderName={selectedFolder?.name}
-            products={productNotes}
-            baselines={productBaselines}
-            onOpenSourceNote={(id) => { setSelectedNoteId(id); setActiveView('notes'); }}
-            onOpenChat={() => setActiveView('chat')}
-            onImportBaseline={handleImportBaseline}
-            onUpdateBaseline={noteTemplatesHook.updateTemplate}
-          />
+          null
         ) : activeView === 'chat' ? (
           null
         ) : activeView === 'investigations' ? (
@@ -1917,7 +2057,7 @@ const AppInner = memo(function AppInner({
             onRestoreTask={loggedRestoreTask}
             onToggleArchiveTask={loggedToggleArchiveTask}
             onCreateTask={(data) => loggedCreateTask({ ...data, folderId: data.folderId ?? selectedFolderId, clsLevel: data.clsLevel ?? selectedFolder?.clsLevel })}
-            getTasksByStatus={(status) => tasks.getTasksByStatus(status, selectedFolderId)}
+            getTasksByStatus={(status) => tasks.getTasksByStatus(status, selectedFolderId).filter(visibility.isEntityVisible)}
             allNotes={screensafeNotes}
             allTimelineEvents={screensafeTimelineEvents}
             scopeLabel={selectedFolder?.name}
@@ -2042,6 +2182,30 @@ const AppInner = memo(function AppInner({
           </div>
         )}
         </div>
+        {/* Keep the owning draft alive while another view/investigation is shown.
+            Suspended dialogs release focus and scroll locks without losing edits. */}
+        {(activeView === 'products' || productDraftFolderId) && (
+          <div hidden={!productsViewActive} inert={!productsViewActive} aria-hidden={!productsViewActive || undefined}
+            style={!productsViewActive ? { display: 'none' } : undefined} className="flex flex-1 flex-col overflow-hidden">
+            {filterBar}
+            <ProductView
+              key={getActiveWorkspaceId()}
+              active={productsViewActive}
+              composerActive={productComposerActive}
+              onComposerSessionChange={setProductDraftFolderId}
+              folderName={selectedFolder?.name}
+              products={productNotes}
+              baselines={productBaselines}
+              onOpenSourceNote={(id) => { setSelectedNoteId(id); setActiveView('notes'); }}
+              onOpenChat={() => setActiveView('chat')}
+              onImportBaseline={handleImportBaseline}
+              onUpdateBaseline={noteTemplatesHook.updateTemplate}
+              composerSnapshot={productComposerSnapshot}
+              effectiveClsLevels={effectiveClsLevels}
+              onSaveDraft={handleSaveProductDraft}
+            />
+          </div>
+        )}
         {/* Always-mounted GraphView — hidden via CSS when not active to preserve layout/positions */}
         <div className={activeView === 'graph' && !showSettings ? 'flex flex-1 overflow-hidden' : 'hidden'}>
           <GraphView
@@ -2062,9 +2226,9 @@ const AppInner = memo(function AppInner({
           />
         </div>
         {/* Always-mounted ChatView — stays alive in background to preserve streaming state */}
-        <div className={activeView === 'chat' && !showSettings ? 'flex flex-1 overflow-hidden' : 'hidden'}>
+        <div hidden={!!screenshareMaxLevel} inert={!!screenshareMaxLevel} aria-hidden={screenshareMaxLevel ? true : undefined} style={screenshareMaxLevel ? { display: 'none' } : undefined} className={activeView === 'chat' && !showSettings ? 'flex flex-1 overflow-hidden' : 'hidden'}>
           <ChatView
-            threads={ssFilteredChatThreads}
+            threads={screenshareMaxLevel ? resolvedChatThreads : ssFilteredChatThreads}
             onCreateThread={loggedCreateChatThread}
             onUpdateThread={chatsHook.updateThread}
             onAddMessage={chatsHook.addMessage}
@@ -2080,6 +2244,7 @@ const AppInner = memo(function AppInner({
             }}
             onOpenSettings={(tab) => { openSettings(tab); }}
           />
+        </div>
         </div>
         </Suspense>
         </ErrorBoundary>
@@ -2108,7 +2273,7 @@ const AppInner = memo(function AppInner({
           onClose={() => setShowQuickCapture(false)}
           onCapture={handleQuickCapture}
           folders={folders}
-          defaultFolderId={selectedFolderId}
+          defaultFolderId={underlyingFolderId}
           templates={noteTemplatesHook.templates}
         />
       </Suspense>
@@ -2158,7 +2323,7 @@ const AppInner = memo(function AppInner({
             navigateTo('ioc-stats');
           }}
           folders={folders}
-          defaultFolderId={selectedFolderId}
+          defaultFolderId={underlyingFolderId}
         />
       </Suspense>
 
@@ -2167,7 +2332,7 @@ const AppInner = memo(function AppInner({
         onClose={() => setShowDataImport(false)}
         folders={folders}
         timelines={timelines}
-        defaultFolderId={selectedFolderId}
+        defaultFolderId={underlyingFolderId}
         onCreateTimeline={loggedCreateTimeline}
         onImportComplete={handleDataImportComplete}
       /></Suspense>
@@ -2339,7 +2504,7 @@ const AppInner = memo(function AppInner({
       )}
 
       <CreateInvestigationModal
-        open={showCreateInvestigationModal}
+        open={showCreateInvestigationModal && !screenshareMaxLevel}
         onClose={() => setShowCreateInvestigationModal(false)}
         onCreate={async (name) => {
           const folder = await loggedCreateFolder(name);
@@ -2356,7 +2521,7 @@ const AppInner = memo(function AppInner({
         onClose={() => setShowShortcutsPanel(false)}
       /></Suspense>
       <Suspense fallback={null}><OperationNameGenerator
-        open={showNameGenerator}
+        open={showNameGenerator && !screenshareMaxLevel}
         onClose={() => setShowNameGenerator(false)}
         onCreateInvestigation={async (name) => {
           const folder = await loggedCreateFolder(name);
@@ -2368,16 +2533,17 @@ const AppInner = memo(function AppInner({
       /></Suspense>
       <Suspense fallback={null}>
         <ServerOnboardingModal
-          open={showServerOnboarding}
+          open={showServerOnboarding && !screenshareMaxLevel}
           onClose={dismissServerOnboarding}
           serverName={serverOnboardingName}
         />
       </Suspense>
     </ActivityLogContext.Provider>
     <ToastContainer />
+    <DraftRecoveryNotice />
 
     {/* Sync Conflict Dialog */}
-    {syncConflicts.length > 0 && (
+    {!screenshareMaxLevel && syncConflicts.length > 0 && (
       <Suspense fallback={null}><ConflictDialog
         conflicts={syncConflicts}
         onResolve={handleResolveConflict}
@@ -2385,6 +2551,7 @@ const AppInner = memo(function AppInner({
         onClose={() => setSyncConflicts([])}
       /></Suspense>
     )}
+    </InvestigationVisibilityScope>
     </ScreenshareContext.Provider>
   );
 });

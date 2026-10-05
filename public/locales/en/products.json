@@ -1,4 +1,7 @@
 {
+  "composer.open": "Compose draft",
+  "composer.selectInvestigation": "Select a loaded local investigation to compose a draft.",
+  "preview.noMedia": "Embedded media is not loaded in previews. Markdown export retains the original content.",
   "header.title": "Products",
   "header.subtitle": "Generated reports, notes, and deliverables",
   "header.importBaseline": "Import Baseline",

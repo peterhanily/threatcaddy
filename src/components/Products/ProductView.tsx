@@ -8,6 +8,8 @@ import { downloadFile } from '../../lib/export';
 import { serializeProductBaselinePackage } from '../../lib/product-baselines';
 import { arrayBufferToBase64, buildTemplateBackedDocxBlob, hasDocxTemplateAsset } from '../../lib/docx-template-renderer';
 import { Modal } from '../Common/Modal';
+import { ProductComposer, type ProductComposerSaveInput } from './ProductComposer';
+import type { ProductComposerSnapshot } from '../../lib/product-composer';
 
 interface ProductViewProps {
   folderName?: string;
@@ -17,6 +19,12 @@ interface ProductViewProps {
   onOpenChat: () => void;
   onImportBaseline?: (json: string, fileName: string) => Promise<NoteTemplate>;
   onUpdateBaseline?: (id: string, updates: Partial<NoteTemplate>) => Promise<void>;
+  composerSnapshot?: ProductComposerSnapshot;
+  effectiveClsLevels?: string[];
+  onSaveDraft?: (draft: ProductComposerSaveInput, origin: ProductComposerSnapshot, originBaseline?: NoteTemplate) => Promise<Note>;
+  active?: boolean;
+  composerActive?: boolean;
+  onComposerSessionChange?: (folderId: string | undefined) => void;
 }
 
 export function ProductView({
@@ -27,6 +35,12 @@ export function ProductView({
   onOpenChat,
   onImportBaseline,
   onUpdateBaseline,
+  composerSnapshot,
+  effectiveClsLevels = [],
+  onSaveDraft,
+  active = true,
+  composerActive = active,
+  onComposerSessionChange,
 }: ProductViewProps) {
   const { t } = useTranslation('products');
   const [query, setQuery] = useState('');
@@ -35,6 +49,9 @@ export function ProductView({
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [baselineMessage, setBaselineMessage] = useState('');
   const [baselineError, setBaselineError] = useState('');
+  const [composer, setComposer] = useState<{
+    snapshot: ProductComposerSnapshot; baselines: NoteTemplate[]; levels: string[]; baselineId?: string;
+  } | null>(null);
   const baselineInputRef = useRef<HTMLInputElement>(null);
   const docxTemplateInputRef = useRef<HTMLInputElement>(null);
 
@@ -62,7 +79,7 @@ export function ProductView({
   );
 
   const selectedProductHtml = useMemo(
-    () => selectedProduct ? renderMarkdown(selectedProduct.content) : '',
+    () => selectedProduct ? renderMarkdown(selectedProduct.content, undefined, { disableMedia: true }) : '',
     [selectedProduct],
   );
 
@@ -181,7 +198,18 @@ export function ProductView({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {onSaveDraft && <button
+            disabled={!composerSnapshot || !!composer}
+            onClick={() => {
+              if (!composerSnapshot || composer) return;
+              setComposer({ snapshot: composerSnapshot, baselines, levels: effectiveClsLevels, baselineId: selectedBaseline?.id });
+              onComposerSessionChange?.(composerSnapshot.folder.id);
+            }}
+            title={composerSnapshot ? t('composer.open', 'Compose draft') : t('composer.selectInvestigation', 'Select a loaded local investigation to compose a draft.')}
+            className="inline-flex min-h-11 md:min-h-0 items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-accent text-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+            <FilePenLine size={14} />{t('composer.open', 'Compose draft')}
+          </button>}
           {onImportBaseline && (
             <label className="inline-flex cursor-pointer items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border-subtle text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors">
               <Upload size={14} />
@@ -352,8 +380,20 @@ export function ProductView({
         </div>
       </main>
 
+      {composer && onSaveDraft && <ProductComposer
+        suspended={!composerActive}
+        snapshot={composer.snapshot}
+        baselines={composer.baselines}
+        initialBaselineId={composer.baselineId}
+        effectiveLevels={composer.levels}
+        onSave={(draft) => onSaveDraft(draft, composer.snapshot, composer.baselines.find(baseline => baseline.id === draft.baselineId))}
+        onSaved={(note) => { setComposer(null); onComposerSessionChange?.(undefined); setSelectedProductId(note.id); }}
+        onClose={() => { setComposer(null); onComposerSessionChange?.(undefined); }}
+      />}
+
       <Modal
         open={baselineManagerOpen}
+        suspended={!active}
         onClose={() => setBaselineManagerOpen(false)}
         title={t('manager.title')}
         extraWide
@@ -464,6 +504,7 @@ export function ProductView({
 
       <Modal
         open={selectedProduct !== null}
+        suspended={!active}
         onClose={() => setSelectedProductId(null)}
         title={selectedProduct?.title || t('preview.title')}
         extraWide
@@ -508,6 +549,7 @@ export function ProductView({
                 </button>
               </div>
             </div>
+            <p className="text-xs text-text-muted">{t('preview.noMedia', 'Embedded media is not loaded in previews. Markdown export retains the original content.')}</p>
             <div className="max-h-[68vh] overflow-auto rounded-lg border border-border-subtle bg-gray-200 p-4">
               <article
                 className="product-document markdown-preview mx-auto min-h-[11in] max-w-[8.5in] bg-white px-[0.7in] py-[0.65in] text-[12pt] text-gray-950 shadow-lg"

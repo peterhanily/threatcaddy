@@ -110,7 +110,12 @@ export async function changeTagEverywhere(id: string, replacement?: { name?: str
   await lifecycle(async () => db.transaction('rw', [db.tags, ...TAGGED_TABLES.map(name => db.table(name))], async () => {
     const old = await db.tags.get(id);
     if (!old) return;
-    const newName = replacement?.name;
+    const newName = replacement?.name?.trim();
+    if (newName !== undefined) {
+      if (!newName) throw new Error('Tag name cannot be empty.');
+      const duplicate = await db.tags.filter(tag => tag.id !== id && tag.name.toLowerCase() === newName.toLowerCase()).first();
+      if (duplicate) throw new Error('A tag with that name already exists.');
+    }
     if (!replacement || (newName !== undefined && newName !== old.name)) {
       for (const name of TAGGED_TABLES) {
         const rows = await db.table<EntityRecord>(name).filter(row => Array.isArray(row.tags) && row.tags.includes(old.name)).toArray();
@@ -120,7 +125,7 @@ export async function changeTagEverywhere(id: string, replacement?: { name?: str
         }
       }
     }
-    if (replacement) await db.tags.update(id, replacement); else await db.tags.delete(id);
+    if (replacement) await db.tags.update(id, { ...replacement, ...(newName !== undefined ? { name: newName } : {}) }); else await db.tags.delete(id);
   }));
 }
 

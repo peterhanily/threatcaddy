@@ -33,6 +33,7 @@ import type { ChatAttachment } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '../../contexts/NavigationContext';
 import { useInvestigation } from '../../contexts/InvestigationContext';
+import { useScreenshare } from '../../hooks/ScreenshareContext';
 
 /** Strip tool call JSON from streaming content (local LLMs output tool calls as text). */
 // Regexes hoisted to module scope — compiled once, not per render frame
@@ -77,6 +78,7 @@ export function ChatView({
 }: ChatViewProps) {
   const { selectedChatThreadId: selectedThreadId, setSelectedChatThreadId: onSelectThread } = useNavigation();
   const { selectedFolderId, selectedFolder } = useInvestigation();
+  const { maxLevel: screenshareMaxLevel } = useScreenshare();
   const { extensionAvailable, streamingContent, isStreaming, error, toolActivity, sendAgentRequest, abort } = useLLM();
   const { t } = useTranslation('chat');
   const { addToast } = useToast();
@@ -151,16 +153,20 @@ export function ChatView({
 
   // Auto-select first non-folder thread when none selected (or stale selection)
   useEffect(() => {
+    // App keeps this view mounted but hidden while sharing. Privacy filtering
+    // must not replace the retained thread or its unsent input/attachments.
+    if (screenshareMaxLevel !== null) return;
     if (threads.length > 0 && (!selectedThreadId || !threads.some(t => t.id === selectedThreadId))) {
       const first = threads.find(t => !t.isFolder);
       if (first) onSelectThread(first.id);
     }
-  }, [selectedThreadId, threads, onSelectThread]);
+  }, [selectedThreadId, threads, onSelectThread, screenshareMaxLevel]);
 
   // Scroll to bottom on new messages or streaming content
   useEffect(() => {
+    if (screenshareMaxLevel !== null) return;
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeThread?.messages?.length, streamingContent, toolActivity.length]);
+  }, [activeThread?.messages?.length, streamingContent, toolActivity.length, screenshareMaxLevel]);
 
   // Show LLM errors
   useEffect(() => {

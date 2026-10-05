@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 import { resolveVariables, evaluateCondition, resolveDeep } from './integration-expression';
 import { postMessageOrigin } from './utils';
+import { resolveIntegrationConfig, validateIntegrationConfig } from './integration-config';
 import type {
   IntegrationTemplate,
   InstalledIntegration,
@@ -259,16 +260,37 @@ export class IntegrationExecutor {
     let entitiesUpdated = 0;
     let displayResults: unknown;
 
+    const config = resolveIntegrationConfig(template.configSchema, installation.config);
+    const missingConfig = validateIntegrationConfig(template.configSchema, config);
+    if (missingConfig.length > 0) {
+      return {
+        id: runId,
+        integrationId: installation.id,
+        templateId: template.id,
+        status: 'error',
+        trigger: 'manual',
+        inputSummary: this.buildInputSummary(input),
+        outputSummary: this.buildOutputSummary('error', 0, 0, 0),
+        durationMs: Date.now() - startTime,
+        error: `Configure required integration settings before running: ${missingConfig.map(field => field.label).join(', ')}.`,
+        entitiesCreated: 0,
+        entitiesUpdated: 0,
+        apiCallsMade: 0,
+        log: [],
+        createdAt: startTime,
+      };
+    }
+
     const context: ExecutionContext = {
       ioc: input.ioc,
       investigation: input.investigation,
-      config: installation.config,
+      config,
       now: new Date().toISOString(),
       steps: {},
       vars: {},
     };
 
-    const secrets = collectSecretValues(template, installation.config);
+    const secrets = collectSecretValues(template, config);
 
     const addLog = (entry: IntegrationRunLogEntry) => {
       // Redact any secret values that leaked into log detail strings
@@ -303,7 +325,7 @@ export class IntegrationExecutor {
 
         if (stepResult.error) {
           if (!step.continueOnError) {
-            error = stepResult.error;
+            error = redactSecrets(stepResult.error, secrets);
             status = 'error';
             break;
           }

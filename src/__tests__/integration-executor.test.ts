@@ -101,6 +101,85 @@ describe('IntegrationExecutor', () => {
     mockFetch.mockReset();
   });
 
+  describe('required configuration preflight', () => {
+    it.each(['direct', 'bridge', 'server'])('returns a failed run before any %s transport or step/output side effects', async transport => {
+      const template = makeTemplate([
+        { id: 'create', type: 'create-entity', label: 'Create', entityType: 'note', fields: { title: 'Must not run' } },
+        { id: 'http', type: 'http', label: 'Fetch', method: 'GET', url: 'https://example.com/' },
+      ], [
+        { type: 'notify', template: { message: 'Must not notify' } },
+        { type: 'create-note', template: { title: 'Must not create' } },
+        { type: 'update-ioc', template: { confidence: 'high' } },
+        { type: 'display', template: { message: 'Must not display' } },
+      ]);
+      template.configSchema = [
+        { key: 'apiKey', label: 'API key', type: 'password', secret: true, required: true },
+        { key: 'otherSecret', label: 'Other credential', type: 'password', secret: true, required: false },
+      ];
+      const callbacks = makeCallbacks({ onCreateEntity: vi.fn(), onUpdateEntity: vi.fn(), onNotify: vi.fn() });
+      const postMessage = vi.spyOn(window, 'postMessage').mockImplementation(() => {});
+      const timer = vi.spyOn(globalThis, 'setTimeout');
+      const getAccessToken = vi.fn();
+      if (transport === 'bridge') document.documentElement.dataset.tcBridgeCaps = 'proxy_fetch';
+      try {
+        const result = await executor.run(template, makeInstallation({ apiKey: ' ', otherSecret: 'fictional-secret-value' }), makeInput(), callbacks, undefined,
+          transport === 'server' ? { useServerProxy: { serverUrl: 'https://team.example', getAccessToken } } : undefined);
+        expect(result).toMatchObject({ status: 'error', outputSummary: 'Failed', entitiesCreated: 0, entitiesUpdated: 0, apiCallsMade: 0, log: [] });
+        expect(result.error).toBe('Configure required integration settings before running: API key.');
+        expect(result.displayResults).toBeUndefined();
+        expect(JSON.stringify(result)).not.toContain('fictional-secret-value');
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(postMessage).not.toHaveBeenCalled();
+        expect(getAccessToken).not.toHaveBeenCalled();
+        expect(timer).not.toHaveBeenCalled();
+        for (const callback of Object.values(callbacks)) expect(callback).not.toHaveBeenCalled();
+      } finally {
+        delete document.documentElement.dataset.tcBridgeCaps;
+        postMessage.mockRestore();
+        timer.mockRestore();
+      }
+    });
+
+    it('rejects output-only runs before processing outputs', async () => {
+      const template = makeTemplate([], [{ type: 'notify', template: { message: 'Do not send' } }]);
+      template.configSchema = [{ key: 'region', label: 'Region', type: 'select', required: true }];
+      const callbacks = makeCallbacks({ onNotify: vi.fn() });
+      const result = await executor.run(template, makeInstallation(), {}, callbacks);
+      expect(result.status).toBe('error');
+      expect(callbacks.onNotify).not.toHaveBeenCalled();
+      expect(callbacks.onLog).not.toHaveBeenCalled();
+    });
+
+    it('executes with resolved defaults while preserving explicit zero and false', async () => {
+      mockFetch.mockResolvedValueOnce(mockJsonResponse({ ok: true }));
+      const template = makeTemplate([{ id: 'fetch', type: 'http', label: 'Fetch', method: 'GET', url: 'https://example.com/{{config.region}}?count={{config.count}}&enabled={{config.enabled}}' }]);
+      template.configSchema = [
+        { key: 'region', label: 'Region', type: 'string', required: true, default: 'eu' },
+        { key: 'count', label: 'Count', type: 'number', required: true, default: 9 },
+        { key: 'enabled', label: 'Enabled', type: 'boolean', required: true, default: true },
+      ];
+      const installation = makeInstallation({ count: 0, enabled: false });
+      const result = await executor.run(template, installation, {}, makeCallbacks());
+      expect(result.status).toBe('success');
+      expect(mockFetch.mock.calls[0][0]).toBe('https://example.com/eu?count=0&enabled=false');
+      expect(installation.config).toEqual({ count: 0, enabled: false });
+    });
+
+    it('includes defaulted secrets in existing error/log redaction', async () => {
+      const secret = 'fictional-default-secret';
+      mockFetch.mockRejectedValueOnce(new Error(`Transport rejected ${secret}`));
+      const template = makeTemplate([{ id: 'fetch', type: 'http', label: 'Fetch', method: 'GET', url: 'https://example.com/' }]);
+      template.configSchema = [{ key: 'apiKey', label: 'API key', type: 'password', required: true, secret: true, default: secret }];
+      const onLog = vi.fn();
+      const callbacks = makeCallbacks({ onLog });
+      const result = await executor.run(template, makeInstallation(), {}, callbacks);
+      expect(result.status).toBe('error');
+      expect(JSON.stringify(result)).not.toContain(secret);
+      expect(JSON.stringify(onLog.mock.calls)).not.toContain(secret);
+      expect(result.error).toContain('[REDACTED]');
+    });
+  });
+
   // ─── 1. Basic execution with one HTTP step ─────────────────────
 
   describe('basic execution', () => {

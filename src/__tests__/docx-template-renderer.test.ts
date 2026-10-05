@@ -48,7 +48,7 @@ describe('docx template renderer', () => {
     expect(headerXml).toContain('Confidential - Restricted');
   });
 
-  it('uses Intel Note role anchors instead of carrying stale baseline body text', () => {
+  it.each([1, 2])('uses Intel Note role anchors and superscript markers with %i source(s)', (sourceCount) => {
     const template = buildStoredZip([
       {
         path: '[Content_Types].xml',
@@ -127,6 +127,7 @@ describe('docx template renderer', () => {
       '## Sources',
       '',
       '- Symantec Threat Hunter Team / Security.com. See: https://www.security.com/threat-intelligence/iran-seedworm-electronics',
+      sourceCount === 2 ? '- Second source: fictional analyst verification fixture.' : '',
     ].join('\n'), 'intel-note');
     const documentXml = readZipText(rendered, 'word/document.xml');
     const footnotesXml = readZipText(rendered, 'word/footnotes.xml');
@@ -146,6 +147,20 @@ describe('docx template renderer', () => {
     expect(documentXml).not.toContain('<w:sz w:val="14"/>');
     expect(documentXml).not.toContain('w:fill="F2F2F2"');
     expect(documentXml).toContain('<w:footnoteReference w:id="1"/>');
+    if (sourceCount === 2) expect(documentXml).toContain('<w:footnoteReference w:id="2"/>');
+    expect(documentXml).not.toContain('w:val="subscript"');
+    const parsedDocument = new DOMParser().parseFromString(documentXml, 'application/xml');
+    expect(parsedDocument.querySelector('parsererror')).toBeNull();
+    const references = parsedDocument.getElementsByTagName('w:footnoteReference');
+    expect(references).toHaveLength(sourceCount);
+    for (const reference of references) {
+      expect(reference.parentElement?.getElementsByTagName('w:vertAlign')[0]?.getAttribute('w:val')).toBe('superscript');
+    }
+    const separators = [...parsedDocument.getElementsByTagName('w:t')].filter(text => text.textContent === ',');
+    expect(separators).toHaveLength(sourceCount - 1);
+    for (const separator of separators) {
+      expect(separator.parentElement?.getElementsByTagName('w:vertAlign')[0]?.getAttribute('w:val')).toBe('superscript');
+    }
     expect(documentXml).toContain('IntelTimeline');
     expect(documentXml).toContain('IntelIocs');
     expect(documentXml).toContain('rIdHeader');
@@ -154,7 +169,18 @@ describe('docx template renderer', () => {
     expect(documentXml).not.toContain('Old IOC');
     expect(footnotesXml).toContain('Symantec Threat Hunter Team / Security.com');
     expect(footnotesXml).toContain('See: https://www.security.com/threat-intelligence/iran-seedworm-electronics');
-    expect(footnotesXml).toContain('<w:vertAlign w:val="subscript"/>');
+    expect(footnotesXml).toContain('<w:vertAlign w:val="superscript"/>');
+    expect(footnotesXml).not.toContain('w:val="subscript"');
+    const parsedFootnotes = new DOMParser().parseFromString(footnotesXml, 'application/xml');
+    expect(parsedFootnotes.querySelector('parsererror')).toBeNull();
+    const footnoteNumbers = parsedFootnotes.getElementsByTagName('w:footnoteRef');
+    expect(footnoteNumbers).toHaveLength(sourceCount);
+    for (const reference of footnoteNumbers) {
+      expect(reference.parentElement?.getElementsByTagName('w:vertAlign')[0]?.getAttribute('w:val')).toBe('superscript');
+    }
+    const sourceTexts = parsedFootnotes.getElementsByTagName('w:t');
+    expect(sourceTexts).toHaveLength(sourceCount);
+    for (const text of sourceTexts) expect(text.parentElement?.getElementsByTagName('w:vertAlign')).toHaveLength(0);
     expect(footnotesXml).toContain('<w:sz w:val="13"/>');
     expect(footnotesXml).not.toContain('OLD SOURCE FOOTNOTE');
   });

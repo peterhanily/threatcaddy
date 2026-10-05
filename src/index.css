@@ -387,6 +387,74 @@ html {
   margin-right: 0.5rem;
 }
 
+/* Saved products are white paper in either app theme. Keep their foregrounds
+   and surfaces together instead of inheriting dark-mode Markdown colours. */
+.markdown-preview.product-document {
+  background: #ffffff;
+  color: #111827;
+}
+
+.markdown-preview.product-document h1,
+.markdown-preview.product-document h2,
+.markdown-preview.product-document h3,
+.markdown-preview.product-document h4,
+.markdown-preview.product-document h5,
+.markdown-preview.product-document h6,
+.markdown-preview.product-document p,
+.markdown-preview.product-document li,
+.markdown-preview.product-document th,
+.markdown-preview.product-document td {
+  color: #111827;
+}
+
+.markdown-preview.product-document h1,
+.markdown-preview.product-document hr,
+.markdown-preview.product-document th,
+.markdown-preview.product-document td {
+  border-color: #9ca3af;
+}
+
+.markdown-preview.product-document th {
+  background: #e5e7eb;
+}
+
+.markdown-preview.product-document code {
+  background: #f3f4f6;
+  color: #9d174d;
+}
+
+.markdown-preview.product-document pre code {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* The shared syntax highlighter uses a dark palette. Paper previews use
+   monochrome code, like their print export, so pale tokens stay readable. */
+.markdown-preview.product-document pre code span {
+  background: transparent;
+  color: inherit;
+}
+
+.markdown-preview.product-document blockquote,
+.markdown-preview.product-document blockquote p {
+  color: #4b5563;
+}
+
+.markdown-preview.product-document a,
+.markdown-preview.product-document .tclink {
+  color: #4338ca;
+}
+
+.markdown-preview.product-document a:hover,
+.markdown-preview.product-document .tclink:hover {
+  color: #3730a3;
+}
+
+.markdown-preview.product-document .tclink-broken {
+  color: #4b5563;
+  opacity: 1;
+}
+
 /* ─── Editor textarea ─── */
 .note-editor {
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;

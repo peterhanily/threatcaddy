@@ -2,12 +2,25 @@ import { useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getFailedDrafts, subscribeFailedDrafts } from '../../lib/entity-drafts';
 import { downloadFile } from '../../lib/export';
+import { useScreenshare } from '../../hooks/ScreenshareContext';
 
 /** Recovery remains reachable after navigating away or deleting an entity. */
 export function DraftRecoveryNotice() {
   const { t } = useTranslation();
+  const { maxLevel } = useScreenshare();
   const failures = useSyncExternalStore(subscribeFailedDrafts, getFailedDrafts);
   if (failures.length === 0) return null;
+  // Recovery errors, titles and conflict snapshots have no classification
+  // provenance. Preserve the drafts, but do not reveal their contents or offer
+  // a download that could expose sensitive filenames while sharing the screen.
+  if (maxLevel !== null) {
+    return (
+      <aside role="alert" className="fixed bottom-4 left-4 right-4 md:right-auto md:max-w-lg z-[100] rounded-lg border border-red-700 bg-gray-950 p-4 text-sm text-red-200 shadow-xl">
+        <p>{t('draftRecovery.message')}</p>
+        <p>{t('draftRecovery.screenshareHidden', { defaultValue: 'Turn off screenshare mode to review unsaved drafts.' })}</p>
+      </aside>
+    );
+  }
   return (
     <aside role="alert" className="fixed bottom-4 left-4 right-4 md:right-auto md:max-w-lg z-[100] rounded-lg border border-red-700 bg-gray-950 p-4 text-sm text-red-200 shadow-xl">
       <p>{t('draftRecovery.message')}</p>

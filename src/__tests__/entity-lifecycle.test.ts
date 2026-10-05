@@ -87,6 +87,23 @@ describe('portable investigation graph', () => {
 });
 
 describe('shared lifecycle', () => {
+  it('rejects blank and duplicate tag renames without changing linked records', async () => {
+    await graph();
+    await db.tags.bulkAdd([{ id: 'tag', name: 'shared', color: 'red' }, { id: 'other', name: 'Existing', color: 'blue' }]);
+    await expect(changeTagEverywhere('tag', { name: '   ' })).rejects.toThrow('empty');
+    await expect(changeTagEverywhere('tag', { name: ' existing ' })).rejects.toThrow('already exists');
+    expect((await db.tags.get('tag'))?.name).toBe('shared');
+    for (const name of TAGGED_TABLES) expect((await db.table(name).toArray()).every(row => row.tags.includes('shared') && row.updatedAt === 1)).toBe(true);
+  });
+
+  it('normalizes a renamed tag consistently in its definition and every linked record', async () => {
+    await graph();
+    await db.tags.add({ id: 'tag', name: 'shared', color: 'red' });
+    await changeTagEverywhere('tag', { name: '  normalized  ' });
+    expect((await db.tags.get('tag'))?.name).toBe('normalized');
+    for (const name of TAGGED_TABLES) expect((await db.table(name).toArray()).every(row => row.tags.includes('normalized'))).toBe(true);
+  });
+
   it('renames/deletes tags in every family with modification metadata', async () => {
     await graph();
     await db.tags.add({ id: 'tag', name: 'shared', color: 'red' });

@@ -1,3 +1,4 @@
+import { useLayoutEffect } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
@@ -22,6 +23,44 @@ beforeEach(async () => { api.snapshot.mockReset(); await db.notes.clear(); });
 afterEach(() => vi.restoreAllMocks());
 
 describe('useInvestigationData request ownership', () => {
+  it('requires a successful current-scope read even before the loading effect runs', async () => {
+    const first = deferred(); const second = deferred();
+    api.snapshot.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    const committed: Array<{ folder: string | null; loading: boolean; loadedSuccessfully: boolean }> = [];
+    const { result, rerender } = renderHook((properties: Props) => {
+      const data = useData(properties);
+      useLayoutEffect(() => {
+        committed.push({ folder: properties.folder, loading: data.loading, loadedSuccessfully: data.loadedSuccessfully });
+      });
+      return data;
+    }, { initialProps: { folder: 'first', mode: 'remote' } as Props });
+    expect(committed[0]).toEqual({ folder: 'first', loading: false, loadedSuccessfully: false });
+    expect(result.current.loadedSuccessfully).toBe(false);
+    await act(async () => { first.resolve(snapshot('current', 'first')); });
+    expect(result.current.loadedSuccessfully).toBe(true);
+
+    rerender({ folder: 'second', mode: 'remote' });
+    expect(committed.find(value => value.folder === 'second')).toEqual({ folder: 'second', loading: false, loadedSuccessfully: false });
+    expect(result.current.loadedSuccessfully).toBe(false);
+    await act(async () => { second.resolve({}); });
+    expect(result.current.notes).toEqual([]);
+    expect(result.current.loadedSuccessfully).toBe(true);
+  });
+
+  it('does not mistake an initial failure for an empty success and recovers only after retry succeeds', async () => {
+    api.snapshot.mockRejectedValueOnce(new Error('Initial snapshot unavailable'));
+    const { result } = renderHook(useData, { initialProps: { folder: 'case', mode: 'remote' } as Props });
+    await waitFor(() => expect(result.current.error).toBe('Initial snapshot unavailable'));
+    expect(result.current.loading).toBe(false);
+    expect(result.current.loadedSuccessfully).toBe(false);
+    const retry = deferred(); api.snapshot.mockReturnValueOnce(retry.promise);
+    let refreshing!: Promise<void>;
+    act(() => { refreshing = result.current.refresh(); });
+    expect(result.current.loadedSuccessfully).toBe(false);
+    await act(async () => { retry.resolve({}); await refreshing; });
+    expect(result.current).toMatchObject({ notes: [], loading: false, error: null, loadedSuccessfully: true });
+  });
+
   it('ignores a previous folder success and its loading completion while the latest folder is pending', async () => {
     const first = deferred(); const second = deferred();
     api.snapshot.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
@@ -30,10 +69,12 @@ describe('useInvestigationData request ownership', () => {
     await act(async () => { first.resolve(snapshot('old', 'first')); });
     expect(result.current.notes).toEqual([]);
     expect(result.current.loading).toBe(true);
+    expect(result.current.loadedSuccessfully).toBe(false);
     expect(result.current.error).toBeNull();
     await act(async () => { second.resolve(snapshot('current', 'second')); });
     expect(result.current.notes.map(row => row.id)).toEqual(['current']);
     expect(result.current.loading).toBe(false);
+    expect(result.current.loadedSuccessfully).toBe(true);
   });
 
   it('ignores an old failure after a newer success rather than clearing current records', async () => {
@@ -46,12 +87,14 @@ describe('useInvestigationData request ownership', () => {
     expect(result.current.notes.map(row => row.id)).toEqual(['current']);
     expect(result.current.error).toBeNull();
     expect(result.current.loading).toBe(false);
+    expect(result.current.loadedSuccessfully).toBe(true);
   });
 
   it('preserves latest loading on an older refresh failure, then surfaces the current failure', async () => {
     api.snapshot.mockResolvedValueOnce(snapshot('initial', 'case'));
     const { result } = renderHook(useData, { initialProps: { folder: 'case', mode: 'remote' } as Props });
     await waitFor(() => expect(result.current.notes).toHaveLength(1));
+    expect(result.current.loadedSuccessfully).toBe(true);
     const older = deferred(); const latest = deferred();
     api.snapshot.mockReturnValueOnce(older.promise).mockReturnValueOnce(latest.promise);
     let olderRefresh!: Promise<void>; let latestRefresh!: Promise<void>;
@@ -59,11 +102,13 @@ describe('useInvestigationData request ownership', () => {
     await act(async () => { older.reject(new Error('Superseded refresh')); await olderRefresh; });
     expect(result.current.notes).toHaveLength(1);
     expect(result.current.loading).toBe(true);
+    expect(result.current.loadedSuccessfully).toBe(false);
     expect(result.current.error).toBeNull();
     await act(async () => { latest.reject(new Error('Current service unavailable')); await latestRefresh; });
     expect(result.current.notes).toEqual([]);
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBe('Current service unavailable');
+    expect(result.current.loadedSuccessfully).toBe(false);
   });
 
   it('fences remote completion when changing to local mode and reads the actual local store', async () => {
@@ -71,11 +116,13 @@ describe('useInvestigationData request ownership', () => {
     const remote = deferred(); api.snapshot.mockReturnValueOnce(remote.promise);
     const { result, rerender } = renderHook(useData, { initialProps: { folder: 'case', mode: 'remote' } as Props });
     rerender({ folder: 'case', mode: 'local' });
+    expect(result.current.loadedSuccessfully).toBe(false);
     await waitFor(() => expect(result.current.notes.map(row => row.id)).toEqual(['local']));
     await act(async () => { remote.resolve(snapshot('stale-remote', 'case')); });
     expect(result.current.notes.map(row => row.id)).toEqual(['local']);
     expect(result.current.isRemote).toBe(false);
     expect(result.current.error).toBeNull();
+    expect(result.current.loadedSuccessfully).toBe(true);
   });
 
   it('returns an empty inactive result after clearing the folder, including a late rejection', async () => {
@@ -83,7 +130,7 @@ describe('useInvestigationData request ownership', () => {
     const { result, rerender } = renderHook(useData, { initialProps: { folder: 'case', mode: 'remote' } as Props });
     rerender({ folder: null, mode: 'local' });
     await act(async () => { pending.reject(new Error('Request ended after navigation')); });
-    expect(result.current).toMatchObject({ notes: [], evidence: [], loading: false, error: null, isRemote: false });
+    expect(result.current).toMatchObject({ notes: [], evidence: [], loading: false, loadedSuccessfully: false, error: null, isRemote: false });
     await result.current.refresh();
     expect(api.snapshot).toHaveBeenCalledOnce();
   });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
 import { db } from '../db';
 import type { ChatThread, ChatMessage } from '../types';
 import { nanoid } from 'nanoid';
@@ -16,14 +16,31 @@ async function ensureDB() {
 export function useChats() {
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadedSuccessfully, setLoadedSuccessfully] = useState(false);
+  const mountedRef = useRef(false);
+  const loadRequestRef = useRef<symbol | null>(null);
   // Cache of thread messages keyed by thread id (used for search)
   const messagesCacheRef = useRef<Map<string, ChatMessage[]>>(new Map());
 
+  useLayoutEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; loadRequestRef.current = null; };
+  }, []);
+
   const loadThreads = useCallback(async () => {
+    if (!mountedRef.current) return;
+    const request = Symbol('chat-load');
+    loadRequestRef.current = request;
+    const current = () => mountedRef.current && loadRequestRef.current === request;
+    setLoading(true);
+    setLoadedSuccessfully(false);
     try {
       await ensureDB();
+      if (!current()) return;
       const all = await db.chatThreads.toArray();
+      if (!current()) return;
       const remaining = await purgeOldTrash(all, db.chatThreads);
+      if (!current()) return;
       const cache = messagesCacheRef.current;
       for (const thread of remaining) {
         cache.set(thread.id, thread.messages);
@@ -34,10 +51,12 @@ export function useChats() {
         if (!activeIds.has(id)) cache.delete(id);
       }
       setThreads(remaining.sort((a, b) => b.updatedAt - a.updatedAt));
+      setLoadedSuccessfully(true);
     } catch (err) {
-      console.warn('useChats: failed to load threads', err);
+      if (current()) console.warn('useChats: failed to load threads', err);
+    } finally {
+      if (current()) setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -177,6 +196,7 @@ export function useChats() {
   return {
     threads,
     loading,
+    loadedSuccessfully,
     createThread,
     updateThread,
     addMessage,

@@ -93,6 +93,37 @@ describe('useNotes', () => {
     expect(stored[0].title).toBe('Persisted');
   });
 
+  it('publishes a custom atomic creation only after its persistence promise commits', async () => {
+    const { result } = renderHook(() => useNotes());
+    await act(async () => {});
+    let finish!: () => void;
+    const committed = new Promise<void>(resolve => { finish = resolve; });
+    const persist = vi.fn(async (note: Parameters<typeof db.notes.add>[0]) => {
+      await committed;
+      await db.notes.add(note);
+    });
+    let saved!: ReturnType<typeof result.current.createNote>;
+    act(() => { saved = result.current.createNote({ title: 'Atomic product', content: 'Reviewed content' }, persist); });
+    await waitFor(() => expect(persist).toHaveBeenCalledOnce());
+    expect(result.current.notes).toEqual([]);
+    expect(await db.notes.count()).toBe(0);
+    await act(async () => { finish(); await saved; });
+    expect(result.current.notes).toEqual([expect.objectContaining({ title: 'Atomic product', content: 'Reviewed content' })]);
+    expect(await db.notes.count()).toBe(1);
+  });
+
+  it('retains no phantom note when custom atomic persistence rejects', async () => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const { result } = renderHook(() => useNotes());
+      await act(async () => {});
+      const persist = vi.fn().mockRejectedValue(new Error('Source classification changed'));
+      await expect(result.current.createNote({ title: 'Rejected product' }, persist)).rejects.toThrow('classification changed');
+      expect(result.current.notes).toEqual([]);
+      expect(await db.notes.count()).toBe(0);
+    } finally { errorLog.mockRestore(); }
+  });
+
   it('updates a note', async () => {
     const { result } = renderHook(() => useNotes());
     await act(async () => {});

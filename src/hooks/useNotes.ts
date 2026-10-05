@@ -8,6 +8,9 @@ import { purgeOldTrash } from '../lib/trash-purge';
 
 const CONTENT_CACHE_MAX = 200;
 
+/** Resolves only after the complete write transaction has committed. */
+export type NotePersistence = (note: Note) => Promise<void>;
+
 type LRUCache<K, V> = {
   get(key: K): V | undefined;
   set(key: K, val: V): void;
@@ -76,7 +79,7 @@ export function useNotes(folderId?: string) {
     loadNotes();
   }, [loadNotes]);
 
-  const createNote = useCallback(async (partial?: Partial<Note>): Promise<Note> => {
+  const createNote = useCallback(async (partial?: Partial<Note>, persist?: NotePersistence): Promise<Note> => {
     const { getCurrentUserName } = await import('../lib/utils');
     const note: Note = {
       id: nanoid(),
@@ -92,13 +95,16 @@ export function useNotes(folderId?: string) {
       ...partial,
     };
     try {
-      await db.notes.add(note);
+      if (persist) await persist(note);
+      else await db.notes.add(note);
     } catch (err) {
       console.error('Failed to create note:', err);
       throw err;
     }
-    contentCacheRef.current.set(note.id, note.content);
-    setNotes((prev) => [note, ...prev]);
+    if (mountedRef.current) {
+      contentCacheRef.current.set(note.id, note.content);
+      setNotes((prev) => [note, ...prev]);
+    }
     return note;
   }, []);
 

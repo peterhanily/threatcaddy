@@ -99,6 +99,9 @@ export function productBaselinePackageToTemplate(input: unknown, importedFrom?: 
     throw new Error('Product baseline package is missing baseline metadata.');
   }
   const name = cleanString(raw.name);
+  if (typeof raw.content === 'string' && raw.content.length > 500_000) {
+    throw new Error('Product baseline content exceeds the 500,000-character limit; it has not been truncated.');
+  }
   const content = cleanString(raw.content, 500_000);
   if (!name || !content) {
     throw new Error('Product baseline package requires baseline.name and baseline.content.');

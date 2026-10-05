@@ -4,6 +4,7 @@ import { IntegrationExecutor, type ExecutionOptions } from './integration-execut
 import type { StandaloneIOC } from '../types';
 import type { InstalledIntegration, IntegrationRun, IntegrationTemplate } from '../types/integration-types';
 import { persistIOCIntegrationUpdate } from './ioc-enrichment-persistence';
+import { validateIntegrationConfig } from './integration-config';
 
 const SUPPORTED_VT_TYPES = new Set(['ipv4', 'ipv6', 'domain', 'md5', 'sha1', 'sha256']);
 const VT_TEMPLATE_IDS = new Set(['vt-ip-lookup', 'vt-domain-lookup', 'vt-hash-lookup']);
@@ -110,8 +111,15 @@ export async function autoEnrichImportedIOCs(
       continue;
     }
 
-    await markQueued(ioc);
     const { installation, template } = vtIntegrations[0];
+    // Configuration failures must not rewrite the IOC's tags or timestamps.
+    // The executor has the same guard, but this caller normally writes its
+    // queued/error markers before and after execution, outside that boundary.
+    if (validateIntegrationConfig(template.configSchema, installation.config).length > 0) {
+      stats.errors += 1;
+      continue;
+    }
+    await markQueued(ioc);
 
     try {
       const run = await executor.run(

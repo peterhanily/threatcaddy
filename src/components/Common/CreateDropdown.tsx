@@ -71,7 +71,7 @@ export function CreateDropdown({ onQuickNote, onNewNote, onNewTask, onNewTimelin
         data-tour="new-note"
         onClick={() => setOpen(!open)}
         onKeyDown={handleKeyDown}
-        className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-sm font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-200"
+        className="flex items-center justify-center min-h-11 min-w-11 md:min-h-0 md:min-w-0 gap-1 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-sm font-medium transition-colors bg-gray-700 hover:bg-gray-600 text-gray-200"
         title={t('createDropdown.createNew')}
         aria-label={t('createDropdown.createNew')}
         aria-haspopup="menu"
@@ -87,7 +87,7 @@ export function CreateDropdown({ onQuickNote, onNewNote, onNewTask, onNewTimelin
           ref={menuRef}
           role="menu"
           aria-activedescendant={activeIndex >= 0 ? `create-menu-item-${activeIndex}` : undefined}
-          className="absolute right-0 top-full mt-1 w-44 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 py-1"
+          className="absolute start-0 md:start-auto md:end-0 top-full mt-1 w-44 max-w-[calc(100vw-1rem)] bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 py-1"
           onKeyDown={handleKeyDown}
         >
           {items.map((item, idx) => (
@@ -98,7 +98,7 @@ export function CreateDropdown({ onQuickNote, onNewNote, onNewTask, onNewTimelin
               aria-label={t('createDropdown.createItem', { item: item.label })}
               onClick={() => { item.action(); setOpen(false); }}
               onMouseEnter={() => setActiveIndex(idx)}
-              className={`w-full flex items-center gap-2 px-3 py-2 sm:py-1.5 text-xs text-gray-300 min-h-[44px] sm:min-h-0 ${idx === activeIndex ? 'bg-gray-700/50' : 'hover:bg-gray-700'}`}
+              className={`w-full flex items-center gap-2 px-3 py-2 md:py-1.5 text-xs text-gray-300 min-h-[44px] md:min-h-0 ${idx === activeIndex ? 'bg-gray-700/50' : 'hover:bg-gray-700'}`}
             >
               <item.icon size={14} />
               {item.label}

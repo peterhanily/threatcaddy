@@ -129,77 +129,87 @@ export default function WhiteboardEditor({ whiteboard, allTags, folders, onUpdat
   const currentFolder = folders.find((f) => f.id === whiteboard.folderId);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex min-w-0 flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 p-2 border-b border-gray-800 shrink-0">
-        <button
-          onClick={onBack}
-          className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
-          title="Back to list"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <input
-          value={name}
-          onChange={(e) => handleNameChange(e.target.value)}
-          className="flex-1 bg-transparent text-gray-200 text-sm font-medium px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-accent"
-          placeholder="Whiteboard name"
-        />
-        <div className="relative">
+      <div className="flex min-w-0 flex-col gap-2 p-2 border-b border-gray-800 shrink-0 md:flex-row md:items-center">
+        <div className="flex min-w-0 items-center gap-2 md:flex-1">
           <button
-            onClick={() => setShowFolderSelect(!showFolderSelect)}
-            className={cn(
-              'flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors',
-              currentFolder ? 'bg-gray-800 text-gray-300' : 'text-gray-500 hover:text-gray-300'
-            )}
-            title="Assign to investigation"
+            onClick={onBack}
+            className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors md:min-h-0 md:min-w-0"
+            title="Back to list"
+            aria-label="Back to list"
           >
-            <Briefcase size={14} />
-            <span>{currentFolder?.name || 'No investigation'}</span>
+            <ArrowLeft size={18} className="rtl:rotate-180" />
           </button>
-          {showFolderSelect && (
-            <div className="absolute right-0 top-full mt-1 z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-xl py-1 min-w-[160px]">
-              <button
-                onClick={() => handleFolderChange(undefined)}
-                className={cn('w-full text-start px-3 py-1.5 text-xs hover:bg-gray-800', !whiteboard.folderId && 'text-accent')}
-              >
-                No investigation
-              </button>
-              {folders.map((f) => (
+          <input
+            value={name}
+            onChange={(e) => handleNameChange(e.target.value)}
+            className="min-h-[44px] min-w-0 flex-1 bg-transparent text-gray-200 text-sm font-medium px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-accent md:min-h-0"
+            placeholder="Whiteboard name"
+            aria-label="Whiteboard name"
+          />
+        </div>
+        <div className="flex min-w-0 flex-wrap items-center gap-2 md:max-w-[65%] md:flex-nowrap">
+          <div className="relative min-w-0 flex-1 basis-28 md:max-w-48 md:flex-initial">
+            <button
+              onClick={() => setShowFolderSelect(!showFolderSelect)}
+              className={cn(
+                'flex min-h-[44px] min-w-[44px] w-full items-center gap-1.5 px-2 py-1 rounded text-start text-xs transition-colors md:min-h-0 md:min-w-0',
+                currentFolder ? 'bg-gray-800 text-gray-300' : 'text-gray-500 hover:text-gray-300'
+              )}
+              title="Assign to investigation"
+              aria-label="Assign to investigation"
+              aria-expanded={showFolderSelect}
+            >
+              <Briefcase size={14} className="shrink-0" />
+              <span className="truncate">{currentFolder?.name || 'No investigation'}</span>
+            </button>
+            {showFolderSelect && (
+              <div role="group" aria-label="Investigation assignment" className="absolute start-0 top-full mt-1 z-50 w-64 max-w-[calc(100vw-2rem)] max-h-60 overflow-y-auto bg-gray-900 border border-gray-700 rounded-lg shadow-xl py-1 md:start-auto md:end-0">
                 <button
-                  key={f.id}
-                  onClick={() => handleFolderChange(f.id)}
-                  className={cn('w-full text-start px-3 py-1.5 text-xs hover:bg-gray-800', whiteboard.folderId === f.id && 'text-accent')}
+                  onClick={() => handleFolderChange(undefined)}
+                  className={cn('min-h-[44px] w-full text-start px-3 py-1.5 text-xs hover:bg-gray-800 md:min-h-0', !whiteboard.folderId && 'text-accent')}
                 >
-                  {f.name}
+                  No investigation
                 </button>
-              ))}
-            </div>
+                {folders.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => handleFolderChange(f.id)}
+                    className={cn('min-h-[44px] w-full whitespace-normal [overflow-wrap:anywhere] text-start px-3 py-1.5 text-xs hover:bg-gray-800 md:min-h-0', whiteboard.folderId === f.id && 'text-accent')}
+                  >
+                    {f.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <ClsSelect
+            value={whiteboard.clsLevel}
+            onChange={(clsLevel) => { draftController.queue({ clsLevel }, 0); }}
+            clsLevels={settings?.tiClsLevels}
+            className="h-[44px] min-h-[44px] min-w-[44px] max-w-full md:h-auto md:min-h-0 md:min-w-0 md:max-w-44"
+          />
+          <button
+            onClick={handleExportPNG}
+            className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors md:min-h-0 md:min-w-0"
+            title="Export as PNG"
+            aria-label="Export as PNG"
+          >
+            <Image size={16} />
+          </button>
+          {saved && <span className="text-xs text-green-500 shrink-0">Saved</span>}
+          {onDelete && (
+            <button
+              onClick={() => setShowConfirmDelete(true)}
+              className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center p-1.5 rounded text-red-500 hover:text-red-400 hover:bg-gray-800 md:min-h-0 md:min-w-0"
+              title="Delete whiteboard"
+              aria-label="Delete whiteboard"
+            >
+              <Trash2 size={16} />
+            </button>
           )}
         </div>
-        <ClsSelect
-          value={whiteboard.clsLevel}
-          onChange={(clsLevel) => { draftController.queue({ clsLevel }, 0); }}
-          clsLevels={settings?.tiClsLevels}
-        />
-        <button
-          onClick={handleExportPNG}
-          className="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
-          title="Export as PNG"
-        >
-          <Image size={16} />
-        </button>
-        {saved && <span className="text-xs text-green-500 shrink-0">Saved</span>}
-        {onDelete && (
-          <button
-            onClick={() => setShowConfirmDelete(true)}
-            className="p-1.5 rounded text-red-500 hover:text-red-400 hover:bg-gray-800"
-            title="Delete whiteboard"
-            aria-label="Delete whiteboard"
-          >
-            <Trash2 size={16} />
-          </button>
-        )}
       </div>
 
       {draft.status === 'error' && (

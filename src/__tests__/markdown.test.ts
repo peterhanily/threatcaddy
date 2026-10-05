@@ -3,6 +3,21 @@ import { renderMarkdown } from '../lib/markdown';
 import type { WikiLinkTarget } from '../lib/markdown';
 
 describe('renderMarkdown', () => {
+  it('can render a local-only report preview without media resources', () => {
+    const markdown = '# Local report\n\n![External illustration](https://example.test/illustration.png)\n\n'
+      + '<video src="https://example.test/film.mp4" poster="https://example.test/poster.png"></video>\n\n'
+      + '<audio src="https://example.test/audio.mp3"></audio>\n\n'
+      + '<div><style>p { color: red; }</style>Local text</div>\n\n'
+      + '[Source](https://example.test/source)\n\n| Value |\n| --- |\n| Plain text |';
+    const html = renderMarkdown(markdown, undefined, { disableMedia: true });
+    expect(html).toContain('<h1>Local report</h1>');
+    expect(html).toContain('<table>');
+    expect(html).toContain('href="https://example.test/source"');
+    expect(html).not.toMatch(/<(?:style|img|video|audio|source|picture|svg)\b/);
+    expect(html).not.toMatch(/\b(?:src|srcset|poster|background)=/);
+    expect(renderMarkdown('![Illustration](https://example.test/illustration.png)')).toContain('<img');
+  });
+
   // ── Existing tests ──────────────────────────────────────────────
 
   it('renders basic markdown', () => {

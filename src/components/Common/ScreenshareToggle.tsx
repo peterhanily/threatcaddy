@@ -24,12 +24,12 @@ export function ScreenshareToggle({ maxLevel, onChangeLevel, effectiveLevels }: 
   const active = maxLevel !== null;
 
   return (
-    <div className="relative" ref={ref} data-tour="screenshare">
+    <div className="md:relative" ref={ref} data-tour="screenshare">
       <div className="flex items-center gap-1.5">
         <button
           onClick={() => setOpen(!open)}
           className={cn(
-            'p-1.5 sm:p-2 rounded-lg transition-colors',
+            'min-h-11 min-w-11 md:min-h-0 md:min-w-0 flex items-center justify-center p-1.5 sm:p-2 rounded-lg transition-colors',
             active
               ? 'text-red-400 hover:text-red-300 hover:bg-red-500/10'
               : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
@@ -47,10 +47,10 @@ export function ScreenshareToggle({ maxLevel, onChangeLevel, effectiveLevels }: 
       </div>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-60 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50">
+        <div className="absolute end-2 md:end-0 top-full mt-1 w-60 max-w-[calc(100vw-1rem)] bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50">
           <button
             onClick={() => { onChangeLevel(null); setOpen(false); }}
-            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg"
+            className="w-full flex items-center gap-2 min-h-11 md:min-h-0 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 rounded-t-lg"
           >
             {!active && <Check size={12} />}
             <span className={cn('whitespace-nowrap', !active ? '' : 'ms-5')}>Off</span>
@@ -60,7 +60,7 @@ export function ScreenshareToggle({ maxLevel, onChangeLevel, effectiveLevels }: 
               key={level}
               onClick={() => { onChangeLevel(level); setOpen(false); }}
               className={cn(
-                'w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700',
+                'w-full flex items-center gap-2 min-h-11 md:min-h-0 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700',
                 i === effectiveLevels.length - 1 && 'rounded-b-lg'
               )}
             >

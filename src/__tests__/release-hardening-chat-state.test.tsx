@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatThread, Folder, Settings } from '../types';
 import { ChatView } from '../components/Chat/ChatView';
+import { ScreenshareContext } from '../hooks/ScreenshareContext';
 
 const state = vi.hoisted(() => ({
   selectedThreadId: 'thread',
@@ -57,6 +58,31 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('release hardening: committed chat submission state', () => {
+  it('does not auto-select a replacement thread while screenshare suspends the view', () => {
+    state.selectedThreadId = 'retained-thread';
+    const ui = (maxLevel: string | null) => <ScreenshareContext.Provider value={{ maxLevel, effectiveLevels: [] }}><ChatView {...props} /></ScreenshareContext.Provider>;
+    const view = render(ui('TLP:CLEAR'));
+    expect(state.select).not.toHaveBeenCalled();
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+    view.rerender(ui(null));
+    expect(state.select).toHaveBeenCalledExactlyOnceWith('thread');
+  });
+
+  it('retains pending attachments across privacy suspension without selecting another thread', async () => {
+    const ui = (maxLevel: string | null) => <ScreenshareContext.Provider value={{ maxLevel, effectiveLevels: [] }}><ChatView {...props} /></ScreenshareContext.Provider>;
+    const view = render(ui(null));
+    const image = { name: 'draft.png', type: 'image/png', arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer } as File;
+    await act(async () => { await state.input.onImageAttach([image]); });
+    const input = screen.getByTestId('attachments');
+    view.rerender(ui('TLP:CLEAR'));
+    expect(screen.getByTestId('attachments')).toBe(input);
+    expect(input).toHaveTextContent('1');
+    view.rerender(ui(null));
+    expect(input).toHaveTextContent('1');
+    expect(state.select).not.toHaveBeenCalled();
+    expect(state.send).not.toHaveBeenCalled();
+  });
+
   it('sends a newly attached image without requiring unrelated prop changes', async () => {
     render(<ChatView {...props} />);
     const image = { name: 'synthetic.png', type: 'image/png', arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer } as File;

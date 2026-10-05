@@ -161,10 +161,18 @@ export function sanitizeHtml(html: string): string {
   return DOMPurify.sanitize(html, SANITIZE_CONFIG) as string;
 }
 
-export function renderMarkdown(content: string, wikiLinkTargets?: WikiLinkTarget[]): string {
+export function renderMarkdown(content: string, wikiLinkTargets?: WikiLinkTarget[], options?: { disableMedia?: boolean }): string {
   // Load highlight.js CSS on first use (lazy-loaded to avoid blocking initial render)
   ensureHljsCss();
   const processed = wikiLinkTargets ? preprocessWikiLinks(content, wikiLinkTargets) : content;
   const raw = marked.parse(processed) as string;
-  return DOMPurify.sanitize(raw, SANITIZE_CONFIG) as string;
+  // Local report previews must not fetch media embedded in a source/template.
+  // Keep the normal renderer's sanitization and opt out of resource-bearing
+  // elements before the sanitized markup is ever mounted in the document.
+  const config = options?.disableMedia ? {
+    ...SANITIZE_CONFIG,
+    FORBID_TAGS: [...SANITIZE_CONFIG.FORBID_TAGS, 'style', 'img', 'image', 'picture', 'video', 'audio', 'source', 'track', 'svg', 'math'],
+    FORBID_ATTR: [...SANITIZE_CONFIG.FORBID_ATTR, 'src', 'srcset', 'poster', 'background', 'xlink:href'],
+  } : SANITIZE_CONFIG;
+  return DOMPurify.sanitize(raw, config) as string;
 }

@@ -594,14 +594,14 @@ function renderCell(text: string, header: boolean, width: number): string {
   ].join('');
 }
 
-function runProperties(options: { size: string; bold?: boolean; subscript?: boolean }): string {
+function runProperties(options: { size: string; bold?: boolean; superscript?: boolean }): string {
   return [
     '<w:rPr>',
     `<w:rFonts w:ascii="${DEFAULT_DOCX_FONT}" w:hAnsi="${DEFAULT_DOCX_FONT}" w:eastAsia="${DEFAULT_DOCX_FONT}" w:cs="${DEFAULT_DOCX_FONT}"/>`,
     options.bold ? '<w:b/>' : '',
     `<w:sz w:val="${options.size}"/>`,
     `<w:szCs w:val="${options.size}"/>`,
-    options.subscript ? '<w:vertAlign w:val="subscript"/>' : '',
+    options.superscript ? '<w:vertAlign w:val="superscript"/>' : '',
     '</w:rPr>',
   ].join('');
 }
@@ -610,12 +610,12 @@ function renderFootnoteReferenceRuns(ids: number[]): string {
   return ids.map((id, index) => [
     index > 0 ? [
       '<w:r>',
-      runProperties({ size: BODY_FONT_SIZE, subscript: true }),
+      runProperties({ size: BODY_FONT_SIZE, superscript: true }),
       '<w:t xml:space="preserve">,</w:t>',
       '</w:r>',
     ].join('') : '',
     '<w:r>',
-    runProperties({ size: BODY_FONT_SIZE, subscript: true }),
+    runProperties({ size: BODY_FONT_SIZE, superscript: true }),
     `<w:footnoteReference w:id="${id}"/>`,
     '</w:r>',
   ].join('')).join('');
@@ -627,7 +627,7 @@ function renderSourceFootnotesXml(sources: string[]): string {
     '<w:p>',
     '<w:pPr><w:pStyle w:val="FootnoteText"/></w:pPr>',
     '<w:r>',
-    runProperties({ size: BODY_FONT_SIZE, subscript: true }),
+    runProperties({ size: BODY_FONT_SIZE, superscript: true }),
     '<w:footnoteRef/>',
     '</w:r>',
     '<w:r>',

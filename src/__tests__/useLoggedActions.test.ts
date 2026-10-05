@@ -201,6 +201,25 @@ describe('useLoggedActions', () => {
       );
     });
 
+    it('passes atomic note persistence through and waits to log until creation commits', async () => {
+      const { result } = renderLoggedActions();
+      let commit!: (note: Note) => void;
+      mocks.notes.createNote.mockReturnValueOnce(new Promise<Note>(resolve => { commit = resolve; }));
+      const persist = vi.fn(async () => {});
+      const saved = result.current.loggedCreateNote({ title: 'Atomic product' }, persist);
+      expect(mocks.notes.createNote).toHaveBeenCalledWith({ title: 'Atomic product' }, persist);
+      expect(mocks.log).not.toHaveBeenCalled();
+      await act(async () => { commit(mocks.sampleNote); await saved; });
+      expect(mocks.log).toHaveBeenCalledOnce();
+    });
+
+    it('does not log a product when atomic persistence rejects', async () => {
+      const { result } = renderLoggedActions();
+      mocks.notes.createNote.mockRejectedValueOnce(new Error('Source classification changed'));
+      await expect(result.current.loggedCreateNote({ title: 'Rejected product' }, vi.fn())).rejects.toThrow('classification changed');
+      expect(mocks.log).not.toHaveBeenCalled();
+    });
+
     it('loggedTrashNote calls trashNote and logs', async () => {
       const { result } = renderLoggedActions();
       await act(async () => {

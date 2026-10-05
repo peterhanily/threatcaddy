@@ -4,10 +4,11 @@ import { Trash2, Settings2, Power, AlertCircle, Check, ExternalLink, Clock, Plus
 import { useIntegrations } from '../../hooks/useIntegrations';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import { fetchCatalog, fetchTemplate, clearCatalogCache } from '../../lib/integration-catalog';
+import { fetchCatalog, fetchTemplate } from '../../lib/integration-catalog';
 import { shareIntegrationTemplate, fetchTeamTemplates, deleteTeamTemplate } from '../../lib/server-api';
 import { IntegrationBuilder } from './IntegrationBuilder';
-import type { IntegrationTemplate, InstalledIntegration, IntegrationRun, IntegrationConfigField, IntegrationCategory, CatalogEntry } from '../../types/integration-types';
+import { IntegrationConfigForm } from './IntegrationConfigForm';
+import type { IntegrationTemplate, InstalledIntegration, IntegrationRun, IntegrationCategory, CatalogEntry } from '../../types/integration-types';
 
 type SubTab = 'installed' | 'catalog' | 'history';
 
@@ -119,133 +120,6 @@ function exportTemplateAsJson(template: IntegrationTemplate): void {
   URL.revokeObjectURL(url);
 }
 
-// --- Config Form ---
-
-function ConfigForm({
-  fields,
-  values,
-  onSave,
-  onCancel,
-}: {
-  fields: IntegrationConfigField[];
-  values: Record<string, unknown>;
-  onSave: (config: Record<string, unknown>) => void;
-  onCancel: () => void;
-}) {
-  const { t } = useTranslation('integrations');
-  const [formValues, setFormValues] = useState<Record<string, unknown>>(() => {
-    const initial: Record<string, unknown> = {};
-    for (const field of fields) {
-      initial[field.key] = values[field.key] ?? field.default ?? '';
-    }
-    return initial;
-  });
-  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
-
-  const updateField = (key: string, value: unknown) => {
-    setFormValues((prev) => ({ ...prev, [key]: value }));
-  };
-
-  return (
-    <div className="border border-gray-700 rounded-lg p-3 space-y-3 bg-gray-800/50 mt-2">
-      {fields.map((field) => (
-        <div key={field.key} className="space-y-1">
-          <label className="text-xs text-gray-400">
-            {field.label}
-            {field.required && <span className="text-red-400 ms-0.5">*</span>}
-          </label>
-          {field.description && (
-            <p className="text-[10px] text-gray-600">{field.description}</p>
-          )}
-
-          {field.type === 'boolean' ? (
-            <button
-              onClick={() => updateField(field.key, !formValues[field.key])}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                formValues[field.key] ? 'bg-accent' : 'bg-gray-600'
-              }`}
-              role="switch"
-              aria-checked={!!formValues[field.key]}
-            >
-              <span
-                className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
-                  formValues[field.key] ? 'translate-x-[18px]' : 'translate-x-[3px]'
-                }`}
-              />
-            </button>
-          ) : field.type === 'select' || field.type === 'multi-select' ? (
-            <select
-              value={String(formValues[field.key] || '')}
-              onChange={(e) => updateField(field.key, e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent"
-            >
-              <option value="">Select...</option>
-              {field.options?.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          ) : field.type === 'password' ? (
-            <div className="relative">
-              <input
-                type={showPasswords[field.key] ? 'text' : 'password'}
-                value={String(formValues[field.key] || '')}
-                onChange={(e) => updateField(field.key, e.target.value)}
-                placeholder={field.placeholder}
-                autoComplete="off"
-                data-1p-ignore
-                data-lpignore="true"
-                className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent pe-16"
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  setShowPasswords((prev) => ({ ...prev, [field.key]: !prev[field.key] }))
-                }
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-500 hover:text-gray-300"
-              >
-                {showPasswords[field.key] ? t('config.hide') : t('config.show')}
-              </button>
-            </div>
-          ) : field.type === 'number' ? (
-            <input
-              type="number"
-              value={String(formValues[field.key] || '')}
-              onChange={(e) => updateField(field.key, e.target.value ? Number(e.target.value) : '')}
-              placeholder={field.placeholder}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent"
-            />
-          ) : (
-            <input
-              type="text"
-              value={String(formValues[field.key] || '')}
-              onChange={(e) => updateField(field.key, e.target.value)}
-              placeholder={field.placeholder}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-accent"
-            />
-          )}
-        </div>
-      ))}
-
-      <div className="flex items-center gap-2 pt-1">
-        <button
-          onClick={() => onSave(formValues)}
-          className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors"
-        >
-          Save
-        </button>
-        <button
-          onClick={onCancel}
-          className="px-3 py-1.5 rounded-lg text-gray-400 text-xs font-medium hover:text-gray-200 transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // --- Installed Tab ---
 
 function InstalledTab({
@@ -262,7 +136,7 @@ function InstalledTab({
   installations: InstalledIntegration[];
   templates: IntegrationTemplate[];
   onToggle: (id: string, enabled: boolean) => void;
-  onConfigure: (id: string, config: Record<string, unknown>) => void;
+  onConfigure: (id: string, config: Record<string, unknown>) => void | Promise<void>;
   onDelete: (id: string) => void;
   onInstall: (templateId: string) => void;
   onExport: (template: IntegrationTemplate) => void;
@@ -376,13 +250,10 @@ function InstalledTab({
 
                 {/* Inline config form */}
                 {isConfiguring && template && (
-                  <ConfigForm
+                  <IntegrationConfigForm
                     fields={template.configSchema}
                     values={inst.config}
-                    onSave={(config) => {
-                      onConfigure(inst.id, config);
-                      setConfiguringId(null);
-                    }}
+                    onSave={(config) => onConfigure(inst.id, config)}
                     onCancel={() => setConfiguringId(null)}
                   />
                 )}
@@ -447,6 +318,7 @@ function CatalogTab({
   onInstallCommunityEntry,
   catalogEntries,
   catalogLoading,
+  catalogLoaded,
   catalogError,
   onRefreshCatalog,
   teamTemplates,
@@ -462,6 +334,7 @@ function CatalogTab({
   onInstallCommunityEntry: (entry: CatalogEntry) => void;
   catalogEntries: CatalogEntry[];
   catalogLoading: boolean;
+  catalogLoaded: boolean;
   catalogError: string | null;
   onRefreshCatalog: () => void;
   teamTemplates: IntegrationTemplate[];
@@ -784,25 +657,28 @@ function CatalogTab({
             onClick={onRefreshCatalog}
             disabled={catalogLoading}
             className="flex items-center gap-1 px-2 py-1 rounded text-[10px] text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors disabled:opacity-50"
-            title="Refresh catalog"
+            title={t(catalogError ? 'catalog.retry' : catalogLoaded ? 'catalog.refresh' : 'catalog.load')}
           >
             <RefreshCw size={10} className={catalogLoading ? 'animate-spin' : ''} />
-            {t('catalog.refresh')}
+            {t(catalogError ? 'catalog.retry' : catalogLoaded ? 'catalog.refresh' : 'catalog.load')}
           </button>
         </div>
 
-        {catalogLoading && catalogEntries.length === 0 ? (
+        {catalogError && (
+          <div role="status" className="flex items-start gap-2 text-xs text-gray-300 py-2">
+            <AlertCircle size={12} className="shrink-0 mt-0.5" />
+            <span>{catalogError}</span>
+          </div>
+        )}
+        {!catalogLoaded && !catalogLoading ? (
+          <p className="text-xs text-gray-400 py-2">{t('catalog.optional')}</p>
+        ) : catalogLoading && catalogEntries.length === 0 ? (
           <div className="flex items-center gap-2 py-4 justify-center">
             <Loader2 size={14} className="animate-spin text-gray-500" />
             <span className="text-xs text-gray-500">{t('catalog.loadingCommunityCatalog')}</span>
           </div>
-        ) : catalogError ? (
-          <div className="flex items-center gap-2 text-xs text-red-400 py-2">
-            <AlertCircle size={12} />
-            {catalogError}
-          </div>
         ) : filteredCommunity.length === 0 && !catalogLoading ? (
-          <p className="text-xs text-gray-500 py-2">
+          !catalogError && <p className="text-xs text-gray-500 py-2">
             {searchQuery ? t('catalog.noCommunityMatch') : t('catalog.noCommunityAvailable')}
           </p>
         ) : (
@@ -1090,25 +966,41 @@ export function IntegrationPanel() {
   const [showBuilder, setShowBuilder] = useState(false);
   const [catalogEntries, setCatalogEntries] = useState<CatalogEntry[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+  const catalogRequestPending = useRef(false);
+  const mounted = useRef(true);
   const [teamTemplates, setTeamTemplates] = useState<IntegrationTemplate[]>([]);
   const [teamLoading, setTeamLoading] = useState(false);
 
   const installedTemplateIds = new Set(installations.map((i) => i.templateId));
 
-  // Fetch community catalog on mount
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+
+  // The optional catalog is not contacted until the user requests it. Built-ins
+  // and custom imports remain available even when its publisher is unavailable.
   const loadCatalog = useCallback(async () => {
+    if (catalogRequestPending.current) return;
+    catalogRequestPending.current = true;
     setCatalogLoading(true);
     setCatalogError(null);
     try {
-      const entries = await fetchCatalog();
-      setCatalogEntries(entries);
-    } catch {
-      setCatalogError('Could not load community catalog. Check your network connection.');
+      const result = await fetchCatalog();
+      if (!mounted.current) return;
+      setCatalogEntries(result.entries);
+      setCatalogLoaded(true);
+      if (result.error) {
+        const reason = t(`catalog.error.${result.error}`);
+        setCatalogError(`${reason} ${t(result.source === 'cache' ? 'catalog.cachedFallback' : 'catalog.builtinFallback')}`);
+      }
     } finally {
-      setCatalogLoading(false);
+      catalogRequestPending.current = false;
+      if (mounted.current) setCatalogLoading(false);
     }
-  }, []);
+  }, [t]);
 
   // Fetch team templates
   const loadTeamTemplates = useCallback(async () => {
@@ -1125,12 +1017,11 @@ export function IntegrationPanel() {
   }, [isTeamConnected]);
 
   useEffect(() => {
-    void loadCatalog();
     void loadTeamTemplates();
-  }, [loadCatalog, loadTeamTemplates]);
+  }, [loadTeamTemplates]);
 
   const handleRefreshCatalog = () => {
-    clearCatalogCache();
+    // Keep the last validated catalog as an explicitly labelled offline fallback.
     void loadCatalog();
   };
 
@@ -1288,6 +1179,7 @@ export function IntegrationPanel() {
               onInstallCommunityEntry={handleInstallCommunityEntry}
               catalogEntries={catalogEntries}
               catalogLoading={catalogLoading}
+              catalogLoaded={catalogLoaded}
               catalogError={catalogError}
               onRefreshCatalog={handleRefreshCatalog}
               teamTemplates={teamTemplates}

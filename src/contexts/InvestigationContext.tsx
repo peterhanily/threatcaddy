@@ -11,6 +11,7 @@ import type {
 import { db } from '../db';
 import { evictSyncedFolder } from '../lib/sync-cache';
 import { fetchInvestigationMembers } from '../lib/server-api';
+import { useScreenshare } from '../hooks/ScreenshareContext';
 
 // ---------------------------------------------------------------------------
 // Context value
@@ -270,6 +271,59 @@ export function InvestigationProvider({
       {children}
     </InvestigationContext.Provider>
   );
+}
+
+/**
+ * Restrict the rendered investigation context without changing the underlying
+ * selection. Turning screenshare off restores the same investigation and draft.
+ * Keep this inside ScreenshareContext and outside the rendered application UI.
+ */
+export function InvestigationVisibilityScope({ folders, tags, children }: {
+  folders: Folder[];
+  tags: Tag[];
+  children: ReactNode;
+}) {
+  const context = useInvestigation();
+  const { maxLevel } = useScreenshare();
+  const value = useMemo<InvestigationContextValue>(() => {
+    // A remote-only investigation is absent from the local folder list even
+    // with unrestricted data; preserve every existing behavior when sharing is off.
+    if (maxLevel === null) return context;
+
+    const visibleIds = new Set(folders.map(folder => folder.id));
+    const visibleTags = new Set(tags.map(tag => tag.name));
+    const selectedFolder = folders.find(folder => folder.id === context.selectedFolderId);
+    const editingFolder = folders.find(folder => folder.id === context.editingFolderId);
+    const selectedTagObj = tags.find(tag => tag.name === context.selectedTag);
+    const canSelect = (id: string | undefined) => id === undefined || visibleIds.has(id);
+
+    return {
+      ...context,
+      folders,
+      tags,
+      selectedFolder,
+      selectedFolderId: selectedFolder?.id,
+      editingFolder,
+      editingFolderId: editingFolder?.id,
+      selectedTag: selectedTagObj?.name,
+      selectedTagObj,
+      investigationMode: selectedFolder ? context.investigationMode : 'local',
+      investigationMembers: selectedFolder ? context.investigationMembers : [],
+      agentPendingCount: selectedFolder ? context.agentPendingCount : 0,
+      syncingFolderId: context.syncingFolderId && visibleIds.has(context.syncingFolderId) ? context.syncingFolderId : null,
+      confirmUnsyncId: context.confirmUnsyncId && visibleIds.has(context.confirmUnsyncId) ? context.confirmUnsyncId : null,
+      setSelectedFolderId: id => { if (canSelect(id)) context.setSelectedFolderId(id); },
+      setEditingFolderId: id => { if (canSelect(id)) context.setEditingFolderId(id); },
+      setSelectedTag: tag => { if (tag === undefined || visibleTags.has(tag)) context.setSelectedTag(tag); },
+      setConfirmUnsyncId: id => { if (id === null || visibleIds.has(id)) context.setConfirmUnsyncId(id); },
+      handleOpenInvestigation: (id, mode) => { if (visibleIds.has(id)) context.handleOpenInvestigation(id, mode); },
+      handleSyncLocally: id => { if (visibleIds.has(id)) context.handleSyncLocally(id); },
+      handleUnsync: id => { if (visibleIds.has(id)) context.handleUnsync(id); },
+      handleUnsyncConfirmed: async id => { if (visibleIds.has(id)) await context.handleUnsyncConfirmed(id); },
+    };
+  }, [context, folders, tags, maxLevel]);
+
+  return <InvestigationContext.Provider value={value}>{children}</InvestigationContext.Provider>;
 }
 
 // ---------------------------------------------------------------------------

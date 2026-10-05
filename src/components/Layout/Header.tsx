@@ -87,7 +87,7 @@ export function Header({
     return ` · ${t('header.built', { when: d === 0 ? t('header.today') : t('header.daysAgo', { count: d }) })}`;
   });
   return (
-    <header data-tour="header" className={cn("h-12 sm:h-14 border-b border-gray-800 flex items-center px-2 sm:px-4 gap-2 sm:gap-3 bg-gray-900/50 backdrop-blur-sm shrink-0 relative z-20", screenshareMaxLevel && "pt-0.5")}>
+    <header data-tour="header" className={cn("min-h-12 md:h-14 border-b border-gray-800 flex flex-wrap md:flex-nowrap items-center px-2 md:px-4 py-1 md:py-0 gap-2 md:gap-3 bg-gray-900/50 backdrop-blur-sm shrink-0 relative z-20", screenshareMaxLevel && "pt-0.5")}>
       {screenshareMaxLevel && <div className="absolute top-0 left-0 right-0 h-0.5 bg-red-500" />}
       {/* Mobile: toggle mobile overlay sidebar */}
       <button
@@ -130,7 +130,7 @@ export function Header({
       {/* Mobile investigation context badge (U6) */}
       {selectedFolderName && (
         <span
-          className="md:hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium text-text-primary bg-bg-active border border-border-subtle max-w-[120px] truncate shrink-0"
+          className="md:hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium text-text-primary bg-bg-active border border-border-subtle max-w-[120px] min-w-0 truncate"
           style={selectedFolderColor ? { borderColor: selectedFolderColor + '60', backgroundColor: selectedFolderColor + '15' } : undefined}
           title={selectedFolderName}
         >
@@ -142,10 +142,10 @@ export function Header({
       <button
         data-tour="search"
         onClick={onOpenSearch}
-        className="flex items-center gap-2 flex-1 max-w-md ps-3 pe-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-500 hover:text-gray-400 hover:border-gray-600 text-sm transition-colors cursor-pointer"
+        className="flex items-center justify-center md:justify-start gap-2 flex-1 min-w-11 min-h-11 md:min-w-0 md:min-h-0 max-w-md ps-3 pe-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-500 hover:text-gray-400 hover:border-gray-600 text-sm transition-colors cursor-pointer"
         title={selectedFolderName ? t('header.searchInFolder', { name: selectedFolderName }) + ' (Ctrl+K)' : t('header.searchAll') + ' (Ctrl+K)'}
       >
-        <Search size={16} />
+        <Search size={16} className="shrink-0" />
         <span className="hidden sm:inline truncate">{selectedFolderName ? t('header.searchInFolderEllipsis', { name: selectedFolderName }) : t('header.searchAllEllipsis')}</span>
         <kbd className="hidden sm:inline ms-auto text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-500 border border-gray-600 font-mono shrink-0">Ctrl+K</kbd>
       </button>
@@ -265,7 +265,7 @@ export function Header({
         )}
       </div>
 
-      <div className="flex items-center gap-1 ms-auto">
+      <div className="flex flex-wrap md:flex-nowrap items-center justify-end gap-1 ms-auto w-full md:w-auto min-w-0">
         <CreateDropdown
           onQuickNote={onQuickNote}
           onNewNote={onNewNote}
@@ -279,7 +279,7 @@ export function Header({
         <button
           data-tour="backup"
           onClick={onQuickSave}
-          className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
+          className="min-h-11 min-w-11 md:min-h-0 md:min-w-0 flex items-center justify-center p-1.5 sm:p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
           title={t('header.saveBackup') + ' (Ctrl+S)'}
           aria-label={t('header.saveBackup')}
         >
@@ -287,7 +287,7 @@ export function Header({
         </button>
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
+          className="min-h-11 min-w-11 md:min-h-0 md:min-w-0 flex items-center justify-center p-1.5 sm:p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
           title={t('header.loadBackup')}
           aria-label={t('header.loadBackup')}
         >
@@ -314,7 +314,7 @@ export function Header({
         {presenceUsers && presenceUsers.length > 0 && (
           <PresenceIndicator users={presenceUsers} />
         )}
-        <NotificationBell />
+        {!screenshareMaxLevel && <NotificationBell />}
         <span data-tour="theme-toggle">
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
         </span>

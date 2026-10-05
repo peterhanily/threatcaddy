@@ -4,6 +4,7 @@ import { renderHook, act } from '@testing-library/react';
 import { useNoteTemplates } from '../hooks/useNoteTemplates';
 import { db } from '../db';
 import { BUILTIN_NOTE_TEMPLATES } from '../lib/builtin-templates';
+import { parseProductBaselinePackage, PRODUCT_BASELINE_PACKAGE_SCHEMA } from '../lib/product-baselines';
 
 describe('useNoteTemplates', () => {
   beforeEach(async () => {
@@ -33,6 +34,24 @@ describe('useNoteTemplates', () => {
   // ─── Create ────────────────────────────────────────────────────
 
   describe('createTemplate', () => {
+    it('preserves imported product baseline metadata through creation and reload', async () => {
+      const parsed = parseProductBaselinePackage(JSON.stringify({
+        schemaVersion: PRODUCT_BASELINE_PACKAGE_SCHEMA, kind: 'product-baseline',
+        baseline: { name: 'Fictional report outline', content: '# Report\n\n## Findings', clsLevel: 'TLP:AMBER',
+          productBaseline: { kind: 'markdown', productType: 'analysis-report', renderer: 'markdown',
+            layoutNotes: ['Keep the original section order.'], sourceNoteRules: ['Attribute each source.'] } },
+      }), 'fictional-outline.json');
+      const { result } = renderHook(() => useNoteTemplates());
+      await act(async () => {});
+      let id = '';
+      await act(async () => { id = (await result.current.createTemplate(parsed)).id; });
+      expect((await db.noteTemplates.get(id))?.productBaseline).toEqual(parsed.productBaseline);
+      await act(async () => { await result.current.reload(); });
+      expect(result.current.templates.find((template) => template.id === id)).toMatchObject({
+        clsLevel: 'TLP:AMBER', productBaseline: parsed.productBaseline,
+      });
+    });
+
     it('creates a user template with required fields', async () => {
       const { result } = renderHook(() => useNoteTemplates());
       await act(async () => {});
