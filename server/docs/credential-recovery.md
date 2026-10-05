@@ -16,6 +16,12 @@ If encrypted credentials cannot be decrypted, first restore the exact master key
 
 Master-key rotation is a separate offline maintenance operation: stop writers, preserve verified recovery material, decrypt using the old key and re-encrypt with the new key in an isolated trusted process, validate every affected record, and atomically install the transformed data and new key. No master-key rotation command is supplied by this change.
 
+## Saved local AI provider keys
+
+Newly entered or explicitly replaced local-provider API keys in the admin AI settings use the existing master-key encryption format. Keep the exact, stable `BOT_MASTER_KEY` in protected backup material; encrypted keys cannot be recovered by generating a replacement master key. Invalid or undecryptable ciphertext fails closed rather than being used as an API key.
+
+Existing plaintext keys remain readable and are **not automatically migrated** on startup, read, or unrelated settings saves. To convert an existing key, re-enter its actual value in the admin AI settings and save it; leaving the masked value unchanged does not convert it. Saving an empty key explicitly clears it. Previous database backups remain unchanged and must still be protected. This upgrade does not perform or verify a migration of a deployed installation.
+
 ## Webhook ownership and handoff availability
 
 Set `WEBHOOK_INGEST_OWNER_ID` to an existing active analyst or administrator account when enabling `WEBHOOK_INGEST_SECRET`. New investigations receive that account as creator and owner in the same transaction as the alert. Existing investigations require that account to retain editor access. Inactive users, viewers and internal bot accounts cannot serve as recipients. Existing ownerless investigations require an administrator to review and assign ownership; the upgrade does not guess an owner.

@@ -29,9 +29,9 @@ export default defineConfig([
       'react-hooks/set-state-in-effect': 'warn',
     },
   },
-  // Server (TypeScript, no React)
+  // Server and build tooling (TypeScript, no React)
   {
-    files: ['server/src/**/*.ts'],
+    files: ['server/src/**/*.ts', 'build/**/*.ts'],
     ignores: ['server/src/__tests__/**'],
     extends: [
       js.configs.recommended,

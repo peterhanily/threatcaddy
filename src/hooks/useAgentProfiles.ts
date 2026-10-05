@@ -3,7 +3,7 @@
  * Merges builtin profiles with user-created ones.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
 import { nanoid } from 'nanoid';
 import { db } from '../db';
 import type { AgentProfile } from '../types';
@@ -12,24 +12,49 @@ import { BUILTIN_AGENT_PROFILES } from '../lib/builtin-agent-profiles';
 export function useAgentProfiles() {
   const [userProfiles, setUserProfiles] = useState<AgentProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const mounted = useRef(false);
+  const requestVersion = useRef(0);
+  useLayoutEffect(() => {
+    ++requestVersion.current;
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   const reload = useCallback(async () => {
-    // Names are encrypted at rest and cannot be sorted by an IndexedDB index.
-    const profiles = await db.agentProfiles.toArray();
-    profiles.sort((a, b) => a.name.localeCompare(b.name));
-    setUserProfiles(profiles);
-    setLoading(false);
+    if (!mounted.current) return;
+    const request = ++requestVersion.current;
+    const current = () => mounted.current && requestVersion.current === request;
+    setLoading(true);
+    setError(null);
+    try {
+      // Names are encrypted at rest and cannot be sorted by an IndexedDB index.
+      const profiles = await db.agentProfiles.toArray();
+      if (!current()) return;
+      profiles.sort((a, b) => a.name.localeCompare(b.name));
+      setUserProfiles(profiles);
+    } catch (err) {
+      if (!current()) return;
+      setError(err instanceof Error ? err.message : 'Failed to load agent profiles');
+      throw err;
+    } finally {
+      if (current()) setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    reload();
+    void reload().catch(() => {}); // Error is exposed; mutation callers retain rejection semantics.
   }, [reload]);
 
   // Reload when agent tools create/modify profiles (define_specialist, soul updates)
   useEffect(() => {
-    const handler = () => { setTimeout(reload, 200); };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const handler = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { void reload().catch(() => {}); }, 200);
+    };
     window.addEventListener('tc-folders-changed', handler);
-    return () => window.removeEventListener('tc-folders-changed', handler);
+    return () => { clearTimeout(timer); window.removeEventListener('tc-folders-changed', handler); };
   }, [reload]);
 
   /** All profiles: builtins first, then user-created (memoized). */
@@ -99,6 +124,7 @@ export function useAgentProfiles() {
     userProfiles,
     builtinProfiles: BUILTIN_AGENT_PROFILES,
     loading,
+    error,
     reload,
     createProfile,
     updateProfile,

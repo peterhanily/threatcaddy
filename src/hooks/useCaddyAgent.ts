@@ -8,7 +8,7 @@
  * - Stops when disabled, folder changes, or component unmounts
  */
 
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import type { Folder, Settings, AgentStatus } from '../types';
 import { DEFAULT_AGENT_POLICY } from '../types';
 import { db } from '../db';
@@ -74,17 +74,43 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
   const settingsRef = useRef(settings);
   const mountedRef = useRef(true);
   const errorRetryCount = useRef(0);
+  const cycleController = useRef<AbortController | null>(null);
+  const supervisorController = useRef<AbortController | null>(null);
+  const supervisorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const callbacks = useRef({ extensionAvailable, onEntitiesChanged });
+  const cycleScope = useMemo(() => ({ folderId: folder?.id, enabled: folder?.agentEnabled }), [folder?.id, folder?.agentEnabled]);
+  const activeCycleScope = useRef<typeof cycleScope | null>(null);
 
   // External loop callbacks may observe only committed props, never an abandoned render.
   useLayoutEffect(() => {
     folderRef.current = folder;
     settingsRef.current = settings;
-  }, [folder, settings]);
+    callbacks.current = { extensionAvailable, onEntitiesChanged };
+  }, [folder, settings, extensionAvailable, onEntitiesChanged]);
+  useLayoutEffect(() => {
+    activeCycleScope.current = cycleScope;
+    errorRetryCount.current = 0;
+    return () => {
+      activeCycleScope.current = null;
+      cycleController.current?.abort();
+    };
+  }, [cycleScope]);
 
   // Track mount state
   useEffect(() => {
     mountedRef.current = true;
-    return () => { mountedRef.current = false; };
+    const stop = () => {
+      mountedRef.current = false;
+      cycleController.current?.abort();
+      supervisorController.current?.abort();
+      if (intervalRef.current) clearTimeout(intervalRef.current);
+      if (supervisorRef.current) clearTimeout(supervisorRef.current);
+    };
+    window.addEventListener('workspace-will-switch', stop);
+    return () => {
+      stop();
+      window.removeEventListener('workspace-will-switch', stop);
+    };
   }, []);
 
   const updateAgentStatus = useCallback((status: AgentStatus | undefined) => {
@@ -95,13 +121,17 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
   // Sync agentStatus from folder prop
   useEffect(() => {
     updateAgentStatus(folder?.agentStatus);
-  }, [folder?.agentStatus, updateAgentStatus]);
+  }, [folder?.id, folder?.agentStatus, updateAgentStatus]);
 
-  const executeCycle = useCallback(async () => {
+  const executeCycle = useCallback(async (requireEnabled = false) => {
     const currentFolder = folderRef.current;
+    const scope = activeCycleScope.current;
     // Mutex guard — if already running, skip
-    if (!currentFolder || cycleMutex.current) return;
+    if (!currentFolder || !scope || !mountedRef.current || cycleMutex.current) return;
     cycleMutex.current = true;
+    const controller = new AbortController();
+    cycleController.current = controller;
+    const current = () => mountedRef.current && activeCycleScope.current === scope && !controller.signal.aborted;
 
     if (mountedRef.current) {
       setRunning(true);
@@ -111,7 +141,7 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     try {
       // Re-read the folder to get latest state
       const freshFolder = await db.folders.get(currentFolder.id);
-      if (!freshFolder) {
+      if (!current() || !freshFolder || (requireEnabled && !freshFolder.agentEnabled)) {
         return;
       }
 
@@ -120,14 +150,15 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
         .where('investigationId')
         .equals(freshFolder.id)
         .count();
+      if (!current()) return;
 
       if (deploymentCount > 0) {
         // Multi-agent mode
-        const multiResult = await runMultiAgentCycle(freshFolder, settingsRef.current, extensionAvailable, (agentName, status) => {
-          if (mountedRef.current) setProgress(`${agentName}: ${status}`);
-        });
+        const multiResult = await runMultiAgentCycle(freshFolder, settingsRef.current, callbacks.current.extensionAvailable, (agentName, status) => {
+          if (current()) setProgress(`${agentName}: ${status}`);
+        }, controller.signal);
 
-        if (!mountedRef.current) return;
+        if (!current()) return;
 
         // Per-agent status: determine folder-level status from individual results
         const results = Array.from(multiResult.deploymentResults.values());
@@ -148,20 +179,21 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
 
         // Update working memory for each deployment that had activity
         for (const [, result] of multiResult.deploymentResults) {
+          if (!current()) return;
           if ((result.autoExecuted.length > 0 || result.proposed.length > 0) && result.threadId) {
-            await updateWorkingMemory(result.threadId, result.autoExecuted.length, result.proposed.length);
+            await updateWorkingMemory(result.threadId, result.autoExecuted.length, result.proposed.length, controller.signal);
           }
         }
       } else {
         // Legacy single-agent mode
         setStreamingContent('');
-        const result = await runAgentCycle(freshFolder, settingsRef.current, extensionAvailable, (status) => {
-          if (mountedRef.current) setProgress(status);
+        const result = await runAgentCycle(freshFolder, settingsRef.current, callbacks.current.extensionAvailable, (status) => {
+          if (current()) setProgress(status);
         }, undefined, undefined, (text) => {
-          if (mountedRef.current) setStreamingContent(prev => prev + text);
-        });
+          if (current()) setStreamingContent(prev => prev + text);
+        }, controller.signal);
 
-        if (!mountedRef.current) return;
+        if (!current()) return;
 
         if (result.error) {
           setError(result.error);
@@ -176,24 +208,25 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
         }
 
         if (result.autoExecuted.length > 0 || result.proposed.length > 0) {
-          await updateWorkingMemory(result.threadId, result.autoExecuted.length, result.proposed.length);
+          await updateWorkingMemory(result.threadId, result.autoExecuted.length, result.proposed.length, controller.signal);
         }
       }
 
-      onEntitiesChanged?.();
+      if (current()) callbacks.current.onEntitiesChanged?.();
     } catch (err) {
-      if (mountedRef.current) {
+      if (current()) {
         setError(String((err as Error).message || err));
         updateAgentStatus('error');
       }
     } finally {
       cycleMutex.current = false;
+      if (cycleController.current === controller) cycleController.current = null;
       if (mountedRef.current) {
         setRunning(false);
         setProgress('');
       }
     }
-  }, [extensionAvailable, onEntitiesChanged, updateAgentStatus]);
+  }, [updateAgentStatus]);
 
   const runOnce = useCallback(async () => {
     await executeCycle();
@@ -203,28 +236,32 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (detail?.folderId === folder?.id) {
+      if (activeCycleScope.current === cycleScope && detail?.folderId === folder?.id) {
         executeCycle().catch((err) => console.error('[AgentCaddy] chat-triggered cycle failed:', err));
       }
     };
     window.addEventListener('tc-run-agent-cycle', handler);
     return () => window.removeEventListener('tc-run-agent-cycle', handler);
-  }, [folder?.id, executeCycle]);
+  }, [folder?.id, executeCycle, cycleScope]);
 
   const toggleAgent = useCallback(async () => {
-    if (!folder) return;
+    if (!folder || activeCycleScope.current !== cycleScope) return;
     const newEnabled = !folder.agentEnabled;
+    if (!newEnabled) cycleController.current?.abort();
     await db.folders.update(folder.id, {
       agentEnabled: newEnabled,
       agentStatus: newEnabled ? 'idle' : undefined,
     });
+    if (activeCycleScope.current !== cycleScope) return;
     updateAgentStatus(newEnabled ? 'idle' : undefined);
     errorRetryCount.current = 0;
-  }, [folder, updateAgentStatus]);
+  }, [folder, updateAgentStatus, cycleScope]);
 
   // Auto-repeat loop: schedule next cycle after completion
+  const intervalMinutes = folder?.agentPolicy?.intervalMinutes ?? DEFAULT_AGENT_POLICY.intervalMinutes;
   useEffect(() => {
-    if (!folder?.agentEnabled || !folder.id) {
+    const { folderId, enabled } = cycleScope;
+    if (!enabled || !folderId) {
       // Clear any pending timer when disabled
       if (intervalRef.current) {
         clearTimeout(intervalRef.current);
@@ -233,10 +270,12 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
       return;
     }
 
-    const policy = folder.agentPolicy ?? DEFAULT_AGENT_POLICY;
-    const baseIntervalMs = (policy.intervalMinutes || 5) * 60 * 1000;
+    let active = true;
+    const current = () => active && mountedRef.current && activeCycleScope.current === cycleScope;
+    const baseIntervalMs = (intervalMinutes || 5) * 60 * 1000;
 
     const scheduleNext = async () => {
+      if (!current()) return;
       // Adaptive: double interval when waiting for approvals (use ref to avoid stale closure)
       const currentStatus = agentStatusRef.current;
       const multiplier = currentStatus === 'waiting' ? 2 : 1;
@@ -253,7 +292,8 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
 
       // Adaptive scheduling based on agent metrics (multi-agent mode)
       try {
-        const deployments = await db.agentDeployments.where('investigationId').equals(folder.id).toArray();
+        const deployments = await db.agentDeployments.where('investigationId').equals(folderId).toArray();
+        if (!current()) return;
         if (deployments.length > 0) {
           const totalProposed = deployments.reduce((s, d) => s + (d.metrics?.toolCallsProposed || 0), 0);
           const totalExecuted = deployments.reduce((s, d) => s + (d.metrics?.toolCallsExecuted || 0), 0);
@@ -265,51 +305,40 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
           }
         }
       } catch { /* non-critical */ }
+      if (!current()) return;
 
-      intervalRef.current = setTimeout(async () => {
-        if (!mountedRef.current) return;
-
-        // Re-check that agent is still enabled
-        const freshFolder = await db.folders.get(folder.id);
-        if (!freshFolder?.agentEnabled) return;
-
-        // Don't run if there are pending actions awaiting approval
-        const pendingCount = await db.agentActions
-          .where('[investigationId+status]')
-          .equals([folder.id, 'pending'])
-          .count();
-
-        if (pendingCount > 0) {
-          // Still waiting — schedule again with longer interval
-          scheduleNext();
-          return;
-        }
-
-        await executeCycle();
-        scheduleNext();
-      }, intervalMs);
+      intervalRef.current = setTimeout(() => { void tick(); }, intervalMs);
     };
 
-    // Run first cycle after a short delay (3s) to let UI settle
-    const initialTimer = setTimeout(() => {
-      if (!mountedRef.current) return;
-      executeCycle().then(scheduleNext).catch((err) => { console.error('[AgentCaddy] cycle failed:', err); scheduleNext(); });
-    }, 3000);
+    const tick = async () => {
+      if (!current()) return;
+      try {
+        // Re-check persisted enablement and pending approvals after each wait.
+        const freshFolder = await db.folders.get(folderId);
+        if (!current() || !freshFolder?.agentEnabled) return;
+        const pendingCount = await db.agentActions.where('[investigationId+status]').equals([folderId, 'pending']).count();
+        if (!current()) return;
+        if (pendingCount === 0) await executeCycle(true);
+      } catch (err) {
+        if (current()) console.error('[AgentCaddy] cycle failed:', err);
+      }
+      if (current()) await scheduleNext();
+    };
+
+    // Run first cycle after a short delay (3s) to let UI settle.
+    intervalRef.current = setTimeout(() => { void tick(); }, 3000);
 
     return () => {
-      clearTimeout(initialTimer);
+      active = false;
       if (intervalRef.current) {
         clearTimeout(intervalRef.current);
         intervalRef.current = null;
       }
     };
-  // Only re-run when folder id or enabled state changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [folder?.id, folder?.agentEnabled]);
+  }, [cycleScope, intervalMinutes, executeCycle]);
 
   // ── Supervisor loop (global, not per-investigation) ──────────────────
 
-  const supervisorRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const supervisorMutex = useRef(false);
 
   useEffect(() => {
@@ -322,26 +351,33 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
     }
 
     const intervalMs = (settings.agentSupervisorIntervalMinutes || 30) * 60 * 1000;
+    let active = true;
+    const current = () => active && mountedRef.current && settingsRef.current.agentSupervisorEnabled;
 
     const runSupervisor = async () => {
-      if (supervisorMutex.current) return;
+      if (!current() || supervisorMutex.current) return;
       supervisorMutex.current = true;
+      const controller = new AbortController();
+      supervisorController.current = controller;
       try {
-        const result = await runSupervisorCycle(settingsRef.current, extensionAvailable);
+        const result = await runSupervisorCycle(settingsRef.current, callbacks.current.extensionAvailable, undefined, controller.signal);
+        if (!current() || controller.signal.aborted) return;
         // Fire desktop notifications for escalations
         for (const escalation of result.escalations) {
-          sendEscalationNotification(escalation);
+          sendEscalationNotification(escalation, controller.signal);
         }
       } catch (err) {
-        console.error('Supervisor cycle error:', err);
+        if (current() && !controller.signal.aborted) console.error('Supervisor cycle error:', err);
       } finally {
         supervisorMutex.current = false;
+        if (supervisorController.current === controller) supervisorController.current = null;
       }
     };
 
     const scheduleNext = () => {
+      if (!current()) return;
       supervisorRef.current = setTimeout(async () => {
-        if (!mountedRef.current) return;
+        if (!current()) return;
         await runSupervisor();
         scheduleNext();
       }, intervalMs);
@@ -349,19 +385,20 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
 
     // First run after 10s delay
     const initialTimer = setTimeout(() => {
-      if (!mountedRef.current) return;
+      if (!current()) return;
       runSupervisor().then(scheduleNext).catch((err) => { console.error('[AgentCaddy] supervisor failed:', err); scheduleNext(); });
     }, 10000);
 
     return () => {
+      active = false;
+      supervisorController.current?.abort();
       clearTimeout(initialTimer);
       if (supervisorRef.current) {
         clearTimeout(supervisorRef.current);
         supervisorRef.current = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.agentSupervisorEnabled]);
+  }, [settings.agentSupervisorEnabled, settings.agentSupervisorIntervalMinutes]);
 
   return {
     running,
@@ -378,12 +415,13 @@ export function useCaddyAgent({ folder, settings, onEntitiesChanged }: UseCaddyA
  * Update the working memory on the agent's audit trail thread.
  * Stores a brief summary of the cycle's activity, capped to prevent unbounded growth.
  */
-async function updateWorkingMemory(threadId: string, executed: number, proposed: number): Promise<void> {
+async function updateWorkingMemory(threadId: string, executed: number, proposed: number, signal: AbortSignal): Promise<void> {
   const now = new Date().toISOString();
   const summary = `[Cycle ${now}] Executed: ${executed} actions, Proposed: ${proposed} actions for review.`;
 
   try {
     await db.chatThreads.where('id').equals(threadId).modify((thread: { contextSummary?: string }) => {
+      signal.throwIfAborted();
       const existing = thread.contextSummary || '';
       // Keep last 5 cycle summaries and cap total length
       const lines = existing.split('\n').filter(Boolean);
@@ -395,6 +433,6 @@ async function updateWorkingMemory(threadId: string, executed: number, proposed:
       thread.contextSummary = result;
     });
   } catch (err) {
-    console.error('Failed to update working memory:', err);
+    if (!signal.aborted) console.error('Failed to update working memory:', err);
   }
 }

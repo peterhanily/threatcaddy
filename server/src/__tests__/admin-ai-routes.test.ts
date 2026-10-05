@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Hono } from 'hono';
 
 // HTTP handlers mock current identity lookup; real PostgreSQL account invalidation is covered by integration tests.
@@ -54,6 +54,7 @@ vi.mock('../lib/logger.js', () => ({
 // --- Imports ---
 
 import { signAdminToken } from '../middleware/admin-auth.js';
+import { getToolByName } from '../services/admin-ai-service.js';
 import aiRoutes from '../routes/admin/ai.js';
 
 function createApp() {
@@ -75,6 +76,170 @@ describe('Admin AI Routes', () => {
     mockLlmService.getAvailableProviders.mockReturnValue([]);
     mockAdminSecret.getAiSettings.mockResolvedValue({});
     mockAdminSecret.setAiSettings.mockResolvedValue(undefined);
+    vi.mocked(getToolByName).mockReturnValue(undefined);
+  });
+
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+
+  function configureProvider(provider: string) {
+    mockLlmService.getAvailableProviders.mockReturnValue(provider === 'local' ? [] : [{ provider, models: ['fixture-model'] }]);
+    mockAdminSecret.getAiSettings.mockResolvedValue({
+      temperature: 0.7,
+      ...(provider === 'local' ? { localEndpoint: 'http://127.0.0.1:12345/v1' } : {}),
+    });
+    if (provider !== 'local') vi.stubEnv(`${provider.toUpperCase()}_API_KEY`, 'synthetic-test-key');
+  }
+
+  function chatRequest(signal?: AbortSignal) {
+    return new Request('http://localhost/admin/api/ai/chat', {
+      method: 'POST', signal,
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: 'Read the ordinary summary.' }] }),
+    });
+  }
+
+  it.each(['anthropic', 'openai', 'mistral', 'gemini', 'local'])('cancels a pending %s response body on request abort', async provider => {
+    configureProvider(provider);
+    const cancel = vi.fn();
+    const upstream = new Response(new ReadableStream({ cancel }));
+    const fetch = vi.fn().mockResolvedValue(upstream);
+    vi.stubGlobal('fetch', fetch);
+    const controller = new AbortController();
+    const response = await app.request(chatRequest(controller.signal));
+    const reading = response.text();
+    await vi.waitFor(() => expect(upstream.body?.locked).toBe(true));
+    controller.abort();
+    await reading;
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
+    expect(getToolByName).not.toHaveBeenCalled();
+  });
+
+  it('cancels provider work when the SSE response consumer disconnects', async () => {
+    configureProvider('anthropic');
+    const cancel = vi.fn();
+    const upstream = new Response(new ReadableStream({ cancel }));
+    const fetch = vi.fn().mockResolvedValue(upstream);
+    vi.stubGlobal('fetch', fetch);
+    const response = await app.request(chatRequest());
+    const reader = response.body!.getReader();
+    await reader.read();
+    await vi.waitFor(() => expect(upstream.body?.locked).toBe(true));
+    await reader.cancel();
+    await vi.waitFor(() => expect(cancel).toHaveBeenCalledOnce());
+    expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
+    expect(getToolByName).not.toHaveBeenCalled();
+  });
+
+  it('keeps the provider deadline active after headers until the body completes', async () => {
+    vi.useFakeTimers();
+    configureProvider('anthropic');
+    const cancel = vi.fn();
+    const upstream = new Response(new ReadableStream({ cancel }));
+    const fetch = vi.fn().mockResolvedValue(upstream);
+    vi.stubGlobal('fetch', fetch);
+    const response = await app.request(chatRequest());
+    const reading = response.text();
+    await vi.waitFor(() => expect(upstream.body?.locked).toBe(true));
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(await reading).toContain('Admin AI provider deadline exceeded');
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);
+    expect(getToolByName).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each([200, 503])('bounds the entire provider body for HTTP %s before parsing or dispatch', async status => {
+    configureProvider('anthropic');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(new Uint8Array(2 * 1024 * 1024 + 1), { status })));
+    const response = await app.request(chatRequest());
+    expect(await response.text()).toContain('HTTP body exceeds');
+    expect(getToolByName).not.toHaveBeenCalled();
+  });
+
+  it('does not dispatch another tool or write a result after cancellation during an existing tool', async () => {
+    configureProvider('anthropic');
+    const controller = new AbortController();
+    const execute = vi.fn(async () => { controller.abort(); return { summary: 'Ordinary summary.' }; });
+    vi.mocked(getToolByName).mockReturnValue({
+      name: 'read_summary', description: 'Read a summary.', requiresConfirm: false, input_schema: { type: 'object' }, execute,
+    });
+    const fetch = vi.fn().mockResolvedValue(Response.json({
+      content: ['one', 'two'].map(id => ({ type: 'tool_use', id, name: 'read_summary', input: {} })), stop_reason: 'tool_use',
+    }));
+    vi.stubGlobal('fetch', fetch);
+    const response = await app.request(chatRequest(controller.signal));
+    const text = await response.text();
+    expect(execute).toHaveBeenCalledOnce();
+    expect(getToolByName).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(text).not.toContain('"type":"tool_result"');
+    expect(text).not.toContain('"type":"tool_error"');
+  });
+
+  it.each([
+    { batches: [20], executed: 20 },
+    { batches: [21], executed: 0 },
+    { batches: [19, 2], executed: 19 },
+  ])('enforces the remaining tool budget before dispatching a batch: $batches', async ({ batches, executed }) => {
+    mockLlmService.getAvailableProviders.mockReturnValue([{ provider: 'anthropic', models: ['fixture-model'] }]);
+    vi.stubEnv('ANTHROPIC_API_KEY', 'synthetic-test-key');
+    const execute = vi.fn().mockResolvedValue({ summary: 'Ordinary summary.' });
+    vi.mocked(getToolByName).mockReturnValue({
+      name: 'read_summary', description: 'Read the ordinary summary.', input_schema: { type: 'object' },
+      requiresConfirm: false, execute,
+    });
+    const fetch = vi.fn();
+    for (const [batch, size] of batches.entries()) {
+      fetch.mockResolvedValueOnce(Response.json({
+        content: Array.from({ length: size }, (_, index) => ({
+          type: 'tool_use', id: `call-${batch}-${index}`, name: 'read_summary', input: {},
+        })), stop_reason: 'tool_use',
+      }));
+    }
+    vi.stubGlobal('fetch', fetch);
+    const res = await app.request('/admin/api/ai/chat', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: 'Read the ordinary summaries.' }] }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('Tool call limit reached');
+    expect(execute).toHaveBeenCalledTimes(executed);
+    expect(getToolByName).toHaveBeenCalledTimes(executed);
+    expect(fetch).toHaveBeenCalledTimes(batches.length);
+  });
+
+  it.each([
+    { provider: 'anthropic', key: 'ANTHROPIC_API_KEY', response: {
+      content: [
+        { type: 'tool_use', id: 'call-one', name: 'read_summary', input: {} },
+        { type: 'tool_use', name: 'read_summary', input: {} },
+      ], stop_reason: 'tool_use',
+    } },
+    { provider: 'gemini', key: 'GEMINI_API_KEY', response: {
+      candidates: [{ content: { parts: [
+        { functionCall: { name: 'read_summary', args: {} } },
+        { functionCall: { args: {} } },
+      ] }, finishReason: 'STOP' }],
+    } },
+  ])('rejects an incomplete $provider batch before looking up any tool', async ({ provider, key, response }) => {
+    mockLlmService.getAvailableProviders.mockReturnValue([{ provider, models: ['fixture-model'] }]);
+    vi.stubEnv(key, 'synthetic-test-key');
+    const fetch = vi.fn().mockResolvedValue(Response.json(response));
+    vi.stubGlobal('fetch', fetch);
+    const res = await app.request('/admin/api/ai/chat', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: 'Read the ordinary summary.' }] }),
+    });
+    expect(res.status).toBe(200);
+    const stream = await res.text();
+    expect(stream).toContain('Malformed');
+    expect(stream).toContain('"type":"error"');
+    expect(stream).not.toContain('"type":"tool_call"');
+    expect(getToolByName).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   // ---- Auth required ----

@@ -35,6 +35,37 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('agent provider conversation and cancellation', () => {
+  it('preserves validated Anthropic tool-call identities and results on the next turn', async () => {
+    const content = [{ type: 'tool_use', id: 'call-one', name: 'read_summary', input: {} }];
+    const fetch = vi.fn().mockResolvedValueOnce(Response.json({ content, stop_reason: 'tool_use' }))
+      .mockResolvedValueOnce(Response.json({ content: [{ type: 'text', text: 'Complete.' }], stop_reason: 'end_turn' }));
+    vi.stubGlobal('fetch', fetch);
+    const { bot, ctx } = fixture('anthropic');
+    await bot.onManual(ctx);
+    const body = JSON.parse(fetch.mock.calls[1][1].body as string);
+    expect(body.messages).toContainEqual({ role: 'assistant', content });
+    expect(body.messages).toContainEqual({ role: 'user', content: [{
+      type: 'tool_result', tool_use_id: 'call-one', content: JSON.stringify({ summary: 'Ordinary investigation summary' }),
+    }] });
+    expect(mocks.execute).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    { type: 'tool_use', name: 'read_summary', input: {} },
+    { type: 'tool_use', id: 'call-two', name: 'read_summary', input: [] },
+    { type: 'tool_use', id: 'call-one', name: 'read_summary', input: {} },
+  ])('rejects an incomplete Anthropic batch before any tool executes %#', async incomplete => {
+    const fetch = vi.fn().mockResolvedValue(Response.json({
+      content: [{ type: 'tool_use', id: 'call-one', name: 'read_summary', input: {} }, incomplete],
+      stop_reason: 'tool_use',
+    }));
+    vi.stubGlobal('fetch', fetch);
+    const { bot, ctx } = fixture('anthropic');
+    await expect(bot.onManual(ctx)).rejects.toThrow('Malformed Anthropic response');
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(mocks.execute).not.toHaveBeenCalled();
+  });
+
   it('preserves assistant tool-call records and matching results on the next OpenAI turn', async () => {
     const calls = [{ id: 'call-one', type: 'function', function: { name: 'read_summary', arguments: '{}' } }];
     const fetch = vi.fn().mockResolvedValueOnce(Response.json({ choices: [{ message: { role: 'assistant', content: 'I will read the summary.', tool_calls: calls }, finish_reason: 'tool_calls' }] }))

@@ -105,8 +105,11 @@ export function InvestigationProvider({
   const [selectedIOCTypes, setSelectedIOCTypes] = useState<IOCType[]>([]);
   const [showTrash, setShowTrash] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
-  const [investigationMembers, setInvestigationMembers] = useState<InvestigationMember[]>([]);
-  const [agentPendingCount, setAgentPendingCount] = useState(0);
+  const selectionScope = useMemo(() => ({ selectedFolderId, authConnected }), [selectedFolderId, authConnected]);
+  const [memberSnapshot, setMemberSnapshot] = useState<{ scope: typeof selectionScope; members: InvestigationMember[] } | null>(null);
+  const [pendingSnapshot, setPendingSnapshot] = useState<{ scope: typeof selectionScope; count: number } | null>(null);
+  const investigationMembers = useMemo(() => memberSnapshot?.scope === selectionScope ? memberSnapshot.members : [], [memberSnapshot, selectionScope]);
+  const agentPendingCount = pendingSnapshot?.scope === selectionScope ? pendingSnapshot.count : 0;
   const [syncingFolderId, setSyncingFolderId] = useState<string | null>(null);
   const [confirmUnsyncId, setConfirmUnsyncId] = useState<string | null>(null);
 
@@ -159,46 +162,44 @@ export function InvestigationProvider({
   }, []);
 
   const clearFilters = useCallback(() => {
-    setSelectedFolderIdRaw(undefined);
+    setSelectedFolderId(undefined);
     setSelectedTag(undefined);
     setShowTrash(false);
     setShowArchive(false);
-  }, []);
+  }, [setSelectedFolderId]);
 
   // --- effects ---
 
   // Fetch investigation members when folder or auth changes
   useEffect(() => {
-    if (!authConnected || !selectedFolderId) {
-      setInvestigationMembers([]);
-      return;
-    }
+    if (!authConnected || !selectedFolderId) return;
+    let active = true;
     fetchInvestigationMembers(selectedFolderId)
-      .then(setInvestigationMembers)
-      .catch(() => setInvestigationMembers([]));
-  }, [authConnected, selectedFolderId]);
+      .then(members => { if (active) setMemberSnapshot({ scope: selectionScope, members }); })
+      .catch(() => { if (active) setMemberSnapshot({ scope: selectionScope, members: [] }); });
+    return () => { active = false; };
+  }, [authConnected, selectedFolderId, selectionScope]);
 
   // Agent pending count
   useEffect(() => {
-    if (!selectedFolderId) {
-      setAgentPendingCount(0);
-      return;
-    }
+    if (!selectedFolderId) return;
+    let active = true;
     db.agentActions
       .where('[investigationId+status]')
       .equals([selectedFolderId, 'pending'])
       .count()
-      .then(setAgentPendingCount)
-      .catch(() => setAgentPendingCount(0));
-  }, [selectedFolderId]);
+      .then(count => { if (active) setPendingSnapshot({ scope: selectionScope, count }); })
+      .catch(() => { if (active) setPendingSnapshot({ scope: selectionScope, count: 0 }); });
+    return () => { active = false; };
+  }, [selectedFolderId, selectionScope]);
 
   // Auto-deselect when selected folder no longer exists (deleted externally or by another tab)
   useEffect(() => {
-    if (selectedFolderId && folders.length > 0 && !folders.find(f => f.id === selectedFolderId)) {
-      setSelectedFolderIdRaw(undefined);
-      setInvestigationMode('local');
+    // Remote-only investigations are intentionally absent from the local cache.
+    if (investigationMode !== 'remote' && selectedFolderId && folders.length > 0 && !folders.find(f => f.id === selectedFolderId)) {
+      setSelectedFolderId(undefined);
     }
-  }, [selectedFolderId, folders]);
+  }, [selectedFolderId, folders, investigationMode, setSelectedFolderId]);
 
   // --- computed ---
   const selectedFolder = useMemo(() => folders.find(f => f.id === selectedFolderId), [folders, selectedFolderId]);

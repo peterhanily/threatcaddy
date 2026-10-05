@@ -97,7 +97,7 @@ tests, fixtures, and source maps; unit and integration checks still run separate
 | `OPENAI_API_KEY` | No | — | OpenAI API key |
 | `GEMINI_API_KEY` | No | — | Google AI API key for Gemini models |
 | `MISTRAL_API_KEY` | No | — | Mistral API key |
-| `BOT_MASTER_KEY` | Yes | — | Stable 32–1024-character key for encrypted bot credentials (new installation: `openssl rand -hex 32`); preserve the existing key exactly |
+| `BOT_MASTER_KEY` | Yes | — | Stable 32–1024-character key for encrypted bot and saved local-AI credentials (new installation: `openssl rand -hex 32`); preserve and back up the existing key exactly |
 | `BOT_EXECUTION_TIMEOUT_MS` | No | `300000` | Max execution time per bot run (ms) — default 5 minutes |
 | `BOT_MAX_CONCURRENT_RUNS` | No | `10` | Max concurrent bot executions |
 | `SANDBOX_PYTHON_IMAGE` | No | `python:3.12-slim` | Docker image for Python code execution |

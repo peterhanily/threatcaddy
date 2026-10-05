@@ -1,12 +1,13 @@
 import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { db } from '../db/index.js';
 import { serverSettings, folders, investigationMembers, users, adminUsers } from '../db/schema.js';
 import { logger } from '../lib/logger.js';
 import { revokeAdminSessions } from './admin-session-service.js';
+import { encryptSecret, decryptSecret } from '../bots/secret-store.js';
 
 export const ADMIN_SYSTEM_USER_ID = '__system_admin__';
 
@@ -166,6 +167,57 @@ export async function setSessionSettings(ttlHours: number, maxPerUser: number): 
       await db.insert(serverSettings).values({ key, value });
     }
   }
+}
+
+export interface AdminSettingsPatch {
+  serverName?: string;
+  registrationMode?: 'invite' | 'open';
+  ttlHours?: number;
+  maxPerUser?: number;
+  notificationRetentionDays?: number;
+  auditLogRetentionDays?: number;
+}
+
+/** Validate the entire patch before starting any configuration write. Numeric
+ * bounds match the existing admin UI and retention contract. */
+export function validateAdminSettings(value: unknown): AdminSettingsPatch {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Settings must be an object');
+  const body = value as Record<string, unknown>;
+  const result: AdminSettingsPatch = {};
+  if (body.serverName !== undefined) {
+    if (typeof body.serverName !== 'string' || !body.serverName.trim() || body.serverName.trim().length > 100) {
+      throw new Error('Server name must be 1-100 characters');
+    }
+    result.serverName = body.serverName.trim();
+  }
+  if (body.registrationMode !== undefined) {
+    if (body.registrationMode !== 'invite' && body.registrationMode !== 'open') {
+      throw new Error('Invalid registrationMode, must be "invite" or "open"');
+    }
+    result.registrationMode = body.registrationMode;
+  }
+  for (const [field, minimum, maximum] of [
+    ['ttlHours', 1, 8760], ['maxPerUser', 0, 1000],
+    ['notificationRetentionDays', 1, 3650], ['auditLogRetentionDays', 1, 3650],
+  ] as const) {
+    const number = body[field];
+    if (number === undefined) continue;
+    if (typeof number !== 'number' || !Number.isInteger(number) || number < minimum || number > maximum) {
+      throw new Error(`${field} must be an integer from ${minimum} to ${maximum}`);
+    }
+    result[field] = number;
+  }
+  return result;
+}
+
+export async function setAdminSettings(settings: AdminSettingsPatch): Promise<void> {
+  const validated = validateAdminSettings(settings);
+  const keys = {
+    serverName: SERVER_NAME_KEY, registrationMode: REG_MODE_KEY,
+    ttlHours: 'session_ttl_hours', maxPerUser: 'max_sessions_per_user',
+    notificationRetentionDays: 'notification_retention_days', auditLogRetentionDays: 'audit_log_retention_days',
+  } as const;
+  await writeSettings(Object.entries(validated).map(([field, value]) => [keys[field as keyof AdminSettingsPatch], String(value)]));
 }
 
 // ─── Backfill Folder Owners ─────────────────────────────────────
@@ -338,50 +390,50 @@ const AI_SETTINGS_DEFAULTS: AiAssistantSettings = {
   temperature: 0.7,
 };
 
-async function getSettingValue(key: string): Promise<string | null> {
-  const row = await db.select().from(serverSettings).where(eq(serverSettings.key, key)).limit(1);
-  return row.length > 0 ? row[0].value : null;
-}
-
-async function setSettingValue(key: string, value: string): Promise<void> {
-  const existing = await db.select().from(serverSettings).where(eq(serverSettings.key, key)).limit(1);
-  if (existing.length > 0) {
-    await db.update(serverSettings).set({ value, updatedAt: new Date() }).where(eq(serverSettings.key, key));
-  } else {
-    await db.insert(serverSettings).values({ key, value });
-  }
+async function writeSettings(entries: Array<[string, string]>): Promise<void> {
+  if (entries.length === 0) return;
+  await db.transaction(async tx => {
+    for (const [key, value] of entries) {
+      const updatedAt = new Date();
+      await tx.insert(serverSettings).values({ key, value, updatedAt })
+        .onConflictDoUpdate({ target: serverSettings.key, set: { value, updatedAt } });
+    }
+  });
 }
 
 export async function getAiSettings(): Promise<AiAssistantSettings> {
-  const [endpoint, apiKey, modelName, systemPrompt, provider, model, temp] = await Promise.all([
-    getSettingValue('ai_local_endpoint'),
-    getSettingValue('ai_local_api_key'),
-    getSettingValue('ai_local_model_name'),
-    getSettingValue('ai_custom_system_prompt'),
-    getSettingValue('ai_default_provider'),
-    getSettingValue('ai_default_model'),
-    getSettingValue('ai_temperature'),
-  ]);
+  // One statement observes a coherent endpoint/key pair across atomic saves.
+  const rows = await db.select({ key: serverSettings.key, value: serverSettings.value }).from(serverSettings)
+    .where(inArray(serverSettings.key, [
+      'ai_local_endpoint', 'ai_local_api_key', 'ai_local_model_name', 'ai_custom_system_prompt',
+      'ai_default_provider', 'ai_default_model', 'ai_temperature',
+    ]));
+  const values = new Map(rows.map(row => [row.key, row.value]));
+  const apiKey = values.get('ai_local_api_key');
+  const temp = values.get('ai_temperature');
 
   return {
-    localEndpoint: endpoint || AI_SETTINGS_DEFAULTS.localEndpoint,
-    localApiKey: apiKey || AI_SETTINGS_DEFAULTS.localApiKey,
-    localModelName: modelName || AI_SETTINGS_DEFAULTS.localModelName,
-    customSystemPrompt: systemPrompt || AI_SETTINGS_DEFAULTS.customSystemPrompt,
-    defaultProvider: provider || AI_SETTINGS_DEFAULTS.defaultProvider,
-    defaultModel: model || AI_SETTINGS_DEFAULTS.defaultModel,
+    localEndpoint: values.get('ai_local_endpoint') || AI_SETTINGS_DEFAULTS.localEndpoint,
+    // Existing plaintext installations remain readable; only an explicit save
+    // encrypts a replacement. Never interpret corrupt ciphertext as plaintext.
+    localApiKey: apiKey?.startsWith('enc:') || apiKey?.startsWith('enc2:')
+      ? decryptSecret(apiKey) : apiKey || AI_SETTINGS_DEFAULTS.localApiKey,
+    localModelName: values.get('ai_local_model_name') || AI_SETTINGS_DEFAULTS.localModelName,
+    customSystemPrompt: values.get('ai_custom_system_prompt') || AI_SETTINGS_DEFAULTS.customSystemPrompt,
+    defaultProvider: values.get('ai_default_provider') || AI_SETTINGS_DEFAULTS.defaultProvider,
+    defaultModel: values.get('ai_default_model') || AI_SETTINGS_DEFAULTS.defaultModel,
     temperature: temp ? parseFloat(temp) : AI_SETTINGS_DEFAULTS.temperature,
   };
 }
 
 export async function setAiSettings(settings: Partial<AiAssistantSettings>): Promise<void> {
-  const updates: Array<Promise<void>> = [];
-  if (settings.localEndpoint !== undefined) updates.push(setSettingValue('ai_local_endpoint', settings.localEndpoint));
-  if (settings.localApiKey !== undefined) updates.push(setSettingValue('ai_local_api_key', settings.localApiKey));
-  if (settings.localModelName !== undefined) updates.push(setSettingValue('ai_local_model_name', settings.localModelName));
-  if (settings.customSystemPrompt !== undefined) updates.push(setSettingValue('ai_custom_system_prompt', settings.customSystemPrompt));
-  if (settings.defaultProvider !== undefined) updates.push(setSettingValue('ai_default_provider', settings.defaultProvider));
-  if (settings.defaultModel !== undefined) updates.push(setSettingValue('ai_default_model', settings.defaultModel));
-  if (settings.temperature !== undefined) updates.push(setSettingValue('ai_temperature', String(settings.temperature)));
-  await Promise.all(updates);
+  const updates: Array<[string, string]> = [];
+  if (settings.localEndpoint !== undefined) updates.push(['ai_local_endpoint', settings.localEndpoint]);
+  if (settings.localApiKey !== undefined) updates.push(['ai_local_api_key', settings.localApiKey ? encryptSecret(settings.localApiKey) : '']);
+  if (settings.localModelName !== undefined) updates.push(['ai_local_model_name', settings.localModelName]);
+  if (settings.customSystemPrompt !== undefined) updates.push(['ai_custom_system_prompt', settings.customSystemPrompt]);
+  if (settings.defaultProvider !== undefined) updates.push(['ai_default_provider', settings.defaultProvider]);
+  if (settings.defaultModel !== undefined) updates.push(['ai_default_model', settings.defaultModel]);
+  if (settings.temperature !== undefined) updates.push(['ai_temperature', String(settings.temperature)]);
+  await writeSettings(updates);
 }

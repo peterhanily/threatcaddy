@@ -6,6 +6,7 @@ import type { BotEvent } from '../types.js';
 import { GenericBot } from './generic-bot.js';
 import { assertSupportedAgentPolicy } from '../handoff-policy.js';
 import { readProviderJSON } from '../../lib/bounded-http.js';
+import { parseAnthropicResponse } from '../../lib/provider-response.js';
 
 const DEFAULT_MAX_ITERATIONS = 10;
 const MAX_RESPONSE_TOKENS = 4096;
@@ -281,23 +282,17 @@ export class AgentBot extends GenericBot {
     execCtx: BotExecutionContext,
     messages: AgentMessage[],
   ): Promise<{ continueLoop: boolean }> {
-    const msg = response as {
-      content: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }>;
-      stop_reason: string;
-    };
-
-    if (!Array.isArray(msg.content)) return { continueLoop: false };
+    const msg = parseAnthropicResponse(response);
 
     // Append the full assistant response to messages
-    messages.push({ role: 'assistant', content: msg.content });
+    messages.push({ role: 'assistant', content: msg.rawAssistantContent });
 
     // Check if there are tool_use blocks
-    const toolUseBlocks = msg.content.filter(b => b.type === 'tool_use');
+    const toolUseBlocks = msg.toolCalls;
     if (toolUseBlocks.length === 0) {
       // No tool calls — agent is done
-      const textBlocks = msg.content.filter(b => b.type === 'text');
-      if (textBlocks.length > 0) {
-        const text = textBlocks.map(b => b.text).join('\n');
+      if (msg.textParts.length > 0) {
+        const text = msg.textParts.join('\n');
         execCtx.addLogEntry({ ts: Date.now(), type: 'llm_response', text: text.slice(0, 2000) });
         await execCtx.audit('agent.response', text.slice(0, 500));
       }
@@ -308,11 +303,11 @@ export class AgentBot extends GenericBot {
     const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
     for (const block of toolUseBlocks) {
       execCtx.checkAborted();
-      const tool = toolMap.get(block.name!);
+      const tool = toolMap.get(block.name);
       if (!tool) {
         toolResults.push({
           type: 'tool_result',
-          tool_use_id: block.id!,
+          tool_use_id: block.id,
           content: JSON.stringify({ error: `Unknown tool: ${block.name}` }),
         });
         execCtx.addLogEntry({ ts: Date.now(), type: 'tool_call', name: block.name, error: 'Unknown tool' });
@@ -321,12 +316,12 @@ export class AgentBot extends GenericBot {
 
       const toolStart = Date.now();
       try {
-        const result = await tool.execute(block.input || {}, execCtx);
+        const result = await tool.execute(block.input, execCtx);
         const resultStr = JSON.stringify(result);
         const truncated = resultStr.length > 20000 ? resultStr.slice(0, 20000) + '... [truncated]' : resultStr;
-        toolResults.push({ type: 'tool_result', tool_use_id: block.id!, content: truncated });
+        toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: truncated });
         execCtx.addLogEntry({
-          ts: toolStart, type: 'tool_call', name: block.name!,
+          ts: toolStart, type: 'tool_call', name: block.name,
           input: block.input, output: resultStr.length > 500 ? resultStr.slice(0, 500) + '...' : result,
           durationMs: Date.now() - toolStart,
         });
@@ -335,11 +330,11 @@ export class AgentBot extends GenericBot {
         execCtx.checkAborted();
         toolResults.push({
           type: 'tool_result',
-          tool_use_id: block.id!,
+          tool_use_id: block.id,
           content: JSON.stringify({ error: String(err) }),
         });
         execCtx.addLogEntry({
-          ts: toolStart, type: 'tool_call', name: block.name!,
+          ts: toolStart, type: 'tool_call', name: block.name,
           input: block.input, error: String(err), durationMs: Date.now() - toolStart,
         });
         logger.warn(`AgentBot "${this.name}" tool error: ${block.name}`, { botId: this.id, error: String(err) });
@@ -349,7 +344,7 @@ export class AgentBot extends GenericBot {
     // Append tool results as a user message
     messages.push({ role: 'user', content: toolResults });
 
-    return { continueLoop: msg.stop_reason === 'tool_use' };
+    return { continueLoop: msg.stopReason === 'tool_use' };
   }
 
   private async handleOpenAIResponse(

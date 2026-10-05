@@ -22,6 +22,15 @@ server must still allow the app's origin through CORS; this setting grants no
 server authorization. Browser login provides an actionable error when an origin
 has not been included. Prefer same-origin deployment for the narrowest policy.
 
+Regional S3 and OCI backup endpoints also require their exact origins in
+`VITE_CONNECT_ORIGINS`. For example, configure
+`https://backup.s3.eu-west-1.amazonaws.com` for your own bucket or
+`https://objectstorage.eu-dublin-1.oraclecloud.com` for your region. Do not include
+presigned URL paths or credentials in build configuration. Interior host
+wildcards such as `*.s3.*.amazonaws.com` are invalid CSP syntax and are not
+replaced with provider-wide permission. The hosted browser suite checks startup
+and a lazy-loaded dialog for CSP diagnostics in Chromium, Firefox and WebKit.
+
 ## 1. Docker Deployment (Recommended)
 
 ### Prerequisites

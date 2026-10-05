@@ -652,6 +652,10 @@ function handleApprovedMessage(message, sender, sendResponse, context) {
   } else if (message.type === 'SEND_NOTIFICATION') {
     (async () => {
     if (!await chrome.permissions.contains({ permissions: ['notifications'] })) throw new Error('Desktop notifications are disabled. Enable them in extension settings; the in-app alert is retained.');
+    const current = await approvedSender(sender);
+    if (current.key !== context.key || current.approval?.approvedAt !== context.approval?.approvedAt) {
+      throw new Error('App approval changed before notification delivery. Reconnect from extension settings.');
+    }
     const id = await chrome.notifications.create({
       type: 'basic',
       iconUrl: chrome.runtime.getURL('assets/icon-128.png'),

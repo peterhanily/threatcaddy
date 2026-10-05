@@ -40,7 +40,7 @@ import { clipBuffer } from './lib/clipBuffer';
 import { formatBytes, openFilePicker, getDroppedFiles, dispatchFile, type FileOpenDetail } from './lib/file-handler';
 import { hasPendingChanges } from './lib/pending-changes';
 import { useInvestigationData } from './hooks/useInvestigationData';
-import type { ConfidenceLevel, Note, StandaloneIOC, Task, TimelineEvent, ChatThread } from './types';
+import type { ConfidenceLevel, Note, StandaloneIOC, ChatThread } from './types';
 import { DEFAULT_QUICK_LINKS } from './types';
 const DashboardView = lazy(() => import('./components/Dashboard/DashboardView').then(m => ({ default: m.DashboardView })));
 import { FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
@@ -86,6 +86,7 @@ const ExecDashboard = lazy(() => import('./components/ExecMode/ExecDashboard').t
 import { ShareReceiver } from './components/ExecMode/ShareReceiver';
 const ShareDialog = lazy(() => import('./components/ExecMode/ShareDialog').then(m => ({ default: m.ShareDialog })));
 import type { SharePayload, InvestigationBundle } from './lib/share';
+import { importSharedPayload } from './lib/share-import';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 const CaddyShackView = lazy(() => import('./components/CaddyShack/CaddyShackView').then(m => ({ default: m.CaddyShackView })));
 const AgentPanel = lazy(() => import('./components/Agent/AgentPanel').then(m => ({ default: m.AgentPanel })));
@@ -134,7 +135,7 @@ function AppDataLayer() {
 
   // ─── Team Server Integration ───────────────────────────────────
   const auth = useAuth();
-  const { remoteInvestigations, loading: remoteLoading, refresh: refreshRemote } = useRemoteInvestigations(auth.connected);
+  const { remoteInvestigations, loading: remoteLoading, refresh: refreshRemote } = useRemoteInvestigations(auth.connected, auth.serverUrl ?? undefined);
 
   const handleFolderInvite = useCallback(() => {
     refreshRemote();
@@ -1172,35 +1173,22 @@ const AppInner = memo(function AppInner({
   }, []);
 
   const handleSaveSharedPayload = useCallback(async (payload: SharePayload) => {
+    if (payload.s === 'whiteboard' || payload.s === 'ioc') throw new Error('This share type cannot be saved individually');
+    await importSharedPayload(payload);
     if (payload.s === 'investigation') {
       const bundle = payload.d as InvestigationBundle;
-      await db.transaction('rw', [db.folders, db.notes, db.tasks, db.timelineEvents, db.whiteboards, db.standaloneIOCs, db.chatThreads, db.timelines, db.tags], async () => {
-        await db.folders.put(bundle.folder);
-        await db.notes.bulkPut(bundle.notes);
-        await db.tasks.bulkPut(bundle.tasks);
-        await db.timelineEvents.bulkPut(bundle.events);
-        await db.whiteboards.bulkPut(bundle.whiteboards);
-        await db.standaloneIOCs.bulkPut(bundle.iocs);
-        if (bundle.chatThreads) await db.chatThreads.bulkPut(bundle.chatThreads);
-        await db.timelines.bulkPut(bundle.timelines);
-        await db.tags.bulkPut(bundle.tags);
-      });
       reloadAll();
       addToast('success', tt('share.investigationSaved', { name: bundle.folder.name }));
     } else if (payload.s === 'note') {
-      await db.notes.put(payload.d as Note);
       notes.reload();
       addToast('success', tt('share.noteSaved'));
     } else if (payload.s === 'task') {
-      await db.tasks.put(payload.d as Task);
       tasks.reload();
       addToast('success', tt('share.taskSaved'));
     } else if (payload.s === 'event') {
-      await db.timelineEvents.put(payload.d as TimelineEvent);
       timeline.reload();
       addToast('success', tt('share.eventSaved'));
     } else if (payload.s === 'chat') {
-      await db.chatThreads.put(payload.d as ChatThread);
       chatsHook.reload();
       addToast('success', tt('share.chatSaved'));
     }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
 import type { InvestigationSummary } from '../types';
 import { fetchInvestigations } from '../lib/server-api';
 
@@ -11,40 +11,58 @@ interface UseRemoteInvestigationsResult {
 
 export function useRemoteInvestigations(
   serverConnected: boolean,
-  serverUrl?: string, // reserved for future direct-URL fetches
+  serverUrl?: string,
 ): UseRemoteInvestigationsResult {
-  void serverUrl;
-  const [remoteInvestigations, setRemoteInvestigations] = useState<InvestigationSummary[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const fetchingRef = useRef(false);
+  const scope = useMemo(() => ({ serverConnected, serverUrl }), [serverConnected, serverUrl]);
+  const [snapshot, setSnapshot] = useState<{
+    scope: typeof scope;
+    remoteInvestigations: InvestigationSummary[];
+    loading: boolean;
+    error: string | null;
+  }>({ scope, remoteInvestigations: [], loading: serverConnected, error: null });
+  const activeScope = useRef<typeof scope | null>(null);
+  const activeRequest = useRef<{ scope: typeof scope } | null>(null);
+
+  useLayoutEffect(() => {
+    activeScope.current = scope;
+    return () => {
+      activeScope.current = null;
+      activeRequest.current = null;
+    };
+  }, [scope]);
 
   const doFetch = useCallback(async () => {
-    if (fetchingRef.current) return;
-    fetchingRef.current = true;
-    setLoading(true);
-    setError(null);
+    // Retained refresh callbacks and old promises cannot acquire a new server's
+    // state, or keep its initial refresh blocked behind an old request.
+    if (!serverConnected || activeScope.current !== scope || activeRequest.current?.scope === scope) return;
+    const request = { scope };
+    activeRequest.current = request;
+    const current = () => activeScope.current === scope && activeRequest.current === request;
+    setSnapshot(previous => ({
+      scope,
+      remoteInvestigations: previous.scope === scope ? previous.remoteInvestigations : [],
+      loading: true,
+      error: null,
+    }));
     try {
       const response = await fetchInvestigations();
       const investigations = (response as { data: InvestigationSummary[] }).data ?? [];
-      setRemoteInvestigations(investigations);
+      if (current()) setSnapshot({ scope, remoteInvestigations: investigations, loading: false, error: null });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch investigations');
+      if (current()) setSnapshot(previous => ({
+        ...previous,
+        loading: false,
+        error: err instanceof Error ? err.message : 'Failed to fetch investigations',
+      }));
     } finally {
-      setLoading(false);
-      fetchingRef.current = false;
+      if (current()) activeRequest.current = null;
     }
-  }, []);
+  }, [scope, serverConnected]);
 
   // Fetch on mount when connected, and refetch when serverConnected transitions to true
   useEffect(() => {
-    if (serverConnected) {
-      doFetch();
-    } else {
-      setRemoteInvestigations([]);
-      setError(null);
-    }
-  }, [serverConnected, doFetch]);
+    void doFetch();
+  }, [doFetch]);
 
   // Periodic refresh every 60s
   useEffect(() => {
@@ -55,10 +73,10 @@ export function useRemoteInvestigations(
     return () => clearInterval(interval);
   }, [serverConnected, doFetch]);
 
-  const refresh = useCallback(async () => {
-    if (!serverConnected) return;
-    await doFetch();
-  }, [serverConnected, doFetch]);
-
-  return { remoteInvestigations, loading, error, refresh };
+  return {
+    remoteInvestigations: snapshot.scope === scope && serverConnected ? snapshot.remoteInvestigations : [],
+    loading: serverConnected && (snapshot.scope !== scope || snapshot.loading),
+    error: snapshot.scope === scope && serverConnected ? snapshot.error : null,
+    refresh: doFetch,
+  };
 }

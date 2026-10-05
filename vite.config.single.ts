@@ -4,7 +4,7 @@ import { resolve, join } from 'node:path'
 import { deflateRawSync } from 'node:zlib'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { viteSingleFile } from 'vite-plugin-singlefile'
+import { standaloneHtml } from './build/standalone-html'
 
 function stripCSPForSingleFile(): Plugin {
   return {
@@ -98,8 +98,9 @@ function loadCompressedLocales(): Record<string, string> {
 }
 
 export default defineConfig({
-  plugins: [standaloneAssets(), react(), tailwindcss(), stripCSPForSingleFile(), inlineFaviconForSingleFile(), standaloneNotices(), viteSingleFile()],
+  plugins: [standaloneAssets(), react(), tailwindcss(), stripCSPForSingleFile(), inlineFaviconForSingleFile(), standaloneNotices(), standaloneHtml()],
   base: './',
+  esbuild: { supported: { 'inline-script': true, 'inline-style': true } },
   worker: {
     // Chromium file:// documents cannot start blob module workers. A bundled
     // classic worker keeps regex isolation without an HTTP origin or imports.
@@ -113,5 +114,10 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist-single',
+    assetsInlineLimit: () => true,
+    assetsDir: '',
+    cssCodeSplit: false,
+    modulePreload: false,
+    rollupOptions: { output: { inlineDynamicImports: true } },
   },
 })

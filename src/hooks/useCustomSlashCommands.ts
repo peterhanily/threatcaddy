@@ -1,18 +1,35 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { nanoid } from 'nanoid';
 import { db } from '../db';
 import type { CustomSlashCommand } from '../types';
 
 export function useCustomSlashCommands() {
   const [commands, setCommands] = useState<CustomSlashCommand[]>([]);
-
-  const reload = useCallback(async () => {
-    if (!db.customSlashCommands) return;
-    const all = await db.customSlashCommands.toArray();
-    setCommands(all.sort((a, b) => a.name.localeCompare(b.name)));
+  const [error, setError] = useState<string | null>(null);
+  const mounted = useRef(false);
+  const requestVersion = useRef(0);
+  useLayoutEffect(() => {
+    ++requestVersion.current;
+    mounted.current = true;
+    return () => { mounted.current = false; };
   }, []);
 
-  useEffect(() => { reload(); }, [reload]);
+  const reload = useCallback(async () => {
+    if (!db.customSlashCommands || !mounted.current) return;
+    const request = ++requestVersion.current;
+    const current = () => mounted.current && requestVersion.current === request;
+    setError(null);
+    try {
+      const all = await db.customSlashCommands.toArray();
+      if (current()) setCommands(all.sort((a, b) => a.name.localeCompare(b.name)));
+    } catch (err) {
+      if (!current()) return;
+      setError(err instanceof Error ? err.message : 'Failed to load custom commands');
+      throw err;
+    }
+  }, []);
+
+  useEffect(() => { void reload().catch(() => {}); }, [reload]);
 
   const createCommand = useCallback(async (name: string, description: string, template: string) => {
     const now = Date.now();
@@ -39,7 +56,7 @@ export function useCustomSlashCommands() {
     await reload();
   }, [reload]);
 
-  return { commands, createCommand, updateCommand, deleteCommand, reload };
+  return { commands, error, createCommand, updateCommand, deleteCommand, reload };
 }
 
 /**

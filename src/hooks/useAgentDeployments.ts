@@ -2,44 +2,65 @@
  * useAgentDeployments — manages agent profile assignments to investigations.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
 import { nanoid } from 'nanoid';
 import { db } from '../db';
 import type { AgentDeployment, AgentProfile, ChatThread, LLMProvider } from '../types';
 
 export function useAgentDeployments(investigationId?: string) {
-  const [deployments, setDeployments] = useState<AgentDeployment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const scope = useMemo(() => ({ investigationId }), [investigationId]);
+  const activeScope = useRef<typeof scope | null>(null);
+  const requestVersion = useRef(0);
+  const [snapshot, setSnapshot] = useState<{ scope: typeof scope; deployments: AgentDeployment[]; loading: boolean; error: string | null }>(
+    { scope, deployments: [], loading: !!investigationId, error: null },
+  );
+  const deployments = useMemo(() => snapshot.scope === scope ? snapshot.deployments : [], [snapshot, scope]);
+  const loading = !!investigationId && (snapshot.scope !== scope || snapshot.loading);
+  const error = snapshot.scope === scope ? snapshot.error : null;
+
+  useLayoutEffect(() => {
+    ++requestVersion.current;
+    activeScope.current = scope;
+    return () => { activeScope.current = null; };
+  }, [scope]);
 
   const reload = useCallback(async () => {
-    if (!investigationId) {
-      setDeployments([]);
-      setLoading(false);
-      return;
+    if (!investigationId || activeScope.current !== scope) return;
+    const request = ++requestVersion.current;
+    const current = () => activeScope.current === scope && requestVersion.current === request;
+    setSnapshot(previous => ({ scope, deployments: previous.scope === scope ? previous.deployments : [], loading: true, error: null }));
+    try {
+      const results = await db.agentDeployments
+        .where('[investigationId+order]')
+        .between([investigationId, -Infinity], [investigationId, Infinity])
+        .toArray();
+      if (current()) setSnapshot({ scope, deployments: results, loading: false, error: null });
+    } catch (err) {
+      if (!current()) return;
+      setSnapshot(previous => ({ ...previous, loading: false, error: err instanceof Error ? err.message : 'Failed to load agent deployments' }));
+      throw err;
     }
-    const results = await db.agentDeployments
-      .where('[investigationId+order]')
-      .between([investigationId, -Infinity], [investigationId, Infinity])
-      .toArray();
-    setDeployments(results);
-    setLoading(false);
-  }, [investigationId]);
+  }, [investigationId, scope]);
 
   useEffect(() => {
-    reload();
+    void reload().catch(() => {}); // Exposed through error; explicit callers still receive the rejection.
   }, [reload]);
 
   // Reload when deployments change from tool calls (deploy_agent, stop_agent, etc.)
   useEffect(() => {
-    const handler = () => { setTimeout(reload, 200); }; // slight delay for Dexie write to commit
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const handler = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { void reload().catch(() => {}); }, 200);
+    }; // slight delay for Dexie write to commit
     window.addEventListener('tc-folders-changed', handler);
-    return () => window.removeEventListener('tc-folders-changed', handler);
+    return () => { clearTimeout(timer); window.removeEventListener('tc-folders-changed', handler); };
   }, [reload]);
 
   // Periodic poll as fallback — catches deployments created by agents or other tabs
   useEffect(() => {
     if (!investigationId) return;
-    const timer = setInterval(reload, 10_000);
+    const timer = setInterval(() => { void reload().catch(() => {}); }, 10_000);
     return () => clearInterval(timer);
   }, [investigationId, reload]);
 
@@ -103,6 +124,7 @@ export function useAgentDeployments(investigationId?: string) {
   return {
     deployments,
     loading,
+    error,
     reload,
     deployProfile,
     removeDeployment,

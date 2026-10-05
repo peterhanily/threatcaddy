@@ -8,6 +8,8 @@ import {
 import { getAvailableProviders } from '../../services/llm-service.js';
 import { getAiSettings, setAiSettings, type AiAssistantSettings } from '../../services/admin-secret.js';
 import { logger } from '../../lib/logger.js';
+import { parseAnthropicResponse, parseGeminiResponse } from '../../lib/provider-response.js';
+import { readProviderJSON, withAbort } from '../../lib/bounded-http.js';
 
 const app = new Hono();
 const MAX_TOOL_CALLS = 20;
@@ -47,6 +49,7 @@ app.get('/api/ai/settings', requireAdminAuth, async (c) => {
 app.patch('/api/ai/settings', requireAdminAuth, async (c) => {
   let body;
   try { body = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON' }, 400); }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return c.json({ error: 'Settings must be an object' }, 400);
 
   const updates: Record<string, unknown> = {};
 
@@ -111,12 +114,22 @@ function getApiKey(provider: string): string {
   }
 }
 
-async function callAnthropic(model: string, messages: unknown[], apiKey: string, systemPrompt: string, temperature: number): Promise<LLMResult> {
-  const anthCtrl = new AbortController();
-  const anthTimer = setTimeout(() => anthCtrl.abort(), 60_000);
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+async function readAdminProvider(url: string, init: RequestInit, signal: AbortSignal, provider: string): Promise<unknown> {
+  signal.throwIfAborted();
+  const deadline = new AbortController();
+  const timer = setTimeout(() => deadline.abort(new Error('Admin AI provider deadline exceeded')), 60_000);
+  const combined = AbortSignal.any([signal, deadline.signal]);
+  try {
+    const response = await withAbort(fetch(url, { ...init, signal: combined }), combined);
+    return await readProviderJSON(response, combined, provider);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function callAnthropic(model: string, messages: unknown[], apiKey: string, systemPrompt: string, temperature: number, signal: AbortSignal): Promise<LLMResult> {
+  const result = await readAdminProvider('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    signal: anthCtrl.signal,
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
@@ -130,27 +143,8 @@ async function callAnthropic(model: string, messages: unknown[], apiKey: string,
       tools: getAnthropicTools(),
       temperature,
     }),
-  });
-  clearTimeout(anthTimer);
-
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`API error ${resp.status}: ${errText}`);
-  }
-
-  const result = await resp.json() as {
-    content: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }>;
-    stop_reason: string;
-  };
-
-  return {
-    textParts: result.content.filter(b => b.type === 'text').map(b => b.text!),
-    toolCalls: result.content.filter(b => b.type === 'tool_use').map(b => ({
-      id: b.id!, name: b.name!, input: b.input || {},
-    })),
-    stopReason: result.stop_reason,
-    rawAssistantContent: result.content,
-  };
+  }, signal, 'Anthropic');
+  return parseAnthropicResponse(result);
 }
 
 function buildAnthropicToolResults(
@@ -162,7 +156,7 @@ function buildAnthropicToolResults(
   };
 }
 
-async function callOpenAI(model: string, messages: unknown[], apiKey: string, provider: 'openai' | 'mistral', systemPrompt: string, temperature: number): Promise<LLMResult> {
+async function callOpenAI(model: string, messages: unknown[], apiKey: string, provider: 'openai' | 'mistral', systemPrompt: string, temperature: number, signal: AbortSignal): Promise<LLMResult> {
   const url = provider === 'mistral'
     ? 'https://api.mistral.ai/v1/chat/completions'
     : 'https://api.openai.com/v1/chat/completions';
@@ -170,11 +164,8 @@ async function callOpenAI(model: string, messages: unknown[], apiKey: string, pr
   // Prepend system message
   const allMessages = [{ role: 'system', content: systemPrompt }, ...(messages as Array<Record<string, unknown>>)];
 
-  const oaiCtrl = new AbortController();
-  const oaiTimer = setTimeout(() => oaiCtrl.abort(), 60_000);
-  const resp = await fetch(url, {
+  const result = await readAdminProvider(url, {
     method: 'POST',
-    signal: oaiCtrl.signal,
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
@@ -186,15 +177,7 @@ async function callOpenAI(model: string, messages: unknown[], apiKey: string, pr
       max_tokens: 4096,
       temperature,
     }),
-  });
-  clearTimeout(oaiTimer);
-
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`API error ${resp.status}: ${errText}`);
-  }
-
-  const result = await resp.json() as {
+  }, signal, provider) as {
     choices: Array<{
       message: {
         role: string;
@@ -232,7 +215,7 @@ function buildOpenAIToolResults(
   }));
 }
 
-async function callGemini(model: string, messages: unknown[], apiKey: string, systemPrompt: string, temperature: number): Promise<LLMResult> {
+async function callGemini(model: string, messages: unknown[], apiKey: string, systemPrompt: string, temperature: number, signal: AbortSignal): Promise<LLMResult> {
   // Convert messages to Gemini format
   const contents = (messages as Array<{ role: string; content: unknown }>).map(m => {
     if (m.role === 'assistant') {
@@ -248,11 +231,8 @@ async function callGemini(model: string, messages: unknown[], apiKey: string, sy
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  const gemCtrl = new AbortController();
-  const gemTimer = setTimeout(() => gemCtrl.abort(), 60_000);
-  const resp = await fetch(url, {
+  const result = await readAdminProvider(url, {
     method: 'POST',
-    signal: gemCtrl.signal,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents,
@@ -260,38 +240,11 @@ async function callGemini(model: string, messages: unknown[], apiKey: string, sy
       systemInstruction: { parts: [{ text: systemPrompt }] },
       generationConfig: { temperature },
     }),
-  });
-  clearTimeout(gemTimer);
-
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`API error ${resp.status}: ${errText}`);
-  }
-
-  const result = await resp.json() as {
-    candidates: Array<{
-      content: { parts: Array<{ text?: string; functionCall?: { name: string; args: Record<string, unknown> } }> };
-      finishReason: string;
-    }>;
-  };
-
-  const parts = result.candidates?.[0]?.content?.parts || [];
-  const textParts = parts.filter(p => p.text).map(p => p.text!);
-  const toolCalls = parts.filter(p => p.functionCall).map((p, i) => ({
-    id: `gemini-tc-${i}`,
-    name: p.functionCall!.name,
-    input: p.functionCall!.args || {},
-  }));
-
-  return {
-    textParts,
-    toolCalls,
-    stopReason: result.candidates?.[0]?.finishReason || 'STOP',
-    rawAssistantContent: result.candidates?.[0]?.content,
-  };
+  }, signal, 'Gemini');
+  return parseGeminiResponse(result);
 }
 
-async function callLocal(model: string, messages: unknown[], endpoint: string, apiKey: string, systemPrompt: string, temperature: number): Promise<LLMResult> {
+async function callLocal(model: string, messages: unknown[], endpoint: string, apiKey: string, systemPrompt: string, temperature: number, signal: AbortSignal): Promise<LLMResult> {
   let parsedEndpoint: URL;
   try { parsedEndpoint = new URL(endpoint); } catch { throw new Error('Invalid local endpoint URL'); }
   if (parsedEndpoint.protocol !== 'http:' && parsedEndpoint.protocol !== 'https:') {
@@ -304,11 +257,8 @@ async function callLocal(model: string, messages: unknown[], endpoint: string, a
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
-  const localCtrl = new AbortController();
-  const localTimer = setTimeout(() => localCtrl.abort(), 60_000);
-  const resp = await fetch(url, {
+  const result = await readAdminProvider(url, {
     method: 'POST',
-    signal: localCtrl.signal,
     headers,
     body: JSON.stringify({
       model,
@@ -317,15 +267,7 @@ async function callLocal(model: string, messages: unknown[], endpoint: string, a
       max_tokens: 4096,
       temperature,
     }),
-  });
-  clearTimeout(localTimer);
-
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`Local LLM error ${resp.status}: ${errText}`);
-  }
-
-  const result = await resp.json() as {
+  }, signal, 'Local LLM') as {
     choices: Array<{
       message: {
         role: string;
@@ -422,54 +364,72 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
   const adminId = getAdminId(c);
   await logAdminAction(adminId, 'ai-assistant.chat', `AI Assistant chat via ${provider}/${model} (${messages.length} messages)`);
 
+  const disconnected = new AbortController();
+  const signal = AbortSignal.any([c.req.raw.signal, disconnected.signal]);
   return streamSSE(c, async (stream) => {
+    stream.onAbort(() => disconnected.abort(new Error('Admin AI client disconnected')));
+    const writeSSE = async (message: Parameters<typeof stream.writeSSE>[0]) => {
+      signal.throwIfAborted();
+      await stream.writeSSE(message);
+      signal.throwIfAborted();
+    };
     let toolCallCount = 0;
     const currentMessages = [...messages];
 
     // Send provider info to client
-    await stream.writeSSE({ data: JSON.stringify({ type: 'provider', provider, model }) });
+    await writeSSE({ data: JSON.stringify({ type: 'provider', provider, model }) });
 
     while (toolCallCount < MAX_TOOL_CALLS) {
+      signal.throwIfAborted();
       let result: LLMResult;
       try {
         switch (provider) {
           case 'anthropic':
-            result = await callAnthropic(model, currentMessages, apiKey, effectiveSystemPrompt, aiSettings.temperature);
+            result = await callAnthropic(model, currentMessages, apiKey, effectiveSystemPrompt, aiSettings.temperature, signal);
             break;
           case 'openai':
-            result = await callOpenAI(model, currentMessages, apiKey, 'openai', effectiveSystemPrompt, aiSettings.temperature);
+            result = await callOpenAI(model, currentMessages, apiKey, 'openai', effectiveSystemPrompt, aiSettings.temperature, signal);
             break;
           case 'mistral':
-            result = await callOpenAI(model, currentMessages, apiKey, 'mistral', effectiveSystemPrompt, aiSettings.temperature);
+            result = await callOpenAI(model, currentMessages, apiKey, 'mistral', effectiveSystemPrompt, aiSettings.temperature, signal);
             break;
           case 'gemini':
-            result = await callGemini(model, currentMessages, apiKey, effectiveSystemPrompt, aiSettings.temperature);
+            result = await callGemini(model, currentMessages, apiKey, effectiveSystemPrompt, aiSettings.temperature, signal);
             break;
           case 'local': {
             if (!aiSettings.localEndpoint) {
-              await stream.writeSSE({ data: JSON.stringify({ type: 'error', error: 'Local LLM endpoint not configured' }) });
+              await writeSSE({ data: JSON.stringify({ type: 'error', error: 'Local LLM endpoint not configured' }) });
               return;
             }
-            result = await callLocal(model, currentMessages, aiSettings.localEndpoint, aiSettings.localApiKey, effectiveSystemPrompt, aiSettings.temperature);
+            result = await callLocal(model, currentMessages, aiSettings.localEndpoint, aiSettings.localApiKey, effectiveSystemPrompt, aiSettings.temperature, signal);
             break;
           }
           default:
-            await stream.writeSSE({ data: JSON.stringify({ type: 'error', error: `Unsupported provider: ${provider}` }) });
+            await writeSSE({ data: JSON.stringify({ type: 'error', error: `Unsupported provider: ${provider}` }) });
             return;
         }
       } catch (err) {
+        if (signal.aborted) return;
         logger.error('Admin AI API error', { provider, model, error: String(err) });
-        await stream.writeSSE({ data: JSON.stringify({ type: 'error', error: String(err) }) });
+        await writeSSE({ data: JSON.stringify({ type: 'error', error: String(err) }) });
+        return;
+      }
+      signal.throwIfAborted();
+
+      // Reserve the complete batch before any dispatch. Checking only the outer
+      // loop allows a single response to exceed the remaining per-chat budget.
+      if (result.toolCalls.length > MAX_TOOL_CALLS - toolCallCount) {
+        await writeSSE({ data: JSON.stringify({ type: 'error', error: 'Tool call limit reached' }) });
         return;
       }
 
       // Send text to client
       for (const text of result.textParts) {
-        await stream.writeSSE({ data: JSON.stringify({ type: 'text', text }) });
+        await writeSSE({ data: JSON.stringify({ type: 'text', text }) });
       }
 
       if (result.toolCalls.length === 0) {
-        await stream.writeSSE({ data: JSON.stringify({ type: 'done', stopReason: result.stopReason }) });
+        await writeSSE({ data: JSON.stringify({ type: 'done', stopReason: result.stopReason }) });
         return;
       }
 
@@ -486,10 +446,11 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
       // Execute tools
       const toolResultEntries: Array<{ id: string; name: string; content: string }> = [];
       for (const tc of result.toolCalls) {
+        signal.throwIfAborted();
         toolCallCount++;
         const tool = getToolByName(tc.name);
 
-        await stream.writeSSE({ data: JSON.stringify({
+        await writeSSE({ data: JSON.stringify({
           type: 'tool_call', name: tc.name, input: tc.input,
           requiresConfirm: tool?.requiresConfirm || false,
         }) });
@@ -504,7 +465,7 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
         if (tool.requiresConfirm && !confirmedToolCalls.has(tc.name)) {
           const pendingMsg = `Tool "${tc.name}" requires admin confirmation before execution. The action was NOT performed. Ask the user to confirm and resubmit with confirmedToolCalls including "${tc.name}".`;
           toolResultEntries.push({ id: tc.id, name: tc.name, content: JSON.stringify({ error: pendingMsg }) });
-          await stream.writeSSE({ data: JSON.stringify({
+          await writeSSE({ data: JSON.stringify({
             type: 'confirmation_required', name: tc.name, input: tc.input,
             message: `This action requires confirmation. Re-send with confirmedToolCalls: ["${tc.name}"] to proceed.`,
           }) });
@@ -512,21 +473,24 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
         }
 
         try {
+          signal.throwIfAborted();
           const toolResult = await tool.execute(tc.input, adminId);
+          signal.throwIfAborted();
           const resultStr = JSON.stringify(toolResult);
           toolResultEntries.push({
             id: tc.id,
             name: tc.name,
             content: resultStr.length > 20000 ? resultStr.slice(0, 20000) + '...[truncated]' : resultStr,
           });
-          await stream.writeSSE({ data: JSON.stringify({
+          await writeSSE({ data: JSON.stringify({
             type: 'tool_result', name: tc.name,
             result: resultStr.length > 5000 ? resultStr.slice(0, 5000) + '...' : toolResult,
           }) });
         } catch (err) {
+          if (signal.aborted) return;
           const errorMsg = String(err);
           toolResultEntries.push({ id: tc.id, name: tc.name, content: JSON.stringify({ error: errorMsg }) });
-          await stream.writeSSE({ data: JSON.stringify({ type: 'tool_error', name: tc.name, error: errorMsg }) });
+          await writeSSE({ data: JSON.stringify({ type: 'tool_error', name: tc.name, error: errorMsg }) });
         }
       }
 
@@ -546,7 +510,11 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
       }
     }
 
-    await stream.writeSSE({ data: JSON.stringify({ type: 'error', error: 'Tool call limit reached' }) });
+    await writeSSE({ data: JSON.stringify({ type: 'error', error: 'Tool call limit reached' }) });
+  }, async (error, stream) => {
+    if (signal.aborted) return;
+    logger.error('Admin AI stream failed', { error: String(error) });
+    await stream.writeSSE({ data: JSON.stringify({ type: 'error', error: 'Admin AI request failed' }) });
   });
 });
 

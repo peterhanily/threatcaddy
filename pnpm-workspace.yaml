@@ -10,3 +10,6 @@ overrides:
   'lodash-es@<4.18.1': '4.18.1'
   '@radix-ui/react-tabs@1.0.2': '1.1.21'
   'tsx>esbuild': '^0.28.2'
+  # Excalidraw consumes prebuilt CSS but pins an old Sass watcher dependency.
+  # This same-major Sass release removes the remaining unpatched braces path.
+  '@excalidraw/excalidraw>sass': '1.105.0'

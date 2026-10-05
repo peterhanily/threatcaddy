@@ -149,19 +149,6 @@ export function ChatView({
     resolve: (approved: boolean) => void;
   } | null>(null);
 
-  // Memoize system prompt — only rebuild when folder context changes
-  const systemPromptRef = useRef<string>('');
-  const systemPromptKeyRef = useRef<string>('');
-  useEffect(() => {
-    const provider = activeThread?.provider ?? 'anthropic';
-    const key = `${selectedFolder?.id ?? ''}:${selectedFolder?.updatedAt ?? ''}:${settings.llmSystemPrompt ?? ''}:${provider}`;
-    if (key === systemPromptKeyRef.current) return;
-    systemPromptKeyRef.current = key;
-    buildSystemPrompt(selectedFolder, settings.llmSystemPrompt, provider).then((prompt) => {
-      systemPromptRef.current = prompt;
-    });
-  }, [selectedFolder, settings.llmSystemPrompt, activeThread?.provider]);
-
   // Auto-select first non-folder thread when none selected (or stale selection)
   useEffect(() => {
     if (threads.length > 0 && (!selectedThreadId || !threads.some(t => t.id === selectedThreadId))) {
@@ -226,7 +213,7 @@ export function ChatView({
       console.error('Failed to create chat thread:', err);
       setLocalError(t('view.errorCreateThread'));
     }
-  }, [onCreateThread, onSelectThread, settings, selectedFolderId, configuredProviders, threads]);
+  }, [onCreateThread, onSelectThread, settings, selectedFolderId, configuredProviders, threads, selectedThreadId, t]);
 
   const getApiKeyForProvider = useCallback((provider: LLMProvider, s: Settings): string | undefined => {
     switch (provider) {
@@ -394,7 +381,7 @@ export function ChatView({
         model: activeThread.model,
         provider: activeThread.provider,
         apiKey: apiKey!,
-        systemPrompt: systemPromptRef.current || await buildSystemPrompt(selectedFolder, settings.llmSystemPrompt, activeThread.provider),
+        systemPrompt: await buildSystemPrompt(selectedFolder, settings.llmSystemPrompt, activeThread.provider),
         endpoint: activeThread.provider === 'local' ? settings.llmLocalEndpoint : undefined,
         useServerProxy: effectiveRoute === 'server',
         onMessage: onAddMessage,
@@ -458,8 +445,9 @@ export function ChatView({
       return;
     }
 
-    // Use memoized system prompt — only rebuilt when folder context changes
-    const systemPrompt = systemPromptRef.current || await buildSystemPrompt(selectedFolder, settings.llmSystemPrompt, activeThread.provider);
+    // Build for this submission's scope. A shared async cache can complete out
+    // of order after an investigation switch and attach another case's context.
+    const systemPrompt = await buildSystemPrompt(selectedFolder, settings.llmSystemPrompt, activeThread.provider);
 
     // Build text-only messages for truncation, then overlay multimodal content
     const allMessages = [...activeThread.messages, userMsg];
@@ -614,7 +602,7 @@ export function ChatView({
         }
       }
     );
-  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, getProviderLabel, startLoop, stopAllForThread]);
+  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, getProviderLabel, startLoop, stopAllForThread, pendingImages, customCommands, effectiveRoute, t]);
 
   const handleModelChange = useCallback((model: string, provider: LLMProvider) => {
     if (activeThread) {

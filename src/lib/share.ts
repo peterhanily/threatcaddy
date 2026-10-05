@@ -1,4 +1,5 @@
 import pako from 'pako';
+import { sanitizeSharePayload } from './share-data';
 import type { Note, Task, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, Folder, Tag, ChatThread } from '../types';
 
 // --- Payload types ---
@@ -25,6 +26,8 @@ export interface SharePayload {
 }
 
 export const MAX_URL_LENGTH = 32_000;
+export const MAX_SHARE_ENCODED_LENGTH = 2 * 1024 * 1024;
+export const MAX_SHARE_DECODED_BYTES = 8 * 1024 * 1024;
 
 // --- Helpers ---
 
@@ -99,9 +102,11 @@ async function decrypt(data: Uint8Array, password: string): Promise<Uint8Array> 
 const FLAG_ENCRYPTED = 0x01;
 
 export async function encodeSharePayload(payload: SharePayload, password?: string): Promise<string> {
-  const json = JSON.stringify(payload);
+  const json = JSON.stringify(sanitizeSharePayload(payload));
   const enc = new TextEncoder();
-  const compressed = pako.deflate(enc.encode(json));
+  const bytes = enc.encode(json);
+  if (bytes.byteLength > MAX_SHARE_DECODED_BYTES) throw new Error('Share content is too large; export a file instead');
+  const compressed = pako.deflate(bytes);
 
   let flags = 0;
   let body: Uint8Array;
@@ -118,46 +123,58 @@ export async function encodeSharePayload(payload: SharePayload, password?: strin
   blob[0] = flags;
   blob.set(body, 1);
 
-  return toBase64Url(blob);
+  const encoded = toBase64Url(blob);
+  if (encoded.length > MAX_SHARE_ENCODED_LENGTH) throw new Error('Share code is too large; export a file instead');
+  return encoded;
 }
 
-const VALID_SCOPES: ShareScope[] = ['note', 'task', 'event', 'whiteboard', 'ioc', 'investigation', 'chat'];
-
-function validateSharePayload(obj: unknown): SharePayload {
-  if (!obj || typeof obj !== 'object') throw new Error('Invalid share payload: not an object');
-  const p = obj as Record<string, unknown>;
-  if (p.v !== 1) throw new Error('Invalid share payload: unsupported version');
-  if (typeof p.s !== 'string' || !VALID_SCOPES.includes(p.s as ShareScope)) {
-    throw new Error('Invalid share payload: invalid scope');
-  }
-  if (typeof p.t !== 'number' || !Number.isFinite(p.t)) {
-    throw new Error('Invalid share payload: invalid timestamp');
-  }
-  if (!p.d || typeof p.d !== 'object') {
-    throw new Error('Invalid share payload: missing data');
-  }
-  return p as unknown as SharePayload;
+/** The optional budget can only tighten the production limit (useful to constrained callers). */
+export function inflateShareBody(body: Uint8Array, maxBytes = MAX_SHARE_DECODED_BYTES): Uint8Array {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > MAX_SHARE_DECODED_BYTES) throw new Error('Invalid share size budget');
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  let complete = false;
+  const inflater = new pako.Inflate({ chunkSize: Math.min(16 * 1024, maxBytes + 1) });
+  inflater.onData = chunk => {
+    const bytes = chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk as ArrayBuffer);
+    total += bytes.byteLength;
+    if (total > maxBytes) throw new Error('Share content exceeds the decoded size limit');
+    chunks.push(bytes);
+  };
+  inflater.onEnd = status => { complete = status === 0; };
+  inflater.push(body, true);
+  if (!complete) throw new Error('Invalid or incomplete compressed share');
+  const result = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.byteLength; }
+  return result;
 }
 
 export async function decodeSharePayload(encoded: string, password?: string): Promise<SharePayload> {
+  if (encoded.length > MAX_SHARE_ENCODED_LENGTH) throw new Error('Share code exceeds the encoded size limit');
+  if (!/^[A-Za-z0-9_-]+={0,2}$/.test(encoded)) throw new Error('Invalid share encoding');
   const blob = fromBase64Url(encoded);
   const flags = blob[0];
+  if (blob.length < 2 || (flags !== 0 && flags !== FLAG_ENCRYPTED)) throw new Error('Invalid share header');
   let body: Uint8Array = blob.slice(1);
 
   if (flags & FLAG_ENCRYPTED) {
     if (!password) throw new Error('Password required to decrypt this share');
+    if (body.length < 44) throw new Error('Invalid encrypted share');
     body = await decrypt(body, password);
   }
 
   const dec = new TextDecoder();
-  const json = dec.decode(pako.inflate(body));
-  return validateSharePayload(JSON.parse(json));
+  const json = dec.decode(inflateShareBody(body));
+  return sanitizeSharePayload(JSON.parse(json));
 }
 
 export function isEncryptedShare(encoded: string): boolean {
   try {
-    const blob = fromBase64Url(encoded);
-    return (blob[0] & FLAG_ENCRYPTED) !== 0;
+    if (encoded.length > MAX_SHARE_ENCODED_LENGTH) return false;
+    // Only the first byte is needed; do not allocate a decoded copy of the code here.
+    const blob = fromBase64Url(encoded.slice(0, 4));
+    return blob[0] === FLAG_ENCRYPTED;
   } catch {
     return false;
   }

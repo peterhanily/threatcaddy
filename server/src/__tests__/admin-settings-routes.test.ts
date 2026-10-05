@@ -19,6 +19,7 @@ const {
   mockGetSessionSettings, mockSetSessionSettings,
   mockGetServerName, mockSetServerName,
   mockGetRetentionSettings, mockSetRetentionSettings,
+  mockSetAdminSettings,
 } = vi.hoisted(() => {
   const selectQueue: unknown[] = [];
   const insertQueue: unknown[] = [];
@@ -56,6 +57,7 @@ const {
   const mockSetServerName = vi.fn().mockResolvedValue(undefined);
   const mockGetRetentionSettings = vi.fn().mockResolvedValue({ notificationRetentionDays: 90, auditLogRetentionDays: 365 });
   const mockSetRetentionSettings = vi.fn().mockResolvedValue(undefined);
+  const mockSetAdminSettings = vi.fn().mockResolvedValue(undefined);
 
   return {
     selectQueue, insertQueue, deleteQueue,
@@ -65,6 +67,7 @@ const {
     mockGetSessionSettings, mockSetSessionSettings,
     mockGetServerName, mockSetServerName,
     mockGetRetentionSettings, mockSetRetentionSettings,
+    mockSetAdminSettings,
   };
 });
 
@@ -100,7 +103,9 @@ vi.mock('../routes/admin/shared.js', async () => {
   };
 });
 
-vi.mock('../services/admin-secret.js', () => ({
+vi.mock('../services/admin-secret.js', async importOriginal => ({
+  validateAdminSettings: (await importOriginal<typeof import('../services/admin-secret.js')>()).validateAdminSettings,
+  setAdminSettings: mockSetAdminSettings,
   getRegistrationMode: mockGetRegistrationMode,
   setRegistrationMode: mockSetRegistrationMode,
   getSessionSettings: mockGetSessionSettings,
@@ -277,7 +282,7 @@ describe('PATCH /admin/api/settings', () => {
       body: JSON.stringify({ serverName: 'My Server' }),
     });
     expect(res.status).toBe(200);
-    expect(mockSetServerName).toHaveBeenCalledWith('My Server');
+    expect(mockSetAdminSettings).toHaveBeenCalledWith({ serverName: 'My Server' });
   });
 
   it('rejects server name longer than 100 characters', async () => {
@@ -288,7 +293,7 @@ describe('PATCH /admin/api/settings', () => {
       body: JSON.stringify({ serverName: 'a'.repeat(101) }),
     });
     expect(res.status).toBe(400);
-    expect(mockSetServerName).not.toHaveBeenCalled();
+    expect(mockSetAdminSettings).not.toHaveBeenCalled();
   });
 
   it('rejects empty server name', async () => {
@@ -299,7 +304,7 @@ describe('PATCH /admin/api/settings', () => {
       body: JSON.stringify({ serverName: '' }),
     });
     expect(res.status).toBe(400);
-    expect(mockSetServerName).not.toHaveBeenCalled();
+    expect(mockSetAdminSettings).not.toHaveBeenCalled();
   });
 
   it('updates registration mode to open', async () => {
@@ -310,7 +315,7 @@ describe('PATCH /admin/api/settings', () => {
       body: JSON.stringify({ registrationMode: 'open' }),
     });
     expect(res.status).toBe(200);
-    expect(mockSetRegistrationMode).toHaveBeenCalledWith('open');
+    expect(mockSetAdminSettings).toHaveBeenCalledWith({ registrationMode: 'open' });
   });
 
   it('updates registration mode to invite', async () => {
@@ -321,7 +326,7 @@ describe('PATCH /admin/api/settings', () => {
       body: JSON.stringify({ registrationMode: 'invite' }),
     });
     expect(res.status).toBe(200);
-    expect(mockSetRegistrationMode).toHaveBeenCalledWith('invite');
+    expect(mockSetAdminSettings).toHaveBeenCalledWith({ registrationMode: 'invite' });
   });
 
   it('rejects invalid registration mode', async () => {
@@ -332,7 +337,7 @@ describe('PATCH /admin/api/settings', () => {
       body: JSON.stringify({ registrationMode: 'invalid' }),
     });
     expect(res.status).toBe(400);
-    expect(mockSetRegistrationMode).not.toHaveBeenCalled();
+    expect(mockSetAdminSettings).not.toHaveBeenCalled();
   });
 
   it('updates session settings (ttlHours and maxPerUser)', async () => {
@@ -343,7 +348,7 @@ describe('PATCH /admin/api/settings', () => {
       body: JSON.stringify({ ttlHours: 48, maxPerUser: 10 }),
     });
     expect(res.status).toBe(200);
-    expect(mockSetSessionSettings).toHaveBeenCalledWith(48, 10);
+    expect(mockSetAdminSettings).toHaveBeenCalledWith({ ttlHours: 48, maxPerUser: 10 });
   });
 
   it('updates retention settings', async () => {
@@ -354,7 +359,29 @@ describe('PATCH /admin/api/settings', () => {
       body: JSON.stringify({ notificationRetentionDays: 30, auditLogRetentionDays: 180 }),
     });
     expect(res.status).toBe(200);
-    expect(mockSetRetentionSettings).toHaveBeenCalledWith(30, 180);
+    expect(mockSetAdminSettings).toHaveBeenCalledWith({ notificationRetentionDays: 30, auditLogRetentionDays: 180 });
+  });
+
+  it.each([
+    { serverName: 'Ordinary renamed server', registrationMode: 'unrecognized' },
+    { registrationMode: 'open', ttlHours: 0 },
+    { registrationMode: 'open', ttlHours: 8761 },
+    { registrationMode: 'open', maxPerUser: 1001 },
+    { registrationMode: 'open', notificationRetentionDays: 0 },
+    { registrationMode: 'open', auditLogRetentionDays: '180' },
+    null,
+    [],
+  ])('rejects the whole invalid patch before any persistence %#', async patch => {
+    const token = await getAdminToken();
+    const res = await app.request('/admin/api/settings', {
+      method: 'PATCH', headers: { ...authHeader(token), 'Content-Type': 'application/json' }, body: JSON.stringify(patch),
+    });
+    expect(res.status).toBe(400);
+    expect(mockSetAdminSettings).not.toHaveBeenCalled();
+    expect(mockSetServerName).not.toHaveBeenCalled();
+    expect(mockSetRegistrationMode).not.toHaveBeenCalled();
+    expect(mockSetSessionSettings).not.toHaveBeenCalled();
+    expect(mockSetRetentionSettings).not.toHaveBeenCalled();
   });
 });
 

@@ -5,6 +5,7 @@
 var TC_PROTOCOL_VERSION = 1;
 var TC_CAPABILITIES = ['llm_streaming', 'fetch_url', 'clip_import', 'proxy_fetch', 'notification_ack'];
 var tcAppApproved = typeof tcAppApproved === 'boolean' ? tcAppApproved : false;
+var tcApprovalRequest = typeof tcApprovalRequest === 'number' ? tcApprovalRequest : 0;
 
 // On file:// pages, window.location.origin is the string "null".
 // postMessage(data, "null") silently drops the message. Use '*' instead.
@@ -28,13 +29,20 @@ function readyPayload() {
     capabilities: TC_CAPABILITIES,
   };
 }
-function refreshAppApproval() {
-  return chrome.runtime.sendMessage({ type: 'PING' }).then(function (response) {
+async function refreshAppApproval() {
+  var request = ++tcApprovalRequest;
+  tcAppApproved = false;
+  delete document.documentElement.dataset.tcBridgeCaps;
+  try {
+    var response = await chrome.runtime.sendMessage({ type: 'PING' });
+    if (request !== tcApprovalRequest) return;
     tcAppApproved = response?.loaded === true;
-    if (!tcAppApproved) { delete document.documentElement.dataset.tcBridgeCaps; return; }
+    if (!tcAppApproved) return;
     document.documentElement.dataset.tcBridgeCaps = TC_CAPABILITIES.join(',');
     window.postMessage(readyPayload(), postOrigin());
-  }).catch(function () { tcAppApproved = false; delete document.documentElement.dataset.tcBridgeCaps; });
+  } catch {
+    if (request === tcApprovalRequest) { tcAppApproved = false; delete document.documentElement.dataset.tcBridgeCaps; }
+  }
 }
 
 // Guard against duplicate injection (static content_scripts + dynamic executeScript)

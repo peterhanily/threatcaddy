@@ -71,7 +71,9 @@ export function IOCDeduplicator({ open, onClose, iocs, onUpdate, onDelete }: IOC
 
   const getKeeperId = (group: DuplicateGroup): string => {
     const explicit = selectedKeepers.get(group.key);
-    if (explicit) return explicit;
+    // A selected keeper may have been deleted, moved, or edited remotely while
+    // this dialog stayed open. Only keep an ID still in this duplicate group.
+    if (explicit && group.iocs.some(ioc => ioc.id === explicit)) return explicit;
     // Default: pick highest confidence
     const sorted = [...group.iocs].sort(
       (a, b) => (CONFIDENCE_ORDER[b.confidence] ?? 0) - (CONFIDENCE_ORDER[a.confidence] ?? 0)
@@ -81,7 +83,8 @@ export function IOCDeduplicator({ open, onClose, iocs, onUpdate, onDelete }: IOC
 
   const mergeGroup = (group: DuplicateGroup) => {
     const keeperId = getKeeperId(group);
-    const keeper = group.iocs.find(i => i.id === keeperId)!;
+    const keeper = group.iocs.find(i => i.id === keeperId);
+    if (!keeper) return;
     const others = group.iocs.filter(i => i.id !== keeperId);
 
     // Merge tags

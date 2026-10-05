@@ -136,7 +136,7 @@ function ShareLinkTab({
             </div>
           ) : state.code ? (
             <div className="flex flex-col gap-2">
-              <p className="text-xs text-yellow-400">Payload too large for URL. Copy the share code below and send it to the recipient. They can paste it into the import dialog.</p>
+              <p className="text-xs text-yellow-400">This share is too large for a URL. Reduce the shared selection, or use file export/import where available. The raw share code below is not a backup file and cannot be pasted into the backup import dialog.</p>
               <div className="bg-gray-800 rounded-lg p-3 text-xs text-gray-200 font-mono break-all max-h-32 overflow-y-auto select-all">
                 {state.code}
               </div>
@@ -145,7 +145,7 @@ function ShareLinkTab({
                 className="flex items-center justify-center gap-2 bg-gray-700 text-gray-100 rounded-lg py-2 text-sm font-medium hover:bg-gray-600 transition-colors"
               >
                 {copied ? <Check size={14} /> : <Copy size={14} />}
-                {copied ? 'Copied!' : 'Copy Code'}
+                {copied ? 'Copied!' : 'Copy Raw Share Code'}
               </button>
             </div>
           ) : null}
@@ -345,7 +345,17 @@ function TeamTab({ folderId }: { folderId: string }) {
   );
 }
 
-export function ShareDialog({ open, onClose, payload, folderId }: ShareDialogProps) {
+export function ShareDialog(props: ShareDialogProps) {
+  // Callers create an immutable payload for each share action. Preserve draft input
+  // across incidental renders, but never reuse a generated link for a new payload.
+  const [owner, setOwner] = useState({ payload: props.payload, generation: 0 });
+  if (owner.payload !== props.payload) {
+    setOwner({ payload: props.payload, generation: owner.generation + 1 });
+  }
+  return props.payload ? <ShareDialogContent key={owner.generation} {...props} /> : null;
+}
+
+function ShareDialogContent({ open, onClose, payload, folderId }: ShareDialogProps) {
   const { t } = useTranslation('exec');
   const { connected } = useAuth();
   const showTeamTab = !!folderId && connected && payload?.s === 'investigation';

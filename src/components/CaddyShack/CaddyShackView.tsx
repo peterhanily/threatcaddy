@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, Globe, FolderOpen, Server, Settings, UserPlus, MessageSquare, Activity } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,6 +15,7 @@ import type { ActivityEntry } from './ActivityCard';
 import type { Post } from '../../types';
 
 type FeedTab = 'all' | 'posts' | 'activity';
+const EMPTY_POSTS: Post[] = [];
 
 interface CaddyShackViewProps {
   folderId?: string;
@@ -22,46 +23,76 @@ interface CaddyShackViewProps {
   settings?: import('../../types').Settings;
 }
 
-export function CaddyShackView({ folderId, folderName, settings }: CaddyShackViewProps) {
+export function CaddyShackView(props: CaddyShackViewProps) {
+  const { user, connected, serverUrl } = useAuth();
+  // Server-owned reads, selections and drafts must never cross accounts or
+  // servers. Folder navigation retains this instance and its composer draft.
+  const identity = JSON.stringify([serverUrl, user?.id, connected]);
+  return <ScopedCaddyShackView key={identity} {...props} />;
+}
+
+function ScopedCaddyShackView({ folderId, folderName, settings }: CaddyShackViewProps) {
   const { t } = useTranslation('caddyshack');
   const { t: tt } = useTranslation('toast');
-  const { user, connected } = useAuth();
+  const { user, connected, serverUrl } = useAuth();
   const { addToast } = useToast();
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('caddyshack-onboarded'));
-  const [posts, setPosts] = useState<Post[]>([]);
   const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([]);
-  const [loading, setLoading] = useState(true);
   const [activityLoading, setActivityLoading] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [feedScope, setFeedScope] = useState<'global' | 'investigation'>(folderId ? 'investigation' : 'global');
   const [feedTab, setFeedTab] = useState<FeedTab>('all');
   const [serverName, setServerName] = useState<string>('Global');
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const scopeFolderId = feedScope === 'investigation' ? folderId : undefined;
+  const feedKey = JSON.stringify([serverUrl, user?.id, connected, scopeFolderId]);
+  const [feed, setFeed] = useState<{ key: string; posts: Post[]; loading: boolean }>(() => ({ key: feedKey, posts: [], loading: true }));
+  const posts = feed.key === feedKey ? feed.posts : EMPTY_POSTS;
+  const loading = feed.key !== feedKey || feed.loading;
+  const feedOwner = useRef({ key: feedKey, active: false, request: 0 });
+  const activityOwner = useRef({ active: false, request: 0 });
+
+  useLayoutEffect(() => {
+    const owner = { active: true, request: 0 };
+    activityOwner.current = owner;
+    return () => { owner.active = false; };
+  }, []);
+
+  // Fence responses by the committed scope without remounting the composer or
+  // discarding its draft. Previous-scope rows are hidden immediately on render.
+  useLayoutEffect(() => {
+    const owner = { key: feedKey, active: true, request: 0 };
+    feedOwner.current = owner;
+    return () => { owner.active = false; };
+  }, [feedKey]);
 
   const loadFeed = useCallback(async () => {
-    if (!connected) return;
-    setLoading(true);
+    const owner = feedOwner.current;
+    if (!connected || !owner.active || owner.key !== feedKey) return;
+    const request = ++owner.request;
+    setFeed(previous => ({ key: feedKey, posts: previous.key === feedKey ? previous.posts : [], loading: true }));
     try {
-      const scope = feedScope === 'investigation' && folderId ? folderId : undefined;
-      const data = await fetchFeed({ folderId: scope, limit: 50 });
-      setPosts(data);
+      const data = await fetchFeed({ folderId: scopeFolderId, limit: 50 });
+      if (owner.active && owner.request === request) setFeed({ key: feedKey, posts: data, loading: false });
     } catch (err) {
-      console.error('Failed to load feed:', err);
+      if (owner.active && owner.request === request) console.error('Failed to load feed:', err);
     } finally {
-      setLoading(false);
+      if (owner.active && owner.request === request) setFeed(previous => ({ ...previous, loading: false }));
     }
-  }, [connected, feedScope, folderId]);
+  }, [connected, feedKey, scopeFolderId]);
 
   const loadActivity = useCallback(async () => {
-    if (!connected) return;
+    const owner = activityOwner.current;
+    if (!connected || !owner.active) return;
+    const request = ++owner.request;
     setActivityLoading(true);
     try {
       const data = await fetchTeamActivity({ limit: 50 });
-      setActivityEntries(data);
+      if (owner.active && owner.request === request) setActivityEntries(data);
     } catch (err) {
-      console.error('Failed to load team activity:', err);
+      if (owner.active && owner.request === request) console.error('Failed to load team activity:', err);
     } finally {
-      setActivityLoading(false);
+      if (owner.active && owner.request === request) setActivityLoading(false);
     }
   }, [connected]);
 
@@ -78,9 +109,11 @@ export function CaddyShackView({ folderId, folderName, settings }: CaddyShackVie
 
   useEffect(() => {
     if (!connected) return;
+    let active = true;
     fetchServerInfo()
-      .then((info) => setServerName(info.serverName))
-      .catch((err) => console.warn('[CaddyShack] Failed to fetch server info:', err));
+      .then((info) => { if (active) setServerName(info.serverName); })
+      .catch((err) => { if (active) console.warn('[CaddyShack] Failed to fetch server info:', err); });
+    return () => { active = false; };
   }, [connected]);
 
   // Listen for notification-driven post selection

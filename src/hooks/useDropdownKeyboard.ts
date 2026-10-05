@@ -22,26 +22,25 @@ export function useDropdownKeyboard(opts: UseDropdownKeyboardOpts): {
 } {
   const { itemCount, onSelect, onClose, isOpen } = opts;
   const [activeIndex, setActiveIndex] = useState(-1);
+  const boundedIndex = isOpen && activeIndex >= 0 && activeIndex < itemCount ? activeIndex : -1;
 
-  // Reset highlight when dropdown closes
+  // Invalid highlights must not select removed items or reappear if the list grows.
   useEffect(() => {
-    if (!isOpen) {
-      setActiveIndex(-1);
-    }
-  }, [isOpen]);
+    setActiveIndex(previous => isOpen && previous < itemCount ? previous : -1);
+  }, [isOpen, itemCount]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (!isOpen || itemCount === 0) return;
+      if (!isOpen || (itemCount <= 0 && e.key !== 'Escape' && e.key !== 'Tab')) return;
 
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setActiveIndex((prev) => (prev + 1) % itemCount);
+          setActiveIndex((prev) => ((prev >= 0 && prev < itemCount ? prev : -1) + 1) % itemCount);
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setActiveIndex((prev) => (prev <= 0 ? itemCount - 1 : prev - 1));
+          setActiveIndex((prev) => (prev <= 0 || prev >= itemCount ? itemCount - 1 : prev - 1));
           break;
         case 'Home':
           e.preventDefault();
@@ -54,8 +53,8 @@ export function useDropdownKeyboard(opts: UseDropdownKeyboardOpts): {
         case 'Enter':
         case ' ':
           e.preventDefault();
-          if (activeIndex >= 0) {
-            onSelect(activeIndex);
+          if (boundedIndex >= 0) {
+            onSelect(boundedIndex);
           }
           break;
         case 'Escape':
@@ -67,8 +66,8 @@ export function useDropdownKeyboard(opts: UseDropdownKeyboardOpts): {
           break;
       }
     },
-    [isOpen, itemCount, activeIndex, onSelect, onClose],
+    [isOpen, itemCount, boundedIndex, onSelect, onClose],
   );
 
-  return { activeIndex, setActiveIndex, onKeyDown };
+  return { activeIndex: boundedIndex, setActiveIndex, onKeyDown };
 }

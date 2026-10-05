@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
@@ -15,28 +15,40 @@ interface ReplyThreadProps {
   settings?: Settings;
 }
 
-export function ReplyThread({ postId, currentUserId, onBack, onUserClick, settings }: ReplyThreadProps) {
+export function ReplyThread(props: ReplyThreadProps) {
+  // Keep the loaded post and reply draft owned by one root post. A prop change
+  // must not render the previous post with a new composer's parentId.
+  return <ReplyThreadContent key={props.postId} {...props} />;
+}
+
+function ReplyThreadContent({ postId, currentUserId, onBack, onUserClick, settings }: ReplyThreadProps) {
   const { t } = useTranslation('caddyshack');
   const { t: tt } = useTranslation('toast');
   const { addToast } = useToast();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [replyTo, setReplyTo] = useState<{ id: string; authorName: string } | null>(null);
+  const mounted = useRef(false);
+  const requestVersion = useRef(0);
 
   const loadPost = useCallback(async () => {
+    if (!mounted.current) return;
+    const version = ++requestVersion.current;
     setLoading(true);
     try {
       const data = await fetchPost(postId);
-      setPost(data);
+      if (mounted.current && version === requestVersion.current) setPost(data);
     } catch (err) {
-      console.error('Failed to load post:', err);
+      if (mounted.current && version === requestVersion.current) console.error('Failed to load post:', err);
     } finally {
-      setLoading(false);
+      if (mounted.current && version === requestVersion.current) setLoading(false);
     }
   }, [postId]);
 
   useEffect(() => {
-    loadPost();
+    mounted.current = true;
+    void loadPost();
+    return () => { mounted.current = false; };
   }, [loadPost]);
 
   const handleReact = async (targetId: string, emoji: string) => {

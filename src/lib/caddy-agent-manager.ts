@@ -8,6 +8,7 @@ import type { AgentCycleOutcome, AgentDeployment, AgentMetrics, AgentProfile, Fo
 import { runAgentCycle, type AgentCycleResult } from './caddy-agent';
 import { BUILTIN_AGENT_PROFILES } from './builtin-agent-profiles';
 import { shouldBlockNewCycle } from './agent-handoff';
+import { cancellableRequest } from './request-cancellation';
 
 export interface MultiAgentCycleResult {
   deploymentResults: Map<string, AgentCycleResult>;
@@ -30,12 +31,30 @@ export async function runMultiAgentCycle(
   settings: Settings,
   extensionAvailable: boolean,
   onProgress?: (agentName: string, status: string) => void,
+  signal?: AbortSignal,
 ): Promise<MultiAgentCycleResult> {
+  const lifecycle = cancellableRequest(signal);
+  try {
+    return await runMultiAgentCycleInner(folder, settings, extensionAvailable, onProgress, lifecycle.signal);
+  } finally {
+    lifecycle.dispose();
+  }
+}
+
+async function runMultiAgentCycleInner(
+  folder: Folder,
+  settings: Settings,
+  extensionAvailable: boolean,
+  onProgress: ((agentName: string, status: string) => void) | undefined,
+  signal: AbortSignal,
+): Promise<MultiAgentCycleResult> {
+  signal.throwIfAborted();
   // Load all active deployments
   const deployments = await db.agentDeployments
     .where('[investigationId+order]')
     .between([folder.id, -Infinity], [folder.id, Infinity])
     .toArray();
+  signal.throwIfAborted();
 
   // Skip deployments the server owns or that haven't finished reconciling after
   // a handoff — starting a cycle on those would race against the server or act
@@ -52,6 +71,7 @@ export async function runMultiAgentCycle(
   const deploymentProfiles: { deployment: AgentDeployment; profile: AgentProfile }[] = [];
   for (const d of activeDeployments) {
     const profile = await resolveProfile(d.profileId);
+    signal.throwIfAborted();
     if (profile) {
       deploymentProfiles.push({ deployment: d, profile });
     }
@@ -63,23 +83,38 @@ export async function runMultiAgentCycle(
   const allResults: PromiseSettledResult<{ deploymentId: string; result: AgentCycleResult }>[] = [];
 
   for (let i = 0; i < deploymentProfiles.length; i += MAX_CONCURRENT) {
+    signal.throwIfAborted();
     const chunk = deploymentProfiles.slice(i, i + MAX_CONCURRENT);
     const chunkResults = await Promise.allSettled(
       chunk.map(async ({ deployment, profile }) => {
+      signal.throwIfAborted();
       // Mark running just before execution (not upfront) so failures revert cleanly
       await db.agentDeployments.update(deployment.id, { status: 'running' });
 
       let result: AgentCycleResult;
       try {
+        signal.throwIfAborted();
         result = await runAgentCycle(
           folder,
           settings,
           extensionAvailable,
-          (status) => onProgress?.(profile.name, status),
+          (status) => { if (!signal.aborted) onProgress?.(profile.name, status); },
           profile,
           deployment,
+          undefined,
+          signal,
         );
+        signal.throwIfAborted();
       } catch (err) {
+        if (signal.aborted) {
+          // Settle this attempt without overwriting a pause applied while the
+          // provider was stopping. No metrics or later deployment is advanced.
+          await db.agentDeployments.where('id').equals(deployment.id).modify(current => {
+            if (current.status === 'running' && current.updatedAt === deployment.updatedAt
+              && current.lastRunAt === deployment.lastRunAt && !shouldBlockNewCycle(current)) current.status = 'idle';
+          });
+          throw err;
+        }
         // Revert to error status on unexpected crash
         await db.agentDeployments.update(deployment.id, { status: 'error', lastRunAt: Date.now() });
         throw err;
@@ -149,6 +184,7 @@ export async function runMultiAgentCycle(
     })
     );
     allResults.push(...chunkResults);
+    signal.throwIfAborted();
   }
 
   const results = allResults;

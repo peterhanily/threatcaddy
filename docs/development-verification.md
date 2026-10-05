@@ -83,6 +83,14 @@ it does not equate browser offline emulation with a verified network outage.
 The standalone suite copies only the generated HTML into an empty temporary
 directory and uses a fresh offline browser profile.
 
+The standalone build uses `build/standalone-html.ts` to combine exactly one
+entry script and at most one stylesheet. Unexpected emitted assets, external
+imports, ambiguous HTML attributes or unsafe script/style embedding fail the
+build. This replaces the glob-based single-file plugin. The narrow Excalidraw
+Sass override removes the other transitive `braces` dependency path; neither
+change suppresses an audit finding or bypasses the package-age policy. See
+[GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm).
+
 ## Installed extension acceptance
 
 After building the extension, run the disposable-profile checks with locally
@@ -99,6 +107,25 @@ and revocation, and verify explicit failure when notification permission is
 absent. Firefox also checks positive browser API acceptance. Chrome's positive
 native notification permission and actual operating-system notification display
 still require manual acceptance; neither harness opens an existing user profile.
+
+For that human-assisted Chrome check, run:
+
+```sh
+node scripts/verify-extension-chrome-manual.mjs
+```
+
+Follow its four steps in the separate Chrome window: approve the synthetic app
+and Chrome's local-site prompt; wait for the denied-notification check; enable
+desktop notifications and allow the native prompt; record whether the actual
+OS notification appeared, then revoke all app connections. Do not enable AI or
+URL-fetch access. Check only prompts you actually saw, and do not mistake browser
+API acceptance for desktop display. If display is suppressed by OS settings,
+report it as incomplete instead of marking the check passed.
+
+The script uses a new temporary profile, never changes an existing profile or
+OS settings, and removes its profile after closing Chrome. It prints the local
+`result.json` path with the overall outcome, completed checks, API responses,
+human observations and any failure. That local receipt is not a release artifact.
 
 Before upgrading an existing server, rehearse migration on an authorized,
 backed-up copy and follow [sync recovery](../server/docs/sync-recovery.md).

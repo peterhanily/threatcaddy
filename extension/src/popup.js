@@ -256,6 +256,7 @@ function refreshAllPermToggles() {
 
 document.getElementById('settings-btn').addEventListener('click', () => {
   refreshAllPermToggles();
+  void refreshNotificationPermission();
   mainSections.forEach(el => el.style.display = 'none');
   settingsPage.style.display = 'block';
 });
@@ -306,7 +307,63 @@ document.getElementById('settings-revoke-apps').addEventListener('click', async 
   const response = await chrome.runtime.sendMessage({ type: 'REVOKE_APPS' });
   document.getElementById('settings-approval-status').textContent = response?.success ? 'All app connections revoked.' : response?.error || 'Revocation failed';
 });
-document.getElementById('settings-notifications').addEventListener('click', async () => {
-  const granted = await chrome.permissions.request({ permissions: ['notifications'] }).catch(() => false);
-  document.getElementById('settings-approval-status').textContent = granted ? 'Desktop notifications enabled. Operating system settings may still suppress display.' : 'Desktop notifications were not enabled; in-app alerts remain available.';
+const notificationButton = document.getElementById('settings-notifications');
+const notificationStatus = document.getElementById('settings-notification-status');
+let notificationRequestPending = false;
+let notificationPermissionVersion = 0;
+
+function renderNotificationPermission(granted, message) {
+  notificationButton.disabled = notificationRequestPending || granted;
+  notificationButton.textContent = notificationRequestPending ? 'Waiting for browser permission…'
+    : granted ? 'Desktop notifications enabled' : 'Enable desktop notifications';
+  notificationStatus.textContent = message || (granted
+    ? 'Desktop notifications enabled. Operating system settings may still suppress display. Revoke permission in your browser extension settings.'
+    : 'Desktop notifications are disabled; in-app alerts remain available.');
+}
+
+async function refreshNotificationPermission() {
+  if (notificationRequestPending) return;
+  const version = ++notificationPermissionVersion;
+  try {
+    const granted = await chrome.permissions.contains({ permissions: ['notifications'] });
+    if (version === notificationPermissionVersion && !notificationRequestPending) renderNotificationPermission(granted === true);
+  } catch (error) {
+    if (version === notificationPermissionVersion && !notificationRequestPending) {
+      renderNotificationPermission(false, 'Unable to check notification permission: ' + (error?.message || String(error)));
+    }
+  }
+}
+
+notificationButton.addEventListener('click', async () => {
+  if (notificationRequestPending) return;
+  notificationRequestPending = true;
+  ++notificationPermissionVersion; // Discard a settings-open read finishing after this click.
+  renderNotificationPermission(false, 'Waiting for the browser permission response. If no prompt appears, check your browser extension permissions or reopen this panel.');
+  let failure;
+  let granted = false;
+  try {
+    // Invoke directly within the user gesture, before any asynchronous read.
+    await chrome.permissions.request({ permissions: ['notifications'] });
+  } catch (error) {
+    failure = 'Notification permission request failed: ' + (error?.message || String(error));
+  }
+  try {
+    // The request response alone is not evidence of current permission.
+    granted = await chrome.permissions.contains({ permissions: ['notifications'] }) === true;
+  } catch (error) {
+    failure = failure || 'Unable to verify notification permission: ' + (error?.message || String(error));
+  }
+  notificationRequestPending = false;
+  renderNotificationPermission(granted, failure
+    ? failure + ' In-app alerts remain available.'
+    : granted ? undefined : 'Desktop notifications were not enabled; in-app alerts remain available. Check your browser extension permissions if no prompt appeared.');
+  // Retain the explicit-action acknowledgement used by existing popup clients.
+  // Passive permission refreshes never overwrite the app approval status.
+  document.getElementById('settings-approval-status').textContent = notificationStatus.textContent;
 });
+
+for (const event of [chrome.permissions.onAdded, chrome.permissions.onRemoved]) {
+  event?.addListener(permission => {
+    if (permission.permissions?.includes('notifications')) void refreshNotificationPermission();
+  });
+}

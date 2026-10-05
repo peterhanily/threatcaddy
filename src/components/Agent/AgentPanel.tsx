@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Bot, Play, CheckCheck, Loader2, AlertTriangle, X, Settings as SettingsIcon, ChevronDown, ChevronRight, Key, Puzzle, Plus, Server,
@@ -46,7 +46,13 @@ interface AgentPanelProps {
   onUnregisterServer?: () => Promise<void>;
 }
 
-export function AgentPanel({
+export function AgentPanel(props: AgentPanelProps) {
+  // Pending actions, pagination and optimistic policy edits belong to one
+  // investigation; never briefly expose them under another investigation.
+  return <InvestigationAgentPanel key={props.folder.id} {...props} />;
+}
+
+function InvestigationAgentPanel({
   folder, settings,
   agentRunning = false, agentProgress = '', agentStreamingContent = '', agentError = null, agentStatus,
   onRunOnce, onNavigateToChat, onNavigateToNote, onEntitiesChanged, onOpenSettings, onFolderChanged,
@@ -115,40 +121,47 @@ export function AgentPanel({
 
   // Load actions for this investigation (paginated)
   const [agentTasks, setAgentTasks] = useState<Task[]>([]);
+  const mounted = useRef(false);
+  const loadVersion = useRef(0);
 
   const loadActions = useCallback(async () => {
+    if (!mounted.current) return;
+    const version = ++loadVersion.current;
     const currentLimit = ACTION_PAGE_SIZE * pageCount;
-    const results = await db.agentActions
-      .where('[investigationId+createdAt]')
-      .between([folder.id, -Infinity], [folder.id, Infinity])
-      .reverse()
-      .limit(currentLimit + 1)
-      .toArray();
+    try {
+      const results = await db.agentActions
+        .where('[investigationId+createdAt]')
+        .between([folder.id, -Infinity], [folder.id, Infinity])
+        .reverse()
+        .limit(currentLimit + 1)
+        .toArray();
+      if (!mounted.current || version !== loadVersion.current) return;
 
-    setHasMore(results.length > currentLimit);
-    setActions(results.slice(0, currentLimit));
-
-    // Also load agent-related tasks
-    const allTasks = await db.tasks.where('folderId').equals(folder.id).toArray();
-    const tasks = allTasks.filter(t => !t.trashed && (t.tags?.includes('agent-delegated') || t.createdBy?.startsWith('agent:')));
-    setAgentTasks(tasks.sort((a, b) => {
-      // Sort: todo first, then in-progress, then done
-      const order: Record<string, number> = { 'todo': 0, 'in-progress': 1, 'done': 2 };
-      return (order[a.status] ?? 3) - (order[b.status] ?? 3);
-    }));
+      // Also load agent-related tasks
+      const allTasks = await db.tasks.where('folderId').equals(folder.id).toArray();
+      const tasks = allTasks.filter(t => !t.trashed && (t.tags?.includes('agent-delegated') || t.createdBy?.startsWith('agent:')));
+      if (!mounted.current || version !== loadVersion.current) return;
+      setHasMore(results.length > currentLimit);
+      setActions(results.slice(0, currentLimit));
+      setAgentTasks(tasks.sort((a, b) => {
+        // Sort: todo first, then in-progress, then done
+        const order: Record<string, number> = { 'todo': 0, 'in-progress': 1, 'done': 2 };
+        return (order[a.status] ?? 3) - (order[b.status] ?? 3);
+      }));
+    } catch (error) {
+      if (mounted.current && version === loadVersion.current) {
+        setLocalError(error instanceof Error ? error.message : 'Unable to load investigation actions.');
+      }
+    }
   }, [folder.id, pageCount]);
 
-  // Reset pagination when switching investigations
-  useEffect(() => { setPageCount(1); }, [folder.id]);
-
+  // Refresh on pagination/run transitions; each response is owned by this
+  // mounted investigation and the newest load, including manual reloads.
   useEffect(() => {
-    loadActions();
-  }, [loadActions]);
-
-  // Reload actions when agent finishes a run
-  useEffect(() => {
-    if (!agentRunning) loadActions();
-  }, [agentRunning, loadActions]);
+    mounted.current = true;
+    void loadActions();
+    return () => { mounted.current = false; };
+  }, [loadActions, agentRunning]);
 
   // Periodic refresh while agents are running
   useEffect(() => {

@@ -517,7 +517,8 @@
       <input type="url" id="settings-local-ai-url" class="capture-title" placeholder="http://localhost:11434" />
       <button id="settings-save-url" style="font-size:12px;padding:6px 12px;">Approve app</button>
       <button id="settings-revoke-apps" style="font-size:12px;padding:6px 12px;">Revoke all approved apps</button>
-      <button id="settings-notifications" style="font-size:12px;padding:6px 12px;">Enable desktop notifications</button>
+      <button id="settings-notifications" aria-describedby="settings-notification-status" style="font-size:12px;padding:6px 12px;">Enable desktop notifications</button>
+      <div id="settings-notification-status" role="status" style="font-size:11px;color:#9ca3af;"></div>
       <div id="settings-approval-status" role="status" style="font-size:11px;color:#9ca3af;"></div>
       <div id="settings-url-saved" class="save-success" data-i18n="saved">Saved!</div>
     </section>

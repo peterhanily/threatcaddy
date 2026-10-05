@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Shield, Lock, X, AlertCircle, Download, Check } from 'lucide-react';
 import { isEncryptedShare, decodeSharePayload } from '../../lib/share';
@@ -46,7 +46,12 @@ const SCOPE_LABELS: Record<string, string> = {
   chat: 'Chat',
 };
 
-export function ShareReceiver({ encodedData, theme, onDismiss, onSave }: ShareReceiverProps) {
+export function ShareReceiver(props: ShareReceiverProps) {
+  // A new link owns new password, drill-down, decode, and save state immediately.
+  return <ShareReceiverContent key={props.encodedData} {...props} />;
+}
+
+function ShareReceiverContent({ encodedData, theme, onDismiss, onSave }: ShareReceiverProps) {
   const { t } = useTranslation('exec');
   const encrypted = useMemo(() => isEncryptedShare(encodedData), [encodedData]);
   const [password, setPassword] = useState('');
@@ -55,37 +60,56 @@ export function ShareReceiver({ encodedData, theme, onDismiss, onSave }: ShareRe
   );
   const [bundleDrill, setBundleDrill] = useState<BundleDrill>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [saveError, setSaveError] = useState('');
+  const mounted = useRef({ active: false });
+  const decryptAttempt = useRef(0);
+  const saving = useRef(false);
+  useLayoutEffect(() => {
+    const lifetime = { active: true };
+    mounted.current = lifetime;
+    return () => { lifetime.active = false; };
+  }, []);
 
   // Auto-decode unencrypted shares on mount
-  const decodedRef = useRef(false);
   useEffect(() => {
-    if (!encrypted && !decodedRef.current) {
-      decodedRef.current = true;
+    let current = true;
+    if (!encrypted) {
       decodeSharePayload(encodedData)
-        .then((payload) => setState({ phase: 'display', payload }))
-        .catch((err) => setState({ phase: 'error', message: err instanceof Error ? err.message : 'Failed to decode' }));
+        .then((payload) => { if (current) setState({ phase: 'display', payload }); })
+        .catch((err) => { if (current) setState({ phase: 'error', message: err instanceof Error ? err.message : 'Failed to decode' }); });
     }
+    return () => { current = false; };
   }, [encrypted, encodedData]);
 
   const handleDecrypt = useCallback(async () => {
-    if (!password) return;
+    const lifetime = mounted.current;
+    if (!password || !lifetime.active) return;
+    const attempt = ++decryptAttempt.current;
     setState({ phase: 'decoding' });
     try {
       const payload = await decodeSharePayload(encodedData, password);
-      setState({ phase: 'display', payload });
+      if (lifetime.active && attempt === decryptAttempt.current) setState({ phase: 'display', payload });
     } catch (err) {
-      setState({ phase: 'error', message: err instanceof Error ? err.message : 'Decryption failed. Wrong password?' });
+      if (lifetime.active && attempt === decryptAttempt.current) setState({ phase: 'error', message: err instanceof Error ? err.message : 'Decryption failed. Wrong password?' });
     }
   }, [encodedData, password]);
 
   const handleSave = useCallback(async () => {
-    if (!onSave || state.phase !== 'display' || saveState !== 'idle') return;
+    const lifetime = mounted.current;
+    if (!onSave || !lifetime.active || saving.current || state.phase !== 'display' || saveState !== 'idle') return;
+    saving.current = true;
+    setSaveError('');
     setSaveState('saving');
     try {
       await onSave(state.payload);
-      setSaveState('saved');
-    } catch {
-      setSaveState('idle');
+      if (lifetime.active) setSaveState('saved');
+    } catch (error) {
+      if (lifetime.active) {
+        setSaveState('idle');
+        setSaveError(error instanceof Error ? error.message : 'Unable to save this shared copy');
+      }
+    } finally {
+      saving.current = false;
     }
   }, [onSave, state, saveState]);
 
@@ -275,7 +299,7 @@ export function ShareReceiver({ encodedData, theme, onDismiss, onSave }: ShareRe
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {onSave && state.phase === 'display' && (
+          {onSave && state.phase === 'display' && !['whiteboard', 'ioc'].includes(state.payload.s) && (
             <button
               onClick={handleSave}
               disabled={saveState !== 'idle'}
@@ -287,7 +311,7 @@ export function ShareReceiver({ encodedData, theme, onDismiss, onSave }: ShareRe
               )}
             >
               {saveState === 'saved' ? <Check size={14} /> : <Download size={14} />}
-              {saveState === 'idle' ? 'Save to ThreatCaddy' : saveState === 'saving' ? 'Saving...' : 'Saved'}
+              {saveState === 'idle' ? 'Save as new copy' : saveState === 'saving' ? 'Saving...' : 'Saved'}
             </button>
           )}
           <button onClick={onDismiss} className="p-2 rounded-lg text-text-muted active:bg-bg-hover" title="Close">
@@ -298,6 +322,7 @@ export function ShareReceiver({ encodedData, theme, onDismiss, onSave }: ShareRe
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
+        {saveError && <p role="alert" className="text-sm text-red-400 mb-3">{saveError}</p>}
         {state.phase === 'password-prompt' && (
           <div className="flex flex-col items-center justify-center gap-4 mt-12">
             <Lock size={32} className="text-accent-amber" />
