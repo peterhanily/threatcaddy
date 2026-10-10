@@ -2,6 +2,10 @@ import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 import { goToApp } from './fixtures';
 
+// Keep the recovery fixture's network boundary at the browser context. Real
+// service-worker installation and offline recovery are covered by offline.spec.
+test.use({ serviceWorkers: 'block' });
+
 type BackupRow = Record<string, unknown> & { id: string };
 type BackupRows = Record<string, BackupRow[]>;
 const folderId = 'release-backup-case';
@@ -58,7 +62,7 @@ async function isolateNetwork(page: Page) {
   const externalRequests: string[] = [];
   const pageErrors: string[] = [];
   page.on('pageerror', error => pageErrors.push(error.message));
-  await page.route(/^https?:\/\//, async route => {
+  await page.context().route(/^https?:\/\//, async route => {
     const url = new URL(route.request().url());
     if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') await route.continue();
     else { externalRequests.push(`${url.origin}${url.pathname}`); await route.abort(); }
