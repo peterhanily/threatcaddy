@@ -104,13 +104,18 @@ export function CloudBackup() {
 
   const handlePushBackup = async () => {
     setConfirmPush(false);
-    const password = encryptEnabled && encryptPassword ? encryptPassword : undefined;
-    await cloud.pushFullBackup(password);
-    if (!cloud.error) {
-      showMessage(password ? t('cloud.encryptedPushSuccess') : t('cloud.pushSuccess'));
-      addToast('success', password ? tt('backup.cloudEncryptedPushed') : tt('backup.cloudPushed'));
-      logActivity('sync', 'backup', `Pushed ${password ? 'encrypted ' : ''}full backup to ${cloud.lastResults.length} destination(s)`);
-      if (password) setEncryptPassword('');
+    setMessage('');
+    const password = encryptEnabled ? encryptPassword : undefined;
+    const result = await cloud.pushFullBackup(password);
+    const successCount = result.results.filter((destination) => destination.ok).length;
+    if (result.status === 'success') {
+      showMessage(result.encrypted ? t('cloud.encryptedPushSuccess') : t('cloud.pushSuccess'));
+      addToast('success', result.encrypted ? tt('backup.cloudEncryptedPushed') : tt('backup.cloudPushed'));
+      logActivity('sync', 'backup', `Pushed ${result.encrypted ? 'encrypted ' : ''}full backup to ${successCount} destination(s)`);
+      if (result.encrypted) setEncryptPassword((current) => current === password ? '' : current);
+    } else if (result.status === 'partial') {
+      addToast('warning', result.error);
+      logActivity('sync', 'backup', `Pushed ${result.encrypted ? 'encrypted ' : ''}full backup to ${successCount} of ${result.results.length} destination(s); remaining destinations failed`);
     } else {
       addToast('error', tt('backup.cloudFailed'));
     }

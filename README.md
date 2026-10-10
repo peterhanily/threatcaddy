@@ -180,7 +180,7 @@ Connect any REST API as an agent skill source:
 ### Security & Backup
 
 - **Encryption at rest** — Passphrase-based AES-256-GCM via PBKDF2 (600k iterations) with configurable session duration and recovery phrase
-- **Cloud backup** — OCI Object Storage, AWS S3, Azure Blob Storage, or Google Cloud Storage via pre-authenticated URLs
+- **Cloud backup** — OCI bucket/prefix pre-authenticated URLs and Azure container SAS URLs; signed single-object S3/GCS URLs are not supported by the generated-key uploader. See [supported cloud destinations](docs/backup-recovery.md#supported-cloud-destination-urls).
 - **Export & import** — Full JSON backup/restore; per-investigation export; includes note templates and playbooks
 
 ### Team Server

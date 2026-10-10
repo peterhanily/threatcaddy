@@ -35,6 +35,9 @@ function requireHttps(url: string): { parsed: URL } | { error: string } {
   if (parsed.protocol !== 'https:') {
     return { error: 'URL must use HTTPS' };
   }
+  if (parsed.username || parsed.password || parsed.hash) {
+    return { error: 'Cloud destination URLs must not contain user information or fragments' };
+  }
   return { parsed };
 }
 
@@ -51,15 +54,22 @@ const ociConfig: CloudProviderConfig = {
     if (!/^objectstorage\..*\.oraclecloud\.com$/i.test(result.parsed.hostname)) {
       return { valid: false, error: 'OCI URL must be an objectstorage.*.oraclecloud.com endpoint' };
     }
-    if (!url.includes('/p/') || !url.includes('/o/')) {
-      return { valid: false, error: 'OCI PAR URL must contain /p/ and /o/ path segments' };
+    if (!/^\/p\/[^/]+\/n\/[^/]+\/b\/[^/]+\/o(?:\/.*)?$/.test(result.parsed.pathname)) {
+      return { valid: false, error: 'OCI PAR URL must contain /p/, /n/, /b/, and /o/ path segments' };
+    }
+    const bucketRoot = /^\/p\/[^/]+\/n\/[^/]+\/b\/[^/]+\/o\/?$/.test(result.parsed.pathname);
+    if (result.parsed.search || (!bucketRoot && !result.parsed.pathname.endsWith('/'))) {
+      return { valid: false, error: 'Use an OCI bucket or prefix PAR URL ending in /o/ or a prefix ending in /. Exact-object PAR URLs are not supported for generated backup filenames.' };
     }
     return { valid: true };
   },
   buildObjectUrl(baseUrl, objectPath) {
+    const validation = ociConfig.validateUrl(baseUrl);
+    if (!validation.valid) throw new Error(validation.error);
     const safe = sanitizePath(objectPath);
     if (!safe) throw new Error('Invalid object path');
-    const prefix = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+    const trimmed = baseUrl.trim();
+    const prefix = trimmed.endsWith('/') ? trimmed : trimmed + '/';
     return prefix + safe;
   },
   extraHeaders: () => ({}),
@@ -79,15 +89,10 @@ const awsS3Config: CloudProviderConfig = {
     if (!/(?:^|\.)s3[.-].*\.amazonaws\.com$/i.test(h)) {
       return { valid: false, error: 'AWS S3 URL must be a *.s3.*.amazonaws.com endpoint' };
     }
-    return { valid: true };
+    return { valid: false, error: 'AWS S3 presigned URLs authorize one exact object and cannot accept generated backup filenames. This upload mode is not supported; use an OCI bucket/prefix PAR or an Azure container SAS destination.' };
   },
-  buildObjectUrl(baseUrl, objectPath) {
-    const safe = sanitizePath(objectPath);
-    if (!safe) throw new Error('Invalid object path');
-    // S3 presigned URLs have query params — insert path before them
-    const parsed = new URL(baseUrl.trim());
-    parsed.pathname = parsed.pathname.replace(/\/+$/, '') + '/' + safe;
-    return parsed.toString();
+  buildObjectUrl() {
+    throw new Error('AWS S3 exact-object uploads are not supported. No request was sent.');
   },
   extraHeaders: () => ({}),
 };
@@ -105,9 +110,15 @@ const azureBlobConfig: CloudProviderConfig = {
     if (!/\.blob\.core\.windows\.net$/i.test(result.parsed.hostname)) {
       return { valid: false, error: 'Azure URL must be a *.blob.core.windows.net endpoint' };
     }
+    if (result.parsed.searchParams.get('sr') !== 'c' || !result.parsed.searchParams.get('sig')
+      || !/^\/[^/]+\/?$/.test(result.parsed.pathname)) {
+      return { valid: false, error: 'Use an Azure container SAS URL (sr=c) with a container path and signature. Exact-blob, directory, and account SAS URLs are not supported for this upload mode.' };
+    }
     return { valid: true };
   },
   buildObjectUrl(baseUrl, objectPath) {
+    const validation = azureBlobConfig.validateUrl(baseUrl);
+    if (!validation.valid) throw new Error(validation.error);
     const safe = sanitizePath(objectPath);
     if (!safe) throw new Error('Invalid object path');
     // Azure SAS URLs have query params — insert path before them
@@ -132,15 +143,10 @@ const gcsConfig: CloudProviderConfig = {
     if (h !== 'storage.googleapis.com' && h !== 'storage.cloud.google.com') {
       return { valid: false, error: 'GCS URL must be a storage.googleapis.com or storage.cloud.google.com endpoint' };
     }
-    return { valid: true };
+    return { valid: false, error: 'Google Cloud Storage signed URLs authorize one exact object and cannot accept generated backup filenames. This upload mode is not supported; use an OCI bucket/prefix PAR or an Azure container SAS destination.' };
   },
-  buildObjectUrl(baseUrl, objectPath) {
-    const safe = sanitizePath(objectPath);
-    if (!safe) throw new Error('Invalid object path');
-    // GCS signed URLs may have query params
-    const parsed = new URL(baseUrl.trim());
-    parsed.pathname = parsed.pathname.replace(/\/+$/, '') + '/' + safe;
-    return parsed.toString();
+  buildObjectUrl() {
+    throw new Error('Google Cloud Storage exact-object uploads are not supported. No request was sent.');
   },
   extraHeaders: () => ({}),
 };

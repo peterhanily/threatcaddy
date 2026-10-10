@@ -82,23 +82,24 @@ describe('JSON backup release regressions', () => {
     const peer = new Dexie(db.name);
     await peer.open();
     let concurrentWrite: Promise<unknown> | undefined;
-    const readNotes = db.notes.toArray.bind(db.notes);
-    vi.spyOn(db.notes, 'toArray').mockImplementationOnce(() => Dexie.Promise.resolve().then(async () => {
-      const rows = await readNotes();
-      concurrentWrite = peer.transaction('rw', [peer.table('notes'), peer.table('tasks')], async () => {
+    const startConcurrentWrite = (row: unknown) => {
+      if (!concurrentWrite) concurrentWrite = peer.transaction('rw', [peer.table('notes'), peer.table('tasks')], async () => {
         await peer.table('notes').update('snapshot-note', { content: 'After change' });
         await peer.table('tasks').update('snapshot-task', { title: 'After change' });
       });
-      return rows;
-    }));
+      return row;
+    };
+    db.notes.hook('reading', startConcurrentWrite);
     try {
       const backup = JSON.parse(await exportJSON());
+      expect(concurrentWrite).toBeDefined();
       await concurrentWrite;
       expect(backup.notes[0].content).toBe('Before change');
       expect(backup.tasks[0].title).toBe('Before change');
       expect((await db.notes.get('snapshot-note'))?.content).toBe('After change');
       expect((await db.tasks.get('snapshot-task'))?.title).toBe('After change');
     } finally {
+      db.notes.hook('reading').unsubscribe(startConcurrentWrite);
       await concurrentWrite;
       peer.close();
     }

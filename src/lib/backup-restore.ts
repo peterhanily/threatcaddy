@@ -6,6 +6,7 @@ import { requireDifferentialBase, selectBackupData } from './backup-data';
 import { BACKUP_TABLES, investigationOf, isBackupTable, parseEntityScope, type BackupTable } from './backup-tables';
 import { flushEntityDrafts, withEntityDraftBarrier } from './entity-drafts';
 import { mapEntityReferences } from './entity-relations';
+import { validatePortableTables } from './backup-records';
 
 type Row = Record<string, unknown> & { id: string };
 type Mode = 'replace' | 'merge';
@@ -61,6 +62,7 @@ function validate(payload: BackupPayload, mode: Mode): Map<BackupTable, Row[]> {
     throw new Error('Investigation backups require a scope ID.');
   }
   const entity = payload.scope === 'entity' ? parseEntityScope(payload.scopeId) : undefined;
+  validatePortableTables(payload.data);
   const result = new Map<BackupTable, Row[]>();
   for (const [name, value] of Object.entries(payload.data)) {
     if (!isBackupTable(name)) throw new Error(`Unsupported backup table: ${name}.`);

@@ -48,6 +48,7 @@ import { FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from './lib/utils';
 import { exportJSON, importJSON, mergeImportJSON, downloadFile, exportInvestigationJSON } from './lib/export';
 import { ConfirmDialog } from './components/Common/ConfirmDialog';
+import { BackupImportDialog } from './components/Common/BackupImportDialog';
 const SearchOverlay = lazy(() => import('./components/Search/SearchOverlay').then(m => ({ default: m.SearchOverlay })));
 import { extractIOCs, mergeIOCAnalysis } from './lib/ioc-extractor';
 import { autoEnrichImportedIOCs } from './lib/ioc-auto-enrichment';
@@ -1351,33 +1352,19 @@ const AppInner = memo(function AppInner({
     setPendingImportFile(file);
   }, []);
 
-  const handleConfirmImport = useCallback(async () => {
-    if (!pendingImportFile) return;
-    try {
-      const text = await pendingImportFile.text();
-      await importJSON(text);
-      setPendingImportFile(null);
-      handleImportComplete();
-      addToast('success', tt('backup.restored'));
-    } catch {
-      addToast('error', tt('backup.restoreFailed'));
-      setPendingImportFile(null);
-    }
-  }, [pendingImportFile, handleImportComplete, addToast, tt]);
-
-  const handleMergeImport = useCallback(async () => {
-    if (!pendingImportFile) return;
-    try {
-      const text = await pendingImportFile.text();
-      const result = await mergeImportJSON(text);
-      setPendingImportFile(null);
-      handleImportComplete();
+  const handleImportBackup = useCallback(async (text: string, mode: 'replace' | 'merge', password?: string) => {
+    if (mode === 'merge') {
+      const result = await mergeImportJSON(text, password);
       addToast('success', tt('backup.mergeComplete', { added: result.added, updated: result.updated, skipped: result.skipped }));
-    } catch {
-      addToast('error', tt('backup.mergeFailed'));
-      setPendingImportFile(null);
+      handleImportComplete();
+      return result;
+    } else {
+      const result = await importJSON(text, password);
+      addToast('success', tt('backup.restored'));
+      handleImportComplete();
+      return result;
     }
-  }, [pendingImportFile, handleImportComplete, addToast, tt]);
+  }, [handleImportComplete, addToast, tt]);
 
   // Sample investigation
   const sampleLoaded = useMemo(() => folders.some((f) => f.id === 'sample-investigation'), [folders]);
@@ -2337,17 +2324,11 @@ const AppInner = memo(function AppInner({
         onImportComplete={handleDataImportComplete}
       /></Suspense>
 
-      <ConfirmDialog
-        open={!!pendingImportFile}
+      {pendingImportFile && <BackupImportDialog
+        file={pendingImportFile}
         onClose={() => setPendingImportFile(null)}
-        onConfirm={handleConfirmImport}
-        title="Load Backup"
-        message="Choose how to import this backup. 'Replace All' will clear existing data. 'Merge' will add new items and update older ones without removing anything."
-        confirmLabel="Replace All"
-        danger
-        secondaryAction={handleMergeImport}
-        secondaryLabel="Merge"
-      />
+        onImport={handleImportBackup}
+      />}
 
       <ConfirmDialog
         open={!!confirmUnsyncId}

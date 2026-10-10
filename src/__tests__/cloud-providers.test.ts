@@ -50,14 +50,14 @@ describe('OCI provider', () => {
 describe('AWS S3 provider', () => {
   const provider = CLOUD_PROVIDERS['aws-s3'];
 
-  it('accepts a valid S3 presigned URL (virtual-hosted)', () => {
+  it('rejects exact-object S3 presigned URLs (virtual-hosted) with an actionable explanation', () => {
     const url = 'https://mybucket.s3.us-east-1.amazonaws.com/key?X-Amz-Signature=abc';
-    expect(provider.validateUrl(url)).toEqual({ valid: true });
+    expect(provider.validateUrl(url)).toMatchObject({ valid: false, error: expect.stringContaining('one exact object') });
   });
 
-  it('accepts a valid S3 presigned URL (path-style)', () => {
+  it('rejects S3 presigned URLs (path-style) instead of inventing an unsigned object path', () => {
     const url = 'https://s3.us-east-1.amazonaws.com/mybucket?X-Amz-Signature=abc';
-    expect(provider.validateUrl(url)).toEqual({ valid: true });
+    expect(provider.validateUrl(url)).toMatchObject({ valid: false, error: expect.stringContaining('not supported') });
   });
 
   it('rejects http:// URLs', () => {
@@ -71,12 +71,9 @@ describe('AWS S3 provider', () => {
     expect(provider.validateUrl(url).error).toContain('amazonaws.com');
   });
 
-  it('builds object URL preserving query params', () => {
+  it('refuses direct object URL construction for unsupported S3 uploads', () => {
     const base = 'https://mybucket.s3.us-east-1.amazonaws.com/?X-Amz-Signature=abc';
-    const url = provider.buildObjectUrl(base, 'threatcaddy/test.json');
-    const parsed = new URL(url);
-    expect(parsed.pathname).toBe('/threatcaddy/test.json');
-    expect(parsed.searchParams.get('X-Amz-Signature')).toBe('abc');
+    expect(() => provider.buildObjectUrl(base, 'threatcaddy/test.json')).toThrow('not supported');
   });
 
   it('returns no extra headers', () => {
@@ -90,7 +87,7 @@ describe('Azure Blob provider', () => {
   const provider = CLOUD_PROVIDERS['azure-blob'];
 
   it('accepts a valid Azure SAS URL', () => {
-    const url = 'https://myaccount.blob.core.windows.net/container?sv=2020&sig=abc';
+    const url = 'https://myaccount.blob.core.windows.net/container?sv=2020&sr=c&sig=abc';
     expect(provider.validateUrl(url)).toEqual({ valid: true });
   });
 
@@ -106,7 +103,7 @@ describe('Azure Blob provider', () => {
   });
 
   it('builds object URL preserving SAS query params', () => {
-    const base = 'https://myaccount.blob.core.windows.net/container?sv=2020&sig=abc';
+    const base = 'https://myaccount.blob.core.windows.net/container?sv=2020&sr=c&sig=abc';
     const url = provider.buildObjectUrl(base, 'threatcaddy/test.json');
     const parsed = new URL(url);
     expect(parsed.pathname).toBe('/container/threatcaddy/test.json');
@@ -124,14 +121,14 @@ describe('Azure Blob provider', () => {
 describe('GCS provider', () => {
   const provider = CLOUD_PROVIDERS['gcs'];
 
-  it('accepts a valid GCS signed URL (googleapis.com)', () => {
+  it('rejects exact-object GCS signed URLs (googleapis.com) with an actionable explanation', () => {
     const url = 'https://storage.googleapis.com/bucket/key?X-Goog-Signature=abc';
-    expect(provider.validateUrl(url)).toEqual({ valid: true });
+    expect(provider.validateUrl(url)).toMatchObject({ valid: false, error: expect.stringContaining('one exact object') });
   });
 
-  it('accepts a valid GCS URL (cloud.google.com)', () => {
+  it('does not treat a browser GCS URL as a supported upload destination', () => {
     const url = 'https://storage.cloud.google.com/bucket/key';
-    expect(provider.validateUrl(url)).toEqual({ valid: true });
+    expect(provider.validateUrl(url)).toMatchObject({ valid: false, error: expect.stringContaining('not supported') });
   });
 
   it('rejects http:// URLs', () => {
@@ -145,12 +142,9 @@ describe('GCS provider', () => {
     expect(provider.validateUrl(url).error).toContain('storage.googleapis.com');
   });
 
-  it('builds object URL preserving query params', () => {
+  it('refuses direct object URL construction for unsupported GCS uploads', () => {
     const base = 'https://storage.googleapis.com/bucket?X-Goog-Signature=abc';
-    const url = provider.buildObjectUrl(base, 'threatcaddy/test.json');
-    const parsed = new URL(url);
-    expect(parsed.pathname).toBe('/bucket/threatcaddy/test.json');
-    expect(parsed.searchParams.get('X-Goog-Signature')).toBe('abc');
+    expect(() => provider.buildObjectUrl(base, 'threatcaddy/test.json')).toThrow('not supported');
   });
 
   it('returns no extra headers', () => {

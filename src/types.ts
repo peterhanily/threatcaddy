@@ -1,4 +1,5 @@
 import { createLabelProxy, createLabelColorProxy, noteColorLabel, iocTableColumnLabel } from './lib/i18n-labels';
+import type { InstalledIntegration, IntegrationTemplate } from './types/integration-types';
 
 /** An investigation note with markdown content, tags, and optional IOC analysis. */
 export interface Note {
@@ -1050,6 +1051,8 @@ export interface PlaybookTemplate {
 }
 
 export interface ExportData {
+  /** Marker for complete portable files; unmarked v1 files remain readable. */
+  format?: 'threatcaddy-backup';
   version: 1;
   exportedAt: number;
   notes: Note[];
@@ -1069,6 +1072,11 @@ export interface ExportData {
   quickLinks?: QuickLink[];
   noteTemplates?: NoteTemplate[];
   playbookTemplates?: PlaybookTemplate[];
+  integrationTemplates?: IntegrationTemplate[];
+  installedIntegrations?: InstalledIntegration[];
+  customSlashCommands?: CustomSlashCommand[];
+  /** Plain files omit all installed configuration, including undeclared secrets. */
+  redactions?: 'installedIntegrations.config'[];
 }
 
 export const TAG_COLORS = [

@@ -366,7 +366,7 @@ describe('exportJSON / importJSON roundtrip', () => {
     await db.tags.clear();
 
     const counts = await importJSON(json);
-    expect(counts).toEqual({ notes: 1, tasks: 1, folders: 1, tags: 1, timelineEvents: 0, timelines: 0, whiteboards: 0, standaloneIOCs: 0, evidenceItems: 0, chatThreads: 0, noteTemplates: 0, playbookTemplates: 0, agentActions: 0, agentProfiles: 0, agentDeployments: 0, agentMeetings: 0 });
+    expect(counts).toEqual({ notes: 1, tasks: 1, folders: 1, tags: 1, timelineEvents: 0, timelines: 0, whiteboards: 0, standaloneIOCs: 0, evidenceItems: 0, chatThreads: 0, noteTemplates: 0, playbookTemplates: 0, agentActions: 0, agentProfiles: 0, agentDeployments: 0, agentMeetings: 0, integrationTemplates: 0, installedIntegrations: 0, customSlashCommands: 0 });
 
     // Verify data integrity
     const notes = await db.notes.toArray();
@@ -438,7 +438,7 @@ describe('exportJSON / importJSON roundtrip', () => {
 
     // Re-import through sanitizers
     const counts = await importJSON(json);
-    expect(counts).toEqual({ notes: 1, tasks: 1, folders: 1, tags: 1, timelineEvents: 1, timelines: 1, whiteboards: 0, standaloneIOCs: 0, evidenceItems: 0, chatThreads: 0, noteTemplates: 0, playbookTemplates: 0, agentActions: 0, agentProfiles: 0, agentDeployments: 0, agentMeetings: 0 });
+    expect(counts).toEqual({ notes: 1, tasks: 1, folders: 1, tags: 1, timelineEvents: 1, timelines: 1, whiteboards: 0, standaloneIOCs: 0, evidenceItems: 0, chatThreads: 0, noteTemplates: 0, playbookTemplates: 0, agentActions: 0, agentProfiles: 0, agentDeployments: 0, agentMeetings: 0, integrationTemplates: 0, installedIntegrations: 0, customSlashCommands: 0 });
 
     // Verify Note fields
     const notes = await db.notes.toArray();
@@ -564,7 +564,8 @@ describe('importJSON edge cases', () => {
     expect(counts.whiteboards).toBe(0);
   });
 
-  it('filters out notes with empty id after sanitization', async () => {
+  it('refuses a backup containing an empty identity without replacing existing notes', async () => {
+    await db.notes.add({ id: 'retained', title: 'Retained', content: 'Original', tags: [], pinned: false, archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
     const data = {
       version: 1,
       notes: [
@@ -575,10 +576,9 @@ describe('importJSON edge cases', () => {
       folders: [],
       tags: [],
     };
-    const counts = await importJSON(JSON.stringify(data));
-    expect(counts.notes).toBe(1);
+    await expect(importJSON(JSON.stringify(data))).rejects.toThrow('notes.id');
     const notes = await db.notes.toArray();
-    expect(notes[0].id).toBe('n1');
+    expect(notes.map(note => note.id)).toEqual(['retained']);
   });
 
   it('does not create default timeline when events already have a timeline', async () => {

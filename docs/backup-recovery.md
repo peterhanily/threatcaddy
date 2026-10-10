@@ -24,21 +24,104 @@ Verify recovery in a new temporary browser profile before relying on a backup:
 1. Export from the browser profile and workspace containing your investigations.
 2. Open the app in a separate, empty profile. Do not clear your working profile.
 3. Import the JSON backup. Use **Replace All** only in that empty profile; it
-   deletes existing app data at the destination. The header import also offers
+   replaces the entity types included in the file at the destination. An empty
+   list clears that type; an omitted type is preserved. The header also offers
    **Merge** for a populated destination; back that destination up first.
 4. Compare investigation names, note and chat content, classifications, source
    associations, and any templates or whiteboard content you depend on.
 5. Reload the restored app and check the same records again. Keep the original
    profile and backup until recovery has been verified.
 
+Normal retention rules still apply after recovery. For example, notes already
+in trash for more than 30 days can be purged when the restored workspace loads.
+Restoring a backup does not reset their trash timestamp or grant a new retention
+period. Keep the original archive if historical trashed content is needed.
+
 A JSON export is an application-data backup, not a copy of the whole browser
 profile or a server/database/files backup. Do not assume browser settings,
 provider credentials, or externally stored server files are included.
 
-The header's **Merge** restores investigation records and note templates; it
-does not currently restore playbook templates, agent tables, or quick-link
-settings. For a complete JSON restore, use **Replace All** in an empty profile
-and verify the optional data you use there before changing a populated profile.
+Both header restore modes cover the portable entity registry in
+`src/lib/backup-tables.ts`, including templates, agent records, integrations and
+custom slash commands. Merge adds missing records and replaces older revisions;
+it does not remove records. Quick links are separate workspace settings, not
+database entities. Internal sync queues, authentication sessions, browser
+permissions and encryption keys are not portable backup data.
+
+New plain backups carry a `threatcaddy-backup` format marker while retaining
+the flat version-1 JSON layout. Ordinary legacy JSON backups and downloaded
+cloud full-backup envelopes are also accepted. Malformed or unsupported data
+is rejected before entity writes; records are not silently dropped or shortened.
+Resolve pending or failed editor drafts before replacing or merging data.
+Keep the app open while a restore is running, and check any retained draft
+recovery notice before closing it.
+
+### Downloaded Cloud Backups
+
+Download the object from your configured cloud storage, then use **Load Backup**.
+For password-encrypted files, enter the backup password in the import dialog;
+for plain JSON, leave it blank. A failed password or validation check leaves
+the dialog open so you can correct the problem and retry. The password is not
+saved in settings or sent to a server by the import dialog.
+
+Full-workspace files can be restored through this dialog. Scoped server backups
+and verified differentials use the separate server restore flow, which checks
+their declared scope and matching parent; do not flatten or manually edit them.
+Cloud upload status distinguishes complete success, partial delivery and failure.
+If some destinations fail, retain the backup password and check each result
+before relying on remote recovery.
+
+Portable files are limited to **50 MiB on disk**, including the encrypted
+envelope. Base64 encryption increases file size, so a near-limit plain backup
+may be too large to encrypt into a supported portable file. Creation fails
+before download/upload in that case; keep the source data and use appropriately
+scoped backups through the separate server workflow where available. Whiteboard
+embedded files retain their separate 8 MiB per-board limit. These limits are not
+raised or bypassed by manually editing a file.
+
+After a successful restore, any notices about omitted configuration, suspended
+automation or unsaved quick-link settings stay visible in the dialog. The entity
+transaction is already committed at that point; the dialog offers **Close**, not
+another restore. Save the original file until you have reviewed those notices.
+
+#### Supported Cloud Destination URLs
+
+Generated backup filenames require a destination that authorizes multiple objects:
+
+- **OCI:** use a bucket PAR URL ending in `/o/`, or a slash-terminated prefix URL.
+  A prefix-restricted PAR must permit the actual `threatcaddy/` paths appended by
+  the app. The URL alone cannot prove the remote grant's permissions or expiry.
+  See [OCI PAR scopes](https://docs.oracle.com/en-us/iaas/Content/Object/Tasks/usingpreauthenticatedrequests.htm).
+- **Azure:** use a container SAS URL with `sr=c`, a signature, and a container
+  path. Blob-specific, directory and account SAS modes are not supported here.
+  See [Azure signed-resource scopes](https://learn.microsoft.com/en-us/rest/api/storageservices/create-service-sas).
+- **S3 and GCS:** exact-object signed URLs are not supported by this generated-path
+  upload flow. Appending a filename changes the signed resource. They now fail
+  before any upload or connectivity-test write; saved destinations are retained
+  so you can inspect or replace them. See [S3 presigned uploads](https://docs.aws.amazon.com/AmazonS3/latest/userguide/PresignedUrlUploadObject.html)
+  and [GCS signed resource paths](https://docs.cloud.google.com/storage/docs/authentication/canonical-requests).
+
+For supported destinations, **Test writes a small object** at
+`threatcaddy/.connectivity-test` beneath the configured bucket/prefix. It is not a
+read-only check. The app does not repurpose an exact-object backup URL for this
+test. Cloud permissions, expiry, browser CORS and the deployment's allowed
+connection origins still need to permit uploads; a syntactically valid URL is
+not evidence that a backup was delivered.
+
+### Credentials and Automation
+
+Treat every backup as sensitive. Plain JSON is not encrypted, even if the source
+workspace uses encryption at rest. Portable plaintext exports exclude installed
+integration configuration and record this omission in their metadata. The header
+and JSON import dialogs suspend imported automation; the separate server restore
+flow preserves its exact snapshot semantics. Re-enter configuration
+and review imported automation before enabling it. Password-encrypted exports
+can preserve installed integration configuration inside the encrypted payload.
+
+This is not a general-purpose secret scrubber: investigation text, evidence,
+template source and user-defined fields may themselves contain credentials or
+private material. Review a backup before sharing it. Provider settings and
+cloud destination URLs are not included as browser settings.
 
 ### Moving from HTTP to HTTPS
 

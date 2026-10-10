@@ -96,17 +96,16 @@ export async function cloudPut(
     };
   }
 
-  const url = provider.buildObjectUrl(destination.url, objectPath);
-  const headers: Record<string, string> = {
-    'Content-Type': contentType,
-    ...provider.extraHeaders(),
-  };
-
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
+    const url = provider.buildObjectUrl(destination.url, objectPath);
+    const headers: Record<string, string> = {
+      'Content-Type': contentType,
+      ...provider.extraHeaders(),
+    };
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 60_000);
+    timer = setTimeout(() => controller.abort(), 60_000);
     const resp = await fetch(url, { method: 'PUT', body: data, headers, signal: controller.signal });
-    clearTimeout(timer);
     if (!resp.ok) {
       return { destinationId: destination.id, label: destination.label, ok: false, status: resp.status, error: `HTTP ${resp.status}: ${resp.statusText}` };
     }
@@ -119,6 +118,8 @@ export async function cloudPut(
       status: 0,
       error: err instanceof Error ? err.message : 'Network error',
     };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -136,18 +137,26 @@ export async function multiCloudPut(
 
   onProgress?.(`Uploading to ${enabled.length} destination(s)...`);
 
+  let completed = 0;
   const settled = await Promise.allSettled(
-    enabled.map(async (dest, idx) => {
-      const result = await cloudPut(dest, objectPath, data, contentType);
-      onProgress?.(`Uploaded to ${dest.label} (${idx + 1}/${enabled.length})`);
+    enabled.map(async (dest) => {
+      let result: DestinationPutResult;
+      try {
+        result = await cloudPut(dest, objectPath, data, contentType);
+      } catch (err) {
+        result = { destinationId: dest.id, label: dest.label, ok: false, status: 0,
+          error: err instanceof Error ? err.message : 'Unknown error' };
+      }
+      completed += 1;
+      onProgress?.(`${result.ok ? 'Uploaded to' : 'Failed to upload to'} ${dest.label} (${completed}/${enabled.length})`);
       return result;
     }),
   );
 
-  return settled.map((s) =>
+  return settled.map((s, index) =>
     s.status === 'fulfilled'
       ? s.value
-      : { destinationId: 'unknown', label: 'unknown', ok: false, status: 0, error: s.reason?.message || 'Unknown error' },
+      : { destinationId: enabled[index].id, label: enabled[index].label, ok: false, status: 0, error: s.reason?.message || 'Unknown error' },
   );
 }
 
