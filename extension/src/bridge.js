@@ -3,7 +3,7 @@
 // Protocol version — increment when message shapes change in breaking ways.
 // The webapp reads this to know which features/messages the extension supports.
 var TC_PROTOCOL_VERSION = 1;
-var TC_CAPABILITIES = ['llm_streaming', 'fetch_url', 'clip_import', 'proxy_fetch', 'notification_ack'];
+var TC_CAPABILITIES = ['llm_streaming', 'fetch_url', 'clip_import', 'clip_import_ack_v2', 'proxy_fetch', 'notification_ack'];
 var tcAppApproved = typeof tcAppApproved === 'boolean' ? tcAppApproved : false;
 var tcApprovalRequest = typeof tcApprovalRequest === 'number' ? tcApprovalRequest : 0;
 
@@ -55,6 +55,8 @@ if (document.documentElement.dataset.tcBridgeLoaded) {
 document.documentElement.dataset.tcBridgeLoaded = '1';
 
 var ports = new Map(); // requestId → Port
+var clipProbes = new Map();
+var clipDocumentToken;
 
 function isExtensionValid() {
   try {
@@ -101,6 +103,20 @@ window.addEventListener('message', function (event) {
   if (event.source !== window) return;
   if (!event.data) return;
   if (!tcAppApproved) return;
+
+  if (event.data.type === 'TC_CLIP_IMPORT_READY') {
+    var probe = clipProbes.get(event.data.requestId);
+    if (probe && event.data.protocol === 2) probe(event.data);
+    return;
+  }
+  if (event.data.type === 'THREATCADDY_CLIP_IMPORT_RESULT') {
+    if (!clipDocumentToken || event.data.protocol !== 2) return;
+    // This is a fresh runtime message, not an open sendMessage callback: a late
+    // database commit can wake a restarted background worker and persist its ACK.
+    chrome.runtime.sendMessage({ type: 'CLIP_IMPORT_RESULT', result: { ...event.data, documentToken: clipDocumentToken } })
+      .catch(function () { /* The extension retains unconfirmed captures for retry. */ });
+    return;
+  }
 
   if (event.data.type === 'TC_LLM_REQUEST') {
     var requestId = event.data.requestId;
@@ -315,9 +331,29 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     sendResponse({ pong: true });
     return;
   }
+  if (message.type === 'GET_CLIP_IMPORT_TARGET') {
+    if (!clipDocumentToken) clipDocumentToken = crypto.randomUUID();
+    var probeId = crypto.randomUUID();
+    var approvalRequest = tcApprovalRequest;
+    var timer = setTimeout(function () {
+      clipProbes.delete(probeId);
+      sendResponse({ protocol: 2, ready: false, error: 'The app did not report a workspace' });
+    }, 1000);
+    clipProbes.set(probeId, function (ready) {
+      clearTimeout(timer);
+      clipProbes.delete(probeId);
+      sendResponse({ protocol: 2, ready: ready.ready === true && tcAppApproved && approvalRequest === tcApprovalRequest,
+        workspaceId: ready.workspaceId, workspaceLabel: ready.workspaceLabel, documentToken: clipDocumentToken });
+    });
+    window.postMessage({ type: 'TC_CLIP_IMPORT_PROBE', requestId: probeId, protocol: 2 }, postOrigin());
+    return true;
+  }
   if (message.type === 'INJECT_CLIPS_TO_PAGE') {
-    window.postMessage({ type: 'THREATCADDY_IMPORT_CLIPS', clips: message.clips }, postOrigin());
-    sendResponse({ success: true });
+    if (message.envelope?.protocol !== 2 || !clipDocumentToken || message.documentToken !== clipDocumentToken) {
+      sendResponse({ delivered: false, error: 'Prepare and confirm this app document before importing' }); return;
+    }
+    window.postMessage(message.envelope, postOrigin());
+    sendResponse({ delivered: true, confirmed: false });
   }
 });
 

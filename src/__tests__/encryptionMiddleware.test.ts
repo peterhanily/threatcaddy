@@ -96,10 +96,11 @@ describe('ENCRYPTED_FIELDS', () => {
     expect(tables).toContain('standaloneIOCs');
     expect(tables).toContain('installedIntegrations');
     expect(tables).toContain('integrationRuns');
-    expect(tables.sort()).toEqual(db.tables.map(table => table.name).filter(name => !['_syncMeta', '_localMigrations'].includes(name)).sort());
+    expect(tables.sort()).toEqual(db.tables.map(table => table.name).filter(name => !['_syncMeta', '_localMigrations', '_clipReceipts'].includes(name)).sort());
     expect(ENCRYPTED_FIELDS._syncQueue).toEqual(['data']);
     expect(ENCRYPTED_FIELDS._syncMeta).toBeUndefined();
     expect(ENCRYPTED_FIELDS._localMigrations).toBeUndefined();
+    expect(ENCRYPTED_FIELDS._clipReceipts).toBeUndefined();
   });
 
   it('notes table encrypts sensitive fields', () => {

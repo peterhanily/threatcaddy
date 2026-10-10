@@ -210,7 +210,7 @@ describe('bridge.js protocol and extension validity', () => {
     const payload = bridge.context.readyPayload()
     expect(payload).toEqual({
       type: 'TC_EXTENSION_READY', protocolVersion: 1,
-      capabilities: ['llm_streaming', 'fetch_url', 'clip_import', 'proxy_fetch', 'notification_ack'],
+      capabilities: ['llm_streaming', 'fetch_url', 'clip_import', 'clip_import_ack_v2', 'proxy_fetch', 'notification_ack'],
     })
     expect(Number.isInteger(payload.protocolVersion)).toBe(true)
     expect(payload.protocolVersion).toBeGreaterThan(0)

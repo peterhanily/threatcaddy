@@ -28,6 +28,14 @@ const modalCancel = document.getElementById('modal-cancel');
 const modalConfirm = document.getElementById('modal-confirm');
 
 let modalResolve = null;
+function captureRevision(capture) { return Number.isSafeInteger(capture.revision) && capture.revision > 0 ? capture.revision : 1; }
+function importConfirmed(capture) { return capture.delivery?.status === 'confirmed' && capture.delivery.revision === captureRevision(capture); }
+function captureRefs(captures) { return captures.map(capture => ({ id: capture.id, revision: captureRevision(capture) })); }
+async function captureCommand(message) {
+  const response = await chrome.runtime.sendMessage(message);
+  if (response?.success !== true) throw new Error(response?.error || 'The capture change was not saved. Refresh and retry.');
+  return response;
+}
 
 // ---- Modal ----
 
@@ -137,7 +145,7 @@ async function loadCaptures() {
 function renderStats(captures) {
   const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const weekCount = captures.filter(c => c.createdAt > oneWeekAgo).length;
-  const unsentCount = captures.filter(c => !c.sent).length;
+  const unsentCount = captures.filter(c => !importConfirmed(c)).length;
 
   statTotal.textContent = captures.length;
   statWeek.textContent = weekCount;
@@ -162,8 +170,11 @@ function renderCaptures(captures) {
   const entityLabels = { 'note': 'Note', 'task': 'Task', 'timeline-event': 'Timeline Event' };
 
   capturesList.innerHTML = sorted.map(capture => {
-    const sentClass = capture.sent ? ' sent' : '';
-    const sentBadge = capture.sent ? '<span class="sent-badge">Sent</span>' : '';
+    const sentClass = importConfirmed(capture) ? ' sent' : '';
+    const label = importConfirmed(capture)
+      ? 'Import confirmed' : capture.sent ? 'Sent (legacy, unverified)' : capture.delivery?.status === 'pending'
+        ? 'Awaiting import confirmation' : capture.delivery?.status === 'failed' ? 'Import failed — retained' : '';
+    const sentBadge = label ? `<span class="sent-badge">${escapeHtml(label)}</span>` : '';
     const sourceLink = capture.sourceUrl && isSafeUrl(capture.sourceUrl)
       ? `<a class="capture-source" href="${escapeHtml(capture.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(capture.sourceUrl)}</a>`
       : capture.sourceUrl
@@ -192,7 +203,7 @@ function renderCaptures(captures) {
         </div>
         <div class="capture-content">${escapeHtml(capture.content)}</div>
         <div class="capture-metadata">${typeBadge}${folderBadge}${clsBadge}</div>
-        <div class="meta-inline-edit" data-id="${escapeHtml(capture.id)}">
+        <div class="meta-inline-edit" data-id="${escapeHtml(capture.id)}" data-revision="${captureRevision(capture)}">
           <select data-field="entityType">
             <option value="note"${eType === 'note' ? ' selected' : ''}>Note</option>
             <option value="task"${eType === 'task' ? ' selected' : ''}>Task</option>
@@ -224,9 +235,11 @@ function renderCaptures(captures) {
         true
       );
       if (confirmed) {
-        await deleteCapture(id);
-        await refresh();
-        showToast('Capture deleted');
+        try {
+          await deleteCapture(captureRefs(captures.filter(capture => capture.id === id)));
+          await refresh();
+          showToast('Capture deleted');
+        } catch (error) { showToast(error.message, true); await refresh(); }
       }
     });
   });
@@ -248,17 +261,15 @@ function renderCaptures(captures) {
       const editRow = el.closest('.meta-inline-edit');
       const id = editRow.dataset.id;
       const field = el.dataset.field;
-      await updateCaptureField(id, field, el.value);
+      try { await updateCaptureField(id, Number(editRow.dataset.revision), field, el.value); }
+      catch (error) { showToast(error.message, true); }
       await refresh();
     });
     // Also save on Enter for text inputs
     if (el.tagName === 'INPUT') {
-      el.addEventListener('keydown', async (e) => {
+      el.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-          const editRow = el.closest('.meta-inline-edit');
-          const id = editRow.dataset.id;
-          await updateCaptureField(id, el.dataset.field, el.value);
-          await refresh();
+          el.blur();
         }
       });
     }
@@ -273,14 +284,12 @@ async function refresh() {
 
 // ---- Actions ----
 
-async function deleteCapture(id) {
-  const { captures = [] } = await chrome.storage.local.get(['captures']);
-  const filtered = captures.filter(c => c.id !== id);
-  await chrome.storage.local.set({ captures: filtered });
+async function deleteCapture(clips) {
+  await captureCommand({ type: 'DELETE_CAPTURES', clips });
 }
 
-async function clearAll() {
-  await chrome.storage.local.set({ captures: [] });
+async function clearAll(captures) {
+  await deleteCapture(captureRefs(captures));
 }
 
 async function getTargetUrl() {
@@ -300,8 +309,12 @@ async function requestHostPermission(targetUrl) {
 }
 
 async function sendAllToTarget() {
+  if (sendAllBtn.disabled) return;
+  sendAllBtn.disabled = true;
+  sendAllBtn.textContent = 'Preparing destination...';
+  try {
   const captures = await loadCaptures();
-  const unsent = captures.filter(c => !c.sent);
+  const unsent = captures.filter(c => !importConfirmed(c));
 
   if (unsent.length === 0) {
     showToast('No unsent captures to send');
@@ -340,40 +353,24 @@ async function sendAllToTarget() {
     }
   }
 
-  // Request host permission for the target (Chrome prompts, Firefox may already have it)
-  try {
-    const granted = await requestHostPermission(targetUrl);
-    if (!granted) {
-      showToast('Permission denied — cannot send to this host', true);
-      return;
-    }
-  } catch {
-    // Firefox with <all_urls> content scripts may not need explicit host permission
-    // Fall through and attempt the send anyway
-  }
-
-  sendAllBtn.disabled = true;
-  sendAllBtn.textContent = 'Sending...';
-
-  try {
+    // Sending does not request new permission. Pairing remains an explicit Save
+    // Target action; a revoked or unavailable destination fails closed.
+    const prepared = await captureCommand({ type: 'PREPARE_CLIP_DELIVERY', targetUrl });
+    const legacyCount = unsent.filter(capture => capture.sent).length;
+    const confirmed = await showModal('Confirm import workspace',
+      `Import ${unsent.length} capture(s) into “${prepared.workspaceLabel}” (${prepared.workspaceId}) at ${targetUrl}? Only database-confirmed imports will be marked sent.${legacyCount ? ` ${legacyCount} legacy capture(s) were previously marked sent without verification; importing them may create duplicates. Review or delete them first if unsure.` : ''}`, 'Import captures', false);
+    if (!confirmed) return;
+    sendAllBtn.textContent = 'Waiting for import confirmation...';
     const response = await chrome.runtime.sendMessage({
       type: 'SEND_TO_TARGET',
-      targetUrl,
-      captures: unsent
+      sessionId: prepared.sessionId,
+      clips: captureRefs(unsent)
     });
-
-    if (response && response.success) {
-      // Mark captures as sent and remove them
-      const allCaptures = await loadCaptures();
-      const sentIds = new Set(unsent.map(c => c.id));
-      for (const c of allCaptures) {
-        if (sentIds.has(c.id)) c.sent = true;
-      }
-      await chrome.storage.local.set({ captures: allCaptures });
-      await refresh();
-      showToast(`${unsent.length} clip(s) sent successfully!`);
+    await refresh();
+    if (response?.success === true) {
+      showToast(`${response.confirmed} clip import(s) confirmed.`);
     } else {
-      showToast(response?.error || 'Failed to send clips', true);
+      showToast(`${response?.confirmed || 0} of ${unsent.length} imports confirmed. ${response?.error || 'Unconfirmed captures are retained.'}`, true);
     }
   } catch (error) {
     showToast('Failed to send: ' + error.message, true);
@@ -387,31 +384,23 @@ async function sendAllToTarget() {
 
 async function applyDefaults(entityType, folderName, clsLevel) {
   const { captures = [] } = await chrome.storage.local.get(['captures']);
-  for (const c of captures) {
-    if (c.sent) continue;
-    if (entityType) c.entityType = entityType;
-    if (folderName !== undefined) c.folderName = folderName;
-    if (clsLevel !== undefined) c.clsLevel = clsLevel;
-  }
-  await chrome.storage.local.set({ captures });
+  await captureCommand({ type: 'UPDATE_CAPTURES', clips: captureRefs(captures.filter(capture => !importConfirmed(capture))),
+    values: { ...(entityType ? { entityType } : {}), ...(folderName !== undefined ? { folderName } : {}), ...(clsLevel !== undefined ? { clsLevel } : {}) } });
 }
 
-async function updateCaptureField(id, field, value) {
-  const { captures = [] } = await chrome.storage.local.get(['captures']);
-  const capture = captures.find(c => c.id === id);
-  if (capture) {
-    capture[field] = value;
-    await chrome.storage.local.set({ captures });
-  }
+async function updateCaptureField(id, revision, field, value) {
+  await captureCommand({ type: 'UPDATE_CAPTURES', clips: [{ id, revision }], values: { [field]: value } });
 }
 
 applyDefaultsBtn.addEventListener('click', async () => {
   const entityType = importEntity.value;
   const folderName = importFolder.value.trim();
   const clsLevel = importCls.value;
-  await applyDefaults(entityType, folderName, clsLevel);
-  await refresh();
-  showToast('Defaults applied to all unsent clips');
+  try {
+    await applyDefaults(entityType, folderName, clsLevel);
+    await refresh();
+    showToast('Defaults applied to all unsent clips');
+  } catch (error) { showToast(error.message, true); await refresh(); }
 });
 
 // ---- Event Listeners ----
@@ -432,10 +421,16 @@ clearAllBtn.addEventListener('click', async () => {
   );
 
   if (confirmed) {
-    await clearAll();
-    await refresh();
-    showToast('All captures cleared');
+    try {
+      await clearAll(captures);
+      await refresh();
+      showToast('Confirmed captures cleared; newer captures were retained');
+    } catch (error) { showToast(error.message, true); await refresh(); }
   }
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.captures && !capturesList.contains(document.activeElement)) void refresh();
 });
 
 // ---- Init ----

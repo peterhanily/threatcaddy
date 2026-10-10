@@ -83,8 +83,8 @@ async function resetDatabase(): Promise<void> {
 
 // Dexie encodes schema version N as raw IndexedDB version N*10, and records the
 // current schema version in a special '$meta' object store (out-of-line key
-// 'version'). To make the production `db` (declared at schema v32) run exactly
-// the v29→v32 upgrade chain against our seeded DB, we must create the raw DB at
+// 'version'). To make the production `db` run the declared structural
+// upgrade chain against our seeded DB, we must create the raw DB at
 // IDB version 280 AND write $meta.version = 28 — otherwise Dexie can't tell
 // which schema version it's upgrading from and skips the migration entirely.
 const SCHEMA_VERSION_V28 = 28;
@@ -137,7 +137,7 @@ function createV28DB(notes: Partial<Note>[]): Promise<void> {
 
 /**
  * Re-open the real `db` singleton. Dexie sees the on-disk DB at v28 and
- * runs the declared v29→v32 upgrade chain (the production migration).
+ * runs the declared structural upgrades before keyed content conversion.
  */
 async function runMigration(): Promise<void> {
   await db.open();
@@ -184,7 +184,7 @@ describe('v29→v32 evidence migration (non-destructive)', () => {
     await createV28DB([encrypted as unknown as Partial<Note>]);
     setEncryptionMeta({ version: 1, salt: '', wrappedKey: '', recoverySalt: '', recoveryWrappedKey: '', enabledAt: 1 });
     await db.open();
-    expect(db.verno).toBe(33);
+    expect(db.verno).toBe(34);
     expect(await db.evidenceItems.count()).toBe(0);
     await expect(runWorkspaceContentMigrations()).rejects.toThrow('Unlock');
     expect(isEncryptedEnvelope((await db.notes.get('encrypted-evidence'))?.content)).toBe(true);
@@ -365,10 +365,10 @@ describe('v29→v32 evidence migration (non-destructive)', () => {
     expect(itemsAfterSecond).toEqual(['analyst-extraction', 'ev-true']);
   });
 
-  it('reaches structural schema version 33 before keyed content migration', async () => {
+  it('reaches structural schema version 34 before keyed content migration', async () => {
     await createV28DB([makeNote({ id: 'plain', tags: [] })]);
     await runMigration();
-    expect(db.verno).toBe(33);
+    expect(db.verno).toBe(34);
   });
 
   it('full chain: a realistic mix survives — every seeded note is still present', async () => {

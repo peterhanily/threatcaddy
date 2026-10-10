@@ -8,8 +8,9 @@ import { clipBuffer } from './lib/clipBuffer'
 import { installAgentBridge } from './lib/agent-bridge'
 import { installFileHandler } from './lib/file-handler'
 
-// Start buffering clip messages immediately — before React mounts and before
-// the encryption lock screen is dismissed — so no postMessage events are lost.
+// Answer extension workspace probes before React mounts. New deliveries stay
+// in the extension until the app can acknowledge their committed receipts;
+// bounded legacy messages are retained across initial unlock.
 clipBuffer.startListening();
 
 // Register PWA file handler so double-clicking a .md file opens it in ThreatCaddy

@@ -37,7 +37,7 @@ import { ActivityLogContext } from './hooks/ActivityLogContext';
 import { ScreenshareContext } from './hooks/ScreenshareContext';
 import { getEffectiveClsLevels, isAboveClsThreshold } from './lib/classification';
 import { buildInvestigationVisibility } from './lib/investigation-visibility';
-import { clipBuffer } from './lib/clipBuffer';
+import { useClipDelivery } from './hooks/useClipDelivery';
 import { formatBytes, openFilePicker, getDroppedFiles, dispatchFile, type FileOpenDetail } from './lib/file-handler';
 import { hasPendingChanges } from './lib/pending-changes';
 import { useInvestigationData } from './hooks/useInvestigationData';
@@ -135,7 +135,7 @@ function AppDataLayer() {
   const standaloneIOCsHook = useStandaloneIOCs();
   const evidenceItemsHook = useEvidenceItems();
   const chatsHook = useChats();
-  const { folders, loading: foldersLoading, createFolder, findOrCreateFolder, updateFolder, deleteFolder, deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder, reload: reloadFolders } = useFolders();
+  const { folders, loading: foldersLoading, createFolder, updateFolder, deleteFolder, deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder, reload: reloadFolders } = useFolders();
   const { tags, createTag, updateTag, deleteTag, reload: reloadTags } = useTags();
   const noteTemplatesHook = useNoteTemplates();
   const playbooksHook = usePlaybooks();
@@ -263,7 +263,6 @@ function AppDataLayer() {
             folders={folders}
             foldersLoading={foldersLoading}
             createFolder={createFolder}
-            findOrCreateFolder={findOrCreateFolder}
             updateFolder={updateFolder}
             deleteFolder={deleteFolder}
             deleteFolderWithContents={deleteFolderWithContents}
@@ -367,7 +366,6 @@ type AppInnerProps = {
   folders: ReturnType<typeof useFolders>['folders'];
   foldersLoading: boolean;
   createFolder: ReturnType<typeof useFolders>['createFolder'];
-  findOrCreateFolder: ReturnType<typeof useFolders>['findOrCreateFolder'];
   updateFolder: ReturnType<typeof useFolders>['updateFolder'];
   deleteFolder: ReturnType<typeof useFolders>['deleteFolder'];
   deleteFolderWithContents: ReturnType<typeof useFolders>['deleteFolderWithContents'];
@@ -412,7 +410,7 @@ const AppInner = memo(function AppInner({
   trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard,
   emptyTrashWhiteboards, getFilteredWhiteboards, reloadWhiteboards,
   standaloneIOCsHook, evidenceItemsHook, chatsHook,
-  folders: allFolders, foldersLoading, createFolder, findOrCreateFolder, updateFolder, deleteFolder,
+  folders: allFolders, foldersLoading, createFolder, updateFolder, deleteFolder,
   deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder, reloadFolders,
   tags: allTags, createTag, updateTag, deleteTag, reloadTags,
   noteTemplatesHook, playbooksHook, integrationsHook,
@@ -675,139 +673,27 @@ const AppInner = memo(function AppInner({
     return () => window.removeEventListener('integration-entity-created', handler);
   }, [notes, navigateTo, setSelectedFolderId]);
 
-  // Listen for clip imports from the Chrome extension via postMessage
-  useEffect(() => {
-    const handler = async (event: MessageEvent) => {
-      // Only accept messages from our own window (extension injects script into this page)
-      // event.source === window ensures only same-window postMessage is accepted,
-      // blocking cross-window/cross-tab attacks even under file:// where origins are "null"
-      if (event.source !== window) return;
-      const isFileProtocol = window.location.protocol === 'file:';
-      if (!isFileProtocol && event.origin !== window.location.origin) return;
-      if (event.data?.type !== 'THREATCADDY_IMPORT_CLIPS' && event.data?.type !== 'BROWSERNOTES_IMPORT_CLIPS') return;
-      const clips = event.data.clips;
-      if (!Array.isArray(clips) || clips.length === 0) return;
-
-      setPendingClipImports(count => count + 1);
-      try {
-        const folderCache = new Map<string, typeof folders[0]>();
-        let lastEntityType: string = 'note';
-        let lastEntityId: string | undefined;
-        let lastFolderId: string | undefined;
-        const entityTypesUsed = new Set<string>();
-
-        let failedClips = 0;
-        for (const clip of clips) {
-          try {
-          // Sanitize clip fields — only accept expected string/number types
-          const rawContent = typeof clip.content === 'string' ? clip.content : '';
-          const sourceUrl = typeof clip.sourceUrl === 'string' ? clip.sourceUrl : '';
-          const sourceTitle = typeof clip.sourceTitle === 'string' ? clip.sourceTitle : '';
-          const clipTitle = typeof clip.title === 'string' ? clip.title : '';
-          const createdAt = typeof clip.createdAt === 'number' ? clip.createdAt : Date.now();
-          const entityType = typeof clip.entityType === 'string' ? clip.entityType : 'note';
-          const folderName = typeof clip.folderName === 'string' && clip.folderName.trim()
-            ? clip.folderName.trim() : 'Clips';
-          const clsLevel = typeof clip.clsLevel === 'string' && clip.clsLevel ? clip.clsLevel : undefined;
-
-          // Resolve folder (cached)
-          if (!folderCache.has(folderName)) {
-            folderCache.set(folderName, await findOrCreateFolder(folderName));
-          }
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- just set above
-          const folder = folderCache.get(folderName)!;
-          lastFolderId = folder.id;
-
-          const timestamp = new Date(createdAt).toLocaleString();
-          const content = `*Clipped ${timestamp}*\n\n${rawContent}`;
-          const freshIOCs = extractIOCs(rawContent, {
-            enabledTypes: settings.tiEnabledIOCTypes,
-            defaultConfidence: settings.tiDefaultConfidence,
-          });
-          const iocAnalysis = mergeIOCAnalysis(undefined, freshIOCs);
-          const iocTypes = [...new Set(freshIOCs.filter((i) => !i.dismissed).map((i) => i.type))];
-
-          entityTypesUsed.add(entityType);
-
-          if (entityType === 'task') {
-            const task = await loggedCreateTask({
-              title: clipTitle || rawContent.substring(0, 80) || 'Clip Task',
-              description: content,
-              folderId: folder.id,
-              clsLevel: clsLevel || folder.clsLevel,
-              status: 'todo',
-              priority: 'none',
-              iocAnalysis,
-              iocTypes,
-            });
-            lastEntityId = task.id; lastEntityType = 'task';
-          } else if (entityType === 'timeline-event') {
-            const event = await loggedCreateEvent({
-              title: clipTitle || rawContent.substring(0, 80) || 'Clip Event',
-              description: content,
-              source: sourceUrl || 'Extension clip',
-              folderId: folder.id,
-              clsLevel: clsLevel || folder.clsLevel,
-              eventType: 'evidence',
-              confidence: 'medium',
-              timelineId: allTimelines[0]?.id || '',
-              iocAnalysis,
-              iocTypes,
-            });
-            lastEntityId = event.id; lastEntityType = 'timeline-event';
-          } else {
-            const note = await loggedCreateNote({
-              title: sourceUrl || clipTitle || rawContent.substring(0, 80) || 'Clip',
-              content,
-              folderId: folder.id,
-              clsLevel: clsLevel || folder.clsLevel,
-              sourceUrl,
-              sourceTitle,
-              createdAt,
-              iocAnalysis,
-              iocTypes,
-            });
-            lastEntityId = note.id; lastEntityType = 'note';
-          }
-          } catch (clipErr) {
-            console.error('Failed to import clip:', clipErr);
-            failedClips++;
-          }
-        }
-        if (failedClips > 0) {
-          addToast('warning', tt('clip.importWarning', { count: failedClips }));
-        }
-
-        // Navigate to the appropriate view and select the latest entity
-        if (lastFolderId) setSelectedFolderId(lastFolderId);
-        if (entityTypesUsed.size === 1) {
-          if (lastEntityType === 'task') {
-            navigateTo('tasks');
-          } else if (lastEntityType === 'timeline-event') {
-            navigateTo('timeline');
-          } else {
-            setSelectedNoteId(lastEntityId);
-            navigateTo('notes', { selectedNoteId: lastEntityId });
-          }
-        } else {
-          // Mixed batch — default to notes, select last note
-          setSelectedNoteId(lastEntityId);
-          navigateTo('notes', { selectedNoteId: lastEntityId });
-        }
-      } catch (error) {
-        console.error('Failed to import clips:', error);
-        addToast('error', tt('clip.importFailed'));
-      } finally {
-        setPendingClipImports(count => count - 1);
+  useClipDelivery({
+    enabledIOCTypes: settings.tiEnabledIOCTypes,
+    defaultConfidence: settings.tiDefaultConfidence,
+    defaultTimelineId: allTimelines[0]?.id,
+    onBusy: busy => setPendingClipImports(busy ? 1 : 0),
+    onFailed: count => addToast('warning', tt('clip.importWarning', { count })),
+    onRefreshFailed: () => addToast('warning', tt('clip.refreshFailed')),
+    onCommitted: async (results, signal) => {
+      await reloadAll();
+      if (signal.aborted) return;
+      const last = results.at(-1);
+      if (!last?.entityId) return;
+      if (last.folderId) setSelectedFolderId(last.folderId);
+      if (last.entityType === 'task') navigateTo('tasks');
+      else if (last.entityType === 'timeline-event') navigateTo('timeline');
+      else {
+        setSelectedNoteId(last.entityId);
+        navigateTo('notes', { selectedNoteId: last.entityId });
       }
-    };
-
-    window.addEventListener('message', handler);
-    // Replay any clips that arrived while the encryption lock screen was shown
-    clipBuffer.flush();
-    return () => window.removeEventListener('message', handler);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- setSelectedFolderId is stable; settings deps intentionally omitted to avoid re-registering handler
-  }, [findOrCreateFolder, loggedCreateNote, loggedCreateTask, loggedCreateEvent, allTimelines, navigateTo, addToast, setSelectedFolderId]);
+    },
+  });
 
   // Handle files opened via PWA File Handling API (double-click .md on desktop)
   useEffect(() => {

@@ -17,7 +17,12 @@ document.querySelectorAll('[data-i18n-title]').forEach(el => {
 // Load stats and recent captures on popup open
 async function loadStats() {
   try {
-    const { captures = [] } = await chrome.storage.local.get(['captures']);
+    const { captures = [], captureErrorV1 } = await chrome.storage.local.get(['captures', 'captureErrorV1']);
+    if (typeof captureErrorV1 === 'string' && captureErrorV1) {
+      const errorEl = document.getElementById('save-error');
+      errorEl.textContent = captureErrorV1;
+      errorEl.classList.add('show');
+    }
 
     // Total captures
     document.getElementById('total-captures').textContent = captures.length;
@@ -91,8 +96,12 @@ document.getElementById('options-toggle').addEventListener('click', () => {
 
 // Save note from quick capture form
 document.getElementById('save-btn').addEventListener('click', async () => {
+  const saveButton = document.getElementById('save-btn');
+  if (saveButton.disabled) return;
   const titleInput = document.getElementById('capture-title');
   const textInput = document.getElementById('capture-text');
+  const originalTitle = titleInput.value;
+  const originalText = textInput.value;
   const content = textInput.value.trim();
 
   if (!content) return;
@@ -101,9 +110,12 @@ document.getElementById('save-btn').addEventListener('click', async () => {
   const entityType = document.getElementById('opt-entity').value;
   const folderName = document.getElementById('opt-folder').value.trim();
   const clsLevel = document.getElementById('opt-cls').value;
+  saveButton.disabled = true;
+  document.getElementById('save-error').classList.remove('show');
+  document.getElementById('save-success').classList.remove('show');
 
   try {
-    await chrome.runtime.sendMessage({
+    const result = await chrome.runtime.sendMessage({
       type: 'SAVE_NOTE',
       note: {
         title,
@@ -115,12 +127,13 @@ document.getElementById('save-btn').addEventListener('click', async () => {
         clsLevel
       }
     });
+    if (result?.success !== true) throw new Error(result?.error || 'The capture was not saved. Your draft is retained.');
 
     // Show success
     const successEl = document.getElementById('save-success');
     successEl.classList.add('show');
-    titleInput.value = '';
-    textInput.value = '';
+    if (titleInput.value === originalTitle) titleInput.value = '';
+    if (textInput.value === originalText) textInput.value = '';
 
     setTimeout(() => {
       successEl.classList.remove('show');
@@ -131,8 +144,11 @@ document.getElementById('save-btn').addEventListener('click', async () => {
   } catch (error) {
     console.error('Failed to save note:', error);
     const errorEl = document.getElementById('save-error');
+    errorEl.textContent = error.message || 'The capture was not saved. Your draft is retained.';
     errorEl.classList.add('show');
     setTimeout(() => { errorEl.classList.remove('show'); }, 4000);
+  } finally {
+    saveButton.disabled = false;
   }
 });
 

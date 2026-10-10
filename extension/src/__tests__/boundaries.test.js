@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { createContext, Script } from 'node:vm';
 import { resolve } from 'node:path';
 import { URL } from 'node:url';
+import { webcrypto } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 
 function hook() {
@@ -24,7 +25,7 @@ function harness() {
     i18n: { getMessage: key => key },
   };
   const fetch = vi.fn().mockImplementation(async () => new Response('{"fixture":true}', { headers: { 'content-type': 'application/json' } }));
-  const context = createContext({ chrome, URL, console, TextEncoder, TextDecoder, AbortController, setTimeout, clearTimeout, fetch });
+  const context = createContext({ chrome, crypto: webcrypto, URL, console, TextEncoder, TextDecoder, AbortController, setTimeout, clearTimeout, fetch });
   new Script(readFileSync(resolve(import.meta.dirname, '../background.js'), 'utf8')).runInContext(context);
   const sender = (url = 'http://localhost:4173', frameId = 0) => ({ id: 'extension', url, frameId, tab: { id: 1, url } });
   const message = (data, from = sender()) => new Promise(resolve => chrome.runtime.onMessage.listeners[0](data, from, resolve));

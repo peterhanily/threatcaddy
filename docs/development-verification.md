@@ -39,6 +39,32 @@ install the client first. It never downloads a test runner on demand. Normal
 server unit tests only discover `src/**/*.test.ts`; PostgreSQL integration
 tests require the separate command below and an explicit scratch target.
 
+## Installed-extension clip recovery
+
+After building the hosted app and both extensions, the local acceptance runners
+exercise the real extension/background bridge and the app's IndexedDB writes:
+
+```sh
+node scripts/verify-clip-delivery-chrome.mjs
+node scripts/verify-clip-delivery-firefox.mjs
+```
+
+They require installed Chrome and Firefox (override discovery with `CHROME_BIN`
+or `FIREFOX_BIN`), create disposable profiles and loopback origins, and block
+external browser traffic through a deny-only proxy. They never use your normal
+browser profile, production investigations, or notification permission. Evidence
+and screenshots stay in the temporary directory printed at startup; do not
+include that directory in a release.
+
+Coverage includes concurrent saves, the 500-clip limit, retained popup drafts,
+explicit workspace confirmation, multi-batch imports, duplicate and partial
+recovery, changed destinations, revoked approvals, and encrypted workspace
+lock/unlock. Permission grants in these disposable profiles are test setup, not
+proof that native permission dialogs or operating-system notifications work.
+Those remain separate human checks. Run the ordinary unit suites too: they
+cover storage failures, worker restart, stale acknowledgements and cancellation
+at deterministic boundaries that the installed-browser checks do not simulate.
+
 ## PostgreSQL integration
 
 Use PostgreSQL 17 and a disposable local coordinator database named

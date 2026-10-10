@@ -2,6 +2,7 @@
   "clip": {
     "importWarning": "Imported with {{count}} failed clip(s)",
     "importFailed": "Failed to import clips from extension",
+    "refreshFailed": "Clips were saved, but the view could not refresh. Reload this workspace to see them.",
     "openedAsNote": "Opened \"{{name}}\" as a new note",
     "openFailed": "Failed to open \"{{name}}\""
   },

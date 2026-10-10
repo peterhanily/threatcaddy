@@ -63,7 +63,7 @@ describe('resumable verified legacy database transfer', () => {
     (await seedLegacy(data, version)).close();
     await migrateIndexedDB();
     for (const [name, rows] of Object.entries(data)) expect(await db.table(name).toArray()).toEqual(rows);
-    expect(db.verno).toBe(33);
+    expect(db.verno).toBe(34);
     expect(db.notes.schema.indexes.some(index => index.name === '[folderId+updatedAt]')).toBe(true);
     expect(await getLegacyCleanupStatus()).toEqual({ exists: true, verified: true, records: 7 });
     expect(await sourceExists()).toBe(true);

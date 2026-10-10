@@ -216,7 +216,7 @@ The full **Clips page** (`Review All Captures`) shows everything captured across
 - View capture stats: total, this week, unsent
 - **Inline edit** per-capture fields: entity type, folder name, and TLP classification
 - **Apply Defaults** — batch-set entity type, folder, and classification across all unsent captures
-- **Send All** — dispatches all unsent captures to the configured ThreatCaddy target; marks them as sent
+- **Send All** — confirms the actual destination workspace and marks only database-confirmed clip revisions as sent; interrupted or partial deliveries retain unconfirmed captures for retry
 - Target URL supports `http://`, `https://`, and `file://` (for standalone builds)
 
 #### Extension Permissions

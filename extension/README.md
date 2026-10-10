@@ -34,7 +34,7 @@ Clip text, images, and selections from web pages into ThreatCaddy. Works on Chro
 - **Keyboard shortcut** — `Alt+Shift+X` (Mac: `Ctrl+Shift+X`) to capture the current selection
 - **Rich content** — Preserves formatting, links, and inline images as Markdown
 - **Confirmation bubble** — Visual feedback after each capture
-- **Send to ThreatCaddy** — Transfer all captured clips to the web app with one click
+- **Send to ThreatCaddy** — Confirm the destination workspace and transfer captured clips with per-clip save receipts
 - **LLM Proxy** — Routes CaddyAI API calls from the web app through the extension's background script, bypassing CORS restrictions for Anthropic, OpenAI, Gemini, Mistral, and local LLM endpoints
 
 ## Usage
@@ -46,6 +46,33 @@ Before connecting an app, open the popup's settings, enter its URL and select **
 For a local AI service, also enter its exact origin in the local-AI setting before approving the app. The endpoint must match that approval and have browser host permission. App pairing does not grant arbitrary local-network access.
 
 Desktop notifications require the separate **Enable desktop notifications** permission. A successful result means the browser accepted the notification, not that the operating system displayed it. ThreatCaddy provides an in-app warning when delivery is denied, unavailable or times out.
+
+### Reliable clip delivery
+
+The clip review page prepares an approved app tab and shows its actual workspace
+before you confirm a transfer. An app URL does not identify a workspace: an
+existing tab can have a different workspace selected from a newly opened tab.
+Open the intended workspace first and check the destination shown by the review
+page. The extension does not switch workspaces automatically.
+
+A clip is confirmed only after the app commits its entity and a workspace-local
+receipt in the same database transaction. A closed or locked app, a timeout, or
+a partial delivery leaves unconfirmed clips available to retry. Retrying the
+same saved revision in the same workspace does not create a second entity.
+Changing a clip's destination options creates a new revision; it never silently
+overwrites an analyst's existing note, task, or event.
+
+The extension keeps at most 500 clips. Reaching capacity rejects a new capture
+with an error; it does not evict older clips. Delete only clips you have reviewed
+and no longer need. A failed popup save leaves its draft available. Clips marked
+sent by an older extension have no verified commit receipt and remain unverified.
+Updating both the app and extension is necessary for verified delivery.
+
+Receipts contain identifiers, a content fingerprint and commit metadata, not a
+second copy of clip content. They are local to that browser workspace and are
+excluded from portable backups and team synchronization. Keep the extension's
+original clips until you have checked the imported data; a delivery receipt is
+not an independent backup. Deleting browser storage removes its local receipts.
 
 ## Outbound boundaries
 
