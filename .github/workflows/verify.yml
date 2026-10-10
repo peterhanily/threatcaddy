@@ -12,6 +12,9 @@ on:
       server-artifact-id:
         description: Immutable tested server image from this verification run
         value: ${{ jobs.gate.outputs.server-artifact-id }}
+      server-publish-required:
+        description: Literal true or false for automatic main-push server publication
+        value: ${{ jobs.gate.outputs.server-publish-required }}
 
 permissions:
   contents: read
@@ -67,11 +70,16 @@ jobs:
     name: Client lint and unit tests
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    outputs:
+      server-publish-required: ${{ steps.release-scope.outputs.server-publish-required }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+          # The complete before/after diff preserves server publication scope,
+          # including multi-commit pushes and paths deleted or moved out.
+          fetch-depth: 0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
@@ -80,6 +88,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm test:run
+      - name: Test workflow and release-scope contracts
+        run: pnpm test:ci
+      - name: Test the post-deployment verification contract
+        run: pnpm test:release:unit
+      - name: Determine automatic server publication scope
+        id: release-scope
+        run: node scripts/ci-release-scope.mjs
 
   client-artifact:
     name: Client builds and cross-browser workflows
@@ -300,6 +315,7 @@ jobs:
       source-sha: ${{ steps.verified.outputs.source-sha }}
       client-artifact-id: ${{ steps.verified.outputs.client-artifact-id }}
       server-artifact-id: ${{ steps.verified.outputs.server-artifact-id }}
+      server-publish-required: ${{ steps.verified.outputs.server-publish-required }}
     steps:
       - name: Require every check and both immutable artifacts
         id: verified
@@ -307,6 +323,7 @@ jobs:
           RESULTS: ${{ toJSON(needs) }}
           CLIENT_ARTIFACT_ID: ${{ needs.client-artifact.outputs.artifact-id }}
           SERVER_ARTIFACT_ID: ${{ needs.server-artifact.outputs.artifact-id }}
+          SERVER_PUBLISH_REQUIRED: ${{ needs.client-checks.outputs.server-publish-required }}
         shell: bash
         run: |
           set -euo pipefail
@@ -318,8 +335,12 @@ jobs:
           if (!process.env.CLIENT_ARTIFACT_ID || !process.env.SERVER_ARTIFACT_ID) {
             throw new Error('Publication blocked: verified artifact missing');
           }
+          if (!['true', 'false'].includes(process.env.SERVER_PUBLISH_REQUIRED)) {
+            throw new Error('Publication blocked: invalid server publication scope');
+          }
           appendFileSync(process.env.GITHUB_OUTPUT,
             `source-sha=${process.env.GITHUB_SHA}\n` +
             `client-artifact-id=${process.env.CLIENT_ARTIFACT_ID}\n` +
-            `server-artifact-id=${process.env.SERVER_ARTIFACT_ID}\n`);
+            `server-artifact-id=${process.env.SERVER_ARTIFACT_ID}\n` +
+            `server-publish-required=${process.env.SERVER_PUBLISH_REQUIRED}\n`);
           JS

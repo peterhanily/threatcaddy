@@ -14,9 +14,34 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel publication or mix a manual/scheduled run with a main push.
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
     uses: ./.github/workflows/verify.yml
+
+  publish-pages:
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/publish-pages.yml
+    with:
+      source-sha: ${{ needs.verify.outputs.source-sha }}
+      client-artifact-id: ${{ needs.verify.outputs.client-artifact-id }}
+
+  publish-server:
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.verify.outputs.server-publish-required == 'true'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-server.yml
+    with:
+      source-sha: ${{ needs.verify.outputs.source-sha }}
+      server-artifact-id: ${{ needs.verify.outputs.server-artifact-id }}

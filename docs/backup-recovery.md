@@ -4,7 +4,7 @@
 
 ThreatCaddy has three layers of data that can be backed up independently:
 
-1. **Client-side (IndexedDB)** -- Local browser data, encrypted backups managed by the SPA
+1. **Client-side (IndexedDB)** -- Local browser data, exported as a JSON backup or through the separate encrypted-backup flow
 2. **Server-side (encrypted backup files)** -- Entity snapshots uploaded to the server via the backup API
 3. **Database (PostgreSQL)** -- The server's authoritative data store
 
@@ -12,9 +12,59 @@ ThreatCaddy has three layers of data that can be backed up independently:
 
 ## 1. Client-Side Backups (IndexedDB)
 
+### Hosted App: JSON Backup and a Restore Drill
+
+For the hosted app without a team server, use **Save Backup** in the app header
+or **Settings → Export JSON**. Store the downloaded `threatcaddy-backup-*.json`
+outside the browser. This JSON file is **not password-encrypted**; protect it as
+sensitive investigation data, including when local database encryption is enabled.
+
+Verify recovery in a new temporary browser profile before relying on a backup:
+
+1. Export from the browser profile and workspace containing your investigations.
+2. Open the app in a separate, empty profile. Do not clear your working profile.
+3. Import the JSON backup. Use **Replace All** only in that empty profile; it
+   deletes existing app data at the destination. The header import also offers
+   **Merge** for a populated destination; back that destination up first.
+4. Compare investigation names, note and chat content, classifications, source
+   associations, and any templates or whiteboard content you depend on.
+5. Reload the restored app and check the same records again. Keep the original
+   profile and backup until recovery has been verified.
+
+A JSON export is an application-data backup, not a copy of the whole browser
+profile or a server/database/files backup. Do not assume browser settings,
+provider credentials, or externally stored server files are included.
+
+The header's **Merge** restores investigation records and note templates; it
+does not currently restore playbook templates, agent tables, or quick-link
+settings. For a complete JSON restore, use **Replace All** in an empty profile
+and verify the optional data you use there before changing a populated profile.
+
+### Moving from HTTP to HTTPS
+
+Browser storage is origin-specific: `http://threatcaddy.com` and
+`https://threatcaddy.com` have separate IndexedDB databases. An HTTP-to-HTTPS
+redirect does **not** move existing investigations to the HTTPS database.
+
+Before enabling GitHub Pages **Enforce HTTPS**, export any HTTP-only data from
+its original profile and restore/verify it on HTTPS using the drill above.
+If HTTPS already contains data, export that data too and use the header's
+**Merge** option rather than replacing it. Do not remove the original HTTP data
+or backups during migration. If all users already use HTTPS and have no HTTP
+data, no data migration is needed.
+
+After the migration, enable only **Settings → Pages → Enforce HTTPS**, leaving
+the custom domain, DNS, and Pages source unchanged. Confirm that HTTP redirects
+to the HTTPS origin and that HTTPS still loads successfully. Future visits and
+bookmarks should use HTTPS.
+
 ### How It Works
 
-The client builds a backup payload from IndexedDB, encrypts it with a user-provided password, and either saves it locally or uploads it to the server.
+The separate **Server Encrypted Backups** flow builds a payload from IndexedDB,
+encrypts it with a user-provided password, and uploads the encrypted blob to a
+connected team server. These controls require that server; they are not a local
+encrypted-file export for hosted-only users. The format and restore modes below
+describe that flow, not the plain JSON export.
 
 **Relevant files:**
 - `src/lib/backup-data.ts` -- Payload construction
@@ -25,14 +75,14 @@ The client builds a backup payload from IndexedDB, encrypts it with a user-provi
 
 | Type | Description |
 |------|-------------|
-| **Full** | All entities from all tables (or scoped to an investigation/entity) |
-| **Differential** | Only entities modified since `lastBackupAt`, plus tombstone (trashed) IDs |
+| **Full** | Entities from the supported backup tables (or scoped to an investigation/entity) |
+| **Differential** | Snapshot differences against a verified full parent, including removed IDs; the matching full parent is required for restore |
 
 ### Backup Scopes
 
 | Scope | What's Included |
 |-------|----------------|
-| `all` | Every table: notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads |
+| `all` | Every supported entity table listed in `src/lib/backup-tables.ts` |
 | `investigation` | A single folder and all its scoped entities (notes, tasks, timeline events, whiteboards, IOCs, chat threads), plus referenced tags and timelines |
 | `entity` | A single entity from a specific table (format: `tableName:entityId`) |
 
@@ -77,15 +127,16 @@ The plaintext payload (before encryption) has this structure:
         "standaloneIOCs": [...],
         "chatThreads": [...]
     },
-    "deletedIds": {
-        "notes": ["id1", "id2"]
-    }
+    "deletedIds": {}
 }
 ```
 
 ### Creating a Client-Side Backup
 
-From the UI, navigate to Settings and use the Export/Backup section. The backup is created in the browser, encrypted with your chosen password, and downloaded as a `.enc` file.
+With a team server connected, use **Settings → Server Encrypted Backups** with
+a password to create and upload an encrypted blob.
+The header's **Save Backup** and Settings' **Export JSON** instead produce the
+plain JSON format described above; they do not prompt for an encryption password.
 
 ### Restoring from a Client-Side Backup
 
@@ -93,10 +144,14 @@ Two restore modes are available:
 
 | Mode | Behavior |
 |------|----------|
-| **Full Replace** | Clears all existing data in each table, then bulk-inserts from backup. Fast but destructive. |
-| **Merge** | For each entity: if it does not exist locally, add it; if it exists and the backup version is newer (`updatedAt` comparison), update it. Tombstoned IDs are deleted. Non-destructive. |
+| **Full Replace** | Replaces records within the full backup's declared scope and included tables. Omitted tables and out-of-scope records are retained; shared references are protected. Replacement can delete existing records, so back up the destination first. |
+| **Merge** | For a full backup, adds missing records and updates existing records when the backup version is newer (`updatedAt` comparison). A verified differential backup applies its recorded changes, including tombstone deletions, to the matching parent state; this is not a non-destructive operation. |
 
-**Important:** If client-side encryption is enabled, the backup will contain already-encrypted field values. Restore will re-insert them as-is through the encryption middleware.
+**Important:** An unlocked workspace's encryption middleware returns decrypted
+application values to backup creation. The separate encrypted-backup flow
+protects that payload with the backup password; plain JSON export does not.
+On restore, the destination workspace's encryption middleware applies its own
+at-rest encryption. Keep the backup password separately from the backup file.
 
 ---
 
@@ -370,7 +425,7 @@ docker compose cp server:/data/files ./files-backup-$(date +%Y%m%d)/
 
 | What | How Often | Method |
 |------|-----------|--------|
-| Full IndexedDB backup | Weekly | Export encrypted backup from Settings |
+| Application JSON backup | Weekly and before major changes | Save Backup / Export JSON; protect the downloaded plaintext file in secure storage |
 | Investigation-scoped backup | After major updates | Export specific investigation |
 
 ### For Team Deployments
@@ -382,7 +437,7 @@ docker compose cp server:/data/files ./files-backup-$(date +%Y%m%d)/
 | File storage (`/data/files`) | Daily | Cron + tar/rsync | 30 days |
 | Server-side encrypted backups | Users manage their own | Via backup API | Max 50 per user |
 | Admin secret | On change | Copy `.admin-secret` file or record `ADMIN_SECRET` env var | Indefinite |
-| `.env` / environment config | On change | Version control or secret manager | Indefinite |
+| `.env` / environment config | On change | Secret manager or encrypted offline backup; never commit secret-bearing files to source control | Indefinite |
 | JWT key pair (Ed25519) | On initial setup | Secure offline storage | Indefinite |
 
 ### What to Monitor

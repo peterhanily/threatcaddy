@@ -1,0 +1,139 @@
+name: Publish verified GitHub Pages
+
+# Called only after the caller's required verification succeeds on the event SHA.
+# Configure Settings > Pages > Source = GitHub Actions before first publication.
+# GITHUB_TOKEN pushes to gh-pages do not trigger a Pages build; use the supported
+# Pages artifact API and retain the existing custom domain in repository settings.
+on:
+  workflow_call:
+    inputs:
+      source-sha:
+        description: Exact source revision approved by the verification gate
+        required: true
+        type: string
+      client-artifact-id:
+        description: Immutable tested client artifact ID from this same run
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  # Serialize the entire release, including its exact-byte production smoke.
+  # Callers must not hold this group while waiting for this workflow.
+  group: deploy-github-pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish verified client artifact
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      page-url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Require exact source and immutable artifact inputs
+        env:
+          VERIFIED_SHA: ${{ inputs.source-sha }}
+          ARTIFACT_ID: ${{ inputs.client-artifact-id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$VERIFIED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$VERIFIED_SHA" = "$GITHUB_SHA"
+          [[ "$ARTIFACT_ID" =~ ^[1-9][0-9]*$ ]]
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ inputs.client-artifact-id }}
+          path: verified-client
+          merge-multiple: true
+          digest-mismatch: error
+      - name: Verify artifact, source identity and Pages configuration
+        env:
+          VERIFIED_SHA: ${{ inputs.source-sha }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$VERIFIED_SHA" = "$GITHUB_SHA"
+          test "$(cat verified-client/source-sha.txt)" = "$GITHUB_SHA"
+          cd verified-client
+          sha256sum --check client.tar.sha256
+          mkdir site
+          tar -xf client.tar -C site
+          test -f site/index.html
+          test -f site/threatcaddy-standalone.html
+          test -f site/.nojekyll
+          main_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          test "$main_sha" = "$GITHUB_SHA" || { echo 'Refusing to publish a superseded main commit'; exit 1; }
+          pages_source=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.build_type')
+          test "$pages_source" = workflow || { echo 'Set Settings > Pages > Source to GitHub Actions before publication'; exit 1; }
+      - name: Stage the tested files for the Pages API
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          name: github-pages-${{ github.sha }}
+          path: verified-client/site
+          include-hidden-files: true
+      - name: Deploy verified Pages artifact
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        with:
+          artifact_name: github-pages-${{ github.sha }}
+
+  smoke:
+    name: Verify published client
+    needs: publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source-sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ inputs.client-artifact-id }}
+          path: verified-client
+          merge-multiple: true
+          digest-mismatch: error
+      - name: Confirm the approved revision (no rebuild)
+        env:
+          VERIFIED_SHA: ${{ inputs.source-sha }}
+        run: |
+          set -euo pipefail
+          test "$VERIFIED_SHA" = "$GITHUB_SHA"
+      - name: Check the live site, PWA and downloaded standalone
+        env:
+          RELEASE_URL: ${{ needs.publish.outputs.page-url }}
+          VERIFIED_SHA: ${{ inputs.source-sha }}
+        run: pnpm test:release --url "$RELEASE_URL" --source-sha "$VERIFIED_SHA" --artifact-dir verified-client
+      - name: Preserve synthetic release-check evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-smoke-${{ github.sha }}-${{ github.run_attempt }}
+          path: test-results/release-smoke/
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Explain post-publication failure
+        if: failure()
+        run: echo '::error::The site was published, but post-deployment verification failed. Inspect the release-smoke evidence; publication was not rolled back.'

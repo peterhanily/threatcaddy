@@ -61,8 +61,12 @@ and outstanding migration failures.
 
 ## Publication
 
-CI and both deployment workflows call the same required verification workflow.
-All required jobs must succeed. High and critical advisories in any of the
+Each main push runs the required verification workflow **once**, through CI.
+Only its successful main-push run can automatically call the reusable Pages
+and server publishers; pull requests, scheduled audits and manual CI runs are
+verification-only. Explicit manual Pages/server deployment workflows remain
+available and each performs its own full verification before using those same
+publishers. All required jobs must succeed. High and critical advisories in any of the
 three complete dependency graphs also block publication; audit errors do not
 become successful checks. Scheduled audits retain their evidence.
 
@@ -70,6 +74,33 @@ Publication promotes the artifacts built and tested for that exact revision;
 it does not rebuild them with deployment credentials. `pnpm deploy` dispatches
 the gated Pages workflow through the GitHub CLI. It no longer downloads an
 unpinned publisher or uploads an unchecked local build.
+
+Automatic server image publication retains its existing path scope:
+`server/**`, `.github/workflows/**`, `scripts/ci-*.mjs` and `.node-version`.
+The existing client-check job computes the complete main-push before/after Git
+diff, including multi-commit pushes, deletions and renames out of those paths.
+Unavailable comparison history conservatively includes server publication
+instead of silently skipping it; every normal verification and source-identity
+gate still applies. An explicit manual server deployment does not require a
+matching path change. Image publication updates GHCR, not a running team server.
+If a server-changing main revision is superseded before promotion, the latest-main
+guard rejects it. A subsequent client-only push does not automatically publish
+that server change; use the gated manual server workflow if promotion is needed.
+
+Verification has read-only repository permissions. Write permissions are scoped
+to main-only publication jobs, which download immutable artifact IDs from the
+same run, verify source identity/checksums and reject a superseded main revision.
+No cross-run `workflow_run` handoff, inherited secrets or privileged rebuild is
+used. A shared Pages workflow lock spans both publication and its production
+smoke check; manual and automatic releases cannot replace the live bytes during
+that check. Server publication has its own shared lock. Main runs are not
+canceled in progress; superseded PR verification may be canceled, with manual
+and scheduled CI runs in separate concurrency groups.
+
+Run `pnpm test:ci` for parsed-workflow trust-boundary contracts, executable input
+and publication-gate checks, and isolated Git release-scope fixtures. These
+Node-owned tests have a separate required CI step; Vitest does not discover them.
+`actionlint` can additionally validate all workflow syntax and reusable wiring.
 
 Pages must use **Settings → Pages → Source → GitHub Actions**. The publication
 workflow checks this setting and fails with instructions when it is different.
@@ -82,6 +113,44 @@ stops its own temporary HTTP origin before cached reload and new-tab checks;
 it does not equate browser offline emulation with a verified network outage.
 The standalone suite copies only the generated HTML into an empty temporary
 directory and uses a fresh offline browser profile.
+
+### Post-deployment verification
+
+After Pages publication, a separate read-only job downloads the same immutable
+client artifact by ID and checks the live HTTPS site against it. It does not
+rebuild the app or derive expected hashes from production. The checks use fresh
+disposable browser contexts and synthetic local data only: hosted save/reload,
+service-worker activation and offline recovery, and a downloaded standalone HTML
+file opened offline without sibling assets. Third-party requests, network writes
+and WebSockets are disallowed.
+
+Run the contract tests locally with `pnpm test:release:unit`. An explicitly
+targeted release check uses this layout and command:
+
+```text
+verified-client/
+  source-sha.txt
+  client.tar
+  client.tar.sha256
+```
+
+The checker validates the source identity, archive checksum and member paths
+before extracting into its own disposable directory. Do not pre-extract an
+unchecked archive. An optional existing `site/` copy is accepted only if every
+file matches the verified archive.
+
+```sh
+pnpm test:release --url https://YOUR-APP.example/ \
+  --source-sha APPROVED_40_CHARACTER_COMMIT_SHA --artifact-dir verified-client
+```
+
+Use an artifact from the approved deployment, not a locally rebuilt substitute.
+Only CDN propagation is retried within a fixed deadline; browser assertions are
+not retried into success. Evidence is written to ignored
+`test-results/release-smoke/` and retained separately from the published site.
+The job has no Pages or package-write permissions. A failure here means
+**published, but post-deployment verification failed**; it does not claim the
+site was never deployed or automatically roll it back.
 
 The standalone build uses `build/standalone-html.ts` to combine exactly one
 entry script and at most one stylesheet. Unexpected emitted assets, external

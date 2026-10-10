@@ -4,9 +4,19 @@ import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS, IOC_TYPE_LABELS } from '
 import { nanoid } from 'nanoid';
 import { workspaceStorageKey } from './workspace-profiles';
 import { ENTITY_RELATIONS, mapEntityReferences, type EntityRecord } from './entity-relations';
-import { withEntityDraftBarrier } from './entity-drafts';
+import { flushEntityDrafts, withEntityDraftBarrier } from './entity-drafts';
 
 export async function exportJSON(): Promise<string> {
+  if ((await flushEntityDrafts()).some(saved => !saved)) throw new Error('Save or recover pending drafts before creating a backup.');
+  // Read all exported entity tables from one snapshot after pending editor
+  // writes settle; another tab cannot interleave a partial multi-table change.
+  return db.transaction('r', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents,
+    db.timelines, db.whiteboards, db.standaloneIOCs, db.evidenceItems, db.chatThreads,
+    db.noteTemplates, db.playbookTemplates, db.agentActions, db.agentProfiles,
+    db.agentDeployments, db.agentMeetings], exportJSONSnapshot);
+}
+
+async function exportJSONSnapshot(): Promise<string> {
   // Load tables sequentially to reduce peak memory usage (avoids loading
   // all 15 tables into memory simultaneously on large datasets).
   const allNotes = collapseEvidenceNoteSeries(await db.notes.toArray());
@@ -817,6 +827,10 @@ export function sanitizeChatThread(raw: unknown): ChatThread | null {
     provider: (VALID_LLM_PROVIDERS.includes(provider) ? provider : 'anthropic') as LLMProvider,
     folderId: r.folderId != null ? str(r.folderId) : undefined,
     tags: strArr(r.tags),
+    clsLevel: typeof r.clsLevel === 'string' ? str(r.clsLevel) : undefined,
+    mode: r.mode === 'plan' || r.mode === 'act' ? r.mode : undefined,
+    source: r.source === 'user' || r.source === 'agent' || r.source === 'agent-meeting' || r.source === 'caddyshack' ? r.source : undefined,
+    contextSummary: typeof r.contextSummary === 'string' ? str(r.contextSummary) : undefined,
     parentThreadId: r.parentThreadId != null ? str(r.parentThreadId) : undefined,
     isFolder: r.isFolder === true ? true : undefined,
     trashed: bool(r.trashed),
@@ -1671,10 +1685,12 @@ export async function mergeImportJSON(json: string): Promise<MergeImportResult> 
   const evidenceItems = mergeEvidenceItemLists(importedEvidenceItems, evidenceItemsFromNotes(allNotes));
   const chatThreads = (Array.isArray(data.chatThreads) ? data.chatThreads : [])
     .map(sanitizeChatThread).filter((c: ChatThread | null): c is ChatThread => c !== null && !!c.id);
+  const noteTemplates = (Array.isArray(data.noteTemplates) ? data.noteTemplates : [])
+    .map(sanitizeNoteTemplate).filter((template: NoteTemplate | null): template is NoteTemplate => template !== null && !!template.id);
 
   const noteInvestigations = countImportedNotesByInvestigation(notes, folders);
 
-  await db.transaction('rw', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents, db.timelines, db.whiteboards, db.standaloneIOCs, db.evidenceItems, db.chatThreads], async () => {
+  await db.transaction('rw', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents, db.timelines, db.whiteboards, db.standaloneIOCs, db.evidenceItems, db.chatThreads, db.noteTemplates], async () => {
     await mergeTable('folders', db.folders, folders);
     await mergeTable('tags', db.tags, tags);
     await mergeTable('notes', db.notes, notes);
@@ -1685,6 +1701,7 @@ export async function mergeImportJSON(json: string): Promise<MergeImportResult> 
     await mergeTable('standaloneIOCs', db.standaloneIOCs, standaloneIOCs);
     await mergeTable('evidenceItems', db.evidenceItems, evidenceItems);
     await mergeTable('chatThreads', db.chatThreads, chatThreads);
+    await mergeTable('noteTemplates', db.noteTemplates, noteTemplates);
   });
 
   return { added, skipped, updated, tables, noteInvestigations };
