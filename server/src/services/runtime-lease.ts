@@ -8,12 +8,14 @@ export async function assertServerStopped(tx: TransactionSql): Promise<void> {
 }
 
 /** Startup guard, not a distributed worker/fencing protocol. A dedicated socket
- * holds the lease; connection loss is fatal rather than silently reacquiring it. */
+ * holds the lease; connection loss is fatal rather than silently reacquiring it.
+ * max_lifetime must stay null: postgres.js otherwise recycles every connection
+ * after 30-60 minutes, which would read as a lost lease and stop the server. */
 export async function acquireRuntimeLease(url: string, onLost: () => void): Promise<() => Promise<void>> {
   let held = false;
   let closing = false;
   let pinging = false;
-  const connection = postgres(url, { max: 1, idle_timeout: 0, connect_timeout: 5, onnotice: () => {},
+  const connection = postgres(url, { max: 1, idle_timeout: 0, max_lifetime: null, connect_timeout: 5, onnotice: () => {},
     onclose: () => { if (held && !closing) { held = false; onLost(); } },
   });
   try {

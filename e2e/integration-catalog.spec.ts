@@ -1,6 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { goToApp, getSidebar } from './fixtures';
 
+// Keep mocked catalog requests on the page route instead of a service worker.
+// Real service-worker/offline behavior is covered separately in offline.spec.ts.
+test.use({ serviceWorkers: 'block' });
+
 const catalogUrl = 'https://raw.githubusercontent.com/peterhanily/threatcaddy-integrations/main/catalog.json';
 const entry = {
   id: 'catalog-runtime-fixture', name: 'Fictional catalog runtime fixture', description: 'Local test response only.',
