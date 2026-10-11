@@ -5,6 +5,7 @@ import type { BotConfig, BotContext, BotCapability } from '../bots/types.js';
 
 vi.mock('../db/index.js', () => ({
   db: {
+    transaction: vi.fn(),
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
@@ -56,12 +57,21 @@ vi.mock('../services/sync-service.js', () => ({
   lookupEntityFolderId: vi.fn().mockResolvedValue(null),
 }));
 
+// These tests isolate the run-snapshot/preflight contract with synthetic rows.
+// Current read authorization uses real PostgreSQL in bot-read-authorization.integration.test.ts.
+vi.mock('../services/bot-read-policy.js', () => ({
+  withBotReadPolicy: async (_context: unknown, _capability: unknown, read: (...args: unknown[]) => unknown) => {
+    const { db } = await import('../db/index.js');
+    return read(db, () => undefined);
+  },
+}));
+
 vi.mock('../services/notification-service.js', () => ({
   createNotification: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../ws/handler.js', () => ({
-  broadcastToFolder: vi.fn(),
+  broadcastToFolder: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('node:dns/promises', () => ({
@@ -271,7 +281,13 @@ describe('BotExecutionContext scope enforcement', () => {
       });
       const exec = new BotExecutionContext(ctx);
 
-      // post_to_feed only checks capability + scope, DB insert is mocked
+      // The live write grant is rechecked inside the transaction as well.
+      const { db } = await import('../db/index.js');
+      const grants = [[{ active: true, role: 'analyst' }], [{ userId: ctx.botUserId,
+        enabled: true, capabilities: ctx.botConfig.capabilities, scopeType: 'global', scopeFolderIds: [] }]];
+      const tx = { execute: vi.fn().mockResolvedValue([{ id: 1 }]), insert: db.insert,
+        select: () => ({ from: () => ({ where: () => ({ for: () => Promise.resolve(grants.shift()) }) }) }) };
+      vi.mocked(db.transaction).mockImplementation(async callback => callback(tx as never));
       await expect(exec.postToFeed('hello world')).resolves.not.toThrow();
     });
   });

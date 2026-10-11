@@ -500,8 +500,8 @@ ${adminStyles()}
 <!-- Purge Confirmation modal -->
 <div id="purgeModal" class="modal-overlay">
   <div class="modal">
-    <h3 style="color:#f85149;">Purge All Content</h3>
-    <p>This will permanently delete ALL content from this investigation. The investigation and its members will be kept.</p>
+    <h3 style="color:#f85149;">Permanently Delete Investigation</h3>
+    <p>This will permanently delete this investigation, its memberships and ALL retained content, including evidence and attachments. This cannot be undone.</p>
     <div id="purgeEntityCounts" style="margin-bottom:1rem;font-size:0.85rem;color:#c9d1d9;"></div>
     <div class="form-group">
       <label>Type the investigation name to confirm:</label>

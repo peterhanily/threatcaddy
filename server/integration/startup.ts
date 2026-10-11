@@ -53,7 +53,8 @@ export async function stageBuiltServer(): Promise<StagedServer> {
   }
 }
 
-export async function bootBuiltServer(database: ScratchDatabase, artifact: StagedServer): Promise<void> {
+export async function bootBuiltServer(database: ScratchDatabase, artifact: StagedServer,
+  onReady?: (addresses: { apiUrl: string; adminUrl: string }) => Promise<void>): Promise<void> {
   const { folder } = artifact;
   const port = await freePort();
   let adminPort = await freePort();
@@ -67,6 +68,7 @@ export async function bootBuiltServer(database: ScratchDatabase, artifact: Stage
       DATABASE_URL: database.url.toString(),
       DB_POOL_MAX: '2',
       PORT: String(port), ADMIN_PORT: String(adminPort),
+      HOST: '127.0.0.1', ADMIN_HOST: '127.0.0.1',
       ...artifact.credentials,
       FILE_STORAGE_PATH: resolve(folder, 'files'),
       DOCKER_HOST: `unix://${resolve(folder, 'no-docker.sock')}`,
@@ -108,7 +110,17 @@ export async function bootBuiltServer(database: ScratchDatabase, artifact: Stage
         if (/Failed to start server|Uncaught exception|Unhandled promise rejection|Failed to clean up stale bot runs/.test(output)) throw new Error(`Compiled server logged initialization errors.\n${output}`);
         const pkg = JSON.parse(await readFile(resolve(folder, 'package.json'), 'utf8')) as { version: string };
         if (stableHealth.version !== pkg.version) throw new Error(`Compiled /health version ${String(stableHealth.version)} differs from package version ${pkg.version}.\n${output}`);
+        // These addresses come from the real listening sockets, not their configured inputs.
+        const entries = output.split('\n').flatMap(line => {
+          try { return [JSON.parse(line) as Record<string, unknown>]; } catch { return []; }
+        });
+        for (const expectedPort of [port, adminPort]) {
+          if (!entries.some(entry => entry.port === expectedPort && entry.address === '127.0.0.1')) {
+            throw new Error(`Compiled listener ${expectedPort} did not confirm its loopback binding.\n${output}`);
+          }
+        }
         becameReady = true;
+        await onReady?.({ apiUrl: `http://127.0.0.1:${port}`, adminUrl: `http://127.0.0.1:${adminPort}` });
         return;
       }
       await delay(100);

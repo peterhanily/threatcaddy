@@ -11,11 +11,12 @@ const state = vi.hoisted(() => ({
   writeErrorAt: 0,
   writeCount: 0,
   events: vi.fn(),
+  missingClock: false,
 }));
 vi.mock('../db/index.js', () => {
   const chain = () => {
     const query: Record<string, unknown> = {};
-    for (const key of ['from', 'where', 'limit', 'for', 'orderBy']) query[key] = () => query;
+    for (const key of ['from', 'innerJoin', 'where', 'limit', 'for', 'orderBy']) query[key] = () => query;
     query.then = (resolve: (rows: unknown[]) => unknown, reject: (error: unknown) => unknown) =>
       Promise.resolve(state.rows.shift() ?? []).then(resolve, reject);
     return query;
@@ -35,7 +36,7 @@ vi.mock('../db/index.js', () => {
   };
   const database = {
     select: chain,
-    execute: vi.fn(async () => []),
+    execute: vi.fn(async () => state.missingClock ? [] : [{ id: 1, cursor: 0n, generation: 'synthetic-history' }]),
     insert: () => write(state.inserts),
     update: () => write(state.updates),
   };
@@ -58,11 +59,20 @@ beforeEach(() => {
   state.inserts.length = 0; state.updates.length = 0;
   state.inTransaction = false; state.commitError = false;
   state.writeErrorAt = 0; state.writeCount = 0; state.events.mockClear();
+  state.missingClock = false;
 });
 
 describe('transactional sync writes', () => {
   const current = { id: 'note-1', folderId: 'folder-1', title: 'Saved', content: 'Existing content', version: 3 };
   const patch: SyncChange = { table: 'notes', entityId: current.id, op: 'put', data: { title: 'Edited' }, clientVersion: 3 };
+
+  it('fails closed before any record access or write when the writer clock is missing', async () => {
+    state.missingClock = true; state.rows.push([current]);
+    await expect(processPush([patch], 'user-1')).rejects.toThrow('Sync clock is missing');
+    expect(state.rows).toEqual([[current]]);
+    expect(state.updates).toEqual([]); expect(state.inserts).toEqual([]);
+    expect(state.events).not.toHaveBeenCalled();
+  });
 
   it('creates a new record with server-managed attribution and revision', async () => {
     state.rows.push([]);
@@ -135,7 +145,7 @@ describe('transactional sync writes', () => {
   });
 
   it('creates ownership before children in the same transaction', async () => {
-    state.rows.push([{ active: true, role: 'analyst' }], [], [], []);
+    state.rows.push([{ active: true, role: 'analyst', email: 'owner@example.invalid' }], [], [], [], [{ id: 'new-folder' }]);
     state.returned.push([{ id: 'new-folder', name: 'New', version: 1 }], [{ id: 'child', folderId: 'new-folder', version: 1 }]);
     const result = await processPush([
       { table: 'notes', entityId: 'child', op: 'put', clientVersion: 0, data: { title: 'Child', folderId: 'new-folder' } },
@@ -149,6 +159,57 @@ describe('transactional sync writes', () => {
     state.rows.push([{ active: true, role: 'analyst' }], [], [current]);
     expect(await processPush([patch], 'user-1', { authorize: true })).toEqual([{ table: 'notes', entityId: current.id, status: 'rejected' }]);
     expect(state.updates).toEqual([]);
+  });
+
+  it.each(['delete', 'restore'] as const)('rejects an editor attempting folder %s even with the current revision', async action => {
+    const folder = { id: 'case', name: 'Synthetic case', version: 3, deletedAt: action === 'restore' ? new Date() : null };
+    state.rows.push([{ active: true, role: 'analyst' }], [{ folderId: 'case', role: 'editor' }], [folder], [folder], []);
+    expect(await processPush([{ table: 'folders', entityId: 'case', op: action === 'delete' ? 'delete' : 'put', data: {}, clientVersion: 3 }], 'editor', { authorize: true }))
+      .toEqual([{ table: 'folders', entityId: 'case', status: 'rejected' }]);
+    expect(state.updates).toEqual([]); expect(state.events).not.toHaveBeenCalled();
+  });
+
+  it.each(['delete', 'restore'] as const)('permits a current owner folder %s without physical deletion', async action => {
+    const folder = { id: 'case', name: 'Synthetic case', version: 3, deletedAt: action === 'restore' ? new Date() : null };
+    state.rows.push([{ active: true, role: 'analyst' }], [{ folderId: 'case', role: 'owner' }], [folder], [folder], [{ id: 'current-owner' }]);
+    state.returned.push([{ ...folder, version: 4, deletedAt: action === 'delete' ? new Date() : null }]);
+    expect((await processPush([{ table: 'folders', entityId: 'case', op: action === 'delete' ? 'delete' : 'put', data: {}, clientVersion: 3 }], 'owner', { authorize: true }))[0].status).toBe('accepted');
+    expect(state.updates[0].deletedAt === null).toBe(action === 'restore');
+    expect(state.events.mock.calls[0][0]).toBe(false);
+  });
+
+  it('rejects a retained child in a missing or deleted investigation before returning its content', async () => {
+    state.rows.push([{ active: true, role: 'analyst' }], [{ folderId: 'folder-1', role: 'owner' }], [current], []);
+    expect(await processPush([patch], 'owner', { authorize: true })).toEqual([{ table: 'notes', entityId: current.id, status: 'rejected' }]);
+    expect(state.updates).toEqual([]);
+  });
+
+  it('checks the internal authorizer under the writer transaction with original and explicit proposed scope', async () => {
+    state.rows.push([current], [{ id: 'folder-1' }]);
+    const authorizeMutation = vi.fn(async (_tx, _change, existing, next) => {
+      expect(state.inTransaction).toBe(true); expect(state.updates).toEqual([]);
+      expect(existing).toEqual(current); expect(next).toMatchObject({ id: current.id, folderId: null, title: 'Edited' });
+      throw new Error('Synthetic policy refusal');
+    });
+    await expect(processPush([{ ...patch, data: { title: 'Edited', folderId: null } }], 'bot', { trustedInternal: true, authorizeMutation })).rejects.toThrow('Synthetic policy refusal');
+    expect(authorizeMutation).toHaveBeenCalledOnce(); expect(state.events).not.toHaveBeenCalled();
+  });
+
+  it('does not skip the internal authorizer for an absent idempotent deletion', async () => {
+    state.rows.push([]); const authorizeMutation = vi.fn(async () => { throw new Error('Synthetic cancellation'); });
+    await expect(processPush([{ ...patch, op: 'delete' }], 'bot', { authorizeMutation })).rejects.toThrow('Synthetic cancellation');
+    expect(authorizeMutation).toHaveBeenCalledWith(expect.anything(), expect.anything(), null, { id: current.id });
+    expect(state.events).not.toHaveBeenCalled();
+  });
+
+  it('runs the final cancellation guard after staged writes and emits no event when it rejects', async () => {
+    state.rows.push([current]); state.returned.push([{ ...current, version: 4 }]);
+    const beforeCommit = vi.fn(() => {
+      expect(state.inTransaction).toBe(true); expect(state.updates).toHaveLength(1);
+      throw new Error('Synthetic cancellation before commit');
+    });
+    await expect(processPush([patch], 'user-1', { beforeCommit })).rejects.toThrow('Synthetic cancellation before commit');
+    expect(beforeCommit).toHaveBeenCalledOnce(); expect(state.events).not.toHaveBeenCalled();
   });
 
   it('rejects duplicate identities before any writes', async () => {

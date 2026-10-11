@@ -1,22 +1,28 @@
 import { Hono } from 'hono';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, isNull, or, inArray } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth.js';
 import { db } from '../db/index.js';
-import { notifications, users } from '../db/schema.js';
-import type { AuthUser } from '../types.js';
+import { notifications, posts, users } from '../db/schema.js';
+import { withCurrentFeedAccess, type FeedVariables } from '../middleware/feed-access.js';
+import { visibleFeedScope, visiblePostScope } from '../services/feed-policy.js';
 
-const app = new Hono<{ Variables: { user: AuthUser } }>();
+const app = new Hono<{ Variables: FeedVariables }>();
 
 app.use('*', requireAuth);
 
 // GET /api/notifications
-app.get('/', async (c) => {
+app.get('/', withCurrentFeedAccess, async (c) => {
+  const db = c.get('feedDb');
   const user = c.get('user');
   const unread = c.req.query('unread');
   const rawLimitN = parseInt(c.req.query('limit') || '', 10);
   const limit = Math.min(isFinite(rawLimitN) && rawLimitN > 0 ? rawLimitN : 50, 500);
 
-  const conditions = [eq(notifications.userId, user.id)];
+  const conditions = [eq(notifications.userId, user.id), visibleFeedScope(notifications.folderId, user.id),
+    // Legacy reaction notifications omitted folderId; validate the referenced
+    // post too, so those rows cannot survive an investigation access revocation.
+    or(isNull(notifications.postId), inArray(notifications.postId,
+      db.select({ id: posts.id }).from(posts).where(and(eq(posts.deleted, false), visiblePostScope(user.id)))))];
   if (unread === 'true') {
     conditions.push(eq(notifications.read, false));
   }

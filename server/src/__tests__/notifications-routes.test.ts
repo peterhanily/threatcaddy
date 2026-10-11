@@ -3,6 +3,16 @@ import { Hono } from 'hono';
 
 // ─── Mock db ───────────────────────────────────────────────────
 
+// Real authorization SQL is exercised in the disposable PostgreSQL suite.
+vi.mock('../middleware/feed-access.js', async () => {
+  const { db } = await import('../db/index.js');
+  const { createMiddleware } = await import('hono/factory');
+  return { withCurrentFeedAccess: createMiddleware(async (c, next) => {
+    c.set('feedDb', db);
+    await next();
+  }) };
+});
+
 const mockSelectResult = vi.fn();
 const mockUpdateResult = vi.fn();
 const mockDeleteResult = vi.fn();
@@ -32,6 +42,7 @@ vi.mock('../db/index.js', () => ({
 }));
 
 vi.mock('../db/schema.js', () => ({
+  posts: { id: 'id', folderId: 'folder_id', parentId: 'parent_id', replyToId: 'reply_to_id', deleted: 'deleted' },
   notifications: {
     id: 'id', userId: 'user_id', type: 'type', sourceUserId: 'source_user_id',
     postId: 'post_id', folderId: 'folder_id', message: 'message',

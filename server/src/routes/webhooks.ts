@@ -25,6 +25,7 @@
 import { Hono } from 'hono';
 import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
+import { lockInvestigationPolicy } from '../services/investigation-policy.js';
 import { folders, notes, standaloneIOCs, users, investigationMembers } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { logger } from '../lib/logger.js';
@@ -175,6 +176,7 @@ app.post('/ingest', async (c) => {
   let iocCount = 0;
   try {
     await db.transaction(async tx => {
+      await lockInvestigationPolicy(tx);
       const [currentOwner] = await tx.select({ active: users.active, role: users.role, email: users.email })
         .from(users).where(eq(users.id, ownerId)).for('share');
       if (!currentOwner || !currentOwner.active || !['admin', 'analyst'].includes(currentOwner.role)

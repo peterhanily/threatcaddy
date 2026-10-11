@@ -8,6 +8,7 @@ import {
 } from './shared.js';
 import { changeAdminSecret } from '../../services/admin-secret.js';
 import { revokeUserSessions, revokeAllSessions, updateUsersAndRevokeSessions } from '../../services/session-service.js';
+import { InvestigationPolicyError } from '../../services/investigation-policy.js';
 
 const app = new Hono();
 
@@ -44,8 +45,6 @@ app.patch('/api/users/:id', requireAdminAuth, async (c) => {
       return c.json({ error: 'Invalid role' }, 400);
     }
     updates.role = body.role;
-    logger.info('Admin action: user role changed', { targetUserId: id, newRole: body.role });
-    await logAdminAction(getAdminId(c), 'user.role-change', `Changed ${target.email} role to ${body.role}`, { itemId: id });
   }
 
   if (body.active !== undefined) {
@@ -53,12 +52,24 @@ app.patch('/api/users/:id', requireAdminAuth, async (c) => {
       return c.json({ error: 'Invalid active value' }, 400);
     }
     updates.active = body.active;
+  }
+
+  try {
+    if (body.role !== undefined || body.active !== undefined) await updateUsersAndRevokeSessions([id], updates, undefined, { kind: 'admin', userId: getAdminId(c) });
+    else await db.update(users).set(updates).where(eq(users.id, id));
+  }
+  catch (error) {
+    if (error instanceof InvestigationPolicyError) return c.json({ error: error.message, code: error.code }, error.status);
+    throw error;
+  }
+  if (body.role !== undefined) {
+    logger.info('Admin action: user role changed', { targetUserId: id, newRole: body.role });
+    await logAdminAction(getAdminId(c), 'user.role-change', `Changed ${target.email} role to ${body.role}`, { itemId: id });
+  }
+  if (body.active !== undefined) {
     logger.info('Admin action: user active status changed', { targetUserId: id, active: body.active });
     await logAdminAction(getAdminId(c), 'user.toggle-active', `${body.active ? 'Activated' : 'Deactivated'} ${target.email}`, { itemId: id });
   }
-
-  if (body.role !== undefined || body.active !== undefined) await updateUsersAndRevokeSessions([id], updates);
-  else await db.update(users).set(updates).where(eq(users.id, id));
 
   return c.json({ ok: true });
 });
@@ -73,7 +84,11 @@ app.post('/api/users/:id/reset-password', requireAdminAuth, async (c) => {
 
   const temporaryPassword = nanoid(16);
   const hash = await argon2.hash(temporaryPassword, { type: argon2.argon2id });
-  await updateUsersAndRevokeSessions([id], { passwordHash: hash, updatedAt: new Date() });
+  try { await updateUsersAndRevokeSessions([id], { passwordHash: hash, updatedAt: new Date() }, undefined, { kind: 'admin', userId: getAdminId(c) }); }
+  catch (error) {
+    if (error instanceof InvestigationPolicyError) return c.json({ error: error.message, code: error.code }, error.status);
+    throw error;
+  }
 
   logger.info('Admin action: password reset', { targetUserId: id, targetEmail: user[0].email });
   await logAdminAction(getAdminId(c), 'user.reset-password', `Reset password for ${user[0].email}`, { itemId: id });
@@ -151,17 +166,12 @@ app.post('/api/users/bulk', requireAdminAuth, async (c) => {
     updates.active = false;
   }
 
-  // Prevent disabling or demoting every admin — ensure at least one admin remains
-  if (action === 'disable' || (action === 'changeRole' && role !== 'admin')) {
-    const adminCount = await db.select({ id: users.id }).from(users)
-      .where(and(eq(users.role, 'admin'), eq(users.active, true)));
-    const remainingAdmins = adminCount.filter((u) => !validIds.includes(u.id));
-    if (remainingAdmins.length === 0) {
-      return c.json({ error: 'Cannot disable or demote all admin users — at least one must remain' }, 400);
-    }
+  let result;
+  try { result = await updateUsersAndRevokeSessions(validIds, updates, undefined, { kind: 'admin', userId: getAdminId(c) }); }
+  catch (error) {
+    if (error instanceof InvestigationPolicyError) return c.json({ error: error.message, code: error.code }, error.status);
+    throw error;
   }
-
-  const result = await updateUsersAndRevokeSessions(validIds, updates);
   const affected = result.length;
 
   await logAdminAction(getAdminId(c), 'user.bulk', `Bulk ${action} on ${affected} user(s)${action === 'changeRole' ? ` to ${role}` : ''}`);

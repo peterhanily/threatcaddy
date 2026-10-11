@@ -37,6 +37,7 @@ const {
 vi.mock('../db/index.js', () => ({ db: mockDb }));
 
 vi.mock('../db/schema.js', () => ({
+  folders: { id: 'id', deletedAt: 'deletedAt' },
   users: { id: 'id', active: 'active', role: 'role' },
   investigationMembers: {
     id: 'id',

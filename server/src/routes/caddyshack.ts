@@ -3,19 +3,21 @@ import { eq, and, lt, desc, isNull, or, inArray, count } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { requireAuth } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
-import { db } from '../db/index.js';
+import { withCurrentFeedAccess, type FeedVariables } from '../middleware/feed-access.js';
+import { postScopeFolders, visiblePostScope } from '../services/feed-policy.js';
 import { posts, reactions, users } from '../db/schema.js';
 import { notifyMentions, createNotification } from '../services/notification-service.js';
 import { broadcastToFolder, broadcastGlobal } from '../ws/handler.js';
-import type { AuthUser } from '../types.js';
 import { ErrorCodes } from '../types/error-codes.js';
 
-const app = new Hono<{ Variables: { user: AuthUser } }>();
+const app = new Hono<{ Variables: FeedVariables }>();
 
 app.use('*', requireAuth);
+app.use('*', withCurrentFeedAccess);
 
 // GET /api/caddyshack — paginated feed
 app.get('/', async (c) => {
+  const db = c.get('feedDb');
   const user = c.get('user');
   const cursor = c.req.query('cursor');
   const rawLimitCs = parseInt(c.req.query('limit') || '', 10);
@@ -23,7 +25,7 @@ app.get('/', async (c) => {
   const folderId = c.req.query('folderId');
 
   if (folderId) {
-    const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer');
+    const hasAccess = await checkInvestigationAccess(user.id, folderId, 'viewer', db);
     if (!hasAccess) {
       return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
     }
@@ -51,6 +53,7 @@ app.get('/', async (c) => {
     .where(
       and(
         eq(posts.deleted, false),
+        visiblePostScope(user.id),
         isNull(posts.parentId), // Only top-level posts
         folderId
           ? eq(posts.folderId, folderId)
@@ -79,7 +82,7 @@ app.get('/', async (c) => {
   for (const r of allReactions) {
     let map = reactionsByPost.get(r.postId);
     if (!map) {
-      map = {};
+      map = Object.create(null) as Record<string, { count: number; userIds: string[] }>;
       reactionsByPost.set(r.postId, map);
     }
     if (!map[r.emoji]) map[r.emoji] = { count: 0, userIds: [] };
@@ -91,7 +94,7 @@ app.get('/', async (c) => {
   const replyCounts = await db
     .select({ parentId: posts.parentId, cnt: count() })
     .from(posts)
-    .where(and(inArray(posts.parentId, postIds), eq(posts.deleted, false)))
+    .where(and(inArray(posts.parentId, postIds), eq(posts.deleted, false), visiblePostScope(user.id)))
     .groupBy(posts.parentId);
 
   const replyCountMap = new Map<string, number>();
@@ -110,9 +113,17 @@ app.get('/', async (c) => {
 
 // POST /api/caddyshack/posts — create post
 app.post('/posts', async (c) => {
+  const db = c.get('feedDb');
   const user = c.get('user');
   const body = await c.req.json();
   const { content, attachments = [], mentions = [], folderId = null, parentId = null, replyToId = null, clsLevel = null } = body;
+
+  if ([folderId, parentId, replyToId].some(id => id !== null && (typeof id !== 'string' || id.length === 0 || id.length > 128))) {
+    return c.json({ error: 'Folder and reply identifiers must be non-empty strings or null', code: ErrorCodes.VALIDATION_FAILED }, 400);
+  }
+  if (replyToId && !parentId) {
+    return c.json({ error: 'A reply target requires a parent post', code: ErrorCodes.VALIDATION_FAILED }, 400);
+  }
 
   // Input validation
   if (typeof content !== 'string' || !content.trim()) {
@@ -159,7 +170,7 @@ app.post('/posts', async (c) => {
   }
 
   if (folderId) {
-    const hasAccess = await checkInvestigationAccess(user.id, folderId, 'editor');
+    const hasAccess = await checkInvestigationAccess(user.id, folderId, 'editor', db);
     if (!hasAccess) {
       return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
     }
@@ -183,7 +194,7 @@ app.post('/posts', async (c) => {
       return c.json({ error: 'Reply must be in the same folder as parent post', code: ErrorCodes.CROSS_FOLDER_REPLY }, 400);
     }
     if (parentPost.folderId) {
-      const hasParentAccess = await checkInvestigationAccess(user.id, parentPost.folderId, 'viewer');
+      const hasParentAccess = await checkInvestigationAccess(user.id, parentPost.folderId, 'viewer', db);
       if (!hasParentAccess) {
         return c.json({ error: 'No access to parent post', code: ErrorCodes.NO_ACCESS }, 403);
       }
@@ -200,6 +211,24 @@ app.post('/posts', async (c) => {
       rootParentId = parentId;
       if (!directReplyToId) directReplyToId = parentId;
     }
+  }
+
+  // Every reply target must belong to this exact live thread and folder. A
+  // supplied replyToId must not disclose or notify an unrelated private post.
+  let replyTarget = parentPost;
+  if (rootParentId && parentPost?.parentId) {
+    const [root] = await db.select().from(posts).where(eq(posts.id, rootParentId)).limit(1);
+    if (!root || root.deleted || root.parentId || (root.folderId || null) !== folderId) {
+      return c.json({ error: 'Parent post not found', code: ErrorCodes.PARENT_POST_NOT_FOUND }, 404);
+    }
+  }
+  if (directReplyToId && directReplyToId !== parentPost?.id) {
+    const [target] = await db.select().from(posts).where(eq(posts.id, directReplyToId)).limit(1);
+    if (!target || target.deleted || (target.folderId || null) !== folderId
+      || (target.id !== rootParentId && target.parentId !== rootParentId)) {
+      return c.json({ error: 'Reply target must belong to the same thread', code: ErrorCodes.CROSS_FOLDER_REPLY }, 400);
+    }
+    replyTarget = target;
   }
 
   const id = nanoid();
@@ -255,30 +284,27 @@ app.post('/posts', async (c) => {
     replyCount: 0,
   };
 
-  // Notify mentions
-  if (mentions.length > 0) {
-    await notifyMentions(mentions, user.id, id, folderId, user.displayName);
-  }
+  // Notifications and broadcasts are best-effort effects of a committed post.
+  c.get('afterFeedCommit')(async () => {
+    if (mentions.length > 0) await notifyMentions(mentions, user.id, id, folderId, user.displayName);
 
-  // Notify the author of the post being replied to
-  const notifyAuthorId = parentPost?.authorId;
-  if (notifyAuthorId && notifyAuthorId !== user.id) {
-    await createNotification({
-      userId: notifyAuthorId,
-      type: 'reply',
-      sourceUserId: user.id,
-      postId: id,
-      folderId: folderId || undefined,
-      message: `${user.displayName} replied to your post`,
-    });
-  }
-
-  // If replying to a different user than the parent post author, notify them too
-  if (directReplyToId && directReplyToId !== rootParentId) {
-    const replyTarget = await db.select().from(posts).where(eq(posts.id, directReplyToId)).limit(1);
-    if (replyTarget.length > 0 && replyTarget[0].authorId !== user.id && replyTarget[0].authorId !== notifyAuthorId) {
+    // Notify the author of the post being replied to.
+    const notifyAuthorId = parentPost?.authorId;
+    if (notifyAuthorId && notifyAuthorId !== user.id) {
       await createNotification({
-        userId: replyTarget[0].authorId,
+        userId: notifyAuthorId,
+        type: 'reply',
+        sourceUserId: user.id,
+        postId: id,
+        folderId: folderId || undefined,
+        message: `${user.displayName} replied to your post`,
+      });
+    }
+
+    if (directReplyToId && directReplyToId !== rootParentId && replyTarget
+      && replyTarget.authorId !== user.id && replyTarget.authorId !== notifyAuthorId) {
+      await createNotification({
+        userId: replyTarget.authorId,
         type: 'reply',
         sourceUserId: user.id,
         postId: id,
@@ -286,21 +312,18 @@ app.post('/posts', async (c) => {
         message: `${user.displayName} replied to your comment`,
       });
     }
-  }
 
-  // Broadcast
-  const wsMsg = { type: 'new-post', postId: id, folderId };
-  if (folderId) {
-    broadcastToFolder(folderId, wsMsg);
-  } else {
-    broadcastGlobal(wsMsg);
-  }
+    const wsMsg = { type: 'new-post', postId: id, folderId };
+    if (folderId) await broadcastToFolder(folderId, wsMsg);
+    else await broadcastGlobal(wsMsg);
+  });
 
   return c.json(post, 201);
 });
 
 // GET /api/caddyshack/posts/:id — post with all descendant replies (flat)
 app.get('/posts/:id', async (c) => {
+  const db = c.get('feedDb');
   const postId = c.req.param('id');
 
   const result = await db
@@ -322,16 +345,16 @@ app.get('/posts/:id', async (c) => {
     })
     .from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
-    .where(eq(posts.id, postId))
+    .where(and(eq(posts.id, postId), visiblePostScope(c.get('user').id)))
     .limit(1);
 
-  if (result.length === 0) {
+  if (result.length === 0 || result[0].deleted) {
     return c.json({ error: 'Post not found', code: ErrorCodes.POST_NOT_FOUND }, 404);
   }
 
   if (result[0].folderId) {
     const user = c.get('user');
-    const hasAccess = await checkInvestigationAccess(user.id, result[0].folderId, 'viewer');
+    const hasAccess = await checkInvestigationAccess(user.id, result[0].folderId, 'viewer', db);
     if (!hasAccess) {
       return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
     }
@@ -357,7 +380,8 @@ app.get('/posts/:id', async (c) => {
     })
     .from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
-    .where(and(eq(posts.parentId, postId), eq(posts.deleted, false)))
+    .where(and(eq(posts.parentId, postId), eq(posts.deleted, false), visiblePostScope(c.get('user').id),
+      result[0].folderId ? eq(posts.folderId, result[0].folderId) : or(isNull(posts.folderId), eq(posts.folderId, ''))))
     .orderBy(posts.createdAt);
 
   // Build a map of post id → author name for replyTo resolution
@@ -385,7 +409,7 @@ app.get('/posts/:id', async (c) => {
   for (const r of reactionRows) {
     let map = reactionsByPost.get(r.postId);
     if (!map) {
-      map = {};
+      map = Object.create(null) as Record<string, { count: number; userIds: string[] }>;
       reactionsByPost.set(r.postId, map);
     }
     if (!map[r.emoji]) map[r.emoji] = { count: 0, userIds: [] };
@@ -405,16 +429,22 @@ app.get('/posts/:id', async (c) => {
 
 // PATCH /api/caddyshack/posts/:id — edit post (author or admin only)
 app.patch('/posts/:id', async (c) => {
+  const db = c.get('feedDb');
   const user = c.get('user');
   const postId = c.req.param('id');
   const body = await c.req.json();
 
-  const existing = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
-  if (existing.length === 0) {
+  const existing = await db.select().from(posts).where(and(eq(posts.id, postId), visiblePostScope(user.id))).limit(1);
+  if (existing.length === 0 || existing[0].deleted) {
     return c.json({ error: 'Post not found', code: ErrorCodes.POST_NOT_FOUND }, 404);
   }
   if (existing[0].authorId !== user.id && user.role !== 'admin') {
     return c.json({ error: 'Not authorized', code: ErrorCodes.NOT_AUTHORIZED }, 403);
+  }
+  for (const scope of await postScopeFolders(db, existing[0])) {
+    if (!await checkInvestigationAccess(user.id, scope, 'editor', db)) {
+      return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
+    }
   }
 
   const updates: Record<string, unknown> = { updatedAt: new Date() };
@@ -441,15 +471,21 @@ app.patch('/posts/:id', async (c) => {
 
 // DELETE /api/caddyshack/posts/:id — soft delete
 app.delete('/posts/:id', async (c) => {
+  const db = c.get('feedDb');
   const user = c.get('user');
   const postId = c.req.param('id');
 
-  const existing = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
-  if (existing.length === 0) {
+  const existing = await db.select().from(posts).where(and(eq(posts.id, postId), visiblePostScope(user.id))).limit(1);
+  if (existing.length === 0 || existing[0].deleted) {
     return c.json({ error: 'Post not found', code: ErrorCodes.POST_NOT_FOUND }, 404);
   }
   if (existing[0].authorId !== user.id && user.role !== 'admin') {
     return c.json({ error: 'Not authorized', code: ErrorCodes.NOT_AUTHORIZED }, 403);
+  }
+  for (const scope of await postScopeFolders(db, existing[0])) {
+    if (!await checkInvestigationAccess(user.id, scope, 'editor', db)) {
+      return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
+    }
   }
 
   await db.update(posts).set({ deleted: true, updatedAt: new Date() }).where(eq(posts.id, postId));
@@ -459,6 +495,7 @@ app.delete('/posts/:id', async (c) => {
 
 // POST /api/caddyshack/posts/:id/reactions — add reaction
 app.post('/posts/:id/reactions', async (c) => {
+  const db = c.get('feedDb');
   const user = c.get('user');
   const postId = c.req.param('id');
   const body = await c.req.json();
@@ -468,27 +505,31 @@ app.post('/posts/:id/reactions', async (c) => {
     return c.json({ error: 'Emoji is required (max 32 chars)', code: ErrorCodes.EMOJI_REQUIRED }, 400);
   }
 
-  try {
-    await db.insert(reactions).values({
+  const [post] = await db.select().from(posts).where(and(eq(posts.id, postId), visiblePostScope(user.id))).limit(1);
+  if (!post || post.deleted) return c.json({ error: 'Post not found', code: ErrorCodes.POST_NOT_FOUND }, 404);
+  if (post.folderId && !await checkInvestigationAccess(user.id, post.folderId, 'viewer', db)) {
+    return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
+  }
+  const inserted = await db.insert(reactions).values({
       id: nanoid(),
       postId,
       userId: user.id,
       emoji,
-    });
-  } catch {
+    }).onConflictDoNothing().returning({ id: reactions.id });
+  if (inserted.length === 0) {
     return c.json({ error: 'Already reacted with this emoji', code: ErrorCodes.ALREADY_REACTED }, 409);
   }
 
   // Notify post author
-  const post = await db.select().from(posts).where(eq(posts.id, postId)).limit(1);
-  if (post.length > 0 && post[0].authorId !== user.id) {
-    await createNotification({
-      userId: post[0].authorId,
+  if (post.authorId !== user.id) {
+    c.get('afterFeedCommit')(() => createNotification({
+      userId: post.authorId,
       type: 'reaction',
       sourceUserId: user.id,
       postId,
+      folderId: post.folderId || undefined,
       message: `${user.displayName} reacted ${emoji} to your post`,
-    });
+    }));
   }
 
   return c.json({ ok: true }, 201);
@@ -496,9 +537,16 @@ app.post('/posts/:id/reactions', async (c) => {
 
 // DELETE /api/caddyshack/posts/:id/reactions/:emoji — remove reaction
 app.delete('/posts/:id/reactions/:emoji', async (c) => {
+  const db = c.get('feedDb');
   const user = c.get('user');
   const postId = c.req.param('id');
   const emoji = c.req.param('emoji');
+
+  const [post] = await db.select().from(posts).where(and(eq(posts.id, postId), visiblePostScope(user.id))).limit(1);
+  if (!post || post.deleted) return c.json({ error: 'Post not found', code: ErrorCodes.POST_NOT_FOUND }, 404);
+  if (post.folderId && !await checkInvestigationAccess(user.id, post.folderId, 'viewer', db)) {
+    return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
+  }
 
   await db
     .delete(reactions)

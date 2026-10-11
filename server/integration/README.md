@@ -11,6 +11,13 @@ TEST_DATABASE_URL=postgres://test_role:test_password@127.0.0.1:55432/threatcaddy
 
 The URL must use a loopback host and contain no query options or fragments. The supplied database only coordinates allocation: each test creates a random `tc_it_<pid>_<random>` database from `template0`, verifies its identity, and drops only that database in cleanup. Separate databases are necessary because the original migrations explicitly reference `public`. No schema or table is dropped in the coordinator database. Do not give this role access to application databases. If the test process is forcibly killed, a disposable test PostgreSQL instance may retain a `tc_it_*` database; discard that test instance instead of running broad database cleanup against another server.
 
+Cleanup closes owned pools and child servers before ordinary `DROP DATABASE`.
+It does not use `FORCE`, terminate unknown client sessions, or require
+`pg_signal_backend`/superuser privileges. PostgreSQL handles its own autovacuum
+workers; a leaked ordinary client makes cleanup fail visibly. After closing that
+client, the same scratch handle can retry cleanup. Concurrent closes share one
+attempt, and the coordinator remains untouched.
+
 The original SQL and journal under `fixtures/historical-migrations` were frozen from the reviewed baseline. **Do not update them when repairing production migrations.** The suite recreates a fresh installation and databases originally migrated through `0002`, `0017`, and `0019`. Historical fixtures run through the actual migrator in one first-install transaction, retaining the original backwards timestamps. Fixture users, investigation ownership and note content/revisions/timestamps must survive upgrade. Each history is also checked through compiled startup and restart.
 
 The production runner verifies applied hashes and timestamps as an exact journal prefix, then runs missing SQL in journal order under a transaction-held advisory lock. This recovers the backwards timestamps without changing historical SQL, renumbering journal entries, or silently skipping migrations. Concurrent startups, unknown history, partial schema adoption and changed defaults have explicit integration cases. A schema-push installation may adopt only the reviewed `0020_runtime_schema_completion` baseline; subsequent migrations always run, including the durable sync log's data backfill. See [migration recovery](../docs/migration-recovery.md).
@@ -37,3 +44,29 @@ TEST_DATABASE_URL=postgres://test_role:test_password@127.0.0.1:55432/threatcaddy
 ```
 
 The historical fixtures retain the reviewed missing-schema and backwards-timestamp defects. Passing requires the current runner and ordinary build output to repair those cases while preserving data. Do not weaken the assertions, regenerate historical fixtures, or mark a failing migration/startup case as passing.
+
+## Optional administrative browser gate
+
+With the root Playwright dependency and its Chromium runtime installed, run the
+separate opt-in UI gate after building the server:
+
+```sh
+npm --prefix server run build
+TEST_DATABASE_URL=postgres://test_role:test_password@127.0.0.1:55432/threatcaddy_test ./server/node_modules/.bin/tsx server/integration/investigation-admin-ui.browser.ts
+```
+
+Set `PLAYWRIGHT_BROWSERS_PATH` if using a separate installed browser cache. This
+runner is deliberately not included in the PostgreSQL-only Vitest suite. It
+creates a guarded scratch database, stages the real packaged server with both
+HTTP listeners bound to loopback, and uses a fresh Chromium context. Only the
+two disposable server origins are allowed; no providers or production services
+are contacted. Generated synthetic setup credentials are not written to logs.
+
+Eight UI checks cover last-owner removal/demotion errors, repeated and switched
+detail panels, explicit owner handover, owner/admin bulk-account rejection, and
+current-name confirmation followed by committed purge. They compare visible
+feedback with actual database results, count mutation requests, and reject
+unexpected script errors, server errors or stale post-purge requests. Synthetic
+screenshots and a request-status summary are retained in the temporary evidence
+directory printed by the runner. Browser/server processes and only the newly
+created scratch database are closed afterward; the coordinator is untouched.

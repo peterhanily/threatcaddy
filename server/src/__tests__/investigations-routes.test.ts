@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Hono } from 'hono';
+import { InvestigationPolicyError, mutateInvestigationMember } from '../services/investigation-policy.js';
+vi.mock('../services/investigation-policy.js', async importOriginal => ({
+  ...await importOriginal<typeof import('../services/investigation-policy.js')>(),
+  mutateInvestigationMember: vi.fn(),
+}));
 import { removeCommittedBlobs } from '../services/storage-policy.js';
 vi.mock('../services/storage-policy.js', () => ({ lockStorage: vi.fn(), removeCommittedBlobs: vi.fn().mockResolvedValue(0) }));
 
@@ -25,7 +30,7 @@ const { selectQueue, insertQueue, updateQueue, deleteQueue, makeThenableChain } 
       const val = queue.shift();
       return val instanceof Error ? Promise.reject(val) : Promise.resolve(val ?? []);
     };
-    for (const method of ['from', 'leftJoin', 'innerJoin', 'where', 'orderBy', 'limit', 'offset', 'groupBy', 'set', 'values', 'returning', 'onConflictDoNothing']) {
+    for (const method of ['from', 'leftJoin', 'innerJoin', 'where', 'orderBy', 'limit', 'offset', 'groupBy', 'set', 'values', 'returning', 'onConflictDoNothing', 'for']) {
       chain[method] = () => chain;
     }
     chain.then = (onFulfilled?: (v: unknown) => unknown, onRejected?: (e: unknown) => unknown) => {
@@ -39,6 +44,16 @@ const { selectQueue, insertQueue, updateQueue, deleteQueue, makeThenableChain } 
 
   return { selectQueue, insertQueue, updateQueue, deleteQueue, makeThenableChain };
 });
+
+vi.mock('../db/index.js', () => ({ db: {
+  select: () => makeThenableChain(selectQueue),
+  transaction: async (callback: (tx: unknown) => Promise<unknown>) => {
+    let executions = 0;
+    return callback({ execute: async () => ++executions === 1 ? [{ id: 1 }] : [],
+      select: () => makeThenableChain(selectQueue), insert: () => makeThenableChain(insertQueue),
+      update: () => makeThenableChain(updateQueue), delete: () => makeThenableChain(deleteQueue) });
+  },
+} }));
 
 // ─── Mock the shared module ────────────────────────────────────
 
@@ -128,6 +143,10 @@ let app: Hono;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(mutateInvestigationMember).mockReset();
+  vi.mocked(mutateInvestigationMember).mockResolvedValue({
+    folder: { id: 'inv-1' }, user: { id: 'user-5', email: 'user5@example.test' }, changed: true,
+  } as Awaited<ReturnType<typeof mutateInvestigationMember>>);
   selectQueue.length = 0;
   insertQueue.length = 0;
   updateQueue.length = 0;
@@ -315,15 +334,13 @@ describe('PATCH /admin/api/investigations/:id', () => {
 describe('POST /admin/api/investigations/:id/members', () => {
   it('adds a member to an investigation', async () => {
     const token = await getAdminToken();
-    selectQueue.push([{ id: 'inv-1' }]); // Folder check
-    selectQueue.push([{ id: 'user-5', email: 'user5@test.com' }]); // User check
-    insertQueue.push(undefined);
 
     const res = await app.request(jsonReq('POST', '/admin/api/investigations/inv-1/members',
       { userId: 'user-5', role: 'editor' }, authHeader(token)));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
+    expect(mutateInvestigationMember).toHaveBeenCalledExactlyOnceWith({ actor: { kind: 'admin', userId: 'admin-1' }, folderId: 'inv-1', targetUserId: 'user-5', operation: 'add', role: 'editor' });
   });
 
   it('returns 400 when userId is missing', async () => {
@@ -338,7 +355,7 @@ describe('POST /admin/api/investigations/:id/members', () => {
 
   it('returns 404 when investigation does not exist', async () => {
     const token = await getAdminToken();
-    selectQueue.push([]); // Folder not found
+    vi.mocked(mutateInvestigationMember).mockRejectedValueOnce(new InvestigationPolicyError('Investigation not found', 404, 'INVESTIGATION_NOT_FOUND'));
 
     const res = await app.request(jsonReq('POST', '/admin/api/investigations/nonexistent/members',
       { userId: 'user-5' }, authHeader(token)));
@@ -347,8 +364,7 @@ describe('POST /admin/api/investigations/:id/members', () => {
 
   it('returns 404 when user does not exist', async () => {
     const token = await getAdminToken();
-    selectQueue.push([{ id: 'inv-1' }]); // Folder found
-    selectQueue.push([]); // User not found
+    vi.mocked(mutateInvestigationMember).mockRejectedValueOnce(new InvestigationPolicyError('User not found', 404, 'USER_NOT_FOUND'));
 
     const res = await app.request(jsonReq('POST', '/admin/api/investigations/inv-1/members',
       { userId: 'nonexistent-user' }, authHeader(token)));
@@ -359,13 +375,11 @@ describe('POST /admin/api/investigations/:id/members', () => {
 
   it('defaults to editor role when no role specified', async () => {
     const token = await getAdminToken();
-    selectQueue.push([{ id: 'inv-1' }]);
-    selectQueue.push([{ id: 'user-5', email: 'user5@test.com' }]);
-    insertQueue.push(undefined);
 
     const res = await app.request(jsonReq('POST', '/admin/api/investigations/inv-1/members',
       { userId: 'user-5' }, authHeader(token)));
     expect(res.status).toBe(200);
+    expect(mutateInvestigationMember).toHaveBeenCalledWith(expect.objectContaining({ role: 'editor' }));
   });
 });
 
@@ -376,13 +390,13 @@ describe('POST /admin/api/investigations/:id/members', () => {
 describe('PATCH /admin/api/investigations/:id/members/:userId', () => {
   it('updates member role successfully', async () => {
     const token = await getAdminToken();
-    updateQueue.push([{ id: 'm1' }]);
 
     const res = await app.request(jsonReq('PATCH', '/admin/api/investigations/inv-1/members/user-5',
       { role: 'owner' }, authHeader(token)));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
+    expect(mutateInvestigationMember).toHaveBeenCalledWith(expect.objectContaining({ operation: 'update', role: 'owner' }));
   });
 
   it('returns 400 for invalid role', async () => {
@@ -397,11 +411,19 @@ describe('PATCH /admin/api/investigations/:id/members/:userId', () => {
 
   it('returns 404 when member not found', async () => {
     const token = await getAdminToken();
-    updateQueue.push([]);
+    vi.mocked(mutateInvestigationMember).mockRejectedValueOnce(new InvestigationPolicyError('Member not found', 404, 'MEMBER_NOT_FOUND'));
 
     const res = await app.request(jsonReq('PATCH', '/admin/api/investigations/inv-1/members/nonexistent',
       { role: 'viewer' }, authHeader(token)));
     expect(res.status).toBe(404);
+  });
+
+  it('surfaces the last eligible owner conflict without claiming success', async () => {
+    const token = await getAdminToken();
+    vi.mocked(mutateInvestigationMember).mockRejectedValueOnce(new InvestigationPolicyError('Assign another eligible owner first', 409, 'LAST_ELIGIBLE_OWNER'));
+    const res = await app.request(jsonReq('PATCH', '/admin/api/investigations/inv-1/members/user-5', { role: 'viewer' }, authHeader(token)));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ code: 'LAST_ELIGIBLE_OWNER' });
   });
 });
 
@@ -412,7 +434,6 @@ describe('PATCH /admin/api/investigations/:id/members/:userId', () => {
 describe('DELETE /admin/api/investigations/:id/members/:userId', () => {
   it('removes a member successfully', async () => {
     const token = await getAdminToken();
-    deleteQueue.push([{ id: 'm1' }]);
 
     const res = await app.request(new Request('http://localhost/admin/api/investigations/inv-1/members/user-5', {
       method: 'DELETE',
@@ -421,11 +442,12 @@ describe('DELETE /admin/api/investigations/:id/members/:userId', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.ok).toBe(true);
+    expect(mutateInvestigationMember).toHaveBeenCalledWith(expect.objectContaining({ operation: 'remove', targetUserId: 'user-5' }));
   });
 
   it('returns 404 when member not found', async () => {
     const token = await getAdminToken();
-    deleteQueue.push([]);
+    vi.mocked(mutateInvestigationMember).mockRejectedValueOnce(new InvestigationPolicyError('Member not found', 404, 'MEMBER_NOT_FOUND'));
 
     const res = await app.request(new Request('http://localhost/admin/api/investigations/inv-1/members/nonexistent', {
       method: 'DELETE',
@@ -442,14 +464,14 @@ describe('DELETE /admin/api/investigations/:id/members/:userId', () => {
 describe('DELETE /admin/api/investigations/:id/content', () => {
   it('purges all content when confirmation name matches', async () => {
     const token = await getAdminToken();
-    // 1) Folder lookup
-    selectQueue.push([{ name: 'Case Alpha' }]);
+    // Current admin and folder are checked inside the shared purge transaction.
+    selectQueue.push([{ id: 'admin-1', active: true }], [{ id: 'inv-1', name: 'Case Alpha' }]);
     // 2) File list for disk cleanup
     selectQueue.push([
       { storagePath: 'file1.pdf', thumbnailPath: 'file1_thumb.webp' },
     ]);
     // Delete operations (notes, tasks, events, whiteboards, iocs, chats, posts, files, notifications, members)
-    for (let i = 0; i < 10; i++) deleteQueue.push([]);
+    for (let i = 0; i < 6; i++) deleteQueue.push([]);
     deleteQueue.push([{ id: 'evidence-fixture' }]);
     // Delete folder itself
     deleteQueue.push(undefined);
@@ -466,7 +488,7 @@ describe('DELETE /admin/api/investigations/:id/content', () => {
 
   it('retains all managed blobs when the purge transaction fails', async () => {
     const token = await getAdminToken();
-    selectQueue.push([{ name: 'Case Alpha' }], [{ storagePath: 'retained.pdf', thumbnailPath: null }]);
+    selectQueue.push([{ id: 'admin-1', active: true }], [{ id: 'inv-1', name: 'Case Alpha' }], [{ storagePath: 'retained.pdf', thumbnailPath: null }]);
     deleteQueue.push(new Error('Ordinary database transaction failure'));
     const res = await app.request(jsonReq('DELETE', '/admin/api/investigations/inv-1/content', { confirmName: 'Case Alpha' }, authHeader(token)));
     expect(res.status).toBe(500);
@@ -475,7 +497,7 @@ describe('DELETE /admin/api/investigations/:id/content', () => {
 
   it('returns 400 when confirmation name does not match', async () => {
     const token = await getAdminToken();
-    selectQueue.push([{ name: 'Case Alpha' }]);
+    selectQueue.push([{ id: 'admin-1', active: true }], [{ id: 'inv-1', name: 'Case Alpha' }]);
 
     const res = await app.request(jsonReq('DELETE', '/admin/api/investigations/inv-1/content',
       { confirmName: 'Wrong Name' }, authHeader(token)));
@@ -486,7 +508,7 @@ describe('DELETE /admin/api/investigations/:id/content', () => {
 
   it('returns 404 when investigation does not exist', async () => {
     const token = await getAdminToken();
-    selectQueue.push([]);
+    selectQueue.push([{ id: 'admin-1', active: true }], []);
 
     const res = await app.request(jsonReq('DELETE', '/admin/api/investigations/nonexistent/content',
       { confirmName: 'whatever' }, authHeader(token)));

@@ -5,6 +5,11 @@ import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import type { SyncChange, SyncResult } from '../types.js';
 import { emitEntityEvent } from '../bots/event-bus.js';
+import { assertInvestigationOwner, InvestigationPolicyError, isEligibleInvestigationOwner } from './investigation-policy.js';
+import { publishInvestigationVisibility, type InvestigationTransaction } from './investigation-lifecycle.js';
+
+export type SyncMutationAuthorizer = (tx: InvestigationTransaction, change: SyncChange,
+  existing: Record<string, unknown> | null, next: Record<string, unknown>) => Promise<void>;
 
 // Maps table names to Drizzle table references
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -188,7 +193,7 @@ export async function bulkLookupEntityFolderIds(
 export async function processPush(
   changes: SyncChange[],
   userId: string,
-  options: { authorize?: boolean; trustedInternal?: boolean; generation?: string } = {},
+  options: { authorize?: boolean; trustedInternal?: boolean; generation?: string; authorizeMutation?: SyncMutationAuthorizer; beforeCommit?: () => void | Promise<void> } = {},
 ): Promise<SyncResult[]> {
   const identities = new Set<string>();
   for (const change of changes) {
@@ -202,12 +207,15 @@ export async function processPush(
     // Match the database triggers' lock order before reading baselines. Every
     // accepted write and new folder membership commits or rolls back together.
     const clock = await tx.execute(sql`SELECT cursor, generation FROM sync_clock WHERE id = 1 FOR UPDATE`);
+    if (!clock.length) throw new Error('Sync clock is missing');
     if (options.generation !== undefined && clock[0]?.generation !== options.generation) {
       throw new SyncReadError('Server history changed; reconcile this workspace before uploading', 409, true);
     }
     const editorFolders = new Set<string>();
+    let actor: typeof schema.users.$inferSelect | undefined;
     if (options.authorize) {
       const [user] = await tx.select().from(schema.users).where(eq(schema.users.id, userId)).for('share');
+      actor = user;
       if (!user?.active || !['admin', 'analyst'].includes(user.role)) {
         return changes.map(change => ({ table: change.table, entityId: change.entityId, status: 'rejected' as const }));
       }
@@ -226,6 +234,7 @@ export async function processPush(
       const [existing] = await tx.select().from(table).where(eq(table.id, entityId)).limit(1);
       const current = existing as Record<string, unknown> | undefined;
       if (!current && op === 'delete') {
+        await options.authorizeMutation?.(tx, change, null, { id: entityId });
         // Idempotent deletion has no remaining object to authorize or mutate.
         // A zero revision explicitly acknowledges its already-absent state.
         result[index] = { table: change.table, entityId, status: 'accepted', serverVersion: 0 };
@@ -234,6 +243,12 @@ export async function processPush(
       const sourceFolder = change.table === 'folders' ? entityId : current?.folderId as string | undefined;
       const destinationFolder = change.table === 'folders' ? entityId :
         (Object.hasOwn(change.data ?? {}, 'folderId') ? change.data?.folderId : sourceFolder) as string | undefined;
+      if (change.table === 'folders' && !current && op === 'put') {
+        if (!actor) [actor] = await tx.select().from(schema.users).where(eq(schema.users.id, userId)).for('share');
+        if (!isEligibleInvestigationOwner(actor)) {
+          result[index] = { table: change.table, entityId, status: 'rejected' }; continue;
+        }
+      }
       if (options.authorize && !GLOBAL_SYNC_TABLES.has(change.table)) {
         const isNewFolder = change.table === 'folders' && !current && op === 'put';
         const authorized = isNewFolder || (current
@@ -245,7 +260,34 @@ export async function processPush(
           continue;
         }
       }
+      const folderTransition = change.table === 'folders' && current && (op === 'delete' || current.deletedAt);
+      if (folderTransition) {
+        try { await assertInvestigationOwner(tx, userId, entityId, { includeDeleted: true }); }
+        catch (error) {
+          if (!(error instanceof InvestigationPolicyError)) throw error;
+          result[index] = { table: change.table, entityId, status: 'rejected' };
+          continue;
+        }
+      }
+      // A retained child never bypasses its deleted/missing parent's boundary,
+      // including moves out of that parent into another accessible folder.
+      if ((options.authorize || options.authorizeMutation) && change.table !== 'folders' && !GLOBAL_SYNC_TABLES.has(change.table)) {
+        const scopes = new Set([sourceFolder, op === 'put' ? destinationFolder : undefined].filter((id): id is string => typeof id === 'string'));
+        let live = true;
+        for (const folderId of scopes) {
+          const [folder] = await tx.select({ id: schema.folders.id }).from(schema.folders)
+            .where(and(eq(schema.folders.id, folderId), isNull(schema.folders.deletedAt))).limit(1);
+          if (!folder) { live = false; break; }
+        }
+        if (!live) { result[index] = { table: change.table, entityId, status: 'rejected' }; continue; }
+      }
       const serverVersion = (current?.version as number | undefined) ?? 0;
+      const cleanData = stripServerFields(change.data, change.table);
+      const now = new Date();
+      await options.authorizeMutation?.(tx, change, current ?? null, {
+        ...current, ...(op === 'put' ? cleanData : {}), id: entityId,
+        deletedAt: op === 'delete' ? now : null, updatedBy: userId, updatedAt: now, version: serverVersion + 1,
+      });
       // Only internal PATCH callers may select a baseline while holding the
       // writer lock. The HTTP route never passes trustedInternal.
       const baseline = change.clientVersion ?? (options.trustedInternal ? serverVersion : undefined);
@@ -253,9 +295,7 @@ export async function processPush(
         result[index] = { table: change.table, entityId, status: 'conflict', serverVersion, serverData: current };
         continue;
       }
-      const cleanData = stripServerFields(change.data, change.table);
       if (change.table === 'evidenceItems' && op === 'put') validateEvidencePreview(cleanData, current);
-      const now = new Date();
       let record: Record<string, unknown>;
       if (!current) {
         const [inserted] = await tx.insert(table).values({ ...cleanData, id: entityId, createdBy: userId, updatedBy: userId, version: 1, createdAt: now, updatedAt: now }).returning();
@@ -273,6 +313,9 @@ export async function processPush(
         }).where(and(eq(table.id, entityId), eq(table.version, serverVersion))).returning();
         if (!updated) throw new Error('Sync revision changed while holding the writer lock');
         record = updated as Record<string, unknown>;
+        if (folderTransition && Boolean(current.deletedAt) !== (op === 'delete')) {
+          await publishInvestigationVisibility(tx, entityId, op === 'delete');
+        }
       }
       result[index] = { table: change.table, entityId, status: 'accepted', serverVersion: record.version as number, serverRecord: record,
         ...(sourceFolder && sourceFolder !== destinationFolder ? { previousFolderId: sourceFolder } : {}) };
@@ -280,6 +323,7 @@ export async function processPush(
       events.push(op === 'put' ? [op, change.table, entityId, eventFolder, userId, !current, record]
         : [op, change.table, entityId, eventFolder, userId, false]);
     }
+    await options.beforeCommit?.();
     return result;
   });
   // Transaction errors propagate: callers must retry the whole batch. No
@@ -321,6 +365,8 @@ export async function pullCursorChanges(
     const allowedFolders = memberships.map(member => member.folderId);
     if (opts.folderId && !allowedFolders.includes(opts.folderId)) throw new SyncReadError('No access to this investigation', 403);
     const folderIds = opts.folderId ? [opts.folderId] : allowedFolders;
+    const liveFolders = new Set(folderIds.length ? (await tx.select({ id: schema.folders.id }).from(schema.folders)
+      .where(and(inArray(schema.folders.id, folderIds), isNull(schema.folders.deletedAt)))).map(folder => folder.id) : []);
     const [clock] = await tx.select().from(schema.syncClock).where(eq(schema.syncClock.id, 1));
     if (!clock) throw new Error('Sync clock is missing');
     if (opts.generation && opts.generation !== clock.generation) throw new SyncReadError('Server history generation changed; reconcile this workspace', 409, true);
@@ -347,7 +393,7 @@ export async function pullCursorChanges(
     const latest = new Map<string, Record<string, unknown>>();
     for (const row of page) {
       const key = JSON.stringify([row.tableName, row.entityId]);
-      const visible = GLOBAL_SYNC_TABLES.has(row.tableName) || !!row.folderId && folderIds.includes(row.folderId);
+      const visible = GLOBAL_SYNC_TABLES.has(row.tableName) || !!row.folderId && liveFolders.has(row.folderId);
       if (!visible) {
         // A move out of an accessible investigation removes its local copy,
         // without disclosing the destination or the destination's record.
@@ -369,8 +415,11 @@ export async function pullChanges(
   folderIds?: string[],
   opts?: { metadataOnly?: boolean },
 ): Promise<{ changes: Record<string, unknown>[]; serverTimestamp: string }> {
+  return db.transaction(async tx => {
   const changes: Record<string, unknown>[] = [];
   const metadataOnly = opts?.metadataOnly ?? false;
+  const liveFolders = new Set(folderIds?.length ? (await tx.select({ id: schema.folders.id }).from(schema.folders)
+    .where(and(inArray(schema.folders.id, folderIds), isNull(schema.folders.deletedAt)))).map(folder => folder.id) : []);
 
   // Build all queries up front, then execute in parallel
   const queries: { tableName: string; promise: Promise<unknown[]> }[] = [];
@@ -384,7 +433,7 @@ export async function pullChanges(
       // Scoped tables: only pull from accessible folders
       queries.push({
         tableName,
-        promise: db
+        promise: tx
           .select()
           .from(table)
           .where(inArray(scopeColumn, folderIds)),
@@ -396,7 +445,7 @@ export async function pullChanges(
       // Explicit shared catalogs only; missing folderId never implies global visibility.
       queries.push({
         tableName,
-        promise: db.select().from(table),
+        promise: tx.select().from(table),
       });
     }
   }
@@ -409,7 +458,8 @@ export async function pullChanges(
     for (const row of rows) {
       const record = row as Record<string, unknown>;
       // If entity has been soft-deleted, send as a delete op so clients remove it
-      if (record.deletedAt) {
+      const scope = tableName === 'folders' ? record.id : record.folderId;
+      if (record.deletedAt || !GLOBAL_SYNC_TABLES.has(tableName) && !liveFolders.has(scope as string)) {
         changes.push({ table: tableName, op: 'delete', id: record.id });
       } else if (metadataOnly) {
         // P11: Strip heavy columns when metadataOnly is requested
@@ -427,10 +477,15 @@ export async function pullChanges(
   }
 
   return { changes, serverTimestamp: new Date().toISOString() };
+  }, { isolationLevel: 'repeatable read', accessMode: 'read only' });
 }
 
 export async function getSnapshot(folderId: string): Promise<Record<string, unknown[]>> {
+  return db.transaction(async tx => {
   const snapshot: Record<string, unknown[]> = {};
+  const [folder] = await tx.select().from(schema.folders)
+    .where(and(eq(schema.folders.id, folderId), isNull(schema.folders.deletedAt))).limit(1);
+  if (!folder) return snapshot;
 
   // Build all queries up front, then execute in parallel
   const queries: { tableName: string; promise: Promise<unknown[]> }[] = [];
@@ -441,7 +496,7 @@ export async function getSnapshot(folderId: string): Promise<Record<string, unkn
     if (t.folderId) {
       queries.push({
         tableName,
-        promise: db.select().from(table).where(and(eq(t.folderId, folderId), isNull(t.deletedAt))),
+        promise: tx.select().from(table).where(and(eq(t.folderId, folderId), isNull(t.deletedAt))),
       });
     }
   }
@@ -449,7 +504,7 @@ export async function getSnapshot(folderId: string): Promise<Record<string, unkn
   // Include the folder itself
   queries.push({
     tableName: 'folders',
-    promise: db.select().from(schema.folders).where(and(eq(schema.folders.id, folderId), isNull(schema.folders.deletedAt))),
+    promise: Promise.resolve([folder]),
   });
 
   const results = await Promise.all(queries.map(q => q.promise));
@@ -458,6 +513,7 @@ export async function getSnapshot(folderId: string): Promise<Record<string, unkn
   }
 
   return snapshot;
+  }, { isolationLevel: 'repeatable read', accessMode: 'read only' });
 }
 
 // ─── Entity Count Helpers ────────────────────────────────────────

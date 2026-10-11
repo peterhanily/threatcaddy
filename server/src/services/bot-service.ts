@@ -8,6 +8,7 @@ import { botManager, validateCronExpression } from '../bots/bot-manager.js';
 import { encryptConfigSecrets, redactConfigSecrets } from '../bots/secret-store.js';
 import { logActivity } from '../services/audit-service.js';
 import type { BotCapability, BotTriggerConfig, BotType } from '../bots/types.js';
+import { lockInvestigationPolicy } from './investigation-policy.js';
 
 // ─── Shared Constants ────────────────────────────────────────────
 
@@ -269,6 +270,7 @@ export async function createBot(input: BotCreateInput, createdBy: string): Promi
 
   await db.transaction(async (tx) => {
     // Create bot user account
+    await lockInvestigationPolicy(tx);
     await tx.insert(schema.users).values({
       id: botUserId,
       email: botEmail,
@@ -425,6 +427,7 @@ export async function deleteBot(id: string): Promise<{ name: string } | null> {
   await botManager.unloadBot(id);
 
   await db.transaction(async (tx) => {
+    await lockInvestigationPolicy(tx);
     await tx.delete(schema.investigationMembers).where(eq(schema.investigationMembers.userId, rows[0].userId));
     await tx.delete(schema.botConfigs).where(eq(schema.botConfigs.id, id));
     await tx.update(schema.users).set({ active: false, updatedAt: new Date() })

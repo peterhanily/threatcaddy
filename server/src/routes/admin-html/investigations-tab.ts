@@ -85,6 +85,7 @@ function openInvestigationDetail(invId) {
     html += '<span class="lbl">IOCs</span><span class="val">' + ec.standaloneIOCs + '</span>';
     html += '<span class="lbl">Chat Threads</span><span class="val">' + ec.chatThreads + '</span>';
     html += '<span class="lbl">Files</span><span class="val">' + ec.files + '</span>';
+    html += '<span class="lbl">Evidence Items</span><span class="val">' + ec.evidenceItems + '</span>';
     html += '</div></div>';
 
     // Members
@@ -119,10 +120,10 @@ function openInvestigationDetail(invId) {
     html += '</div>';
 
     // Danger Zone
-    var totalEntities = ec.notes + ec.tasks + ec.timelineEvents + ec.whiteboards + ec.standaloneIOCs + ec.chatThreads + ec.files;
+    var totalEntities = ec.notes + ec.tasks + ec.timelineEvents + ec.whiteboards + ec.standaloneIOCs + ec.chatThreads + ec.files + ec.evidenceItems;
     html += '<div class="danger-zone"><h4>Danger Zone</h4>';
-    html += '<p>Permanently delete all content (' + totalEntities + ' entities) from this investigation.</p>';
-    html += '<button class="btn btn-danger btn-sm" id="openPurgeBtn"' + (totalEntities === 0 ? ' disabled' : '') + '>Purge All Content</button>';
+    html += '<p>Permanently delete this investigation, its memberships and all retained content (' + totalEntities + ' listed entities). This cannot be undone.</p>';
+    html += '<button class="btn btn-danger btn-sm" id="openPurgeBtn">Permanently Delete Investigation</button>';
     html += '</div>';
 
     document.getElementById('detailContent').innerHTML = html;
@@ -146,22 +147,23 @@ function openInvestigationDetail(invId) {
     });
 
     // Member role change / remove (delegation on detail content)
-    document.getElementById('detailContent').addEventListener('change', function(e) {
+    // Reopening this persistent panel replaces its handlers rather than retaining old investigation IDs.
+    document.getElementById('detailContent').onchange = function(e) {
       if (e.target.dataset.action === 'member-role') {
         api('/investigations/' + invId + '/members/' + e.target.dataset.uid, { method: 'PATCH', body: JSON.stringify({ role: e.target.value }) })
           .then(function() { toast('Role updated'); })
           .catch(function(err) { toast(err.message, 'error'); openInvestigationDetail(invId); });
       }
-    });
+    };
 
-    document.getElementById('detailContent').addEventListener('click', function(e) {
+    document.getElementById('detailContent').onclick = function(e) {
       var rmBtn = e.target.closest('[data-action="remove-member"]');
       if (rmBtn) {
         api('/investigations/' + invId + '/members/' + rmBtn.dataset.uid, { method: 'DELETE' })
           .then(function() { toast('Member removed'); openInvestigationDetail(invId); })
           .catch(function(err) { toast(err.message, 'error'); });
       }
-    });
+    };
 
     // Purge
     var purgeBtn = document.getElementById('openPurgeBtn');
@@ -179,7 +181,7 @@ function openPurgeModal(invId, invName, ec) {
   document.getElementById('purgeEntityCounts').innerHTML =
     '<strong>This will delete:</strong><br>' +
     ec.notes + ' notes, ' + ec.tasks + ' tasks, ' + ec.timelineEvents + ' timeline events, ' +
-    ec.whiteboards + ' whiteboards, ' + ec.standaloneIOCs + ' IOCs, ' + ec.chatThreads + ' chat threads, ' + ec.files + ' files';
+    ec.whiteboards + ' whiteboards, ' + ec.standaloneIOCs + ' IOCs, ' + ec.chatThreads + ' chat threads, ' + ec.files + ' files, ' + ec.evidenceItems + ' evidence items';
   document.getElementById('purgeConfirmInput').value = '';
   document.getElementById('purgeConfirmInput').placeholder = invName;
   document.getElementById('confirmPurge').disabled = true;
@@ -192,9 +194,12 @@ function openPurgeModal(invId, invName, ec) {
   document.getElementById('confirmPurge').onclick = function() {
     api('/investigations/' + invId + '/content', { method: 'DELETE', body: JSON.stringify({ confirmName: invName }) })
       .then(function(res) {
-        toast('Content purged');
+        toast(res.cleanupPending ? 'Investigation deleted; some attachment cleanup is pending.' : 'Investigation and its content permanently deleted', res.cleanupPending ? 'error' : 'success');
         document.getElementById('purgeModal').classList.remove('active');
-        openInvestigationDetail(invId);
+        currentInvId = null;
+        currentInvName = null;
+        closeDetailPanel();
+        document.getElementById('detailContent').innerHTML = '';
         loadInvestigationsData();
       })
       .catch(function(err) { toast(err.message, 'error'); });

@@ -1,18 +1,19 @@
 import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
-import { eq, and, count, sql } from 'drizzle-orm';
-import { nanoid } from 'nanoid';
+import { eq, and, count, sql, isNull } from 'drizzle-orm';
 import { requireAuth } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
 import { db } from '../db/index.js';
-import { investigationMembers, folders, users, notes, tasks, timelineEvents, whiteboards, standaloneIOCs, chatThreads, evidenceItems, posts, files, notifications } from '../db/schema.js';
+import { investigationMembers, folders, users, notes, tasks, timelineEvents, whiteboards, standaloneIOCs, chatThreads, evidenceItems } from '../db/schema.js';
 import { createNotification } from '../services/notification-service.js';
 import { logActivity } from '../services/audit-service.js';
 import { revokeUserFolderAccess, revokeFolderAccess, broadcastToUser } from '../ws/handler.js';
 import { getEntityCounts, getEntityCountsBatch } from '../services/sync-service.js';
 import type { AuthUser } from '../types.js';
 import { ErrorCodes } from '../types/error-codes.js';
-import { lockStorage, removeCommittedBlobs } from '../services/storage-policy.js';
+import { removeCommittedBlobs } from '../services/storage-policy.js';
+import { purgeInvestigation } from '../services/investigation-lifecycle.js';
+import { InvestigationPolicyError, mutateInvestigationMember } from '../services/investigation-policy.js';
 
 const FILE_STORAGE_PATH = process.env.FILE_STORAGE_PATH || '/data/files';
 
@@ -34,7 +35,8 @@ app.get('/', async (c) => {
     db
       .select({ count: count() })
       .from(investigationMembers)
-      .where(eq(investigationMembers.userId, user.id)),
+      .innerJoin(folders, eq(folders.id, investigationMembers.folderId))
+      .where(and(eq(investigationMembers.userId, user.id), isNull(folders.deletedAt))),
     db
       .select({
         folderId: investigationMembers.folderId,
@@ -54,7 +56,7 @@ app.get('/', async (c) => {
       })
       .from(investigationMembers)
       .innerJoin(folders, eq(folders.id, investigationMembers.folderId))
-      .where(eq(investigationMembers.userId, user.id))
+      .where(and(eq(investigationMembers.userId, user.id), isNull(folders.deletedAt)))
       .limit(limit)
       .offset(offset),
   ]);
@@ -207,48 +209,13 @@ app.post('/:id/members', requireInvestigationWrite, async (c) => {
     return c.json({ error: 'Invalid role', code: ErrorCodes.INVALID_ROLE }, 400);
   }
 
-  // Check folder exists
-  const [folder] = await db.select({ id: folders.id, name: folders.name }).from(folders).where(eq(folders.id, folderId)).limit(1);
-  if (!folder) {
-    return c.json({ error: 'Investigation not found', code: ErrorCodes.INVESTIGATION_NOT_FOUND }, 404);
+  let result;
+  try { result = await mutateInvestigationMember({ actor: { kind: 'user', userId: user.id }, folderId, targetUserId: userId, operation: 'add', role }); }
+  catch (error) {
+    if (error instanceof InvestigationPolicyError) return c.json({ error: error.message, code: error.code }, error.status);
+    throw error;
   }
-
-  // Check requester is owner
-  const requesterMembership = await db
-    .select()
-    .from(investigationMembers)
-    .where(
-      and(
-        eq(investigationMembers.folderId, folderId),
-        eq(investigationMembers.userId, user.id)
-      )
-    )
-    .limit(1);
-
-  if (requesterMembership.length === 0 || requesterMembership[0].role !== 'owner') {
-    return c.json({ error: 'Only investigation owners can add members', code: ErrorCodes.OWNER_REQUIRED }, 403);
-  }
-
-  // Check target user exists
-  const targetUser = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  if (targetUser.length === 0) {
-    return c.json({ error: 'User not found', code: ErrorCodes.USER_NOT_FOUND }, 404);
-  }
-
-  // Check not already a member
-  const existing = await db.select({ id: investigationMembers.id }).from(investigationMembers)
-    .where(and(eq(investigationMembers.folderId, folderId), eq(investigationMembers.userId, userId)))
-    .limit(1);
-  if (existing.length > 0) {
-    return c.json({ error: 'User already a member', code: ErrorCodes.USER_ALREADY_MEMBER }, 409);
-  }
-
-  await db.insert(investigationMembers).values({
-    id: nanoid(),
-    folderId,
-    userId,
-    role,
-  });
+  const { folder } = result;
 
   await createNotification({
     userId,
@@ -276,35 +243,10 @@ app.patch('/:id/members/:userId', requireInvestigationWrite, async (c) => {
     return c.json({ error: 'Invalid role', code: ErrorCodes.INVALID_ROLE }, 400);
   }
 
-  // Check permissions — must be owner
-  const requesterMembership = await db
-    .select()
-    .from(investigationMembers)
-    .where(
-      and(
-        eq(investigationMembers.folderId, folderId),
-        eq(investigationMembers.userId, user.id)
-      )
-    )
-    .limit(1);
-
-  if (requesterMembership.length === 0 || requesterMembership[0].role !== 'owner') {
-    return c.json({ error: 'Insufficient permissions', code: ErrorCodes.INSUFFICIENT_PERMISSIONS }, 403);
-  }
-
-  const result = await db
-    .update(investigationMembers)
-    .set({ role })
-    .where(
-      and(
-        eq(investigationMembers.folderId, folderId),
-        eq(investigationMembers.userId, targetUserId)
-      )
-    )
-    .returning({ id: investigationMembers.id });
-
-  if (result.length === 0) {
-    return c.json({ error: 'Member not found', code: ErrorCodes.MEMBER_NOT_FOUND }, 404);
+  try { await mutateInvestigationMember({ actor: { kind: 'user', userId: user.id }, folderId, targetUserId, operation: 'update', role }); }
+  catch (error) {
+    if (error instanceof InvestigationPolicyError) return c.json({ error: error.message, code: error.code }, error.status);
+    throw error;
   }
 
   revokeUserFolderAccess(targetUserId, folderId);
@@ -317,37 +259,10 @@ app.delete('/:id/members/:userId', async (c) => {
   const folderId = c.req.param('id');
   const targetUserId = c.req.param('userId');
 
-  // Users can remove themselves, or owners can remove others
-  if (user.id !== targetUserId) {
-    if (user.role === 'viewer') return c.json({ error: 'Insufficient permissions', code: ErrorCodes.INSUFFICIENT_PERMISSIONS }, 403);
-    const requesterMembership = await db
-      .select()
-      .from(investigationMembers)
-      .where(
-        and(
-          eq(investigationMembers.folderId, folderId),
-          eq(investigationMembers.userId, user.id)
-        )
-      )
-      .limit(1);
-
-    if (requesterMembership.length === 0 || requesterMembership[0].role !== 'owner') {
-      return c.json({ error: 'Insufficient permissions', code: ErrorCodes.INSUFFICIENT_PERMISSIONS }, 403);
-    }
-  }
-
-  const result = await db
-    .delete(investigationMembers)
-    .where(
-      and(
-        eq(investigationMembers.folderId, folderId),
-        eq(investigationMembers.userId, targetUserId)
-      )
-    )
-    .returning({ id: investigationMembers.id });
-
-  if (result.length === 0) {
-    return c.json({ error: 'Member not found', code: ErrorCodes.MEMBER_NOT_FOUND }, 404);
+  try { await mutateInvestigationMember({ actor: { kind: 'user', userId: user.id }, folderId, targetUserId, operation: 'remove' }); }
+  catch (error) {
+    if (error instanceof InvestigationPolicyError) return c.json({ error: error.message, code: error.code }, error.status);
+    throw error;
   }
 
   // Revoke WS subscriptions immediately so removed user can't receive further data
@@ -369,40 +284,13 @@ app.delete('/:id', requireInvestigationWrite, async (c) => {
   const user = c.get('user');
   const folderId = c.req.param('id');
 
-  // Must be owner
-  const membership = await db.select()
-    .from(investigationMembers)
-    .where(and(eq(investigationMembers.folderId, folderId), eq(investigationMembers.userId, user.id)))
-    .limit(1);
-
-  if (membership.length === 0 || membership[0].role !== 'owner') {
-    return c.json({ error: 'Only investigation owners can delete investigations', code: ErrorCodes.OWNER_REQUIRED }, 403);
+  let purged;
+  try { purged = await purgeInvestigation({ actor: { kind: 'user', userId: user.id }, folderId }); }
+  catch (error) {
+    if (error instanceof InvestigationPolicyError) return c.json({ error: error.message, code: error.code }, error.status);
+    throw error;
   }
-
-  const [folder] = await db.select({ id: folders.id, name: folders.name }).from(folders).where(eq(folders.id, folderId)).limit(1);
-  if (!folder) {
-    return c.json({ error: 'Investigation not found', code: ErrorCodes.INVESTIGATION_NOT_FOUND }, 404);
-  }
-
-  // Remove references atomically; disk cleanup must never precede commit.
-  const folderFiles = await db.transaction(async (tx) => {
-    await lockStorage(tx);
-    const records = await tx.select({ storagePath: files.storagePath, thumbnailPath: files.thumbnailPath })
-      .from(files).where(eq(files.folderId, folderId));
-    await tx.delete(notes).where(eq(notes.folderId, folderId));
-    await tx.delete(tasks).where(eq(tasks.folderId, folderId));
-    await tx.delete(timelineEvents).where(eq(timelineEvents.folderId, folderId));
-    await tx.delete(whiteboards).where(eq(whiteboards.folderId, folderId));
-    await tx.delete(standaloneIOCs).where(eq(standaloneIOCs.folderId, folderId));
-    await tx.delete(chatThreads).where(eq(chatThreads.folderId, folderId));
-    await tx.delete(evidenceItems).where(eq(evidenceItems.folderId, folderId));
-    await tx.delete(posts).where(eq(posts.folderId, folderId));
-    await tx.delete(files).where(eq(files.folderId, folderId));
-    await tx.delete(notifications).where(eq(notifications.folderId, folderId));
-    await tx.delete(investigationMembers).where(eq(investigationMembers.folderId, folderId));
-    await tx.delete(folders).where(eq(folders.id, folderId));
-    return records;
-  });
+  const { folder, folderFiles } = purged;
 
   revokeFolderAccess(folderId);
   const cleanupPending = await removeCommittedBlobs(FILE_STORAGE_PATH, folderFiles);
@@ -428,12 +316,6 @@ app.post('/:id/invite', requireInvestigationWrite, async (c) => {
     return c.json({ error: 'Invalid role', code: ErrorCodes.INVALID_ROLE }, 400);
   }
 
-  // Check folder exists
-  const [folder] = await db.select({ id: folders.id, name: folders.name }).from(folders).where(eq(folders.id, folderId)).limit(1);
-  if (!folder) {
-    return c.json({ error: 'Investigation not found', code: ErrorCodes.INVESTIGATION_NOT_FOUND }, 404);
-  }
-
   // Find user by email
   const targetUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (targetUser.length === 0) {
@@ -442,36 +324,13 @@ app.post('/:id/invite', requireInvestigationWrite, async (c) => {
 
   const userId = targetUser[0].id;
 
-  // Check requester is owner
-  const requesterMembership = await db
-    .select()
-    .from(investigationMembers)
-    .where(
-      and(
-        eq(investigationMembers.folderId, folderId),
-        eq(investigationMembers.userId, user.id)
-      )
-    )
-    .limit(1);
-
-  if (requesterMembership.length === 0 || requesterMembership[0].role !== 'owner') {
-    return c.json({ error: 'Only investigation owners can invite members', code: ErrorCodes.OWNER_REQUIRED }, 403);
+  let result;
+  try { result = await mutateInvestigationMember({ actor: { kind: 'user', userId: user.id }, folderId, targetUserId: userId, operation: 'add', role }); }
+  catch (error) {
+    if (error instanceof InvestigationPolicyError) return c.json({ error: error.message, code: error.code }, error.status);
+    throw error;
   }
-
-  // Check not already a member
-  const existing = await db.select({ id: investigationMembers.id }).from(investigationMembers)
-    .where(and(eq(investigationMembers.folderId, folderId), eq(investigationMembers.userId, userId)))
-    .limit(1);
-  if (existing.length > 0) {
-    return c.json({ error: 'User already a member', code: ErrorCodes.USER_ALREADY_MEMBER }, 409);
-  }
-
-  await db.insert(investigationMembers).values({
-    id: nanoid(),
-    folderId,
-    userId,
-    role,
-  });
+  const { folder } = result;
 
   await createNotification({
     userId,

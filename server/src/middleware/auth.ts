@@ -41,14 +41,14 @@ export async function signAccessToken(user: AuthUser, sessionFamily: string): Pr
     .sign(key);
 }
 
-export async function verifyAccessToken(token: string): Promise<AuthUser> {
+export async function verifyAccessToken(token: string, database: Pick<typeof db, 'select'> = db): Promise<AuthUser> {
   const key = await getPublicKey();
   const { payload } = await jose.jwtVerify(token, key, { algorithms: ['EdDSA'] });
   if (typeof payload.sub !== 'string' || !payload.sub || typeof payload.sid !== 'string'
     || !payload.sid || typeof payload.exp !== 'number' || !Number.isFinite(payload.exp)) {
     throw new Error('Invalid session claims');
   }
-  const [current] = await db.select({
+  const [current] = await database.select({
     id: users.id, email: users.email, role: users.role, displayName: users.displayName, avatarUrl: users.avatarUrl,
   }).from(users).innerJoin(sessions, eq(sessions.userId, users.id)).where(and(
     eq(users.id, payload.sub), eq(users.active, true), eq(sessions.tokenFamily, payload.sid),

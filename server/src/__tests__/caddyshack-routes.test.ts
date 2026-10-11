@@ -59,6 +59,19 @@ vi.mock('../db/schema.js', () => ({
 }));
 
 const mockCheckAccess = vi.fn();
+// These cases exercise HTTP validation/response contracts. The real transaction
+// middleware and concurrent authorization are tested with PostgreSQL separately.
+vi.mock('../middleware/feed-access.js', async () => {
+  const { db } = await import('../db/index.js');
+  const { createMiddleware } = await import('hono/factory');
+  return { withCurrentFeedAccess: createMiddleware(async (c, next) => {
+    const effects: Array<() => unknown> = [];
+    c.set('feedDb', db);
+    c.set('afterFeedCommit', (effect: () => unknown) => effects.push(effect));
+    await next();
+    if (!c.error) for (const effect of effects) await effect();
+  }) };
+});
 vi.mock('../middleware/access.js', () => ({
   checkInvestigationAccess: (...args: unknown[]) => mockCheckAccess(...args),
 }));
@@ -201,6 +214,15 @@ describe('GET /api/caddyshack', () => {
     expect(body).toHaveLength(1);
     expect(body[0].id).toBe('p1');
     expect(body[0].replyCount).toBe(3);
+  });
+
+  it('treats every reaction label as data, including object property names', async () => {
+    selectQueue.push([{ id: 'p1', authorId: 'user-1', content: 'Fictional post', folderId: null, parentId: null }]);
+    selectQueue.push([{ postId: 'p1', emoji: 'constructor', userId: 'user-2' }]);
+    selectQueue.push([]);
+    const response = await app.request('/api/caddyshack', { headers: authHeader() });
+    expect(response.status).toBe(200);
+    expect((await response.json())[0].reactions.constructor).toEqual({ count: 1, userIds: ['user-2'] });
   });
 
   it('returns 403 when user has no access to folder', async () => {
@@ -617,7 +639,7 @@ describe('DELETE /api/caddyshack/posts/:id', () => {
 
 describe('POST /api/caddyshack/posts/:id/reactions', () => {
   it('adds a reaction and returns 201', async () => {
-    insertQueue.push(undefined);
+    insertQueue.push([{ id: 'reaction-1' }]);
     // Post lookup for notification
     selectQueue.push([{ authorId: 'user-2' }]);
 
@@ -644,7 +666,8 @@ describe('POST /api/caddyshack/posts/:id/reactions', () => {
   });
 
   it('returns 409 when user already reacted with the same emoji', async () => {
-    insertQueue.push(new Error('UNIQUE constraint'));
+    selectQueue.push([{ id: 'p1', authorId: 'user-2' }]);
+    insertQueue.push([]);
 
     const res = await app.request(jsonReq('POST', '/api/caddyshack/posts/p1/reactions', {
       emoji: 'fire',
@@ -655,7 +678,7 @@ describe('POST /api/caddyshack/posts/:id/reactions', () => {
   });
 
   it('notifies post author when someone else reacts', async () => {
-    insertQueue.push(undefined);
+    insertQueue.push([{ id: 'reaction-1' }]);
     selectQueue.push([{ authorId: 'user-2' }]);
 
     await app.request(jsonReq('POST', '/api/caddyshack/posts/p1/reactions', {
@@ -669,7 +692,7 @@ describe('POST /api/caddyshack/posts/:id/reactions', () => {
   });
 
   it('does not notify author when they react to their own post', async () => {
-    insertQueue.push(undefined);
+    insertQueue.push([{ id: 'reaction-1' }]);
     selectQueue.push([{ authorId: 'user-1' }]);
 
     await app.request(jsonReq('POST', '/api/caddyshack/posts/p1/reactions', {
@@ -685,6 +708,7 @@ describe('POST /api/caddyshack/posts/:id/reactions', () => {
 
 describe('DELETE /api/caddyshack/posts/:id/reactions/:emoji', () => {
   it('removes a reaction and returns ok', async () => {
+    selectQueue.push([{ id: 'p1', authorId: 'user-1' }]);
     deleteQueue.push(undefined);
 
     const res = await app.request(new Request('http://localhost/api/caddyshack/posts/p1/reactions/fire', {

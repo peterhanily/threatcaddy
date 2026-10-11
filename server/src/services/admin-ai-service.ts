@@ -2,6 +2,7 @@ import { db } from '../db/index.js';
 import { eq, count, desc, and, gte, sql } from 'drizzle-orm';
 import * as schema from '../db/schema.js';
 import { logActivity } from './audit-service.js';
+import { updateUsersAndRevokeSessions } from './session-service.js';
 
 // Tool definitions for the admin AI assistant
 export interface AdminTool {
@@ -198,19 +199,19 @@ const writeTools: AdminTool[] = [
     },
     requiresConfirm: true,
     execute: async (input, adminId) => {
-      const result = await db.update(schema.users)
-        .set({ role: input.role as 'admin' | 'analyst' | 'viewer', updatedAt: new Date() })
-        .where(eq(schema.users.id, input.userId as string))
-        .returning({ id: schema.users.id, email: schema.users.email });
-      if (result.length === 0) return { error: 'User not found' };
+      if (typeof input.userId !== 'string' || !input.userId || !['admin', 'analyst', 'viewer'].includes(input.role as string)) return { error: 'A user ID and valid role are required' };
+      const [user] = await db.select({ id: schema.users.id, email: schema.users.email }).from(schema.users).where(eq(schema.users.id, input.userId)).limit(1);
+      if (!user) return { error: 'User not found' };
+      const result = await updateUsersAndRevokeSessions([user.id], { role: input.role as 'admin' | 'analyst' | 'viewer', updatedAt: new Date() }, undefined, { kind: 'admin', userId: adminId });
+      if (!result.length) return { error: 'User not found' };
       await logActivity({
         userId: adminId,
         category: 'admin',
         action: 'user.role-change',
-        detail: `AI Assistant changed role of ${result[0].email} to ${input.role}`,
+        detail: `AI Assistant changed role of ${user.email} to ${input.role}`,
         itemId: input.userId as string,
       });
-      return { ok: true, user: result[0], newRole: input.role };
+      return { ok: true, user, newRole: input.role };
     },
   },
   {
@@ -226,19 +227,19 @@ const writeTools: AdminTool[] = [
     },
     requiresConfirm: true,
     execute: async (input, adminId) => {
-      const result = await db.update(schema.users)
-        .set({ active: input.active as boolean, updatedAt: new Date() })
-        .where(eq(schema.users.id, input.userId as string))
-        .returning({ id: schema.users.id, email: schema.users.email });
-      if (result.length === 0) return { error: 'User not found' };
+      if (typeof input.userId !== 'string' || !input.userId || typeof input.active !== 'boolean') return { error: 'A user ID and boolean active status are required' };
+      const [user] = await db.select({ id: schema.users.id, email: schema.users.email }).from(schema.users).where(eq(schema.users.id, input.userId)).limit(1);
+      if (!user) return { error: 'User not found' };
+      const result = await updateUsersAndRevokeSessions([user.id], { active: input.active, updatedAt: new Date() }, undefined, { kind: 'admin', userId: adminId });
+      if (!result.length) return { error: 'User not found' };
       await logActivity({
         userId: adminId,
         category: 'admin',
         action: input.active ? 'user.enable' : 'user.disable',
-        detail: `AI Assistant ${input.active ? 'enabled' : 'disabled'} user ${result[0].email}`,
+        detail: `AI Assistant ${input.active ? 'enabled' : 'disabled'} user ${user.email}`,
         itemId: input.userId as string,
       });
-      return { ok: true, user: result[0], active: input.active };
+      return { ok: true, user, active: input.active };
     },
   },
   {
