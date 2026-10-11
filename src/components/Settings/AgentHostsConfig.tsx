@@ -1,24 +1,53 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useLayoutEffect, useRef } from 'react';
 import { Plus, Trash2, RefreshCw, CheckCircle2, AlertTriangle, ChevronDown, ChevronRight, Loader2, Server } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { nanoid } from 'nanoid';
 import type { Settings, AgentHost, AgentHostSkill } from '../../types';
 import { fetchHostSkills } from '../../lib/agent-hosts';
 import { normalizeHostActionClass } from '../../lib/caddy-agent-policy';
+import type { SettingsUpdate } from '../../hooks/useSettings';
 
 interface AgentHostsConfigProps {
   settings: Settings;
-  onUpdateSettings: (patch: Partial<Settings>) => void;
+  onUpdateSettings: (patch: SettingsUpdate) => void;
 }
+
+function sameHostConfiguration(current: AgentHost | undefined, captured: AgentHost): boolean {
+  return !!current && current.id === captured.id && current.name === captured.name
+    && current.url === captured.url && current.apiKey === captured.apiKey && current.enabled === captured.enabled;
+}
+
+interface SkillRequest { host: AgentHost; controller: AbortController }
+interface SkillResult { request: SkillRequest; ok: boolean; count?: number; msg?: string }
+const NO_HOSTS: AgentHost[] = [];
 
 export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfigProps) {
   const { t } = useTranslation('settings');
   const { t: tc } = useTranslation('common');
-  const hosts = settings.agentHosts || [];
+  const hosts = settings.agentHosts || NO_HOSTS;
   const [adding, setAdding] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [testingId, setTestingId] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<{ id: string; ok: boolean; msg: string } | null>(null);
+  const [testing, setTesting] = useState<ReadonlyMap<string, SkillRequest>>(() => new Map());
+  const [testResult, setTestResult] = useState<SkillResult | null>(null);
+  const pending = useRef(new Map<string, SkillRequest>());
+  const mounted = useRef(false);
+  const batch = useRef(0);
+  const committed = useRef({ settings, onUpdateSettings });
+
+  useLayoutEffect(() => {
+    committed.current = { settings, onUpdateSettings };
+    for (const request of pending.current.values()) {
+      if (!sameHostConfiguration(settings.agentHosts?.find(host => host.id === request.host.id), request.host)) request.controller.abort();
+    }
+  }, [settings, onUpdateSettings]);
+
+  useLayoutEffect(() => {
+    mounted.current = true;
+    const requests = pending.current;
+    const cancel = () => { batch.current++; for (const request of requests.values()) request.controller.abort(); };
+    window.addEventListener('workspace-will-switch', cancel);
+    return () => { mounted.current = false; cancel(); window.removeEventListener('workspace-will-switch', cancel); };
+  }, []);
 
   // Form state for new host
   const [formName, setFormName] = useState('');
@@ -26,8 +55,8 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
   const [formUrl, setFormUrl] = useState('');
   const [formApiKey, setFormApiKey] = useState('');
 
-  const updateHosts = useCallback((newHosts: AgentHost[]) => {
-    onUpdateSettings({ agentHosts: newHosts });
+  const updateHosts = useCallback((change: (current: AgentHost[]) => AgentHost[]) => {
+    onUpdateSettings(current => ({ agentHosts: change(current.agentHosts || []) }));
   }, [onUpdateSettings]);
 
   const addHost = useCallback(() => {
@@ -42,44 +71,61 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
       enabled: true,
       skills: [],
     };
-    updateHosts([...hosts, newHost]);
+    updateHosts(current => [...current, newHost]);
     setAdding(false);
     setFormName('');
     setFormDisplayName('');
     setFormUrl('');
     setFormApiKey('');
-  }, [formName, formDisplayName, formUrl, formApiKey, hosts, updateHosts]);
+  }, [formName, formDisplayName, formUrl, formApiKey, updateHosts]);
 
   const removeHost = useCallback((id: string) => {
     const host = hosts.find(h => h.id === id);
     if (!host) return;
     if (!confirm(t('agents.hostDeleteConfirm', { name: host.displayName }))) return;
-    updateHosts(hosts.filter(h => h.id !== id));
+    pending.current.get(id)?.controller.abort();
+    updateHosts(current => current.filter(h => h.id !== id));
     if (expandedId === id) setExpandedId(null);
   }, [hosts, expandedId, updateHosts, t]);
 
   const toggleEnabled = useCallback((id: string) => {
-    updateHosts(hosts.map(h => h.id === id ? { ...h, enabled: !h.enabled } : h));
-  }, [hosts, updateHosts]);
+    pending.current.get(id)?.controller.abort();
+    updateHosts(current => current.map(h => h.id === id ? { ...h, enabled: !h.enabled } : h));
+  }, [updateHosts]);
 
   const testAndFetchSkills = useCallback(async (host: AgentHost) => {
-    setTestingId(host.id);
+    if (!mounted.current || !sameHostConfiguration(committed.current.settings.agentHosts?.find(item => item.id === host.id), host)) return;
+    pending.current.get(host.id)?.controller.abort();
+    const request: SkillRequest = { host: { ...host }, controller: new AbortController() };
+    pending.current.set(host.id, request);
+    setTesting(previous => new Map(previous).set(host.id, request));
     setTestResult(null);
+    const ownsResult = () => mounted.current && !request.controller.signal.aborted && pending.current.get(host.id) === request
+      && sameHostConfiguration(committed.current.settings.agentHosts?.find(item => item.id === host.id), request.host);
     try {
-      const skills = await fetchHostSkills(host);
-      // Update cached skills in settings
-      updateHosts(hosts.map(h => h.id === host.id ? { ...h, skills, skillsFetchedAt: Date.now() } : h));
-      setTestResult({ id: host.id, ok: true, msg: t('agents.connected', { count: skills.length, plural: skills.length === 1 ? '' : 's' }) });
+      const skills = await fetchHostSkills(request.host, request.controller.signal);
+      if (!ownsResult()) return;
+      const skillsFetchedAt = Date.now();
+      committed.current.onUpdateSettings(current => {
+        if (request.controller.signal.aborted || !sameHostConfiguration(current.agentHosts?.find(item => item.id === host.id), request.host)) return null;
+        return { agentHosts: (current.agentHosts || []).map(item => item.id === host.id ? { ...item, skills, skillsFetchedAt } : item) };
+      });
+      setTestResult({ request, ok: true, count: skills.length });
     } catch (err) {
-      setTestResult({ id: host.id, ok: false, msg: (err as Error).message });
+      if (ownsResult()) setTestResult({ request, ok: false, msg: (err as Error).message });
     } finally {
-      setTestingId(null);
+      if (pending.current.get(host.id) === request) {
+        pending.current.delete(host.id);
+        if (mounted.current) setTesting(previous => { const next = new Map(previous); next.delete(host.id); return next; });
+      }
     }
-  }, [hosts, updateHosts]);
+  }, []);
 
   const refreshAll = useCallback(async () => {
+    const owner = ++batch.current;
     for (const host of hosts.filter(h => h.enabled)) {
-      await testAndFetchSkills(host).catch(() => {});
+      if (!mounted.current || owner !== batch.current) return;
+      await testAndFetchSkills(host);
     }
   }, [hosts, testAndFetchSkills]);
 
@@ -185,7 +231,12 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
       )}
 
       <div className="space-y-2">
-        {hosts.map(host => (
+        {hosts.map(host => {
+          const request = testing.get(host.id);
+          const testingHost = !!request && !request.controller.signal.aborted && sameHostConfiguration(host, request.host);
+          const result = testResult?.request.host.id === host.id && !testResult.request.controller.signal.aborted
+            && sameHostConfiguration(host, testResult.request.host) ? testResult : null;
+          return (
           <div key={host.id} className="border border-border-default rounded-lg overflow-hidden">
             {/* Host Header */}
             <div className="flex items-center gap-2 px-3 py-2">
@@ -210,10 +261,10 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
               <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   onClick={() => testAndFetchSkills(host)}
-                  disabled={testingId === host.id}
+                  disabled={testingHost}
                   className="text-[10px] px-2 py-0.5 rounded bg-surface-raised text-text-muted hover:text-text-primary disabled:opacity-40 transition-colors"
                 >
-                  {testingId === host.id ? <Loader2 size={10} className="inline me-1 animate-spin" /> : <RefreshCw size={10} className="inline me-1" />}
+                  {testingHost ? <Loader2 size={10} className="inline me-1 animate-spin" /> : <RefreshCw size={10} className="inline me-1" />}
                   {t('agents.fetchSkills')}
                 </button>
                 <button
@@ -236,10 +287,10 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
             </div>
 
             {/* Test Result */}
-            {testResult?.id === host.id && (
-              <div className={`px-3 py-1.5 text-[10px] flex items-center gap-1.5 ${testResult.ok ? 'bg-green-900/20 text-green-400' : 'bg-red-900/20 text-red-400'}`}>
-                {testResult.ok ? <CheckCircle2 size={10} /> : <AlertTriangle size={10} />}
-                {testResult.msg}
+            {result && (
+              <div role={result.ok ? 'status' : 'alert'} className={`px-3 py-1.5 text-[10px] flex items-center gap-1.5 ${result.ok ? 'bg-green-900/20 text-green-400' : 'bg-red-900/20 text-red-400'}`}>
+                {result.ok ? <CheckCircle2 size={10} /> : <AlertTriangle size={10} />}
+                {result.ok ? t('agents.connected', { count: result.count, plural: result.count === 1 ? '' : 's' }) : result.msg}
               </div>
             )}
 
@@ -261,7 +312,7 @@ export function AgentHostsConfig({ settings, onUpdateSettings }: AgentHostsConfi
               </div>
             )}
           </div>
-        ))}
+        ); })}
       </div>
     </div>
   );

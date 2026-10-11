@@ -8,6 +8,7 @@ import { resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { ScratchDatabase } from './database.js';
 import { serverRoot } from './migrations.js';
+import { throwIfFailed } from '../../scripts/lib/cleanup-outcome.mjs';
 
 async function freePort(): Promise<number> {
   const listener = createServer();
@@ -86,6 +87,8 @@ export async function bootBuiltServer(database: ScratchDatabase, artifact: Stage
   const exited = new Promise<void>(resolveExit => child.once('close', () => resolveExit()));
   let becameReady = false;
   let forcedShutdown = false;
+  let operationFailure: { error: unknown } | undefined;
+  const cleanupErrors: unknown[] = [];
   try {
     const deadline = Date.now() + 20_000;
     while (Date.now() < deadline) {
@@ -121,21 +124,26 @@ export async function bootBuiltServer(database: ScratchDatabase, artifact: Stage
         }
         becameReady = true;
         await onReady?.({ apiUrl: `http://127.0.0.1:${port}`, adminUrl: `http://127.0.0.1:${adminPort}` });
-        return;
+        break;
       }
       await delay(100);
     }
-    throw new Error(`Compiled server failed readiness within 20 seconds.\n${output}`);
+    if (!becameReady) throw new Error(`Compiled server failed readiness within 20 seconds.\n${output}`);
+  } catch (error) {
+    operationFailure = { error };
   } finally {
-    if (child.exitCode === null && child.signalCode === null) {
-      child.kill('SIGTERM');
-      await Promise.race([exited, delay(3_000)]);
+    try {
       if (child.exitCode === null && child.signalCode === null) {
-        forcedShutdown = true;
-        child.kill('SIGKILL');
+        child.kill('SIGTERM');
+        await Promise.race([exited, delay(3_000)]);
+        if (child.exitCode === null && child.signalCode === null) {
+          forcedShutdown = true;
+          child.kill('SIGKILL');
+        }
       }
-    }
-    await exited;
-    if (becameReady && (forcedShutdown || child.exitCode !== 0)) throw new Error(`Healthy compiled server did not shut down cleanly (${child.exitCode ?? child.signalCode}).\n${output}`);
+      await exited;
+      if (becameReady && (forcedShutdown || child.exitCode !== 0)) cleanupErrors.push(new Error(`Healthy compiled server did not shut down cleanly (${child.exitCode ?? child.signalCode}).\n${output}`));
+    } catch (error) { cleanupErrors.push(error); }
   }
+  throwIfFailed(operationFailure, cleanupErrors, 'Compiled server verification and cleanup failed');
 }

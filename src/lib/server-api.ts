@@ -297,6 +297,8 @@ export async function updateMemberRole(folderId: string, userId: string, role: s
 
 export async function fetchFeed(opts: { cursor?: string; limit?: number; folderId?: string }): Promise<Post[]> {
   const params = new URLSearchParams();
+  // Older servers ignore this opt-in and still return full reactor lists.
+  params.set('reactions', 'summary');
   if (opts.cursor) params.set('cursor', opts.cursor);
   if (opts.limit) params.set('limit', String(opts.limit));
   if (opts.folderId) params.set('folderId', opts.folderId);
@@ -325,6 +327,15 @@ export async function createPost(data: {
 export async function fetchPost(postId: string): Promise<Post> {
   const resp = await apiFetch(`/api/caddyshack/posts/${postId}`);
   if (!resp.ok) throw new Error('Failed to fetch post');
+  return resp.json();
+}
+
+/** Additive opt-in: an older server returns all replies without replyPage. */
+export async function fetchPostPage(postId: string, cursor?: string): Promise<Post> {
+  const params = new URLSearchParams({ replies: 'page', reactions: 'summary', limit: '50' });
+  if (cursor) params.set('cursor', cursor);
+  const resp = await apiFetch(`/api/caddyshack/posts/${encodeURIComponent(postId)}?${params}`);
+  if (!resp.ok) throw Object.assign(await apiError(resp, 'Failed to fetch post'), { status: resp.status });
   return resp.json();
 }
 

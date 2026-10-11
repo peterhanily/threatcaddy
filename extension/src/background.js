@@ -260,10 +260,10 @@ async function getSelectionAsMarkdown() {
 
   // Resolve relative URLs to absolute
   div.querySelectorAll('img[src]').forEach(img => {
-    try { img.src = new URL(img.getAttribute('src'), document.baseURI).href; } catch {}
+    try { img.src = new URL(img.getAttribute('src'), document.baseURI).href; } catch { /* Preserve the original attribute if it cannot be resolved. */ }
   });
   div.querySelectorAll('a[href]').forEach(a => {
-    try { a.href = new URL(a.getAttribute('href'), document.baseURI).href; } catch {}
+    try { a.href = new URL(a.getAttribute('href'), document.baseURI).href; } catch { /* Preserve the original attribute if it cannot be resolved. */ }
   });
 
   // Convert images to inline base64 data URIs for offline use
@@ -294,7 +294,7 @@ async function getSelectionAsMarkdown() {
       // Try 1: draw the page's already-loaded image (works for same-origin)
       for (const pi of document.querySelectorAll('img')) {
         if (pi.src === src && pi.complete && pi.naturalWidth > 0) {
-          try { clearTimeout(timer); return resolve(capDataUri(drawToCanvas(pi))); } catch {}
+          try { clearTimeout(timer); return resolve(capDataUri(drawToCanvas(pi))); } catch { /* Try the existing fetch fallback when canvas access is unavailable. */ }
           break;
         }
       }
@@ -1028,7 +1028,7 @@ async function streamAnthropic(send, payload, signal) {
           send({ type: 'error', error: `Anthropic mid-stream error: ${msg}` });
           return;
         }
-      } catch {}
+      } catch { /* Preserve the existing tolerant stream behavior for malformed events. */ }
     }
   }
 
@@ -1053,7 +1053,7 @@ function parseToolCallsFromText(text, toolNames) {
       if (name && nameSet.has(name)) {
         calls.push({ name, arguments: typeof args === 'string' ? JSON.parse(args) : args });
       }
-    } catch {}
+    } catch { /* This text candidate is not a usable tool-call object. */ }
   }
   if (calls.length > 0) return calls;
 
@@ -1067,7 +1067,7 @@ function parseToolCallsFromText(text, toolNames) {
       if (name && nameSet.has(name)) {
         calls.push({ name, arguments: typeof args === 'string' ? JSON.parse(args) : args });
       }
-    } catch {}
+    } catch { /* This text candidate is not a usable tool-call object. */ }
   }
 
   return calls;
@@ -1190,7 +1190,7 @@ async function streamOpenAICompatible(send, payload, signal, endpoint, headers, 
           send({ type: 'error', error: `API mid-stream error: ${parsed.error.message || String(parsed.error)}` });
           return;
         }
-      } catch {}
+      } catch { /* Preserve the existing tolerant stream behavior for malformed events. */ }
     }
   }
 
@@ -1199,7 +1199,7 @@ async function streamOpenAICompatible(send, payload, signal, endpoint, headers, 
   if (toolEntries.length > 0) {
     for (const tc of toolEntries) {
       let parsedArgs = {};
-      try { parsedArgs = JSON.parse(tc.arguments); } catch {}
+      try { parsedArgs = JSON.parse(tc.arguments); } catch { /* Preserve the existing empty-argument fallback. */ }
       contentBlocks.push({ type: 'tool_use', id: tc.id, name: tc.name, input: parsedArgs });
     }
   }
@@ -1394,7 +1394,7 @@ async function streamGemini(send, payload, signal) {
         if (parsed.usageMetadata) {
           usage = { input: parsed.usageMetadata.promptTokenCount || 0, output: parsed.usageMetadata.candidatesTokenCount || 0 };
         }
-      } catch {}
+      } catch { /* Preserve the existing tolerant stream behavior for malformed events. */ }
     }
   }
 

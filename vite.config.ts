@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { applyDeploymentPolicy, type DeploymentPolicy } from './src/lib/deployment-policy'
+import { startupBudget } from './build/startup-budget'
 
 function deploymentPolicy(policy: DeploymentPolicy): Plugin {
   return {
@@ -44,6 +45,7 @@ export default defineConfig(({ mode }) => {
     react(),
     tailwindcss(),
     deploymentPolicy({ analyticsToken: env.VITE_CF_ANALYTICS_TOKEN, connectOrigins: env.VITE_CONNECT_ORIGINS }),
+    startupBudget(),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: false,
@@ -102,18 +104,8 @@ export default defineConfig(({ mode }) => {
   worker: {
     format: 'es',
   },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          excalidraw: ['@excalidraw/excalidraw'],
-          cytoscape: ['cytoscape', 'cytoscape-cose-bilkent'],
-          leaflet: ['leaflet', 'react-leaflet'],
-          markdown: ['marked', 'dompurify'],
-          compression: ['pako'],
-        },
-      },
-    },
-  },
+  // Preserve the natural dynamic-import graph. Package-wide manual chunks
+  // pulled shared React dependencies into the lazy editor and made the whole
+  // editor eager; they also collapsed its independently lazy diagram modules.
   }
 })

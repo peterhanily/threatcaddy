@@ -226,5 +226,11 @@
   "draftRecovery.discardConfirm": "Bỏ vĩnh viễn bản nháp chưa lưu này? Hãy tải xuống trước nếu cần bản sao để khôi phục.",
   "draftRecovery.conflictField": "Xem xung đột {{field}}",
   "draftRecovery.keepLocal": "Giữ {{field}} của tôi",
-  "draftRecovery.useRemote": "Dùng {{field}} từ xa"
+  "draftRecovery.useRemote": "Dùng {{field}} từ xa",
+  "offlineStatus.checking": "Đang kiểm tra hỗ trợ ngoại tuyến",
+  "offlineStatus.installed": "Đã cài đặt hỗ trợ ngoại tuyến",
+  "offlineStatus.unavailable": "Chưa xác nhận khả năng dùng ngoại tuyến",
+  "offlineStatus.checkingHelp": "Lần tải đầu tiên có dung lượng lớn có thể mất vài phút. Hãy giữ thẻ này mở trong khi cài đặt.",
+  "offlineStatus.unavailableHelp": "Trình duyệt chưa xác nhận việc cài đặt ngoại tuyến. Tính năng có thể không được hỗ trợ, vẫn đang tải hoặc không thể hoàn tất. Hãy giữ một bản sao lưu đã xuất.",
+  "offlineStatus.caveat": "Đây là trạng thái worker của trình duyệt, không phải kết quả kiểm tra các tệp được lưu đệm hay phiên bản mới nhất. Dữ liệu trong bộ nhớ đệm có thể bị xóa hoặc loại bỏ. Đây không phải là bản sao lưu. Máy chủ nhóm, AI và các dịch vụ bên ngoài khác cần kết nối."
 }

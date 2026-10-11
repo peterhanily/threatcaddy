@@ -3,6 +3,7 @@
 import Docker from 'dockerode';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
+import { throwIfFailed } from '../../scripts/lib/cleanup-outcome.mjs';
 
 const image = process.env.TEST_SERVER_IMAGE;
 if (!image || !/^[a-zA-Z0-9][a-zA-Z0-9_.:/@-]+$/.test(image)) throw new Error('TEST_SERVER_IMAGE must be an already built local fixture image');
@@ -22,6 +23,8 @@ Docker.prototype.createContainer = async function (options) {
   return container;
 };
 process.env.SANDBOX_NODE_IMAGE = image;
+let operationFailure;
+const cleanupErrors = [];
 try {
   const { executeCode } = await import('../dist/bots/sandbox.js');
   const result = await executeCode('nodejs', 'console.log("ordinary fixture")', { timeout: 10 });
@@ -32,7 +35,8 @@ try {
   const signal = AbortSignal.abort();
   await assert.rejects(executeCode('nodejs', 'console.log("ordinary fixture")', { signal }));
   assert.equal(created.length, 1);
-  console.log('Dockerode create/attach/demux/start/wait and cancelled-run containment passed');
+} catch (error) {
+  operationFailure = { error };
 } finally {
   Docker.prototype.createContainer = originalCreate;
   for (const container of created) {
@@ -40,6 +44,8 @@ try {
       const details = await container.inspect();
       assert.equal(details.Config.Labels['com.threatcaddy.acceptance'], label);
       await container.remove({ force: true });
-    } catch (error) { if (error.statusCode !== 404) throw error; }
+    } catch (error) { if (error.statusCode !== 404) cleanupErrors.push(error); }
   }
 }
+throwIfFailed(operationFailure, cleanupErrors, 'Docker fixture verification and cleanup failed');
+console.log('Dockerode create/attach/demux/start/wait and cancelled-run containment passed');

@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, useMemo, useId } from 'react';
 import { useChatComposerDraft } from '../../hooks/useChatComposerDraft';
+import { useMentionSearch } from '../../hooks/useMentionSearch';
 import { beginComposerSubmission, finishComposerSubmission } from '../../lib/chat-composer-drafts';
 import { Send, Square, Wifi, WifiOff, Globe, Search, FileText, CheckSquare, Shield, BarChart3, Clock, Network, ClipboardList, Zap, Link2, AlertTriangle, Terminal, RefreshCw, StopCircle, Wrench, ImagePlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { LLMProvider } from '../../types';
 import { MODELS as STATIC_MODELS } from '../../lib/models';
 import { cn } from '../../lib/utils';
-import { searchMentions, MENTION_CATEGORIES, type MentionSuggestion } from '../../lib/chat-mentions';
+import { MENTION_CATEGORIES, type MentionSuggestion } from '../../lib/chat-mentions';
 
 const SLASH_COMMAND_DEFS = [
   { command: '/fetch', descKey: 'slash.fetch', placeholder: '<url>', icon: Globe },
@@ -120,17 +121,15 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, ser
 
   // ── @-mention autocomplete ──────────────────────────────────────────
   const [mentionOpen, setMentionOpen] = useState(false);
-  const [mentionResults, setMentionResults] = useState<MentionSuggestion[]>([]);
   const [mentionIndex, setMentionIndex] = useState(0);
   const [mentionPhase, setMentionPhase] = useState<'category' | 'search'>('category');
   const mentionMenuRef = useRef<HTMLDivElement>(null);
-  /** Debounce handle for the searchMentions call. Reset on every keystroke so
-   *  only the last 200ms-quiescent query hits Dexie — avoids a full-table scan
-   *  per character when the global (no folderId) mention path is used. */
-  const mentionSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (mentionSearchTimerRef.current) clearTimeout(mentionSearchTimerRef.current);
-  }, []);
+  const typedMention = !slashOpen && text.lastIndexOf('@') !== -1
+    ? text.slice(text.lastIndexOf('@') + 1).match(/^(note|ioc|investigation):(.*)$/i) : null;
+  const mentionResults = useMentionSearch({
+    type: mentionOpen && typedMention ? typedMention[1].toLowerCase() as MentionSuggestion['type'] : undefined,
+    query: typedMention?.[2] ?? '', folderId, scope,
+  });
 
   // Detect @-mention trigger
   useEffect(() => {
@@ -146,35 +145,23 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, ser
     // Check if we're in a typed mention (e.g. @note:query)
     const typedMatch = afterAt.match(/^(note|ioc|investigation):(.*)$/i);
     if (typedMatch) {
-      const type = typedMatch[1].toLowerCase() as 'note' | 'ioc' | 'investigation';
-      const query = typedMatch[2];
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMentionPhase('search');
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMentionOpen(true);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMentionIndex(0);
-      if (mentionSearchTimerRef.current) clearTimeout(mentionSearchTimerRef.current);
-      mentionSearchTimerRef.current = setTimeout(() => {
-        searchMentions(type, query, folderId).then(setMentionResults).catch(console.error);
-      }, 200);
       return;
     }
 
     // Just '@' or '@<partial category>' — show categories
     if (afterAt === '' || MENTION_CATEGORIES.some(c => c.type.startsWith(afterAt.toLowerCase()))) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMentionPhase('category');
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMentionOpen(true);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMentionIndex(0);
       return;
     }
 
     if (mentionOpen) setMentionOpen(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, slashOpen, folderId]);
+  }, [text, slashOpen, folderId, scope]);
 
   const selectMentionCategory = (type: 'note' | 'ioc' | 'investigation') => {
     const lastAt = text.lastIndexOf('@');

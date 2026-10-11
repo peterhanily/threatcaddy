@@ -226,5 +226,11 @@
   "draftRecovery.discardConfirm": "Scartare definitivamente questa bozza non salvata? Scaricala prima se ti serve una copia di recupero.",
   "draftRecovery.conflictField": "Esamina conflitto: {{field}}",
   "draftRecovery.keepLocal": "Mantieni il mio valore: {{field}}",
-  "draftRecovery.useRemote": "Usa il valore remoto: {{field}}"
+  "draftRecovery.useRemote": "Usa il valore remoto: {{field}}",
+  "offlineStatus.checking": "Verifica del supporto offline",
+  "offlineStatus.installed": "Supporto offline installato",
+  "offlineStatus.unavailable": "Disponibilità offline non confermata",
+  "offlineStatus.checkingHelp": "Un primo download di grandi dimensioni può richiedere diversi minuti. Lascia aperta questa scheda durante l’installazione.",
+  "offlineStatus.unavailableHelp": "Il browser non ha confermato l’installazione offline. Potrebbe non essere supportata, essere ancora in download o non riuscire a completarsi. Conserva una copia di backup esportata.",
+  "offlineStatus.caveat": "Questo è lo stato del worker del browser, non una verifica dei file in cache o dell’ultima versione. I dati in cache possono essere cancellati o rimossi. Questo non è un backup. I server del team, l’IA e gli altri servizi esterni richiedono una connessione."
 }

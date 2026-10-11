@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
 import { withCurrentFeedAccess, type FeedVariables } from '../middleware/feed-access.js';
 import { postScopeFolders, visiblePostScope } from '../services/feed-policy.js';
+import { FeedReadInputError, loadPostReactions, loadReplyPage, parseReplyPage } from '../services/feed-read.js';
 import { posts, reactions, users } from '../db/schema.js';
 import { notifyMentions, createNotification } from '../services/notification-service.js';
 import { broadcastToFolder, broadcastGlobal } from '../ws/handler.js';
@@ -72,23 +73,7 @@ app.get('/', async (c) => {
 
   const postIds = feedPosts.map((p) => p.id);
 
-  // Batch-fetch all reactions for these posts
-  const allReactions = await db
-    .select()
-    .from(reactions)
-    .where(inArray(reactions.postId, postIds));
-
-  const reactionsByPost = new Map<string, Record<string, { count: number; userIds: string[] }>>();
-  for (const r of allReactions) {
-    let map = reactionsByPost.get(r.postId);
-    if (!map) {
-      map = Object.create(null) as Record<string, { count: number; userIds: string[] }>;
-      reactionsByPost.set(r.postId, map);
-    }
-    if (!map[r.emoji]) map[r.emoji] = { count: 0, userIds: [] };
-    map[r.emoji].count++;
-    map[r.emoji].userIds.push(r.userId);
-  }
+  const reactionsByPost = await loadPostReactions(db, postIds, user.id, c.req.query('reactions') === 'summary');
 
   // Batch-fetch reply counts
   const replyCounts = await db
@@ -325,6 +310,14 @@ app.post('/posts', async (c) => {
 app.get('/posts/:id', async (c) => {
   const db = c.get('feedDb');
   const postId = c.req.param('id');
+  let pageRequest;
+  if (c.req.query('replies') === 'page') {
+    try { pageRequest = parseReplyPage(postId, c.req.query('limit'), c.req.query('cursor')); }
+    catch (error) {
+      if (error instanceof FeedReadInputError) return c.json({ error: error.message, code: ErrorCodes.VALIDATION_FAILED }, 400);
+      throw error;
+    }
+  }
 
   const result = await db
     .select({
@@ -358,6 +351,14 @@ app.get('/posts/:id', async (c) => {
     if (!hasAccess) {
       return c.json({ error: 'No access to this investigation', code: ErrorCodes.NO_ACCESS }, 403);
     }
+  }
+
+  if (pageRequest) {
+    const page = await loadReplyPage(db, result[0], c.get('user').id, pageRequest);
+    const reactionsByPost = await loadPostReactions(db, [postId, ...page.replies.map(reply => reply.id)],
+      c.get('user').id, c.req.query('reactions') === 'summary');
+    return c.json({ ...result[0], reactions: reactionsByPost.get(postId) || {}, replyPage: page.replyPage,
+      replies: page.replies.map(reply => ({ ...reply, reactions: reactionsByPost.get(reply.id) || {} })) });
   }
 
   // Get all replies (flat — all posts with parentId = this post)
@@ -399,23 +400,7 @@ app.get('/posts/:id', async (c) => {
     replyToAuthorName: reply.replyToId ? authorMap.get(reply.replyToId) || undefined : undefined,
   }));
 
-  // Get reactions for the root post and all replies
-  const reactionRows = await db
-    .select()
-    .from(reactions)
-    .where(inArray(reactions.postId, allPostIds));
-
-  const reactionsByPost = new Map<string, Record<string, { count: number; userIds: string[] }>>();
-  for (const r of reactionRows) {
-    let map = reactionsByPost.get(r.postId);
-    if (!map) {
-      map = Object.create(null) as Record<string, { count: number; userIds: string[] }>;
-      reactionsByPost.set(r.postId, map);
-    }
-    if (!map[r.emoji]) map[r.emoji] = { count: 0, userIds: [] };
-    map[r.emoji].count++;
-    map[r.emoji].userIds.push(r.userId);
-  }
+  const reactionsByPost = await loadPostReactions(db, allPostIds, c.get('user').id, c.req.query('reactions') === 'summary');
 
   return c.json({
     ...result[0],

@@ -5,6 +5,7 @@ import { mkdir, mkdtemp, lstat, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium, expect } from '@playwright/test';
+import { throwIfFailed } from './lib/cleanup-outcome.mjs';
 import {
   CRITICAL_FILES, OFFLINE_PROBE_PATH, expectedOfflineFailure, loadVerifiedArtifact,
   requestPolicy, sha256, validateSiteURL, validateSourceSHA, waitForRelease,
@@ -94,6 +95,8 @@ async function runStage(name, artifact, operation, { standalone = false, service
   result.stages.push(stage);
   let context;
   let tracingStarted = false;
+  let operationFailure;
+  const cleanupErrors = [];
   const state = { offline: standalone, closing: false };
   try {
     context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, serviceWorkers, offline: standalone });
@@ -170,20 +173,20 @@ async function runStage(name, artifact, operation, { standalone = false, service
     stage.failure = error.message;
     const page = context?.pages().at(-1);
     if (page) await page.screenshot({ path: join(output, `${name}-failure.png`) }).catch(() => {});
-    throw error;
+    operationFailure = { error };
   } finally {
     state.closing = true;
     const cleanupFailures = [];
-    if (tracingStarted) await context.tracing.stop({ path: join(output, `${name}-trace.zip`) }).catch(error => cleanupFailures.push({ kind: 'trace', message: error.message }));
-    if (context) await context.close().catch(error => cleanupFailures.push({ kind: 'context-close', message: error.message }));
+    const recordCleanupFailure = (kind, error) => { cleanupErrors.push(error); cleanupFailures.push({ kind, message: error.message }); };
+    if (tracingStarted) await context.tracing.stop({ path: join(output, `${name}-trace.zip`) }).catch(error => recordCleanupFailure('trace', error));
+    if (context) await context.close().catch(error => recordCleanupFailure('context-close', error));
     if (cleanupFailures.length) {
       stage.errors.push(...cleanupFailures);
-      const previouslyPassed = stage.status === 'passed';
       stage.status = 'failed';
       stage.failure ??= 'Browser cleanup or evidence capture failed';
-      if (previouslyPassed) throw new Error(stage.failure);
     }
   }
+  throwIfFailed(operationFailure, cleanupErrors, `${name}: verification and cleanup failed`);
   console.log(`PASS ${name}`);
 }
 

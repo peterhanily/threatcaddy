@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef, lazy, Suspense, memo, type ReactNode } from 'react';
 import { AppLayout } from './components/Layout/AppLayout';
 import { SyncErrorBanner } from './components/Common/SyncErrorBanner';
+import { OfflineStatusNotice } from './components/Common/OfflineStatusNotice';
 import type { SettingsTab } from './components/Settings/SettingsPanel';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
@@ -1498,7 +1499,7 @@ const AppInner = memo(function AppInner({
         <ErrorBoundary region="exec-dashboard">
         <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500">Loading…</div>}>
         <ExecDashboard
-          notice={syncError && <SyncErrorBanner error={syncError} />}
+          notice={<><OfflineStatusNotice />{syncError && <SyncErrorBanner error={syncError} />}</>}
           folders={folders}
           allNotes={screensafeNotes}
           allTasks={screensafeTasks}
@@ -1566,7 +1567,7 @@ const AppInner = memo(function AppInner({
         </div>
       )}
       <AppLayout
-        notice={syncError && <SyncErrorBanner error={syncError} />}
+        notice={<><OfflineStatusNotice />{syncError && <SyncErrorBanner error={syncError} />}</>}
         bgImageEnabled={settings.bgImageEnabled}
         bgImageOpacity={settings.bgImageOpacity}
         bgImagePosX={settings.bgImagePosX}

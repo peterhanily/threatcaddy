@@ -226,5 +226,11 @@
   "draftRecovery.discardConfirm": "Dit niet-opgeslagen concept definitief verwijderen? Download het eerst als je een herstelkopie nodig hebt.",
   "draftRecovery.conflictField": "Conflict in {{field}} bekijken",
   "draftRecovery.keepLocal": "Mijn versie van {{field}} behouden",
-  "draftRecovery.useRemote": "Externe versie van {{field}} gebruiken"
+  "draftRecovery.useRemote": "Externe versie van {{field}} gebruiken",
+  "offlineStatus.checking": "Offline-ondersteuning controleren",
+  "offlineStatus.installed": "Offline-ondersteuning geïnstalleerd",
+  "offlineStatus.unavailable": "Offlinebeschikbaarheid niet bevestigd",
+  "offlineStatus.checkingHelp": "Een grote eerste download kan enkele minuten duren. Laat dit tabblad tijdens de installatie open.",
+  "offlineStatus.unavailableHelp": "De browser heeft de offline-installatie niet bevestigd. Mogelijk wordt deze niet ondersteund, wordt er nog gedownload of kan de installatie niet worden voltooid. Bewaar een geëxporteerde back-up.",
+  "offlineStatus.caveat": "Dit is de status van de browserworker, geen controle van bestanden in de cache of de nieuwste versie. Cachegegevens kunnen worden gewist of verwijderd. Dit is geen back-up. Teamservers, AI en andere externe diensten hebben een verbinding nodig."
 }

@@ -1,14 +1,13 @@
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Share2 } from 'lucide-react';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
-import L from 'leaflet';
 import type { TimelineEvent } from '../../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS } from '../../types';
 import { renderMarkdown } from '../../lib/markdown';
 import { formatFullDate } from '../../lib/utils';
 import { ExecDetailNav } from './ExecDetailNav';
-import 'leaflet/dist/leaflet.css';
+
+const LazyExecEventMap = lazy(() => import('./ExecEventMap').then(module => ({ default: module.ExecEventMap })));
 
 interface ExecEventViewProps {
   event: TimelineEvent;
@@ -17,24 +16,6 @@ interface ExecEventViewProps {
   currentIndex?: number;
   totalCount?: number;
   onNavigate?: (direction: 'prev' | 'next') => void;
-}
-
-const iconCache = new Map<string, L.Icon>();
-
-function getMarkerIcon(color: string): L.Icon {
-  const cached = iconCache.get(color);
-  if (cached) return cached;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="25" height="41" viewBox="0 0 25 41">
-    <path d="M12.5 0C5.6 0 0 5.6 0 12.5C0 21.9 12.5 41 12.5 41S25 21.9 25 12.5C25 5.6 19.4 0 12.5 0Z" fill="${color}" stroke="#000" stroke-width="1" stroke-opacity="0.3"/>
-    <circle cx="12.5" cy="12.5" r="5" fill="white" fill-opacity="0.9"/>
-  </svg>`;
-  const icon = L.icon({
-    iconUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-  });
-  iconCache.set(color, icon);
-  return icon;
 }
 
 export function ExecEventView({ event, onShare, currentIndex, totalCount, onNavigate }: ExecEventViewProps) {
@@ -104,23 +85,9 @@ export function ExecEventView({ event, onShare, currentIndex, totalCount, onNavi
 
       {event.latitude != null && event.longitude != null && (
         <div className="rounded-xl overflow-hidden border border-border-subtle" style={{ height: 200 }}>
-          <MapContainer
-            center={[event.latitude, event.longitude]}
-            zoom={10}
-            style={{ height: '100%', width: '100%' }}
-            zoomControl={false}
-            attributionControl={false}
-            dragging={false}
-            scrollWheelZoom={false}
-            doubleClickZoom={false}
-            touchZoom={false}
-          >
-            <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
-            <Marker
-              position={[event.latitude, event.longitude]}
-              icon={getMarkerIcon(typeInfo?.color ?? '#6b7280')}
-            />
-          </MapContainer>
+          <Suspense fallback={<div role="status" className="h-full flex items-center justify-center text-text-muted text-xs">{t('common:loading')}</div>}>
+            <LazyExecEventMap latitude={event.latitude} longitude={event.longitude} color={typeInfo?.color ?? '#6b7280'} />
+          </Suspense>
         </div>
       )}
 

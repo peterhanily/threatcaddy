@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq, and, ilike, or, desc, inArray, count } from 'drizzle-orm';
+import { eq, and, ilike, or, desc, inArray, count, sql } from 'drizzle-orm';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { db } from '../db/index.js';
 import { users, posts, reactions, activityLog } from '../db/schema.js';
@@ -128,15 +128,6 @@ app.get('/:id/likes', withCurrentFeedAccess, async (c) => {
   const requestingUser = c.get('user');
   const targetUserId = c.req.param('id');
 
-  // Find posts the user reacted to
-  const userReactions = await db
-    .select({ postId: reactions.postId })
-    .from(reactions)
-    .where(eq(reactions.userId, targetUserId));
-  const postIds = [...new Set(userReactions.map((r) => r.postId))];
-
-  if (postIds.length === 0) return c.json([]);
-
   const likedPosts = await db
     .select({
       id: posts.id,
@@ -157,7 +148,7 @@ app.get('/:id/likes', withCurrentFeedAccess, async (c) => {
     .from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
     .where(and(
-      inArray(posts.id, postIds),
+      sql`EXISTS (SELECT 1 FROM ${reactions} WHERE ${reactions.postId} = ${posts.id} AND ${reactions.userId} = ${targetUserId})`,
       eq(posts.deleted, false),
       visiblePostScope(requestingUser.id),
     ))

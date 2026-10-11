@@ -179,10 +179,6 @@ function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-function percent(done, total) {
-  return `${Math.round((done / total) * 100)}%`;
-}
-
 // ── Main ───────────────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);

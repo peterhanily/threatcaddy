@@ -1151,9 +1151,13 @@ export interface Post {
   updatedAt: string;
   authorDisplayName?: string;
   authorAvatarUrl?: string | null;
-  reactions?: Record<string, { count: number; userIds: string[] }>;
+  reactions?: Record<string, { count: number; userIds: string[]; reactedByMe?: boolean;
+    /** Explicit summary mode contains only the viewing user, if they reacted. */
+    userIdsScope?: 'viewer'; userIdsComplete?: boolean }>;
   replyCount?: number;
   replies?: Post[];
+  /** Absent on legacy servers, which return the entire thread. */
+  replyPage?: { total: number; limit: number; hasMore: boolean; nextCursor: string | null };
 }
 
 export type NotificationType = 'mention' | 'reply' | 'reaction' | 'invite' | 'entity-update';

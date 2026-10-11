@@ -27,8 +27,8 @@ async function useArabicCatalog(page) {
       });
     };
     globalThis.TC_UI.localize();
-    if (typeof refresh === 'function') await refresh();
-    if (typeof loadLocalAIApproval === 'function') await loadLocalAIApproval();
+    if (typeof globalThis.refresh === 'function') await globalThis.refresh();
+    if (typeof globalThis.loadLocalAIApproval === 'function') await globalThis.loadLocalAIApproval();
   }, catalog);
 }
 

@@ -32,7 +32,7 @@ export function validateSourceSHA(value) {
 }
 
 export function artifactMember(value) {
-  if (typeof value !== 'string' || /[\x00-\x1f\x7f\\]/.test(value) || value.startsWith('/')) {
+  if (typeof value !== 'string' || hasUnsafeMemberCharacter(value) || value.startsWith('/')) {
     throw new ReleaseContractError('Unsafe artifact member path');
   }
   const name = value.replace(/^\.\//, '').replace(/\/$/, '');
@@ -41,6 +41,14 @@ export function artifactMember(value) {
     throw new ReleaseContractError('Unsafe artifact member path');
   }
   return name;
+}
+
+function hasUnsafeMemberCharacter(value) {
+  for (let index = 0; index < value.length; index++) {
+    const code = value.charCodeAt(index);
+    if (code <= 31 || code === 127 || code === 92) return true;
+  }
+  return false;
 }
 
 export function validateArchiveListing(names, descriptions) {

@@ -1,6 +1,6 @@
 # ThreatCaddy Architecture
 
-ThreatCaddy is a threat intelligence investigation platform composed of three main subsystems: a Chrome Extension client, a Team Server, and an Agent Bridge for AI integration.
+ThreatCaddy consists of a local-first browser app, optional Chrome/Firefox extension, optional Team Server, and Agent Bridge integrations.
 
 ---
 
@@ -13,7 +13,7 @@ ThreatCaddy is a local-first, team-capable threat intelligence workbench. Users 
 | Component | Technology | Purpose |
 |---|---|---|
 | **Browser Client** | React, Vite, TypeScript, Dexie.js, PWA | Investigation workspace -- notes, tasks, timelines, IOCs, whiteboards, chat |
-| **IndexedDB** | Dexie.js (21 schema versions) | Local-first storage. All data persists in the browser first. |
+| **IndexedDB** | Dexie.js, versioned migrations | Local investigation storage; optional server-backed features have separate persistence. |
 | **Encryption Middleware** | Web Crypto API (AES-256-GCM) | Transparent field-level encryption at rest in IndexedDB |
 | **Chrome Extension** | Chrome MV3 | Web clipping, LLM API proxy (bypasses CORS), URL fetching |
 | **Team Server** | Hono framework, Node.js | REST API, WebSocket server, bot runtime, admin panel |
@@ -28,7 +28,7 @@ ThreatCaddy is a local-first, team-capable threat intelligence workbench. Users 
 ## 2. Directory Layout
 
 ```
-src/                    Chrome extension source
+src/                    Browser application source
   components/           React components
   contexts/             React context providers
   hooks/                React hooks (data layer)
@@ -38,7 +38,7 @@ src/                    Chrome extension source
   workers/              Web Workers
   db.ts                 Dexie database schema
 
-extension/              Chrome extension packaging (manifest, build scripts)
+extension/              Chrome/Firefox extension source, manifests and build scripts
 
 server/                 Team server
   src/
@@ -63,7 +63,7 @@ docs/                   Documentation
 
 ### 3.1 Core Entities
 
-- **Folder (Investigation)** -- The top-level container. Every note, task, timeline event, IOC, and whiteboard belongs to exactly one folder. Folders carry status (active, closed, archived), TLP/PAP classification, and closure resolution metadata.
+- **Folder (Investigation)** -- The top-level investigation container. Entities may belong to a folder or remain unfiled. Folders carry status (active, closed, archived), TLP/PAP classification, and closure resolution metadata.
 
 - **Note** -- Rich Markdown content with automatic IOC extraction, inline annotations, and cross-entity links to tasks, timeline events, and other notes.
 
@@ -83,11 +83,11 @@ All entities support cross-linking through `linkedNoteIds`, `linkedTaskIds`, and
 
 ### 3.3 Client-Side Storage (IndexedDB via Dexie)
 
-The client database has evolved through 21 schema versions. Tables include: notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, activityLog, standaloneIOCs, chatThreads, noteTemplates, playbookTemplates, integrationTemplates, installedIntegrations, integrationRuns, and two internal sync tables (_syncQueue, _syncMeta).
+The migration definitions in `src/db.ts` are authoritative. Tables include notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, activityLog, standaloneIOCs, chatThreads, evidenceItems, templates, integrations, and internal sync, migration and clip-receipt records. The portable backup registry explicitly distinguishes supported portable content from runtime/internal state.
 
 ### 3.4 Server-Side Storage (PostgreSQL via Drizzle ORM)
 
-The server schema has 19 migrations and includes all client-side entities plus server-specific tables: users, sessions, investigation_members, server_settings, allowed_emails, bot_configs, bot_runs, admin_users, activity_log, posts, reactions, notifications, files, saved_searches, integration_templates, and backups.
+The server's append-only migration history lives in `server/src/db/migrations/`. It includes synchronized entities and server-specific tables such as users, sessions, investigation_members, server_settings, allowed_emails, bot_configs, bot_runs, admin_users, activity_log, posts, reactions, notifications, files, saved_searches, integration_templates, and backups. Not every local runtime table is synchronized.
 
 Drizzle ORM with the `postgres.js` driver manages the connection pool (max 20 connections). The schema is defined in TypeScript with type-safe queries. Migration files live in `server/src/db/migrations/`.
 
@@ -376,6 +376,16 @@ User JWTs are signed with EdDSA using Ed25519 key pairs. This provides smaller k
 ### Drizzle ORM over Prisma/Knex
 
 Drizzle ORM with the postgres.js driver provides a SQL-like TypeScript API that maps closely to actual SQL. It is lightweight with no binary engine dependency (unlike Prisma's Rust engine). Schema is defined in TypeScript with type-safe queries.
+
+### Startup, Offline Installation and Performance Checks
+
+Hosted builds preserve the natural dynamic-import graph. Whiteboard, graph and map engines are deferred; event maps load only when coordinates are displayed. `build/startup-budget.ts` checks the complete static entry dependency graph, raw/gzip JavaScript and CSS budgets, and the service worker's per-chunk precache limit. It fails builds if a heavy feature becomes eager. Its test metadata stays in ignored `node_modules/.cache/threatcaddy/`, not the published site. Browser tests then open the actual lazy features and check persistence and rendering.
+
+The PWA still precaches its packaged module graph and fonts, including CJK subsets, for offline use. This background download is larger than foreground startup. The passive offline notice observes the existing worker's installation state without changing registration, requesting persistence, clearing caches or reloading unsaved work. An installed worker indicates that a matching worker has activated, not an integrity check, a guarantee of the newest release, or a backup. Browsers can evict storage; remote services still need connectivity. The self-contained standalone edition does not use this hosted-worker notice.
+
+For reproducible local lab measurements, build the hosted app and run `node scripts/measure-startup.mjs --dir dist --out /tmp/threatcaddy-startup.json`. It uses disposable Chromium contexts, a gzip loopback server, cold and HTTP-cache-warm visits, and a fixed throttled mobile profile. Service workers are blocked in this measurement to isolate foreground startup. These synthetic results are not real-user percentiles or field INP. Real installed/offline behavior has separate browser acceptance tests.
+
+IOC extraction uses an exact-input/options cache with eight LRU entries and a total two-million UTF-16-code-unit retention budget. Results returned to callers are copied; oversized inputs still extract normally but bypass caching. The budget is a retained-string bound, not an exact heap-byte measurement.
 
 ---
 

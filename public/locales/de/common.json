@@ -226,5 +226,11 @@
   "draftRecovery.discardConfirm": "Diesen ungespeicherten Entwurf dauerhaft verwerfen? Laden Sie ihn zuerst herunter, wenn Sie eine Wiederherstellungskopie benötigen.",
   "draftRecovery.conflictField": "Konflikt bei {{field}} prüfen",
   "draftRecovery.keepLocal": "Meine Version von {{field}} behalten",
-  "draftRecovery.useRemote": "Entfernte Version von {{field}} verwenden"
+  "draftRecovery.useRemote": "Entfernte Version von {{field}} verwenden",
+  "offlineStatus.checking": "Offline-Unterstützung wird geprüft",
+  "offlineStatus.installed": "Offline-Unterstützung installiert",
+  "offlineStatus.unavailable": "Offline-Verfügbarkeit nicht bestätigt",
+  "offlineStatus.checkingHelp": "Ein großer erster Download kann mehrere Minuten dauern. Lassen Sie diesen Tab während der Installation geöffnet.",
+  "offlineStatus.unavailableHelp": "Der Browser hat die Offline-Installation nicht bestätigt. Sie wird möglicherweise nicht unterstützt, noch heruntergeladen oder kann nicht abgeschlossen werden. Bewahren Sie eine exportierte Sicherung auf.",
+  "offlineStatus.caveat": "Dies ist der Status des Browser-Workers, keine Prüfung der zwischengespeicherten Dateien oder der neuesten Version. Zwischengespeicherte Daten können gelöscht oder verdrängt werden. Dies ist keine Sicherung. Teamserver, KI und andere externe Dienste benötigen eine Verbindung."
 }

@@ -1,9 +1,9 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ExecDashboard } from '../components/ExecMode/ExecDashboard';
 import { db } from '../db';
 import i18n from '../i18n';
-import type { Note } from '../types';
+import type { ChatThread, Note } from '../types';
 
 vi.mock('../components/ExecMode/ShareDialog', () => ({ ShareDialog: () => null }));
 
@@ -60,5 +60,23 @@ describe('Exec dashboard accessible entry controls', () => {
     expect(screen.getByRole('button', { name: 'Passer en mode analyste' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Passer au thème clair' })).toBeVisible();
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Switch to Analyst Mode' })).not.toBeInTheDocument());
+  });
+
+  it('refreshes the open chat breadcrumb after a rename and a locale change', async () => {
+    const chat: ChatThread = { id: 'fictional-chat', title: 'Original fictional chat', messages: [], model: 'synthetic-model', provider: 'anthropic', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 };
+    const view = render(<ExecDashboard {...properties} allChatThreads={[chat]} />);
+    fireEvent.click(screen.getByRole('button', { name: /1\s*AI Chats/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Original fictional chat/ }));
+    expect(screen.getByRole('button', { name: 'Overview' })).toBeVisible();
+    view.rerender(<ExecDashboard {...properties} allChatThreads={[{ ...chat, title: 'Renamed fictional chat' }]} />);
+    expect(screen.queryByText('Original fictional chat')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Renamed fictional chat').length).toBeGreaterThan(0);
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('fr', namespace, values, true, false);
+    i18n.addResourceBundle('fr', 'exec', { 'breadcrumb.overview': 'Vue de test', 'breadcrumb.aiChats': 'Conversations de test' }, true, true);
+    await act(async () => { await i18n.changeLanguage('fr'); });
+    expect(screen.queryByRole('button', { name: 'Overview' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Vue de test' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Conversations de test' })).toBeVisible();
+    expect(screen.getAllByText('Renamed fictional chat').length).toBeGreaterThan(0);
   });
 });

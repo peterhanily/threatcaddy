@@ -88,6 +88,21 @@ describe('useSettings', () => {
     expect(result.current.settings.theme).toBe('dark');
   });
 
+  it('merges functional patches with the latest queued update and supports a no-op decision', () => {
+    const { result } = renderHook(() => useSettings());
+    act(() => {
+      result.current.updateSettings({ displayName: 'Fictional analyst' });
+      result.current.updateSettings(current => ({ displayName: `${current.displayName} updated`, language: 'pt_BR' }));
+    });
+    expect(result.current.settings.displayName).toBe('Fictional analyst updated');
+    expect(result.current.settings.language).toBe('pt-BR');
+    const before = localStorage.getItem(SETTINGS_KEY);
+    const current = result.current.settings;
+    act(() => result.current.updateSettings(() => null));
+    expect(result.current.settings).toBe(current);
+    expect(localStorage.getItem(SETTINGS_KEY)).toBe(before);
+  });
+
   it('preserves unmodified settings on partial update', () => {
     const { result } = renderHook(() => useSettings());
 

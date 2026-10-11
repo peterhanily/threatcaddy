@@ -49,8 +49,8 @@ try {
   await expect.poll(() => popup.evaluate(origins => chrome.storage.local.get(null).then(data => data['proxyPolicyV1:' + origins[0]]?.domains?.[0] === 'first.example.test' && data['proxyPolicyV1:' + origins[1]]?.domains?.[0] === 'second.example.test'), origins), { timeout: 10000 }).toBe(true);
   console.log('PASS Chrome: two paired app policies remain separate');
   await first.evaluate(() => window.postMessage({ type: 'TC_SEND_NOTIFICATION', requestId: 'denied', payload: { title: 'Synthetic local acceptance', message: 'Permission absent' } }, location.origin));
-  await first.waitForFunction(() => received.some(item => item.type === 'TC_NOTIFICATION_RESULT' && item.requestId === 'denied'));
-  assert.equal(await first.evaluate(() => received.find(item => item.requestId === 'denied' && item.type === 'TC_NOTIFICATION_RESULT').accepted), false);
+  await first.waitForFunction(() => window.received.some(item => item.type === 'TC_NOTIFICATION_RESULT' && item.requestId === 'denied'));
+  assert.equal(await first.evaluate(() => window.received.find(item => item.requestId === 'denied' && item.type === 'TC_NOTIFICATION_RESULT').accepted), false);
   console.log('PASS Chrome: denied notification returns explicit failure');
   console.log('NOT RUN Chrome: positive notification permission grant requires native prompt interaction; covered separately in Firefox API test.');
   await popup.locator('#settings-revoke-apps').click();

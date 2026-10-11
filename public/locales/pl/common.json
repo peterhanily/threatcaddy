@@ -226,5 +226,11 @@
   "draftRecovery.discardConfirm": "Trwale odrzucić ten niezapisany szkic? Najpierw pobierz go, jeśli potrzebujesz kopii do odzyskania.",
   "draftRecovery.conflictField": "Sprawdź konflikt pola {{field}}",
   "draftRecovery.keepLocal": "Zachowaj moją wartość {{field}}",
-  "draftRecovery.useRemote": "Użyj zdalnej wartości {{field}}"
+  "draftRecovery.useRemote": "Użyj zdalnej wartości {{field}}",
+  "offlineStatus.checking": "Sprawdzanie obsługi offline",
+  "offlineStatus.installed": "Obsługa offline zainstalowana",
+  "offlineStatus.unavailable": "Dostępność offline niepotwierdzona",
+  "offlineStatus.checkingHelp": "Duże pierwsze pobieranie może potrwać kilka minut. Pozostaw tę kartę otwartą podczas instalacji.",
+  "offlineStatus.unavailableHelp": "Przeglądarka nie potwierdziła instalacji offline. Może ona nie być obsługiwana, nadal się pobierać lub nie móc się zakończyć. Zachowaj wyeksportowaną kopię zapasową.",
+  "offlineStatus.caveat": "To stan workera przeglądarki, a nie sprawdzenie plików w pamięci podręcznej ani najnowszej wersji. Dane z pamięci podręcznej mogą zostać wyczyszczone lub usunięte. To nie jest kopia zapasowa. Serwery zespołu, AI i inne usługi zewnętrzne wymagają połączenia."
 }

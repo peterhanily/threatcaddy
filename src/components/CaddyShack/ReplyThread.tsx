@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
-import { fetchPost, addReaction, removeReaction, deletePost, editPost } from '../../lib/server-api';
+import { fetchPostPage, addReaction, removeReaction, deletePost, editPost } from '../../lib/server-api';
 import { PostCard } from './PostCard';
 import { PostComposer } from './PostComposer';
 import type { Post, Settings } from '../../types';
@@ -24,26 +24,70 @@ export function ReplyThread(props: ReplyThreadProps) {
 function ReplyThreadContent({ postId, currentUserId, onBack, onUserClick, settings }: ReplyThreadProps) {
   const { t } = useTranslation('caddyshack');
   const { t: tt } = useTranslation('toast');
+  const { t: tc } = useTranslation('common');
   const { addToast } = useToast();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; authorName: string } | null>(null);
   const mounted = useRef(false);
   const requestVersion = useRef(0);
+  const loadingMore = useRef(false);
+  const [nextPageLoading, setNextPageLoading] = useState(false);
 
   const loadPost = useCallback(async () => {
     if (!mounted.current) return;
     const version = ++requestVersion.current;
+    loadingMore.current = false;
+    setNextPageLoading(false);
     setLoading(true);
+    setLoadError(false);
     try {
-      const data = await fetchPost(postId);
+      const data = await fetchPostPage(postId);
       if (mounted.current && version === requestVersion.current) setPost(data);
     } catch (err) {
-      if (mounted.current && version === requestVersion.current) console.error('Failed to load post:', err);
+      if (mounted.current && version === requestVersion.current) {
+        if (err instanceof Error && 'status' in err && [401, 403, 404].includes(Number(err.status))) setPost(null);
+        setLoadError(true);
+        console.error('Failed to load post:', err);
+      }
     } finally {
       if (mounted.current && version === requestVersion.current) setLoading(false);
     }
   }, [postId]);
+
+  const loadMore = async () => {
+    const cursor = post?.replyPage?.nextCursor;
+    if (!mounted.current || loading || loadingMore.current || !post?.replyPage?.hasMore || !cursor) return;
+    loadingMore.current = true;
+    setNextPageLoading(true);
+    setLoadError(false);
+    const version = requestVersion.current;
+    try {
+      const data = await fetchPostPage(postId, cursor);
+      if (!mounted.current || version !== requestVersion.current) return;
+      setPost(previous => {
+        if (!previous || !mounted.current || version !== requestVersion.current) return previous;
+        // A server downgrade can return a complete legacy thread; that is not
+        // another partial page and must not be appended to stale page contents.
+        if (!data.replyPage) return data;
+        const replies = new Map((previous.replies || []).map(reply => [reply.id, reply]));
+        for (const reply of data.replies || []) replies.set(reply.id, reply);
+        return { ...data, replies: [...replies.values()] };
+      });
+    } catch (err) {
+      if (mounted.current && version === requestVersion.current) {
+        if (err instanceof Error && 'status' in err && [401, 403, 404].includes(Number(err.status))) setPost(null);
+        setLoadError(true);
+        console.error('Failed to load replies:', err);
+      }
+    } finally {
+      if (mounted.current && version === requestVersion.current) {
+        loadingMore.current = false;
+        setNextPageLoading(false);
+      }
+    }
+  };
 
   useEffect(() => {
     mounted.current = true;
@@ -94,7 +138,7 @@ function ReplyThreadContent({ postId, currentUserId, onBack, onUserClick, settin
     }
   };
 
-  if (loading) {
+  if (loading && !post) {
     return (
       <div className="flex-1 flex items-center justify-center text-[var(--text-tertiary)] text-sm">
         {t('reply.loadingThread')}
@@ -105,7 +149,8 @@ function ReplyThreadContent({ postId, currentUserId, onBack, onUserClick, settin
   if (!post) {
     return (
       <div className="flex-1 flex items-center justify-center text-[var(--text-tertiary)] text-sm">
-        {t('reply.postNotFound')}
+        <span>{loadError ? tc('error.generic') : t('reply.postNotFound')}</span>
+        {loadError && <button onClick={() => { void loadPost(); }} className="ms-2 underline">{tc('reload')}</button>}
       </div>
     );
   }
@@ -126,6 +171,11 @@ function ReplyThreadContent({ postId, currentUserId, onBack, onUserClick, settin
       >
         <ArrowLeft size={16} /> {t('reply.backToCaddyShack')}
       </button>
+
+      {loadError && <div role="alert" className="flex items-center gap-2 text-sm text-red-400">
+        <span>{tc('error.generic')}</span>
+        <button onClick={() => { void loadPost(); }} className="underline">{tc('reload')}</button>
+      </div>}
 
       {/* Original post */}
       <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--bg-secondary)]">
@@ -157,7 +207,9 @@ function ReplyThreadContent({ postId, currentUserId, onBack, onUserClick, settin
       {post.replies && post.replies.length > 0 && (
         <div className="border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--bg-secondary)] divide-y divide-[var(--border)]">
           <div className="px-4 py-2 text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider bg-[var(--bg-primary)]/50">
-            {post.replies.length === 1 ? t('reply.replyCount', { count: post.replies.length }) : t('reply.replyCountPlural', { count: post.replies.length })}
+            {(post.replyPage?.total ?? post.replies.length) === 1
+              ? t('reply.replyCount', { count: post.replyPage?.total ?? post.replies.length })
+              : t('reply.replyCountPlural', { count: post.replyPage?.total ?? post.replies.length })}
           </div>
           {post.replies.map((reply) => (
             <PostCard
@@ -176,6 +228,10 @@ function ReplyThreadContent({ postId, currentUserId, onBack, onUserClick, settin
           ))}
         </div>
       )}
+      {post.replyPage?.hasMore && <button onClick={() => { void loadMore(); }} disabled={loading || nextPageLoading}
+        className="self-center rounded border border-border-default px-4 py-2 text-sm disabled:opacity-50">
+        {nextPageLoading ? tc('loading') : tc('next')}
+      </button>}
     </div>
   );
 }

@@ -237,25 +237,6 @@ function getReq(path: string, token?: string) {
   return new Request(`http://localhost${path}`, { method: 'GET', headers });
 }
 
-function jsonReq(
-  method: string,
-  path: string,
-  body?: unknown,
-  token?: string,
-) {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  const init: RequestInit = { method, headers };
-  if (body !== undefined) {
-    init.body = JSON.stringify(body);
-  }
-  return new Request(`http://localhost${path}`, init);
-}
-
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('investigation user routes', () => {

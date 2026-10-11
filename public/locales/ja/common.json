@@ -226,5 +226,11 @@
   "draftRecovery.discardConfirm": "この未保存の下書きを完全に破棄しますか？復元用のコピーが必要な場合は、先にダウンロードしてください。",
   "draftRecovery.conflictField": "{{field}} の競合を確認",
   "draftRecovery.keepLocal": "自分の {{field}} を保持",
-  "draftRecovery.useRemote": "リモートの {{field}} を使用"
+  "draftRecovery.useRemote": "リモートの {{field}} を使用",
+  "offlineStatus.checking": "オフライン対応を確認中",
+  "offlineStatus.installed": "オフライン対応をインストール済み",
+  "offlineStatus.unavailable": "オフラインでの利用は未確認です",
+  "offlineStatus.checkingHelp": "初回の大きなダウンロードには数分かかる場合があります。インストール中はこのタブを開いたままにしてください。",
+  "offlineStatus.unavailableHelp": "ブラウザーはオフライン用のインストールを確認していません。非対応、ダウンロード中、または完了できない状態の可能性があります。エクスポートしたバックアップを保管してください。",
+  "offlineStatus.caveat": "これはブラウザーのワーカーの状態であり、キャッシュ内のファイルや最新バージョンを確認したものではありません。キャッシュデータは消去または削除されることがあります。これはバックアップではありません。チームサーバー、AI、その他の外部サービスには接続が必要です。"
 }

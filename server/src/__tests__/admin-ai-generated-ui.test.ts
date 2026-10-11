@@ -94,8 +94,8 @@ describe('the actual generated administrative AI JavaScript', () => {
       logout: () => { logouts++; },
     });
     new Script(aiTabJs()).runInContext(context);
-    const request = (context.aiRequestJSON as (path: string, options: object, controller: AbortController, token: string) => Promise<unknown>)
-      ('/fictional', {}, new AbortController(), 'fictional-session');
+    const request = (context.aiRequestJSON as (path: string, options: object, controller: AbortController, token: string) => Promise<unknown>)(
+      '/fictional', {}, new AbortController(), 'fictional-session');
     if (changedGeneration) context.aiSessionGeneration = 1;
     resolveResponse(new Response(JSON.stringify({ error: 'Fictional session expired' }), { status: 401 }));
     await expect(request).rejects.toThrow('Fictional session expired');

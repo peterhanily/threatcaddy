@@ -118,13 +118,13 @@ export function ExecDashboard({
         case 'iocList':
           return { screen: 'investigation', folderId: prev.folderId };
         case 'noteDetail':
-          return { screen: 'noteList', folderId: prev.folderId };
+          return prev.folderId ? { screen: 'noteList', folderId: prev.folderId } : { screen: 'globalNotes' };
         case 'taskDetail':
-          return { screen: 'taskList', folderId: prev.folderId };
+          return prev.folderId ? { screen: 'taskList', folderId: prev.folderId } : { screen: 'globalTasks' };
         case 'eventDetail':
-          return { screen: 'eventList', folderId: prev.folderId };
+          return prev.folderId ? { screen: 'eventList', folderId: prev.folderId } : { screen: 'globalEvents' };
         case 'iocDetail':
-          return { screen: 'iocList', folderId: prev.folderId };
+          return prev.folderId ? { screen: 'iocList', folderId: prev.folderId } : { screen: 'globalIOCs' };
         case 'globalNotes':
         case 'globalTasks':
         case 'globalIOCs':
@@ -247,6 +247,11 @@ export function ExecDashboard({
     const casesRoot: BreadcrumbSegment = { label: t('breadcrumb.investigations'), onTap: () => { setDrillDown(null); setNav('investigations'); } };
     const fid = 'folderId' in drillDown ? drillDown.folderId : '';
     const invDetail: BreadcrumbSegment = { label: drillFolderName, onTap: () => setDrillDown({ screen: 'investigation', folderId: fid }) };
+    const globalDetail = (screen: 'globalNotes' | 'globalTasks' | 'globalEvents' | 'globalIOCs', listLabel: string, itemLabel: string): BreadcrumbSegment[] => [
+      { label: t('breadcrumb.overview'), onTap: () => setDrillDown(null) },
+      { label: listLabel, onTap: () => setDrillDown({ screen }) },
+      { label: itemLabel },
+    ];
 
     switch (drillDown.screen) {
       case 'investigation':
@@ -263,24 +268,28 @@ export function ExecDashboard({
         return [casesRoot, invDetail, { label: 'IOCs' }];
       case 'noteDetail': {
         const note = allNotes.find((n) => n.id === drillDown.noteId);
+        if (!fid) return globalDetail('globalNotes', t('breadcrumb.allNotes'), note?.title || t('notes.untitled'));
         return [casesRoot, invDetail,
           { label: 'Notes', onTap: () => setDrillDown({ screen: 'noteList', folderId: drillDown.folderId }) },
           { label: note?.title || 'Note' }];
       }
       case 'taskDetail': {
         const task = allTasks.find((t) => t.id === drillDown.taskId);
+        if (!fid) return globalDetail('globalTasks', t('breadcrumb.openTasks'), task?.title || t('tasks.untitled'));
         return [casesRoot, invDetail,
           { label: 'Tasks', onTap: () => setDrillDown({ screen: 'taskList', folderId: drillDown.folderId }) },
           { label: task?.title || 'Task' }];
       }
       case 'eventDetail': {
         const event = allEvents.find((e) => e.id === drillDown.eventId);
+        if (!fid) return globalDetail('globalEvents', t('breadcrumb.eventsThisWeek'), event?.title || t('events.untitled'));
         return [casesRoot, invDetail,
           { label: 'Events', onTap: () => setDrillDown({ screen: 'eventList', folderId: drillDown.folderId }) },
           { label: event?.title || 'Event' }];
       }
       case 'iocDetail': {
         const ioc = allIOCs.find((i) => i.id === drillDown.iocId);
+        if (!fid) return globalDetail('globalIOCs', t('breadcrumb.allIOCs'), ioc?.value || t('share.scopeIoc'));
         return [casesRoot, invDetail,
           { label: 'IOCs', onTap: () => setDrillDown({ screen: 'iocList', folderId: drillDown.folderId }) },
           { label: ioc?.value || 'IOC' }];
@@ -317,7 +326,7 @@ export function ExecDashboard({
       }
       default: return [];
     }
-  }, [drillDown, drillFolderName, allNotes, allTasks, allEvents, allIOCs]);
+  }, [drillDown, drillFolderName, allNotes, allTasks, allEvents, allIOCs, allChatThreads, t]);
 
   // Show search bar on list views and investigations tab
   const showSearch = nav === 'investigations' || (drillDown && [
@@ -613,7 +622,7 @@ export function ExecDashboard({
       {notice}
 
       {/* Entity nav bar — persistent when inside an investigation */}
-      {drillDown && (
+      {drillFolder && (
         <ExecEntityNav counts={drillEntityCounts} activeTab={activeEntityTab} onTap={handleEntityNavTap} />
       )}
 

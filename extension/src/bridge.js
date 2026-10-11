@@ -62,7 +62,7 @@ var clipDocumentToken;
 function isExtensionValid() {
   try {
     return tcAppApproved && !!(chrome && chrome.runtime && chrome.runtime.id);
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -305,7 +305,7 @@ window.addEventListener('message', function (event) {
     var domains = Array.isArray(event.data.domains) ? event.data.domains : [];
     try {
       chrome.runtime.sendMessage({ type: 'SET_PROXY_DOMAINS', domains: domains });
-    } catch (e) { /* ignore */ }
+    } catch { /* The extension can unload before this best-effort policy update. */ }
   }
 
   if (event.data.type === 'TC_LLM_ABORT') {
