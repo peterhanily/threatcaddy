@@ -152,14 +152,43 @@ async function readBoundedResponse(response, limit = MAX_FETCH_BYTES) {
   } catch (error) { await reader.cancel().catch(() => {}); throw error; }
   finally { reader.releaseLock(); }
 }
-async function boundedFetch(url, options, timeout) {
+async function boundedFetch(url, options, timeout, signal) {
   const controller = new AbortController();
+  const abort = () => controller.abort();
+  if (signal?.aborted) abort();
+  else signal?.addEventListener('abort', abort, { once: true });
   const timer = setTimeout(() => controller.abort(), timeout);
   try {
+    controller.signal.throwIfAborted();
     const response = await fetch(url, { ...options, signal: controller.signal, redirect: 'error', credentials: 'omit' });
-    return { response, text: await readBoundedResponse(response) };
-  } finally { clearTimeout(timer); }
+    const text = await readBoundedResponse(response);
+    controller.signal.throwIfAborted();
+    return { response, text };
+  } finally { clearTimeout(timer); signal?.removeEventListener('abort', abort); }
 }
+
+// Short-lived cancellation records also cover an abort arriving during the
+// request's asynchronous authorization read. They contain no body or credentials.
+const proxyRequests = new Map();
+function proxyRequestKey(message, sender, context) {
+  if (typeof message.requestId !== 'string' || !message.requestId || message.requestId.length > 128
+      || typeof message.documentToken !== 'string' || !message.documentToken || message.documentToken.length > 128) throw new Error('Invalid proxy request identity');
+  return JSON.stringify([context.key, approvalGeneration(context.approval), sender.tab?.id,
+    sender.frameId ?? 0, sender.documentId || '', message.documentToken, message.requestId]);
+}
+function proxyRequest(key) {
+  if (proxyRequests.has(key)) return proxyRequests.get(key);
+  if (proxyRequests.size >= 128) throw new Error('Too many pending proxy requests; wait and retry');
+  const state = { controller: new AbortController(), started: false };
+  state.timer = setTimeout(() => { state.controller.abort(); proxyRequests.delete(key); }, 60000);
+  proxyRequests.set(key, state);
+  return state;
+}
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes[APP_APPROVAL_KEY]) {
+    for (const state of proxyRequests.values()) state.controller.abort();
+  }
+});
 
 // ── Dynamic bridge.js registration (MV3) ────────────────────────────────
 // No app is implicitly trusted. Only explicitly paired targets receive a bridge.
@@ -573,26 +602,39 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: true }); return;
     }
     const context = await approvedSender(sender);
-    const appMessages = ['PING', 'SET_PROXY_DOMAINS', 'FETCH_URL', 'PROXY_FETCH', 'SEND_NOTIFICATION', 'CLIP_IMPORT_RESULT'];
+    const appMessages = ['PING', 'SET_PROXY_DOMAINS', 'FETCH_URL', 'PROXY_FETCH', 'PROXY_ABORT', 'SEND_NOTIFICATION', 'CLIP_IMPORT_RESULT'];
     if (!context.internal && !appMessages.includes(message.type)) throw new Error('This operation is available only from the extension');
-    if (message.type === 'APPROVE_APP') {
+    if (message.type === 'APPROVE_APP' || message.type === 'UPDATE_LOCAL_LLM_APPROVAL') {
       const key = appTargetKey(message.targetUrl);
-      const localLLMOrigin = message.localLLMUrl ? new URL(message.localLLMUrl).origin : undefined;
+      // Firefox preserves undefined properties while Chrome may omit them.
+      // Only an explicit string updates the approval; '' is explicit removal.
+      const updatesLocalAI = typeof message.localLLMUrl === 'string';
+      if (!updatesLocalAI && message.localLLMUrl !== undefined) throw new Error('Invalid local AI endpoint');
+      let localLLMOrigin = message.localLLMUrl ? new URL(message.localLLMUrl).origin : undefined;
       if (localLLMOrigin && !/^https?:\/\//.test(localLLMOrigin)) throw new Error('Local AI endpoint must be HTTP(S)');
       if (message.localLLMUrl && (new URL(message.localLLMUrl).username || new URL(message.localLLMUrl).password)) throw new Error('Local AI endpoint must not contain credentials');
       await serializeStorage(async () => {
         const stored = await chrome.storage.local.get([APP_APPROVAL_KEY, 'settings', 'appApprovalSequenceV1']);
+        if (message.type === 'UPDATE_LOCAL_LLM_APPROVAL' && (!stored[APP_APPROVAL_KEY]?.[key] || !updatesLocalAI)) throw new Error('Approve this app first, then explicitly save or remove its local AI endpoint');
+        if (!updatesLocalAI) localLLMOrigin = stored[APP_APPROVAL_KEY]?.[key]?.localLLMOrigin;
+        if (message.type === 'UPDATE_LOCAL_LLM_APPROVAL' && localLLMOrigin
+            && !await chrome.permissions.contains({ origins: [targetUrlToMatchPattern(localLLMOrigin)] })) throw new Error('Local AI host permission was not granted');
         const approvedAt = Math.max(Date.now(), (stored.appApprovalSequenceV1 || 0) + 1);
         await chrome.storage.local.set({
           [APP_APPROVAL_KEY]: { ...stored[APP_APPROVAL_KEY], [key]: { approvedAt, generation: crypto.randomUUID(), localLLMOrigin } },
           appApprovalSequenceV1: approvedAt,
-          settings: { ...stored.settings, targetUrl: message.targetUrl },
+          settings: message.type === 'APPROVE_APP' ? { ...stored.settings, targetUrl: message.targetUrl } : stored.settings || {},
         });
         await chrome.storage.local.remove('proxyPolicyV1:' + key);
         await syncBridgeRegistration();
       });
       sendResponse({ success: true });
       return;
+    }
+    if (message.type === 'PROXY_ABORT') {
+      const state = proxyRequest(proxyRequestKey(message, sender, context));
+      state.controller.abort();
+      sendResponse({ success: true }); return;
     }
     if (message.type === 'REVOKE_APPS') {
       await serializeStorage(async () => {
@@ -687,8 +729,13 @@ function handleApprovedMessage(message, sender, sendResponse, context) {
       return;
     }
     const hostname = parsed.hostname;
+    const requestKey = message.requestId === undefined ? undefined : proxyRequestKey(message, sender, context);
+    const request = requestKey ? proxyRequest(requestKey) : undefined;
+    if (request?.started) throw new Error('Proxy request is already running');
+    if (request) request.started = true;
     (async () => {
       try {
+        request?.controller.signal.throwIfAborted();
         // Validate hostname against stored allowed proxy domains
         const policyKey = 'proxyPolicyV1:' + context.key;
         const stored = await chrome.storage.local.get([policyKey]);
@@ -717,7 +764,10 @@ function handleApprovedMessage(message, sender, sendResponse, context) {
         if (message.body && message.method !== 'GET') {
           fetchOptions.body = message.body;
         }
-        const { response: resp, text } = await boundedFetch(message.url, fetchOptions, 30000);
+        const fresh = await approvedSender(sender);
+        if (approvalGeneration(fresh.approval) !== approvalGeneration(context.approval)) throw new Error('App approval changed; retry from the app');
+        request?.controller.signal.throwIfAborted();
+        const { response: resp, text } = await boundedFetch(message.url, fetchOptions, 30000, request?.controller.signal);
         let data;
         try { data = JSON.parse(text); } catch { data = text; }
         const headers = {};
@@ -735,6 +785,8 @@ function handleApprovedMessage(message, sender, sendResponse, context) {
           ? chrome.i18n.getMessage('errorRequestTimedOut30')
           : (err.message || String(err));
         sendResponse({ success: false, error: msg });
+      } finally {
+        if (requestKey) { clearTimeout(request.timer); proxyRequests.delete(requestKey); }
       }
     })();
     return true;
@@ -787,34 +839,40 @@ function handleApprovedMessage(message, sender, sendResponse, context) {
 chrome.runtime.onConnect.addListener((port) => {
   if (!port.name.startsWith('llm-')) return;
 
-  let abortController = new AbortController();
+  const abortController = new AbortController();
   let portDisconnected = false;
   let running = false;
   const approvalChanged = (changes, area) => {
-    if (area === 'local' && changes[APP_APPROVAL_KEY]) { abortController.abort(); port.disconnect(); }
+    if (area === 'local' && changes[APP_APPROVAL_KEY]) finish();
   };
   chrome.storage.onChanged.addListener(approvalChanged);
 
-  port.onDisconnect.addListener(() => {
+  function finish() {
+    if (portDisconnected) return;
     portDisconnected = true;
     abortController.abort();
     chrome.storage.onChanged.removeListener(approvalChanged);
-  });
+    port.onDisconnect.removeListener(finish);
+    port.onMessage.removeListener(receive);
+    try { port.disconnect(); } catch { /* Already disconnected. */ }
+  }
+  port.onDisconnect.addListener(finish);
 
   // Safe wrapper — silently drops messages if the port already disconnected
   function safeSend(msg) {
     if (portDisconnected) return;
-    try { port.postMessage(msg); } catch { portDisconnected = true; }
+    try { port.postMessage(msg); } catch { finish(); }
   }
 
-  port.onMessage.addListener(async (payload) => {
+  async function receive(payload) {
     let ownsRequest = false;
     try {
-      const context = await approvedSender(port.sender ?? {});
       if (portDisconnected) return;
       if (running) throw new Error('Only one request per streaming connection is allowed');
       running = true;
       ownsRequest = true;
+      const context = await approvedSender(port.sender ?? {});
+      if (portDisconnected) return;
       if (context.internal) throw new Error('LLM streaming requires an approved app tab');
       if (payload.provider === 'local') {
         const origin = new URL(payload.endpoint || 'http://localhost:11434/v1').origin;
@@ -837,16 +895,20 @@ chrome.runtime.onConnect.addListener((port) => {
       if (err.name === 'AbortError') return;
       safeSend({ type: 'error', error: err.message || chrome.i18n.getMessage('errorUnknown') });
     } finally {
-      if (ownsRequest) running = false;
+      if (ownsRequest) finish();
     }
-  });
+  }
+  port.onMessage.addListener(receive);
 });
 
 // Check host permission before making LLM API calls (AI API origins are optional_host_permissions)
-async function ensureLLMPermission(url) {
-  const parsed = new URL(url);
-  const origin = parsed.origin + '/*';
+async function ensureLLMPermission(url, signal) {
+  signal.throwIfAborted();
+  // Native host patterns are portless in Firefox. The app approval still
+  // separately binds the exact endpoint origin, including its port.
+  const origin = targetUrlToMatchPattern(url);
   const has = await chrome.permissions.contains({ origins: [origin] });
+  signal.throwIfAborted();
   if (!has) {
     throw new Error(
       chrome.i18n.getMessage('errorCaddyAIPermission')
@@ -855,7 +917,7 @@ async function ensureLLMPermission(url) {
 }
 
 async function streamAnthropic(send, payload, signal) {
-  await ensureLLMPermission('https://api.anthropic.com/v1/messages');
+  await ensureLLMPermission('https://api.anthropic.com/v1/messages', signal);
 
   // Support both API keys (sk-ant-...) and OAuth/Bearer tokens
   const isApiKey = payload.apiKey.startsWith('sk-ant-');
@@ -1013,7 +1075,7 @@ function parseToolCallsFromText(text, toolNames) {
 
 // Shared streamer for OpenAI-compatible APIs (OpenAI, Mistral, Local/Ollama/vLLM)
 async function streamOpenAICompatible(send, payload, signal, endpoint, headers, providerLabel, options = {}) {
-  await ensureLLMPermission(endpoint);
+  await ensureLLMPermission(endpoint, signal);
 
   const messages = [];
   if (payload.systemPrompt) {
@@ -1194,7 +1256,7 @@ async function streamLocal(send, payload, signal) {
   // Pairing the local endpoint and granting its browser host permission are separate checks.
   const parsed = new URL(endpoint);
   {
-    const origin = parsed.origin + '/*';
+    const origin = targetUrlToMatchPattern(endpoint);
     const has = await chrome.permissions.contains({ origins: [origin] });
     if (!has) {
       throw new Error(
@@ -1215,7 +1277,7 @@ async function streamLocal(send, payload, signal) {
 }
 
 async function streamGemini(send, payload, signal) {
-  await ensureLLMPermission('https://generativelanguage.googleapis.com/v1beta/models');
+  await ensureLLMPermission('https://generativelanguage.googleapis.com/v1beta/models', signal);
 
   const model = payload.model;
   const apiKey = payload.apiKey;

@@ -1,5 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef, lazy, Suspense, memo, type ReactNode } from 'react';
 import { AppLayout } from './components/Layout/AppLayout';
+import { SyncErrorBanner } from './components/Common/SyncErrorBanner';
+import type { SettingsTab } from './components/Settings/SettingsPanel';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
 import { NavigationProvider, useNavigation, savedNavState } from './contexts/NavigationContext';
@@ -38,8 +40,9 @@ import { ScreenshareContext } from './hooks/ScreenshareContext';
 import { getEffectiveClsLevels, isAboveClsThreshold } from './lib/classification';
 import { buildInvestigationVisibility } from './lib/investigation-visibility';
 import { useClipDelivery } from './hooks/useClipDelivery';
-import { formatBytes, openFilePicker, getDroppedFiles, dispatchFile, type FileOpenDetail } from './lib/file-handler';
-import { hasPendingChanges } from './lib/pending-changes';
+import { formatBytes, openFilePicker, getDroppedFiles, dispatchFile } from './lib/file-handler';
+import { useOpenedFiles } from './hooks/useOpenedFiles';
+import { fileNotePersistence } from './lib/file-note-persistence';
 import { useInvestigationData } from './hooks/useInvestigationData';
 import type { ConfidenceLevel, Note, NoteTemplate, StandaloneIOC, ChatThread } from './types';
 import { DEFAULT_QUICK_LINKS } from './types';
@@ -113,11 +116,6 @@ export default function App() {
       </ToastProvider>
     </AuthProvider>
   );
-}
-
-function SyncErrorBanner({ error }: { error: string }) {
-  const { screenshareMaxLevel } = useUIModals();
-  return <div role="alert" className="fixed bottom-4 left-4 right-4 z-[100] rounded border border-amber-500 bg-gray-950 p-3 text-sm text-amber-100 shadow-lg">{screenshareMaxLevel ? 'Synchronization needs attention. Details are hidden during screensharing.' : error}</div>;
 }
 
 // ─── AppDataLayer ─────────────────────────────────────────────────────
@@ -229,8 +227,8 @@ function AppDataLayer() {
           updateSettings={updateSettings}
           defaultView={safeDefaultView}
         >
-          {syncError && <SyncErrorBanner error={syncError} />}
           <AppInner
+            syncError={syncError}
             settings={settings}
             updateSettings={updateSettings}
             toggleTheme={toggleTheme}
@@ -334,6 +332,7 @@ function NavigationBridge({ folders, timelineEvents, initialSettings, updateSett
 // Using ReturnType for hooks to keep this type in sync automatically.
 
 type AppInnerProps = {
+  syncError: ReturnType<typeof useServerSync>['syncError'];
   settings: ReturnType<typeof useSettings>['settings'];
   updateSettings: ReturnType<typeof useSettings>['updateSettings'];
   toggleTheme: ReturnType<typeof useSettings>['toggleTheme'];
@@ -402,6 +401,7 @@ type AppInnerProps = {
 // preventing cascading re-renders when unrelated hooks in AppDataLayer update.
 
 const AppInner = memo(function AppInner({
+  syncError,
   settings, updateSettings, toggleTheme,
   addToast, tt,
   notes, tasks, timeline,
@@ -611,17 +611,6 @@ const AppInner = memo(function AppInner({
 
   const demoProcessedRef = useRef(false);
 
-  // Warn before closing tab with unsaved editor changes
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (hasPendingChanges()) {
-        e.preventDefault();
-      }
-    };
-    window.addEventListener('beforeunload', handler);
-    return () => window.removeEventListener('beforeunload', handler);
-  }, []);
-
   const loggedTrashChatThread = useCallback(async (id: string) => {
     const thread = chatsHook.threads.find((t) => t.id === id);
     await chatsHook.trashThread(id);
@@ -695,54 +684,56 @@ const AppInner = memo(function AppInner({
     },
   });
 
-  // Handle files opened via PWA File Handling API (double-click .md on desktop)
-  useEffect(() => {
-    const handler = async (e: Event) => {
-      const { name, content, size, lastModified } = (e as CustomEvent<FileOpenDetail>).detail;
+  // Launch handles wait until this unlocked App owns the import channel.
+  useOpenedFiles({
+    consume: async ({ name, content, size, lastModified }, signal) => {
+      signal.throwIfAborted();
+      const modified = new Date(lastModified).toLocaleDateString(undefined, {
+        year: 'numeric', month: 'short', day: 'numeric',
+      });
+      const title = tt('clip.fileTitle', { name, size: formatBytes(size), modified });
+      const freshIOCs = extractIOCs(content, {
+        enabledTypes: settings.tiEnabledIOCTypes,
+        defaultConfidence: settings.tiDefaultConfidence,
+      });
+      const iocAnalysis = mergeIOCAnalysis(undefined, freshIOCs);
+      const iocTypes = [...new Set(freshIOCs.filter((i) => !i.dismissed).map((i) => i.type))];
+      const note = await loggedCreateNote({
+        title,
+        content,
+        folderId: underlyingFolderId,
+        clsLevel: allFolders.find(folder => folder.id === underlyingFolderId)?.clsLevel,
+        sourceTitle: name,
+        iocAnalysis,
+        iocTypes,
+      }, fileNotePersistence(signal));
+      // Commit is the acknowledgement. Do not retry a committed file just
+      // because navigation/toast failed or the workspace subsequently locked.
+      if (signal.aborted) return;
       try {
-        const created = new Date(lastModified).toLocaleDateString(undefined, {
-          year: 'numeric', month: 'short', day: 'numeric',
-        });
-        const title = `${name} — ${formatBytes(size)} — Created ${created}`;
-        const freshIOCs = extractIOCs(content, {
-          enabledTypes: settings.tiEnabledIOCTypes,
-          defaultConfidence: settings.tiDefaultConfidence,
-        });
-        const iocAnalysis = mergeIOCAnalysis(undefined, freshIOCs);
-        const iocTypes = [...new Set(freshIOCs.filter((i) => !i.dismissed).map((i) => i.type))];
-        const note = await loggedCreateNote({
-          title,
-          content,
-          folderId: underlyingFolderId,
-          clsLevel: allFolders.find(folder => folder.id === underlyingFolderId)?.clsLevel,
-          sourceTitle: name,
-          iocAnalysis,
-          iocTypes,
-        });
         setSelectedNoteId(note.id);
         navigateTo('notes', { selectedNoteId: note.id });
         addToast('success', tt('clip.openedAsNote', { name }));
-      } catch (err) {
-        console.error('Failed to import file as note:', err);
-        addToast('error', tt('clip.openFailed', { name }));
-      }
-    };
-    window.addEventListener('threatcaddy:file-open', handler);
-    return () => window.removeEventListener('threatcaddy:file-open', handler);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- settings deps intentionally omitted
-  }, [loggedCreateNote, underlyingFolderId, allFolders, navigateTo, addToast]);
+      } catch { addToast('warning', tt('clip.fileRefreshFailed')); }
+    },
+    report: issues => {
+      for (const issue of issues) addToast('error', tt(`clip.fileError.${issue.kind}`, {
+        name: issue.name ?? '', count: issue.count,
+      }));
+    },
+  });
 
   // Global drag-and-drop for markdown/text files
   useEffect(() => {
     const onDragOver = (e: DragEvent) => {
       if (e.dataTransfer?.types.includes('Files')) e.preventDefault();
     };
-    const onDrop = async (e: DragEvent) => {
+    const onDrop = (e: DragEvent) => {
       const files = getDroppedFiles(e);
       if (files.length === 0) return;
       e.preventDefault();
       for (const file of files) {
-        await dispatchFile(file);
+        dispatchFile(file);
       }
     };
     window.addEventListener('dragover', onDragOver);
@@ -1507,6 +1498,7 @@ const AppInner = memo(function AppInner({
         <ErrorBoundary region="exec-dashboard">
         <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500">Loading…</div>}>
         <ExecDashboard
+          notice={syncError && <SyncErrorBanner error={syncError} />}
           folders={folders}
           allNotes={screensafeNotes}
           allTasks={screensafeTasks}
@@ -1574,6 +1566,7 @@ const AppInner = memo(function AppInner({
         </div>
       )}
       <AppLayout
+        notice={syncError && <SyncErrorBanner error={syncError} />}
         bgImageEnabled={settings.bgImageEnabled}
         bgImageOpacity={settings.bgImageOpacity}
         bgImagePosX={settings.bgImagePosX}
@@ -1661,7 +1654,8 @@ const AppInner = memo(function AppInner({
             onLoadSample={handleLoadSample}
             onDeleteSample={handleDeleteSample}
             onClose={() => { closeSettings(); }}
-            initialTab={settingsInitialTab as 'general' | 'ai' | 'data' | 'templates' | 'intel' | 'integrations' | 'shortcuts' | undefined}
+            activeTab={(settingsInitialTab || 'general') as SettingsTab}
+            onTabChange={openSettings}
             templateProps={{
               templates: noteTemplatesHook.templates,
               userTemplates: noteTemplatesHook.userTemplates,

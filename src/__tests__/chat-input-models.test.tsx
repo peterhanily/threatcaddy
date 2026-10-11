@@ -116,6 +116,6 @@ describe('ChatInput', () => {
     const textarea = screen.getByRole('textbox');
     fireEvent.change(textarea, { target: { value: '  Hello world  ' } });
     fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
-    expect(onSend).toHaveBeenCalledWith('Hello world');
+    expect(onSend).toHaveBeenCalledWith('Hello world', expect.any(Function));
   });
 });

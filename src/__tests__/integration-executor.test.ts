@@ -682,8 +682,8 @@ describe('IntegrationExecutor', () => {
         abortController.signal,
       );
 
-      // The step should be skipped because signal is already aborted
-      expect(result.status).toBe('success'); // no steps ran, so it ends as success
+      // A pre-cancelled run must never report successful completion or run outputs.
+      expect(result.status).toBe('cancelled');
       expect(mockFetch).toHaveBeenCalledTimes(0);
     });
   });
@@ -789,7 +789,7 @@ describe('IntegrationExecutor', () => {
         value: '1.2.3.4',
         type: 'ipv4',
         notes: 'Auto-created',
-      });
+      }, expect.any(AbortSignal));
     });
 
     it('calls onCreateEntity from output create-ioc', async () => {
@@ -822,7 +822,7 @@ describe('IntegrationExecutor', () => {
         value: '5.6.7.8',
         type: 'ipv4',
         confidence: 'medium',
-      });
+      }, expect.any(AbortSignal));
     });
 
     it('throws when onCreateEntity callback is missing', async () => {

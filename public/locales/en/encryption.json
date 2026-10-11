@@ -96,6 +96,6 @@
   "legacy.recover": "Verify and restore legacy archive",
   "legacy.recovered": "Verified and restored {{count}} records. Reopen the workspace to finish content upgrades.",
   "legacy.reopen": "Reopen recovered workspace",
-  "legacy.pendingDrafts": "Save or recover pending drafts before reopening the workspace.",
+  "legacy.pendingDrafts": "Finish pending file imports and send, save, recover, or explicitly discard unsent drafts before reopening the workspace.",
   "legacy.archiveTooLarge": "This recovery archive exceeds the 512 MiB browser import limit."
 }

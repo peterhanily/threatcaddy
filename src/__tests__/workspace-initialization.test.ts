@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ migrate: vi.fn(), open: vi.fn(), prepare: vi.fn(), content: vi.fn(), enabled: vi.fn(), key: vi.fn() }));
+const mocks = vi.hoisted(() => ({ migrate: vi.fn(), open: vi.fn(), prepare: vi.fn(), content: vi.fn(), capture: vi.fn(), enabled: vi.fn(), key: vi.fn() }));
 vi.mock('../db', () => ({ db: { open: mocks.open }, runWorkspaceContentMigrations: mocks.content }));
+vi.mock('../lib/sync-capture-policy', () => ({ ensureSyncCaptureCoverage: mocks.capture }));
 vi.mock('../lib/db-migration', () => ({ migrateIndexedDB: mocks.migrate }));
 vi.mock('../lib/encryptionMiddleware', () => ({ ensureEncryptionReady: mocks.prepare, getSessionKey: mocks.key }));
 vi.mock('../lib/encryptionStore', () => ({ isEncryptionEnabled: mocks.enabled }));
@@ -33,8 +34,9 @@ describe('workspace startup ordering', () => {
       events.push('coverage');
     });
     mocks.content.mockImplementation(async () => { events.push('content'); });
+    mocks.capture.mockImplementation(async () => { events.push('capture'); });
     await initializeWorkspace();
-    expect(events).toEqual(['schema', 'coverage', 'migration', 'content']);
+    expect(events).toEqual(['schema', 'coverage', 'migration', 'content', 'capture']);
     expect(isWorkspaceInitialized()).toBe(true);
   });
 

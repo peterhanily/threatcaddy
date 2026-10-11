@@ -102,10 +102,59 @@ function formatDate(timestamp) {
 }
 
 // ---- Settings ----
+let localApprovalRead = 0;
+let localAIActionPending = false;
+async function loadLocalAIApproval(preserveDraft = false) {
+  const read = ++localApprovalRead;
+  const target = targetUrlInput.value.trim();
+  const input = document.getElementById('local-ai-url');
+  const status = document.getElementById('local-ai-status');
+  if (!preserveDraft) input.value = '';
+  try {
+    const url = new URL(target);
+    url.search = ''; url.hash = '';
+    const key = url.protocol === 'file:' ? url.href : url.origin;
+    const { approvedAppsV1 = {} } = await chrome.storage.local.get(['approvedAppsV1']);
+    if (read !== localApprovalRead) return;
+    const approval = approvedAppsV1[key];
+    if (!preserveDraft) input.value = approval?.localLLMOrigin || '';
+    status.textContent = approval?.localLLMOrigin ? 'Saved for this app: ' + approval.localLLMOrigin
+      : approval ? 'No local AI endpoint approved for this app.' : 'Approve this app before saving a local AI endpoint.';
+  } catch (error) { if (read === localApprovalRead) status.textContent = 'Unable to read local AI approval: ' + error.message; }
+}
+targetUrlInput.addEventListener('input', () => { void loadLocalAIApproval(); });
+document.getElementById('local-ai-url').addEventListener('input', () => { ++localApprovalRead; });
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.approvedAppsV1) void loadLocalAIApproval(true);
+});
+async function updateLocalAIApproval(remove) {
+  if (localAIActionPending) return;
+  localAIActionPending = true;
+  const save = document.getElementById('save-local-ai-btn');
+  const clear = document.getElementById('remove-local-ai-btn');
+  save.disabled = clear.disabled = true;
+  const targetUrl = targetUrlInput.value.trim();
+  const localLLMUrl = remove ? '' : document.getElementById('local-ai-url').value.trim();
+  ++localApprovalRead;
+  try {
+    if (!remove) {
+      const local = new URL(localLLMUrl);
+      if (!['http:', 'https:'].includes(local.protocol) || local.username || local.password) throw new Error('Local AI must use HTTP(S) without credentials in its URL');
+      if (!await requestHostPermission(localLLMUrl)) throw new Error('Local AI permission was denied; saved approval is unchanged.');
+    }
+    const response = await chrome.runtime.sendMessage({ type: 'UPDATE_LOCAL_LLM_APPROVAL', targetUrl, localLLMUrl });
+    if (!response?.success) throw new Error(response?.error || 'Local AI approval failed');
+    if (targetUrlInput.value.trim() === targetUrl) await loadLocalAIApproval();
+  } catch (error) { if (targetUrlInput.value.trim() === targetUrl) document.getElementById('local-ai-status').textContent = error.message; }
+  finally { localAIActionPending = false; save.disabled = clear.disabled = false; }
+}
+document.getElementById('save-local-ai-btn').addEventListener('click', () => { void updateLocalAIApproval(false); });
+document.getElementById('remove-local-ai-btn').addEventListener('click', () => { void updateLocalAIApproval(true); });
 
 async function loadSettings() {
   const { settings = {} } = await chrome.storage.local.get(['settings']);
   targetUrlInput.value = settings.targetUrl || DEFAULT_TARGET_URL;
+  await loadLocalAIApproval();
   return settings;
 }
 
@@ -129,6 +178,7 @@ async function saveSettings() {
 
   const approved = await chrome.runtime.sendMessage({ type: 'APPROVE_APP', targetUrl });
   if (!approved?.success) { showToast(approved?.error || 'App approval failed', true); return; }
+  await loadLocalAIApproval();
   settingsSaved.classList.add('show');
   setTimeout(() => settingsSaved.classList.remove('show'), 2000);
 }
@@ -303,7 +353,7 @@ async function requestHostPermission(targetUrl) {
   // file:// URLs use a different origin pattern
   const origin = url.protocol === 'file:'
     ? 'file:///*'
-    : `${url.protocol}//${url.host}/*`;
+    : `${url.protocol}//${url.hostname}/*`;
   const granted = await chrome.permissions.request({ origins: [origin] });
   return granted;
 }

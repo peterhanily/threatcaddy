@@ -43,7 +43,21 @@ After installing, browse any page and select text you want to save. Use the righ
 
 Before connecting an app, open the popup's settings, enter its URL and select **Approve app**. Accept the browser's host-permission prompt, then reload that app tab. No hosted, localhost or standalone app is trusted automatically. HTTP(S) approvals bind the exact origin, including its port; standalone approvals bind the exact file. Use **Revoke app approvals** to disconnect paired apps.
 
-For a local AI service, also enter its exact origin in the local-AI setting before approving the app. The endpoint must match that approval and have browser host permission. App pairing does not grant arbitrary local-network access.
+For a local AI service, select the approved app, enter the service URL in its
+local-AI setting, and explicitly save it. The saved approval is the exact origin
+(including its port); paths are not part of an origin. The endpoint must match
+that approval and have browser host permission. Reopening settings or approving
+the app again preserves its saved local-AI origin without requesting additional
+permission. Use the separate Remove action to revoke that app's local-AI
+approval. App pairing does not grant arbitrary local-network access.
+
+Browser host permissions and ThreatCaddy approvals are separate: the browser
+grant uses the scheme and hostname (all ports), because Firefox does not support
+ports in [host match patterns](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Match_patterns#host).
+ThreatCaddy still checks the saved exact origin, including its port, before
+allowing that app to use a local AI endpoint. Removing an app's local-AI approval
+does not revoke a host grant that another approved app may use; browser extension
+settings can revoke the browser grant itself.
 
 Desktop notifications require the separate **Enable desktop notifications** permission. A successful result means the browser accepted the notification, not that the operating system displayed it. ThreatCaddy provides an in-app warning when delivery is denied, unavailable or times out.
 

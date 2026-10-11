@@ -293,9 +293,37 @@ setupPermToggle('settings-ai-toggle', 'settings-ai-slider', [
 setupPermToggle('settings-url-toggle', 'settings-url-slider', ['*://*/*']);
 
 // Target URL — stored inside settings.targetUrl to match background.js / clips.js
+let localApprovalRead = 0;
+let localAIActionPending = false;
+function approvalTargetKey(value) {
+  const url = new URL(value);
+  if (url.protocol === 'file:') { url.hash = ''; url.search = ''; return url.href; }
+  return url.origin;
+}
+async function loadLocalAIApproval(preserveDraft = false) {
+  const read = ++localApprovalRead;
+  const url = document.getElementById('settings-target-url').value.trim();
+  const input = document.getElementById('settings-local-ai-url');
+  const status = document.getElementById('settings-local-ai-status');
+  if (!preserveDraft) input.value = '';
+  try {
+    const { approvedAppsV1 = {} } = await chrome.storage.local.get(['approvedAppsV1']);
+    if (read !== localApprovalRead) return;
+    const approval = approvedAppsV1[approvalTargetKey(url)];
+    if (!preserveDraft) input.value = approval?.localLLMOrigin || '';
+    status.textContent = approval?.localLLMOrigin ? 'Saved for this app: ' + approval.localLLMOrigin
+      : approval ? 'No local AI endpoint approved for this app.' : 'Approve this app before saving a local AI endpoint.';
+  } catch (error) { if (read === localApprovalRead) status.textContent = 'Unable to read local AI approval: ' + error.message; }
+}
+document.getElementById('settings-target-url').addEventListener('input', () => { void loadLocalAIApproval(); });
+document.getElementById('settings-local-ai-url').addEventListener('input', () => { ++localApprovalRead; });
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.approvedAppsV1) void loadLocalAIApproval(true);
+});
 (async function loadTargetUrl() {
   const { settings = {} } = await chrome.storage.local.get(['settings']);
   document.getElementById('settings-target-url').value = settings.targetUrl || 'https://threatcaddy.com';
+  await loadLocalAIApproval();
 })();
 
 document.getElementById('settings-save-url').addEventListener('click', async () => {
@@ -306,22 +334,43 @@ document.getElementById('settings-save-url').addEventListener('click', async () 
     const parsed = new URL(url);
     if (!['http:', 'https:', 'file:'].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error('Use an HTTP(S) app or exact standalone file without credentials');
     const origins = [parsed.protocol === 'file:' ? 'file:///*' : parsed.protocol + '//' + parsed.hostname + '/*'];
-    const localLLMUrl = document.getElementById('settings-local-ai-url').value.trim();
-    if (localLLMUrl) {
-      const local = new URL(localLLMUrl);
-      if (!['http:', 'https:'].includes(local.protocol) || local.username || local.password) throw new Error('Local AI must use HTTP(S) without credentials in its URL');
-      origins.push(local.protocol + '//' + local.hostname + '/*');
-    }
     if (!await chrome.permissions.request({ origins })) throw new Error('App access permission was denied');
-    const response = await chrome.runtime.sendMessage({ type: 'APPROVE_APP', targetUrl: url, localLLMUrl });
+    const response = await chrome.runtime.sendMessage({ type: 'APPROVE_APP', targetUrl: url });
     if (!response?.success) throw new Error(response?.error || 'App approval failed');
     status.textContent = 'App approved. Reload the app tab to connect.';
+    await loadLocalAIApproval();
   } catch (error) { status.textContent = error.message; }
 });
+
+async function updateLocalAIApproval(remove) {
+  if (localAIActionPending) return;
+  localAIActionPending = true;
+  const save = document.getElementById('settings-save-local-ai');
+  const clear = document.getElementById('settings-remove-local-ai');
+  save.disabled = clear.disabled = true;
+  const targetUrl = document.getElementById('settings-target-url').value.trim();
+  const localLLMUrl = remove ? '' : document.getElementById('settings-local-ai-url').value.trim();
+  const status = document.getElementById('settings-local-ai-status');
+  ++localApprovalRead;
+  try {
+    if (!remove) {
+      const local = new URL(localLLMUrl);
+      if (!['http:', 'https:'].includes(local.protocol) || local.username || local.password) throw new Error('Local AI must use HTTP(S) without credentials in its URL');
+      if (!await chrome.permissions.request({ origins: [local.protocol + '//' + local.hostname + '/*'] })) throw new Error('Local AI permission was denied; saved approval is unchanged.');
+    }
+    const response = await chrome.runtime.sendMessage({ type: 'UPDATE_LOCAL_LLM_APPROVAL', targetUrl, localLLMUrl });
+    if (!response?.success) throw new Error(response?.error || 'Local AI approval failed');
+    if (document.getElementById('settings-target-url').value.trim() === targetUrl) await loadLocalAIApproval();
+  } catch (error) { if (document.getElementById('settings-target-url').value.trim() === targetUrl) status.textContent = error.message; }
+  finally { localAIActionPending = false; save.disabled = clear.disabled = false; }
+}
+document.getElementById('settings-save-local-ai').addEventListener('click', () => { void updateLocalAIApproval(false); });
+document.getElementById('settings-remove-local-ai').addEventListener('click', () => { void updateLocalAIApproval(true); });
 
 document.getElementById('settings-revoke-apps').addEventListener('click', async () => {
   const response = await chrome.runtime.sendMessage({ type: 'REVOKE_APPS' });
   document.getElementById('settings-approval-status').textContent = response?.success ? 'All app connections revoked.' : response?.error || 'Revocation failed';
+  if (response?.success) await loadLocalAIApproval();
 });
 const notificationButton = document.getElementById('settings-notifications');
 const notificationStatus = document.getElementById('settings-notification-status');

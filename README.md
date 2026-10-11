@@ -69,7 +69,7 @@ docker compose up -d   # Starts Hono server + PostgreSQL
 - **Note sub-folders** — Organize notes into a hierarchy via drag-to-folder; folders are first-class notes with `isFolder` set
 - **Note annotations** — Timestamped comments on any note
 - **Defang/Refang toggle** — Preview network IOCs in defanged form (`hxxps://`, `example[.]com`)
-- **Open markdown files** — Open `.md` or `.txt` files via `Ctrl+O` / `Cmd+O`, drag-and-drop, or the New menu. File name, size, and creation date are captured in the title. IOCs are auto-extracted on import
+- **Open markdown files** — Open Markdown or `.txt` files via `Ctrl+O` / `Cmd+O`, drag-and-drop, or the New menu. File name, size, and last-modified date are captured in the title. IOCs are auto-extracted on import. Files are limited to 5 MiB each, with at most 20 pending imports; launch requests wait for an unlocked workspace without reading their contents
 - **Quick capture** — Clip articles, bookmarks, code snippets, and meeting notes with 15+ built-in templates
 - **Note templates** — 15 built-in templates (host details, malware analysis, phishing reports, threat actor profiles, and more). Create, edit, and save your own. Save any note as a reusable template.
 

@@ -65,6 +65,54 @@ Those remain separate human checks. Run the ordinary unit suites too: they
 cover storage failures, worker restart, stale acknowledgements and cancellation
 at deterministic boundaries that the installed-browser checks do not simulate.
 
+## Client lifecycle checks
+
+The hosted suite's `e2e/client-lifecycle.spec.ts` exercises startup file delivery,
+encrypted lock/unlock, workspace switching, bounded image attachments, signed-out
+local edits and paused legacy sync history in Chromium, Firefox and WebKit.
+Its files, accounts and responses are synthetic; no provider calls are needed.
+After building the hosted app and extensions, also run:
+
+```sh
+node scripts/verify-client-lifecycle.mjs chrome
+node scripts/verify-client-lifecycle.mjs firefox
+```
+
+These disposable-profile checks exercise the actual popup and Clips-page
+local-AI approval controls, including a port-bearing origin, restoring saved
+values, app-only updates and explicit removal. They compare host grants before
+and after updates, but do not assert native permission-dialog behavior.
+
+Local Markdown/text imports retain at most 20 file handles in this tab and read
+only when the workspace is unlocked. Each file is limited to 5 MiB, and a read
+has a 30-second deadline. Invalid, over-capacity or failed imports are reported;
+reopen the original file to retry. The original file is never modified. Queued
+handles are not crash recovery and are not stored in backups or synced.
+
+Unsent CaddyAI text and accepted images belong to their originating conversation
+and survive view changes in memory. They are not persisted, backed up or synced,
+and closing/reloading the tab can lose them. Each draft accepts 200,000 text
+characters and four PNG/JPEG/GIF/WebP images (5 MiB per file, 10 MiB total). Across
+all drafts in a tab, limits are 1,000,000 text characters, 16 images and 20 MiB of
+image data. Pending reads reserve capacity before reading. Finish the work or
+explicitly discard unsent drafts before switching workspaces or preparing a
+data snapshot. Browser unload warnings are advisory, not durable storage.
+
+A previously bound workspace captures local changes even while signed out; it
+does not transmit them without the matching server/account session. Upgrades
+with potentially incomplete historical capture pause sync before applying or
+pushing data. Recovery requires a verified encrypted archive and explicit
+reconciliation. The current local row supersedes stale queued versions;
+ambiguous missing rows block recovery rather than inventing deletes. Historical
+deletions that were never captured cannot be reconstructed automatically.
+
+Integration cancellation propagates through request waits, retry delays, bridge
+requests and known local write transactions. A canceled run cannot start later
+outputs, but earlier committed writes remain and are reported in its counts.
+Cancellation is not rollback of work already committed or of a request already
+processed by a remote service. Deterministic unit tests cover commit/abort races
+that browser checks cannot reliably schedule.
+
 ## PostgreSQL integration
 
 Use PostgreSQL 17 and a disposable local coordinator database named

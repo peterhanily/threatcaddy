@@ -5,6 +5,7 @@ import { BgImageLayer } from './BgImageLayer';
 interface AppLayoutProps {
   header: ReactNode;
   sidebar: ReactNode;
+  notice?: ReactNode;
   children: ReactNode;
   bgImageEnabled?: boolean;
   bgImageOpacity?: number;
@@ -14,7 +15,7 @@ interface AppLayoutProps {
   theme?: 'dark' | 'light';
 }
 
-export function AppLayout({ header, sidebar, children, bgImageEnabled, bgImageOpacity, bgImagePosX, bgImagePosY, bgImageZoom, theme }: AppLayoutProps) {
+export function AppLayout({ header, sidebar, notice, children, bgImageEnabled, bgImageOpacity, bgImagePosX, bgImagePosY, bgImageZoom, theme }: AppLayoutProps) {
   const { t } = useTranslation('common');
   return (
     <div className="h-screen flex flex-col overflow-hidden relative">
@@ -33,6 +34,7 @@ export function AppLayout({ header, sidebar, children, bgImageEnabled, bgImageOp
         theme={theme ?? 'dark'}
       />
       {header}
+      {notice}
       <div className="flex flex-1 overflow-hidden">
         <div className="hidden md:block shrink-0">
           {sidebar}

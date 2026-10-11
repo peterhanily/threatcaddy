@@ -7,6 +7,7 @@ import { withEntityDraftBarrier, hasPendingEntityDrafts } from '../lib/entity-dr
 import { syncEngine } from '../lib/sync-engine';
 import { authStorageKey as STORAGE_KEY, readStoredAuth, withAuthRefreshLock, type StoredAuth } from '../lib/auth-storage';
 import { fetchServerResponse } from '../lib/server-response';
+import { hasPendingChanges } from '../lib/pending-changes';
 
 interface AuthState {
   user: TeamUser | null;
@@ -112,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await withEntityDraftBarrier(async () => {
       assertCurrent();
       if (hasPendingEntityDrafts()) throw new Error('Resolve unsaved drafts before switching workspaces.');
+      if (hasPendingChanges()) throw new Error('Finish or discard unsaved work before switching workspaces.');
       preserveEncryptionForNewWorkspace(profile.id);
       localStorage.setItem(workspaceStorageKey('threatcaddy-auth', profile.id), JSON.stringify({ serverUrl: profile.serverUrl, accessToken: token, refreshToken: refresh, user: u }));
       window.dispatchEvent(new Event('workspace-will-switch'));

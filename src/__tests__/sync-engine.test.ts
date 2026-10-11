@@ -1,6 +1,6 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
-import { disableSync, enableSync, revisionKey } from '../lib/sync-state';
+import { disableSync, revisionKey, suppressSyncInCurrentTransaction } from '../lib/sync-state';
 import { setSessionKey } from '../lib/encryptionMiddleware';
 import { SyncEngine } from '../lib/sync-engine';
 import { ensureSyncWorkspace } from '../lib/sync-workspace';
@@ -11,6 +11,7 @@ vi.mock('../lib/server-api', () => ({
   syncPush: api.push, syncPull: async (...args: unknown[]) => ({ generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', ...await api.pull(...args) }), syncSnapshot: api.snapshot,
 }));
 const note = (id: string, title = 'Local') => ({ id, title, content: 'body', folderId: 'f1', tags: [], pinned: false, archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
+const seedNote = (row: Parameters<typeof db.notes.add>[0]) => db.transaction('rw', db.notes, async () => { suppressSyncInCurrentTransaction(); return db.notes.add(row); });
 let engine: SyncEngine;
 beforeEach(async () => {
   disableSync();
@@ -77,10 +78,9 @@ describe('sync engine persistence contract', () => {
   });
 
   it('evicts all offline investigation records without server tombstones and restores them through verified replay', async () => {
-    await db.notes.add(note('n1'));
-    await db.evidenceItems.add({ ...note('e1'), type: 'finding' } as never);
-    await db.notes.add({ ...note('other'), folderId: 'f2' });
-    enableSync();
+    await seedNote(note('n1'));
+    await db.transaction('rw', db.evidenceItems, async () => { suppressSyncInCurrentTransaction(); await db.evidenceItems.add({ ...note('e1'), type: 'finding' } as never); });
+    await seedNote({ ...note('other'), folderId: 'f2' });
     await evictSyncedFolder('f1');
     expect(await db.notes.get('n1')).toBeUndefined();
     expect(await db.evidenceItems.count()).toBe(0);
@@ -100,7 +100,7 @@ describe('sync engine persistence contract', () => {
   });
 
   it('refuses cache removal for pending edits or a local-only investigation', async () => {
-    await db.notes.add(note('n1'));
+    await seedNote(note('n1'));
     await engine.enqueue('notes', 'n1', 'put', note('n1'));
     await expect(evictSyncedFolder('f1')).rejects.toThrow('unsynced edits');
     expect(await db.notes.get('n1')).toBeDefined();
@@ -138,7 +138,7 @@ describe('sync engine persistence contract', () => {
     expect(handler).toHaveBeenCalledWith(expect.stringContaining('different server/account'));
   });
   it('retains queued and remote changes when their investigation becomes local-only', async () => {
-    await db.notes.add(note('n1'));
+    await seedNote(note('n1'));
     await engine.enqueue('notes', 'n1', 'put', note('n1'));
     await engine.enqueue('folders', 'f1', 'put', { id: 'f1', name: 'Case' });
     await db.folders.update('f1', { localOnly: true });
@@ -154,9 +154,8 @@ describe('sync engine persistence contract', () => {
     expect(await db.table('_syncMeta').get(revisionKey('notes', 'n1'))).toBeUndefined();
   });
   it('sends the acknowledged baseline and coalesces edits for each entity', async () => {
-    await db.notes.add(note('n1'));
+    await seedNote(note('n1'));
     await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 4 });
-    enableSync();
     await db.notes.update('n1', { title: 'First' });
     await db.notes.update('n1', { title: 'Latest' });
     api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'accepted', serverVersion: 5 }] });
@@ -167,7 +166,7 @@ describe('sync engine persistence contract', () => {
   });
 
   it('retains rejected and conflicted edits across pulls', async () => {
-    await db.notes.add(note('n1'));
+    await seedNote(note('n1'));
     await engine.enqueue('notes', 'n1', 'put', note('n1'));
     const conflict = { table: 'notes', entityId: 'n1', status: 'conflict', serverVersion: 3, serverData: { ...note('n1', 'Remote'), version: 3 } };
     api.push.mockResolvedValue({ results: [conflict] });
@@ -184,8 +183,7 @@ describe('sync engine persistence contract', () => {
   });
 
   it('preserves later edits while acknowledging an in-flight upload', async () => {
-    await db.notes.add(note('n1'));
-    enableSync();
+    await seedNote(note('n1'));
     await db.notes.update('n1', { title: 'Sent' });
     api.push.mockImplementationOnce(async () => {
       await db.notes.update('n1', { title: 'Typed during upload' });
@@ -212,17 +210,15 @@ describe('sync engine persistence contract', () => {
   });
 
   it('Keep theirs changes only the matching table/entity and suppresses capture', async () => {
-    await db.notes.add(note('shared-id', 'Mine'));
+    await seedNote(note('shared-id', 'Mine'));
     await engine.enqueue('notes', 'shared-id', 'put', note('shared-id'));
     await engine.enqueue('tasks', 'shared-id', 'delete');
-    enableSync();
     await engine.resolveConflicts([{ table: 'notes', entityId: 'shared-id', serverVersion: 4, serverData: { ...note('shared-id', 'Theirs'), version: 4 } }], 'theirs');
     expect((await db.notes.get('shared-id'))?.title).toBe('Theirs');
     expect((await db.table('_syncQueue').toArray()).map(e => e.table)).toEqual(['tasks']);
   });
 
   it('applies cursor pages and revisions atomically without requeueing them', async () => {
-    enableSync();
     api.pull.mockResolvedValueOnce({ changes: [{ ...note('n1', 'Remote'), table: 'notes', op: 'put', version: 1 }], cursor: '1', hasMore: true })
       .mockResolvedValueOnce({ changes: [{ table: 'notes', op: 'delete', id: 'n1', version: 2 }], cursor: '2', hasMore: false })
       .mockResolvedValueOnce({ changes: [], cursor: '2', hasMore: false });
@@ -234,7 +230,7 @@ describe('sync engine persistence contract', () => {
   });
 
   it('catches up revisions skipped while a conflict was awaiting review', async () => {
-    await db.notes.add(note('n1'));
+    await seedNote(note('n1'));
     await engine.enqueue('notes', 'n1', 'put', note('n1'));
     api.push.mockResolvedValue({ results: [{ table: 'notes', entityId: 'n1', status: 'conflict', serverVersion: 2 }] });
     const later = { ...note('n1', 'Newest remote'), version: 3, table: 'notes', op: 'put' };
@@ -325,8 +321,8 @@ describe('sync engine persistence contract', () => {
 
   it('initial capture excludes local-only/unscoped content and does not mark it uploaded', async () => {
     await db.folders.update('f1', { localOnly: true });
-    await db.notes.add(note('n1'));
-    await db.notes.add({ ...note('n2'), folderId: undefined });
+    await seedNote(note('n1'));
+    await seedNote({ ...note('n2'), folderId: undefined });
     engine.start();
     await vi.waitFor(() => expect(api.pull).toHaveBeenCalled());
     expect(api.push).not.toHaveBeenCalled();

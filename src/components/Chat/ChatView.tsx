@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, Check, X, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -29,7 +29,8 @@ import { useCustomSlashCommands, interpolateTemplate } from '../../hooks/useCust
 import { useToast } from '../../contexts/ToastContext';
 import { supportsVision, describeImage } from '../../lib/image-ocr';
 import { resolveRoutingMode } from '../../lib/llm-router';
-import type { ChatAttachment } from '../../types';
+import { useImageAttachments } from '../../hooks/useImageAttachments';
+import { hasComposerDrafts, subscribeComposerDrafts, discardAllComposerDrafts } from '../../lib/chat-composer-drafts';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '../../contexts/NavigationContext';
 import { useInvestigation } from '../../contexts/InvestigationContext';
@@ -124,17 +125,13 @@ export function ChatView({
   const { commands: customCommands } = useCustomSlashCommands();
 
   // ── Image attachments ──────────────────────────────────────────────
-  const [pendingImages, setPendingImages] = useState<ChatAttachment[]>([]);
-
-  const handleImageAttach = useCallback(async (files: File[]) => {
-    const attachments: ChatAttachment[] = [];
-    for (const file of files) {
-      const buffer = await file.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
-      attachments.push({ type: 'image', data: base64, mimeType: file.type, name: file.name });
-    }
-    setPendingImages(prev => [...prev, ...attachments]);
-  }, []);
+  const { images: pendingImages, setImages: setPendingImages, attach: handleImageAttach,
+    clear: clearImages, reading: readingImages } = useImageAttachments(selectedThreadId, code => {
+    setErrorHasSettingsLink(false);
+    setLocalError(t(`input.imageError.${code}`));
+  });
+  const hasDrafts = useSyncExternalStore(subscribeComposerDrafts, hasComposerDrafts);
+  const [discardDraftsOpen, setDiscardDraftsOpen] = useState(false);
 
   // ── YOLO mode — auto-approve all write tools without prompting
   const [yoloMode, setYoloMode] = useState(false);
@@ -243,8 +240,8 @@ export function ChatView({
     }
   }, []);
 
-  const handleSend = useCallback(async (text: string) => {
-    if (!activeThread) return;
+  const handleSend = useCallback(async (text: string, onCommitted?: () => void) => {
+    if (!activeThread || readingImages) return;
     setLocalError(null);
     setErrorHasSettingsLink(false);
 
@@ -281,9 +278,8 @@ export function ChatView({
     // Resolve @-mentions: replace tokens with labels for display, inject entity data for LLM
     const { displayText: mentionDisplayText, contextBlock: mentionContext } = await resolveMentions(text);
 
-    // Capture and clear pending images
+    // Retain the draft's images until the user message is actually saved.
     const images = pendingImages.length > 0 ? [...pendingImages] : undefined;
-    if (images) setPendingImages([]);
 
     // Add user message (with readable @-mention labels)
     const userMsg: ChatMessage = {
@@ -294,6 +290,8 @@ export function ChatView({
       createdAt: Date.now(),
     };
     await onAddMessage(activeThread.id, userMsg);
+    if (images) setPendingImages(previous => previous.filter(image => !images.includes(image)));
+    onCommitted?.();
 
     // Transform slash hint commands to natural language before sending to LLM
     const SLASH_TRANSFORMS: Record<string, (arg: string) => string> = {
@@ -608,7 +606,7 @@ export function ChatView({
         }
       }
     );
-  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, getProviderLabel, startLoop, stopAllForThread, pendingImages, customCommands, effectiveRoute, t]);
+  }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, getProviderLabel, startLoop, stopAllForThread, pendingImages, setPendingImages, readingImages, customCommands, effectiveRoute, t]);
 
   const handleModelChange = useCallback((model: string, provider: LLMProvider) => {
     if (activeThread) {
@@ -796,7 +794,12 @@ export function ChatView({
   }, [activeThread, onCreateThread, onSelectThread, onAddMessage, addToast]);
 
   return (
-    <div className="relative flex flex-1 overflow-hidden">
+    <div className="relative flex flex-1 flex-col overflow-hidden">
+      {hasDrafts && <div className="flex flex-wrap items-center gap-2 border-b border-border-subtle p-2 text-xs">
+        <span className="flex-1 text-text-muted">{t('input.memoryDrafts')}</span>
+        <button onClick={() => setDiscardDraftsOpen(true)} className="rounded border border-border-subtle px-2 py-1 text-text-secondary hover:text-red-400">{t('input.discardAllDrafts')}</button>
+      </div>}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
       {/* Thread list — hidden on mobile when a thread is selected */}
       <div className={cn(
         'w-56 border-r border-border-subtle flex flex-col shrink-0',
@@ -1254,23 +1257,6 @@ export function ChatView({
                           </div>
                         </div>
                       )}
-                      {localError && (
-                        <div className="mx-auto max-w-md my-3 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
-                          {errorHasSettingsLink && onOpenSettings ? (
-                            <span>
-                              {localError.replace(/Settings \u2192 AI\/LLM\.?/, '')}{' '}
-                              <button
-                                onClick={() => onOpenSettings('ai')}
-                                className="underline hover:text-red-300 font-medium"
-                              >
-                                {t('view.settingsAiLlm')}
-                              </button>
-                            </span>
-                          ) : (
-                            localError
-                          )}
-                        </div>
-                      )}
                       <div ref={messagesEndRef} />
                     </div>
                   ),
@@ -1280,7 +1266,20 @@ export function ChatView({
             </div>
 
             {/* Input */}
+            {localError && (
+              <div role="alert" className="mx-auto max-w-md my-3 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                {errorHasSettingsLink && onOpenSettings ? (
+                  <span>
+                    {localError.replace(/Settings \u2192 AI\/LLM\.?/, '')}{' '}
+                    <button onClick={() => onOpenSettings('ai')} className="underline hover:text-red-300 font-medium">
+                      {t('view.settingsAiLlm')}
+                    </button>
+                  </span>
+                ) : localError}
+              </div>
+            )}
             <ChatInput
+              draftScope={selectedThreadId}
               onSend={handleSend}
               onStop={abort}
               isStreaming={isStreaming}
@@ -1293,8 +1292,9 @@ export function ChatView({
               folderId={selectedFolderId}
               customCommands={customCommands.map(c => ({ command: `/${c.name}`, description: c.description }))}
               onImageAttach={handleImageAttach}
+              readingImages={readingImages}
               attachedImages={pendingImages.map(a => ({ name: a.name || 'Image' }))}
-              onClearImages={() => setPendingImages([])}
+              onClearImages={clearImages}
             />
           </>
         ) : (
@@ -1314,6 +1314,11 @@ export function ChatView({
           </div>
         )}
       </div>
+
+      </div>
+      <ConfirmDialog open={discardDraftsOpen} onClose={() => setDiscardDraftsOpen(false)}
+        onConfirm={discardAllComposerDrafts} title={t('input.discardAllDrafts')}
+        message={t('input.discardAllDraftsConfirm')} confirmLabel={t('input.discardDraftsConfirm')} danger />
 
       <ConfirmDialog
         open={trashConfirmId !== null}

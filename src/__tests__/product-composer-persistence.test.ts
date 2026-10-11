@@ -6,7 +6,7 @@ import { prepareProductComposerNote, type ProductComposerSnapshot } from '../lib
 import { generateMasterKey, isEncryptedEnvelope } from '../lib/crypto';
 import { installEncryptionMiddleware, setSessionKey } from '../lib/encryptionMiddleware';
 import { clearEncryptionMeta, encryptionStorageKey, setEncryptionMeta } from '../lib/encryptionStore';
-import { enableSync, disableSync } from '../lib/sync-state';
+import { disableSync } from '../lib/sync-state';
 import * as workspaces from '../lib/workspace-profiles';
 import { DEFAULT_CLS_LEVELS, type EvidenceItem, type Note, type NoteTemplate, type StandaloneIOC, type Task, type TimelineEvent } from '../types';
 
@@ -82,7 +82,8 @@ describe('atomic current-persisted product classification', () => {
   it('saves the exact new ordinary note and commits its normal durable sync entry', async () => {
     const source = await seed();
     const { candidate, persist } = prepare(source);
-    enableSync();
+    await db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { version: 1, serverUrl: 'https://test.invalid', userId: 'fixture-user' } });
+    disableSync();
     await persist(candidate);
     expect(await db.notes.get(candidate.id)).toEqual(candidate);
     expect(await db.notes.get('source-note')).toEqual(source.notes[0]);
@@ -216,7 +217,7 @@ describe('source and baseline ownership', () => {
     const { candidate, persist } = prepare(source);
     await db.notes.bulkAdd(Array.from({ length: 2_001 }, (_, i) => note(`additional-${i}`)));
     await expect(persist(candidate)).rejects.toThrow('source items');
-  });
+  }, 15_000); // The real IndexedDB boundary fixture seeds 2,001 records; this is not a speed benchmark.
 
   it('rejects altered candidate content or destination instead of bypassing the validated patch', async () => {
     const source = await seed();
@@ -272,7 +273,8 @@ describe('asynchronous session, transaction and hierarchy fences', () => {
     const { candidate, persist } = prepare(source, { assertCurrentScope: () => { if (!owned) throw new Error('Composer ownership changed'); } });
     const originalAdd = db.notes.add.bind(db.notes);
     vi.spyOn(db.notes, 'add').mockImplementation(value => originalAdd(value).then(id => { owned = false; return id; }));
-    enableSync();
+    await db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { version: 1, serverUrl: 'https://test.invalid', userId: 'fixture-user' } });
+    disableSync();
     await expect(persist(candidate)).rejects.toThrow('ownership changed');
     expect(await db.notes.get(candidate.id)).toBeUndefined();
     expect(await db.table('_syncQueue').count()).toBe(0);
@@ -283,7 +285,8 @@ describe('asynchronous session, transaction and hierarchy fences', () => {
     const { candidate, persist } = prepare(source);
     const originalAdd = db.notes.add.bind(db.notes);
     vi.spyOn(db.notes, 'add').mockImplementation(value => originalAdd(value).then(() => { throw new Error('Simulated storage failure'); }));
-    enableSync();
+    await db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { version: 1, serverUrl: 'https://test.invalid', userId: 'fixture-user' } });
+    disableSync();
     await expect(persist(candidate)).rejects.toThrow('storage failure');
     expect(await db.notes.get(candidate.id)).toBeUndefined();
     expect(await db.table('_syncQueue').count()).toBe(0);
@@ -342,7 +345,8 @@ describe('asynchronous session, transaction and hierarchy fences', () => {
     await inOtherTab(peer => peer.table('notes').update('source-note', { clsLevel: 'TLP:RED' }));
     await expect(stale.persist(stale.candidate)).rejects.toThrow('classification');
     const accepted = prepare(source, { template, clsLevel: 'TLP:RED' });
-    enableSync();
+    await db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { version: 1, serverUrl: 'https://test.invalid', userId: 'fixture-user' } });
+    disableSync();
     await accepted.persist(accepted.candidate);
     expect(await db.notes.get(accepted.candidate.id)).toEqual(accepted.candidate);
     const rawNote = await new Promise<Record<string, unknown>>((resolve, reject) => {

@@ -243,7 +243,7 @@
   "encryption.sharedPreserved": "Existing shared tags and timelines preserved: {{count}}",
   "encryption.restoreScopeNotice": "Only the scope and entity types included in this backup are replaced. Empty lists clear records in that scope; omitted types are preserved.",
   "encryption.mergeScopeNotice": "New records and newer backup revisions are merged within the backup scope. Existing shared tags and timelines are preserved for investigation backups.",
-  "encryption.restorePendingDraftNotice": "Edits made during restoration are retained for review. Recover or discard them using the draft notice before reopening the restored workspace.",
+  "encryption.restorePendingDraftNotice": "Finish pending file imports and send, save, recover, or explicitly discard unsent drafts before reopening the restored workspace. Edits made during restoration are retained for review.",
   "encryption.reopenWorkspace": "Reopen restored workspace",
   "encryption.table.notes": "Notes",
   "encryption.table.tasks": "Tasks",

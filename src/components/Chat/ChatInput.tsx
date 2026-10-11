@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useId } from 'react';
+import { useChatComposerDraft } from '../../hooks/useChatComposerDraft';
+import { beginComposerSubmission, finishComposerSubmission } from '../../lib/chat-composer-drafts';
 import { Send, Square, Wifi, WifiOff, Globe, Search, FileText, CheckSquare, Shield, BarChart3, Clock, Network, ClipboardList, Zap, Link2, AlertTriangle, Terminal, RefreshCw, StopCircle, Wrench, ImagePlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { LLMProvider } from '../../types';
@@ -23,7 +25,8 @@ const SLASH_COMMAND_DEFS = [
 ] as const;
 
 interface ChatInputProps {
-  onSend: (text: string) => void;
+  /** Acknowledge only after saving the user message; failure retains its draft. */
+  onSend: (text: string, onCommitted: () => void) => void | Promise<void>;
   onStop: () => void;
   isStreaming: boolean;
   extensionAvailable: boolean;
@@ -39,9 +42,11 @@ interface ChatInputProps {
   onImageAttach?: (files: File[]) => void;
   attachedImages?: { name: string }[];
   onClearImages?: () => void;
+  readingImages?: boolean;
+  draftScope?: string;
 }
 
-export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, model, onModelChange, disabled, localModelName, configuredProviders, onOpenSettings, folderId, customCommands, onImageAttach, attachedImages, onClearImages }: ChatInputProps) {
+export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, model, onModelChange, disabled, localModelName, configuredProviders, onOpenSettings, folderId, customCommands, onImageAttach, attachedImages, onClearImages, readingImages, draftScope }: ChatInputProps) {
   const { t } = useTranslation('chat');
   // Can send if extension is available OR a local LLM is configured (direct fetch, no extension needed)
   const canSend = extensionAvailable || !!localModelName;
@@ -64,7 +69,11 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
     }
   }, [MODELS, model, onModelChange]);
 
-  const [text, setText] = useState('');
+  const fallbackScope = useId();
+  const scope = draftScope ?? fallbackScope;
+  const { text, setText, commit, error: draftError, submitting } = useChatComposerDraft(scope);
+  const [submitErrors, setSubmitErrors] = useState<ReadonlySet<string>>(() => new Set());
+  const submitError = submitErrors.has(scope);
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashIndex, setSlashIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -206,14 +215,21 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
     textareaRef.current?.focus();
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmed = text.trim();
-    if (!trimmed || isStreaming || disabled) return;
-    onSend(trimmed);
-    setText('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
+    if (!trimmed || isStreaming || disabled || readingImages) return;
+    const submission = beginComposerSubmission(scope);
+    if (!submission) return;
+    setSubmitErrors(previous => { const next = new Set(previous); next.delete(scope); return next; });
+    let committed = false;
+    try {
+      await onSend(trimmed, () => {
+        if (committed) return;
+        committed = true;
+        commit();
+      });
+    } catch { setSubmitErrors(previous => new Set([...previous, scope])); }
+    finally { finishComposerSubmission(scope, submission); }
   };
 
   // ── Image paste/drop handling ─────────────────────────────────────
@@ -335,6 +351,9 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
         </div>
       )}
 
+      {readingImages && <p role="status" className="text-xs text-text-secondary">{t('input.readingImages')}</p>}
+      {submitError && <p role="alert" className="text-xs text-red-400">{t('input.submitFailed')}</p>}
+      {draftError && <p role="alert" className="text-xs text-red-400">{t(`input.draftError.${draftError}`)}</p>}
       {/* Input area */}
       <div className="relative flex items-end gap-2">
         {/* Slash command menu */}
@@ -465,10 +484,10 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
         {/* Image attach button */}
         {onImageAttach && (
           <>
-            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { if (e.target.files) onImageAttach(Array.from(e.target.files)); e.target.value = ''; }} />
+            <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple className="hidden" onChange={(e) => { if (e.target.files) onImageAttach(Array.from(e.target.files)); e.target.value = ''; }} />
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={!canSend || disabled}
+              disabled={!canSend || disabled || readingImages || submitting}
               className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title={t('input.attachImage')}
             >
@@ -487,7 +506,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
         ) : (
           <button
             onClick={handleSend}
-            disabled={!text.trim() || !canSend || disabled}
+            disabled={!text.trim() || !canSend || disabled || readingImages || submitting}
             className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-purple text-white hover:bg-purple/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             title={t('input.sendMessage')}
           >

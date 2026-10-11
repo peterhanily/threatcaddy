@@ -7,7 +7,7 @@ import { db } from '../../db';
 import { encryptBackup, decryptBackup, type BackupPayload, type EncryptedBackupBlob } from '../../lib/backup-crypto';
 import { buildFullBackupPayload, buildDifferentialPayload, countPayloadEntities } from '../../lib/backup-data';
 import { previewRestore, restoreFullReplace, restoreMerge, type RestorePreview, type RestoreResult } from '../../lib/backup-restore';
-import { hasPendingEntityDrafts } from '../../lib/entity-drafts';
+import { hasPendingChanges } from '../../lib/pending-changes';
 import {
   createBackup, listBackups, downloadBackup, deleteBackup,
   type BackupMeta,
@@ -222,7 +222,7 @@ export function ServerBackup() {
       setRestoreResult(result);
       setRestoreStep('done');
       addToast('success', tt('backup.serverRestored'));
-      if (!hasPendingEntityDrafts()) window.location.reload();
+      if (!hasPendingChanges()) window.location.reload();
     } catch (err) {
       setRestoreError(err instanceof Error ? err.message : 'Restore failed');
       setRestorePreview(null);
@@ -526,7 +526,7 @@ export function ServerBackup() {
               <p className="text-gray-300">{t('encryption.restorePendingDraftNotice')}</p>
               <button
                 onClick={() => {
-                  if (hasPendingEntityDrafts()) setRestoreError(t('encryption.restorePendingDraftNotice'));
+                  if (hasPendingChanges()) setRestoreError(t('encryption.restorePendingDraftNotice'));
                   else window.location.reload();
                 }}
                 className={`${btnClass} bg-gray-700 text-gray-200`}

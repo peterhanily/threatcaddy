@@ -51,6 +51,7 @@ vi.mock('../lib/sync-engine', () => ({
 }));
 
 const mockConfigureServerApi = vi.fn();
+vi.mock('../lib/sync-capture-policy', () => ({ getSyncPauseReason: async () => null }));
 vi.mock('../lib/server-api', () => ({
   configureServerApi: (...args: unknown[]) => mockConfigureServerApi(...args),
 }));
@@ -112,11 +113,11 @@ describe('useServerSync', () => {
     mockWSConstructorArgs.length = 0;
   });
 
-  it('surfaces sync errors and captures edits while a signed-in server is offline', async () => {
+  it('surfaces offline transport errors without changing durable capture policy', async () => {
     const auth = { ...makeAuth({ connected: false }), user: { id: 'u1' } };
     const { result } = renderHook(() => useServerSync(auth, makeReloadFns()));
     await flushPromises();
-    expect(mockEnableSync).toHaveBeenCalled();
+    expect(mockEnableSync).not.toHaveBeenCalled();
     act(() => mockSetErrorHandler.mock.calls[0][0]('Sync paused; edits retained'));
     expect(result.current.syncError).toBe('Sync paused; edits retained');
   });
@@ -133,7 +134,7 @@ describe('useServerSync', () => {
       auth.getAccessToken,
       auth.invalidateAccessToken,
     );
-    expect(mockEnableSync).toHaveBeenCalled();
+    expect(mockEnableSync).not.toHaveBeenCalled();
     expect(mockSyncStart).toHaveBeenCalled();
     expect(mockSetConflictHandler).toHaveBeenCalled();
     expect(mockSetRemoteChangeHandler).toHaveBeenCalled();
@@ -152,14 +153,14 @@ describe('useServerSync', () => {
     expect(mockWSOn).toHaveBeenCalled();
   });
 
-  it('disables sync and disconnects when auth is disconnected', async () => {
+  it('stops transport without disabling durable capture when auth is disconnected', async () => {
     const auth = makeAuth({ serverUrl: null, connected: false });
     const reloadFns = makeReloadFns();
 
     renderHook(() => useServerSync(auth, reloadFns));
     await flushPromises();
 
-    expect(mockDisableSync).toHaveBeenCalled();
+    expect(mockDisableSync).not.toHaveBeenCalled();
     expect(mockSyncStop).toHaveBeenCalled();
     expect(mockSetWSClient).toHaveBeenCalledWith(null);
   });
@@ -179,7 +180,7 @@ describe('useServerSync', () => {
     unmount();
 
     expect(mockSyncStop).toHaveBeenCalled();
-    expect(mockDisableSync).toHaveBeenCalled();
+    expect(mockDisableSync).not.toHaveBeenCalled();
     expect(mockSetWSClient).toHaveBeenCalledWith(null);
   });
 

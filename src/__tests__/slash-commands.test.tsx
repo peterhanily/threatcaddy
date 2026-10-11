@@ -237,7 +237,7 @@ describe('ChatInput slash command menu', () => {
       const textarea = getTextarea();
       await userEvent.type(textarea, 'hello world');
       fireEvent.keyDown(textarea, { key: 'Enter' });
-      expect(onSend).toHaveBeenCalledWith('hello world');
+      expect(onSend).toHaveBeenCalledWith('hello world', expect.any(Function));
     });
 
     it('sends slash command with args on Enter when menu is closed', async () => {
@@ -247,11 +247,11 @@ describe('ChatInput slash command menu', () => {
       // Type /fetch then space (menu closes) then URL then Enter
       await userEvent.type(textarea, '/fetch https://example.com');
       fireEvent.keyDown(textarea, { key: 'Enter' });
-      expect(onSend).toHaveBeenCalledWith('/fetch https://example.com');
+      expect(onSend).toHaveBeenCalledWith('/fetch https://example.com', expect.any(Function));
     });
 
-    it('clears input after sending', async () => {
-      renderInput();
+    it('clears input after the sent message is acknowledged', async () => {
+      renderInput({ onSend: vi.fn((_text: string, committed: () => void) => committed()) });
       const textarea = getTextarea();
       await userEvent.type(textarea, 'hello');
       fireEvent.keyDown(textarea, { key: 'Enter' });

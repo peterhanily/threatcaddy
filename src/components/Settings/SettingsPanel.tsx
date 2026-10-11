@@ -86,6 +86,8 @@ interface SettingsPanelProps {
   onDeleteSample?: () => void;
   onClose?: () => void;
   initialTab?: SettingsTab;
+  activeTab?: SettingsTab;
+  onTabChange?: (tab: SettingsTab) => void;
   templateProps?: {
     templates: NoteTemplate[];
     userTemplates: NoteTemplate[];
@@ -104,7 +106,7 @@ interface SettingsPanelProps {
   };
 }
 
-type SettingsTab = 'general' | 'appearance' | 'ai' | 'agents' | 'data' | 'templates' | 'intel' | 'integrations' | 'shortcuts';
+export type SettingsTab = 'general' | 'appearance' | 'ai' | 'agents' | 'data' | 'templates' | 'intel' | 'integrations' | 'shortcuts';
 
 // ── Custom Slash Commands Editor ────────────────────────────────────
 
@@ -224,10 +226,15 @@ function CustomSlashCommandsEditor() {
 
 const TAB_KEYS: SettingsTab[] = ['general', 'appearance', 'ai', 'agents', 'data', 'templates', 'intel', 'integrations', 'shortcuts'];
 
-export function SettingsPanel({ settings, onUpdateSettings, notes, onImportComplete, sampleLoaded, onLoadSample, onDeleteSample, onClose, initialTab, templateProps, playbookProps }: SettingsPanelProps) {
+export function SettingsPanel({ settings, onUpdateSettings, notes, onImportComplete, sampleLoaded, onLoadSample, onDeleteSample, onClose, initialTab, activeTab: controlledTab, onTabChange, templateProps, playbookProps }: SettingsPanelProps) {
   const { t } = useTranslation('settings');
   const { addToast } = useToast();
-  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab || 'general');
+  const [localTab, setLocalTab] = useState<SettingsTab>(initialTab || 'general');
+  const activeTab = controlledTab ?? localTab;
+  const setActiveTab = (tab: SettingsTab) => {
+    if (onTabChange) onTabChange(tab);
+    else setLocalTab(tab);
+  };
   const selectClass = 'bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent';
   const labelClass = 'text-sm text-gray-400';
 

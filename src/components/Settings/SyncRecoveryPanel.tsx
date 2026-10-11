@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { db } from '../../db';
 import { useAuth } from '../../contexts/AuthContext';
 import { downloadFile } from '../../lib/export';
 import { prepareSyncRecovery, reconcileSyncWorkspace, restoreSyncRecovery, type SyncRecoveryReceipt } from '../../lib/sync-recovery';
@@ -24,7 +23,6 @@ export function SyncRecoveryPanel() {
   const prepare = () => work(async () => {
     if (password !== repeat) throw new Error('The archive passwords do not match.');
     syncEngine.stop();
-    await db.table('_syncMeta').put({ key: 'syncRecoveryRequiredV2', value: true });
     const result = await prepareSyncRecovery(password);
     downloadFile(JSON.stringify(result.blob), result.filename, 'application/json');
     setReceipt(result); setSaved(false); setConfirmed(false); setPassword(''); setRepeat('');
@@ -48,7 +46,8 @@ export function SyncRecoveryPanel() {
   return <details className="rounded border border-border p-3">
     <summary className="cursor-pointer text-sm font-semibold">Sync history recovery</summary>
     <div className="mt-3 space-y-3 text-xs">
-      <p>Use this after a server restore or an unverified legacy sync history. Download a password-encrypted archive first. Reconciliation retains local data and queued deletions, resets their baselines, and requires review of existing server records. It never binds this workspace to a different account.</p>
+      <p>Use this after a server restore, unverified legacy sync history, or an upgrade warning about older signed-out edits. Download a password-encrypted archive first. Reconciliation uses your current local records, retains known queued deletions, resets their baselines, and requires review of existing server records. It never binds this workspace to a different account.</p>
+      <p>Older versions did not record every signed-out edit or deletion. Missing records do not prove a deletion: they may have been removed from the offline cache. If a queued update has no current record, reconciliation stops for review. Keep the archive; no deletion is inferred and previously unrecorded deletion intent cannot be recovered automatically.</p>
       <p>Close other tabs for this workspace and pause agents before proceeding. Keep the archive password separately; it cannot be recovered.</p>
       <p>To restore without changing existing data, create a new empty local workspace above. Restore before signing in; afterwards, sign in to the archive’s original account and reconcile.</p>
       <label className="block">Archive password<input type="password" autoComplete="new-password" value={password} disabled={busy} onChange={e => setPassword(e.target.value)} className="block w-full rounded bg-bg-secondary p-2" /></label>

@@ -2,6 +2,8 @@ import { nanoid } from 'nanoid';
 import { resolveVariables, evaluateCondition, resolveDeep } from './integration-expression';
 import { postMessageOrigin } from './utils';
 import { resolveIntegrationConfig, validateIntegrationConfig } from './integration-config';
+import { cancellableRequest } from './request-cancellation';
+import { awaitIntegrationResult, integrationDelay } from './integration-cancellation';
 import type {
   IntegrationTemplate,
   InstalledIntegration,
@@ -24,8 +26,8 @@ export interface ExecutionInput {
 }
 
 export interface ExecutionCallbacks {
-  onCreateEntity?: (type: string, fields: Record<string, unknown>) => Promise<string>;
-  onUpdateEntity?: (type: string, id: string, fields: Record<string, unknown>) => Promise<void>;
+  onCreateEntity?: (type: string, fields: Record<string, unknown>, signal?: AbortSignal) => Promise<string>;
+  onUpdateEntity?: (type: string, id: string, fields: Record<string, unknown>, signal?: AbortSignal) => Promise<void>;
   onNotify?: (message: string) => void;
   onLog?: (entry: IntegrationRunLogEntry) => void;
 }
@@ -53,21 +55,22 @@ async function serverProxyFetch(
   method: string,
   headers: Record<string, string>,
   body: string | null,
+  signal: AbortSignal,
 ): Promise<{ ok: boolean; status: number; statusText: string; data: unknown; headers: Record<string, string> }> {
-  const token = await getAccessToken();
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 60_000);
+  signal.throwIfAborted();
+  const token = await awaitIntegrationResult(getAccessToken(), signal);
+  signal.throwIfAborted();
   const resp = await fetch(`${serverUrl}/api/proxy-fetch`, {
     method: 'POST',
-    signal: controller.signal,
+    signal,
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({ url, method, headers, body }),
   });
-  clearTimeout(timer);
-  const result = await resp.json();
+  const result = await awaitIntegrationResult(resp.json(), signal);
+  signal.throwIfAborted();
   if (!resp.ok) {
     throw new Error(result.error || `Server proxy error: ${resp.status}`);
   }
@@ -178,11 +181,23 @@ function bridgeProxyFetch(
   method: string,
   headers: Record<string, string>,
   body: string | null,
+  signal: AbortSignal,
 ): Promise<{ ok: boolean; status: number; statusText: string; data: unknown; headers: Record<string, string> }> {
   return new Promise((resolve, reject) => {
+    signal.throwIfAborted();
     const requestId = nanoid();
-    const timeout = setTimeout(() => {
+    const cleanup = () => {
       window.removeEventListener('message', handler);
+      signal.removeEventListener('abort', abort);
+      clearTimeout(timeout);
+    };
+    const cancelTransport = () => {
+      try { window.postMessage({ type: 'TC_PROXY_ABORT', requestId }, postMessageOrigin()); } catch { /* no receiver */ }
+    };
+    const abort = () => { cleanup(); cancelTransport(); reject(signal.reason); };
+    const timeout = setTimeout(() => {
+      cleanup();
+      cancelTransport();
       reject(new Error('Bridge proxy fetch timed out (30s)'));
     }, 30000);
 
@@ -190,8 +205,7 @@ function bridgeProxyFetch(
       if (event.source !== window || !event.data) return;
       if (event.data.type !== 'TC_PROXY_FETCH_RESULT') return;
       if (event.data.requestId !== requestId) return;
-      window.removeEventListener('message', handler);
-      clearTimeout(timeout);
+      cleanup();
 
       if (!event.data.success && event.data.error) {
         reject(new Error(event.data.error));
@@ -207,14 +221,15 @@ function bridgeProxyFetch(
     }
 
     window.addEventListener('message', handler);
-    window.postMessage({
+    signal.addEventListener('abort', abort, { once: true });
+    try { window.postMessage({
       type: 'TC_PROXY_FETCH',
       requestId,
       url,
       method,
       headers,
       body,
-    }, postMessageOrigin());
+    }, postMessageOrigin()); } catch (error) { cleanup(); reject(error); }
   });
 }
 
@@ -301,10 +316,13 @@ export class IntegrationExecutor {
       callbacks.onLog?.(redacted);
     };
 
+    const lifecycle = cancellableRequest(signal);
     const timeoutController = new AbortController();
     const timeoutId = setTimeout(() => timeoutController.abort(), MAX_EXECUTION_MS);
+    const runSignal = AbortSignal.any([lifecycle.signal, timeoutController.signal]);
 
     try {
+      runSignal.throwIfAborted();
       for (const step of template.steps) {
         const stepResult = await this.executeStep(
           step,
@@ -312,16 +330,16 @@ export class IntegrationExecutor {
           context,
           callbacks,
           addLog,
-          signal,
+          runSignal,
           timeoutController.signal,
           options,
         );
 
-        if (stepResult.skipped) continue;
-
         apiCallsMade += stepResult.apiCalls;
         entitiesCreated += stepResult.entitiesCreated;
         entitiesUpdated += stepResult.entitiesUpdated;
+        runSignal.throwIfAborted();
+        if (stepResult.skipped) continue;
 
         if (stepResult.error) {
           if (!step.continueOnError) {
@@ -330,28 +348,21 @@ export class IntegrationExecutor {
             break;
           }
         }
-
-        if (signal?.aborted) {
-          status = 'cancelled';
-          break;
-        }
-        if (timeoutController.signal.aborted) {
-          status = 'timeout';
-          error = 'Execution exceeded 5 minute timeout';
-          break;
-        }
       }
 
       if (status === 'running') {
         // Process outputs
-        const outputResult = await this.processOutputs(template, context, callbacks, addLog);
+        runSignal.throwIfAborted();
+        const outputResult = await this.processOutputs(template, context, callbacks, addLog, runSignal);
         entitiesCreated += outputResult.entitiesCreated;
         entitiesUpdated += outputResult.entitiesUpdated;
         displayResults = outputResult.displayResults;
+        if (outputResult.failure) throw outputResult.failure.error;
+        runSignal.throwIfAborted();
         status = 'success';
       }
     } catch (err) {
-      if (signal?.aborted) {
+      if (lifecycle.signal.aborted) {
         status = 'cancelled';
       } else if (timeoutController.signal.aborted) {
         status = 'timeout';
@@ -362,6 +373,7 @@ export class IntegrationExecutor {
       }
     } finally {
       clearTimeout(timeoutId);
+      lifecycle.dispose();
     }
 
     const durationMs = Date.now() - startTime;
@@ -474,15 +486,19 @@ export class IntegrationExecutor {
           break;
         }
         case 'create-entity': {
-          const id = await this.executeCreateEntityStep(step, context, callbacks, addLog);
+          const id = await this.executeCreateEntityStep(step, context, callbacks, signal);
           context.steps[step.id] = { id };
           entitiesCreated += 1;
+          addLog({ ts: Date.now(), stepId: step.id, stepLabel: step.label,
+            type: 'entity-created', detail: `Created ${step.entityType}: ${id}` });
           break;
         }
         case 'update-entity': {
-          await this.executeUpdateEntityStep(step, context, callbacks, addLog);
+          const id = await this.executeUpdateEntityStep(step, context, callbacks, signal);
           context.steps[step.id] = { updated: true };
           entitiesUpdated += 1;
+          addLog({ ts: Date.now(), stepId: step.id, stepLabel: step.label,
+            type: 'entity-created', detail: `Updated ${step.entityType}: ${id}` });
           break;
         }
         case 'set-variable': {
@@ -491,12 +507,13 @@ export class IntegrationExecutor {
           break;
         }
         case 'delay': {
-          await new Promise((r) => setTimeout(r, step.ms));
+          await integrationDelay(step.ms, signal);
           context.steps[step.id] = { delayed: step.ms };
           break;
         }
       }
 
+      signal?.throwIfAborted();
       addLog({
         ts: Date.now(),
         stepId: step.id,
@@ -554,6 +571,8 @@ export class IntegrationExecutor {
     let apiCalls = 0;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      signal?.throwIfAborted();
+      timeoutSignal?.throwIfAborted();
       // Build fetch options
       const fetchOptions: RequestInit = {
         method: step.method,
@@ -613,7 +632,7 @@ export class IntegrationExecutor {
         const proxyResult = await serverProxyFetch(
           options.useServerProxy.serverUrl,
           options.useServerProxy.getAccessToken,
-          url.toString(), step.method, proxyHeaders, serializeBody(),
+          url.toString(), step.method, proxyHeaders, serializeBody(), fetchOptions.signal,
         );
         responseStatus = proxyResult.status;
         responseStatusText = proxyResult.statusText;
@@ -625,7 +644,7 @@ export class IntegrationExecutor {
         if (fetchOptions.body instanceof URLSearchParams && !proxyHeaders['Content-Type'] && !proxyHeaders['content-type']) {
           proxyHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
         }
-        const proxyResult = await bridgeProxyFetch(url.toString(), step.method, proxyHeaders, serializeBody());
+        const proxyResult = await bridgeProxyFetch(url.toString(), step.method, proxyHeaders, serializeBody(), fetchOptions.signal);
         responseStatus = proxyResult.status;
         responseStatusText = proxyResult.statusText;
         responseData = step.responseType === 'text' ? String(proxyResult.data) : proxyResult.data;
@@ -635,14 +654,15 @@ export class IntegrationExecutor {
         const response = await fetch(url.toString(), fetchOptions);
         responseStatus = response.status;
         responseStatusText = response.statusText;
-        responseData = step.responseType === 'text'
-          ? await response.text()
-          : await response.json().catch(() => null);
+        responseData = await awaitIntegrationResult(step.responseType === 'text'
+          ? response.text()
+          : response.json().catch(error => { fetchOptions.signal?.throwIfAborted(); if (error?.name === 'AbortError') throw error; return null; }), fetchOptions.signal);
         response.headers.forEach((value, key) => {
           responseHeaders[key] = value;
         });
       }
 
+      fetchOptions.signal.throwIfAborted();
       addLog({
         ts: Date.now(),
         stepId: step.id,
@@ -653,7 +673,7 @@ export class IntegrationExecutor {
 
       // Check if we should retry
       if (responseStatus >= 400 && attempt < maxRetries && retryOn.includes(responseStatus)) {
-        await new Promise((r) => setTimeout(r, backoffMs * (attempt + 1)));
+        await integrationDelay(backoffMs * (attempt + 1), signal);
         continue;
       }
 
@@ -804,6 +824,8 @@ export class IntegrationExecutor {
       entitiesCreated += result.entitiesCreated;
       entitiesUpdated += result.entitiesUpdated;
 
+      // Return committed child counts to the parent before its cancellation gate.
+      if (signal?.aborted || timeoutSignal?.aborted) break;
       if (result.error && !subStep.continueOnError) {
         throw new Error(result.error);
       }
@@ -874,7 +896,7 @@ export class IntegrationExecutor {
       iterations++;
 
       if (step.delayMs && i < items.length - 1) {
-        await new Promise((r) => setTimeout(r, step.delayMs));
+        await integrationDelay(step.delayMs, signal);
       }
     }
 
@@ -888,7 +910,7 @@ export class IntegrationExecutor {
     step: CreateEntityStep,
     context: ExecutionContext,
     callbacks: ExecutionCallbacks,
-    addLog: (entry: IntegrationRunLogEntry) => void,
+    signal?: AbortSignal,
   ): Promise<string> {
     const resolvedFields = resolveDeep(step.fields, context) as Record<string, unknown>;
 
@@ -896,16 +918,8 @@ export class IntegrationExecutor {
       throw new Error('No onCreateEntity callback provided');
     }
 
-    const id = await callbacks.onCreateEntity(step.entityType, resolvedFields);
-
-    addLog({
-      ts: Date.now(),
-      stepId: step.id,
-      stepLabel: step.label,
-      type: 'entity-created',
-      detail: `Created ${step.entityType}: ${id}`,
-    });
-
+    signal?.throwIfAborted();
+    const id = await callbacks.onCreateEntity(step.entityType, resolvedFields, signal);
     return id;
   }
 
@@ -913,8 +927,8 @@ export class IntegrationExecutor {
     step: UpdateEntityStep,
     context: ExecutionContext,
     callbacks: ExecutionCallbacks,
-    addLog: (entry: IntegrationRunLogEntry) => void,
-  ): Promise<void> {
+    signal?: AbortSignal,
+  ): Promise<string> {
     const resolvedFields = resolveDeep(step.fields, context) as Record<string, unknown>;
     const resolvedId = resolveVariables(step.entityId, context) as string;
 
@@ -922,15 +936,9 @@ export class IntegrationExecutor {
       throw new Error('No onUpdateEntity callback provided');
     }
 
-    await callbacks.onUpdateEntity(step.entityType, resolvedId, resolvedFields);
-
-    addLog({
-      ts: Date.now(),
-      stepId: step.id,
-      stepLabel: step.label,
-      type: 'entity-created',
-      detail: `Updated ${step.entityType}: ${resolvedId}`,
-    });
+    signal?.throwIfAborted();
+    await callbacks.onUpdateEntity(step.entityType, resolvedId, resolvedFields, signal);
+    return resolvedId;
   }
 
   private executeSetVariableStep(
@@ -957,80 +965,90 @@ export class IntegrationExecutor {
     context: ExecutionContext,
     callbacks: ExecutionCallbacks,
     addLog: (entry: IntegrationRunLogEntry) => void,
-  ): Promise<{ displayResults: unknown; entitiesCreated: number; entitiesUpdated: number }> {
+    signal: AbortSignal,
+  ): Promise<{ displayResults: unknown; entitiesCreated: number; entitiesUpdated: number; failure?: { error: unknown } }> {
     let entitiesCreated = 0;
     let entitiesUpdated = 0;
     let displayResults: unknown;
 
     for (const output of template.outputs) {
-      if (output.condition) {
-        const shouldProcess = evaluateCondition(output.condition, context);
-        if (!shouldProcess) continue;
-      }
+      try {
+        signal.throwIfAborted();
+        if (output.condition) {
+          const shouldProcess = evaluateCondition(output.condition, context);
+          if (!shouldProcess) continue;
+        }
 
-      const resolved = resolveDeep(output.template, context) as Record<string, unknown>;
+        const resolved = resolveDeep(output.template, context) as Record<string, unknown>;
 
-      switch (output.type) {
-        case 'display':
-          displayResults = resolved;
-          break;
+        switch (output.type) {
+          case 'display':
+            displayResults = resolved;
+            break;
 
-        case 'create-ioc':
-        case 'create-note':
-        case 'create-task':
-        case 'create-timeline-event': {
-          if (callbacks.onCreateEntity) {
-            const entityType = output.type.replace('create-', '') as string;
-            // For notes, attach raw API responses and transform results for rich formatting
-            if (output.type === 'create-note') {
-              const httpResponses: Record<string, unknown> = {};
-              const transformResults: Record<string, unknown> = {};
-              for (const [stepId, stepData] of Object.entries(context.steps)) {
-                const data = stepData as Record<string, unknown>;
-                if (data?.response) {
-                  httpResponses[stepId] = (data.response as Record<string, unknown>).data;
-                } else if (!data?._apiCalls && !data?.branch) {
-                  // Transform step results (no _apiCalls or branch property)
-                  transformResults[stepId] = data;
+          case 'create-ioc':
+          case 'create-note':
+          case 'create-task':
+          case 'create-timeline-event': {
+            if (callbacks.onCreateEntity) {
+              const entityType = output.type.replace('create-', '') as string;
+              // For notes, attach raw API responses and transform results for rich formatting
+              if (output.type === 'create-note') {
+                const httpResponses: Record<string, unknown> = {};
+                const transformResults: Record<string, unknown> = {};
+                for (const [stepId, stepData] of Object.entries(context.steps)) {
+                  const data = stepData as Record<string, unknown>;
+                  if (data?.response) {
+                    httpResponses[stepId] = (data.response as Record<string, unknown>).data;
+                  } else if (!data?._apiCalls && !data?.branch) {
+                    // Transform step results (no _apiCalls or branch property)
+                    transformResults[stepId] = data;
+                  }
                 }
+                resolved._rawResponses = httpResponses;
+                resolved._transformResults = transformResults;
               }
-              resolved._rawResponses = httpResponses;
-              resolved._transformResults = transformResults;
+              await callbacks.onCreateEntity(entityType, resolved, signal);
+              entitiesCreated++;
+              signal.throwIfAborted();
+              addLog({
+                ts: Date.now(),
+                stepId: 'output',
+                stepLabel: `Output: ${output.type}`,
+                type: 'entity-created',
+                detail: `Created ${entityType} from output`,
+              });
             }
-            await callbacks.onCreateEntity(entityType, resolved);
-            entitiesCreated++;
-            addLog({
-              ts: Date.now(),
-              stepId: 'output',
-              stepLabel: `Output: ${output.type}`,
-              type: 'entity-created',
-              detail: `Created ${entityType} from output`,
-            });
+            break;
           }
-          break;
-        }
 
-        case 'update-ioc': {
-          if (callbacks.onUpdateEntity) {
-            const id = resolved.id as string;
-            const fields = { ...resolved };
-            delete fields.id;
-            await callbacks.onUpdateEntity('ioc', id, fields);
-            entitiesUpdated++;
+          case 'update-ioc': {
+            if (callbacks.onUpdateEntity) {
+              const id = resolved.id as string;
+              const fields = { ...resolved };
+              delete fields.id;
+              await callbacks.onUpdateEntity('ioc', id, fields, signal);
+              entitiesUpdated++;
+              signal.throwIfAborted();
+            }
+            break;
           }
-          break;
-        }
 
-        case 'notify': {
-          const message =
-            typeof resolved.message === 'string' ? resolved.message : JSON.stringify(resolved);
-          callbacks.onNotify?.(message);
-          break;
-        }
+          case 'notify': {
+            const message =
+              typeof resolved.message === 'string' ? resolved.message : JSON.stringify(resolved);
+            callbacks.onNotify?.(message);
+            break;
+          }
 
-        case 'post-to-feed':
-          // post-to-feed is handled at a higher level
-          break;
+          case 'post-to-feed':
+            // post-to-feed is handled at a higher level
+            break;
+        }
+      } catch (error) {
+        // Preserve acknowledgements from completed callbacks even when this or
+        // a later output is cancelled. The caller records them before failing.
+        return { displayResults, entitiesCreated, entitiesUpdated, failure: { error } };
       }
     }
 

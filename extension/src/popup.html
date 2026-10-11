@@ -515,6 +515,9 @@
       <p style="font-size:11px;color:#9ca3af;">Approve only an app you trust. This exact origin (including its port), or exact standalone file, may use the extension's granted capabilities.</p>
       <label for="settings-local-ai-url" style="font-size:11px;">Local AI endpoint origin (optional)</label>
       <input type="url" id="settings-local-ai-url" class="capture-title" placeholder="http://localhost:11434" />
+      <div id="settings-local-ai-status" role="status" style="font-size:11px;color:#9ca3af;"></div>
+      <button id="settings-save-local-ai" style="font-size:12px;padding:6px 12px;">Save local AI approval</button>
+      <button id="settings-remove-local-ai" style="font-size:12px;padding:6px 12px;">Remove local AI approval</button>
       <button id="settings-save-url" style="font-size:12px;padding:6px 12px;">Approve app</button>
       <button id="settings-revoke-apps" style="font-size:12px;padding:6px 12px;">Revoke all approved apps</button>
       <button id="settings-notifications" aria-describedby="settings-notification-status" style="font-size:12px;padding:6px 12px;">Enable desktop notifications</button>

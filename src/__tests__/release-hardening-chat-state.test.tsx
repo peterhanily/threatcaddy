@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatThread, Folder, Settings } from '../types';
 import { ChatView } from '../components/Chat/ChatView';
 import { ScreenshareContext } from '../hooks/ScreenshareContext';
+import { discardAllComposerDrafts } from '../lib/chat-composer-drafts';
 
 const state = vi.hoisted(() => ({
   selectedThreadId: 'thread',
@@ -47,6 +48,7 @@ const props = { threads: [thread], settings, onCreateThread: state.createThread,
   onAddMessage: state.addMessage, onTrashThread: vi.fn() };
 
 beforeEach(() => {
+  discardAllComposerDrafts();
   vi.clearAllMocks();
   state.folder = { id: 'a', name: 'Investigation A', order: 0, createdAt: 1 };
   state.serverUrl = ''; state.extensionAvailable = true; state.commands = []; state.selectedThreadId = 'thread';
@@ -55,7 +57,7 @@ beforeEach(() => {
   localStorage.setItem('caddyai-onboarded', '1');
   Element.prototype.scrollIntoView = vi.fn();
 });
-afterEach(cleanup);
+afterEach(() => { cleanup(); discardAllComposerDrafts(); });
 
 describe('release hardening: committed chat submission state', () => {
   it('does not auto-select a replacement thread while screenshare suspends the view', () => {
@@ -71,7 +73,7 @@ describe('release hardening: committed chat submission state', () => {
   it('retains pending attachments across privacy suspension without selecting another thread', async () => {
     const ui = (maxLevel: string | null) => <ScreenshareContext.Provider value={{ maxLevel, effectiveLevels: [] }}><ChatView {...props} /></ScreenshareContext.Provider>;
     const view = render(ui(null));
-    const image = { name: 'draft.png', type: 'image/png', arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer } as File;
+    const image = new File([new Uint8Array([1, 2, 3])], 'draft.png', { type: 'image/png' });
     await act(async () => { await state.input.onImageAttach([image]); });
     const input = screen.getByTestId('attachments');
     view.rerender(ui('TLP:CLEAR'));
@@ -85,7 +87,7 @@ describe('release hardening: committed chat submission state', () => {
 
   it('sends a newly attached image without requiring unrelated prop changes', async () => {
     render(<ChatView {...props} />);
-    const image = { name: 'synthetic.png', type: 'image/png', arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer } as File;
+    const image = new File([new Uint8Array([1, 2, 3])], 'synthetic.png', { type: 'image/png' });
     await act(async () => { await state.input.onImageAttach([image]); });
     expect(screen.getByTestId('attachments')).toHaveTextContent('1');
     await act(async () => { await state.input.onSend('Describe attached evidence'); });

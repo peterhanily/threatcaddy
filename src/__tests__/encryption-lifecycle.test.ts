@@ -4,7 +4,7 @@ import { generateMasterKey, isEncryptedEnvelope } from '../lib/crypto';
 import { ENCRYPTED_FIELDS, ENCRYPTION_COVERAGE_VERSION, installEncryptionMiddleware, setSessionKey, getSessionKey, encryptAllExistingData, decryptAllExistingData, ensureEncryptionReady } from '../lib/encryptionMiddleware';
 import { getEncryptionMeta, setEncryptionMeta, clearEncryptionMeta } from '../lib/encryptionStore';
 import { installSyncOutbox } from '../lib/sync-outbox';
-import { enableSync, disableSync } from '../lib/sync-state';
+import { disableSync } from '../lib/sync-state';
 
 // Uses real Web Crypto and a disposable fake-indexeddb database, never browser data.
 let fixture: Dexie;
@@ -114,7 +114,8 @@ describe('atomic and resumable encryption transitions', () => {
   it('captures encrypted outbox data and reads it back for sync with the same key', async () => {
     setEncryptionMeta(metadata());
     setSessionKey(key);
-    enableSync();
+    await fixture.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { version: 1, serverUrl: 'https://test.invalid', userId: 'fixture-user' } });
+    disableSync();
     await fixture.table('notes').put(note('one'));
     const entry = (await fixture.table('_syncQueue').toArray())[0];
     expect(entry.data).toEqual(note('one'));
@@ -125,7 +126,8 @@ describe('atomic and resumable encryption transitions', () => {
   it('aborts both encrypted entity and queue when durable outbox storage fails', async () => {
     setEncryptionMeta(metadata());
     setSessionKey(key);
-    enableSync();
+    await fixture.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { version: 1, serverUrl: 'https://test.invalid', userId: 'fixture-user' } });
+    disableSync();
     failOutboxWrite = true;
     await expect(fixture.table('notes').put(note('one'))).rejects.toThrow();
     expect(await fixture.table('notes').count()).toBe(0);
@@ -138,7 +140,8 @@ describe('atomic and resumable encryption transitions', () => {
     await fixture.table('_syncMeta').put({ key: 'cursor', value: 12 });
     setEncryptionMeta(metadata());
     setSessionKey(key);
-    enableSync();
+    await fixture.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { version: 1, serverUrl: 'https://test.invalid', userId: 'fixture-user' } });
+    disableSync();
     await ensureEncryptionReady(fixture);
     expect(getEncryptionMeta()?.coverageVersion).toBe(ENCRYPTION_COVERAGE_VERSION);
     expect(isEncryptedEnvelope((await raw('evidenceItems', 'evidence')).imageData)).toBe(true);

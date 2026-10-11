@@ -1,4 +1,4 @@
-import { clearPending, markPending } from './pending-changes';
+import { clearPending, markPending, hasPendingChanges, PendingChangesError } from './pending-changes';
 
 export type DraftPatch = Record<string, unknown>;
 export interface DraftConflict { base: unknown; local: unknown; remote: unknown }
@@ -237,8 +237,9 @@ export function hasPendingEntityDrafts(): boolean {
  * Drain existing drafts before a restore/import callback. Edits attempted while
  * the callback runs are retained for explicit review and never auto-saved over
  * the replacement data. Callers must reload the application after success only
- * if hasPendingEntityDrafts() is false; otherwise keep recovery UI reachable.
- * This guards these editor queues, not arbitrary database writers or other tabs.
+ * if hasPendingChanges() is false; otherwise keep recovery UI reachable.
+ * Existing unsent chat/file work blocks the callback after editor drafts drain.
+ * This is not a lock on arbitrary database writers or other tabs.
  */
 export async function withEntityDraftBarrier<T>(operation: () => Promise<T>): Promise<T> {
   if (externalDataChange) throw new Error('Another data replacement is already in progress.');
@@ -247,6 +248,7 @@ export async function withEntityDraftBarrier<T>(operation: () => Promise<T>): Pr
     if ((await flushEntityDrafts()).some((saved) => !saved)) {
       throw new Error('Unsaved drafts require review before replacing data. Resolve, retry, or explicitly discard them first.');
     }
+    if (hasPendingChanges()) throw new PendingChangesError('Unsent chat drafts or pending file imports require attention. Send, finish, or explicitly discard them before changing workspaces, restoring, or preparing a data snapshot.');
     return await operation();
   } finally {
     externalDataChange = false;

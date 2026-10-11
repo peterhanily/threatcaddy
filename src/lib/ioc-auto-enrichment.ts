@@ -5,6 +5,8 @@ import type { StandaloneIOC } from '../types';
 import type { InstalledIntegration, IntegrationRun, IntegrationTemplate } from '../types/integration-types';
 import { persistIOCIntegrationUpdate } from './ioc-enrichment-persistence';
 import { validateIntegrationConfig } from './integration-config';
+import { integrationWrite, integrationDelay } from './integration-cancellation';
+import { cancellableRequest } from './request-cancellation';
 
 const SUPPORTED_VT_TYPES = new Set(['ipv4', 'ipv6', 'domain', 'md5', 'sha1', 'sha256']);
 const VT_TEMPLATE_IDS = new Set(['vt-ip-lookup', 'vt-domain-lookup', 'vt-hash-lookup']);
@@ -12,6 +14,7 @@ const AUTO_TAG_PREFIX = 'auto-enrich:vt:';
 type AutoEnrichStatus = 'queued' | 'checked' | 'error' | 'skipped';
 
 export interface AutoEnrichOptions {
+  signal?: AbortSignal;
   maxIOCs?: number;
   investigation?: { id: string; name: string };
   getInstallationsForIOCType: (type: string) => Array<{ installation: InstalledIntegration; template: IntegrationTemplate }>;
@@ -99,65 +102,72 @@ export async function autoEnrichImportedIOCs(
 
   const executor = new IntegrationExecutor();
 
-  for (const ioc of candidates) {
-    const vtIntegrations = options
-      .getInstallationsForIOCType(ioc.type)
-      .filter(({ template }) => VT_TEMPLATE_IDS.has(template.id));
+  const lifecycle = cancellableRequest(options.signal);
+  try {
+    for (const ioc of candidates) {
+      lifecycle.signal.throwIfAborted();
+      const vtIntegrations = options
+        .getInstallationsForIOCType(ioc.type)
+        .filter(({ template }) => VT_TEMPLATE_IDS.has(template.id));
 
-    if (vtIntegrations.length === 0) {
-      stats.skipped += 1;
-      stats.missingIntegration += 1;
-      await markSkipped(ioc);
-      continue;
-    }
-
-    const { installation, template } = vtIntegrations[0];
-    // Configuration failures must not rewrite the IOC's tags or timestamps.
-    // The executor has the same guard, but this caller normally writes its
-    // queued/error markers before and after execution, outside that boundary.
-    if (validateIntegrationConfig(template.configSchema, installation.config).length > 0) {
-      stats.errors += 1;
-      continue;
-    }
-    await markQueued(ioc);
-
-    try {
-      const run = await executor.run(
-        template,
-        installation,
-        {
-          ioc: { id: ioc.id, value: ioc.value, type: ioc.type, confidence: ioc.confidence },
-          investigation: options.investigation,
-        },
-        {
-          onUpdateEntity: async (type, id, fields) => {
-            if (type === 'ioc') await mergeIOCUpdate(id, fields);
-          },
-          onNotify: () => {},
-        },
-        undefined,
-        options.executionOptions,
-      );
-
-      await options.addRun({
-        ...run,
-        id: run.id || nanoid(),
-      });
-
-      if (run.status === 'success') {
-        stats.enriched += 1;
-        await markChecked(ioc);
-      } else {
-        stats.errors += 1;
-        await markError(ioc);
+      if (vtIntegrations.length === 0) {
+        stats.skipped += 1;
+        stats.missingIntegration += 1;
+        await integrationWrite([db.standaloneIOCs], lifecycle.signal, () => markSkipped(ioc));
+        continue;
       }
-    } catch {
-      stats.errors += 1;
-      await markError(ioc);
-    }
 
-    await new Promise((resolve) => window.setTimeout(resolve, 1_000));
-  }
+      const { installation, template } = vtIntegrations[0];
+      // Configuration failures must not rewrite the IOC's tags or timestamps.
+      // The executor has the same guard, but this caller normally writes its
+      // queued/error markers before and after execution, outside that boundary.
+      if (validateIntegrationConfig(template.configSchema, installation.config).length > 0) {
+        stats.errors += 1;
+        continue;
+      }
+      await integrationWrite([db.standaloneIOCs], lifecycle.signal, () => markQueued(ioc));
+
+      try {
+        const run = await executor.run(
+          template,
+          installation,
+          {
+            ioc: { id: ioc.id, value: ioc.value, type: ioc.type, confidence: ioc.confidence },
+            investigation: options.investigation,
+          },
+          {
+            onUpdateEntity: async (type, id, fields, signal) => {
+              if (type === 'ioc') await integrationWrite([db.standaloneIOCs], signal, () => mergeIOCUpdate(id, fields));
+            },
+            onNotify: () => {},
+          },
+          lifecycle.signal,
+          options.executionOptions,
+        );
+
+        lifecycle.signal.throwIfAborted();
+        await options.addRun({
+          ...run,
+          id: run.id || nanoid(),
+        });
+
+        lifecycle.signal.throwIfAborted();
+        if (run.status === 'success') {
+          stats.enriched += 1;
+          await integrationWrite([db.standaloneIOCs], lifecycle.signal, () => markChecked(ioc));
+        } else {
+          stats.errors += 1;
+          await integrationWrite([db.standaloneIOCs], lifecycle.signal, () => markError(ioc));
+        }
+      } catch {
+        lifecycle.signal.throwIfAborted();
+        stats.errors += 1;
+        await integrationWrite([db.standaloneIOCs], lifecycle.signal, () => markError(ioc));
+      }
+
+      await integrationDelay(1_000, lifecycle.signal);
+    }
+  } finally { lifecycle.dispose(); }
 
   options.onComplete?.(stats);
   return stats;

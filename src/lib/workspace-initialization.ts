@@ -2,6 +2,7 @@ import { db, runWorkspaceContentMigrations } from '../db';
 import { migrateIndexedDB } from './db-migration';
 import { ensureEncryptionReady, getSessionKey } from './encryptionMiddleware';
 import { isEncryptionEnabled } from './encryptionStore';
+import { ensureSyncCaptureCoverage } from './sync-capture-policy';
 
 let initialized = false;
 export function isWorkspaceInitialized(): boolean { return initialized; }
@@ -15,5 +16,6 @@ export async function initializeWorkspace(): Promise<void> {
   await ensureEncryptionReady(db);
   await migrateIndexedDB({ sourceKey });
   await runWorkspaceContentMigrations();
+  await ensureSyncCaptureCoverage(db);
   initialized = true;
 }

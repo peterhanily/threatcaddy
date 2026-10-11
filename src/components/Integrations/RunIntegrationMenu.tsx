@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { IntegrationExecutor } from '../../lib/integration-executor';
+import { integrationWrite } from '../../lib/integration-cancellation';
 import type { ExecutionOptions } from '../../lib/integration-executor';
 import { IntegrationResultModal } from './IntegrationResultModal';
 import { db } from '../../db';
@@ -69,7 +70,7 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
         match.installation,
         { ioc, investigation },
         {
-          onCreateEntity: async (type, fields) => {
+          onCreateEntity: async (type, fields, signal) => integrationWrite([db.notes, db.standaloneIOCs, db.tasks], signal, async () => {
             const id = nanoid();
             const now = Date.now();
             switch (type) {
@@ -170,8 +171,8 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
                 break;
             }
             return id;
-          },
-          onUpdateEntity: async (type, id, fields) => {
+          }),
+          onUpdateEntity: async (type, id, fields, signal) => integrationWrite([db.standaloneIOCs], signal, async () => {
             if (type === 'ioc') {
               const existing = await db.standaloneIOCs.get(id);
               if (!existing) return;
@@ -191,7 +192,7 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
               }
               await db.standaloneIOCs.update(id, updates);
             }
-          },
+          }),
           onNotify: (message) => {
             addToast('info', message);
           },

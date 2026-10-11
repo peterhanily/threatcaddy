@@ -1,16 +1,30 @@
 import { db } from '../db';
 import { canonicalBackupJSON, encryptBackup, decryptBackup, type EncryptedBackupBlob } from './backup-crypto';
 import { normalizeSyncWorkspaceIdentity, SYNC_WORKSPACE_KEY } from './sync-workspace';
-import { SYNC_TABLES, suppressSyncInCurrentTransaction } from './sync-state';
-import { withEntityDraftBarrier, hasPendingEntityDrafts } from './entity-drafts';
+import { SYNC_TABLES, isSyncTable, suppressSyncInCurrentTransaction } from './sync-state';
+import { withEntityDraftBarrier } from './entity-drafts';
+import { hasPendingChanges, PendingChangesError } from './pending-changes';
 import { syncPull } from './server-api';
 import { readStoredAuth } from './auth-storage';
+import { ensureSyncCaptureCoverage, markRestoredSyncHistory, SYNC_CAPTURE_KEY, SYNC_RECOVERY_KEY } from './sync-capture-policy';
 
-const RECOVERY_KEY = 'syncRecoveryRequiredV2';
+const RECOVERY_KEY = SYNC_RECOVERY_KEY;
 type Snapshot = Record<string, Record<string, unknown>[]>;
 interface RecoveryArchive { version: 1; kind: 'threatcaddy-workspace-recovery'; databaseVersion: number; data: Snapshot }
 export interface SyncRecoveryReceipt { blob: EncryptedBackupBlob; filename: string; records: number }
 const receipts = new WeakMap<SyncRecoveryReceipt, string>();
+
+function assertNoAmbiguousMissingRows(data: Snapshot): void {
+  const latest = new Map<string, Record<string, unknown>>();
+  for (const row of data._syncQueue) {
+    if (typeof row.table === 'string' && isSyncTable(row.table) && typeof row.entityId === 'string') {
+      latest.set(JSON.stringify([row.table, row.entityId]), row);
+    }
+  }
+  const present = new Set(SYNC_TABLES.flatMap(table => data[table].map(row => JSON.stringify([table, row.id]))));
+  const ambiguous = [...latest].filter(([key, row]) => row.op === 'put' && !present.has(key)).map(([key]) => key);
+  if (ambiguous.length) throw new Error(`Reconciliation is blocked: ${ambiguous.length} queued update(s) have no current local record: ${ambiguous.slice(0, 10).join(', ')}${ambiguous.length > 10 ? ' (additional entries are in the archive)' : ''}. Keep the verified archive and review these records before retrying. Absence may mean an old deletion or cache removal; no deletion or queued content was inferred.`);
+}
 
 async function snapshot(): Promise<Snapshot> {
   const entries = await Promise.all([...db.tables].sort((a, b) => a.name.localeCompare(b.name)).map(async table => [table.name, await table.toArray()] as const));
@@ -22,8 +36,14 @@ async function snapshot(): Promise<Snapshot> {
 export async function prepareSyncRecovery(password: string): Promise<SyncRecoveryReceipt> {
   if (password.length < 12) throw new Error('Use at least 12 characters for the recovery archive password.');
   return withEntityDraftBarrier(async () => {
-    if (hasPendingEntityDrafts()) throw new Error('Resolve pending drafts before preparing recovery.');
-    const data = await db.transaction('r', db.tables, snapshot);
+    const data = await db.transaction('rw', db.tables, async () => {
+      if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work before preparing recovery.');
+      await ensureSyncCaptureCoverage(db);
+      await db.table('_syncMeta').put({ key: RECOVERY_KEY, value: true });
+      const data = await snapshot();
+      if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work before preparing recovery.');
+      return data;
+    });
     const archive: RecoveryArchive = { version: 1, kind: 'threatcaddy-workspace-recovery', databaseVersion: db.verno, data };
     const blob = await encryptBackup(password, archive);
     if (new TextEncoder().encode(JSON.stringify(blob)).byteLength > 512 * 1024 * 1024) throw new Error('Recovery archive exceeds the supported 512 MiB restore limit. Local data was not changed.');
@@ -46,25 +66,38 @@ export async function reconcileSyncWorkspace(receipt: SyncRecoveryReceipt, serve
     if (!auth || auth.serverUrl !== identity.serverUrl || auth.user.id !== identity.userId) throw new Error('The signed-in account changed; recovery was not applied.');
   };
   assertIdentity();
+  // Reject ambiguous archives before any handshake as well as in the final
+  // transaction. Do not replay a stale put for an absent (possibly deleted) row.
+  await db.transaction('r', db.tables, async () => {
+    const data = await snapshot();
+    if (canonicalBackupJSON(data) !== receipts.get(receipt)) throw new Error('Local data changed after backup. Download a new recovery archive before reconciling.');
+    const binding = (await db.table('_syncMeta').get(SYNC_WORKSPACE_KEY))?.value;
+    if (binding && (binding.version !== 1 || binding.serverUrl !== identity.serverUrl || binding.userId !== identity.userId)) throw new Error('This workspace belongs to another account. Switch workspaces instead of rebinding it.');
+    assertNoAmbiguousMissingRows(data);
+  });
+  assertIdentity();
   const page = await syncPull(new Date(0).toISOString(), undefined, '0');
   if (!page.generation || !/^[a-f\d-]{36}$/.test(page.generation)) throw new Error('This server does not support safe history recovery.');
   await withEntityDraftBarrier(() => db.transaction('rw', db.tables, async () => {
     assertIdentity();
-    if (hasPendingEntityDrafts()) throw new Error('Resolve pending drafts before reconciliation.');
-    if (canonicalBackupJSON(await snapshot()) !== receipts.get(receipt)) throw new Error('Local data changed after backup. Download a new recovery archive before reconciling.');
+    if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work before reconciliation.');
+    const data = await snapshot();
+    if (canonicalBackupJSON(data) !== receipts.get(receipt)) throw new Error('Local data changed after backup. Download a new recovery archive before reconciling.');
+    assertNoAmbiguousMissingRows(data);
     const meta = db.table('_syncMeta');
     const binding = (await meta.get(SYNC_WORKSPACE_KEY))?.value;
     if (binding && (binding.version !== 1 || binding.serverUrl !== identity.serverUrl || binding.userId !== identity.userId)) throw new Error('This workspace belongs to another account. Switch workspaces instead of rebinding it.');
     suppressSyncInCurrentTransaction();
     const queue = db.table('_syncQueue');
     const pending = await queue.toArray();
-    const pendingIds = new Set(pending.map(row => JSON.stringify([row.table, row.entityId])));
     for (const row of pending) await queue.put({ ...row, clientVersion: 0 });
     const folders = await db.folders.toArray();
     const shared = new Set(folders.filter(folder => !folder.localOnly).map(folder => folder.id));
     for (const table of SYNC_TABLES) for (const row of await db.table(table).toArray()) {
       if (row.localOnly || (table === 'folders' ? !shared.has(row.id) : !['tags', 'timelines'].includes(table) && !shared.has(row.folderId))) continue;
-      if (!pendingIds.has(JSON.stringify([table, row.id]))) await queue.add({ table, entityId: row.id,
+      // The verified current row wins over an older queued payload. Old clients
+      // could leave their signed-out edits uncaptured even with a pending put.
+      await queue.add({ table, entityId: row.id,
         folderId: table === 'folders' ? row.id : row.folderId, op: 'put', data: row, clientVersion: 0 });
     }
     for (const entry of await meta.toArray()) {
@@ -75,7 +108,9 @@ export async function reconcileSyncWorkspace(receipt: SyncRecoveryReceipt, serve
       { key: 'syncHistoryGenerationV1', value: page.generation }, { key: RECOVERY_KEY, value: false },
       { key: 'initialPushDoneV2', value: true },
     ]);
+    await db.table('_localMigrations').put({ key: SYNC_CAPTURE_KEY, version: 1, state: 'ready' });
     assertIdentity();
+    if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work before reconciliation.');
   }));
   receipts.delete(receipt);
 }
@@ -99,7 +134,7 @@ export async function restoreSyncRecovery(password: string, blob: EncryptedBacku
   const auth = readStoredAuth();
   if (auth && (binding?.serverUrl !== auth.serverUrl || binding.userId !== auth.user.id)) throw new Error('Recovery archive belongs to another server or account.');
   return withEntityDraftBarrier(() => db.transaction('rw', db.tables, async () => {
-    if (hasPendingEntityDrafts()) throw new Error('Resolve pending drafts first.');
+    if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work first.');
     suppressSyncInCurrentTransaction();
     for (const table of db.tables) if (table.name !== '_localMigrations' && await table.count()) throw new Error('Recovery requires an empty workspace; existing data was not changed.');
     let count = 0;
@@ -113,7 +148,8 @@ export async function restoreSyncRecovery(password: string, blob: EncryptedBacku
       await db.table(name).bulkPut(restored);
       count += restored.length;
     }
-    await db.table('_syncMeta').put({ key: RECOVERY_KEY, value: true });
+    await markRestoredSyncHistory(db);
+    if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work first.');
     return count;
   }));
 }

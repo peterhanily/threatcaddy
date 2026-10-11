@@ -7,7 +7,7 @@ import { getActiveWorkspaceId } from '../lib/workspace-profiles';
 import { clearEncryptionMeta, setEncryptionMeta } from '../lib/encryptionStore';
 import { setSessionKey } from '../lib/encryptionMiddleware';
 import { generateMasterKey, isEncryptedEnvelope } from '../lib/crypto';
-import { disableSync, enableSync } from '../lib/sync-state';
+import { disableSync } from '../lib/sync-state';
 
 const stores = ['folders', 'notes', 'tasks', 'timelineEvents', 'timelines', 'activityLog', '_clipReceipts', '_syncQueue', '_syncMeta'];
 const options = () => ({ sourceId: 'synthetic-installation', workspaceId: getActiveWorkspaceId(), createdBy: 'Synthetic analyst' });
@@ -180,7 +180,9 @@ describe('durable clip import into the actual workspace database', () => {
 
   it('encrypts captured content and outbox copies while keeping the receipt minimal and plaintext', async () => {
     setEncryptionMeta({ version: 1, salt: 'fixture', wrappedKey: 'fixture', recoverySalt: 'fixture', recoveryWrappedKey: 'fixture', enabledAt: 1 });
-    setSessionKey(await generateMasterKey()); enableSync();
+    setSessionKey(await generateMasterKey());
+    await db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { version: 1, serverUrl: 'https://test.invalid', userId: 'fixture-user' } });
+    disableSync();
     const clip = await makeClip();
     const [result] = await importClipBatch([clip], options());
     expect(result.status).toBe('imported');
@@ -204,7 +206,10 @@ describe('durable clip import into the actual workspace database', () => {
 
   it('rolls encrypted entities and outbox copies back together if the durable receipt cannot be stored', async () => {
     setEncryptionMeta({ version: 1, salt: 'fixture', wrappedKey: 'fixture', recoverySalt: 'fixture', recoveryWrappedKey: 'fixture', enabledAt: 1 });
-    setSessionKey(await generateMasterKey()); enableSync();
+    setSessionKey(await generateMasterKey());
+    await db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { version: 1, serverUrl: 'https://test.invalid', userId: 'fixture-user' } });
+    disableSync();
+    const before = await counts();
     const prototype = Object.getPrototypeOf(db.notes) as typeof db.notes;
     const add = prototype.add;
     vi.spyOn(prototype, 'add').mockImplementation(function (this: typeof db.notes, ...args) {
@@ -212,6 +217,6 @@ describe('durable clip import into the actual workspace database', () => {
       return add.apply(this, args);
     });
     expect((await importClipBatch([await makeClip({ entityType: 'timeline-event' })], options()))[0].status).toBe('failed');
-    expect(Object.values(await counts()).every(count => count === 0)).toBe(true);
+    expect(await counts()).toEqual(before);
   });
 });

@@ -1,4 +1,6 @@
 {
+  "syncStatus.screenshareHidden": "Synchronization needs attention. Turn off screensharing to review the details.",
+  "syncStatus.review": "Review sync settings",
   "draftRecovery.message": "Some changes could not be saved. Drafts are kept only in this tab. Retry or download them before closing it.",
   "draftRecovery.untitled": "Unsaved draft",
   "draftRecovery.retry": "Retry save",

@@ -732,8 +732,13 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string,
 
   // Run each matching integration
   const { IntegrationExecutor } = await import('./integration-executor');
+  const { integrationWrite } = await import('./integration-cancellation');
   const folder = folderId ? await db.folders.get(folderId) : undefined;
   const results: { name: string; status: string; summary: string }[] = [];
+  // Callback adapters may omit the newer per-write signal. The enclosing tool
+  // request still owns every write; neither signal can relax the other's abort.
+  const outputSignal = (writeSignal?: AbortSignal) => signal && writeSignal
+    ? AbortSignal.any([signal, writeSignal]) : signal ?? writeSignal;
 
   for (const { installation, template } of matching) {
     try {
@@ -747,8 +752,7 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string,
           investigation: folder ? { id: folder.id, name: folder.name } : undefined,
         },
         {
-          onCreateEntity: async (type, fields) => {
-            signal?.throwIfAborted();
+          onCreateEntity: async (type, fields, writeSignal) => integrationWrite([db.notes, db.standaloneIOCs], outputSignal(writeSignal), async () => {
             const entityId = nanoid();
             if (type === 'note') {
               await db.notes.add({
@@ -774,18 +778,18 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string,
               });
             }
             return entityId;
-          },
-          onUpdateEntity: async (type, id, fields) => {
-            signal?.throwIfAborted();
+          }),
+          onUpdateEntity: async (type, id, fields, writeSignal) => integrationWrite([db.standaloneIOCs], outputSignal(writeSignal), async () => {
             if (type === 'ioc' || type === 'standaloneIOC') {
               await db.standaloneIOCs.update(id, { ...fields, updatedAt: Date.now() });
             }
-          },
+          }),
         },
         signal,
       );
 
       signal?.throwIfAborted();
+      if (run.status === 'cancelled') return JSON.stringify({ error: 'Enrichment cancelled. Completed remote operations or earlier outputs may remain; no further writes were started.', results });
       await db.integrationRuns.add(run);
 
       results.push({

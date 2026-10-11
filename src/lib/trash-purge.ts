@@ -1,5 +1,6 @@
 import type { EntityTable } from 'dexie';
 import { deleteEntitiesWithReferences, ENTITY_RELATIONS } from './entity-relations';
+import { PendingChangesError } from './pending-changes';
 
 const TRASH_PURGE_DAYS = 30;
 
@@ -21,7 +22,15 @@ export async function purgeOldTrash<T extends Trashable>(
   const toPurge = items.filter((item) => item.trashed && item.trashedAt && item.trashedAt < purgeThreshold);
   if (toPurge.length > 0) {
     if (!ENTITY_RELATIONS[table.name]) throw new Error('No safe purge lifecycle registered for ' + table.name);
-    await deleteEntitiesWithReferences({ [table.name]: toPurge.map(item => item.id) }, undefined, purgeThreshold);
+    try {
+      await deleteEntitiesWithReferences({ [table.name]: toPurge.map(item => item.id) }, undefined, purgeThreshold);
+    } catch (error) {
+      // Background maintenance must not hide already-loaded records merely
+      // because unsent work needs attention. A later load can retry the purge.
+      // Check the queued operation's refusal, not a racy preflight snapshot.
+      if (error instanceof PendingChangesError) return items;
+      throw error;
+    }
   }
   if (!toPurge.length) return items;
   // A record restored or edited while its queued purge waited must not vanish from the view.

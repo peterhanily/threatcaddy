@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, FolderOpen, Activity, Sun, Moon, Monitor, Shield, ChevronRight, Bot } from 'lucide-react';
 import type { Folder, Note, Task, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, Tag, ActivityLogEntry, ChatThread, ViewMode } from '../../types';
@@ -45,6 +45,7 @@ type ExecDrillDown =
   | { screen: 'globalGraph' };
 
 interface ExecDashboardProps {
+  notice?: ReactNode;
   folders: Folder[];
   allNotes: Note[];
   allTasks: Task[];
@@ -61,6 +62,7 @@ interface ExecDashboardProps {
 }
 
 export function ExecDashboard({
+  notice,
   folders,
   allNotes,
   allTasks,
@@ -602,6 +604,8 @@ export function ExecDashboard({
           </button>
         </div>
       </div>
+
+      {notice}
 
       {/* Entity nav bar — persistent when inside an investigation */}
       {drillDown && (

@@ -121,11 +121,13 @@ describe('approved extension boundaries', () => {
     await missingEndpoint.send(payload);
     expect(missingEndpoint.port.postMessage).toHaveBeenCalledWith(expect.objectContaining({ error: expect.stringContaining('Approve this local AI endpoint') }));
     await h.approve('http://localhost:4173', 'http://localhost:11434');
-    const approved = h.stream();
+    const deniedPermission = h.stream();
     h.chrome.permissions.contains.mockResolvedValue(false);
-    await approved.send(payload);
+    await deniedPermission.send(payload);
+    expect(deniedPermission.port.disconnect).toHaveBeenCalledOnce();
     expect(h.fetch).not.toHaveBeenCalled();
     h.chrome.permissions.contains.mockResolvedValue(true);
+    const approved = h.stream();
     await approved.send(payload);
     expect(h.fetch).toHaveBeenCalledWith('http://localhost:11434/v1/chat/completions', expect.objectContaining({ redirect: 'error', credentials: 'omit' }));
     const wrongEndpoint = h.stream();

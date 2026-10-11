@@ -49,6 +49,17 @@ function clickTab(label: string) {
 }
 
 describe('SettingsPanel', () => {
+  it('honors recovery navigation on an already mounted controlled panel', () => {
+    const onTabChange = vi.fn();
+    const view = render(<SettingsPanel {...defaultProps} activeTab="ai" onTabChange={onTabChange} />);
+    expect(screen.getByRole('tab', { name: 'AI' })).toHaveAttribute('aria-selected', 'true');
+    clickTab('Data');
+    expect(onTabChange).toHaveBeenCalledExactlyOnceWith('data');
+    view.rerender(<SettingsPanel {...defaultProps} activeTab="general" onTabChange={onTabChange} />);
+    expect(screen.getByRole('tab', { name: 'General' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Sync history recovery')).toBeInTheDocument();
+  });
+
   it('renders Settings heading', () => {
     render(<SettingsPanel {...defaultProps} />);
     expect(screen.getByText('Settings')).toBeInTheDocument();
