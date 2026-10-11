@@ -83,7 +83,9 @@
     "lockScrollAria": "स्क्रॉल सिंक लॉक करें",
     "wordsChars": "{{words}} शब्द, {{chars}} अक्षर",
     "created": "{{date}} को बनाया गया",
-    "modified": "{{date}} को संशोधित"
+    "modified": "{{date}} को संशोधित",
+    "saveFailed": "बदलाव सहेजे नहीं जा सके। ड्राफ़्ट इस टैब में है; बंद करने से पहले फिर कोशिश करें।",
+    "retrySave": "फिर सहेजें"
   },
   "list": {
     "defaultTitle": "नोट्स",

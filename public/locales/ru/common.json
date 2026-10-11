@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "Произошла непредвиденная ошибка.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Доказательства",
-  "sidebar.products": "Продукты"
+  "sidebar.products": "Продукты",
+  "syncStatus.screenshareHidden": "Синхронизация требует внимания. Отключите демонстрацию экрана, чтобы посмотреть подробности.",
+  "syncStatus.review": "Проверить настройки синхронизации",
+  "draftRecovery.message": "Некоторые изменения не удалось сохранить. Черновики хранятся только в этой вкладке. Повторите сохранение или скачайте их перед закрытием.",
+  "draftRecovery.untitled": "Несохранённый черновик",
+  "draftRecovery.retry": "Повторить сохранение",
+  "draftRecovery.download": "Скачать черновик",
+  "draftRecovery.discard": "Отбросить черновик",
+  "draftRecovery.discardConfirm": "Навсегда отбросить этот несохранённый черновик? Сначала скачайте его, если нужна копия для восстановления.",
+  "draftRecovery.conflictField": "Проверить конфликт поля «{{field}}»",
+  "draftRecovery.keepLocal": "Оставить моё значение «{{field}}»",
+  "draftRecovery.useRemote": "Использовать удалённое значение «{{field}}»"
 }

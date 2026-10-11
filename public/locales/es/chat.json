@@ -74,7 +74,8 @@
     "onboardingStep2Desc": "CaddyAI requiere la extensión de navegador ThreatCaddy para hacer proxy de solicitudes API.",
     "onboardingStep3Title": "3. Habilitar permisos",
     "onboardingStep3Desc": "En el popup de la extensión, habilite \"Permitir CaddyAI\" para acceso a proveedores de IA y \"Permitir obtención de URL\" para la herramienta /fetch.",
-    "onboardingDismiss": "Entendido"
+    "onboardingDismiss": "Entendido",
+    "loopCount_many": "{{count}} bucles"
   },
   "input": {
     "noApiKeys": "No hay claves API configuradas — agregue una en Configuración → IA/LLM",
@@ -96,7 +97,26 @@
     "stopGenerating": "Detener generación",
     "sendMessage": "Enviar mensaje (Enter)",
     "noMatchesFound": "No se encontraron coincidencias",
-    "imageLabel": "Imagen {{index}}"
+    "imageLabel": "Imagen {{index}}",
+    "readingImages": "Leyendo imágenes…",
+    "submitFailed": "No se pudo terminar de enviar el mensaje. Se conservan el texto y las imágenes no guardados; revise el hilo antes de reintentar.",
+    "memoryDrafts": "Los borradores de chat no enviados solo se guardan en la memoria de esta pestaña, incluidos los hilos ocultos. Envíelos o descártelos y espere a que terminen los envíos pendientes antes de cambiar de espacio de trabajo; cerrar o recargar puede perderlos.",
+    "discardAllDrafts": "Descartar todos los borradores de chat no enviados",
+    "discardAllDraftsConfirm": "¿Descartar el texto y las imágenes no enviados de todos los hilos de este espacio y cancelar las lecturas de imágenes pendientes? Los mensajes guardados no cambiarán. Un envío en curso debe terminar y puede guardar su mensaje. Esta acción no se puede deshacer.",
+    "discardDraftsConfirm": "Descartar borradores no enviados",
+    "draftError": {
+      "length": "Un borrador admite como máximo 200 000 caracteres. Se conserva el borrador anterior; acorte o divida el mensaje.",
+      "total": "Los borradores no enviados admiten 1 000 000 de caracteres en total. Envíe o descarte otros borradores primero; se conserva el anterior."
+    },
+    "imageError": {
+      "busy": "Espere a que termine el lote de imágenes actual. Se conserva su borrador.",
+      "count": "Adjunte como máximo 4 imágenes por mensaje. Se conservan el borrador y las imágenes anteriores.",
+      "type": "Elija imágenes PNG, JPEG, GIF o WebP. Se conservan el borrador y las imágenes anteriores.",
+      "size": "Cada imagen debe ocupar 5 MiB o menos. Se conservan el borrador y las imágenes anteriores.",
+      "total": "Las imágenes de un mensaje no deben superar 10 MiB en total. Se conservan el borrador y las imágenes anteriores.",
+      "global": "Los borradores no enviados admiten como máximo 16 imágenes y 20 MiB en total, incluidas las lecturas en curso. Envíe o descarte otros borradores primero; se conservan las imágenes anteriores.",
+      "read": "No se pudo leer una imagen. No se adjuntó el nuevo lote; se conservan el borrador y las imágenes anteriores. Intente seleccionarla de nuevo."
+    }
   },
   "message": {
     "sources": "Fuentes",
@@ -119,7 +139,9 @@
     "itemCount_other": "{{count}} elementos",
     "doneEmpty": "Hecho (resultado vacío)",
     "inputLabel": "Entrada:",
-    "resultLabel": "Resultado:"
+    "resultLabel": "Resultado:",
+    "resultCount_many": "{{count}} resultados",
+    "itemCount_many": "{{count}} elementos"
   },
   "slash": {
     "fetch": "Obtener URL en una nota",
@@ -139,5 +161,8 @@
   "cti": {
     "invalidCommand": "No se pudo ejecutar ese comando de CTI:",
     "noSources": "No hay configuradas fuentes de Agent Host de CTI. Añade un host de CTI en Ajustes → IA → Agent Hosts para usar este comando."
-  }
+  },
+  "input.serverStatus": "Ruta del servidor del equipo",
+  "input.serverModelsHelp": "Los proveedores y modelos disponibles dependen de la configuración del servidor de su equipo.",
+  "input.modelLabel": "Modelo de IA"
 }

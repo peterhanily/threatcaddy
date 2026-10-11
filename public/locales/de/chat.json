@@ -96,7 +96,26 @@
     "stopGenerating": "Generierung stoppen",
     "sendMessage": "Nachricht senden (Enter)",
     "noMatchesFound": "Keine Treffer gefunden",
-    "imageLabel": "Bild {{index}}"
+    "imageLabel": "Bild {{index}}",
+    "readingImages": "Bilder werden eingelesen…",
+    "submitFailed": "Die Nachricht konnte nicht vollständig gesendet werden. Noch nicht gespeicherte Texte und Bilder wurden behalten; prüfen Sie den Chat vor einem erneuten Versuch.",
+    "memoryDrafts": "Ungesendete Chatentwürfe werden nur im Arbeitsspeicher dieses Tabs gehalten, auch in ausgeblendeten Chats. Senden oder verwerfen Sie sie und warten Sie auf laufende Sendevorgänge, bevor Sie den Arbeitsbereich wechseln; beim Schließen oder Neuladen können sie verloren gehen.",
+    "discardAllDrafts": "Alle ungesendeten Chatentwürfe verwerfen",
+    "discardAllDraftsConfirm": "Ungesendete Texte und Bilder aus allen Chats dieses Arbeitsbereichs verwerfen und laufende Bildlesevorgänge abbrechen? Gespeicherte Nachrichten bleiben unverändert. Ein bereits laufender Sendevorgang muss noch abgeschlossen werden und kann seine Nachricht speichern. Dies kann nicht rückgängig gemacht werden.",
+    "discardDraftsConfirm": "Ungesendete Entwürfe verwerfen",
+    "draftError": {
+      "length": "Ein Entwurf darf höchstens 200.000 Zeichen enthalten. Der bisherige Entwurf wurde behalten; kürzen oder teilen Sie die Nachricht.",
+      "total": "Ungesendete Chatentwürfe dürfen insgesamt höchstens 1.000.000 Zeichen enthalten. Senden oder verwerfen Sie zuerst andere Entwürfe; der bisherige Entwurf wurde behalten."
+    },
+    "imageError": {
+      "busy": "Warten Sie, bis die aktuelle Bildauswahl vollständig eingelesen wurde. Ihr Entwurf wurde behalten.",
+      "count": "Hängen Sie höchstens 4 Bilder pro Nachricht an. Ihr Entwurf und zuvor angehängte Bilder wurden behalten.",
+      "type": "Wählen Sie Bilder im Format PNG, JPEG, GIF oder WebP. Ihr Entwurf und zuvor angehängte Bilder wurden behalten.",
+      "size": "Jedes Bild darf höchstens 5 MiB groß sein. Ihr Entwurf und zuvor angehängte Bilder wurden behalten.",
+      "total": "Bilder dürfen pro Nachricht zusammen höchstens 10 MiB groß sein. Ihr Entwurf und zuvor angehängte Bilder wurden behalten.",
+      "global": "Ungesendete Chatentwürfe dürfen insgesamt höchstens 16 Bilder und 20 MiB Bilddaten enthalten, einschließlich laufender Lesevorgänge. Senden oder verwerfen Sie zuerst andere Entwürfe; bisherige Bilder wurden behalten.",
+      "read": "Ein Bild konnte nicht gelesen werden. Die neue Auswahl wurde nicht angehängt; Ihr Entwurf und bisherige Bilder wurden behalten. Wählen Sie das Bild erneut aus."
+    }
   },
   "message": {
     "sources": "Quellen",
@@ -139,5 +158,8 @@
   "cti": {
     "invalidCommand": "Dieser CTI-Befehl konnte nicht ausgeführt werden:",
     "noSources": "Es sind keine CTI-Agent-Host-Quellen konfiguriert. Fügen Sie unter Einstellungen → AI → Agent Hosts einen CTI-Host hinzu, um diesen Befehl zu verwenden."
-  }
+  },
+  "input.serverStatus": "Route über den Teamserver",
+  "input.serverModelsHelp": "Verfügbare Anbieter und Modelle hängen von der Konfiguration Ihres Teamservers ab.",
+  "input.modelLabel": "KI-Modell"
 }

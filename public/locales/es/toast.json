@@ -3,7 +3,19 @@
     "importWarning": "Importado con {{count}} clip(s) fallido(s)",
     "importFailed": "Error al importar clips desde la extensión",
     "openedAsNote": "\"{{name}}\" abierto como nueva nota",
-    "openFailed": "No se pudo abrir \"{{name}}\""
+    "openFailed": "No se pudo abrir \"{{name}}\"",
+    "refreshFailed": "Los recortes se guardaron, pero la vista no pudo actualizarse. Recargue este espacio para verlos.",
+    "fileRefreshFailed": "El archivo se guardó como nota, pero la vista no pudo actualizarse. Recargue este espacio para verla.",
+    "fileTitle": "{{name}} — {{size}} — Modificado {{modified}}",
+    "fileError": {
+      "capacity_one": "Un archivo no entró en la cola: solo pueden esperar 20 a la vez. Vuelva a abrirlo cuando terminen estas importaciones.",
+      "capacity_other": "{{count}} archivos no entraron en la cola: solo pueden esperar 20 a la vez. Vuelva a abrirlos cuando terminen estas importaciones.",
+      "type": "No se pudo abrir «{{name}}»: elija un archivo Markdown o de texto.",
+      "size": "No se pudo abrir «{{name}}»: los archivos de texto deben ocupar 5 MiB o menos. Abra un archivo más pequeño.",
+      "read": "No se pudo leer «{{name}}». Compruebe el acceso y vuelva a abrirlo para reintentar.",
+      "import": "No se pudo guardar «{{name}}» como nota. Compruebe el almacenamiento del espacio y vuelva a abrir el archivo para reintentar.",
+      "capacity_many": "{{count}} archivos no entraron en la cola: solo pueden esperar 20 a la vez. Vuelva a abrirlos cuando terminen estas importaciones."
+    }
   },
   "share": {
     "investigationSaved": "Investigación \"{{name}}\" guardada con todas las entidades",

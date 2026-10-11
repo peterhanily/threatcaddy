@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '../Common/Modal';
 import { Shield, Copy, Check, Loader2 } from 'lucide-react';
@@ -25,6 +25,7 @@ interface EncryptionSetupProps {
 }
 
 export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupProps) {
+  const fieldId = useId();
   const { t } = useTranslation('encryption');
   const { t: tt } = useTranslation('toast');
   const { addToast } = useToast();
@@ -144,8 +145,9 @@ export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupPro
               {t('setup.step1Desc')}
             </p>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">{t('setup.passphraseLabel')}</label>
+              <label htmlFor={`${fieldId}-passphrase`} className="block text-sm text-gray-400 mb-1">{t('setup.passphraseLabel')}</label>
               <input
+                id={`${fieldId}-passphrase`}
                 type="password"
                 value={passphrase}
                 onChange={(e) => setPassphrase(e.target.value)}
@@ -155,8 +157,9 @@ export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupPro
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">{t('setup.confirmLabel')}</label>
+              <label htmlFor={`${fieldId}-confirm`} className="block text-sm text-gray-400 mb-1">{t('setup.confirmLabel')}</label>
               <input
+                id={`${fieldId}-confirm`}
                 type="password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}

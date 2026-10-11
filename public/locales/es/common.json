@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "Ocurrió un error inesperado.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Pruebas",
-  "sidebar.products": "Productos"
+  "sidebar.products": "Productos",
+  "syncStatus.screenshareHidden": "La sincronización requiere atención. Desactive el modo de pantalla compartida para revisar los detalles.",
+  "syncStatus.review": "Revisar ajustes de sincronización",
+  "draftRecovery.message": "No se pudieron guardar algunos cambios. Los borradores solo se conservan en esta pestaña. Reintente o descárguelos antes de cerrarla.",
+  "draftRecovery.untitled": "Borrador sin guardar",
+  "draftRecovery.retry": "Reintentar guardado",
+  "draftRecovery.download": "Descargar borrador",
+  "draftRecovery.discard": "Descartar borrador",
+  "draftRecovery.discardConfirm": "¿Descartar este borrador sin guardar de forma permanente? Descárguelo antes si necesita una copia de recuperación.",
+  "draftRecovery.conflictField": "Revisar conflicto de {{field}}",
+  "draftRecovery.keepLocal": "Conservar mi {{field}}",
+  "draftRecovery.useRemote": "Usar {{field}} remoto"
 }

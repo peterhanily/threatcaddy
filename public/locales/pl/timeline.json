@@ -145,5 +145,17 @@
   "mitreReport.techniqueCount_other": "{{count}} technik",
   "mitreReport.techniqueCoverage": "Pokrycie technik",
   "emptyState": "Brak wydarzeń na osi czasu",
-  "createFirstHint": "Użyj przycisku + powyżej, aby dodać swoje pierwsze wydarzenie"
+  "createFirstHint": "Użyj przycisku + powyżej, aby dodać swoje pierwsze wydarzenie",
+  "eventCard.assetCount_few": "{{count}} zasoby",
+  "eventCard.assetCount_many": "{{count}} zasobów",
+  "feed.eventCount_few": "{{count}} zdarzenia",
+  "feed.eventCount_many": "{{count}} zdarzeń",
+  "gantt.eventCount_few": "{{count}} zdarzenia",
+  "gantt.eventCount_many": "{{count}} zdarzeń",
+  "heatmap.maxEventsPerTechnique_few": "Maks. {{count}} zdarzenia na technikę",
+  "heatmap.maxEventsPerTechnique_many": "{{count}} maks. zdarzeń na technikę",
+  "heatmap.maxActorsPerTechnique_few": "{{count}} maks. aktorów na technikę",
+  "heatmap.maxActorsPerTechnique_many": "{{count}} maks. aktorów na technikę",
+  "mitreReport.techniqueCount_few": "{{count}} techniki",
+  "mitreReport.techniqueCount_many": "{{count}} technik"
 }

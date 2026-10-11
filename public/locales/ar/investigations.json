@@ -102,5 +102,9 @@
   "card.entity.iocs": "مؤشرات",
   "card.entity.events": "أحداث",
   "card.entity.whiteboards": "لوحات",
-  "card.entity.chats": "محادثات"
+  "card.entity.chats": "محادثات",
+  "card.members_zero": "عدد الأعضاء: {{count}}",
+  "card.members_two": "عضوان ({{count}})",
+  "card.members_few": "{{count}} أعضاء",
+  "card.members_many": "{{count}} عضوًا"
 }

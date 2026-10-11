@@ -1,4 +1,8 @@
 {
+  "passphrase.showPassphrase": "Show passphrase",
+  "passphrase.hidePassphrase": "Hide passphrase",
+  "passphrase.confirmDelete": "Type {{confirmation}} to confirm.",
+  "passphrase.resetFailed": "The workspace reset did not finish. Do not clear browser storage manually; preserve your recovery information and try again.",
   "setup.enableEncryption": "Enable Encryption",
   "setup.step1of2": "Step 1 of 2: Set Passphrase",
   "setup.step1Desc": "Choose a strong passphrase to encrypt your data. You'll enter this each time you open ThreatCaddy.",

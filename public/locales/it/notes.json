@@ -83,7 +83,9 @@
     "lockScrollAria": "Blocca sincronizzazione scroll",
     "wordsChars": "{{words}} parole, {{chars}} caratteri",
     "created": "Creato {{date}}",
-    "modified": "Modificato {{date}}"
+    "modified": "Modificato {{date}}",
+    "saveFailed": "Impossibile salvare le modifiche. La bozza resta in questa scheda; riprova prima di chiuderla.",
+    "retrySave": "Riprova salvataggio"
   },
   "list": {
     "defaultTitle": "Note",

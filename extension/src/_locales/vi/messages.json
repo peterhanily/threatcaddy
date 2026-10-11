@@ -8,7 +8,6 @@
   "version": {
     "message": "v1.1.1"
   },
-
   "quickStats": {
     "message": "Thống kê nhanh"
   },
@@ -18,7 +17,6 @@
   "thisWeek": {
     "message": "Tuần này"
   },
-
   "quickCapture": {
     "message": "Chụp nhanh"
   },
@@ -64,7 +62,6 @@
   "saveFailed": {
     "message": "Lưu thất bại. Vui lòng thử lại."
   },
-
   "recentCaptures": {
     "message": "Đoạn trích gần đây"
   },
@@ -74,7 +71,6 @@
   "untitled": {
     "message": "Chưa có tiêu đề"
   },
-
   "quickActions": {
     "message": "Hành động nhanh"
   },
@@ -84,7 +80,6 @@
   "reviewAllCaptures": {
     "message": "Xem tất cả đoạn trích"
   },
-
   "permissions": {
     "message": "Quyền"
   },
@@ -109,7 +104,6 @@
   "allowFileAccessHint": {
     "message": "Để bật: vào chrome://extensions, tìm ThreatCaddy, và bật \"Cho phép truy cập URL tệp\"."
   },
-
   "howToUse": {
     "message": "Cách sử dụng:"
   },
@@ -126,9 +120,8 @@
     "message": "Quyền riêng tư:"
   },
   "privacyText": {
-    "message": "Tất cả dữ liệu ở lại cục bộ trên thiết bị. Khóa API chỉ gửi đến nhà cung cấp bạn chọn. Không theo dõi."
+    "message": "Các đoạn trích ở lại trên thiết bị này cho đến khi được gửi hoặc xuất. AI tùy chọn, tính năng tải URL và kết nối ứng dụng được phê duyệt có thể gửi dữ liệu đến các dịch vụ đã cấu hình."
   },
-
   "settings": {
     "message": "Cài đặt"
   },
@@ -150,37 +143,39 @@
   "save": {
     "message": "Lưu"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "Lưu vào ThreatCaddy"
   },
-
   "savedToThreatCaddy": {
     "message": "Đã lưu vào ThreatCaddy!"
   },
-
   "justNow": {
     "message": "Vừa xong"
   },
   "minutesAgo": {
     "message": "$count$ phút trước",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "$count$ giờ trước",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "$count$ ngày trước",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "Ngữ cảnh tiện ích mở rộng không hợp lệ. Vui lòng tải lại trang này."
   },
@@ -190,7 +185,9 @@
   "errorExtensionUnknown": {
     "message": "Lỗi tiện ích mở rộng: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +196,6 @@
   "errorExtensionError": {
     "message": "Lỗi tiện ích mở rộng"
   },
-
   "errorInvalidUrl": {
     "message": "URL không hợp lệ"
   },
@@ -221,13 +217,17 @@
   "errorBlockedDomain": {
     "message": "Bị chặn: $hostname$ không có trong danh sách tên miền proxy được phép",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "Cần quyền máy chủ cho $hostname$",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +236,9 @@
   "errorUnknownProvider": {
     "message": "Nhà cung cấp không xác định: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +247,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "Cần quyền máy chủ cho $hostname$. Mở popup tiện ích ThreatCaddy và bật \"Cho phép lấy URL\" trong Quyền.",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +261,320 @@
   "errorInvalidTargetUrl": {
     "message": "URL đích không hợp lệ"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "privacyLink": {
+    "message": "Quyền riêng tư"
+  },
+  "captureSaveFailed": {
+    "message": "Không lưu được đoạn trích. Bản nháp của bạn được giữ lại."
+  },
+  "captureChangeFailed": {
+    "message": "Không lưu được thay đổi của đoạn trích. Làm mới rồi thử lại."
+  },
+  "approvalTrust": {
+    "message": "Chỉ phê duyệt ứng dụng bạn tin cậy. Đúng nguồn gốc này (gồm cả cổng), hoặc đúng tệp độc lập này, có thể dùng các khả năng đã cấp cho tiện ích."
+  },
+  "localAIOrigin": {
+    "message": "Nguồn gốc điểm cuối AI cục bộ (không bắt buộc)"
+  },
+  "saveLocalAI": {
+    "message": "Lưu phê duyệt AI cục bộ"
+  },
+  "removeLocalAI": {
+    "message": "Xóa phê duyệt AI cục bộ"
+  },
+  "approveApp": {
+    "message": "Phê duyệt ứng dụng"
+  },
+  "revokeApps": {
+    "message": "Thu hồi mọi ứng dụng đã phê duyệt"
+  },
+  "revokeAppsQuestion": {
+    "message": "Ngắt kết nối tất cả ứng dụng đã phê duyệt? Các đoạn trích và quyền trình duyệt sẽ không bị xóa. Phê duyệt lại ứng dụng để kết nối lại."
+  },
+  "localAISavedOrigin": {
+    "message": "Đã lưu cho ứng dụng này: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "Chưa có điểm cuối AI cục bộ nào được phê duyệt cho ứng dụng này."
+  },
+  "localAIApproveFirst": {
+    "message": "Phê duyệt ứng dụng này trước khi lưu điểm cuối AI cục bộ."
+  },
+  "localAIReadFailed": {
+    "message": "Không đọc được phê duyệt AI cục bộ: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "AI cục bộ phải dùng HTTP(S) và không chứa thông tin xác thực trong URL"
+  },
+  "localAIPermissionDenied": {
+    "message": "Quyền AI cục bộ bị từ chối; phê duyệt đã lưu không thay đổi."
+  },
+  "localAIApprovalFailed": {
+    "message": "Phê duyệt AI cục bộ thất bại"
+  },
+  "invalidAppTarget": {
+    "message": "Dùng ứng dụng HTTP(S) hoặc tệp độc lập chính xác không chứa thông tin xác thực"
+  },
+  "appPermissionDenied": {
+    "message": "Quyền truy cập ứng dụng bị từ chối"
+  },
+  "appApprovalFailed": {
+    "message": "Phê duyệt ứng dụng thất bại"
+  },
+  "appApproved": {
+    "message": "Đã phê duyệt ứng dụng. Tải lại thẻ ứng dụng để kết nối."
+  },
+  "appsRevoked": {
+    "message": "Đã thu hồi mọi kết nối ứng dụng."
+  },
+  "revokeFailed": {
+    "message": "Thu hồi thất bại"
+  },
+  "notificationWaiting": {
+    "message": "Đang chờ quyền trình duyệt…"
+  },
+  "notificationEnabled": {
+    "message": "Đã bật thông báo trên máy tính"
+  },
+  "notificationEnable": {
+    "message": "Bật thông báo trên máy tính"
+  },
+  "notificationEnabledDesc": {
+    "message": "Đã bật thông báo trên máy tính. Cài đặt hệ điều hành vẫn có thể chặn hiển thị. Thu hồi quyền trong cài đặt tiện ích của trình duyệt."
+  },
+  "notificationDisabledDesc": {
+    "message": "Thông báo trên máy tính đang tắt; cảnh báo trong ứng dụng vẫn dùng được."
+  },
+  "notificationCheckFailed": {
+    "message": "Không kiểm tra được quyền thông báo: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "Đang chờ phản hồi quyền từ trình duyệt. Nếu không xuất hiện hộp thoại, hãy kiểm tra quyền tiện ích của trình duyệt hoặc mở lại bảng này."
+  },
+  "notificationRequestFailed": {
+    "message": "Yêu cầu quyền thông báo thất bại: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "Không xác minh được quyền thông báo: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "Cảnh báo trong ứng dụng vẫn dùng được."
+  },
+  "notificationNotEnabled": {
+    "message": "Thông báo trên máy tính chưa được bật; cảnh báo trong ứng dụng vẫn dùng được. Kiểm tra quyền tiện ích của trình duyệt nếu không có hộp thoại xuất hiện."
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — Xem lại đoạn trích"
+  },
+  "clipReview": {
+    "message": "Xem lại đoạn trích"
+  },
+  "clipReviewSubtitle": {
+    "message": "Duyệt và quản lý các đoạn trích đã lưu"
+  },
+  "totalCaptures": {
+    "message": "Tổng số đoạn trích"
+  },
+  "unsent": {
+    "message": "Chưa gửi"
+  },
+  "applyAll": {
+    "message": "Áp dụng cho tất cả"
+  },
+  "sendAll": {
+    "message": "Gửi tất cả đến ThreatCaddy"
+  },
+  "refresh": {
+    "message": "Làm mới"
+  },
+  "clearAll": {
+    "message": "Xóa tất cả"
+  },
+  "delete": {
+    "message": "Xóa"
+  },
+  "confirm": {
+    "message": "Xác nhận"
+  },
+  "cancel": {
+    "message": "Hủy"
+  },
+  "noCapturesTitle": {
+    "message": "Chưa có đoạn trích"
+  },
+  "noSourceUrl": {
+    "message": "Không có URL nguồn"
+  },
+  "importConfirmed": {
+    "message": "Đã xác nhận nhập"
+  },
+  "legacySent": {
+    "message": "Đã gửi (cũ, chưa xác minh)"
+  },
+  "importPending": {
+    "message": "Đang chờ xác nhận nhập"
+  },
+  "importFailedRetained": {
+    "message": "Nhập thất bại — đã giữ lại"
+  },
+  "folder": {
+    "message": "Thư mục"
+  },
+  "editCaptureMetadata": {
+    "message": "Sửa siêu dữ liệu đoạn trích"
+  },
+  "deleteCaptureTitle": {
+    "message": "Xóa đoạn trích"
+  },
+  "deleteCaptureQuestion": {
+    "message": "Bạn có chắc muốn xóa đoạn trích này không?"
+  },
+  "captureDeleted": {
+    "message": "Đã xóa đoạn trích"
+  },
+  "preparingDestination": {
+    "message": "Đang chuẩn bị đích…"
+  },
+  "noUnsentCaptures": {
+    "message": "Không có đoạn trích chưa gửi"
+  },
+  "configureTargetFirst": {
+    "message": "Hãy cấu hình URL đích trước"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "URL đích không hợp lệ — chỉ cho phép http, https và file://"
+  },
+  "targetPermissionDenied": {
+    "message": "Quyền bị từ chối — tiện ích cần truy cập trang này"
+  },
+  "permissionRequestFailed": {
+    "message": "Yêu cầu quyền thất bại"
+  },
+  "fileAccessDisabled": {
+    "message": "Quyền truy cập URL tệp đang tắt. Kiểm tra cài đặt truy cập tệp của tiện ích trong trình duyệt trước khi thử lại."
+  },
+  "confirmWorkspace": {
+    "message": "Xác nhận không gian làm việc để nhập"
+  },
+  "importWorkspaceMessage": {
+    "message": "Nhập $count$ đoạn trích vào “$label$” ($workspace$) tại $url$? Chỉ những lần nhập được cơ sở dữ liệu xác nhận mới được đánh dấu đã gửi.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "$count$ đoạn trích cũ từng được đánh dấu đã gửi mà chưa xác minh; nhập chúng có thể tạo bản trùng. Hãy xem lại hoặc xóa trước nếu không chắc.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "Nhập đoạn trích"
+  },
+  "waitingForImport": {
+    "message": "Đang chờ xác nhận nhập…"
+  },
+  "importsConfirmed": {
+    "message": "Đã xác nhận nhập $count$ đoạn trích.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "Đã xác nhận $confirmed$ trên $total$ lần nhập. $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "Các đoạn trích chưa xác nhận được giữ lại."
+  },
+  "sendFailed": {
+    "message": "Gửi thất bại: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "Đã áp dụng giá trị mặc định cho mọi đoạn trích chưa gửi"
+  },
+  "clearAllCaptures": {
+    "message": "Xóa tất cả đoạn trích"
+  },
+  "clearAllQuestion": {
+    "message": "Thao tác này sẽ xóa vĩnh viễn toàn bộ $count$ đoạn trích. Không thể hoàn tác.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "Đã xóa các đoạn trích được xác nhận; giữ lại các đoạn trích mới hơn"
+  },
+  "capturesLoadFailed": {
+    "message": "Không tải được đoạn trích. Mở lại trang này hoặc thử Làm mới."
+  },
+  "discardMetadataDraft": {
+    "message": "Bỏ bản nháp siêu dữ liệu"
+  },
+  "discardMetadataMessage": {
+    "message": "Bỏ các chỉnh sửa siêu dữ liệu chưa lưu của đoạn trích này và tải lại siêu dữ liệu hiện đang được lưu? Siêu dữ liệu đã lưu sẽ không thay đổi."
+  },
+  "metadataSaved": {
+    "message": "Đã lưu siêu dữ liệu đoạn trích"
   }
 }

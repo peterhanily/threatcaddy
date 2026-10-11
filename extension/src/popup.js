@@ -1,17 +1,11 @@
 // Popup script for ThreatCaddy extension
 
-// i18n bootstrap — resolve data-i18n attributes to localized strings
-document.querySelectorAll('[data-i18n]').forEach(el => {
-  const msg = chrome.i18n.getMessage(el.dataset.i18n);
-  if (msg) el.textContent = msg;
-});
-document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-  const msg = chrome.i18n.getMessage(el.dataset.i18nPlaceholder);
-  if (msg) el.placeholder = msg;
-});
-document.querySelectorAll('[data-i18n-title]').forEach(el => {
-  const msg = chrome.i18n.getMessage(el.dataset.i18nTitle);
-  if (msg) el.title = msg;
+const { t, localize, confirmation } = TC_UI;
+localize();
+const showConfirmation = confirmation({
+  overlay: document.getElementById('modal-overlay'), title: document.getElementById('modal-title'),
+  message: document.getElementById('modal-message'), cancel: document.getElementById('modal-cancel'),
+  confirm: document.getElementById('modal-confirm'), fallback: document.getElementById('settings-back'),
 });
 
 // Load stats and recent captures on popup open
@@ -36,6 +30,9 @@ async function loadStats() {
     renderRecentCaptures(captures.slice(-3).reverse());
   } catch (error) {
     console.error('Failed to load stats:', error);
+    const errorEl = document.getElementById('save-error');
+    errorEl.textContent = t('capturesLoadFailed');
+    errorEl.classList.add('show');
   }
 }
 
@@ -50,7 +47,8 @@ function renderRecentCaptures(captures) {
   list.innerHTML = captures.map(capture => {
     const date = new Date(capture.createdAt);
     const timeStr = formatRelativeTime(date);
-    const source = capture.sourceUrl ? new URL(capture.sourceUrl).hostname : '';
+    let source = '';
+    try { source = capture.sourceUrl ? new URL(capture.sourceUrl).hostname : ''; } catch { /* Legacy plain text source. */ }
 
     return `
       <div class="recent-item">
@@ -90,6 +88,7 @@ document.getElementById('options-toggle').addEventListener('click', () => {
   const panel = document.getElementById('options-panel');
   const toggle = document.getElementById('options-toggle');
   const open = panel.classList.toggle('show');
+  toggle.setAttribute('aria-expanded', String(open));
   const optionsLabel = chrome.i18n.getMessage('options');
   toggle.innerHTML = (open ? '&#9652; ' : '&#9662; ') + escapeHtml(optionsLabel);
 });
@@ -127,7 +126,7 @@ document.getElementById('save-btn').addEventListener('click', async () => {
         clsLevel
       }
     });
-    if (result?.success !== true) throw new Error(result?.error || 'The capture was not saved. Your draft is retained.');
+    if (result?.success !== true) throw new Error(result?.error || t('captureSaveFailed'));
 
     // Show success
     const successEl = document.getElementById('save-success');
@@ -144,9 +143,8 @@ document.getElementById('save-btn').addEventListener('click', async () => {
   } catch (error) {
     console.error('Failed to save note:', error);
     const errorEl = document.getElementById('save-error');
-    errorEl.textContent = error.message || 'The capture was not saved. Your draft is retained.';
+    errorEl.textContent = error.message || t('captureSaveFailed');
     errorEl.classList.add('show');
-    setTimeout(() => { errorEl.classList.remove('show'); }, 4000);
   } finally {
     saveButton.disabled = false;
   }
@@ -275,12 +273,14 @@ document.getElementById('settings-btn').addEventListener('click', () => {
   void refreshNotificationPermission();
   mainSections.forEach(el => el.style.display = 'none');
   settingsPage.style.display = 'block';
+  document.getElementById('settings-back').focus();
 });
 
 document.getElementById('settings-back').addEventListener('click', () => {
   refreshAllPermToggles();
   settingsPage.style.display = 'none';
   mainSections.forEach(el => el.style.display = '');
+  document.getElementById('settings-btn').focus();
 });
 
 // Settings page permission toggles (mirror the main page ones)
@@ -311,9 +311,9 @@ async function loadLocalAIApproval(preserveDraft = false) {
     if (read !== localApprovalRead) return;
     const approval = approvedAppsV1[approvalTargetKey(url)];
     if (!preserveDraft) input.value = approval?.localLLMOrigin || '';
-    status.textContent = approval?.localLLMOrigin ? 'Saved for this app: ' + approval.localLLMOrigin
-      : approval ? 'No local AI endpoint approved for this app.' : 'Approve this app before saving a local AI endpoint.';
-  } catch (error) { if (read === localApprovalRead) status.textContent = 'Unable to read local AI approval: ' + error.message; }
+    status.textContent = approval?.localLLMOrigin ? t('localAISavedOrigin', [approval.localLLMOrigin])
+      : t(approval ? 'localAINone' : 'localAIApproveFirst');
+  } catch (error) { if (read === localApprovalRead) status.textContent = t('localAIReadFailed', [error.message]); }
 }
 document.getElementById('settings-target-url').addEventListener('input', () => { void loadLocalAIApproval(); });
 document.getElementById('settings-local-ai-url').addEventListener('input', () => { ++localApprovalRead; });
@@ -332,12 +332,12 @@ document.getElementById('settings-save-url').addEventListener('click', async () 
   const status = document.getElementById('settings-approval-status');
   try {
     const parsed = new URL(url);
-    if (!['http:', 'https:', 'file:'].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error('Use an HTTP(S) app or exact standalone file without credentials');
+    if (!['http:', 'https:', 'file:'].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error(t('invalidAppTarget'));
     const origins = [parsed.protocol === 'file:' ? 'file:///*' : parsed.protocol + '//' + parsed.hostname + '/*'];
-    if (!await chrome.permissions.request({ origins })) throw new Error('App access permission was denied');
+    if (!await chrome.permissions.request({ origins })) throw new Error(t('appPermissionDenied'));
     const response = await chrome.runtime.sendMessage({ type: 'APPROVE_APP', targetUrl: url });
-    if (!response?.success) throw new Error(response?.error || 'App approval failed');
-    status.textContent = 'App approved. Reload the app tab to connect.';
+    if (!response?.success) throw new Error(response?.error || t('appApprovalFailed'));
+    status.textContent = t('appApproved');
     await loadLocalAIApproval();
   } catch (error) { status.textContent = error.message; }
 });
@@ -355,11 +355,11 @@ async function updateLocalAIApproval(remove) {
   try {
     if (!remove) {
       const local = new URL(localLLMUrl);
-      if (!['http:', 'https:'].includes(local.protocol) || local.username || local.password) throw new Error('Local AI must use HTTP(S) without credentials in its URL');
-      if (!await chrome.permissions.request({ origins: [local.protocol + '//' + local.hostname + '/*'] })) throw new Error('Local AI permission was denied; saved approval is unchanged.');
+      if (!['http:', 'https:'].includes(local.protocol) || local.username || local.password) throw new Error(t('invalidLocalAI'));
+      if (!await chrome.permissions.request({ origins: [local.protocol + '//' + local.hostname + '/*'] })) throw new Error(t('localAIPermissionDenied'));
     }
     const response = await chrome.runtime.sendMessage({ type: 'UPDATE_LOCAL_LLM_APPROVAL', targetUrl, localLLMUrl });
-    if (!response?.success) throw new Error(response?.error || 'Local AI approval failed');
+    if (!response?.success) throw new Error(response?.error || t('localAIApprovalFailed'));
     if (document.getElementById('settings-target-url').value.trim() === targetUrl) await loadLocalAIApproval();
   } catch (error) { if (document.getElementById('settings-target-url').value.trim() === targetUrl) status.textContent = error.message; }
   finally { localAIActionPending = false; save.disabled = clear.disabled = false; }
@@ -368,9 +368,15 @@ document.getElementById('settings-save-local-ai').addEventListener('click', () =
 document.getElementById('settings-remove-local-ai').addEventListener('click', () => { void updateLocalAIApproval(true); });
 
 document.getElementById('settings-revoke-apps').addEventListener('click', async () => {
-  const response = await chrome.runtime.sendMessage({ type: 'REVOKE_APPS' });
-  document.getElementById('settings-approval-status').textContent = response?.success ? 'All app connections revoked.' : response?.error || 'Revocation failed';
-  if (response?.success) await loadLocalAIApproval();
+  if (!await showConfirmation(t('revokeApps'), t('revokeAppsQuestion'), t('revokeApps'), true)) return;
+  const button = document.getElementById('settings-revoke-apps');
+  button.disabled = true;
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'REVOKE_APPS' });
+    document.getElementById('settings-approval-status').textContent = response?.success ? t('appsRevoked') : response?.error || t('revokeFailed');
+    if (response?.success) await loadLocalAIApproval();
+  } catch { document.getElementById('settings-approval-status').textContent = t('revokeFailed'); }
+  finally { button.disabled = false; }
 });
 const notificationButton = document.getElementById('settings-notifications');
 const notificationStatus = document.getElementById('settings-notification-status');
@@ -379,11 +385,8 @@ let notificationPermissionVersion = 0;
 
 function renderNotificationPermission(granted, message) {
   notificationButton.disabled = notificationRequestPending || granted;
-  notificationButton.textContent = notificationRequestPending ? 'Waiting for browser permission…'
-    : granted ? 'Desktop notifications enabled' : 'Enable desktop notifications';
-  notificationStatus.textContent = message || (granted
-    ? 'Desktop notifications enabled. Operating system settings may still suppress display. Revoke permission in your browser extension settings.'
-    : 'Desktop notifications are disabled; in-app alerts remain available.');
+  notificationButton.textContent = t(notificationRequestPending ? 'notificationWaiting' : granted ? 'notificationEnabled' : 'notificationEnable');
+  notificationStatus.textContent = message || t(granted ? 'notificationEnabledDesc' : 'notificationDisabledDesc');
 }
 
 async function refreshNotificationPermission() {
@@ -394,7 +397,7 @@ async function refreshNotificationPermission() {
     if (version === notificationPermissionVersion && !notificationRequestPending) renderNotificationPermission(granted === true);
   } catch (error) {
     if (version === notificationPermissionVersion && !notificationRequestPending) {
-      renderNotificationPermission(false, 'Unable to check notification permission: ' + (error?.message || String(error)));
+      renderNotificationPermission(false, t('notificationCheckFailed', [error?.message || String(error)]));
     }
   }
 }
@@ -403,25 +406,25 @@ notificationButton.addEventListener('click', async () => {
   if (notificationRequestPending) return;
   notificationRequestPending = true;
   ++notificationPermissionVersion; // Discard a settings-open read finishing after this click.
-  renderNotificationPermission(false, 'Waiting for the browser permission response. If no prompt appears, check your browser extension permissions or reopen this panel.');
+  renderNotificationPermission(false, t('notificationWaitingDesc'));
   let failure;
   let granted = false;
   try {
     // Invoke directly within the user gesture, before any asynchronous read.
     await chrome.permissions.request({ permissions: ['notifications'] });
   } catch (error) {
-    failure = 'Notification permission request failed: ' + (error?.message || String(error));
+    failure = t('notificationRequestFailed', [error?.message || String(error)]);
   }
   try {
     // The request response alone is not evidence of current permission.
     granted = await chrome.permissions.contains({ permissions: ['notifications'] }) === true;
   } catch (error) {
-    failure = failure || 'Unable to verify notification permission: ' + (error?.message || String(error));
+    failure = failure || t('notificationVerifyFailed', [error?.message || String(error)]);
   }
   notificationRequestPending = false;
   renderNotificationPermission(granted, failure
-    ? failure + ' In-app alerts remain available.'
-    : granted ? undefined : 'Desktop notifications were not enabled; in-app alerts remain available. Check your browser extension permissions if no prompt appeared.');
+    ? failure + ' ' + t('inAppAlertsAvailable')
+    : granted ? undefined : t('notificationNotEnabled'));
   // Retain the explicit-action acknowledgement used by existing popup clients.
   // Passive permission refreshes never overwrite the app approval status.
   document.getElementById('settings-approval-status').textContent = notificationStatus.textContent;

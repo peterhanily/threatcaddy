@@ -74,7 +74,8 @@
     "onboardingStep2Desc": "CaddyAI richiede l'estensione browser ThreatCaddy per inoltrare le richieste API.",
     "onboardingStep3Title": "3. Abilita i permessi",
     "onboardingStep3Desc": "Nel popup dell'estensione, abilita \"Consenti CaddyAI\" per l'accesso ai provider AI e \"Consenti recupero URL\" per lo strumento /fetch.",
-    "onboardingDismiss": "Capito"
+    "onboardingDismiss": "Capito",
+    "loopCount_many": "{{count}} loop"
   },
   "input": {
     "noApiKeys": "Nessuna chiave API configurata — aggiungila in Impostazioni → AI/LLM",
@@ -96,7 +97,26 @@
     "stopGenerating": "Ferma generazione",
     "sendMessage": "Invia messaggio (Invio)",
     "noMatchesFound": "Nessuna corrispondenza trovata",
-    "imageLabel": "Immagine {{index}}"
+    "imageLabel": "Immagine {{index}}",
+    "readingImages": "Lettura delle immagini…",
+    "submitFailed": "Non è stato possibile completare l’invio. Testo e immagini non salvati sono conservati; controlla la conversazione prima di riprovare.",
+    "memoryDrafts": "Le bozze non inviate restano solo nella memoria di questa scheda, incluse le conversazioni nascoste. Inviale o scartale e attendi la fine degli invii prima di cambiare area di lavoro; chiudere o ricaricare può farle perdere.",
+    "discardAllDrafts": "Scarta tutte le bozze di chat non inviate",
+    "discardAllDraftsConfirm": "Scartare testo e immagini non inviati di tutte le conversazioni in quest’area e annullare le letture di immagini in corso? I messaggi salvati non cambieranno. Un invio già avviato deve terminare e potrebbe salvare il messaggio. L’azione è irreversibile.",
+    "discardDraftsConfirm": "Scarta bozze non inviate",
+    "draftError": {
+      "length": "Una bozza può contenere al massimo 200.000 caratteri. La precedente è conservata; accorcia o dividi il messaggio.",
+      "total": "Le bozze non inviate possono contenere 1.000.000 di caratteri in totale. Invia o scarta prima altre bozze; la precedente è conservata."
+    },
+    "imageError": {
+      "busy": "Attendi la fine del gruppo di immagini attuale. La bozza è conservata.",
+      "count": "Allega al massimo 4 immagini per messaggio. La bozza e le immagini precedenti sono conservate.",
+      "type": "Scegli immagini PNG, JPEG, GIF o WebP. La bozza e le immagini precedenti sono conservate.",
+      "size": "Ogni immagine deve avere dimensioni massime di 5 MiB. La bozza e le immagini precedenti sono conservate.",
+      "total": "Le immagini di un messaggio non devono superare 10 MiB in totale. La bozza e le immagini precedenti sono conservate.",
+      "global": "Le bozze non inviate possono contenere al massimo 16 immagini e 20 MiB totali, incluse le letture in corso. Invia o scarta prima altre bozze; le immagini precedenti sono conservate.",
+      "read": "Impossibile leggere un’immagine. Il nuovo gruppo non è stato allegato; la bozza e le immagini precedenti sono conservate. Prova a selezionarla di nuovo."
+    }
   },
   "message": {
     "sources": "Fonti",
@@ -119,7 +139,9 @@
     "itemCount_other": "{{count}} elementi",
     "doneEmpty": "Completato (risultato vuoto)",
     "inputLabel": "Input:",
-    "resultLabel": "Risultato:"
+    "resultLabel": "Risultato:",
+    "resultCount_many": "{{count}} risultati",
+    "itemCount_many": "{{count}} elementi"
   },
   "slash": {
     "fetch": "Recupera URL come nota",
@@ -139,5 +161,8 @@
   "cti": {
     "invalidCommand": "Non è stato possibile eseguire quel comando CTI:",
     "noSources": "Nessuna origine CTI Agent Host è configurata. Aggiungi un host CTI in Impostazioni → AI → Agent Hosts per usare questo comando."
-  }
+  },
+  "input.serverStatus": "Instradamento tramite server del team",
+  "input.serverModelsHelp": "I fornitori e i modelli disponibili dipendono dalla configurazione del server del team.",
+  "input.modelLabel": "Modello IA"
 }

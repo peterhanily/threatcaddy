@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "أحداث هذا الأسبوع",
   "metrics.aiChats": "محادثات الذكاء الاصطناعي",
   "metrics.graphNodes": "عقد الرسم البياني",
-  "dashboard.backToExecView": "العودة إلى العرض التنفيذي"
+  "dashboard.backToExecView": "العودة إلى العرض التنفيذي",
+  "dashboard.switchToLight": "التبديل إلى المظهر الفاتح",
+  "dashboard.switchToDark": "التبديل إلى المظهر الداكن",
+  "dashboard.emptyTitle": "مساحة عملك جاهزة",
+  "dashboard.emptyDescription": "أنشئ تحقيقًا أو استورد عملك الحالي في وضع المحلل. تلخّص لوحة المعلومات هذه العمل المحفوظ في مساحة العمل الحالية.",
+  "dashboard.emptyAction": "فتح وضع المحلل"
 }

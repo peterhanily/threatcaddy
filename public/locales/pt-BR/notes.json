@@ -83,7 +83,9 @@
     "lockScrollAria": "Bloquear sincronização de rolagem",
     "wordsChars": "{{words}} palavras, {{chars}} caracteres",
     "created": "Criada {{date}}",
-    "modified": "Modificada {{date}}"
+    "modified": "Modificada {{date}}",
+    "saveFailed": "Não foi possível salvar as alterações. Seu rascunho fica nesta aba; tente novamente antes de fechá-la.",
+    "retrySave": "Tentar salvar novamente"
   },
   "list": {
     "defaultTitle": "Notas",

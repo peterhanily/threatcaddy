@@ -320,5 +320,16 @@
   "demoModal.removeHint": "คุณสามารถลบข้อมูลตัวอย่างได้ภายหลังในการตั้งค่า",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "หลักฐาน",
-  "sidebar.products": "ผลิตภัณฑ์"
+  "sidebar.products": "ผลิตภัณฑ์",
+  "syncStatus.screenshareHidden": "การซิงค์ต้องได้รับการดูแล โปรดปิดการแชร์หน้าจอเพื่อดูรายละเอียด",
+  "syncStatus.review": "ตรวจสอบการตั้งค่าซิงค์",
+  "draftRecovery.message": "บันทึกการเปลี่ยนแปลงบางส่วนไม่ได้ ฉบับร่างเก็บอยู่ในแท็บนี้เท่านั้น โปรดลองอีกครั้งหรือดาวน์โหลดฉบับร่างก่อนปิด",
+  "draftRecovery.untitled": "ฉบับร่างที่ยังไม่บันทึก",
+  "draftRecovery.retry": "ลองบันทึกอีกครั้ง",
+  "draftRecovery.download": "ดาวน์โหลดฉบับร่าง",
+  "draftRecovery.discard": "ทิ้งฉบับร่าง",
+  "draftRecovery.discardConfirm": "ทิ้งฉบับร่างที่ยังไม่บันทึกนี้อย่างถาวรหรือไม่? หากต้องการสำเนาสำหรับกู้คืน โปรดดาวน์โหลดก่อน",
+  "draftRecovery.conflictField": "ตรวจสอบข้อขัดแย้งของ {{field}}",
+  "draftRecovery.keepLocal": "เก็บ {{field}} ของฉัน",
+  "draftRecovery.useRemote": "ใช้ {{field}} จากระยะไกล"
 }

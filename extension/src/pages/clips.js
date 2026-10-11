@@ -1,6 +1,8 @@
 // Clips review page logic
 
 const DEFAULT_TARGET_URL = 'https://threatcaddy.com';
+const { t, localize, confirmation } = TC_UI;
+localize();
 
 // DOM references
 const capturesList = document.getElementById('captures-list');
@@ -13,6 +15,10 @@ const clearAllBtn = document.getElementById('clear-all-btn');
 const targetUrlInput = document.getElementById('target-url');
 const saveSettingsBtn = document.getElementById('save-settings-btn');
 const settingsSaved = document.getElementById('settings-saved');
+const metadataDrafts = new Map();
+const pendingMetadataWrites = new Set();
+const pendingMetadataDiscards = new Set();
+let refreshVersion = 0;
 
 // Import options references
 const importFolder = document.getElementById('import-folder');
@@ -27,42 +33,20 @@ const modalMessage = document.getElementById('modal-message');
 const modalCancel = document.getElementById('modal-cancel');
 const modalConfirm = document.getElementById('modal-confirm');
 
-let modalResolve = null;
 function captureRevision(capture) { return Number.isSafeInteger(capture.revision) && capture.revision > 0 ? capture.revision : 1; }
 function importConfirmed(capture) { return capture.delivery?.status === 'confirmed' && capture.delivery.revision === captureRevision(capture); }
 function captureRefs(captures) { return captures.map(capture => ({ id: capture.id, revision: captureRevision(capture) })); }
 async function captureCommand(message) {
   const response = await chrome.runtime.sendMessage(message);
-  if (response?.success !== true) throw new Error(response?.error || 'The capture change was not saved. Refresh and retry.');
+  if (response?.success !== true) throw new Error(response?.error || t('captureChangeFailed'));
   return response;
 }
 
 // ---- Modal ----
 
-function showModal(title, message, confirmLabel, isDanger) {
-  modalTitle.textContent = title;
-  modalMessage.textContent = message;
-  modalConfirm.textContent = confirmLabel || 'Confirm';
-  modalConfirm.className = isDanger ? 'btn btn-danger' : 'btn btn-primary';
-  modalOverlay.classList.remove('hidden');
-
-  return new Promise((resolve) => {
-    modalResolve = resolve;
-  });
-}
-
-function hideModal(result) {
-  modalOverlay.classList.add('hidden');
-  if (modalResolve) {
-    modalResolve(result);
-    modalResolve = null;
-  }
-}
-
-modalCancel.addEventListener('click', () => hideModal(false));
-modalConfirm.addEventListener('click', () => hideModal(true));
-modalOverlay.addEventListener('click', (e) => {
-  if (e.target === modalOverlay) hideModal(false);
+const showModal = confirmation({
+  overlay: modalOverlay, title: modalTitle, message: modalMessage,
+  cancel: modalCancel, confirm: modalConfirm, fallback: refreshBtn,
 });
 
 // ---- Toast ----
@@ -73,6 +57,7 @@ function showToast(message, isError) {
 
   const toast = document.createElement('div');
   toast.className = 'toast' + (isError ? ' error' : '');
+  toast.setAttribute('role', isError ? 'alert' : 'status');
   toast.textContent = message;
   document.body.appendChild(toast);
 
@@ -84,7 +69,7 @@ function showToast(message, isError) {
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
-  return div.innerHTML;
+  return div.innerHTML.replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 }
 
 function isSafeUrl(url) {
@@ -118,9 +103,9 @@ async function loadLocalAIApproval(preserveDraft = false) {
     if (read !== localApprovalRead) return;
     const approval = approvedAppsV1[key];
     if (!preserveDraft) input.value = approval?.localLLMOrigin || '';
-    status.textContent = approval?.localLLMOrigin ? 'Saved for this app: ' + approval.localLLMOrigin
-      : approval ? 'No local AI endpoint approved for this app.' : 'Approve this app before saving a local AI endpoint.';
-  } catch (error) { if (read === localApprovalRead) status.textContent = 'Unable to read local AI approval: ' + error.message; }
+    status.textContent = approval?.localLLMOrigin ? t('localAISavedOrigin', [approval.localLLMOrigin])
+      : t(approval ? 'localAINone' : 'localAIApproveFirst');
+  } catch (error) { if (read === localApprovalRead) status.textContent = t('localAIReadFailed', [error.message]); }
 }
 targetUrlInput.addEventListener('input', () => { void loadLocalAIApproval(); });
 document.getElementById('local-ai-url').addEventListener('input', () => { ++localApprovalRead; });
@@ -139,11 +124,11 @@ async function updateLocalAIApproval(remove) {
   try {
     if (!remove) {
       const local = new URL(localLLMUrl);
-      if (!['http:', 'https:'].includes(local.protocol) || local.username || local.password) throw new Error('Local AI must use HTTP(S) without credentials in its URL');
-      if (!await requestHostPermission(localLLMUrl)) throw new Error('Local AI permission was denied; saved approval is unchanged.');
+      if (!['http:', 'https:'].includes(local.protocol) || local.username || local.password) throw new Error(t('invalidLocalAI'));
+      if (!await requestHostPermission(localLLMUrl)) throw new Error(t('localAIPermissionDenied'));
     }
     const response = await chrome.runtime.sendMessage({ type: 'UPDATE_LOCAL_LLM_APPROVAL', targetUrl, localLLMUrl });
-    if (!response?.success) throw new Error(response?.error || 'Local AI approval failed');
+    if (!response?.success) throw new Error(response?.error || t('localAIApprovalFailed'));
     if (targetUrlInput.value.trim() === targetUrl) await loadLocalAIApproval();
   } catch (error) { if (targetUrlInput.value.trim() === targetUrl) document.getElementById('local-ai-status').textContent = error.message; }
   finally { localAIActionPending = false; save.disabled = clear.disabled = false; }
@@ -161,7 +146,7 @@ async function loadSettings() {
 async function saveSettings() {
   const targetUrl = targetUrlInput.value.trim() || DEFAULT_TARGET_URL;
   if (!isSafeUrl(targetUrl)) {
-    showToast('Invalid target URL — only http, https, and file:// allowed', true);
+    showToast(t('invalidTargetUrlDetail'), true);
     return;
   }
 
@@ -170,14 +155,14 @@ async function saveSettings() {
     try {
       const granted = await requestHostPermission(targetUrl);
       if (!granted) {
-        showToast('Permission denied — extension needs access to this site', true);
+        showToast(t('targetPermissionDenied'), true);
         return;
       }
-    } catch (error) { showToast(error.message || 'Permission request failed', true); return; }
+    } catch (error) { showToast(error.message || t('permissionRequestFailed'), true); return; }
   }
 
   const approved = await chrome.runtime.sendMessage({ type: 'APPROVE_APP', targetUrl });
-  if (!approved?.success) { showToast(approved?.error || 'App approval failed', true); return; }
+  if (!approved?.success) { showToast(approved?.error || t('appApprovalFailed'), true); return; }
   await loadLocalAIApproval();
   settingsSaved.classList.add('show');
   setTimeout(() => settingsSaved.classList.remove('show'), 2000);
@@ -203,12 +188,14 @@ function renderStats(captures) {
 }
 
 function renderCaptures(captures) {
+  const focused = document.activeElement?.closest?.('.meta-inline-edit');
+  const focusToRestore = focused ? { id: focused.dataset.id, field: document.activeElement.dataset.field } : null;
   if (captures.length === 0) {
     capturesList.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">&#128203;</div>
-        <p>No captures yet</p>
-        <p style="font-size: 13px;">Select text on any page and right-click "Save to ThreatCaddy"</p>
+        <p>${escapeHtml(t('noCapturesTitle'))}</p>
+        <p style="font-size: 13px;">${escapeHtml(t('howToUseContextMenu'))}</p>
       </div>
     `;
     return;
@@ -217,19 +204,19 @@ function renderCaptures(captures) {
   // Newest first
   const sorted = [...captures].sort((a, b) => b.createdAt - a.createdAt);
 
-  const entityLabels = { 'note': 'Note', 'task': 'Task', 'timeline-event': 'Timeline Event' };
+  const entityLabels = { 'note': t('entityNote'), 'task': t('entityTask'), 'timeline-event': t('entityTimelineEvent') };
 
   capturesList.innerHTML = sorted.map(capture => {
     const sentClass = importConfirmed(capture) ? ' sent' : '';
     const label = importConfirmed(capture)
-      ? 'Import confirmed' : capture.sent ? 'Sent (legacy, unverified)' : capture.delivery?.status === 'pending'
-        ? 'Awaiting import confirmation' : capture.delivery?.status === 'failed' ? 'Import failed — retained' : '';
+      ? t('importConfirmed') : capture.sent ? t('legacySent') : capture.delivery?.status === 'pending'
+        ? t('importPending') : capture.delivery?.status === 'failed' ? t('importFailedRetained') : '';
     const sentBadge = label ? `<span class="sent-badge">${escapeHtml(label)}</span>` : '';
     const sourceLink = capture.sourceUrl && isSafeUrl(capture.sourceUrl)
       ? `<a class="capture-source" href="${escapeHtml(capture.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(capture.sourceUrl)}</a>`
       : capture.sourceUrl
         ? `<span class="capture-source">${escapeHtml(capture.sourceUrl)}</span>`
-        : '<span class="capture-source" style="color: #6b7280;">No source URL</span>';
+        : `<span class="capture-source" style="color: #6b7280;">${escapeHtml(t('noSourceUrl'))}</span>`;
     const sourceTitle = capture.sourceTitle
       ? `<div class="capture-source-title">${escapeHtml(capture.sourceTitle)}</div>`
       : '';
@@ -237,9 +224,13 @@ function renderCaptures(captures) {
     const eType = capture.entityType || 'note';
     const fName = capture.folderName || '';
     const cls = capture.clsLevel || '';
-    const typeBadge = `<span class="meta-badge type-${escapeHtml(eType)}" data-id="${escapeHtml(capture.id)}" data-field="entityType">${escapeHtml(entityLabels[eType] || 'Note')}</span>`;
-    const folderBadge = fName ? `<span class="meta-badge folder-badge" data-id="${escapeHtml(capture.id)}" data-field="folderName">${escapeHtml(fName)}</span>` : '';
-    const clsBadge = cls ? `<span class="meta-badge cls-badge" data-id="${escapeHtml(capture.id)}" data-field="clsLevel">${escapeHtml(cls)}</span>` : '';
+    const draft = metadataDrafts.get(capture.id);
+    const editType = draft?.values.entityType ?? eType;
+    const editFolder = draft?.values.folderName ?? fName;
+    const editCls = draft?.values.clsLevel ?? cls;
+    const typeBadge = `<button type="button" class="meta-badge type-${escapeHtml(eType)}" data-id="${escapeHtml(capture.id)}" aria-label="${escapeHtml(t('editCaptureMetadata'))}" aria-expanded="${draft?.open === true}">${escapeHtml(entityLabels[eType] || t('entityNote'))}</button>`;
+    const folderBadge = fName ? `<span class="meta-badge folder-badge">${escapeHtml(fName)}</span>` : '';
+    const clsBadge = cls ? `<span class="meta-badge cls-badge">${escapeHtml(cls)}</span>` : '';
 
     return `
       <div class="capture-card${sentClass}" data-id="${escapeHtml(capture.id)}">
@@ -249,25 +240,26 @@ function renderCaptures(captures) {
             <span class="capture-date">${formatDate(capture.createdAt)}${sentBadge}</span>
             ${sourceLink}
           </div>
-          <button class="capture-delete-btn" data-id="${escapeHtml(capture.id)}">Delete</button>
+          <button class="capture-delete-btn" data-id="${escapeHtml(capture.id)}">${escapeHtml(t('delete'))}</button>
         </div>
         <div class="capture-content">${escapeHtml(capture.content)}</div>
         <div class="capture-metadata">${typeBadge}${folderBadge}${clsBadge}</div>
-        <div class="meta-inline-edit" data-id="${escapeHtml(capture.id)}" data-revision="${captureRevision(capture)}">
-          <select data-field="entityType">
-            <option value="note"${eType === 'note' ? ' selected' : ''}>Note</option>
-            <option value="task"${eType === 'task' ? ' selected' : ''}>Task</option>
-            <option value="timeline-event"${eType === 'timeline-event' ? ' selected' : ''}>Timeline Event</option>
+        <div class="meta-inline-edit${draft?.open ? ' show' : ''}" data-id="${escapeHtml(capture.id)}" data-revision="${draft?.revision ?? captureRevision(capture)}" aria-busy="${pendingMetadataWrites.has(capture.id)}">
+          <select data-field="entityType" aria-label="${escapeHtml(t('saveAs'))}">
+            <option value="note"${editType === 'note' ? ' selected' : ''}>${escapeHtml(t('entityNote'))}</option>
+            <option value="task"${editType === 'task' ? ' selected' : ''}>${escapeHtml(t('entityTask'))}</option>
+            <option value="timeline-event"${editType === 'timeline-event' ? ' selected' : ''}>${escapeHtml(t('entityTimelineEvent'))}</option>
           </select>
-          <input type="text" data-field="folderName" value="${escapeHtml(fName)}" placeholder="Folder" style="width:100px;" />
-          <select data-field="clsLevel">
-            <option value=""${!cls ? ' selected' : ''}>None</option>
-            <option value="TLP:CLEAR"${cls === 'TLP:CLEAR' ? ' selected' : ''}>TLP:CLEAR</option>
-            <option value="TLP:GREEN"${cls === 'TLP:GREEN' ? ' selected' : ''}>TLP:GREEN</option>
-            <option value="TLP:AMBER"${cls === 'TLP:AMBER' ? ' selected' : ''}>TLP:AMBER</option>
-            <option value="TLP:AMBER+STRICT"${cls === 'TLP:AMBER+STRICT' ? ' selected' : ''}>TLP:AMBER+STRICT</option>
-            <option value="TLP:RED"${cls === 'TLP:RED' ? ' selected' : ''}>TLP:RED</option>
+          <input type="text" data-field="folderName" value="${escapeHtml(editFolder)}" aria-label="${escapeHtml(t('investigation'))}" placeholder="${escapeHtml(t('folder'))}" style="width:100px;" />
+          <select data-field="clsLevel" aria-label="${escapeHtml(t('classification'))}">
+            <option value=""${!editCls ? ' selected' : ''}>${escapeHtml(t('classificationNone'))}</option>
+            <option value="TLP:CLEAR"${editCls === 'TLP:CLEAR' ? ' selected' : ''}>TLP:CLEAR</option>
+            <option value="TLP:GREEN"${editCls === 'TLP:GREEN' ? ' selected' : ''}>TLP:GREEN</option>
+            <option value="TLP:AMBER"${editCls === 'TLP:AMBER' ? ' selected' : ''}>TLP:AMBER</option>
+            <option value="TLP:AMBER+STRICT"${editCls === 'TLP:AMBER+STRICT' ? ' selected' : ''}>TLP:AMBER+STRICT</option>
+            <option value="TLP:RED"${editCls === 'TLP:RED' ? ' selected' : ''}>TLP:RED</option>
           </select>
+          <button type="button" class="btn btn-secondary discard-metadata-draft"${draft ? '' : ' hidden'}${pendingMetadataWrites.has(capture.id) ? ' disabled' : ''}>${escapeHtml(t('discardMetadataDraft'))}</button>
         </div>
       </div>
     `;
@@ -279,41 +271,101 @@ function renderCaptures(captures) {
       e.stopPropagation();
       const id = btn.dataset.id;
       const confirmed = await showModal(
-        'Delete Capture',
-        'Are you sure you want to delete this capture?',
-        'Delete',
+        t('deleteCaptureTitle'),
+        t('deleteCaptureQuestion'),
+        t('delete'),
         true
       );
       if (confirmed) {
         try {
           await deleteCapture(captureRefs(captures.filter(capture => capture.id === id)));
+          metadataDrafts.delete(id);
           await refresh();
-          showToast('Capture deleted');
+          refreshBtn.focus();
+          showToast(t('captureDeleted'));
         } catch (error) { showToast(error.message, true); await refresh(); }
       }
     });
   });
 
   // Wire up metadata badge clicks to toggle inline edit
-  capturesList.querySelectorAll('.meta-badge').forEach(badge => {
+  capturesList.querySelectorAll('button.meta-badge').forEach(badge => {
     badge.addEventListener('click', (e) => {
       e.stopPropagation();
-      const id = badge.dataset.id;
-      const editRow = capturesList.querySelector(`.meta-inline-edit[data-id="${id}"]`);
-      if (editRow) editRow.classList.toggle('show');
+      const editRow = badge.closest('.capture-card').querySelector('.meta-inline-edit');
+      if (editRow) {
+        const open = editRow.classList.toggle('show');
+        badge.setAttribute('aria-expanded', String(open));
+        const draft = metadataDrafts.get(editRow.dataset.id);
+        if (draft) draft.open = open;
+        if (open) editRow.querySelector('select').focus();
+      }
+    });
+  });
+
+  capturesList.querySelectorAll('.discard-metadata-draft').forEach(button => {
+    // A pointer on Discard must not blur-save the input before the confirmation.
+    button.addEventListener('pointerdown', event => event.preventDefault());
+    button.addEventListener('click', async () => {
+      const id = button.closest('.meta-inline-edit').dataset.id;
+      if (pendingMetadataWrites.has(id) || pendingMetadataDiscards.has(id) || !metadataDrafts.has(id)) return;
+      pendingMetadataDiscards.add(id);
+      try {
+        const confirmed = await showModal(t('discardMetadataDraft'), t('discardMetadataMessage'), t('discardMetadataDraft'), true);
+        if (confirmed) {
+          // Load first: a failed storage read must not discard the local draft.
+          await refresh(id);
+          const row = [...capturesList.querySelectorAll('.meta-inline-edit')].find(item => item.dataset.id === id);
+          (row?.closest('.capture-card').querySelector('button.meta-badge') || refreshBtn).focus();
+        }
+      } finally { pendingMetadataDiscards.delete(id); }
     });
   });
 
   // Wire up inline edit changes
   capturesList.querySelectorAll('.meta-inline-edit select, .meta-inline-edit input').forEach(el => {
+    const remember = () => {
+      const row = el.closest('.meta-inline-edit');
+      const draft = metadataDrafts.get(row.dataset.id) || { revision: Number(row.dataset.revision), values: {}, open: true };
+      draft.values[el.dataset.field] = el.value;
+      metadataDrafts.set(row.dataset.id, draft);
+      row.querySelector('.discard-metadata-draft').hidden = false;
+      return draft;
+    };
+    el.addEventListener('input', remember);
     const eventType = el.tagName === 'SELECT' ? 'change' : 'blur';
     el.addEventListener(eventType, async () => {
       const editRow = el.closest('.meta-inline-edit');
       const id = editRow.dataset.id;
+      if (pendingMetadataDiscards.has(id)) return;
       const field = el.dataset.field;
-      try { await updateCaptureField(id, Number(editRow.dataset.revision), field, el.value); }
-      catch (error) { showToast(error.message, true); }
-      await refresh();
+      const draft = remember();
+      if (pendingMetadataWrites.has(id)) return; // Keep newer edits for their next explicit save gesture.
+      const value = el.value;
+      const revision = draft.revision;
+      const original = captures.find(capture => capture.id === id);
+      const changed = (original?.[field] || '') !== value;
+      pendingMetadataWrites.add(id);
+      editRow.querySelector('.discard-metadata-draft').disabled = true;
+      editRow.setAttribute('aria-busy', 'true');
+      try {
+        await updateCaptureField(id, revision, field, value);
+        const latest = metadataDrafts.get(id);
+        if (latest) {
+          if (latest.values[field] === value) delete latest.values[field];
+          latest.revision = revision + (changed ? 1 : 0);
+          if (Object.keys(latest.values).length === 0) metadataDrafts.delete(id);
+        }
+        await refresh();
+        showToast(t('metadataSaved'));
+      } catch (error) { showToast(error.message, true); }
+      finally {
+        pendingMetadataWrites.delete(id);
+        const currentRow = [...capturesList.querySelectorAll('.meta-inline-edit')].find(row => row.dataset.id === id);
+        currentRow?.setAttribute('aria-busy', 'false');
+        const discard = currentRow?.querySelector('.discard-metadata-draft');
+        if (discard) discard.disabled = false;
+      }
     });
     // Also save on Enter for text inputs
     if (el.tagName === 'INPUT') {
@@ -324,12 +376,22 @@ function renderCaptures(captures) {
       });
     }
   });
+  if (focusToRestore) {
+    const row = [...capturesList.querySelectorAll('.meta-inline-edit')].find(row => row.dataset.id === focusToRestore.id);
+    if (row?.classList.contains('show')) [...row.querySelectorAll('[data-field]')].find(element => element.dataset.field === focusToRestore.field)?.focus();
+    else row?.closest('.capture-card').querySelector('button.meta-badge')?.focus();
+  }
 }
 
-async function refresh() {
-  const captures = await loadCaptures();
-  renderStats(captures);
-  renderCaptures(captures);
+async function refresh(discardDraftId) {
+  const version = ++refreshVersion;
+  try {
+    const captures = await loadCaptures();
+    if (version !== refreshVersion) return;
+    if (typeof discardDraftId === 'string') metadataDrafts.delete(discardDraftId);
+    renderStats(captures);
+    renderCaptures(captures);
+  } catch { showToast(t('capturesLoadFailed'), true); }
 }
 
 // ---- Actions ----
@@ -340,6 +402,7 @@ async function deleteCapture(clips) {
 
 async function clearAll(captures) {
   await deleteCapture(captureRefs(captures));
+  captures.forEach(capture => metadataDrafts.delete(capture.id));
 }
 
 async function getTargetUrl() {
@@ -361,13 +424,13 @@ async function requestHostPermission(targetUrl) {
 async function sendAllToTarget() {
   if (sendAllBtn.disabled) return;
   sendAllBtn.disabled = true;
-  sendAllBtn.textContent = 'Preparing destination...';
+  sendAllBtn.textContent = t('preparingDestination');
   try {
   const captures = await loadCaptures();
   const unsent = captures.filter(c => !importConfirmed(c));
 
   if (unsent.length === 0) {
-    showToast('No unsent captures to send');
+    showToast(t('noUnsentCaptures'));
     return;
   }
 
@@ -378,14 +441,14 @@ async function sendAllToTarget() {
     const currentVal = targetUrlInput.value.trim();
     if (!currentVal) {
       targetUrlInput.focus();
-      showToast('Please configure a target URL first', true);
+      showToast(t('configureTargetFirst'), true);
       return;
     }
     targetUrl = currentVal;
   }
 
   if (!isSafeUrl(targetUrl)) {
-    showToast('Invalid target URL — only http, https, and file:// allowed', true);
+    showToast(t('invalidTargetUrlDetail'), true);
     return;
   }
 
@@ -396,7 +459,7 @@ async function sendAllToTarget() {
     );
     if (!hasFileAccess) {
       showToast(
-        'File URL access is disabled. Go to chrome://extensions → ThreatCaddy → Enable "Allow access to file URLs"',
+        t('fileAccessDisabled'),
         true
       );
       return;
@@ -407,10 +470,11 @@ async function sendAllToTarget() {
     // Target action; a revoked or unavailable destination fails closed.
     const prepared = await captureCommand({ type: 'PREPARE_CLIP_DELIVERY', targetUrl });
     const legacyCount = unsent.filter(capture => capture.sent).length;
-    const confirmed = await showModal('Confirm import workspace',
-      `Import ${unsent.length} capture(s) into “${prepared.workspaceLabel}” (${prepared.workspaceId}) at ${targetUrl}? Only database-confirmed imports will be marked sent.${legacyCount ? ` ${legacyCount} legacy capture(s) were previously marked sent without verification; importing them may create duplicates. Review or delete them first if unsure.` : ''}`, 'Import captures', false);
+    const confirmed = await showModal(t('confirmWorkspace'),
+      t('importWorkspaceMessage', [unsent.length, prepared.workspaceLabel, prepared.workspaceId, targetUrl])
+        + (legacyCount ? ' ' + t('legacyImportWarning', [legacyCount]) : ''), t('importCaptures'), false);
     if (!confirmed) return;
-    sendAllBtn.textContent = 'Waiting for import confirmation...';
+    sendAllBtn.textContent = t('waitingForImport');
     const response = await chrome.runtime.sendMessage({
       type: 'SEND_TO_TARGET',
       sessionId: prepared.sessionId,
@@ -418,15 +482,15 @@ async function sendAllToTarget() {
     });
     await refresh();
     if (response?.success === true) {
-      showToast(`${response.confirmed} clip import(s) confirmed.`);
+      showToast(t('importsConfirmed', [response.confirmed]));
     } else {
-      showToast(`${response?.confirmed || 0} of ${unsent.length} imports confirmed. ${response?.error || 'Unconfirmed captures are retained.'}`, true);
+      showToast(t('importsPartial', [response?.confirmed || 0, unsent.length, response?.error || t('unconfirmedRetained')]), true);
     }
   } catch (error) {
-    showToast('Failed to send: ' + error.message, true);
+    showToast(t('sendFailed', [error.message]), true);
   } finally {
     sendAllBtn.disabled = false;
-    sendAllBtn.textContent = 'Send All to ThreatCaddy';
+    sendAllBtn.textContent = t('sendAll');
   }
 }
 
@@ -449,7 +513,7 @@ applyDefaultsBtn.addEventListener('click', async () => {
   try {
     await applyDefaults(entityType, folderName, clsLevel);
     await refresh();
-    showToast('Defaults applied to all unsent clips');
+    showToast(t('defaultsApplied'));
   } catch (error) { showToast(error.message, true); await refresh(); }
 });
 
@@ -464,9 +528,9 @@ clearAllBtn.addEventListener('click', async () => {
   if (captures.length === 0) return;
 
   const confirmed = await showModal(
-    'Clear All Captures',
-    `This will permanently delete all ${captures.length} capture(s). This cannot be undone.`,
-    'Clear All',
+    t('clearAllCaptures'),
+    t('clearAllQuestion', [captures.length]),
+    t('clearAll'),
     true
   );
 
@@ -474,7 +538,7 @@ clearAllBtn.addEventListener('click', async () => {
     try {
       await clearAll(captures);
       await refresh();
-      showToast('Confirmed captures cleared; newer captures were retained');
+      showToast(t('capturesCleared'));
     } catch (error) { showToast(error.message, true); await refresh(); }
   }
 });

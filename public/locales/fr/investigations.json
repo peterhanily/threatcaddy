@@ -102,5 +102,6 @@
   "card.entity.iocs": "IOCs",
   "card.entity.events": "Événements",
   "card.entity.whiteboards": "Tableaux",
-  "card.entity.chats": "Discussions"
+  "card.entity.chats": "Discussions",
+  "card.members_many": "{{count}} membres"
 }

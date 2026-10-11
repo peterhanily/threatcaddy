@@ -3,7 +3,20 @@
     "importWarning": "Zaimportowano z {{count}} nieudanym klipem(-ami)",
     "importFailed": "Nie udało się zaimportować klipów z rozszerzenia",
     "openedAsNote": "Otwarto „{{name}}\" jako nową notatkę",
-    "openFailed": "Nie udało się otworzyć „{{name}}\""
+    "openFailed": "Nie udało się otworzyć „{{name}}\"",
+    "refreshFailed": "Wycinki zapisano, ale widoku nie udało się odświeżyć. Odśwież obszar roboczy, aby je zobaczyć.",
+    "fileRefreshFailed": "Plik zapisano jako notatkę, ale widoku nie udało się odświeżyć. Odśwież obszar roboczy, aby ją zobaczyć.",
+    "fileTitle": "{{name}} — {{size}} — Zmodyfikowano {{modified}}",
+    "fileError": {
+      "capacity_one": "Jednego pliku nie dodano do kolejki: może oczekiwać najwyżej 20 plików naraz. Otwórz go ponownie po zakończeniu importów.",
+      "capacity_other": "{{count}} pliku nie dodano do kolejki: może oczekiwać najwyżej 20 plików naraz. Otwórz je ponownie po zakończeniu importów.",
+      "type": "Nie można otworzyć „{{name}}”: wybierz plik Markdown lub tekstowy.",
+      "size": "Nie można otworzyć „{{name}}”: pliki tekstowe mogą mieć najwyżej 5 MiB. Otwórz mniejszy plik.",
+      "read": "Nie można odczytać „{{name}}”. Sprawdź dostęp i otwórz plik ponownie.",
+      "import": "Nie można zapisać „{{name}}” jako notatki. Sprawdź pamięć obszaru roboczego i otwórz plik ponownie.",
+      "capacity_few": "{{count}} pliki nie zostały dodane do kolejki: może oczekiwać najwyżej 20 plików naraz. Otwórz je ponownie po zakończeniu importów.",
+      "capacity_many": "{{count}} plików nie zostało dodanych do kolejki: może oczekiwać najwyżej 20 plików naraz. Otwórz je ponownie po zakończeniu importów."
+    }
   },
   "share": {
     "investigationSaved": "Zapisano dochodzenie „{{name}}\" ze wszystkimi encjami",

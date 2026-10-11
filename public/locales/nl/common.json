@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "Er is een onverwachte fout opgetreden.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Bewijsmateriaal",
-  "sidebar.products": "Producten"
+  "sidebar.products": "Producten",
+  "syncStatus.screenshareHidden": "Synchronisatie vereist aandacht. Stop met schermdelen om de details te bekijken.",
+  "syncStatus.review": "Synchronisatie-instellingen bekijken",
+  "draftRecovery.message": "Sommige wijzigingen konden niet worden opgeslagen. Concepten worden alleen in dit tabblad bewaard. Probeer het opnieuw of download ze voordat je het tabblad sluit.",
+  "draftRecovery.untitled": "Niet-opgeslagen concept",
+  "draftRecovery.retry": "Opnieuw opslaan",
+  "draftRecovery.download": "Concept downloaden",
+  "draftRecovery.discard": "Concept verwijderen",
+  "draftRecovery.discardConfirm": "Dit niet-opgeslagen concept definitief verwijderen? Download het eerst als je een herstelkopie nodig hebt.",
+  "draftRecovery.conflictField": "Conflict in {{field}} bekijken",
+  "draftRecovery.keepLocal": "Mijn versie van {{field}} behouden",
+  "draftRecovery.useRemote": "Externe versie van {{field}} gebruiken"
 }

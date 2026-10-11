@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "Si è verificato un errore imprevisto.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Evidence",
-  "sidebar.products": "Products"
+  "sidebar.products": "Products",
+  "syncStatus.screenshareHidden": "La sincronizzazione richiede attenzione. Disattiva la condivisione dello schermo per vedere i dettagli.",
+  "syncStatus.review": "Controlla impostazioni di sincronizzazione",
+  "draftRecovery.message": "Alcune modifiche non sono state salvate. Le bozze restano solo in questa scheda. Riprova o scaricale prima di chiuderla.",
+  "draftRecovery.untitled": "Bozza non salvata",
+  "draftRecovery.retry": "Riprova salvataggio",
+  "draftRecovery.download": "Scarica bozza",
+  "draftRecovery.discard": "Scarta bozza",
+  "draftRecovery.discardConfirm": "Scartare definitivamente questa bozza non salvata? Scaricala prima se ti serve una copia di recupero.",
+  "draftRecovery.conflictField": "Esamina conflitto: {{field}}",
+  "draftRecovery.keepLocal": "Mantieni il mio valore: {{field}}",
+  "draftRecovery.useRemote": "Usa il valore remoto: {{field}}"
 }

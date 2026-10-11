@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "Події цього тижня",
   "metrics.aiChats": "ІІ-чати",
   "metrics.graphNodes": "Вузли графу",
-  "dashboard.backToExecView": "Назад до Огляду керівництва"
+  "dashboard.backToExecView": "Назад до Огляду керівництва",
+  "dashboard.switchToLight": "Увімкнути світлу тему",
+  "dashboard.switchToDark": "Увімкнути темну тему",
+  "dashboard.emptyTitle": "Робочий простір готовий",
+  "dashboard.emptyDescription": "Створіть розслідування або імпортуйте свої матеріали в режимі аналітика. Ця панель показує підсумки збереженої роботи.",
+  "dashboard.emptyAction": "Відкрити режим аналітика"
 }

@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "发生了意外错误。",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "证据",
-  "sidebar.products": "产物"
+  "sidebar.products": "产物",
+  "syncStatus.screenshareHidden": "同步需要处理。请关闭屏幕共享以查看详情。",
+  "syncStatus.review": "检查同步设置",
+  "draftRecovery.message": "部分更改未能保存。草稿仅保存在此标签页。关闭前请重试或下载草稿。",
+  "draftRecovery.untitled": "未保存的草稿",
+  "draftRecovery.retry": "重试保存",
+  "draftRecovery.download": "下载草稿",
+  "draftRecovery.discard": "丢弃草稿",
+  "draftRecovery.discardConfirm": "永久丢弃这份未保存的草稿？如需恢复副本，请先下载。",
+  "draftRecovery.conflictField": "检查 {{field}} 冲突",
+  "draftRecovery.keepLocal": "保留我的 {{field}}",
+  "draftRecovery.useRemote": "使用远程 {{field}}"
 }

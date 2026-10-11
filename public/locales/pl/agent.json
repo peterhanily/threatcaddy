@@ -265,5 +265,19 @@
   "picker.activeCount": "{{count}} aktywnych",
   "panel.loadMore": "Załaduj więcej akcji",
   "cycleSummary.expand": "Pokaż szczegóły cyklu",
-  "cycleSummary.collapse": "Ukryj szczegóły cyklu"
+  "cycleSummary.collapse": "Ukryj szczegóły cyklu",
+  "panel.serverRanActions_few": "Serwer wykonał {{count}} akcje podczas nieobecności",
+  "panel.serverRanActions_many": "Serwer wykonał {{count}} akcji podczas nieobecności",
+  "panel.serverRanActionsTitle_few": "Bot serwera wykonał {{count}} akcje, gdy ta karta była offline{{topToolSuffix}}. Sprawdź wątek audytowy lub zamknij.",
+  "panel.serverRanActionsTitle_many": "Bot serwera wykonał {{count}} akcji, gdy ta karta była offline{{topToolSuffix}}. Sprawdź wątek audytowy lub zamknij.",
+  "meeting.pendingRequests_few": "{{count}} oczekujące żądania spotkań od agentów",
+  "meeting.pendingRequests_many": "{{count}} oczekujących żądań spotkań od agentów",
+  "cycleSummary.errorsTitle_few": "{{count}} błędy",
+  "cycleSummary.errorsTitle_many": "{{count}} błędów",
+  "cycleSummary.turns_few": "{{count}} tury",
+  "cycleSummary.turns_many": "{{count}} tur",
+  "cycleSummary.toolErrors_few": "{{count}} błędy narzędzi",
+  "cycleSummary.toolErrors_many": "{{count}} błędów narzędzi",
+  "picker.agentsSelected_few": "Wybrano {{count}} agentów",
+  "picker.agentsSelected_many": "Wybrano {{count}} agentów"
 }

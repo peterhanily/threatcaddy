@@ -31,10 +31,10 @@
 
 Most investigation tools lock your data in a cloud you don't control, cost per seat, and force you into rigid workflows. ThreatCaddy is different:
 
-- **Local-first** — All data lives in your browser's IndexedDB. No accounts, no tracking, no cookies.
+- **Local-first** — Investigation data is stored in your browser's IndexedDB. No account is required for local use; optional sync, AI, enrichment and backup features can send data to configured services.
 - **Zero setup** — Open the URL and start working. No install, no server required.
 - **Optional team server** — When you need collaboration, spin up a Docker container. Per-investigation sync lets you choose what stays local and what gets shared.
-- **Encryption at rest** — AES-256-GCM encryption with PBKDF2 key derivation protects your data even on shared machines.
+- **Encryption at rest** — Optional AES-256-GCM encryption with PBKDF2 key derivation protects covered local content fields while locked; it does not encrypt the whole browser profile or provide end-to-end team sync.
 - **Works offline** — Download a standalone HTML file that runs from `file://`.
 - **AI that works for you** — From a conversational assistant to a full autonomous multi-agent security team, CaddyAI and AgentCaddy meet you where you are.
 
@@ -239,7 +239,7 @@ To send clips to an offline `file://` build, enable **"Allow access to file URLs
 
 - **Quick Links dashboard** — Configurable shortcut tiles for VirusTotal, Shodan, AbuseIPDB, and other threat intel tools
 - **Dark & light mode** — Dark by default
-- **21 languages** — UI fully translated into Arabic, Chinese (Simplified), Dutch, English, Farsi, French, German, Hebrew, Hindi, Indonesian, Italian, Japanese, Korean, Polish, Portuguese (Brazil), Russian, Spanish, Thai, Turkish, Ukrainian, and Vietnamese — including full RTL support
+- **21 language catalogs** — Arabic, Chinese (Simplified), Dutch, English, Farsi, French, German, Hebrew, Hindi, Indonesian, Italian, Japanese, Korean, Polish, Portuguese (Brazil), Russian, Spanish, Thai, Turkish, Ukrainian, and Vietnamese, with RTL layout support for Arabic, Farsi and Hebrew. Automated checks cover keys and interpolation; they do not certify translation fluency or every assistive-technology combination.
 - **Guided tour** — Interactive onboarding walkthrough
 - **Browser navigation** — Back/forward with persistent state across refresh
 - **Standalone HTML** — Single-file offline version (`pnpm build:single`) with all assets and locale packs inlined. Language switcher included. Fully functional from `file://`
@@ -324,7 +324,7 @@ Optionally add `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, or `MIST
 
 ## Privacy
 
-All data stays local by default. No accounts, no tracking, no cookies. API keys are stored in your browser and sent only to your chosen LLM provider. See the full [Privacy Policy](https://threatcaddy.com/privacy.html).
+Local use needs no account. Optional AI, enrichment, URL fetching, map tiles, catalogs, cloud backup and team sync involve network requests; the extension, custom endpoints or team server may act as intermediaries. Local encryption at rest is not end-to-end encryption for team sync. Hosted analytics are build-time opt-in, and hosting operators may retain request logs. Review the [Privacy Policy](https://threatcaddy.com/privacy.html) and your chosen service operators before processing sensitive data.
 
 ## License
 

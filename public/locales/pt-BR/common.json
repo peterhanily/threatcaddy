@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "Ocorreu um erro inesperado.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Evidências",
-  "sidebar.products": "Produtos"
+  "sidebar.products": "Produtos",
+  "syncStatus.screenshareHidden": "A sincronização precisa de atenção. Desative o compartilhamento de tela para ver os detalhes.",
+  "syncStatus.review": "Revisar configurações de sincronização",
+  "draftRecovery.message": "Algumas alterações não foram salvas. Os rascunhos ficam apenas nesta aba. Tente novamente ou baixe-os antes de fechá-la.",
+  "draftRecovery.untitled": "Rascunho não salvo",
+  "draftRecovery.retry": "Tentar salvar novamente",
+  "draftRecovery.download": "Baixar rascunho",
+  "draftRecovery.discard": "Descartar rascunho",
+  "draftRecovery.discardConfirm": "Descartar permanentemente este rascunho não salvo? Baixe-o primeiro se precisar de uma cópia de recuperação.",
+  "draftRecovery.conflictField": "Revisar conflito de {{field}}",
+  "draftRecovery.keepLocal": "Manter meu valor de {{field}}",
+  "draftRecovery.useRemote": "Usar valor remoto de {{field}}"
 }

@@ -8,7 +8,6 @@
   "version": {
     "message": "v1.1.1"
   },
-
   "quickStats": {
     "message": "Быстрая статистика"
   },
@@ -18,7 +17,6 @@
   "thisWeek": {
     "message": "На этой неделе"
   },
-
   "quickCapture": {
     "message": "Быстрый захват"
   },
@@ -64,7 +62,6 @@
   "saveFailed": {
     "message": "Не удалось сохранить. Повторите попытку."
   },
-
   "recentCaptures": {
     "message": "Недавние захваты"
   },
@@ -74,7 +71,6 @@
   "untitled": {
     "message": "Без названия"
   },
-
   "quickActions": {
     "message": "Быстрые действия"
   },
@@ -84,7 +80,6 @@
   "reviewAllCaptures": {
     "message": "Просмотреть все захваты"
   },
-
   "permissions": {
     "message": "Разрешения"
   },
@@ -109,7 +104,6 @@
   "allowFileAccessHint": {
     "message": "Для включения: перейдите в chrome://extensions, найдите ThreatCaddy и включите «Разрешить доступ к файловым URL»."
   },
-
   "howToUse": {
     "message": "Как использовать:"
   },
@@ -126,9 +120,8 @@
     "message": "Конфиденциальность:"
   },
   "privacyText": {
-    "message": "Все данные остаются на вашем устройстве. API-ключи отправляются только выбранному провайдеру. Без отслеживания."
+    "message": "Вырезки остаются на этом устройстве до передачи или экспорта. Необязательные функции ИИ, загрузка URL и подключения одобренных приложений могут отправлять данные настроенным сервисам."
   },
-
   "settings": {
     "message": "Настройки"
   },
@@ -150,37 +143,39 @@
   "save": {
     "message": "Сохранить"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "Сохранить в ThreatCaddy"
   },
-
   "savedToThreatCaddy": {
     "message": "Сохранено в ThreatCaddy!"
   },
-
   "justNow": {
     "message": "Только что"
   },
   "minutesAgo": {
     "message": "$count$мин. назад",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "$count$ч. назад",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "$count$д. назад",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "Контекст расширения стал недействительным. Перезагрузите страницу."
   },
@@ -190,7 +185,9 @@
   "errorExtensionUnknown": {
     "message": "Ошибка расширения: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +196,6 @@
   "errorExtensionError": {
     "message": "Ошибка расширения"
   },
-
   "errorInvalidUrl": {
     "message": "Неверный URL"
   },
@@ -221,13 +217,17 @@
   "errorBlockedDomain": {
     "message": "Заблокировано: $hostname$ не входит в список разрешённых прокси-доменов",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "Требуется разрешение хоста для $hostname$",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +236,9 @@
   "errorUnknownProvider": {
     "message": "Неизвестный провайдер: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +247,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "Требуется разрешение хоста для $hostname$. Откройте всплывающее окно расширения ThreatCaddy и включите «Разрешить получение URL» в разделе «Разрешения».",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +261,320 @@
   "errorInvalidTargetUrl": {
     "message": "Неверный целевой URL"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "privacyLink": {
+    "message": "Конфиденциальность"
+  },
+  "captureSaveFailed": {
+    "message": "Вырезка не сохранена. Черновик оставлен."
+  },
+  "captureChangeFailed": {
+    "message": "Изменение вырезки не сохранено. Обновите страницу и повторите попытку."
+  },
+  "approvalTrust": {
+    "message": "Одобряйте только доверенные приложения. Именно этот источник (включая порт) или конкретный автономный файл сможет использовать возможности, предоставленные расширению."
+  },
+  "localAIOrigin": {
+    "message": "Источник локального сервера ИИ (необязательно)"
+  },
+  "saveLocalAI": {
+    "message": "Сохранить разрешение локального ИИ"
+  },
+  "removeLocalAI": {
+    "message": "Удалить разрешение локального ИИ"
+  },
+  "approveApp": {
+    "message": "Одобрить приложение"
+  },
+  "revokeApps": {
+    "message": "Отозвать разрешения всех приложений"
+  },
+  "revokeAppsQuestion": {
+    "message": "Отключить все одобренные приложения? Вырезки и разрешения браузера не удалятся. Для подключения снова одобрите приложение."
+  },
+  "localAISavedOrigin": {
+    "message": "Сохранено для этого приложения: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "Для этого приложения не одобрен локальный сервер ИИ."
+  },
+  "localAIApproveFirst": {
+    "message": "Одобрите приложение перед сохранением локального сервера ИИ."
+  },
+  "localAIReadFailed": {
+    "message": "Не удалось прочитать разрешение локального ИИ: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "Локальный ИИ должен использовать HTTP(S) без учётных данных в URL"
+  },
+  "localAIPermissionDenied": {
+    "message": "Доступ к локальному ИИ отклонён; сохранённое разрешение не изменено."
+  },
+  "localAIApprovalFailed": {
+    "message": "Не удалось одобрить локальный ИИ"
+  },
+  "invalidAppTarget": {
+    "message": "Используйте HTTP(S)-приложение или конкретный автономный файл без учётных данных"
+  },
+  "appPermissionDenied": {
+    "message": "Доступ к приложению отклонён"
+  },
+  "appApprovalFailed": {
+    "message": "Не удалось одобрить приложение"
+  },
+  "appApproved": {
+    "message": "Приложение одобрено. Перезагрузите его вкладку для подключения."
+  },
+  "appsRevoked": {
+    "message": "Все подключения приложений отозваны."
+  },
+  "revokeFailed": {
+    "message": "Не удалось отозвать разрешения"
+  },
+  "notificationWaiting": {
+    "message": "Ожидание разрешения браузера…"
+  },
+  "notificationEnabled": {
+    "message": "Уведомления рабочего стола включены"
+  },
+  "notificationEnable": {
+    "message": "Включить уведомления рабочего стола"
+  },
+  "notificationEnabledDesc": {
+    "message": "Уведомления рабочего стола включены. Настройки операционной системы могут блокировать показ. Отозвать разрешение можно в настройках расширений браузера."
+  },
+  "notificationDisabledDesc": {
+    "message": "Уведомления рабочего стола отключены; уведомления внутри приложения доступны."
+  },
+  "notificationCheckFailed": {
+    "message": "Не удалось проверить разрешение уведомлений: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "Ожидание ответа браузера. Если запрос не появился, проверьте разрешения расширения или откройте эту панель заново."
+  },
+  "notificationRequestFailed": {
+    "message": "Запрос разрешения уведомлений не удался: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "Не удалось подтвердить разрешение уведомлений: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "Уведомления внутри приложения доступны."
+  },
+  "notificationNotEnabled": {
+    "message": "Уведомления рабочего стола не включены; внутренние уведомления доступны. Если запрос не появился, проверьте разрешения расширения."
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — Обзор вырезок"
+  },
+  "clipReview": {
+    "message": "Обзор вырезок"
+  },
+  "clipReviewSubtitle": {
+    "message": "Просмотр и управление сохранёнными вырезками"
+  },
+  "totalCaptures": {
+    "message": "Всего вырезок"
+  },
+  "unsent": {
+    "message": "Не отправлены"
+  },
+  "applyAll": {
+    "message": "Применить ко всем"
+  },
+  "sendAll": {
+    "message": "Отправить всё в ThreatCaddy"
+  },
+  "refresh": {
+    "message": "Обновить"
+  },
+  "clearAll": {
+    "message": "Очистить всё"
+  },
+  "delete": {
+    "message": "Удалить"
+  },
+  "confirm": {
+    "message": "Подтвердить"
+  },
+  "cancel": {
+    "message": "Отмена"
+  },
+  "noCapturesTitle": {
+    "message": "Вырезок пока нет"
+  },
+  "noSourceUrl": {
+    "message": "Нет исходного URL"
+  },
+  "importConfirmed": {
+    "message": "Импорт подтверждён"
+  },
+  "legacySent": {
+    "message": "Отправлено (ранее, без проверки)"
+  },
+  "importPending": {
+    "message": "Ожидание подтверждения импорта"
+  },
+  "importFailedRetained": {
+    "message": "Импорт не удался — сохранено"
+  },
+  "folder": {
+    "message": "Папка"
+  },
+  "editCaptureMetadata": {
+    "message": "Изменить метаданные вырезки"
+  },
+  "deleteCaptureTitle": {
+    "message": "Удалить вырезку"
+  },
+  "deleteCaptureQuestion": {
+    "message": "Вы уверены, что хотите удалить эту вырезку?"
+  },
+  "captureDeleted": {
+    "message": "Вырезка удалена"
+  },
+  "preparingDestination": {
+    "message": "Подготовка назначения…"
+  },
+  "noUnsentCaptures": {
+    "message": "Нет неотправленных вырезок"
+  },
+  "configureTargetFirst": {
+    "message": "Сначала настройте URL назначения"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "Недопустимый URL назначения: разрешены только http, https и file://"
+  },
+  "targetPermissionDenied": {
+    "message": "Доступ отклонён: расширению нужен доступ к этому сайту"
+  },
+  "permissionRequestFailed": {
+    "message": "Запрос разрешения не удался"
+  },
+  "fileAccessDisabled": {
+    "message": "Доступ к локальным файлам отключён. Проверьте настройки доступа к файлам для этого расширения в браузере перед повторной попыткой."
+  },
+  "confirmWorkspace": {
+    "message": "Подтвердить рабочую область импорта"
+  },
+  "importWorkspaceMessage": {
+    "message": "Импортировать вырезки ($count$) в «$label$» ($workspace$) по адресу $url$? Отправленными будут отмечены только импорты, подтверждённые базой данных.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "Старые вырезки ($count$) были отмечены отправленными без проверки; импорт может создать дубликаты. При сомнениях сначала проверьте или удалите их.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "Импортировать вырезки"
+  },
+  "waitingForImport": {
+    "message": "Ожидание подтверждения импорта…"
+  },
+  "importsConfirmed": {
+    "message": "Подтверждено импортов вырезок: $count$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "Подтверждено $confirmed$ из $total$ импортов. $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "Неподтверждённые вырезки сохранены."
+  },
+  "sendFailed": {
+    "message": "Отправка не удалась: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "Значения по умолчанию применены ко всем неотправленным вырезкам"
+  },
+  "clearAllCaptures": {
+    "message": "Очистить все вырезки"
+  },
+  "clearAllQuestion": {
+    "message": "Все вырезки ($count$) будут безвозвратно удалены. Это действие необратимо.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "Подтверждённые вырезки удалены; более новые сохранены"
+  },
+  "capturesLoadFailed": {
+    "message": "Не удалось загрузить вырезки. Откройте страницу заново или нажмите «Обновить»."
+  },
+  "metadataSaved": {
+    "message": "Метаданные вырезки сохранены"
+  },
+  "discardMetadataDraft": {
+    "message": "Отбросить черновик метаданных"
+  },
+  "discardMetadataMessage": {
+    "message": "Отбросить несохранённые изменения метаданных этой вырезки и загрузить их текущую сохранённую версию? Сохранённые метаданные не изменятся."
   }
 }

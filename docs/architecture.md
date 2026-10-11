@@ -171,11 +171,11 @@ Bot accounts use `@threatcaddy.internal` email addresses and are blocked from in
 
 ### 5.3 Client-Side Encryption
 
-All sensitive fields in IndexedDB can be encrypted at rest using AES-256-GCM. The key hierarchy:
+Covered content fields in IndexedDB can be encrypted at rest using AES-256-GCM. This is field-level protection, not whole-profile encryption: record identifiers, indexing metadata and configuration outside the encryption registry remain readable. The key hierarchy:
 
-1. **Master key** -- Random AES-256-GCM key generated once, stored wrapped in IndexedDB.
+1. **Master key** -- Random AES-256-GCM key generated once. Passphrase-wrapped and recovery-wrapped copies, with their salts, are stored in workspace-scoped localStorage metadata.
 2. **Wrapping key** -- Derived from user passphrase via PBKDF2 (600,000 iterations, SHA-256).
-3. **Session key** -- Unwrapped master key held in memory only (lost on tab close), cached in sessionStorage for tab refreshes.
+3. **Session key** -- Unwrapped master key used in memory. Depending on the chosen session duration, raw key bytes may also be cached in workspace-scoped sessionStorage for refreshes (never for the every-load option; timed cache duration is capped at eight hours). Browser session restoration can preserve sessionStorage; explicit locking clears the cache. This is not protection from scripts running in the unlocked app or from a compromised browser profile.
 4. **Recovery phrase** -- 24-word BIP39-style phrase (192 bits of entropy) for passphrase recovery.
 
 Each encrypted field gets its own random 96-bit IV. The encryption middleware is installed as a Dexie DBCore middleware, transparently encrypting on mutate (add/put) and decrypting on get/getMany/query. It uses `Dexie.waitFor()` to keep IDB transactions alive during async Web Crypto operations.
@@ -359,7 +359,7 @@ Bot API keys and secrets are encrypted at rest in the database using AES-256-GCM
 
 ### Local-First with Optional Server Sync
 
-All data is stored in IndexedDB first. The server is optional -- users can run the app as a standalone browser extension without any server. When a server is connected, the sync engine handles bidirectional change propagation. This enables offline work and air-gapped deployments while still supporting team collaboration when needed. Client-side encryption protects data at rest even when syncing, as encrypted envelopes are sent to the server. Local-only folders can be excluded from sync entirely.
+Investigation data is stored in IndexedDB first. The server is optional: users can run the hosted web app or standalone HTML without a team server. When a server is connected, the sync engine handles bidirectional change propagation. Client-side encryption protects covered fields in the local database at rest, but middleware decrypts those fields before the sync engine reads them. Team sync sends readable entity values, not end-to-end encrypted envelopes. Trust and secure the team server and its backups independently; use HTTPS for transport. Local-only folders can be excluded from sync. Offline copies, exports and historical server records have separate retention lifecycles.
 
 ### Separate Admin Panel on a Different Port
 

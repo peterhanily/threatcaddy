@@ -14,5 +14,7 @@
   "unarchive": "הוצא מארכיון",
   "moveToTrash": "העבר לאשפה",
   "restore": "שחזר",
-  "deletePermanently": "מחק לצמיתות"
+  "deletePermanently": "מחק לצמיתות",
+  "saveFailed": "לא ניתן לשמור את השינויים. הטיוטה נשמרת בלשונית זו; יש לנסות שוב לפני סגירתה.",
+  "retrySave": "ניסיון שמירה נוסף"
 }

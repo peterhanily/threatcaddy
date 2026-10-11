@@ -3,7 +3,19 @@
     "importWarning": "Importé avec {{count}} clip(s) échoué(s)",
     "importFailed": "Échec de l'importation des clips depuis l'extension",
     "openedAsNote": "\"{{name}}\" ouvert comme nouvelle note",
-    "openFailed": "Impossible d'ouvrir \"{{name}}\""
+    "openFailed": "Impossible d'ouvrir \"{{name}}\"",
+    "refreshFailed": "Les extraits ont été enregistrés, mais la vue n’a pas pu être actualisée. Rechargez cet espace pour les voir.",
+    "fileRefreshFailed": "Le fichier a été enregistré comme note, mais la vue n’a pas pu être actualisée. Rechargez cet espace pour la voir.",
+    "fileTitle": "{{name}} — {{size}} — Modifié le {{modified}}",
+    "fileError": {
+      "capacity_one": "Un fichier n’a pas été mis en attente : seuls 20 fichiers peuvent attendre à la fois. Rouvrez-le après ces imports.",
+      "capacity_other": "{{count}} fichiers n’ont pas été mis en attente : seuls 20 peuvent attendre à la fois. Rouvrez-les après ces imports.",
+      "type": "Impossible d’ouvrir « {{name}} » : choisissez un fichier Markdown ou texte.",
+      "size": "Impossible d’ouvrir « {{name}} » : un fichier texte doit faire au maximum 5 MiB. Rouvrez un fichier plus petit.",
+      "read": "Impossible de lire « {{name}} ». Vérifiez les droits d’accès et rouvrez-le pour réessayer.",
+      "import": "Impossible d’enregistrer « {{name}} » comme note. Vérifiez le stockage de l’espace et rouvrez le fichier pour réessayer.",
+      "capacity_many": "{{count}} fichiers n’ont pas été mis en attente : seuls 20 peuvent attendre à la fois. Rouvrez-les après ces imports."
+    }
   },
   "share": {
     "investigationSaved": "Enquête \"{{name}}\" enregistrée avec toutes les entités",

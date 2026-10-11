@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "رویدادهای این هفته",
   "metrics.aiChats": "چت‌های AI",
   "metrics.graphNodes": "گره‌های گراف",
-  "dashboard.backToExecView": "بازگشت به نمای اجرایی"
+  "dashboard.backToExecView": "بازگشت به نمای اجرایی",
+  "dashboard.switchToLight": "تغییر به پوستهٔ روشن",
+  "dashboard.switchToDark": "تغییر به پوستهٔ تیره",
+  "dashboard.emptyTitle": "فضای کاری شما آماده است",
+  "dashboard.emptyDescription": "در حالت تحلیلگر، یک تحقیق بسازید یا کارهای قبلی خود را وارد کنید. این داشبورد کارهای ذخیره‌شده در این فضای کاری را خلاصه می‌کند.",
+  "dashboard.emptyAction": "باز کردن حالت تحلیلگر"
 }

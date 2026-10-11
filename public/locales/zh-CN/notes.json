@@ -83,7 +83,9 @@
     "lockScrollAria": "锁定滚动同步",
     "wordsChars": "{{words}} 个单词，{{chars}} 个字符",
     "created": "创建于 {{date}}",
-    "modified": "修改于 {{date}}"
+    "modified": "修改于 {{date}}",
+    "saveFailed": "无法保存更改。草稿保留在此标签页中；关闭前请重试。",
+    "retrySave": "重试保存"
   },
   "list": {
     "defaultTitle": "笔记",

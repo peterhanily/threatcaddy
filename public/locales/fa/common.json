@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "خطای غیرمنتظره‌ای رخ داد.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "شواهد",
-  "sidebar.products": "محصولات"
+  "sidebar.products": "محصولات",
+  "syncStatus.screenshareHidden": "همگام‌سازی به بررسی نیاز دارد. برای دیدن جزئیات، اشتراک‌گذاری صفحه را خاموش کنید.",
+  "syncStatus.review": "بررسی تنظیمات همگام‌سازی",
+  "draftRecovery.message": "برخی تغییرات ذخیره نشدند. پیش‌نویس‌ها فقط در همین زبانه نگه‌داری می‌شوند. پیش از بستن آن دوباره تلاش کنید یا آن‌ها را دانلود کنید.",
+  "draftRecovery.untitled": "پیش‌نویس ذخیره‌نشده",
+  "draftRecovery.retry": "تلاش دوباره برای ذخیره",
+  "draftRecovery.download": "دانلود پیش‌نویس",
+  "draftRecovery.discard": "حذف پیش‌نویس",
+  "draftRecovery.discardConfirm": "این پیش‌نویس ذخیره‌نشده برای همیشه حذف شود؟ اگر به نسخهٔ بازیابی نیاز دارید، ابتدا آن را دانلود کنید.",
+  "draftRecovery.conflictField": "بررسی تعارض {{field}}",
+  "draftRecovery.keepLocal": "حفظ نسخهٔ من از {{field}}",
+  "draftRecovery.useRemote": "استفاده از نسخهٔ راه دورِ {{field}}"
 }

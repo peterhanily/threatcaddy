@@ -96,7 +96,26 @@
     "stopGenerating": "Oluşturmayı durdur",
     "sendMessage": "Mesaj gönder (Enter)",
     "noMatchesFound": "Eşleşme bulunamadı",
-    "imageLabel": "Resim {{index}}"
+    "imageLabel": "Resim {{index}}",
+    "readingImages": "Görseller okunuyor…",
+    "submitFailed": "Mesajın gönderilmesi tamamlanamadı. Kaydedilmemiş metin ve görseller korundu; yeniden denemeden önce konuşmayı kontrol edin.",
+    "memoryDrafts": "Gönderilmemiş sohbet taslakları, gizli konuşmalar da dâhil olmak üzere yalnızca bu sekmenin belleğinde tutulur. Çalışma alanını değiştirmeden önce taslakları gönderin veya silin ve devam eden gönderimlerin bitmesini bekleyin. Sekmeyi kapatmak ya da yenilemek taslakların kaybolmasına neden olabilir.",
+    "discardAllDrafts": "Gönderilmemiş tüm sohbet taslaklarını sil",
+    "discardAllDraftsConfirm": "Bu çalışma alanındaki tüm konuşmaların gönderilmemiş metin ve görselleri silinsin, okunmakta olan görseller iptal edilsin mi? Kayıtlı mesajlar değişmez. Başlamış gönderimlerin yine tamamlanması gerekir ve bu mesajlar kaydedilebilir. Bu işlem geri alınamaz.",
+    "discardDraftsConfirm": "Gönderilmemiş taslakları sil",
+    "draftError": {
+      "length": "Her taslak en fazla 200.000 karakter içerebilir. Önceki taslak korundu; mesajı kısaltın veya bölün.",
+      "total": "Gönderilmemiş sohbet taslakları toplamda en fazla 1.000.000 karakter içerebilir. Önce diğer taslakları gönderin veya silin; önceki taslak korundu."
+    },
+    "imageError": {
+      "busy": "Geçerli görsel grubunun okunmasını bekleyin. Taslağınız korundu.",
+      "count": "Mesaj başına en fazla 4 görsel ekleyin. Taslak ve önceki görseller korundu.",
+      "type": "PNG, JPEG, GIF veya WebP görselleri seçin. Taslak ve önceki görseller korundu.",
+      "size": "Her görsel 5 MiB veya daha küçük olmalıdır. Taslak ve önceki görseller korundu.",
+      "total": "Mesaj başına görsellerin toplam boyutu 10 MiB veya daha küçük olmalıdır. Taslak ve önceki görseller korundu.",
+      "global": "Gönderilmemiş sohbet taslakları, okunmakta olanlar dâhil en fazla 16 görsel ve toplam 20 MiB görsel verisi tutabilir. Önce diğer taslakları gönderin veya silin; önceki görseller korundu.",
+      "read": "Bir görsel okunamadı. Yeni grup eklenmedi; taslak ve önceki görseller korundu. Yeniden seçip deneyin."
+    }
   },
   "message": {
     "sources": "Kaynaklar",
@@ -140,5 +159,8 @@
   "cti": {
     "invalidCommand": "Bu CTI komutu çalıştırılamadı:",
     "noSources": "Yapılandırılmış CTI Agent Host kaynağı yok. Bu komutu kullanmak için Ayarlar → AI → Agent Hosts altına bir CTI host'u ekleyin."
-  }
+  },
+  "input.serverStatus": "Ekip sunucusu yolu",
+  "input.serverModelsHelp": "Kullanılabilir sağlayıcılar ve modeller ekip sunucusunun yapılandırmasına bağlıdır.",
+  "input.modelLabel": "Yapay zekâ modeli"
 }

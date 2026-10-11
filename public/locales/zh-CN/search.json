@@ -27,5 +27,6 @@
   "timelineEvents": "时间线事件",
   "whiteboards": "白板",
   "iocs": "IOC",
-  "chatThreads": "聊天会话"
+  "chatThreads": "聊天会话",
+  "evidence": "证据"
 }

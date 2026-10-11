@@ -487,9 +487,10 @@ docker compose cp server:/data/files ./files-backup-$(date +%Y%m%d)/
 **Situation:** User forgot their encryption passphrase.
 
 **Recovery options:**
-1. **Recovery phrase**: If the user has their 24-word recovery phrase, they can use it as the passphrase to unwrap the master key.
-2. **Server data**: If connected to a team server, the server has the entity data (though field content may be encrypted client-side). Disabling encryption and re-syncing may recover unencrypted content.
-3. **No recovery possible**: If no recovery phrase and no server, encrypted data in IndexedDB is permanently inaccessible. This is by design.
+1. **Preserve the original**: Do not reset the workspace, clear site storage, remove encryption metadata, or attempt to disable encryption without unlocking it. Preserve the locked database and its workspace-scoped localStorage metadata together; the database alone does not contain the wrapped-key metadata.
+2. **Recovery phrase**: Select the recovery-key mode on the unlock screen and enter the saved 24-word phrase. It uses a separate recovery-wrapped copy of the master key, not the ordinary passphrase wrapping.
+3. **Verified independent copy**: A known-good password-encrypted backup can be restored into a separate workspace using its backup password. Alternatively, if team sync previously completed, verify the required entities are still accessible on that server, then sign in from a separate fresh workspace/browser profile. Sync receives readable entity values; browser encryption at rest is not end-to-end sync encryption. This cannot recover local-only data, untransmitted edits or records the server no longer has. Leave the locked original intact until the recovered copy is checked.
+4. **No usable key or independent copy**: The remaining encrypted data cannot be recovered. Resetting deletes it; it does not decrypt it.
 
 ### Scenario 5: Admin Secret Lost
 

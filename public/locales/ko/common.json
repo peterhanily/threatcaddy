@@ -320,5 +320,16 @@
   "demoModal.removeHint": "나중에 설정에서 샘플 데이터를 제거할 수 있습니다.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "증거",
-  "sidebar.products": "제품"
+  "sidebar.products": "제품",
+  "syncStatus.screenshareHidden": "동기화에 조치가 필요합니다. 자세히 보려면 화면 공유를 끄세요.",
+  "syncStatus.review": "동기화 설정 검토",
+  "draftRecovery.message": "일부 변경 사항을 저장하지 못했습니다. 초안은 이 탭에만 보관됩니다. 닫기 전에 다시 시도하거나 초안을 다운로드하세요.",
+  "draftRecovery.untitled": "저장하지 않은 초안",
+  "draftRecovery.retry": "저장 다시 시도",
+  "draftRecovery.download": "초안 다운로드",
+  "draftRecovery.discard": "초안 버리기",
+  "draftRecovery.discardConfirm": "저장하지 않은 이 초안을 영구적으로 버릴까요? 복구용 사본이 필요하면 먼저 다운로드하세요.",
+  "draftRecovery.conflictField": "{{field}} 충돌 검토",
+  "draftRecovery.keepLocal": "내 {{field}} 유지",
+  "draftRecovery.useRemote": "원격 {{field}} 사용"
 }

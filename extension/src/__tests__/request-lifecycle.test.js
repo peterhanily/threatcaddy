@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { createContext, Script } from 'node:vm';
 import { webcrypto } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { englishMessage, loadUI } from './ui-fixture.js';
 
 function hook() {
   const listeners = new Set();
@@ -31,11 +32,12 @@ function harness(script = 'background.js', storage = {}) {
     extension: { isAllowedFileSchemeAccess: callback => callback(true) },
     scripting: { registerContentScripts: vi.fn().mockResolvedValue(), unregisterContentScripts: vi.fn().mockResolvedValue() },
     tabs: { onUpdated: hook(), create: vi.fn() }, contextMenus: { onClicked: hook(), create: vi.fn() }, commands: { onCommand: hook() },
-    i18n: { getMessage: key => key },
+    i18n: { getMessage: script === 'popup.js' || script === 'pages/clips.js' ? englishMessage : key => key },
   };
   const fetch = vi.fn().mockResolvedValue(new Response('data: [DONE]\n\n'));
   const context = createContext({ chrome, crypto: webcrypto, document: page, window, navigator: { platform: 'Linux' },
     URL, console, fetch, AbortController, TextEncoder, TextDecoder, setTimeout: schedule, clearTimeout });
+  if (script === 'popup.js' || script === 'pages/clips.js') loadUI(context);
   new Script(readFileSync(resolve(import.meta.dirname, '..', script), 'utf8')).runInContext(context);
   const sender = (tab = 1, doc = 'document-one') => ({ id: 'fixture', frameId: 0, documentId: doc,
     url: window.location.href, tab: { id: tab, url: window.location.href } });

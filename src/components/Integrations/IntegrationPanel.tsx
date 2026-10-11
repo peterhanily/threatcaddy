@@ -55,7 +55,7 @@ function CategoryBadge({ category }: { category: IntegrationCategory }) {
   const color = CATEGORY_COLORS[category] || '#6b7280';
   return (
     <span
-      className="px-1.5 py-0.5 rounded text-[10px] font-medium border"
+      className="shrink-0 whitespace-nowrap px-1.5 py-0.5 rounded text-[10px] font-medium border"
       style={{ color, borderColor: `${color}40`, backgroundColor: `${color}15` }}
     >
       {CATEGORY_LABELS[category] || category}
@@ -172,7 +172,7 @@ function InstalledTab({
                     color={template?.color || '#6b7280'}
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="text-sm font-medium text-gray-200 truncate">
                         {template?.name || inst.name}
                       </span>
@@ -283,7 +283,7 @@ function InstalledTab({
               >
                 <TemplateIcon name={template.name} color={template.color} />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="text-sm font-medium text-gray-200 truncate">
                       {template.name}
                     </span>
@@ -295,10 +295,10 @@ function InstalledTab({
                 </div>
                 <button
                   onClick={() => onInstall(template.id)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors shrink-0"
+                  className="flex items-center gap-1 min-h-11 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors shrink-0"
                 >
                   <Plus size={12} />
-                  Install
+                  {t('catalog.install')}
                 </button>
               </div>
             ))}
@@ -534,7 +534,7 @@ function CatalogTab({
                     {isInstalled ? (
                       <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-green-400 bg-green-500/10 border border-green-500/20">
                         <Check size={12} />
-                        Installed
+                        {t('catalog.installed')}
                       </span>
                     ) : (
                       <button
@@ -542,7 +542,7 @@ function CatalogTab({
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors"
                       >
                         <Plus size={12} />
-                        Install
+                        {t('catalog.install')}
                       </button>
                     )}
                     <button
@@ -628,7 +628,7 @@ function CatalogTab({
                         {isInstalled ? (
                           <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-green-400 bg-green-500/10 border border-green-500/20">
                             <Check size={12} />
-                            Installed
+                            {t('catalog.installed')}
                           </span>
                         ) : (
                           <button
@@ -636,7 +636,7 @@ function CatalogTab({
                             className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors"
                           >
                             <Plus size={12} />
-                            Install
+                            {t('catalog.install')}
                           </button>
                         )}
                         <button
@@ -746,7 +746,7 @@ function CatalogTab({
                         {updateStatus === 'installed' ? (
                           <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-green-400 bg-green-500/10 border border-green-500/20">
                             <Check size={12} />
-                            Installed
+                            {t('catalog.installed')}
                           </span>
                         ) : updateStatus === 'update-available' ? (
                           <button
@@ -764,7 +764,7 @@ function CatalogTab({
                             className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
                           >
                             {isInstalling ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-                            Install
+                            {t('catalog.install')}
                           </button>
                         )}
                       </div>

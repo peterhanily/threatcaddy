@@ -145,5 +145,17 @@
   "mitreReport.techniqueCount_other": "{{count}} технік",
   "mitreReport.techniqueCoverage": "Охоплення технік",
   "emptyState": "Подій на часовій шкалі поки немає",
-  "createFirstHint": "Використовуйте кнопку + вище, щоб додати першу подію"
+  "createFirstHint": "Використовуйте кнопку + вище, щоб додати першу подію",
+  "eventCard.assetCount_few": "{{count}} активи",
+  "eventCard.assetCount_many": "{{count}} активів",
+  "feed.eventCount_few": "{{count}} події",
+  "feed.eventCount_many": "{{count}} подій",
+  "gantt.eventCount_few": "{{count}} події",
+  "gantt.eventCount_many": "{{count}} подій",
+  "heatmap.maxEventsPerTechnique_few": "Макс. {{count}} події на техніку",
+  "heatmap.maxEventsPerTechnique_many": "{{count}} макс. подій на техніку",
+  "heatmap.maxActorsPerTechnique_few": "Макс. {{count}} актори на техніку",
+  "heatmap.maxActorsPerTechnique_many": "{{count}} макс. акторів на техніку",
+  "mitreReport.techniqueCount_few": "{{count}} техніки",
+  "mitreReport.techniqueCount_many": "{{count}} технік"
 }

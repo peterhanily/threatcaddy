@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "אירועים השבוע",
   "metrics.aiChats": "צ'אטים AI",
   "metrics.graphNodes": "צמתי גרף",
-  "dashboard.backToExecView": "חזרה לתצוגת הנהלה"
+  "dashboard.backToExecView": "חזרה לתצוגת הנהלה",
+  "dashboard.switchToLight": "מעבר לערכת נושא בהירה",
+  "dashboard.switchToDark": "מעבר לערכת נושא כהה",
+  "dashboard.emptyTitle": "סביבת העבודה מוכנה",
+  "dashboard.emptyDescription": "ניתן ליצור חקירה או לייבא עבודה קיימת במצב אנליסט. לוח זה מסכם את העבודה שנשמרה בסביבת העבודה.",
+  "dashboard.emptyAction": "פתיחת מצב אנליסט"
 }

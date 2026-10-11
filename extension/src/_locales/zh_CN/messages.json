@@ -8,7 +8,6 @@
   "version": {
     "message": "v1.1.1"
   },
-
   "quickStats": {
     "message": "快速统计"
   },
@@ -18,7 +17,6 @@
   "thisWeek": {
     "message": "本周"
   },
-
   "quickCapture": {
     "message": "快速捕获"
   },
@@ -64,7 +62,6 @@
   "saveFailed": {
     "message": "保存失败，请重试。"
   },
-
   "recentCaptures": {
     "message": "近期捕获"
   },
@@ -74,7 +71,6 @@
   "untitled": {
     "message": "未命名"
   },
-
   "quickActions": {
     "message": "快速操作"
   },
@@ -84,7 +80,6 @@
   "reviewAllCaptures": {
     "message": "查看所有捕获"
   },
-
   "permissions": {
     "message": "权限"
   },
@@ -109,7 +104,6 @@
   "allowFileAccessHint": {
     "message": "要启用：前往 chrome://extensions，找到 ThreatCaddy，并开启\"允许访问文件URL\"。"
   },
-
   "howToUse": {
     "message": "使用方法："
   },
@@ -126,9 +120,8 @@
     "message": "隐私："
   },
   "privacyText": {
-    "message": "所有数据本地存储在您的设备上。API 密钥仅发送给您选择的提供商。无追踪。"
+    "message": "剪辑在发送或导出前保留在此设备上。可选的 AI、URL 抓取及已批准的应用连接可能向已配置的服务发送数据。"
   },
-
   "settings": {
     "message": "设置"
   },
@@ -150,37 +143,39 @@
   "save": {
     "message": "保存"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "保存到 ThreatCaddy"
   },
-
   "savedToThreatCaddy": {
     "message": "已保存到 ThreatCaddy！"
   },
-
   "justNow": {
     "message": "刚刚"
   },
   "minutesAgo": {
     "message": "$count$分钟前",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "$count$小时前",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "$count$天前",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "扩展上下文已失效。请重新加载此页面。"
   },
@@ -190,7 +185,9 @@
   "errorExtensionUnknown": {
     "message": "扩展错误：$detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +196,6 @@
   "errorExtensionError": {
     "message": "扩展错误"
   },
-
   "errorInvalidUrl": {
     "message": "无效的 URL"
   },
@@ -221,13 +217,17 @@
   "errorBlockedDomain": {
     "message": "已阻止：$hostname$ 不在允许的代理域名列表中",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "需要 $hostname$ 的主机权限",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +236,9 @@
   "errorUnknownProvider": {
     "message": "未知提供商：$provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +247,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "需要 $hostname$ 的主机权限。请打开 ThreatCaddy 扩展弹出窗口并在权限下启用\"允许 URL 获取\"。",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +261,320 @@
   "errorInvalidTargetUrl": {
     "message": "无效的目标 URL"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "privacyLink": {
+    "message": "隐私"
+  },
+  "captureSaveFailed": {
+    "message": "未能保存剪辑。草稿已保留。"
+  },
+  "captureChangeFailed": {
+    "message": "未能保存剪辑更改。请刷新后重试。"
+  },
+  "approvalTrust": {
+    "message": "仅批准您信任的应用。此确切源（包括端口）或指定的独立文件可以使用授予扩展的功能。"
+  },
+  "localAIOrigin": {
+    "message": "本地 AI 端点源（可选）"
+  },
+  "saveLocalAI": {
+    "message": "保存本地 AI 批准"
+  },
+  "removeLocalAI": {
+    "message": "移除本地 AI 批准"
+  },
+  "approveApp": {
+    "message": "批准应用"
+  },
+  "revokeApps": {
+    "message": "撤销所有已批准的应用"
+  },
+  "revokeAppsQuestion": {
+    "message": "断开所有已批准应用的连接？剪辑和浏览器权限不会被删除。重新连接需要再次批准应用。"
+  },
+  "localAISavedOrigin": {
+    "message": "已为此应用保存：$origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "此应用尚无获准使用的本地 AI 端点。"
+  },
+  "localAIApproveFirst": {
+    "message": "保存本地 AI 端点前，请先批准此应用。"
+  },
+  "localAIReadFailed": {
+    "message": "无法读取本地 AI 批准：$detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "本地 AI 必须使用 URL 中不含凭据的 HTTP(S)"
+  },
+  "localAIPermissionDenied": {
+    "message": "本地 AI 权限被拒绝；已保存的批准未更改。"
+  },
+  "localAIApprovalFailed": {
+    "message": "本地 AI 批准失败"
+  },
+  "invalidAppTarget": {
+    "message": "请使用不含凭据的 HTTP(S) 应用或确切的独立文件"
+  },
+  "appPermissionDenied": {
+    "message": "应用访问权限被拒绝"
+  },
+  "appApprovalFailed": {
+    "message": "应用批准失败"
+  },
+  "appApproved": {
+    "message": "应用已批准。请重新加载应用标签页以连接。"
+  },
+  "appsRevoked": {
+    "message": "所有应用连接均已撤销。"
+  },
+  "revokeFailed": {
+    "message": "撤销失败"
+  },
+  "notificationWaiting": {
+    "message": "正在等待浏览器权限…"
+  },
+  "notificationEnabled": {
+    "message": "桌面通知已启用"
+  },
+  "notificationEnable": {
+    "message": "启用桌面通知"
+  },
+  "notificationEnabledDesc": {
+    "message": "桌面通知已启用。操作系统设置仍可能阻止其显示。请在浏览器扩展设置中撤销权限。"
+  },
+  "notificationDisabledDesc": {
+    "message": "桌面通知已禁用；应用内提醒仍可使用。"
+  },
+  "notificationCheckFailed": {
+    "message": "无法检查通知权限：$detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "正在等待浏览器权限响应。如未出现提示，请检查浏览器扩展权限或重新打开此面板。"
+  },
+  "notificationRequestFailed": {
+    "message": "通知权限请求失败：$detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "无法验证通知权限：$detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "应用内提醒仍可使用。"
+  },
+  "notificationNotEnabled": {
+    "message": "桌面通知未启用；应用内提醒仍可使用。如未出现提示，请检查浏览器扩展权限。"
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — 剪辑审阅"
+  },
+  "clipReview": {
+    "message": "剪辑审阅"
+  },
+  "clipReviewSubtitle": {
+    "message": "浏览和管理已保存的剪辑"
+  },
+  "totalCaptures": {
+    "message": "剪辑总数"
+  },
+  "unsent": {
+    "message": "未发送"
+  },
+  "applyAll": {
+    "message": "应用到全部"
+  },
+  "sendAll": {
+    "message": "全部发送到 ThreatCaddy"
+  },
+  "refresh": {
+    "message": "刷新"
+  },
+  "clearAll": {
+    "message": "全部清除"
+  },
+  "delete": {
+    "message": "删除"
+  },
+  "confirm": {
+    "message": "确认"
+  },
+  "cancel": {
+    "message": "取消"
+  },
+  "noCapturesTitle": {
+    "message": "尚无剪辑"
+  },
+  "noSourceUrl": {
+    "message": "无来源 URL"
+  },
+  "importConfirmed": {
+    "message": "导入已确认"
+  },
+  "legacySent": {
+    "message": "已发送（旧版，未验证）"
+  },
+  "importPending": {
+    "message": "等待导入确认"
+  },
+  "importFailedRetained": {
+    "message": "导入失败 — 已保留"
+  },
+  "folder": {
+    "message": "文件夹"
+  },
+  "editCaptureMetadata": {
+    "message": "编辑剪辑元数据"
+  },
+  "deleteCaptureTitle": {
+    "message": "删除剪辑"
+  },
+  "deleteCaptureQuestion": {
+    "message": "确定要删除此剪辑吗？"
+  },
+  "captureDeleted": {
+    "message": "剪辑已删除"
+  },
+  "preparingDestination": {
+    "message": "正在准备目标…"
+  },
+  "noUnsentCaptures": {
+    "message": "没有尚未发送的剪辑"
+  },
+  "configureTargetFirst": {
+    "message": "请先配置目标 URL"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "目标 URL 无效 — 仅允许 http、https 和 file://"
+  },
+  "targetPermissionDenied": {
+    "message": "权限被拒绝 — 扩展需要访问此网站"
+  },
+  "permissionRequestFailed": {
+    "message": "权限请求失败"
+  },
+  "fileAccessDisabled": {
+    "message": "文件 URL 访问已禁用。请先检查浏览器中此扩展的文件访问设置，然后重试。"
+  },
+  "confirmWorkspace": {
+    "message": "确认导入工作区"
+  },
+  "importWorkspaceMessage": {
+    "message": "将 $count$ 条剪辑导入 $url$ 上的“$label$”（$workspace$）？只有经数据库确认的导入才会标记为已发送。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "$count$ 条旧剪辑此前未经验证就被标记为已发送；导入它们可能产生重复。如不确定，请先审阅或删除。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "导入剪辑"
+  },
+  "waitingForImport": {
+    "message": "正在等待导入确认…"
+  },
+  "importsConfirmed": {
+    "message": "$count$ 条剪辑的导入已确认。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "$total$ 次导入中已有 $confirmed$ 次确认。$detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "未确认的剪辑已保留。"
+  },
+  "sendFailed": {
+    "message": "发送失败：$detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "默认值已应用到所有未发送的剪辑"
+  },
+  "clearAllCaptures": {
+    "message": "清除所有剪辑"
+  },
+  "clearAllQuestion": {
+    "message": "这将永久删除全部 $count$ 条剪辑。此操作无法撤销。",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "已清除经确认的剪辑；较新的剪辑已保留"
+  },
+  "capturesLoadFailed": {
+    "message": "无法加载剪辑。请重新打开此页面或重试刷新。"
+  },
+  "discardMetadataDraft": {
+    "message": "丢弃元数据草稿"
+  },
+  "discardMetadataMessage": {
+    "message": "丢弃此剪辑尚未保存的元数据编辑，并重新加载当前已保存的元数据？已保存的元数据不会更改。"
+  },
+  "metadataSaved": {
+    "message": "剪辑元数据已保存"
   }
 }

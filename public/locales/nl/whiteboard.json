@@ -14,5 +14,7 @@
   "unarchive": "Dearchiveren",
   "moveToTrash": "Naar prullenbak",
   "restore": "Herstellen",
-  "deletePermanently": "Definitief verwijderen"
+  "deletePermanently": "Definitief verwijderen",
+  "saveFailed": "Wijzigingen konden niet worden opgeslagen. Je concept blijft in dit tabblad bewaard; probeer het opnieuw voordat je het sluit.",
+  "retrySave": "Opnieuw opslaan"
 }

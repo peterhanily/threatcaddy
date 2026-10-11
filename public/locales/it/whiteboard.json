@@ -14,5 +14,7 @@
   "unarchive": "Rimuovi dall'archivio",
   "moveToTrash": "Sposta nel cestino",
   "restore": "Ripristina",
-  "deletePermanently": "Elimina definitivamente"
+  "deletePermanently": "Elimina definitivamente",
+  "saveFailed": "Impossibile salvare le modifiche. La bozza resta in questa scheda; riprova prima di chiuderla.",
+  "retrySave": "Riprova salvataggio"
 }

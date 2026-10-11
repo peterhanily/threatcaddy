@@ -96,7 +96,26 @@
     "stopGenerating": "Dừng tạo nội dung",
     "sendMessage": "Gửi tin nhắn (Enter)",
     "noMatchesFound": "Không tìm thấy kết quả",
-    "imageLabel": "Hình ảnh {{index}}"
+    "imageLabel": "Hình ảnh {{index}}",
+    "readingImages": "Đang đọc ảnh…",
+    "submitFailed": "Chưa hoàn tất gửi tin nhắn. Văn bản và ảnh chưa được ghi nhận vẫn được giữ lại; hãy kiểm tra cuộc trò chuyện trước khi thử lại.",
+    "memoryDrafts": "Bản nháp trò chuyện chưa gửi chỉ được giữ trong bộ nhớ của thẻ này, kể cả các cuộc trò chuyện bị ẩn. Hãy gửi hoặc bỏ bản nháp và đợi các lượt gửi đang diễn ra hoàn tất trước khi đổi không gian làm việc; đóng hoặc tải lại thẻ có thể làm mất bản nháp.",
+    "discardAllDrafts": "Bỏ tất cả bản nháp trò chuyện chưa gửi",
+    "discardAllDraftsConfirm": "Bỏ văn bản và ảnh chưa gửi trong mọi cuộc trò chuyện của không gian làm việc này, đồng thời hủy việc đọc ảnh đang diễn ra? Tin nhắn đã lưu không thay đổi. Các lượt gửi đã bắt đầu vẫn phải hoàn tất và có thể lưu tin nhắn. Không thể hoàn tác thao tác này.",
+    "discardDraftsConfirm": "Bỏ bản nháp chưa gửi",
+    "draftError": {
+      "length": "Mỗi bản nháp có thể chứa tối đa 200.000 ký tự. Bản nháp trước được giữ lại; hãy rút ngắn hoặc chia tin nhắn.",
+      "total": "Các bản nháp trò chuyện chưa gửi có thể chứa tổng cộng tối đa 1.000.000 ký tự. Hãy gửi hoặc bỏ bản nháp khác trước; bản nháp trước được giữ lại."
+    },
+    "imageError": {
+      "busy": "Hãy đợi đọc xong nhóm ảnh hiện tại. Bản nháp được giữ lại.",
+      "count": "Chỉ đính kèm tối đa 4 ảnh mỗi tin nhắn. Bản nháp và ảnh trước đó được giữ lại.",
+      "type": "Hãy chọn ảnh PNG, JPEG, GIF hoặc WebP. Bản nháp và ảnh trước đó được giữ lại.",
+      "size": "Mỗi ảnh phải có kích thước không quá 5 MiB. Bản nháp và ảnh trước đó được giữ lại.",
+      "total": "Tổng ảnh mỗi tin nhắn phải có kích thước không quá 10 MiB. Bản nháp và ảnh trước đó được giữ lại.",
+      "global": "Các bản nháp trò chuyện chưa gửi có thể giữ tổng cộng tối đa 16 ảnh và 20 MiB dữ liệu ảnh, kể cả ảnh đang đọc. Hãy gửi hoặc bỏ bản nháp khác trước; ảnh trước đó được giữ lại.",
+      "read": "Không thể đọc một ảnh. Nhóm ảnh mới chưa được đính kèm; bản nháp và ảnh trước đó được giữ lại. Hãy chọn lại rồi thử lại."
+    }
   },
   "message": {
     "sources": "Nguồn",
@@ -139,5 +158,8 @@
   "cti": {
     "invalidCommand": "Không thể chạy lệnh CTI đó:",
     "noSources": "Chưa cấu hình nguồn CTI Agent Host nào. Hãy thêm một CTI host trong Cài đặt → AI → Agent Hosts để sử dụng lệnh này."
-  }
+  },
+  "input.serverStatus": "Kênh máy chủ nhóm",
+  "input.serverModelsHelp": "Nhà cung cấp và mô hình khả dụng phụ thuộc vào cấu hình máy chủ nhóm.",
+  "input.modelLabel": "Mô hình AI"
 }

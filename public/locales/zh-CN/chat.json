@@ -96,7 +96,26 @@
     "stopGenerating": "停止生成",
     "sendMessage": "发送消息（Enter）",
     "noMatchesFound": "未找到匹配项",
-    "imageLabel": "图片 {{index}}"
+    "imageLabel": "图片 {{index}}",
+    "readingImages": "正在读取图像…",
+    "submitFailed": "消息未能完成发送。未提交的文字和图像已保留；重试前请先检查对话。",
+    "memoryDrafts": "未发送的聊天草稿仅保存在此标签页的内存中，包括隐藏的对话。切换工作区前，请发送或丢弃草稿并等待正在发送的消息完成；关闭或重新加载可能导致草稿丢失。",
+    "discardAllDrafts": "丢弃所有未发送的聊天草稿",
+    "discardAllDraftsConfirm": "丢弃此工作区所有聊天对话中未发送的文字和图像，并取消正在读取的图像？已保存的消息不会改变。已开始的发送仍须完成，并可能保存其消息。此操作无法撤销。",
+    "discardDraftsConfirm": "丢弃未发送的草稿",
+    "draftError": {
+      "length": "每份草稿最多包含 200,000 个字符。先前的草稿已保留；请缩短或拆分消息。",
+      "total": "未发送的聊天草稿合计最多包含 1,000,000 个字符。请先发送或丢弃其他草稿；先前的草稿已保留。"
+    },
+    "imageError": {
+      "busy": "请等待当前图像批次读取完成。草稿已保留。",
+      "count": "每条消息最多附加 4 张图像。草稿和先前的图像已保留。",
+      "type": "请选择 PNG、JPEG、GIF 或 WebP 图像。草稿和先前的图像已保留。",
+      "size": "每张图像不得超过 5 MiB。草稿和先前的图像已保留。",
+      "total": "每条消息的图像合计不得超过 10 MiB。草稿和先前的图像已保留。",
+      "global": "未发送的聊天草稿合计最多保留 16 张图像和 20 MiB 图像数据，包括正在读取的图像。请先发送或丢弃其他草稿；先前的图像已保留。",
+      "read": "无法读取某张图像。新批次未被附加；草稿和先前的图像已保留。请重新选择后重试。"
+    }
   },
   "message": {
     "sources": "来源",
@@ -139,5 +158,8 @@
   "cti": {
     "invalidCommand": "无法运行该 CTI 命令:",
     "noSources": "未配置任何 CTI Agent Host 源。请在“设置 → AI → Agent Hosts”下添加一个 CTI host 以使用此命令。"
-  }
+  },
+  "input.serverStatus": "团队服务器通道",
+  "input.serverModelsHelp": "可用的提供商和模型取决于团队服务器配置。",
+  "input.modelLabel": "AI 模型"
 }

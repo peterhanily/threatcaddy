@@ -1,4 +1,7 @@
 {
+  "input.serverStatus": "Team server route",
+  "input.serverModelsHelp": "Available providers and models depend on your team server configuration.",
+  "input.modelLabel": "AI model",
   "cti": {
     "invalidCommand": "That CTI command couldn't be run:",
     "noSources": "No CTI Agent Host sources are configured. Add a CTI host under Settings → AI → Agent Hosts to use this command."

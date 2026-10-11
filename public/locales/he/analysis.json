@@ -53,7 +53,6 @@
   "iocPanel.pushAgainMessage": "IOCs מדוח זה כבר נדחפו {{date}}. לדחוף שוב?",
   "iocPanel.pushAgainCategoryMessage": "IOCs מדוח זה כבר נדחפו {{date}}. לדחוף קטגוריה זו שוב?",
   "iocPanel.pushAgainConfirm": "דחף שוב",
-
   "iocItem.collapseAria": "כווץ",
   "iocItem.expandAria": "הרחב",
   "iocItem.copyTitle": "העתק ערך",
@@ -74,7 +73,6 @@
   "iocItem.selectType": "בחר סוג...",
   "iocItem.selectTarget": "בחר IOC יעד...",
   "iocItem.addRelationship": "הוסף קשר",
-
   "iocStats.title": "ניתוח IOC",
   "iocStats.global": "גלובלי",
   "iocStats.uniqueCount": "({{count}} ייחודיים)",
@@ -169,7 +167,6 @@
   "iocStats.deleteSelectedMessage": "למחוק {{count}} IOC{{plural}}? לא ניתן לבטל פעולה זו.{{extractedNote}}",
   "iocStats.extractedSkipNote": " ({{count}} IOCs שחולצו יידלגו)",
   "iocStats.deleteSelectedConfirm": "מחק {{count}}",
-
   "iocForm.editTitle": "ערוך IOC",
   "iocForm.createTitle": "צור IOC",
   "iocForm.typeLabel": "סוג",
@@ -200,7 +197,6 @@
   "iocForm.prevValue": "היה {{value}}",
   "iocForm.saveButton": "שמור",
   "iocForm.createButton": "צור IOC",
-
   "iocList.title": "IOCs עצמאיים",
   "iocList.dedup": "בטל כפילויות",
   "iocList.dedupTitle": "מצא IOCs כפולים",
@@ -253,7 +249,6 @@
   "iocList.statusHeader": "סטטוס",
   "iocList.attributionHeader": "ייחוס",
   "iocList.updatedHeader": "עודכן",
-
   "bulkImport.inputTitle": "ייבוא IOCs מרוכז",
   "bulkImport.previewTitle": "תצוגה מקדימה של ייבוא",
   "bulkImport.resultsTitle": "תוצאות ייבוא",
@@ -279,7 +274,6 @@
   "bulkImport.skippedCount": "דולג {{count}} כפיל",
   "bulkImport.skippedCount_other": "דולגו {{count}} כפילים",
   "bulkImport.failedCount": "{{count}} נכשלו",
-
   "bulkEnrich.title": "העשרה מרוכזת",
   "bulkEnrich.selectedCount": "{{count}} IOC נבחר",
   "bulkEnrich.selectedCount_other": "{{count}} IOCs נבחרו",
@@ -307,7 +301,6 @@
   "bulkEnrich.resume": "המשך",
   "bulkEnrich.pause": "השהה",
   "bulkEnrich.stop": "עצור",
-
   "dedup.title": "מצא כפילויות",
   "dedup.summary": "נמצאו {{groups}} קבוצות כפולות ({{total}} כפילויות סה\"כ)",
   "dedup.noDuplicatesTitle": "לא נמצאו כפילויות",
@@ -318,12 +311,10 @@
   "dedup.merge": "מזג",
   "dedup.tags": "{{count}} תגיות",
   "dedup.keep": "שמור",
-
   "badge.filterAria": "מסנן IOC {{label}}",
   "badge.filterActiveOnlyAria": "מסנן IOC {{label}}, פעיל",
   "badge.filterCountAria": "מסנן IOC {{label}}, נמצאו {{count}}",
   "badge.filterActiveAria": "מסנן IOC {{label}}, נמצאו {{count}}, פעיל",
-
   "mispImport.uploadTitle": "ייבא אירוע MISP",
   "mispImport.previewTitle": "תצוגה מקדימה של ייבוא MISP",
   "mispImport.resultsTitle": "תוצאות ייבוא",
@@ -348,7 +339,6 @@
   "mispImport.skippedCount": "דולג {{count}} כפיל",
   "mispImport.skippedCount_other": "דולגו {{count}} כפילים",
   "mispImport.failedCount": "{{count}} נכשלו",
-
   "stixImport.uploadTitle": "ייבא חבילת STIX 2.1",
   "stixImport.previewTitle": "תצוגה מקדימה של ייבוא STIX",
   "stixImport.resultsTitle": "תוצאות ייבוא",
@@ -376,6 +366,25 @@
   "stixImport.failedCount": "{{count}} נכשלו",
   "stixImport.relationshipsDetected": "זוהה {{count}} קשר",
   "stixImport.relationshipsDetected_other": "זוהו {{count}} קשרים",
-
-  "attribution.placeholder": "למשל: APT29, קבוצת Lazarus..."
+  "attribution.placeholder": "למשל: APT29, קבוצת Lazarus...",
+  "iocPanel.copiedCount_two": "הועתקו {{count}} IOCs ללוח",
+  "bulkImport.parsedCount_two": "נותחו {{count}} IOCs",
+  "bulkImport.importButton_two": "ייבא {{count}} IOCs",
+  "bulkImport.createdCount_two": "נוצרו {{count}} IOCs",
+  "bulkImport.skippedCount_two": "דולגו {{count}} כפילים",
+  "bulkEnrich.selectedCount_two": "{{count}} IOCs נבחרו",
+  "bulkEnrich.noMatchHint_two": "ל-{{count}} IOCs אין אינטגרציות מתאימות וידולגו.",
+  "bulkEnrich.enrichButton_two": "העשר {{count}} IOCs",
+  "mispImport.iocCount_two": "נמצאו {{count}} IOCs",
+  "mispImport.warningCount_two": "{{count}} אזהרות",
+  "mispImport.importButton_two": "ייבא {{count}} IOCs",
+  "mispImport.createdCount_two": "נוצרו {{count}} IOCs",
+  "mispImport.skippedCount_two": "דולגו {{count}} כפילים",
+  "stixImport.iocCount_two": "נמצאו {{count}} IOCs",
+  "stixImport.relationshipCount_two": "נמצאו {{count}} קשרים",
+  "stixImport.warningCount_two": "{{count}} אזהרות",
+  "stixImport.importButton_two": "ייבא {{count}} IOCs",
+  "stixImport.createdCount_two": "נוצרו {{count}} IOCs",
+  "stixImport.skippedCount_two": "דולגו {{count}} כפילים",
+  "stixImport.relationshipsDetected_two": "זוהו {{count}} קשרים"
 }

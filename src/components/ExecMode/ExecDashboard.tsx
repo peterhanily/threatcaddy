@@ -188,6 +188,8 @@ export function ExecDashboard({
   }, [allIOCs]);
 
   const activeFolders = folders.filter((f) => (f.status || 'active') === 'active');
+  const emptyWorkspace = folders.length === 0 && activityEntries.length === 0 && agentStats.total === 0
+    && [allNotes, allTasks, allEvents, allWhiteboards, allIOCs, allChatThreads].every(items => !items.some(item => !item.trashed));
   const folderNames = useMemo(() => {
     const map = new Map<string, string>();
     for (const f of folders) map.set(f.id, f.name);
@@ -578,27 +580,30 @@ export function ExecDashboard({
   };
 
   return (
-    <div className={cn('h-screen flex flex-col bg-bg-deep', theme)}>
+    <div className={cn('h-screen min-w-0 flex flex-col bg-bg-deep', theme)}>
       {/* Gradient top accent */}
       <div className="h-0.5 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 shrink-0" />
 
       {/* Header bar */}
-      <div className="flex items-center justify-between px-4 py-3 bg-bg-surface border-b border-border-subtle shrink-0">
-        <div className="flex items-center gap-2.5">
-          <Shield size={18} className="text-accent" />
+      <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-3 bg-bg-surface border-b border-border-subtle shrink-0">
+        <div className="min-w-0 flex items-center gap-2">
+          <Shield size={18} className="text-accent shrink-0" />
           <span className="font-bold text-text-primary text-sm">ThreatCaddy</span>
           <span className="text-[10px] font-semibold tracking-widest text-accent bg-accent/10 px-1.5 py-0.5 rounded">
             EXEC
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={onToggleTheme} className="p-2 rounded-lg text-text-muted active:bg-bg-hover">
+        <div className="flex shrink-0 items-center gap-1">
+          <button onClick={onToggleTheme} className="min-h-11 min-w-11 flex items-center justify-center rounded-lg text-text-muted active:bg-bg-hover"
+            aria-label={t(theme === 'dark' ? 'dashboard.switchToLight' : 'dashboard.switchToDark')}
+            title={t(theme === 'dark' ? 'dashboard.switchToLight' : 'dashboard.switchToDark')}>
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
           <button
             onClick={() => onSwitchToAnalystMode()}
-            className="p-2 rounded-lg text-text-muted active:bg-bg-hover"
-            title="Switch to Analyst Mode"
+            className="min-h-11 min-w-11 flex items-center justify-center rounded-lg text-text-muted active:bg-bg-hover"
+            title={t('dashboard.switchToAnalyst')}
+            aria-label={t('dashboard.switchToAnalyst')}
           >
             <Monitor size={16} />
           </button>
@@ -620,7 +625,7 @@ export function ExecDashboard({
       )}
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="flex-1 min-w-0 overflow-y-auto px-3 sm:px-4 py-4">
         {drillDown ? (
           <div className="flex flex-col gap-3">
             <ExecBreadcrumb segments={breadcrumbs} />
@@ -628,6 +633,13 @@ export function ExecDashboard({
           </div>
         ) : nav === 'overview' ? (
           <div className="flex flex-col gap-5">
+            {emptyWorkspace && (
+              <section className="min-w-0 rounded-xl border border-border-subtle bg-bg-surface p-4 space-y-3 [overflow-wrap:anywhere]" aria-labelledby="exec-empty-title">
+                <h2 id="exec-empty-title" className="text-base font-semibold text-text-primary">{t('dashboard.emptyTitle')}</h2>
+                <p className="text-sm text-text-secondary">{t('dashboard.emptyDescription')}</p>
+                <button onClick={() => onSwitchToAnalystMode()} className="min-h-11 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white">{t('dashboard.emptyAction')}</button>
+              </section>
+            )}
             <ExecMetricsBar
               allNotes={allNotes}
               allTasks={allTasks}
@@ -673,25 +685,25 @@ export function ExecDashboard({
                   <Bot size={14} className="text-accent-blue" />
                   <h2 className="text-sm font-semibold text-text-primary">{t('dashboard.agentCaddy')}</h2>
                   {agentStats.activeAgents > 0 && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-green/10 text-accent-green">{agentStats.activeAgents} active</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-green/10 text-accent-green">{t('dashboard.active', { count: agentStats.activeAgents })}</span>
                   )}
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div className="bg-surface-raised rounded-lg p-3 text-center">
                     <div className="text-lg font-bold text-text-primary">{agentStats.executed}</div>
-                    <div className="text-[10px] text-accent-green">Executed</div>
+                    <div className="text-[10px] text-accent-green">{t('dashboard.executed')}</div>
                   </div>
                   <div className="bg-surface-raised rounded-lg p-3 text-center">
                     <div className="text-lg font-bold text-text-primary">{agentStats.pending}</div>
-                    <div className="text-[10px] text-accent-amber">Pending Review</div>
+                    <div className="text-[10px] text-accent-amber">{t('dashboard.pendingReview')}</div>
                   </div>
                   <div className="bg-surface-raised rounded-lg p-3 text-center">
                     <div className="text-lg font-bold text-text-primary">{agentStats.failed}</div>
-                    <div className="text-[10px] text-red-400">Failed</div>
+                    <div className="text-[10px] text-red-400">{t('dashboard.failed')}</div>
                   </div>
                   <div className="bg-surface-raised rounded-lg p-3 text-center">
                     <div className="text-lg font-bold text-text-primary">{agentStats.activeAgents}</div>
-                    <div className="text-[10px] text-accent-blue">Active Agents</div>
+                    <div className="text-[10px] text-accent-blue">{t('dashboard.activeAgents')}</div>
                   </div>
                 </div>
               </div>

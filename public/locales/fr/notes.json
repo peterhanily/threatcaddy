@@ -83,7 +83,9 @@
     "lockScrollAria": "Verrouiller la synchronisation du défilement",
     "wordsChars": "{{words}} mots, {{chars}} caractères",
     "created": "Créé {{date}}",
-    "modified": "Modifié {{date}}"
+    "modified": "Modifié {{date}}",
+    "saveFailed": "Impossible d’enregistrer les modifications. Votre brouillon reste dans cet onglet ; réessayez avant de le fermer.",
+    "retrySave": "Réessayer l’enregistrement"
   },
   "list": {
     "defaultTitle": "Notes",

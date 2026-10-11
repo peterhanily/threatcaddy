@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Settings } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import { applyColorScheme } from '../lib/theme-schemes';
-import i18n, { RTL_LANGS, SUPPORTED_LANGUAGES } from '../i18n';
+import { applyAppLanguage, normalizeLanguage } from '../i18n';
 
 const SETTINGS_KEY = workspaceStorageKey('threatcaddy-settings');
 
@@ -43,6 +43,7 @@ function loadSettings(): Settings {
     const stored = localStorage.getItem(SETTINGS_KEY);
     if (stored) {
       const raw = migrateSettings(JSON.parse(stored));
+      if ('language' in raw) raw.language = normalizeLanguage(raw.language);
       return { ...DEFAULT_SETTINGS, ...raw } as Settings;
     }
   } catch {
@@ -82,17 +83,12 @@ export function useSettings() {
 
   // Apply language and text direction
   useEffect(() => {
-    const lang = SUPPORTED_LANGUAGES.some(({ code }) => code === settings.language) ? settings.language! : 'en';
-    if (i18n.language !== lang) {
-      i18n.changeLanguage(lang);
-    }
-    document.documentElement.dir = RTL_LANGS.has(lang) ? 'rtl' : 'ltr';
-    document.documentElement.lang = lang;
+    applyAppLanguage(settings.language);
   }, [settings.language]);
 
   const updateSettings = useCallback((updates: Partial<Settings>) => {
     setSettingsState((prev) => {
-      const next = { ...prev, ...updates };
+      const next = { ...prev, ...updates, ...('language' in updates ? { language: normalizeLanguage(updates.language) } : {}) };
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
       return next;
     });

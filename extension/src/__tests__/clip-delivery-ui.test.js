@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { createContext, Script } from 'node:vm';
 import { webcrypto } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
+import { englishMessage, loadUI } from './ui-fixture.js';
 
 function hook() {
   const listeners = [];
@@ -17,10 +18,11 @@ function pageHarness(script = 'popup.js', storage = {}) {
     storage: { local: { get: vi.fn(async () => structuredClone(storage)), set: vi.fn() }, onChanged: hook() },
     permissions: { contains: vi.fn().mockResolvedValue(false), request: vi.fn().mockResolvedValue(false), onAdded: hook(), onRemoved: hook() },
     extension: { isAllowedFileSchemeAccess: callback => callback(false) },
-    i18n: { getMessage: key => key }, tabs: { create: vi.fn() },
+    i18n: { getMessage: englishMessage }, tabs: { create: vi.fn() },
   };
   const context = createContext({ chrome, crypto: webcrypto, document: page, window: { close: vi.fn() },
     navigator: { platform: 'Linux' }, console, URL, setTimeout, clearTimeout });
+  loadUI(context);
   new Script(readFileSync(resolve(import.meta.dirname, '..', script), 'utf8')).runInContext(context);
   return { chrome, page, context, get: id => page.getElementById(id) };
 }

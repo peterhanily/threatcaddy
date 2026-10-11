@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "今週のイベント",
   "metrics.aiChats": "AIチャット",
   "metrics.graphNodes": "グラフノード",
-  "dashboard.backToExecView": "エグゼクティブビューに戻る"
+  "dashboard.backToExecView": "エグゼクティブビューに戻る",
+  "dashboard.switchToLight": "ライトテーマに切り替え",
+  "dashboard.switchToDark": "ダークテーマに切り替え",
+  "dashboard.emptyTitle": "ワークスペースの準備ができました",
+  "dashboard.emptyDescription": "アナリストモードで調査を作成するか、既存の作業をインポートしてください。このダッシュボードには、現在のワークスペースに保存された作業の概要が表示されます。",
+  "dashboard.emptyAction": "アナリストモードを開く"
 }

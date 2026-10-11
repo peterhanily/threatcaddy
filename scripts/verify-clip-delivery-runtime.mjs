@@ -99,6 +99,8 @@ function chromePage(page) {
     evaluate: (fn, arg) => page.evaluate(fn, arg),
     click: selector => page.locator(selector).click(),
     fill: (selector, value) => page.locator(selector).fill(value),
+    press: key => page.keyboard.press(key),
+    setViewport: (width, height) => page.setViewportSize({ width, height }),
     clickText: (name, role = 'button') => page.getByRole(role, { name, exact: true }).click(),
     screenshot: path => page.screenshot({ path, fullPage: true }),
     url: () => page.url(),
@@ -106,24 +108,26 @@ function chromePage(page) {
   };
 }
 
-async function chromeRuntime(root, proxy) {
+async function chromeRuntime(root, proxy, { grantLoopback = true, locale = 'en-US' } = {}) {
   const context = await chromium.launchPersistentContext(join(root, 'profile'), {
     executablePath: process.env.CHROME_BIN || (process.platform === 'darwin'
       ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : '/usr/bin/google-chrome'),
     headless: true, ignoreDefaultArgs: ['--disable-extensions'],
-    args: ['--enable-unsafe-extension-debugging', '--disable-background-networking', '--lang=en-US',
+    args: ['--enable-unsafe-extension-debugging', '--disable-background-networking', `--lang=${locale}`, `--accept-lang=${locale}`,
       `--proxy-server=${proxy.origin}`, '--proxy-bypass-list=127.0.0.1;localhost;[::1]'],
   });
   try {
     await context.addInitScript(seedPageSettings);
     const cdp = await context.browser().newBrowserCDPSession();
     const extension = await cdp.send('Extensions.loadUnpacked', { path: join(repo, 'extension/dist/chrome') });
-    const manager = await context.newPage();
-    await manager.goto(`chrome://extensions/?id=${extension.id}`);
-    // Only this disposable profile gets a loopback host grant. Native prompt UI
-    // is intentionally out of scope; real extension permission checks still run.
-    await manager.evaluate(id => chrome.developerPrivate.addHostPermission(id, 'http://127.0.0.1/*'), extension.id);
-    await manager.close();
+    if (grantLoopback) {
+      const manager = await context.newPage();
+      await manager.goto(`chrome://extensions/?id=${extension.id}`);
+      // Only this disposable profile gets a loopback host grant. Native prompt UI
+      // is intentionally out of scope; real extension permission checks still run.
+      await manager.evaluate(id => chrome.developerPrivate.addHostPermission(id, 'http://127.0.0.1/*'), extension.id);
+      await manager.close();
+    }
     return {
       version: context.browser().version(), extensionOrigin: `chrome-extension://${extension.id}`,
       newPage: async () => chromePage(await context.newPage()),
@@ -133,7 +137,7 @@ async function chromeRuntime(root, proxy) {
   } catch (error) { await context.close(); throw error; }
 }
 
-async function firefoxRuntime(root, proxy) {
+async function firefoxRuntime(root, proxy, { locale = 'en-US' } = {}) {
   const profile = join(root, 'profile');
   await mkdir(profile);
   const uuid = 'f03dcd35-0081-47c4-bb91-fdf22192e617';
@@ -142,7 +146,7 @@ async function firefoxRuntime(root, proxy) {
     'extensions.webextOptionalPermissionPrompts': false,
     'extensions.webextensions.uuids': JSON.stringify({ 'threatcaddy@threatcaddy.com': uuid }),
     'browser.shell.checkDefaultBrowser': false, 'browser.startup.homepage_override.mstone': 'ignore',
-    'intl.locale.requested': 'en-US', 'intl.accept_languages': 'en-US,en',
+    'intl.locale.requested': locale, 'intl.accept_languages': locale,
     'datareporting.healthreport.uploadEnabled': false, 'toolkit.telemetry.enabled': false,
     'network.proxy.type': 1, 'network.proxy.http': '127.0.0.1', 'network.proxy.http_port': proxyPort,
     'network.proxy.ssl': '127.0.0.1', 'network.proxy.ssl_port': proxyPort,
@@ -227,6 +231,14 @@ async function firefoxRuntime(root, proxy) {
       evaluate: (fn, arg) => evaluate(context, fn, arg),
       click: async selector => pointClick(context, await actionTarget(context, { selector })),
       clickText: async (name, role = 'button') => pointClick(context, await actionTarget(context, { name, role })),
+      press: async key => {
+        const values = { Tab: '\uE004', Enter: '\uE007', Escape: '\uE00C', Shift: '\uE008' };
+        const keys = key.split('+').map(part => values[part] || part);
+        await send('input.performActions', { context, actions: [{ type: 'key', id: 'keyboard', actions: [
+          ...keys.map(value => ({ type: 'keyDown', value })), ...keys.toReversed().map(value => ({ type: 'keyUp', value })),
+        ] }] });
+      },
+      setViewport: (width, height) => send('browsingContext.setViewport', { context, viewport: { width, height } }),
       fill: async (selector, value) => {
         await pointClick(context, await actionTarget(context, { selector, editable: true }));
         return evaluate(context, ({ selector, value }) => {
@@ -266,7 +278,7 @@ async function firefoxRuntime(root, proxy) {
   }
 }
 
-export async function withClipRuntime(browserName, suite) {
+export async function withClipRuntime(browserName, suite, options = {}) {
   const root = await mkdtemp(join(tmpdir(), `threatcaddy-clip-${browserName}-`));
   const result = { browser: browserName, status: 'incomplete', checks: [], error: null };
   console.log('Task-owned profile and evidence:', root);
@@ -277,7 +289,7 @@ export async function withClipRuntime(browserName, suite) {
   let runtime;
   const check = label => { result.checks.push(label); console.log('PASS:', label); };
   try {
-    runtime = browserName === 'chrome' ? await chromeRuntime(root, proxy) : await firefoxRuntime(root, proxy);
+    runtime = browserName === 'chrome' ? await chromeRuntime(root, proxy, options) : await firefoxRuntime(root, proxy, options);
     result.version = runtime.version;
     result.origin = app.origin;
     await suite({ runtime, origin: app.origin, unavailableOrigin: unavailable.origin, root, check });

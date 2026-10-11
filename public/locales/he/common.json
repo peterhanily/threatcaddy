@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "אירעה שגיאה לא צפויה.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "ראיות",
-  "sidebar.products": "מוצרים"
+  "sidebar.products": "מוצרים",
+  "syncStatus.screenshareHidden": "הסנכרון דורש טיפול. יש לכבות שיתוף מסך כדי לבדוק את הפרטים.",
+  "syncStatus.review": "בדיקת הגדרות סנכרון",
+  "draftRecovery.message": "חלק מהשינויים לא נשמרו. הטיוטות נשמרות רק בלשונית זו. יש לנסות שוב או להוריד אותן לפני סגירתה.",
+  "draftRecovery.untitled": "טיוטה שלא נשמרה",
+  "draftRecovery.retry": "ניסיון שמירה נוסף",
+  "draftRecovery.download": "הורדת הטיוטה",
+  "draftRecovery.discard": "מחיקת הטיוטה",
+  "draftRecovery.discardConfirm": "למחוק לצמיתות טיוטה זו שלא נשמרה? אם נדרש עותק לשחזור, יש להוריד אותה תחילה.",
+  "draftRecovery.conflictField": "בדיקת התנגשות בשדה {{field}}",
+  "draftRecovery.keepLocal": "שמירת הגרסה שלי של {{field}}",
+  "draftRecovery.useRemote": "שימוש בגרסה המרוחקת של {{field}}"
 }

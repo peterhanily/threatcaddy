@@ -23,5 +23,7 @@
   "rename": "이름 변경",
   "archive": "보관",
   "unarchive": "보관 해제",
-  "deletePermanently": "영구 삭제"
+  "deletePermanently": "영구 삭제",
+  "saveFailed": "변경 사항을 저장할 수 없습니다. 초안은 이 탭에 남아 있습니다. 닫기 전에 다시 시도하세요.",
+  "retrySave": "저장 다시 시도"
 }

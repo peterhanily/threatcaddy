@@ -145,5 +145,11 @@
   "mitreReport.techniqueCount_other": "{{count}} טכניקות",
   "mitreReport.techniqueCoverage": "כיסוי טכניקות",
   "emptyState": "אין עדיין אירועי ציר זמן",
-  "createFirstHint": "השתמש בכפתור + למעלה כדי להוסיף את האירוע הראשון שלך"
+  "createFirstHint": "השתמש בכפתור + למעלה כדי להוסיף את האירוע הראשון שלך",
+  "eventCard.assetCount_two": "{{count}} נכסים",
+  "feed.eventCount_two": "{{count}} אירועים",
+  "gantt.eventCount_two": "{{count}} אירועים",
+  "heatmap.maxEventsPerTechnique_two": "{{count}} אירועים מקסימליים לטכניקה",
+  "heatmap.maxActorsPerTechnique_two": "{{count}} גורמים מקסימליים לטכניקה",
+  "mitreReport.techniqueCount_two": "{{count}} טכניקות"
 }

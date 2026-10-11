@@ -1,6 +1,6 @@
 {
   "name": "threatcaddy",
-  "description": "ThreatCaddy — Threat Investigation Workspace. Notes, IOCs, Timelines & Graphs. No server. No tracking.",
+  "description": "ThreatCaddy — Local-first threat investigation workspace with optional team collaboration.",
   "private": true,
   "version": "1.0.0",
   "packageManager": "pnpm@10.29.1",
@@ -33,6 +33,8 @@
     "translate:dry": "node scripts/translate-i18n.mjs --dry-run",
     "translate:sync": "node scripts/translate-i18n.mjs --sync",
     "translate:sync:dry": "node scripts/translate-i18n.mjs --sync --dry-run",
+    "locales:check": "node scripts/check-locales.mjs",
+    "locales:report": "node scripts/check-locales.mjs --report",
     "deploy": "gh workflow run deploy.yml --ref main"
   },
   "dependencies": {

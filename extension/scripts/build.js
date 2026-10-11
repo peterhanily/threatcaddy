@@ -35,6 +35,7 @@ copyFileSync(
   join(rootDir, 'src/popup.js'),
   join(outdir, 'popup.js')
 );
+copyFileSync(join(rootDir, 'src/ui.js'), join(outdir, 'ui.js'));
 
 // Copy background script
 copyFileSync(

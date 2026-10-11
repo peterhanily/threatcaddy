@@ -8,7 +8,6 @@
   "version": {
     "message": "v1.1.1"
   },
-
   "quickStats": {
     "message": "Statistik Cepat"
   },
@@ -18,7 +17,6 @@
   "thisWeek": {
     "message": "Minggu Ini"
   },
-
   "quickCapture": {
     "message": "Tangkap Cepat"
   },
@@ -64,7 +62,6 @@
   "saveFailed": {
     "message": "Gagal menyimpan. Silakan coba lagi."
   },
-
   "recentCaptures": {
     "message": "Tangkapan Terbaru"
   },
@@ -74,7 +71,6 @@
   "untitled": {
     "message": "Tanpa Judul"
   },
-
   "quickActions": {
     "message": "Tindakan Cepat"
   },
@@ -84,7 +80,6 @@
   "reviewAllCaptures": {
     "message": "Tinjau Semua Tangkapan"
   },
-
   "permissions": {
     "message": "Izin"
   },
@@ -109,7 +104,6 @@
   "allowFileAccessHint": {
     "message": "Untuk mengaktifkan: buka chrome://extensions, temukan ThreatCaddy, dan aktifkan \"Izinkan akses URL file\"."
   },
-
   "howToUse": {
     "message": "Cara menggunakan:"
   },
@@ -126,9 +120,8 @@
     "message": "Privasi:"
   },
   "privacyText": {
-    "message": "Semua data tetap lokal di perangkat Anda. API key hanya dikirim ke penyedia yang Anda pilih. Tidak ada pelacakan."
+    "message": "Klip tetap di perangkat ini hingga dikirim atau diekspor. AI opsional, pengambilan URL, dan koneksi aplikasi yang disetujui dapat mengirim data ke layanan yang dikonfigurasi."
   },
-
   "settings": {
     "message": "Pengaturan"
   },
@@ -150,37 +143,39 @@
   "save": {
     "message": "Simpan"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "Simpan ke ThreatCaddy"
   },
-
   "savedToThreatCaddy": {
     "message": "Tersimpan ke ThreatCaddy!"
   },
-
   "justNow": {
     "message": "Baru saja"
   },
   "minutesAgo": {
     "message": "$count$m lalu",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "$count$j lalu",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "$count$h lalu",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "Konteks ekstensi tidak valid. Harap muat ulang halaman ini."
   },
@@ -190,7 +185,9 @@
   "errorExtensionUnknown": {
     "message": "Kesalahan ekstensi: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +196,6 @@
   "errorExtensionError": {
     "message": "Kesalahan ekstensi"
   },
-
   "errorInvalidUrl": {
     "message": "URL tidak valid"
   },
@@ -221,13 +217,17 @@
   "errorBlockedDomain": {
     "message": "Diblokir: $hostname$ tidak ada dalam daftar domain proksi yang diizinkan",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "Izin host diperlukan untuk $hostname$",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +236,9 @@
   "errorUnknownProvider": {
     "message": "Penyedia tidak diketahui: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +247,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "Izin host diperlukan untuk $hostname$. Buka popup ekstensi ThreatCaddy dan aktifkan \"Izinkan pengambilan URL\" di bawah Izin.",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +261,320 @@
   "errorInvalidTargetUrl": {
     "message": "URL target tidak valid"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "privacyLink": {
+    "message": "Privasi"
+  },
+  "captureSaveFailed": {
+    "message": "Tangkapan tidak tersimpan. Draf Anda dipertahankan."
+  },
+  "captureChangeFailed": {
+    "message": "Perubahan tangkapan tidak tersimpan. Muat ulang lalu coba lagi."
+  },
+  "approvalTrust": {
+    "message": "Setujui hanya aplikasi yang Anda percayai. Origin persis ini (termasuk port), atau berkas mandiri persis ini, dapat memakai kemampuan yang diberikan kepada ekstensi."
+  },
+  "localAIOrigin": {
+    "message": "Origin endpoint AI lokal (opsional)"
+  },
+  "saveLocalAI": {
+    "message": "Simpan persetujuan AI lokal"
+  },
+  "removeLocalAI": {
+    "message": "Hapus persetujuan AI lokal"
+  },
+  "approveApp": {
+    "message": "Setujui aplikasi"
+  },
+  "revokeApps": {
+    "message": "Cabut semua aplikasi yang disetujui"
+  },
+  "revokeAppsQuestion": {
+    "message": "Putuskan semua aplikasi yang disetujui? Tangkapan dan izin browser tidak dihapus. Setujui kembali aplikasi untuk menghubungkannya lagi."
+  },
+  "localAISavedOrigin": {
+    "message": "Disimpan untuk aplikasi ini: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "Belum ada endpoint AI lokal yang disetujui untuk aplikasi ini."
+  },
+  "localAIApproveFirst": {
+    "message": "Setujui aplikasi ini sebelum menyimpan endpoint AI lokal."
+  },
+  "localAIReadFailed": {
+    "message": "Tidak dapat membaca persetujuan AI lokal: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "AI lokal harus menggunakan HTTP(S) tanpa kredensial di URL"
+  },
+  "localAIPermissionDenied": {
+    "message": "Izin AI lokal ditolak; persetujuan tersimpan tidak berubah."
+  },
+  "localAIApprovalFailed": {
+    "message": "Persetujuan AI lokal gagal"
+  },
+  "invalidAppTarget": {
+    "message": "Gunakan aplikasi HTTP(S) atau berkas mandiri yang persis tanpa kredensial"
+  },
+  "appPermissionDenied": {
+    "message": "Izin akses aplikasi ditolak"
+  },
+  "appApprovalFailed": {
+    "message": "Persetujuan aplikasi gagal"
+  },
+  "appApproved": {
+    "message": "Aplikasi disetujui. Muat ulang tab aplikasi untuk terhubung."
+  },
+  "appsRevoked": {
+    "message": "Semua koneksi aplikasi dicabut."
+  },
+  "revokeFailed": {
+    "message": "Pencabutan gagal"
+  },
+  "notificationWaiting": {
+    "message": "Menunggu izin browser…"
+  },
+  "notificationEnabled": {
+    "message": "Notifikasi desktop diaktifkan"
+  },
+  "notificationEnable": {
+    "message": "Aktifkan notifikasi desktop"
+  },
+  "notificationEnabledDesc": {
+    "message": "Notifikasi desktop diaktifkan. Pengaturan sistem operasi masih dapat menyembunyikannya. Cabut izin melalui pengaturan ekstensi browser."
+  },
+  "notificationDisabledDesc": {
+    "message": "Notifikasi desktop dinonaktifkan; peringatan dalam aplikasi tetap tersedia."
+  },
+  "notificationCheckFailed": {
+    "message": "Tidak dapat memeriksa izin notifikasi: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "Menunggu tanggapan izin browser. Jika tidak ada dialog, periksa izin ekstensi browser atau buka kembali panel ini."
+  },
+  "notificationRequestFailed": {
+    "message": "Permintaan izin notifikasi gagal: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "Tidak dapat memverifikasi izin notifikasi: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "Peringatan dalam aplikasi tetap tersedia."
+  },
+  "notificationNotEnabled": {
+    "message": "Notifikasi desktop belum diaktifkan; peringatan dalam aplikasi tetap tersedia. Periksa izin ekstensi browser jika dialog tidak muncul."
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — Tinjauan Klip"
+  },
+  "clipReview": {
+    "message": "Tinjauan Klip"
+  },
+  "clipReviewSubtitle": {
+    "message": "Telusuri dan kelola klip yang ditangkap"
+  },
+  "totalCaptures": {
+    "message": "Total Tangkapan"
+  },
+  "unsent": {
+    "message": "Belum dikirim"
+  },
+  "applyAll": {
+    "message": "Terapkan ke Semua"
+  },
+  "sendAll": {
+    "message": "Kirim Semua ke ThreatCaddy"
+  },
+  "refresh": {
+    "message": "Muat ulang"
+  },
+  "clearAll": {
+    "message": "Hapus Semua"
+  },
+  "delete": {
+    "message": "Hapus"
+  },
+  "confirm": {
+    "message": "Konfirmasi"
+  },
+  "cancel": {
+    "message": "Batal"
+  },
+  "noCapturesTitle": {
+    "message": "Belum ada tangkapan"
+  },
+  "noSourceUrl": {
+    "message": "Tidak ada URL sumber"
+  },
+  "importConfirmed": {
+    "message": "Impor dikonfirmasi"
+  },
+  "legacySent": {
+    "message": "Terkirim (lama, belum diverifikasi)"
+  },
+  "importPending": {
+    "message": "Menunggu konfirmasi impor"
+  },
+  "importFailedRetained": {
+    "message": "Impor gagal — dipertahankan"
+  },
+  "folder": {
+    "message": "Folder"
+  },
+  "editCaptureMetadata": {
+    "message": "Edit metadata tangkapan"
+  },
+  "deleteCaptureTitle": {
+    "message": "Hapus Tangkapan"
+  },
+  "deleteCaptureQuestion": {
+    "message": "Yakin ingin menghapus tangkapan ini?"
+  },
+  "captureDeleted": {
+    "message": "Tangkapan dihapus"
+  },
+  "preparingDestination": {
+    "message": "Menyiapkan tujuan…"
+  },
+  "noUnsentCaptures": {
+    "message": "Tidak ada tangkapan yang belum dikirim"
+  },
+  "configureTargetFirst": {
+    "message": "Konfigurasikan URL tujuan terlebih dahulu"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "URL tujuan tidak valid — hanya http, https, dan file:// yang diizinkan"
+  },
+  "targetPermissionDenied": {
+    "message": "Izin ditolak — ekstensi memerlukan akses ke situs ini"
+  },
+  "permissionRequestFailed": {
+    "message": "Permintaan izin gagal"
+  },
+  "fileAccessDisabled": {
+    "message": "Akses URL berkas dinonaktifkan. Periksa pengaturan akses berkas ekstensi ini di browser sebelum mencoba lagi."
+  },
+  "confirmWorkspace": {
+    "message": "Konfirmasi ruang kerja impor"
+  },
+  "importWorkspaceMessage": {
+    "message": "Impor $count$ tangkapan ke “$label$” ($workspace$) di $url$? Hanya impor yang dikonfirmasi database akan ditandai terkirim.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "$count$ tangkapan lama sebelumnya ditandai terkirim tanpa verifikasi; mengimpornya dapat membuat duplikat. Tinjau atau hapus terlebih dahulu jika ragu.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "Impor tangkapan"
+  },
+  "waitingForImport": {
+    "message": "Menunggu konfirmasi impor…"
+  },
+  "importsConfirmed": {
+    "message": "$count$ impor klip dikonfirmasi.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "$confirmed$ dari $total$ impor dikonfirmasi. $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "Tangkapan yang belum dikonfirmasi dipertahankan."
+  },
+  "sendFailed": {
+    "message": "Gagal mengirim: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "Nilai bawaan diterapkan ke semua klip yang belum dikirim"
+  },
+  "clearAllCaptures": {
+    "message": "Hapus Semua Tangkapan"
+  },
+  "clearAllQuestion": {
+    "message": "Ini akan menghapus seluruh $count$ tangkapan secara permanen. Tindakan ini tidak dapat dibatalkan.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "Tangkapan yang dikonfirmasi dihapus; tangkapan baru dipertahankan"
+  },
+  "capturesLoadFailed": {
+    "message": "Tidak dapat memuat tangkapan. Buka kembali halaman ini atau coba Muat ulang."
+  },
+  "discardMetadataDraft": {
+    "message": "Buang draf metadata"
+  },
+  "discardMetadataMessage": {
+    "message": "Buang perubahan metadata tangkapan ini yang belum disimpan dan muat ulang metadata tersimpannya saat ini? Metadata tersimpan tidak akan diubah."
+  },
+  "metadataSaved": {
+    "message": "Metadata tangkapan disimpan"
   }
 }

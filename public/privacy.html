@@ -79,7 +79,7 @@
   <div class="container">
     <a href="https://threatcaddy.com" class="back">&larr; Back to ThreatCaddy</a>
     <h1>Privacy Policy</h1>
-    <p class="subtitle">Last updated: March 5, 2026</p>
+    <p class="subtitle">Last updated: October 11, 2026</p>
 
     <p>
       ThreatCaddy is a personal open-source project. It is <strong>not affiliated with any
@@ -88,7 +88,7 @@
 
     <h2>Data Storage</h2>
     <ul>
-      <li>By default, all notes, tasks, timelines, and investigation data are stored locally in your browser using IndexedDB. No data leaves your device unless you choose otherwise.</li>
+      <li>Notes, tasks, timelines, and investigation data are stored locally in your browser using IndexedDB. Optional features described below can transmit selected content, identifiers, or requests to other services.</li>
       <li>Extension clips are stored in <code>chrome.storage.local</code> on your device.</li>
       <li>The standalone HTML file and the default web app require no accounts and use no cookies.</li>
     </ul>
@@ -97,34 +97,40 @@
     <ul>
       <li>You may optionally connect to a self-hosted team server for real-time sync and collaboration. This is entirely opt-in — no data is sent until you configure a server URL and sign in.</li>
       <li>When connected, notes, tasks, timelines, IOCs, and other investigation entities are transmitted to the server you configure. Authentication tokens are stored in your browser.</li>
-      <li>The team server is open-source and self-hosted. ThreatCaddy does not operate any hosted server infrastructure and has no access to your data.</li>
+      <li>Local workspace encryption protects covered browser fields at rest; it is not end-to-end encryption for team sync. The server receives readable entity values and may retain historical records. Removing a server record does not erase offline copies or exported files.</li>
+      <li>The team server is open-source and self-hosted. This project does not provide a hosted team-server service; access and retention depend on the server operator you choose.</li>
     </ul>
 
     <h2>API Keys &amp; AI Features</h2>
     <ul>
       <li>API keys you configure for AI features (e.g., OpenAI, Anthropic, Google, or other LLM providers) are stored locally in your browser.</li>
-      <li>Keys are transmitted only to your chosen provider's API endpoint when you use CaddyAI features. They are never sent anywhere else.</li>
+      <li>Depending on the selected route, AI requests travel through the extension, directly to a configured local-model endpoint, or through your team server. The extension receives client-configured credentials needed for its requests; a team server can use its own provider credentials.</li>
+      <li>Prompts, selected context, attachments and tool results may contain investigation data. They are sent to the configured service when you use these features. Custom endpoints and proxies are additional trust boundaries; review their operators and retention policies.</li>
     </ul>
 
     <h2>Extension Permissions</h2>
     <ul>
-      <li>The ThreatCaddy extension requests only the permissions necessary to capture clips and deliver them to your ThreatCaddy instance.</li>
-      <li>Optional host permissions are requested only when you configure a custom target URL or enable file:// access.</li>
-      <li>The extension does not collect browsing history, form data, or any information beyond what you explicitly clip.</li>
+      <li>The extension uses permissions for clipping and delivery, and optional permissions for approved app connections, AI provider requests, URL fetching and desktop notifications.</li>
+      <li>Host permissions and app approval are separate controls. File access also depends on the browser's extension settings. Enabling an optional capability may allow selected content or requests to leave the device.</li>
+      <li>Clipping is user-initiated. Optional AI and URL-fetching operations process the requests and content you submit through those features; they are not limited to saved clips.</li>
     </ul>
 
     <h2>Analytics</h2>
     <ul>
-      <li>The hosted site at <a href="https://threatcaddy.com">threatcaddy.com</a> uses Cloudflare Web Analytics, which collects anonymous page-view metrics only. It does not use cookies, does not collect personal information, and does not track individual users.</li>
+      <li>Hosted builds can enable Cloudflare Web Analytics when the operator supplies a build-time analytics token. The application does not inject this analytics script when that token is absent. Hosting providers may separately retain ordinary request logs.</li>
       <li>The standalone HTML file and the extension include no analytics whatsoever.</li>
     </ul>
 
     <h2>Third Parties</h2>
-    <p>ThreatCaddy does not share any data with third parties. The only external network requests are:</p>
+    <p>Network activity depends on the features you use and the deployment configuration. These requests can reveal your IP address and request metadata to the receiving service. They include:</p>
     <ul>
       <li>CaddyAI requests sent to the LLM provider endpoint you configure (e.g., <code>api.openai.com</code>).</li>
       <li>URL fetch requests you explicitly initiate through CaddyAI tools.</li>
       <li>Sync traffic to a self-hosted team server, if you choose to configure one.</li>
+      <li>IOC enrichment and enabled integration requests to their configured services; submitted indicators can themselves be sensitive.</li>
+      <li>Optional cloud-backup uploads, downloads and connection tests to the storage endpoint you configure. A connection test writes a small remote test object. Plain JSON exports are not encrypted; use the separate password-encrypted backup flow when needed.</li>
+      <li>Community integration catalog downloads when you explicitly browse or refresh that catalog, and map-tile requests when you open map views. Tile providers can infer the viewed geographic area.</li>
+      <li>App assets, update checks and any analytics enabled for the hosted build. Standalone offline operation does not require these hosted resources, but optional network features remain available when configured.</li>
     </ul>
 
     <div class="disclaimer">

@@ -8,7 +8,6 @@
   "version": {
     "message": "v1.1.1"
   },
-
   "quickStats": {
     "message": "Snelle statistieken"
   },
@@ -18,7 +17,6 @@
   "thisWeek": {
     "message": "Deze week"
   },
-
   "quickCapture": {
     "message": "Snel vastleggen"
   },
@@ -64,7 +62,6 @@
   "saveFailed": {
     "message": "Opslaan mislukt. Probeer opnieuw."
   },
-
   "recentCaptures": {
     "message": "Recente vastleggingen"
   },
@@ -74,7 +71,6 @@
   "untitled": {
     "message": "Naamloos"
   },
-
   "quickActions": {
     "message": "Snelle acties"
   },
@@ -84,7 +80,6 @@
   "reviewAllCaptures": {
     "message": "Alle vastleggingen bekijken"
   },
-
   "permissions": {
     "message": "Machtigingen"
   },
@@ -109,7 +104,6 @@
   "allowFileAccessHint": {
     "message": "Om in te schakelen: ga naar chrome://extensions, vind ThreatCaddy en schakel \"Toegang tot bestands-URL's toestaan\" in."
   },
-
   "howToUse": {
     "message": "Hoe te gebruiken:"
   },
@@ -126,9 +120,8 @@
     "message": "Privacy:"
   },
   "privacyText": {
-    "message": "Alle gegevens blijven op uw apparaat. API-sleutels worden alleen naar de geselecteerde provider gestuurd. Geen tracking."
+    "message": "Clips blijven op dit apparaat totdat ze worden afgeleverd of geëxporteerd. Optionele AI, URL-ophaalacties en goedgekeurde appverbindingen kunnen gegevens naar ingestelde diensten sturen."
   },
-
   "settings": {
     "message": "Instellingen"
   },
@@ -150,37 +143,39 @@
   "save": {
     "message": "Opslaan"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "Opslaan in ThreatCaddy"
   },
-
   "savedToThreatCaddy": {
     "message": "Opgeslagen in ThreatCaddy!"
   },
-
   "justNow": {
     "message": "Zojuist"
   },
   "minutesAgo": {
     "message": "$count$min geleden",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "$count$u geleden",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "$count$d geleden",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "Extensiecontext ongeldig geworden. Laad deze pagina opnieuw."
   },
@@ -190,7 +185,9 @@
   "errorExtensionUnknown": {
     "message": "Extensiefout: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +196,6 @@
   "errorExtensionError": {
     "message": "Extensiefout"
   },
-
   "errorInvalidUrl": {
     "message": "Ongeldige URL"
   },
@@ -221,13 +217,17 @@
   "errorBlockedDomain": {
     "message": "Geblokkeerd: $hostname$ staat niet op de toegestane proxy-domeinenlijst",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "Hostmachtiging vereist voor $hostname$",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +236,9 @@
   "errorUnknownProvider": {
     "message": "Onbekende provider: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +247,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "Hostmachtiging vereist voor $hostname$. Open het ThreatCaddy-extensiepopup en schakel 'URL ophalen toestaan' in onder Machtigingen.",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +261,320 @@
   "errorInvalidTargetUrl": {
     "message": "Ongeldige doel-URL"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "privacyLink": {
+    "message": "Privacy"
+  },
+  "captureSaveFailed": {
+    "message": "De vastlegging is niet opgeslagen. Je concept blijft behouden."
+  },
+  "captureChangeFailed": {
+    "message": "De wijziging aan de vastlegging is niet opgeslagen. Vernieuw en probeer opnieuw."
+  },
+  "approvalTrust": {
+    "message": "Keur alleen een app goed die je vertrouwt. Precies deze oorsprong inclusief poort, of precies dit zelfstandige bestand, mag de verleende mogelijkheden van de extensie gebruiken."
+  },
+  "localAIOrigin": {
+    "message": "Oorsprong van lokaal AI-eindpunt (optioneel)"
+  },
+  "saveLocalAI": {
+    "message": "Lokale AI-goedkeuring opslaan"
+  },
+  "removeLocalAI": {
+    "message": "Lokale AI-goedkeuring verwijderen"
+  },
+  "approveApp": {
+    "message": "App goedkeuren"
+  },
+  "revokeApps": {
+    "message": "Alle appgoedkeuringen intrekken"
+  },
+  "revokeAppsQuestion": {
+    "message": "Alle goedgekeurde apps loskoppelen? Vastleggingen en browserrechten worden niet verwijderd. Keur een app opnieuw goed om deze weer te verbinden."
+  },
+  "localAISavedOrigin": {
+    "message": "Opgeslagen voor deze app: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "Geen lokaal AI-eindpunt goedgekeurd voor deze app."
+  },
+  "localAIApproveFirst": {
+    "message": "Keur deze app goed voordat je een lokaal AI-eindpunt opslaat."
+  },
+  "localAIReadFailed": {
+    "message": "Lokale AI-goedkeuring kan niet worden gelezen: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "Lokale AI moet HTTP(S) gebruiken zonder inloggegevens in de URL"
+  },
+  "localAIPermissionDenied": {
+    "message": "Toestemming voor lokale AI geweigerd; de opgeslagen goedkeuring is ongewijzigd."
+  },
+  "localAIApprovalFailed": {
+    "message": "Lokale AI-goedkeuring mislukt"
+  },
+  "invalidAppTarget": {
+    "message": "Gebruik een HTTP(S)-app of een exact zelfstandig bestand zonder inloggegevens"
+  },
+  "appPermissionDenied": {
+    "message": "Toestemming voor apptoegang geweigerd"
+  },
+  "appApprovalFailed": {
+    "message": "Appgoedkeuring mislukt"
+  },
+  "appApproved": {
+    "message": "App goedgekeurd. Laad het apptabblad opnieuw om verbinding te maken."
+  },
+  "appsRevoked": {
+    "message": "Alle appverbindingen ingetrokken."
+  },
+  "revokeFailed": {
+    "message": "Intrekken mislukt"
+  },
+  "notificationWaiting": {
+    "message": "Wachten op browsertoestemming…"
+  },
+  "notificationEnabled": {
+    "message": "Bureaubladmeldingen ingeschakeld"
+  },
+  "notificationEnable": {
+    "message": "Bureaubladmeldingen inschakelen"
+  },
+  "notificationEnabledDesc": {
+    "message": "Bureaubladmeldingen zijn ingeschakeld. Instellingen van het besturingssysteem kunnen de weergave nog blokkeren. Trek de toestemming in via de extensie-instellingen van je browser."
+  },
+  "notificationDisabledDesc": {
+    "message": "Bureaubladmeldingen zijn uitgeschakeld; meldingen in de app blijven beschikbaar."
+  },
+  "notificationCheckFailed": {
+    "message": "Meldingstoestemming kan niet worden gecontroleerd: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "Wachten op het toestemmingsantwoord van de browser. Verschijnt er geen vraag, controleer dan de browserrechten van de extensie of open dit paneel opnieuw."
+  },
+  "notificationRequestFailed": {
+    "message": "Aanvraag voor meldingstoestemming mislukt: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "Meldingstoestemming kan niet worden bevestigd: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "Meldingen in de app blijven beschikbaar."
+  },
+  "notificationNotEnabled": {
+    "message": "Bureaubladmeldingen zijn niet ingeschakeld; meldingen in de app blijven beschikbaar. Controleer de browserrechten van de extensie als er geen vraag verscheen."
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — Clips controleren"
+  },
+  "clipReview": {
+    "message": "Clips controleren"
+  },
+  "clipReviewSubtitle": {
+    "message": "Bekijk en beheer je vastgelegde clips"
+  },
+  "totalCaptures": {
+    "message": "Totaal vastleggingen"
+  },
+  "unsent": {
+    "message": "Niet verzonden"
+  },
+  "applyAll": {
+    "message": "Op alles toepassen"
+  },
+  "sendAll": {
+    "message": "Alles naar ThreatCaddy sturen"
+  },
+  "refresh": {
+    "message": "Vernieuwen"
+  },
+  "clearAll": {
+    "message": "Alles wissen"
+  },
+  "delete": {
+    "message": "Verwijderen"
+  },
+  "confirm": {
+    "message": "Bevestigen"
+  },
+  "cancel": {
+    "message": "Annuleren"
+  },
+  "noCapturesTitle": {
+    "message": "Nog geen vastleggingen"
+  },
+  "noSourceUrl": {
+    "message": "Geen bron-URL"
+  },
+  "importConfirmed": {
+    "message": "Import bevestigd"
+  },
+  "legacySent": {
+    "message": "Verzonden (oud, niet geverifieerd)"
+  },
+  "importPending": {
+    "message": "Wachten op importbevestiging"
+  },
+  "importFailedRetained": {
+    "message": "Import mislukt — behouden"
+  },
+  "folder": {
+    "message": "Map"
+  },
+  "editCaptureMetadata": {
+    "message": "Metagegevens van vastlegging bewerken"
+  },
+  "deleteCaptureTitle": {
+    "message": "Vastlegging verwijderen"
+  },
+  "deleteCaptureQuestion": {
+    "message": "Weet je zeker dat je deze vastlegging wilt verwijderen?"
+  },
+  "captureDeleted": {
+    "message": "Vastlegging verwijderd"
+  },
+  "preparingDestination": {
+    "message": "Bestemming voorbereiden…"
+  },
+  "noUnsentCaptures": {
+    "message": "Geen niet-verzonden vastleggingen om te sturen"
+  },
+  "configureTargetFirst": {
+    "message": "Stel eerst een doel-URL in"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "Ongeldige doel-URL — alleen http, https en file:// zijn toegestaan"
+  },
+  "targetPermissionDenied": {
+    "message": "Toestemming geweigerd — de extensie heeft toegang tot deze site nodig"
+  },
+  "permissionRequestFailed": {
+    "message": "Toestemmingsaanvraag mislukt"
+  },
+  "fileAccessDisabled": {
+    "message": "Toegang tot bestands-URL's is uitgeschakeld. Controleer de instellingen voor bestandstoegang van deze extensie in je browser voordat je het opnieuw probeert."
+  },
+  "confirmWorkspace": {
+    "message": "Werkruimte voor import bevestigen"
+  },
+  "importWorkspaceMessage": {
+    "message": "$count$ vastleggingen importeren in ‘$label$’ ($workspace$) op $url$? Alleen door de database bevestigde imports worden als verzonden gemarkeerd.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "$count$ oude vastleggingen zijn eerder zonder verificatie als verzonden gemarkeerd; importeren kan duplicaten maken. Controleer of verwijder ze eerst als je twijfelt.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "Vastleggingen importeren"
+  },
+  "waitingForImport": {
+    "message": "Wachten op importbevestiging…"
+  },
+  "importsConfirmed": {
+    "message": "$count$ clipimports bevestigd.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "$confirmed$ van $total$ imports bevestigd. $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "Onbevestigde vastleggingen blijven behouden."
+  },
+  "sendFailed": {
+    "message": "Verzenden mislukt: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "Standaardwaarden toegepast op alle niet-verzonden clips"
+  },
+  "clearAllCaptures": {
+    "message": "Alle vastleggingen wissen"
+  },
+  "clearAllQuestion": {
+    "message": "Hiermee worden alle $count$ vastleggingen definitief verwijderd. Dit kan niet ongedaan worden gemaakt.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "Bevestigde vastleggingen gewist; nieuwere vastleggingen zijn behouden"
+  },
+  "capturesLoadFailed": {
+    "message": "Vastleggingen kunnen niet worden geladen. Open deze pagina opnieuw of probeer Vernieuwen opnieuw."
+  },
+  "metadataSaved": {
+    "message": "Metagegevens van vastlegging opgeslagen"
+  },
+  "discardMetadataDraft": {
+    "message": "Metagegevensconcept verwijderen"
+  },
+  "discardMetadataMessage": {
+    "message": "De niet-opgeslagen metagegevenswijzigingen van deze vastlegging verwijderen en de huidige opgeslagen metagegevens opnieuw laden? Opgeslagen metagegevens blijven ongewijzigd."
   }
 }

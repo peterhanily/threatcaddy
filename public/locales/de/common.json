@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "Ein unerwarteter Fehler ist aufgetreten.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Beweismittel",
-  "sidebar.products": "Produkte"
+  "sidebar.products": "Produkte",
+  "syncStatus.screenshareHidden": "Die Synchronisierung erfordert Ihre Aufmerksamkeit. Beenden Sie die Bildschirmfreigabe, um die Details zu prüfen.",
+  "syncStatus.review": "Synchronisierungseinstellungen prüfen",
+  "draftRecovery.message": "Einige Änderungen konnten nicht gespeichert werden. Entwürfe bleiben nur in diesem Tab erhalten. Versuchen Sie es erneut oder laden Sie sie herunter, bevor Sie den Tab schließen.",
+  "draftRecovery.untitled": "Ungespeicherter Entwurf",
+  "draftRecovery.retry": "Speichern erneut versuchen",
+  "draftRecovery.download": "Entwurf herunterladen",
+  "draftRecovery.discard": "Entwurf verwerfen",
+  "draftRecovery.discardConfirm": "Diesen ungespeicherten Entwurf dauerhaft verwerfen? Laden Sie ihn zuerst herunter, wenn Sie eine Wiederherstellungskopie benötigen.",
+  "draftRecovery.conflictField": "Konflikt bei {{field}} prüfen",
+  "draftRecovery.keepLocal": "Meine Version von {{field}} behalten",
+  "draftRecovery.useRemote": "Entfernte Version von {{field}} verwenden"
 }

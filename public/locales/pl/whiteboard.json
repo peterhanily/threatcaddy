@@ -14,5 +14,7 @@
   "unarchive": "Przywróć z archiwum",
   "moveToTrash": "Przenieś do kosza",
   "restore": "Przywróć",
-  "deletePermanently": "Usuń trwale"
+  "deletePermanently": "Usuń trwale",
+  "saveFailed": "Nie udało się zapisać zmian. Szkic pozostaje w tej karcie; ponów zapis przed zamknięciem.",
+  "retrySave": "Ponów zapis"
 }

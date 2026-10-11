@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "Сталася неочікувана помилка.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Докази",
-  "sidebar.products": "Продукти"
+  "sidebar.products": "Продукти",
+  "syncStatus.screenshareHidden": "Синхронізація потребує уваги. Вимкніть показ екрана, щоб переглянути подробиці.",
+  "syncStatus.review": "Перевірити налаштування синхронізації",
+  "draftRecovery.message": "Деякі зміни не вдалося зберегти. Чернетки зберігаються лише в цій вкладці. Повторіть збереження або завантажте їх перед закриттям.",
+  "draftRecovery.untitled": "Незбережена чернетка",
+  "draftRecovery.retry": "Повторити збереження",
+  "draftRecovery.download": "Завантажити чернетку",
+  "draftRecovery.discard": "Відкинути чернетку",
+  "draftRecovery.discardConfirm": "Назавжди відкинути цю незбережену чернетку? Спершу завантажте її, якщо потрібна копія для відновлення.",
+  "draftRecovery.conflictField": "Перевірити конфлікт поля «{{field}}»",
+  "draftRecovery.keepLocal": "Залишити моє значення «{{field}}»",
+  "draftRecovery.useRemote": "Використати віддалене значення «{{field}}»"
 }

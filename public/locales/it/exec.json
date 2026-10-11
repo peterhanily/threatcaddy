@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "Eventi questa settimana",
   "metrics.aiChats": "Chat AI",
   "metrics.graphNodes": "Nodi grafo",
-  "dashboard.backToExecView": "Torna alla Vista dirigenza"
+  "dashboard.backToExecView": "Torna alla Vista dirigenza",
+  "dashboard.switchToLight": "Passa al tema chiaro",
+  "dashboard.switchToDark": "Passa al tema scuro",
+  "dashboard.emptyTitle": "La tua area di lavoro è pronta",
+  "dashboard.emptyDescription": "Crea un’indagine o importa il tuo lavoro in modalità Analista. Questa dashboard riassume il lavoro salvato nell’area.",
+  "dashboard.emptyAction": "Apri modalità Analista"
 }

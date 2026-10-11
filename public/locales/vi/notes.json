@@ -83,7 +83,9 @@
     "lockScrollAria": "Khóa đồng bộ cuộn",
     "wordsChars": "{{words}} từ, {{chars}} ký tự",
     "created": "Đã tạo {{date}}",
-    "modified": "Đã sửa {{date}}"
+    "modified": "Đã sửa {{date}}",
+    "saveFailed": "Không thể lưu thay đổi. Bản nháp vẫn ở trong thẻ này; hãy thử lại trước khi đóng.",
+    "retrySave": "Thử lưu lại"
   },
   "list": {
     "defaultTitle": "Ghi chú",

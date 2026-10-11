@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "Đã xảy ra lỗi không mong muốn.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Bằng chứng",
-  "sidebar.products": "Sản phẩm"
+  "sidebar.products": "Sản phẩm",
+  "syncStatus.screenshareHidden": "Đồng bộ cần được xử lý. Tắt chia sẻ màn hình để xem chi tiết.",
+  "syncStatus.review": "Xem lại cài đặt đồng bộ",
+  "draftRecovery.message": "Không thể lưu một số thay đổi. Bản nháp chỉ được giữ trong thẻ này. Hãy thử lại hoặc tải bản nháp xuống trước khi đóng.",
+  "draftRecovery.untitled": "Bản nháp chưa lưu",
+  "draftRecovery.retry": "Thử lưu lại",
+  "draftRecovery.download": "Tải bản nháp xuống",
+  "draftRecovery.discard": "Bỏ bản nháp",
+  "draftRecovery.discardConfirm": "Bỏ vĩnh viễn bản nháp chưa lưu này? Hãy tải xuống trước nếu cần bản sao để khôi phục.",
+  "draftRecovery.conflictField": "Xem xung đột {{field}}",
+  "draftRecovery.keepLocal": "Giữ {{field}} của tôi",
+  "draftRecovery.useRemote": "Dùng {{field}} từ xa"
 }

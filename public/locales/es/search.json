@@ -27,5 +27,6 @@
   "timelineEvents": "Eventos de cronología",
   "whiteboards": "Pizarras",
   "iocs": "IOCs",
-  "chatThreads": "Hilos de chat"
+  "chatThreads": "Hilos de chat",
+  "evidence": "Evidencias"
 }

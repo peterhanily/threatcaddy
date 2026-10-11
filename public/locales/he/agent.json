@@ -265,5 +265,12 @@
   "picker.activeCount": "{{count}} פעיל",
   "panel.loadMore": "טען פעולות נוספות",
   "cycleSummary.expand": "הצג פרטי מחזור",
-  "cycleSummary.collapse": "הסתר פרטי מחזור"
+  "cycleSummary.collapse": "הסתר פרטי מחזור",
+  "panel.serverRanActions_two": "השרת ביצע {{count}} פעולות בזמן שלא היית",
+  "panel.serverRanActionsTitle_two": "הבוט של השרת ביצע {{count}} פעולות בזמן שהלשונית הזו הייתה לא מחוברת{{topToolSuffix}}. עיין בחוט הביקורת או סגור.",
+  "meeting.pendingRequests_two": "{{count}} בקשות פגישה ממתינות מסוכנים",
+  "cycleSummary.errorsTitle_two": "{{count}} שגיאות",
+  "cycleSummary.turns_two": "{{count}} סיבובים",
+  "cycleSummary.toolErrors_two": "{{count}} שגיאות כלים",
+  "picker.agentsSelected_two": "{{count}} סוכנים נבחרו"
 }

@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "Wystąpił nieoczekiwany błąd.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Dowody",
-  "sidebar.products": "Produkty"
+  "sidebar.products": "Produkty",
+  "syncStatus.screenshareHidden": "Synchronizacja wymaga uwagi. Wyłącz udostępnianie ekranu, aby zobaczyć szczegóły.",
+  "syncStatus.review": "Sprawdź ustawienia synchronizacji",
+  "draftRecovery.message": "Nie udało się zapisać części zmian. Szkice są przechowywane tylko w tej karcie. Ponów zapis lub pobierz je przed zamknięciem.",
+  "draftRecovery.untitled": "Niezapisany szkic",
+  "draftRecovery.retry": "Ponów zapis",
+  "draftRecovery.download": "Pobierz szkic",
+  "draftRecovery.discard": "Odrzuć szkic",
+  "draftRecovery.discardConfirm": "Trwale odrzucić ten niezapisany szkic? Najpierw pobierz go, jeśli potrzebujesz kopii do odzyskania.",
+  "draftRecovery.conflictField": "Sprawdź konflikt pola {{field}}",
+  "draftRecovery.keepLocal": "Zachowaj moją wartość {{field}}",
+  "draftRecovery.useRemote": "Użyj zdalnej wartości {{field}}"
 }

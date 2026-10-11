@@ -83,7 +83,9 @@
     "lockScrollAria": "נעל סנכרון גלילה",
     "wordsChars": "{{words}} מילים, {{chars}} תווים",
     "created": "נוצר {{date}}",
-    "modified": "שונה {{date}}"
+    "modified": "שונה {{date}}",
+    "saveFailed": "לא ניתן לשמור את השינויים. הטיוטה נשמרת בלשונית זו; יש לנסות שוב לפני סגירתה.",
+    "retrySave": "ניסיון שמירה נוסף"
   },
   "list": {
     "defaultTitle": "הערות",

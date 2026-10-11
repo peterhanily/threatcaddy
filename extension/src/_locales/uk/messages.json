@@ -8,7 +8,6 @@
   "version": {
     "message": "v1.1.1"
   },
-
   "quickStats": {
     "message": "Швидка статистика"
   },
@@ -18,7 +17,6 @@
   "thisWeek": {
     "message": "Цього тижня"
   },
-
   "quickCapture": {
     "message": "Швидке захоплення"
   },
@@ -64,7 +62,6 @@
   "saveFailed": {
     "message": "Не вдалося зберегти. Спробуйте ще раз."
   },
-
   "recentCaptures": {
     "message": "Нещодавні захоплення"
   },
@@ -74,7 +71,6 @@
   "untitled": {
     "message": "Без назви"
   },
-
   "quickActions": {
     "message": "Швидкі дії"
   },
@@ -84,7 +80,6 @@
   "reviewAllCaptures": {
     "message": "Переглянути всі захоплення"
   },
-
   "permissions": {
     "message": "Дозволи"
   },
@@ -109,7 +104,6 @@
   "allowFileAccessHint": {
     "message": "Для увімкнення: перейдіть до chrome://extensions, знайдіть ThreatCaddy і увімкніть «Дозволити доступ до URL файлів»."
   },
-
   "howToUse": {
     "message": "Як використовувати:"
   },
@@ -126,9 +120,8 @@
     "message": "Конфіденційність:"
   },
   "privacyText": {
-    "message": "Усі дані залишаються на вашому пристрої. API-ключі надсилаються лише обраному провайдеру. Без відстеження."
+    "message": "Вирізки залишаються на цьому пристрої до передавання або експорту. Необов’язкові функції ШІ, завантаження URL та підключення схвалених застосунків можуть надсилати дані налаштованим сервісам."
   },
-
   "settings": {
     "message": "Налаштування"
   },
@@ -150,37 +143,39 @@
   "save": {
     "message": "Зберегти"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "Зберегти в ThreatCaddy"
   },
-
   "savedToThreatCaddy": {
     "message": "Збережено в ThreatCaddy!"
   },
-
   "justNow": {
     "message": "Щойно"
   },
   "minutesAgo": {
     "message": "$count$хв тому",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "$count$год тому",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "$count$д тому",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "Контекст розширення став недійсним. Перезавантажте сторінку."
   },
@@ -190,7 +185,9 @@
   "errorExtensionUnknown": {
     "message": "Помилка розширення: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +196,6 @@
   "errorExtensionError": {
     "message": "Помилка розширення"
   },
-
   "errorInvalidUrl": {
     "message": "Невірний URL"
   },
@@ -221,13 +217,17 @@
   "errorBlockedDomain": {
     "message": "Заблоковано: $hostname$ не входить до списку дозволених проксі-доменів",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "Потрібен дозвіл хоста для $hostname$",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +236,9 @@
   "errorUnknownProvider": {
     "message": "Невідомий провайдер: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +247,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "Потрібен дозвіл хоста для $hostname$. Відкрийте спливаюче вікно розширення ThreatCaddy та увімкніть «Дозволити отримання URL» в розділі «Дозволи».",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +261,320 @@
   "errorInvalidTargetUrl": {
     "message": "Невірний цільовий URL"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "privacyLink": {
+    "message": "Конфіденційність"
+  },
+  "captureSaveFailed": {
+    "message": "Вирізку не збережено. Чернетку залишено."
+  },
+  "captureChangeFailed": {
+    "message": "Зміну вирізки не збережено. Оновіть сторінку й повторіть спробу."
+  },
+  "approvalTrust": {
+    "message": "Схвалюйте лише довірені застосунки. Саме це джерело (включно з портом) або конкретний автономний файл зможе використовувати можливості, надані розширенню."
+  },
+  "localAIOrigin": {
+    "message": "Джерело локального сервера ШІ (необов’язково)"
+  },
+  "saveLocalAI": {
+    "message": "Зберегти дозвіл локального ШІ"
+  },
+  "removeLocalAI": {
+    "message": "Видалити дозвіл локального ШІ"
+  },
+  "approveApp": {
+    "message": "Схвалити застосунок"
+  },
+  "revokeApps": {
+    "message": "Відкликати дозволи всіх застосунків"
+  },
+  "revokeAppsQuestion": {
+    "message": "Від’єднати всі схвалені застосунки? Вирізки й дозволи браузера не видаляться. Для підключення знову схваліть застосунок."
+  },
+  "localAISavedOrigin": {
+    "message": "Збережено для цього застосунку: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "Для цього застосунку не схвалено локальний сервер ШІ."
+  },
+  "localAIApproveFirst": {
+    "message": "Схваліть застосунок перед збереженням локального сервера ШІ."
+  },
+  "localAIReadFailed": {
+    "message": "Не вдалося прочитати дозвіл локального ШІ: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "Локальний ШІ має використовувати HTTP(S) без облікових даних в URL"
+  },
+  "localAIPermissionDenied": {
+    "message": "Доступ до локального ШІ відхилено; збережений дозвіл не змінено."
+  },
+  "localAIApprovalFailed": {
+    "message": "Не вдалося схвалити локальний ШІ"
+  },
+  "invalidAppTarget": {
+    "message": "Використовуйте HTTP(S)-застосунок або конкретний автономний файл без облікових даних"
+  },
+  "appPermissionDenied": {
+    "message": "Доступ до застосунку відхилено"
+  },
+  "appApprovalFailed": {
+    "message": "Не вдалося схвалити застосунок"
+  },
+  "appApproved": {
+    "message": "Застосунок схвалено. Перезавантажте його вкладку для підключення."
+  },
+  "appsRevoked": {
+    "message": "Усі підключення застосунків відкликано."
+  },
+  "revokeFailed": {
+    "message": "Не вдалося відкликати дозволи"
+  },
+  "notificationWaiting": {
+    "message": "Очікування дозволу браузера…"
+  },
+  "notificationEnabled": {
+    "message": "Сповіщення робочого столу ввімкнено"
+  },
+  "notificationEnable": {
+    "message": "Увімкнути сповіщення робочого столу"
+  },
+  "notificationEnabledDesc": {
+    "message": "Сповіщення робочого столу ввімкнено. Налаштування операційної системи можуть блокувати показ. Відкликати дозвіл можна в налаштуваннях розширень браузера."
+  },
+  "notificationDisabledDesc": {
+    "message": "Сповіщення робочого столу вимкнено; сповіщення в застосунку доступні."
+  },
+  "notificationCheckFailed": {
+    "message": "Не вдалося перевірити дозвіл сповіщень: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "Очікування відповіді браузера. Якщо запит не з’явився, перевірте дозволи розширення або відкрийте цю панель знову."
+  },
+  "notificationRequestFailed": {
+    "message": "Запит дозволу сповіщень не вдався: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "Не вдалося підтвердити дозвіл сповіщень: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "Сповіщення в застосунку доступні."
+  },
+  "notificationNotEnabled": {
+    "message": "Сповіщення робочого столу не ввімкнено; внутрішні сповіщення доступні. Якщо запит не з’явився, перевірте дозволи розширення."
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — Огляд вирізок"
+  },
+  "clipReview": {
+    "message": "Огляд вирізок"
+  },
+  "clipReviewSubtitle": {
+    "message": "Перегляд і керування збереженими вирізками"
+  },
+  "totalCaptures": {
+    "message": "Усього вирізок"
+  },
+  "unsent": {
+    "message": "Не надіслані"
+  },
+  "applyAll": {
+    "message": "Застосувати до всіх"
+  },
+  "sendAll": {
+    "message": "Надіслати все до ThreatCaddy"
+  },
+  "refresh": {
+    "message": "Оновити"
+  },
+  "clearAll": {
+    "message": "Очистити все"
+  },
+  "delete": {
+    "message": "Видалити"
+  },
+  "confirm": {
+    "message": "Підтвердити"
+  },
+  "cancel": {
+    "message": "Скасувати"
+  },
+  "noCapturesTitle": {
+    "message": "Вирізок поки немає"
+  },
+  "noSourceUrl": {
+    "message": "Немає вихідного URL"
+  },
+  "importConfirmed": {
+    "message": "Імпорт підтверджено"
+  },
+  "legacySent": {
+    "message": "Надіслано (раніше, без перевірки)"
+  },
+  "importPending": {
+    "message": "Очікування підтвердження імпорту"
+  },
+  "importFailedRetained": {
+    "message": "Імпорт не вдався — збережено"
+  },
+  "folder": {
+    "message": "Папка"
+  },
+  "editCaptureMetadata": {
+    "message": "Змінити метадані вирізки"
+  },
+  "deleteCaptureTitle": {
+    "message": "Видалити вирізку"
+  },
+  "deleteCaptureQuestion": {
+    "message": "Ви впевнені, що хочете видалити цю вирізку?"
+  },
+  "captureDeleted": {
+    "message": "Вирізку видалено"
+  },
+  "preparingDestination": {
+    "message": "Підготовка призначення…"
+  },
+  "noUnsentCaptures": {
+    "message": "Немає ненадісланих вирізок"
+  },
+  "configureTargetFirst": {
+    "message": "Спершу налаштуйте URL призначення"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "Недопустимий URL призначення: дозволено лише http, https і file://"
+  },
+  "targetPermissionDenied": {
+    "message": "Доступ відхилено: розширенню потрібен доступ до цього сайту"
+  },
+  "permissionRequestFailed": {
+    "message": "Запит дозволу не вдався"
+  },
+  "fileAccessDisabled": {
+    "message": "Доступ до локальних файлів вимкнено. Перевірте налаштування доступу до файлів для цього розширення в браузері перед повторною спробою."
+  },
+  "confirmWorkspace": {
+    "message": "Підтвердити робочий простір імпорту"
+  },
+  "importWorkspaceMessage": {
+    "message": "Імпортувати вирізки ($count$) до «$label$» ($workspace$) за адресою $url$? Надісланими буде позначено лише імпорти, підтверджені базою даних.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "Старі вирізки ($count$) позначено надісланими без перевірки; імпорт може створити дублікати. У разі сумнівів спершу перевірте або видаліть їх.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "Імпортувати вирізки"
+  },
+  "waitingForImport": {
+    "message": "Очікування підтвердження імпорту…"
+  },
+  "importsConfirmed": {
+    "message": "Підтверджено імпортів вирізок: $count$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "Підтверджено $confirmed$ із $total$ імпортів. $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "Непідтверджені вирізки збережено."
+  },
+  "sendFailed": {
+    "message": "Надсилання не вдалося: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "Типові значення застосовано до всіх ненадісланих вирізок"
+  },
+  "clearAllCaptures": {
+    "message": "Очистити всі вирізки"
+  },
+  "clearAllQuestion": {
+    "message": "Усі вирізки ($count$) буде безповоротно видалено. Цю дію неможливо скасувати.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "Підтверджені вирізки видалено; новіші збережено"
+  },
+  "capturesLoadFailed": {
+    "message": "Не вдалося завантажити вирізки. Відкрийте сторінку знову або натисніть «Оновити»."
+  },
+  "metadataSaved": {
+    "message": "Метадані вирізки збережено"
+  },
+  "discardMetadataDraft": {
+    "message": "Відкинути чернетку метаданих"
+  },
+  "discardMetadataMessage": {
+    "message": "Відкинути незбережені зміни метаданих цієї вирізки й завантажити їхню поточну збережену версію? Збережені метадані не зміняться."
   }
 }

@@ -8,10 +8,11 @@ import { discardAllComposerDrafts } from '../lib/chat-composer-drafts';
 const state = vi.hoisted(() => ({
   selectedThreadId: 'thread',
   folder: { id: 'a', name: 'Investigation A', order: 0, createdAt: 1 } as Folder,
-  serverUrl: '', extensionAvailable: true,
+  serverUrl: '', signedIn: false, extensionAvailable: true,
   commands: [] as { name: string; description: string; template: string }[],
   input: { onSend: async () => {}, onImageAttach: async () => {} } as {
     onSend: (text: string) => Promise<void>; onImageAttach: (files: File[]) => Promise<void>;
+    serverRoute?: boolean;
   },
   send: vi.fn(), addMessage: vi.fn(), createThread: vi.fn(), updateThread: vi.fn(),
   select: vi.fn(), toast: vi.fn(), startLoop: vi.fn(), stopLoops: vi.fn(),
@@ -19,7 +20,7 @@ const state = vi.hoisted(() => ({
 }));
 vi.mock('../hooks/useLLM', () => ({ useLLM: () => ({ extensionAvailable: state.extensionAvailable,
   streamingContent: '', isStreaming: false, error: null, toolActivity: [], sendAgentRequest: state.send, abort: state.abort }) }));
-vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ serverUrl: state.serverUrl }) }));
+vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ serverUrl: state.serverUrl, user: state.signedIn ? { id: 'synthetic-user' } : null }) }));
 vi.mock('../contexts/NavigationContext', () => ({ useNavigation: () => ({ selectedChatThreadId: state.selectedThreadId, setSelectedChatThreadId: state.select }) }));
 vi.mock('../contexts/InvestigationContext', () => ({ useInvestigation: () => ({ selectedFolderId: state.folder.id, selectedFolder: state.folder }) }));
 vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ addToast: state.toast }) }));
@@ -51,7 +52,7 @@ beforeEach(() => {
   discardAllComposerDrafts();
   vi.clearAllMocks();
   state.folder = { id: 'a', name: 'Investigation A', order: 0, createdAt: 1 };
-  state.serverUrl = ''; state.extensionAvailable = true; state.commands = []; state.selectedThreadId = 'thread';
+  state.serverUrl = ''; state.signedIn = false; state.extensionAvailable = true; state.commands = []; state.selectedThreadId = 'thread';
   state.addMessage.mockResolvedValue(undefined);
   state.prompt.mockImplementation(async (folder?: Folder) => `Context for ${folder?.id}`);
   localStorage.setItem('caddyai-onboarded', '1');
@@ -98,11 +99,23 @@ describe('release hardening: committed chat submission state', () => {
 
   it('uses the current route after extension availability changes', async () => {
     state.serverUrl = 'https://server.test';
+    state.signedIn = true;
     const view = render(<ChatView {...props} />);
     state.extensionAvailable = false;
     view.rerender(<ChatView {...props} />);
     await act(async () => { await state.input.onSend('Synthetic question'); });
     expect(state.send).toHaveBeenCalledWith(expect.objectContaining({ useServerProxy: true }), expect.any(Function), expect.any(Function));
+    expect(state.input.serverRoute).toBe(true);
+  });
+
+  it('does not advertise a server route for an unsigned-in configured URL', () => {
+    state.serverUrl = 'https://server.test'; state.extensionAvailable = false;
+    const view = render(<ChatView {...props} />);
+    expect(state.input.serverRoute).toBe(false);
+    state.signedIn = true; view.rerender(<ChatView {...props} />);
+    expect(state.input.serverRoute).toBe(true);
+    state.signedIn = false; view.rerender(<ChatView {...props} />);
+    expect(state.input.serverRoute).toBe(false);
   });
 
   it('uses edited custom commands on the next submission', async () => {

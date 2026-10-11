@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "Eventos esta semana",
   "metrics.aiChats": "Chats de IA",
   "metrics.graphNodes": "Nodos del grafo",
-  "dashboard.backToExecView": "Volver a Vista ejecutiva"
+  "dashboard.backToExecView": "Volver a Vista ejecutiva",
+  "dashboard.switchToLight": "Cambiar al tema claro",
+  "dashboard.switchToDark": "Cambiar al tema oscuro",
+  "dashboard.emptyTitle": "Su espacio de trabajo está listo",
+  "dashboard.emptyDescription": "Cree una investigación o importe su trabajo en el modo Analista. Este panel resume el trabajo guardado en este espacio.",
+  "dashboard.emptyAction": "Abrir modo Analista"
 }

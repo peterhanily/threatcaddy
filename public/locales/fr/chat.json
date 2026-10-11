@@ -74,7 +74,8 @@
     "onboardingStep2Desc": "CaddyAI requiert l'extension de navigateur ThreatCaddy pour proxyer les requêtes API.",
     "onboardingStep3Title": "3. Activer les permissions",
     "onboardingStep3Desc": "Dans le popup de l'extension, activez « Autoriser CaddyAI » pour l'accès aux fournisseurs IA et « Autoriser la récupération d'URL » pour l'outil /fetch.",
-    "onboardingDismiss": "Compris"
+    "onboardingDismiss": "Compris",
+    "loopCount_many": "{{count}} boucles"
   },
   "input": {
     "noApiKeys": "Aucune clé API configurée — ajoutez-en une dans Paramètres → IA/LLM",
@@ -96,7 +97,26 @@
     "stopGenerating": "Arrêter la génération",
     "sendMessage": "Envoyer le message (Entrée)",
     "noMatchesFound": "Aucun résultat trouvé",
-    "imageLabel": "Image {{index}}"
+    "imageLabel": "Image {{index}}",
+    "readingImages": "Lecture des images…",
+    "submitFailed": "L’envoi du message n’a pas pu se terminer. Le texte et les images non enregistrés sont conservés ; vérifiez le fil avant de réessayer.",
+    "memoryDrafts": "Les brouillons non envoyés restent uniquement en mémoire dans cet onglet, y compris ceux des fils masqués. Envoyez-les ou abandonnez-les et attendez la fin des envois avant de changer d’espace de travail ; fermer ou recharger peut les perdre.",
+    "discardAllDrafts": "Abandonner tous les brouillons de chat non envoyés",
+    "discardAllDraftsConfirm": "Abandonner les textes et images non envoyés de tous les fils de cet espace et annuler les lectures d’images en attente ? Les messages enregistrés ne changent pas. Un envoi déjà en cours doit se terminer et peut enregistrer son message. Cette action est irréversible.",
+    "discardDraftsConfirm": "Abandonner les brouillons non envoyés",
+    "draftError": {
+      "length": "Un brouillon peut contenir au maximum 200 000 caractères. Le précédent est conservé ; raccourcissez ou divisez le message.",
+      "total": "Les brouillons non envoyés peuvent contenir 1 000 000 de caractères au total. Envoyez ou abandonnez d’autres brouillons d’abord ; le précédent est conservé."
+    },
+    "imageError": {
+      "busy": "Attendez la fin du lot d’images en cours. Votre brouillon est conservé.",
+      "count": "Joignez au maximum 4 images par message. Le brouillon et les images précédentes sont conservés.",
+      "type": "Choisissez des images PNG, JPEG, GIF ou WebP. Le brouillon et les images précédentes sont conservés.",
+      "size": "Chaque image doit faire au maximum 5 MiB. Le brouillon et les images précédentes sont conservés.",
+      "total": "Les images d’un message ne doivent pas dépasser 10 MiB au total. Le brouillon et les images précédentes sont conservés.",
+      "global": "Les brouillons non envoyés peuvent contenir au maximum 16 images et 20 MiB au total, lectures en cours comprises. Envoyez ou abandonnez d’autres brouillons d’abord ; les images précédentes sont conservées.",
+      "read": "Impossible de lire une image. Le nouveau lot n’a pas été joint ; le brouillon et les images précédentes sont conservés. Essayez de la sélectionner à nouveau."
+    }
   },
   "message": {
     "sources": "Sources",
@@ -119,7 +139,9 @@
     "itemCount_other": "{{count}} éléments",
     "doneEmpty": "Terminé (résultat vide)",
     "inputLabel": "Entrée :",
-    "resultLabel": "Résultat :"
+    "resultLabel": "Résultat :",
+    "resultCount_many": "{{count}} résultats",
+    "itemCount_many": "{{count}} éléments"
   },
   "slash": {
     "fetch": "Récupérer une URL dans une note",
@@ -139,5 +161,8 @@
   "cti": {
     "invalidCommand": "Cette commande CTI n'a pas pu être exécutée :",
     "noSources": "Aucune source CTI Agent Host n'est configurée. Ajoutez un hôte CTI sous Paramètres → AI → Agent Hosts pour utiliser cette commande."
-  }
+  },
+  "input.serverStatus": "Routage par le serveur d’équipe",
+  "input.serverModelsHelp": "Les fournisseurs et modèles disponibles dépendent de la configuration du serveur de votre équipe.",
+  "input.modelLabel": "Modèle d’IA"
 }

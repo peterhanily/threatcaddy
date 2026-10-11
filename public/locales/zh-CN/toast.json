@@ -3,7 +3,18 @@
     "importWarning": "导入时有 {{count}} 个片段失败",
     "importFailed": "从扩展导入片段失败",
     "openedAsNote": "已将\"{{name}}\"作为新笔记打开",
-    "openFailed": "无法打开\"{{name}}\""
+    "openFailed": "无法打开\"{{name}}\"",
+    "refreshFailed": "剪辑已保存，但视图无法刷新。重新加载此工作区即可查看。",
+    "fileRefreshFailed": "文件已保存为笔记，但视图无法刷新。重新加载此工作区即可查看。",
+    "fileTitle": "{{name}} — {{size}} — 修改于 {{modified}}",
+    "fileError": {
+      "capacity_one": "一个文件未加入队列：最多只能同时等待 20 个文件。当前导入完成后，请重新打开该文件。",
+      "capacity_other": "{{count}} 个文件未加入队列：最多只能同时等待 20 个文件。当前导入完成后，请重新打开这些文件。",
+      "type": "无法打开“{{name}}”：请选择 Markdown 或文本文件。",
+      "size": "无法打开“{{name}}”：文本文件不得超过 5 MiB。请重新打开较小的文件。",
+      "read": "无法读取“{{name}}”。请检查文件访问权限并重新打开以重试。",
+      "import": "无法将“{{name}}”保存为笔记。请检查工作区存储并重新打开文件以重试。"
+    }
   },
   "share": {
     "investigationSaved": "已保存调查\"{{name}}\"及其所有实体",

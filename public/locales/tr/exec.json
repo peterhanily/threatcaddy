@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "Bu Haftaki Olaylar",
   "metrics.aiChats": "AI Sohbetleri",
   "metrics.graphNodes": "Graf Düğümleri",
-  "dashboard.backToExecView": "Yönetim Görünümüne Dön"
+  "dashboard.backToExecView": "Yönetim Görünümüne Dön",
+  "dashboard.switchToLight": "Açık temaya geç",
+  "dashboard.switchToDark": "Koyu temaya geç",
+  "dashboard.emptyTitle": "Çalışma alanınız hazır",
+  "dashboard.emptyDescription": "Analist Modunda bir inceleme oluşturun veya var olan çalışmaları içe aktarın. Bu pano geçerli çalışma alanındaki kayıtlı çalışmaları özetler.",
+  "dashboard.emptyAction": "Analist Modunu aç"
 }

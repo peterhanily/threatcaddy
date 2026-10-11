@@ -8,6 +8,7 @@ import { resolve } from 'node:path'
 import { URL } from 'node:url'
 import { createContext, Script } from 'node:vm'
 import { beforeEach, describe, it, expect, vi } from 'vitest'
+import { loadUI } from './ui-fixture.js'
 
 const NOW = Date.parse('2026-09-07T12:00:00Z')
 
@@ -71,6 +72,7 @@ function executeSource(filename, globals = {}) {
     console: { error: vi.fn(), warn: vi.fn() },
     ...globals,
   })
+  if (filename === 'popup.js') loadUI(context)
   new Script(readFileSync(sourcePath, 'utf8'), { filename: sourcePath }).runInContext(context)
   return context
 }

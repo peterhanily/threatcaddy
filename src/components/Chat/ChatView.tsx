@@ -83,8 +83,8 @@ export function ChatView({
   const { extensionAvailable, streamingContent, isStreaming, error, toolActivity, sendAgentRequest, abort } = useLLM();
   const { t } = useTranslation('chat');
   const { addToast } = useToast();
-  const { serverUrl } = useAuth();
-  const serverConnected = !!serverUrl;
+  const { serverUrl, user } = useAuth();
+  const serverConnected = !!serverUrl && !!user;
   const effectiveRoute = resolveRoutingMode(settings.llmRoutingMode, extensionAvailable, serverConnected);
   const hasLocalLLM = !!settings.llmLocalEndpoint?.trim();
   const canChat = extensionAvailable || serverConnected || hasLocalLLM;
@@ -200,7 +200,7 @@ export function ChatView({
       let defaultModel = settings.llmDefaultModel || 'claude-sonnet-4-6';
       let defaultProvider: LLMProvider = (settings.llmDefaultProvider as LLMProvider) || 'anthropic';
       // If the default provider has no API key, pick the first configured provider
-      if (configuredProviders.size > 0 && !configuredProviders.has(defaultProvider)) {
+      if (effectiveRoute !== 'server' && configuredProviders.size > 0 && !configuredProviders.has(defaultProvider)) {
         const first = configuredProviders.values().next().value!;
         defaultProvider = first as LLMProvider;
         // Pick a sensible model for that provider
@@ -216,7 +216,7 @@ export function ChatView({
       console.error('Failed to create chat thread:', err);
       setLocalError(t('view.errorCreateThread'));
     }
-  }, [onCreateThread, onSelectThread, settings, selectedFolderId, configuredProviders, threads, selectedThreadId, t]);
+  }, [onCreateThread, onSelectThread, settings, selectedFolderId, configuredProviders, threads, selectedThreadId, effectiveRoute, t]);
 
   const getApiKeyForProvider = useCallback((provider: LLMProvider, s: Settings): string | undefined => {
     switch (provider) {
@@ -1284,6 +1284,8 @@ export function ChatView({
               onStop={abort}
               isStreaming={isStreaming}
               extensionAvailable={extensionAvailable}
+              serverRoute={effectiveRoute === 'server' && serverConnected}
+              provider={activeThread.provider}
               model={activeThread.model}
               onModelChange={handleModelChange}
               localModelName={settings.llmLocalModelName}

@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "Kejadian Minggu Ini",
   "metrics.aiChats": "Obrolan AI",
   "metrics.graphNodes": "Node Graf",
-  "dashboard.backToExecView": "Kembali ke Tampilan Eksekutif"
+  "dashboard.backToExecView": "Kembali ke Tampilan Eksekutif",
+  "dashboard.switchToLight": "Beralih ke tema terang",
+  "dashboard.switchToDark": "Beralih ke tema gelap",
+  "dashboard.emptyTitle": "Ruang kerja Anda siap",
+  "dashboard.emptyDescription": "Buat investigasi atau impor pekerjaan yang ada melalui Mode Analis. Dasbor ini merangkum pekerjaan tersimpan di ruang kerja saat ini.",
+  "dashboard.emptyAction": "Buka Mode Analis"
 }

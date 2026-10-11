@@ -6,6 +6,10 @@ import { ScreenshareContext } from '../hooks/ScreenshareContext';
 import { hasPendingChanges } from '../lib/pending-changes';
 import { PRODUCT_COMPOSER_LIMITS, type ProductComposerSnapshot } from '../lib/product-composer';
 import { DEFAULT_CLS_LEVELS, type Note, type NoteTemplate } from '../types';
+import { createInstance } from 'i18next';
+import { I18nextProvider } from 'react-i18next';
+import productsEn from '../../public/locales/en/products.json';
+import commonEn from '../../public/locales/en/common.json';
 
 const encryption = vi.hoisted(() => ({ key: null as CryptoKey | null }));
 vi.mock('../lib/encryptionMiddleware', () => ({ getSessionKey: () => encryption.key }));
@@ -38,6 +42,24 @@ beforeEach(() => { encryption.key = null; });
 afterEach(() => { vi.restoreAllMocks(); });
 
 describe('ProductComposer local draft lifecycle', () => {
+  it('localizes controls and validation without translating or replacing analyst text', async () => {
+    const locale = createInstance();
+    await locale.init({ lng: 'fr', fallbackLng: 'en', interpolation: { escapeValue: false }, resources: {
+      en: { products: productsEn, common: commonEn },
+      fr: { products: { 'composer.title': 'Composer un rapport', 'composer.stageSelected': 'Ajouter les sources choisies',
+        'composer.validation.selectSource': 'Sélectionnez au moins une source.', 'composer.sectionContent': 'Contenu de la section {{number}}' } },
+    } });
+    render(<I18nextProvider i18n={locale}><ProductComposer {...properties()} /></I18nextProvider>);
+    expect(screen.getByRole('dialog', { name: 'Composer un rapport' })).toBeVisible();
+    const content = screen.getByRole('textbox', { name: 'Contenu de la section 1' });
+    fireEvent.change(content, { target: { value: 'Exact analyst text {{literal}}' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter les sources choisies' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Sélectionnez au moins une source.');
+    await act(async () => { await locale.changeLanguage('en'); });
+    expect(screen.getByRole('dialog', { name: 'Compose product' })).toBeVisible();
+    expect(screen.getByRole('textbox', { name: 'Section 1 content' })).toHaveValue('Exact analyst text {{literal}}');
+  });
+
   it('stages only explicit sources, appends edits and saves the immutable classification floor without background writes', async () => {
     const user = userEvent.setup();
     const localWrite = vi.spyOn(Storage.prototype, 'setItem');
@@ -181,7 +203,7 @@ describe('ProductComposer local draft lifecycle', () => {
   it('rejects an oversized initial snapshot without rendering its source collection', () => {
     const notes = Array.from({ length: PRODUCT_COMPOSER_LIMITS.sourceItems + 1 }, (_, index) => note(`bulk-${index}`, 'Fictional fixture'));
     render(<ProductComposer {...properties({ snapshot: { ...snapshot, notes } })} />);
-    expect(screen.getByRole('alert')).toHaveTextContent('at most 2000 source items');
+    expect(screen.getByRole('alert')).toHaveTextContent('at most 2,000 source items');
     expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
     expect(screen.getByRole('button', { name: 'Save draft product' })).toBeDisabled();
   });

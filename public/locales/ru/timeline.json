@@ -145,5 +145,17 @@
   "mitreReport.techniqueCount_other": "{{count}} техник",
   "mitreReport.techniqueCoverage": "Охват техник",
   "emptyState": "Событий на временной шкале пока нет",
-  "createFirstHint": "Используйте кнопку + выше, чтобы добавить первое событие"
+  "createFirstHint": "Используйте кнопку + выше, чтобы добавить первое событие",
+  "eventCard.assetCount_few": "{{count}} актива",
+  "eventCard.assetCount_many": "{{count}} активов",
+  "feed.eventCount_few": "{{count}} события",
+  "feed.eventCount_many": "{{count}} событий",
+  "gantt.eventCount_few": "{{count}} события",
+  "gantt.eventCount_many": "{{count}} событий",
+  "heatmap.maxEventsPerTechnique_few": "Макс. {{count}} события на технику",
+  "heatmap.maxEventsPerTechnique_many": "{{count}} макс. событий на технику",
+  "heatmap.maxActorsPerTechnique_few": "Макс. {{count}} актора на технику",
+  "heatmap.maxActorsPerTechnique_many": "{{count}} макс. акторов на технику",
+  "mitreReport.techniqueCount_few": "{{count}} техники",
+  "mitreReport.techniqueCount_many": "{{count}} техник"
 }

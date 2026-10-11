@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "Beklenmedik bir hata oluştu.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Kanıt",
-  "sidebar.products": "Ürünler"
+  "sidebar.products": "Ürünler",
+  "syncStatus.screenshareHidden": "Eşitleme için işlem gerekiyor. Ayrıntıları görmek için ekran paylaşımını kapatın.",
+  "syncStatus.review": "Eşitleme ayarlarını incele",
+  "draftRecovery.message": "Bazı değişiklikler kaydedilemedi. Taslak yalnızca bu sekmede tutuluyor. Kapatmadan önce yeniden deneyin veya taslağı indirin.",
+  "draftRecovery.untitled": "Kaydedilmemiş taslak",
+  "draftRecovery.retry": "Kaydetmeyi yeniden dene",
+  "draftRecovery.download": "Taslağı indir",
+  "draftRecovery.discard": "Taslağı sil",
+  "draftRecovery.discardConfirm": "Bu kaydedilmemiş taslak kalıcı olarak silinsin mi? Kurtarma kopyası gerekiyorsa önce indirin.",
+  "draftRecovery.conflictField": "{{field}} çakışmasını incele",
+  "draftRecovery.keepLocal": "Benim {{field}} değerimi koru",
+  "draftRecovery.useRemote": "Uzak {{field}} değerini kullan"
 }

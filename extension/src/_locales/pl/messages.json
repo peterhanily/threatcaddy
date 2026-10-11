@@ -8,7 +8,6 @@
   "version": {
     "message": "v1.1.1"
   },
-
   "quickStats": {
     "message": "Szybkie statystyki"
   },
@@ -18,7 +17,6 @@
   "thisWeek": {
     "message": "W tym tygodniu"
   },
-
   "quickCapture": {
     "message": "Szybkie przechwycenie"
   },
@@ -64,7 +62,6 @@
   "saveFailed": {
     "message": "Nie udało się zapisać. Spróbuj ponownie."
   },
-
   "recentCaptures": {
     "message": "Ostatnie przechwycenia"
   },
@@ -74,7 +71,6 @@
   "untitled": {
     "message": "Bez tytułu"
   },
-
   "quickActions": {
     "message": "Szybkie akcje"
   },
@@ -84,7 +80,6 @@
   "reviewAllCaptures": {
     "message": "Przejrzyj wszystkie przechwycenia"
   },
-
   "permissions": {
     "message": "Uprawnienia"
   },
@@ -109,7 +104,6 @@
   "allowFileAccessHint": {
     "message": "Aby włączyć: przejdź do chrome://extensions, znajdź ThreatCaddy i włącz \"Zezwól na dostęp do adresów URL pliku\"."
   },
-
   "howToUse": {
     "message": "Jak używać:"
   },
@@ -126,9 +120,8 @@
     "message": "Prywatność:"
   },
   "privacyText": {
-    "message": "Wszystkie dane pozostają na Twoim urządzeniu. Klucze API są wysyłane tylko do wybranego dostawcy. Bez śledzenia."
+    "message": "Wycinki pozostają na tym urządzeniu do przesłania lub eksportu. Opcjonalne AI, pobieranie adresów URL i połączenia z zatwierdzonymi aplikacjami mogą wysyłać dane do skonfigurowanych usług."
   },
-
   "settings": {
     "message": "Ustawienia"
   },
@@ -150,37 +143,39 @@
   "save": {
     "message": "Zapisz"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "Zapisz w ThreatCaddy"
   },
-
   "savedToThreatCaddy": {
     "message": "Zapisano w ThreatCaddy!"
   },
-
   "justNow": {
     "message": "Przed chwilą"
   },
   "minutesAgo": {
     "message": "$count$min temu",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "$count$godz temu",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "$count$d temu",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "Kontekst rozszerzenia stał się nieważny. Przeładuj tę stronę."
   },
@@ -190,7 +185,9 @@
   "errorExtensionUnknown": {
     "message": "Błąd rozszerzenia: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +196,6 @@
   "errorExtensionError": {
     "message": "Błąd rozszerzenia"
   },
-
   "errorInvalidUrl": {
     "message": "Nieprawidłowy URL"
   },
@@ -221,13 +217,17 @@
   "errorBlockedDomain": {
     "message": "Zablokowane: $hostname$ nie znajduje się na liście dozwolonych domen proxy",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "Wymagane uprawnienie hosta dla $hostname$",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +236,9 @@
   "errorUnknownProvider": {
     "message": "Nieznany dostawca: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +247,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "Wymagane uprawnienie hosta dla $hostname$. Otwórz wyskakujące okno rozszerzenia ThreatCaddy i włącz „Zezwól na pobieranie URL\" w sekcji Uprawnienia.",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +261,320 @@
   "errorInvalidTargetUrl": {
     "message": "Nieprawidłowy docelowy URL"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "privacyLink": {
+    "message": "Prywatność"
+  },
+  "captureSaveFailed": {
+    "message": "Wycinek nie został zapisany. Szkic zachowano."
+  },
+  "captureChangeFailed": {
+    "message": "Zmiana wycinka nie została zapisana. Odśwież i spróbuj ponownie."
+  },
+  "approvalTrust": {
+    "message": "Zatwierdzaj tylko zaufane aplikacje. Dokładnie to źródło (wraz z portem) lub wskazany plik samodzielny będzie mogło korzystać z uprawnień rozszerzenia."
+  },
+  "localAIOrigin": {
+    "message": "Źródło lokalnego serwera AI (opcjonalne)"
+  },
+  "saveLocalAI": {
+    "message": "Zapisz zgodę na lokalne AI"
+  },
+  "removeLocalAI": {
+    "message": "Usuń zgodę na lokalne AI"
+  },
+  "approveApp": {
+    "message": "Zatwierdź aplikację"
+  },
+  "revokeApps": {
+    "message": "Cofnij zgody dla wszystkich aplikacji"
+  },
+  "revokeAppsQuestion": {
+    "message": "Odłączyć wszystkie zatwierdzone aplikacje? Wycinki i uprawnienia przeglądarki nie zostaną usunięte. Zatwierdź aplikację ponownie, aby ją połączyć."
+  },
+  "localAISavedOrigin": {
+    "message": "Zapisano dla tej aplikacji: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "Brak zatwierdzonego lokalnego serwera AI dla tej aplikacji."
+  },
+  "localAIApproveFirst": {
+    "message": "Zatwierdź aplikację przed zapisaniem lokalnego serwera AI."
+  },
+  "localAIReadFailed": {
+    "message": "Nie można odczytać zgody na lokalne AI: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "Lokalne AI musi używać HTTP(S) bez danych logowania w URL"
+  },
+  "localAIPermissionDenied": {
+    "message": "Odmówiono dostępu do lokalnego AI; zapisana zgoda pozostaje bez zmian."
+  },
+  "localAIApprovalFailed": {
+    "message": "Nie udało się zatwierdzić lokalnego AI"
+  },
+  "invalidAppTarget": {
+    "message": "Użyj aplikacji HTTP(S) lub dokładnie wskazanego pliku samodzielnego, bez danych logowania"
+  },
+  "appPermissionDenied": {
+    "message": "Odmówiono dostępu do aplikacji"
+  },
+  "appApprovalFailed": {
+    "message": "Nie udało się zatwierdzić aplikacji"
+  },
+  "appApproved": {
+    "message": "Aplikację zatwierdzono. Odśwież jej kartę, aby połączyć."
+  },
+  "appsRevoked": {
+    "message": "Cofnięto wszystkie połączenia aplikacji."
+  },
+  "revokeFailed": {
+    "message": "Nie udało się cofnąć zgody"
+  },
+  "notificationWaiting": {
+    "message": "Oczekiwanie na zgodę przeglądarki…"
+  },
+  "notificationEnabled": {
+    "message": "Powiadomienia pulpitu włączone"
+  },
+  "notificationEnable": {
+    "message": "Włącz powiadomienia pulpitu"
+  },
+  "notificationEnabledDesc": {
+    "message": "Powiadomienia pulpitu włączono. Ustawienia systemu mogą nadal blokować ich wyświetlanie. Cofnij uprawnienie w ustawieniach rozszerzeń przeglądarki."
+  },
+  "notificationDisabledDesc": {
+    "message": "Powiadomienia pulpitu są wyłączone; alerty w aplikacji pozostają dostępne."
+  },
+  "notificationCheckFailed": {
+    "message": "Nie można sprawdzić uprawnienia powiadomień: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "Oczekiwanie na odpowiedź przeglądarki. Jeśli nie ma monitu, sprawdź uprawnienia rozszerzenia lub otwórz ten panel ponownie."
+  },
+  "notificationRequestFailed": {
+    "message": "Nie udało się poprosić o uprawnienie powiadomień: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "Nie można zweryfikować uprawnienia powiadomień: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "Alerty w aplikacji pozostają dostępne."
+  },
+  "notificationNotEnabled": {
+    "message": "Nie włączono powiadomień pulpitu; alerty w aplikacji pozostają dostępne. Sprawdź uprawnienia rozszerzenia, jeśli monit się nie pojawił."
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — Przegląd wycinków"
+  },
+  "clipReview": {
+    "message": "Przegląd wycinków"
+  },
+  "clipReviewSubtitle": {
+    "message": "Przeglądaj wycinki i zarządzaj nimi"
+  },
+  "totalCaptures": {
+    "message": "Łącznie wycinków"
+  },
+  "unsent": {
+    "message": "Niewysłane"
+  },
+  "applyAll": {
+    "message": "Zastosuj do wszystkich"
+  },
+  "sendAll": {
+    "message": "Wyślij wszystko do ThreatCaddy"
+  },
+  "refresh": {
+    "message": "Odśwież"
+  },
+  "clearAll": {
+    "message": "Wyczyść wszystko"
+  },
+  "delete": {
+    "message": "Usuń"
+  },
+  "confirm": {
+    "message": "Potwierdź"
+  },
+  "cancel": {
+    "message": "Anuluj"
+  },
+  "noCapturesTitle": {
+    "message": "Brak wycinków"
+  },
+  "noSourceUrl": {
+    "message": "Brak źródłowego URL"
+  },
+  "importConfirmed": {
+    "message": "Import potwierdzony"
+  },
+  "legacySent": {
+    "message": "Wysłano (dawniej, bez weryfikacji)"
+  },
+  "importPending": {
+    "message": "Oczekiwanie na potwierdzenie importu"
+  },
+  "importFailedRetained": {
+    "message": "Import nieudany — zachowano"
+  },
+  "folder": {
+    "message": "Folder"
+  },
+  "editCaptureMetadata": {
+    "message": "Edytuj metadane wycinka"
+  },
+  "deleteCaptureTitle": {
+    "message": "Usuń wycinek"
+  },
+  "deleteCaptureQuestion": {
+    "message": "Czy na pewno usunąć ten wycinek?"
+  },
+  "captureDeleted": {
+    "message": "Wycinek usunięto"
+  },
+  "preparingDestination": {
+    "message": "Przygotowywanie miejsca docelowego…"
+  },
+  "noUnsentCaptures": {
+    "message": "Brak niewysłanych wycinków do przesłania"
+  },
+  "configureTargetFirst": {
+    "message": "Najpierw skonfiguruj docelowy URL"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "Nieprawidłowy docelowy URL: dozwolone są tylko http, https i file://"
+  },
+  "targetPermissionDenied": {
+    "message": "Odmowa uprawnienia: rozszerzenie potrzebuje dostępu do tej witryny"
+  },
+  "permissionRequestFailed": {
+    "message": "Żądanie uprawnienia nie powiodło się"
+  },
+  "fileAccessDisabled": {
+    "message": "Dostęp do plików lokalnych jest wyłączony. Przed ponowieniem sprawdź ustawienia dostępu do plików tego rozszerzenia w przeglądarce."
+  },
+  "confirmWorkspace": {
+    "message": "Potwierdź obszar importu"
+  },
+  "importWorkspaceMessage": {
+    "message": "Zaimportować wycinki ($count$) do „$label$” ($workspace$) pod adresem $url$? Tylko importy potwierdzone przez bazę zostaną oznaczone jako wysłane.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "Stare wycinki ($count$) oznaczono jako wysłane bez weryfikacji; import może utworzyć duplikaty. W razie wątpliwości najpierw je sprawdź lub usuń.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "Importuj wycinki"
+  },
+  "waitingForImport": {
+    "message": "Oczekiwanie na potwierdzenie importu…"
+  },
+  "importsConfirmed": {
+    "message": "Potwierdzone importy wycinków: $count$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "Potwierdzono $confirmed$ z $total$ importów. $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "Niepotwierdzone wycinki zachowano."
+  },
+  "sendFailed": {
+    "message": "Wysyłanie nie powiodło się: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "Wartości domyślne zastosowano do wszystkich niewysłanych wycinków"
+  },
+  "clearAllCaptures": {
+    "message": "Wyczyść wszystkie wycinki"
+  },
+  "clearAllQuestion": {
+    "message": "Wszystkie wycinki ($count$) zostaną trwale usunięte. Tej operacji nie można cofnąć.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "Potwierdzone wycinki usunięto; nowsze zachowano"
+  },
+  "capturesLoadFailed": {
+    "message": "Nie można wczytać wycinków. Otwórz tę stronę ponownie lub wybierz Odśwież."
+  },
+  "metadataSaved": {
+    "message": "Metadane wycinka zapisano"
+  },
+  "discardMetadataDraft": {
+    "message": "Odrzuć szkic metadanych"
+  },
+  "discardMetadataMessage": {
+    "message": "Odrzucić niezapisane zmiany metadanych tego wycinka i wczytać ich bieżącą zapisaną wersję? Zapisane metadane nie zostaną zmienione."
   }
 }

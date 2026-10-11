@@ -1,5 +1,5 @@
 import { workspaceStorageKey } from '../../lib/workspace-profiles';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId, type KeyboardEvent } from 'react';
 import DOMPurify from 'dompurify';
 import { Github, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw, Plus, Pencil, Wrench, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +27,7 @@ import { AppearanceSettings } from './AppearanceSettings';
 
 function SystemPromptEditor({ value, onChange }: { value?: string; onChange: (v: string | undefined) => void }) {
   const { t } = useTranslation('settings');
+  const inputId = useId();
   const [expanded, setExpanded] = useState(false);
   const isCustom = !!value?.trim();
   const displayValue = value ?? DEFAULT_SYSTEM_PROMPT;
@@ -36,6 +37,8 @@ function SystemPromptEditor({ value, onChange }: { value?: string; onChange: (v:
       <div className="flex items-center justify-between">
         <button
           onClick={() => setExpanded(!expanded)}
+          aria-expanded={expanded}
+          aria-controls={inputId}
           className="text-sm text-gray-300 font-medium hover:text-gray-100 transition-colors text-start"
         >
           {t('ai.systemPrompt')} {expanded ? '▾' : '▸'}
@@ -49,6 +52,7 @@ function SystemPromptEditor({ value, onChange }: { value?: string; onChange: (v:
               onClick={() => onChange(undefined)}
               className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300 transition-colors"
               title={t('ai.systemPromptResetTitle')}
+              aria-label={t('ai.systemPromptResetTitle')}
             >
               <RotateCcw size={13} />
             </button>
@@ -61,6 +65,8 @@ function SystemPromptEditor({ value, onChange }: { value?: string; onChange: (v:
             {t('ai.systemPromptHelp')}
           </p>
           <textarea
+            id={inputId}
+            aria-label={t('ai.systemPrompt')}
             value={displayValue}
             onChange={(e) => {
               const v = e.target.value;
@@ -131,6 +137,7 @@ function CustomSlashCommandsEditor() {
   const { t: tt } = useTranslation('toast');
   const { commands, createCommand, updateCommand, deleteCommand } = useCustomSlashCommands();
   const { addToast } = useToast();
+  const fieldId = useId();
   const [editing, setEditing] = useState<CustomSlashCommand | null>(null);
   const [creating, setCreating] = useState(false);
   const [formName, setFormName] = useState('');
@@ -191,21 +198,27 @@ function CustomSlashCommandsEditor() {
 
       {creating && (
         <div className="space-y-2 p-3 rounded-lg bg-gray-800/50 border border-gray-700">
+          <label className="sr-only" htmlFor={`${fieldId}-name`}>{t('ai.commandNameLabel')}</label>
           <input
+            id={`${fieldId}-name`}
             type="text"
             value={formName}
             onChange={e => setFormName(e.target.value)}
             placeholder={t('ai.commandNamePlaceholder')}
             className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent font-mono"
           />
+          <label className="sr-only" htmlFor={`${fieldId}-description`}>{t('ai.commandDescLabel')}</label>
           <input
+            id={`${fieldId}-description`}
             type="text"
             value={formDesc}
             onChange={e => setFormDesc(e.target.value)}
             placeholder={t('ai.commandDescPlaceholder')}
             className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-accent"
           />
+          <label className="sr-only" htmlFor={`${fieldId}-template`}>{t('ai.commandTemplateLabel')}</label>
           <textarea
+            id={`${fieldId}-template`}
             value={formTemplate}
             onChange={e => setFormTemplate(e.target.value)}
             placeholder={t('ai.commandTemplatePlaceholder')}
@@ -229,18 +242,37 @@ const TAB_KEYS: SettingsTab[] = ['general', 'appearance', 'ai', 'agents', 'data'
 export function SettingsPanel({ settings, onUpdateSettings, notes, onImportComplete, sampleLoaded, onLoadSample, onDeleteSample, onClose, initialTab, activeTab: controlledTab, onTabChange, templateProps, playbookProps }: SettingsPanelProps) {
   const { t } = useTranslation('settings');
   const { addToast } = useToast();
+  const fieldId = useId();
   const [localTab, setLocalTab] = useState<SettingsTab>(initialTab || 'general');
+  const [focusedTab, setFocusedTab] = useState<SettingsTab | null>(null);
   const activeTab = controlledTab ?? localTab;
   const setActiveTab = (tab: SettingsTab) => {
     if (onTabChange) onTabChange(tab);
     else setLocalTab(tab);
   };
-  const selectClass = 'bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent';
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, tab: SettingsTab) => {
+    const index = TAB_KEYS.indexOf(tab);
+    const direction = getComputedStyle(event.currentTarget.parentElement ?? event.currentTarget).direction;
+    const forward = direction === 'rtl' ? -1 : 1;
+    let next: number;
+    switch (event.key) {
+      case 'ArrowLeft': next = (index - forward + TAB_KEYS.length) % TAB_KEYS.length; break;
+      case 'ArrowRight': next = (index + forward + TAB_KEYS.length) % TAB_KEYS.length; break;
+      case 'Home': next = 0; break;
+      case 'End': next = TAB_KEYS.length - 1; break;
+      default: return;
+    }
+    event.preventDefault();
+    const tabs = event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+    tabs?.[next]?.focus();
+  };
+  const selectClass = 'min-w-0 max-w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent';
   const labelClass = 'text-sm text-gray-400';
+  const preferenceRowClass = 'flex min-w-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between';
 
   return (
-    <div className="flex-1 overflow-y-auto">
-    <div className="w-full max-w-2xl mx-auto p-6 space-y-8">
+    <div className="flex-1 min-w-0 overflow-y-auto">
+    <div className="w-full min-w-0 max-w-2xl mx-auto p-3 sm:p-6 space-y-8 [overflow-wrap:anywhere]">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-100">{t('title')}</h2>
         {onClose && (
@@ -251,7 +283,8 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
       </div>
 
       {/* Tab Bar */}
-      <div className="flex gap-0.5 border-b border-gray-700 pb-0" role="tablist" aria-label={t('title')}>
+      <div className="flex min-w-0 max-w-full gap-0.5 overflow-x-auto border-b border-gray-700 pb-0" role="tablist" aria-label={t('title')} aria-orientation="horizontal"
+        onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocusedTab(null); }}>
         {TAB_KEYS.map((tabKey) => (
           <button
             key={tabKey}
@@ -259,8 +292,11 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
             aria-selected={activeTab === tabKey}
             aria-controls={`settings-panel-${tabKey}`}
             id={`settings-tab-${tabKey}`}
+            tabIndex={(focusedTab ?? activeTab) === tabKey ? 0 : -1}
+            onFocus={() => setFocusedTab(tabKey)}
+            onKeyDown={event => handleTabKeyDown(event, tabKey)}
             onClick={() => setActiveTab(tabKey)}
-            className={`flex-1 px-1 py-2 text-xs font-medium text-center tracking-tight transition-colors border-b-2 ${
+            className={`shrink-0 flex-1 min-h-11 whitespace-nowrap px-3 py-2 text-xs font-medium text-center tracking-tight transition-colors border-b-2 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent ${
               activeTab === tabKey
                 ? 'border-accent text-text-primary'
                 : 'border-transparent text-text-secondary hover:text-text-primary'
@@ -273,7 +309,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       {/* General Tab */}
       {activeTab === 'general' && (
-        <div className="space-y-6" role="tabpanel" id="settings-panel-general" aria-labelledby="settings-tab-general">
+        <div className="space-y-6" role="tabpanel" tabIndex={0} id="settings-panel-general" aria-labelledby="settings-tab-general">
           {/* Team Server */}
           <WorkspaceSwitcher />
           <ServerConnection
@@ -293,7 +329,11 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-gray-300">{t('general.identity')}</h3>
                 <div>
-                  <label className="text-sm text-gray-400 block mb-2">{t('general.displayName')}</label>
+                  {teamName ? (
+                    <p className="text-sm text-gray-400 mb-2">{t('general.displayName')}</p>
+                  ) : (
+                    <label htmlFor={`${fieldId}-display-name`} className="text-sm text-gray-400 block mb-2">{t('general.displayName')}</label>
+                  )}
                   {teamName ? (
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-sm text-gray-200">{teamName}</span>
@@ -301,6 +341,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                     </div>
                   ) : (
                     <input
+                      id={`${fieldId}-display-name`}
                       type="text"
                       value={settings.displayName || ''}
                       onChange={(e) => onUpdateSettings({ displayName: e.target.value.trim() || undefined })}
@@ -322,9 +363,10 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-300">{t('general.preferences')}</h3>
 
-            <div className="flex items-center justify-between">
-              <label className={labelClass}>{t('general.editorMode')}</label>
+            <div className={preferenceRowClass}>
+              <label htmlFor={`${fieldId}-editor-mode`} className={labelClass}>{t('general.editorMode')}</label>
               <select
+                id={`${fieldId}-editor-mode`}
                 value={settings.editorMode}
                 onChange={(e) => onUpdateSettings({ editorMode: e.target.value as Settings['editorMode'] })}
                 className={selectClass}
@@ -335,9 +377,10 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               </select>
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className={labelClass}>{t('general.taskView')}</label>
+            <div className={preferenceRowClass}>
+              <label htmlFor={`${fieldId}-task-view`} className={labelClass}>{t('general.taskView')}</label>
               <select
+                id={`${fieldId}-task-view`}
                 value={settings.taskViewMode}
                 onChange={(e) => onUpdateSettings({ taskViewMode: e.target.value as Settings['taskViewMode'] })}
                 className={selectClass}
@@ -348,9 +391,10 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
             </div>
 
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className={labelClass}>{t('general.language')}</label>
+              <div className={preferenceRowClass}>
+                <label htmlFor={`${fieldId}-language`} className={labelClass}>{t('general.language')}</label>
                 <select
+                  id={`${fieldId}-language`}
                   value={settings.language ?? 'en'}
                   onChange={(e) => onUpdateSettings({ language: e.target.value })}
                   className={selectClass}
@@ -372,16 +416,22 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
             {(['mention', 'reply', 'reaction', 'invite', 'bot'] as const).map((key) => {
               const enabled = settings.notificationPrefs?.[key] !== false;
               return (
-                <div key={key} className="flex items-center justify-between">
-                  <div>
-                    <span className="text-sm text-gray-300">{t(`general.notifications.${key}`)}</span>
-                    <p className="text-xs text-gray-500">{t(`general.notifications.${key}Desc`)}</p>
+                <div key={key} className="flex min-w-0 items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <span id={`${fieldId}-notification-${key}`} className="text-sm text-gray-300">{t(`general.notifications.${key}`)}</span>
+                    <p id={`${fieldId}-notification-${key}-help`} className="text-xs text-gray-500">{t(`general.notifications.${key}Desc`)}</p>
                   </div>
                   <button
+                    role="switch"
+                    aria-checked={enabled}
+                    aria-labelledby={`${fieldId}-notification-${key}`}
+                    aria-describedby={`${fieldId}-notification-${key}-help`}
                     onClick={() => onUpdateSettings({ notificationPrefs: { ...settings.notificationPrefs, [key]: !enabled } })}
-                    className={`relative w-9 h-5 rounded-full transition-colors ${enabled ? 'bg-accent' : 'bg-gray-700'}`}
+                    className="flex min-w-11 min-h-11 shrink-0 items-center justify-center rounded-lg focus-visible:outline-2 focus-visible:outline-accent"
                   >
-                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${enabled ? 'translate-x-4' : ''}`} />
+                    <span aria-hidden="true" className={`relative w-9 h-5 rounded-full transition-colors ${enabled ? 'bg-accent' : 'bg-gray-700'}`}>
+                      <span className={`absolute top-0.5 start-0.5 w-4 h-4 rounded-full bg-white transition-transform ${enabled ? 'translate-x-4 rtl:-translate-x-4' : ''}`} />
+                    </span>
                   </button>
                 </div>
               );
@@ -495,13 +545,14 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       {/* Appearance Tab */}
       {activeTab === 'appearance' && (
-        <div className="space-y-6" role="tabpanel" id="settings-panel-appearance" aria-labelledby="settings-tab-appearance">
+        <div className="space-y-6" role="tabpanel" tabIndex={0} id="settings-panel-appearance" aria-labelledby="settings-tab-appearance">
           {/* Theme toggle — moved from General */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-300">{t('appearance.theme')}</h3>
-            <div className="flex items-center justify-between">
-              <label className={labelClass}>{t('appearance.mode')}</label>
+            <div className={preferenceRowClass}>
+              <label htmlFor={`${fieldId}-theme`} className={labelClass}>{t('appearance.mode')}</label>
               <select
+                id={`${fieldId}-theme`}
                 value={settings.theme}
                 onChange={(e) => onUpdateSettings({ theme: e.target.value as 'dark' | 'light' })}
                 className={selectClass}
@@ -517,7 +568,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       {/* AI Tab */}
       {activeTab === 'ai' && (
-        <div className="space-y-6" role="tabpanel" id="settings-panel-ai" aria-labelledby="settings-tab-ai">
+        <div className="space-y-6" role="tabpanel" tabIndex={0} id="settings-panel-ai" aria-labelledby="settings-tab-ai">
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
               <Bot size={16} />
@@ -526,8 +577,9 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
             <div className="space-y-3">
               <div>
-                <label className={labelClass}>{t('ai.anthropicKey')}</label>
+                <label htmlFor={`${fieldId}-anthropic`} className={labelClass}>{t('ai.anthropicKey')}</label>
                 <input
+                  id={`${fieldId}-anthropic`}
                   type="password"
                   autoComplete="off"
                   data-1p-ignore
@@ -540,8 +592,9 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               </div>
 
               <div>
-                <label className={labelClass}>{t('ai.openaiKey')}</label>
+                <label htmlFor={`${fieldId}-openai`} className={labelClass}>{t('ai.openaiKey')}</label>
                 <input
+                  id={`${fieldId}-openai`}
                   type="password"
                   autoComplete="off"
                   data-1p-ignore
@@ -554,8 +607,9 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               </div>
 
               <div>
-                <label className={labelClass}>{t('ai.geminiKey')}</label>
+                <label htmlFor={`${fieldId}-gemini`} className={labelClass}>{t('ai.geminiKey')}</label>
                 <input
+                  id={`${fieldId}-gemini`}
                   type="password"
                   autoComplete="off"
                   data-1p-ignore
@@ -568,8 +622,9 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               </div>
 
               <div>
-                <label className={labelClass}>{t('ai.mistralKey')}</label>
+                <label htmlFor={`${fieldId}-mistral`} className={labelClass}>{t('ai.mistralKey')}</label>
                 <input
+                  id={`${fieldId}-mistral`}
                   type="password"
                   autoComplete="off"
                   data-1p-ignore
@@ -583,9 +638,10 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
               <LocalLLMConfig settings={settings} onUpdateSettings={onUpdateSettings} />
 
-              <div className="flex items-center justify-between">
-                <label className={labelClass}>{t('ai.defaultModel')}</label>
+              <div className={preferenceRowClass}>
+                <label htmlFor={`${fieldId}-default-model`} className={labelClass}>{t('ai.defaultModel')}</label>
                 <select
+                  id={`${fieldId}-default-model`}
                   value={settings.llmDefaultModel || 'claude-sonnet-4-6'}
                   onChange={(e) => {
                     const model = e.target.value;
@@ -609,9 +665,10 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 </select>
               </div>
 
-              <div className="flex items-center justify-between">
-                <label className={labelClass}>{t('ai.maxContextMessages')}</label>
+              <div className={preferenceRowClass}>
+                <label htmlFor={`${fieldId}-context-messages`} className={labelClass}>{t('ai.maxContextMessages')}</label>
                 <input
+                  id={`${fieldId}-context-messages`}
                   type="number"
                   min={6}
                   max={200}
@@ -628,9 +685,10 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 {t('ai.maxContextHelp')}
               </p>
 
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-400">{t('ai.tokenBudget')}</label>
+              <div className={preferenceRowClass}>
+                <label htmlFor={`${fieldId}-token-budget`} className="text-xs text-gray-400">{t('ai.tokenBudget')}</label>
                 <input
+                  id={`${fieldId}-token-budget`}
                   type="number"
                   min={0}
                   step={10000}
@@ -647,9 +705,10 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 {t('ai.tokenBudgetHelp')}
               </p>
 
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-400">{t('ai.routing')}</label>
+              <div className={preferenceRowClass}>
+                <label htmlFor={`${fieldId}-routing`} className="text-xs text-gray-400">{t('ai.routing')}</label>
                 <select
+                  id={`${fieldId}-routing`}
                   value={settings.llmRoutingMode || 'extension'}
                   onChange={(e) => onUpdateSettings({ llmRoutingMode: e.target.value as 'extension' | 'server' | 'auto' })}
                   className={selectClass}
@@ -685,7 +744,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       {/* Agents Tab */}
       {activeTab === 'agents' && (
-        <div className="space-y-6" role="tabpanel" id="settings-panel-agents" aria-labelledby="settings-tab-agents">
+        <div className="space-y-6" role="tabpanel" tabIndex={0} id="settings-panel-agents" aria-labelledby="settings-tab-agents">
           {/* Agent Profiles */}
           <AgentProfileSection />
 
@@ -715,8 +774,9 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
             </div>
             {settings.agentSupervisorEnabled && (
               <div className="flex items-center gap-3 mt-2">
-                <label className="text-xs text-gray-400 shrink-0">{t('agents.interval')}</label>
+                <label htmlFor={`${fieldId}-supervisor-interval`} className="text-xs text-gray-400 shrink-0">{t('agents.interval')}</label>
                 <input
+                  id={`${fieldId}-supervisor-interval`}
                   type="range"
                   min={10}
                   max={120}
@@ -734,7 +794,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       {/* Data Tab */}
       {activeTab === 'data' && (
-        <div className="space-y-6" role="tabpanel" id="settings-panel-data" aria-labelledby="settings-tab-data">
+        <div className="space-y-6" role="tabpanel" tabIndex={0} id="settings-panel-data" aria-labelledby="settings-tab-data">
           <ExportImport notes={notes} onImportComplete={onImportComplete} />
           <EncryptionSettings />
           <CloudBackup />
@@ -744,7 +804,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       {/* Templates Tab */}
       {activeTab === 'templates' && (
-        <div className="space-y-6" role="tabpanel" id="settings-panel-templates" aria-labelledby="settings-tab-templates">
+        <div className="space-y-6" role="tabpanel" tabIndex={0} id="settings-panel-templates" aria-labelledby="settings-tab-templates">
           {templateProps && <TemplateManager {...templateProps} />}
           {playbookProps && <PlaybookManager {...playbookProps} />}
         </div>
@@ -752,21 +812,21 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
 
       {/* Threat Intel Tab */}
       {activeTab === 'intel' && (
-        <div className="space-y-6" role="tabpanel" id="settings-panel-intel" aria-labelledby="settings-tab-intel">
+        <div className="space-y-6" role="tabpanel" tabIndex={0} id="settings-panel-intel" aria-labelledby="settings-tab-intel">
           <ThreatIntelConfig />
         </div>
       )}
 
       {/* Integrations Tab */}
       {activeTab === 'integrations' && (
-        <div className="space-y-6" role="tabpanel" id="settings-panel-integrations" aria-labelledby="settings-tab-integrations">
+        <div className="space-y-6" role="tabpanel" tabIndex={0} id="settings-panel-integrations" aria-labelledby="settings-tab-integrations">
           <IntegrationPanel />
         </div>
       )}
 
       {/* Shortcuts Tab */}
       {activeTab === 'shortcuts' && (
-        <div className="space-y-6" role="tabpanel" id="settings-panel-shortcuts" aria-labelledby="settings-tab-shortcuts">
+        <div className="space-y-6" role="tabpanel" tabIndex={0} id="settings-panel-shortcuts" aria-labelledby="settings-tab-shortcuts">
           <KeyboardShortcuts />
         </div>
       )}
@@ -784,6 +844,7 @@ interface LocalLLMConfigProps {
 
 function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
   const { t } = useTranslation('settings');
+  const fieldId = useId();
   const [fetchingModels, setFetchingModels] = useState(false);
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
@@ -904,9 +965,9 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
 
   return (
     <div className="border border-gray-700 rounded-lg p-3 space-y-3">
-      <div className="flex items-center justify-between">
-        <label className="text-sm text-gray-300 font-medium">{t('ai.localLlm')}</label>
-        <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h4 className="text-sm text-gray-300 font-medium">{t('ai.localLlm')}</h4>
+        <div className="flex shrink-0 items-center gap-1.5">
           {testStatus === 'success' && <CheckCircle2 size={12} className="text-green-400" />}
           {testStatus === 'error' && <AlertTriangle size={12} className="text-red-400" />}
           <button
@@ -922,8 +983,9 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
         <p className="text-[10px] text-red-400">{testError}</p>
       )}
       <div>
-        <label className={labelClass}>{t('ai.endpointUrl')}</label>
+        <label htmlFor={`${fieldId}-endpoint`} className={labelClass}>{t('ai.endpointUrl')}</label>
         <input
+          id={`${fieldId}-endpoint`}
           type="text"
           value={settings.llmLocalEndpoint || ''}
           onChange={(e) => { onUpdateSettings({ llmLocalEndpoint: e.target.value.trim() || undefined }); setTestStatus('idle'); }}
@@ -933,8 +995,9 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
         <p className="text-[10px] text-gray-600 mt-0.5">{t('ai.endpointHelp')}</p>
       </div>
       <div>
-        <label className={labelClass}>{t('ai.localApiKey')}</label>
+        <label htmlFor={`${fieldId}-api-key`} className={labelClass}>{t('ai.localApiKey')}</label>
         <input
+          id={`${fieldId}-api-key`}
           type="password"
           autoComplete="off"
           data-1p-ignore
@@ -947,7 +1010,7 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
       </div>
       <div>
         <div className="flex items-center justify-between">
-          <label className={labelClass}>{t('ai.model')}</label>
+          <label htmlFor={`${fieldId}-model`} className={labelClass}>{t('ai.model')}</label>
           <button
             onClick={fetchModels}
             disabled={fetchingModels}
@@ -959,6 +1022,7 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
         </div>
         {availableModels.length > 0 ? (
           <select
+            id={`${fieldId}-model`}
             value={settings.llmLocalModelName || ''}
             onChange={(e) => onUpdateSettings({ llmLocalModelName: e.target.value || undefined })}
             className="w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
@@ -970,6 +1034,7 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
           </select>
         ) : (
           <input
+            id={`${fieldId}-model`}
             type="text"
             value={settings.llmLocalModelName || ''}
             onChange={(e) => onUpdateSettings({ llmLocalModelName: e.target.value.trim() || undefined })}
@@ -985,7 +1050,7 @@ function LocalLLMConfig({ settings, onUpdateSettings }: LocalLLMConfigProps) {
       {/* Agent Skills Discovery */}
       <div className="border-t border-gray-700 pt-3 mt-1">
         <div className="flex items-center justify-between">
-          <label className="text-xs text-gray-400 font-medium">{t('ai.agentSkills')}</label>
+          <h4 className="text-xs text-gray-400 font-medium">{t('ai.agentSkills')}</h4>
           <button
             onClick={async () => {
               setFetchingSkills(true);

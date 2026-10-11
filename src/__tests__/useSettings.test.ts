@@ -40,6 +40,18 @@ describe('useSettings', () => {
     expect(result.current.settings.defaultView).toBe('dashboard');
   });
 
+  it('normalizes persisted regional choices and saves canonical supported language codes', () => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ language: 'ar-EG' }));
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.settings.language).toBe('ar');
+    expect(document.documentElement.dir).toBe('rtl');
+    act(() => result.current.updateSettings({ language: 'pt_BR' }));
+    expect(result.current.settings.language).toBe('pt-BR');
+    expect(JSON.parse(localStorage.getItem(SETTINGS_KEY)!).language).toBe('pt-BR');
+    act(() => result.current.updateSettings({ language: 'zh-TW' }));
+    expect(result.current.settings.language).toBe('en');
+  });
+
   it('falls back to defaults on corrupted localStorage', () => {
     localStorage.setItem(SETTINGS_KEY, 'not valid json');
     const { result } = renderHook(() => useSettings());

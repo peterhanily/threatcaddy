@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "予期しないエラーが発生しました。",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "証拠",
-  "sidebar.products": "成果物"
+  "sidebar.products": "成果物",
+  "syncStatus.screenshareHidden": "同期への対応が必要です。詳細を見るには画面共有をオフにしてください。",
+  "syncStatus.review": "同期設定を確認",
+  "draftRecovery.message": "一部の変更を保存できませんでした。下書きはこのタブにのみ保持されています。閉じる前に再試行するか、下書きをダウンロードしてください。",
+  "draftRecovery.untitled": "未保存の下書き",
+  "draftRecovery.retry": "保存を再試行",
+  "draftRecovery.download": "下書きをダウンロード",
+  "draftRecovery.discard": "下書きを破棄",
+  "draftRecovery.discardConfirm": "この未保存の下書きを完全に破棄しますか？復元用のコピーが必要な場合は、先にダウンロードしてください。",
+  "draftRecovery.conflictField": "{{field}} の競合を確認",
+  "draftRecovery.keepLocal": "自分の {{field}} を保持",
+  "draftRecovery.useRemote": "リモートの {{field}} を使用"
 }

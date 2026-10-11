@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
+import Dexie from 'dexie';
 
 // ── Mocks ────────────────────────────────────────────────────────────
 // vi.mock paths are resolved relative to the test file
@@ -62,6 +63,9 @@ vi.mock('../lib/db-migration', () => ({ getLegacyCleanupStatus: vi.fn(async () =
 import { EncryptionSetup } from '../components/Encryption/EncryptionSetup';
 import { PassphraseDialog } from '../components/Encryption/PassphraseDialog';
 import { EncryptionSettings } from '../components/Encryption/EncryptionSettings';
+import { db } from '../db';
+import { clearEncryptionMeta } from '../lib/encryptionStore';
+import { deriveWrappingKey } from '../lib/crypto';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -87,6 +91,8 @@ describe('EncryptionSetup', () => {
     expect(screen.getByText(/Step 1 of 2/)).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Enter passphrase...')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Confirm passphrase...')).toBeInTheDocument();
+    expect(screen.getByLabelText('Passphrase (min 8 characters)')).toBe(screen.getByPlaceholderText('Enter passphrase...'));
+    expect(screen.getByLabelText('Confirm passphrase')).toBe(screen.getByPlaceholderText('Confirm passphrase...'));
   });
 
   it('shows error when passphrase is too short', () => {
@@ -144,6 +150,37 @@ describe('EncryptionSetup', () => {
 // ── PassphraseDialog ─────────────────────────────────────────────────
 
 describe('PassphraseDialog', () => {
+  it('serializes unlock attempts and blocks mode changes or reset while key derivation is pending', async () => {
+    vi.clearAllMocks();
+    mockGetEncryptionMeta.mockReturnValue({ salt: 'synthetic', wrappedKey: 'synthetic' });
+    let reject!: (cause: Error) => void;
+    vi.mocked(deriveWrappingKey).mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail; }));
+    render(<PassphraseDialog onUnlocked={vi.fn()} />);
+    const input = screen.getByPlaceholderText('Enter passphrase...');
+    changeInput(input, 'fictional retained passphrase');
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(deriveWrappingKey).toHaveBeenCalledOnce();
+    expect(input).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Use recovery key' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Forgot passphrase?' })).toBeDisabled();
+    await act(async () => reject(new Error('Synthetic key derivation failure')));
+    expect(input).toBeEnabled();
+    expect(input).toHaveValue('fictional retained passphrase');
+    expect(screen.getByRole('alert')).not.toHaveTextContent('Synthetic');
+    expect(db.delete).not.toHaveBeenCalled();
+    mockGetEncryptionMeta.mockReturnValue(null);
+  });
+  it('names both states of the passphrase visibility control without changing the value', () => {
+    render(<PassphraseDialog onUnlocked={vi.fn()} />);
+    const input = screen.getByPlaceholderText('Enter passphrase...');
+    changeInput(input, 'fictional retained passphrase');
+    fireEvent.click(screen.getByRole('button', { name: 'Show passphrase' }));
+    expect(input).toHaveAttribute('type', 'text');
+    fireEvent.click(screen.getByRole('button', { name: 'Hide passphrase' }));
+    expect(input).toHaveAttribute('type', 'password');
+    expect(input).toHaveValue('fictional retained passphrase');
+  });
   it('renders passphrase input and unlock button', () => {
     render(<PassphraseDialog onUnlocked={vi.fn()} />);
     expect(screen.getByText('Unlock ThreatCaddy')).toBeInTheDocument();
@@ -182,6 +219,25 @@ describe('PassphraseDialog', () => {
     fireEvent.click(screen.getByText('Forgot passphrase?'));
     expect(screen.getByText('Start Fresh')).toBeInTheDocument();
     expect(screen.getByText(/permanently delete/i)).toBeInTheDocument();
+  });
+
+  it('names the exact confirmation input and retains metadata after a failed reset without duplicate deletes', async () => {
+    vi.clearAllMocks();
+    let reject!: (cause: Error) => void;
+    vi.mocked(db.delete).mockImplementationOnce(() => new Dexie.Promise<void>((_resolve, fail) => { reject = fail; }));
+    render(<PassphraseDialog onUnlocked={vi.fn()} />);
+    fireEvent.click(screen.getByText('Forgot passphrase?'));
+    const input = screen.getByRole('textbox', { name: 'Type DELETE to confirm.' });
+    const button = screen.getByRole('button', { name: 'Delete All Data & Start Fresh' });
+    changeInput(input, 'delete'); expect(button).toBeDisabled();
+    changeInput(input, 'DELETE'); expect(button).toBeEnabled();
+    fireEvent.click(button); fireEvent.click(button);
+    expect(db.delete).toHaveBeenCalledOnce();
+    await act(async () => { reject(new Error('Synthetic database unavailable')); });
+    expect(screen.getByRole('alert')).toHaveTextContent('reset did not finish');
+    expect(screen.getByRole('alert')).not.toHaveTextContent('Synthetic database');
+    expect(clearEncryptionMeta).not.toHaveBeenCalled();
+    expect(input).toHaveValue('DELETE'); expect(button).toBeEnabled();
   });
 });
 

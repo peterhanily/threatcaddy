@@ -215,5 +215,16 @@
   "demoModal.removeHint": "يمكنك إزالة البيانات النموذجية لاحقًا في الإعدادات.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "الأدلة",
-  "sidebar.products": "المنتجات"
+  "sidebar.products": "المنتجات",
+  "syncStatus.screenshareHidden": "تحتاج المزامنة إلى مراجعة. أوقف مشاركة الشاشة لعرض التفاصيل.",
+  "syncStatus.review": "مراجعة إعدادات المزامنة",
+  "draftRecovery.message": "تعذّر حفظ بعض التغييرات. تُحفظ المسودات في علامة التبويب هذه فقط. أعد المحاولة أو نزّلها قبل إغلاقها.",
+  "draftRecovery.untitled": "مسودة غير محفوظة",
+  "draftRecovery.retry": "إعادة محاولة الحفظ",
+  "draftRecovery.download": "تنزيل المسودة",
+  "draftRecovery.discard": "تجاهل المسودة",
+  "draftRecovery.discardConfirm": "هل تريد تجاهل هذه المسودة غير المحفوظة نهائيًا؟ نزّلها أولًا إذا كنت تحتاج إلى نسخة للاسترداد.",
+  "draftRecovery.conflictField": "مراجعة تعارض {{field}}",
+  "draftRecovery.keepLocal": "الاحتفاظ بالقيمة المحلية لحقل {{field}}",
+  "draftRecovery.useRemote": "استخدام القيمة البعيدة لحقل {{field}}"
 }

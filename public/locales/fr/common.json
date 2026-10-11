@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "Une erreur inattendue s'est produite.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Preuves",
-  "sidebar.products": "Produits"
+  "sidebar.products": "Produits",
+  "syncStatus.screenshareHidden": "La synchronisation demande votre attention. Désactivez le partage d’écran pour consulter les détails.",
+  "syncStatus.review": "Vérifier les paramètres de synchronisation",
+  "draftRecovery.message": "Certaines modifications n’ont pas pu être enregistrées. Les brouillons restent uniquement dans cet onglet. Réessayez ou téléchargez-les avant de le fermer.",
+  "draftRecovery.untitled": "Brouillon non enregistré",
+  "draftRecovery.retry": "Réessayer l’enregistrement",
+  "draftRecovery.download": "Télécharger le brouillon",
+  "draftRecovery.discard": "Abandonner le brouillon",
+  "draftRecovery.discardConfirm": "Abandonner définitivement ce brouillon non enregistré ? Téléchargez-le d’abord si vous avez besoin d’une copie de secours.",
+  "draftRecovery.conflictField": "Vérifier le conflit : {{field}}",
+  "draftRecovery.keepLocal": "Conserver ma valeur : {{field}}",
+  "draftRecovery.useRemote": "Utiliser la valeur distante : {{field}}"
 }

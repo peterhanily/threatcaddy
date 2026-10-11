@@ -30,6 +30,9 @@ interface ChatInputProps {
   onStop: () => void;
   isStreaming: boolean;
   extensionAvailable: boolean;
+  /** The selected route uses an authenticated team server, not local API keys. */
+  serverRoute?: boolean;
+  provider?: LLMProvider;
   model: string;
   onModelChange: (model: string, provider: LLMProvider) => void;
   disabled?: boolean;
@@ -46,28 +49,26 @@ interface ChatInputProps {
   draftScope?: string;
 }
 
-export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, model, onModelChange, disabled, localModelName, configuredProviders, onOpenSettings, folderId, customCommands, onImageAttach, attachedImages, onClearImages, readingImages, draftScope }: ChatInputProps) {
+export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, serverRoute = false, provider, model, onModelChange, disabled, localModelName, configuredProviders, onOpenSettings, folderId, customCommands, onImageAttach, attachedImages, onClearImages, readingImages, draftScope }: ChatInputProps) {
   const { t } = useTranslation('chat');
-  // Can send if extension is available OR a local LLM is configured (direct fetch, no extension needed)
-  const canSend = extensionAvailable || !!localModelName;
+  const canSend = serverRoute || extensionAvailable || (!!localModelName && (!provider || provider === 'local'));
   const MODELS = useMemo(() => {
     let models = [...STATIC_MODELS];
     if (localModelName) {
       models.push({ label: `Local: ${localModelName}`, value: localModelName, provider: 'local' as LLMProvider, group: 'Local' });
     }
     // Only show models for providers that have an API key configured
-    if (configuredProviders) {
+    if (configuredProviders && !serverRoute) {
       models = models.filter(m => configuredProviders.has(m.provider));
     }
-    return models;
-  }, [localModelName, configuredProviders]);
-
-  // Auto-switch to a valid model when the current one isn't in the filtered list
-  useEffect(() => {
-    if (MODELS.length > 0 && !MODELS.some(m => m.value === model)) {
-      onModelChange(MODELS[0].value, MODELS[0].provider);
+    // Preserve an existing thread's selection even after credentials or route
+    // change. Sending to another provider requires an explicit model choice.
+    if (provider && model && !models.some(item => item.value === model)) {
+      models.push({ label: model, value: model, provider,
+        group: serverRoute ? t('input.serverStatus') : STATIC_MODELS.find(item => item.provider === provider)?.group ?? provider });
     }
-  }, [MODELS, model, onModelChange]);
+    return models;
+  }, [localModelName, configuredProviders, serverRoute, provider, model, t]);
 
   const fallbackScope = useId();
   const scope = draftScope ?? fallbackScope;
@@ -217,7 +218,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
 
   const handleSend = async () => {
     const trimmed = text.trim();
-    if (!trimmed || isStreaming || disabled || readingImages) return;
+    if (!trimmed || !canSend || isStreaming || disabled || readingImages) return;
     const submission = beginComposerSubmission(scope);
     if (!submission) return;
     setSubmitErrors(previous => { const next = new Set(previous); next.delete(scope); return next; });
@@ -302,17 +303,18 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
   return (
     <div className="border-t border-border-subtle p-3 space-y-2">
       {/* Model selector + extension status */}
-      <div className="flex items-center gap-2 text-xs">
+      <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs">
         {MODELS.length === 0 ? (
           <span className="text-text-muted text-[10px] italic">{t('input.noApiKeys')}</span>
         ) : (
           <select
+            aria-label={t('input.modelLabel')}
             value={model}
             onChange={(e) => {
               const m = MODELS.find((m) => m.value === e.target.value);
               if (m) onModelChange(m.value, m.provider);
             }}
-            className="bg-bg-deep border border-border-medium rounded px-2 py-1 text-text-secondary focus:outline-none focus:border-purple text-xs"
+            className="min-w-0 max-w-full bg-bg-deep border border-border-medium rounded px-2 py-1 text-text-secondary focus:outline-none focus:border-purple text-xs"
           >
             {Array.from(new Set(MODELS.map(m => m.group))).map(group => (
               <optgroup key={group} label={group}>
@@ -329,9 +331,10 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
           canSend ? 'text-accent-green' : 'text-text-muted'
         )}>
           {canSend ? <Wifi size={10} /> : <WifiOff size={10} />}
-          {extensionAvailable ? t('input.extensionStatus') : localModelName ? t('input.localLlmStatus') : t('input.noConnection')}
+          {serverRoute ? t('input.serverStatus') : extensionAvailable ? t('input.extensionStatus') : canSend && localModelName ? t('input.localLlmStatus') : t('input.noConnection')}
         </div>
       </div>
+      {serverRoute && <p className="text-[10px] text-text-muted">{t('input.serverModelsHelp')}</p>}
 
       {/* Connection required banner */}
       {!canSend && (

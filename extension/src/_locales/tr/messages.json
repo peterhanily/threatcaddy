@@ -8,7 +8,6 @@
   "version": {
     "message": "v1.1.1"
   },
-
   "quickStats": {
     "message": "Hızlı İstatistikler"
   },
@@ -18,7 +17,6 @@
   "thisWeek": {
     "message": "Bu Hafta"
   },
-
   "quickCapture": {
     "message": "Hızlı Yakalama"
   },
@@ -64,7 +62,6 @@
   "saveFailed": {
     "message": "Kaydetme başarısız. Lütfen tekrar deneyin."
   },
-
   "recentCaptures": {
     "message": "Son Yakalamalar"
   },
@@ -74,7 +71,6 @@
   "untitled": {
     "message": "Başlıksız"
   },
-
   "quickActions": {
     "message": "Hızlı İşlemler"
   },
@@ -84,7 +80,6 @@
   "reviewAllCaptures": {
     "message": "Tüm Yakalamaları İncele"
   },
-
   "permissions": {
     "message": "İzinler"
   },
@@ -109,7 +104,6 @@
   "allowFileAccessHint": {
     "message": "Etkinleştirmek için: chrome://extensions'a gidin, ThreatCaddy'yi bulun ve \"Dosya URL'lerine erişime izin ver\"i açın."
   },
-
   "howToUse": {
     "message": "Nasıl kullanılır:"
   },
@@ -126,9 +120,8 @@
     "message": "Gizlilik:"
   },
   "privacyText": {
-    "message": "Tüm veriler cihazınızda yerel kalır. API anahtarları yalnızca seçtiğiniz sağlayıcıya gönderilir. İzleme yok."
+    "message": "Klipler teslim edilene veya dışa aktarılana kadar bu cihazda kalır. İsteğe bağlı yapay zekâ, URL getirme ve onaylı uygulama bağlantıları yapılandırılan hizmetlere veri gönderebilir."
   },
-
   "settings": {
     "message": "Ayarlar"
   },
@@ -150,37 +143,39 @@
   "save": {
     "message": "Kaydet"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "ThreatCaddy'ye Kaydet"
   },
-
   "savedToThreatCaddy": {
     "message": "ThreatCaddy'ye Kaydedildi!"
   },
-
   "justNow": {
     "message": "Az önce"
   },
   "minutesAgo": {
     "message": "$count$d önce",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "$count$s önce",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "$count$g önce",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "Uzantı bağlamı geçersiz kılındı. Lütfen bu sayfayı yenileyin."
   },
@@ -190,7 +185,9 @@
   "errorExtensionUnknown": {
     "message": "Uzantı hatası: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +196,6 @@
   "errorExtensionError": {
     "message": "Uzantı hatası"
   },
-
   "errorInvalidUrl": {
     "message": "Geçersiz URL"
   },
@@ -221,13 +217,17 @@
   "errorBlockedDomain": {
     "message": "Engellendi: $hostname$ izin verilen proxy alanları listesinde değil",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "$hostname$ için ana bilgisayar izni gerekli",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +236,9 @@
   "errorUnknownProvider": {
     "message": "Bilinmeyen sağlayıcı: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +247,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "$hostname$ için ana bilgisayar izni gerekli. ThreatCaddy uzantı açılır penceresini açın ve İzinler altında \"URL getirmeye izin ver\"i etkinleştirin.",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +261,320 @@
   "errorInvalidTargetUrl": {
     "message": "Geçersiz hedef URL"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "privacyLink": {
+    "message": "Gizlilik"
+  },
+  "captureSaveFailed": {
+    "message": "Kayıt kaydedilemedi. Taslağınız korundu."
+  },
+  "captureChangeFailed": {
+    "message": "Kayıt değişikliği kaydedilemedi. Yenileyip tekrar deneyin."
+  },
+  "approvalTrust": {
+    "message": "Yalnızca güvendiğiniz uygulamaları onaylayın. Bu tam köken (bağlantı noktası dahil) veya belirtilen bağımsız dosya, uzantıya verilmiş yetenekleri kullanabilir."
+  },
+  "localAIOrigin": {
+    "message": "Yerel yapay zekâ uç noktası kökeni (isteğe bağlı)"
+  },
+  "saveLocalAI": {
+    "message": "Yerel yapay zekâ onayını kaydet"
+  },
+  "removeLocalAI": {
+    "message": "Yerel yapay zekâ onayını kaldır"
+  },
+  "approveApp": {
+    "message": "Uygulamayı onayla"
+  },
+  "revokeApps": {
+    "message": "Tüm uygulama onaylarını kaldır"
+  },
+  "revokeAppsQuestion": {
+    "message": "Onaylı tüm uygulamaların bağlantısı kesilsin mi? Kayıtlar ve tarayıcı izinleri silinmez. Yeniden bağlanmak için uygulamayı tekrar onaylayın."
+  },
+  "localAISavedOrigin": {
+    "message": "Bu uygulama için kaydedildi: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "Bu uygulama için onaylanmış yerel yapay zekâ uç noktası yok."
+  },
+  "localAIApproveFirst": {
+    "message": "Yerel yapay zekâ uç noktasını kaydetmeden önce bu uygulamayı onaylayın."
+  },
+  "localAIReadFailed": {
+    "message": "Yerel yapay zekâ onayı okunamadı: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "Yerel yapay zekâ, URL içinde kimlik bilgisi olmadan HTTP(S) kullanmalıdır"
+  },
+  "localAIPermissionDenied": {
+    "message": "Yerel yapay zekâ izni reddedildi; kayıtlı onay değişmedi."
+  },
+  "localAIApprovalFailed": {
+    "message": "Yerel yapay zekâ onayı başarısız"
+  },
+  "invalidAppTarget": {
+    "message": "Kimlik bilgisi içermeyen bir HTTP(S) uygulaması veya tam bağımsız dosya kullanın"
+  },
+  "appPermissionDenied": {
+    "message": "Uygulamaya erişim izni reddedildi"
+  },
+  "appApprovalFailed": {
+    "message": "Uygulama onayı başarısız"
+  },
+  "appApproved": {
+    "message": "Uygulama onaylandı. Bağlanmak için uygulama sekmesini yeniden yükleyin."
+  },
+  "appsRevoked": {
+    "message": "Tüm uygulama bağlantılarının onayı kaldırıldı."
+  },
+  "revokeFailed": {
+    "message": "Onay kaldırma başarısız"
+  },
+  "notificationWaiting": {
+    "message": "Tarayıcı izni bekleniyor…"
+  },
+  "notificationEnabled": {
+    "message": "Masaüstü bildirimleri etkin"
+  },
+  "notificationEnable": {
+    "message": "Masaüstü bildirimlerini etkinleştir"
+  },
+  "notificationEnabledDesc": {
+    "message": "Masaüstü bildirimleri etkin. İşletim sistemi ayarları görüntülenmelerini yine de engelleyebilir. İzni tarayıcının uzantı ayarlarından kaldırın."
+  },
+  "notificationDisabledDesc": {
+    "message": "Masaüstü bildirimleri devre dışı; uygulama içi uyarılar kullanılabilir."
+  },
+  "notificationCheckFailed": {
+    "message": "Bildirim izni kontrol edilemedi: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "Tarayıcının izin yanıtı bekleniyor. İstek görünmezse tarayıcı uzantısı izinlerini kontrol edin veya bu paneli yeniden açın."
+  },
+  "notificationRequestFailed": {
+    "message": "Bildirim izni isteği başarısız: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "Bildirim izni doğrulanamadı: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "Uygulama içi uyarılar kullanılabilir."
+  },
+  "notificationNotEnabled": {
+    "message": "Masaüstü bildirimleri etkinleştirilmedi; uygulama içi uyarılar kullanılabilir. İstek görünmediyse tarayıcı uzantısı izinlerini kontrol edin."
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — Klip İnceleme"
+  },
+  "clipReview": {
+    "message": "Klip İnceleme"
+  },
+  "clipReviewSubtitle": {
+    "message": "Yakalanan kliplerinizi görüntüleyin ve yönetin"
+  },
+  "totalCaptures": {
+    "message": "Toplam Kayıt"
+  },
+  "unsent": {
+    "message": "Gönderilmemiş"
+  },
+  "applyAll": {
+    "message": "Tümüne Uygula"
+  },
+  "sendAll": {
+    "message": "Tümünü ThreatCaddy'ye Gönder"
+  },
+  "refresh": {
+    "message": "Yenile"
+  },
+  "clearAll": {
+    "message": "Tümünü Temizle"
+  },
+  "delete": {
+    "message": "Sil"
+  },
+  "confirm": {
+    "message": "Onayla"
+  },
+  "cancel": {
+    "message": "İptal"
+  },
+  "noCapturesTitle": {
+    "message": "Henüz kayıt yok"
+  },
+  "noSourceUrl": {
+    "message": "Kaynak URL yok"
+  },
+  "importConfirmed": {
+    "message": "İçe aktarma doğrulandı"
+  },
+  "legacySent": {
+    "message": "Gönderildi (eski, doğrulanmamış)"
+  },
+  "importPending": {
+    "message": "İçe aktarma doğrulaması bekleniyor"
+  },
+  "importFailedRetained": {
+    "message": "İçe aktarma başarısız — korundu"
+  },
+  "folder": {
+    "message": "Klasör"
+  },
+  "editCaptureMetadata": {
+    "message": "Kayıt üst verilerini düzenle"
+  },
+  "deleteCaptureTitle": {
+    "message": "Kaydı Sil"
+  },
+  "deleteCaptureQuestion": {
+    "message": "Bu kaydı silmek istediğinizden emin misiniz?"
+  },
+  "captureDeleted": {
+    "message": "Kayıt silindi"
+  },
+  "preparingDestination": {
+    "message": "Hedef hazırlanıyor…"
+  },
+  "noUnsentCaptures": {
+    "message": "Gönderilecek gönderilmemiş kayıt yok"
+  },
+  "configureTargetFirst": {
+    "message": "Önce bir hedef URL yapılandırın"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "Geçersiz hedef URL — yalnızca http, https ve file:// kullanılabilir"
+  },
+  "targetPermissionDenied": {
+    "message": "İzin reddedildi — uzantının bu siteye erişmesi gerekiyor"
+  },
+  "permissionRequestFailed": {
+    "message": "İzin isteği başarısız"
+  },
+  "fileAccessDisabled": {
+    "message": "Dosya URL erişimi kapalı. Yeniden denemeden önce tarayıcıda bu uzantının dosya erişim ayarlarını kontrol edin."
+  },
+  "confirmWorkspace": {
+    "message": "İçe aktarma çalışma alanını onayla"
+  },
+  "importWorkspaceMessage": {
+    "message": "$url$ adresindeki “$label$” ($workspace$) alanına $count$ kayıt aktarılsın mı? Yalnızca veritabanınca doğrulanan aktarımlar gönderildi olarak işaretlenir.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "$count$ eski kayıt daha önce doğrulanmadan gönderildi olarak işaretlenmiş; bunları aktarmak kopyalar oluşturabilir. Emin değilseniz önce inceleyin veya silin.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "Kayıtları içe aktar"
+  },
+  "waitingForImport": {
+    "message": "İçe aktarma doğrulaması bekleniyor…"
+  },
+  "importsConfirmed": {
+    "message": "$count$ klibin içe aktarılması doğrulandı.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "$total$ içe aktarmadan $confirmed$ tanesi doğrulandı. $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "Doğrulanmamış kayıtlar korunur."
+  },
+  "sendFailed": {
+    "message": "Gönderilemedi: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "Varsayılanlar tüm gönderilmemiş kliplere uygulandı"
+  },
+  "clearAllCaptures": {
+    "message": "Tüm Kayıtları Temizle"
+  },
+  "clearAllQuestion": {
+    "message": "$count$ kaydın tümü kalıcı olarak silinecek. Bu işlem geri alınamaz.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "Onaylanan kayıtlar silindi; daha yeni kayıtlar korundu"
+  },
+  "capturesLoadFailed": {
+    "message": "Kayıtlar yüklenemedi. Sayfayı yeniden açın veya Yenile'yi deneyin."
+  },
+  "discardMetadataDraft": {
+    "message": "Meta veri taslağını sil"
+  },
+  "discardMetadataMessage": {
+    "message": "Bu kaydın kaydedilmemiş meta veri düzenlemeleri silinip mevcut kayıtlı meta verileri yeniden yüklensin mi? Kayıtlı meta veriler değiştirilmeyecek."
+  },
+  "metadataSaved": {
+    "message": "Kayıt üst verileri kaydedildi"
   }
 }

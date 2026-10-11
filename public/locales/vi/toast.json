@@ -3,7 +3,18 @@
     "importWarning": "Đã nhập với {{count}} đoạn trích thất bại",
     "importFailed": "Nhập đoạn trích từ tiện ích mở rộng thất bại",
     "openedAsNote": "Đã mở \"{{name}}\" dưới dạng ghi chú mới",
-    "openFailed": "Mở \"{{name}}\" thất bại"
+    "openFailed": "Mở \"{{name}}\" thất bại",
+    "refreshFailed": "Đã lưu đoạn trích nhưng không thể làm mới giao diện. Tải lại không gian làm việc này để xem.",
+    "fileRefreshFailed": "Đã lưu tệp thành ghi chú nhưng không thể làm mới giao diện. Tải lại không gian làm việc này để xem.",
+    "fileTitle": "{{name}} — {{size}} — sửa đổi {{modified}}",
+    "fileError": {
+      "capacity_one": "Một tệp không được xếp hàng: chỉ tối đa 20 tệp có thể chờ cùng lúc. Mở lại khi các lượt nhập hiện tại hoàn tất.",
+      "capacity_other": "{{count}} tệp không được xếp hàng: chỉ tối đa 20 tệp có thể chờ cùng lúc. Mở lại khi các lượt nhập hiện tại hoàn tất.",
+      "type": "Không thể mở “{{name}}”: hãy chọn tệp Markdown hoặc văn bản.",
+      "size": "Không thể mở “{{name}}”: tệp văn bản phải không quá 5 MiB. Hãy mở lại tệp nhỏ hơn.",
+      "read": "Không thể đọc “{{name}}”. Kiểm tra quyền truy cập tệp và mở lại để thử lại.",
+      "import": "Không thể lưu “{{name}}” thành ghi chú. Kiểm tra bộ nhớ không gian làm việc và mở lại tệp để thử lại."
+    }
   },
   "share": {
     "investigationSaved": "Điều tra \"{{name}}\" đã lưu với tất cả thực thể",

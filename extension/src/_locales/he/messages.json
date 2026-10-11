@@ -8,7 +8,6 @@
   "version": {
     "message": "v1.1.1"
   },
-
   "quickStats": {
     "message": "סטטיסטיקות מהירות"
   },
@@ -18,7 +17,6 @@
   "thisWeek": {
     "message": "השבוע"
   },
-
   "quickCapture": {
     "message": "לכידה מהירה"
   },
@@ -64,7 +62,6 @@
   "saveFailed": {
     "message": "השמירה נכשלה. אנא נסה שוב."
   },
-
   "recentCaptures": {
     "message": "לכידות אחרונות"
   },
@@ -74,7 +71,6 @@
   "untitled": {
     "message": "ללא כותרת"
   },
-
   "quickActions": {
     "message": "פעולות מהירות"
   },
@@ -84,7 +80,6 @@
   "reviewAllCaptures": {
     "message": "סקור את כל הלכידות"
   },
-
   "permissions": {
     "message": "הרשאות"
   },
@@ -109,7 +104,6 @@
   "allowFileAccessHint": {
     "message": "להפעלה: עבור אל chrome://extensions, מצא את ThreatCaddy, והפעל \"אפשר גישה לכתובות URL של קבצים\"."
   },
-
   "howToUse": {
     "message": "כיצד להשתמש:"
   },
@@ -126,9 +120,8 @@
     "message": "פרטיות:"
   },
   "privacyText": {
-    "message": "כל הנתונים נשארים מקומיים במכשיר שלך. מפתחות API נשלחים רק לספק שנבחר. ללא מעקב."
+    "message": "קליפים נשארים במכשיר זה עד למסירה או לייצוא. בינה מלאכותית אופציונלית, שליפת כתובות URL וחיבורי אפליקציות מאושרים עשויים לשלוח נתונים לשירותים שהוגדרו."
   },
-
   "settings": {
     "message": "הגדרות"
   },
@@ -150,37 +143,39 @@
   "save": {
     "message": "שמור"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "שמור ל-ThreatCaddy"
   },
-
   "savedToThreatCaddy": {
     "message": "נשמר ב-ThreatCaddy!"
   },
-
   "justNow": {
     "message": "זה עתה"
   },
   "minutesAgo": {
     "message": "לפני $count$ד",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "לפני $count$ש",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "לפני $count$י",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "הקשר ההרחבה אינו תקף. אנא טען מחדש את הדף."
   },
@@ -190,7 +185,9 @@
   "errorExtensionUnknown": {
     "message": "שגיאת הרחבה: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +196,6 @@
   "errorExtensionError": {
     "message": "שגיאת הרחבה"
   },
-
   "errorInvalidUrl": {
     "message": "כתובת URL לא חוקית"
   },
@@ -221,13 +217,17 @@
   "errorBlockedDomain": {
     "message": "חסום: $hostname$ אינו ברשימת הדומיינים המורשים לפרוקסי",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "נדרשת הרשאת מארח עבור $hostname$",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +236,9 @@
   "errorUnknownProvider": {
     "message": "ספק לא ידוע: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +247,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "נדרשת הרשאת מארח עבור $hostname$. פתח את חלון ההרחבה ThreatCaddy ואפשר \"אפשר שליפת URL\" תחת הרשאות.",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +261,320 @@
   "errorInvalidTargetUrl": {
     "message": "כתובת URL יעד לא חוקית"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "discardMetadataDraft": {
+    "message": "מחיקת טיוטת מטא-נתונים"
+  },
+  "discardMetadataMessage": {
+    "message": "למחוק את עריכות המטא-נתונים שלא נשמרו עבור קליפ זה ולטעון מחדש את המטא-נתונים השמורים הנוכחיים? המטא-נתונים השמורים לא ישתנו."
+  },
+  "privacyLink": {
+    "message": "פרטיות"
+  },
+  "captureSaveFailed": {
+    "message": "הקליפ לא נשמר. הטיוטה נשמרת."
+  },
+  "captureChangeFailed": {
+    "message": "השינוי בקליפ לא נשמר. יש לרענן ולנסות שוב."
+  },
+  "approvalTrust": {
+    "message": "יש לאשר רק אפליקציה מהימנה. מקור מדויק זה, כולל היציאה, או קובץ עצמאי מדויק זה, יוכלו להשתמש ביכולות שניתנו להרחבה."
+  },
+  "localAIOrigin": {
+    "message": "מקור נקודת קצה לבינה מלאכותית מקומית (אופציונלי)"
+  },
+  "saveLocalAI": {
+    "message": "שמירת אישור לבינה מלאכותית מקומית"
+  },
+  "removeLocalAI": {
+    "message": "הסרת אישור לבינה מלאכותית מקומית"
+  },
+  "approveApp": {
+    "message": "אישור אפליקציה"
+  },
+  "revokeApps": {
+    "message": "ביטול כל אישורי האפליקציות"
+  },
+  "revokeAppsQuestion": {
+    "message": "לנתק את כל האפליקציות המאושרות? קליפים והרשאות דפדפן לא יימחקו. כדי להתחבר מחדש יש לאשר את האפליקציה שוב."
+  },
+  "localAISavedOrigin": {
+    "message": "נשמר עבור אפליקציה זו: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "לא אושרה נקודת קצה מקומית לבינה מלאכותית עבור אפליקציה זו."
+  },
+  "localAIApproveFirst": {
+    "message": "יש לאשר את האפליקציה לפני שמירת נקודת קצה מקומית לבינה מלאכותית."
+  },
+  "localAIReadFailed": {
+    "message": "לא ניתן לקרוא את אישור הבינה המלאכותית המקומית: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "בינה מלאכותית מקומית חייבת להשתמש ב-HTTP(S) ללא פרטי כניסה בכתובת URL"
+  },
+  "localAIPermissionDenied": {
+    "message": "הרשאת הבינה המלאכותית המקומית נדחתה; האישור השמור לא השתנה."
+  },
+  "localAIApprovalFailed": {
+    "message": "אישור הבינה המלאכותית המקומית נכשל"
+  },
+  "invalidAppTarget": {
+    "message": "יש להשתמש באפליקציית HTTP(S) או בקובץ עצמאי מדויק ללא פרטי כניסה"
+  },
+  "appPermissionDenied": {
+    "message": "הרשאת הגישה לאפליקציה נדחתה"
+  },
+  "appApprovalFailed": {
+    "message": "אישור האפליקציה נכשל"
+  },
+  "appApproved": {
+    "message": "האפליקציה אושרה. יש לטעון מחדש את לשונית האפליקציה כדי להתחבר."
+  },
+  "appsRevoked": {
+    "message": "כל חיבורי האפליקציות בוטלו."
+  },
+  "revokeFailed": {
+    "message": "ביטול ההרשאה נכשל"
+  },
+  "notificationWaiting": {
+    "message": "המתנה להרשאת דפדפן…"
+  },
+  "notificationEnabled": {
+    "message": "התראות שולחן עבודה מופעלות"
+  },
+  "notificationEnable": {
+    "message": "הפעלת התראות שולחן עבודה"
+  },
+  "notificationEnabledDesc": {
+    "message": "התראות שולחן העבודה מופעלות. הגדרות מערכת ההפעלה עדיין עשויות למנוע הצגה. ניתן לבטל הרשאה בהגדרות ההרחבה בדפדפן."
+  },
+  "notificationDisabledDesc": {
+    "message": "התראות שולחן העבודה כבויות; התראות בתוך האפליקציה עדיין זמינות."
+  },
+  "notificationCheckFailed": {
+    "message": "לא ניתן לבדוק את הרשאת ההתראות: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "המתנה לתשובת הדפדפן לבקשת ההרשאה. אם לא מוצגת בקשה, יש לבדוק את הרשאות ההרחבה בדפדפן או לפתוח לוח זה מחדש."
+  },
+  "notificationRequestFailed": {
+    "message": "בקשת הרשאת ההתראות נכשלה: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "לא ניתן לאמת את הרשאת ההתראות: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "התראות בתוך האפליקציה עדיין זמינות."
+  },
+  "notificationNotEnabled": {
+    "message": "התראות שולחן העבודה לא הופעלו; התראות בתוך האפליקציה עדיין זמינות. אם לא הוצגה בקשה, יש לבדוק את הרשאות ההרחבה בדפדפן."
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — סקירת קליפים"
+  },
+  "clipReview": {
+    "message": "סקירת קליפים"
+  },
+  "clipReviewSubtitle": {
+    "message": "עיון וניהול של קליפים שנלכדו"
+  },
+  "totalCaptures": {
+    "message": "סך הקליפים"
+  },
+  "unsent": {
+    "message": "לא נשלחו"
+  },
+  "applyAll": {
+    "message": "החלה על הכול"
+  },
+  "sendAll": {
+    "message": "שליחת הכול אל ThreatCaddy"
+  },
+  "refresh": {
+    "message": "רענון"
+  },
+  "clearAll": {
+    "message": "ניקוי הכול"
+  },
+  "delete": {
+    "message": "מחיקה"
+  },
+  "confirm": {
+    "message": "אישור"
+  },
+  "cancel": {
+    "message": "ביטול"
+  },
+  "noCapturesTitle": {
+    "message": "אין קליפים עדיין"
+  },
+  "noSourceUrl": {
+    "message": "אין כתובת URL למקור"
+  },
+  "importConfirmed": {
+    "message": "הייבוא אושר"
+  },
+  "legacySent": {
+    "message": "נשלח (ישן, לא מאומת)"
+  },
+  "importPending": {
+    "message": "המתנה לאישור ייבוא"
+  },
+  "importFailedRetained": {
+    "message": "הייבוא נכשל — הקליפ נשמר"
+  },
+  "folder": {
+    "message": "תיקייה"
+  },
+  "editCaptureMetadata": {
+    "message": "עריכת מטא-נתוני הקליפ"
+  },
+  "deleteCaptureTitle": {
+    "message": "מחיקת קליפ"
+  },
+  "deleteCaptureQuestion": {
+    "message": "האם למחוק קליפ זה?"
+  },
+  "captureDeleted": {
+    "message": "הקליפ נמחק"
+  },
+  "preparingDestination": {
+    "message": "הכנת יעד…"
+  },
+  "noUnsentCaptures": {
+    "message": "אין קליפים שלא נשלחו לשליחה"
+  },
+  "configureTargetFirst": {
+    "message": "יש להגדיר תחילה כתובת URL ליעד"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "כתובת יעד לא תקינה — מותרים רק http, https ו-file://"
+  },
+  "targetPermissionDenied": {
+    "message": "ההרשאה נדחתה — ההרחבה זקוקה לגישה לאתר זה"
+  },
+  "permissionRequestFailed": {
+    "message": "בקשת ההרשאה נכשלה"
+  },
+  "fileAccessDisabled": {
+    "message": "הגישה לכתובות קובץ כבויה. יש לבדוק את הגדרות גישת הקבצים של ההרחבה בדפדפן לפני ניסיון נוסף."
+  },
+  "confirmWorkspace": {
+    "message": "אישור סביבת העבודה לייבוא"
+  },
+  "importWorkspaceMessage": {
+    "message": "לייבא $count$ קליפים אל ״$label$״ ($workspace$) בכתובת $url$? רק ייבוא שאושר במסד הנתונים יסומן כנשלח.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "$count$ קליפים ישנים סומנו בעבר כנשלחו ללא אימות; ייבואם עלול ליצור כפילויות. אם יש ספק, יש לבדוק או למחוק אותם תחילה.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "ייבוא קליפים"
+  },
+  "waitingForImport": {
+    "message": "המתנה לאישור ייבוא…"
+  },
+  "importsConfirmed": {
+    "message": "אושר ייבוא של $count$ קליפים.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "אושרו $confirmed$ מתוך $total$ פעולות ייבוא. $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "קליפים שלא אושרו נשמרים."
+  },
+  "sendFailed": {
+    "message": "השליחה נכשלה: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "ברירות המחדל הוחלו על כל הקליפים שלא נשלחו"
+  },
+  "clearAllCaptures": {
+    "message": "ניקוי כל הקליפים"
+  },
+  "clearAllQuestion": {
+    "message": "פעולה זו תמחק לצמיתות את כל $count$ הקליפים. לא ניתן לבטל פעולה זו.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "הקליפים שאושרו נמחקו; קליפים חדשים יותר נשמרו"
+  },
+  "capturesLoadFailed": {
+    "message": "לא ניתן לטעון קליפים. יש לפתוח דף זה מחדש או לנסות שוב לרענן."
+  },
+  "metadataSaved": {
+    "message": "מטא-נתוני הקליפ נשמרו"
   }
 }

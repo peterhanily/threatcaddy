@@ -215,5 +215,16 @@
   "error.unexpectedDetail": "एक अप्रत्याशित त्रुटि हुई।",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "साक्ष्य",
-  "sidebar.products": "उत्पाद"
+  "sidebar.products": "उत्पाद",
+  "syncStatus.screenshareHidden": "सिंक पर ध्यान देना आवश्यक है। विवरण देखने के लिए स्क्रीन शेयरिंग बंद करें।",
+  "syncStatus.review": "सिंक सेटिंग की समीक्षा करें",
+  "draftRecovery.message": "कुछ बदलाव सहेजे नहीं जा सके। ड्राफ़्ट केवल इस टैब में है। बंद करने से पहले फिर कोशिश करें या ड्राफ़्ट डाउनलोड करें।",
+  "draftRecovery.untitled": "बिना सहेजा ड्राफ़्ट",
+  "draftRecovery.retry": "फिर सहेजें",
+  "draftRecovery.download": "ड्राफ़्ट डाउनलोड करें",
+  "draftRecovery.discard": "ड्राफ़्ट छोड़ें",
+  "draftRecovery.discardConfirm": "यह बिना सहेजा ड्राफ़्ट स्थायी रूप से छोड़ें? यदि रिकवरी प्रति चाहिए तो पहले डाउनलोड करें।",
+  "draftRecovery.conflictField": "{{field}} के टकराव की समीक्षा करें",
+  "draftRecovery.keepLocal": "मेरा {{field}} रखें",
+  "draftRecovery.useRemote": "दूरस्थ {{field}} उपयोग करें"
 }

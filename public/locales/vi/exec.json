@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "Sự kiện tuần này",
   "metrics.aiChats": "Trò chuyện AI",
   "metrics.graphNodes": "Nút đồ thị",
-  "dashboard.backToExecView": "Quay lại Chế độ điều hành"
+  "dashboard.backToExecView": "Quay lại Chế độ điều hành",
+  "dashboard.switchToLight": "Chuyển sang giao diện sáng",
+  "dashboard.switchToDark": "Chuyển sang giao diện tối",
+  "dashboard.emptyTitle": "Không gian làm việc đã sẵn sàng",
+  "dashboard.emptyDescription": "Tạo cuộc điều tra hoặc nhập công việc hiện có trong Chế độ Phân tích. Bảng điều khiển này tóm tắt công việc đã lưu trong không gian làm việc hiện tại.",
+  "dashboard.emptyAction": "Mở Chế độ Phân tích"
 }

@@ -3,7 +3,18 @@
     "importWarning": "Diimpor dengan {{count}} klip gagal",
     "importFailed": "Gagal mengimpor klip dari ekstensi",
     "openedAsNote": "Dibuka \"{{name}}\" sebagai catatan baru",
-    "openFailed": "Gagal membuka \"{{name}}\""
+    "openFailed": "Gagal membuka \"{{name}}\"",
+    "refreshFailed": "Klip tersimpan, tetapi tampilan tidak dapat disegarkan. Muat ulang ruang kerja untuk melihatnya.",
+    "fileRefreshFailed": "Berkas tersimpan sebagai catatan, tetapi tampilan tidak dapat disegarkan. Muat ulang ruang kerja untuk melihatnya.",
+    "fileTitle": "{{name}} — {{size}} — diubah {{modified}}",
+    "fileError": {
+      "capacity_one": "Satu berkas tidak masuk antrean: paling banyak 20 berkas dapat menunggu sekaligus. Buka kembali setelah impor saat ini selesai.",
+      "capacity_other": "{{count}} berkas tidak masuk antrean: paling banyak 20 berkas dapat menunggu sekaligus. Buka kembali setelah impor saat ini selesai.",
+      "type": "Tidak dapat membuka “{{name}}”: pilih berkas Markdown atau teks.",
+      "size": "Tidak dapat membuka “{{name}}”: berkas teks harus berukuran 5 MiB atau kurang. Buka berkas yang lebih kecil.",
+      "read": "Tidak dapat membaca “{{name}}”. Periksa akses berkas dan buka kembali untuk mencoba lagi.",
+      "import": "Tidak dapat menyimpan “{{name}}” sebagai catatan. Periksa penyimpanan ruang kerja dan buka kembali berkas untuk mencoba lagi."
+    }
   },
   "share": {
     "investigationSaved": "Investigasi \"{{name}}\" disimpan dengan semua entitas",
