@@ -38,7 +38,7 @@ function makeTemplate(
     configSchema: [],
     steps,
     outputs,
-    requiredDomains: [],
+    requiredDomains: ['example.com', 'urlhaus-api.abuse.ch'],
     source: 'user',
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -78,14 +78,7 @@ function makeCallbacks(overrides: Partial<ExecutionCallbacks> = {}): ExecutionCa
 
 // Helper to create a mock response for fetch
 function mockJsonResponse(data: unknown, status = 200, statusText = 'OK') {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    statusText,
-    json: () => Promise.resolve(data),
-    text: () => Promise.resolve(JSON.stringify(data)),
-    headers: new Headers({ 'content-type': 'application/json' }),
-  };
+  return new Response(JSON.stringify(data), { status, statusText, headers: { 'content-type': 'application/json' } });
 }
 
 // ---------------------------------------------------------------------------
@@ -125,7 +118,7 @@ describe('IntegrationExecutor', () => {
         const result = await executor.run(template, makeInstallation({ apiKey: ' ', otherSecret: 'fictional-secret-value' }), makeInput(), callbacks, undefined,
           transport === 'server' ? { useServerProxy: { serverUrl: 'https://team.example', getAccessToken } } : undefined);
         expect(result).toMatchObject({ status: 'error', outputSummary: 'Failed', entitiesCreated: 0, entitiesUpdated: 0, apiCallsMade: 0, log: [] });
-        expect(result.error).toBe('Configure required integration settings before running: API key.');
+        expect(result.error).toBe('Configure valid integration settings before running: API key.');
         expect(result.displayResults).toBeUndefined();
         expect(JSON.stringify(result)).not.toContain('fictional-secret-value');
         expect(mockFetch).not.toHaveBeenCalled();
@@ -446,9 +439,7 @@ describe('IntegrationExecutor', () => {
   describe('condition step', () => {
     it('evaluates condition and executes then-branch', async () => {
       // The condition step will check ioc.type == ipv4, which is true
-      // Note: sub-steps referenced by the condition are also in template.steps,
-      // so the main loop will iterate them too. We use mockResolvedValue so
-      // every fetch call succeeds.
+      // Referenced steps belong to the condition, not the root sequence.
       mockFetch.mockResolvedValue(
         mockJsonResponse({ enriched: true }),
       );
@@ -486,9 +477,7 @@ describe('IntegrationExecutor', () => {
       );
 
       expect(result.status).toBe('success');
-      // The condition handler executes the then-branch step.
-      // Then the main loop also iterates both sub-steps.
-      // First call should be the then-branch from condition handler.
+      expect(mockFetch).toHaveBeenCalledOnce();
       expect(mockFetch.mock.calls[0][0]).toContain('/ip/enrich');
     });
 
@@ -531,6 +520,7 @@ describe('IntegrationExecutor', () => {
 
       expect(result.status).toBe('success');
       // The condition is false (ipv4 != domain), so else-branch runs first
+      expect(mockFetch).toHaveBeenCalledOnce();
       expect(mockFetch.mock.calls[0][0]).toContain('/ip/enrich');
     });
   });

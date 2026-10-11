@@ -1,9 +1,13 @@
 import { nanoid } from 'nanoid';
-import { resolveVariables, evaluateCondition, resolveDeep } from './integration-expression';
+import { resolveVariables, resolveDataValue, evaluateCondition, resolveDeep } from './integration-expression';
+import { compileIntegrationPlan, INTEGRATION_LIMITS } from './integration-plan';
+import type { IntegrationPlan } from './integration-plan';
 import { postMessageOrigin } from './utils';
 import { resolveIntegrationConfig, validateIntegrationConfig } from './integration-config';
 import { cancellableRequest } from './request-cancellation';
 import { awaitIntegrationResult, integrationDelay } from './integration-cancellation';
+import { readIntegrationResponse } from './integration-response';
+import { IntegrationDataBudget } from './integration-data-budget';
 import type {
   IntegrationTemplate,
   InstalledIntegration,
@@ -33,6 +37,10 @@ export interface ExecutionCallbacks {
 }
 
 export interface ExecutionOptions {
+  /** Optional lower bound for a bounded/manual run; cannot raise the hard limit. */
+  maxStepVisits?: number;
+  /** May lower, never raise, the cumulative derived-data limit. */
+  maxDerivedBytes?: number;
   /**
    * When set, HTTP requests are routed through `POST <serverUrl>/api/proxy-fetch`
    * instead of going directly from the browser. This lets the server enforce
@@ -56,10 +64,12 @@ async function serverProxyFetch(
   headers: Record<string, string>,
   body: string | null,
   signal: AbortSignal,
+  onDispatch: () => void,
 ): Promise<{ ok: boolean; status: number; statusText: string; data: unknown; headers: Record<string, string> }> {
   signal.throwIfAborted();
   const token = await awaitIntegrationResult(getAccessToken(), signal);
   signal.throwIfAborted();
+  onDispatch();
   const resp = await fetch(`${serverUrl}/api/proxy-fetch`, {
     method: 'POST',
     signal,
@@ -257,6 +267,14 @@ function hasBridgeProxyFetch(): boolean {
 }
 
 export class IntegrationExecutor {
+  private readonly executions = new WeakMap<ExecutionContext, { plan: IntegrationPlan; visits: number; limit: number; apiCalls: number; data: IntegrationDataBudget; fatal?: string }>();
+
+  private dataBudget(context: ExecutionContext): IntegrationDataBudget {
+    const execution = this.executions.get(context);
+    if (!execution) throw new Error('Integration execution state is unavailable');
+    return execution.data;
+  }
+
   async run(
     template: IntegrationTemplate,
     installation: InstalledIntegration,
@@ -275,19 +293,35 @@ export class IntegrationExecutor {
     let entitiesUpdated = 0;
     let displayResults: unknown;
 
-    const config = resolveIntegrationConfig(template.configSchema, installation.config);
-    const missingConfig = validateIntegrationConfig(template.configSchema, config);
-    if (missingConfig.length > 0) {
+    let plan: IntegrationPlan | undefined;
+    let config: Record<string, unknown> = {};
+    let preflightError: string | undefined;
+    let dataBudget: IntegrationDataBudget | undefined;
+    try {
+      dataBudget = new IntegrationDataBudget(options?.maxDerivedBytes);
+      plan = compileIntegrationPlan(template);
+      template = plan.template as unknown as IntegrationTemplate;
+      if (options?.maxStepVisits !== undefined && (!Number.isSafeInteger(options.maxStepVisits) || options.maxStepVisits < 1 || options.maxStepVisits > INTEGRATION_LIMITS.visits)) {
+        throw new Error('Integration step budget is outside its supported range');
+      }
+      config = structuredClone(resolveIntegrationConfig(template.configSchema, installation.config));
+      input = structuredClone(input);
+      const missingConfig = validateIntegrationConfig(template.configSchema, config);
+      if (missingConfig.length) preflightError = `Configure valid integration settings before running: ${missingConfig.map(field => field.label).join(', ')}.`;
+    } catch (err) {
+      preflightError = err instanceof Error ? err.message : 'Invalid integration template';
+    }
+    if (preflightError || !plan || !dataBudget) {
       return {
         id: runId,
         integrationId: installation.id,
-        templateId: template.id,
+        templateId: typeof template?.id === 'string' ? template.id : '',
         status: 'error',
         trigger: 'manual',
         inputSummary: this.buildInputSummary(input),
         outputSummary: this.buildOutputSummary('error', 0, 0, 0),
         durationMs: Date.now() - startTime,
-        error: `Configure required integration settings before running: ${missingConfig.map(field => field.label).join(', ')}.`,
+        error: preflightError,
         entitiesCreated: 0,
         entitiesUpdated: 0,
         apiCallsMade: 0,
@@ -301,9 +335,11 @@ export class IntegrationExecutor {
       investigation: input.investigation,
       config,
       now: new Date().toISOString(),
-      steps: {},
-      vars: {},
+      steps: Object.create(null) as Record<string, unknown>,
+      vars: Object.create(null) as Record<string, unknown>,
     };
+    const execution = { plan, visits: 0, limit: options?.maxStepVisits ?? INTEGRATION_LIMITS.visits, apiCalls: 0, data: dataBudget, fatal: undefined as string | undefined };
+    this.executions.set(context, execution);
 
     const secrets = collectSecretValues(template, config);
 
@@ -312,8 +348,14 @@ export class IntegrationExecutor {
       const redacted = entry.detail
         ? { ...entry, detail: redactSecrets(entry.detail, secrets) }
         : entry;
-      log.push(redacted);
-      callbacks.onLog?.(redacted);
+      if (log.length < INTEGRATION_LIMITS.logs - 1) {
+        log.push(redacted);
+        callbacks.onLog?.(redacted);
+      } else if (log.length === INTEGRATION_LIMITS.logs - 1) {
+        const marker: IntegrationRunLogEntry = { ts: Date.now(), stepId: 'log-limit', stepLabel: 'Log limit', type: 'step-complete', detail: 'Further log entries omitted after the bounded log limit.' };
+        log.push(marker);
+        callbacks.onLog?.(marker);
+      }
     };
 
     const lifecycle = cancellableRequest(signal);
@@ -323,7 +365,8 @@ export class IntegrationExecutor {
 
     try {
       runSignal.throwIfAborted();
-      for (const step of template.steps) {
+      for (const id of plan.roots) {
+        const step = plan.byId.get(id) as unknown as IntegrationStep;
         const stepResult = await this.executeStep(
           step,
           template,
@@ -339,6 +382,7 @@ export class IntegrationExecutor {
         entitiesCreated += stepResult.entitiesCreated;
         entitiesUpdated += stepResult.entitiesUpdated;
         runSignal.throwIfAborted();
+        if (execution.fatal || execution.data.exceeded) throw new Error(execution.fatal ?? 'Integration exceeded its derived-data budget');
         if (stepResult.skipped) continue;
 
         if (stepResult.error) {
@@ -372,8 +416,11 @@ export class IntegrationExecutor {
         error = redactSecrets(err instanceof Error ? err.message : String(err), secrets);
       }
     } finally {
+      // Count attempted requests even when a response/read/retry ultimately fails.
+      apiCallsMade = execution.apiCalls;
       clearTimeout(timeoutId);
       lifecycle.dispose();
+      this.executions.delete(context);
     }
 
     const durationMs = Date.now() - startTime;
@@ -413,11 +460,21 @@ export class IntegrationExecutor {
     entitiesCreated: number;
     entitiesUpdated: number;
   }> {
+    const execution = this.executions.get(context);
+    if (!execution) throw new Error('Integration execution state is unavailable');
+    if (execution.fatal || execution.data.exceeded || ++execution.visits > execution.limit) {
+      execution.fatal ??= execution.data.exceeded ? 'Integration exceeded its derived-data budget' : 'Integration exceeded its total step budget';
+      return { skipped: false, error: execution.fatal, apiCalls: 0, entitiesCreated: 0, entitiesUpdated: 0 };
+    }
     // Check condition
     if (step.condition) {
-      const shouldRun = evaluateCondition(step.condition, context);
-      if (!shouldRun) {
-        return { skipped: true, apiCalls: 0, entitiesCreated: 0, entitiesUpdated: 0 };
+      try {
+        const shouldRun = evaluateCondition(step.condition, context, execution.data);
+        if (!shouldRun) return { skipped: true, apiCalls: 0, entitiesCreated: 0, entitiesUpdated: 0 };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Integration condition failed';
+        if (execution.data.exceeded) execution.fatal = message;
+        return { skipped: false, error: message, apiCalls: 0, entitiesCreated: 0, entitiesUpdated: 0 };
       }
     }
 
@@ -466,6 +523,7 @@ export class IntegrationExecutor {
           apiCalls += result.apiCalls;
           entitiesCreated += result.entitiesCreated;
           entitiesUpdated += result.entitiesUpdated;
+          if (result.error) return { skipped: false, error: result.error, apiCalls, entitiesCreated, entitiesUpdated };
           break;
         }
         case 'loop': {
@@ -483,6 +541,7 @@ export class IntegrationExecutor {
           apiCalls += result.apiCalls;
           entitiesCreated += result.entitiesCreated;
           entitiesUpdated += result.entitiesUpdated;
+          if (result.error) return { skipped: false, error: result.error, apiCalls, entitiesCreated, entitiesUpdated };
           break;
         }
         case 'create-entity': {
@@ -525,6 +584,7 @@ export class IntegrationExecutor {
       return { skipped: false, apiCalls, entitiesCreated, entitiesUpdated };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
+      if (execution.data.exceeded) execution.fatal = errorMessage;
       addLog({
         ts: Date.now(),
         stepId: step.id,
@@ -547,14 +607,15 @@ export class IntegrationExecutor {
     timeoutSignal?: AbortSignal,
     options?: ExecutionOptions,
   ): Promise<Record<string, unknown>> {
-    const resolvedUrl = resolveVariables(step.url, context);
+    const budget = this.dataBudget(context);
+    const resolvedUrl = resolveVariables(step.url, context, budget);
     const resolvedHeaders = step.headers
-      ? (resolveDeep(step.headers, context) as Record<string, string>)
+      ? (resolveDeep(step.headers, context, budget) as Record<string, string>)
       : {};
     const resolvedParams = step.queryParams
-      ? (resolveDeep(step.queryParams, context) as Record<string, string>)
+      ? (resolveDeep(step.queryParams, context, budget) as Record<string, string>)
       : {};
-    const resolvedBody = step.body != null ? resolveDeep(step.body, context) : undefined;
+    const resolvedBody = step.body != null ? resolveDeep(step.body, context, budget) : undefined;
 
     // Validate URL before fetching (SSRF protection)
     const url = validateHttpUrl(resolvedUrl);
@@ -581,11 +642,16 @@ export class IntegrationExecutor {
 
       if (resolvedBody != null && step.method !== 'GET') {
         if (step.contentType === 'form') {
+          // Percent encoding expands each UTF-8 byte by at most three. Reserve
+          // that conservative bound before URLSearchParams allocates the body.
+          budget.chargeJSON(resolvedBody);
+          budget.chargeJSON(resolvedBody);
+          budget.chargeJSON(resolvedBody);
           fetchOptions.body = new URLSearchParams(resolvedBody as Record<string, string>);
         } else if (step.contentType === 'text') {
-          fetchOptions.body = String(resolvedBody);
+          fetchOptions.body = budget.join([resolvedBody], '');
         } else {
-          fetchOptions.body = JSON.stringify(resolvedBody);
+          fetchOptions.body = budget.stringify(resolvedBody);
           if (!resolvedHeaders['Content-Type'] && !resolvedHeaders['content-type']) {
             (fetchOptions.headers as Record<string, string>)['Content-Type'] = 'application/json';
           }
@@ -609,6 +675,10 @@ export class IntegrationExecutor {
       });
 
       apiCalls++;
+      const onDispatch = () => {
+        const execution = this.executions.get(context);
+        if (execution) execution.apiCalls++;
+      };
 
       let responseStatus: number;
       let responseStatusText: string;
@@ -632,7 +702,7 @@ export class IntegrationExecutor {
         const proxyResult = await serverProxyFetch(
           options.useServerProxy.serverUrl,
           options.useServerProxy.getAccessToken,
-          url.toString(), step.method, proxyHeaders, serializeBody(), fetchOptions.signal,
+          url.toString(), step.method, proxyHeaders, serializeBody(), fetchOptions.signal, onDispatch,
         );
         responseStatus = proxyResult.status;
         responseStatusText = proxyResult.statusText;
@@ -644,6 +714,7 @@ export class IntegrationExecutor {
         if (fetchOptions.body instanceof URLSearchParams && !proxyHeaders['Content-Type'] && !proxyHeaders['content-type']) {
           proxyHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
         }
+        onDispatch();
         const proxyResult = await bridgeProxyFetch(url.toString(), step.method, proxyHeaders, serializeBody(), fetchOptions.signal);
         responseStatus = proxyResult.status;
         responseStatusText = proxyResult.statusText;
@@ -651,12 +722,15 @@ export class IntegrationExecutor {
         responseHeaders = proxyResult.headers;
       } else {
         // Direct fetch (standalone mode)
+        onDispatch();
         const response = await fetch(url.toString(), fetchOptions);
         responseStatus = response.status;
         responseStatusText = response.statusText;
-        responseData = await awaitIntegrationResult(step.responseType === 'text'
-          ? response.text()
-          : response.json().catch(error => { fetchOptions.signal?.throwIfAborted(); if (error?.name === 'AbortError') throw error; return null; }), fetchOptions.signal);
+        const text = await readIntegrationResponse(response, fetchOptions.signal);
+        if (step.responseType === 'text') responseData = text;
+        else {
+          try { responseData = JSON.parse(text); } catch { responseData = null; }
+        }
         response.headers.forEach((value, key) => {
           responseHeaders[key] = value;
         });
@@ -681,6 +755,10 @@ export class IntegrationExecutor {
         throw new Error(`HTTP ${responseStatus}: ${responseStatusText}`);
       }
 
+      // Step results remain reachable for the whole run. Charge them before
+      // retaining another response, not only when a later transform reads it.
+      budget.chargeJSON(responseData);
+      budget.chargeJSON(responseHeaders);
       return {
         response: {
           status: responseStatus,
@@ -703,26 +781,23 @@ export class IntegrationExecutor {
     // raw object so extract/map/filter can traverse its properties. When the
     // template contains surrounding text or multiple expressions we fall back
     // to the stringified value.
-    let sourceData: unknown;
-    const singleExprMatch = /^\{\{([^}]+)\}\}$/.exec(step.input);
-    if (singleExprMatch) {
-      const path = singleExprMatch[1].trim();
-      const segments = path.split('.');
-      let current: unknown = context;
-      for (const seg of segments) {
-        if (current == null || typeof current !== 'object') { current = undefined; break; }
-        current = (current as Record<string, unknown>)[seg];
-      }
-      sourceData = current;
-    } else {
-      sourceData = resolveVariables(step.input, context);
-    }
-    const result: Record<string, unknown> = {};
+    const budget = this.dataBudget(context);
+    const sourceData = resolveDataValue(step.input, context, budget);
+    const result: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
 
     // Make sourceData available as a working value
     let working: unknown = sourceData;
 
     for (const op of step.operations) {
+      const execution = this.executions.get(context);
+      const value = 'path' in op ? getNestedValue(op.op === 'extract' ? sourceData : working, op.path) : undefined;
+      const remaining = execution ? execution.limit - execution.visits : 0;
+      const work = boundedDataWork(value, remaining);
+      if (!execution || work > remaining) {
+        if (execution) execution.fatal = 'Integration exceeded its total step budget';
+        throw new Error('Integration exceeded its total step budget');
+      }
+      execution.visits += work;
       switch (op.op) {
         case 'extract': {
           // Extract always reads from the original sourceData so multiple
@@ -739,7 +814,7 @@ export class IntegrationExecutor {
           }
           result[op.as] = arr.map((item) => {
             const itemContext = { ...context, item };
-            return resolveDeep(op.template, itemContext);
+            return resolveDeep(op.template, itemContext, budget);
           });
           break;
         }
@@ -751,27 +826,28 @@ export class IntegrationExecutor {
           }
           result[op.as] = arr.filter((item) => {
             const itemContext = { ...context, item };
-            return evaluateCondition(op.condition, itemContext);
+            return evaluateCondition(op.condition, itemContext, budget);
           });
           break;
         }
         case 'flatten': {
           const arr = getNestedValue(working, op.path);
+          budget.chargeJSON(arr);
           result[op.as] = Array.isArray(arr) ? arr.flat() : arr;
           break;
         }
         case 'join': {
           const arr = getNestedValue(working, op.path);
-          result[op.as] = Array.isArray(arr) ? arr.join(op.separator) : String(arr ?? '');
+          result[op.as] = budget.join(Array.isArray(arr) ? arr : [arr], op.separator);
           break;
         }
         case 'template': {
-          result[op.as] = resolveVariables(op.template, context);
+          result[op.as] = resolveVariables(op.template, context, budget);
           break;
         }
         case 'lookup': {
-          const value = String(getNestedValue(working, op.path) ?? '');
-          result[op.as] = op.map[value] ?? op.default ?? value;
+          const value = budget.join([getNestedValue(working, op.path)], '');
+          result[op.as] = (Object.hasOwn(op.map, value) ? op.map[value] : undefined) ?? op.default ?? value;
           break;
         }
       }
@@ -799,16 +875,16 @@ export class IntegrationExecutor {
     apiCalls: number;
     entitiesCreated: number;
     entitiesUpdated: number;
+    error?: string;
   }> {
-    const conditionResult = evaluateCondition(step.expression, context);
+    const conditionResult = evaluateCondition(step.expression, context, this.dataBudget(context));
     const stepIds = conditionResult ? step.thenSteps : (step.elseSteps ?? []);
     let apiCalls = 0;
     let entitiesCreated = 0;
     let entitiesUpdated = 0;
 
     for (const stepId of stepIds) {
-      const subStep = template.steps.find((s) => s.id === stepId);
-      if (!subStep) continue;
+      const subStep = this.executions.get(context)?.plan.byId.get(stepId) as unknown as IntegrationStep;
 
       const result = await this.executeStep(
         subStep,
@@ -826,8 +902,8 @@ export class IntegrationExecutor {
 
       // Return committed child counts to the parent before its cancellation gate.
       if (signal?.aborted || timeoutSignal?.aborted) break;
-      if (result.error && !subStep.continueOnError) {
-        throw new Error(result.error);
+      if (result.error && (!subStep.continueOnError || this.executions.get(context)?.fatal)) {
+        return { branch: conditionResult ? 'then' : 'else', error: result.error, apiCalls, entitiesCreated, entitiesUpdated };
       }
     }
 
@@ -848,8 +924,8 @@ export class IntegrationExecutor {
     signal?: AbortSignal,
     timeoutSignal?: AbortSignal,
     options?: ExecutionOptions,
-  ): Promise<{ iterations: number; apiCalls: number; entitiesCreated: number; entitiesUpdated: number }> {
-    const items = resolveVariables(step.items, context);
+  ): Promise<{ iterations: number; apiCalls: number; entitiesCreated: number; entitiesUpdated: number; error?: string }> {
+    const items = resolveDataValue(step.items, context, this.dataBudget(context));
     if (!Array.isArray(items)) {
       throw new Error(`Loop items expression did not resolve to an array`);
     }
@@ -859,9 +935,18 @@ export class IntegrationExecutor {
     let entitiesCreated = 0;
     let entitiesUpdated = 0;
     let iterations = 0;
-
-    for (let i = 0; i < Math.min(items.length, maxIterations); i++) {
+    const count = Math.min(items.length, maxIterations);
+    const outerLoop = context.loop;
+    const variables = new Map([step.itemVariable, ...(step.indexVariable ? [step.indexVariable] : [])]
+      .map(key => [key, Object.getOwnPropertyDescriptor(context.vars, key)]));
+    try {
+    for (let i = 0; i < count; i++) {
       if (signal?.aborted || timeoutSignal?.aborted) break;
+      const execution = this.executions.get(context);
+      if (!execution || ++execution.visits > execution.limit) {
+        if (execution) execution.fatal = 'Integration exceeded its total step budget';
+        return { iterations, error: 'Integration exceeded its total step budget', apiCalls, entitiesCreated, entitiesUpdated };
+      }
 
       const item = items[i];
       context.loop = { item, index: i };
@@ -871,8 +956,7 @@ export class IntegrationExecutor {
       }
 
       for (const stepId of step.bodySteps) {
-        const subStep = template.steps.find((s) => s.id === stepId);
-        if (!subStep) continue;
+        const subStep = execution.plan.byId.get(stepId) as unknown as IntegrationStep;
 
         const result = await this.executeStep(
           subStep,
@@ -888,20 +972,28 @@ export class IntegrationExecutor {
         entitiesCreated += result.entitiesCreated;
         entitiesUpdated += result.entitiesUpdated;
 
-        if (result.error && !subStep.continueOnError) {
-          throw new Error(result.error);
+        if (signal?.aborted || timeoutSignal?.aborted) return { iterations, apiCalls, entitiesCreated, entitiesUpdated };
+        if (result.error && (!subStep.continueOnError || execution.fatal)) {
+          return { iterations, error: result.error, apiCalls, entitiesCreated, entitiesUpdated };
         }
       }
 
       iterations++;
 
-      if (step.delayMs && i < items.length - 1) {
+      if (step.delayMs && i < count - 1) {
         await integrationDelay(step.delayMs, signal);
       }
     }
-
-    // Clean up loop context
-    delete context.loop;
+    } catch (error) {
+      return { iterations, error: error instanceof Error ? error.message : 'Loop failed', apiCalls, entitiesCreated, entitiesUpdated };
+    } finally {
+      if (outerLoop === undefined) delete context.loop;
+      else context.loop = outerLoop;
+      for (const [key, descriptor] of variables) {
+        if (descriptor) Object.defineProperty(context.vars, key, descriptor);
+        else delete context.vars[key];
+      }
+    }
 
     return { iterations, apiCalls, entitiesCreated, entitiesUpdated };
   }
@@ -912,7 +1004,7 @@ export class IntegrationExecutor {
     callbacks: ExecutionCallbacks,
     signal?: AbortSignal,
   ): Promise<string> {
-    const resolvedFields = resolveDeep(step.fields, context) as Record<string, unknown>;
+    const resolvedFields = resolveDeep(step.fields, context, this.dataBudget(context)) as Record<string, unknown>;
 
     if (!callbacks.onCreateEntity) {
       throw new Error('No onCreateEntity callback provided');
@@ -929,8 +1021,8 @@ export class IntegrationExecutor {
     callbacks: ExecutionCallbacks,
     signal?: AbortSignal,
   ): Promise<string> {
-    const resolvedFields = resolveDeep(step.fields, context) as Record<string, unknown>;
-    const resolvedId = resolveVariables(step.entityId, context) as string;
+    const resolvedFields = resolveDeep(step.fields, context, this.dataBudget(context)) as Record<string, unknown>;
+    const resolvedId = resolveVariables(step.entityId, context, this.dataBudget(context)) as string;
 
     if (!callbacks.onUpdateEntity) {
       throw new Error('No onUpdateEntity callback provided');
@@ -947,7 +1039,7 @@ export class IntegrationExecutor {
     addLog: (entry: IntegrationRunLogEntry) => void,
   ): void {
     for (const [key, expr] of Object.entries(step.variables)) {
-      const value = resolveVariables(expr, context);
+      const value = resolveVariables(expr, context, this.dataBudget(context));
       context.vars[key] = value;
 
       addLog({
@@ -975,11 +1067,11 @@ export class IntegrationExecutor {
       try {
         signal.throwIfAborted();
         if (output.condition) {
-          const shouldProcess = evaluateCondition(output.condition, context);
+          const shouldProcess = evaluateCondition(output.condition, context, this.dataBudget(context));
           if (!shouldProcess) continue;
         }
 
-        const resolved = resolveDeep(output.template, context) as Record<string, unknown>;
+        const resolved = resolveDeep(output.template, context, this.dataBudget(context)) as Record<string, unknown>;
 
         switch (output.type) {
           case 'display':
@@ -994,8 +1086,8 @@ export class IntegrationExecutor {
               const entityType = output.type.replace('create-', '') as string;
               // For notes, attach raw API responses and transform results for rich formatting
               if (output.type === 'create-note') {
-                const httpResponses: Record<string, unknown> = {};
-                const transformResults: Record<string, unknown> = {};
+                const httpResponses: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+                const transformResults: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
                 for (const [stepId, stepData] of Object.entries(context.steps)) {
                   const data = stepData as Record<string, unknown>;
                   if (data?.response) {
@@ -1007,6 +1099,10 @@ export class IntegrationExecutor {
                 }
                 resolved._rawResponses = httpResponses;
                 resolved._transformResults = transformResults;
+                // Note formatters materialize these references as text, including
+                // repeated aliases. Reserve that complete payload before handing
+                // it to a callback that can allocate and persist the note.
+                this.dataBudget(context).chargeJSON(resolved);
               }
               await callbacks.onCreateEntity(entityType, resolved, signal);
               entitiesCreated++;
@@ -1036,7 +1132,7 @@ export class IntegrationExecutor {
 
           case 'notify': {
             const message =
-              typeof resolved.message === 'string' ? resolved.message : JSON.stringify(resolved);
+              typeof resolved.message === 'string' ? resolved.message : this.dataBudget(context).stringify(resolved);
             callbacks.onNotify?.(message);
             break;
           }
@@ -1091,10 +1187,30 @@ function getNestedValue(obj: unknown, path: string): unknown {
   for (const part of parts) {
     if (current == null) return undefined;
     if (typeof current === 'object') {
+      if (!Object.hasOwn(current, part)) return undefined;
       current = (current as Record<string, unknown>)[part];
     } else {
       return undefined;
     }
   }
   return current;
+}
+
+/** Charge nested materialization before map/flatten allocate their result. */
+function boundedDataWork(value: unknown, remaining: number): number {
+  const pending: unknown[] = [value];
+  let work = 0;
+  while (pending.length && work <= remaining) {
+    const item = pending.pop();
+    work++;
+    if (item && typeof item === 'object') {
+      // Do not allocate an unbounded temporary Object.values array.
+      for (const key in item) {
+        if (!Object.hasOwn(item, key)) continue;
+        if (pending.length + work > remaining) return remaining + 1;
+        pending.push((item as Record<string, unknown>)[key]);
+      }
+    }
+  }
+  return pending.length ? remaining + 1 : work;
 }

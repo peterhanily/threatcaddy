@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { nanoid } from 'nanoid';
-import { and, asc, eq, gt, gte, inArray, or, not, ilike } from 'drizzle-orm';
-import { db } from '../db/index.js';
+import { and, asc, eq, gt, gte, inArray, or, not, ilike, sql } from 'drizzle-orm';
+import { db, type DB } from '../db/index.js';
 import { sessions, users } from '../db/schema.js';
 import { signAccessToken } from '../middleware/auth.js';
 import { getSessionSettings } from './admin-secret.js';
@@ -112,13 +112,20 @@ export async function revokeAllSessions(): Promise<number> {
   return count;
 }
 
-export async function updateUsersAndRevokeSessions(userIds: string[], updates: Partial<typeof users.$inferInsert>, expectedPasswordHash?: string, actor?: InvestigationActor): Promise<{ id: string }[]> {
+export type AccountMutationGuard = (tx: Pick<DB, 'execute' | 'select' | 'update' | 'delete' | 'insert'>) => Promise<void>;
+
+export async function updateUsersAndRevokeSessions(userIds: string[], updates: Partial<typeof users.$inferInsert>, expectedPasswordHash?: string, actor?: InvestigationActor, guard?: AccountMutationGuard): Promise<{ id: string }[]> {
   if (!userIds.length) return [];
   if (updates.role !== undefined && !['admin', 'analyst', 'viewer'].includes(updates.role)) throw new InvestigationPolicyError('Invalid role', 400, 'INVALID_ROLE');
   if (updates.active !== undefined && typeof updates.active !== 'boolean') throw new InvestigationPolicyError('Invalid active value', 400, 'INVALID_ACTIVE');
   const changesEligibility = updates.role !== undefined || updates.active !== undefined || updates.email !== undefined;
   const updated = await db.transaction(async tx => {
-    if (changesEligibility || actor) await lockInvestigationPolicy(tx);
+    if (guard) {
+      await tx.execute(sql`SET LOCAL lock_timeout = '5s'`);
+      await tx.execute(sql`SET LOCAL statement_timeout = '10s'`);
+    }
+    if (changesEligibility || actor || guard) await lockInvestigationPolicy(tx);
+    await guard?.(tx);
     if (actor) await assertAccountAdministrator(tx, actor);
     const locked = await tx.select().from(users).where(inArray(users.id, userIds)).orderBy(asc(users.id)).for('update');
     if (expectedPasswordHash !== undefined && (userIds.length !== 1 || !activeInteractiveUser(locked[0]) || locked[0].passwordHash !== expectedPasswordHash)) {
@@ -134,6 +141,7 @@ export async function updateUsersAndRevokeSessions(userIds: string[], updates: P
       if (!remaining.length) throw new InvestigationPolicyError('Assign another active human administrator before demoting or deactivating the last one.', 409, 'LAST_ACTIVE_ADMIN');
     }
     await tx.delete(sessions).where(inArray(sessions.userId, userIds));
+    await guard?.(tx);
     return result;
   });
   for (const { id: userId } of updated) notifySessionRevocation({ userId });

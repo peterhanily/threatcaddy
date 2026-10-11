@@ -18,6 +18,7 @@ import botsRouter from './bots.js';
 import settingsRouter from './settings.js';
 import auditRouter from './audit.js';
 import aiRouter from './ai.js';
+import aiApprovalsRouter from './ai-approvals.js';
 
 const app = new Hono();
 
@@ -245,5 +246,6 @@ app.route('', botsRouter);
 app.route('', settingsRouter);
 app.route('', auditRouter);
 app.route('', aiRouter);
+app.route('', aiApprovalsRouter);
 
 export default app;

@@ -1332,7 +1332,9 @@ AI assistant with tool use (agentic loop). Streams via SSE.
 }
 ```
 
-Max 50 messages, 20 tool calls per request. Supports Anthropic, OpenAI, Gemini, Mistral, and local providers.
+Only user/assistant messages with string content are accepted: at most 50 messages, 20,000 characters per message, and 128 KiB for the request body. A turn allows at most 20 tool calls, a 512 KiB conversation context, and 1 MiB of SSE output (256 KiB per event). It has a two-minute deadline; disconnects and stalled consumers cancel provider work. Supports Anthropic, OpenAI, Gemini, Mistral, and local providers.
+
+Write tools do not execute in this endpoint. They produce one exact-action proposal and terminate the turn. Nonempty legacy `confirmedToolCalls` lists are rejected; a tool name or chat message cannot authorize a mutation. Current administrator authority is rechecked around provider/tool work.
 
 **SSE events:**
 - `{ "type": "provider", "provider": "anthropic", "model": "..." }` -- selected provider
@@ -1342,3 +1344,14 @@ Max 50 messages, 20 tool calls per request. Supports Anthropic, OpenAI, Gemini, 
 - `{ "type": "tool_error", "name": "...", "error": "..." }` -- tool error
 - `{ "type": "done", "stopReason": "end_turn" }` -- completion
 - `{ "type": "error", "error": "..." }` -- fatal error
+- `{ "type": "confirmation_required", "approvalId": "...", "name": "...", "input": {...}, "expiresAt": 1234567890000 }` -- terminal, exact-action proposal; no mutation has executed
+
+Exactly one terminal event ends a completed stream. A truncated stream is not success; partial text must not be reused as completed conversation history.
+
+##### `POST /admin/api/ai/approvals/:approvalId`
+
+Send only `{ "decision": "approve" }` or `{ "decision": "reject" }` from the same administrator session that received the proposal. The server uses its stored tool name and validated arguments, not replacement arguments from the request. Proposals expire after at most five minutes, bounded by session expiry. Authorization, last-owner/admin constraints, and supported bot capabilities are rechecked inside the mutation transaction.
+
+The receipt has `approvalId`, `name`, and `status` (`executing`, `completed`, `rejected`, or `failed`), with optional bounded `result`, `error`, and `completedAt`. An executing receipt returns HTTP 202; a settled receipt returns 200. A completed receipt may include warnings when the mutation committed but its audit or runtime refresh did not complete.
+
+Repeating a decision for the same ID returns its receipt without executing again. After a lost response, explicitly retry the same ID rather than requesting another proposal. Completed receipts are retained for five minutes. The registry is process-local and bounded (200 total / 20 per session); restarting the server invalidates pending approvals and receipts. An expired or missing receipt does not prove that an earlier submitted action failed: inspect current state and the audit log before requesting a replacement. Cancelling or clearing the UI cannot undo a committed mutation.

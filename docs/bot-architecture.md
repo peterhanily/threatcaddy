@@ -2,7 +2,7 @@
 
 ## Overview
 
-The bot system is an in-process automation framework that runs inside the ThreatCaddy team server. It lets administrators create bots that react to entity changes, run on schedules, accept inbound webhooks, or are triggered manually. Bots can enrich IOCs, post summaries, run integration workflows, or execute LLM-powered agent loops -- all without external infrastructure.
+The bot system is an in-process automation framework that runs inside the ThreatCaddy team server. Supported implementations can react to entity changes, run on schedules, accept inbound webhooks, or be triggered manually. Enrichment and LLM-backed bots may contact external providers. Server-side integration-template execution is currently unavailable; client integration execution is described in [the integration guide](integration-platform.md).
 
 Everything runs in the Hono server process. A singleton `BotManager` handles lifecycle, event routing, concurrency, rate limiting, and circuit-breaking. Each bot operates under a dedicated user account with scoped capabilities, so its mutations flow through the same sync, audit, and permission paths as human users.
 
@@ -17,7 +17,7 @@ Everything runs in the Hono server process. A singleton `BotManager` handles lif
 | `report` | Intended for report generation. Generic type handled by `GenericBot`. |
 | `correlation` | Intended for cross-investigation correlation. Generic type handled by `GenericBot`. |
 | `ai-agent` | LLM-powered agent that runs a tool-calling loop (Anthropic, OpenAI, Gemini, Mistral). |
-| `integration` | Executes integration templates (multi-step workflows with HTTP calls, entity creation, notifications). |
+| `integration` | Retained compatibility type; execution is unavailable. Existing configuration/history is preserved. |
 | `custom` | Catch-all for user-defined logic. Handled by `GenericBot`. |
 
 Types without a dedicated implementation class (`feed`, `triage`, `report`, `correlation`, `custom`) fall through to `GenericBot`, which is a no-op base class. They can still be triggered by events, schedules, or webhooks -- the intended use is for future specialization or for integration templates that embed their own logic.
@@ -29,11 +29,11 @@ Bot (interface)
   GenericBot (base class -- wraps BotContext into BotExecutionContext)
     EnrichmentBot
     MonitorBot
-    IntegrationBot
+    IntegrationBot (retained source; runtime gated off)
     AgentBot
 ```
 
-The factory function `createBotImplementation(config)` maps `config.type` to the appropriate class. Unknown types get `GenericBot`.
+The factory function `createBotImplementation(config)` maps `config.type` to the appropriate class after checking runtime availability. Integration templates and unsupported restricted handoffs are rejected rather than reported as successful runs. List/detail projections expose `runtimeAvailable` and `unavailableReason` separately from the stored `enabled` preference. Unknown types otherwise get `GenericBot`.
 
 ## Lifecycle
 

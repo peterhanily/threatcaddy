@@ -1,5 +1,6 @@
 import type { Bot, BotConfig } from '../types.js';
 import { AgentBot } from './agent-bot.js';
+import { assertBotRuntimeAvailable } from '../runtime-availability.js';
 import { EnrichmentBot } from './enrichment-bot.js';
 import { IntegrationBot } from './integration-bot.js';
 import { MonitorBot } from './monitor-bot.js';
@@ -13,6 +14,7 @@ export { AgentBot } from './agent-bot.js';
 
 /** Create a Bot implementation based on the config type. */
 export function createBotImplementation(config: BotConfig): Bot {
+  assertBotRuntimeAvailable(config);
   switch (config.type) {
     case 'enrichment': return new EnrichmentBot(config);
     case 'integration': return new IntegrationBot(config);

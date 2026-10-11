@@ -34,7 +34,7 @@ function nextTags(existing: string[] | undefined, status: AutoEnrichStatus): str
 
 async function mergeIOCUpdate(id: string, fields: Record<string, unknown>): Promise<void> {
   const existing = await db.standaloneIOCs.get(id);
-  if (!existing) return;
+  if (!existing || existing.trashed) throw new Error('The IOC target is missing or deleted.');
   await persistIOCIntegrationUpdate({
     ioc: { id, value: existing.value, type: existing.type, confidence: existing.confidence },
     fields,
@@ -137,7 +137,8 @@ export async function autoEnrichImportedIOCs(
           },
           {
             onUpdateEntity: async (type, id, fields, signal) => {
-              if (type === 'ioc') await integrationWrite([db.standaloneIOCs], signal, () => mergeIOCUpdate(id, fields));
+              if (type !== 'ioc') throw new Error('This enrichment caller only supports updating IOCs.');
+              await integrationWrite([db.standaloneIOCs], signal, () => mergeIOCUpdate(id, fields));
             },
             onNotify: () => {},
           },

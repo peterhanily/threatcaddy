@@ -6,6 +6,7 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import { logActivity } from '../services/audit-service.js';
+import { compileIntegrationPlan } from '../lib/integration-plan.js';
 
 const integrationTemplateSchema = z.object({
   id: z.string().optional(),
@@ -101,6 +102,12 @@ app.post('/templates', requireRole('admin', 'analyst'), async (c) => {
 
   // Ensure the template has an ID
   template.id = id;
+
+  try {
+    compileIntegrationPlan(template);
+  } catch (error) {
+    return c.json({ error: error instanceof Error ? error.message : 'Invalid integration template' }, 400);
+  }
 
   await db.insert(schema.integrationTemplates).values({
     id,

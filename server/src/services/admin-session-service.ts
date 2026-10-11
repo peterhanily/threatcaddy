@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
-import { db } from '../db/index.js';
+import { db, type DB } from '../db/index.js';
 import { adminUsers, serverSettings } from '../db/schema.js';
 
 // Admin signing keys already live per process and rotate on restart. Retain revocation epochs for that same lifetime.
@@ -9,8 +9,9 @@ const adminRevocations = new Map<string, string>();
 export const adminSessionVersion = (id: string): string => adminRevocations.get(id) ?? '';
 export function revokeAdminSessions(id: string): void { adminRevocations.set(id, nanoid(24)); }
 
-export async function getActiveAdmin(id: string) {
-  const [admin] = await db.select({ id: adminUsers.id, username: adminUsers.username, passwordHash: adminUsers.passwordHash }).from(adminUsers).where(and(eq(adminUsers.id, id), eq(adminUsers.active, true))).limit(1);
+export async function getActiveAdmin(id: string, database: Pick<DB, 'select'> = db, lock = false) {
+  const query = database.select({ id: adminUsers.id, username: adminUsers.username, passwordHash: adminUsers.passwordHash }).from(adminUsers).where(and(eq(adminUsers.id, id), eq(adminUsers.active, true))).limit(1);
+  const [admin] = await (lock ? query.for('share') : query);
   return admin;
 }
 

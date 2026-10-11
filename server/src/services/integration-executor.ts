@@ -5,6 +5,7 @@
  */
 
 import { nanoid } from 'nanoid';
+import { assertBotRuntimeAvailable } from '../bots/runtime-availability.js';
 import { resolveVariables, evaluateCondition, resolveDeep } from '../lib/integration-expression.js';
 import type {
   IntegrationTemplate,
@@ -174,6 +175,9 @@ export class IntegrationExecutor {
     callbacks: ExecutionCallbacks,
     signal?: AbortSignal,
   ): Promise<IntegrationRun> {
+    // The archived server interpreter is not an available runtime. Keep this
+    // boundary even if a caller bypasses the bot manager/factory.
+    assertBotRuntimeAvailable({ type: 'integration', config: {} });
     const runId = nanoid();
     const startTime = Date.now();
     const log: IntegrationRunLogEntry[] = [];

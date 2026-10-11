@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import { db } from '../db/index.js';
+import { db, type DB } from '../db/index.js';
 import { activityLog } from '../db/schema.js';
 
 export async function logActivity(opts: {
@@ -10,8 +10,8 @@ export async function logActivity(opts: {
   itemId?: string;
   itemTitle?: string;
   folderId?: string;
-}) {
-  await db.insert(activityLog).values({
+}, database: Pick<DB, 'insert'> = db) {
+  await database.insert(activityLog).values({
     id: nanoid(),
     userId: opts.userId,
     category: opts.category,

@@ -1,18 +1,33 @@
 import { Hono } from 'hono';
-import { streamSSE } from 'hono/streaming';
 import { requireAdminAuth, logAdminAction, getAdminId } from './shared.js';
+import { AdminAuthorizationError, getAdminAiPrincipal } from '../../middleware/admin-auth.js';
+import { AdminAiApprovalError } from '../../services/admin-ai-approvals.js';
 import {
   getAnthropicTools, getOpenAITools, getGeminiTools,
-  getToolByName, ADMIN_AI_SYSTEM_PROMPT,
+  getToolByName, dispatchAdminAiTool, assertCurrentAdminAiSession, ADMIN_AI_SYSTEM_PROMPT,
 } from '../../services/admin-ai-service.js';
 import { getAvailableProviders } from '../../services/llm-service.js';
 import { getAiSettings, setAiSettings, type AiAssistantSettings } from '../../services/admin-secret.js';
 import { logger } from '../../lib/logger.js';
-import { parseAnthropicResponse, parseGeminiResponse } from '../../lib/provider-response.js';
-import { readProviderJSON, withAbort } from '../../lib/bounded-http.js';
+import { parseAnthropicResponse, parseGeminiResponse, parseOpenAIResponse } from '../../lib/provider-response.js';
+import { readBoundedBytes, readProviderJSON, withAbort } from '../../lib/bounded-http.js';
+import { createBoundedSSE } from '../../lib/bounded-sse.js';
 
 const app = new Hono();
 const MAX_TOOL_CALLS = 20;
+const MAX_CHAT_INPUT_BYTES = 128 * 1024;
+const MAX_HISTORY_BYTES = 512 * 1024;
+
+const historyWithinLimit = (messages: unknown[]): boolean => Buffer.byteLength(JSON.stringify(messages)) <= MAX_HISTORY_BYTES;
+
+function providerErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : '';
+  // Structural/limit messages are locally generated. Provider error bodies and
+  // network exceptions can contain credentials or private prompt fragments.
+  if (/^(Admin AI provider deadline exceeded|HTTP body exceeds \d+ bytes|Malformed [A-Za-z -]+ response: [A-Za-z ,_-]+)$/.test(message)) return message;
+  const status = / API error (\d{3}):/.exec(message)?.[1];
+  return status ? `AI provider request failed (HTTP ${status}).` : 'AI provider request failed.';
+}
 
 // GET /admin/api/ai/providers — list available providers with API keys configured
 app.get('/api/ai/providers', requireAdminAuth, async (c) => {
@@ -96,7 +111,7 @@ app.patch('/api/ai/settings', requireAdminAuth, async (c) => {
 
 // ─── Provider-specific LLM call abstractions ─────────────────────
 
-interface ToolCall { id: string; name: string; input: Record<string, unknown>; confirmed?: boolean }
+interface ToolCall { id: string; name: string; input: Record<string, unknown> }
 interface LLMResult {
   textParts: string[];
   toolCalls: ToolCall[];
@@ -177,31 +192,8 @@ async function callOpenAI(model: string, messages: unknown[], apiKey: string, pr
       max_tokens: 4096,
       temperature,
     }),
-  }, signal, provider) as {
-    choices: Array<{
-      message: {
-        role: string;
-        content: string | null;
-        tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }>;
-      };
-      finish_reason: string;
-    }>;
-  };
-
-  const msg = result.choices[0]?.message;
-  const textParts = msg?.content ? [msg.content] : [];
-  const toolCalls = (msg?.tool_calls || []).map(tc => ({
-    id: tc.id,
-    name: tc.function.name,
-    input: JSON.parse(tc.function.arguments || '{}') as Record<string, unknown>,
-  }));
-
-  return {
-    textParts,
-    toolCalls,
-    stopReason: result.choices[0]?.finish_reason || 'stop',
-    rawAssistantContent: msg,
-  };
+  }, signal, provider);
+  return parseOpenAIResponse(result);
 }
 
 function buildOpenAIToolResults(
@@ -267,38 +259,20 @@ async function callLocal(model: string, messages: unknown[], endpoint: string, a
       max_tokens: 4096,
       temperature,
     }),
-  }, signal, 'Local LLM') as {
-    choices: Array<{
-      message: {
-        role: string;
-        content: string | null;
-        tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }>;
-      };
-      finish_reason: string;
-    }>;
-  };
-
-  const msg = result.choices[0]?.message;
-  const textParts = msg?.content ? [msg.content] : [];
-  const toolCalls = (msg?.tool_calls || []).map(tc => ({
-    id: tc.id,
-    name: tc.function.name,
-    input: JSON.parse(tc.function.arguments || '{}') as Record<string, unknown>,
-  }));
-
-  return {
-    textParts,
-    toolCalls,
-    stopReason: result.choices[0]?.finish_reason || 'stop',
-    rawAssistantContent: msg,
-  };
+  }, signal, 'Local LLM');
+  return parseOpenAIResponse(result);
 }
 
 // ─── Unified agent loop ──────────────────────────────────────────
 
 app.post('/api/ai/chat', requireAdminAuth, async (c) => {
+  if (c.req.raw.signal.aborted) return c.json({ error: 'Request cancelled' }, 408);
+  const preflightSignal = AbortSignal.any([c.req.raw.signal, AbortSignal.timeout(10_000)]);
   let body;
-  try { body = await c.req.json(); } catch { return c.json({ error: 'Invalid JSON body' }, 400); }
+  try {
+    body = JSON.parse(new TextDecoder().decode(await readBoundedBytes(c.req.raw.body, MAX_CHAT_INPUT_BYTES, preflightSignal)));
+  } catch { return c.json({ error: 'Invalid or oversized JSON body (maximum 128 KiB)' }, 400); }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return c.json({ error: 'Chat request must be an object' }, 400);
 
   const { messages, provider: reqProvider, model: reqModel, confirmedToolCalls: confirmedRaw } = body;
   if (!Array.isArray(messages) || messages.length === 0) {
@@ -307,14 +281,25 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
   if (messages.length > 50) {
     return c.json({ error: 'Too many messages (max 50)' }, 400);
   }
-
-  // Client can pre-approve specific write tool calls by name
-  const confirmedToolCalls = new Set<string>(
-    Array.isArray(confirmedRaw) ? (confirmedRaw as string[]).filter(s => typeof s === 'string') : [],
-  );
+  if (messages.some(message => !message || typeof message !== 'object' || Array.isArray(message)
+    || !['user', 'assistant'].includes(message.role) || typeof message.content !== 'string' || message.content.length > 20_000
+    || Object.keys(message).some(key => key !== 'role' && key !== 'content'))) {
+    return c.json({ error: 'Messages must contain only a user/assistant role and text content (maximum 20,000 characters each)' }, 400);
+  }
+  if (confirmedRaw !== undefined && (!Array.isArray(confirmedRaw) || confirmedRaw.length)) {
+    return c.json({ error: 'Tool-name preapproval is no longer supported. Approve the exact proposed action using its approval ID.' }, 400);
+  }
+  if ((reqProvider !== undefined && (typeof reqProvider !== 'string' || reqProvider.length > 50))
+    || (reqModel !== undefined && (typeof reqModel !== 'string' || reqModel.length > 200))) {
+    return c.json({ error: 'Invalid provider or model' }, 400);
+  }
+  const principal = getAdminAiPrincipal(c);
+  if (preflightSignal.aborted) return c.json({ error: 'Request cancelled or timed out' }, 408);
 
   // Load AI settings for system prompt, temperature, defaults
-  const aiSettings = await getAiSettings();
+  let aiSettings: AiAssistantSettings;
+  try { aiSettings = await withAbort(getAiSettings(), preflightSignal); }
+  catch { return c.json({ error: 'AI settings could not be loaded' }, 503); }
 
   const effectiveSystemPrompt = aiSettings.customSystemPrompt
     ? ADMIN_AI_SYSTEM_PROMPT + '\n\n' + aiSettings.customSystemPrompt
@@ -346,7 +331,8 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
     provider = available[0].provider;
   }
 
-  const providerInfo = available.find(p => p.provider === provider)!;
+  const providerInfo = available.find(p => p.provider === provider);
+  if (!providerInfo?.models.length) return c.json({ error: 'No model is available for this provider' }, 503);
   let model: string;
   if (reqModel && providerInfo.models.includes(reqModel)) {
     model = reqModel as string;
@@ -361,26 +347,23 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
     return c.json({ error: `${provider.toUpperCase()} API key not configured` }, 503);
   }
 
-  const adminId = getAdminId(c);
-  await logAdminAction(adminId, 'ai-assistant.chat', `AI Assistant chat via ${provider}/${model} (${messages.length} messages)`);
-
-  const disconnected = new AbortController();
-  const signal = AbortSignal.any([c.req.raw.signal, disconnected.signal]);
-  return streamSSE(c, async (stream) => {
-    stream.onAbort(() => disconnected.abort(new Error('Admin AI client disconnected')));
-    const writeSSE = async (message: Parameters<typeof stream.writeSSE>[0]) => {
-      signal.throwIfAborted();
-      await stream.writeSSE(message);
-      signal.throwIfAborted();
-    };
+  return createBoundedSSE(c.req.raw.signal, async ({ signal, send }) => {
+    await assertCurrentAdminAiSession({ principal, signal });
+    signal.throwIfAborted();
+    await withAbort(logAdminAction(principal.adminId, 'ai-assistant.chat', `AI Assistant chat via ${provider} (${messages.length} messages)`), signal);
     let toolCallCount = 0;
     const currentMessages = [...messages];
 
     // Send provider info to client
-    await writeSSE({ data: JSON.stringify({ type: 'provider', provider, model }) });
+    await send({ type: 'provider', provider, model });
 
     while (toolCallCount < MAX_TOOL_CALLS) {
       signal.throwIfAborted();
+      if (!historyWithinLimit(currentMessages)) {
+        await send({ type: 'error', error: 'AI conversation context limit reached. Start a new conversation.' });
+        return;
+      }
+      await assertCurrentAdminAiSession({ principal, signal });
       let result: LLMResult;
       try {
         switch (provider) {
@@ -398,38 +381,52 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
             break;
           case 'local': {
             if (!aiSettings.localEndpoint) {
-              await writeSSE({ data: JSON.stringify({ type: 'error', error: 'Local LLM endpoint not configured' }) });
+              await send({ type: 'error', error: 'Local LLM endpoint not configured' });
               return;
             }
             result = await callLocal(model, currentMessages, aiSettings.localEndpoint, aiSettings.localApiKey, effectiveSystemPrompt, aiSettings.temperature, signal);
             break;
           }
           default:
-            await writeSSE({ data: JSON.stringify({ type: 'error', error: `Unsupported provider: ${provider}` }) });
+            await send({ type: 'error', error: `Unsupported provider: ${provider}` });
             return;
         }
       } catch (err) {
         if (signal.aborted) return;
-        logger.error('Admin AI API error', { provider, model, error: String(err) });
-        await writeSSE({ data: JSON.stringify({ type: 'error', error: String(err) }) });
+        logger.warn('Admin AI provider request failed', { provider });
+        await send({ type: 'error', error: providerErrorMessage(err) });
         return;
       }
       signal.throwIfAborted();
+      // A provider request may outlive an admin session. Revalidate before any
+      // response content (including a text-only answer) leaves the server.
+      try {
+        await assertCurrentAdminAiSession({ principal, signal });
+      } catch (err) {
+        if (signal.aborted) return;
+        if (!(err instanceof AdminAuthorizationError)) throw err;
+        await send({ type: 'error', error: 'Administrator session is no longer authorized. Sign in again.' });
+        return;
+      }
 
       // Reserve the complete batch before any dispatch. Checking only the outer
       // loop allows a single response to exceed the remaining per-chat budget.
       if (result.toolCalls.length > MAX_TOOL_CALLS - toolCallCount) {
-        await writeSSE({ data: JSON.stringify({ type: 'error', error: 'Tool call limit reached' }) });
+        await send({ type: 'error', error: 'Tool call limit reached' });
+        return;
+      }
+      if (!historyWithinLimit([...currentMessages, result.rawAssistantContent])) {
+        await send({ type: 'error', error: 'AI conversation context limit reached. Start a new conversation.' });
         return;
       }
 
       // Send text to client
       for (const text of result.textParts) {
-        await writeSSE({ data: JSON.stringify({ type: 'text', text }) });
+        await send({ type: 'text', text });
       }
 
       if (result.toolCalls.length === 0) {
-        await writeSSE({ data: JSON.stringify({ type: 'done', stopReason: result.stopReason }) });
+        await send({ type: 'done', stopReason: result.stopReason });
         return;
       }
 
@@ -450,47 +447,44 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
         toolCallCount++;
         const tool = getToolByName(tc.name);
 
-        await writeSSE({ data: JSON.stringify({
+        await send({
           type: 'tool_call', name: tc.name, input: tc.input,
           requiresConfirm: tool?.requiresConfirm || false,
-        }) });
+        });
 
         if (!tool) {
           toolResultEntries.push({ id: tc.id, name: tc.name, content: JSON.stringify({ error: `Unknown tool: ${tc.name}` }) });
           continue;
         }
 
-        // Enforce confirmation for write tools — block execution unless the
-        // client explicitly included the tool name in confirmedToolCalls
-        if (tool.requiresConfirm && !confirmedToolCalls.has(tc.name)) {
-          const pendingMsg = `Tool "${tc.name}" requires admin confirmation before execution. The action was NOT performed. Ask the user to confirm and resubmit with confirmedToolCalls including "${tc.name}".`;
-          toolResultEntries.push({ id: tc.id, name: tc.name, content: JSON.stringify({ error: pendingMsg }) });
-          await writeSSE({ data: JSON.stringify({
-            type: 'confirmation_required', name: tc.name, input: tc.input,
-            message: `This action requires confirmation. Re-send with confirmedToolCalls: ["${tc.name}"] to proceed.`,
-          }) });
-          continue;
-        }
-
         try {
           signal.throwIfAborted();
-          const toolResult = await tool.execute(tc.input, adminId);
+          const dispatch = await dispatchAdminAiTool(tc.name, tc.input, { principal, signal });
           signal.throwIfAborted();
+          if (dispatch.kind === 'approval') {
+            await send({ type: 'confirmation_required', ...dispatch.approval });
+            return; // No more tools or model calls until a separate exact decision.
+          }
+          const toolResult = dispatch.result;
           const resultStr = JSON.stringify(toolResult);
           toolResultEntries.push({
             id: tc.id,
             name: tc.name,
             content: resultStr.length > 20000 ? resultStr.slice(0, 20000) + '...[truncated]' : resultStr,
           });
-          await writeSSE({ data: JSON.stringify({
+          await send({
             type: 'tool_result', name: tc.name,
             result: resultStr.length > 5000 ? resultStr.slice(0, 5000) + '...' : toolResult,
-          }) });
+          });
         } catch (err) {
           if (signal.aborted) return;
-          const errorMsg = String(err);
+          if (err instanceof AdminAuthorizationError) {
+            await send({ type: 'error', error: 'Administrator session is no longer authorized. Sign in again.' });
+            return;
+          }
+          const errorMsg = err instanceof AdminAiApprovalError ? err.message.slice(0, 500) : 'The requested tool could not complete.';
           toolResultEntries.push({ id: tc.id, name: tc.name, content: JSON.stringify({ error: errorMsg }) });
-          await writeSSE({ data: JSON.stringify({ type: 'tool_error', name: tc.name, error: errorMsg }) });
+          await send({ type: 'tool_error', name: tc.name, error: errorMsg });
         }
       }
 
@@ -510,12 +504,8 @@ app.post('/api/ai/chat', requireAdminAuth, async (c) => {
       }
     }
 
-    await writeSSE({ data: JSON.stringify({ type: 'error', error: 'Tool call limit reached' }) });
-  }, async (error, stream) => {
-    if (signal.aborted) return;
-    logger.error('Admin AI stream failed', { error: String(error) });
-    await stream.writeSSE({ data: JSON.stringify({ type: 'error', error: 'Admin AI request failed' }) });
-  });
+    await send({ type: 'error', error: 'Tool call limit reached' });
+  }, { onError: () => logger.warn('Admin AI stream failed') });
 });
 
 export default app;

@@ -30,6 +30,7 @@ vi.mock('../middleware/auth.js', () => ({ signAccessToken: vi.fn() }));
 vi.mock('../services/admin-secret.js', () => ({ getSessionSettings: vi.fn() }));
 vi.mock('../services/session-events.js', () => ({ notifySessionRevocation: vi.fn(() => { expect(state.committed).toBe(true); }) }));
 vi.mock('../services/audit-service.js', () => ({ logActivity: vi.fn(() => { expect(state.committed).toBe(true); }) }));
+vi.mock('../middleware/admin-auth.js', () => ({ assertAdminAiPrincipal: vi.fn(async () => {}), AdminAuthorizationError: class extends Error {} }));
 
 import { isEligibleInvestigationOwner, mutateInvestigationMember, InvestigationPolicyError } from '../services/investigation-policy.js';
 import { updateUsersAndRevokeSessions } from '../services/session-service.js';
@@ -40,6 +41,7 @@ import { logActivity } from '../services/audit-service.js';
 const human = { id: 'person', email: 'person@example.test', active: true, role: 'analyst' };
 const folder = { id: 'case', name: 'Synthetic case', deletedAt: null };
 const adminActor = { kind: 'admin' as const, userId: 'administrator' };
+const aiContext = { principal: { adminId: adminActor.userId, tokenFingerprint: 'fixture-session', sessionVersion: '', credentialVersion: 'fixture', expiresAt: Date.now() + 3_600_000 } };
 
 beforeEach(() => {
   vi.clearAllMocks(); state.selections.length = 0; state.updateResults.length = 0; state.trace.length = 0;
@@ -141,18 +143,18 @@ describe('account eligibility changes and session revocation', () => {
   });
 
   it.each([['set_user_role', { role: 'viewer' }], ['toggle_user_active', { active: false }]] as const)('admin AI %s uses the same transactional policy and session lifecycle', async (name, change) => {
-    state.selections.push([human], [{ active: true }], [human], []);
+    state.selections.push([{ active: true }], [human], []);
     state.updateResults.push([{ id: human.id }]);
-    const result = await getToolByName(name)!.execute({ userId: human.id, ...change }, adminActor.userId);
+    const result = await getToolByName(name)!.execute({ userId: human.id, ...change }, adminActor.userId, aiContext);
     expect(result).toMatchObject({ ok: true, user: { id: human.id } });
     expect(notifySessionRevocation).toHaveBeenCalledExactlyOnceWith({ userId: human.id });
     expect(logActivity).toHaveBeenCalledOnce();
   });
 
   it('does not audit a rejected admin AI owner-demotion as success', async () => {
-    state.selections.push([human], [{ active: true }], [human], [{ folderId: 'case' }], []);
+    state.selections.push([{ active: true }], [human], [{ folderId: 'case' }], []);
     state.updateResults.push([{ id: human.id }]);
-    await expect(getToolByName('set_user_role')!.execute({ userId: human.id, role: 'viewer' }, adminActor.userId)).rejects.toMatchObject({ code: 'LAST_ELIGIBLE_OWNER' });
+    await expect(getToolByName('set_user_role')!.execute({ userId: human.id, role: 'viewer' }, adminActor.userId, aiContext)).rejects.toMatchObject({ code: 'LAST_ELIGIBLE_OWNER' });
     expect(logActivity).not.toHaveBeenCalled(); expect(notifySessionRevocation).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { parseAnthropicResponse, parseGeminiResponse } from '../lib/provider-response.js';
+import { parseAnthropicResponse, parseGeminiResponse, parseOpenAIResponse } from '../lib/provider-response.js';
 
 describe('provider response validation', () => {
+  const openAICall = { id: 'fixture-call', type: 'function', function: { name: 'list_users', arguments: '{"limit":2}' } };
+  const openAI = (message: unknown) => ({ choices: [{ finish_reason: 'tool_calls', message }] });
+  it('preserves valid OpenAI-compatible content and typed arguments', () => {
+    const message = { role: 'assistant', content: 'Fictional summary', tool_calls: [openAICall] };
+    expect(parseOpenAIResponse(openAI(message))).toEqual({
+      textParts: ['Fictional summary'], toolCalls: [{ id: 'fixture-call', name: 'list_users', input: { limit: 2 } }],
+      stopReason: 'tool_calls', rawAssistantContent: message,
+    });
+  });
+  it.each([
+    null, { choices: [] }, openAI({ role: 'system', content: 'fixture' }),
+    openAI({ role: 'assistant', content: {} }), openAI({ role: 'assistant', tool_calls: {} }),
+    openAI({ role: 'assistant', tool_calls: [openAICall, {}] }),
+    openAI({ role: 'assistant', tool_calls: [openAICall, openAICall] }),
+    ...['[]', 'null', '1', '"fixture"', '{not json}'].map(argumentsText => openAI({ role: 'assistant',
+      tool_calls: [{ ...openAICall, function: { ...openAICall.function, arguments: argumentsText } }] })),
+  ])('rejects malformed complete OpenAI-compatible batches %#', value => {
+    expect(() => parseOpenAIResponse(value)).toThrow('Malformed OpenAI-compatible response');
+  });
+
   it('preserves valid Anthropic content and collects checked tool calls', () => {
     const content = [
       { type: 'thinking', thinking: 'Ordinary provider reasoning.', signature: 'fixture-signature' },

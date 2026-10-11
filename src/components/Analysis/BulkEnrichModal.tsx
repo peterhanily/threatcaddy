@@ -231,6 +231,7 @@ export function BulkEnrichModal({
               {
                 onCreateEntity: createNotes
                   ? async (type, fields, signal) => integrationWrite([db.notes], signal, async () => {
+                      if (type !== 'note') throw new Error('This enrichment caller only supports creating notes.');
                       const id = nanoid();
                       const now = Date.now();
                       // Phase 1b: try/catch so DB failures don't crash the batch
@@ -289,13 +290,14 @@ export function BulkEnrichModal({
                     })
                   : undefined,
                 onUpdateEntity: async (type, id, fields, signal) => {
+                  if (type !== 'ioc') throw new Error('This enrichment caller only supports updating IOCs.');
                   // Phase 1b: try/catch for DB failures
                   try {
                     if (type === 'ioc') {
                       // Phase 1c: transactional read-modify-write
                       await integrationWrite([db.standaloneIOCs], signal, async () => {
                         const existing = await db.standaloneIOCs.get(id);
-                        if (!existing) return;
+                        if (!existing || existing.trashed) throw new Error('The IOC target is missing or deleted.');
                         const updates: Partial<StandaloneIOC> = { updatedAt: Date.now() };
                         if (fields.iocStatus !== undefined) updates.iocStatus = fields.iocStatus as string;
                         if (fields.confidence !== undefined) updates.confidence = fields.confidence as StandaloneIOC['confidence'];
@@ -308,7 +310,7 @@ export function BulkEnrichModal({
                           }
                           updates.enrichment = merged;
                         }
-                        await db.standaloneIOCs.update(id, updates);
+                        if (await db.standaloneIOCs.update(id, updates) !== 1) throw new Error('The IOC update was not saved.');
                       });
                     }
                   } catch (dbErr) {

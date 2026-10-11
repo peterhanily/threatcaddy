@@ -37,7 +37,11 @@ describe('integration cancellation ownership', () => {
   });
   it.each(['direct', 'server'])('cancels %s response-body waiting without processing late content', async transport => {
     const body = deferred<unknown>();
-    const fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => body.promise, headers: new Headers() });
+    const response = transport === 'server' ? { ok: true, status: 200, json: () => body.promise, headers: new Headers() }
+      : new Response(new ReadableStream({ start(controller) {
+        void body.promise.then(value => { try { controller.enqueue(new TextEncoder().encode(JSON.stringify(value))); controller.close(); } catch { /* reader was cancelled */ } });
+      } }));
+    const fetch = vi.fn().mockResolvedValue(response);
     vi.stubGlobal('fetch', fetch);
     const h = setup([http], transport === 'server' ? { useServerProxy: { serverUrl: 'https://server.example.test', getAccessToken: async () => null } } : undefined);
     const run = h.run(); await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce()); h.controller.abort();

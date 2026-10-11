@@ -11,6 +11,12 @@
 
 const TEMPLATE_RE = /\{\{([^}]+)\}\}/g;
 
+export interface IntegrationExpressionBudget {
+  chargeText(text: string): void;
+  chargeJSON(value: unknown): void;
+  interpolate(template: string, resolve: (path: string) => unknown): string;
+}
+
 /**
  * Walk a dot-separated path into an object, supporting numeric array indices.
  * Returns `undefined` when the path cannot be resolved.
@@ -20,6 +26,7 @@ function walkPath(obj: unknown, path: string): unknown {
   let current: unknown = obj;
   for (const seg of segments) {
     if (current == null || typeof current !== 'object') return undefined;
+    if (!Object.hasOwn(current, seg)) return undefined;
     current = (current as Record<string, unknown>)[seg];
   }
   return current;
@@ -44,11 +51,22 @@ function valueToString(val: unknown): string {
 export function resolveVariables(
   template: string,
   context: Record<string, unknown>,
+  budget?: IntegrationExpressionBudget,
 ): string {
+  if (budget) return budget.interpolate(template, path => walkPath(context, path));
   return template.replace(TEMPLATE_RE, (_, path: string) => {
     const val = walkPath(context, path);
     return valueToString(val);
   });
+}
+
+/** Preserve the type of a single data reference; mixed interpolation remains text. */
+export function resolveDataValue(template: string, context: Record<string, unknown>, budget?: IntegrationExpressionBudget): unknown {
+  const match = /^\{\{([^}]+)\}\}$/.exec(template);
+  if (!match) return resolveVariables(template, context, budget);
+  const value = walkPath(context, match[1]);
+  budget?.chargeJSON(value);
+  return value;
 }
 
 // ---------------------------------------------------------------------------
@@ -121,9 +139,10 @@ function splitOperator(
 function evaluateSingle(
   expr: string,
   context: Record<string, unknown>,
+  budget?: IntegrationExpressionBudget,
 ): boolean {
   // Resolve all {{...}} tokens first so the expression contains plain values.
-  const resolved = resolveVariables(expr, context);
+  const resolved = resolveVariables(expr, context, budget);
 
   const parts = splitOperator(resolved);
   if (!parts) {
@@ -212,12 +231,13 @@ function splitCombinators(
 export function evaluateCondition(
   expression: string,
   context: Record<string, unknown>,
+  budget?: IntegrationExpressionBudget,
 ): boolean {
   const parts = splitCombinators(expression);
-  let result = evaluateSingle(parts[0].expr, context);
+  let result = evaluateSingle(parts[0].expr, context, budget);
 
   for (let i = 0; i < parts.length - 1; i++) {
-    const nextResult = evaluateSingle(parts[i + 1].expr, context);
+    const nextResult = evaluateSingle(parts[i + 1].expr, context, budget);
     if (parts[i].combinator === 'and') {
       result = result && nextResult;
     } else {
@@ -239,20 +259,25 @@ export function evaluateCondition(
 export function resolveDeep(
   obj: unknown,
   context: Record<string, unknown>,
+  budget?: IntegrationExpressionBudget,
 ): unknown {
   if (typeof obj === 'string') {
-    return resolveVariables(obj, context);
+    return resolveVariables(obj, context, budget);
   }
   if (Array.isArray(obj)) {
-    return obj.map((item) => resolveDeep(item, context));
+    budget?.chargeText('[]');
+    return obj.map((item) => { budget?.chargeText(','); return resolveDeep(item, context, budget); });
   }
   if (obj !== null && typeof obj === 'object') {
     const result: Record<string, unknown> = {};
+    budget?.chargeText('{}');
     for (const [key, val] of Object.entries(obj)) {
-      result[key] = resolveDeep(val, context);
+      budget?.chargeJSON(key);
+      Object.defineProperty(result, key, { value: resolveDeep(val, context, budget), enumerable: true, configurable: true, writable: true });
     }
     return result;
   }
   // Primitives (number, boolean, null, undefined) pass through.
+  budget?.chargeJSON(obj);
   return obj;
 }

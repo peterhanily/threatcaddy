@@ -70,3 +70,29 @@ unexpected script errors, server errors or stale post-purge requests. Synthetic
 screenshots and a request-status summary are retained in the temporary evidence
 directory printed by the runner. Browser/server processes and only the newly
 created scratch database are closed afterward; the coordinator is untouched.
+
+## Optional generated AI interface browser gate
+
+The separate inert UI gate needs the root Playwright dependency and its
+Chromium, Firefox and WebKit runtimes, but no database or provider credentials:
+
+```sh
+./server/node_modules/.bin/tsx server/integration/admin-ai-ui.browser.ts
+# Optional focused smoke check:
+./server/node_modules/.bin/tsx server/integration/admin-ai-ui.browser.ts chromium
+```
+
+It serves the actual generated admin HTML on a fresh loopback port with a nonce
+content-security policy. Fictional HTTP responses exercise split UTF-8/CRLF SSE,
+malformed/truncated/oversized streams, retained drafts, Clear/logout cancellation,
+settings retries and numeric zero. Exact-action approval checks cover expiry,
+rejection, a truncated receipt, executing receipts and explicit same-ID retries
+without a model rerun. Legacy unavailable integration bots retain working
+history, disable and delete controls without offering enable/trigger actions.
+
+Each engine uses a fresh profile; external requests and unexpected script/CSP
+errors fail the gate. Temporary screenshots and a synthetic request summary are
+retained at the printed evidence path, while owned browser/server processes are
+closed. The approval HTTP responses here are inert protocol fixtures: actual
+authorization and at-most-once mutation behavior belong to the separate real
+PostgreSQL approval integration tests, not this UI gate.

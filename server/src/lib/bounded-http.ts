@@ -4,7 +4,12 @@ import { Readable } from 'node:stream';
 import { createBrotliDecompress, createGunzip, createInflate } from 'node:zlib';
 
 export async function withAbort<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
-  signal.throwIfAborted();
+  if (signal.aborted) {
+    // The argument may already have started before the signal was inspected.
+    // Observe any late rejection even though its result will not be returned.
+    void work.catch(() => {});
+    signal.throwIfAborted();
+  }
   return new Promise<T>((resolve, reject) => {
     const aborted = () => reject(signal.reason);
     signal.addEventListener('abort', aborted, { once: true });

@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ results: [] as unknown[][], updates: [] as Record<string, unknown>[], reload: vi.fn() }));
-vi.mock('../db/index.js', () => ({ db: {
+vi.mock('../db/index.js', () => { const database = {
+  execute: vi.fn(async () => [{ id: 1 }]),
   select: () => {
     const rows = mocks.results.shift() ?? [];
-    const chain = { from: () => chain, where: () => chain, orderBy: () => chain, leftJoin: () => chain, limit: async () => rows, then: (resolve: (value: unknown) => unknown) => Promise.resolve(rows).then(resolve) };
+    const chain = { from: () => chain, where: () => chain, orderBy: () => chain, leftJoin: () => chain, for: () => chain, limit: async () => rows, then: (resolve: (value: unknown) => unknown) => Promise.resolve(rows).then(resolve) };
     return chain;
   },
   update: () => ({ set: (updates: Record<string, unknown>) => { mocks.updates.push(updates); return { where: () => ({ returning: async () => [{ id: 'bot-a', ...updates }] }) }; } }),
-} }));
+}; return { db: { ...database, transaction: async (callback: (tx: typeof database) => Promise<unknown>) => callback(database) } }; });
 vi.mock('../bots/bot-manager.js', () => ({ botManager: { reloadBot: mocks.reload }, validateCronExpression: vi.fn() }));
 vi.mock('../services/audit-service.js', () => ({ logActivity: vi.fn() }));
 import { getBot, getBotDetail, listBots, listBotsWithCreator, mergeSentinelSecrets, updateBot, enableBot, triggerBot } from '../services/bot-service.js';

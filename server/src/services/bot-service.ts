@@ -1,6 +1,6 @@
 import { HANDOFF_UNAVAILABLE, hasUnsupportedAgentPolicy } from '../bots/handoff-policy.js';
 import { nanoid } from 'nanoid';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 import * as argon2 from 'argon2';
 import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
@@ -9,6 +9,9 @@ import { encryptConfigSecrets, redactConfigSecrets } from '../bots/secret-store.
 import { logActivity } from '../services/audit-service.js';
 import type { BotCapability, BotTriggerConfig, BotType } from '../bots/types.js';
 import { lockInvestigationPolicy } from './investigation-policy.js';
+import { botRuntimeAvailability, getBotRuntimeUnavailableReason, INTEGRATION_RUNTIME_UNAVAILABLE } from '../bots/runtime-availability.js';
+import type { AccountMutationGuard } from './session-service.js';
+import { withAbort } from '../lib/bounded-http.js';
 
 // ─── Shared Constants ────────────────────────────────────────────
 
@@ -43,6 +46,8 @@ export interface BotCreateInput {
 /** Validate input for bot creation. Returns error string or null. */
 export function validateBotCreate(input: BotCreateInput): string | null {
   const { name, type, capabilities, allowedDomains, triggers } = input;
+
+  if (type === 'integration') return INTEGRATION_RUNTIME_UNAVAILABLE;
 
   if (!name || typeof name !== 'string' || name.trim().length < 1 || name.trim().length > 100) {
     return 'Name is required (1-100 chars)';
@@ -140,6 +145,7 @@ export function validateBotUpdate(body: Record<string, unknown>): { updates: Rec
   }
 
   if (body.type !== undefined) {
+    if (body.type === 'integration') return { error: INTEGRATION_RUNTIME_UNAVAILABLE };
     if (!VALID_BOT_TYPES.includes(body.type as BotType)) {
       return { error: `Invalid bot type: ${body.type}` };
     }
@@ -255,6 +261,7 @@ export interface CreateBotResult {
 /** Create a new bot with its user account and investigation memberships.
  *  Wrapped in a transaction so partial failures don't leave orphaned records. */
 export async function createBot(input: BotCreateInput, createdBy: string): Promise<CreateBotResult> {
+  if (input.type === 'integration') throw new Error(INTEGRATION_RUNTIME_UNAVAILABLE);
   const botId = nanoid();
   const botUserId = nanoid();
   const now = new Date();
@@ -323,7 +330,7 @@ export async function createBot(input: BotCreateInput, createdBy: string): Promi
 
 /** Update a bot config. Returns the existing bot name for audit logging. */
 export async function updateBot(id: string, updates: Record<string, unknown>): Promise<{ name: string } | null> {
-  const rows = await db.select({ id: schema.botConfigs.id, name: schema.botConfigs.name, config: schema.botConfigs.config, sourceType: schema.botConfigs.sourceType })
+  const rows = await db.select({ id: schema.botConfigs.id, name: schema.botConfigs.name, type: schema.botConfigs.type, config: schema.botConfigs.config, sourceType: schema.botConfigs.sourceType })
     .from(schema.botConfigs).where(eq(schema.botConfigs.id, id)).limit(1);
   if (rows.length === 0) return null;
 
@@ -334,7 +341,7 @@ export async function updateBot(id: string, updates: Record<string, unknown>): P
     updates.config = encryptConfigSecrets(mergeSentinelSecrets(updates.config as Record<string, unknown>, existingConfig));
   }
 
-  if (hasUnsupportedAgentPolicy({ sourceType: rows[0].sourceType, config: (updates.config ?? rows[0].config ?? {}) as Record<string, unknown> })) updates.enabled = false;
+  if ((updates.type ?? rows[0].type) === 'integration' || hasUnsupportedAgentPolicy({ sourceType: rows[0].sourceType, config: (updates.config ?? rows[0].config ?? {}) as Record<string, unknown> })) updates.enabled = false;
 
   // Use returning() to get the full updated row, avoiding a re-SELECT in reloadBot
   const updatedRows = await db.update(schema.botConfigs).set(updates).where(eq(schema.botConfigs.id, id)).returning();
@@ -378,39 +385,52 @@ export function mergeSentinelSecrets(newConfig: Record<string, unknown>, existin
   return merge(newConfig, existingConfig) as Record<string, unknown>;
 }
 
-/** Enable a bot. Returns bot name or null if not found. */
-export async function enableBot(id: string): Promise<{ name: string } | { error: string } | null> {
-  const [existing] = await db.select({ config: schema.botConfigs.config, sourceType: schema.botConfigs.sourceType })
-    .from(schema.botConfigs).where(eq(schema.botConfigs.id, id)).limit(1);
-  if (!existing) return null;
-  if (hasUnsupportedAgentPolicy({ sourceType: existing.sourceType, config: (existing.config ?? {}) as Record<string, unknown> })) return { error: HANDOFF_UNAVAILABLE };
-  const rows = await db.update(schema.botConfigs)
-    .set({ enabled: true, updatedAt: new Date() })
-    .where(eq(schema.botConfigs.id, id))
-    .returning({ name: schema.botConfigs.name });
-  if (rows.length === 0) return null;
-
-  await botManager.reloadBot(id);
-  return { name: rows[0].name };
+/** All callers share the same availability and optional transaction-bound authority checks. */
+export async function setBotEnabled(id: string, enabled: boolean, guard?: AccountMutationGuard): Promise<{ name: string; warnings?: string[] } | { error: string } | null> {
+  const result = await db.transaction(async tx => {
+    if (guard) {
+      await tx.execute(sql`SET LOCAL lock_timeout = '5s'`);
+      await tx.execute(sql`SET LOCAL statement_timeout = '10s'`);
+    }
+    await lockInvestigationPolicy(tx);
+    await guard?.(tx);
+    const [existing] = await tx.select().from(schema.botConfigs).where(eq(schema.botConfigs.id, id)).for('update');
+    if (!existing) return null;
+    if (enabled) {
+      const reason = getBotRuntimeUnavailableReason({ ...existing, config: (existing.config ?? {}) as Record<string, unknown> });
+      if (reason) return { error: reason };
+    }
+    const [updated] = await tx.update(schema.botConfigs).set({ enabled, updatedAt: new Date() })
+      .where(eq(schema.botConfigs.id, id)).returning({ name: schema.botConfigs.name });
+    await guard?.(tx);
+    return updated ?? null;
+  });
+  if (!result || 'error' in result) return result;
+  const refresh = new AbortController();
+  const timer = setTimeout(() => refresh.abort(new DOMException('Bot refresh deadline exceeded', 'AbortError')), 5000);
+  try {
+    if (enabled) await withAbort(botManager.reloadBot(id, undefined, { signal: refresh.signal }), refresh.signal);
+    else await withAbort(botManager.unloadBot(id, { signal: refresh.signal }), refresh.signal);
+    return result;
+  } catch {
+    // Persisted state is already committed; retries must not misrepresent this as a rollback.
+    return { ...result, warnings: ['The bot setting was saved, but its runtime could not be refreshed. Check runtime status.'] };
+  } finally { clearTimeout(timer); }
 }
 
-/** Disable a bot. Returns bot name or null if not found. */
-export async function disableBot(id: string): Promise<{ name: string } | null> {
-  const rows = await db.update(schema.botConfigs)
-    .set({ enabled: false, updatedAt: new Date() })
-    .where(eq(schema.botConfigs.id, id))
-    .returning({ name: schema.botConfigs.name });
-  if (rows.length === 0) return null;
-
-  await botManager.unloadBot(id);
-  return { name: rows[0].name };
+export async function enableBot(id: string) { return setBotEnabled(id, true); }
+export async function disableBot(id: string) {
+  const result = await setBotEnabled(id, false);
+  if (result && 'error' in result) throw new Error(result.error);
+  return result;
 }
 
 /** Trigger a bot manually. Returns { name } or { error } or null if not found. */
 export async function triggerBot(id: string): Promise<{ name: string } | { error: string } | null> {
-  const rows = await db.select({ id: schema.botConfigs.id, name: schema.botConfigs.name, enabled: schema.botConfigs.enabled, config: schema.botConfigs.config, sourceType: schema.botConfigs.sourceType })
+  const rows = await db.select({ id: schema.botConfigs.id, name: schema.botConfigs.name, type: schema.botConfigs.type, enabled: schema.botConfigs.enabled, config: schema.botConfigs.config, sourceType: schema.botConfigs.sourceType })
     .from(schema.botConfigs).where(eq(schema.botConfigs.id, id)).limit(1);
   if (rows.length === 0) return null;
+  if (rows[0].type === 'integration') return { error: INTEGRATION_RUNTIME_UNAVAILABLE };
   if (hasUnsupportedAgentPolicy({ sourceType: rows[0].sourceType, config: (rows[0].config ?? {}) as Record<string, unknown> })) return { error: HANDOFF_UNAVAILABLE };
   if (!rows[0].enabled) return { error: 'Bot is disabled' };
 
@@ -444,6 +464,7 @@ export async function listBots() {
   const rows = await db.select().from(schema.botConfigs).orderBy(desc(schema.botConfigs.createdAt));
   return rows.map((row) => ({
     ...row,
+    ...botRuntimeAvailability({ ...row, config: (row.config ?? {}) as Record<string, unknown> }),
     config: redactConfigSecrets(row.config as Record<string, unknown>),
   }));
 }
@@ -455,6 +476,7 @@ export async function listBotsWithCreator() {
       id: schema.botConfigs.id,
       userId: schema.botConfigs.userId,
       type: schema.botConfigs.type,
+      sourceType: schema.botConfigs.sourceType,
       name: schema.botConfigs.name,
       description: schema.botConfigs.description,
       enabled: schema.botConfigs.enabled,
@@ -481,6 +503,7 @@ export async function listBotsWithCreator() {
 
   return rows.map((r) => ({
     ...r,
+    ...botRuntimeAvailability({ ...r, config: (r.config ?? {}) as Record<string, unknown> }),
     config: redactConfigSecrets(r.config as Record<string, unknown>),
   }));
 }
@@ -489,7 +512,7 @@ export async function listBotsWithCreator() {
 export async function getBot(id: string) {
   const rows = await db.select().from(schema.botConfigs).where(eq(schema.botConfigs.id, id)).limit(1);
   if (rows.length === 0) return null;
-  return { ...rows[0], config: redactConfigSecrets(rows[0].config as Record<string, unknown>) };
+  return { ...rows[0], ...botRuntimeAvailability({ ...rows[0], config: (rows[0].config ?? {}) as Record<string, unknown> }), config: redactConfigSecrets(rows[0].config as Record<string, unknown>) };
 }
 
 /** Get bot detail with creator name, recent runs, and memberships (for admin panel). */
@@ -499,6 +522,7 @@ export async function getBotDetail(id: string) {
       id: schema.botConfigs.id,
       userId: schema.botConfigs.userId,
       type: schema.botConfigs.type,
+      sourceType: schema.botConfigs.sourceType,
       name: schema.botConfigs.name,
       description: schema.botConfigs.description,
       enabled: schema.botConfigs.enabled,
@@ -538,7 +562,7 @@ export async function getBotDetail(id: string) {
   ]);
 
   return {
-    bot: { ...bot, config: redactConfigSecrets(bot.config as Record<string, unknown>) },
+    bot: { ...bot, ...botRuntimeAvailability({ ...bot, config: (bot.config ?? {}) as Record<string, unknown> }), config: redactConfigSecrets(bot.config as Record<string, unknown>) },
     recentRuns,
     memberships,
   };

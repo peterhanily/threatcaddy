@@ -1,4 +1,4 @@
-import { assertSupportedAgentPolicy, hasUnsupportedAgentPolicy } from './handoff-policy.js';
+import { assertBotRuntimeAvailable, getBotRuntimeUnavailableReason } from './runtime-availability.js';
 import { nanoid } from 'nanoid';
 import { eq, sql } from 'drizzle-orm';
 import { Cron } from 'croner';
@@ -12,6 +12,7 @@ import { botRateLimiter } from './rate-limiter.js';
 import { decryptConfigSecrets } from './secret-store.js';
 import type { Bot, BotConfig, BotContext, BotEvent, BotEventType, BotRunStatus, BotTriggerType, BotCapability } from './types.js';
 import { createBotImplementation } from './implementations/index.js';
+import { withAbort } from '../lib/bounded-http.js';
 
 const BOT_EXECUTION_TIMEOUT_MS = parseInt(process.env.BOT_EXECUTION_TIMEOUT_MS || '', 10) || 5 * 60 * 1000;
 const MAX_CONCURRENT_RUNS = parseInt(process.env.BOT_MAX_CONCURRENT_RUNS || '', 10) || 10;
@@ -139,13 +140,16 @@ export class BotManager {
   }
 
   /** Load and start a single bot from its config */
-  async loadBot(config: BotConfig): Promise<void> {
+  async loadBot(config: BotConfig, options: { signal?: AbortSignal } = {}): Promise<void> {
+    const { signal } = options;
+    signal?.throwIfAborted();
     const generation = (this.generations.get(config.id) ?? 0) + 1;
-    await this.unloadBot(config.id);
+    await this.unloadBot(config.id, options);
+    signal?.throwIfAborted();
     if (this.stopping || !config.enabled) return;
-    if (hasUnsupportedAgentPolicy(config)) {
-      await this.unloadBot(config.id);
-      logger.warn('Agent handoff remains disabled pending policy enforcement', { botId: config.id });
+    const unavailableReason = getBotRuntimeUnavailableReason(config);
+    if (unavailableReason) {
+      logger.warn(unavailableReason, { botId: config.id });
       return;
     }
     // Clean up prior state to prevent cron job leaks on reload
@@ -163,9 +167,25 @@ export class BotManager {
 
     const decrypted = decryptConfigSecrets(config.config);
     const bot = createBotImplementation(config);
-    await bot.onInit(config);
+    const initialized = Promise.resolve().then(() => { signal?.throwIfAborted(); return bot.onInit(config); });
+    const invalidate = () => {
+      if (this.generations.get(config.id) === generation) this.generations.set(config.id, generation + 1);
+    };
+    signal?.addEventListener('abort', invalidate, { once: true });
+    try {
+      if (signal) await withAbort(initialized, signal);
+      else await initialized;
+    } catch (error) {
+      invalidate();
+      // Initialization may be non-cancellable. It can finish cleanup, but can
+      // never publish or schedule a bot after this generation has been cancelled.
+      void initialized.catch(() => {}).then(() => bot.onDestroy()).catch(() => logger.warn('Cancelled bot initialization cleanup failed'));
+      throw error;
+    } finally { signal?.removeEventListener('abort', invalidate); }
     if (this.stopping || this.generations.get(config.id) !== generation) {
-      await bot.onDestroy();
+      const cleanup = bot.onDestroy();
+      if (signal) await withAbort(cleanup, signal);
+      else await cleanup;
       return;
     }
     // Publish initialized state together, after the generation check.
@@ -198,7 +218,8 @@ export class BotManager {
   }
 
   /** Unload a bot */
-  async unloadBot(botId: string): Promise<void> {
+  async unloadBot(botId: string, options: { signal?: AbortSignal } = {}): Promise<void> {
+    options.signal?.throwIfAborted();
     this.generations.set(botId, (this.generations.get(botId) ?? 0) + 1);
     this.executionQueue = this.executionQueue.filter(queued => {
       if (queued.botId !== botId) return true;
@@ -240,22 +261,33 @@ export class BotManager {
     botRateLimiter.removeBuckets(botId);
     this.configs.delete(botId);
     this.decryptedConfigs.delete(botId);
-    if (bot) await bot.onDestroy();
+    if (bot) {
+      const cleanup = bot.onDestroy();
+      if (options.signal) await withAbort(cleanup, options.signal);
+      else await cleanup;
+    }
   }
 
   /** Reload a bot (disable then re-enable with updated config).
    *  If a pre-fetched config is provided, skip the DB SELECT. */
-  async reloadBot(botId: string, prefetchedConfig?: BotConfig): Promise<void> {
-    await this.unloadBot(botId);
+  async reloadBot(botId: string, prefetchedConfig?: BotConfig, options: { signal?: AbortSignal } = {}): Promise<void> {
+    options.signal?.throwIfAborted();
+    const generation = (this.generations.get(botId) ?? 0) + 1;
+    await this.unloadBot(botId, options);
+    options.signal?.throwIfAborted();
+    if (this.generations.get(botId) !== generation) return;
 
     if (prefetchedConfig) {
       if (prefetchedConfig.enabled) {
-        await this.loadBot(prefetchedConfig);
+        await this.loadBot(prefetchedConfig, options);
       }
     } else {
-      const rows = await db.select().from(schema.botConfigs).where(eq(schema.botConfigs.id, botId));
+      const query = db.select().from(schema.botConfigs).where(eq(schema.botConfigs.id, botId));
+      const rows = await (options.signal ? withAbort(Promise.resolve(query), options.signal) : query);
+      options.signal?.throwIfAborted();
+      if (this.generations.get(botId) !== generation) return;
       if (rows.length > 0 && rows[0].enabled) {
-        await this.loadBot(rows[0] as unknown as BotConfig);
+        await this.loadBot(rows[0] as unknown as BotConfig, options);
       }
     }
   }
@@ -329,7 +361,7 @@ export class BotManager {
   ): Promise<void> {
     const config = this.configs.get(botId);
     if (this.stopping || !config || !config.enabled) return;
-    assertSupportedAgentPolicy(config);
+    assertBotRuntimeAvailable(config);
 
     // Concurrency limit — queue if at capacity, drop if queue is full
     if (this.activeRuns >= MAX_CONCURRENT_RUNS) {
@@ -427,6 +459,7 @@ export class BotManager {
     let timedOut = false;
 
     try {
+      assertBotRuntimeAvailable(config);
       // Create run record
       await db.insert(schema.botRuns).values({
         id: runId,

@@ -21,6 +21,22 @@ function fixture(id: string, manual = vi.fn().mockResolvedValue(undefined)) {
 beforeEach(() => { state.insert.mockResolvedValue(undefined); state.updates.length = 0; state.bots.clear(); });
 
 describe('bot runtime lifecycle', () => {
+  it('retains but never initializes or dispatches a legacy enabled integration bot', async () => {
+    const manager = new BotManager();
+    const { bot, config } = fixture('legacy-integration');
+    config.type = 'integration';
+    config.triggers = { schedule: '* * * * *', events: ['entity.created'], webhook: true };
+    await manager.loadBot(config);
+    await manager.reloadBot(config.id, config);
+    for (const trigger of ['manual', 'schedule', 'event', 'webhook'] as const) await manager.executeBot(config.id, trigger);
+    expect(bot.onInit).not.toHaveBeenCalled();
+    expect(bot.onManual).not.toHaveBeenCalled();
+    expect(manager.getLoadedBots()).toEqual([]);
+    expect(manager.getStats()).toMatchObject({ loadedBots: 0, activeRuns: 0, queueSize: 0 });
+    expect(state.insert).not.toHaveBeenCalled();
+    expect(config.enabled).toBe(true);
+    await manager.shutdown();
+  });
   it('dispatches a manual request to its handler before recording success', async () => {
     const manager = new BotManager();
     const { bot, config } = fixture('manual');

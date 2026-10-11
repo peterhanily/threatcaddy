@@ -14,11 +14,19 @@ describe('required integration settings', () => {
   );
 
   it.each([false, true, 0, -1, 'configured', '  configured  '])('accepts a supplied scalar %j', value => {
-    expect(validateIntegrationConfig([field()], { setting: value })).toEqual([]);
+    const type = typeof value === 'boolean' ? 'boolean' : typeof value === 'number' ? 'number' : 'string';
+    expect(validateIntegrationConfig([field({ type })], { setting: value })).toEqual([]);
   });
 
   it('does not require optional fields', () => {
     expect(validateIntegrationConfig([field({ required: false })], {})).toEqual([]);
+  });
+
+  it('checks configured types and choices without coercing false, zero, or legacy selections', () => {
+    expect(validateIntegrationConfig([field()], { setting: false })).toHaveLength(1);
+    expect(validateIntegrationConfig([field({ type: 'boolean' })], { setting: 'false' })).toHaveLength(1);
+    expect(validateIntegrationConfig([field({ type: 'number', required: false })], { setting: 'zero' })).toHaveLength(1);
+    expect(validateIntegrationConfig([field({ type: 'select', options: [{ label: 'One', value: 'one' }] })], { setting: 'two' })).toHaveLength(1);
   });
 
   it.each(['selected', ['first'], ['first', 'second']].map(value => ({ value })))('accepts legacy scalar and array multi-select values $value', ({ value }) => {
@@ -30,7 +38,8 @@ describe('required integration settings', () => {
   });
 
   it.each(['fallback', false, 0])('honors defaults only for absent or undefined values (%j)', defaultValue => {
-    const fields = [field({ default: defaultValue })];
+    const type = typeof defaultValue === 'boolean' ? 'boolean' : typeof defaultValue === 'number' ? 'number' : 'string';
+    const fields = [field({ type, default: defaultValue })];
     expect(resolveIntegrationConfig(fields, {})).toEqual({ setting: defaultValue });
     expect(resolveIntegrationConfig(fields, { setting: undefined })).toEqual({ setting: defaultValue });
     expect(validateIntegrationConfig(fields, {})).toEqual([]);

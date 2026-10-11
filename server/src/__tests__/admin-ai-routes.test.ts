@@ -44,6 +44,8 @@ vi.mock('../services/admin-ai-service.js', () => ({
   getOpenAITools: vi.fn(() => []),
   getGeminiTools: vi.fn(() => []),
   getToolByName: vi.fn(),
+  assertCurrentAdminAiSession: vi.fn().mockResolvedValue(undefined),
+  dispatchAdminAiTool: vi.fn(),
   ADMIN_AI_SYSTEM_PROMPT: 'You are an admin assistant.',
 }));
 
@@ -53,8 +55,8 @@ vi.mock('../lib/logger.js', () => ({
 
 // --- Imports ---
 
-import { signAdminToken } from '../middleware/admin-auth.js';
-import { getToolByName } from '../services/admin-ai-service.js';
+import { AdminAuthorizationError, signAdminToken } from '../middleware/admin-auth.js';
+import { getToolByName, dispatchAdminAiTool, assertCurrentAdminAiSession } from '../services/admin-ai-service.js';
 import aiRoutes from '../routes/admin/ai.js';
 
 function createApp() {
@@ -77,6 +79,14 @@ describe('Admin AI Routes', () => {
     mockAdminSecret.getAiSettings.mockResolvedValue({});
     mockAdminSecret.setAiSettings.mockResolvedValue(undefined);
     vi.mocked(getToolByName).mockReturnValue(undefined);
+    vi.mocked(assertCurrentAdminAiSession).mockResolvedValue(undefined);
+    // Existing route compatibility tests use inert read tools. Actual exact
+    // approval storage and transactional dispatch have independent tests.
+    vi.mocked(dispatchAdminAiTool).mockImplementation(async (name, input, context) => {
+      const tool = vi.mocked(getToolByName).mock.results.at(-1)?.value;
+      if (!tool || tool.name !== name || tool.requiresConfirm) throw new Error('Unexpected fixture tool');
+      return { kind: 'result', result: await tool.execute(input, context.principal.adminId) };
+    });
   });
 
   afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
@@ -131,6 +141,23 @@ describe('Admin AI Routes', () => {
     expect(getToolByName).not.toHaveBeenCalled();
   });
 
+  it('rechecks the current session after a deferred provider response before releasing text', async () => {
+    configureProvider('anthropic');
+    let complete!: (response: Response) => void;
+    const fetch = vi.fn(() => new Promise<Response>(resolve => { complete = resolve; }));
+    vi.stubGlobal('fetch', fetch);
+    const response = await app.request(chatRequest());
+    const reading = response.text();
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    vi.mocked(assertCurrentAdminAiSession).mockRejectedValue(new AdminAuthorizationError());
+    complete(Response.json({ content: [{ type: 'text', text: 'Synthetic private summary.' }], stop_reason: 'end_turn' }));
+    const text = await reading;
+    expect(text).toContain('Administrator session is no longer authorized');
+    expect(text).not.toContain('Synthetic private summary.');
+    expect(text).not.toContain('"type":"done"');
+    expect(dispatchAdminAiTool).not.toHaveBeenCalled();
+  });
+
   it('keeps the provider deadline active after headers until the body completes', async () => {
     vi.useFakeTimers();
     configureProvider('anthropic');
@@ -175,6 +202,58 @@ describe('Admin AI Routes', () => {
     expect(fetch).toHaveBeenCalledOnce();
     expect(text).not.toContain('"type":"tool_result"');
     expect(text).not.toContain('"type":"tool_error"');
+  });
+
+  it('issues one exact-action proposal and stops the turn without executing or calling the provider again', async () => {
+    configureProvider('anthropic');
+    const execute = vi.fn();
+    vi.mocked(getToolByName).mockReturnValue({ name: 'toggle_user_active', description: 'Fixture', input_schema: {}, requiresConfirm: true, execute });
+    vi.mocked(dispatchAdminAiTool).mockResolvedValue({ kind: 'approval', approval: {
+      approvalId: 'fixture-approval', name: 'toggle_user_active', input: { userId: 'fixture-user', active: false }, expiresAt: Date.now() + 60_000,
+    } });
+    const fetch = vi.fn().mockResolvedValue(Response.json({ content: ['one', 'two'].map(id => ({ type: 'tool_use', id,
+      name: 'toggle_user_active', input: { userId: 'fixture-user', active: false } })), stop_reason: 'tool_use' }));
+    vi.stubGlobal('fetch', fetch);
+    const response = await app.request(chatRequest());
+    const result = await response.text();
+    expect(result).toContain('"type":"confirmation_required"');
+    expect(result).toContain('"approvalId":"fixture-approval"');
+    expect(result).not.toContain('"type":"done"');
+    expect(result).not.toContain('"type":"tool_result"');
+    expect(dispatchAdminAiTool).toHaveBeenCalledOnce();
+    expect(execute).not.toHaveBeenCalled(); expect(fetch).toHaveBeenCalledOnce();
+  });
+
+  it.each([null, [], { messages: [{ role: 'system', content: 'Fixture' }] },
+    { messages: [{ role: 'user', content: {} }] }, { messages: [{ role: 'user', content: 'a'.repeat(20_001) }] },
+    { messages: [{ role: 'user', content: 'Fixture', tool_calls: [] }] },
+    { messages: [{ role: 'user', content: 'Fixture' }], confirmedToolCalls: ['toggle_user_active'] },
+  ])('rejects malformed or blanket-approved chat input before settings/provider work %#', async body => {
+    configureProvider('anthropic');
+    const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
+    const response = await app.request('/admin/api/ai/chat', { method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    expect(response.status).toBe(400);
+    expect(mockAdminSecret.getAiSettings).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('does no settings, audit or provider work for a pre-cancelled request', async () => {
+    configureProvider('anthropic');
+    const controller = new AbortController(); controller.abort();
+    const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
+    const response = await app.request(chatRequest(controller.signal));
+    expect(response.status).toBe(408);
+    expect(mockAdminSecret.getAiSettings).not.toHaveBeenCalled(); expect(fetch).not.toHaveBeenCalled();
+    expect(assertCurrentAdminAiSession).not.toHaveBeenCalled();
+  });
+
+  it('does not expose provider error bodies or dispatch tools on upstream failure', async () => {
+    configureProvider('anthropic');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Fictional private prompt fragment', { status: 503 })));
+    const response = await app.request(chatRequest());
+    const text = await response.text();
+    expect(text).toContain('HTTP 503'); expect(text).not.toContain('private prompt');
+    expect(dispatchAdminAiTool).not.toHaveBeenCalled();
   });
 
   it.each([

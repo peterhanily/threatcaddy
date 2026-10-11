@@ -9,11 +9,20 @@ import { BulkIOCImportModal } from './BulkIOCImportModal';
 import { IOCDeduplicator } from './IOCDeduplicator';
 import { BulkEnrichModal } from './BulkEnrichModal';
 import { RunIntegrationMenu } from '../Integrations/RunIntegrationMenu';
+import { IntegrationResultModal } from '../Integrations/IntegrationResultModal';
 import { useIntegrations } from '../../hooks/useIntegrations';
+import { useIntegrationResult } from '../../hooks/useIntegrationResult';
 import { useToast } from '../../contexts/ToastContext';
 import { formatDate } from '../../lib/utils';
 import { EnrichmentLabels } from './EnrichmentLabels';
-import { TableVirtuoso } from 'react-virtuoso';
+import { TableVirtuoso, type TableComponents } from 'react-virtuoso';
+
+const IOC_TABLE_COMPONENTS: TableComponents<StandaloneIOC> = {
+  Table: (props) => <table {...props} className="w-full min-w-[640px] text-xs" aria-label="IOC list" />,
+  TableHead: forwardRef((props, ref) => <thead ref={ref} {...props} />),
+  TableRow: (props) => <tr {...props} className="border-b border-gray-800/50 group" />,
+  TableBody: forwardRef((props, ref) => <tbody ref={ref} {...props} />),
+};
 
 const STATUS_COLORS: Record<string, string> = IOC_STATUS_COLORS;
 const STATUS_LABELS: Record<string, string> = IOC_STATUS_LABELS;
@@ -72,6 +81,7 @@ export function StandaloneIOCList({
   onOpenSettings,
 }: StandaloneIOCListProps) {
   const { getInstallationsForIOCType, addRun } = useIntegrations();
+  const { resultRun, showResult, closeResult } = useIntegrationResult(currentFolderId);
   const { addToast } = useToast();
   const { t: tt } = useTranslation('toast');
   const [showForm, setShowForm] = useState(false);
@@ -520,12 +530,8 @@ export function StandaloneIOCList({
           <div className="overflow-x-auto" style={{ height: Math.min(600, 40 + filteredSortedIOCs.length * 40) }}>
             <TableVirtuoso
               data={filteredSortedIOCs}
-              components={{
-                Table: (props) => <table {...props} className="w-full min-w-[640px] text-xs" aria-label="IOC list" />,
-                TableHead: forwardRef((props, ref) => <thead ref={ref} {...props} />),
-                TableRow: (props) => <tr {...props} className="border-b border-gray-800/50 group" />,
-                TableBody: forwardRef((props, ref) => <tbody ref={ref} {...props} />),
-              }}
+              computeItemKey={(_index, ioc) => ioc.id}
+              components={IOC_TABLE_COMPONENTS}
               fixedHeaderContent={() => (
                 <tr className="border-b border-gray-800 bg-gray-900">
                   <th className="text-start text-gray-500 font-medium py-2 pe-1 w-8">
@@ -628,6 +634,7 @@ export function StandaloneIOCList({
                               investigation={currentFolderId ? { id: currentFolderId, name: currentFolderName || '' } : undefined}
                               matching={getInstallationsForIOCType(ioc.type)}
                               addRun={addRun}
+                              onShowResults={showResult}
                               onOpenSettings={onOpenSettings}
                             />
                             <button
@@ -674,6 +681,8 @@ export function StandaloneIOCList({
           </div>
         )}
       </div>
+
+      <IntegrationResultModal open={resultRun !== null} run={resultRun} onClose={closeResult} />
 
       <StandaloneIOCForm
         open={showForm}
