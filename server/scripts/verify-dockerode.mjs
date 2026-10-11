@@ -4,6 +4,7 @@ import Docker from 'dockerode';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { throwIfFailed } from '../../scripts/lib/cleanup-outcome.mjs';
+import { cleanupDockerodeFixture } from '../../scripts/lib/dockerode-fixture-cleanup.mjs';
 
 const image = process.env.TEST_SERVER_IMAGE;
 if (!image || !/^[a-zA-Z0-9][a-zA-Z0-9_.:/@-]+$/.test(image)) throw new Error('TEST_SERVER_IMAGE must be an already built local fixture image');
@@ -42,10 +43,8 @@ try {
   Docker.prototype.createContainer = originalCreate;
   for (const container of created) {
     try {
-      const details = await container.inspect();
-      assert.equal(details.Config.Labels['com.threatcaddy.acceptance'], label);
-      await container.remove({ force: true });
-    } catch (error) { if (error.statusCode !== 404) cleanupErrors.push(error); }
+      await cleanupDockerodeFixture(container, label);
+    } catch (error) { cleanupErrors.push(error); }
   }
 }
 throwIfFailed(operationFailure, cleanupErrors, 'Docker fixture verification and cleanup failed');
