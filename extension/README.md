@@ -105,11 +105,25 @@ npm ci
 npm run build            # Build both Chrome and Firefox → dist/chrome/, dist/firefox/
 npm run build:chrome     # Build Chrome only → dist/chrome/
 npm run build:firefox    # Build Firefox only → dist/firefox/
-npm run package:chrome   # Zip Chrome build → dist/threatcaddy-chrome.zip
-npm run package:firefox  # Zip Firefox build → dist/threatcaddy-firefox.zip
+npm run package:check    # Read-only source/build/release ZIP verification
+# After tests and disposable-browser qualification:
+npm run package:write    # Refresh both extension archives and root download aliases
 ```
 
 The build script reads the `BROWSER` environment variable (`chrome` or `firefox`) and copies the appropriate manifest and source files into `dist/<browser>/`.
+
+Both browser manifests and package metadata use version **1.1.2**. The popup reads
+its version from the installed manifest; translations only format that value.
+Release verification requires exactly 34 regular files, including all 21 locale
+catalogs, with source/build/archive parity. Unexpected files (even stale build
+files), links, duplicate ZIP entries and version mismatches fail verification.
+Archives are inspected without extracting members. Generated PNG encodings may
+vary by platform; only the three validated, correctly sized icons are exempt
+from archive byte equality (not a check of identical rendered pixels). Root
+`chrome.zip` and `firefox.zip` must still match
+their extension archives byte for byte. CI uses `package:check` and never repairs
+archives silently; `package:write` is an explicit local release step, not a
+browser-store publication.
 
 ## Privacy
 

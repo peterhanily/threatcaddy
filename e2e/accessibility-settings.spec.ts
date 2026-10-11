@@ -137,6 +137,77 @@ test('a real encrypted workspace starts with its saved RTL locale before unlock 
   expect(await readRows(page, ['notes'])).toEqual(encrypted);
 });
 
+test('filed Exec entity controls expose names and selection through real keyboard navigation', async ({ page, browserName }, testInfo) => {
+  const exec = catalog('en', 'exec');
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await goToApp(page);
+  const now = Date.now();
+  const folderId = 'filed-keyboard-case';
+  await seedRows(page, {
+    folders: [{ id: folderId, name: 'Fictional navigation case', order: 0, status: 'active', tags: [], createdAt: now, updatedAt: now }],
+    notes: [1, 2].map(index => ({ id: `filed-keyboard-note-${index}`, folderId, title: `Fictional filed note ${index}`,
+      content: 'Synthetic local content', tags: [], archived: false, trashed: false, pinned: false, createdAt: now, updatedAt: now })),
+    tasks: [{ id: 'filed-keyboard-task', folderId, title: 'Fictional filed task', description: '', status: 'todo', priority: 'medium',
+      order: 0, tags: [], archived: false, trashed: false, createdAt: now, updatedAt: now }],
+    whiteboards: [{ id: 'filed-keyboard-board', folderId, name: 'Fictional filed board', elements: '[]', appState: '{}',
+      order: 0, trashed: false, createdAt: now, updatedAt: now }],
+    standaloneIOCs: [{ id: 'filed-keyboard-ioc', folderId, type: 'domain', value: 'fixture.example', confidence: 'low',
+      tags: [], trashed: false, createdAt: now, updatedAt: now }],
+  });
+  const tables = ['folders', 'notes', 'tasks', 'whiteboards', 'standaloneIOCs'];
+  const saved = await readRows(page, tables);
+  await page.evaluate(() => {
+    sessionStorage.removeItem('tc-analyst-mode');
+    localStorage.setItem('threatcaddy-settings', JSON.stringify({ language: 'en', tiAutoExtractEnabled: false }));
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await page.getByRole('button', { name: /Fictional navigation case/ }).click();
+  const controls = [
+    { key: 'notes', count: 2, heading: 'Notes', content: 'Fictional filed note 1' },
+    { key: 'tasks', count: 1, heading: 'Tasks', content: 'Fictional filed task' },
+    { key: 'events', count: 0, heading: 'Events' },
+    { key: 'boards', count: 1, heading: 'Whiteboards', content: 'Fictional filed board' },
+    { key: 'iocs', count: 1, heading: 'IOCs', content: 'fixture.example' },
+  ].map(control => ({ ...control, name: `${exec[`investigations.${control.key}`]}: ${control.count}` }));
+  for (const control of controls) {
+    const button = page.getByRole('button', { name: control.name, exact: true, pressed: false });
+    await withinWidth(page, button);
+    await expect(button).toHaveAttribute('type', 'button');
+  }
+  // The clicked investigation card unmounts. Firefox continues after its old
+  // position and exits to browser chrome instead of wrapping to the top. Anchor
+  // on a preceding header control, then enter and traverse the bar with real keys.
+  const headerAnchor = page.getByRole('button', { name: exec['dashboard.switchToAnalyst'], exact: true });
+  await headerAnchor.focus();
+  await expect(headerAnchor).toBeFocused();
+  // macOS Safari includes buttons with Option-Tab.
+  const nextControl = browserName === 'webkit' && process.platform === 'darwin' ? 'Alt+Tab' : 'Tab';
+  const first = page.getByRole('button', { name: controls[0].name, exact: true });
+  const focusPath: Array<{ tag: string | undefined; name: string | null | undefined }> = [];
+  for (let step = 0; step < 10 && !await first.evaluate(element => element === document.activeElement); step++) {
+    await page.keyboard.press(nextControl);
+    focusPath.push(await page.evaluate(() => ({ tag: document.activeElement?.tagName,
+      name: document.activeElement?.getAttribute('aria-label') ?? document.activeElement?.textContent?.trim().slice(0, 100) })));
+  }
+  await testInfo.attach('filed-entity-keyboard-entry', { body: JSON.stringify(focusPath), contentType: 'application/json' });
+  await expect(first).toBeFocused();
+  for (const [index, control] of controls.entries()) {
+    if (index > 0) await page.keyboard.press(nextControl);
+    await expect(page.getByRole('button', { name: control.name, exact: true })).toBeFocused();
+    await page.keyboard.press(index % 2 ? 'Space' : 'Enter');
+    await expect(page.getByRole('heading', { name: control.heading, exact: true })).toBeVisible();
+    if (control.content) await expect(page.getByText(control.content, { exact: true })).toBeVisible();
+    for (const candidate of controls) {
+      await expect(page.getByRole('button', { name: candidate.name, exact: true, pressed: candidate.key === control.key })).toBeVisible();
+    }
+  }
+  await page.screenshot({ path: testInfo.outputPath('filed-exec-keyboard-navigation.png') });
+  expect(await readRows(page, tables)).toEqual(saved);
+  expect(errors).toEqual([]);
+});
+
 test('French Composer controls and validation preserve the exact analyst-authored text on save', async ({ page }) => {
   const products = catalog('fr', 'products');
   await goToApp(page);

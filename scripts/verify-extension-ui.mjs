@@ -36,6 +36,7 @@ await withClipRuntime(browser, async ({ runtime, root, check }) => {
   const popup = await runtime.newPage();
   await popup.goto(runtime.extensionOrigin + '/popup.html');
   const before = await popup.evaluate(async () => ({ permissions: await chrome.permissions.getAll(), language: chrome.i18n.getUILanguage() }));
+  const builtVersion = JSON.parse(await readFile(new URL(`../extension/dist/${browser}/manifest.json`, import.meta.url), 'utf8')).version;
   console.log('Requested and actual UI locale:', locale, before.language);
   const catalogFixture = locale === 'ar' && !before.language.toLowerCase().startsWith('ar');
   const mode = catalogFixture ? 'Arabic catalog-backed presentation fixture; native browser UI locale unchanged' : 'Native browser UI locale';
@@ -51,10 +52,15 @@ await withClipRuntime(browser, async ({ runtime, root, check }) => {
       controls: ['save-btn', 'options-toggle', 'settings-btn'].map(id => ({ id, height: document.getElementById(id).getBoundingClientRect().height })),
       names: ['capture-title', 'capture-text', 'ai-perm-toggle', 'url-perm-toggle'].map(id => document.getElementById(id).getAttribute('aria-label')),
       privacy: document.querySelector('[data-i18n="privacyText"]').textContent === chrome.i18n.getMessage('privacyText'),
+      version: chrome.runtime.getManifest().version,
+      versionText: document.querySelector('[data-runtime-version]').textContent,
+      expectedVersionText: chrome.i18n.getMessage('version', [chrome.runtime.getManifest().version]),
     }));
     assert.equal(layout.direction, expectedDirection); assert.equal(layout.language, effectiveLanguage.replaceAll('_', '-'));
     assert.equal(layout.overflow, false); assert.ok(layout.controls.every(control => control.height >= 44));
     assert.ok(layout.names.every(Boolean)); assert.equal(layout.privacy, true);
+    assert.equal(layout.version, builtVersion); assert.equal(layout.versionText, layout.expectedVersionText);
+    assert.ok(layout.versionText.includes(builtVersion));
   }
   check('Popup ' + mode + ', named controls, 44px targets and 320/390px bounds');
 

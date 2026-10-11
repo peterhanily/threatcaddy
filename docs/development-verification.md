@@ -16,12 +16,22 @@ is not covered by npm lockfile audits. See the official
 [24.18.1 security release](https://nodejs.org/en/blog/release/v24.18.1).
 Both Docker stages use the verified official 24.21.0 Alpine image digest.
 
+Start with [CONTRIBUTING.md](../CONTRIBUTING.md) for change scope and review,
+[SECURITY.md](../SECURITY.md) for vulnerability reporting, and
+[repository maintenance](repository-maintenance.md) for maintainer release checks.
+The root [`.env.example`](../.env.example) is for Docker Compose; the separate
+[`server/.env.example`](../server/.env.example) is for direct server execution.
+Do not copy real credentials into tests or commit either local `.env` file.
+
 ```sh
 pnpm install --frozen-lockfile
 npm --prefix server ci
 npm --prefix extension ci
 
 pnpm lint
+pnpm locales:check
+pnpm test:ci
+pnpm exec tsc -b
 pnpm test:run
 npm run test:server
 npm run test:extension
@@ -172,7 +182,8 @@ canceled in progress; superseded PR verification may be canceled, with manual
 and scheduled CI runs in separate concurrency groups.
 
 Run `pnpm test:ci` for parsed-workflow trust-boundary contracts, executable input
-and publication-gate checks, and isolated Git release-scope fixtures. These
+and publication-gate checks, isolated Git release-scope fixtures, and the
+documented sync/feed schema and blank environment-template contracts. These
 Node-owned tests have a separate required CI step; Vitest does not discover them.
 `actionlint` can additionally validate all workflow syntax and reusable wiring.
 
@@ -233,6 +244,16 @@ build. This replaces the glob-based single-file plugin. The narrow Excalidraw
 Sass override removes the other transitive `braces` dependency path; neither
 change suppresses an audit finding or bypasses the package-age policy. See
 [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm).
+
+Hosted and standalone builds also verify the versions of the math and locale
+modules actually emitted by Rollup. Package-relative provenance reports stay in
+`node_modules/.cache/threatcaddy/`, outside the published site. Browser acceptance
+checks real HTTP locale loading, regional RTL selection, Mermaid math rendering,
+whiteboard conversion/persistence, and PNG export. The converter currently keeps
+formula labels as literal TeX in the editable whiteboard and exported PNG; these
+checks preserve that existing behavior, not typeset-export support. The tested
+browser engines use native MathML; legacy non-MathML rendering needs separate
+qualification.
 
 ## Installed extension acceptance
 

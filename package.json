@@ -48,7 +48,7 @@
     "dompurify": "^3.4.16",
     "highlight.js": "^11.12.0",
     "i18next": "^26.4.2",
-    "i18next-http-backend": "^3.0.6",
+    "i18next-http-backend": "4.0.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.575.0",
     "marked": "^17.0.6",

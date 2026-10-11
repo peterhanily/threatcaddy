@@ -6,6 +6,8 @@ import { generateKeyPairSync, randomBytes } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { setTimeout as delay } from 'node:timers/promises';
+import { throwIfFailed } from './lib/cleanup-outcome.mjs';
+import { cleanupImageFixtures } from './lib/docker-fixture-cleanup.mjs';
 
 const image = process.env.TEST_SERVER_IMAGE;
 const isolated = process.env.TEST_ISOLATED_POSTGRES === '1';
@@ -63,6 +65,7 @@ let postgres;
 let serverOrigin = 'http://127.0.0.1:3001';
 const fixtureId = `threatcaddy-image-${randomBytes(8).toString('hex')}`;
 const labels = ['--label', `com.threatcaddy.acceptance=${fixtureId}`];
+console.log(`Disposable fixture label: com.threatcaddy.acceptance=${fixtureId}`);
 function refreshServerOrigin() {
   if (!isolated) return;
   const binding = docker(['port', container, '3001/tcp']);
@@ -128,13 +131,15 @@ async function assertReady(label, expectedInitializations) {
   throw new Error(`${label}: readiness timed out: ${lastFailure}`);
 }
 
+let operationFailure;
+const cleanupErrors = [];
 try {
   if (isolated) {
     network = docker(['network', 'create', ...labels, fixtureId]);
     Object.assign(process.env, { POSTGRES_USER: 'tc_test', POSTGRES_PASSWORD: randomBytes(24).toString('hex'), POSTGRES_DB: 'threatcaddy_test_image' });
     postgres = docker(['run', '--detach', ...labels, '--network', network, '--network-alias', 'fixture-db',
       '--tmpfs', '/var/lib/postgresql/data:rw',
-      ...['POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_DB'].flatMap(name => ['--env', name]), 'postgres:17-alpine']);
+      ...['POSTGRES_USER', 'POSTGRES_PASSWORD', 'POSTGRES_DB'].flatMap(name => ['--env', name]), 'postgres:17.9-alpine']);
     databaseUrl = `postgres://tc_test:${process.env.POSTGRES_PASSWORD}@fixture-db:5432/threatcaddy_test_image`;
     process.env.DATABASE_URL = databaseUrl;
     let ready = false;
@@ -172,12 +177,15 @@ try {
   docker(['start', container]);
   refreshServerOrigin();
   await assertReady('Image restart after migration', 2);
-  console.log(`Verified image ${imageId}`);
+  console.log(`Image lifecycle checks passed for ${imageId}; cleanup still required`);
 } catch (error) {
-  if (container) console.error(docker(['logs', '--tail', '200', container], { allowFailure: true }));
-  throw error;
+  operationFailure = { error };
+  if (container) {
+    try { console.error(docker(['logs', '--tail', '200', container])); }
+    catch (logError) { cleanupErrors.push(logError); }
+  }
 } finally {
-  if (container) docker(['rm', '--force', container], { allowFailure: true });
-  if (postgres) docker(['rm', '--force', postgres], { allowFailure: true });
-  if (network) docker(['network', 'rm', network], { allowFailure: true });
+  cleanupErrors.push(...cleanupImageFixtures(docker, { container, postgres, network }));
 }
+throwIfFailed(operationFailure, cleanupErrors, 'Image acceptance and cleanup failed');
+console.log('Image acceptance and fixture cleanup passed');

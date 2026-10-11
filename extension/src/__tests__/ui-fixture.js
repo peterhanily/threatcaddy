@@ -12,5 +12,7 @@ export function englishMessage(key, values = []) {
   });
 }
 export function loadUI(context) {
+  context.chrome.runtime ??= {};
+  context.chrome.runtime.getManifest ??= () => JSON.parse(readFileSync(resolve(import.meta.dirname, '../manifest.json'), 'utf8'));
   new Script(readFileSync(resolve(import.meta.dirname, '../ui.js'), 'utf8')).runInContext(context);
 }

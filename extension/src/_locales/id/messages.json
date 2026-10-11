@@ -6,7 +6,10 @@
     "message": "Tangkap konten web dengan cepat dan proksi permintaan AI untuk intelijen ancaman ThreatCaddy. Data tetap lokal di perangkat Anda secara default."
   },
   "version": {
-    "message": "v1.1.1"
+    "message": "v$VERSION$",
+    "placeholders": {
+      "version": { "content": "$1" }
+    }
   },
   "quickStats": {
     "message": "Statistik Cepat"

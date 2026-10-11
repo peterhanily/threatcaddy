@@ -44,18 +44,21 @@ Most investigation tools lock your data in a cloud you don't control, cost per s
 
 **Self-host the client:**
 
+Use Node **24.21.0** and pnpm **10.29.1** (npm **11.19.0** for the server and extension). See [development and verification](docs/development-verification.md) for the complete setup and checks.
+
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev          # Dev server at localhost:5173
 ```
 
 **Deploy a team server:**
 
 ```bash
-cd server
-cp .env.example .env   # Configure JWT keys and optional LLM API keys
+cp .env.example .env   # From the repository root; fill the required values first
 docker compose up -d   # Starts Hono server + PostgreSQL
 ```
+
+Set `POSTGRES_PASSWORD`, a stable `BOT_MASTER_KEY`, the Ed25519 `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` pair, and an exact `ALLOWED_ORIGINS` list before starting. Compose derives `DATABASE_URL`; direct server execution uses [server/.env.example](server/.env.example) instead. Preserve encryption keys across restarts and restores. Follow the [deployment guide](docs/deployment.md) for key generation, TLS and first-admin setup.
 
 ---
 
@@ -281,13 +284,17 @@ To send clips to an offline `file://` build, enable **"Allow access to file URLs
 ## Development
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev              # Dev server at localhost:5173
 pnpm test:run         # Run test suite
 pnpm test:coverage    # Tests with coverage report
-pnpm lint             # ESLint
-pnpm tsc -b           # Type check
+pnpm lint             # ESLint and checked warning baseline
+pnpm locales:check    # Translation keys, parameters and plural forms
+pnpm test:ci          # Repository/build/documentation contracts
+pnpm exec tsc -b      # Type check
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the [verification guide](docs/development-verification.md) for server, extension, browser and PostgreSQL checks. Report suspected vulnerabilities through [SECURITY.md](SECURITY.md), not a public issue containing sensitive details.
 
 ## Build
 
@@ -310,17 +317,18 @@ pnpm build:extension   # Builds Chrome + Firefox → extension/dist/
 
 ### Client (GitHub Pages)
 
-Push to `main` — GitHub Actions builds and deploys to `threatcaddy.com`.
+The Pages workflow verifies the client and publishes its built artifact to `threatcaddy.com`. A failed acceptance gate prevents publication. See [deployment](docs/deployment.md) and [repository maintenance](docs/repository-maintenance.md) for release responsibilities.
 
 ### Team Server (Docker)
 
 ```bash
-cd server
-cp .env.example .env   # Set JWT_PRIVATE_KEY, JWT_PUBLIC_KEY (Ed25519)
+cp .env.example .env   # Repository root; fill all required values as above
 docker compose up -d   # Starts Hono server + PostgreSQL
 ```
 
 Optionally add `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, or `MISTRAL_API_KEY` to `.env` for server-side LLM proxying.
+
+Publishing a GHCR image does **not** roll out a running team server. Coordinate client/server upgrades, retain a verified database-and-files backup, and follow [runtime operations](server/docs/runtime-operations.md) and [sync recovery](server/docs/sync-recovery.md) for restore and rollback. Current changes are summarized in the [changelog](CHANGELOG.md).
 
 ## Privacy
 

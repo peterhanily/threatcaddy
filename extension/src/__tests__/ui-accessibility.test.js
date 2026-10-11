@@ -13,7 +13,7 @@ function harness(script = 'pages/clips.js', language = 'en', captures = [{ id: '
   const hook = () => ({ addListener: vi.fn(), removeListener: vi.fn() });
   const chrome = {
     i18n: { getUILanguage: () => language, getMessage: (key, args) => key === '@@bidi_dir' ? '' : englishMessage(key, args) },
-    runtime: { sendMessage: vi.fn().mockResolvedValue({ success: false, error: 'Synthetic refusal; draft retained.' }) },
+    runtime: { getManifest: () => ({ version: '7.8.9' }), sendMessage: vi.fn().mockResolvedValue({ success: false, error: 'Synthetic refusal; draft retained.' }) },
     storage: { local: { get: vi.fn(async () => structuredClone(storage)) }, onChanged: hook() },
     permissions: { contains: vi.fn((_value, callback) => { callback?.(false); return Promise.resolve(false); }),
       request: vi.fn(), remove: vi.fn(), onAdded: hook(), onRemoved: hook() },
@@ -29,6 +29,15 @@ function harness(script = 'pages/clips.js', language = 'en', captures = [{ id: '
 }
 
 describe('extension language and accessible controls', () => {
+  it.each(['manifest.json', 'manifest.firefox.json'])('displays the installed version from %s, not a catalog constant', manifestName => {
+    const h = harness('popup.js');
+    const manifest = JSON.parse(readFileSync(resolve(import.meta.dirname, '..', manifestName), 'utf8'));
+    h.chrome.runtime.getManifest = () => manifest;
+    h.context.TC_UI.localize();
+    expect(document.querySelector('[data-runtime-version]').textContent).toBe(englishMessage('version', [manifest.version]));
+    expect(document.querySelector('[data-runtime-version]').textContent).toContain(manifest.version);
+  });
+
   it.each([['en', 'ltr'], ['ar', 'rtl'], ['fa-IR', 'rtl'], ['he', 'rtl'], ['pt_BR', 'ltr']])('sets document language/direction for %s', async (language, direction) => {
     const h = harness('pages/clips.js', language);
     await vi.waitFor(() => expect(h.get('captures-list').querySelector('.capture-card')).not.toBeNull());
@@ -41,6 +50,7 @@ describe('extension language and accessible controls', () => {
 
   it('names popup controls, exposes options state and restores focus after Settings', () => {
     const h = harness('popup.js');
+    expect(document.querySelector('[data-runtime-version]').textContent).toBe('v7.8.9');
     for (const id of ['capture-title', 'capture-text', 'settings-btn', 'settings-back', 'settings-target-url', 'ai-perm-toggle', 'url-perm-toggle', 'settings-ai-toggle', 'settings-url-toggle']) {
       expect(h.get(id).getAttribute('aria-label')).toBeTruthy();
     }

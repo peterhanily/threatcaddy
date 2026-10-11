@@ -27,6 +27,28 @@ const pagesPermission = { contents: 'read', pages: 'write', 'id-token': 'write' 
 const pagesCallerPermission = { contents: 'read', actions: 'read', pages: 'write', 'id-token': 'write' };
 const serverPermission = { contents: 'read', packages: 'write' };
 
+test('required client checks validate every locale without report-only or narrowed coverage', () => {
+  const localeSteps = stepsOf(verify.jobs['client-checks']).filter(step => step.run === 'pnpm locales:check');
+  assert.equal(localeSteps.length, 1);
+  assert.equal(localeSteps[0].if, undefined);
+  assert.equal(localeSteps[0]['continue-on-error'], undefined);
+  assert.equal(verify.jobs['client-checks']['continue-on-error'], undefined);
+  assert.equal(JSON.parse(read('package.json')).scripts['locales:check'], 'node scripts/check-locales.mjs');
+  assert.ok(verify.jobs.gate.needs.includes('client-checks'));
+});
+
+test('extension verification checks committed downloads without rewriting or extracting them', () => {
+  const step = stepsOf(verify.jobs.extension).find(candidate => candidate.name === 'Build extension and verify committed packages');
+  assert.ok(step);
+  assert.equal(step['working-directory'], 'extension');
+  assert.match(step.run, /npm run build/);
+  assert.match(step.run, /node \.\.\/scripts\/verify-extension-packages\.mjs --check/);
+  assert.doesNotMatch(step.run, /--write|package:(?:chrome|firefox)|unzip\s+-[a-z]*[ox]/);
+  assert.equal(step.if, undefined);
+  assert.equal(step['continue-on-error'], undefined);
+  assert.ok(verify.jobs.gate.needs.includes('extension'));
+});
+
 test('only CI automatically verifies main pushes; PR, schedule and manual CI stay available', () => {
   const automatic = Object.entries(workflows).filter(([, workflow]) => Object.hasOwn(workflow.on, 'push'));
   assert.deepEqual(automatic.map(([name]) => name), ['ci.yml']);

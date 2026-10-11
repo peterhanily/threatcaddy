@@ -6,7 +6,10 @@
     "message": "Швидке захоплення веб-вмісту та проксування AI-запитів для ThreatCaddy. Дані за замовчуванням залишаються на вашому пристрої."
   },
   "version": {
-    "message": "v1.1.1"
+    "message": "v$VERSION$",
+    "placeholders": {
+      "version": { "content": "$1" }
+    }
   },
   "quickStats": {
     "message": "Швидка статистика"

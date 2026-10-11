@@ -6,7 +6,10 @@
     "message": "التقاط سريع لمحتوى الويب وتوجيه طلبات الذكاء الاصطناعي لـ ThreatCaddy لاستخبارات التهديدات. تبقى البيانات محلية على جهازك افتراضيًا."
   },
   "version": {
-    "message": "v1.1.1"
+    "message": "v$VERSION$",
+    "placeholders": {
+      "version": { "content": "$1" }
+    }
   },
   "quickStats": {
     "message": "إحصاءات سريعة"

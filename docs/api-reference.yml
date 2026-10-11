@@ -634,6 +634,11 @@ paths:
       operationId: syncPush
       tags: [sync]
       summary: Push local changes to server
+      description: >-
+        Requires a current active admin or analyst account. Existing rows use an
+        exact clientVersion baseline (compare-and-swap), not last-writer-wins.
+        Each table/entityId pair must occur at most once in a batch. Membership,
+        source/destination scope and history generation are checked transactionally.
       requestBody:
         required: true
         content:
@@ -641,11 +646,16 @@ paths:
             schema:
               type: object
               properties:
+                generation:
+                  type: string
+                  format: uuid
+                  description: Server history generation obtained from cursor pull.
                 changes:
                   type: array
+                  maxItems: 500
                   items:
                     $ref: "#/components/schemas/SyncChange"
-              required: [changes]
+              required: [generation, changes]
       responses:
         "200":
           description: Push results
@@ -659,18 +669,55 @@ paths:
                     items:
                       $ref: "#/components/schemas/SyncResult"
                 required: [results]
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/SyncCursorReset"
 
   /api/sync/pull:
     get:
       operationId: syncPull
       tags: [sync]
       summary: Pull remote changes
+      description: >-
+        Prefer cursor paging. Cursors are decimal strings and are scoped to a
+        server history generation. Visibility and the page watermark are read
+        consistently; deleted or moved-out rows can be minimal tombstones.
+        Supplying since without cursor selects the legacy full visible resync,
+        not an incremental timestamp cutoff. Either cursor or a nonempty since
+        is required.
       parameters:
+        - name: cursor
+          in: query
+          description: Ordered change cursor; use "0" for the first page. Maximum 9223372036854775807.
+          schema:
+            type: string
+            pattern: '^(0|[1-9][0-9]{0,18})$'
+        - name: generation
+          in: query
+          description: >-
+            Expected history generation for cursor paging. Omit only when
+            discovering the initial generation; retain the returned value for
+            subsequent pulls and pushes.
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          description: Maximum change count per cursor page; byte budgeting can return fewer.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 200
         - name: since
           in: query
-          description: ISO 8601 timestamp to pull changes since
+          deprecated: true
+          description: Legacy compatibility selector; ignored as an incremental cutoff. Used only without cursor.
           schema:
             type: string
             format: date-time
@@ -680,19 +727,26 @@ paths:
             type: string
         - name: metadataOnly
           in: query
+          description: Omits selected heavy fields, not all sensitive content.
           schema:
             type: boolean
       responses:
         "200":
-          description: Changes since the given timestamp
+          description: Cursor page, or legacy full visible resync when since is supplied without cursor.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/SyncChange"
+                oneOf:
+                  - $ref: "#/components/schemas/SyncPullPage"
+                  - $ref: "#/components/schemas/LegacySyncPull"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/SyncCursorReset"
 
   /api/sync/snapshot/{folderId}:
     get:
@@ -1505,6 +1559,7 @@ paths:
       tags: [caddyshack]
       summary: Get social feed
       parameters:
+        - $ref: "#/components/parameters/ReactionProjection"
         - name: cursor
           in: query
           schema:
@@ -1558,8 +1613,32 @@ paths:
       operationId: getPost
       tags: [caddyshack]
       summary: Get a post with replies
+      description: >-
+        Omit replies and reactions to retain the legacy full-reply/full-reactor
+        response. replies=page opts into keyset pagination, and reactions=summary
+        opts into viewer-only reaction identities. Access is checked on every
+        request; page totals can change as replies are added or removed.
       parameters:
         - $ref: "#/components/parameters/PostId"
+        - $ref: "#/components/parameters/ReactionProjection"
+        - name: replies
+          in: query
+          schema:
+            type: string
+            enum: [page]
+        - name: limit
+          in: query
+          description: With replies=page, requested page size; values above 50 are clamped to 50.
+          schema:
+            type: integer
+            minimum: 1
+            default: 50
+        - name: cursor
+          in: query
+          description: Opaque nextCursor from this post's previous reply page; only with replies=page.
+          schema:
+            type: string
+            maxLength: 1024
       responses:
         "200":
           description: Post with replies
@@ -1567,6 +1646,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Post"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -1893,6 +1974,16 @@ components:
 
   # ─── Reusable Parameters ────────────────────────────────────────────
   parameters:
+    ReactionProjection:
+      name: reactions
+      in: query
+      description: >-
+        Optional viewer-only projection. With summary, each emoji retains its
+        total count, but userIds contains only the current viewer when they
+        reacted. Omit to retain the legacy full userIds list.
+      schema:
+        type: string
+        enum: [summary]
     UserId:
       name: id
       in: path
@@ -1920,6 +2011,22 @@ components:
 
   # ─── Reusable Responses ─────────────────────────────────────────────
   responses:
+    SyncCursorReset:
+      description: History generation changed or cursor is ahead of the server; explicit recovery is required.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: string
+                const: SYNC_CURSOR_RESET
+              resetRequired:
+                type: boolean
+                const: true
+            required: [error, code, resetRequired]
     BadRequest:
       description: Invalid request body or parameters
       content:
@@ -2415,16 +2522,84 @@ components:
       properties:
         table:
           type: string
+          enum: [notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads, evidenceItems]
         op:
           type: string
           enum: [put, delete]
         entityId:
           type: string
+          minLength: 1
+          maxLength: 128
         data:
           type: object
+          description: Required for put. Server-managed identity, provenance, version and lifecycle fields are not accepted as client authority.
         clientVersion:
           type: integer
+          minimum: 0
+          maximum: 2147483646
+          description: Must equal the current version for an existing entity; new puts accept an absent or zero baseline.
       required: [table, op, entityId]
+      allOf:
+        - if:
+            properties:
+              op:
+                const: put
+          then:
+            required: [data]
+
+    SyncRemoteChange:
+      type: object
+      description: >-
+        A flat remote row with table and op, not the nested data shape used for
+        push. Put rows include entity fields (or metadata only when requested).
+        Delete rows contain only identity/version metadata.
+      properties:
+        table:
+          type: string
+        op:
+          type: string
+          enum: [put, delete]
+        id:
+          type: string
+        version:
+          type: integer
+      required: [table, op, id]
+      additionalProperties: true
+
+    SyncPullPage:
+      type: object
+      properties:
+        changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncRemoteChange"
+        cursor:
+          type: string
+          pattern: '^(0|[1-9][0-9]{0,18})$'
+        generation:
+          type: string
+          format: uuid
+        hasMore:
+          type: boolean
+        serverTimestamp:
+          type: string
+          format: date-time
+      required: [changes, cursor, generation, hasMore, serverTimestamp]
+
+    LegacySyncPull:
+      type: object
+      description: Legacy full visible resync selected by since without cursor.
+      properties:
+        changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncRemoteChange"
+        serverTimestamp:
+          type: string
+          format: date-time
+      required: [changes, serverTimestamp]
+      not:
+        required: [cursor]
 
     SyncResult:
       type: object
@@ -2809,6 +2984,16 @@ components:
                 type: array
                 items:
                   type: string
+              reactedByMe:
+                type: boolean
+                description: Present with reactions=summary.
+              userIdsScope:
+                type: string
+                enum: [viewer]
+                description: Present with reactions=summary; userIds is not a list of all reactors.
+              userIdsComplete:
+                type: boolean
+                description: In summary mode, true only when the total count equals the returned viewer-only list length.
             required: [count, userIds]
           description: "Record keyed by emoji string, e.g. { \"thumbsup\": { count: 2, userIds: [...] } }"
         replyCount:
@@ -2817,6 +3002,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Post"
+        replyPage:
+          $ref: "#/components/schemas/ReplyPage"
+        replyToAuthorName:
+          type: string
+          description: Display name of the currently visible reply target, when available.
         createdAt:
           type: string
           format: date-time
@@ -2824,6 +3014,24 @@ components:
           type: string
           format: date-time
       required: [id, authorId, content, createdAt]
+
+    ReplyPage:
+      type: object
+      description: Present only with replies=page; a bounded row page, not a frozen snapshot or response-byte limit.
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 50
+        hasMore:
+          type: boolean
+        nextCursor:
+          type: [string, "null"]
+          description: Opaque cursor for this post; null when there is no next page.
+      required: [total, limit, hasMore, nextCursor]
 
     CreatePostRequest:
       type: object

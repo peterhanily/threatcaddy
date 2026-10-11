@@ -14,7 +14,8 @@ globalThis.TC_UI = (() => {
       ['data-i18n-title', 'title'], ['data-i18n-label', 'aria-label'],
     ]) {
       document.querySelectorAll(`[${attribute}]`).forEach(element => {
-        const message = chrome.i18n.getMessage(element.getAttribute(attribute));
+        const substitutions = element.hasAttribute('data-runtime-version') ? [chrome.runtime.getManifest().version] : [];
+        const message = chrome.i18n.getMessage(element.getAttribute(attribute), substitutions);
         if (!message) return;
         if (destination) element.setAttribute(destination, message);
         else element.textContent = message;

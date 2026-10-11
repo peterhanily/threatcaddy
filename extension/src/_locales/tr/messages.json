@@ -6,7 +6,10 @@
     "message": "ThreatCaddy tehdit istihbaratı için web içeriğini hızlıca yakala ve AI isteklerini proxy et. Veriler varsayılan olarak cihazınızda yerel kalır."
   },
   "version": {
-    "message": "v1.1.1"
+    "message": "v$VERSION$",
+    "placeholders": {
+      "version": { "content": "$1" }
+    }
   },
   "quickStats": {
     "message": "Hızlı İstatistikler"

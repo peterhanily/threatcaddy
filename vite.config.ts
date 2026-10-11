@@ -6,6 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { applyDeploymentPolicy, type DeploymentPolicy } from './src/lib/deployment-policy'
 import { startupBudget } from './build/startup-budget'
+import { dependencyProvenance } from './build/dependency-provenance'
 
 function deploymentPolicy(policy: DeploymentPolicy): Plugin {
   return {
@@ -46,6 +47,7 @@ export default defineConfig(({ mode }) => {
     tailwindcss(),
     deploymentPolicy({ analyticsToken: env.VITE_CF_ANALYTICS_TOKEN, connectOrigins: env.VITE_CONNECT_ORIGINS }),
     startupBudget(),
+    dependencyProvenance('hosted'),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: false,

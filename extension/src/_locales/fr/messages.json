@@ -6,7 +6,10 @@
     "message": "Capturez rapidement du contenu web et proxytez les requêtes IA pour ThreatCaddy Threat Intelligence. Les données restent localement sur votre appareil par défaut."
   },
   "version": {
-    "message": "v1.1.1"
+    "message": "v$VERSION$",
+    "placeholders": {
+      "version": { "content": "$1" }
+    }
   },
   "quickStats": {
     "message": "Statistiques rapides"
