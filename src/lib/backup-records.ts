@@ -246,9 +246,14 @@ export function validatePortableTables(value: unknown, options: { allowLegacyDef
   }
 }
 
-export function assertBackupSize(json: string): void {
-  if (json.length > MAX_BACKUP_BYTES || new TextEncoder().encode(json).byteLength > MAX_BACKUP_BYTES) {
-    throw new Error('Backup file too large (maximum 50 MiB). Keep the original data and split the backup.');
+/** Callers may impose a smaller budget, but cannot raise the portable-file cap. */
+export function assertBackupSize(json: string, maxBytes = MAX_BACKUP_BYTES): void {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || maxBytes > MAX_BACKUP_BYTES) {
+    throw new Error('Invalid backup file size limit.');
+  }
+  if (json.length > maxBytes || new TextEncoder().encode(json).byteLength > maxBytes) {
+    const limit = maxBytes === MAX_BACKUP_BYTES ? '50 MiB' : `${maxBytes} bytes`;
+    throw new Error(`Backup file too large (maximum ${limit}). Keep the original data and split the backup.`);
   }
 }
 

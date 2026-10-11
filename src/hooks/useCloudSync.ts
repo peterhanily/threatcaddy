@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { exportJSON, exportEncryptedJSON } from '../lib/export';
+import { assertBackupSize } from '../lib/backup-records';
 import type { Note, ExportData, BackupDestination } from '../types';
 import {
   buildNoteEnvelope,
@@ -81,6 +82,9 @@ export function useCloudSync(backupDestinations?: BackupDestination[]) {
         data = JSON.stringify(envelope, null, 2);
       }
 
+      // Validate the final file (including the plaintext cloud envelope) against
+      // the importer's limit before starting per-destination upload attempts.
+      assertBackupSize(data);
       const results = await multiCloudPut(dests, objectKey, data, 'application/json', setProgress);
       setLastResults(results);
 

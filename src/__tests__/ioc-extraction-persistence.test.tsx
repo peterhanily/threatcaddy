@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, renderHook } from '@testing-library/react';
 import { db } from '../db';
 import { useAutoIOCExtraction } from '../hooks/useAutoIOCExtraction';
 import { extractIOCs } from '../lib/ioc-extractor';
@@ -12,8 +12,18 @@ const makeNote = (content: string, iocAnalysis?: IOCAnalysis): Note => ({
   tags: [], pinned: false, archived: false, trashed: false,
 });
 
-beforeEach(async () => { disableSync(); await db.notes.clear(); });
-afterEach(() => vi.restoreAllMocks());
+beforeEach(async () => {
+  disableSync();
+  await db.notes.clear();
+  // Control the extraction deadline only. IndexedDB's setImmediate task queue
+  // stays real, so an awaited write cannot accidentally consume the debounce.
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+});
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 describe('debounced extraction persists exact source results', () => {
   it('persists the final equal-length middle edit while retaining unrelated analyst annotations and dismissals', async () => {
@@ -38,14 +48,18 @@ describe('debounced extraction persists exact source results', () => {
     expect(latest.slice(0, 200)).toBe(initial.slice(0, 200));
     expect(latest.slice(-200)).toBe(initial.slice(-200));
     view.rerender({ content: intermediate });
+    act(() => vi.advanceTimersByTime(20));
     await db.notes.update('ioc-cache-note', { content: latest });
     view.rerender({ content: latest });
-    await waitFor(async () => {
-      const saved = await db.notes.get('ioc-cache-note');
-      expect(saved?.iocAnalysis?.iocs.map(item => item.value)).toEqual(['192.0.2.1', '192.0.2.4']);
+    act(() => vi.advanceTimersByTime(24));
+    expect(update).not.toHaveBeenCalled();
+    await act(async () => {
+      vi.advanceTimersByTime(1);
+      await Promise.all(update.mock.results.map(result => result.value));
     });
     expect(update).toHaveBeenCalledTimes(1);
     const saved = await db.notes.get('ioc-cache-note');
+    expect(saved?.iocAnalysis?.iocs.map(item => item.value)).toEqual(['192.0.2.1', '192.0.2.4']);
     expect(saved?.content).toBe(latest);
     expect(saved?.iocAnalysis?.analysisSummary).toBe('Analyst summary retained');
     expect(saved?.iocAnalysis?.iocs.find(item => item.value === '192.0.2.1')).toMatchObject({
@@ -69,8 +83,43 @@ describe('debounced extraction persists exact source results', () => {
       enabledTypes: [], debounceMs: 1,
     }), { initialProps: { content: `${content} ` } });
     view.rerender({ content });
-    await waitFor(async () => expect((await db.notes.get('ioc-cache-note'))?.iocAnalysis?.iocs).toEqual([]));
+    await act(async () => {
+      vi.advanceTimersByTime(1);
+      await Promise.all(update.mock.results.map(result => result.value));
+    });
+    expect((await db.notes.get('ioc-cache-note'))?.iocAnalysis?.iocs).toEqual([]);
     expect(update).toHaveBeenCalledTimes(1);
     expect(extractIOCs(content, {})).toHaveLength(2);
+  });
+
+  it('persists both distinct edits when each debounce interval deliberately elapses', async () => {
+    const initial = source('192.0.2.2');
+    const intermediate = source('192.0.2.3');
+    const latest = source('192.0.2.4');
+    await db.notes.add(makeNote(initial));
+    const update = vi.fn(async (id: string, changes: { iocAnalysis: IOCAnalysis; iocTypes: IOCType[] }) => {
+      const count = await db.notes.update(id, changes);
+      if (count !== 1) throw new Error('Synthetic note is missing');
+    });
+    const view = renderHook(({ content }) => useAutoIOCExtraction({
+      entityId: 'ioc-cache-note', content, existingAnalysis: undefined, onUpdate: update, debounceMs: 25,
+    }), { initialProps: { content: initial } });
+
+    for (const content of [intermediate, latest]) {
+      await db.notes.update('ioc-cache-note', { content });
+      view.rerender({ content });
+      await act(async () => {
+        vi.advanceTimersByTime(25);
+        await Promise.all(update.mock.results.map(result => result.value));
+      });
+      const saved = await db.notes.get('ioc-cache-note');
+      expect(saved?.content).toBe(content);
+      expect(saved?.iocAnalysis?.iocs.map(item => item.value)).toEqual(extractIOCs(content).map(item => item.value));
+    }
+    expect(update).toHaveBeenCalledTimes(2);
+    expect(update.mock.calls.map(call => call[1].iocAnalysis.iocs.map(item => item.value))).toEqual([
+      ['192.0.2.1', '192.0.2.3'], ['192.0.2.1', '192.0.2.4'],
+    ]);
+    expect(view.result.current.error).toBeNull();
   });
 });

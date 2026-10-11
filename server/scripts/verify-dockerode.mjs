@@ -10,6 +10,7 @@ if (!image || !/^[a-zA-Z0-9][a-zA-Z0-9_.:/@-]+$/.test(image)) throw new Error('T
 const docker = new Docker();
 await docker.getImage(image).inspect(); // Fail rather than pulling an arbitrary image.
 const label = `threatcaddy-dockerode-${randomUUID()}`;
+console.log(`Disposable fixture label: com.threatcaddy.acceptance=${label}`);
 const originalCreate = Docker.prototype.createContainer;
 const created = [];
 Docker.prototype.createContainer = async function (options) {
