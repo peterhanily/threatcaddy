@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { goToApp, getSidebar, createInvestigation, navigateToView } from './fixtures';
+import { goToApp, getSidebar, createInvestigation, navigateToView, dismissInitialOverlays } from './fixtures';
+import { readRows } from './client-lifecycle-fixtures';
 
 test.describe('Authentication & local-first access', () => {
   // Each Playwright test gets a fresh browser context by default —
@@ -59,13 +60,17 @@ test.describe('Authentication & local-first access', () => {
     await navigateToView(page, 'Investigations');
     const main = page.locator('#main-content');
     await expect(main.getByText('Persistence Test').first()).toBeVisible({ timeout: 5_000 });
+    const storedFolders = (await readRows(page, ['folders'])).folders;
+    expect(storedFolders.filter(folder => folder.name === 'Persistence Test')).toHaveLength(1);
 
-    // Reload the page
+    // Reload once, then wait for this document. A second navigation here can
+    // abort its lazy imports before the persistence assertions run.
     await page.reload();
-    await goToApp(page);
+    await dismissInitialOverlays(page);
 
     // The investigation should still be there (IndexedDB persists)
     await navigateToView(page, 'Investigations');
     await expect(main.getByText('Persistence Test').first()).toBeVisible({ timeout: 10_000 });
+    expect((await readRows(page, ['folders'])).folders).toEqual(storedFolders);
   });
 });
