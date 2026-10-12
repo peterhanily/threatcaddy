@@ -1,5 +1,7 @@
 // Real installed-browser adapters for synthetic, loopback-only clip acceptance.
-// These never use a user's profile or request notification permission.
+// These never use a user's profile. The adapters scope loopback permission setup
+// to disposable profiles; an explicit suite may test notification permission APIs,
+// which does not qualify native permission prompts or OS notification delivery.
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
@@ -8,6 +10,8 @@ import { tmpdir } from 'node:os';
 import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { cleanupNativeFixtures } from './lib/native-fixture-cleanup.mjs';
+import { throwIfFailed } from './lib/cleanup-outcome.mjs';
 
 const require = createRequire(new URL('../package.json', import.meta.url));
 const { chromium } = require('@playwright/test');
@@ -134,7 +138,10 @@ async function chromeRuntime(root, proxy, { grantLoopback = true, locale = 'en-U
       pages: async () => context.pages().map(chromePage),
       close: () => context.close(),
     };
-  } catch (error) { await context.close(); throw error; }
+  } catch (error) {
+    const { errors } = await cleanupNativeFixtures({ runtime: context });
+    throwIfFailed({ error }, errors, 'Chrome setup and cleanup failed');
+  }
 }
 
 async function firefoxRuntime(root, proxy, { locale = 'en-US' } = {}) {
@@ -279,23 +286,26 @@ async function firefoxRuntime(root, proxy, { locale = 'en-US' } = {}) {
 }
 
 export async function withClipRuntime(browserName, suite, options = {}) {
+  assert.ok(['chrome', 'firefox'].includes(browserName));
   const root = await mkdtemp(join(tmpdir(), `threatcaddy-clip-${browserName}-`));
   const result = { browser: browserName, status: 'incomplete', checks: [], error: null };
   console.log('Task-owned profile and evidence:', root);
-  const proxy = await deniedEgress();
-  const app = await appOrigin();
-  // A distinct origin cannot be replaced by the app PWA's navigation fallback.
-  const unavailable = await appOrigin(true);
-  let runtime;
+  let proxy, app, unavailable, runtime;
+  let operationFailure;
+  const cleanupErrors = [];
   const check = label => { result.checks.push(label); console.log('PASS:', label); };
   try {
+    proxy = await deniedEgress();
+    app = await appOrigin();
+    // A distinct origin cannot be replaced by the app PWA's navigation fallback.
+    unavailable = await appOrigin(true);
     runtime = browserName === 'chrome' ? await chromeRuntime(root, proxy, options) : await firefoxRuntime(root, proxy, options);
     result.version = runtime.version;
     result.origin = app.origin;
     await suite({ runtime, origin: app.origin, unavailableOrigin: unavailable.origin, root, check });
-    result.status = 'passed';
   } catch (error) {
-    result.status = 'failed'; result.error = error.stack ?? String(error);
+    operationFailure = { error };
+    result.error = error?.stack ?? String(error);
     if (runtime) {
       const pages = await runtime.pages().catch(() => []);
       result.failurePages = [];
@@ -307,14 +317,21 @@ export async function withClipRuntime(browserName, suite, options = {}) {
         result.failurePages.push({ url, screenshot: path });
       }
     }
-    throw error;
   } finally {
-    await runtime?.close().catch(error => { result.cleanupError = String(error); });
-    await app.close();
-    await unavailable.close();
-    await proxy.close();
-    result.blockedExternalRequests = proxy.denied;
-    await writeFile(join(root, 'results.json'), JSON.stringify(result, null, 2));
-    console.log('Evidence:', join(root, 'results.json'));
+    const cleanup = await cleanupNativeFixtures({ runtime, app, unavailable, proxy });
+    cleanupErrors.push(...cleanup.errors);
+    if (cleanup.failures.length > 0) result.cleanupErrors = cleanup.failures;
+    result.status = operationFailure || cleanupErrors.length > 0 ? 'failed' : 'passed';
+    result.blockedExternalRequests = proxy?.denied ?? [];
+    try {
+      await writeFile(join(root, 'results.json'), JSON.stringify(result, null, 2));
+      console.log('Evidence:', join(root, 'results.json'));
+    } catch (error) {
+      cleanupErrors.push(error);
+      result.status = 'failed';
+      result.evidenceError = error?.stack ?? String(error);
+      console.error('Could not persist native acceptance evidence:', JSON.stringify(result));
+    }
   }
+  throwIfFailed(operationFailure, cleanupErrors, 'Native acceptance and fixture cleanup failed');
 }

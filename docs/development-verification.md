@@ -37,6 +37,8 @@ npm run test:server
 npm run test:extension
 pnpm build
 pnpm build:single
+cp dist-single/index.html dist/threatcaddy-standalone.html
+touch dist/.nojekyll
 npm --prefix server run build
 npm run build:extension
 pnpm exec playwright install chromium firefox webkit
@@ -196,8 +198,11 @@ or publish anything.
 The hosted browser suite covers Chromium, Firefox and WebKit. Its offline test
 stops its own temporary HTTP origin before cached reload and new-tab checks;
 it does not equate browser offline emulation with a verified network outage.
-The standalone suite copies only the generated HTML into an empty temporary
-directory and uses a fresh offline browser profile.
+The standalone suite copies only the assembled download,
+`dist/threatcaddy-standalone.html`, into an empty temporary directory and uses a
+fresh offline browser profile. Assemble that file before running the suite, as
+shown above; testing only `dist-single/index.html` would not verify the file that
+is packaged for publication.
 
 ### Post-deployment verification
 

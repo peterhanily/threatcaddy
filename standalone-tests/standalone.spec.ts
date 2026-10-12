@@ -11,7 +11,7 @@ let failures: string[] = [];
 test.beforeEach(async ({ page }) => {
   directory = await mkdtemp(join(tmpdir(), 'threatcaddy-standalone-'));
   const path = join(directory, 'ThreatCaddy.html');
-  await copyFile('dist-single/index.html', path);
+  await copyFile('dist/threatcaddy-standalone.html', path);
   expect(await readdir(directory)).toEqual(['ThreatCaddy.html']);
   fileURL = pathToFileURL(path).href;
   failures = [];

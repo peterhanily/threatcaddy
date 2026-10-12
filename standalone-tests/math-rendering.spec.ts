@@ -9,7 +9,11 @@ test('copied standalone HTML renders Mermaid math and exports without network or
   const directory = await mkdtemp(join(tmpdir(), 'threatcaddy-math-standalone-'));
   try {
     const path = join(directory, 'Math fixture.html');
-    await copyFile(join(process.env.MATH_TEST_STANDALONE ?? 'dist-single', 'index.html'), path);
+    // Default to the assembled download that CI packages and publishes. The
+    // explicit directory override is only for isolated legacy comparisons.
+    await copyFile(process.env.MATH_TEST_STANDALONE === undefined
+      ? 'dist/threatcaddy-standalone.html'
+      : join(process.env.MATH_TEST_STANDALONE, 'index.html'), path);
     const requests: string[] = [];
     const errors: string[] = [];
     page.on('request', request => { if (/^https?:/.test(request.url())) requests.push(request.url()); });
