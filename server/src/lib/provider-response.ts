@@ -79,3 +79,37 @@ export function parseGeminiResponse(value: unknown): ParsedResponse {
   }
   return { textParts, toolCalls, stopReason: candidate.finishReason ?? 'STOP', rawAssistantContent: content };
 }
+
+/** OpenAI-compatible providers must validate the complete chosen batch before
+ * dispatch, including arguments from every call. Never echo malformed payloads. */
+export function parseOpenAIResponse(value: unknown): ParsedResponse {
+  if (!isObject(value) || !Array.isArray(value.choices) || !isObject(value.choices[0])) {
+    malformed('OpenAI-compatible', 'a response choice is required');
+  }
+  const choice = value.choices[0];
+  if (typeof choice.finish_reason !== 'string' || !isObject(choice.message)) {
+    malformed('OpenAI-compatible', 'message and finish_reason are required');
+  }
+  const message = choice.message;
+  if (message.role !== 'assistant' || (message.content !== null && message.content !== undefined && typeof message.content !== 'string')
+    || (message.tool_calls !== undefined && !Array.isArray(message.tool_calls))) {
+    malformed('OpenAI-compatible', 'invalid assistant message');
+  }
+  const toolCalls: ParsedToolCall[] = [];
+  const ids = new Set<string>();
+  for (const call of message.tool_calls ?? []) {
+    if (!isObject(call) || !identifier(call.id) || call.type !== 'function' || !isObject(call.function)
+      || !identifier(call.function.name) || typeof call.function.arguments !== 'string') {
+      malformed('OpenAI-compatible', 'tool call requires id, function name and JSON arguments');
+    }
+    if (ids.has(call.id)) malformed('OpenAI-compatible', 'duplicate tool call id');
+    let input: unknown;
+    try { input = JSON.parse(call.function.arguments); }
+    catch { malformed('OpenAI-compatible', 'tool arguments must be a JSON object'); }
+    if (!isObject(input)) malformed('OpenAI-compatible', 'tool arguments must be a JSON object');
+    ids.add(call.id);
+    toolCalls.push({ id: call.id, name: call.function.name, input });
+  }
+  return { textParts: typeof message.content === 'string' ? [message.content] : [], toolCalls,
+    stopReason: choice.finish_reason, rawAssistantContent: message };
+}

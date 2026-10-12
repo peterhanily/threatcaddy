@@ -699,7 +699,7 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string,
   if (!iocId) return JSON.stringify({ error: 'iocId is required' });
 
   const ioc = await db.standaloneIOCs.get(iocId);
-  if (!ioc) return JSON.stringify({ error: `IOC not found: ${iocId}` });
+  if (!ioc || ioc.trashed) return JSON.stringify({ error: `IOC not found or deleted: ${iocId}` });
 
   // Find matching installed integrations for this IOC type
   const installations = await db.installedIntegrations.filter(i => i.enabled).toArray();
@@ -732,8 +732,13 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string,
 
   // Run each matching integration
   const { IntegrationExecutor } = await import('./integration-executor');
+  const { integrationWrite } = await import('./integration-cancellation');
   const folder = folderId ? await db.folders.get(folderId) : undefined;
   const results: { name: string; status: string; summary: string }[] = [];
+  // Callback adapters may omit the newer per-write signal. The enclosing tool
+  // request still owns every write; neither signal can relax the other's abort.
+  const outputSignal = (writeSignal?: AbortSignal) => signal && writeSignal
+    ? AbortSignal.any([signal, writeSignal]) : signal ?? writeSignal;
 
   for (const { installation, template } of matching) {
     try {
@@ -747,8 +752,8 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string,
           investigation: folder ? { id: folder.id, name: folder.name } : undefined,
         },
         {
-          onCreateEntity: async (type, fields) => {
-            signal?.throwIfAborted();
+          onCreateEntity: async (type, fields, writeSignal) => integrationWrite([db.notes, db.standaloneIOCs], outputSignal(writeSignal), async () => {
+            if (type !== 'note' && type !== 'ioc' && type !== 'standaloneIOC') throw new Error('This enrichment caller only supports creating notes or IOCs.');
             const entityId = nanoid();
             if (type === 'note') {
               await db.notes.add({
@@ -774,18 +779,19 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string,
               });
             }
             return entityId;
-          },
-          onUpdateEntity: async (type, id, fields) => {
-            signal?.throwIfAborted();
-            if (type === 'ioc' || type === 'standaloneIOC') {
-              await db.standaloneIOCs.update(id, { ...fields, updatedAt: Date.now() });
-            }
-          },
+          }),
+          onUpdateEntity: async (type, id, fields, writeSignal) => integrationWrite([db.standaloneIOCs], outputSignal(writeSignal), async () => {
+            if (type !== 'ioc' && type !== 'standaloneIOC') throw new Error('This enrichment caller only supports updating IOCs.');
+            const existing = await db.standaloneIOCs.get(id);
+            if (!existing || existing.trashed) throw new Error('The IOC target is missing or deleted.');
+            if (await db.standaloneIOCs.update(id, { ...fields, updatedAt: Date.now() }) !== 1) throw new Error('The IOC update was not saved.');
+          }),
         },
         signal,
       );
 
       signal?.throwIfAborted();
+      if (run.status === 'cancelled') return JSON.stringify({ error: 'Enrichment cancelled. Completed remote operations or earlier outputs may remain; no further writes were started.', results });
       await db.integrationRuns.add(run);
 
       results.push({

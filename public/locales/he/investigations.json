@@ -102,5 +102,6 @@
   "card.entity.iocs": "IOCs",
   "card.entity.events": "אירועים",
   "card.entity.whiteboards": "לוחות",
-  "card.entity.chats": "שיחות"
+  "card.entity.chats": "שיחות",
+  "card.members_two": "{{count}} חברים"
 }

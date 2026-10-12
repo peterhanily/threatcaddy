@@ -8,6 +8,7 @@ import { fetchCatalog, fetchTemplate } from '../../lib/integration-catalog';
 import { shareIntegrationTemplate, fetchTeamTemplates, deleteTeamTemplate } from '../../lib/server-api';
 import { IntegrationBuilder } from './IntegrationBuilder';
 import { IntegrationConfigForm } from './IntegrationConfigForm';
+import { INTEGRATION_LIMITS } from '../../lib/integration-plan';
 import type { IntegrationTemplate, InstalledIntegration, IntegrationRun, IntegrationCategory, CatalogEntry } from '../../types/integration-types';
 
 type SubTab = 'installed' | 'catalog' | 'history';
@@ -54,7 +55,7 @@ function CategoryBadge({ category }: { category: IntegrationCategory }) {
   const color = CATEGORY_COLORS[category] || '#6b7280';
   return (
     <span
-      className="px-1.5 py-0.5 rounded text-[10px] font-medium border"
+      className="shrink-0 whitespace-nowrap px-1.5 py-0.5 rounded text-[10px] font-medium border"
       style={{ color, borderColor: `${color}40`, backgroundColor: `${color}15` }}
     >
       {CATEGORY_LABELS[category] || category}
@@ -171,7 +172,7 @@ function InstalledTab({
                     color={template?.color || '#6b7280'}
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="text-sm font-medium text-gray-200 truncate">
                         {template?.name || inst.name}
                       </span>
@@ -282,7 +283,7 @@ function InstalledTab({
               >
                 <TemplateIcon name={template.name} color={template.color} />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="text-sm font-medium text-gray-200 truncate">
                       {template.name}
                     </span>
@@ -294,10 +295,10 @@ function InstalledTab({
                 </div>
                 <button
                   onClick={() => onInstall(template.id)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors shrink-0"
+                  className="flex items-center gap-1 min-h-11 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors shrink-0"
                 >
                   <Plus size={12} />
-                  Install
+                  {t('catalog.install')}
                 </button>
               </div>
             ))}
@@ -330,8 +331,8 @@ function CatalogTab({
   templates: IntegrationTemplate[];
   installedTemplateIds: Set<string>;
   onInstall: (templateId: string) => void;
-  onImportJson: (json: string) => void;
-  onInstallCommunityEntry: (entry: CatalogEntry) => void;
+  onImportJson: (json: string) => Promise<void>;
+  onInstallCommunityEntry: (entry: CatalogEntry) => Promise<void>;
   catalogEntries: CatalogEntry[];
   catalogLoading: boolean;
   catalogLoaded: boolean;
@@ -348,6 +349,9 @@ function CatalogTab({
   const [searchQuery, setSearchQuery] = useState('');
   const [pasteJson, setPasteJson] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [imported, setImported] = useState(false);
+  const importPending = useRef(false);
   const [installingEntryId, setInstallingEntryId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -398,37 +402,43 @@ function CatalogTab({
       )
     : teamTemplates;
 
-  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        onImportJson(reader.result as string);
-        setImportError(null);
-      } catch (err) {
-        setImportError(err instanceof Error ? err.message : 'Invalid JSON');
-      }
-    };
-    reader.readAsText(file);
     e.target.value = '';
+    if (!file || importPending.current) return;
+    importPending.current = true; setImporting(true); setImported(false); setImportError(null);
+    try {
+      if (file.size > INTEGRATION_LIMITS.templateBytes) throw new Error(t('catalog.importTooLarge'));
+      const json = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = reader.onabort = () => reject(new Error(t('catalog.importReadFailed')));
+        reader.readAsText(file);
+      });
+      await onImportJson(json);
+      setImported(true);
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : t('catalog.importFailed'));
+    } finally { importPending.current = false; setImporting(false); }
   };
 
-  const handlePasteImport = () => {
-    if (!pasteJson.trim()) return;
+  const handlePasteImport = async () => {
+    if (!pasteJson.trim() || importPending.current) return;
+    const submitted = pasteJson;
+    importPending.current = true; setImporting(true); setImported(false); setImportError(null);
     try {
-      onImportJson(pasteJson);
-      setPasteJson('');
-      setImportError(null);
+      await onImportJson(submitted);
+      setPasteJson(current => current === submitted ? '' : current);
+      setImported(true);
     } catch (err) {
-      setImportError(err instanceof Error ? err.message : 'Invalid JSON');
-    }
+      setImportError(err instanceof Error ? err.message : t('catalog.importFailed'));
+    } finally { importPending.current = false; setImporting(false); }
   };
 
   const handleInstallCommunityEntry = async (entry: CatalogEntry) => {
     setInstallingEntryId(entry.id);
     try {
-      onInstallCommunityEntry(entry);
+      await onInstallCommunityEntry(entry);
     } finally {
       setInstallingEntryId(null);
     }
@@ -524,7 +534,7 @@ function CatalogTab({
                     {isInstalled ? (
                       <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-green-400 bg-green-500/10 border border-green-500/20">
                         <Check size={12} />
-                        Installed
+                        {t('catalog.installed')}
                       </span>
                     ) : (
                       <button
@@ -532,7 +542,7 @@ function CatalogTab({
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors"
                       >
                         <Plus size={12} />
-                        Install
+                        {t('catalog.install')}
                       </button>
                     )}
                     <button
@@ -618,7 +628,7 @@ function CatalogTab({
                         {isInstalled ? (
                           <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-green-400 bg-green-500/10 border border-green-500/20">
                             <Check size={12} />
-                            Installed
+                            {t('catalog.installed')}
                           </span>
                         ) : (
                           <button
@@ -626,7 +636,7 @@ function CatalogTab({
                             className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors"
                           >
                             <Plus size={12} />
-                            Install
+                            {t('catalog.install')}
                           </button>
                         )}
                         <button
@@ -736,16 +746,16 @@ function CatalogTab({
                         {updateStatus === 'installed' ? (
                           <span className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium text-green-400 bg-green-500/10 border border-green-500/20">
                             <Check size={12} />
-                            Installed
+                            {t('catalog.installed')}
                           </span>
                         ) : updateStatus === 'update-available' ? (
                           <button
-                            onClick={() => handleInstallCommunityEntry(entry)}
-                            disabled={isInstalling}
+                            disabled
+                            title={t('catalog.replacementHint')}
                             className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs font-medium hover:bg-yellow-500/30 transition-colors disabled:opacity-50"
                           >
-                            {isInstalling ? <Loader2 size={12} className="animate-spin" /> : <ArrowUpCircle size={12} />}
-                            Update
+                            <ArrowUpCircle size={12} />
+                            {t('catalog.replacementUnavailable')}
                           </button>
                         ) : (
                           <button
@@ -754,7 +764,7 @@ function CatalogTab({
                             className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
                           >
                             {isInstalling ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-                            Install
+                            {t('catalog.install')}
                           </button>
                         )}
                       </div>
@@ -777,11 +787,13 @@ function CatalogTab({
           ref={fileRef}
           type="file"
           accept=".json"
+          disabled={importing}
           onChange={handleFileImport}
           className="hidden"
         />
         <button
           onClick={() => fileRef.current?.click()}
+          disabled={importing}
           className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-medium transition-colors"
         >
           <Upload size={14} />
@@ -791,6 +803,7 @@ function CatalogTab({
         <div className="space-y-2">
           <textarea
             value={pasteJson}
+            aria-label={t('catalog.pasteJsonPlaceholder')}
             onChange={(e) => setPasteJson(e.target.value)}
             placeholder={t('catalog.pasteJsonPlaceholder')}
             rows={4}
@@ -798,19 +811,20 @@ function CatalogTab({
           />
           <button
             onClick={handlePasteImport}
-            disabled={!pasteJson.trim()}
+            disabled={importing || !pasteJson.trim()}
             className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {t('catalog.importFromPaste')}
+            {t(importing ? 'catalog.importing' : 'catalog.importFromPaste')}
           </button>
         </div>
 
         {importError && (
-          <div className="flex items-center gap-2 text-xs text-red-400">
+          <div role="alert" className="flex items-center gap-2 text-xs text-red-400">
             <AlertCircle size={12} />
             {importError}
           </div>
         )}
+        {imported && <p role="status" className="text-xs text-green-400">{t('catalog.imported')}</p>}
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import { generateSalt, arrayBufferToBase64, base64ToArrayBuffer } from './crypto
 
 const PBKDF2_ITERATIONS = 600_000;
 const IV_BYTES = 12;
+const SALT_BYTES = 16;
 
 export interface EncryptedBackupBlob {
   v: 1;
@@ -129,13 +130,28 @@ export async function encryptBackup<T extends object>(password: string, payload:
 }
 
 export async function decryptBackup<T = BackupPayload>(password: string, blob: EncryptedBackupBlob): Promise<T> {
+  if (!blob || typeof blob !== 'object' || Array.isArray(blob)) throw new Error('Invalid encrypted backup envelope');
   if (blob.v !== 1) throw new Error('Unsupported backup format version');
 
-  const saltBuf = base64ToArrayBuffer(blob.salt);
+  // Check the complete envelope before spending time deriving a key. Fixed
+  // salt/nonce sizes are part of v1, not caller-selected crypto parameters.
+  const decode = (value: unknown, expectedBytes?: number): ArrayBuffer => {
+    if (typeof value !== 'string' || !value || value.length % 4 !== 0
+      || (expectedBytes !== undefined && value.length !== 4 * Math.ceil(expectedBytes / 3))
+      || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) throw new Error('Invalid encrypted backup envelope');
+    let decoded: ArrayBuffer;
+    try { decoded = base64ToArrayBuffer(value); }
+    catch { throw new Error('Invalid encrypted backup envelope'); }
+    if (expectedBytes !== undefined && (decoded.byteLength !== expectedBytes || arrayBufferToBase64(decoded) !== value)) {
+      throw new Error('Invalid encrypted backup envelope');
+    }
+    return decoded;
+  };
+  const saltBuf = decode(blob.salt, SALT_BYTES);
+  const ivBuf = decode(blob.iv, IV_BYTES);
+  const ctBuf = decode(blob.ct);
+  if (ctBuf.byteLength < 16) throw new Error('Invalid encrypted backup envelope');
   const key = await deriveBackupKey(password, saltBuf);
-
-  const ivBuf = base64ToArrayBuffer(blob.iv);
-  const ctBuf = base64ToArrayBuffer(blob.ct);
 
   let plainBuf: ArrayBuffer;
   try {

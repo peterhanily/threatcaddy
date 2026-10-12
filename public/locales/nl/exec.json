@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "Gebeurtenissen deze week",
   "metrics.aiChats": "AI-chats",
   "metrics.graphNodes": "Grafknooppunten",
-  "dashboard.backToExecView": "Terug naar Directieweergave"
+  "dashboard.backToExecView": "Terug naar Directieweergave",
+  "dashboard.switchToLight": "Overschakelen naar licht thema",
+  "dashboard.switchToDark": "Overschakelen naar donker thema",
+  "dashboard.emptyTitle": "Je werkruimte is klaar",
+  "dashboard.emptyDescription": "Maak een onderzoek of importeer je bestaande werk in de analistenmodus. Dit dashboard vat het werk samen dat in deze werkruimte is opgeslagen.",
+  "dashboard.emptyAction": "Analistenmodus openen"
 }

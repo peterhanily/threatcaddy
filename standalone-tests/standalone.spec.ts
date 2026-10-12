@@ -5,13 +5,13 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createQuickNote, navigateToView } from '../e2e/fixtures';
 
-let directory: string;
+let directory: string | undefined;
 let fileURL: string;
-let failures: string[];
+let failures: string[] = [];
 test.beforeEach(async ({ page }) => {
   directory = await mkdtemp(join(tmpdir(), 'threatcaddy-standalone-'));
   const path = join(directory, 'ThreatCaddy.html');
-  await copyFile('dist-single/index.html', path);
+  await copyFile('dist/threatcaddy-standalone.html', path);
   expect(await readdir(directory)).toEqual(['ThreatCaddy.html']);
   fileURL = pathToFileURL(path).href;
   failures = [];
@@ -39,7 +39,10 @@ test.beforeEach(async ({ page }) => {
 test.afterEach(async ({}, info) => {
   await info.attach('standalone-browser-errors', { body: JSON.stringify(failures), contentType: 'application/json' });
   if (info.status !== info.expectedStatus) console.log(JSON.stringify(failures));
-  await rm(directory, { recursive: true, force: true });
+  if (directory) {
+    await rm(directory, { recursive: true, force: true });
+    directory = undefined;
+  }
 });
 
 async function createSavedNote(page: Page) {

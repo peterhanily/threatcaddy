@@ -31,10 +31,10 @@
 
 Most investigation tools lock your data in a cloud you don't control, cost per seat, and force you into rigid workflows. ThreatCaddy is different:
 
-- **Local-first** — All data lives in your browser's IndexedDB. No accounts, no tracking, no cookies.
+- **Local-first** — Investigation data is stored in your browser's IndexedDB. No account is required for local use; optional sync, AI, enrichment and backup features can send data to configured services.
 - **Zero setup** — Open the URL and start working. No install, no server required.
 - **Optional team server** — When you need collaboration, spin up a Docker container. Per-investigation sync lets you choose what stays local and what gets shared.
-- **Encryption at rest** — AES-256-GCM encryption with PBKDF2 key derivation protects your data even on shared machines.
+- **Encryption at rest** — Optional AES-256-GCM encryption with PBKDF2 key derivation protects covered local content fields while locked; it does not encrypt the whole browser profile or provide end-to-end team sync.
 - **Works offline** — Download a standalone HTML file that runs from `file://`.
 - **AI that works for you** — From a conversational assistant to a full autonomous multi-agent security team, CaddyAI and AgentCaddy meet you where you are.
 
@@ -44,18 +44,21 @@ Most investigation tools lock your data in a cloud you don't control, cost per s
 
 **Self-host the client:**
 
+Use Node **24.21.0** and pnpm **10.29.1** (npm **11.19.0** for the server and extension). See [development and verification](docs/development-verification.md) for the complete setup and checks.
+
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev          # Dev server at localhost:5173
 ```
 
 **Deploy a team server:**
 
 ```bash
-cd server
-cp .env.example .env   # Configure JWT keys and optional LLM API keys
+cp .env.example .env   # From the repository root; fill the required values first
 docker compose up -d   # Starts Hono server + PostgreSQL
 ```
+
+Set `POSTGRES_PASSWORD`, a stable `BOT_MASTER_KEY`, the Ed25519 `JWT_PRIVATE_KEY` / `JWT_PUBLIC_KEY` pair, and an exact `ALLOWED_ORIGINS` list before starting. Compose derives `DATABASE_URL`; direct server execution uses [server/.env.example](server/.env.example) instead. Preserve encryption keys across restarts and restores. Follow the [deployment guide](docs/deployment.md) for key generation, TLS and first-admin setup.
 
 ---
 
@@ -69,7 +72,7 @@ docker compose up -d   # Starts Hono server + PostgreSQL
 - **Note sub-folders** — Organize notes into a hierarchy via drag-to-folder; folders are first-class notes with `isFolder` set
 - **Note annotations** — Timestamped comments on any note
 - **Defang/Refang toggle** — Preview network IOCs in defanged form (`hxxps://`, `example[.]com`)
-- **Open markdown files** — Open `.md` or `.txt` files via `Ctrl+O` / `Cmd+O`, drag-and-drop, or the New menu. File name, size, and creation date are captured in the title. IOCs are auto-extracted on import
+- **Open markdown files** — Open Markdown or `.txt` files via `Ctrl+O` / `Cmd+O`, drag-and-drop, or the New menu. File name, size, and last-modified date are captured in the title. IOCs are auto-extracted on import. Files are limited to 5 MiB each, with at most 20 pending imports; launch requests wait for an unlocked workspace without reading their contents
 - **Quick capture** — Clip articles, bookmarks, code snippets, and meeting notes with 15+ built-in templates
 - **Note templates** — 15 built-in templates (host details, malware analysis, phishing reports, threat actor profiles, and more). Create, edit, and save your own. Save any note as a reusable template.
 
@@ -180,7 +183,7 @@ Connect any REST API as an agent skill source:
 ### Security & Backup
 
 - **Encryption at rest** — Passphrase-based AES-256-GCM via PBKDF2 (600k iterations) with configurable session duration and recovery phrase
-- **Cloud backup** — OCI Object Storage, AWS S3, Azure Blob Storage, or Google Cloud Storage via pre-authenticated URLs
+- **Cloud backup** — OCI bucket/prefix pre-authenticated URLs and Azure container SAS URLs; signed single-object S3/GCS URLs are not supported by the generated-key uploader. See [supported cloud destinations](docs/backup-recovery.md#supported-cloud-destination-urls).
 - **Export & import** — Full JSON backup/restore; per-investigation export; includes note templates and playbooks
 
 ### Team Server
@@ -216,7 +219,7 @@ The full **Clips page** (`Review All Captures`) shows everything captured across
 - View capture stats: total, this week, unsent
 - **Inline edit** per-capture fields: entity type, folder name, and TLP classification
 - **Apply Defaults** — batch-set entity type, folder, and classification across all unsent captures
-- **Send All** — dispatches all unsent captures to the configured ThreatCaddy target; marks them as sent
+- **Send All** — confirms the actual destination workspace and marks only database-confirmed clip revisions as sent; interrupted or partial deliveries retain unconfirmed captures for retry
 - Target URL supports `http://`, `https://`, and `file://` (for standalone builds)
 
 #### Extension Permissions
@@ -239,7 +242,7 @@ To send clips to an offline `file://` build, enable **"Allow access to file URLs
 
 - **Quick Links dashboard** — Configurable shortcut tiles for VirusTotal, Shodan, AbuseIPDB, and other threat intel tools
 - **Dark & light mode** — Dark by default
-- **21 languages** — UI fully translated into Arabic, Chinese (Simplified), Dutch, English, Farsi, French, German, Hebrew, Hindi, Indonesian, Italian, Japanese, Korean, Polish, Portuguese (Brazil), Russian, Spanish, Thai, Turkish, Ukrainian, and Vietnamese — including full RTL support
+- **21 language catalogs** — Arabic, Chinese (Simplified), Dutch, English, Farsi, French, German, Hebrew, Hindi, Indonesian, Italian, Japanese, Korean, Polish, Portuguese (Brazil), Russian, Spanish, Thai, Turkish, Ukrainian, and Vietnamese, with RTL layout support for Arabic, Farsi and Hebrew. Automated checks cover keys and interpolation; they do not certify translation fluency or every assistive-technology combination.
 - **Guided tour** — Interactive onboarding walkthrough
 - **Browser navigation** — Back/forward with persistent state across refresh
 - **Standalone HTML** — Single-file offline version (`pnpm build:single`) with all assets and locale packs inlined. Language switcher included. Fully functional from `file://`
@@ -281,13 +284,17 @@ To send clips to an offline `file://` build, enable **"Allow access to file URLs
 ## Development
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev              # Dev server at localhost:5173
 pnpm test:run         # Run test suite
 pnpm test:coverage    # Tests with coverage report
-pnpm lint             # ESLint
-pnpm tsc -b           # Type check
+pnpm lint             # ESLint and checked warning baseline
+pnpm locales:check    # Translation keys, parameters and plural forms
+pnpm test:ci          # Repository/build/documentation contracts
+pnpm exec tsc -b      # Type check
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the [verification guide](docs/development-verification.md) for server, extension, browser and PostgreSQL checks. Report suspected vulnerabilities through [SECURITY.md](SECURITY.md), not a public issue containing sensitive details.
 
 ## Build
 
@@ -310,21 +317,22 @@ pnpm build:extension   # Builds Chrome + Firefox → extension/dist/
 
 ### Client (GitHub Pages)
 
-Push to `main` — GitHub Actions builds and deploys to `threatcaddy.com`.
+The Pages workflow verifies the client and publishes its built artifact to `threatcaddy.com`. A failed acceptance gate prevents publication. See [deployment](docs/deployment.md) and [repository maintenance](docs/repository-maintenance.md) for release responsibilities.
 
 ### Team Server (Docker)
 
 ```bash
-cd server
-cp .env.example .env   # Set JWT_PRIVATE_KEY, JWT_PUBLIC_KEY (Ed25519)
+cp .env.example .env   # Repository root; fill all required values as above
 docker compose up -d   # Starts Hono server + PostgreSQL
 ```
 
 Optionally add `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, or `MISTRAL_API_KEY` to `.env` for server-side LLM proxying.
 
+Publishing a GHCR image does **not** roll out a running team server. Coordinate client/server upgrades, retain a verified database-and-files backup, and follow [runtime operations](server/docs/runtime-operations.md) and [sync recovery](server/docs/sync-recovery.md) for restore and rollback. Current changes are summarized in the [changelog](CHANGELOG.md).
+
 ## Privacy
 
-All data stays local by default. No accounts, no tracking, no cookies. API keys are stored in your browser and sent only to your chosen LLM provider. See the full [Privacy Policy](https://threatcaddy.com/privacy.html).
+Local use needs no account. Optional AI, enrichment, URL fetching, map tiles, catalogs, cloud backup and team sync involve network requests; the extension, custom endpoints or team server may act as intermediaries. Local encryption at rest is not end-to-end encryption for team sync. Hosted analytics are build-time opt-in, and hosting operators may retain request logs. Review the [Privacy Policy](https://threatcaddy.com/privacy.html) and your chosen service operators before processing sensitive data.
 
 ## License
 

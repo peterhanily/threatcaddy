@@ -213,6 +213,10 @@ db.version(32).stores({
 /** Schema upgrades never inspect content or require an encryption key. */
 db.version(33).stores({ _localMigrations: 'key' });
 
+// Workspace-local delivery receipts contain IDs, revisions and fingerprints,
+// never clip content. They are neither portable entities nor server sync data.
+db.version(34).stores({ _clipReceipts: 'key, clipId, committedAt' });
+
 async function promoteLegacyEvidence(tx: Parameters<NonNullable<Parameters<ReturnType<typeof db.version>['upgrade']>[0]>>[0]) {
   const notesTable = tx.table('notes');
   const evidenceTable = tx.table('evidenceItems');

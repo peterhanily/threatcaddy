@@ -13,7 +13,7 @@ vi.mock('../lib/server-api', () => ({ listBackups: mocks.list, downloadBackup: m
 vi.mock('../lib/backup-crypto', () => ({ decryptBackup: mocks.decrypt, encryptBackup: mocks.encrypt }));
 vi.mock('../lib/backup-data', () => ({ buildFullBackupPayload: mocks.full, buildDifferentialPayload: mocks.differential, countPayloadEntities: () => 1 }));
 vi.mock('../lib/backup-restore', () => ({ previewRestore: mocks.preview, restoreFullReplace: mocks.replace, restoreMerge: mocks.merge }));
-vi.mock('../lib/entity-drafts', () => ({ hasPendingEntityDrafts: () => true }));
+vi.mock('../lib/pending-changes', () => ({ hasPendingChanges: () => true }));
 
 const base: BackupPayload = { version: 1, type: 'full', scope: 'all', createdAt: 100, data: {} };
 const delta: BackupPayload = { version: 2, type: 'differential', scope: 'all', createdAt: 200, parentBackupId: 'base', data: {} };
@@ -76,6 +76,15 @@ describe('server backup parent orchestration and cancellation', () => {
     expect(mocks.download.mock.calls.map(args => args[0])).toEqual(['delta', 'base']);
     expect(mocks.preview).toHaveBeenCalledWith(delta, 'merge', base);
     expect(mocks.decrypt.mock.calls.map(args => args[0])).toEqual(['full-parent-password', 'full-parent-password']);
+  });
+
+  it('retains recovery controls when non-entity work is pending after commit and refuses the reopen action', async () => {
+    render(<ServerBackup />);
+    await decryptSelected();
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm restore' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Reopen restored workspace' }));
+    expect(screen.getAllByText(/^Finish pending file imports and send, save, recover/)).toHaveLength(2);
+    expect(mocks.merge).toHaveBeenCalledOnce();
   });
 
   it('cannot reopen a restore panel after its pending download is cancelled', async () => {

@@ -215,5 +215,22 @@
   "error.unexpectedDetail": "Terjadi kesalahan yang tidak terduga.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Bukti",
-  "sidebar.products": "Produk"
+  "sidebar.products": "Produk",
+  "syncStatus.screenshareHidden": "Sinkronisasi memerlukan perhatian. Matikan berbagi layar untuk melihat rinciannya.",
+  "syncStatus.review": "Periksa pengaturan sinkronisasi",
+  "draftRecovery.message": "Sebagian perubahan belum tersimpan. Draf hanya disimpan di tab ini. Coba lagi atau unduh draf sebelum menutupnya.",
+  "draftRecovery.untitled": "Draf belum tersimpan",
+  "draftRecovery.retry": "Coba simpan lagi",
+  "draftRecovery.download": "Unduh draf",
+  "draftRecovery.discard": "Buang draf",
+  "draftRecovery.discardConfirm": "Buang draf yang belum tersimpan ini secara permanen? Unduh dahulu jika Anda memerlukan salinan pemulihan.",
+  "draftRecovery.conflictField": "Tinjau konflik {{field}}",
+  "draftRecovery.keepLocal": "Pertahankan {{field}} saya",
+  "draftRecovery.useRemote": "Gunakan {{field}} jarak jauh",
+  "offlineStatus.checking": "Memeriksa dukungan offline",
+  "offlineStatus.installed": "Dukungan offline terpasang",
+  "offlineStatus.unavailable": "Ketersediaan offline belum dikonfirmasi",
+  "offlineStatus.checkingHelp": "Unduhan awal yang besar dapat memerlukan beberapa menit. Biarkan tab ini terbuka selama pemasangan.",
+  "offlineStatus.unavailableHelp": "Browser belum mengonfirmasi pemasangan offline. Fitur ini mungkin tidak didukung, masih diunduh, atau tidak dapat diselesaikan. Simpan cadangan yang diekspor.",
+  "offlineStatus.caveat": "Ini adalah status worker browser, bukan pemeriksaan berkas dalam cache atau versi terbaru. Data cache dapat dibersihkan atau dikeluarkan. Ini bukan cadangan. Server tim, AI, dan layanan eksternal lainnya memerlukan koneksi."
 }

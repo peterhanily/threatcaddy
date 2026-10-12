@@ -1,4 +1,7 @@
 {
+  "input.serverStatus": "Team server route",
+  "input.serverModelsHelp": "Available providers and models depend on your team server configuration.",
+  "input.modelLabel": "AI model",
   "cti": {
     "invalidCommand": "That CTI command couldn't be run:",
     "noSources": "No CTI Agent Host sources are configured. Add a CTI host under Settings → AI → Agent Hosts to use this command."
@@ -81,6 +84,25 @@
     "onboardingDismiss": "Got it"
   },
   "input": {
+    "readingImages": "Reading images…",
+    "submitFailed": "The message could not finish sending. Uncommitted text and images have been kept; check the thread before retrying.",
+    "memoryDrafts": "Unsent chat drafts are kept only in this tab’s memory, including hidden threads. Send or discard them and wait for pending sends before switching workspaces; closing or reloading can lose them.",
+    "discardAllDrafts": "Discard all unsent chat drafts",
+    "discardAllDraftsConfirm": "Discard unsent text and images from every chat thread in this workspace and cancel pending image reads? Saved messages will not be changed. A send already in progress must still finish and may save its message. This cannot be undone.",
+    "discardDraftsConfirm": "Discard unsent drafts",
+    "draftError": {
+      "length": "A draft can contain at most 200,000 characters. The previous draft has been kept; shorten or split the message.",
+      "total": "Unsent chat drafts can contain at most 1,000,000 characters in total. Send or discard other drafts first; the previous draft has been kept."
+    },
+    "imageError": {
+      "busy": "Wait for the current image batch to finish. Your draft has been kept.",
+      "count": "Attach at most 4 images per message. Your draft and earlier images have been kept.",
+      "type": "Choose PNG, JPEG, GIF or WebP images. Your draft and earlier images have been kept.",
+      "size": "Each image must be 5 MiB or smaller. Your draft and earlier images have been kept.",
+      "total": "Images must total 10 MiB or less per message. Your draft and earlier images have been kept.",
+      "global": "Unsent chat drafts can hold at most 16 images and 20 MiB of image data in total, including reads in progress. Send or discard other drafts first; earlier images have been kept.",
+      "read": "An image could not be read. The new batch was not attached; your draft and earlier images have been kept. Try selecting it again."
+    },
     "noApiKeys": "No API keys configured — add one in Settings → AI/LLM",
     "extensionStatus": "Extension",
     "localLlmStatus": "Local LLM",

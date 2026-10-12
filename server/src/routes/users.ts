@@ -1,13 +1,15 @@
 import { Hono } from 'hono';
-import { eq, and, ilike, or, desc, inArray, count } from 'drizzle-orm';
+import { eq, and, ilike, or, desc, inArray, count, sql } from 'drizzle-orm';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { db } from '../db/index.js';
-import { users, posts, investigationMembers, reactions, activityLog } from '../db/schema.js';
+import { users, posts, reactions, activityLog } from '../db/schema.js';
 import { updateUsersAndRevokeSessions } from '../services/session-service.js';
-import type { AuthUser } from '../types.js';
+import { InvestigationPolicyError } from '../services/investigation-policy.js';
 import { ErrorCodes } from '../types/error-codes.js';
+import { withCurrentFeedAccess, type FeedVariables } from '../middleware/feed-access.js';
+import { visibleFeedScope, visiblePostScope, PROFILE_ACTIVITY_CATEGORIES, projectProfileActivity } from '../services/feed-policy.js';
 
-const app = new Hono<{ Variables: { user: AuthUser } }>();
+const app = new Hono<{ Variables: FeedVariables }>();
 
 app.use('*', requireAuth);
 
@@ -95,16 +97,10 @@ app.get('/:id', async (c) => {
 });
 
 // GET /api/users/:id/feed — user's posts timeline
-app.get('/:id/feed', async (c) => {
+app.get('/:id/feed', withCurrentFeedAccess, async (c) => {
+  const db = c.get('feedDb');
   const requestingUser = c.get('user');
   const targetUserId = c.req.param('id');
-
-  // Get folders the requesting user has access to
-  const memberships = await db
-    .select({ folderId: investigationMembers.folderId })
-    .from(investigationMembers)
-    .where(eq(investigationMembers.userId, requestingUser.id));
-  const accessibleFolderIds = new Set(memberships.map((m) => m.folderId));
 
   // Fetch the user's non-deleted posts (global + investigation-scoped), limited to 50
   const allPosts = await db
@@ -114,39 +110,23 @@ app.get('/:id/feed', async (c) => {
       and(
         eq(posts.authorId, targetUserId),
         eq(posts.deleted, false),
+        visiblePostScope(requestingUser.id),
       )
     )
-    .orderBy(posts.createdAt)
-    .limit(100);
+    .orderBy(desc(posts.createdAt))
+    .limit(50);
 
   // Filter to only posts the requesting user can see
-  const result = allPosts
-    .filter((post) => !post.folderId || accessibleFolderIds.has(post.folderId))
-    .slice(-50);
+  const result = allPosts.reverse();
 
   return c.json(result);
 });
 
 // GET /api/users/:id/likes — posts the user has liked
-app.get('/:id/likes', async (c) => {
+app.get('/:id/likes', withCurrentFeedAccess, async (c) => {
+  const db = c.get('feedDb');
   const requestingUser = c.get('user');
   const targetUserId = c.req.param('id');
-
-  // Get accessible folder IDs for scoping
-  const memberships = await db
-    .select({ folderId: investigationMembers.folderId })
-    .from(investigationMembers)
-    .where(eq(investigationMembers.userId, requestingUser.id));
-  const accessibleFolderIds = new Set(memberships.map((m) => m.folderId));
-
-  // Find posts the user reacted to
-  const userReactions = await db
-    .select({ postId: reactions.postId })
-    .from(reactions)
-    .where(eq(reactions.userId, targetUserId));
-  const postIds = [...new Set(userReactions.map((r) => r.postId))];
-
-  if (postIds.length === 0) return c.json([]);
 
   const likedPosts = await db
     .select({
@@ -168,28 +148,21 @@ app.get('/:id/likes', async (c) => {
     .from(posts)
     .innerJoin(users, eq(users.id, posts.authorId))
     .where(and(
-      inArray(posts.id, postIds),
+      sql`EXISTS (SELECT 1 FROM ${reactions} WHERE ${reactions.postId} = ${posts.id} AND ${reactions.userId} = ${targetUserId})`,
       eq(posts.deleted, false),
+      visiblePostScope(requestingUser.id),
     ))
     .orderBy(desc(posts.createdAt))
     .limit(50);
 
-  // Filter by access
-  const result = likedPosts.filter((p) => !p.folderId || accessibleFolderIds.has(p.folderId));
-  return c.json(result);
+  return c.json(likedPosts);
 });
 
 // GET /api/users/:id/activity — user's recent activity from audit log
-app.get('/:id/activity', async (c) => {
+app.get('/:id/activity', withCurrentFeedAccess, async (c) => {
+  const db = c.get('feedDb');
   const requestingUser = c.get('user');
   const targetUserId = c.req.param('id');
-
-  // Get accessible folder IDs for scoping
-  const memberships = await db
-    .select({ folderId: investigationMembers.folderId })
-    .from(investigationMembers)
-    .where(eq(investigationMembers.userId, requestingUser.id));
-  const accessibleFolderIds = new Set(memberships.map((m) => m.folderId));
 
   const entries = await db
     .select({
@@ -203,13 +176,13 @@ app.get('/:id/activity', async (c) => {
       timestamp: activityLog.timestamp,
     })
     .from(activityLog)
-    .where(eq(activityLog.userId, targetUserId))
+    .where(and(eq(activityLog.userId, targetUserId),
+      visibleFeedScope(activityLog.folderId, requestingUser.id, false),
+      inArray(activityLog.category, [...PROFILE_ACTIVITY_CATEGORIES])))
     .orderBy(desc(activityLog.timestamp))
-    .limit(100);
+    .limit(50);
 
-  // Filter: global entries (no folderId) visible to all; folder-scoped need access
-  const result = entries.filter((e) => !e.folderId || accessibleFolderIds.has(e.folderId));
-  return c.json(result.slice(0, 50));
+  return c.json(entries.map(projectProfileActivity));
 });
 
 // PATCH /api/users/:id — admin update user
@@ -236,8 +209,13 @@ app.patch('/:id', requireRole('admin'), async (c) => {
     updates.displayName = body.displayName.trim();
   }
 
-  if (body.role !== undefined || body.active !== undefined) await updateUsersAndRevokeSessions([userId], updates);
-  else await db.update(users).set(updates).where(eq(users.id, userId));
+  try {
+    if (body.role !== undefined || body.active !== undefined) await updateUsersAndRevokeSessions([userId], updates, undefined, { kind: 'user', userId: c.get('user').id });
+    else await db.update(users).set(updates).where(eq(users.id, userId));
+  } catch (error) {
+    if (error instanceof InvestigationPolicyError) return c.json({ error: error.message, code: error.code }, error.status);
+    throw error;
+  }
 
   return c.json({ ok: true });
 });
@@ -252,7 +230,11 @@ app.delete('/:id', requireRole('admin'), async (c) => {
     return c.json({ error: 'Cannot deactivate yourself', code: ErrorCodes.CANNOT_DEACTIVATE_SELF }, 400);
   }
 
-  await updateUsersAndRevokeSessions([userId], { active: false, updatedAt: new Date() });
+  try { await updateUsersAndRevokeSessions([userId], { active: false, updatedAt: new Date() }, undefined, { kind: 'user', userId: requestingUser.id }); }
+  catch (error) {
+    if (error instanceof InvestigationPolicyError) return c.json({ error: error.message, code: error.code }, error.status);
+    throw error;
+  }
 
   return c.json({ ok: true });
 });

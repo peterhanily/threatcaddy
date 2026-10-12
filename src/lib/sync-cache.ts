@@ -1,7 +1,9 @@
 import { db } from '../db';
 import { SYNC_TABLES, suppressSyncInCurrentTransaction } from './sync-state';
-import { withEntityDraftBarrier, hasPendingEntityDrafts } from './entity-drafts';
+import { withEntityDraftBarrier } from './entity-drafts';
+import { hasPendingChanges, PendingChangesError } from './pending-changes';
 import { nanoid } from 'nanoid';
+import { assertSyncCaptureReady, ensureSyncCaptureCoverage } from './sync-capture-policy';
 
 export const uncachedFolderKey = (id: string) => JSON.stringify(['notCached', id]);
 export const cacheOperationKey = (id: string) => JSON.stringify(['cacheOperation', id]);
@@ -18,9 +20,11 @@ export async function rotateCacheOperation(folderId: string): Promise<string> {
 /** Eviction is not a server deletion. Refuse pending local changes rather than
  * quietly discarding them, and persist the cache choice so ordinary pulls do
  * not immediately recreate the evicted investigation. */
-export function evictSyncedFolder(folderId: string): Promise<void> {
-  return withEntityDraftBarrier(() => db.transaction('rw', [...SYNC_TABLES, '_syncQueue', '_syncMeta'], async () => {
-    if (hasPendingEntityDrafts()) throw new Error('Resolve pending drafts before removing an offline copy.');
+export async function evictSyncedFolder(folderId: string): Promise<void> {
+  await ensureSyncCaptureCoverage(db);
+  return withEntityDraftBarrier(() => db.transaction('rw', [...SYNC_TABLES, '_syncQueue', '_syncMeta', '_localMigrations'], async () => {
+    await assertSyncCaptureReady(db);
+    if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work before removing an offline copy.');
     if ((await db.folders.get(folderId))?.localOnly
       || (await db.table('_syncMeta').get(JSON.stringify(['localOnly', folderId])))?.value) {
       throw new Error('This investigation is local-only; its local data cannot be removed as a synced cache.');
@@ -42,5 +46,6 @@ export function evictSyncedFolder(folderId: string): Promise<void> {
     for (const [table, ids] of rows) await db.table(table).bulkDelete(ids);
     await rotateCacheOperation(folderId);
     await db.table('_syncMeta').put({ key: uncachedFolderKey(folderId), value: true });
+    if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work before removing an offline copy.');
   }));
 }

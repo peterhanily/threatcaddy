@@ -31,15 +31,19 @@ export function validateIntegrationConfig(
 ): MissingIntegrationConfigField[] {
   const config = resolveIntegrationConfig(fields, values);
   return fields.filter(field => {
-    if (!field.required) return false;
     const value = Object.hasOwn(config, field.key) ? config[field.key] : undefined;
-    if (value === null || value === undefined) return true;
-    if (typeof value === 'string') return value.trim().length === 0;
-    if (Array.isArray(value)) {
-      return field.type !== 'multi-select' || value.length === 0
-        || value.some(selection => typeof selection !== 'string' || selection.trim().length === 0);
+    if (value === null || value === undefined || value === '') return field.required;
+    switch (field.type) {
+      case 'number': return typeof value !== 'number' || !Number.isFinite(value);
+      case 'boolean': return typeof value !== 'boolean';
+      case 'string': case 'password': return typeof value !== 'string' || (field.required && !value.trim());
+      case 'select': case 'multi-select': {
+        const selections = field.type === 'multi-select' && Array.isArray(value) ? value : [value];
+        if (!selections.length) return field.required;
+        return selections.some(selection => typeof selection !== 'string' || !selection.trim()
+          || (field.options !== undefined && !field.options.some(option => option.value === selection)));
+      }
+      default: return true;
     }
-    if (typeof value === 'number') return !Number.isFinite(value);
-    return typeof value !== 'boolean';
   }).map(field => ({ key: field.key, label: field.label || field.key }));
 }

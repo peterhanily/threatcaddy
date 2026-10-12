@@ -6,7 +6,10 @@
     "message": "Quick-capture web content and proxy AI requests for ThreatCaddy threat intelligence. Data stays local on your device by default."
   },
   "version": {
-    "message": "v1.1.1"
+    "message": "v$VERSION$",
+    "placeholders": {
+      "version": { "content": "$1" }
+    }
   },
 
   "quickStats": {
@@ -126,7 +129,7 @@
     "message": "Privacy:"
   },
   "privacyText": {
-    "message": "All data stays local on your device. API keys are sent only to your chosen provider. No tracking."
+    "message": "Clips stay on this device until delivered or exported. Optional AI, URL fetching and approved app connections can send data to configured services."
   },
 
   "settings": {
@@ -260,5 +263,86 @@
 
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
-  }
+  },
+  "privacyLink": { "message": "Privacy" },
+  "captureSaveFailed": { "message": "The capture was not saved. Your draft is retained." },
+  "captureChangeFailed": { "message": "The capture change was not saved. Refresh and retry." },
+  "approvalTrust": { "message": "Approve only an app you trust. This exact origin (including its port), or exact standalone file, may use the extension's granted capabilities." },
+  "localAIOrigin": { "message": "Local AI endpoint origin (optional)" },
+  "saveLocalAI": { "message": "Save local AI approval" },
+  "removeLocalAI": { "message": "Remove local AI approval" },
+  "approveApp": { "message": "Approve app" },
+  "revokeApps": { "message": "Revoke all approved apps" },
+  "revokeAppsQuestion": { "message": "Disconnect all approved apps? Captures and browser permissions will not be deleted. Reapprove an app to reconnect it." },
+  "localAISavedOrigin": { "message": "Saved for this app: $origin$", "placeholders": { "origin": { "content": "$1" } } },
+  "localAINone": { "message": "No local AI endpoint approved for this app." },
+  "localAIApproveFirst": { "message": "Approve this app before saving a local AI endpoint." },
+  "localAIReadFailed": { "message": "Unable to read local AI approval: $detail$", "placeholders": { "detail": { "content": "$1" } } },
+  "invalidLocalAI": { "message": "Local AI must use HTTP(S) without credentials in its URL" },
+  "localAIPermissionDenied": { "message": "Local AI permission was denied; saved approval is unchanged." },
+  "localAIApprovalFailed": { "message": "Local AI approval failed" },
+  "invalidAppTarget": { "message": "Use an HTTP(S) app or exact standalone file without credentials" },
+  "appPermissionDenied": { "message": "App access permission was denied" },
+  "appApprovalFailed": { "message": "App approval failed" },
+  "appApproved": { "message": "App approved. Reload the app tab to connect." },
+  "appsRevoked": { "message": "All app connections revoked." },
+  "revokeFailed": { "message": "Revocation failed" },
+  "notificationWaiting": { "message": "Waiting for browser permission…" },
+  "notificationEnabled": { "message": "Desktop notifications enabled" },
+  "notificationEnable": { "message": "Enable desktop notifications" },
+  "notificationEnabledDesc": { "message": "Desktop notifications enabled. Operating system settings may still suppress display. Revoke permission in your browser extension settings." },
+  "notificationDisabledDesc": { "message": "Desktop notifications are disabled; in-app alerts remain available." },
+  "notificationCheckFailed": { "message": "Unable to check notification permission: $detail$", "placeholders": { "detail": { "content": "$1" } } },
+  "notificationWaitingDesc": { "message": "Waiting for the browser permission response. If no prompt appears, check your browser extension permissions or reopen this panel." },
+  "notificationRequestFailed": { "message": "Notification permission request failed: $detail$", "placeholders": { "detail": { "content": "$1" } } },
+  "notificationVerifyFailed": { "message": "Unable to verify notification permission: $detail$", "placeholders": { "detail": { "content": "$1" } } },
+  "inAppAlertsAvailable": { "message": "In-app alerts remain available." },
+  "notificationNotEnabled": { "message": "Desktop notifications were not enabled; in-app alerts remain available. Check your browser extension permissions if no prompt appeared." },
+  "clipReviewTitle": { "message": "ThreatCaddy — Clip Review" },
+  "clipReview": { "message": "Clip Review" },
+  "clipReviewSubtitle": { "message": "Browse and manage your captured clips" },
+  "totalCaptures": { "message": "Total Captures" },
+  "unsent": { "message": "Unsent" },
+  "applyAll": { "message": "Apply to All" },
+  "sendAll": { "message": "Send All to ThreatCaddy" },
+  "refresh": { "message": "Refresh" },
+  "clearAll": { "message": "Clear All" },
+  "delete": { "message": "Delete" },
+  "confirm": { "message": "Confirm" },
+  "cancel": { "message": "Cancel" },
+  "noCapturesTitle": { "message": "No captures yet" },
+  "noSourceUrl": { "message": "No source URL" },
+  "importConfirmed": { "message": "Import confirmed" },
+  "legacySent": { "message": "Sent (legacy, unverified)" },
+  "importPending": { "message": "Awaiting import confirmation" },
+  "importFailedRetained": { "message": "Import failed — retained" },
+  "folder": { "message": "Folder" },
+  "editCaptureMetadata": { "message": "Edit capture metadata" },
+  "deleteCaptureTitle": { "message": "Delete Capture" },
+  "deleteCaptureQuestion": { "message": "Are you sure you want to delete this capture?" },
+  "captureDeleted": { "message": "Capture deleted" },
+  "preparingDestination": { "message": "Preparing destination…" },
+  "noUnsentCaptures": { "message": "No unsent captures to send" },
+  "configureTargetFirst": { "message": "Please configure a target URL first" },
+  "invalidTargetUrlDetail": { "message": "Invalid target URL — only http, https, and file:// allowed" },
+  "targetPermissionDenied": { "message": "Permission denied — extension needs access to this site" },
+  "permissionRequestFailed": { "message": "Permission request failed" },
+  "fileAccessDisabled": { "message": "File URL access is disabled. Check this extension's file access settings in your browser before retrying." },
+  "confirmWorkspace": { "message": "Confirm import workspace" },
+  "importWorkspaceMessage": { "message": "Import $count$ capture(s) into “$label$” ($workspace$) at $url$? Only database-confirmed imports will be marked sent.", "placeholders": { "count": { "content": "$1" }, "label": { "content": "$2" }, "workspace": { "content": "$3" }, "url": { "content": "$4" } } },
+  "legacyImportWarning": { "message": "$count$ legacy capture(s) were previously marked sent without verification; importing them may create duplicates. Review or delete them first if unsure.", "placeholders": { "count": { "content": "$1" } } },
+  "importCaptures": { "message": "Import captures" },
+  "waitingForImport": { "message": "Waiting for import confirmation…" },
+  "importsConfirmed": { "message": "$count$ clip import(s) confirmed.", "placeholders": { "count": { "content": "$1" } } },
+  "importsPartial": { "message": "$confirmed$ of $total$ imports confirmed. $detail$", "placeholders": { "confirmed": { "content": "$1" }, "total": { "content": "$2" }, "detail": { "content": "$3" } } },
+  "unconfirmedRetained": { "message": "Unconfirmed captures are retained." },
+  "sendFailed": { "message": "Failed to send: $detail$", "placeholders": { "detail": { "content": "$1" } } },
+  "defaultsApplied": { "message": "Defaults applied to all unsent clips" },
+  "clearAllCaptures": { "message": "Clear All Captures" },
+  "clearAllQuestion": { "message": "This will permanently delete all $count$ capture(s). This cannot be undone.", "placeholders": { "count": { "content": "$1" } } },
+  "capturesCleared": { "message": "Confirmed captures cleared; newer captures were retained" },
+  "capturesLoadFailed": { "message": "Unable to load captures. Reopen this page or retry Refresh." },
+  "metadataSaved": { "message": "Capture metadata saved" },
+  "discardMetadataDraft": { "message": "Discard metadata draft" },
+  "discardMetadataMessage": { "message": "Discard this capture’s unsaved metadata edits and reload its current saved metadata? Saved metadata will not be changed." }
 }

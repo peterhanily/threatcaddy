@@ -6,9 +6,11 @@
     "message": "वेब सामग्री जल्दी कैप्चर करें और ThreatCaddy थ्रेट इंटेलिजेंस के लिए AI अनुरोधों को प्रॉक्सी करें। डेटा डिफ़ॉल्ट रूप से आपके डिवाइस पर स्थानीय रहता है।"
   },
   "version": {
-    "message": "v1.1.1"
+    "message": "v$VERSION$",
+    "placeholders": {
+      "version": { "content": "$1" }
+    }
   },
-
   "quickStats": {
     "message": "त्वरित आँकड़े"
   },
@@ -18,7 +20,6 @@
   "thisWeek": {
     "message": "इस सप्ताह"
   },
-
   "quickCapture": {
     "message": "त्वरित कैप्चर"
   },
@@ -64,7 +65,6 @@
   "saveFailed": {
     "message": "सहेजने में विफल। कृपया पुनः प्रयास करें।"
   },
-
   "recentCaptures": {
     "message": "हालिया कैप्चर"
   },
@@ -74,7 +74,6 @@
   "untitled": {
     "message": "बिना शीर्षक"
   },
-
   "quickActions": {
     "message": "त्वरित क्रियाएं"
   },
@@ -84,7 +83,6 @@
   "reviewAllCaptures": {
     "message": "सभी कैप्चर देखें"
   },
-
   "permissions": {
     "message": "अनुमतियाँ"
   },
@@ -109,7 +107,6 @@
   "allowFileAccessHint": {
     "message": "सक्षम करने के लिए: chrome://extensions पर जाएं, ThreatCaddy ढूंढें, और \"फ़ाइल URL तक पहुंच की अनुमति दें\" टॉगल करें।"
   },
-
   "howToUse": {
     "message": "उपयोग कैसे करें:"
   },
@@ -126,9 +123,8 @@
     "message": "गोपनीयता:"
   },
   "privacyText": {
-    "message": "सभी डेटा आपके डिवाइस पर स्थानीय रहता है। API कुंजियाँ केवल आपके चुने प्रदाता को भेजी जाती हैं। कोई ट्रैकिंग नहीं।"
+    "message": "क्लिप डिलीवर या निर्यात किए जाने तक इसी डिवाइस पर रहती हैं। वैकल्पिक AI, URL प्राप्ति और स्वीकृत ऐप कनेक्शन कॉन्फ़िगर की गई सेवाओं को डेटा भेज सकते हैं।"
   },
-
   "settings": {
     "message": "सेटिंग"
   },
@@ -150,37 +146,39 @@
   "save": {
     "message": "सहेजें"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "ThreatCaddy में सहेजें"
   },
-
   "savedToThreatCaddy": {
     "message": "ThreatCaddy में सहेजा गया!"
   },
-
   "justNow": {
     "message": "अभी-अभी"
   },
   "minutesAgo": {
     "message": "$count$मि॰ पहले",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "$count$घं॰ पहले",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "$count$दि॰ पहले",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "एक्सटेंशन संदर्भ अमान्य हो गया। कृपया यह पेज रीलोड करें।"
   },
@@ -190,7 +188,9 @@
   "errorExtensionUnknown": {
     "message": "एक्सटेंशन त्रुटि: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +199,6 @@
   "errorExtensionError": {
     "message": "एक्सटेंशन त्रुटि"
   },
-
   "errorInvalidUrl": {
     "message": "अमान्य URL"
   },
@@ -221,13 +220,17 @@
   "errorBlockedDomain": {
     "message": "ब्लॉक: $hostname$ अनुमत प्रॉक्सी डोमेन सूची में नहीं है",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "$hostname$ के लिए होस्ट अनुमति आवश्यक",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +239,9 @@
   "errorUnknownProvider": {
     "message": "अज्ञात प्रदाता: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +250,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "$hostname$ के लिए होस्ट अनुमति आवश्यक। ThreatCaddy एक्सटेंशन पॉपअप खोलें और अनुमतियों में \"URL प्राप्त करने की अनुमति दें\" सक्षम करें।",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +264,320 @@
   "errorInvalidTargetUrl": {
     "message": "अमान्य लक्ष्य URL"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "privacyLink": {
+    "message": "गोपनीयता"
+  },
+  "captureSaveFailed": {
+    "message": "कैप्चर सहेजा नहीं गया। आपका ड्राफ्ट सुरक्षित रखा गया है।"
+  },
+  "captureChangeFailed": {
+    "message": "कैप्चर का बदलाव सहेजा नहीं गया। रीफ़्रेश करके फिर कोशिश करें।"
+  },
+  "approvalTrust": {
+    "message": "केवल भरोसेमंद ऐप को स्वीकृति दें। यह सटीक ओरिजिन (पोर्ट सहित), या सटीक स्टैंडअलोन फ़ाइल, एक्सटेंशन को मिली क्षमताओं का उपयोग कर सकती है।"
+  },
+  "localAIOrigin": {
+    "message": "स्थानीय AI एंडपॉइंट ओरिजिन (वैकल्पिक)"
+  },
+  "saveLocalAI": {
+    "message": "स्थानीय AI स्वीकृति सहेजें"
+  },
+  "removeLocalAI": {
+    "message": "स्थानीय AI स्वीकृति हटाएँ"
+  },
+  "approveApp": {
+    "message": "ऐप को स्वीकृति दें"
+  },
+  "revokeApps": {
+    "message": "सभी स्वीकृत ऐप की स्वीकृति वापस लें"
+  },
+  "revokeAppsQuestion": {
+    "message": "सभी स्वीकृत ऐप डिस्कनेक्ट करें? कैप्चर और ब्राउज़र अनुमतियाँ नहीं हटेंगी। दोबारा कनेक्ट करने के लिए ऐप को फिर स्वीकृति दें।"
+  },
+  "localAISavedOrigin": {
+    "message": "इस ऐप के लिए सहेजा गया: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "इस ऐप के लिए कोई स्थानीय AI एंडपॉइंट स्वीकृत नहीं है।"
+  },
+  "localAIApproveFirst": {
+    "message": "स्थानीय AI एंडपॉइंट सहेजने से पहले इस ऐप को स्वीकृति दें।"
+  },
+  "localAIReadFailed": {
+    "message": "स्थानीय AI स्वीकृति पढ़ी नहीं जा सकी: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "स्थानीय AI को बिना URL क्रेडेंशियल के HTTP(S) का उपयोग करना चाहिए"
+  },
+  "localAIPermissionDenied": {
+    "message": "स्थानीय AI अनुमति अस्वीकार हुई; सहेजी गई स्वीकृति नहीं बदली।"
+  },
+  "localAIApprovalFailed": {
+    "message": "स्थानीय AI स्वीकृति विफल हुई"
+  },
+  "invalidAppTarget": {
+    "message": "बिना क्रेडेंशियल वाला HTTP(S) ऐप या सटीक स्टैंडअलोन फ़ाइल उपयोग करें"
+  },
+  "appPermissionDenied": {
+    "message": "ऐप एक्सेस की अनुमति अस्वीकार हुई"
+  },
+  "appApprovalFailed": {
+    "message": "ऐप की स्वीकृति विफल हुई"
+  },
+  "appApproved": {
+    "message": "ऐप स्वीकृत है। कनेक्ट करने के लिए ऐप टैब दोबारा लोड करें।"
+  },
+  "appsRevoked": {
+    "message": "सभी ऐप कनेक्शन की स्वीकृति वापस ली गई।"
+  },
+  "revokeFailed": {
+    "message": "स्वीकृति वापस लेना विफल हुआ"
+  },
+  "notificationWaiting": {
+    "message": "ब्राउज़र अनुमति की प्रतीक्षा…"
+  },
+  "notificationEnabled": {
+    "message": "डेस्कटॉप सूचनाएँ चालू हैं"
+  },
+  "notificationEnable": {
+    "message": "डेस्कटॉप सूचनाएँ चालू करें"
+  },
+  "notificationEnabledDesc": {
+    "message": "डेस्कटॉप सूचनाएँ चालू हैं। ऑपरेटिंग सिस्टम की सेटिंग उन्हें दिखने से रोक सकती है। अनुमति ब्राउज़र की एक्सटेंशन सेटिंग में वापस लें।"
+  },
+  "notificationDisabledDesc": {
+    "message": "डेस्कटॉप सूचनाएँ बंद हैं; ऐप के भीतर अलर्ट उपलब्ध हैं।"
+  },
+  "notificationCheckFailed": {
+    "message": "सूचना अनुमति जाँची नहीं जा सकी: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "ब्राउज़र की अनुमति प्रतिक्रिया की प्रतीक्षा है। यदि प्रॉम्प्ट न दिखे, तो ब्राउज़र की एक्सटेंशन अनुमतियाँ जाँचें या यह पैनल फिर खोलें।"
+  },
+  "notificationRequestFailed": {
+    "message": "सूचना अनुमति का अनुरोध विफल हुआ: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "सूचना अनुमति सत्यापित नहीं हो सकी: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "ऐप के भीतर अलर्ट उपलब्ध हैं।"
+  },
+  "notificationNotEnabled": {
+    "message": "डेस्कटॉप सूचनाएँ चालू नहीं हुईं; ऐप के भीतर अलर्ट उपलब्ध हैं। यदि प्रॉम्प्ट न दिखा हो तो ब्राउज़र की एक्सटेंशन अनुमतियाँ जाँचें।"
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — क्लिप समीक्षा"
+  },
+  "clipReview": {
+    "message": "क्लिप समीक्षा"
+  },
+  "clipReviewSubtitle": {
+    "message": "कैप्चर की गई क्लिप देखें और प्रबंधित करें"
+  },
+  "totalCaptures": {
+    "message": "कुल कैप्चर"
+  },
+  "unsent": {
+    "message": "नहीं भेजे गए"
+  },
+  "applyAll": {
+    "message": "सभी पर लागू करें"
+  },
+  "sendAll": {
+    "message": "सभी ThreatCaddy को भेजें"
+  },
+  "refresh": {
+    "message": "रीफ़्रेश करें"
+  },
+  "clearAll": {
+    "message": "सभी हटाएँ"
+  },
+  "delete": {
+    "message": "हटाएँ"
+  },
+  "confirm": {
+    "message": "पुष्टि करें"
+  },
+  "cancel": {
+    "message": "रद्द करें"
+  },
+  "noCapturesTitle": {
+    "message": "अभी कोई कैप्चर नहीं है"
+  },
+  "noSourceUrl": {
+    "message": "कोई स्रोत URL नहीं"
+  },
+  "importConfirmed": {
+    "message": "आयात की पुष्टि हुई"
+  },
+  "legacySent": {
+    "message": "भेजा गया (पुराना, असत्यापित)"
+  },
+  "importPending": {
+    "message": "आयात की पुष्टि की प्रतीक्षा"
+  },
+  "importFailedRetained": {
+    "message": "आयात विफल — सुरक्षित रखा गया"
+  },
+  "folder": {
+    "message": "फ़ोल्डर"
+  },
+  "editCaptureMetadata": {
+    "message": "कैप्चर मेटाडेटा संपादित करें"
+  },
+  "deleteCaptureTitle": {
+    "message": "कैप्चर हटाएँ"
+  },
+  "deleteCaptureQuestion": {
+    "message": "क्या आप यह कैप्चर हटाना चाहते हैं?"
+  },
+  "captureDeleted": {
+    "message": "कैप्चर हटाया गया"
+  },
+  "preparingDestination": {
+    "message": "गंतव्य तैयार किया जा रहा है…"
+  },
+  "noUnsentCaptures": {
+    "message": "भेजने के लिए कोई लंबित कैप्चर नहीं"
+  },
+  "configureTargetFirst": {
+    "message": "पहले लक्ष्य URL कॉन्फ़िगर करें"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "अमान्य लक्ष्य URL — केवल http, https और file:// अनुमत हैं"
+  },
+  "targetPermissionDenied": {
+    "message": "अनुमति अस्वीकार — एक्सटेंशन को इस साइट का एक्सेस चाहिए"
+  },
+  "permissionRequestFailed": {
+    "message": "अनुमति अनुरोध विफल हुआ"
+  },
+  "fileAccessDisabled": {
+    "message": "फ़ाइल URL एक्सेस बंद है। फिर कोशिश करने से पहले ब्राउज़र में इस एक्सटेंशन की फ़ाइल एक्सेस सेटिंग जाँचें।"
+  },
+  "confirmWorkspace": {
+    "message": "आयात वर्कस्पेस की पुष्टि करें"
+  },
+  "importWorkspaceMessage": {
+    "message": "$url$ पर “$label$” ($workspace$) में $count$ कैप्चर आयात करें? केवल डेटाबेस द्वारा पुष्ट आयात भेजे गए माने जाएँगे।",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "$count$ पुराने कैप्चर बिना सत्यापन के भेजे गए चिह्नित थे; उन्हें आयात करने से डुप्लिकेट बन सकते हैं। संदेह हो तो पहले समीक्षा करें या हटाएँ।",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "कैप्चर आयात करें"
+  },
+  "waitingForImport": {
+    "message": "आयात की पुष्टि की प्रतीक्षा…"
+  },
+  "importsConfirmed": {
+    "message": "$count$ क्लिप आयात की पुष्टि हुई।",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "$total$ में से $confirmed$ आयात पुष्ट हुए। $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "अपुष्ट कैप्चर सुरक्षित रखे गए हैं।"
+  },
+  "sendFailed": {
+    "message": "भेजना विफल हुआ: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "डिफ़ॉल्ट सभी न भेजी गई क्लिप पर लागू किए गए"
+  },
+  "clearAllCaptures": {
+    "message": "सभी कैप्चर हटाएँ"
+  },
+  "clearAllQuestion": {
+    "message": "सभी $count$ कैप्चर स्थायी रूप से हट जाएँगे। इसे वापस नहीं किया जा सकता।",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "पुष्ट कैप्चर हटाए गए; नए कैप्चर सुरक्षित रखे गए"
+  },
+  "capturesLoadFailed": {
+    "message": "कैप्चर लोड नहीं हो सके। यह पेज फिर खोलें या रीफ़्रेश करके कोशिश करें।"
+  },
+  "discardMetadataDraft": {
+    "message": "मेटाडेटा ड्राफ़्ट छोड़ें"
+  },
+  "discardMetadataMessage": {
+    "message": "इस कैप्चर के बिना सहेजे मेटाडेटा बदलाव छोड़कर उसका वर्तमान सहेजा हुआ मेटाडेटा फिर लोड करें? सहेजा हुआ मेटाडेटा नहीं बदलेगा।"
+  },
+  "metadataSaved": {
+    "message": "कैप्चर मेटाडेटा सहेजा गया"
   }
 }

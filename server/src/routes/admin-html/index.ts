@@ -394,14 +394,15 @@ ${adminStyles()}
   <div id="tab-ai" class="tab-content">
     <div style="display:flex;flex-direction:column;height:calc(100vh - 180px);">
       <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap;">
-        <select id="aiProviderSelect" style="padding:0.3rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;font-size:0.8rem;">
+        <select id="aiProviderSelect" aria-label="AI provider" style="padding:0.3rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;font-size:0.8rem;">
           <option value="">Loading...</option>
         </select>
-        <select id="aiModelSelect" style="padding:0.3rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;font-size:0.8rem;">
+        <select id="aiModelSelect" aria-label="AI model" style="padding:0.3rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;font-size:0.8rem;">
           <option value="">—</option>
         </select>
         <span id="aiProviderHint" style="font-size:0.75rem;color:#d29922;display:none;"></span>
         <div style="flex:1;"></div>
+        <button id="aiReloadBtn" class="btn btn-outline btn-sm">Reload providers</button>
         <button id="aiSettingsToggle" class="btn btn-outline btn-sm">Settings</button>
       </div>
 
@@ -410,37 +411,39 @@ ${adminStyles()}
         <h3 style="font-size:0.9rem;color:#c9d1d9;margin-bottom:0.75rem;">AI Assistant Settings</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
           <div>
-            <label style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Local LLM Endpoint</label>
-            <input type="text" id="aiLocalEndpoint" placeholder="http://localhost:11434/v1" style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;">
+            <label for="aiLocalEndpoint" style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Local LLM Endpoint</label>
+            <input type="text" id="aiLocalEndpoint" disabled placeholder="http://localhost:11434/v1" style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;">
             <span style="font-size:0.7rem;color:#8b949e;">Ollama, LM Studio, vLLM, etc.</span>
           </div>
           <div>
-            <label style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Local API Key (optional)</label>
-            <input type="password" id="aiLocalApiKey" placeholder="Leave blank if not needed" style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;">
+            <label for="aiLocalApiKey" style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Local API Key (optional)</label>
+            <input type="password" id="aiLocalApiKey" disabled placeholder="Leave blank if not needed" style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;">
           </div>
           <div>
-            <label style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Local Model Name</label>
-            <input type="text" id="aiLocalModel" placeholder="e.g. llama3, mistral, codestral" style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;">
+            <label for="aiLocalModel" style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Local Model Name</label>
+            <input type="text" id="aiLocalModel" disabled placeholder="e.g. llama3, mistral, codestral" style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;">
           </div>
           <div>
-            <label style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Temperature</label>
-            <input type="number" id="aiTemperature" min="0" max="2" step="0.1" value="0.7" style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;">
+            <label for="aiTemperature" style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Temperature</label>
+            <input type="number" id="aiTemperature" disabled min="0" max="2" step="0.1" value="0.7" style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;">
           </div>
         </div>
         <div style="margin-top:0.75rem;">
-          <label style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Custom System Prompt (appended to built-in prompt)</label>
-          <textarea id="aiCustomPrompt" rows="3" placeholder="Add custom instructions for the AI assistant..." style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;resize:vertical;font-family:inherit;"></textarea>
+          <label for="aiCustomPrompt" style="display:block;font-size:0.75rem;color:#8b949e;margin-bottom:0.25rem;">Custom System Prompt (appended to built-in prompt)</label>
+          <textarea id="aiCustomPrompt" disabled rows="3" placeholder="Add custom instructions for the AI assistant..." style="width:100%;padding:0.35rem 0.5rem;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#c9d1d9;font-size:0.8rem;resize:vertical;font-family:inherit;"></textarea>
         </div>
         <div style="margin-top:0.75rem;display:flex;gap:0.5rem;justify-content:flex-end;">
-          <button id="aiSettingsSave" class="btn btn-primary btn-sm">Save Settings</button>
+          <button id="aiSettingsSave" disabled class="btn btn-primary btn-sm">Save Settings</button>
         </div>
+        <div id="aiSettingsStatus" role="status" style="margin-top:0.5rem;"></div>
       </div>
 
       <div id="aiChatArea" style="flex:1;overflow-y:auto;padding:1rem;background:#0d1117;border:1px solid #21262d;border-radius:6px;margin-bottom:0.5rem;">
-        <div style="text-align:center;color:#8b949e;padding:2rem;">Ask me anything about your server — users, bots, investigations, audit logs, and more.</div>
+        <div class="ai-placeholder" style="text-align:center;color:#8b949e;padding:2rem;">Ask me anything about your server — users, bots, investigations, audit logs, and more.</div>
       </div>
+      <div id="aiStatus" role="alert" style="color:#d29922;font-size:0.85rem;"></div>
       <div style="display:flex;gap:0.5rem;padding:0.5rem 0;">
-        <input type="text" id="aiInput" placeholder="Ask about your server..." style="flex:1;padding:0.5rem 0.75rem;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;font-size:0.9rem;">
+        <input type="text" id="aiInput" aria-label="Message to administrative AI" placeholder="Ask about your server..." style="flex:1;padding:0.5rem 0.75rem;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;font-size:0.9rem;">
         <button id="aiSendBtn" class="btn btn-primary btn-sm">Send</button>
         <button id="aiClearBtn" class="btn btn-outline btn-sm">Clear</button>
       </div>
@@ -500,8 +503,8 @@ ${adminStyles()}
 <!-- Purge Confirmation modal -->
 <div id="purgeModal" class="modal-overlay">
   <div class="modal">
-    <h3 style="color:#f85149;">Purge All Content</h3>
-    <p>This will permanently delete ALL content from this investigation. The investigation and its members will be kept.</p>
+    <h3 style="color:#f85149;">Permanently Delete Investigation</h3>
+    <p>This will permanently delete this investigation, its memberships and ALL retained content, including evidence and attachments. This cannot be undone.</p>
     <div id="purgeEntityCounts" style="margin-bottom:1rem;font-size:0.85rem;color:#c9d1d9;"></div>
     <div class="form-group">
       <label>Type the investigation name to confirm:</label>

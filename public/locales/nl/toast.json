@@ -3,7 +3,18 @@
     "importWarning": "Geïmporteerd met {{count}} mislukte clip(s)",
     "importFailed": "Clips importeren uit extensie mislukt",
     "openedAsNote": "'{{name}}' geopend als nieuwe notitie",
-    "openFailed": "'{{name}}' openen mislukt"
+    "openFailed": "'{{name}}' openen mislukt",
+    "refreshFailed": "Clips zijn opgeslagen, maar de weergave kon niet worden vernieuwd. Laad deze werkruimte opnieuw om ze te zien.",
+    "fileRefreshFailed": "Het bestand is als notitie opgeslagen, maar de weergave kon niet worden vernieuwd. Laad deze werkruimte opnieuw om het te zien.",
+    "fileTitle": "{{name}} — {{size}} — Gewijzigd {{modified}}",
+    "fileError": {
+      "capacity_one": "Eén bestand is niet in de wachtrij geplaatst: er kunnen maximaal 20 bestanden tegelijk wachten. Open het opnieuw zodra deze imports zijn voltooid.",
+      "capacity_other": "{{count}} bestanden zijn niet in de wachtrij geplaatst: er kunnen maximaal 20 bestanden tegelijk wachten. Open ze opnieuw zodra deze imports zijn voltooid.",
+      "type": "Kan ‘{{name}}’ niet openen: kies een Markdown- of tekstbestand.",
+      "size": "Kan ‘{{name}}’ niet openen: tekstbestanden mogen maximaal 5 MiB groot zijn. Open een kleiner bestand.",
+      "read": "Kan ‘{{name}}’ niet lezen. Controleer de bestandstoegang en open het opnieuw.",
+      "import": "Kan ‘{{name}}’ niet als notitie opslaan. Controleer de werkruimteopslag en open het bestand opnieuw."
+    }
   },
   "share": {
     "investigationSaved": "Onderzoek '{{name}}' opgeslagen met alle entiteiten",

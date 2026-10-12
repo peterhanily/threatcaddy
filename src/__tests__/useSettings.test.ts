@@ -40,6 +40,18 @@ describe('useSettings', () => {
     expect(result.current.settings.defaultView).toBe('dashboard');
   });
 
+  it('normalizes persisted regional choices and saves canonical supported language codes', () => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ language: 'ar-EG' }));
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.settings.language).toBe('ar');
+    expect(document.documentElement.dir).toBe('rtl');
+    act(() => result.current.updateSettings({ language: 'pt_BR' }));
+    expect(result.current.settings.language).toBe('pt-BR');
+    expect(JSON.parse(localStorage.getItem(SETTINGS_KEY)!).language).toBe('pt-BR');
+    act(() => result.current.updateSettings({ language: 'zh-TW' }));
+    expect(result.current.settings.language).toBe('en');
+  });
+
   it('falls back to defaults on corrupted localStorage', () => {
     localStorage.setItem(SETTINGS_KEY, 'not valid json');
     const { result } = renderHook(() => useSettings());
@@ -74,6 +86,21 @@ describe('useSettings', () => {
       result.current.toggleTheme();
     });
     expect(result.current.settings.theme).toBe('dark');
+  });
+
+  it('merges functional patches with the latest queued update and supports a no-op decision', () => {
+    const { result } = renderHook(() => useSettings());
+    act(() => {
+      result.current.updateSettings({ displayName: 'Fictional analyst' });
+      result.current.updateSettings(current => ({ displayName: `${current.displayName} updated`, language: 'pt_BR' }));
+    });
+    expect(result.current.settings.displayName).toBe('Fictional analyst updated');
+    expect(result.current.settings.language).toBe('pt-BR');
+    const before = localStorage.getItem(SETTINGS_KEY);
+    const current = result.current.settings;
+    act(() => result.current.updateSettings(() => null));
+    expect(result.current.settings).toBe(current);
+    expect(localStorage.getItem(SETTINGS_KEY)).toBe(before);
   });
 
   it('preserves unmodified settings on partial update', () => {

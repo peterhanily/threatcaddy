@@ -5,6 +5,9 @@ import { updatePresence, removePresence, getPresence } from './presence.js';
 import { logger } from '../lib/logger.js';
 import type { AuthUser } from '../types.js';
 import { onSessionRevocation } from '../services/session-events.js';
+import { eq, sql } from 'drizzle-orm';
+import { db } from '../db/index.js';
+import { users } from '../db/schema.js';
 
 const MAX_WS_MESSAGE_SIZE = 64 * 1024; // 64 KB
 const MAX_CONNECTIONS_PER_USER = 10;
@@ -323,11 +326,37 @@ export async function broadcastGlobal(msg: unknown, excludeUserId?: string) {
   }));
 }
 
-export async function broadcastToUser(userId: string, msg: unknown) {
+export async function broadcastToUser(userId: string, msg: unknown, folderIds: readonly string[] = []) {
   const json = typeof msg === 'string' ? msg : JSON.stringify(msg);
   await Promise.all([...(userConnections.get(userId) ?? [])].map(async ws => {
     const client = clients.get(ws);
-    if (client && await authorizeClient(client)) sendTo(ws, json);
+    if (!client) return;
+    const revision = client.authorizationRevision;
+    if (!folderIds.length) {
+      if (await authorizeClient(client) && client.authorizationRevision === revision) sendTo(ws, json);
+      return;
+    }
+    try {
+      await db.transaction(async tx => {
+        // Direct notifications need membership, not an open subscription. Hold
+        // policy and account locks through send so no revocation can commit
+        // between the final permission check and delivery of scoped content.
+        const clock = await tx.execute(sql`SELECT id FROM sync_clock WHERE id = 1 FOR SHARE`);
+        if (!clock.length) throw new Error('Notification delivery authorization lock is unavailable');
+        const [account] = await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for('share');
+        if (!account) throw new Error('Notification recipient no longer exists');
+        const current = await verifyAccessToken(client.token, tx);
+        if (current.id !== userId || current.sessionFamily !== client.user.sessionFamily) throw new Error('Session identity changed');
+        client.user = current;
+        for (const folderId of new Set(folderIds)) {
+          if (!await checkInvestigationAccess(userId, folderId, 'viewer', tx)) return;
+        }
+        if (clients.get(ws) === client && client.authorizationRevision === revision
+          && current.tokenExpiresAt && current.tokenExpiresAt > Date.now()) sendTo(ws, json);
+      });
+    } catch {
+      closeClient(ws, 4001, 'Notification authorization unavailable');
+    }
   }));
 }
 

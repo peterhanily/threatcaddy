@@ -6,9 +6,11 @@
     "message": "محتوای وب را سریع ثبت کنید و درخواست‌های هوش مصنوعی را برای اطلاعات تهدید ThreatCaddy پروکسی کنید. داده‌ها به‌طور پیش‌فرض روی دستگاه شما محلی می‌مانند."
   },
   "version": {
-    "message": "v1.1.1"
+    "message": "v$VERSION$",
+    "placeholders": {
+      "version": { "content": "$1" }
+    }
   },
-
   "quickStats": {
     "message": "آمار سریع"
   },
@@ -18,7 +20,6 @@
   "thisWeek": {
     "message": "این هفته"
   },
-
   "quickCapture": {
     "message": "ثبت سریع"
   },
@@ -64,7 +65,6 @@
   "saveFailed": {
     "message": "ذخیره ناموفق بود. لطفاً دوباره امتحان کنید."
   },
-
   "recentCaptures": {
     "message": "ثبت‌های اخیر"
   },
@@ -74,7 +74,6 @@
   "untitled": {
     "message": "بی‌عنوان"
   },
-
   "quickActions": {
     "message": "اقدامات سریع"
   },
@@ -84,7 +83,6 @@
   "reviewAllCaptures": {
     "message": "مرور همه ثبت‌ها"
   },
-
   "permissions": {
     "message": "مجوزها"
   },
@@ -109,7 +107,6 @@
   "allowFileAccessHint": {
     "message": "برای فعال‌سازی: به chrome://extensions بروید، ThreatCaddy را پیدا کنید و «اجازه دسترسی به URL فایل» را فعال کنید."
   },
-
   "howToUse": {
     "message": "نحوه استفاده:"
   },
@@ -126,9 +123,8 @@
     "message": "حریم خصوصی:"
   },
   "privacyText": {
-    "message": "همه داده‌ها روی دستگاه شما محلی می‌مانند. کلیدهای API فقط به ارائه‌دهنده انتخابی شما ارسال می‌شوند. بدون ردیابی."
+    "message": "کلیپ‌ها تا زمان تحویل یا صدور روی همین دستگاه می‌مانند. هوش مصنوعی اختیاری، دریافت URL و اتصال‌های تأییدشدهٔ برنامه می‌توانند داده‌ها را به سرویس‌های پیکربندی‌شده ارسال کنند."
   },
-
   "settings": {
     "message": "تنظیمات"
   },
@@ -150,37 +146,39 @@
   "save": {
     "message": "ذخیره"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "ذخیره در ThreatCaddy"
   },
-
   "savedToThreatCaddy": {
     "message": "در ThreatCaddy ذخیره شد!"
   },
-
   "justNow": {
     "message": "همین الان"
   },
   "minutesAgo": {
     "message": "$count$د پیش",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "$count$س پیش",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "$count$ر پیش",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "زمینه افزونه باطل شد. لطفاً این صفحه را بارگذاری مجدد کنید."
   },
@@ -190,7 +188,9 @@
   "errorExtensionUnknown": {
     "message": "خطای افزونه: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +199,6 @@
   "errorExtensionError": {
     "message": "خطای افزونه"
   },
-
   "errorInvalidUrl": {
     "message": "URL نامعتبر"
   },
@@ -221,13 +220,17 @@
   "errorBlockedDomain": {
     "message": "مسدود شد: $hostname$ در لیست دامنه‌های پروکسی مجاز نیست",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "مجوز میزبان برای $hostname$ لازم است",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +239,9 @@
   "errorUnknownProvider": {
     "message": "ارائه‌دهنده ناشناخته: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +250,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "مجوز میزبان برای $hostname$ لازم است. پنجره بازشوی افزونه ThreatCaddy را باز کنید و «اجازه دریافت URL» را در قسمت مجوزها فعال کنید.",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +264,320 @@
   "errorInvalidTargetUrl": {
     "message": "URL هدف نامعتبر"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "discardMetadataDraft": {
+    "message": "حذف پیش‌نویس فراداده"
+  },
+  "discardMetadataMessage": {
+    "message": "ویرایش‌های ذخیره‌نشدهٔ فرادادهٔ این کلیپ حذف و فرادادهٔ ذخیره‌شدهٔ فعلی دوباره بارگذاری شود؟ فرادادهٔ ذخیره‌شده تغییر نمی‌کند."
+  },
+  "privacyLink": {
+    "message": "حریم خصوصی"
+  },
+  "captureSaveFailed": {
+    "message": "کلیپ ذخیره نشد. پیش‌نویس شما حفظ شده است."
+  },
+  "captureChangeFailed": {
+    "message": "تغییر کلیپ ذخیره نشد. تازه‌سازی کنید و دوباره تلاش کنید."
+  },
+  "approvalTrust": {
+    "message": "فقط برنامه‌ای را تأیید کنید که به آن اعتماد دارید. همین مبدأ دقیق، شامل درگاه، یا همین فایل مستقل دقیق، می‌تواند از قابلیت‌های اعطاشده به افزونه استفاده کند."
+  },
+  "localAIOrigin": {
+    "message": "مبدأ نقطهٔ پایانی هوش مصنوعی محلی (اختیاری)"
+  },
+  "saveLocalAI": {
+    "message": "ذخیرهٔ تأیید هوش مصنوعی محلی"
+  },
+  "removeLocalAI": {
+    "message": "حذف تأیید هوش مصنوعی محلی"
+  },
+  "approveApp": {
+    "message": "تأیید برنامه"
+  },
+  "revokeApps": {
+    "message": "لغو تأیید همهٔ برنامه‌ها"
+  },
+  "revokeAppsQuestion": {
+    "message": "اتصال همهٔ برنامه‌های تأییدشده قطع شود؟ کلیپ‌ها و مجوزهای مرورگر حذف نمی‌شوند. برای اتصال مجدد یک برنامه، آن را دوباره تأیید کنید."
+  },
+  "localAISavedOrigin": {
+    "message": "برای این برنامه ذخیره شده: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "هیچ نقطهٔ پایانی هوش مصنوعی محلی برای این برنامه تأیید نشده است."
+  },
+  "localAIApproveFirst": {
+    "message": "پیش از ذخیرهٔ نقطهٔ پایانی هوش مصنوعی محلی، این برنامه را تأیید کنید."
+  },
+  "localAIReadFailed": {
+    "message": "تأیید هوش مصنوعی محلی خوانده نشد: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "هوش مصنوعی محلی باید از HTTP(S) بدون اطلاعات ورود در URL استفاده کند"
+  },
+  "localAIPermissionDenied": {
+    "message": "مجوز هوش مصنوعی محلی رد شد؛ تأیید ذخیره‌شده تغییر نکرده است."
+  },
+  "localAIApprovalFailed": {
+    "message": "تأیید هوش مصنوعی محلی ناموفق بود"
+  },
+  "invalidAppTarget": {
+    "message": "از برنامهٔ HTTP(S) یا فایل مستقل دقیق، بدون اطلاعات ورود، استفاده کنید"
+  },
+  "appPermissionDenied": {
+    "message": "مجوز دسترسی برنامه رد شد"
+  },
+  "appApprovalFailed": {
+    "message": "تأیید برنامه ناموفق بود"
+  },
+  "appApproved": {
+    "message": "برنامه تأیید شد. برای اتصال، زبانهٔ برنامه را دوباره بارگذاری کنید."
+  },
+  "appsRevoked": {
+    "message": "همهٔ اتصال‌های برنامه لغو شدند."
+  },
+  "revokeFailed": {
+    "message": "لغو دسترسی ناموفق بود"
+  },
+  "notificationWaiting": {
+    "message": "در انتظار مجوز مرورگر…"
+  },
+  "notificationEnabled": {
+    "message": "اعلان‌های دسکتاپ فعال‌اند"
+  },
+  "notificationEnable": {
+    "message": "فعال‌سازی اعلان‌های دسکتاپ"
+  },
+  "notificationEnabledDesc": {
+    "message": "اعلان‌های دسکتاپ فعال‌اند. تنظیمات سیستم‌عامل همچنان ممکن است مانع نمایش شوند. مجوز را در تنظیمات افزونهٔ مرورگر لغو کنید."
+  },
+  "notificationDisabledDesc": {
+    "message": "اعلان‌های دسکتاپ غیرفعال‌اند؛ هشدارهای داخل برنامه همچنان در دسترس‌اند."
+  },
+  "notificationCheckFailed": {
+    "message": "مجوز اعلان بررسی نشد: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "در انتظار پاسخ مرورگر به درخواست مجوز. اگر پرسشی نمایش داده نشد، مجوزهای افزونهٔ مرورگر را بررسی کنید یا این پنل را دوباره باز کنید."
+  },
+  "notificationRequestFailed": {
+    "message": "درخواست مجوز اعلان ناموفق بود: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "مجوز اعلان تأیید نشد: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "هشدارهای داخل برنامه همچنان در دسترس‌اند."
+  },
+  "notificationNotEnabled": {
+    "message": "اعلان‌های دسکتاپ فعال نشدند؛ هشدارهای داخل برنامه همچنان در دسترس‌اند. اگر پرسشی نمایش داده نشد، مجوزهای افزونهٔ مرورگر را بررسی کنید."
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — بررسی کلیپ‌ها"
+  },
+  "clipReview": {
+    "message": "بررسی کلیپ‌ها"
+  },
+  "clipReviewSubtitle": {
+    "message": "مرور و مدیریت کلیپ‌های ثبت‌شده"
+  },
+  "totalCaptures": {
+    "message": "مجموع کلیپ‌ها"
+  },
+  "unsent": {
+    "message": "ارسال‌نشده"
+  },
+  "applyAll": {
+    "message": "اعمال روی همه"
+  },
+  "sendAll": {
+    "message": "ارسال همه به ThreatCaddy"
+  },
+  "refresh": {
+    "message": "تازه‌سازی"
+  },
+  "clearAll": {
+    "message": "پاک کردن همه"
+  },
+  "delete": {
+    "message": "حذف"
+  },
+  "confirm": {
+    "message": "تأیید"
+  },
+  "cancel": {
+    "message": "لغو"
+  },
+  "noCapturesTitle": {
+    "message": "هنوز کلیپی ثبت نشده است"
+  },
+  "noSourceUrl": {
+    "message": "بدون URL منبع"
+  },
+  "importConfirmed": {
+    "message": "واردکردن تأیید شد"
+  },
+  "legacySent": {
+    "message": "ارسال‌شده (قدیمی، تأییدنشده)"
+  },
+  "importPending": {
+    "message": "در انتظار تأیید واردکردن"
+  },
+  "importFailedRetained": {
+    "message": "واردکردن ناموفق — حفظ شده"
+  },
+  "folder": {
+    "message": "پوشه"
+  },
+  "editCaptureMetadata": {
+    "message": "ویرایش فرادادهٔ کلیپ"
+  },
+  "deleteCaptureTitle": {
+    "message": "حذف کلیپ"
+  },
+  "deleteCaptureQuestion": {
+    "message": "از حذف این کلیپ مطمئن هستید؟"
+  },
+  "captureDeleted": {
+    "message": "کلیپ حذف شد"
+  },
+  "preparingDestination": {
+    "message": "در حال آماده‌سازی مقصد…"
+  },
+  "noUnsentCaptures": {
+    "message": "کلیپ ارسال‌نشده‌ای برای ارسال وجود ندارد"
+  },
+  "configureTargetFirst": {
+    "message": "ابتدا URL مقصد را پیکربندی کنید"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "URL مقصد نامعتبر است — فقط http، https و file:// مجازند"
+  },
+  "targetPermissionDenied": {
+    "message": "مجوز رد شد — افزونه به دسترسی به این سایت نیاز دارد"
+  },
+  "permissionRequestFailed": {
+    "message": "درخواست مجوز ناموفق بود"
+  },
+  "fileAccessDisabled": {
+    "message": "دسترسی به URL فایل غیرفعال است. پیش از تلاش دوباره، تنظیمات دسترسی این افزونه به فایل را در مرورگر بررسی کنید."
+  },
+  "confirmWorkspace": {
+    "message": "تأیید فضای کاری واردکردن"
+  },
+  "importWorkspaceMessage": {
+    "message": "$count$ کلیپ در «$label$» ($workspace$) در $url$ وارد شود؟ فقط واردکردن‌هایی که پایگاه داده تأیید کند، ارسال‌شده علامت می‌خورند.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "$count$ کلیپ قدیمی قبلاً بدون تأیید، ارسال‌شده علامت خورده‌اند؛ واردکردن آن‌ها ممکن است نسخه‌های تکراری ایجاد کند. اگر مطمئن نیستید ابتدا آن‌ها را بررسی یا حذف کنید.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "واردکردن کلیپ‌ها"
+  },
+  "waitingForImport": {
+    "message": "در انتظار تأیید واردکردن…"
+  },
+  "importsConfirmed": {
+    "message": "واردکردن $count$ کلیپ تأیید شد.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "$confirmed$ مورد از $total$ واردکردن تأیید شد. $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "کلیپ‌های تأییدنشده حفظ می‌شوند."
+  },
+  "sendFailed": {
+    "message": "ارسال ناموفق بود: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "پیش‌فرض‌ها روی همهٔ کلیپ‌های ارسال‌نشده اعمال شدند"
+  },
+  "clearAllCaptures": {
+    "message": "پاک کردن همهٔ کلیپ‌ها"
+  },
+  "clearAllQuestion": {
+    "message": "این کار هر $count$ کلیپ را برای همیشه حذف می‌کند. برگشت‌پذیر نیست.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "کلیپ‌های تأییدشده پاک شدند؛ کلیپ‌های جدیدتر حفظ شدند"
+  },
+  "capturesLoadFailed": {
+    "message": "کلیپ‌ها بارگذاری نشدند. این صفحه را دوباره باز کنید یا تازه‌سازی را دوباره امتحان کنید."
+  },
+  "metadataSaved": {
+    "message": "فرادادهٔ کلیپ ذخیره شد"
   }
 }

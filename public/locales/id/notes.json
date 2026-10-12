@@ -83,7 +83,9 @@
     "lockScrollAria": "Kunci sinkronisasi gulir",
     "wordsChars": "{{words}} kata, {{chars}} karakter",
     "created": "Dibuat {{date}}",
-    "modified": "Diubah {{date}}"
+    "modified": "Diubah {{date}}",
+    "saveFailed": "Perubahan tidak dapat disimpan. Draf tetap ada di tab ini; coba lagi sebelum menutupnya.",
+    "retrySave": "Coba simpan lagi"
   },
   "list": {
     "defaultTitle": "Catatan",

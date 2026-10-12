@@ -6,6 +6,7 @@ import { isEncryptionEnabled } from './encryptionStore';
 import { canonicalBackupJSON, decryptBackup, encryptBackup, type EncryptedBackupBlob } from './backup-crypto';
 import { suppressSyncInCurrentTransaction } from './sync-state';
 import { withEntityDraftBarrier } from './entity-drafts';
+import { markRestoredSyncHistory, SYNC_CAPTURE_KEY, isOnlyLocalPrivacyMetadata } from './sync-capture-policy';
 
 export const LEGACY_DB_NAME = 'BrowserNotesDB';
 export const LEGACY_TRANSFER_KEY = 'legacy-transfer:BrowserNotesDB:v1';
@@ -96,10 +97,25 @@ export async function migrateIndexedDB(options: { sourceKey?: CryptoKey | null }
   await db.open();
   const snapshot = await readLegacySnapshot(options.sourceKey ?? getSessionKey());
   if (!snapshot) return;
+  const incomingHistory = snapshot.stores.some(store => store.name === '_syncQueue' ? store.rows.length > 0
+    : store.name === '_syncMeta' && store.rows.some(row => !isOnlyLocalPrivacyMetadata({ key: row.key, value: row.value })));
   const markers = db.table<Transfer, string>('_localMigrations');
   let progress = await db.transaction('rw', markers, async () => {
+    const resetCoverage = async () => {
+      if (incomingHistory) await db.table('_localMigrations').put({ key: SYNC_CAPTURE_KEY, version: 1,
+        state: 'reconciliation-required', reason: 'legacy-capture-gap' });
+      else await markers.delete(SYNC_CAPTURE_KEY);
+    };
     const existing = await markers.get(LEGACY_TRANSFER_KEY);
-    if (existing) return existing;
+    if (existing) {
+      if (existing.status !== 'verified') await resetCoverage();
+      return existing;
+    }
+    // An earlier visit may already have marked this formerly empty workspace
+    // ready. Incoming operational history must be classified again at startup.
+    // Persist the source's known history before independent store copies. A
+    // peer tab must not infer a fresh workspace between those transactions.
+    await resetCoverage();
     const created: Transfer = { key: LEGACY_TRANSFER_KEY, status: 'copying', sourceVersion: snapshot.version,
       fingerprint: snapshot.fingerprint, completed: [], counts: Object.fromEntries(snapshot.stores.map(store => [store.name, store.rows.length])) };
     await markers.add(created);
@@ -222,6 +238,7 @@ export async function restoreLegacyRecoveryArchive(password: string, blob: Encry
       count += store.rows.length;
     }
     await db.table('_localMigrations').delete('content-v1');
+    await markRestoredSyncHistory(db);
     return count;
   }));
 }

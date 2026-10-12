@@ -34,7 +34,7 @@ const {
     selectQueue,
     mockProcessPush: vi.fn().mockResolvedValue([{ status: 'accepted', serverVersion: 1, serverRecord: {} }]),
     mockLookupEntityFolderId: vi.fn().mockResolvedValue(undefined),
-    mockBroadcastToFolder: vi.fn(),
+    mockBroadcastToFolder: vi.fn().mockResolvedValue(undefined),
     mockLogActivity: vi.fn().mockResolvedValue(undefined),
     mockCreateNotification: vi.fn().mockResolvedValue(undefined),
     mockLogger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
@@ -52,6 +52,12 @@ const {
 vi.mock('../services/sync-service.js', () => ({
   processPush: mockProcessPush,
   lookupEntityFolderId: mockLookupEntityFolderId,
+}));
+// Keep this implementation/dispatch fixture independent of policy-query rows;
+// bot-read-authorization.integration.test.ts covers the actual read policy.
+vi.mock('../services/bot-read-policy.js', () => ({
+  withBotReadPolicy: async (_context: unknown, _capability: unknown, read: (...args: unknown[]) => unknown) =>
+    read(mockDb, () => undefined),
 }));
 vi.mock('../ws/handler.js', () => ({ broadcastToFolder: mockBroadcastToFolder }));
 vi.mock('../services/audit-service.js', () => ({ logActivity: mockLogActivity }));

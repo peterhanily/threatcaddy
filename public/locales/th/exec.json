@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "เหตุการณ์สัปดาห์นี้",
   "metrics.aiChats": "แชท AI",
   "metrics.graphNodes": "โหนดกราฟ",
-  "dashboard.backToExecView": "กลับสู่มุมมองผู้บริหาร"
+  "dashboard.backToExecView": "กลับสู่มุมมองผู้บริหาร",
+  "dashboard.switchToLight": "เปลี่ยนเป็นธีมสว่าง",
+  "dashboard.switchToDark": "เปลี่ยนเป็นธีมมืด",
+  "dashboard.emptyTitle": "พื้นที่ทำงานของคุณพร้อมแล้ว",
+  "dashboard.emptyDescription": "สร้างการสืบสวนหรือนำเข้างานเดิมในโหมดนักวิเคราะห์ แดชบอร์ดนี้สรุปงานที่บันทึกในพื้นที่ทำงานปัจจุบัน",
+  "dashboard.emptyAction": "เปิดโหมดนักวิเคราะห์"
 }

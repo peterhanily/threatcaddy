@@ -11,6 +11,10 @@ interface ExecDetailNavProps {
 
 export function ExecDetailNav({ currentIndex, totalCount, onPrev, onNext }: ExecDetailNavProps) {
   const { t } = useTranslation('exec');
+  // A valid detail can lack a sibling collection (for example, unfiled work).
+  // Do not invent a position or offer navigation from a missing selection.
+  if (!Number.isSafeInteger(currentIndex) || !Number.isSafeInteger(totalCount)
+    || totalCount <= 0 || currentIndex < 0 || currentIndex >= totalCount) return null;
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < totalCount - 1;
 

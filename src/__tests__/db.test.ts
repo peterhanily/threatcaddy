@@ -65,8 +65,9 @@ describe('Database schema', () => {
     expect(db.integrationRuns).toBeDefined();
   });
 
-  it('is at version 33', () => {
-    expect(db.verno).toBe(33);
+  it('is at version 34 and keeps clip receipts workspace-local', () => {
+    expect(db.verno).toBe(34);
+    expect(db.table('_clipReceipts').schema.primKey.name).toBe('key');
   });
 });
 

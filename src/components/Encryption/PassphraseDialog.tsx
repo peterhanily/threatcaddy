@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, Lock, AlertTriangle } from 'lucide-react';
 import { deriveWrappingKey, unwrapMasterKey, base64ToArrayBuffer, arrayBufferToBase64, exportKeyRaw } from '../../lib/crypto';
@@ -14,6 +14,9 @@ interface PassphraseDialogProps {
 
 export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDialogProps) {
   const { t } = useTranslation('encryption');
+  const resetId = useId();
+  const resetInFlight = useRef(false);
+  const unlockInFlight = useRef(false);
   const [passphrase, setPassphrase] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [useRecovery, setUseRecovery] = useState(false);
@@ -22,8 +25,11 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
   const [showReset, setShowReset] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState(false);
 
   const handleUnlock = async () => {
+    if (unlockInFlight.current || resetInFlight.current || !passphrase.trim()) return;
+    unlockInFlight.current = true;
     setError('');
     setUnlocking(true);
     let keyVerified = false;
@@ -62,17 +68,22 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
         ? t('passphrase.prepareFailed', { defaultValue: 'Your key was accepted, but preparing the workspace failed: {{error}}. Unlock again to retry.', error: err instanceof Error ? err.message : String(err) })
         : useRecovery ? t('passphrase.invalidRecoveryKey') : t('passphrase.wrongPassphrase'));
     } finally {
+      unlockInFlight.current = false;
       setUnlocking(false);
     }
   };
 
   const toggleMode = () => {
+    if (unlockInFlight.current) return;
     setUseRecovery(!useRecovery);
     setPassphrase('');
     setError('');
   };
 
   const handleReset = async () => {
+    if (resetInFlight.current || unlockInFlight.current || confirmText !== 'DELETE') return;
+    resetInFlight.current = true;
+    setResetError(false);
     setResetting(true);
     try {
       await db.delete();
@@ -80,6 +91,8 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
       clearSessionCache();
       window.location.reload();
     } catch {
+      resetInFlight.current = false;
+      setResetError(true);
       setResetting(false);
     }
   };
@@ -97,11 +110,10 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
             {t('passphrase.startFreshWarning')}
           </p>
 
-          <p className="text-sm text-gray-400 mb-3">
-            Type <span className="font-mono font-bold text-gray-200">DELETE</span> to confirm.
-          </p>
+          <label htmlFor={resetId} className="block text-sm text-gray-400 mb-3">{t('passphrase.confirmDelete', { confirmation: 'DELETE' })}</label>
 
           <input
+            id={resetId}
             type="text"
             value={confirmText}
             onChange={(e) => setConfirmText(e.target.value)}
@@ -109,6 +121,7 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-red-500 mb-3"
             autoFocus
           />
+          {resetError && <p role="alert" className="mb-3 text-sm text-red-400">{t('passphrase.resetFailed')}</p>}
 
           <div className="flex gap-2">
             <button
@@ -149,6 +162,7 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
           <>
             <textarea
               aria-label={t('passphrase.enterRecoveryKey')}
+              disabled={unlocking}
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
               placeholder={t('passphrase.recoveryKeyPlaceholder')}
@@ -160,25 +174,27 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
           <div className="relative mb-3">
             <input
               aria-label={t('passphrase.enterPassphrase')}
+              disabled={unlocking}
               type={showPassword ? 'text' : 'password'}
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && passphrase && handleUnlock()}
               placeholder={t('passphrase.passphrasePlaceholder')}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 pe-10 text-sm text-gray-200 focus:outline-none focus:border-accent"
+              className="w-full min-h-11 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 pe-12 text-sm text-gray-200 focus:outline-none focus:border-accent"
               autoFocus
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-200"
+              aria-label={t(showPassword ? 'passphrase.hidePassphrase' : 'passphrase.showPassphrase')}
+              className="absolute end-0 top-1/2 -translate-y-1/2 min-w-11 min-h-11 flex items-center justify-center text-gray-400 hover:text-gray-200"
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
         )}
 
-        {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
+        {error && <p role="alert" className="text-red-400 text-sm mb-3">{error}</p>}
 
         <button
           onClick={handleUnlock}
@@ -190,6 +206,7 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
 
         <button
           onClick={toggleMode}
+          disabled={unlocking}
           className="w-full text-sm text-accent hover:text-accent-hover transition-colors mb-2"
         >
           {useRecovery ? t('passphrase.usePassphraseInstead') : t('passphrase.useRecoveryKey')}
@@ -197,6 +214,7 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
 
         <button
           onClick={() => setShowReset(true)}
+          disabled={unlocking}
           className="w-full text-sm text-gray-500 hover:text-gray-300 transition-colors"
         >
           {t('passphrase.forgotPassphrase')}

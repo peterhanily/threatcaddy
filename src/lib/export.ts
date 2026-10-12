@@ -5,61 +5,51 @@ import { nanoid } from 'nanoid';
 import { workspaceStorageKey } from './workspace-profiles';
 import { ENTITY_RELATIONS, mapEntityReferences, type EntityRecord } from './entity-relations';
 import { withEntityDraftBarrier } from './entity-drafts';
+import { buildFullBackupPayload } from './backup-data';
+import { canonicalBackupJSON, encryptBackup, type BackupPayload } from './backup-crypto';
+import { BACKUP_TABLES, type BackupTable } from './backup-tables';
+import { assertBackupSize, validateBackupQuickLinks, validatePortableTables, type PortableRow } from './backup-records';
+import { decodePortableBackup, PORTABLE_BACKUP_FORMAT, portableTableCounts, suspendRestoredAutomation } from './portable-backup';
+import { previewRestore, restoreFullReplace, restoreMerge } from './backup-restore';
 
 export async function exportJSON(): Promise<string> {
-  // Load tables sequentially to reduce peak memory usage (avoids loading
-  // all 15 tables into memory simultaneously on large datasets).
-  const allNotes = collapseEvidenceNoteSeries(await db.notes.toArray());
-  const notes = allNotes.filter((note) => !isBackupEvidenceNote(note));
-  const tasks = await db.tasks.toArray();
-  const folders = await db.folders.toArray();
-  const tags = await db.tags.toArray();
-  const timelineEvents = await db.timelineEvents.toArray();
-  const timelines = await db.timelines.toArray();
-  const whiteboards = await db.whiteboards.toArray();
-  const standaloneIOCs = await db.standaloneIOCs.toArray();
-  const evidenceItems = mergeEvidenceItemLists(await db.evidenceItems.toArray(), evidenceItemsFromNotes(allNotes));
-  const chatThreads = await db.chatThreads.toArray();
-  const noteTemplates = await db.noteTemplates.toArray();
-  const playbookTemplates = await db.playbookTemplates.toArray();
-  const agentActions = await db.agentActions.toArray();
-  const agentProfiles = await db.agentProfiles.toArray();
-  const agentDeployments = await db.agentDeployments.toArray();
-  const agentMeetings = await db.agentMeetings.toArray();
+  const json = JSON.stringify(await portableSnapshot(false), null, 2);
+  assertBackupSize(json);
+  return json;
+}
 
-  // Include quick links from settings if user has customized them
+/** Secrets are included only inside an explicitly password-encrypted envelope. */
+export async function exportEncryptedJSON(password: string): Promise<string> {
+  if (!password.trim()) throw new Error('Enter a non-empty backup password.');
+  const document = await portableSnapshot(true);
+  assertBackupSize(JSON.stringify(document));
+  const json = JSON.stringify(await encryptBackup(password, document));
+  assertBackupSize(json);
+  return json;
+}
+
+async function portableSnapshot(includeConfiguration: boolean): Promise<ExportData> {
+  const payload = await buildFullBackupPayload('all');
+  validatePortableTables(payload.data);
+  const data = payload.data;
+  const redacted = !includeConfiguration && (data.installedIntegrations ?? []).some(row => Object.keys((row as Record<string, unknown>).config as object).length > 0);
+  if (!includeConfiguration) {
+    data.installedIntegrations = (data.installedIntegrations ?? []).map(row => ({ ...row, config: {} }));
+  }
   let quickLinks: QuickLink[] | undefined;
-  try {
-    const stored = localStorage.getItem(workspaceStorageKey('threatcaddy-settings'));
-    if (stored) {
-      const s = JSON.parse(stored);
-      if (Array.isArray(s.quickLinks)) quickLinks = s.quickLinks;
+  const stored = localStorage.getItem(workspaceStorageKey('threatcaddy-settings'));
+  if (stored) {
+    const settings = JSON.parse(stored);
+    if (settings.quickLinks !== undefined) {
+      validateBackupQuickLinks(settings.quickLinks);
+      quickLinks = settings.quickLinks;
     }
-  } catch { /* ignore */ }
-
-  const data: ExportData = {
-    version: 1,
-    exportedAt: Date.now(),
-    notes,
-    tasks,
-    folders,
-    tags,
-    timelineEvents,
-    timelines,
-    whiteboards,
-    standaloneIOCs,
-    evidenceItems: evidenceItems.length > 0 ? evidenceItems : undefined,
-    chatThreads,
-    agentActions: agentActions.length > 0 ? agentActions : undefined,
-    agentProfiles: agentProfiles.length > 0 ? agentProfiles : undefined,
-    agentDeployments: agentDeployments.length > 0 ? agentDeployments : undefined,
-    agentMeetings: agentMeetings.length > 0 ? agentMeetings : undefined,
-    quickLinks,
-    noteTemplates: noteTemplates.length > 0 ? noteTemplates : undefined,
-    playbookTemplates: playbookTemplates.length > 0 ? playbookTemplates : undefined,
-  };
-
-  return JSON.stringify(data, null, 2);
+  }
+  return {
+    format: PORTABLE_BACKUP_FORMAT, version: 1, exportedAt: payload.createdAt,
+    ...data, ...(quickLinks !== undefined ? { quickLinks } : {}),
+    ...(!includeConfiguration ? { redactions: redacted ? ['installedIntegrations.config'] : [] } : {}),
+  } as unknown as ExportData;
 }
 
 const MAX_IMPORT_SIZE = 50 * 1024 * 1024; // 50 MB
@@ -817,6 +807,10 @@ export function sanitizeChatThread(raw: unknown): ChatThread | null {
     provider: (VALID_LLM_PROVIDERS.includes(provider) ? provider : 'anthropic') as LLMProvider,
     folderId: r.folderId != null ? str(r.folderId) : undefined,
     tags: strArr(r.tags),
+    clsLevel: typeof r.clsLevel === 'string' ? str(r.clsLevel) : undefined,
+    mode: r.mode === 'plan' || r.mode === 'act' ? r.mode : undefined,
+    source: r.source === 'user' || r.source === 'agent' || r.source === 'agent-meeting' || r.source === 'caddyshack' ? r.source : undefined,
+    contextSummary: typeof r.contextSummary === 'string' ? str(r.contextSummary) : undefined,
     parentThreadId: r.parentThreadId != null ? str(r.parentThreadId) : undefined,
     isFolder: r.isFolder === true ? true : undefined,
     trashed: bool(r.trashed),
@@ -1113,164 +1107,73 @@ function sanitizePlaybookTemplate(raw: unknown): PlaybookTemplate | null {
   };
 }
 
-function sanitizeQuickLink(raw: unknown): QuickLink | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const r = raw as Record<string, unknown>;
-  if (typeof r.id !== 'string' || typeof r.title !== 'string' || typeof r.url !== 'string') return null;
-  // Reject non-http(s) URLs to prevent javascript: injection from malicious imports
-  try { const u = new URL(str(r.url)); if (u.protocol !== 'http:' && u.protocol !== 'https:') return null; } catch { return null; }
-  return {
-    id: str(r.id),
-    title: str(r.title),
-    url: str(r.url),
-    description: r.description != null ? str(r.description) : undefined,
-    color: r.color != null ? str(r.color) : undefined,
-    icon: r.icon != null ? str(r.icon) : undefined,
+export type JSONImportResult = Record<BackupTable, number> & { warnings?: string[] };
+
+async function prepareJSONImport(json: string, password?: string) {
+  const decoded = await decodePortableBackup(json, password);
+  const sanitizers: Partial<Record<BackupTable, (value: unknown) => object | null>> = {
+    notes: sanitizeNote, tasks: sanitizeTask, folders: sanitizeFolder, tags: sanitizeTag,
+    timelineEvents: sanitizeTimelineEvent, timelines: sanitizeTimeline, whiteboards: sanitizeWhiteboard,
+    standaloneIOCs: sanitizeStandaloneIOC, evidenceItems: sanitizeEvidenceItem, chatThreads: sanitizeChatThread,
+    agentActions: sanitizeAgentAction, agentProfiles: sanitizeAgentProfile, agentDeployments: sanitizeAgentDeployment,
+    agentMeetings: sanitizeAgentMeeting, noteTemplates: sanitizeNoteTemplate, playbookTemplates: sanitizePlaybookTemplate,
   };
-}
-
-export async function importJSON(json: string): Promise<{ notes: number; tasks: number; folders: number; tags: number; timelineEvents: number; timelines: number; whiteboards: number; standaloneIOCs: number; evidenceItems: number; chatThreads: number; noteTemplates: number; playbookTemplates: number; agentActions: number; agentProfiles: number; agentDeployments: number; agentMeetings: number }> {
-  if (json.length > MAX_IMPORT_SIZE) {
-    throw new Error(`Backup file too large (max ${MAX_IMPORT_SIZE / 1024 / 1024} MB)`);
+  // Defaults retain legacy compatibility. Every original field has already been
+  // validated; overlaying it preserves text, nested audit data and optional fields
+  // instead of passing a backup through the lossy content-share sanitizers.
+  const data: BackupPayload['data'] = {};
+  for (const name of BACKUP_TABLES) {
+    const rows = decoded.payload.data[name];
+    if (rows === undefined) continue;
+    data[name] = rows.map(value => {
+      const row = value as PortableRow;
+      const input = name === 'whiteboards' ? { ...row, elements: '[]', appState: undefined, files: undefined }
+        : name === 'standaloneIOCs' ? { ...row, enrichment: undefined } : row;
+      const sanitize = sanitizers[name];
+      const defaults = sanitize?.(input);
+      if (sanitize && !defaults) throw new Error(`Invalid backup record in ${name}; nothing was imported.`);
+      return { ...defaults, ...row };
+    });
   }
-
-  const data = JSON.parse(json);
-
-  if (!data || typeof data !== 'object' || !Array.isArray(data.notes) || !Array.isArray(data.tasks) || !Array.isArray(data.folders) || !Array.isArray(data.tags)) {
-    throw new Error('Invalid backup file format');
-  }
-
-  if (data.notes.length > MAX_ITEMS || data.tasks.length > MAX_ITEMS) {
-    throw new Error(`Too many items (max ${MAX_ITEMS.toLocaleString()} per type)`);
-  }
-
-  // Sanitize all imported objects through allowlisted field extractors
-  const allNotes = collapseEvidenceNoteSeries(data.notes.map(sanitizeNote).filter((n: Note | null): n is Note => n !== null && !!n.id));
-  const notes = allNotes.filter((note) => !isBackupEvidenceNote(note));
-  const tasks = data.tasks.map(sanitizeTask).filter((t: Task | null): t is Task => t !== null && !!t.id);
-  const folders = (Array.isArray(data.folders) ? data.folders : [])
-    .map(sanitizeFolder).filter((f: Folder | null): f is Folder => f !== null && !!f.id);
-  const tags = data.tags.map(sanitizeTag).filter((t: Tag | null): t is Tag => t !== null && !!t.id);
-  const timelineEvents = (Array.isArray(data.timelineEvents) ? data.timelineEvents : [])
-    .map(sanitizeTimelineEvent)
-    .filter((e: TimelineEvent | null): e is TimelineEvent => e !== null && !!e.id);
-  let timelines = (Array.isArray(data.timelines) ? data.timelines : [])
-    .map(sanitizeTimeline)
-    .filter((t: Timeline | null): t is Timeline => t !== null && !!t.id);
-
-  const whiteboards = (Array.isArray(data.whiteboards) ? data.whiteboards : [])
-    .map(sanitizeWhiteboard)
-    .filter((w: Whiteboard | null): w is Whiteboard => w !== null && !!w.id);
-
-  const standaloneIOCs = (Array.isArray(data.standaloneIOCs) ? data.standaloneIOCs : [])
-    .map(sanitizeStandaloneIOC)
-    .filter((i: StandaloneIOC | null): i is StandaloneIOC => i !== null && !!i.id);
-
-  const importedEvidenceItems = (Array.isArray(data.evidenceItems) ? data.evidenceItems : [])
-    .map(sanitizeEvidenceItem)
-    .filter((item: EvidenceItem | null): item is EvidenceItem => item !== null && !!item.id);
-  const evidenceItems = mergeEvidenceItemLists(importedEvidenceItems, evidenceItemsFromNotes(allNotes));
-
-  const chatThreads = (Array.isArray(data.chatThreads) ? data.chatThreads : [])
-    .map(sanitizeChatThread)
-    .filter((c: ChatThread | null): c is ChatThread => c !== null && !!c.id);
-
-  const agentActions = (Array.isArray(data.agentActions) ? data.agentActions : [])
-    .map(sanitizeAgentAction)
-    .filter((a: AgentAction | null): a is AgentAction => a !== null && !!a.id);
-
-  const noteTemplatesRaw = (Array.isArray(data.noteTemplates) ? data.noteTemplates : [])
-    .map(sanitizeNoteTemplate)
-    .filter((t: NoteTemplate | null): t is NoteTemplate => t !== null && !!t.id);
-
-  const playbookTemplatesRaw = (Array.isArray(data.playbookTemplates) ? data.playbookTemplates : [])
-    .map(sanitizePlaybookTemplate)
-    .filter((p: PlaybookTemplate | null): p is PlaybookTemplate => p !== null && !!p.id);
-
-  // If we have timeline events but no timelines, create a Default and assign all events
-  if (timelineEvents.length > 0 && timelines.length === 0) {
-    const defaultId = nanoid();
-    const now = Date.now();
-    timelines = [{ id: defaultId, name: 'Default', order: 0, createdAt: now, updatedAt: now }];
-    for (const ev of timelineEvents) {
-      if (!ev.timelineId) ev.timelineId = defaultId;
+  if (decoded.legacy) {
+    const allNotes = collapseEvidenceNoteSeries((data.notes ?? []) as Note[]);
+    data.notes = allNotes.filter(note => !isBackupEvidenceNote(note));
+    const evidence = mergeEvidenceItemLists((data.evidenceItems ?? []) as EvidenceItem[], evidenceItemsFromNotes(allNotes));
+    if (data.evidenceItems !== undefined || evidence.length) data.evidenceItems = evidence;
+    const events = (data.timelineEvents ?? []) as TimelineEvent[];
+    if (events.some(event => !event.timelineId) && !(data.timelines?.length)) {
+      const id = nanoid();
+      const now = Date.now();
+      data.timelines = [{ id, name: 'Default', order: 0, createdAt: now, updatedAt: now }];
+      for (const event of events) if (!event.timelineId) event.timelineId = id;
     }
   }
-
-  // Sanitize quickLinks if present
-  const quickLinks = (Array.isArray(data.quickLinks) ? data.quickLinks : [])
-    .map(sanitizeQuickLink)
-    .filter((l: QuickLink | null): l is QuickLink => l !== null && !!l.id);
-
-  // Agent profiles/deployments/meetings are imported with basic ID validation
-  const importedProfiles = (Array.isArray(data.agentProfiles) ? data.agentProfiles : []).map(sanitizeAgentProfile).filter(Boolean);
-  const importedDeployments = (Array.isArray(data.agentDeployments) ? data.agentDeployments : []).map(sanitizeAgentDeployment).filter(Boolean);
-  const importedMeetings = (Array.isArray(data.agentMeetings) ? data.agentMeetings : []).map(sanitizeAgentMeeting).filter(Boolean);
-
-  await db.transaction('rw', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents, db.timelines, db.whiteboards, db.standaloneIOCs, db.evidenceItems, db.chatThreads, db.noteTemplates, db.playbookTemplates, db.agentActions, db.agentProfiles, db.agentDeployments, db.agentMeetings], async () => {
-    await db.notes.clear();
-    await db.tasks.clear();
-    await db.folders.clear();
-    await db.tags.clear();
-    await db.timelineEvents.clear();
-    await db.timelines.clear();
-    await db.whiteboards.clear();
-    await db.standaloneIOCs.clear();
-    await db.evidenceItems.clear();
-    await db.chatThreads.clear();
-    await db.noteTemplates.clear();
-    await db.playbookTemplates.clear();
-    await db.agentActions.clear();
-    await db.agentProfiles.clear();
-    await db.agentDeployments.clear();
-    await db.agentMeetings.clear();
-
-    await db.notes.bulkAdd(notes);
-    await db.tasks.bulkAdd(tasks);
-    await db.folders.bulkAdd(folders);
-    await db.tags.bulkAdd(tags);
-    await db.timelineEvents.bulkAdd(timelineEvents);
-    await db.timelines.bulkAdd(timelines);
-    await db.whiteboards.bulkAdd(whiteboards);
-    await db.standaloneIOCs.bulkAdd(standaloneIOCs);
-    if (evidenceItems.length > 0) await db.evidenceItems.bulkAdd(evidenceItems);
-    await db.chatThreads.bulkAdd(chatThreads);
-    if (noteTemplatesRaw.length > 0) await db.noteTemplates.bulkAdd(noteTemplatesRaw);
-    if (playbookTemplatesRaw.length > 0) await db.playbookTemplates.bulkAdd(playbookTemplatesRaw);
-    if (agentActions.length > 0) await db.agentActions.bulkAdd(agentActions);
-    if (importedProfiles.length > 0) await db.agentProfiles.bulkAdd(importedProfiles);
-    if (importedDeployments.length > 0) await db.agentDeployments.bulkAdd(importedDeployments);
-    if (importedMeetings.length > 0) await db.agentMeetings.bulkAdd(importedMeetings);
-  });
-
-  // Restore quick links to settings if present in backup
-  if (quickLinks.length > 0) {
-    try {
-      const stored = localStorage.getItem(workspaceStorageKey('threatcaddy-settings'));
-      const settings = stored ? JSON.parse(stored) : {};
-      settings.quickLinks = quickLinks;
-      localStorage.setItem(workspaceStorageKey('threatcaddy-settings'), JSON.stringify(settings));
-    } catch { /* ignore */ }
+  validatePortableTables(data);
+  const suspended = suspendRestoredAutomation(data);
+  if (canonicalBackupJSON(suspended) !== canonicalBackupJSON(data)) {
+    decoded.warnings.push('Restored automation is inactive: integrations and agent deployments require review; previous pending or approved actions cannot execute. Original settings remain in the backup file.');
   }
+  decoded.payload = { ...decoded.payload, data: suspended };
+  return decoded;
+}
 
-  return {
-    notes: notes.length,
-    tasks: tasks.length,
-    folders: folders.length,
-    tags: tags.length,
-    timelineEvents: timelineEvents.length,
-    timelines: timelines.length,
-    whiteboards: whiteboards.length,
-    standaloneIOCs: standaloneIOCs.length,
-    evidenceItems: evidenceItems.length,
-    chatThreads: chatThreads.length,
-    noteTemplates: noteTemplatesRaw.length,
-    playbookTemplates: playbookTemplatesRaw.length,
-    agentActions: agentActions.length,
-    agentProfiles: importedProfiles.length,
-    agentDeployments: importedDeployments.length,
-    agentMeetings: importedMeetings.length,
-  };
+function restoreQuickLinks(links: QuickLink[] | undefined, warnings: string[]): void {
+  if (links === undefined) return;
+  try {
+    const key = workspaceStorageKey('threatcaddy-settings');
+    const stored = localStorage.getItem(key);
+    const settings = stored ? JSON.parse(stored) : {};
+    localStorage.setItem(key, JSON.stringify({ ...settings, quickLinks: links }));
+  } catch {
+    warnings.push('Investigation data was restored, but quick-link settings could not be saved. Keep the backup and recover those settings separately.');
+  }
+}
+
+export async function importJSON(json: string, password?: string): Promise<JSONImportResult> {
+  const decoded = await prepareJSONImport(json, password);
+  await restoreFullReplace(decoded.payload);
+  restoreQuickLinks(decoded.quickLinks, decoded.warnings);
+  return { ...portableTableCounts(decoded.payload.data), ...(decoded.warnings.length ? { warnings: decoded.warnings } : {}) };
 }
 
 export async function exportInvestigationJSON(folderId: string): Promise<string> {
@@ -1573,6 +1476,7 @@ export interface MergeImportInvestigationNoteSummary {
 }
 
 export interface MergeImportResult {
+  warnings?: string[];
   added: number;
   skipped: number;
   updated: number;
@@ -1603,91 +1507,26 @@ function countImportedNotesByInvestigation(
   return Array.from(counts.values()).sort((a, b) => b.notes - a.notes || a.folderName.localeCompare(b.folderName));
 }
 
-export async function mergeImportJSON(json: string): Promise<MergeImportResult> {
-  if (json.length > MAX_IMPORT_SIZE) {
-    throw new Error(`Backup file too large (max ${MAX_IMPORT_SIZE / 1024 / 1024} MB)`);
-  }
-
-  const data = JSON.parse(json);
-  if (!data || typeof data !== 'object' || !Array.isArray(data.notes) || !Array.isArray(data.tasks)) {
-    throw new Error('Invalid backup file format');
-  }
-
-  let added = 0;
+export async function mergeImportJSON(json: string, password?: string): Promise<MergeImportResult> {
+  const decoded = await prepareJSONImport(json, password);
+  const preview = await previewRestore(decoded.payload, 'merge');
+  const restored = await restoreMerge(decoded.payload, preview);
+  const tables: Record<string, MergeImportTableResult> = Object.fromEntries(BACKUP_TABLES.map(name => [name,
+    { incoming: decoded.payload.data[name]?.length ?? 0, added: 0, updated: 0, skipped: 0 },
+  ]));
   let skipped = 0;
-  let updated = 0;
-  const tables: Record<string, MergeImportTableResult> = {};
-
-  async function mergeTable(
-    name: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    table: { get: (id: string) => Promise<any>; add: (item: any) => Promise<unknown>; update: (id: string, changes: any) => Promise<number> },
-    items: { id: string; updatedAt?: number }[],
-  ) {
-    const tableResult: MergeImportTableResult = { incoming: items.length, added: 0, updated: 0, skipped: 0 };
-    for (const item of items) {
-      if (!item.id) { skipped++; tableResult.skipped++; continue; }
-      const existing = await table.get(item.id);
-      if (existing) {
-        if (item.updatedAt && existing.updatedAt && item.updatedAt > existing.updatedAt) {
-          await table.update(item.id, item);
-          updated++;
-          tableResult.updated++;
-        } else {
-          skipped++;
-          tableResult.skipped++;
-        }
-      } else {
-        try {
-          await table.add(item);
-          added++;
-          tableResult.added++;
-        } catch {
-          skipped++;
-          tableResult.skipped++;
-        }
-      }
-    }
-    tables[name] = tableResult;
+  for (const change of preview.changes) {
+    const incoming = decoded.payload.data[change.table as BackupTable]?.length ?? 0;
+    const ignored = incoming - change.added - change.updated;
+    tables[change.table] = { incoming, added: change.added, updated: change.updated, skipped: ignored };
+    skipped += ignored;
   }
-
-  const allNotes = collapseEvidenceNoteSeries(data.notes.map(sanitizeNote).filter((n: Note | null): n is Note => n !== null && !!n.id));
-  const notes = allNotes.filter((note) => !isBackupEvidenceNote(note));
-  const tasks = data.tasks.map(sanitizeTask).filter((t: Task | null): t is Task => t !== null && !!t.id);
-  const folders = (Array.isArray(data.folders) ? data.folders : [])
-    .map(sanitizeFolder).filter((f: Folder | null): f is Folder => f !== null && !!f.id);
-  const tags = (Array.isArray(data.tags) ? data.tags : [])
-    .map(sanitizeTag).filter((t: Tag | null): t is Tag => t !== null && !!t.id);
-  const timelineEvents = (Array.isArray(data.timelineEvents) ? data.timelineEvents : [])
-    .map(sanitizeTimelineEvent).filter((e: TimelineEvent | null): e is TimelineEvent => e !== null && !!e.id);
-  const timelines = (Array.isArray(data.timelines) ? data.timelines : [])
-    .map(sanitizeTimeline).filter((t: Timeline | null): t is Timeline => t !== null && !!t.id);
-  const whiteboards = (Array.isArray(data.whiteboards) ? data.whiteboards : [])
-    .map(sanitizeWhiteboard).filter((w: Whiteboard | null): w is Whiteboard => w !== null && !!w.id);
-  const standaloneIOCs = (Array.isArray(data.standaloneIOCs) ? data.standaloneIOCs : [])
-    .map(sanitizeStandaloneIOC).filter((i: StandaloneIOC | null): i is StandaloneIOC => i !== null && !!i.id);
-  const importedEvidenceItems = (Array.isArray(data.evidenceItems) ? data.evidenceItems : [])
-    .map(sanitizeEvidenceItem).filter((item: EvidenceItem | null): item is EvidenceItem => item !== null && !!item.id);
-  const evidenceItems = mergeEvidenceItemLists(importedEvidenceItems, evidenceItemsFromNotes(allNotes));
-  const chatThreads = (Array.isArray(data.chatThreads) ? data.chatThreads : [])
-    .map(sanitizeChatThread).filter((c: ChatThread | null): c is ChatThread => c !== null && !!c.id);
-
-  const noteInvestigations = countImportedNotesByInvestigation(notes, folders);
-
-  await db.transaction('rw', [db.notes, db.tasks, db.folders, db.tags, db.timelineEvents, db.timelines, db.whiteboards, db.standaloneIOCs, db.evidenceItems, db.chatThreads], async () => {
-    await mergeTable('folders', db.folders, folders);
-    await mergeTable('tags', db.tags, tags);
-    await mergeTable('notes', db.notes, notes);
-    await mergeTable('tasks', db.tasks, tasks);
-    await mergeTable('timelineEvents', db.timelineEvents, timelineEvents);
-    await mergeTable('timelines', db.timelines, timelines);
-    await mergeTable('whiteboards', db.whiteboards, whiteboards);
-    await mergeTable('standaloneIOCs', db.standaloneIOCs, standaloneIOCs);
-    await mergeTable('evidenceItems', db.evidenceItems, evidenceItems);
-    await mergeTable('chatThreads', db.chatThreads, chatThreads);
-  });
-
-  return { added, skipped, updated, tables, noteInvestigations };
+  restoreQuickLinks(decoded.quickLinks, decoded.warnings);
+  return {
+    added: restored.added, updated: restored.updated, skipped, tables,
+    noteInvestigations: countImportedNotesByInvestigation((decoded.payload.data.notes ?? []) as Note[], (decoded.payload.data.folders ?? []) as Folder[]),
+    ...(decoded.warnings.length ? { warnings: decoded.warnings } : {}),
+  };
 }
 
 export function downloadFile(content: string, filename: string, type: string) {

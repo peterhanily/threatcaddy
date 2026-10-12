@@ -1,10 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { db } from '../db';
 import { purgeOldTrash } from '../lib/trash-purge';
+import { clearPending, markPending, PendingChangesError } from '../lib/pending-changes';
+import { withEntityDraftBarrier } from '../lib/entity-drafts';
 import type { Note, Task } from '../types';
 
 const DAY_MS = 86_400_000;
 const NOW = Date.now();
+const pendingDraft = Symbol('trash purge pending draft fixture');
 function note(overrides: Partial<Note> = {}): Note {
   return { id: 'note', title: 'Test note', content: '', tags: [], pinned: false,
     trashed: false, archived: false, createdAt: NOW, updatedAt: NOW, ...overrides };
@@ -20,6 +23,7 @@ async function purgeNotes(items: Note[]) {
 
 describe('purgeOldTrash with the registered IndexedDB lifecycle', () => {
   beforeEach(async () => { await Promise.all(db.tables.map(table => table.clear())); });
+  afterEach(() => { clearPending(pendingDraft); });
 
   it('keeps recent, undated and non-trashed records', async () => {
     const items = [
@@ -75,6 +79,39 @@ describe('purgeOldTrash with the registered IndexedDB lifecycle', () => {
     expect(await Promise.all([purgeOldTrash(notes, db.notes), purgeOldTrash(tasks, db.tasks), purgeOldTrash(notes, db.notes)])).toEqual([[], [], []]);
     expect(await db.notes.count()).toBe(0);
     expect(await db.tasks.count()).toBe(0);
+  });
+
+  it('preserves the loaded list while unsent work blocks maintenance, then retries on a later load', async () => {
+    const items = [note({ id: 'old', trashed: true, trashedAt: NOW - 40 * DAY_MS }), note({ id: 'active' })];
+    await db.notes.bulkAdd(items);
+    markPending(pendingDraft);
+    expect(await purgeOldTrash(items, db.notes)).toBe(items);
+    expect(await db.notes.count()).toBe(2);
+    // The same pending work must continue to refuse explicit replacement.
+    let replaced = false;
+    await expect(withEntityDraftBarrier(async () => { replaced = true; })).rejects.toBeInstanceOf(PendingChangesError);
+    expect(replaced).toBe(false);
+    clearPending(pendingDraft);
+    expect((await purgeOldTrash(items, db.notes)).map(row => row.id)).toEqual(['active']);
+  });
+
+  it('defers a queued purge when a draft appears during an earlier lifecycle operation', async () => {
+    const notes = [note({ trashed: true, trashedAt: NOW - 40 * DAY_MS })];
+    const tasks = [task({ trashed: true, trashedAt: NOW - 40 * DAY_MS })];
+    await db.notes.bulkAdd(notes);
+    await db.tasks.bulkAdd(tasks);
+    const draftAppears = () => { markPending(pendingDraft); };
+    db.notes.hook('deleting', draftAppears);
+    try {
+      const earlier = purgeOldTrash(notes, db.notes);
+      const queued = purgeOldTrash(tasks, db.tasks);
+      expect(await earlier).toEqual([]);
+      expect(await queued).toBe(tasks);
+    } finally { db.notes.hook('deleting').unsubscribe(draftAppears); }
+    expect(await db.notes.count()).toBe(0);
+    expect(await db.tasks.get('task')).toEqual(tasks[0]);
+    clearPending(pendingDraft);
+    expect(await purgeOldTrash(tasks, db.tasks)).toEqual([]);
   });
 
   it('rechecks the current row and preserves a restored record from a stale purge snapshot', async () => {

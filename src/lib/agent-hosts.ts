@@ -37,16 +37,17 @@ function redactAuth(s: string): string {
  * Fetch available skills from an agent host's GET /skills endpoint.
  * Returns the parsed skill array, or throws on failure.
  */
-export async function fetchHostSkills(host: AgentHost): Promise<AgentHostSkill[]> {
+export async function fetchHostSkills(host: AgentHost, signal?: AbortSignal): Promise<AgentHostSkill[]> {
   const url = `${host.url.replace(/\/+$/, '')}/skills`;
   const headers: Record<string, string> = { 'Accept': 'application/json' };
   if (host.apiKey) headers['Authorization'] = `Bearer ${host.apiKey}`;
 
-  const lifecycle = cancellableRequest();
+  const lifecycle = cancellableRequest(signal);
   const { controller } = lifecycle;
   const timer = setTimeout(() => controller.abort(), SKILLS_TIMEOUT_MS);
 
   try {
+    if (controller.signal.aborted) throw new DOMException('Cancelled', 'AbortError');
     assertConfiguredConnection(url);
     const resp = await fetch(url, { headers, signal: controller.signal });
     if (!resp.ok) {

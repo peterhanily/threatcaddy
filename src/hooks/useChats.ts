@@ -118,13 +118,14 @@ export function useChats() {
       t.updatedAt = now;
     });
 
-    if (modified === 0) return; // thread not found
+    if (modified === 0) throw new Error('The chat thread no longer exists. Your unsent draft has been kept; choose or restore a thread before retrying.');
 
     // Update messages cache from the actual DB state to stay consistent
-    const freshThread = await db.chatThreads.get(threadId);
-    if (freshThread) {
-      messagesCacheRef.current.set(threadId, freshThread.messages);
-    }
+    let freshThread: ChatThread | undefined;
+    try { freshThread = await db.chatThreads.get(threadId); }
+    catch (error) { console.warn('useChats: message saved, but refreshing its cache failed', error); }
+    if (!mountedRef.current) return;
+    if (freshThread) messagesCacheRef.current.set(threadId, freshThread.messages);
 
     // Optimistic update React state
     const updates: Partial<ChatThread> = { updatedAt: now };
@@ -132,9 +133,11 @@ export function useChats() {
     setThreads((prev) =>
       prev.map((t) => {
         if (t.id !== threadId) return t;
+        if (freshThread) return freshThread;
         const merged = { ...t, ...updates };
         // Append to local state as well (will be authoritative on next reload)
         merged.messages = [...t.messages, message];
+        if (merged.messages.length > 2000) merged.messages = [...merged.messages.slice(0, 2), ...merged.messages.slice(-1998)];
         return merged;
       }).sort((a, b) => b.updatedAt - a.updatedAt)
     );

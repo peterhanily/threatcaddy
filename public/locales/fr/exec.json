@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "Événements cette semaine",
   "metrics.aiChats": "Chats IA",
   "metrics.graphNodes": "Nœuds du graphe",
-  "dashboard.backToExecView": "Retour à la Vue direction"
+  "dashboard.backToExecView": "Retour à la Vue direction",
+  "dashboard.switchToLight": "Passer au thème clair",
+  "dashboard.switchToDark": "Passer au thème sombre",
+  "dashboard.emptyTitle": "Votre espace de travail est prêt",
+  "dashboard.emptyDescription": "Créez une enquête ou importez votre travail en mode Analyste. Ce tableau de bord résume le travail enregistré dans cet espace.",
+  "dashboard.emptyAction": "Ouvrir le mode Analyste"
 }

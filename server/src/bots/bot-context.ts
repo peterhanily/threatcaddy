@@ -4,7 +4,7 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { requestPinned, withAbort } from '../lib/bounded-http.js';
 import { setTimeout as delay } from 'node:timers/promises';
 import { Client as SSHClient } from 'ssh2';
-import { eq, and, or, isNull, ilike, inArray } from 'drizzle-orm';
+import { eq, and, or, isNull, ilike, inArray, sql } from 'drizzle-orm';
 import { executeCode, type CodeExecutionResult } from './sandbox.js';
 import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
@@ -13,6 +13,9 @@ import { createNotification } from '../services/notification-service.js';
 import { logActivity } from '../services/audit-service.js';
 import { broadcastToFolder } from '../ws/handler.js';
 import type { BotContext, BotCapability, BotRunLogEntry } from './types.js';
+import { authorizeBotWrite, botMutationAuthorizer } from '../services/bot-write-policy.js';
+import { withBotReadPolicy } from '../services/bot-read-policy.js';
+import { logger } from '../lib/logger.js';
 
 const BOT_WRITABLE_TABLES = new Set(['notes', 'tasks', 'standaloneIOCs', 'timelineEvents']);
 
@@ -134,7 +137,7 @@ export class BotExecutionContext {
       );
     }
 
-    const rows = await db.select({
+    const rows = await withBotReadPolicy(this.ctx, 'read_entities', (tx, visibleScope) => tx.select({
       id: schema.notes.id,
       title: schema.notes.title,
       content: schema.notes.content,
@@ -143,8 +146,8 @@ export class BotExecutionContext {
       createdAt: schema.notes.createdAt,
       updatedAt: schema.notes.updatedAt,
     }).from(schema.notes)
-      .where(and(...conditions))
-      .limit(limit);
+      .where(and(...conditions, visibleScope(schema.notes.folderId)))
+      .limit(limit));
 
     return rows.map((n) => ({ id: n.id, title: n.title, snippet: n.content.slice(0, 200), tags: n.tags }));
   }
@@ -153,7 +156,8 @@ export class BotExecutionContext {
     this.checkAborted();
     this.requireCapability('read_entities');
 
-    const rows = await db.select().from(schema.notes).where(eq(schema.notes.id, noteId)).limit(1);
+    const rows = await withBotReadPolicy(this.ctx, 'read_entities', (tx, visibleScope) => tx.select().from(schema.notes)
+      .where(and(eq(schema.notes.id, noteId), isNull(schema.notes.deletedAt), visibleScope(schema.notes.folderId))).limit(1));
     if (rows.length === 0) return null;
 
     const note = rows[0];
@@ -183,9 +187,9 @@ export class BotExecutionContext {
       conditions.push(eq(schema.standaloneIOCs.type, typeFilter));
     }
 
-    return db.select().from(schema.standaloneIOCs)
-      .where(and(...conditions))
-      .limit(limit);
+    return withBotReadPolicy(this.ctx, 'read_entities', (tx, visibleScope) => tx.select().from(schema.standaloneIOCs)
+      .where(and(...conditions, visibleScope(schema.standaloneIOCs.folderId)))
+      .limit(limit));
   }
 
   /**
@@ -200,12 +204,13 @@ export class BotExecutionContext {
     const result = new Map<string, Record<string, unknown>[]>();
     if (folderIds.length === 0) return result;
 
-    const rows = await db.select().from(schema.standaloneIOCs)
+    const rows = await withBotReadPolicy(this.ctx, 'read_entities', (tx, visibleScope) => tx.select().from(schema.standaloneIOCs)
       .where(and(
         inArray(schema.standaloneIOCs.folderId, folderIds),
         eq(schema.standaloneIOCs.trashed, false),
         isNull(schema.standaloneIOCs.deletedAt),
-      ));
+        visibleScope(schema.standaloneIOCs.folderId),
+      )));
 
     for (const row of rows) {
       const fid = (row as Record<string, unknown>).folderId as string;
@@ -231,9 +236,9 @@ export class BotExecutionContext {
       conditions.push(eq(schema.tasks.status, statusFilter as 'todo' | 'in-progress' | 'done'));
     }
 
-    return db.select().from(schema.tasks)
-      .where(and(...conditions))
-      .limit(limit);
+    return withBotReadPolicy(this.ctx, 'read_entities', (tx, visibleScope) => tx.select().from(schema.tasks)
+      .where(and(...conditions, visibleScope(schema.tasks.folderId)))
+      .limit(limit));
   }
 
   /**
@@ -248,12 +253,13 @@ export class BotExecutionContext {
     const result = new Map<string, Record<string, unknown>[]>();
     if (folderIds.length === 0) return result;
 
-    const rows = await db.select().from(schema.tasks)
+    const rows = await withBotReadPolicy(this.ctx, 'read_entities', (tx, visibleScope) => tx.select().from(schema.tasks)
       .where(and(
         inArray(schema.tasks.folderId, folderIds),
         eq(schema.tasks.trashed, false),
         isNull(schema.tasks.deletedAt),
-      ));
+        visibleScope(schema.tasks.folderId),
+      )));
 
     for (const row of rows) {
       const fid = (row as Record<string, unknown>).folderId as string;
@@ -270,13 +276,14 @@ export class BotExecutionContext {
     this.requireCapability('read_entities');
     this.requireScope(folderId);
 
-    return db.select().from(schema.timelineEvents).where(
+    return withBotReadPolicy(this.ctx, 'read_entities', (tx, visibleScope) => tx.select().from(schema.timelineEvents).where(
       and(
         eq(schema.timelineEvents.folderId, folderId),
         eq(schema.timelineEvents.trashed, false),
         isNull(schema.timelineEvents.deletedAt),
+        visibleScope(schema.timelineEvents.folderId),
       )
-    ).limit(limit);
+    ).limit(limit));
   }
 
   async getInvestigation(folderId: string): Promise<Record<string, unknown> | null> {
@@ -284,9 +291,9 @@ export class BotExecutionContext {
     this.requireCapability('read_entities');
     this.requireScope(folderId);
 
-    const rows = await db.select().from(schema.folders).where(
-      and(eq(schema.folders.id, folderId), isNull(schema.folders.deletedAt))
-    ).limit(1);
+    const rows = await withBotReadPolicy(this.ctx, 'read_entities', (tx, visibleScope) => tx.select().from(schema.folders).where(
+      and(eq(schema.folders.id, folderId), isNull(schema.folders.deletedAt), visibleScope(schema.folders.id))
+    ).limit(1));
     return rows.length > 0 ? (rows[0] as Record<string, unknown>) : null;
   }
 
@@ -304,7 +311,8 @@ export class BotExecutionContext {
       return [];
     }
 
-    return db.select().from(schema.folders).where(and(...conditions));
+    return withBotReadPolicy(this.ctx, 'read_entities', (tx, visibleScope) => tx.select().from(schema.folders)
+      .where(and(...conditions, visibleScope(schema.folders.id))));
   }
 
   async searchAcrossInvestigations(query: string): Promise<Record<string, unknown>[]> {
@@ -327,7 +335,8 @@ export class BotExecutionContext {
       return [];
     }
 
-    return db.select().from(schema.standaloneIOCs).where(and(...conditions)).limit(500);
+    return withBotReadPolicy(this.ctx, 'cross_investigation', (tx, visibleScope) => tx.select().from(schema.standaloneIOCs)
+      .where(and(...conditions, visibleScope(schema.standaloneIOCs.folderId))).limit(500));
   }
 
   // ─── Write Operations (via sync-service) ──────────────────────
@@ -348,6 +357,7 @@ export class BotExecutionContext {
     const results = await processPush(
       [{ table, op: 'put', entityId, data, clientVersion: 0 }],
       this.ctx.botUserId,
+      { authorizeMutation: botMutationAuthorizer(this.ctx, 'create'), beforeCommit: () => this.checkAborted() },
     );
 
     const result = results[0];
@@ -360,14 +370,14 @@ export class BotExecutionContext {
     // Broadcast entity change for real-time sync
     const folderId = data.folderId as string | undefined;
     if (folderId) {
-      broadcastToFolder(folderId, {
+      await broadcastToFolder(folderId, {
         type: 'entity-change',
         table,
         op: 'put',
         entityId,
         data: result.serverRecord,
         updatedBy: this.ctx.botUserId,
-      }, this.ctx.botUserId);
+      }, this.ctx.botUserId).catch(() => logger.warn('Committed bot creation notification failed'));
     }
   }
 
@@ -395,7 +405,7 @@ export class BotExecutionContext {
       this.ctx.botUserId,
       // Built-in updates are field patches. If no observed revision is supplied,
       // the service merges only these fields under its transaction writer lock.
-      { trustedInternal: true },
+      { trustedInternal: true, authorizeMutation: botMutationAuthorizer(this.ctx, 'update'), beforeCommit: () => this.checkAborted() },
     );
 
     const result = results[0];
@@ -405,21 +415,22 @@ export class BotExecutionContext {
 
     this.ctx.entitiesUpdated++;
 
-    const folderId = (result.serverRecord?.folderId as string | undefined) || existingFolderId;
-    if (existingFolderId && folderId && existingFolderId !== folderId) {
-      await broadcastToFolder(existingFolderId, {
+    const folderId = result.serverRecord?.folderId as string | undefined;
+    const previousFolderId = result.previousFolderId;
+    if (previousFolderId && previousFolderId !== folderId) {
+      await broadcastToFolder(previousFolderId, {
         type: 'entity-change', table, op: 'delete', entityId, updatedBy: this.ctx.botUserId,
-      }, this.ctx.botUserId);
+      }, this.ctx.botUserId).catch(() => logger.warn('Committed bot move notification failed'));
     }
     if (folderId) {
-      broadcastToFolder(folderId, {
+      await broadcastToFolder(folderId, {
         type: 'entity-change',
         table,
         op: 'put',
         entityId,
         data: result.serverRecord,
         updatedBy: this.ctx.botUserId,
-      }, this.ctx.botUserId);
+      }, this.ctx.botUserId).catch(() => logger.warn('Committed bot update notification failed'));
     }
   }
 
@@ -493,21 +504,28 @@ export class BotExecutionContext {
     }
 
     const id = nanoid();
-    await db.insert(schema.posts).values({
-      id,
-      authorId: this.ctx.botUserId,
-      content,
-      attachments: [],
-      folderId: folderId ?? null,
-      mentions: [],
-      deleted: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    await db.transaction(async tx => {
+      const clock = await tx.execute(sql`SELECT id FROM sync_clock WHERE id = 1 FOR UPDATE`);
+      if (!clock.length) throw new Error('Bot write authorization lock is unavailable');
+      await authorizeBotWrite(tx, this.ctx, 'post_to_feed', [folderId]);
+      await tx.insert(schema.posts).values({
+        id,
+        authorId: this.ctx.botUserId,
+        content,
+        attachments: [],
+        folderId: folderId ?? null,
+        mentions: [],
+        deleted: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      this.checkAborted();
     });
 
     // Broadcast new post
     if (folderId) {
-      broadcastToFolder(folderId, { type: 'new-post', postId: id, folderId }, this.ctx.botUserId);
+      await broadcastToFolder(folderId, { type: 'new-post', postId: id, folderId }, this.ctx.botUserId)
+        .catch(() => logger.warn('Committed bot feed notification failed'));
     }
 
     await logActivity({

@@ -5,16 +5,18 @@ import { sanitizeSyncEntity } from './sync-sanitize';
 import { SYNC_TABLES, isSyncTable, onOutboxCommit, revisionKey, suppressSyncInCurrentTransaction } from './sync-state';
 import type { WSClient } from './ws-client';
 import { ensureSyncWorkspace } from './sync-workspace';
+import { assertSyncCaptureReady, ensureSyncCaptureCoverage, normalizeSyncWorkspaceIdentity, isSyncWorkspaceIdentity,
+  SYNC_WORKSPACE_KEY, SYNC_RECOVERY_KEY, SYNC_HISTORY_MESSAGE } from './sync-capture-policy';
 import { uncachedFolderKey, cacheOperationKey, rotateCacheOperation, CACHE_REPLAY_CANCELLED } from './sync-cache';
 
 const dynamicDb = db as unknown as DexieType;
 const CURSOR_KEY = 'syncCursorV2';
 const INITIAL_KEY = 'initialPushDoneV2';
-const RECOVERY_KEY = 'syncRecoveryRequiredV2';
+const RECOVERY_KEY = SYNC_RECOVERY_KEY;
 const HISTORY_KEY = 'syncHistoryGenerationV1';
 const MAX_PUSH_BYTES = 900_000; // Leave room beneath the server's 1 MiB body limit.
 const MAX_ASSET_PUSH_BYTES = 15 * 1024 * 1024; // Dedicated 16 MiB sync route.
-const RECOVERY_MESSAGE = 'Sync paused because the server history changed. Your local edits are retained. Coordinate with the server administrator, then use Settings → General → Sync history recovery to download a verified archive and review conflicts before resuming.';
+const RECOVERY_MESSAGE = SYNC_HISTORY_MESSAGE;
 const entityKey = (table: string, id: string) => JSON.stringify([table, id]);
 const validVersion = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0;
 
@@ -49,9 +51,31 @@ export class SyncEngine {
     this.workspace = { serverUrl, userId };
   }
 
-  private async ensureWorkspace() {
-    if (!this.workspace) throw new Error('Sync paused: no verified server/account identity. Local edits are retained.');
-    await ensureSyncWorkspace(this.workspace.serverUrl, this.workspace.userId);
+  private async ensureWorkspace(epoch: number) {
+    const workspace = this.workspace;
+    if (!workspace) throw new Error('Sync paused: no verified server/account identity. Local edits are retained.');
+    const assertCurrent = () => {
+      if (epoch !== this.epoch || workspace !== this.workspace) throw new Error('Sync session changed; local edits were retained.');
+    };
+    assertCurrent();
+    await ensureSyncCaptureCoverage(dynamicDb);
+    assertCurrent();
+    await ensureSyncWorkspace(workspace.serverUrl, workspace.userId, assertCurrent);
+    await this.assertCurrentWorkspace(epoch);
+  }
+
+  /** Recheck after async work and inside committing transactions. A valid
+   * account at request start is not permission to mutate a later session. */
+  private async assertCurrentWorkspace(epoch: number) {
+    const workspace = this.workspace;
+    if (!workspace || epoch !== this.epoch) throw new Error('Sync session changed; local edits were retained.');
+    const identity = normalizeSyncWorkspaceIdentity(workspace.serverUrl, workspace.userId);
+    const saved = (await dynamicDb.table('_syncMeta').get(SYNC_WORKSPACE_KEY))?.value;
+    if (!isSyncWorkspaceIdentity(saved) || saved.serverUrl !== identity.serverUrl || saved.userId !== identity.userId) {
+      throw new Error('Sync paused: the durable server/account binding changed. Local edits were retained.');
+    }
+    await assertSyncCaptureReady(dynamicDb);
+    if (epoch !== this.epoch || workspace !== this.workspace) throw new Error('Sync session changed; local edits were retained.');
   }
 
   start() {
@@ -95,7 +119,7 @@ export class SyncEngine {
     const epoch = this.epoch;
     const work = (async () => {
       try {
-        await this.ensureWorkspace();
+        await this.ensureWorkspace(epoch);
         if ((await dynamicDb.table('_syncMeta').get(RECOVERY_KEY))?.value) {
           if (epoch === this.epoch) this.onError?.(RECOVERY_MESSAGE);
           return;
@@ -127,11 +151,12 @@ export class SyncEngine {
   }
 
   private async initialSync(epoch: number) {
-    await this.ensureWorkspace();
+    await this.ensureWorkspace(epoch);
     if (epoch !== this.epoch) return;
     if ((await dynamicDb.table('_syncMeta').get(INITIAL_KEY))?.value) return;
-    await dynamicDb.transaction('rw', [...SYNC_TABLES, '_syncMeta', '_syncQueue'], async () => {
+    await dynamicDb.transaction('rw', [...SYNC_TABLES, '_syncMeta', '_syncQueue', '_localMigrations'], async () => {
       if (epoch !== this.epoch) return;
+      await this.assertCurrentWorkspace(epoch);
       suppressSyncInCurrentTransaction();
       const folders = await dynamicDb.table('folders').toArray();
       const folderIds = new Set(folders.filter(f => !f.localOnly && !f.trashed).map(f => f.id));
@@ -147,6 +172,7 @@ export class SyncEngine {
         }
       }
       await dynamicDb.table('_syncMeta').put({ key: INITIAL_KEY, value: true });
+      await this.assertCurrentWorkspace(epoch);
     });
   }
 
@@ -200,10 +226,12 @@ export class SyncEngine {
       if (!deliverable.length) continue;
       const batch = deliverable.map(item => item.entries);
       const changes = deliverable.map(item => item.change);
+      await this.assertCurrentWorkspace(epoch);
       const { results } = await syncPush(changes, history);
       if (epoch !== this.epoch) return;
-      await dynamicDb.transaction('rw', '_syncQueue', '_syncMeta', async () => {
+      await dynamicDb.transaction('rw', '_syncQueue', '_syncMeta', '_localMigrations', async () => {
         if (epoch !== this.epoch) return;
+        await this.assertCurrentWorkspace(epoch);
         for (let i = 0; i < changes.length; i++) {
           const sent = changes[i], result = results[i];
           if (!result || result.entityId !== sent.entityId || (result.table && result.table !== sent.table)) continue;
@@ -225,6 +253,7 @@ export class SyncEngine {
             }
           }
         }
+        await this.assertCurrentWorkspace(epoch);
       });
     }
     if (epoch === this.epoch && conflicts.length) this.onConflict?.(conflicts);
@@ -241,6 +270,7 @@ export class SyncEngine {
           await dynamicDb.table('_syncMeta').put({ key: RECOVERY_KEY, value: true });
           throw new Error(RECOVERY_MESSAGE);
         }
+        await this.assertCurrentWorkspace(epoch);
         page = await syncPull(new Date(0).toISOString(), undefined, cursor, history);
         if (typeof page.generation !== 'string' || !/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/.test(page.generation)) throw new Error('Server does not support sync history generations; pending edits were retained.');
         if (history && page.generation !== history) throw Object.assign(new Error(RECOVERY_MESSAGE), { code: 'SYNC_CURSOR_RESET' });
@@ -271,8 +301,9 @@ export class SyncEngine {
 
   private async applyChanges(changes: RemoteChange[], epoch: number, cursor?: string, generation?: number, expectedCursor?: string, history?: string, cacheFolder?: string, cacheOperation?: string) {
     const affected = new Set<string>();
-    const applied = await dynamicDb.transaction('rw', [...SYNC_TABLES, '_syncQueue', '_syncMeta'], async () => {
+    const applied = await dynamicDb.transaction('rw', [...SYNC_TABLES, '_syncQueue', '_syncMeta', '_localMigrations'], async () => {
       if (epoch !== this.epoch) return false;
+      await this.assertCurrentWorkspace(epoch);
       if (generation !== undefined && generation !== this.replayGeneration) return false;
       if (expectedCursor !== undefined && ((await dynamicDb.table('_syncMeta').get(CURSOR_KEY))?.value ?? '0') !== expectedCursor) return false;
       suppressSyncInCurrentTransaction();
@@ -309,6 +340,7 @@ export class SyncEngine {
       }
       if (cursor !== undefined && generation === this.replayGeneration) await dynamicDb.table('_syncMeta').put({ key: CURSOR_KEY, value: cursor });
       if (history !== undefined) await dynamicDb.table('_syncMeta').put({ key: HISTORY_KEY, value: history });
+      await this.assertCurrentWorkspace(epoch);
       return true;
     });
     if (epoch === this.epoch && affected.size) this.onRemoteChange?.(changes, affected);
@@ -323,9 +355,12 @@ export class SyncEngine {
   }
 
   async resolveConflicts(conflicts: Array<{ table?: string; entityId: string; serverVersion?: number; serverData?: Record<string, unknown> }>, choice: 'mine' | 'theirs') {
+    const epoch = this.epoch;
+    await this.ensureWorkspace(epoch);
     if (choice === 'theirs') ++this.replayGeneration;
     const affected = new Set<string>();
-    await dynamicDb.transaction('rw', [...SYNC_TABLES, '_syncQueue', '_syncMeta'], async () => {
+    await dynamicDb.transaction('rw', [...SYNC_TABLES, '_syncQueue', '_syncMeta', '_localMigrations'], async () => {
+      await this.assertCurrentWorkspace(epoch);
       suppressSyncInCurrentTransaction();
       for (const conflict of conflicts) {
         const table = conflict.table;
@@ -358,23 +393,28 @@ export class SyncEngine {
         }
         await dynamicDb.table('_syncMeta').put({ key: revisionKey(table, conflict.entityId), value: version });
       }
+      await this.assertCurrentWorkspace(epoch);
     });
-    if (affected.size) this.onRemoteChange?.([], affected);
+    if (epoch === this.epoch && affected.size) this.onRemoteChange?.([], affected);
     this.scheduleSync();
   }
 
   async enqueue(table: string, entityId: string, op: 'put' | 'delete', data?: Record<string, unknown>) {
     if (!isSyncTable(table)) throw new Error('Unsupported sync table');
-    await dynamicDb.transaction('rw', '_syncQueue', '_syncMeta', async () => {
+    const epoch = this.epoch;
+    await this.ensureWorkspace(epoch);
+    await dynamicDb.transaction('rw', '_syncQueue', '_syncMeta', '_localMigrations', async () => {
+      await this.assertCurrentWorkspace(epoch);
       const known = await dynamicDb.table('_syncMeta').get(revisionKey(table, entityId));
       await dynamicDb.table('_syncQueue').add({ table, entityId, op, data, clientVersion: known?.value ?? 0 });
+      await this.assertCurrentWorkspace(epoch);
     });
     this.scheduleSync();
   }
 
   async pullFolder(folderId: string) {
     const epoch = this.epoch;
-    await this.ensureWorkspace();
+    await this.ensureWorkspace(epoch);
     if (epoch !== this.epoch) return;
     if ((await dynamicDb.table('_syncMeta').get(RECOVERY_KEY))?.value) throw new Error(RECOVERY_MESSAGE);
     // Claim before any network wait. A later eviction or explicit recache in
@@ -387,6 +427,7 @@ export class SyncEngine {
     let cursor = '0';
     while (epoch === this.epoch) {
       try {
+        await this.assertCurrentWorkspace(epoch);
         const page = await syncPull(new Date(0).toISOString(), folderId, cursor, history);
         if (epoch !== this.epoch) return;
         if (page.generation !== history) throw Object.assign(new Error(RECOVERY_MESSAGE), { code: 'SYNC_CURSOR_RESET' });
@@ -409,10 +450,12 @@ export class SyncEngine {
   }
 
   async syncFolder(folderId: string) {
-    await this.ensureWorkspace();
+    const epoch = this.epoch;
+    await this.ensureWorkspace(epoch);
     const folder = await dynamicDb.table('folders').get(folderId);
     if (!folder || folder.localOnly) return;
-    await dynamicDb.transaction('rw', [...SYNC_TABLES, '_syncMeta', '_syncQueue'], async () => {
+    await dynamicDb.transaction('rw', [...SYNC_TABLES, '_syncMeta', '_syncQueue', '_localMigrations'], async () => {
+      await this.assertCurrentWorkspace(epoch);
       suppressSyncInCurrentTransaction();
       // Replay changes skipped while this investigation was local-only. Local
       // rows are queued first, so differing remote content requires review.
@@ -431,6 +474,7 @@ export class SyncEngine {
           await dynamicDb.table('_syncQueue').add({ table, entityId: row.id, op: 'put', data: row, clientVersion: revision?.value ?? 0 });
         }
       }
+      await this.assertCurrentWorkspace(epoch);
     });
     await this.sync();
   }

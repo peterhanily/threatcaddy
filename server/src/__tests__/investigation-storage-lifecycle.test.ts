@@ -18,12 +18,16 @@ vi.mock('../services/storage-policy.js', () => ({
 vi.mock('../db/index.js', () => {
   function select() {
     const chain: Record<string, unknown> = {};
-    for (const key of ['from', 'where', 'limit']) chain[key] = () => chain;
+    for (const key of ['from', 'where', 'limit', 'innerJoin', 'for']) chain[key] = () => chain;
     chain.then = (resolve: (value: unknown) => unknown) => Promise.resolve(state.selections.shift() ?? []).then(resolve);
     return chain;
   }
   return { db: { select, transaction: async (fn: (tx: unknown) => Promise<unknown>) => {
-    const result = await fn({ select, delete: (table: unknown) => ({ where: async () => { state.deletes.push(table); } }) });
+    let executions = 0;
+    const result = await fn({ select, execute: async () => ++executions === 1 ? [{ id: 1 }] : [], delete: (table: unknown) => {
+      const chain = { where: () => chain, returning: async () => [], then: (resolve: (rows: unknown[]) => unknown) => Promise.resolve([]).then(resolve) };
+      state.deletes.push(table); return chain;
+    } });
     if (state.failCommit) throw new Error('Ordinary simulated commit failure');
     state.committed = true;
     return result;
@@ -35,7 +39,7 @@ import { removeCommittedBlobs } from '../services/storage-policy.js';
 describe('owner investigation deletion storage lifecycle', () => {
   beforeEach(() => {
     vi.clearAllMocks(); state.selections.length = 0; state.deletes.length = 0; state.failCommit = false; state.committed = false;
-    state.selections.push([{ role: 'owner' }], [{ id: 'case', name: 'Ordinary case' }], [{ storagePath: 'retained.pdf', thumbnailPath: null }]);
+    state.selections.push([{ id: 'case', name: 'Ordinary case' }], [{ id: 'owner-membership' }], [{ storagePath: 'retained.pdf', thumbnailPath: null }]);
   });
   function request() { const app = new Hono(); app.route('/investigations', investigations); return app.request('/investigations/case', { method: 'DELETE' }); }
   it('deletes evidence with all content and cleans managed bytes only after commit', async () => {

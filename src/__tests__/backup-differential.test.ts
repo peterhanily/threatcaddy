@@ -47,7 +47,11 @@ describe('verified snapshot differentials with real IndexedDB', () => {
     await db.notes.bulkAdd([{ ...note('a', 'A'), tags: ['shared'] }, { ...note('b', 'B'), tags: ['shared'] }, note('trash', 'A')]);
     for (const name of ['agentActions', 'agentDeployments', 'agentMeetings', 'evidenceItems'] as const) {
       const field = name === 'evidenceItems' ? 'folderId' : 'investigationId';
-      await db.table(name).bulkAdd([{ id: 'a', [field]: 'A' }, { id: 'b', [field]: 'B' }]);
+      const extra = name === 'agentDeployments' ? { profileId: 'profile', status: 'paused', order: 0, createdAt: 100, updatedAt: 100 }
+        : name === 'agentActions' ? { threadId: 'chat', toolName: 'read_note', toolInput: {}, rationale: 'Synthetic', status: 'rejected', createdAt: 100 }
+        : name === 'agentMeetings' ? { participantDeploymentIds: [], threadId: 'chat', agenda: 'Synthetic', status: 'completed', roundsCompleted: 0, maxRounds: 1, createdAt: 100 }
+        : { title: 'Synthetic', fileName: 'synthetic.txt', fileType: 'text', size: 1, content: 'Synthetic', extractionStatus: 'extracted', importedAt: 100, chunkIndex: 1, chunkCount: 1, tags: [], trashed: false, archived: false, createdAt: 100, updatedAt: 100 };
+      await db.table(name).bulkAdd([{ id: 'a', [field]: 'A', ...extra }, { id: 'b', [field]: 'B', ...extra }]);
     }
     const base = await buildFullBackupPayload('investigation', 'A');
     await db.notes.delete('a');
@@ -113,7 +117,7 @@ describe('verified snapshot differentials with real IndexedDB', () => {
     await db.notes.add(note('n'));
     const base = await buildFullBackupPayload('all');
     await db.notes.update('n', { content: 'Delta content' });
-    await db.table('tasks').add({ id: 'new-task', title: 'Task', tags: [], createdAt: 100, updatedAt: 100 });
+    await db.tasks.add({ id: 'new-task', title: 'Task', tags: [], completed: false, priority: 'none', status: 'todo', order: 0, trashed: false, archived: false, createdAt: 100, updatedAt: 100 });
     const delta = await buildDifferentialPayload('all', base, 'base');
     await restoreFullReplace(base);
     const before = await snapshot();

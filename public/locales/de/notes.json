@@ -83,7 +83,9 @@
     "lockScrollAria": "Scroll-Synchronisierung sperren",
     "wordsChars": "{{words}} Wörter, {{chars}} Zeichen",
     "created": "Erstellt {{date}}",
-    "modified": "Geändert {{date}}"
+    "modified": "Geändert {{date}}",
+    "saveFailed": "Änderungen konnten nicht gespeichert werden. Ihr Entwurf bleibt in diesem Tab erhalten; versuchen Sie es erneut, bevor Sie ihn schließen.",
+    "retrySave": "Speichern erneut versuchen"
   },
   "list": {
     "defaultTitle": "Notizen",

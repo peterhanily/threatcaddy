@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "이번 주 이벤트",
   "metrics.aiChats": "AI 채팅",
   "metrics.graphNodes": "그래프 노드",
-  "dashboard.backToExecView": "경영진 뷰로 돌아가기"
+  "dashboard.backToExecView": "경영진 뷰로 돌아가기",
+  "dashboard.switchToLight": "밝은 테마로 전환",
+  "dashboard.switchToDark": "어두운 테마로 전환",
+  "dashboard.emptyTitle": "작업 공간이 준비되었습니다",
+  "dashboard.emptyDescription": "분석가 모드에서 조사를 만들거나 기존 작업을 가져오세요. 이 대시보드는 현재 작업 공간에 저장된 작업을 요약합니다.",
+  "dashboard.emptyAction": "분석가 모드 열기"
 }

@@ -38,8 +38,8 @@ describe('integration configuration form', () => {
     const token = screen.getByLabelText(/^Access token/);
     expect(token).toHaveFocus();
     expect(token).toHaveAttribute('aria-invalid', 'true');
-    expect(token).toHaveAccessibleDescription('Use your integration token. Access token is required.');
-    expect(screen.getByRole('combobox', { name: 'Dataset' })).toHaveAccessibleDescription('Dataset is required.');
+    expect(token).toHaveAccessibleDescription('Use your integration token. Enter a valid value for Access token.');
+    expect(screen.getByRole('combobox', { name: 'Dataset' })).toHaveAccessibleDescription('Enter a valid value for Dataset.');
     expect(save).not.toHaveBeenCalled();
     await user.type(token, 'fictional-token');
     expect(token).not.toHaveAttribute('aria-invalid');
@@ -56,7 +56,7 @@ describe('integration configuration form', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(save).not.toHaveBeenCalled();
     expect(screen.getByRole('spinbutton')).toHaveValue(null);
-    expect(screen.getByRole('spinbutton')).toHaveAccessibleDescription('Limit is required.');
+    expect(screen.getByRole('spinbutton')).toHaveAccessibleDescription('Enter a valid value for Limit.');
     expect(screen.getByLabelText(/^Access token/)).toHaveFocus();
   });
 

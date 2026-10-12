@@ -83,7 +83,9 @@
     "lockScrollAria": "Włącz synchronizację przewijania",
     "wordsChars": "{{words}} słów, {{chars}} znaków",
     "created": "Utworzono {{date}}",
-    "modified": "Zmodyfikowano {{date}}"
+    "modified": "Zmodyfikowano {{date}}",
+    "saveFailed": "Nie udało się zapisać zmian. Szkic pozostaje w tej karcie; ponów zapis przed zamknięciem.",
+    "retrySave": "Ponów zapis"
   },
   "list": {
     "defaultTitle": "Notatki",

@@ -1,4 +1,5 @@
 import { FileText, ListChecks, Clock, PenTool, Shield } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
 
 type EntityTab = 'notes' | 'tasks' | 'events' | 'whiteboards' | 'iocs';
@@ -18,6 +19,7 @@ const TABS: { key: EntityTab; icon: typeof FileText; color: string; activeColor:
 ];
 
 export function ExecEntityNav({ counts, activeTab, onTap }: ExecEntityNavProps) {
+  const { t } = useTranslation('exec');
   return (
     <div className="flex items-center justify-around bg-bg-surface border-b border-border-subtle py-1.5 shrink-0">
       {TABS.map((tab) => {
@@ -25,9 +27,12 @@ export function ExecEntityNav({ counts, activeTab, onTap }: ExecEntityNavProps) 
         return (
           <button
             key={tab.key}
+            type="button"
+            aria-label={`${t(`investigations.${tab.key === 'whiteboards' ? 'boards' : tab.key}`)}: ${counts[tab.key]}`}
+            aria-pressed={isActive}
             onClick={() => onTap(tab.key)}
             className={cn(
-              'flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[48px]',
+              'flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors min-w-[48px] focus-visible:outline-2 focus-visible:outline-accent-blue',
               isActive ? 'bg-bg-hover' : 'active:bg-bg-hover',
             )}
           >

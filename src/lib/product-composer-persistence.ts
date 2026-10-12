@@ -13,8 +13,8 @@ type ProductInput = Parameters<typeof prepareProductComposerNote>[0];
 type SourceKey = Exclude<keyof ProductComposerSnapshot, 'folder'>;
 const sourceKeys: SourceKey[] = ['notes', 'tasks', 'timelineEvents', 'iocs', 'evidence'];
 
-function changed(message: string): never {
-  throw new ProductComposerValidationError('selection', message);
+function changed(messageKey: string, message: string): never {
+  throw new ProductComposerValidationError('selection', message, messageKey);
 }
 
 function persistedClassificationLevels(): readonly string[] {
@@ -28,7 +28,7 @@ function persistedClassificationLevels(): readonly string[] {
       || new Set(levels).size !== levels.length)) throw new Error();
     return getEffectiveClsLevels(levels as string[] | undefined);
   } catch {
-    return changed('Classification settings could not be verified. Review the workspace settings before saving.');
+    return changed('classificationUnverified', 'Classification settings could not be verified. Review the workspace settings before saving.');
   }
 }
 
@@ -64,10 +64,10 @@ export function createProductComposerPersistence({ input, originSnapshot, origin
     if (getActiveWorkspaceId() !== workspaceId || getSessionKey() !== sessionKey
       || JSON.stringify(currentMetadata) !== encryptionMetadata
       || (isEncryptionEnabled() && (!sessionKey || !currentMetadata || currentMetadata.transition))) {
-      changed('The workspace session changed. Unlock the workspace and review the draft before saving.');
+      changed('sessionChanged', 'The workspace session changed. Unlock the workspace and review the draft before saving.');
     }
     if (JSON.stringify(persistedClassificationLevels()) !== hierarchy) {
-      changed('Classification settings changed. Review the draft before saving.');
+      changed('settingsChanged', 'Classification settings changed. Review the draft before saving.');
     }
   };
   assertOwner();
@@ -76,18 +76,18 @@ export function createProductComposerPersistence({ input, originSnapshot, origin
     assertOwner();
     if (note.title !== patch.title || note.content !== patch.content || note.folderId !== folderId
       || note.clsLevel !== patch.clsLevel || JSON.stringify(note.tags) !== JSON.stringify(patch.tags)) {
-      changed('The draft changed before it could be saved. Review the draft and try again.');
+      changed('draftChanged', 'The draft changed before it could be saved. Review the draft and try again.');
     }
     await db.transaction('rw', [db.notes, db.tasks, db.timelineEvents, db.standaloneIOCs,
       db.evidenceItems, db.folders, db.noteTemplates], async () => {
       assertOwner();
       const folder = await db.folders.get(folderId);
       if (!folder || folder.status === 'archived') {
-        changed('The investigation is no longer available for composing. Review the draft before saving.');
+        changed('investigationUnavailable', 'The investigation is no longer available for composing. Review the draft before saving.');
       }
       const baseline = draft.baselineId ? await db.noteTemplates.get(draft.baselineId) : undefined;
       if (draft.baselineId && !baseline?.productBaseline) {
-        changed('The selected baseline is no longer available. Review the draft before saving.');
+        changed('baselineChanged', 'The selected baseline is no longer available. Review the draft before saving.');
       }
       // Bound the active result set of each investigation-indexed read (the
       // cursor may still examine inactive rows). The shared validator also
@@ -109,7 +109,7 @@ export function createProductComposerPersistence({ input, originSnapshot, origin
       for (const key of sourceKeys) {
         const available = new Set(current[key].map(row => row.id));
         if (originIds[key].some(id => !available.has(id))) {
-          changed('A source was deleted, moved, or made unavailable. Review the draft and source selection before saving.');
+          changed('sourceChanged', 'A source was deleted, moved, or made unavailable. Review the draft and source selection before saving.');
         }
       }
       assertOwner();

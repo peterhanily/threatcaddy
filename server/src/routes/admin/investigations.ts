@@ -1,12 +1,13 @@
 import { Hono } from 'hono';
-import { eq, count, and, sql } from 'drizzle-orm';
-import { nanoid } from 'nanoid';
-import { lockStorage, removeCommittedBlobs } from '../../services/storage-policy.js';
+import { eq, count, sql, isNull } from 'drizzle-orm';
+import { removeCommittedBlobs } from '../../services/storage-policy.js';
+import { purgeInvestigation } from '../../services/investigation-lifecycle.js';
+import { InvestigationPolicyError, mutateInvestigationMember } from '../../services/investigation-policy.js';
 import { revokeUserFolderAccess, revokeFolderAccess } from '../../ws/handler.js';
 import {
   db, users, folders, investigationMembers, notes, tasks,
-  timelineEvents, whiteboards, standaloneIOCs, chatThreads, posts,
-  files, notifications, evidenceItems,
+  timelineEvents, whiteboards, standaloneIOCs, chatThreads,
+  files, evidenceItems,
   requireAdminAuth, logAdminAction, getAdminId, FILE_STORAGE_PATH,
 } from './shared.js';
 
@@ -28,6 +29,7 @@ app.get('/api/investigations', requireAdminAuth, async (c) => {
     })
     .from(folders)
     .leftJoin(users, eq(users.id, folders.createdBy))
+    .where(isNull(folders.deletedAt))
     .orderBy(folders.createdAt);
 
   return c.json({ investigations: rows });
@@ -124,20 +126,13 @@ app.post('/api/investigations/:id/members', requireAdminAuth, async (c) => {
   const validRoles = ['owner', 'editor', 'viewer'];
   const memberRole = validRoles.includes(role) ? role : 'editor';
 
-  // Check folder and user exist
-  const [folder] = await db.select({ id: folders.id }).from(folders).where(eq(folders.id, folderId)).limit(1);
-  if (!folder) return c.json({ error: 'Investigation not found' }, 404);
-  const [user] = await db.select({ id: users.id, email: users.email }).from(users).where(eq(users.id, userId)).limit(1);
-  if (!user) return c.json({ error: 'User not found' }, 404);
-
-  await db.insert(investigationMembers).values({
-    id: nanoid(),
-    folderId,
-    userId,
-    role: memberRole,
-  }).onConflictDoNothing();
-
-  await logAdminAction(getAdminId(c), 'investigation.add-member', `Added ${user.email} as ${memberRole} to investigation`, { folderId });
+  let result;
+  try { result = await mutateInvestigationMember({ actor: { kind: 'admin', userId: getAdminId(c) }, folderId, targetUserId: userId, operation: 'add', role: memberRole }); }
+  catch (error) {
+    if (error instanceof InvestigationPolicyError) return c.json({ error: error.message, code: error.code }, error.status);
+    throw error;
+  }
+  if (result.changed) await logAdminAction(getAdminId(c), 'investigation.add-member', `Added ${result.user.email} as ${memberRole} to investigation`, { folderId });
 
   return c.json({ ok: true });
 });
@@ -152,12 +147,11 @@ app.patch('/api/investigations/:id/members/:userId', requireAdminAuth, async (c)
   const validRoles = ['owner', 'editor', 'viewer'];
   if (!validRoles.includes(role)) return c.json({ error: 'Invalid role' }, 400);
 
-  const result = await db.update(investigationMembers)
-    .set({ role })
-    .where(and(eq(investigationMembers.folderId, folderId), eq(investigationMembers.userId, userId)))
-    .returning({ id: investigationMembers.id });
-
-  if (result.length === 0) return c.json({ error: 'Member not found' }, 404);
+  try { await mutateInvestigationMember({ actor: { kind: 'admin', userId: getAdminId(c) }, folderId, targetUserId: userId, operation: 'update', role }); }
+  catch (error) {
+    if (error instanceof InvestigationPolicyError) return c.json({ error: error.message, code: error.code }, error.status);
+    throw error;
+  }
 
   revokeUserFolderAccess(userId, folderId);
   await logAdminAction(getAdminId(c), 'investigation.update-member', `Changed member role to ${role}`, { folderId });
@@ -169,11 +163,11 @@ app.delete('/api/investigations/:id/members/:userId', requireAdminAuth, async (c
   const folderId = c.req.param('id');
   const userId = c.req.param('userId');
 
-  const result = await db.delete(investigationMembers)
-    .where(and(eq(investigationMembers.folderId, folderId), eq(investigationMembers.userId, userId)))
-    .returning({ id: investigationMembers.id });
-
-  if (result.length === 0) return c.json({ error: 'Member not found' }, 404);
+  try { await mutateInvestigationMember({ actor: { kind: 'admin', userId: getAdminId(c) }, folderId, targetUserId: userId, operation: 'remove' }); }
+  catch (error) {
+    if (error instanceof InvestigationPolicyError) return c.json({ error: error.message, code: error.code }, error.status);
+    throw error;
+  }
 
   revokeUserFolderAccess(userId, folderId);
   await logAdminAction(getAdminId(c), 'investigation.remove-member', `Removed member from investigation`, { folderId });
@@ -186,45 +180,13 @@ app.delete('/api/investigations/:id/content', requireAdminAuth, async (c) => {
   const body = await c.req.json();
   const { confirmName } = body || {};
 
-  const [folder] = await db.select({ name: folders.name }).from(folders).where(eq(folders.id, folderId)).limit(1);
-  if (!folder) return c.json({ error: 'Investigation not found' }, 404);
-
-  if (confirmName !== folder.name) {
-    return c.json({ error: 'Confirmation name does not match' }, 400);
+  let purged;
+  try { purged = await purgeInvestigation({ actor: { kind: 'admin', userId: getAdminId(c) }, folderId, confirmName }); }
+  catch (error) {
+    if (error instanceof InvestigationPolicyError) return c.json({ error: error.message }, error.status);
+    throw error;
   }
-
-  // Commit reference deletion before removing any managed bytes.
-  const { deleted, folderFiles } = await db.transaction(async (tx) => {
-    await lockStorage(tx);
-    const folderFiles = await tx.select({ storagePath: files.storagePath, thumbnailPath: files.thumbnailPath })
-      .from(files).where(eq(files.folderId, folderId));
-    const counts: Record<string, number> = {};
-    const delNotes = await tx.delete(notes).where(eq(notes.folderId, folderId)).returning({ id: notes.id });
-    counts.notes = delNotes.length;
-    const delTasks = await tx.delete(tasks).where(eq(tasks.folderId, folderId)).returning({ id: tasks.id });
-    counts.tasks = delTasks.length;
-    const delEvents = await tx.delete(timelineEvents).where(eq(timelineEvents.folderId, folderId)).returning({ id: timelineEvents.id });
-    counts.timelineEvents = delEvents.length;
-    const delWb = await tx.delete(whiteboards).where(eq(whiteboards.folderId, folderId)).returning({ id: whiteboards.id });
-    counts.whiteboards = delWb.length;
-    const delIoc = await tx.delete(standaloneIOCs).where(eq(standaloneIOCs.folderId, folderId)).returning({ id: standaloneIOCs.id });
-    counts.standaloneIOCs = delIoc.length;
-    const delChat = await tx.delete(chatThreads).where(eq(chatThreads.folderId, folderId)).returning({ id: chatThreads.id });
-    counts.chatThreads = delChat.length;
-    const delPosts = await tx.delete(posts).where(eq(posts.folderId, folderId)).returning({ id: posts.id });
-    counts.posts = delPosts.length;
-    const delFiles = await tx.delete(files).where(eq(files.folderId, folderId)).returning({ id: files.id });
-    counts.files = delFiles.length;
-    const delNotif = await tx.delete(notifications).where(eq(notifications.folderId, folderId)).returning({ id: notifications.id });
-    counts.notifications = delNotif.length;
-    const delMembers = await tx.delete(investigationMembers).where(eq(investigationMembers.folderId, folderId)).returning({ id: investigationMembers.id });
-    counts.members = delMembers.length;
-    const delEvidence = await tx.delete(evidenceItems).where(eq(evidenceItems.folderId, folderId)).returning({ id: evidenceItems.id });
-    counts.evidenceItems = delEvidence.length;
-    // Delete the folder itself
-    await tx.delete(folders).where(eq(folders.id, folderId));
-    return { deleted: counts, folderFiles };
-  });
+  const { folder, deleted, folderFiles } = purged;
 
   revokeFolderAccess(folderId);
   const cleanupPending = await removeCommittedBlobs(FILE_STORAGE_PATH, folderFiles);

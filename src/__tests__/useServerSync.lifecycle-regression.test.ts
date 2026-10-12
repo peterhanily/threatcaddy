@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   ready: vi.fn(), remote: vi.fn(), conflicts: vi.fn(), error: vi.fn(), apply: vi.fn(), sync: vi.fn(), resolve: vi.fn(),
   sockets: [] as Array<{ handlers: Map<string, (message: Record<string, unknown>) => void>; status?: (connected: boolean) => void; disconnect: ReturnType<typeof vi.fn> }>,
 }));
+vi.mock('../lib/sync-capture-policy', () => ({ getSyncPauseReason: async () => null }));
 vi.mock('../lib/server-api', () => ({ configureServerApi: vi.fn() }));
 vi.mock('../lib/sync-middleware', () => ({ enableSync: vi.fn(), disableSync: vi.fn() }));
 vi.mock('../lib/sync-engine', () => ({ syncEngine: {

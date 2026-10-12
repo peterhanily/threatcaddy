@@ -3,7 +3,19 @@
     "importWarning": "Importato con {{count}} clip falliti",
     "importFailed": "Impossibile importare clip dall'estensione",
     "openedAsNote": "Aperto \"{{name}}\" come nuova nota",
-    "openFailed": "Impossibile aprire \"{{name}}\""
+    "openFailed": "Impossibile aprire \"{{name}}\"",
+    "refreshFailed": "I ritagli sono stati salvati, ma la vista non si è aggiornata. Ricarica quest’area per vederli.",
+    "fileRefreshFailed": "Il file è stato salvato come nota, ma la vista non si è aggiornata. Ricarica quest’area per vederla.",
+    "fileTitle": "{{name}} — {{size}} — Modificato {{modified}}",
+    "fileError": {
+      "capacity_one": "Un file non è stato accodato: possono attendere solo 20 file alla volta. Riaprilo al termine di queste importazioni.",
+      "capacity_other": "{{count}} file non sono stati accodati: possono attendere solo 20 file alla volta. Riaprili al termine di queste importazioni.",
+      "type": "Impossibile aprire «{{name}}»: scegli un file Markdown o di testo.",
+      "size": "Impossibile aprire «{{name}}»: i file di testo devono avere dimensioni massime di 5 MiB. Apri un file più piccolo.",
+      "read": "Impossibile leggere «{{name}}». Controlla l’accesso e riaprilo per riprovare.",
+      "import": "Impossibile salvare «{{name}}» come nota. Controlla lo spazio di archiviazione dell’area e riapri il file per riprovare.",
+      "capacity_many": "{{count}} file non sono stati accodati: possono attendere solo 20 file alla volta. Riaprili al termine di queste importazioni."
+    }
   },
   "share": {
     "investigationSaved": "Indagine \"{{name}}\" salvata con tutte le entità",

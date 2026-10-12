@@ -3,6 +3,13 @@ export function botsTabJs(): string {
 
 var allBots = [];
 
+function botAttr(value) { return esc(String(value == null ? '' : value)).replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+function botUnavailable(bot) { return bot.runtimeAvailable === false || bot.type === 'integration'; }
+function botStatusBadge(bot) {
+  if (botUnavailable(bot)) return '<span class="badge badge-yellow">unavailable</span>';
+  return bot.enabled ? '<span class="badge badge-green">enabled</span>' : '<span class="badge badge-gray">disabled</span>';
+}
+
 function loadBotsData() {
   return api('/bots').then(function(data) {
     allBots = data.bots;
@@ -11,11 +18,11 @@ function loadBotsData() {
 }
 
 function botTypeBadge(type) {
-  return '<span class="bot-type-badge bot-type-' + esc(type) + '">' + esc(type) + '</span>';
+  return '<span class="bot-type-badge bot-type-' + botAttr(type) + '">' + esc(type) + '</span>';
 }
 
 function runStatusBadge(status) {
-  return '<span class="run-status-' + esc(status) + '">' + esc(status) + '</span>';
+  return '<span class="run-status-' + botAttr(status) + '">' + esc(status) + '</span>';
 }
 
 function getFilteredBots() {
@@ -37,12 +44,10 @@ function renderBots() {
   var tbody = document.getElementById('botsBody');
   tbody.innerHTML = filtered.map(function(b) {
     var lastRun = b.lastRunAt ? fmtDate(b.lastRunAt) : 'Never';
-    var statusBadge = b.enabled
-      ? '<span class="badge badge-green">enabled</span>'
-      : '<span class="badge badge-gray">disabled</span>';
+    var statusBadge = botStatusBadge(b);
     var scopeLabel = b.scopeType === 'global' ? 'Global' : (b.scopeFolderIds && b.scopeFolderIds.length > 0 ? b.scopeFolderIds.length + ' inv.' : 'None');
     return '<tr>' +
-      '<td><a data-action="bot-detail" data-id="' + esc(b.id) + '">' + esc(b.name) + '</a></td>' +
+      '<td><button class="btn btn-outline btn-sm" data-action="bot-detail" data-id="' + botAttr(b.id) + '">' + esc(b.name) + '</button></td>' +
       '<td>' + botTypeBadge(b.type) + '</td>' +
       '<td>' + statusBadge + '</td>' +
       '<td>' + esc(scopeLabel) + '</td>' +
@@ -51,10 +56,10 @@ function renderBots() {
       '<td style="white-space:nowrap;">' + lastRun + '</td>' +
       '<td style="white-space:nowrap;">' +
         (b.enabled
-          ? '<button class="btn btn-outline btn-sm" data-action="disable-bot" data-id="' + esc(b.id) + '" data-name="' + esc(b.name) + '">Disable</button> '
-          : '<button class="btn btn-primary btn-sm" data-action="enable-bot" data-id="' + esc(b.id) + '" data-name="' + esc(b.name) + '">Enable</button> ') +
-        (b.enabled ? '<button class="btn btn-outline btn-sm" data-action="trigger-bot" data-id="' + esc(b.id) + '" data-name="' + esc(b.name) + '">Trigger</button> ' : '') +
-        '<button class="btn btn-danger btn-sm" data-action="delete-bot" data-id="' + esc(b.id) + '" data-name="' + esc(b.name) + '">Delete</button>' +
+          ? '<button class="btn btn-outline btn-sm" data-action="disable-bot" data-id="' + botAttr(b.id) + '" data-name="' + botAttr(b.name) + '">Disable</button> '
+          : (!botUnavailable(b) ? '<button class="btn btn-primary btn-sm" data-action="enable-bot" data-id="' + botAttr(b.id) + '">Enable</button> ' : '')) +
+        (b.enabled && !botUnavailable(b) ? '<button class="btn btn-outline btn-sm" data-action="trigger-bot" data-id="' + botAttr(b.id) + '">Trigger</button> ' : '') +
+        '<button class="btn btn-danger btn-sm" data-action="delete-bot" data-id="' + botAttr(b.id) + '" data-name="' + botAttr(b.name) + '">Delete</button>' +
       '</td>' +
       '</tr>';
   }).join('');
@@ -121,7 +126,7 @@ function openBotDetail(botId) {
     // Info grid
     html += '<div class="info-grid">';
     html += '<span class="lbl">Type</span><span class="val">' + botTypeBadge(b.type) + '</span>';
-    html += '<span class="lbl">Status</span><span class="val">' + (b.enabled ? '<span class="badge badge-green">enabled</span>' : '<span class="badge badge-gray">disabled</span>') + '</span>';
+    html += '<span class="lbl">Status</span><span class="val">' + botStatusBadge(b) + '</span>';
     html += '<span class="lbl">Scope</span><span class="val">' + esc(b.scopeType) + '</span>';
     html += '<span class="lbl">Rate Limit</span><span class="val">' + b.rateLimitPerHour + '/hr, ' + b.rateLimitPerDay + '/day</span>';
     html += '<span class="lbl">Runs</span><span class="val">' + (b.runCount || 0) + '</span>';
@@ -130,6 +135,11 @@ function openBotDetail(botId) {
     html += '<span class="lbl">Created</span><span class="val">' + fmtDate(b.createdAt) + '</span>';
     if (b.creatorName) html += '<span class="lbl">Created By</span><span class="val">' + esc(b.creatorName) + '</span>';
     html += '</div>';
+
+    if (botUnavailable(b)) {
+      html += '<div class="section" role="status"><h4>Execution unavailable</h4><p>' + esc(b.unavailableReason || 'Server integration execution is unavailable. Stored configuration and run history are retained.') + '</p>';
+      html += '<p>Saved enabled preference: ' + (b.enabled ? 'enabled' : 'disabled') + '. No execution is permitted while unavailable.</p></div>';
+    }
 
     // Description
     if (b.description) {
@@ -207,8 +217,8 @@ function openBotDetail(botId) {
     if (runs.length > 0) {
       html += '<table><thead><tr><th>Time</th><th>Trigger</th><th>Status</th><th>Duration</th><th>Created</th><th>Updated</th><th>API</th></tr></thead><tbody>';
       runs.forEach(function(r) {
-        html += '<tr style="cursor:pointer;" onclick="openRunDetail(\\'' + esc(b.id) + '\\',\\'' + esc(r.id) + '\\')">' +
-          '<td style="white-space:nowrap;">' + fmtDate(r.createdAt) + '</td>' +
+        html += '<tr>' +
+          '<td style="white-space:nowrap;"><button class="btn btn-outline btn-sm" data-bot-action="run" data-bot-id="' + botAttr(b.id) + '" data-run-id="' + botAttr(r.id) + '">' + fmtDate(r.createdAt) + '</button></td>' +
           '<td>' + esc(r.trigger) + '</td>' +
           '<td>' + runStatusBadge(r.status) + '</td>' +
           '<td>' + (r.durationMs > 0 ? (r.durationMs / 1000).toFixed(1) + 's' : '-') + '</td>' +
@@ -229,20 +239,38 @@ function openBotDetail(botId) {
     // Actions
     html += '<div style="display:flex;gap:0.5rem;margin-top:1rem;">';
     if (b.enabled) {
-      html += '<button class="btn btn-outline btn-sm" onclick="toggleBotFromDetail(\\'' + esc(b.id) + '\\', false)">Disable</button>';
-      html += '<button class="btn btn-primary btn-sm" onclick="triggerBotFromDetail(\\'' + esc(b.id) + '\\')">Trigger Now</button>';
-    } else {
-      html += '<button class="btn btn-primary btn-sm" onclick="toggleBotFromDetail(\\'' + esc(b.id) + '\\', true)">Enable</button>';
+      html += '<button class="btn btn-outline btn-sm" data-bot-action="disable" data-bot-id="' + botAttr(b.id) + '">Disable</button>';
+      if (!botUnavailable(b)) html += '<button class="btn btn-primary btn-sm" data-bot-action="trigger" data-bot-id="' + botAttr(b.id) + '">Trigger Now</button>';
+    } else if (!botUnavailable(b)) {
+      html += '<button class="btn btn-primary btn-sm" data-bot-action="enable" data-bot-id="' + botAttr(b.id) + '">Enable</button>';
     }
-    html += '<button class="btn btn-outline btn-sm" onclick="editBotFromDetail(\\'' + esc(b.id) + '\\')">Edit</button>';
-    html += '<button class="btn btn-outline btn-sm" onclick="duplicateBotFromDetail(\\'' + esc(b.id) + '\\')">Duplicate</button>';
-    html += '<button class="btn btn-danger btn-sm" onclick="deleteBotFromDetail(\\'' + esc(b.id) + '\\', \\'' + esc(b.name) + '\\')">Delete</button>';
+    if (b.type !== 'integration') {
+      html += '<button class="btn btn-outline btn-sm" data-bot-action="edit" data-bot-id="' + botAttr(b.id) + '">Edit</button>';
+      html += '<button class="btn btn-outline btn-sm" data-bot-action="duplicate" data-bot-id="' + botAttr(b.id) + '">Duplicate</button>';
+    }
+    html += '<button class="btn btn-danger btn-sm" data-bot-action="delete" data-bot-id="' + botAttr(b.id) + '" data-bot-name="' + botAttr(b.name) + '">Delete</button>';
     html += '</div>';
 
     document.getElementById('detailContent').innerHTML = html;
     openDetailPanel();
   }).catch(function(err) { toast(err.message, 'error'); });
 }
+
+// A single delegated listener also handles panels reopened from run history.
+// Inline event attributes are deliberately excluded by the admin CSP.
+document.getElementById('detailContent').addEventListener('click', function(event) {
+  var button = event.target.closest('[data-bot-action]');
+  if (!button || !event.currentTarget.contains(button)) return;
+  var id = button.dataset.botId;
+  var action = button.dataset.botAction;
+  if (action === 'run') openRunDetail(id, button.dataset.runId);
+  else if (action === 'back') openBotDetail(id);
+  else if (action === 'enable' || action === 'disable') toggleBotFromDetail(id, action === 'enable');
+  else if (action === 'trigger') triggerBotFromDetail(id);
+  else if (action === 'edit') editBotFromDetail(id);
+  else if (action === 'duplicate') duplicateBotFromDetail(id);
+  else if (action === 'delete') deleteBotFromDetail(id, button.dataset.botName);
+});
 
 function toggleBotFromDetail(botId, enable) {
   var endpoint = enable ? '/enable' : '/disable';
@@ -315,7 +343,7 @@ function populateInvestigationPicker(selectedIds) {
   }
   container.innerHTML = allInvestigations.map(function(inv) {
     var checked = selectedIds.indexOf(inv.id) !== -1 ? ' checked' : '';
-    return '<label><input type="checkbox" class="bot-scope-inv-check" value="' + esc(inv.id) + '"' + checked + '> ' + esc(inv.name) + '</label>';
+    return '<label><input type="checkbox" class="bot-scope-inv-check" value="' + botAttr(inv.id) + '"' + checked + '> ' + esc(inv.name) + '</label>';
   }).join('');
 }
 
@@ -633,7 +661,7 @@ function openRunDetail(botId, runId) {
       html += '</div></div>';
     }
 
-    html += '<div style="margin-top:1rem;"><button class="btn btn-outline btn-sm" onclick="openBotDetail(\\'' + esc(botId) + '\\')">Back to Bot</button></div>';
+    html += '<div style="margin-top:1rem;"><button class="btn btn-outline btn-sm" data-bot-action="back" data-bot-id="' + botAttr(botId) + '">Back to Bot</button></div>';
 
     document.getElementById('detailContent').innerHTML = html;
     openDetailPanel();

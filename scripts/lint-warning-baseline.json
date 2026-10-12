@@ -1,0 +1,323 @@
+{
+  "version": 1,
+  "description": "Reviewed existing warnings, capped independently by repository-relative file and rule. Errors are never allowed; new files/rules default to zero. Reductions do not offset regressions elsewhere. Lower allowances when removing warnings; do not regenerate to accept an unexplained increase.",
+  "warnings": {
+    "e2e/accessibility-critical.spec.ts": {
+      "@typescript-eslint/no-non-null-assertion": 3
+    },
+    "e2e/accessibility-settings.spec.ts": {
+      "@typescript-eslint/no-non-null-assertion": 5
+    },
+    "e2e/chat-route.spec.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "e2e/client-lifecycle.spec.ts": {
+      "@typescript-eslint/no-non-null-assertion": 7
+    },
+    "e2e/integration-catalog.spec.ts": {
+      "@typescript-eslint/no-non-null-assertion": 3
+    },
+    "e2e/mobile-controls.spec.ts": {
+      "@typescript-eslint/no-non-null-assertion": 9
+    },
+    "e2e/product-composer.spec.ts": {
+      "@typescript-eslint/no-non-null-assertion": 5
+    },
+    "server/integration/admin-ai-ui.browser.ts": {
+      "@typescript-eslint/no-non-null-assertion": 5
+    },
+    "server/integration/authorization.integration.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "server/integration/database.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "server/integration/investigation-admin-ui.browser.ts": {
+      "@typescript-eslint/no-non-null-assertion": 18
+    },
+    "server/integration/investigation-lifecycle.integration.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "server/integration/investigation-ownership.integration.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 3
+    },
+    "server/src/__tests__/admin-ai-generated-ui.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "server/src/__tests__/admin-ai-routes.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "server/src/__tests__/admin-auth.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "server/src/__tests__/admin-bots-ui.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "server/src/__tests__/auth.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "server/src/__tests__/bounded-sse.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "server/src/__tests__/files-routes.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "server/src/__tests__/investigation-owner-policy.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "server/src/__tests__/webhook-ownership.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "server/src/bots/bot-context.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "server/src/bots/bot-manager.ts": {
+      "@typescript-eslint/no-non-null-assertion": 6
+    },
+    "server/src/index.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "server/src/routes/admin/audit.ts": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "server/src/routes/caddy-agents.ts": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "server/src/routes/files.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "server/src/routes/taxii.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "server/src/routes/webhooks.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "server/src/services/sync-service.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "server/src/ws/handler.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/__tests__/agent-handoff.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 15
+    },
+    "src/__tests__/auth-context.test.tsx": {
+      "@typescript-eslint/no-non-null-assertion": 4
+    },
+    "src/__tests__/chat-components.test.tsx": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/__tests__/chat-loop.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/__tests__/checkpoints.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/__tests__/conflict-dialog.test.tsx": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "src/__tests__/cti-source-formatting.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 7
+    },
+    "src/__tests__/enrichment-labels.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 5
+    },
+    "src/__tests__/idempotency-key.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/__tests__/llm-router.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "src/__tests__/llm-tools.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 37
+    },
+    "src/__tests__/product-baselines.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/__tests__/search-index.test.ts": {
+      "no-console": 1
+    },
+    "src/__tests__/server-response.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/__tests__/sync-sanitize.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 19
+    },
+    "src/__tests__/tool-binding.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 3
+    },
+    "src/__tests__/useCloudSync.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "src/__tests__/useLLM.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 9
+    },
+    "src/__tests__/useLoggedActions.test.ts": {
+      "unused-eslint-disable": 1
+    },
+    "src/__tests__/useServerSync.test.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/__tests__/whiteboard-editor-drafts.test.tsx": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "src/App.tsx": {
+      "react-hooks/exhaustive-deps": 24
+    },
+    "src/components/Agent/AgentMeetingPanel.tsx": {
+      "@typescript-eslint/no-non-null-assertion": 1,
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/Agent/AgentPanel.tsx": {
+      "react-hooks/set-state-in-effect": 3
+    },
+    "src/components/Agent/AgentProfilePicker.tsx": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/components/Analysis/BulkEnrichModal.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/Analysis/IOCStatsView.tsx": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/components/CaddyShack/CaddyShackView.tsx": {
+      "react-hooks/set-state-in-effect": 2
+    },
+    "src/components/CaddyShack/NotificationBell.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/CaddyShack/PostComposer.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/CaddyShack/ReplyThread.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/Chat/ChatInput.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/Chat/ChatView.tsx": {
+      "@typescript-eslint/no-non-null-assertion": 4,
+      "react-hooks/exhaustive-deps": 3,
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/Clips/QuickCapture.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/Common/ConflictDialog.tsx": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/components/Common/CreateDropdown.tsx": {
+      "react-hooks/exhaustive-deps": 1
+    },
+    "src/components/Evidence/EvidenceView.tsx": {
+      "react-hooks/set-state-in-effect": 3
+    },
+    "src/components/ExecMode/ExecDashboard.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/ExecMode/ExecIOCView.tsx": {
+      "@typescript-eslint/no-non-null-assertion": 6
+    },
+    "src/components/ExecMode/ShareDialog.tsx": {
+      "@typescript-eslint/no-non-null-assertion": 1,
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/Graph/GraphView.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/Integrations/IntegrationPanel.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/Investigation/InvestigationDetailPanel.tsx": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "src/components/Layout/BgImageLayer.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/Layout/InlineNameGenerator.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/Notes/LinkAutocompleteMenu.tsx": {
+      "unused-eslint-disable": 1
+    },
+    "src/components/Notes/NoteEditor.tsx": {
+      "react-hooks/preserve-manual-memoization": 2,
+      "react-hooks/set-state-in-effect": 5
+    },
+    "src/components/Search/SearchOverlay.tsx": {
+      "unused-eslint-disable": 1
+    },
+    "src/components/Settings/MarkdownImportModal.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/Settings/ServerBackup.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/Settings/ServerConnection.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/components/Settings/SettingsPanel.tsx": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "src/components/Tasks/TaskItem.tsx": {
+      "@typescript-eslint/no-non-null-assertion": 3
+    },
+    "src/components/Tour/TourTooltip.tsx": {
+      "unused-eslint-disable": 1
+    },
+    "src/contexts/InvestigationContext.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/contexts/UIModalContext.tsx": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/hooks/useAgentProfiles.ts": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/hooks/useCaddyAgent.ts": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/hooks/useCustomSlashCommands.ts": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/hooks/useDropdownKeyboard.ts": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/hooks/useIntegrations.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/hooks/useInvestigationData.ts": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/hooks/useNotes.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/hooks/useServerSync.ts": {
+      "react-hooks/set-state-in-effect": 1
+    },
+    "src/lib/caddy-agent-meeting.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/lib/caddy-agent.ts": {
+      "@typescript-eslint/no-non-null-assertion": 4
+    },
+    "src/lib/chat-loop.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    },
+    "src/lib/llm-tools.ts": {
+      "@typescript-eslint/no-non-null-assertion": 4
+    },
+    "src/lib/server-response.ts": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "src/lib/sync-engine.ts": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "src/lib/ws-client.ts": {
+      "@typescript-eslint/no-non-null-assertion": 2
+    },
+    "standalone-tests/standalone.spec.ts": {
+      "@typescript-eslint/no-non-null-assertion": 1
+    }
+  }
+}

@@ -14,5 +14,7 @@
   "unarchive": "Aus Archiv entfernen",
   "moveToTrash": "In Papierkorb verschieben",
   "restore": "Wiederherstellen",
-  "deletePermanently": "Dauerhaft löschen"
+  "deletePermanently": "Dauerhaft löschen",
+  "saveFailed": "Änderungen konnten nicht gespeichert werden. Ihr Entwurf bleibt in diesem Tab erhalten; versuchen Sie es erneut, bevor Sie ihn schließen.",
+  "retrySave": "Speichern erneut versuchen"
 }

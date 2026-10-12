@@ -27,5 +27,6 @@
   "timelineEvents": "タイムラインイベント",
   "whiteboards": "ホワイトボード",
   "iocs": "IOC",
-  "chatThreads": "チャットスレッド"
+  "chatThreads": "チャットスレッド",
+  "evidence": "証拠"
 }

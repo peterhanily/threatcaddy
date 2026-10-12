@@ -92,6 +92,15 @@ describe('durable sync workspace identity', () => {
     expect(await db.table('_syncMeta').count()).toBe(1);
   });
 
+  it('rolls back first binding and coverage when the requesting session changes mid-transaction', async () => {
+    let checks = 0;
+    await expect(ensureSyncWorkspace('https://team.example', 'analyst', () => {
+      if (++checks === 2) throw new Error('Session changed');
+    })).rejects.toThrow('Session changed');
+    expect(await snapshot()).toEqual({ queue: [], meta: [] });
+    expect(await db.table('_localMigrations').count()).toBe(0);
+  });
+
   it.each([
     ['not-a-url', 'analyst'], ['ftp://team.example', 'analyst'],
     ['https://name:secret@team.example', 'analyst'], ['https://team.example?other=1', 'analyst'],

@@ -83,8 +83,8 @@ for (const multiple of [false, true]) {
     await save.click();
     await expect(apiKey).toBeFocused();
     await expect(apiKey).toHaveAttribute('aria-invalid', 'true');
-    await expect(apiKey).toHaveAccessibleDescription('Fixture API key is required.');
-    await expect(panel.getByText('Fixture API key is required.', { exact: true })).toBeVisible();
+    await expect(apiKey).toHaveAccessibleDescription('Enter a valid value for Fixture API key.');
+    await expect(panel.getByText('Enter a valid value for Fixture API key.', { exact: true })).toBeVisible();
     await apiKey.fill('   ');
     await save.click();
     await expect(apiKey).toBeFocused();

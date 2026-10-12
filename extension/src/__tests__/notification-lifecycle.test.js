@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createContext, Script } from 'node:vm';
+import { webcrypto } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
+import { englishMessage, loadUI } from './ui-fixture.js';
 
 // Execute shipped scripts against synthetic browser APIs, never user profiles.
 function hook() {
@@ -32,14 +34,17 @@ function harness(script = 'popup.js') {
     notifications: { create: vi.fn().mockResolvedValue('synthetic-notification') },
     scripting: { registerContentScripts: vi.fn().mockResolvedValue(), unregisterContentScripts: vi.fn().mockResolvedValue() },
     tabs: { onUpdated: hook(), create: vi.fn() }, contextMenus: { onClicked: hook(), create: vi.fn() }, commands: { onCommand: hook() },
-    i18n: { getMessage: key => key },
+    i18n: { getMessage: script === 'popup.js' ? englishMessage : key => key },
   };
   const page = document.implementation.createHTMLDocument('Synthetic extension popup');
   if (script === 'popup.js') page.documentElement.innerHTML = readFileSync(resolve(import.meta.dirname, '../popup.html'), 'utf8');
   const window = { location: new URL('https://approved.example.test/app'), postMessage: vi.fn(), close: vi.fn(), addEventListener: vi.fn() };
-  const context = createContext({ chrome, document: page, window, navigator: { platform: 'Linux' }, URL, console,
+  const context = createContext({ chrome, crypto: webcrypto, document: page, window, navigator: { platform: 'Linux' }, URL, console,
     AbortController, TextEncoder, TextDecoder, setTimeout, clearTimeout });
-  const start = () => new Script(readFileSync(resolve(import.meta.dirname, '..', script), 'utf8')).runInContext(context);
+  const start = () => {
+    if (script === 'popup.js') loadUI(context);
+    new Script(readFileSync(resolve(import.meta.dirname, '..', script), 'utf8')).runInContext(context);
+  };
   const sender = { id: chrome.runtime.id, url: 'https://approved.example.test/app', frameId: 0, tab: { id: 1, url: 'https://approved.example.test/app' } };
   const internal = { id: chrome.runtime.id, url: chrome.runtime.getURL('popup.html') };
   const message = (payload, source = sender) => new Promise(done => chrome.runtime.onMessage.listeners[0](payload, source, done));
@@ -170,7 +175,7 @@ describe('notification approval at delivery', () => {
     const pending = h.message({ type: 'SEND_NOTIFICATION', title: 'Synthetic notice', message: 'Local fixture only' });
     await vi.waitFor(() => expect(h.chrome.permissions.contains).toHaveBeenCalledOnce());
     const old = h.storage.approvedAppsV1['https://approved.example.test'];
-    h.storage.approvedAppsV1 = { 'https://approved.example.test': { ...old, approvedAt: old.approvedAt + 1 } };
+    h.storage.approvedAppsV1 = { 'https://approved.example.test': { ...old, generation: 'replacement-approval-generation' } };
     permission.resolve(true);
     expect(await pending).toMatchObject({ success: false, error: expect.stringContaining('App approval changed') });
     expect(h.chrome.notifications.create).not.toHaveBeenCalled();

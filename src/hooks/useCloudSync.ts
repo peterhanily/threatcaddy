@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
-import { exportJSON } from '../lib/export';
+import { exportJSON, exportEncryptedJSON } from '../lib/export';
+import { assertBackupSize } from '../lib/backup-records';
 import type { Note, ExportData, BackupDestination } from '../types';
 import {
   buildNoteEnvelope,
@@ -9,7 +10,6 @@ import {
   multiCloudPut,
   type DestinationPutResult,
 } from '../lib/cloud-sync';
-import { encryptBackup, type BackupPayload } from '../lib/backup-crypto';
 import { formatIOCsFlatJSON, slugify } from '../lib/ioc-export';
 import type { IOCExportEntry, ThreatIntelExportConfig, IOCExportFilter } from '../lib/ioc-export';
 
@@ -25,6 +25,15 @@ function summarizeResults(results: DestinationPutResult[]): { allOk: boolean; er
   return { allOk: false, errorMsg: `${failed.length} of ${results.length} destinations failed` };
 }
 
+/** An operation receipt, independent of React's next state/render. */
+export type CloudBackupResult = {
+  results: DestinationPutResult[];
+  encrypted: boolean;
+} & (
+  | { status: 'success'; error: null }
+  | { status: 'partial' | 'failure'; error: string }
+);
+
 /** Handles multi-cloud backup operations (OCI, S3, Azure Blob, GCS). Returns push helpers, progress state, and per-destination results. */
 export function useCloudSync(backupDestinations?: BackupDestination[]) {
   const [syncing, setSyncing] = useState(false);
@@ -37,64 +46,70 @@ export function useCloudSync(backupDestinations?: BackupDestination[]) {
   const enabledDestinations = useMemo(() => destinations.filter((d) => d.enabled), [destinations]);
   const hasDestinations = enabledDestinations.length > 0;
 
-  const pushFullBackup = useCallback(async (encryptionPassword?: string) => {
+  const pushFullBackup = useCallback(async (encryptionPassword?: string): Promise<CloudBackupResult> => {
+    // An explicitly supplied password means encryption was requested. Never
+    // downgrade an empty password to a plaintext upload.
+    const encrypted = encryptionPassword !== undefined;
     setSyncing(true);
     setError(null);
+    setLastResults([]);
     setProgress('Exporting data...');
     try {
-      const dests = destinations.filter((d) => d.enabled);
+      const dests = destinations.filter((d) => d.enabled).map((d) => ({ ...d }));
       if (dests.length === 0) throw new Error('No backup destinations configured. Go to Settings > Cloud Backup to add one.');
+      if (encrypted && !encryptionPassword) throw new Error('An encryption password is required.');
       const label = getLabel(dests);
-
-      const json = await exportJSON();
-      let exportData: ExportData;
-      try {
-        exportData = JSON.parse(json);
-      } catch {
-        throw new Error('Failed to parse export data — backup may be corrupted');
-      }
 
       let data: string;
       let objectKey: string;
 
-      if (encryptionPassword) {
+      if (encryptionPassword !== undefined) {
         setProgress('Encrypting backup...');
-        const payload: BackupPayload = {
-          version: 1,
-          type: 'full',
-          scope: 'all',
-          createdAt: Date.now(),
-          data: exportData as unknown as BackupPayload['data'],
-        };
-        const encrypted = await encryptBackup(encryptionPassword, payload);
-        data = JSON.stringify(encrypted);
+        data = await exportEncryptedJSON(encryptionPassword);
         const safeLabel = (label || 'default').replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50);
         objectKey = `threatcaddy/backups/${safeLabel}-${Date.now()}.enc.json`;
       } else {
+        const json = await exportJSON();
+        let exportData: ExportData;
+        try {
+          exportData = JSON.parse(json);
+        } catch {
+          throw new Error('Failed to parse export data — backup may be corrupted');
+        }
         setProgress('Building envelope...');
         const envelope = buildFullBackupEnvelope(exportData, label);
         objectKey = buildObjectKey('full-backup', '', label);
         data = JSON.stringify(envelope, null, 2);
       }
 
+      // Validate the final file (including the plaintext cloud envelope) against
+      // the importer's limit before starting per-destination upload attempts.
+      assertBackupSize(data);
       const results = await multiCloudPut(dests, objectKey, data, 'application/json', setProgress);
       setLastResults(results);
 
       const { allOk, errorMsg } = summarizeResults(results);
       if (allOk) {
         setLastSyncAt(Date.now());
-        setProgress(encryptionPassword ? 'Encrypted backup uploaded successfully' : 'Backup uploaded successfully');
+        setProgress(encrypted ? 'Encrypted backup uploaded successfully' : 'Backup uploaded successfully');
+        return { status: 'success', results, encrypted, error: null };
       } else {
         const successCount = results.filter((r) => r.ok).length;
         if (successCount > 0) {
           setLastSyncAt(Date.now());
           setProgress(`Uploaded to ${successCount} of ${results.length} destination(s)`);
+        } else {
+          setProgress('');
         }
-        setError(errorMsg);
+        const message = errorMsg ?? 'Backup upload failed';
+        setError(message);
+        return { status: successCount > 0 ? 'partial' : 'failure', results, encrypted, error: message };
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Push failed');
+      const message = err instanceof Error ? err.message : 'Push failed';
+      setError(message);
       setProgress('');
+      return { status: 'failure', results: [], encrypted, error: message };
     } finally {
       setSyncing(false);
     }

@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react';
-import { Download, Upload, FileText, AlertCircle } from 'lucide-react';
+import { Download, Upload, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { exportJSON, importJSON, exportNotesMarkdown, downloadFile } from '../../lib/export';
-import { ConfirmDialog } from '../Common/ConfirmDialog';
+import { BackupImportDialog } from '../Common/BackupImportDialog';
 import { MarkdownImportModal } from './MarkdownImportModal';
 import { useLogActivity } from '../../hooks/ActivityLogContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -22,7 +22,6 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
   const { addToast } = useToast();
   const [importing, setImporting] = useState(false);
   const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [showMdImport, setShowMdImport] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,24 +59,17 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleConfirmImport = async () => {
-    if (!pendingFile) return;
+  const handleConfirmImport = async (text: string, _mode: 'replace' | 'merge', password?: string) => {
     setImporting(true);
-    setError('');
     try {
-      const text = await pendingFile.text();
-      const counts = await importJSON(text);
+      const counts = await importJSON(text, password);
       showMessage(t('data.importedCounts', { notes: counts.notes, tasks: counts.tasks, folders: counts.folders, tags: counts.tags }));
       addToast('success', tt('import.jsonImported', { notes: counts.notes, tasks: counts.tasks }));
       logActivity('data', 'import', `Imported ${counts.notes} notes, ${counts.tasks} tasks, ${counts.folders} investigations, ${counts.tags} tags`);
       onImportComplete();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to import';
-      setError(msg);
-      addToast('error', tt('import.importFailed'));
+      return counts;
     } finally {
       setImporting(false);
-      setPendingFile(null);
     }
   };
 
@@ -132,22 +124,12 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
       {message && (
         <p className="text-sm text-green-400">{message}</p>
       )}
-      {error && (
-        <p className="text-sm text-red-400 flex items-center gap-1">
-          <AlertCircle size={14} />
-          {error}
-        </p>
-      )}
-
-      <ConfirmDialog
-        open={pendingFile !== null}
+      {pendingFile && <BackupImportDialog
+        file={pendingFile}
         onClose={() => setPendingFile(null)}
-        onConfirm={handleConfirmImport}
-        title={t('data.importBackupTitle')}
-        message={t('data.importBackupMessage')}
-        confirmLabel={t('data.importReplace')}
-        danger
-      />
+        onImport={handleConfirmImport}
+        allowMerge={false}
+      />}
 
       <MarkdownImportModal
         open={showMdImport}

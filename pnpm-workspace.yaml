@@ -13,3 +13,6 @@ overrides:
   # Excalidraw consumes prebuilt CSS but pins an old Sass watcher dependency.
   # This same-major Sass release removes the remaining unpatched braces path.
   '@excalidraw/excalidraw>sass': '1.105.0'
+  # Mermaid's public KaTeX renderer is covered by ordinary math/whiteboard
+  # acceptance; scope the security fix without upgrading Mermaid's parser API.
+  'mermaid>katex': '0.18.2'

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
+import { PgDialect } from 'drizzle-orm/pg-core';
 
 const mocks = vi.hoisted(() => ({
   selectResults: [] as unknown[][], writes: [] as Array<{ kind: string; values: Record<string, unknown> }>,
@@ -31,7 +32,7 @@ const request = (path: string, body: unknown) => app.request(`/agents/${path}`, 
 const deployment = (id = 'deployment-a') => ({ deploymentId: id, order: 0, profile: { id: 'profile-a', name: 'Synthetic analyst', role: 'observer', systemPrompt: 'Synthetic test', allowedTools: ['read_note'], readOnlyEntityTypes: ['note'], policy: { autoApproveReads: false, intervalMinutes: 5 } }, policyOverrides: { autoApproveCreate: false } });
 const stored = (overrides = {}) => ({ id: 'bot-a', sourceDeploymentId: 'deployment-a', sourceType: 'caddy-agent', createdBy: 'owner-a', userId: 'owner-a', scopeType: 'investigation', scopeFolderIds: ['folder-a'], config: {}, ...overrides });
 
-beforeEach(() => { mocks.selectResults.length = 0; mocks.writes.length = 0; vi.clearAllMocks(); mocks.access.mockResolvedValue(true); mocks.unload.mockResolvedValue(undefined); });
+beforeEach(() => { mocks.selectResults.length = 0; mocks.writes.length = 0; vi.clearAllMocks(); mocks.locks.mockReset(); mocks.locks.mockResolvedValue([{ id: 1 }]); mocks.access.mockResolvedValue(true); mocks.unload.mockResolvedValue(undefined); });
 
 describe('deployment ownership and unsupported handoff containment', () => {
   it('denies another creator before any mutation even when the incoming folder is accessible', async () => {
@@ -69,7 +70,10 @@ describe('deployment ownership and unsupported handoff containment', () => {
     const response = await request('register', { investigationId: 'folder-a', deployments: [deployment()] });
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ serverExecutionAvailable: false });
-    expect(mocks.locks).toHaveBeenCalledOnce();
+    expect(mocks.locks).toHaveBeenCalledTimes(2);
+    const dialect = new PgDialect();
+    expect(dialect.sqlToQuery(mocks.locks.mock.calls[0][0]).sql).toMatch(/sync_clock.*FOR UPDATE/);
+    expect(dialect.sqlToQuery(mocks.locks.mock.calls[1][0]).sql).toContain('pg_advisory_xact_lock');
     expect(mocks.writes[0].values).toMatchObject({ enabled: false, capabilities: [], config: { allowedTools: ['read_note'], readOnlyEntityTypes: ['note'], agentPolicy: { autoApproveReads: false, autoApproveCreate: false } } });
     expect(mocks.unload).toHaveBeenCalledWith('bot-a');
     expect(mocks.execute).not.toHaveBeenCalled();
@@ -97,6 +101,32 @@ describe('deployment ownership and unsupported handoff containment', () => {
   it('denies unregistering another creator deployment without deleting or unloading it', async () => {
     mocks.selectResults.push([stored({ createdBy: 'owner-b' })], [stored({ createdBy: 'owner-b' })]);
     expect((await request('unregister', { deploymentIds: ['deployment-a'] })).status).toBe(403);
+    expect(mocks.writes).toEqual([]);
+    expect(mocks.unload).not.toHaveBeenCalled();
+  });
+
+  it.each(['register', 'unregister'])('rechecks revoked access after %s waits for the shared policy lock', async operation => {
+    let release!: (rows: Array<{ id: number }>) => void;
+    mocks.locks.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+    mocks.selectResults.push([stored()], [stored()]);
+    const response = request(operation, operation === 'register'
+      ? { investigationId: 'folder-a', deployments: [deployment()] }
+      : { deploymentIds: ['deployment-a'] });
+    await vi.waitFor(() => expect(mocks.locks).toHaveBeenCalledOnce());
+    expect(mocks.selectResults).toHaveLength(2);
+    expect(mocks.writes).toEqual([]);
+    mocks.access.mockResolvedValue(false);
+    release([{ id: 1 }]);
+    expect((await response).status).toBe(403);
+    expect(mocks.writes).toEqual([]);
+    expect(mocks.unload).not.toHaveBeenCalled();
+    expect(mocks.execute).not.toHaveBeenCalled();
+  });
+
+  it('fails closed before advisory locks or metadata writes if the policy singleton is missing', async () => {
+    mocks.locks.mockResolvedValueOnce([]);
+    expect((await request('register', { investigationId: 'folder-a', deployments: [deployment()] })).status).toBe(500);
+    expect(mocks.locks).toHaveBeenCalledOnce();
     expect(mocks.writes).toEqual([]);
     expect(mocks.unload).not.toHaveBeenCalled();
   });

@@ -118,7 +118,6 @@ vi.mock('../lib/logger.js', () => ({
 let encryptSecret: typeof import('../bots/secret-store.js').encryptSecret;
 let decryptSecret: typeof import('../bots/secret-store.js').decryptSecret;
 let encryptConfigSecrets: typeof import('../bots/secret-store.js').encryptConfigSecrets;
-let decryptConfigSecrets: typeof import('../bots/secret-store.js').decryptConfigSecrets;
 let redactConfigSecrets: typeof import('../bots/secret-store.js').redactConfigSecrets;
 
 beforeEach(async () => {
@@ -127,7 +126,6 @@ beforeEach(async () => {
   encryptSecret = mod.encryptSecret;
   decryptSecret = mod.decryptSecret;
   encryptConfigSecrets = mod.encryptConfigSecrets;
-  decryptConfigSecrets = mod.decryptConfigSecrets;
   redactConfigSecrets = mod.redactConfigSecrets;
 });
 

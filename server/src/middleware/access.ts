@@ -1,7 +1,7 @@
 import { createMiddleware } from 'hono/factory';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { db } from '../db/index.js';
-import { investigationMembers, users } from '../db/schema.js';
+import { folders, investigationMembers, users } from '../db/schema.js';
 import type { AuthUser, InvestigationRole } from '../types.js';
 
 const ROLE_LEVELS: Record<string, number> = {
@@ -15,16 +15,19 @@ export async function checkInvestigationAccess(
   folderId: string,
   minRole: InvestigationRole = 'viewer',
   database: Pick<typeof db, 'select'> = db,
+  options: { includeDeleted?: boolean } = {},
 ): Promise<boolean> {
   const member = await database
     .select({ role: investigationMembers.role, serverRole: users.role })
     .from(investigationMembers)
     .innerJoin(users, eq(users.id, investigationMembers.userId))
+    .innerJoin(folders, eq(folders.id, investigationMembers.folderId))
     .where(
       and(
         eq(investigationMembers.userId, userId),
         eq(investigationMembers.folderId, folderId),
         eq(users.active, true),
+        options.includeDeleted ? undefined : isNull(folders.deletedAt),
       )
     )
     .limit(1);

@@ -4,7 +4,7 @@ import type { Post } from '../types';
 import { ReplyThread } from '../components/CaddyShack/ReplyThread';
 
 const api = vi.hoisted(() => ({ fetch: vi.fn(), react: vi.fn(), toast: vi.fn() }));
-vi.mock('../lib/server-api', () => ({ fetchPost: api.fetch, addReaction: api.react, removeReaction: vi.fn(), deletePost: vi.fn(), editPost: vi.fn() }));
+vi.mock('../lib/server-api', () => ({ fetchPostPage: api.fetch, addReaction: api.react, removeReaction: vi.fn(), deletePost: vi.fn(), editPost: vi.fn() }));
 vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ addToast: api.toast }) }));
 vi.mock('../components/CaddyShack/PostCard', () => ({ PostCard: ({ post, onReact, onReply }: {
   post: Post; onReact: (id: string, emoji: string) => void; onReply?: (id: string) => void;

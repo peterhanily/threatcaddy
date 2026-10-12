@@ -8,6 +8,7 @@ import { resolve } from 'node:path'
 import { URL } from 'node:url'
 import { createContext, Script } from 'node:vm'
 import { beforeEach, describe, it, expect, vi } from 'vitest'
+import { loadUI } from './ui-fixture.js'
 
 const NOW = Date.parse('2026-09-07T12:00:00Z')
 
@@ -71,6 +72,7 @@ function executeSource(filename, globals = {}) {
     console: { error: vi.fn(), warn: vi.fn() },
     ...globals,
   })
+  if (filename === 'popup.js') loadUI(context)
   new Script(readFileSync(sourcePath, 'utf8'), { filename: sourcePath }).runInContext(context)
   return context
 }
@@ -131,7 +133,7 @@ describe('background.js targetUrlToMatchPattern', () => {
   it('executes service-worker startup and registers the actual event handlers', async () => {
     await vi.waitFor(() => expect(background.chrome.scripting.unregisterContentScripts)
       .toHaveBeenCalledWith({ ids: ['dynamic-bridge'] }))
-    expect(background.chrome.storage.onChanged.addListener).toHaveBeenCalledOnce()
+    expect(background.chrome.storage.onChanged.addListener).toHaveBeenCalledTimes(2)
     expect(background.chrome.runtime.onMessage.addListener).toHaveBeenCalledOnce()
     expect(background.chrome.runtime.onConnect.addListener).toHaveBeenCalledOnce()
     expect(background.console.error).not.toHaveBeenCalled()
@@ -210,7 +212,7 @@ describe('bridge.js protocol and extension validity', () => {
     const payload = bridge.context.readyPayload()
     expect(payload).toEqual({
       type: 'TC_EXTENSION_READY', protocolVersion: 1,
-      capabilities: ['llm_streaming', 'fetch_url', 'clip_import', 'proxy_fetch', 'notification_ack'],
+      capabilities: ['llm_streaming', 'fetch_url', 'clip_import', 'clip_import_ack_v2', 'proxy_fetch', 'proxy_fetch_abort', 'notification_ack'],
     })
     expect(Number.isInteger(payload.protocolVersion)).toBe(true)
     expect(payload.protocolVersion).toBeGreaterThan(0)

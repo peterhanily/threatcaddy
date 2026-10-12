@@ -1,400 +1,174 @@
-# Integration Platform
+# Integration platform
 
-The integration platform is ThreatCaddy's no-code workflow engine for threat-intel enrichment. An **integration template** is a shareable JSON definition that wires together HTTP calls, conditional branches, loops, transforms, and entity CRUD. An **installed integration** is a user's instance of a template with a config (API keys, scope, schedule).
+Integration templates are declarative JSON workflows. Installed integrations pair a template with configuration and scope. This document describes the implemented client runtime, not every capability represented by the compatibility schema.
 
-This doc covers the shape of a template, the seven step types, the variable / expression syntax, the trigger model, and the output routing model. It's written for people building a new integration, not for end users running pre-built ones.
+## Availability and triggers
 
-## Anatomy of a template
+The browser runs integrations through explicit callers: IOC run menus, bulk enrichment, imported-IOC enrichment, and the enrichment tool used by chat. Declaring a trigger does not install a general entity listener, scheduler, or webhook endpoint.
+
+| Declaration | Current behavior |
+|---|---|
+| `manual` | Available through supported run controls; the IOC menu filters by matching IOC type. |
+| `on-entity-create` | Used by the explicit imported-IOC enrichment caller; not a universal create listener. |
+| `on-entity-update` | Compatibility metadata; no general automatic update listener. |
+| `scheduled` | Compatibility metadata; no supported scheduler for integration templates. |
+| `webhook` | Compatibility metadata; no supported inbound integration webhook. |
+
+Server-side integration execution is unavailable. Startup, load, enable, and trigger paths enforce this capability gate. Existing definitions, configuration, saved enable preferences, and history are retained; the admin UI distinguishes a saved preference from an available runtime. Legacy integrations can still be disabled or deleted. Sharing a template with a team does not enable server execution.
+
+HTTP pagination and the `post-to-feed` output are also unavailable. Validation rejects these declarations before execution rather than silently producing incomplete results.
+
+## Minimal inert example
+
+This complete template makes no network requests and does not create entities:
 
 ```json
 {
-  "id": "ti-virustotal-ip",
+  "id": "local-summary-example",
   "schemaVersion": "1.0",
-  "version": "1.2.0",
-  "name": "VirusTotal — IP enrichment",
-  "description": "Look up an IP on VirusTotal and append the verdict to the IOC.",
-  "author": "ThreatCaddy",
-  "icon": "🦠",
-  "color": "#ff6b35",
-  "category": "enrichment",
-  "tags": ["virustotal", "ip", "enrichment"],
-  "triggers":      [{ "type": "on-entity-create", "iocTypes": ["ipv4", "ipv6"] }],
-  "configSchema":  [{ "key": "apiKey", "label": "VirusTotal API key", "type": "password", "required": true, "secret": true }],
-  "steps":         [ /* see below */ ],
-  "outputs":       [ /* see below */ ],
-  "rateLimit":     { "maxPerHour": 240, "maxPerDay": 1000 },
-  "requiredDomains": ["www.virustotal.com"],
-  "minVersion":    "1.0.0",
-  "source":        "user",
-  "createdAt":     1735000000000,
-  "updatedAt":     1735000000000
+  "version": "1.0.0",
+  "name": "Local summary",
+  "description": "Render a local demonstration message.",
+  "author": "Example",
+  "icon": "📋",
+  "color": "#0066cc",
+  "category": "utility",
+  "tags": ["example"],
+  "triggers": [{ "type": "manual" }],
+  "configSchema": [],
+  "requiredDomains": [],
+  "steps": [{
+    "id": "summary",
+    "type": "set-variable",
+    "label": "Prepare summary",
+    "variables": { "summary": "Local demonstration complete." }
+  }],
+  "outputs": [{
+    "type": "display",
+    "template": { "summary": "{{vars.summary}}" }
+  }],
+  "source": "user",
+  "createdAt": 1735000000000,
+  "updatedAt": 1735000000000
 }
 ```
 
-Field reference (full type in `src/types/integration-types.ts`):
+The full schema is in `src/types/integration-types.ts`; runtime validation is in `src/lib/integration-plan.ts`. Configuration validates declared types/options and preserves valid `false` and `0` values. Defaults apply to missing values, not every falsy value.
 
-| Field | Required | Notes |
-|---|---|---|
-| `id` | yes | Stable slug. User-installed instances reference this. |
-| `schemaVersion` | yes | Currently `"1.0"`. Bumped when the template shape changes incompatibly. |
-| `version` | yes | Template-author semver; informational. |
-| `category` | yes | One of `enrichment`, `threat-feed`, `siem-soar`, `notification`, `export`, `pipeline`, `utility`. |
-| `triggers` | yes | At least one. See [Triggers](#triggers). |
-| `configSchema` | yes | Field declarations for the install-time config form. `secret: true` flags it for the secret store. |
-| `steps` | yes | Ordered execution graph. See [Step types](#step-types). |
-| `outputs` | yes | Routing rules from final variables to ThreatCaddy entities. See [Outputs](#outputs). |
-| `rateLimit` | no | Soft cap enforced per installed integration. |
-| `requiredDomains` | yes | Allowlist of egress hosts. The HTTP step refuses URLs outside this list (SSRF guard). |
-| `source` | yes | `builtin` (read-only), `user`, `team`, or `community`. |
+JSON imports always receive a fresh local ID, preserving any installed definition with the supplied ID. Catalog/team installation refuses collisions with stored or built-in templates, including IDs still referenced by installations. There is no automatic replacement/update path: import a separate JSON copy, review it, and configure it explicitly. Import errors preserve the pasted draft.
 
-## Triggers
+## Execution graph and limits
 
-| Trigger | When it fires | Optional filters |
-|---|---|---|
-| `manual` | User clicks Run from the UI | — |
-| `on-entity-create` | A matching entity is created | `iocTypes`, `entityTables` |
-| `on-entity-update` | A matching entity is updated | `iocTypes`, `entityTables` |
-| `scheduled` | Server cron fires | `schedule` (cron string, server-side only) |
-| `webhook` | Inbound POST to the integration's webhook URL | — |
+There are eight step types: `http`, `transform`, `condition`, `loop`, `create-entity`, `update-entity`, `delay`, and `set-variable`.
 
-Multiple triggers can be declared on a single template — e.g. an enrichment integration that wants both manual runs and on-create runs.
+Unreferenced steps are roots and execute in declaration order. A branch or loop owns its referenced children: those children are not also run as top-level steps. Reusable children may run on each selected invocation. Duplicate IDs, missing references, cycles, excessive nesting, and malformed declarations are rejected before any step executes.
 
-`scheduled` and `webhook` triggers only fire server-side. `manual`, `on-entity-create`, and `on-entity-update` fire client-side too.
+The runtime caps templates at 256 steps, nesting at eight levels, aggregate execution visits at 10,000, and each loop at 1,000 iterations (default 100). Template JSON is limited to 4 MiB, with separate bounded-data validation. Runs have a five-minute deadline. Logs are capped at 500 entries with an explicit truncation marker. Limits and cancellation are not bypassed by `continueOnError`.
 
-## Step types
+Derived and retained data has a cumulative 8 MiB budget, with 50,000 measured data nodes and a depth cap of 24. Expansion is charged before interpolation, mapping, joining, and serialization allocate their result. Conservative accounting can reject a run before its final output alone reaches 8 MiB; overwriting a variable does not reset the cumulative budget.
 
-Seven step types (`IntegrationStepType` in `integration-types.ts`):
+A loop's `maxIterations` processes only that prefix; it does not promise every input item was processed. Cancellation or a later error does not roll back earlier acknowledged entity writes. Run counts retain those acknowledged changes.
 
-```
-http | transform | condition | loop | create-entity | update-entity | delay | set-variable
-```
+## Context and substitution
 
-All steps share a `StepBase`:
+The run context is shaped as follows:
 
 ```ts
 {
-  id: string;            // unique within the template
-  type: IntegrationStepType;
-  label: string;         // shown in the run log
-  continueOnError?: boolean;  // if true, errors don't abort the run
-  condition?: string;    // skip the step if this expression is false
+  ioc?: { id, value, type, confidence },
+  investigation?: { id, name },
+  config: { /* installed configuration */ },
+  now: string,
+  steps: { /* results keyed by step ID */ },
+  vars: { /* explicitly assigned variables and current loop bindings */ },
+  loop?: { /* current loop metadata */ }
 }
 ```
 
-### `http` — outbound HTTP call
+Examples:
 
-```json
-{
-  "id": "vt-lookup",
-  "type": "http",
-  "label": "Query VirusTotal",
-  "method": "GET",
-  "url": "https://www.virustotal.com/api/v3/ip_addresses/{{trigger.entity.value}}",
-  "headers": { "x-apikey": "{{config.apiKey}}" },
-  "responseType": "json",
-  "timeout": 30000,
-  "retry": { "maxRetries": 3, "retryOn": [429, 500, 502, 503], "backoffMs": 1000 },
-  "pagination": {
-    "type": "cursor",
-    "nextExpression": "{{response.next_cursor}}",
-    "maxPages": 10,
-    "resultsPath": "data"
-  }
-}
-```
+- HTTP response: `{{steps.lookup.response.data.result}}`, with `status`, `data`, and `headers` under `response`.
+- Transform result: `{{steps.extract.score}}`, where `score` is an operation's `as` key.
+- Created entity ID: `{{steps.create.id}}`.
+- Assigned variable: `{{vars.summary}}`.
+- Current IOC: `{{ioc.value}}`.
 
-| Field | Notes |
-|---|---|
-| `method` | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`. |
-| `url` | Variable substitution allowed. Must resolve to a host in `requiredDomains`. |
-| `headers`, `queryParams`, `body` | Variable substitution allowed throughout. |
-| `contentType` | `json` (default), `form`, `text`. Drives serialisation of `body`. |
-| `responseType` | `json` (default) parses the body and stores it on `response`. `text` keeps it as a raw string. |
-| `timeout` | Milliseconds; default 30 000. Hard cap is enforced server-side. |
-| `retry` | Retries with constant backoff on the listed status codes. |
-| `pagination` | Three modes — `offset` (uses an offset/limit pair), `cursor` (next-cursor token), `link-header` (RFC 5988). All three concatenate `resultsPath` arrays from each page into one. |
+There is no implicit `trigger.entity`, bare `response`, or bare transform-result variable.
 
-Server-side execution sends the call through the team server's proxy (which enforces SSRF / private-IP blocks again on top of the `requiredDomains` allowlist). Client-side execution goes through the extension's `PROXY_FETCH` for the same reason — direct browser fetches would be CORS-blocked anyway.
+`resolveVariables` substitutes text. An exact object/array reference used in a text field is JSON text, not a typed value. `resolveDeep` recursively substitutes strings while preserving literal non-string values.
 
-### `transform` — reshape variables
-
-```json
-{
-  "id": "extract-verdict",
-  "type": "transform",
-  "label": "Pull verdict",
-  "input": "{{response}}",
-  "operations": [
-    { "op": "extract",  "path": "data.attributes.last_analysis_stats.malicious", "as": "maliciousCount" },
-    { "op": "lookup",   "path": "maliciousCount", "map": { "0": "clean", "1": "suspicious" }, "default": "malicious", "as": "verdict" },
-    { "op": "template", "template": "VT verdict: {{verdict}} ({{maliciousCount}} engines)", "as": "summary" }
-  ]
-}
-```
-
-Seven `op`s:
-
-| Op | Shape | Purpose |
-|---|---|---|
-| `extract` | `{ path, as }` | Pull a single value out of the input via dot-path. |
-| `map` | `{ path, template, as }` | Map an array → array of objects, where each object's keys are filled from `template`. |
-| `filter` | `{ path, condition, as }` | Filter an array by a boolean expression evaluated against each element. |
-| `flatten` | `{ path, as }` | Flatten one level of nested arrays. |
-| `join` | `{ path, separator, as }` | Join array elements with a separator. |
-| `template` | `{ template, as }` | Render a `{{var}}` template string into a new variable. |
-| `lookup` | `{ path, map, default?, as }` | Map a value through a static lookup table. |
-
-All ops set their result on the `as` variable in the run context.
-
-### `condition` — branching
-
-```json
-{
-  "id": "is-malicious",
-  "type": "condition",
-  "label": "If malicious",
-  "expression": "verdict == 'malicious'",
-  "thenSteps": ["create-block-task"],
-  "elseSteps": ["log-clean"]
-}
-```
-
-`expression` is evaluated by the safe expression module (see [Variables and expressions](#variables-and-expressions)). The runner executes the listed step IDs in order, then resumes after the condition step. `elseSteps` is optional.
-
-### `loop` — iterate
-
-```json
-{
-  "id": "for-each-engine",
-  "type": "loop",
-  "label": "Loop engines",
-  "items": "{{response.data.attributes.last_analysis_results}}",
-  "itemVariable": "engine",
-  "indexVariable": "i",
-  "bodySteps": ["log-engine"],
-  "maxIterations": 100,
-  "delayMs": 50
-}
-```
-
-`items` must resolve to an array (or `Object.values()` of an object). `itemVariable` and optionally `indexVariable` are scoped to the body steps. `maxIterations` and `delayMs` are belt-and-braces protections against runaway loops and rate limits.
-
-### `create-entity` — create a ThreatCaddy entity
-
-```json
-{
-  "id": "create-block-task",
-  "type": "create-entity",
-  "label": "Create block task",
-  "entityType": "task",
-  "fields": {
-    "title": "Block {{trigger.entity.value}} (VT verdict: {{verdict}})",
-    "priority": "high",
-    "tags": ["vt-malicious"]
-  }
-}
-```
-
-`entityType`: `ioc`, `note`, `task`, or `timeline-event`. `fields` is the partial entity payload — variable substitution applies to all string fields. The created entity is added to the run context as `<stepId>.created` so downstream steps can link to it.
-
-### `update-entity` — update by ID
-
-```json
-{
-  "id": "tag-ioc",
-  "type": "update-entity",
-  "label": "Tag the IOC as malicious",
-  "entityType": "ioc",
-  "entityId": "{{trigger.entity.id}}",
-  "fields": { "tags": ["vt-malicious"], "confidence": "high" }
-}
-```
-
-`entityId` is required; without it the update has no target. Same `entityType` enum as `create-entity`.
-
-### `delay` — pause
-
-```json
-{ "id": "throttle", "type": "delay", "label": "Be polite", "ms": 2000 }
-```
-
-Sleeps for `ms` milliseconds. Used for politeness when looping over external API calls.
-
-### `set-variable` — explicit variable assignment
-
-```json
-{
-  "id": "init",
-  "type": "set-variable",
-  "label": "Init",
-  "variables": {
-    "lookupCount": "0",
-    "summary": "verdict={{verdict}} engines={{engineCount}}"
-  }
-}
-```
-
-Useful for initialising counters, naming intermediate values clearly, or templating a string that downstream steps reference repeatedly.
-
-## Variables and expressions
-
-The expression engine lives in `src/lib/integration-expression.ts`. It's a small parser — **no `eval`, no `new Function`** — with three public surfaces:
-
-- `resolveVariables(template, context)` — substitutes `{{path.to.value}}` tokens in a string.
-- `evaluateCondition(expr, context)` — evaluates a boolean expression for `condition` steps and `condition` filters on outputs.
-- `resolveDeep(value, context)` — recursively substitutes through arrays / objects.
-
-### Run context
-
-A run carries a context object that grows as steps complete:
-
-```
-{
-  trigger: { type, entity?, payload? },   // what fired the run
-  config:  { …configSchema values… },     // user-supplied config
-  response: <last http response body>,    // shorthand for the last http step
-  <stepId>: <step result>,                // every step writes here
-  <as variable>: <value>,                 // transforms write to their `as` keys
-  <itemVariable>: <current loop item>,    // inside a loop body
-}
-```
-
-`{{trigger.entity.value}}`, `{{config.apiKey}}`, `{{response.data.id}}`, `{{verdict}}` are all resolved against the same context.
+Loop items and transform inputs instead use `resolveDataValue`: a single exact `{{path}}` reference preserves the original typed value. Mixed text remains text. Loop items must resolve to an array; `Object.values()` is not an expression feature. Loop item/index bindings live under `vars`, use a zero-based index, and restore previous bindings when a nested loop exits.
 
 ### Conditions
 
-Supported operators: `==`, `!=`, `>`, `>=`, `<`, `<=`, `&&`, `||`, parentheses, plus the unary `!`. Operands can be variable references, string literals (single or double quoted), numbers, `true`/`false`/`null`/`undefined`. Examples:
+Supported comparisons are `==`, `!=`, `>`, `>=`, `<`, `<=`, `exists`, `not-exists`, `contains`, `startsWith`, and `endsWith`.
 
-```
-verdict == 'malicious'
-maliciousCount > 0 && config.threshold >= 5
-!response.error && response.status == 'ok'
-```
+Use explicit references and spaces, for example:
 
-Anything weirder than this needs a dedicated `transform` step.
-
-## Outputs
-
-After all steps complete, the runner walks `outputs` and routes each one based on its `type`. This is where the run's final values turn into ThreatCaddy entities or notifications.
-
-```json
-{
-  "type": "create-note",
-  "condition": "maliciousCount > 0",
-  "template": {
-    "title": "VT verdict for {{trigger.entity.value}}",
-    "content": "## Verdict: {{verdict}}\n\n{{maliciousCount}} engines flagged this as malicious.",
-    "tags": ["virustotal", "{{verdict}}"]
-  }
-}
+```text
+{{config.enabled}} == true
+{{steps.lookup.response.status}} == 200
+{{ioc.value}} exists
 ```
 
-| Output type | What it does |
-|---|---|
-| `create-ioc` | Adds a new IOC. `template` populates its fields. |
-| `update-ioc` | Updates the triggering IOC. Common for enrichment templates. |
-| `create-note` | Creates an analyst note. |
-| `create-task` | Creates a follow-up task. |
-| `create-timeline-event` | Adds an event to the investigation timeline. |
-| `notify` | Sends an in-app toast / push notification. |
-| `post-to-feed` | Posts a CaddyShack feed entry. |
-| `display` | No persistence — surfaces the rendered template in the run log only (useful for dry-runs). |
+The words `and` and `or` combine conditions left to right without operator precedence. This is not JavaScript: `&&`, `||`, unary `!`, parentheses, and JavaScript quoted-literal syntax are not supported. A nonempty standalone string, including the text `false`, is truthy for compatibility; use an explicit comparison for boolean configuration.
 
-`condition` is optional. If present, the output is skipped unless the expression evaluates true.
+## Step behavior
 
-## Run records
+### HTTP
 
-Every execution writes an `IntegrationRun` to Dexie:
+Methods are `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`. URL, headers, query parameters, and body support substitution. Body encoding is `json`, `form`, or `text`; response decoding is `json` or `text`. The default timeout is 30 seconds. Configured retries are bounded and use increasing backoff for eligible status codes.
 
-| Field | Notes |
-|---|---|
-| `status` | `running`, `success`, `error`, `timeout`, `cancelled`. |
-| `log` | Array of `IntegrationRunLogEntry` — one per step boundary plus HTTP request/response records. |
-| `output` | The final context, scrubbed of `password`-typed config values. |
-| `error` | Top-level error message if the run aborted. |
-| `startedAt`, `finishedAt` | Wall clock. |
+Client transport may use the configured team proxy, the extension, or direct browser fetch. Direct fetch remains subject to browser CORS and the application's content security policy; not every declared endpoint will be reachable. Direct response bodies are bounded at 5 MiB, including streamed bodies, and cancellation remains active through body consumption.
 
-The Run History panel in Settings → Integrations renders these. Server-side runs are mirrored back via the sync engine.
+`requiredDomains` is a bare-hostname allowlist checked before dispatch. It is not by itself a DNS-aware private-network/SSRF defense. Each transport has its own additional restrictions. Only actual dispatched HTTP attempts count toward API usage.
 
-## Security model
+### Transform
 
-- **Secret config fields** (`type: 'password'` or `secret: true`) are persisted via `secret-store.ts` server-side and `Settings.integrationSecrets` (encrypted) client-side. They never appear in the run log.
-- **`requiredDomains`** is enforced before every HTTP call. A template can't add domains at runtime; the install-time list is the cap.
-- **The expression engine has no `eval`**. All dynamic behaviour is template substitution + a recursive-descent parser for boolean expressions.
-- **HTTP responses are not auto-trusted as instructions**. They land in the `response` variable; the LLM doesn't see them unless an output is `create-note` and the rendered content is later surfaced into a chat thread. (Compare the agent-soul / observer-note framing for prompt-injection defence.)
-- **Rate limits** are advisory client-side and enforced server-side. The server's `BotManager` (see `docs/bot-architecture.md`) gates integration runs the same way it gates other bots.
+Operations are `extract`, `map`, `filter`, `flatten`, `join`, `template`, and `lookup`. Each result is stored under `steps.<stepId>.<as>`, not automatically promoted to the top-level context.
 
-## Worked example: AbuseIPDB IP lookup
+`extract` reads the original transform input. Other data operations work from the preceding intermediate result. Mapping and filtering expose the current element as `item`. Template formatting resolves the ordinary run context; it does not automatically expose prior `as` names as bare variables.
 
-```json
-{
-  "id": "abuseipdb-ip",
-  "schemaVersion": "1.0",
-  "version": "1.0.0",
-  "name": "AbuseIPDB — IP reputation",
-  "description": "Look up an IP on AbuseIPDB and tag it if abusive.",
-  "category": "enrichment",
-  "triggers": [{ "type": "on-entity-create", "iocTypes": ["ipv4"] }],
-  "requiredDomains": ["api.abuseipdb.com"],
-  "configSchema": [
-    { "key": "apiKey", "label": "AbuseIPDB API key", "type": "password", "required": true, "secret": true },
-    { "key": "abuseThreshold", "label": "Abuse score threshold", "type": "number", "required": true, "default": 50 }
-  ],
-  "steps": [
-    {
-      "id": "lookup",
-      "type": "http",
-      "label": "Query AbuseIPDB",
-      "method": "GET",
-      "url": "https://api.abuseipdb.com/api/v2/check?ipAddress={{trigger.entity.value}}&maxAgeInDays=90",
-      "headers": { "Key": "{{config.apiKey}}", "Accept": "application/json" },
-      "responseType": "json",
-      "timeout": 15000,
-      "retry": { "maxRetries": 2, "retryOn": [429, 500, 502, 503], "backoffMs": 1000 }
-    },
-    {
-      "id": "extract",
-      "type": "transform",
-      "label": "Extract score",
-      "input": "{{response}}",
-      "operations": [
-        { "op": "extract",  "path": "data.abuseConfidenceScore", "as": "score" },
-        { "op": "extract",  "path": "data.countryCode",          "as": "country" },
-        { "op": "template", "template": "AbuseIPDB score {{score}}/100 ({{country}})", "as": "summary" }
-      ]
-    }
-  ],
-  "outputs": [
-    {
-      "type": "update-ioc",
-      "condition": "score >= config.abuseThreshold",
-      "template": { "tags": ["abuseipdb-malicious"], "confidence": "high", "analystNotes": "{{summary}}" }
-    },
-    {
-      "type": "create-note",
-      "template": {
-        "title": "AbuseIPDB lookup: {{trigger.entity.value}}",
-        "content": "Score: {{score}}/100\nCountry: {{country}}\nThreshold: {{config.abuseThreshold}}",
-        "tags": ["abuseipdb"]
-      }
-    }
-  ],
-  "source": "user",
-  "createdAt": 1735000000000,
-  "updatedAt": 1735000000000,
-  "author": "ThreatCaddy",
-  "icon": "🛡️",
-  "color": "#0066cc",
-  "tags": ["abuseipdb", "ip", "enrichment"]
-}
-```
+### Branches and loops
 
-This template fires on every new IPv4 IOC, hits AbuseIPDB once, tags the IOC if the abuse score meets the user-configured threshold, and writes a note either way for traceability.
+A condition selects `thenSteps` or `elseSteps`. A loop resolves `items`, assigns `itemVariable` and optional `indexVariable` under `vars`, and executes `bodySteps`. Selected child steps run in their listed order. The shared budget covers nested work.
 
-## Related
+### Entity writes, delays, variables
 
-- `src/lib/integration-executor.ts` — the runner
-- `src/lib/integration-expression.ts` — the expression engine
-- `src/types/integration-types.ts` — full type surface
-- `docs/bot-architecture.md` — server-side execution as `integration` bots
-- `docs/api-reference.md` — `/api/integrations/*` endpoints
+The schema describes IOC, note, task, and timeline-event callbacks, but available callbacks and current scope determine what a caller can persist. Update steps require an explicit entity ID. A supplied callback rejects unsupported types or missing/deleted targets; it must not acknowledge a write that did not happen.
+
+| Current caller | Creation callback | Update callback |
+|---|---|---|
+| IOC run menu | Notes, IOCs, tasks | Existing, non-trashed IOCs |
+| Bulk enrichment | Notes, when Create notes is enabled | Existing, non-trashed IOCs |
+| Imported-IOC enrichment | Not supplied | Existing, non-trashed IOCs |
+| Chat enrichment tool | Notes and IOCs | Existing, non-trashed IOCs |
+
+No current browser caller supplies timeline-event creation or note/task/timeline update support. A disabled/absent output callback does not create an entity or increment a write count. Do not assume that a schema-compatible template can perform every output in every caller.
+
+`delay` waits abortably. `set-variable` writes under `vars`; string values use text substitution.
+
+## Outputs and history
+
+Supported outputs are `create-ioc`, `update-ioc`, `create-note`, `create-task`, `create-timeline-event`, `notify`, and `display`. Optional conditions use the same expression syntax. An `update-ioc` output needs an explicit target ID in its template.
+
+`notify` invokes the caller's notification callback; it does not guarantee OS notification permission or delivery. `display` adds display results without a write of its own. It is not a dry-run switch: preceding steps and other outputs may already have changed data.
+
+The executor returns a run record; UI callers persist history in local Dexie. Records include status, input/output summaries, duration, created/updated counts, actual API calls, bounded logs, error/display results, and `createdAt`. They do not contain a promised full final context or `startedAt`/`finishedAt` pair. Server-run mirroring is not available.
+
+## Configuration and trust
+
+Installed configuration, including API keys, is stored in `installedIntegrations.config`. Password fields and `secret: true` control form behavior and configured-value log redaction; they do not create a separate secret store. The app's actual vault/backup settings determine at-rest and export protection.
+
+Do not hardcode secrets in templates or share a configured template as though it were credential-free. Exact configured-secret redaction is not a data-loss prevention guarantee: transformed/encoded secrets and values deliberately copied into response fields or entities can still be retained. Review imported domains, step behavior, and outputs before configuring or running a template.
+
+Template `rateLimit` values are compatibility metadata, not enforced quotas in the current client runtime. Execution deadlines and resource budgets are separate safeguards; they do not implement the declared hourly/daily quotas. The expression engine does not evaluate arbitrary JavaScript. External responses remain untrusted data, including if an output later places them in notes used by an AI conversation.
+
+## Source reference
+
+- `src/lib/integration-executor.ts`: browser execution and callback contract.
+- `src/lib/integration-expression.ts`: supported substitutions and conditions.
+- `src/lib/integration-plan.ts`: preflight validation and graph compilation.
+- `src/hooks/useIntegrations.ts`: import, installation, and local run history.
+- `server/src/bots/runtime-availability.ts`: server runtime capability gate.
+- `docs/api-reference.md`: template-sharing endpoints; sharing is separate from execution.

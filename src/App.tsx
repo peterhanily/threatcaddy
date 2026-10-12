@@ -1,5 +1,8 @@
 import { useState, useCallback, useMemo, useEffect, useLayoutEffect, useRef, lazy, Suspense, memo, type ReactNode } from 'react';
 import { AppLayout } from './components/Layout/AppLayout';
+import { SyncErrorBanner } from './components/Common/SyncErrorBanner';
+import { OfflineStatusNotice } from './components/Common/OfflineStatusNotice';
+import type { SettingsTab } from './components/Settings/SettingsPanel';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
 import { NavigationProvider, useNavigation, savedNavState } from './contexts/NavigationContext';
@@ -37,9 +40,10 @@ import { ActivityLogContext } from './hooks/ActivityLogContext';
 import { ScreenshareContext } from './hooks/ScreenshareContext';
 import { getEffectiveClsLevels, isAboveClsThreshold } from './lib/classification';
 import { buildInvestigationVisibility } from './lib/investigation-visibility';
-import { clipBuffer } from './lib/clipBuffer';
-import { formatBytes, openFilePicker, getDroppedFiles, dispatchFile, type FileOpenDetail } from './lib/file-handler';
-import { hasPendingChanges } from './lib/pending-changes';
+import { useClipDelivery } from './hooks/useClipDelivery';
+import { formatBytes, openFilePicker, getDroppedFiles, dispatchFile } from './lib/file-handler';
+import { useOpenedFiles } from './hooks/useOpenedFiles';
+import { fileNotePersistence } from './lib/file-note-persistence';
 import { useInvestigationData } from './hooks/useInvestigationData';
 import type { ConfidenceLevel, Note, NoteTemplate, StandaloneIOC, ChatThread } from './types';
 import { DEFAULT_QUICK_LINKS } from './types';
@@ -48,6 +52,7 @@ import { FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from './lib/utils';
 import { exportJSON, importJSON, mergeImportJSON, downloadFile, exportInvestigationJSON } from './lib/export';
 import { ConfirmDialog } from './components/Common/ConfirmDialog';
+import { BackupImportDialog } from './components/Common/BackupImportDialog';
 const SearchOverlay = lazy(() => import('./components/Search/SearchOverlay').then(m => ({ default: m.SearchOverlay })));
 import { extractIOCs, mergeIOCAnalysis } from './lib/ioc-extractor';
 import { autoEnrichImportedIOCs } from './lib/ioc-auto-enrichment';
@@ -114,11 +119,6 @@ export default function App() {
   );
 }
 
-function SyncErrorBanner({ error }: { error: string }) {
-  const { screenshareMaxLevel } = useUIModals();
-  return <div role="alert" className="fixed bottom-4 left-4 right-4 z-[100] rounded border border-amber-500 bg-gray-950 p-3 text-sm text-amber-100 shadow-lg">{screenshareMaxLevel ? 'Synchronization needs attention. Details are hidden during screensharing.' : error}</div>;
-}
-
 // ─── AppDataLayer ─────────────────────────────────────────────────────
 // Calls data/server hooks and renders: InvestigationProvider → NavigationBridge → UIModalProvider → AppInner
 
@@ -134,7 +134,7 @@ function AppDataLayer() {
   const standaloneIOCsHook = useStandaloneIOCs();
   const evidenceItemsHook = useEvidenceItems();
   const chatsHook = useChats();
-  const { folders, loading: foldersLoading, createFolder, findOrCreateFolder, updateFolder, deleteFolder, deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder, reload: reloadFolders } = useFolders();
+  const { folders, loading: foldersLoading, createFolder, updateFolder, deleteFolder, deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder, reload: reloadFolders } = useFolders();
   const { tags, createTag, updateTag, deleteTag, reload: reloadTags } = useTags();
   const noteTemplatesHook = useNoteTemplates();
   const playbooksHook = usePlaybooks();
@@ -228,8 +228,8 @@ function AppDataLayer() {
           updateSettings={updateSettings}
           defaultView={safeDefaultView}
         >
-          {syncError && <SyncErrorBanner error={syncError} />}
           <AppInner
+            syncError={syncError}
             settings={settings}
             updateSettings={updateSettings}
             toggleTheme={toggleTheme}
@@ -262,7 +262,6 @@ function AppDataLayer() {
             folders={folders}
             foldersLoading={foldersLoading}
             createFolder={createFolder}
-            findOrCreateFolder={findOrCreateFolder}
             updateFolder={updateFolder}
             deleteFolder={deleteFolder}
             deleteFolderWithContents={deleteFolderWithContents}
@@ -334,6 +333,7 @@ function NavigationBridge({ folders, timelineEvents, initialSettings, updateSett
 // Using ReturnType for hooks to keep this type in sync automatically.
 
 type AppInnerProps = {
+  syncError: ReturnType<typeof useServerSync>['syncError'];
   settings: ReturnType<typeof useSettings>['settings'];
   updateSettings: ReturnType<typeof useSettings>['updateSettings'];
   toggleTheme: ReturnType<typeof useSettings>['toggleTheme'];
@@ -366,7 +366,6 @@ type AppInnerProps = {
   folders: ReturnType<typeof useFolders>['folders'];
   foldersLoading: boolean;
   createFolder: ReturnType<typeof useFolders>['createFolder'];
-  findOrCreateFolder: ReturnType<typeof useFolders>['findOrCreateFolder'];
   updateFolder: ReturnType<typeof useFolders>['updateFolder'];
   deleteFolder: ReturnType<typeof useFolders>['deleteFolder'];
   deleteFolderWithContents: ReturnType<typeof useFolders>['deleteFolderWithContents'];
@@ -403,6 +402,7 @@ type AppInnerProps = {
 // preventing cascading re-renders when unrelated hooks in AppDataLayer update.
 
 const AppInner = memo(function AppInner({
+  syncError,
   settings, updateSettings, toggleTheme,
   addToast, tt,
   notes, tasks, timeline,
@@ -411,7 +411,7 @@ const AppInner = memo(function AppInner({
   trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard,
   emptyTrashWhiteboards, getFilteredWhiteboards, reloadWhiteboards,
   standaloneIOCsHook, evidenceItemsHook, chatsHook,
-  folders: allFolders, foldersLoading, createFolder, findOrCreateFolder, updateFolder, deleteFolder,
+  folders: allFolders, foldersLoading, createFolder, updateFolder, deleteFolder,
   deleteFolderWithContents, trashFolderContents, archiveFolder, unarchiveFolder, reloadFolders,
   tags: allTags, createTag, updateTag, deleteTag, reloadTags,
   noteTemplatesHook, playbooksHook, integrationsHook,
@@ -612,17 +612,6 @@ const AppInner = memo(function AppInner({
 
   const demoProcessedRef = useRef(false);
 
-  // Warn before closing tab with unsaved editor changes
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (hasPendingChanges()) {
-        e.preventDefault();
-      }
-    };
-    window.addEventListener('beforeunload', handler);
-    return () => window.removeEventListener('beforeunload', handler);
-  }, []);
-
   const loggedTrashChatThread = useCallback(async (id: string) => {
     const thread = chatsHook.threads.find((t) => t.id === id);
     await chatsHook.trashThread(id);
@@ -674,188 +663,78 @@ const AppInner = memo(function AppInner({
     return () => window.removeEventListener('integration-entity-created', handler);
   }, [notes, navigateTo, setSelectedFolderId]);
 
-  // Listen for clip imports from the Chrome extension via postMessage
-  useEffect(() => {
-    const handler = async (event: MessageEvent) => {
-      // Only accept messages from our own window (extension injects script into this page)
-      // event.source === window ensures only same-window postMessage is accepted,
-      // blocking cross-window/cross-tab attacks even under file:// where origins are "null"
-      if (event.source !== window) return;
-      const isFileProtocol = window.location.protocol === 'file:';
-      if (!isFileProtocol && event.origin !== window.location.origin) return;
-      if (event.data?.type !== 'THREATCADDY_IMPORT_CLIPS' && event.data?.type !== 'BROWSERNOTES_IMPORT_CLIPS') return;
-      const clips = event.data.clips;
-      if (!Array.isArray(clips) || clips.length === 0) return;
-
-      setPendingClipImports(count => count + 1);
-      try {
-        const folderCache = new Map<string, typeof folders[0]>();
-        let lastEntityType: string = 'note';
-        let lastEntityId: string | undefined;
-        let lastFolderId: string | undefined;
-        const entityTypesUsed = new Set<string>();
-
-        let failedClips = 0;
-        for (const clip of clips) {
-          try {
-          // Sanitize clip fields — only accept expected string/number types
-          const rawContent = typeof clip.content === 'string' ? clip.content : '';
-          const sourceUrl = typeof clip.sourceUrl === 'string' ? clip.sourceUrl : '';
-          const sourceTitle = typeof clip.sourceTitle === 'string' ? clip.sourceTitle : '';
-          const clipTitle = typeof clip.title === 'string' ? clip.title : '';
-          const createdAt = typeof clip.createdAt === 'number' ? clip.createdAt : Date.now();
-          const entityType = typeof clip.entityType === 'string' ? clip.entityType : 'note';
-          const folderName = typeof clip.folderName === 'string' && clip.folderName.trim()
-            ? clip.folderName.trim() : 'Clips';
-          const clsLevel = typeof clip.clsLevel === 'string' && clip.clsLevel ? clip.clsLevel : undefined;
-
-          // Resolve folder (cached)
-          if (!folderCache.has(folderName)) {
-            folderCache.set(folderName, await findOrCreateFolder(folderName));
-          }
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- just set above
-          const folder = folderCache.get(folderName)!;
-          lastFolderId = folder.id;
-
-          const timestamp = new Date(createdAt).toLocaleString();
-          const content = `*Clipped ${timestamp}*\n\n${rawContent}`;
-          const freshIOCs = extractIOCs(rawContent, {
-            enabledTypes: settings.tiEnabledIOCTypes,
-            defaultConfidence: settings.tiDefaultConfidence,
-          });
-          const iocAnalysis = mergeIOCAnalysis(undefined, freshIOCs);
-          const iocTypes = [...new Set(freshIOCs.filter((i) => !i.dismissed).map((i) => i.type))];
-
-          entityTypesUsed.add(entityType);
-
-          if (entityType === 'task') {
-            const task = await loggedCreateTask({
-              title: clipTitle || rawContent.substring(0, 80) || 'Clip Task',
-              description: content,
-              folderId: folder.id,
-              clsLevel: clsLevel || folder.clsLevel,
-              status: 'todo',
-              priority: 'none',
-              iocAnalysis,
-              iocTypes,
-            });
-            lastEntityId = task.id; lastEntityType = 'task';
-          } else if (entityType === 'timeline-event') {
-            const event = await loggedCreateEvent({
-              title: clipTitle || rawContent.substring(0, 80) || 'Clip Event',
-              description: content,
-              source: sourceUrl || 'Extension clip',
-              folderId: folder.id,
-              clsLevel: clsLevel || folder.clsLevel,
-              eventType: 'evidence',
-              confidence: 'medium',
-              timelineId: allTimelines[0]?.id || '',
-              iocAnalysis,
-              iocTypes,
-            });
-            lastEntityId = event.id; lastEntityType = 'timeline-event';
-          } else {
-            const note = await loggedCreateNote({
-              title: sourceUrl || clipTitle || rawContent.substring(0, 80) || 'Clip',
-              content,
-              folderId: folder.id,
-              clsLevel: clsLevel || folder.clsLevel,
-              sourceUrl,
-              sourceTitle,
-              createdAt,
-              iocAnalysis,
-              iocTypes,
-            });
-            lastEntityId = note.id; lastEntityType = 'note';
-          }
-          } catch (clipErr) {
-            console.error('Failed to import clip:', clipErr);
-            failedClips++;
-          }
-        }
-        if (failedClips > 0) {
-          addToast('warning', tt('clip.importWarning', { count: failedClips }));
-        }
-
-        // Navigate to the appropriate view and select the latest entity
-        if (lastFolderId) setSelectedFolderId(lastFolderId);
-        if (entityTypesUsed.size === 1) {
-          if (lastEntityType === 'task') {
-            navigateTo('tasks');
-          } else if (lastEntityType === 'timeline-event') {
-            navigateTo('timeline');
-          } else {
-            setSelectedNoteId(lastEntityId);
-            navigateTo('notes', { selectedNoteId: lastEntityId });
-          }
-        } else {
-          // Mixed batch — default to notes, select last note
-          setSelectedNoteId(lastEntityId);
-          navigateTo('notes', { selectedNoteId: lastEntityId });
-        }
-      } catch (error) {
-        console.error('Failed to import clips:', error);
-        addToast('error', tt('clip.importFailed'));
-      } finally {
-        setPendingClipImports(count => count - 1);
+  useClipDelivery({
+    enabledIOCTypes: settings.tiEnabledIOCTypes,
+    defaultConfidence: settings.tiDefaultConfidence,
+    defaultTimelineId: allTimelines[0]?.id,
+    onBusy: busy => setPendingClipImports(busy ? 1 : 0),
+    onFailed: count => addToast('warning', tt('clip.importWarning', { count })),
+    onRefreshFailed: () => addToast('warning', tt('clip.refreshFailed')),
+    onCommitted: async (results, signal) => {
+      await reloadAll();
+      if (signal.aborted) return;
+      const last = results.at(-1);
+      if (!last?.entityId) return;
+      if (last.folderId) setSelectedFolderId(last.folderId);
+      if (last.entityType === 'task') navigateTo('tasks');
+      else if (last.entityType === 'timeline-event') navigateTo('timeline');
+      else {
+        setSelectedNoteId(last.entityId);
+        navigateTo('notes', { selectedNoteId: last.entityId });
       }
-    };
+    },
+  });
 
-    window.addEventListener('message', handler);
-    // Replay any clips that arrived while the encryption lock screen was shown
-    clipBuffer.flush();
-    return () => window.removeEventListener('message', handler);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- setSelectedFolderId is stable; settings deps intentionally omitted to avoid re-registering handler
-  }, [findOrCreateFolder, loggedCreateNote, loggedCreateTask, loggedCreateEvent, allTimelines, navigateTo, addToast, setSelectedFolderId]);
-
-  // Handle files opened via PWA File Handling API (double-click .md on desktop)
-  useEffect(() => {
-    const handler = async (e: Event) => {
-      const { name, content, size, lastModified } = (e as CustomEvent<FileOpenDetail>).detail;
+  // Launch handles wait until this unlocked App owns the import channel.
+  useOpenedFiles({
+    consume: async ({ name, content, size, lastModified }, signal) => {
+      signal.throwIfAborted();
+      const modified = new Date(lastModified).toLocaleDateString(undefined, {
+        year: 'numeric', month: 'short', day: 'numeric',
+      });
+      const title = tt('clip.fileTitle', { name, size: formatBytes(size), modified });
+      const freshIOCs = extractIOCs(content, {
+        enabledTypes: settings.tiEnabledIOCTypes,
+        defaultConfidence: settings.tiDefaultConfidence,
+      });
+      const iocAnalysis = mergeIOCAnalysis(undefined, freshIOCs);
+      const iocTypes = [...new Set(freshIOCs.filter((i) => !i.dismissed).map((i) => i.type))];
+      const note = await loggedCreateNote({
+        title,
+        content,
+        folderId: underlyingFolderId,
+        clsLevel: allFolders.find(folder => folder.id === underlyingFolderId)?.clsLevel,
+        sourceTitle: name,
+        iocAnalysis,
+        iocTypes,
+      }, fileNotePersistence(signal));
+      // Commit is the acknowledgement. Do not retry a committed file just
+      // because navigation/toast failed or the workspace subsequently locked.
+      if (signal.aborted) return;
       try {
-        const created = new Date(lastModified).toLocaleDateString(undefined, {
-          year: 'numeric', month: 'short', day: 'numeric',
-        });
-        const title = `${name} — ${formatBytes(size)} — Created ${created}`;
-        const freshIOCs = extractIOCs(content, {
-          enabledTypes: settings.tiEnabledIOCTypes,
-          defaultConfidence: settings.tiDefaultConfidence,
-        });
-        const iocAnalysis = mergeIOCAnalysis(undefined, freshIOCs);
-        const iocTypes = [...new Set(freshIOCs.filter((i) => !i.dismissed).map((i) => i.type))];
-        const note = await loggedCreateNote({
-          title,
-          content,
-          folderId: underlyingFolderId,
-          clsLevel: allFolders.find(folder => folder.id === underlyingFolderId)?.clsLevel,
-          sourceTitle: name,
-          iocAnalysis,
-          iocTypes,
-        });
         setSelectedNoteId(note.id);
         navigateTo('notes', { selectedNoteId: note.id });
         addToast('success', tt('clip.openedAsNote', { name }));
-      } catch (err) {
-        console.error('Failed to import file as note:', err);
-        addToast('error', tt('clip.openFailed', { name }));
-      }
-    };
-    window.addEventListener('threatcaddy:file-open', handler);
-    return () => window.removeEventListener('threatcaddy:file-open', handler);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- settings deps intentionally omitted
-  }, [loggedCreateNote, underlyingFolderId, allFolders, navigateTo, addToast]);
+      } catch { addToast('warning', tt('clip.fileRefreshFailed')); }
+    },
+    report: issues => {
+      for (const issue of issues) addToast('error', tt(`clip.fileError.${issue.kind}`, {
+        name: issue.name ?? '', count: issue.count,
+      }));
+    },
+  });
 
   // Global drag-and-drop for markdown/text files
   useEffect(() => {
     const onDragOver = (e: DragEvent) => {
       if (e.dataTransfer?.types.includes('Files')) e.preventDefault();
     };
-    const onDrop = async (e: DragEvent) => {
+    const onDrop = (e: DragEvent) => {
       const files = getDroppedFiles(e);
       if (files.length === 0) return;
       e.preventDefault();
       for (const file of files) {
-        await dispatchFile(file);
+        dispatchFile(file);
       }
     };
     window.addEventListener('dragover', onDragOver);
@@ -1351,33 +1230,19 @@ const AppInner = memo(function AppInner({
     setPendingImportFile(file);
   }, []);
 
-  const handleConfirmImport = useCallback(async () => {
-    if (!pendingImportFile) return;
-    try {
-      const text = await pendingImportFile.text();
-      await importJSON(text);
-      setPendingImportFile(null);
-      handleImportComplete();
-      addToast('success', tt('backup.restored'));
-    } catch {
-      addToast('error', tt('backup.restoreFailed'));
-      setPendingImportFile(null);
-    }
-  }, [pendingImportFile, handleImportComplete, addToast, tt]);
-
-  const handleMergeImport = useCallback(async () => {
-    if (!pendingImportFile) return;
-    try {
-      const text = await pendingImportFile.text();
-      const result = await mergeImportJSON(text);
-      setPendingImportFile(null);
-      handleImportComplete();
+  const handleImportBackup = useCallback(async (text: string, mode: 'replace' | 'merge', password?: string) => {
+    if (mode === 'merge') {
+      const result = await mergeImportJSON(text, password);
       addToast('success', tt('backup.mergeComplete', { added: result.added, updated: result.updated, skipped: result.skipped }));
-    } catch {
-      addToast('error', tt('backup.mergeFailed'));
-      setPendingImportFile(null);
+      handleImportComplete();
+      return result;
+    } else {
+      const result = await importJSON(text, password);
+      addToast('success', tt('backup.restored'));
+      handleImportComplete();
+      return result;
     }
-  }, [pendingImportFile, handleImportComplete, addToast, tt]);
+  }, [handleImportComplete, addToast, tt]);
 
   // Sample investigation
   const sampleLoaded = useMemo(() => folders.some((f) => f.id === 'sample-investigation'), [folders]);
@@ -1634,6 +1499,7 @@ const AppInner = memo(function AppInner({
         <ErrorBoundary region="exec-dashboard">
         <Suspense fallback={<div className="flex-1 flex items-center justify-center text-gray-500">Loading…</div>}>
         <ExecDashboard
+          notice={<><OfflineStatusNotice />{syncError && <SyncErrorBanner error={syncError} />}</>}
           folders={folders}
           allNotes={screensafeNotes}
           allTasks={screensafeTasks}
@@ -1701,6 +1567,7 @@ const AppInner = memo(function AppInner({
         </div>
       )}
       <AppLayout
+        notice={<><OfflineStatusNotice />{syncError && <SyncErrorBanner error={syncError} />}</>}
         bgImageEnabled={settings.bgImageEnabled}
         bgImageOpacity={settings.bgImageOpacity}
         bgImagePosX={settings.bgImagePosX}
@@ -1788,7 +1655,8 @@ const AppInner = memo(function AppInner({
             onLoadSample={handleLoadSample}
             onDeleteSample={handleDeleteSample}
             onClose={() => { closeSettings(); }}
-            initialTab={settingsInitialTab as 'general' | 'ai' | 'data' | 'templates' | 'intel' | 'integrations' | 'shortcuts' | undefined}
+            activeTab={(settingsInitialTab || 'general') as SettingsTab}
+            onTabChange={openSettings}
             templateProps={{
               templates: noteTemplatesHook.templates,
               userTemplates: noteTemplatesHook.userTemplates,
@@ -2337,17 +2205,11 @@ const AppInner = memo(function AppInner({
         onImportComplete={handleDataImportComplete}
       /></Suspense>
 
-      <ConfirmDialog
-        open={!!pendingImportFile}
+      {pendingImportFile && <BackupImportDialog
+        file={pendingImportFile}
         onClose={() => setPendingImportFile(null)}
-        onConfirm={handleConfirmImport}
-        title="Load Backup"
-        message="Choose how to import this backup. 'Replace All' will clear existing data. 'Merge' will add new items and update older ones without removing anything."
-        confirmLabel="Replace All"
-        danger
-        secondaryAction={handleMergeImport}
-        secondaryLabel="Merge"
-      />
+        onImport={handleImportBackup}
+      />}
 
       <ConfirmDialog
         open={!!confirmUnsyncId}

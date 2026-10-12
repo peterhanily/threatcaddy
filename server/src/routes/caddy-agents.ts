@@ -14,6 +14,7 @@ import { HeartbeatManager } from '../bots/heartbeat-manager.js';
 import { botManager } from '../bots/bot-manager.js';
 import { HANDOFF_UNAVAILABLE } from '../bots/handoff-policy.js';
 import { encryptConfigSecrets, redactConfigSecrets } from '../bots/secret-store.js';
+import { lockInvestigationPolicy } from '../services/investigation-policy.js';
 import { z } from 'zod';
 
 // Singleton — initialized with db, wired to BotManager later
@@ -73,6 +74,7 @@ app.post('/register', async (c) => {
   }
   try {
     const results = await db.transaction(async tx => {
+      await lockInvestigationPolicy(tx);
       // Lock identities in a consistent order. This serializes registration even
       // before the forward migration adds a database uniqueness constraint.
       for (const id of body.deployments.map(dep => dep.deploymentId).sort()) {
@@ -126,6 +128,7 @@ app.post('/unregister', async (c) => {
   if (body.investigationId && !await checkInvestigationAccess(user.id, body.investigationId, 'editor')) return c.json({ error: 'No access to this investigation' }, 403);
   try {
     const removed = await db.transaction(async tx => {
+      await lockInvestigationPolicy(tx);
       const snapshot = await tx.select().from(botConfigs).where(eq(botConfigs.sourceType, 'caddy-agent'));
       const identities = body.deploymentIds ?? snapshot.filter(bot => bot.createdBy === user.id
         && Array.isArray(bot.scopeFolderIds) && (bot.scopeFolderIds as string[]).includes(body.investigationId!))

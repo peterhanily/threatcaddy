@@ -27,5 +27,6 @@
   "timelineEvents": "Zdarzenia osi czasu",
   "whiteboards": "Tablice",
   "iocs": "IOC",
-  "chatThreads": "Wątki czatu"
+  "chatThreads": "Wątki czatu",
+  "evidence": "Dowody"
 }

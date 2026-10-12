@@ -3,7 +3,18 @@
     "importWarning": "Importiert mit {{count}} fehlgeschlagenen Clip(s)",
     "importFailed": "Import von Clips aus Erweiterung fehlgeschlagen",
     "openedAsNote": "\"{{name}}\" als neue Notiz geöffnet",
-    "openFailed": "\"{{name}}\" konnte nicht geöffnet werden"
+    "openFailed": "\"{{name}}\" konnte nicht geöffnet werden",
+    "refreshFailed": "Clips wurden gespeichert, aber die Ansicht konnte nicht aktualisiert werden. Laden Sie diesen Arbeitsbereich neu, um sie zu sehen.",
+    "fileRefreshFailed": "Die Datei wurde als Notiz gespeichert, aber die Ansicht konnte nicht aktualisiert werden. Laden Sie diesen Arbeitsbereich neu, um sie zu sehen.",
+    "fileTitle": "{{name}} — {{size}} — Geändert {{modified}}",
+    "fileError": {
+      "capacity_one": "Eine Datei wurde nicht eingereiht: Es können nur 20 Dateien gleichzeitig warten. Öffnen Sie sie erneut, nachdem diese Importe abgeschlossen sind.",
+      "capacity_other": "{{count}} Dateien wurden nicht eingereiht: Es können nur 20 Dateien gleichzeitig warten. Öffnen Sie sie erneut, nachdem diese Importe abgeschlossen sind.",
+      "type": "„{{name}}“ konnte nicht geöffnet werden: Wählen Sie eine Markdown- oder Textdatei.",
+      "size": "„{{name}}“ konnte nicht geöffnet werden: Textdateien dürfen höchstens 5 MiB groß sein. Öffnen Sie eine kleinere Datei.",
+      "read": "„{{name}}“ konnte nicht gelesen werden. Prüfen Sie den Dateizugriff und öffnen Sie sie erneut.",
+      "import": "„{{name}}“ konnte nicht als Notiz gespeichert werden. Prüfen Sie den Speicher des Arbeitsbereichs und öffnen Sie die Datei erneut."
+    }
   },
   "share": {
     "investigationSaved": "Untersuchung \"{{name}}\" mit allen Entitäten gespeichert",

@@ -3,7 +3,18 @@
     "importWarning": "{{count}} başarısız klip ile içe aktarıldı",
     "importFailed": "Uzantıdan klipler içe aktarılamadı",
     "openedAsNote": "\"{{name}}\" yeni not olarak açıldı",
-    "openFailed": "\"{{name}}\" açılamadı"
+    "openFailed": "\"{{name}}\" açılamadı",
+    "refreshFailed": "Klipler kaydedildi ancak görünüm yenilenemedi. Görmek için bu çalışma alanını yeniden yükleyin.",
+    "fileRefreshFailed": "Dosya not olarak kaydedildi ancak görünüm yenilenemedi. Görmek için bu çalışma alanını yeniden yükleyin.",
+    "fileTitle": "{{name}} — {{size}} — değiştirilme {{modified}}",
+    "fileError": {
+      "capacity_one": "Bir dosya kuyruğa eklenmedi: aynı anda en fazla 20 dosya bekleyebilir. Geçerli içe aktarımlar bitince yeniden açın.",
+      "capacity_other": "{{count}} dosya kuyruğa eklenmedi: aynı anda en fazla 20 dosya bekleyebilir. Geçerli içe aktarımlar bitince yeniden açın.",
+      "type": "“{{name}}” açılamadı: bir Markdown veya metin dosyası seçin.",
+      "size": "“{{name}}” açılamadı: metin dosyaları 5 MiB veya daha küçük olmalıdır. Daha küçük bir dosyayı yeniden açın.",
+      "read": "“{{name}}” okunamadı. Dosya erişimini kontrol edip yeniden açarak deneyin.",
+      "import": "“{{name}}” not olarak kaydedilemedi. Çalışma alanı depolamasını kontrol edip dosyayı yeniden açarak deneyin."
+    }
   },
   "share": {
     "investigationSaved": "\"{{name}}\" soruşturması tüm varlıklarla kaydedildi",

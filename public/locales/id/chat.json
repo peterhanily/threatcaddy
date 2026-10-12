@@ -96,7 +96,26 @@
     "stopGenerating": "Hentikan pembuatan",
     "sendMessage": "Kirim pesan (Enter)",
     "noMatchesFound": "Tidak ada kecocokan ditemukan",
-    "imageLabel": "Gambar {{index}}"
+    "imageLabel": "Gambar {{index}}",
+    "readingImages": "Membaca gambar…",
+    "submitFailed": "Pesan belum selesai dikirim. Teks dan gambar yang belum tersimpan tetap dipertahankan; periksa percakapan sebelum mencoba lagi.",
+    "memoryDrafts": "Draf chat yang belum dikirim hanya disimpan di memori tab ini, termasuk percakapan tersembunyi. Kirim atau buang draf dan tunggu pengiriman selesai sebelum berpindah ruang kerja; menutup atau memuat ulang tab dapat menghilangkan draf.",
+    "discardAllDrafts": "Buang semua draf chat yang belum dikirim",
+    "discardAllDraftsConfirm": "Buang teks dan gambar yang belum dikirim dari semua percakapan di ruang kerja ini serta batalkan pembacaan gambar yang sedang berlangsung? Pesan tersimpan tidak berubah. Pengiriman yang sudah dimulai tetap harus selesai dan dapat menyimpan pesannya. Tindakan ini tidak dapat dibatalkan.",
+    "discardDraftsConfirm": "Buang draf yang belum dikirim",
+    "draftError": {
+      "length": "Setiap draf dibatasi hingga 200.000 karakter. Draf sebelumnya dipertahankan; pendekkan atau bagi pesan.",
+      "total": "Gabungan draf chat yang belum dikirim dibatasi hingga 1.000.000 karakter. Kirim atau buang draf lain terlebih dahulu; draf sebelumnya dipertahankan."
+    },
+    "imageError": {
+      "busy": "Tunggu hingga pembacaan kumpulan gambar saat ini selesai. Draf Anda dipertahankan.",
+      "count": "Lampirkan paling banyak 4 gambar per pesan. Draf dan gambar sebelumnya dipertahankan.",
+      "type": "Pilih gambar PNG, JPEG, GIF, atau WebP. Draf dan gambar sebelumnya dipertahankan.",
+      "size": "Setiap gambar harus berukuran 5 MiB atau kurang. Draf dan gambar sebelumnya dipertahankan.",
+      "total": "Total gambar per pesan harus berukuran 10 MiB atau kurang. Draf dan gambar sebelumnya dipertahankan.",
+      "global": "Gabungan draf chat yang belum dikirim dapat menyimpan hingga 16 gambar dan 20 MiB data gambar, termasuk gambar yang sedang dibaca. Kirim atau buang draf lain terlebih dahulu; gambar sebelumnya dipertahankan.",
+      "read": "Sebuah gambar tidak dapat dibaca. Kumpulan baru tidak dilampirkan; draf dan gambar sebelumnya dipertahankan. Pilih kembali lalu coba lagi."
+    }
   },
   "message": {
     "sources": "Sumber",
@@ -139,5 +158,8 @@
   "cti": {
     "invalidCommand": "Perintah CTI itu tidak dapat dijalankan:",
     "noSources": "Tidak ada sumber CTI Agent Host yang dikonfigurasi. Tambahkan host CTI di Pengaturan → AI → Agent Hosts untuk menggunakan perintah ini."
-  }
+  },
+  "input.serverStatus": "Jalur server tim",
+  "input.serverModelsHelp": "Penyedia dan model yang tersedia bergantung pada konfigurasi server tim.",
+  "input.modelLabel": "Model AI"
 }

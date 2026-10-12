@@ -1,21 +1,21 @@
 # ThreatCaddy Architecture
 
-ThreatCaddy is a threat intelligence investigation platform composed of three main subsystems: a Chrome Extension client, a Team Server, and an Agent Bridge for AI integration.
+ThreatCaddy consists of a local-first browser app, optional Chrome/Firefox extension, optional Team Server, and Agent Bridge integrations.
 
 ---
 
 ## 1. System Overview
 
-ThreatCaddy is a local-first, team-capable threat intelligence workbench. Users can run it entirely offline in a browser, or connect to a shared team server for real-time collaboration.
+ThreatCaddy is a local-first, team-capable threat intelligence workbench. Local investigation features work offline after the necessary assets are available, or from the standalone HTML file. Optional remote features require their configured services; a shared team server enables collaboration.
 
 ### Component Roles
 
 | Component | Technology | Purpose |
 |---|---|---|
 | **Browser Client** | React, Vite, TypeScript, Dexie.js, PWA | Investigation workspace -- notes, tasks, timelines, IOCs, whiteboards, chat |
-| **IndexedDB** | Dexie.js (21 schema versions) | Local-first storage. All data persists in the browser first. |
+| **IndexedDB** | Dexie.js, versioned migrations | Local investigation storage; optional server-backed features have separate persistence. |
 | **Encryption Middleware** | Web Crypto API (AES-256-GCM) | Transparent field-level encryption at rest in IndexedDB |
-| **Chrome Extension** | Chrome MV3 | Web clipping, LLM API proxy (bypasses CORS), URL fetching |
+| **Browser Extension** | Chrome/Firefox MV3 | Web clipping and explicitly approved API proxy/URL fetching |
 | **Team Server** | Hono framework, Node.js | REST API, WebSocket server, bot runtime, admin panel |
 | **PostgreSQL** | Drizzle ORM | Shared data store for team mode |
 | **Admin Panel** | Separate Hono app on port 3002 | Server-rendered HTML admin UI (users, bots, settings, audit) |
@@ -28,7 +28,7 @@ ThreatCaddy is a local-first, team-capable threat intelligence workbench. Users 
 ## 2. Directory Layout
 
 ```
-src/                    Chrome extension source
+src/                    Browser application source
   components/           React components
   contexts/             React context providers
   hooks/                React hooks (data layer)
@@ -38,7 +38,7 @@ src/                    Chrome extension source
   workers/              Web Workers
   db.ts                 Dexie database schema
 
-extension/              Chrome extension packaging (manifest, build scripts)
+extension/              Chrome/Firefox extension source, manifests and build scripts
 
 server/                 Team server
   src/
@@ -63,7 +63,7 @@ docs/                   Documentation
 
 ### 3.1 Core Entities
 
-- **Folder (Investigation)** -- The top-level container. Every note, task, timeline event, IOC, and whiteboard belongs to exactly one folder. Folders carry status (active, closed, archived), TLP/PAP classification, and closure resolution metadata.
+- **Folder (Investigation)** -- The top-level investigation container. Entities may belong to a folder or remain unfiled. Folders carry status (active, closed, archived), TLP/PAP classification, and closure resolution metadata.
 
 - **Note** -- Rich Markdown content with automatic IOC extraction, inline annotations, and cross-entity links to tasks, timeline events, and other notes.
 
@@ -83,11 +83,11 @@ All entities support cross-linking through `linkedNoteIds`, `linkedTaskIds`, and
 
 ### 3.3 Client-Side Storage (IndexedDB via Dexie)
 
-The client database has evolved through 21 schema versions. Tables include: notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, activityLog, standaloneIOCs, chatThreads, noteTemplates, playbookTemplates, integrationTemplates, installedIntegrations, integrationRuns, and two internal sync tables (_syncQueue, _syncMeta).
+The migration definitions in `src/db.ts` are authoritative. Tables include notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, activityLog, standaloneIOCs, chatThreads, evidenceItems, templates, integrations, and internal sync, migration and clip-receipt records. The portable backup registry explicitly distinguishes supported portable content from runtime/internal state.
 
 ### 3.4 Server-Side Storage (PostgreSQL via Drizzle ORM)
 
-The server schema has 19 migrations and includes all client-side entities plus server-specific tables: users, sessions, investigation_members, server_settings, allowed_emails, bot_configs, bot_runs, admin_users, activity_log, posts, reactions, notifications, files, saved_searches, integration_templates, and backups.
+The server's append-only migration history lives in `server/src/db/migrations/`. It includes synchronized entities and server-specific tables such as users, sessions, investigation_members, server_settings, allowed_emails, bot_configs, bot_runs, admin_users, activity_log, posts, reactions, notifications, files, saved_searches, integration_templates, and backups. Not every local runtime table is synchronized.
 
 Drizzle ORM with the `postgres.js` driver manages the connection pool (max 20 connections). The schema is defined in TypeScript with type-safe queries. Migration files live in `server/src/db/migrations/`.
 
@@ -104,36 +104,40 @@ Drizzle ORM with the `postgres.js` driver manages the connection pool (max 20 co
 
 ## 4. Sync Protocol
 
-ThreatCaddy uses an optimistic concurrency model with full offline support. Every entity is written to IndexedDB first -- the server is optional and the app is fully functional without it.
+Local investigation work is stored in IndexedDB; a team server is optional. Team sync uses optimistic concurrency with exact version checks. Remote collaboration, provider calls and other configured network features still require their services to be reachable.
 
 ### 4.1 Push
 
-The client drains the `_syncQueue` table and sends changes via POST to the server. Each change contains a table name, entity ID, operation type (create/update/delete), data payload, version number, and timestamp. The server validates investigation membership, applies conflict resolution, and broadcasts accepted changes to other clients via WebSocket. Results for each change are classified as accepted, rejected, or conflict.
+The client sends bounded batches from `_syncQueue` to `POST /api/sync/push`. A request supplies the server history `generation` and up to 500 changes, with no repeated table/entity pair. Each change contains `table`, `entityId`, `op` (`put` or `delete`), a data object for puts, and a `clientVersion` baseline for existing rows. The server checks the current account, investigation scope and version under the same transaction as the write and ordered change log. Each result is accepted, rejected or a conflict; broadcasts follow commit.
 
 ### 4.2 Pull
 
-The client requests all changes since a given timestamp for a specific folder. The server returns changes with version info. A MetadataOnly mode is available for lightweight polling without full payloads.
+Current clients use `GET /api/sync/pull?cursor=…&generation=…`. Cursors are decimal strings, not JavaScript numbers or timestamps. Each page returns flat entity changes, the next cursor, generation, `hasMore` and `serverTimestamp`. Authorization and the page watermark are read from one consistent database snapshot. A requested folder narrows the results; `metadataOnly=true` omits selected heavy fields, not all sensitive content. Deleted or moved-out entities can be represented by minimal tombstones.
+
+A changed history generation or a cursor ahead of the server returns `409 SYNC_CURSOR_RESET` with `resetRequired: true`. The client pauses for explicit recovery rather than silently resetting its cursor. The legacy `since` request remains available, but returns a full currently visible resync, not a timestamp-based incremental page.
 
 ### 4.3 Snapshot
 
-A full investigation state download used for initial sync when joining an investigation or for recovery after extended offline periods.
+`GET /api/sync/snapshot/:folderId` returns a currently authorized investigation as a map of tables to rows. This is not a portable backup or permission to overwrite pending local work. Current client recovery also checks workspace identity and history generation; see [server sync recovery](../server/docs/sync-recovery.md).
 
 ### 4.4 Conflict Resolution
 
-The system uses last-writer-wins semantics keyed by version number. Every entity has a `version` integer that increments on each update. When the server receives a change whose version is less than or equal to the current version, it rejects the write and returns the current server data as a conflict. The client surfaces conflicts to the UI where users choose "mine" (re-push local) or "theirs" (overwrite local with server data).
+Updates use compare-and-swap, not last-writer-wins: an existing entity's `clientVersion` must equal its current server version. An accepted write advances that version; a stale or missing baseline returns the current server row as a conflict. A new put accepts an absent or zero baseline. Choosing "mine" retries against the reviewed version, so another intervening server edit can conflict again. Choosing "theirs" applies the reviewed server state with local pending-work checks.
 
 Server-managed fields (id, createdBy, updatedBy, version, createdAt, updatedAt, deletedAt) are stripped from client payloads and never trusted from the client. Delete operations use soft-delete (setting `deletedAt` and bumping the version) so other clients discover deletions on their next pull.
 
 ### 4.5 Offline Support
 
-When the client is offline, all mutations are queued in the `_syncQueue` IndexedDB table via Dexie table hooks (creating, updating, deleting) that run synchronously in Dexie transactions. On reconnect, queued changes are replayed in order. A safety-net full push+pull cycle runs every 30 seconds. During continuous typing, changes trigger a push within 50ms (debounce) with a 300ms maximum wait.
+Dexie DBCore middleware captures eligible local writes in `_syncQueue` in the same transaction as the entity change. A queue failure aborts the entity write. Capture requires a durable server/account binding and continues while signed out; transport separately requires that exact active identity. Local-only investigations and unfiled scoped entities are excluded. When local encryption is enabled, the outbox's content payload is covered by the encryption middleware too.
+
+Committed writes wake the sync engine, with periodic retries as a safety net. Pull, push and acknowledgement handling fence the workspace/session generation and preserve queued local work. Existing workspaces with potentially incomplete historical capture pause before remote application or transmission. Reconciliation requires a verified encrypted archive, reads current rows instead of replaying stale queued bodies, retains recorded deletes and blocks ambiguous missing put targets. It cannot reconstruct deletions that were never recorded. Clip-delivery receipts are local import metadata, not sync history. See [backup and recovery](backup-recovery.md).
 
 ### 4.6 Authorization on Push
 
-- Global tables (tags, timelines) are always accepted.
-- Folder-scoped tables require editor role on the folder via investigation_members.
+- All public pushes require a current active admin or analyst account and valid data/version baselines. Global tables (tags, timelines) do not require investigation membership, but do not bypass those checks.
+- Folder-scoped writes require current editor access to live source and destination investigations. Ordinary folder deletion and restoration require an eligible owner; a separate confirmed admin purge is a physical deletion, not device erasure.
 - New folders auto-create an owner membership for the creating user.
-- Folders marked `localOnly` (and their scoped entities) skip sync entirely.
+- Folders marked `localOnly` (and their scoped entities) are excluded from capture. This setting does not erase copies previously shared with other devices or exported.
 
 ---
 
@@ -171,16 +175,16 @@ Bot accounts use `@threatcaddy.internal` email addresses and are blocked from in
 
 ### 5.3 Client-Side Encryption
 
-All sensitive fields in IndexedDB can be encrypted at rest using AES-256-GCM. The key hierarchy:
+Covered content fields in IndexedDB can be encrypted at rest using AES-256-GCM. This is field-level protection, not whole-profile encryption: record identifiers, indexing metadata and configuration outside the encryption registry remain readable. The key hierarchy:
 
-1. **Master key** -- Random AES-256-GCM key generated once, stored wrapped in IndexedDB.
+1. **Master key** -- Random AES-256-GCM key generated once. Passphrase-wrapped and recovery-wrapped copies, with their salts, are stored in workspace-scoped localStorage metadata.
 2. **Wrapping key** -- Derived from user passphrase via PBKDF2 (600,000 iterations, SHA-256).
-3. **Session key** -- Unwrapped master key held in memory only (lost on tab close), cached in sessionStorage for tab refreshes.
+3. **Session key** -- Unwrapped master key used in memory. Depending on the chosen session duration, raw key bytes may also be cached in workspace-scoped sessionStorage for refreshes (never for the every-load option; timed cache duration is capped at eight hours). Browser session restoration can preserve sessionStorage; explicit locking clears the cache. This is not protection from scripts running in the unlocked app or from a compromised browser profile.
 4. **Recovery phrase** -- 24-word BIP39-style phrase (192 bits of entropy) for passphrase recovery.
 
-Each encrypted field gets its own random 96-bit IV. The encryption middleware is installed as a Dexie DBCore middleware, transparently encrypting on mutate (add/put) and decrypting on get/getMany/query. It uses `Dexie.waitFor()` to keep IDB transactions alive during async Web Crypto operations.
+Each encrypted field gets its own random 96-bit IV. The encryption middleware is installed as a Dexie DBCore middleware, transparently encrypting on mutate (add/put) and decrypting on get/getMany/query and cursor reads. It uses `Dexie.waitFor()` to keep IDB transactions alive during async Web Crypto operations.
 
-Encrypted tables and fields include: notes (title, content, sourceUrl, sourceTitle, color, clsLevel, iocAnalysis), tasks (title, description, clsLevel, iocAnalysis, comments), folders (name, description, clsLevel, papLevel), timelineEvents (title, description, source, actor, rawData, clsLevel, iocAnalysis), whiteboards (name, elements, appState), chatThreads (title, messages), standaloneIOCs (value, analystNotes), timelines (name, description), tags (name), activityLog (detail, itemTitle), installedIntegrations (config, lastError), and integrationRuns (log, error, displayResults).
+The field registry in [`src/lib/encryptionMiddleware.ts`](../src/lib/encryptionMiddleware.ts) is authoritative. It covers content in notes, tasks, evidence, timelines, IOCs, whiteboards (including embedded files), chat and agent records, templates, checkpoints, integration records and queued sync payloads. Operational metadata remains plaintext by design. Enable/disable and unlock-time coverage upgrades complete before normal app access; this does not encrypt historical exports, server copies or arbitrary browser storage.
 
 ### 5.4 Security Headers
 
@@ -220,7 +224,7 @@ Real-time collaboration is powered by WebSocket connections between the client a
 - Maximum 10 connections per user.
 - Maximum 64KB per message.
 
-Entity changes received via WebSocket are applied directly via `applyRemoteChange()`, bypassing the normal pull cycle for lower latency.
+Entity-change messages are wake-up hints: `applyRemoteChange()` requests the normal generation-checked sync cycle instead of applying the WebSocket payload directly. Current access is rechecked before scoped delivery; a subscription is not a permanent authorization grant.
 
 ---
 
@@ -230,7 +234,7 @@ ThreatCaddy supports multiple interchange formats for interoperability with othe
 
 | Format | Direction | Description |
 |---|---|---|
-| JSON | Import/Export | Full database backup and restore, or single-investigation export |
+| JSON | Import/Export | Portable backup of 19 supported entity tables, or single-investigation export; operational sync/receipt stores and credentials are not a raw database dump |
 | CSV | Export | IOC export with configurable column selection |
 | STIX 2.1 | Import/Export | Full bundle with Indicator SDOs, Vulnerability SDOs, Relationship SROs, and TLP markings using official OASIS UUIDs |
 | MISP | Import/Export | Event-level export and import with attribute type mapping |
@@ -280,8 +284,10 @@ Bots extend ThreatCaddy with automated workflows for enrichment, monitoring, and
 | report | Generate reports |
 | correlation | Find relationships across investigations |
 | ai-agent | LLM-powered autonomous agent with tool calling |
-| integration | Execute integration templates |
+| integration | Legacy records retained; server runtime unavailable |
 | custom | User-defined logic |
+
+The legacy server integration runner and server-side AgentCaddy handoff are unavailable; their saved records/history are retained, not silently executed. Bot projections expose `runtimeAvailable` / `unavailableReason`, and enabling an unavailable runtime is rejected. The separate, explicitly invoked client integration engine remains supported; see [integration platform](integration-platform.md).
 
 ### 9.2 Trigger Types
 
@@ -359,7 +365,7 @@ Bot API keys and secrets are encrypted at rest in the database using AES-256-GCM
 
 ### Local-First with Optional Server Sync
 
-All data is stored in IndexedDB first. The server is optional -- users can run the app as a standalone browser extension without any server. When a server is connected, the sync engine handles bidirectional change propagation. This enables offline work and air-gapped deployments while still supporting team collaboration when needed. Client-side encryption protects data at rest even when syncing, as encrypted envelopes are sent to the server. Local-only folders can be excluded from sync entirely.
+Investigation data is stored in IndexedDB first. The server is optional: users can run the hosted web app or standalone HTML without a team server. When a server is connected, the sync engine handles bidirectional change propagation. Client-side encryption protects covered fields in the local database at rest, but middleware decrypts those fields before the sync engine reads them. Team sync sends readable entity values, not end-to-end encrypted envelopes. Trust and secure the team server and its backups independently; use HTTPS for transport. Local-only folders can be excluded from sync. Offline copies, exports and historical server records have separate retention lifecycles.
 
 ### Separate Admin Panel on a Different Port
 
@@ -376,6 +382,16 @@ User JWTs are signed with EdDSA using Ed25519 key pairs. This provides smaller k
 ### Drizzle ORM over Prisma/Knex
 
 Drizzle ORM with the postgres.js driver provides a SQL-like TypeScript API that maps closely to actual SQL. It is lightweight with no binary engine dependency (unlike Prisma's Rust engine). Schema is defined in TypeScript with type-safe queries.
+
+### Startup, Offline Installation and Performance Checks
+
+Hosted builds preserve the natural dynamic-import graph. Whiteboard, graph and map engines are deferred; event maps load only when coordinates are displayed. `build/startup-budget.ts` checks the complete static entry dependency graph, raw/gzip JavaScript and CSS budgets, and the service worker's per-chunk precache limit. It fails builds if a heavy feature becomes eager. Its test metadata stays in ignored `node_modules/.cache/threatcaddy/`, not the published site. Browser tests then open the actual lazy features and check persistence and rendering.
+
+The PWA still precaches its packaged module graph and fonts, including CJK subsets, for offline use. This background download is larger than foreground startup. The passive offline notice observes the existing worker's installation state without changing registration, requesting persistence, clearing caches or reloading unsaved work. An installed worker indicates that a matching worker has activated, not an integrity check, a guarantee of the newest release, or a backup. Browsers can evict storage; remote services still need connectivity. The self-contained standalone edition does not use this hosted-worker notice.
+
+For reproducible local lab measurements, build the hosted app and run `node scripts/measure-startup.mjs --dir dist --out /tmp/threatcaddy-startup.json`. It uses disposable Chromium contexts, a gzip loopback server, cold and HTTP-cache-warm visits, and a fixed throttled mobile profile. Service workers are blocked in this measurement to isolate foreground startup. These synthetic results are not real-user percentiles or field INP. Real installed/offline behavior has separate browser acceptance tests.
+
+IOC extraction uses an exact-input/options cache with eight LRU entries and a total two-million UTF-16-code-unit retention budget. Results returned to callers are copied; oversized inputs still extract normally but bypass caching. The budget is a retained-string bound, not an exact heap-byte measurement.
 
 ---
 

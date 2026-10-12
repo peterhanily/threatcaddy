@@ -14,5 +14,7 @@
   "unarchive": "Bỏ lưu trữ",
   "moveToTrash": "Chuyển vào thùng rác",
   "restore": "Khôi phục",
-  "deletePermanently": "Xóa vĩnh viễn"
+  "deletePermanently": "Xóa vĩnh viễn",
+  "saveFailed": "Không thể lưu thay đổi. Bản nháp vẫn ở trong thẻ này; hãy thử lại trước khi đóng.",
+  "retrySave": "Thử lưu lại"
 }

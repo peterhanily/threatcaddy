@@ -14,5 +14,7 @@
   "unarchive": "取消存档",
   "moveToTrash": "移至回收站",
   "restore": "恢复",
-  "deletePermanently": "永久删除"
+  "deletePermanently": "永久删除",
+  "saveFailed": "无法保存更改。草稿保留在此标签页中；关闭前请重试。",
+  "retrySave": "重试保存"
 }

@@ -83,7 +83,9 @@
     "lockScrollAria": "Kaydırma senkronunu kilitle",
     "wordsChars": "{{words}} kelime, {{chars}} karakter",
     "created": "{{date}} oluşturuldu",
-    "modified": "{{date}} değiştirildi"
+    "modified": "{{date}} değiştirildi",
+    "saveFailed": "Değişiklikler kaydedilemedi. Taslak bu sekmede tutuluyor; kapatmadan önce yeniden deneyin.",
+    "retrySave": "Kaydetmeyi yeniden dene"
   },
   "list": {
     "defaultTitle": "Notlar",

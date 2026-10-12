@@ -72,16 +72,58 @@ export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
 
 export const RTL_LANGS = new Set(['ar', 'he', 'fa']);
 
-function getInitialLanguage(): string {
+/** Canonical supported locale, including supported base-language regional tags.
+ * Never map an unsupported script/dialect (for example zh-TW) to a different one. */
+export function normalizeLanguage(value: unknown): string {
+  if (typeof value !== 'string' || !value.trim()) return 'en';
+  try {
+    const [canonical] = Intl.getCanonicalLocales(value.trim().replaceAll('_', '-'));
+    if (!canonical) return 'en';
+    const exact = SUPPORTED_LANGUAGES.find(language => language.code === canonical);
+    if (exact) return exact.code;
+    if (canonical === 'zh' || canonical === 'zh-Hans' || canonical === 'zh-Hans-CN') return 'zh-CN';
+    if (new Intl.Locale(canonical).script) return 'en';
+    const base = canonical.split('-')[0];
+    return SUPPORTED_LANGUAGES.find(language => language.code === base)?.code ?? 'en';
+  } catch { return 'en'; }
+}
+
+export function getInitialLanguage(): string {
   try {
     const raw = localStorage.getItem(workspaceStorageKey('threatcaddy-settings'));
     if (raw) {
-      const s = JSON.parse(raw) as Record<string, unknown>;
-      if (typeof s.language === 'string' && s.language) return s.language;
+      const settings: unknown = JSON.parse(raw);
+      if (settings && typeof settings === 'object' && !Array.isArray(settings)) {
+        return normalizeLanguage((settings as Record<string, unknown>).language);
+      }
     }
   } catch { /* ignore */ }
   return 'en';
 }
+
+export function applyDocumentLanguage(value: unknown): string {
+  const language = normalizeLanguage(value);
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = language;
+    document.documentElement.dir = RTL_LANGS.has(language) ? 'rtl' : 'ltr';
+  }
+  return language;
+}
+
+/** Shared startup/settings contract. i18next owns asynchronous resource loading;
+ * document direction changes synchronously, including before the lock screen. */
+export function applyAppLanguage(value: unknown): void {
+  const language = applyDocumentLanguage(value);
+  if (requestedLanguage !== language || i18n.language !== language) {
+    requestedLanguage = language;
+    // Missing/offline hosted bundles use the explicitly configured English
+    // fallback, not an unhandled settings-effect rejection.
+    void i18n.changeLanguage(language).catch(() => {});
+  }
+}
+
+const initialLanguage = applyDocumentLanguage(getInitialLanguage());
+let requestedLanguage = initialLanguage;
 
 // In standalone (single-file) builds, bundle ALL English namespaces so that
 // no HTTP requests are made — file:// protocol can't serve them.
@@ -159,7 +201,7 @@ i18n.init({
   resources: bundledResources,
   partialBundledLanguages: true,
 
-  lng: getInitialLanguage(),
+  lng: initialLanguage,
   fallbackLng: 'en',
   supportedLngs: SUPPORTED_LANGUAGES.map(l => l.code),
 

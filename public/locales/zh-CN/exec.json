@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "本周事件",
   "metrics.aiChats": "AI 聊天",
   "metrics.graphNodes": "图谱节点",
-  "dashboard.backToExecView": "返回高管视图"
+  "dashboard.backToExecView": "返回高管视图",
+  "dashboard.switchToLight": "切换到浅色主题",
+  "dashboard.switchToDark": "切换到深色主题",
+  "dashboard.emptyTitle": "您的工作区已就绪",
+  "dashboard.emptyDescription": "请在分析员模式中创建调查或导入已有工作。此仪表板汇总当前工作区中已保存的工作。",
+  "dashboard.emptyAction": "打开分析员模式"
 }

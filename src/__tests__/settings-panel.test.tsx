@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { SettingsPanel } from '../components/Settings/SettingsPanel';
 import { DEFAULT_SETTINGS } from '../types';
 import type { Settings } from '../types';
@@ -49,6 +50,110 @@ function clickTab(label: string) {
 }
 
 describe('SettingsPanel', () => {
+  it('uses manual horizontal tab activation, wrapped arrow focus, Home/End and one tab stop', async () => {
+    const user = userEvent.setup();
+    render(<SettingsPanel {...defaultProps} />);
+    const tablist = screen.getByRole('tablist', { name: 'Settings' });
+    const tabs = within(tablist).getAllByRole('tab');
+    expect(tabs).toHaveLength(9);
+    expect(tablist).toHaveAttribute('aria-orientation', 'horizontal');
+    expect(tabs.filter(tab => tab.tabIndex === 0)).toEqual([screen.getByRole('tab', { name: 'General' })]);
+    await user.click(screen.getByRole('tab', { name: 'General' }));
+    await user.keyboard('{End}');
+    expect(screen.getByRole('tab', { name: 'Shortcuts' })).toHaveFocus();
+    expect(screen.getByRole('tab', { name: 'General' })).toHaveAttribute('aria-selected', 'true');
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: 'General' })).toHaveFocus();
+    await user.keyboard('{ArrowLeft}');
+    expect(screen.getByRole('tab', { name: 'Shortcuts' })).toHaveFocus();
+    await user.keyboard('{Home}{ArrowRight}{Enter}');
+    const appearance = screen.getByRole('tab', { name: 'Appearance' });
+    expect(appearance).toHaveFocus();
+    expect(appearance).toHaveAttribute('aria-selected', 'true');
+    await user.keyboard('{ArrowDown}{ArrowUp}');
+    expect(appearance).toHaveFocus();
+    await user.tab();
+    const panel = screen.getByRole('tabpanel', { name: 'Appearance' });
+    expect(panel).toHaveFocus();
+    expect(appearance.getAttribute('aria-controls')).toBe(panel.id);
+    await user.tab({ shift: true });
+    expect(appearance).toHaveFocus();
+    await user.keyboard('{End} ');
+    expect(screen.getByRole('tab', { name: 'Shortcuts' })).toHaveAttribute('aria-selected', 'true');
+    expect(within(tablist).getAllByRole('tab').filter(tab => tab.tabIndex === 0)).toHaveLength(1);
+  });
+
+  it('leaves a manually focused inactive tab for the current panel and reenters at the selected tab', async () => {
+    const user = userEvent.setup();
+    render(<SettingsPanel {...defaultProps} />);
+    await user.click(screen.getByRole('tab', { name: 'General' }));
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: 'Appearance' })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('tabpanel', { name: 'General' })).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(screen.getByRole('tab', { name: 'General' })).toHaveFocus();
+  });
+
+  it('moves focus in the physical arrow direction for a right-to-left tablist without automatic activation', async () => {
+    const user = userEvent.setup();
+    render(<SettingsPanel {...defaultProps} />);
+    screen.getByRole('tablist').style.direction = 'rtl';
+    await user.click(screen.getByRole('tab', { name: 'General' }));
+    await user.keyboard('{ArrowLeft}');
+    expect(screen.getByRole('tab', { name: 'Appearance' })).toHaveFocus();
+    expect(screen.getByRole('tab', { name: 'General' })).toHaveAttribute('aria-selected', 'true');
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: 'General' })).toHaveFocus();
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: 'Shortcuts' })).toHaveFocus();
+    await user.keyboard('{Home}');
+    expect(screen.getByRole('tab', { name: 'General' })).toHaveFocus();
+    await user.keyboard('{End}{Enter}');
+    expect(screen.getByRole('tab', { name: 'Shortcuts' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('exposes associated general controls and named notification switches without changing other preferences', async () => {
+    const user = userEvent.setup();
+    const onUpdateSettings = vi.fn();
+    render(<SettingsPanel {...defaultProps} onUpdateSettings={onUpdateSettings} settings={{ ...DEFAULT_SETTINGS, notificationPrefs: { mention: true, reply: false } }} />);
+    for (const name of ['Display Name', 'Default Editor Mode', 'Default Task View', 'Interface Language']) expect(screen.getByLabelText(name)).toBeInTheDocument();
+    for (const name of ['Mentions', 'Replies', 'Reactions', 'Invites', 'Bot alerts']) expect(screen.getByRole('switch', { name })).toBeInTheDocument();
+    const mentions = screen.getByRole('switch', { name: 'Mentions' });
+    expect(mentions).toHaveAttribute('aria-checked', 'true');
+    expect(mentions).toHaveAccessibleDescription('When someone @mentions you');
+    expect(screen.getByRole('switch', { name: 'Replies' })).toHaveAttribute('aria-checked', 'false');
+    await user.click(mentions);
+    expect(onUpdateSettings).toHaveBeenCalledExactlyOnceWith({ notificationPrefs: { mention: false, reply: false } });
+  });
+
+  it('names AI fields and expandable prompt/slash-command editors without relying on placeholders', async () => {
+    const user = userEvent.setup();
+    render(<SettingsPanel {...defaultProps} initialTab="ai" />);
+    for (const name of ['Anthropic API Key', 'OpenAI API Key', 'Google Gemini API Key', 'Mistral API Key', 'Default Model']) expect(screen.getByLabelText(name)).toBeInTheDocument();
+    expect(screen.getByLabelText('Endpoint URL')).toBeInTheDocument();
+    expect(screen.getByLabelText('API Key (optional)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Model')).toBeInTheDocument();
+    const prompt = screen.getByRole('button', { name: /System Prompt/ });
+    expect(prompt).toHaveAttribute('aria-expanded', 'false');
+    await user.click(prompt);
+    expect(prompt).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('textbox', { name: 'CaddyAI System Prompt' })).toHaveAttribute('id', prompt.getAttribute('aria-controls'));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    for (const name of ['Command name', 'Description', 'Prompt template']) expect(screen.getByRole('textbox', { name })).toBeInTheDocument();
+  });
+
+  it('honors recovery navigation on an already mounted controlled panel', () => {
+    const onTabChange = vi.fn();
+    const view = render(<SettingsPanel {...defaultProps} activeTab="ai" onTabChange={onTabChange} />);
+    expect(screen.getByRole('tab', { name: 'AI' })).toHaveAttribute('aria-selected', 'true');
+    clickTab('Data');
+    expect(onTabChange).toHaveBeenCalledExactlyOnceWith('data');
+    view.rerender(<SettingsPanel {...defaultProps} activeTab="general" onTabChange={onTabChange} />);
+    expect(screen.getByRole('tab', { name: 'General' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Sync history recovery')).toBeInTheDocument();
+  });
+
   it('renders Settings heading', () => {
     render(<SettingsPanel {...defaultProps} />);
     expect(screen.getByText('Settings')).toBeInTheDocument();

@@ -3,7 +3,7 @@
 // Protocol version — increment when message shapes change in breaking ways.
 // The webapp reads this to know which features/messages the extension supports.
 var TC_PROTOCOL_VERSION = 1;
-var TC_CAPABILITIES = ['llm_streaming', 'fetch_url', 'clip_import', 'proxy_fetch', 'notification_ack'];
+var TC_CAPABILITIES = ['llm_streaming', 'fetch_url', 'clip_import', 'clip_import_ack_v2', 'proxy_fetch', 'proxy_fetch_abort', 'notification_ack'];
 var tcAppApproved = typeof tcAppApproved === 'boolean' ? tcAppApproved : false;
 var tcApprovalRequest = typeof tcApprovalRequest === 'number' ? tcApprovalRequest : 0;
 
@@ -55,11 +55,14 @@ if (document.documentElement.dataset.tcBridgeLoaded) {
 document.documentElement.dataset.tcBridgeLoaded = '1';
 
 var ports = new Map(); // requestId → Port
+var proxyDocumentToken;
+var clipProbes = new Map();
+var clipDocumentToken;
 
 function isExtensionValid() {
   try {
     return tcAppApproved && !!(chrome && chrome.runtime && chrome.runtime.id);
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -102,6 +105,20 @@ window.addEventListener('message', function (event) {
   if (!event.data) return;
   if (!tcAppApproved) return;
 
+  if (event.data.type === 'TC_CLIP_IMPORT_READY') {
+    var probe = clipProbes.get(event.data.requestId);
+    if (probe && event.data.protocol === 2) probe(event.data);
+    return;
+  }
+  if (event.data.type === 'THREATCADDY_CLIP_IMPORT_RESULT') {
+    if (!clipDocumentToken || event.data.protocol !== 2) return;
+    // This is a fresh runtime message, not an open sendMessage callback: a late
+    // database commit can wake a restarted background worker and persist its ACK.
+    chrome.runtime.sendMessage({ type: 'CLIP_IMPORT_RESULT', result: { ...event.data, documentToken: clipDocumentToken } })
+      .catch(function () { /* The extension retains unconfirmed captures for retry. */ });
+    return;
+  }
+
   if (event.data.type === 'TC_LLM_REQUEST') {
     var requestId = event.data.requestId;
     var payload = event.data.payload;
@@ -115,36 +132,45 @@ window.addEventListener('message', function (event) {
       return;
     }
 
+    if (ports.has(requestId)) return; // Never orphan an active connection.
+    var port;
+    var finished = false;
+    function finishLLM() {
+      if (finished) return;
+      finished = true;
+      ports.delete(requestId);
+      if (port) {
+        port.onMessage.removeListener(receiveLLM);
+        port.onDisconnect.removeListener(disconnectLLM);
+        try { port.disconnect(); } catch { /* Already disconnected. */ }
+      }
+    }
+    function receiveLLM(msg) {
+      if (finished) return;
+      if (msg.type === 'chunk') {
+        window.postMessage({ type: 'TC_LLM_CHUNK', requestId: requestId, content: msg.content }, postOrigin());
+      } else if (msg.type === 'done' || msg.type === 'error') {
+        finishLLM();
+        window.postMessage(msg.type === 'done'
+          ? { type: 'TC_LLM_DONE', requestId: requestId, stopReason: msg.stopReason, contentBlocks: msg.contentBlocks, usage: msg.usage || null }
+          : { type: 'TC_LLM_ERROR', requestId: requestId, error: msg.error }, postOrigin());
+      }
+    }
+    function disconnectLLM() {
+      if (finished) return;
+      var error = chrome.runtime.lastError;
+      finishLLM();
+      window.postMessage({ type: 'TC_LLM_ERROR', requestId: requestId,
+        error: error?.message || chrome.i18n.getMessage('errorExtensionDisconnected') }, postOrigin());
+    }
     try {
-      var port = chrome.runtime.connect({ name: 'llm-' + requestId });
-      ports.set(requestId, port);
-
-      port.onMessage.addListener(function (msg) {
-        if (msg.type === 'chunk') {
-          window.postMessage({ type: 'TC_LLM_CHUNK', requestId: requestId, content: msg.content }, postOrigin());
-        } else if (msg.type === 'done') {
-          window.postMessage({ type: 'TC_LLM_DONE', requestId: requestId, stopReason: msg.stopReason, contentBlocks: msg.contentBlocks, usage: msg.usage || null }, postOrigin());
-          ports.delete(requestId);
-        } else if (msg.type === 'error') {
-          window.postMessage({ type: 'TC_LLM_ERROR', requestId: requestId, error: msg.error }, postOrigin());
-          ports.delete(requestId);
-        }
-      });
-
-      port.onDisconnect.addListener(function () {
-        var lastError = chrome.runtime.lastError;
-        if (lastError) {
-          window.postMessage({
-            type: 'TC_LLM_ERROR',
-            requestId: requestId,
-            error: lastError.message || chrome.i18n.getMessage('errorExtensionDisconnected')
-          }, postOrigin());
-        }
-        ports.delete(requestId);
-      });
-
+      port = chrome.runtime.connect({ name: 'llm-' + requestId });
+      ports.set(requestId, { finish: finishLLM });
+      port.onMessage.addListener(receiveLLM);
+      port.onDisconnect.addListener(disconnectLLM);
       port.postMessage(payload);
     } catch (err) {
+      finishLLM();
       window.postMessage({
         type: 'TC_LLM_ERROR',
         requestId: requestId,
@@ -210,6 +236,8 @@ window.addEventListener('message', function (event) {
     var proxyId = event.data.requestId;
     var proxyPayload = {
       type: 'PROXY_FETCH',
+      requestId: proxyId,
+      documentToken: proxyDocumentToken || (proxyDocumentToken = crypto.randomUUID()),
       url: event.data.url,
       method: event.data.method || 'GET',
       headers: event.data.headers || {},
@@ -266,21 +294,25 @@ window.addEventListener('message', function (event) {
     }
   }
 
+  if (event.data.type === 'TC_PROXY_ABORT' && proxyDocumentToken) {
+    chrome.runtime.sendMessage({ type: 'PROXY_ABORT', requestId: event.data.requestId, documentToken: proxyDocumentToken })
+      .catch(function () { /* Local caller has already stopped waiting. */ });
+  }
+
   if (event.data.type === 'TC_SET_PROXY_DOMAINS') {
     // Web app sends its configured integration domains so the proxy can enforce an allowlist
     if (!isExtensionValid()) return;
     var domains = Array.isArray(event.data.domains) ? event.data.domains : [];
     try {
       chrome.runtime.sendMessage({ type: 'SET_PROXY_DOMAINS', domains: domains });
-    } catch (e) { /* ignore */ }
+    } catch { /* The extension can unload before this best-effort policy update. */ }
   }
 
   if (event.data.type === 'TC_LLM_ABORT') {
     var abortId = event.data.requestId;
     var abortPort = ports.get(abortId);
     if (abortPort) {
-      try { abortPort.disconnect(); } catch (e) { /* ignore */ }
-      ports.delete(abortId);
+      abortPort.finish();
     }
   }
 
@@ -315,9 +347,29 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     sendResponse({ pong: true });
     return;
   }
+  if (message.type === 'GET_CLIP_IMPORT_TARGET') {
+    if (!clipDocumentToken) clipDocumentToken = crypto.randomUUID();
+    var probeId = crypto.randomUUID();
+    var approvalRequest = tcApprovalRequest;
+    var timer = setTimeout(function () {
+      clipProbes.delete(probeId);
+      sendResponse({ protocol: 2, ready: false, error: 'The app did not report a workspace' });
+    }, 1000);
+    clipProbes.set(probeId, function (ready) {
+      clearTimeout(timer);
+      clipProbes.delete(probeId);
+      sendResponse({ protocol: 2, ready: ready.ready === true && tcAppApproved && approvalRequest === tcApprovalRequest,
+        workspaceId: ready.workspaceId, workspaceLabel: ready.workspaceLabel, documentToken: clipDocumentToken });
+    });
+    window.postMessage({ type: 'TC_CLIP_IMPORT_PROBE', requestId: probeId, protocol: 2 }, postOrigin());
+    return true;
+  }
   if (message.type === 'INJECT_CLIPS_TO_PAGE') {
-    window.postMessage({ type: 'THREATCADDY_IMPORT_CLIPS', clips: message.clips }, postOrigin());
-    sendResponse({ success: true });
+    if (message.envelope?.protocol !== 2 || !clipDocumentToken || message.documentToken !== clipDocumentToken) {
+      sendResponse({ delivered: false, error: 'Prepare and confirm this app document before importing' }); return;
+    }
+    window.postMessage(message.envelope, postOrigin());
+    sendResponse({ delivered: true, confirmed: false });
   }
 });
 

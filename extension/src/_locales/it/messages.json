@@ -6,9 +6,11 @@
     "message": "Cattura rapidamente contenuti web e proxy le richieste AI per la threat intelligence ThreatCaddy. I dati rimangono localmente sul tuo dispositivo per impostazione predefinita."
   },
   "version": {
-    "message": "v1.1.1"
+    "message": "v$VERSION$",
+    "placeholders": {
+      "version": { "content": "$1" }
+    }
   },
-
   "quickStats": {
     "message": "Statistiche rapide"
   },
@@ -18,7 +20,6 @@
   "thisWeek": {
     "message": "Questa settimana"
   },
-
   "quickCapture": {
     "message": "Acquisizione rapida"
   },
@@ -64,7 +65,6 @@
   "saveFailed": {
     "message": "Salvataggio non riuscito. Riprova."
   },
-
   "recentCaptures": {
     "message": "Acquisizioni recenti"
   },
@@ -74,7 +74,6 @@
   "untitled": {
     "message": "Senza titolo"
   },
-
   "quickActions": {
     "message": "Azioni rapide"
   },
@@ -84,7 +83,6 @@
   "reviewAllCaptures": {
     "message": "Rivedi tutte le acquisizioni"
   },
-
   "permissions": {
     "message": "Permessi"
   },
@@ -109,7 +107,6 @@
   "allowFileAccessHint": {
     "message": "Per abilitare: vai a chrome://extensions, trova ThreatCaddy e attiva \"Consenti accesso a URL file\"."
   },
-
   "howToUse": {
     "message": "Come usare:"
   },
@@ -126,9 +123,8 @@
     "message": "Privacy:"
   },
   "privacyText": {
-    "message": "Tutti i dati rimangono localmente sul tuo dispositivo. Le chiavi API vengono inviate solo al provider scelto. Nessun tracciamento."
+    "message": "I ritagli restano su questo dispositivo fino al trasferimento o all’esportazione. L’IA facoltativa, il recupero di URL e le connessioni ad app approvate possono inviare dati ai servizi configurati."
   },
-
   "settings": {
     "message": "Impostazioni"
   },
@@ -150,37 +146,39 @@
   "save": {
     "message": "Salva"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "Salva in ThreatCaddy"
   },
-
   "savedToThreatCaddy": {
     "message": "Salvato in ThreatCaddy!"
   },
-
   "justNow": {
     "message": "Adesso"
   },
   "minutesAgo": {
     "message": "$count$ min fa",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "$count$h fa",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "$count$g fa",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "Contesto estensione invalidato. Ricarica questa pagina."
   },
@@ -190,7 +188,9 @@
   "errorExtensionUnknown": {
     "message": "Errore estensione: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +199,6 @@
   "errorExtensionError": {
     "message": "Errore estensione"
   },
-
   "errorInvalidUrl": {
     "message": "URL non valido"
   },
@@ -221,13 +220,17 @@
   "errorBlockedDomain": {
     "message": "Bloccato: $hostname$ non è nell'elenco dei domini proxy consentiti",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "Permesso host richiesto per $hostname$",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +239,9 @@
   "errorUnknownProvider": {
     "message": "Provider sconosciuto: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +250,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "Permesso host richiesto per $hostname$. Apri il popup dell'estensione ThreatCaddy e abilita \"Consenti recupero URL\" in Permessi.",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +264,320 @@
   "errorInvalidTargetUrl": {
     "message": "URL di destinazione non valido"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "privacyLink": {
+    "message": "Privacy"
+  },
+  "captureSaveFailed": {
+    "message": "Il ritaglio non è stato salvato. La bozza è conservata."
+  },
+  "captureChangeFailed": {
+    "message": "La modifica al ritaglio non è stata salvata. Aggiorna e riprova."
+  },
+  "approvalTrust": {
+    "message": "Approva solo app affidabili. Questa origine esatta (porta inclusa), o questo preciso file autonomo, potrà usare le funzionalità concesse all’estensione."
+  },
+  "localAIOrigin": {
+    "message": "Origine del server IA locale (facoltativa)"
+  },
+  "saveLocalAI": {
+    "message": "Salva approvazione IA locale"
+  },
+  "removeLocalAI": {
+    "message": "Rimuovi approvazione IA locale"
+  },
+  "approveApp": {
+    "message": "Approva app"
+  },
+  "revokeApps": {
+    "message": "Revoca tutte le app approvate"
+  },
+  "revokeAppsQuestion": {
+    "message": "Disconnettere tutte le app approvate? Ritagli e permessi del browser non verranno eliminati. Approva nuovamente un’app per riconnetterla."
+  },
+  "localAISavedOrigin": {
+    "message": "Salvata per questa app: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "Nessun server IA locale approvato per questa app."
+  },
+  "localAIApproveFirst": {
+    "message": "Approva questa app prima di salvare un server IA locale."
+  },
+  "localAIReadFailed": {
+    "message": "Impossibile leggere l’approvazione IA locale: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "L’IA locale deve usare HTTP(S) senza credenziali nell’URL"
+  },
+  "localAIPermissionDenied": {
+    "message": "Permesso IA locale negato; l’approvazione salvata è invariata."
+  },
+  "localAIApprovalFailed": {
+    "message": "Approvazione IA locale fallita"
+  },
+  "invalidAppTarget": {
+    "message": "Usa un’app HTTP(S) o un preciso file autonomo, senza credenziali"
+  },
+  "appPermissionDenied": {
+    "message": "Permesso di accesso all’app negato"
+  },
+  "appApprovalFailed": {
+    "message": "Approvazione dell’app fallita"
+  },
+  "appApproved": {
+    "message": "App approvata. Ricarica la sua scheda per connetterla."
+  },
+  "appsRevoked": {
+    "message": "Tutte le connessioni alle app sono state revocate."
+  },
+  "revokeFailed": {
+    "message": "Revoca fallita"
+  },
+  "notificationWaiting": {
+    "message": "In attesa del permesso del browser…"
+  },
+  "notificationEnabled": {
+    "message": "Notifiche desktop attivate"
+  },
+  "notificationEnable": {
+    "message": "Attiva notifiche desktop"
+  },
+  "notificationEnabledDesc": {
+    "message": "Notifiche desktop attivate. Le impostazioni del sistema operativo potrebbero impedirne la visualizzazione. Revoca il permesso nelle impostazioni delle estensioni del browser."
+  },
+  "notificationDisabledDesc": {
+    "message": "Le notifiche desktop sono disattivate; gli avvisi nell’app restano disponibili."
+  },
+  "notificationCheckFailed": {
+    "message": "Impossibile controllare il permesso di notifica: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "In attesa della risposta del browser. Se non compare una richiesta, verifica i permessi dell’estensione o riapri questo pannello."
+  },
+  "notificationRequestFailed": {
+    "message": "Richiesta del permesso di notifica fallita: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "Impossibile verificare il permesso di notifica: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "Gli avvisi nell’app restano disponibili."
+  },
+  "notificationNotEnabled": {
+    "message": "Le notifiche desktop non sono state attivate; gli avvisi nell’app restano disponibili. Controlla i permessi dell’estensione se non è comparsa alcuna richiesta."
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — Revisione ritagli"
+  },
+  "clipReview": {
+    "message": "Revisione ritagli"
+  },
+  "clipReviewSubtitle": {
+    "message": "Consulta e gestisci i tuoi ritagli"
+  },
+  "totalCaptures": {
+    "message": "Ritagli totali"
+  },
+  "unsent": {
+    "message": "Non inviati"
+  },
+  "applyAll": {
+    "message": "Applica a tutti"
+  },
+  "sendAll": {
+    "message": "Invia tutto a ThreatCaddy"
+  },
+  "refresh": {
+    "message": "Aggiorna"
+  },
+  "clearAll": {
+    "message": "Cancella tutto"
+  },
+  "delete": {
+    "message": "Elimina"
+  },
+  "confirm": {
+    "message": "Conferma"
+  },
+  "cancel": {
+    "message": "Annulla"
+  },
+  "noCapturesTitle": {
+    "message": "Nessun ritaglio"
+  },
+  "noSourceUrl": {
+    "message": "Nessun URL di origine"
+  },
+  "importConfirmed": {
+    "message": "Importazione confermata"
+  },
+  "legacySent": {
+    "message": "Inviato (precedente, non verificato)"
+  },
+  "importPending": {
+    "message": "In attesa della conferma d’importazione"
+  },
+  "importFailedRetained": {
+    "message": "Importazione fallita — conservato"
+  },
+  "folder": {
+    "message": "Cartella"
+  },
+  "editCaptureMetadata": {
+    "message": "Modifica metadati del ritaglio"
+  },
+  "deleteCaptureTitle": {
+    "message": "Elimina ritaglio"
+  },
+  "deleteCaptureQuestion": {
+    "message": "Vuoi davvero eliminare questo ritaglio?"
+  },
+  "captureDeleted": {
+    "message": "Ritaglio eliminato"
+  },
+  "preparingDestination": {
+    "message": "Preparazione della destinazione…"
+  },
+  "noUnsentCaptures": {
+    "message": "Nessun ritaglio non inviato da trasmettere"
+  },
+  "configureTargetFirst": {
+    "message": "Configura prima un URL di destinazione"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "URL di destinazione non valido: sono consentiti solo http, https e file://"
+  },
+  "targetPermissionDenied": {
+    "message": "Permesso negato: l’estensione deve accedere a questo sito"
+  },
+  "permissionRequestFailed": {
+    "message": "Richiesta di permesso fallita"
+  },
+  "fileAccessDisabled": {
+    "message": "L’accesso ai file locali è disattivato. Controlla le impostazioni di accesso ai file dell’estensione nel browser prima di riprovare."
+  },
+  "confirmWorkspace": {
+    "message": "Conferma area d’importazione"
+  },
+  "importWorkspaceMessage": {
+    "message": "Importare $count$ ritagli in «$label$» ($workspace$) su $url$? Solo le importazioni confermate dal database saranno segnate come inviate.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "$count$ vecchi ritagli sono stati segnati come inviati senza verifica; importarli può creare duplicati. Controllali o eliminali prima in caso di dubbio.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "Importa ritagli"
+  },
+  "waitingForImport": {
+    "message": "In attesa della conferma d’importazione…"
+  },
+  "importsConfirmed": {
+    "message": "Importazioni di ritagli confermate: $count$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "$confirmed$ importazioni confermate su $total$. $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "I ritagli non confermati sono conservati."
+  },
+  "sendFailed": {
+    "message": "Invio fallito: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "Valori predefiniti applicati a tutti i ritagli non inviati"
+  },
+  "clearAllCaptures": {
+    "message": "Cancella tutti i ritagli"
+  },
+  "clearAllQuestion": {
+    "message": "Verranno eliminati definitivamente tutti i $count$ ritagli. L’azione è irreversibile.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "Ritagli confermati cancellati; quelli più recenti sono stati conservati"
+  },
+  "capturesLoadFailed": {
+    "message": "Impossibile caricare i ritagli. Riapri questa pagina o riprova Aggiorna."
+  },
+  "metadataSaved": {
+    "message": "Metadati del ritaglio salvati"
+  },
+  "discardMetadataDraft": {
+    "message": "Scarta bozza dei metadati"
+  },
+  "discardMetadataMessage": {
+    "message": "Scartare le modifiche non salvate ai metadati di questo ritaglio e ricaricare quelli attualmente salvati? I metadati salvati non verranno modificati."
   }
 }

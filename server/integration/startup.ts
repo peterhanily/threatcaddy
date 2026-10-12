@@ -8,6 +8,7 @@ import { resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import type { ScratchDatabase } from './database.js';
 import { serverRoot } from './migrations.js';
+import { throwIfFailed } from '../../scripts/lib/cleanup-outcome.mjs';
 
 async function freePort(): Promise<number> {
   const listener = createServer();
@@ -53,7 +54,8 @@ export async function stageBuiltServer(): Promise<StagedServer> {
   }
 }
 
-export async function bootBuiltServer(database: ScratchDatabase, artifact: StagedServer): Promise<void> {
+export async function bootBuiltServer(database: ScratchDatabase, artifact: StagedServer,
+  onReady?: (addresses: { apiUrl: string; adminUrl: string }) => Promise<void>): Promise<void> {
   const { folder } = artifact;
   const port = await freePort();
   let adminPort = await freePort();
@@ -67,6 +69,7 @@ export async function bootBuiltServer(database: ScratchDatabase, artifact: Stage
       DATABASE_URL: database.url.toString(),
       DB_POOL_MAX: '2',
       PORT: String(port), ADMIN_PORT: String(adminPort),
+      HOST: '127.0.0.1', ADMIN_HOST: '127.0.0.1',
       ...artifact.credentials,
       FILE_STORAGE_PATH: resolve(folder, 'files'),
       DOCKER_HOST: `unix://${resolve(folder, 'no-docker.sock')}`,
@@ -84,6 +87,8 @@ export async function bootBuiltServer(database: ScratchDatabase, artifact: Stage
   const exited = new Promise<void>(resolveExit => child.once('close', () => resolveExit()));
   let becameReady = false;
   let forcedShutdown = false;
+  let operationFailure: { error: unknown } | undefined;
+  const cleanupErrors: unknown[] = [];
   try {
     const deadline = Date.now() + 20_000;
     while (Date.now() < deadline) {
@@ -108,22 +113,37 @@ export async function bootBuiltServer(database: ScratchDatabase, artifact: Stage
         if (/Failed to start server|Uncaught exception|Unhandled promise rejection|Failed to clean up stale bot runs/.test(output)) throw new Error(`Compiled server logged initialization errors.\n${output}`);
         const pkg = JSON.parse(await readFile(resolve(folder, 'package.json'), 'utf8')) as { version: string };
         if (stableHealth.version !== pkg.version) throw new Error(`Compiled /health version ${String(stableHealth.version)} differs from package version ${pkg.version}.\n${output}`);
+        // These addresses come from the real listening sockets, not their configured inputs.
+        const entries = output.split('\n').flatMap(line => {
+          try { return [JSON.parse(line) as Record<string, unknown>]; } catch { return []; }
+        });
+        for (const expectedPort of [port, adminPort]) {
+          if (!entries.some(entry => entry.port === expectedPort && entry.address === '127.0.0.1')) {
+            throw new Error(`Compiled listener ${expectedPort} did not confirm its loopback binding.\n${output}`);
+          }
+        }
         becameReady = true;
-        return;
+        await onReady?.({ apiUrl: `http://127.0.0.1:${port}`, adminUrl: `http://127.0.0.1:${adminPort}` });
+        break;
       }
       await delay(100);
     }
-    throw new Error(`Compiled server failed readiness within 20 seconds.\n${output}`);
+    if (!becameReady) throw new Error(`Compiled server failed readiness within 20 seconds.\n${output}`);
+  } catch (error) {
+    operationFailure = { error };
   } finally {
-    if (child.exitCode === null && child.signalCode === null) {
-      child.kill('SIGTERM');
-      await Promise.race([exited, delay(3_000)]);
+    try {
       if (child.exitCode === null && child.signalCode === null) {
-        forcedShutdown = true;
-        child.kill('SIGKILL');
+        child.kill('SIGTERM');
+        await Promise.race([exited, delay(3_000)]);
+        if (child.exitCode === null && child.signalCode === null) {
+          forcedShutdown = true;
+          child.kill('SIGKILL');
+        }
       }
-    }
-    await exited;
-    if (becameReady && (forcedShutdown || child.exitCode !== 0)) throw new Error(`Healthy compiled server did not shut down cleanly (${child.exitCode ?? child.signalCode}).\n${output}`);
+      await exited;
+      if (becameReady && (forcedShutdown || child.exitCode !== 0)) cleanupErrors.push(new Error(`Healthy compiled server did not shut down cleanly (${child.exitCode ?? child.signalCode}).\n${output}`));
+    } catch (error) { cleanupErrors.push(error); }
   }
+  throwIfFailed(operationFailure, cleanupErrors, 'Compiled server verification and cleanup failed');
 }

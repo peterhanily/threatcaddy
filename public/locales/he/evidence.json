@@ -1,7 +1,6 @@
 {
   "header.title": "ראיות",
   "header.selectInvestigation": "בחר חקירה",
-
   "actions.deduplicate": "הסר כפילויות",
   "actions.deduplicateTitle": "הסרת כפילויות בראיות",
   "actions.duplicatesDetected_one": "זוהה {{count}} פריט כפול",
@@ -13,30 +12,23 @@
   "actions.copyMetadataAria": "העתק מטא-נתונים של ראיות",
   "actions.copyText": "העתק טקסט שחולץ",
   "actions.copyTextAria": "העתק טקסט שחולץ",
-
   "empty.noInvestigation": "לא נבחרה חקירה",
   "empty.noInvestigationDesc": "פתח חקירה לפני ייבוא ראיות.",
   "empty.noEvidence": "אין ראיות עדיין",
   "empty.noEvidenceDesc": "קבצים שיובאו יופיעו כאן כחומר מקור עבור חקירה זו.",
   "empty.noMatches": "אין ראיות תואמות",
   "empty.noMatchesDesc": "נסה שם קובץ, תגית, סוג, או טקסט מהתוכן שחולץ.",
-
   "dropzone.label": "גרור קבצי ראיות לכאן",
   "dropzone.hint": "PDF, Word, RTF, Excel, CSV, JSON, XML, יומנים, טקסט וצילומי מסך. עד {{count}} קבצים לכל ייבוא.",
   "dropzone.browse": "עיון",
-
   "section.importedEvidence": "ראיות שיובאו",
-
   "search.placeholder": "חיפוש ראיות",
   "search.ariaLabel": "חיפוש בראיות שיובאו",
   "search.clear": "נקה חיפוש ראיות",
-
   "card.inspect": "בדיקה",
   "card.dimensions": "{{width}} x {{height}} פיקסל",
-
   "inspect.iocCount_one": "{{count}} IOC",
   "inspect.iocCount_other": "{{count}} IOCs",
-
   "inspectSearch.placeholder": "חיפוש בתוך הבדיקה",
   "inspectSearch.ariaLabel": "חיפוש בראיות שנבדקו",
   "inspectSearch.clear": "נקה חיפוש בבדיקה",
@@ -46,14 +38,12 @@
   "inspectSearch.prevTitle": "תוצאה קודמת",
   "inspectSearch.nextAria": "תוצאת חיפוש הבאה בבדיקה",
   "inspectSearch.nextTitle": "תוצאה הבאה",
-
   "image.details": "פרטי תמונה",
   "image.analyze": "נתח",
   "image.analyzeAria": "נתח תמונה עם CaddyAI",
   "image.prompt": "הנחיה",
   "image.copyPromptAria": "העתק הנחיית ניתוח תמונה",
   "image.noPayload": "מטען התצוגה לא נשמר עבור תמונה זו.",
-
   "table.preview": "תצוגה מקדימה של טבלה",
   "table.rowsColumns": "{{shown}} / {{total}} שורות, {{columns}} עמודות",
   "table.rowLimitAria": "מגבלת שורות בתצוגה המקדימה של הטבלה",
@@ -67,7 +57,6 @@
   "table.noRowsMatch": "אין שורות התואמות למסנן הבדיקה הנוכחי.",
   "table.noRows": "אין שורות להצגה מקדימה.",
   "table.cappedAt": "התצוגה המקדימה מוגבלת ל-{{count}} שורות.",
-
   "readable.titlePdf": "טקסט PDF קריא",
   "readable.titleRtf": "טקסט RTF קריא",
   "readable.titleDocument": "טקסט מסמך קריא",
@@ -82,7 +71,6 @@
   "readable.hiddenNoisy_one": "שורות חילוץ PDF רועשות מוסתרות: מציג שבר נקי {{count}} מתוך {{total}} שורות שחולצו{{totalS}}.",
   "readable.hiddenNoisy_other": "שורות חילוץ PDF רועשות מוסתרות: מציג {{count}} שברים נקיים מתוך {{total}} שורות שחולצו{{totalS}}.",
   "readable.truncated": "התצוגה המקדימה מציגה את {{size}} הראשונים של הטקסט שחולץ כדי לשמור על תגובתיות חלונית הבדיקה. העתק את הטקסט שחולץ עבור התוכן השמור המלא.",
-
   "signals.title": "אותות עיבוד",
   "signals.readableIncomplete": "ייתכן שהטקסט הקריא אינו שלם. השתמש ב-OCR או בניתוח ראיית CaddyAI עבור עמודים חזותיים, תרשימים, צילומי מסך וראיות סרוקות.",
   "signals.pdfPreview": "התצוגה המקדימה של ה-PDF משתמשת בטקסט נבחר שחולץ. פריסת עמודים, תרשימים מעובדים, צירי גרף, תמונות מוטמעות, ותאי טבלה מבוססי תמונה אינם מפוענחים לטקסט תצוגה מקדימה מובנה.",
@@ -90,21 +78,18 @@
   "signals.pdfVisualReferences": "הטקסט שחולץ מה-PDF מפנה לחומר חזותי או טבלאי; אמת את עמוד המקור או השתמש בניתוח OCR/ראייה עבור תוכן הגרף, הטבלה או התרשים בפועל.",
   "signals.workbookArtifacts": "מטא-נתוני עיבוד של חוברת עבודה קיימים בטקסט הראיות שחולץ.",
   "signals.workbookCells": "תאי חוברת העבודה מוצגים בתצוגה מקדימה כטבלה. תרשימים או תמונות מוטמעים עשויים להזדקק לראיית CaddyAI אם אינם מיוצגים בתאים.",
-
   "tableIOC.title": "מועמדי IOC מטבלה",
   "tableIOC.copyAria": "העתק מועמדי IOC מטבלה",
   "tableIOC.copyTitle": "העתק מועמדי IOC מטבלה",
   "tableIOC.add": "הוסף IOCs",
   "tableIOC.sourceRow": "{{source}}, שורה {{row}}",
   "tableIOC.showing": "מציג 12 מתוך {{count}} מועמדים.",
-
   "raw.title": "בדיקה גולמית",
   "raw.hiddenLowConfidence": "חילוץ PDF גולמי מוסתר משום שהוא נראה מקודד או משובש. התצוגה הקריאה למעלה מציגה רק שברים נקיים יותר; השתמש ב-OCR או בראיית CaddyAI לתצוגת עמוד המקור.",
   "raw.noMatchingLines": "אין שורות תואמות בבדיקה הגולמית.",
   "raw.matches_one": "מציג {{matchCount}} מתוך {{count}} שורה גולמית התואמת למסנן הבדיקה.",
   "raw.matches_other": "מציג {{matchCount}} מתוך {{count}} שורות גולמיות התואמות למסנן הבדיקה.",
   "raw.truncated": "הבדיקה הגולמית מציגה את {{size}} הראשונים של פריט ראיה זה כדי לשמור על תגובתיות הדפדפן. העתק את הטקסט שחולץ עבור התוכן השמור המלא.",
-
   "meta.fileName": "שם קובץ",
   "meta.fileType": "סוג קובץ",
   "meta.mime": "MIME",
@@ -121,9 +106,7 @@
   "meta.previewPayload": "מטען תצוגה מקדימה",
   "meta.previewPayloadStored": "נשמר",
   "meta.previewPayloadMetadataOnly": "מטא-נתונים בלבד",
-
   "preview.noText": "אין תצוגה מקדימה של טקסט שחולץ.",
-
   "toast.dedupeFailed": "הסרת כפילויות בראיות נכשלה",
   "toast.tableIocsFailed": "יצירת IOC מטבלה נכשלה",
   "toast.noNewIocs": "לא נוספו IOCs חדשים; ייתכן ש-IOCs תואמים כבר קיימים בחקירה זו.",
@@ -131,8 +114,12 @@
   "toast.tooManyFiles": "בחר עד {{count}} קבצי ראיות בכל פעם.",
   "toast.importFailed": "ייבוא ראיות נכשל",
   "toast.importRecursion": "ייבוא הראיות הגיע למגבלת רקורסיה של הדפדפן. נסה לייבא פחות קבצים, או המר תחילה ראיות Office/PDF גדולות מאוד ל-CSV/טקסט.",
-
   "imagePrompt.intro": "כאשר תמונה זו מצורפת ל-CaddyAI, נתח את ראיית התמונה של ThreatCaddy: {{fileName}}",
   "imagePrompt.instruction": "זהה את מה שהתמונה מציגה, תמלל טקסט גלוי, חלץ IOCs או ישויות רלוונטיות לאבטחה, והצבע על אי-ודאות.",
-  "imagePrompt.metadataLabel": "מטא-נתוני ראיות:"
+  "imagePrompt.metadataLabel": "מטא-נתוני ראיות:",
+  "actions.duplicatesDetected_two": "זוהו {{count}} פריטים כפולים",
+  "inspect.iocCount_two": "{{count}} אינדיקטורים לפגיעה",
+  "readable.visibleMatches_two": "מציג {{matchCount}} מתוך {{count}} שורות גלויות התואמות למסנן הבדיקה.",
+  "readable.hiddenNoisy_two": "שורות חילוץ PDF רועשות מוסתרות: מציג {{count}} שברים נקיים מתוך {{total}} שורות שחולצו.",
+  "raw.matches_two": "מציג {{matchCount}} מתוך {{count}} שורות גולמיות התואמות למסנן הבדיקה."
 }

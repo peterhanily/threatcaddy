@@ -26,7 +26,7 @@ beforeEach(() => {
   mocks.access.mockResolvedValue(true);
   mocks.transaction.mockImplementation(async callback => {
     const staged: typeof mocks.committed = [];
-    await callback({ select: () => ({ from: () => ({ where: () => ({ for: async () => [mocks.txOwner] }) }) }), insert: (table: unknown) => ({ values: async (values: Record<string, unknown> | unknown[]) => {
+    await callback({ execute: async () => [{ id: 1 }], select: () => ({ from: () => ({ where: () => ({ for: async () => [mocks.txOwner] }) }) }), insert: (table: unknown) => ({ values: async (values: Record<string, unknown> | unknown[]) => {
       if (table === mocks.failTable) throw new Error('Synthetic membership failure');
       staged.push({ table, values });
     } }) });

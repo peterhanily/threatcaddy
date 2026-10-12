@@ -265,5 +265,19 @@
   "picker.activeCount": "{{count}} активних",
   "panel.loadMore": "Завантажити більше дій",
   "cycleSummary.expand": "Показати деталі циклу",
-  "cycleSummary.collapse": "Сховати деталі циклу"
+  "cycleSummary.collapse": "Сховати деталі циклу",
+  "panel.serverRanActions_few": "Сервер виконав {{count}} дії за вашої відсутності",
+  "panel.serverRanActions_many": "Сервер виконав {{count}} дій за вашої відсутності",
+  "panel.serverRanActionsTitle_few": "Серверний бот виконав {{count}} дії, поки ця вкладка була офлайн{{topToolSuffix}}. Перегляньте потік аудиту або закрийте.",
+  "panel.serverRanActionsTitle_many": "Серверний бот виконав {{count}} дій, поки ця вкладка була офлайн{{topToolSuffix}}. Перегляньте потік аудиту або закрийте.",
+  "meeting.pendingRequests_few": "{{count}} очікувані запити на зустрічі від агентів",
+  "meeting.pendingRequests_many": "{{count}} очікуваних запитів зустрічей від агентів",
+  "cycleSummary.errorsTitle_few": "{{count}} помилки",
+  "cycleSummary.errorsTitle_many": "{{count}} помилок",
+  "cycleSummary.turns_few": "{{count}} ходи",
+  "cycleSummary.turns_many": "{{count}} ходів",
+  "cycleSummary.toolErrors_few": "{{count}} помилки інструментів",
+  "cycleSummary.toolErrors_many": "{{count}} помилок інструментів",
+  "picker.agentsSelected_few": "Вибраних агентів: {{count}}",
+  "picker.agentsSelected_many": "Обрано {{count}} агентів"
 }

@@ -3,6 +3,7 @@ import { db } from '../db';
 import { backupFingerprint, backupStateFingerprint, canonicalBackupJSON, type BackupPayload } from './backup-crypto';
 import { BACKUP_TABLES, investigationOf, parseEntityScope, type BackupTable } from './backup-tables';
 import { flushEntityDrafts } from './entity-drafts';
+import { validatePortableTables } from './backup-records';
 
 export type BackupRow = Record<string, unknown> & { id: string };
 const INVESTIGATION_TABLES: BackupTable[] = [
@@ -47,7 +48,9 @@ async function collectSnapshot(scope: BackupPayload['scope'], scopeId?: string, 
     const createdAt = Date.now();
     const rows = new Map<BackupTable, BackupRow[]>();
     for (const name of BACKUP_TABLES) rows.set(name, await db.table(name).toArray());
-    return { version: 1, type: 'full', scope, scopeId, createdAt, data: selectBackupData(rows, scope, scopeId, allowMissing) };
+    const data = selectBackupData(rows, scope, scopeId, allowMissing);
+    validatePortableTables(data);
+    return { version: 1, type: 'full', scope, scopeId, createdAt, data };
   });
 }
 

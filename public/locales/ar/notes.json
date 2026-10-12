@@ -83,7 +83,9 @@
     "lockScrollAria": "قفل مزامنة التمرير",
     "wordsChars": "{{words}} كلمة، {{chars}} حرف",
     "created": "تم الإنشاء {{date}}",
-    "modified": "تم التعديل {{date}}"
+    "modified": "تم التعديل {{date}}",
+    "saveFailed": "تعذّر حفظ التغييرات. مسودتك محفوظة في علامة التبويب هذه؛ أعد المحاولة قبل إغلاقها.",
+    "retrySave": "إعادة محاولة الحفظ"
   },
   "list": {
     "defaultTitle": "الملاحظات",

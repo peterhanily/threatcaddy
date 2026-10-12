@@ -1,20 +1,12 @@
 name: Deploy to GitHub Pages
 
-# Manual and automatic publication run full verification on the event SHA.
-# Configure Settings > Pages > Source = GitHub Actions before first publication.
-# GITHUB_TOKEN pushes to gh-pages do not trigger a Pages build; use the supported
-# Pages artifact API and retain the existing custom domain in repository settings.
+# Explicit manual release entry point, including `pnpm deploy`.
+# Automatic main publication is orchestrated by CI so verification runs once.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  group: deploy-github-pages
-  cancel-in-progress: false
 
 jobs:
   verify:
@@ -22,53 +14,14 @@ jobs:
     uses: ./.github/workflows/verify.yml
 
   publish:
-    name: Publish verified client artifact
     needs: verify
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
     permissions:
       contents: read
+      actions: read
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          artifact-ids: ${{ needs.verify.outputs.client-artifact-id }}
-          path: verified-client
-          merge-multiple: true
-          digest-mismatch: error
-      - name: Verify artifact, source identity and Pages configuration
-        env:
-          VERIFIED_SHA: ${{ needs.verify.outputs.source-sha }}
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$VERIFIED_SHA" = "$GITHUB_SHA"
-          test "$(cat verified-client/source-sha.txt)" = "$GITHUB_SHA"
-          cd verified-client
-          sha256sum --check client.tar.sha256
-          mkdir site
-          tar -xf client.tar -C site
-          test -f site/index.html
-          test -f site/threatcaddy-standalone.html
-          test -f site/.nojekyll
-          main_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
-          test "$main_sha" = "$GITHUB_SHA" || { echo 'Refusing to publish a superseded main commit'; exit 1; }
-          pages_source=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.build_type')
-          test "$pages_source" = workflow || { echo 'Set Settings > Pages > Source to GitHub Actions before publication'; exit 1; }
-      - name: Stage the tested files for the Pages API
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        with:
-          name: github-pages-${{ github.sha }}
-          path: verified-client/site
-          include-hidden-files: true
-      - name: Deploy verified Pages artifact
-        id: deployment
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
-        with:
-          artifact_name: github-pages-${{ github.sha }}
+    uses: ./.github/workflows/publish-pages.yml
+    with:
+      source-sha: ${{ needs.verify.outputs.source-sha }}
+      client-artifact-id: ${{ needs.verify.outputs.client-artifact-id }}

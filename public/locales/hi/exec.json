@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "इस सप्ताह के इवेंट",
   "metrics.aiChats": "AI चैट",
   "metrics.graphNodes": "ग्राफ नोड्स",
-  "dashboard.backToExecView": "कार्यकारी दृश्य पर वापस"
+  "dashboard.backToExecView": "कार्यकारी दृश्य पर वापस",
+  "dashboard.switchToLight": "हल्की थीम पर जाएँ",
+  "dashboard.switchToDark": "गहरी थीम पर जाएँ",
+  "dashboard.emptyTitle": "आपका कार्यस्थान तैयार है",
+  "dashboard.emptyDescription": "विश्लेषक मोड में जाँच बनाएँ या मौजूदा काम आयात करें। यह डैशबोर्ड वर्तमान कार्यस्थान में सहेजे काम का सार दिखाता है।",
+  "dashboard.emptyAction": "विश्लेषक मोड खोलें"
 }

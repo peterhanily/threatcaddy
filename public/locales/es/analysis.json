@@ -53,7 +53,6 @@
   "iocPanel.pushAgainMessage": "Los IOCs de este informe ya fueron enviados el {{date}}. ¿Enviar de nuevo?",
   "iocPanel.pushAgainCategoryMessage": "Los IOCs de este informe ya fueron enviados el {{date}}. ¿Enviar esta categoría de nuevo?",
   "iocPanel.pushAgainConfirm": "Enviar de nuevo",
-
   "iocItem.collapseAria": "Contraer",
   "iocItem.expandAria": "Expandir",
   "iocItem.copyTitle": "Copiar valor",
@@ -74,7 +73,6 @@
   "iocItem.selectType": "Seleccionar tipo...",
   "iocItem.selectTarget": "Seleccionar IOC objetivo...",
   "iocItem.addRelationship": "Agregar relación",
-
   "iocStats.title": "Análisis IOC",
   "iocStats.global": "Global",
   "iocStats.uniqueCount": "({{count}} único(s))",
@@ -169,7 +167,6 @@
   "iocStats.deleteSelectedMessage": "¿Eliminar {{count}} IOC(s) independiente(s){{plural}}? No se puede deshacer.{{extractedNote}}",
   "iocStats.extractedSkipNote": " ({{count}} IOCs extraídos se omitirán)",
   "iocStats.deleteSelectedConfirm": "Eliminar {{count}}",
-
   "iocForm.editTitle": "Editar IOC",
   "iocForm.createTitle": "Crear IOC",
   "iocForm.typeLabel": "Tipo",
@@ -200,7 +197,6 @@
   "iocForm.prevValue": "era {{value}}",
   "iocForm.saveButton": "Guardar",
   "iocForm.createButton": "Crear IOC",
-
   "iocList.title": "IOCs independientes",
   "iocList.dedup": "Deduplicar",
   "iocList.dedupTitle": "Encontrar IOCs duplicados",
@@ -253,7 +249,6 @@
   "iocList.statusHeader": "Estado",
   "iocList.attributionHeader": "Atribución",
   "iocList.updatedHeader": "Actualizado",
-
   "bulkImport.inputTitle": "Importación masiva de IOCs",
   "bulkImport.previewTitle": "Vista previa de importación",
   "bulkImport.resultsTitle": "Resultados de importación",
@@ -279,7 +274,6 @@
   "bulkImport.skippedCount": "{{count}} duplicado omitido",
   "bulkImport.skippedCount_other": "{{count}} duplicados omitidos",
   "bulkImport.failedCount": "{{count}} fallido(s)",
-
   "bulkEnrich.title": "Enriquecimiento masivo",
   "bulkEnrich.selectedCount": "{{count}} IOC seleccionado",
   "bulkEnrich.selectedCount_other": "{{count}} IOCs seleccionados",
@@ -307,7 +301,6 @@
   "bulkEnrich.resume": "Reanudar",
   "bulkEnrich.pause": "Pausar",
   "bulkEnrich.stop": "Detener",
-
   "dedup.title": "Encontrar duplicados",
   "dedup.summary": "{{groups}} grupo(s) de duplicados{{groupPlural}} encontrado(s) ({{total}} duplicado(s) en total{{totalPlural}})",
   "dedup.noDuplicatesTitle": "No se encontraron duplicados",
@@ -318,12 +311,10 @@
   "dedup.merge": "Fusionar",
   "dedup.tags": "{{count}} etiquetas",
   "dedup.keep": "Conservar",
-
   "badge.filterAria": "Filtro IOC {{label}}",
   "badge.filterActiveOnlyAria": "Filtro IOC {{label}}, activo",
   "badge.filterCountAria": "Filtro IOC {{label}}, {{count}} encontrado(s)",
   "badge.filterActiveAria": "Filtro IOC {{label}}, {{count}} encontrado(s), activo",
-
   "mispImport.uploadTitle": "Importar evento MISP",
   "mispImport.previewTitle": "Vista previa importación MISP",
   "mispImport.resultsTitle": "Resultados de importación",
@@ -348,7 +339,6 @@
   "mispImport.skippedCount": "{{count}} duplicado omitido",
   "mispImport.skippedCount_other": "{{count}} duplicados omitidos",
   "mispImport.failedCount": "{{count}} fallido(s)",
-
   "stixImport.uploadTitle": "Importar bundle STIX 2.1",
   "stixImport.previewTitle": "Vista previa importación STIX",
   "stixImport.resultsTitle": "Resultados de importación",
@@ -376,6 +366,25 @@
   "stixImport.failedCount": "{{count}} fallido(s)",
   "stixImport.relationshipsDetected": "{{count}} relación detectada",
   "stixImport.relationshipsDetected_other": "{{count}} relaciones detectadas",
-
-  "attribution.placeholder": "ej. APT29, Lazarus Group..."
+  "attribution.placeholder": "ej. APT29, Lazarus Group...",
+  "iocPanel.copiedCount_many": "{{count}} IOCs copiados al portapapeles",
+  "bulkImport.parsedCount_many": "{{count}} IOCs analizados",
+  "bulkImport.importButton_many": "Importar {{count}} IOCs",
+  "bulkImport.createdCount_many": "{{count}} IOCs creados",
+  "bulkImport.skippedCount_many": "{{count}} duplicados omitidos",
+  "bulkEnrich.selectedCount_many": "{{count}} IOCs seleccionados",
+  "bulkEnrich.noMatchHint_many": "{{count}} IOCs no tienen integraciones coincidentes y se omitirán.",
+  "bulkEnrich.enrichButton_many": "Enriquecer {{count}} IOCs",
+  "mispImport.iocCount_many": "{{count}} IOCs encontrados",
+  "mispImport.warningCount_many": "{{count}} advertencias",
+  "mispImport.importButton_many": "Importar {{count}} IOCs",
+  "mispImport.createdCount_many": "{{count}} IOCs creados",
+  "mispImport.skippedCount_many": "{{count}} duplicados omitidos",
+  "stixImport.iocCount_many": "{{count}} IOCs encontrados",
+  "stixImport.relationshipCount_many": "{{count}} relaciones encontradas",
+  "stixImport.warningCount_many": "{{count}} advertencias",
+  "stixImport.importButton_many": "Importar {{count}} IOCs",
+  "stixImport.createdCount_many": "{{count}} IOCs creados",
+  "stixImport.skippedCount_many": "{{count}} duplicados omitidos",
+  "stixImport.relationshipsDetected_many": "{{count}} relaciones detectadas"
 }

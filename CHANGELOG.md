@@ -2,65 +2,40 @@
 
 ## Unreleased
 
-### Features
+### Data preservation and recovery
 
-- **Open markdown files as notes** — Open `.md` and `.txt` files directly in the browser via `Ctrl+O` / `Cmd+O` file picker, drag-and-drop anywhere on the app, or the "Open File" item in the New dropdown menu. File name, size, and creation date are captured in the note title. IOCs are auto-extracted on import. Also registers as a PWA file handler for OS-level "Open with" support when installed.
-- **AgentCaddy hardening pass (April 2026)** — six-phase architectural sweep grounded in 2025-2026 multi-agent failure research:
-  - **Phase 0 — Observability**: per-cycle `AgentCycleSummary` (cost in USD, tool histogram, error histogram, outcome) emitted to the audit ChatThread and rendered inline. Per-deployment metrics now expose cost, tokens, and top-tool at a glance.
-  - **Phase 1 — Safety holes**: new `delegate` action class so a locked-down policy never silently breaks lead→specialist handoff. Agent soul rendering uses control-char stripping + length caps instead of an ineffective word blocklist. Supervisor folder gets rolling retention (200 newest notes, 3-per-cycle quota). Observer-authored notes flagged `reviewRequired` for analyst review.
-  - **Phase 2 — Tool surface**: extracted `buildAgentToolset` — one source of truth for the LLM-visible tool list and the runtime authorization gate. Closes the latent bug where a lead's role-granted `delegate_task` was offered in the prompt but rejected at runtime.
-  - **Phase 3 — Delegation loop**: tasks gain `rejectionCount` / `rejectionHistory` / `escalated`. `review_completed_task` requires a structured `requestedDelta` on reject, refuses identical deltas, and auto-escalates after 3 rejections. Escalated tasks are frozen to agents — only humans can unstick.
-  - **Phase 4 — Meeting discipline**: new `MeetingPurpose` enum (`redTeamReview` / `dissentSynthesis` / `signOff` / `freeform`). Structured purposes hard-cap at 2 rounds and emit a JSON artifact matching the purpose's schema. Per-turn `[[confidence=N]]` signal replaces the brittle string-match termination. Agent-authored meeting requests appear as a one-click queue in the meeting panel.
-  - **Phase 5 — Handoff idempotency**: auto-executed write tools carry an `idempotencyKey` so client crashes and client↔server handoff boundaries can't produce double-writes. New explicit `handoffState` state machine on each deployment (client → handoff-pending → server → reclaim-pending → client) blocks new cycles while the server owns the loop. Heartbeat success/failure drives transitions automatically.
-  - **Reconcile summary**: when the client reclaims a deployment, a `HandoffReconciliation` summarizing what the server did while away appears as a dismissable banner on the deployment card.
-- **Hypothesis Writer profile** — replaces the old generalist Case Analyst persona. Generates 3-5 falsifiable working theories of the case as structured notes with claim, evidence (for/against), confidence, and how-to-test. Tagged with `hypothesis-status:<open|confirmed|refuted>` so the Lead can filter open theories.
-- **Settings: CaddyLabs branding** — info dropdown gains a "CaddyLabs" link to caddylabs.io (Flask icon); Settings About block adds a tagline ("This is a CaddyLabs tool, made with love and tokens in Ireland.") with the link, translated across all 20 locales.
+- Portable JSON backups cover all 19 supported entity tables, validate complete records before writes and preserve supported long text without silent truncation. Plaintext exports omit installed integration configuration; explicit encrypted exports can retain it. Restores suspend automation and report settings-only failures separately from committed entity writes.
+- Import, restore and workspace-switch barriers protect pending edits. Unsent CaddyAI text and images remain attached to their conversation in memory across view changes; they are not crash recovery or part of a backup.
+- Extension captures use explicit workspace confirmation and durable per-revision receipts. Retries do not create a second entity after a successful import, and failed captures remain available to retry.
+- Bound workspaces capture eligible local changes while signed out without sending them to another account. Incomplete legacy sync history pauses for archive-backed reconciliation instead of silently replacing local data.
+- Markdown/text opening supports the file picker, drag-and-drop and PWA launch delivery, with bounded queues, size limits and unlock-aware reads.
 
-### Security
+### Access and automation
 
-- **Server `/api/caddy-agents` authZ closures** — `/register`, `/unregister`, and `/heartbeat` now require `checkInvestigationAccess` before mutating bot configs or heartbeat rows. The April 12 audit covered `/status`, `/actions`, `/approve`, `/reject`, and `/trigger`; these three were missed and allowed an authenticated user to register/deregister server-side bots for investigations they couldn't read. `/unregister` by `deploymentIds` now re-checks access per-deployment's scope folders.
-- **Agent Host error-body redaction** — `fetchHostSkills` in `src/lib/agent-hosts.ts` now strips `Bearer <token>`, `Authorization` headers, and common credential keys (`api_key`, `access_token`, `secret`, `password`) from upstream HTTP error bodies before raising them into tool results or audit logs. Upstream servers that echo the caller's auth header in 401/403 responses can no longer leak it through agent tool output. Error body also capped at 500 chars.
+- Team-server reads and writes recheck current accounts, memberships and investigation scope. Ordinary investigation deletion/restoration is owner-only; explicit admin purge remains separate. Physical server deletion does not revoke exported or offline copies.
+- Bot reads, writes and scoped notifications use current grants and live investigation access. Admin AI writes require approval tied to the exact proposed action.
+- The unsupported server integration runner and server-side AgentCaddy handoff remain unavailable; saved configuration and history are retained.
+- Client integrations validate their graph and configuration before running, preserve typed substitutions and nested loop state, and enforce cancellation and work/data limits. Output counts reflect committed supported writes. Imported templates receive fresh identities; catalog collisions cannot silently replace installed definitions.
+- Integration results remain visible when their source list row is virtualized or refreshed.
 
-### Security (Phase 6–7)
+### Usability and accessibility
 
-- **Dependency bumps past CVE advisories** — `dompurify` `^3.3.3` → `^3.4.0` (patches `ADD_TAGS` bypass, GHSA-39q2-94rc-95cp); `vite` `^7.3.1` → `^7.3.2` (patches plugin sandbox escape, GHSA-4w7w-66w2-5vf9). The Vite 7.3.2 sandbox tighten denied the previous `/logo.svg?raw` leading-slash import in `Header.tsx`; switched to a filesystem-relative path so the import resolves through the FS plugin in both build and test.
-- **Idempotency key — FNV-1a → SHA-256 truncated** — `makeIdempotencyKey` now hashes canonical JSON with Web Crypto (`crypto.subtle.digest('SHA-256')`) and takes the first 64 bits as hex. Removes the 2^32 birthday risk of the old non-crypto FNV-1a and neutralises any crafted-collision angle from adversarial tool outputs reflected back into later calls. Function is now async; the single call site in the cycle loop adds `await`. 7 tests (one new — asserts the 16-hex truncation format).
-- **Agent soul hardening** — tightened per-field caps in the soul-injection block (identity 500→200, lessons 300→150, strengths/weaknesses 100→80) so a compromised soul carries less payload room. Added a word-neutralization pass that replaces imperative prompt-injection conjuring words (`ignore`, `disregard`, `override`, `system`, `assistant`, `user`, `instruction`, `forget`) with `·` before rendering into the system prompt. Boundary markers restyled with balanced `<<<AGENT_SOUL>>>` fences.
+- Settings tabs support manual keyboard activation, directional navigation, Home/End and RTL layouts. Narrow-screen forms and named controls improve Settings, encryption, Exec and extension workflows.
+- Dashboard quick links have separate keyboard controls for opening, editing and deleting, so editing or deleting cannot accidentally open the destination.
+- Existing CaddyAI conversations retain their selected provider/model when server availability changes, without silently rerouting to a local provider.
+- Product Composer uses localized controls and validation messages while preserving drafts on failed saves. Locale checks cover keys, interpolation and language-specific plural forms across the app and extension; automated checks do not certify translation fluency.
+- Exec views provide useful empty states and return unfiled entity details to their global list.
 
-### Documentation (Phase 6)
+### Performance and offline use
 
-- **README profile table** — Case Analyst → Hypothesis Writer, aligned with the 2026-04-16 profile audit.
-- **Server: CaddyShack → Team Feed** in user-facing tool description (`bot-tools.ts`) and code comment (`bot-context.ts`). The route path, database table, and internal module names keep the CaddyShack codename — those are API contracts with existing deployments.
-- **Wiki drift swept** — `projects/threatcaddy.md`, `concepts/local-first-architecture.md`, `concepts/caddy-suite.md`, `concepts/agentcaddy-system.md`: Dexie schema `v25` → `v28`, Case Analyst → Hypothesis Writer in the specialist tiers, test count refreshed to 2,138+.
+- IOC extraction uses an exact-input, bounded cache with isolated returned objects; different middle text cannot reuse a stale result.
+- Heavy client views load on demand, while the hosted offline shell precaches its packaged assets. A passive status notice reports service-worker installation without reloading the page; it is not a backup, cache-integrity check or current-version guarantee.
+- Team-feed clients can request bounded reply pages and viewer-only reaction summaries. Existing full-reply/full-reactor API behavior remains the default for callers that do not opt in.
+- Build, locale, lint and runtime acceptance checks document reproducible release gates.
 
-### Performance
+### Upgrade notes
 
-- **`chat-mentions` no longer full-scans on every keystroke** — the global (no `folderId`) mention search previously did `db.notes.filter(n => !n.trashed).toArray()` on each `@`-typed character. Switched to `orderBy('updatedAt').reverse().filter().limit(200)` which walks the existing `updatedAt` index and stops after 200 hits. Same change on `standaloneIOCs`. Added a 200ms debounce in `ChatInput` so fast typing only fires the last query.
-- **Supervisor retention sweep uses indexed walk + bulk modify** — `caddy-agent-supervisor.ts` previously read all supervisor-folder notes into memory, sorted them, then issued one `db.notes.update` per row to trash. Replaced with a reverse walk of the `[folderId+updatedAt]` composite index that skips the newest `SUPERVISOR_NOTE_RETENTION` matches and bulk-modifies the rest via `where('id').anyOf(ids).modify()` — one transaction instead of N.
-- **Dexie v28: `[status+shift]` index on `agentDeployments`** — ExecDashboard roll-ups and other "running + active" filters can now use the composite index instead of reading every deployment into memory. `db.test.ts` version assertion bumped to 28.
-- **Synthesizer prompt schemas interned at module load** — `synthesizerPrompt` used to rebuild four multi-line schema template literals in a switch statement on every meeting end. Schemas now live in a module-level `SYNTHESIZER_SCHEMAS` record; a single lookup + one template concat replaces the switch. Test assertions still pass (substring-based).
-
-### Accessibility
-
-- **Cycle-summary card expand button has an accessible name** — `AgentCycleSummaryCard` toggle previously carried `aria-expanded` but no `aria-label`, leaving screen readers to announce only the meta content next to it. Now labeled "Show/Hide cycle details" (translated across 20 locales).
-- **Load more actions** — `AgentPanel` action feed previously computed `hasMore` but never exposed it; long investigations silently capped at 100 items. Replaced the static "Showing latest 100" text with a "Load more actions" button that bumps a per-investigation `pageCount` state. Resets to 1 on investigation switch.
-- **Profile picker focus management** — `AgentProfilePicker` now captures `document.activeElement` on mount, moves focus to the close button when the modal opens, and restores focus to the opener on unmount. Previously focus stayed on whatever button was clicked behind the backdrop.
-
-### i18n
-
-- **AgentCaddy UI fully translated across 20 locales** — Phase 0-5 hardening shipped new surface area (`AgentCycleSummaryCard`, `AgentMeetingPanel` purpose picker, `AgentProfilePicker` deploy modal, `AgentPanel` approval-flow toasts + reconciliation banner, `AgentHostsConfig` form) that was English-only. 56 `agent.json` keys and 5 `settings.json` keys added and translated — outcome labels (complete/timed out/error/approval-gated), meeting purposes (red-team/dissent synthesis/sign-off/freeform) + hints, "Server ran N actions while away" banner, all error toasts, all picker group labels and buttons. `_one`/`_other` plural forms for counts. `OUTCOME_META` keys and `PURPOSES` arrays refactored to resolve labels at render time.
-
-### Integrity
-
-- **Idempotency key stability across property reordering** — `makeIdempotencyKey` now canonicalizes object property order before hashing, so `{a:1,b:2}` and `{b:2,a:1}` produce the same key. Without this, an LLM that re-emitted the same tool call with a different field order across a handoff boundary would defeat dedup and double-write. Array order is still sequence-sensitive by design. 6 unit tests lock the behavior.
-- **Reconciliation banner reverts on server failure** — `AgentPanel` dismiss handler previously ran `setDismissedReconciliations` optimistically and left the UI dismissed even if `acknowledgeReconciliation` rejected, which drifted client state from the persisted `handoffReconciliation` on the deployment. Now reverts the set on error so the user can retry.
-- **Agent Host delete requires confirmation** — trashing a host from Settings > AI > Agent Hosts now prompts before dropping the host and its cached skill list, matching the pattern `AgentProfileManager` uses. Single-click data loss fixed.
-
-### Fixes
-
-- **Keyboard shortcuts** — Synced shortcuts across both UI panels (Ctrl+/ modal and Settings), added missing entries (`Ctrl+O`, `Ctrl+\``, `Ctrl+/`, `Ctrl+B/I`)
-- **Pattern Hunter role** — flipped from `lead` to `specialist`. The lead-only delegation tools couldn't usefully delegate cross-case findings (`executeDelegateTask` scopes to a single `folderId`). `create_task` is still in `allowedTools`, so follow-ups still work.
-- **Meeting synthesizer purpose coercion** — `parseSynthesizerJson` was meant to force the requested purpose onto the parsed JSON but the spread order let the parsed value win. Fixed.
+Use the recorded Node 24.21.0 / pnpm 10.29.1 / npm 11.19.0 baseline. Coordinate client and team-server upgrades, preserve the existing credential-encryption key and retain a verified database-and-files backup. Publishing a server image does not update a running deployment. See [deployment](docs/deployment.md), [runtime operations](server/docs/runtime-operations.md), [backup recovery](docs/backup-recovery.md) and [verification](docs/development-verification.md).
 
 ---
 

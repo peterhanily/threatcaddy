@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { restoreLegacyRecoveryArchive } from '../../lib/db-migration';
 import type { EncryptedBackupBlob } from '../../lib/backup-crypto';
-import { hasPendingEntityDrafts } from '../../lib/entity-drafts';
+import { hasPendingChanges } from '../../lib/pending-changes';
 
 export function LegacyDataRecovery() {
   const { t } = useTranslation('encryption');
@@ -37,7 +37,7 @@ export function LegacyDataRecovery() {
         className="rounded bg-gray-700 px-3 py-2 text-white disabled:opacity-50">{t('legacy.recover')}</button>
       {result !== null && <div role="status"><p>{t('legacy.recovered', { count: result })}</p>
         <button type="button" className="mt-2 underline" onClick={() => {
-          if (hasPendingEntityDrafts()) setError(t('legacy.pendingDrafts')); else window.location.reload();
+          if (hasPendingChanges()) setError(t('legacy.pendingDrafts')); else window.location.reload();
         }}>{t('legacy.reopen')}</button></div>}
       {error && <p role="alert" className="text-red-300">{error}</p>}
     </div>

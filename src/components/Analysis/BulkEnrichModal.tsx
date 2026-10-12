@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { nanoid } from 'nanoid';
 import { useAuth } from '../../contexts/AuthContext';
 import { IntegrationExecutor } from '../../lib/integration-executor';
+import { integrationWrite } from '../../lib/integration-cancellation';
+import { cancellableRequest } from '../../lib/request-cancellation';
 import type { ExecutionOptions } from '../../lib/integration-executor';
 import { db } from '../../db';
 import type { IntegrationRun, InstalledIntegration, IntegrationTemplate } from '../../types/integration-types';
@@ -174,7 +176,8 @@ export function BulkEnrichModal({
     setResults([]);
     setCurrentIndex(0);
 
-    const controller = new AbortController();
+    const lifecycle = cancellableRequest();
+    const controller = lifecycle.controller;
     abortRef.current = controller;
     const executor = new IntegrationExecutor();
     const execOptions: ExecutionOptions | undefined =
@@ -227,7 +230,8 @@ export function BulkEnrichModal({
               },
               {
                 onCreateEntity: createNotes
-                  ? async (type, fields) => {
+                  ? async (type, fields, signal) => integrationWrite([db.notes], signal, async () => {
+                      if (type !== 'note') throw new Error('This enrichment caller only supports creating notes.');
                       const id = nanoid();
                       const now = Date.now();
                       // Phase 1b: try/catch so DB failures don't crash the batch
@@ -280,18 +284,20 @@ export function BulkEnrichModal({
                         }
                       } catch (dbErr) {
                         console.error('[BulkEnrich] onCreateEntity DB error:', dbErr);
+                        throw dbErr;
                       }
                       return id;
-                    }
+                    })
                   : undefined,
-                onUpdateEntity: async (type, id, fields) => {
+                onUpdateEntity: async (type, id, fields, signal) => {
+                  if (type !== 'ioc') throw new Error('This enrichment caller only supports updating IOCs.');
                   // Phase 1b: try/catch for DB failures
                   try {
                     if (type === 'ioc') {
                       // Phase 1c: transactional read-modify-write
-                      await db.transaction('rw', db.standaloneIOCs, async () => {
+                      await integrationWrite([db.standaloneIOCs], signal, async () => {
                         const existing = await db.standaloneIOCs.get(id);
-                        if (!existing) return;
+                        if (!existing || existing.trashed) throw new Error('The IOC target is missing or deleted.');
                         const updates: Partial<StandaloneIOC> = { updatedAt: Date.now() };
                         if (fields.iocStatus !== undefined) updates.iocStatus = fields.iocStatus as string;
                         if (fields.confidence !== undefined) updates.confidence = fields.confidence as StandaloneIOC['confidence'];
@@ -304,11 +310,12 @@ export function BulkEnrichModal({
                           }
                           updates.enrichment = merged;
                         }
-                        await db.standaloneIOCs.update(id, updates);
+                        if (await db.standaloneIOCs.update(id, updates) !== 1) throw new Error('The IOC update was not saved.');
                       });
                     }
                   } catch (dbErr) {
                     console.error('[BulkEnrich] onUpdateEntity DB error:', dbErr);
+                    throw dbErr;
                   }
                 },
                 onNotify: () => {},
@@ -317,6 +324,7 @@ export function BulkEnrichModal({
               execOptions,
             );
 
+            controller.signal.throwIfAborted();
             // Phase 2a: mark domain as used after the request completes
             markDomainUsed(template);
 
@@ -355,6 +363,7 @@ export function BulkEnrichModal({
       // Phase 1a: surface unexpected errors in results
       console.error('[BulkEnrich] Fatal error in run loop:', fatalErr);
     } finally {
+      lifecycle.dispose();
       abortRef.current = null;
       setPhase('done');
 

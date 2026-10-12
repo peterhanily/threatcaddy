@@ -1,7 +1,6 @@
 {
   "header.title": "الأدلة",
   "header.selectInvestigation": "اختر تحقيقًا",
-
   "actions.deduplicate": "إزالة التكرار",
   "actions.deduplicateTitle": "إزالة تكرار الأدلة",
   "actions.duplicatesDetected_one": "تم اكتشاف {{count}} عنصر مكرر",
@@ -13,30 +12,23 @@
   "actions.copyMetadataAria": "نسخ البيانات الوصفية للأدلة",
   "actions.copyText": "نسخ النص المستخرج",
   "actions.copyTextAria": "نسخ النص المستخرج",
-
   "empty.noInvestigation": "لم يتم تحديد أي تحقيق",
   "empty.noInvestigationDesc": "افتح تحقيقًا قبل استيراد الأدلة.",
   "empty.noEvidence": "لا توجد أدلة بعد",
   "empty.noEvidenceDesc": "ستظهر الملفات المستوردة هنا كمواد مصدرية لهذا التحقيق.",
   "empty.noMatches": "لا توجد أدلة مطابقة",
   "empty.noMatchesDesc": "جرّب اسم ملف أو وسمًا أو نوعًا أو نصًا من المحتوى المستخرج.",
-
   "dropzone.label": "أفلِت ملفات الأدلة هنا",
   "dropzone.hint": "PDF وWord وRTF وExcel وCSV وJSON وXML والسجلات والنصوص ولقطات الشاشة. حتى {{count}} ملف لكل عملية استيراد.",
   "dropzone.browse": "تصفّح",
-
   "section.importedEvidence": "الأدلة المستوردة",
-
   "search.placeholder": "البحث في الأدلة",
   "search.ariaLabel": "البحث في الأدلة المستوردة",
   "search.clear": "مسح البحث في الأدلة",
-
   "card.inspect": "فحص",
   "card.dimensions": "{{width}} x {{height}} بكسل",
-
   "inspect.iocCount_one": "{{count}} IOC",
   "inspect.iocCount_other": "{{count}} IOC",
-
   "inspectSearch.placeholder": "البحث داخل الفحص",
   "inspectSearch.ariaLabel": "البحث في الأدلة المفحوصة",
   "inspectSearch.clear": "مسح بحث الفحص",
@@ -46,14 +38,12 @@
   "inspectSearch.prevTitle": "النتيجة السابقة",
   "inspectSearch.nextAria": "نتيجة بحث الفحص التالية",
   "inspectSearch.nextTitle": "النتيجة التالية",
-
   "image.details": "تفاصيل الصورة",
   "image.analyze": "تحليل",
   "image.analyzeAria": "تحليل الصورة باستخدام CaddyAI",
   "image.prompt": "الموجِّه",
   "image.copyPromptAria": "نسخ موجِّه تحليل الصورة",
   "image.noPayload": "لم يتم تخزين حمولة المعاينة لهذه الصورة.",
-
   "table.preview": "معاينة الجدول",
   "table.rowsColumns": "{{shown}} / {{total}} صف، {{columns}} عمود",
   "table.rowLimitAria": "حد صفوف معاينة الجدول",
@@ -67,7 +57,6 @@
   "table.noRowsMatch": "لا توجد صفوف تطابق مرشّح الفحص الحالي.",
   "table.noRows": "لا توجد صفوف للمعاينة.",
   "table.cappedAt": "المعاينة محدودة بـ {{count}} صف.",
-
   "readable.titlePdf": "نص PDF قابل للقراءة",
   "readable.titleRtf": "نص RTF قابل للقراءة",
   "readable.titleDocument": "نص مستند قابل للقراءة",
@@ -82,7 +71,6 @@
   "readable.hiddenNoisy_one": "أسطر استخراج PDF المشوّشة مخفية: عرض {{count}} جزء أنظف من {{total}} سطر مستخرج{{totalS}}.",
   "readable.hiddenNoisy_other": "أسطر استخراج PDF المشوّشة مخفية: عرض {{count}} جزء أنظف من {{total}} سطر مستخرج{{totalS}}.",
   "readable.truncated": "تعرض المعاينة أول {{size}} من النص المستخرج للحفاظ على استجابة لوحة الفحص. انسخ النص المستخرج للحصول على المحتوى المخزَّن كاملًا.",
-
   "signals.title": "إشارات الأثر",
   "signals.readableIncomplete": "قد يكون النص القابل للقراءة غير مكتمل. استخدم التعرّف الضوئي على الحروف أو تحليل رؤية CaddyAI للصفحات المرئية والرسوم البيانية ولقطات الشاشة والأدلة الممسوحة ضوئيًا.",
   "signals.pdfPreview": "تستخدم معاينة PDF النص القابل للتحديد المستخرج. لا يتم فك تخطيط الصفحة والرسوم البيانية المعروضة ومحاور الرسوم البيانية والصور المضمَّنة وخلايا الجداول التي تحتوي على صور فقط إلى نص معاينة منظّم.",
@@ -90,21 +78,18 @@
   "signals.pdfVisualReferences": "يشير نص PDF المستخرج إلى مواد مرئية أو جدولية؛ تحقّق من صفحة المصدر أو استخدم التعرّف الضوئي على الحروف/تحليل الرؤية للحصول على محتوى الرسم البياني أو الجدول أو المخطط الفعلي.",
   "signals.workbookArtifacts": "توجد بيانات وصفية لأثر المصنّف في نص الدليل المستخرج.",
   "signals.workbookCells": "تتم معاينة خلايا المصنّف في جدول. قد تحتاج الرسوم البيانية أو الصور المضمَّنة إلى رؤية CaddyAI إذا لم تكن ممثَّلة في الخلايا.",
-
   "tableIOC.title": "مرشّحات IOC من الجدول",
   "tableIOC.copyAria": "نسخ مرشّحات IOC من الجدول",
   "tableIOC.copyTitle": "نسخ مرشّحات IOC من الجدول",
   "tableIOC.add": "إضافة IOCs",
   "tableIOC.sourceRow": "{{source}}، الصف {{row}}",
   "tableIOC.showing": "عرض 12 من {{count}} مرشّح.",
-
   "raw.title": "فحص خام",
   "raw.hiddenLowConfidence": "تم إخفاء استخراج PDF الخام لأنه يبدو مشفّرًا أو مشوّهًا. تعرض المعاينة القابلة للقراءة أعلاه الأجزاء الأنظف فقط؛ استخدم التعرّف الضوئي على الحروف أو رؤية CaddyAI لعرض صفحة المصدر.",
   "raw.noMatchingLines": "لا توجد أسطر مطابقة في الفحص الخام.",
   "raw.matches_one": "عرض {{matchCount}} من {{count}} سطر خام يطابق مرشّح الفحص.",
   "raw.matches_other": "عرض {{matchCount}} من {{count}} سطر خام يطابق مرشّح الفحص.",
   "raw.truncated": "يعرض الفحص الخام أول {{size}} من عنصر الدليل هذا للحفاظ على استجابة المتصفح. انسخ النص المستخرج للحصول على المحتوى المخزَّن كاملًا.",
-
   "meta.fileName": "اسم الملف",
   "meta.fileType": "نوع الملف",
   "meta.mime": "MIME",
@@ -121,9 +106,7 @@
   "meta.previewPayload": "حمولة المعاينة",
   "meta.previewPayloadStored": "مخزَّنة",
   "meta.previewPayloadMetadataOnly": "البيانات الوصفية فقط",
-
   "preview.noText": "لا تتوفر معاينة للنص المستخرج.",
-
   "toast.dedupeFailed": "فشلت إزالة تكرار الأدلة",
   "toast.tableIocsFailed": "فشل إنشاء IOC من الجدول",
   "toast.noNewIocs": "لم تتم إضافة أي IOCs جديدة؛ قد تكون IOCs المطابقة موجودة بالفعل في هذا التحقيق.",
@@ -131,8 +114,27 @@
   "toast.tooManyFiles": "اختر حتى {{count}} ملف أدلة في كل مرة.",
   "toast.importFailed": "فشل استيراد الأدلة",
   "toast.importRecursion": "واجه استيراد الأدلة حد التكرار في المتصفح. جرّب استيراد عدد أقل من الملفات، أو حوّل أدلة Office/PDF الكبيرة جدًا إلى CSV/نص أولًا.",
-
   "imagePrompt.intro": "عند إرفاق هذه الصورة بـ CaddyAI، حلّل دليل صورة ThreatCaddy: {{fileName}}",
   "imagePrompt.instruction": "حدّد ما تعرضه الصورة، وانسخ النص المرئي، واستخرج أي IOCs أو كيانات ذات صلة بالأمان، وأبرز أي حالة عدم يقين.",
-  "imagePrompt.metadataLabel": "البيانات الوصفية للأدلة:"
+  "imagePrompt.metadataLabel": "البيانات الوصفية للأدلة:",
+  "actions.duplicatesDetected_zero": "عدد العناصر المكررة المكتشفة: {{count}}",
+  "actions.duplicatesDetected_two": "عدد العناصر المكررة المكتشفة: {{count}}",
+  "actions.duplicatesDetected_few": "عدد العناصر المكررة المكتشفة: {{count}}",
+  "actions.duplicatesDetected_many": "عدد العناصر المكررة المكتشفة: {{count}}",
+  "inspect.iocCount_zero": "عدد مؤشرات الاختراق: {{count}}",
+  "inspect.iocCount_two": "مؤشرا اختراق ({{count}})",
+  "inspect.iocCount_few": "{{count}} مؤشرات اختراق",
+  "inspect.iocCount_many": "{{count}} مؤشر اختراق",
+  "readable.visibleMatches_zero": "عرض {{matchCount}} من الأسطر المرئية المطابقة لمرشّح الفحص، وعددها الإجمالي {{count}}.",
+  "readable.visibleMatches_two": "عرض {{matchCount}} من الأسطر المرئية المطابقة لمرشّح الفحص، وعددها الإجمالي {{count}}.",
+  "readable.visibleMatches_few": "عرض {{matchCount}} من الأسطر المرئية المطابقة لمرشّح الفحص، وعددها الإجمالي {{count}}.",
+  "readable.visibleMatches_many": "عرض {{matchCount}} من الأسطر المرئية المطابقة لمرشّح الفحص، وعددها الإجمالي {{count}}.",
+  "readable.hiddenNoisy_zero": "أُخفيت أسطر استخراج PDF المشوّشة: عرض مقاطع أوضح عددها {{count}} من إجمالي {{total}} من الأسطر المستخرجة.",
+  "readable.hiddenNoisy_two": "أُخفيت أسطر استخراج PDF المشوّشة: عرض مقاطع أوضح عددها {{count}} من إجمالي {{total}} من الأسطر المستخرجة.",
+  "readable.hiddenNoisy_few": "أُخفيت أسطر استخراج PDF المشوّشة: عرض مقاطع أوضح عددها {{count}} من إجمالي {{total}} من الأسطر المستخرجة.",
+  "readable.hiddenNoisy_many": "أُخفيت أسطر استخراج PDF المشوّشة: عرض مقاطع أوضح عددها {{count}} من إجمالي {{total}} من الأسطر المستخرجة.",
+  "raw.matches_zero": "عرض {{matchCount}} من الأسطر الخام المطابقة لمرشّح الفحص، وعددها الإجمالي {{count}}.",
+  "raw.matches_two": "عرض {{matchCount}} من الأسطر الخام المطابقة لمرشّح الفحص، وعددها الإجمالي {{count}}.",
+  "raw.matches_few": "عرض {{matchCount}} من الأسطر الخام المطابقة لمرشّح الفحص، وعددها الإجمالي {{count}}.",
+  "raw.matches_many": "عرض {{matchCount}} من الأسطر الخام المطابقة لمرشّح الفحص، وعددها الإجمالي {{count}}."
 }

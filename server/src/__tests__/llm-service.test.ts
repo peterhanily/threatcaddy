@@ -22,15 +22,6 @@ function makeSSEStream(events: string[]): ReadableStream<Uint8Array> {
   });
 }
 
-function makeResponse(status: number, body: string | ReadableStream<Uint8Array>, ok = true) {
-  return {
-    ok: ok && status >= 200 && status < 300,
-    status,
-    text: typeof body === 'string' ? () => Promise.resolve(body) : undefined,
-    body: typeof body !== 'string' ? body : undefined,
-  };
-}
-
 function makeStreamResponse(events: string[]) {
   const stream = makeSSEStream(events);
   return {

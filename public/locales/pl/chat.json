@@ -74,7 +74,9 @@
     "onboardingStep2Desc": "CaddyAI wymaga rozszerzenia przeglądarki ThreatCaddy do proxy żądań API.",
     "onboardingStep3Title": "3. Włącz uprawnienia",
     "onboardingStep3Desc": "W wyskakującym oknie rozszerzenia włącz «Zezwól CaddyAI» dla dostępu do dostawców AI i «Zezwól na pobieranie URL» dla narzędzia /fetch.",
-    "onboardingDismiss": "Rozumiem"
+    "onboardingDismiss": "Rozumiem",
+    "loopCount_few": "{{count}} pętle",
+    "loopCount_many": "{{count}} pętli"
   },
   "input": {
     "noApiKeys": "Brak skonfigurowanych kluczy API — dodaj jeden w Ustawienia → AI/LLM",
@@ -96,7 +98,26 @@
     "stopGenerating": "Zatrzymaj generowanie",
     "sendMessage": "Wyślij wiadomość (Enter)",
     "noMatchesFound": "Nie znaleziono dopasowań",
-    "imageLabel": "Obraz {{index}}"
+    "imageLabel": "Obraz {{index}}",
+    "readingImages": "Odczytywanie obrazów…",
+    "submitFailed": "Nie udało się dokończyć wysyłania wiadomości. Niezapisany tekst i obrazy zachowano; sprawdź wątek przed ponowieniem.",
+    "memoryDrafts": "Niewysłane szkice, również z ukrytych wątków, są przechowywane tylko w pamięci tej karty. Wyślij je lub odrzuć i poczekaj na zakończenie wysyłania przed zmianą obszaru roboczego; zamknięcie lub odświeżenie może je utracić.",
+    "discardAllDrafts": "Odrzuć wszystkie niewysłane szkice czatu",
+    "discardAllDraftsConfirm": "Odrzucić niewysłany tekst i obrazy ze wszystkich wątków w tym obszarze oraz anulować odczytywanie obrazów? Zapisane wiadomości nie zmienią się. Rozpoczęte wysyłanie musi się zakończyć i może zapisać wiadomość. Tej operacji nie można cofnąć.",
+    "discardDraftsConfirm": "Odrzuć niewysłane szkice",
+    "draftError": {
+      "length": "Szkic może zawierać najwyżej 200 000 znaków. Poprzedni zachowano; skróć lub podziel wiadomość.",
+      "total": "Niewysłane szkice mogą zawierać łącznie najwyżej 1 000 000 znaków. Najpierw wyślij lub odrzuć inne szkice; poprzedni zachowano."
+    },
+    "imageError": {
+      "busy": "Poczekaj na zakończenie odczytywania bieżącego zestawu obrazów. Szkic zachowano.",
+      "count": "Dołącz najwyżej 4 obrazy do wiadomości. Szkic i wcześniejsze obrazy zachowano.",
+      "type": "Wybierz obrazy PNG, JPEG, GIF lub WebP. Szkic i wcześniejsze obrazy zachowano.",
+      "size": "Każdy obraz może mieć najwyżej 5 MiB. Szkic i wcześniejsze obrazy zachowano.",
+      "total": "Obrazy w wiadomości mogą mieć łącznie najwyżej 10 MiB. Szkic i wcześniejsze obrazy zachowano.",
+      "global": "Niewysłane szkice mogą zawierać łącznie najwyżej 16 obrazów i 20 MiB, wliczając trwające odczyty. Najpierw wyślij lub odrzuć inne szkice; wcześniejsze obrazy zachowano.",
+      "read": "Nie udało się odczytać obrazu. Nowego zestawu nie dołączono; szkic i wcześniejsze obrazy zachowano. Spróbuj wybrać go ponownie."
+    }
   },
   "message": {
     "sources": "Źródła",
@@ -119,7 +140,11 @@
     "itemCount_other": "{{count}} elementów",
     "doneEmpty": "Gotowe (pusty wynik)",
     "inputLabel": "Wejście:",
-    "resultLabel": "Wynik:"
+    "resultLabel": "Wynik:",
+    "resultCount_few": "{{count}} wyniki",
+    "resultCount_many": "{{count}} wyników",
+    "itemCount_few": "{{count}} elementy",
+    "itemCount_many": "{{count}} elementów"
   },
   "slash": {
     "fetch": "Pobierz URL do notatki",
@@ -139,5 +164,8 @@
   "cti": {
     "invalidCommand": "Nie udało się wykonać tego polecenia CTI:",
     "noSources": "Nie skonfigurowano żadnych źródeł CTI Agent Host. Dodaj host CTI w Ustawienia → AI → Agent Hosts, aby użyć tego polecenia."
-  }
+  },
+  "input.serverStatus": "Trasa przez serwer zespołu",
+  "input.serverModelsHelp": "Dostępni dostawcy i modele zależą od konfiguracji serwera zespołu.",
+  "input.modelLabel": "Model AI"
 }

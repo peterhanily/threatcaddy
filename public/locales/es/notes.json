@@ -83,7 +83,9 @@
     "lockScrollAria": "Bloquear sincronización de desplazamiento",
     "wordsChars": "{{words}} palabras, {{chars}} caracteres",
     "created": "Creada {{date}}",
-    "modified": "Modificada {{date}}"
+    "modified": "Modificada {{date}}",
+    "saveFailed": "No se pudieron guardar los cambios. Su borrador se conserva en esta pestaña; reintente antes de cerrarla.",
+    "retrySave": "Reintentar guardado"
   },
   "list": {
     "defaultTitle": "Notas",

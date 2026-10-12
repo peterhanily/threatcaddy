@@ -6,9 +6,11 @@
     "message": "จับภาพเนื้อหาเว็บอย่างรวดเร็วและพร็อกซีคำขอ AI สำหรับข่าวกรองภัยคุกคาม ThreatCaddy ข้อมูลจะถูกเก็บไว้ในเครื่องของคุณเป็นค่าเริ่มต้น"
   },
   "version": {
-    "message": "v1.1.1"
+    "message": "v$VERSION$",
+    "placeholders": {
+      "version": { "content": "$1" }
+    }
   },
-
   "quickStats": {
     "message": "สถิติด่วน"
   },
@@ -18,7 +20,6 @@
   "thisWeek": {
     "message": "สัปดาห์นี้"
   },
-
   "quickCapture": {
     "message": "จับภาพด่วน"
   },
@@ -64,7 +65,6 @@
   "saveFailed": {
     "message": "บันทึกล้มเหลว กรุณาลองอีกครั้ง"
   },
-
   "recentCaptures": {
     "message": "การจับภาพล่าสุด"
   },
@@ -74,7 +74,6 @@
   "untitled": {
     "message": "ไม่มีชื่อ"
   },
-
   "quickActions": {
     "message": "การดำเนินการด่วน"
   },
@@ -84,7 +83,6 @@
   "reviewAllCaptures": {
     "message": "ดูการจับภาพทั้งหมด"
   },
-
   "permissions": {
     "message": "สิทธิ์"
   },
@@ -109,7 +107,6 @@
   "allowFileAccessHint": {
     "message": "หากต้องการเปิดใช้งาน: ไปที่ chrome://extensions ค้นหา ThreatCaddy และเปิด \"อนุญาตการเข้าถึง URL ไฟล์\""
   },
-
   "howToUse": {
     "message": "วิธีใช้:"
   },
@@ -126,9 +123,8 @@
     "message": "ความเป็นส่วนตัว:"
   },
   "privacyText": {
-    "message": "ข้อมูลทั้งหมดเก็บในเครื่องของคุณ API key จะถูกส่งไปยังผู้ให้บริการที่คุณเลือกเท่านั้น ไม่มีการติดตาม"
+    "message": "คลิปจะอยู่บนอุปกรณ์นี้จนกว่าจะส่งหรือส่งออก ฟีเจอร์ AI แบบเลือกใช้ การดึง URL และการเชื่อมต่อแอปที่อนุมัติอาจส่งข้อมูลไปยังบริการที่กำหนดไว้"
   },
-
   "settings": {
     "message": "การตั้งค่า"
   },
@@ -150,37 +146,39 @@
   "save": {
     "message": "บันทึก"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "บันทึกไปยัง ThreatCaddy"
   },
-
   "savedToThreatCaddy": {
     "message": "บันทึกไปยัง ThreatCaddy แล้ว!"
   },
-
   "justNow": {
     "message": "เมื่อกี้นี้"
   },
   "minutesAgo": {
     "message": "$count$ นาทีที่แล้ว",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "$count$ ชั่วโมงที่แล้ว",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "$count$ วันที่แล้ว",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "บริบทส่วนขยายถูกยกเลิก กรุณาโหลดหน้านี้ใหม่"
   },
@@ -190,7 +188,9 @@
   "errorExtensionUnknown": {
     "message": "ข้อผิดพลาดส่วนขยาย: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +199,6 @@
   "errorExtensionError": {
     "message": "ข้อผิดพลาดส่วนขยาย"
   },
-
   "errorInvalidUrl": {
     "message": "URL ไม่ถูกต้อง"
   },
@@ -221,13 +220,17 @@
   "errorBlockedDomain": {
     "message": "ถูกบล็อก: $hostname$ ไม่อยู่ในรายการโดเมนพร็อกซีที่อนุญาต",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "จำเป็นต้องมีสิทธิ์โฮสต์สำหรับ $hostname$",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +239,9 @@
   "errorUnknownProvider": {
     "message": "ผู้ให้บริการไม่รู้จัก: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +250,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "จำเป็นต้องมีสิทธิ์โฮสต์สำหรับ $hostname$ เปิดป็อปอัปส่วนขยาย ThreatCaddy แล้วเปิดใช้งาน \"อนุญาตการดึง URL\" ในส่วนสิทธิ์",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +264,320 @@
   "errorInvalidTargetUrl": {
     "message": "URL เป้าหมายไม่ถูกต้อง"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "privacyLink": {
+    "message": "ความเป็นส่วนตัว"
+  },
+  "captureSaveFailed": {
+    "message": "บันทึกคลิปไม่สำเร็จ ร่างของคุณยังอยู่"
+  },
+  "captureChangeFailed": {
+    "message": "บันทึกการเปลี่ยนแปลงคลิปไม่สำเร็จ โปรดรีเฟรชแล้วลองอีกครั้ง"
+  },
+  "approvalTrust": {
+    "message": "อนุมัติเฉพาะแอปที่คุณไว้วางใจ ออริจินที่ตรงกันนี้ (รวมพอร์ต) หรือไฟล์แบบสแตนด์อโลนที่ระบุ สามารถใช้ความสามารถที่ส่วนขยายได้รับอนุญาตได้"
+  },
+  "localAIOrigin": {
+    "message": "ออริจินปลายทาง AI ภายในเครื่อง (ไม่บังคับ)"
+  },
+  "saveLocalAI": {
+    "message": "บันทึกการอนุมัติ AI ภายในเครื่อง"
+  },
+  "removeLocalAI": {
+    "message": "ลบการอนุมัติ AI ภายในเครื่อง"
+  },
+  "approveApp": {
+    "message": "อนุมัติแอป"
+  },
+  "revokeApps": {
+    "message": "เพิกถอนแอปที่อนุมัติทั้งหมด"
+  },
+  "revokeAppsQuestion": {
+    "message": "ตัดการเชื่อมต่อแอปที่อนุมัติทั้งหมดหรือไม่? คลิปและสิทธิ์ของเบราว์เซอร์จะไม่ถูกลบ ต้องอนุมัติแอปอีกครั้งเพื่อเชื่อมต่อใหม่"
+  },
+  "localAISavedOrigin": {
+    "message": "บันทึกสำหรับแอปนี้แล้ว: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "ยังไม่มีปลายทาง AI ภายในเครื่องที่อนุมัติสำหรับแอปนี้"
+  },
+  "localAIApproveFirst": {
+    "message": "อนุมัติแอปนี้ก่อนบันทึกปลายทาง AI ภายในเครื่อง"
+  },
+  "localAIReadFailed": {
+    "message": "อ่านการอนุมัติ AI ภายในเครื่องไม่ได้: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "AI ภายในเครื่องต้องใช้ HTTP(S) โดยไม่มีข้อมูลรับรองใน URL"
+  },
+  "localAIPermissionDenied": {
+    "message": "สิทธิ์ AI ภายในเครื่องถูกปฏิเสธ การอนุมัติที่บันทึกไว้ไม่เปลี่ยนแปลง"
+  },
+  "localAIApprovalFailed": {
+    "message": "อนุมัติ AI ภายในเครื่องไม่สำเร็จ"
+  },
+  "invalidAppTarget": {
+    "message": "ใช้แอป HTTP(S) หรือไฟล์สแตนด์อโลนที่ระบุ โดยไม่มีข้อมูลรับรอง"
+  },
+  "appPermissionDenied": {
+    "message": "สิทธิ์เข้าถึงแอปถูกปฏิเสธ"
+  },
+  "appApprovalFailed": {
+    "message": "อนุมัติแอปไม่สำเร็จ"
+  },
+  "appApproved": {
+    "message": "อนุมัติแอปแล้ว โหลดแท็บแอปใหม่เพื่อเชื่อมต่อ"
+  },
+  "appsRevoked": {
+    "message": "เพิกถอนการเชื่อมต่อแอปทั้งหมดแล้ว"
+  },
+  "revokeFailed": {
+    "message": "เพิกถอนไม่สำเร็จ"
+  },
+  "notificationWaiting": {
+    "message": "กำลังรอสิทธิ์จากเบราว์เซอร์…"
+  },
+  "notificationEnabled": {
+    "message": "เปิดการแจ้งเตือนเดสก์ท็อปแล้ว"
+  },
+  "notificationEnable": {
+    "message": "เปิดการแจ้งเตือนเดสก์ท็อป"
+  },
+  "notificationEnabledDesc": {
+    "message": "เปิดการแจ้งเตือนเดสก์ท็อปแล้ว การตั้งค่าระบบปฏิบัติการอาจยังซ่อนการแจ้งเตือนอยู่ เพิกถอนสิทธิ์ได้ในการตั้งค่าส่วนขยายของเบราว์เซอร์"
+  },
+  "notificationDisabledDesc": {
+    "message": "ปิดการแจ้งเตือนเดสก์ท็อปอยู่ แต่ยังมีการแจ้งเตือนภายในแอป"
+  },
+  "notificationCheckFailed": {
+    "message": "ตรวจสอบสิทธิ์การแจ้งเตือนไม่ได้: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "กำลังรอคำตอบเรื่องสิทธิ์จากเบราว์เซอร์ หากไม่มีหน้าต่างปรากฏ ให้ตรวจสอบสิทธิ์ส่วนขยายหรือเปิดแผงนี้ใหม่"
+  },
+  "notificationRequestFailed": {
+    "message": "ขอสิทธิ์การแจ้งเตือนไม่สำเร็จ: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "ยืนยันสิทธิ์การแจ้งเตือนไม่ได้: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "ยังมีการแจ้งเตือนภายในแอป"
+  },
+  "notificationNotEnabled": {
+    "message": "ยังไม่ได้เปิดการแจ้งเตือนเดสก์ท็อป แต่ยังมีการแจ้งเตือนภายในแอป หากไม่มีหน้าต่างขอสิทธิ์ ให้ตรวจสอบสิทธิ์ส่วนขยายของเบราว์เซอร์"
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — ตรวจสอบคลิป"
+  },
+  "clipReview": {
+    "message": "ตรวจสอบคลิป"
+  },
+  "clipReviewSubtitle": {
+    "message": "เรียกดูและจัดการคลิปที่บันทึกไว้"
+  },
+  "totalCaptures": {
+    "message": "คลิปทั้งหมด"
+  },
+  "unsent": {
+    "message": "ยังไม่ส่ง"
+  },
+  "applyAll": {
+    "message": "ใช้กับทั้งหมด"
+  },
+  "sendAll": {
+    "message": "ส่งทั้งหมดไปยัง ThreatCaddy"
+  },
+  "refresh": {
+    "message": "รีเฟรช"
+  },
+  "clearAll": {
+    "message": "ล้างทั้งหมด"
+  },
+  "delete": {
+    "message": "ลบ"
+  },
+  "confirm": {
+    "message": "ยืนยัน"
+  },
+  "cancel": {
+    "message": "ยกเลิก"
+  },
+  "noCapturesTitle": {
+    "message": "ยังไม่มีคลิป"
+  },
+  "noSourceUrl": {
+    "message": "ไม่มี URL ต้นทาง"
+  },
+  "importConfirmed": {
+    "message": "ยืนยันการนำเข้าแล้ว"
+  },
+  "legacySent": {
+    "message": "ส่งแล้ว (แบบเก่า ยังไม่ยืนยัน)"
+  },
+  "importPending": {
+    "message": "กำลังรอการยืนยันการนำเข้า"
+  },
+  "importFailedRetained": {
+    "message": "นำเข้าไม่สำเร็จ — เก็บไว้แล้ว"
+  },
+  "folder": {
+    "message": "โฟลเดอร์"
+  },
+  "editCaptureMetadata": {
+    "message": "แก้ไขเมทาดาทาคลิป"
+  },
+  "deleteCaptureTitle": {
+    "message": "ลบคลิป"
+  },
+  "deleteCaptureQuestion": {
+    "message": "คุณแน่ใจหรือไม่ว่าต้องการลบคลิปนี้?"
+  },
+  "captureDeleted": {
+    "message": "ลบคลิปแล้ว"
+  },
+  "preparingDestination": {
+    "message": "กำลังเตรียมปลายทาง…"
+  },
+  "noUnsentCaptures": {
+    "message": "ไม่มีคลิปที่ยังไม่ส่ง"
+  },
+  "configureTargetFirst": {
+    "message": "โปรดกำหนด URL ปลายทางก่อน"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "URL ปลายทางไม่ถูกต้อง — อนุญาตเฉพาะ http, https และ file://"
+  },
+  "targetPermissionDenied": {
+    "message": "สิทธิ์ถูกปฏิเสธ — ส่วนขยายต้องเข้าถึงไซต์นี้"
+  },
+  "permissionRequestFailed": {
+    "message": "ขอสิทธิ์ไม่สำเร็จ"
+  },
+  "fileAccessDisabled": {
+    "message": "ปิดการเข้าถึง URL ของไฟล์อยู่ ตรวจสอบการตั้งค่าการเข้าถึงไฟล์ของส่วนขยายในเบราว์เซอร์ก่อนลองใหม่"
+  },
+  "confirmWorkspace": {
+    "message": "ยืนยันพื้นที่ทำงานสำหรับนำเข้า"
+  },
+  "importWorkspaceMessage": {
+    "message": "นำเข้าคลิป $count$ รายการไปยัง “$label$” ($workspace$) ที่ $url$ หรือไม่? เฉพาะการนำเข้าที่ฐานข้อมูลยืนยันแล้วเท่านั้นจะถูกทำเครื่องหมายว่าส่งแล้ว",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "คลิปแบบเก่า $count$ รายการเคยถูกทำเครื่องหมายว่าส่งแล้วโดยไม่ได้ยืนยัน การนำเข้าอาจสร้างรายการซ้ำ หากไม่แน่ใจ ให้ตรวจสอบหรือลบก่อน",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "นำเข้าคลิป"
+  },
+  "waitingForImport": {
+    "message": "กำลังรอการยืนยันการนำเข้า…"
+  },
+  "importsConfirmed": {
+    "message": "ยืนยันการนำเข้าคลิป $count$ รายการแล้ว",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "ยืนยันแล้ว $confirmed$ จาก $total$ รายการ $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "เก็บคลิปที่ยังไม่ยืนยันไว้แล้ว"
+  },
+  "sendFailed": {
+    "message": "ส่งไม่สำเร็จ: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "ใช้ค่าเริ่มต้นกับคลิปที่ยังไม่ส่งทั้งหมดแล้ว"
+  },
+  "clearAllCaptures": {
+    "message": "ล้างคลิปทั้งหมด"
+  },
+  "clearAllQuestion": {
+    "message": "คลิปทั้ง $count$ รายการจะถูกลบอย่างถาวร การดำเนินการนี้ย้อนกลับไม่ได้",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "ลบคลิปที่ยืนยันแล้ว โดยเก็บคลิปใหม่ไว้"
+  },
+  "capturesLoadFailed": {
+    "message": "โหลดคลิปไม่ได้ เปิดหน้านี้ใหม่หรือลองรีเฟรช"
+  },
+  "discardMetadataDraft": {
+    "message": "ทิ้งฉบับร่างเมทาดาทา"
+  },
+  "discardMetadataMessage": {
+    "message": "ทิ้งการแก้ไขเมทาดาทาที่ยังไม่บันทึกของคลิปนี้ แล้วโหลดเมทาดาทาที่บันทึกไว้ปัจจุบันใหม่หรือไม่? เมทาดาทาที่บันทึกไว้จะไม่เปลี่ยนแปลง"
+  },
+  "metadataSaved": {
+    "message": "บันทึกเมทาดาทาคลิปแล้ว"
   }
 }

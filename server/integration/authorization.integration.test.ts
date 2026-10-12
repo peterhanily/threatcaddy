@@ -3,7 +3,7 @@ import { generateKeyPairSync } from 'node:crypto';
 import { Hono } from 'hono';
 import type { WSContext } from 'hono/ws';
 import { scratchDatabase, type ScratchDatabase } from './database.js';
-import { applySchemaPushFixture } from './migrations.js';
+import { applyCurrentMigrations } from './migrations.js';
 
 const databaseState = vi.hoisted(() => ({ db: undefined as unknown }));
 vi.mock('../src/db/index.js', () => ({
@@ -41,7 +41,7 @@ describe('current account and investigation authorization in PostgreSQL', () => 
   beforeEach(async () => {
     database = await scratchDatabase({ maxConnections: 4 });
     databaseState.db = database.db;
-    await applySchemaPushFixture(database);
+    await applyCurrentMigrations(database);
     await database.sql`INSERT INTO admin_users (id,username,display_name,password_hash) VALUES ('admin-fixture','test-admin','Test Administrator','fixture-admin-hash')`;
     await database.sql`INSERT INTO users (id,email,display_name,password_hash,role) VALUES ('owner','owner@example.invalid','Owner','fixture-hash','admin'), ('editor','editor@example.invalid','Editor','fixture-hash','analyst'), ('viewer','viewer@example.invalid','Viewer','fixture-hash','viewer'), ('other','other@example.invalid','Other','fixture-hash','analyst')`;
     await database.sql`INSERT INTO folders (id,name,description,created_by,updated_by,created_at,updated_at) VALUES ('shared','Shared investigation','Authorized fixture','owner','owner',now(),now()), ('private','Other investigation','Other fixture','other','other',now(),now()), ('deleted-private','Deleted investigation','Deleted fixture','other','other',now(),now())`;

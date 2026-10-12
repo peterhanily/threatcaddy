@@ -31,7 +31,7 @@ import webhookRoutes from './routes/webhooks.js';
 import adminRoutes from './routes/admin/index.js';
 import { botManager } from './bots/bot-manager.js';
 import { prePullSandboxImages } from './bots/sandbox.js';
-import { initAdminSecret, initRegistrationMode, initServerName, getServerName, backfillFolderOwners, initAdminSystemUser } from './services/admin-secret.js';
+import { initAdminSecret, initRegistrationMode, initServerName, getServerName, initAdminSystemUser } from './services/admin-secret.js';
 import { pruneOldData } from './services/cleanup-service.js';
 import { initAdminKey } from './middleware/admin-auth.js';
 import { handleWSConnection, handleWSMessage, handleWSClose } from './ws/handler.js';
@@ -42,6 +42,7 @@ import { apiBodyLimit } from './middleware/api-body-limit.js';
 import { requestId } from './middleware/request-id.js';
 import { globalErrorHandler } from './middleware/error-handler.js';
 import { logger } from './lib/logger.js';
+import { listenerHosts } from './lib/listener-config.js';
 import { acquireRuntimeLease } from './services/runtime-lease.js';
 import { reconcileStorage, storageLimits } from './services/storage-policy.js';
 
@@ -235,6 +236,7 @@ adminApp.route('/admin', adminRoutes);
 
 const port = parseInt(process.env.PORT || '3001', 10);
 const adminPort = parseInt(process.env.ADMIN_PORT || '3002', 10);
+const { host, adminHost } = listenerHosts(process.env);
 
 async function main() {
   // Validate required environment variables
@@ -267,7 +269,6 @@ async function main() {
   await initAdminSystemUser();
   await initRegistrationMode();
   await initServerName();
-  await backfillFolderOwners();
 
   // No public or admin listener is ready until runtime initialization settles.
   await botManager.init();
@@ -275,8 +276,9 @@ async function main() {
   const server = serve({
     fetch: app.fetch,
     port,
+    hostname: host,
   }, (info) => {
-    logger.info(`Server running on http://localhost:${info.port}`, { port: info.port });
+    logger.info(`Server running on http://localhost:${info.port}`, { port: info.port, address: info.address });
   });
 
   injectWebSocket(server);
@@ -284,8 +286,9 @@ async function main() {
   const adminServer = serve({
     fetch: adminApp.fetch,
     port: adminPort,
+    hostname: adminHost,
   }, (info) => {
-    logger.info(`Admin panel running on http://localhost:${info.port}`, { port: info.port });
+    logger.info(`Admin panel running on http://localhost:${info.port}`, { port: info.port, address: info.address });
   });
 
   // Start AgentCaddy heartbeat manager for server-side agent handoff

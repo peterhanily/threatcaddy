@@ -1,5 +1,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { goToApp } from './fixtures';
+const execAr: Record<string, string> = JSON.parse(readFileSync(new URL('../public/locales/ar/exec.json', import.meta.url), 'utf8'));
 
 async function expectWithinViewport(page: Page, control: Locator, minimumSize = 0) {
   await expect(control).toBeVisible();
@@ -76,7 +78,7 @@ for (const scenario of [
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('lang', scenario.language);
     await expect(page.locator('html')).toHaveAttribute('dir', scenario.language === 'ar' ? 'rtl' : 'ltr');
-    if (narrow) await page.getByRole('button', { name: 'Switch to Analyst Mode', exact: true }).click();
+    if (narrow) await page.getByRole('button', { name: scenario.language === 'ar' ? execAr['dashboard.switchToAnalyst'] : 'Switch to Analyst Mode', exact: true }).click();
     const main = page.locator('#main-content');
     await main.getByRole('heading', { name: boardName.trim(), exact: true }).click();
     const title = main.getByRole('textbox', { name: 'Whiteboard name', exact: true });

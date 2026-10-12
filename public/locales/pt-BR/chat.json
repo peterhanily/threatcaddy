@@ -74,7 +74,8 @@
     "onboardingStep2Desc": "CaddyAI requer a extensão do navegador ThreatCaddy para fazer proxy de requisições de API.",
     "onboardingStep3Title": "3. Habilitar permissões",
     "onboardingStep3Desc": "No popup da extensão, habilite \"Permitir CaddyAI\" para acesso aos provedores de IA e \"Permitir busca de URL\" para a ferramenta /fetch.",
-    "onboardingDismiss": "Entendido"
+    "onboardingDismiss": "Entendido",
+    "loopCount_many": "{{count}} loops"
   },
   "input": {
     "noApiKeys": "Nenhuma chave de API configurada — adicione uma em Configurações → IA/LLM",
@@ -96,7 +97,26 @@
     "stopGenerating": "Parar geração",
     "sendMessage": "Enviar mensagem (Enter)",
     "noMatchesFound": "Nenhuma correspondência encontrada",
-    "imageLabel": "Imagem {{index}}"
+    "imageLabel": "Imagem {{index}}",
+    "readingImages": "Lendo imagens…",
+    "submitFailed": "Não foi possível concluir o envio. O texto e as imagens não salvos foram mantidos; confira a conversa antes de tentar novamente.",
+    "memoryDrafts": "Rascunhos não enviados ficam apenas na memória desta aba, inclusive os de conversas ocultas. Envie ou descarte os rascunhos e aguarde os envios pendentes antes de trocar de espaço; fechar ou recarregar pode perdê-los.",
+    "discardAllDrafts": "Descartar todos os rascunhos de chat não enviados",
+    "discardAllDraftsConfirm": "Descartar texto e imagens não enviados de todas as conversas deste espaço e cancelar as leituras de imagens pendentes? Mensagens salvas não serão alteradas. Um envio já em andamento precisa terminar e pode salvar sua mensagem. Isso não pode ser desfeito.",
+    "discardDraftsConfirm": "Descartar rascunhos não enviados",
+    "draftError": {
+      "length": "Um rascunho pode conter no máximo 200.000 caracteres. O anterior foi mantido; encurte ou divida a mensagem.",
+      "total": "Rascunhos não enviados podem conter 1.000.000 de caracteres no total. Envie ou descarte outros rascunhos primeiro; o anterior foi mantido."
+    },
+    "imageError": {
+      "busy": "Aguarde o término do lote de imagens atual. Seu rascunho foi mantido.",
+      "count": "Anexe no máximo 4 imagens por mensagem. Seu rascunho e as imagens anteriores foram mantidos.",
+      "type": "Escolha imagens PNG, JPEG, GIF ou WebP. Seu rascunho e as imagens anteriores foram mantidos.",
+      "size": "Cada imagem deve ter no máximo 5 MiB. Seu rascunho e as imagens anteriores foram mantidos.",
+      "total": "As imagens de uma mensagem devem somar no máximo 10 MiB. Seu rascunho e as imagens anteriores foram mantidos.",
+      "global": "Rascunhos não enviados podem conter no máximo 16 imagens e 20 MiB no total, incluindo leituras em andamento. Envie ou descarte outros rascunhos primeiro; as imagens anteriores foram mantidas.",
+      "read": "Não foi possível ler uma imagem. O novo lote não foi anexado; seu rascunho e as imagens anteriores foram mantidos. Tente selecioná-la novamente."
+    }
   },
   "message": {
     "sources": "Fontes",
@@ -119,7 +139,9 @@
     "itemCount_other": "{{count}} itens",
     "doneEmpty": "Concluído (resultado vazio)",
     "inputLabel": "Entrada:",
-    "resultLabel": "Resultado:"
+    "resultLabel": "Resultado:",
+    "resultCount_many": "{{count}} resultados",
+    "itemCount_many": "{{count}} itens"
   },
   "slash": {
     "fetch": "Buscar URL em uma nota",
@@ -139,5 +161,8 @@
   "cti": {
     "invalidCommand": "Esse comando CTI não pôde ser executado:",
     "noSources": "Nenhuma fonte de Agent Host de CTI está configurada. Adicione um host de CTI em Configurações → IA → Agent Hosts para usar este comando."
-  }
+  },
+  "input.serverStatus": "Rota pelo servidor da equipe",
+  "input.serverModelsHelp": "Os provedores e modelos disponíveis dependem da configuração do servidor da equipe.",
+  "input.modelLabel": "Modelo de IA"
 }

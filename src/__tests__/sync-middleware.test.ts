@@ -1,9 +1,10 @@
 import { beforeEach, afterEach, describe, expect, it } from 'vitest';
 import { db } from '../db';
-import { enableSync, disableSync, markFolderLocalOnly } from '../lib/sync-middleware';
+import { disableSync, markFolderLocalOnly } from '../lib/sync-middleware';
 import { revisionKey, suppressSyncInCurrentTransaction, onOutboxCommit } from '../lib/sync-state';
 import { setSessionKey } from '../lib/encryptionMiddleware';
 
+const bind = () => db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { version: 1, serverUrl: 'https://test.invalid', userId: 'alice' } });
 const note = (id: string, title = 'Local note') => ({ id, title, content: 'body', folderId: 'f1', tags: [], pinned: false, archived: false, trashed: false, createdAt: 1, updatedAt: 1 });
 beforeEach(async () => {
   disableSync();
@@ -16,7 +17,7 @@ afterEach(() => disableSync());
 
 describe('transactional sync outbox using the actual database', () => {
   it('captures committed adds and later updates without a timer', async () => {
-    enableSync();
+    await bind();
     await db.notes.add(note('n1'));
     await db.notes.update('n1', { title: 'Updated' });
     const queue = await db.table('_syncQueue').toArray();
@@ -26,7 +27,7 @@ describe('transactional sync outbox using the actual database', () => {
   });
 
   it('rolls back both the entity and its outgoing operation', async () => {
-    enableSync();
+    await bind();
     await expect(db.transaction('rw', db.notes, async () => {
       await db.notes.add(note('n1'));
       throw new Error('Cancel edit');
@@ -39,7 +40,7 @@ describe('transactional sync outbox using the actual database', () => {
     const fail = () => { throw new Error('Queue unavailable'); };
     db.table('_syncQueue').hook('creating', fail);
     try {
-      enableSync();
+      await bind();
       await expect(db.notes.add(note('n1'))).rejects.toBeDefined();
       expect(await db.notes.count()).toBe(0);
     } finally {
@@ -51,28 +52,28 @@ describe('transactional sync outbox using the actual database', () => {
   it('captures deletions with the last acknowledged revision', async () => {
     await db.notes.add(note('n1'));
     await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 7 });
-    enableSync();
+    await bind();
     await db.notes.delete('n1');
     expect(await db.table('_syncQueue').toArray()).toEqual([expect.objectContaining({ entityId: 'n1', op: 'delete', clientVersion: 7 })]);
   });
 
   it('captures range deletion and clears as durable tombstones', async () => {
     await db.notes.bulkAdd([note('n1'), note('n2')]);
-    enableSync();
+    await bind();
     await db.notes.clear();
     expect((await db.table('_syncQueue').toArray()).map(e => e.entityId).sort()).toEqual(['n1', 'n2']);
   });
 
   it('keeps local-only and unscoped records out of the team queue', async () => {
     await db.folders.update('f1', { localOnly: true });
-    enableSync();
+    await bind();
     await db.notes.add(note('n1'));
     await db.notes.add({ ...note('n2'), folderId: undefined });
     expect(await db.table('_syncQueue').count()).toBe(0);
   });
 
   it('suppresses only the maintenance transaction and resumes ordinary capture', async () => {
-    enableSync();
+    await bind();
     await db.transaction('rw', db.notes, async () => {
       suppressSyncInCurrentTransaction();
       await db.notes.add(note('remote'));
@@ -83,7 +84,7 @@ describe('transactional sync outbox using the actual database', () => {
 
   it('uses persisted folder policy when a different tab has changed sharing', async () => {
     markFolderLocalOnly('f1', true);
-    enableSync();
+    await bind();
     await db.notes.add(note('n1'));
     expect(await db.table('_syncQueue').count()).toBe(1);
   });
@@ -92,7 +93,7 @@ describe('transactional sync outbox using the actual database', () => {
     let count = 0;
     const off = onOutboxCommit(() => { count++; });
     try {
-      enableSync();
+      await bind();
       await expect(db.transaction('rw', db.notes, async () => {
         await db.notes.add(note('rolled-back'));
         throw new Error('rollback');
@@ -103,7 +104,7 @@ describe('transactional sync outbox using the actual database', () => {
     } finally { off(); }
   });
 
-  it('does not queue local writes while sync has never been enabled', async () => {
+  it('does not queue local writes without a durable sync binding', async () => {
     await db.notes.add(note('n1'));
     expect(await db.table('_syncQueue').count()).toBe(0);
   });

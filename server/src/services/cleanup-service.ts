@@ -3,6 +3,10 @@ import { db } from '../db/index.js';
 import * as schema from '../db/schema.js';
 import { serverSettings, notifications, activityLog, investigationMembers, folders, botRuns } from '../db/schema.js';
 import { logger } from '../lib/logger.js';
+import { purgeExpiredInvestigation } from './investigation-lifecycle.js';
+import { lockInvestigationPolicy } from './investigation-policy.js';
+import { removeCommittedBlobs } from './storage-policy.js';
+import { revokeFolderAccess } from '../ws/handler.js';
 
 const NOTIF_RETENTION_KEY = 'notification_retention_days';
 const AUDIT_RETENTION_KEY = 'audit_log_retention_days';
@@ -42,13 +46,13 @@ export async function setRetentionSettings(notifDays: number, auditDays: number)
 const TOMBSTONE_TABLES: { name: string; table: any }[] = [
   { name: 'notes', table: schema.notes },
   { name: 'tasks', table: schema.tasks },
-  { name: 'folders', table: schema.folders },
   { name: 'tags', table: schema.tags },
   { name: 'timelineEvents', table: schema.timelineEvents },
   { name: 'timelines', table: schema.timelines },
   { name: 'whiteboards', table: schema.whiteboards },
   { name: 'standaloneIOCs', table: schema.standaloneIOCs },
   { name: 'chatThreads', table: schema.chatThreads },
+  { name: 'evidenceItems', table: schema.evidenceItems },
 ];
 
 export async function pruneOldData(): Promise<void> {
@@ -70,12 +74,28 @@ export async function pruneOldData(): Promise<void> {
     // Hard-delete tombstones (soft-deleted entities) older than retention period
     const tombstoneCutoff = new Date(Date.now() - settings.tombstoneRetentionDays * 86400000);
     let totalTombstones = 0;
+    // A retained deleted folder owns live children and file references. Purging
+    // just its row would orphan those records and leave managed blobs forever.
+    const expiredFolders = await db.select({ id: folders.id }).from(folders).where(lt(folders.deletedAt, tombstoneCutoff));
+    for (const folder of expiredFolders) {
+      try {
+        const purged = await purgeExpiredInvestigation(folder.id, tombstoneCutoff);
+        if (!purged) continue;
+        totalTombstones += 1 + Object.values(purged.deleted).reduce((sum, count) => sum + count, 0);
+        revokeFolderAccess(folder.id);
+        await removeCommittedBlobs(process.env.FILE_STORAGE_PATH || '/data/files', purged.folderFiles);
+      } catch (err) { logger.error('Investigation retention purge failed', { folderId: folder.id, error: String(err) }); }
+    }
     for (const { name, table } of TOMBSTONE_TABLES) {
       try {
-        const deleted = await db
-          .delete(table)
-          .where(and(isNotNull(table.deletedAt), lt(table.deletedAt, tombstoneCutoff)))
-          .returning({ id: table.id });
+        const deleted = await db.transaction(async tx => {
+          // DELETE triggers append sync history. Take their shared writer lock
+          // before row locks, just as normal synchronization/lifecycle writes do.
+          await lockInvestigationPolicy(tx);
+          return tx.delete(table)
+            .where(and(isNotNull(table.deletedAt), lt(table.deletedAt, tombstoneCutoff)))
+            .returning({ id: table.id });
+        });
         if (deleted.length > 0) {
           totalTombstones += deleted.length;
           logger.info(`Tombstone cleanup: hard-deleted ${deleted.length} ${name} record(s)`);
@@ -88,19 +108,15 @@ export async function pruneOldData(): Promise<void> {
     // Clean up orphaned investigationMembers (folders that no longer exist)
     let orphanedMembers = 0;
     try {
-      const allFolderIds = await db.select({ id: folders.id }).from(folders);
-      const validIds = allFolderIds.map(f => f.id);
-      if (validIds.length > 0) {
-        const deleted = await db.delete(investigationMembers)
-          .where(notInArray(investigationMembers.folderId, validIds))
+      orphanedMembers = await db.transaction(async tx => {
+        await lockInvestigationPolicy(tx);
+        const allFolderIds = await tx.select({ id: folders.id }).from(folders);
+        const validIds = allFolderIds.map(f => f.id);
+        const deleted = await tx.delete(investigationMembers)
+          .where(validIds.length ? notInArray(investigationMembers.folderId, validIds) : undefined)
           .returning({ id: investigationMembers.id });
-        orphanedMembers = deleted.length;
-      } else {
-        // No folders exist — all memberships are orphaned
-        const deleted = await db.delete(investigationMembers)
-          .returning({ id: investigationMembers.id });
-        orphanedMembers = deleted.length;
-      }
+        return deleted.length;
+      });
       if (orphanedMembers > 0) {
         logger.info(`Orphan cleanup: removed ${orphanedMembers} orphaned investigation member(s)`);
       }

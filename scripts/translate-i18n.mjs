@@ -3,7 +3,7 @@
  * ThreatCaddy i18n Translation Script
  *
  * Generates locale files for all supported languages using the Anthropic API.
- * Resumable: skips files that already exist unless --force is passed.
+ * Resumable: skips existing files; --sync fills missing recursive leaves only.
  *
  * Usage:
  *   node scripts/translate-i18n.mjs [options]
@@ -11,7 +11,7 @@
  * Options:
  *   --lang <code>   Only translate this language (e.g. --lang de)
  *   --ns <name>     Only translate this namespace (e.g. --ns common), or 'extension'
- *   --force         Overwrite existing files
+ *   --sync          Translate only missing leaves, preserving existing values
  *   --dry-run       Print what would be done without calling the API
  *
  * Requires:
@@ -21,6 +21,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { catalogLeaves, chunkCatalog, extensionLocaleCode, extensionMessages, mergeMissingTranslations, missingTranslations, validateTranslationBatch } from './lib/locale-quality.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -72,26 +73,6 @@ const PRESERVE_NOUNS = [
 // (Avoids hitting output token limits on large namespaces like settings.)
 const MAX_BYTES_PER_CHUNK = 8000;
 
-function chunkObject(obj) {
-  const keys = Object.keys(obj);
-  const chunks = [];
-  let current = {};
-  let currentSize = 0;
-
-  for (const key of keys) {
-    const entry = JSON.stringify({ [key]: obj[key] });
-    if (currentSize + entry.length > MAX_BYTES_PER_CHUNK && currentSize > 0) {
-      chunks.push(current);
-      current = {};
-      currentSize = 0;
-    }
-    current[key] = obj[key];
-    currentSize += entry.length;
-  }
-  if (Object.keys(current).length > 0) chunks.push(current);
-  return chunks;
-}
-
 // ── API call ───────────────────────────────────────────────────────────────
 
 async function callClaude(systemPrompt, userPrompt) {
@@ -99,6 +80,7 @@ async function callClaude(systemPrompt, userPrompt) {
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
+    signal: AbortSignal.timeout(60_000),
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -114,8 +96,7 @@ async function callClaude(systemPrompt, userPrompt) {
   });
 
   if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`API ${response.status}: ${err.slice(0, 200)}`);
+    throw new Error(`Translation API returned HTTP ${response.status}`);
   }
 
   const data = await response.json();
@@ -148,8 +129,8 @@ ${rtl ? '6. Ensure text flows naturally for right-to-left reading.' : ''}
 
 async function translateNamespace(content, lang, namespace) {
   const system = buildSystemPrompt(lang.name, lang.rtl);
-  const chunks = chunkObject(content);
-  const results = {};
+  const chunks = chunkCatalog(content, MAX_BYTES_PER_CHUNK);
+  let results = {};
 
   for (let i = 0; i < chunks.length; i++) {
     const chunkLabel = chunks.length > 1 ? ` (chunk ${i + 1}/${chunks.length})` : '';
@@ -160,42 +141,34 @@ async function translateNamespace(content, lang, namespace) {
       `Translate this i18next namespace (${namespace})${chunkLabel} to ${lang.name}:\n\n${JSON.stringify(chunks[i], null, 2)}`,
     );
 
-    // Validate keys match
-    for (const key of Object.keys(chunks[i])) {
-      if (!(key in translated)) {
-        throw new Error(`Missing key in translation output: ${key}`);
-      }
-    }
-
-    Object.assign(results, translated);
+    validateTranslationBatch(chunks[i], translated, { namespace });
+    results = mergeMissingTranslations(chunks[i], results, translated, { namespace });
     process.stdout.write('✓\n');
 
     if (i < chunks.length - 1) await sleep(300);
   }
-
+  const leaves = new Map(catalogLeaves(results).map(leaf => [leaf.key, leaf.value]));
+  const unchanged = catalogLeaves(content).filter(leaf => leaf.value && leaves.get(leaf.key) === leaf.value).length;
+  if (unchanged) console.log(`    Review required: ${unchanged} values equal the English source (possibly proper nouns).`);
   return results;
 }
 
 // ── Translate extension messages.json ─────────────────────────────────────
 
 async function translateExtensionMessages(content, lang) {
-  const system = buildSystemPrompt(lang.name, lang.rtl);
-
-  // Extract message values only; WebExtension format: { key: { message, description? } }
-  const messages = {};
-  for (const [key, val] of Object.entries(content)) {
-    messages[key] = val.message;
+  const system = buildSystemPrompt(lang.name, lang.rtl) + '\nPreserve every WebExtension $PLACEHOLDER$ and $1 substitution exactly.';
+  const messages = extensionMessages(content);
+  let translated = {};
+  for (const chunk of chunkCatalog(messages, MAX_BYTES_PER_CHUNK)) {
+    const result = await callClaude(system, `Translate these browser extension UI strings to ${lang.name}:\n\n${JSON.stringify(chunk, null, 2)}`);
+    translated = mergeMissingTranslations(chunk, translated, result, { extension: true });
   }
-
-  const translated = await callClaude(
-    system,
-    `Translate these browser extension UI strings to ${lang.name}:\n\n${JSON.stringify(messages, null, 2)}`,
-  );
+  validateTranslationBatch(messages, translated, { extension: true });
 
   // Reconstruct WebExtension format, preserving description fields
   const result = {};
   for (const [key, val] of Object.entries(content)) {
-    result[key] = { ...val, message: translated[key] ?? val.message };
+    result[key] = { ...val, message: translated[key] };
   }
   return result;
 }
@@ -206,19 +179,27 @@ function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-function percent(done, total) {
-  return `${Math.round((done / total) * 100)}%`;
-}
-
 // ── Main ───────────────────────────────────────────────────────────────────
 
 const args = process.argv.slice(2);
 const langFilter = args.includes('--lang') ? args[args.indexOf('--lang') + 1] : null;
 const nsFilter   = args.includes('--ns')   ? args[args.indexOf('--ns')   + 1] : null;
-const force      = args.includes('--force');
 const dryRun     = args.includes('--dry-run');
 // --sync: only translate keys missing from existing files, preserving existing translations
 const syncMode   = args.includes('--sync');
+
+if (args.includes('--force')) {
+  console.error('Refusing to overwrite existing translations. Use --sync to add missing leaves; review existing translations manually.');
+  process.exit(1);
+}
+if ((args.includes('--ns') && !nsFilter) || (nsFilter && nsFilter !== 'extension' && !NAMESPACES.includes(nsFilter))) {
+  console.error('Unknown namespace. Use a supported app namespace or extension.');
+  process.exit(1);
+}
+if (args.includes('--lang') && !langFilter) {
+  console.error('--lang requires a supported language code.');
+  process.exit(1);
+}
 
 if (!process.env.ANTHROPIC_API_KEY && !dryRun) {
   console.error('Error: ANTHROPIC_API_KEY environment variable is not set.');
@@ -237,7 +218,7 @@ if (langFilter && langs.length === 0) {
 
 let processed = 0, skipped = 0, errors = 0;
 
-const modeLabel = dryRun ? 'DRY RUN' : syncMode ? 'sync (missing keys only)' : force ? 'force (overwrite)' : 'resume (skip existing)';
+const modeLabel = dryRun ? 'DRY RUN' : syncMode ? 'sync (missing leaves only)' : 'resume (skip existing)';
 console.log(`\nThreatCaddy i18n Translator`);
 console.log(`Languages : ${langs.length} (${langs.map(l => l.code).join(', ')})`);
 console.log(`Namespaces: ${nsFilter ?? 'all (' + NAMESPACES.length + ')'} + extension`);
@@ -250,7 +231,7 @@ for (const lang of langs) {
   const localeDir = join(ROOT, 'public', 'locales', lang.code);
   if (!dryRun) mkdirSync(localeDir, { recursive: true });
 
-  const nsList = nsFilter && nsFilter !== 'extension' ? [nsFilter] : NAMESPACES;
+  const nsList = nsFilter === 'extension' ? [] : nsFilter ? [nsFilter] : NAMESPACES;
 
   for (const ns of nsList) {
     const outPath = join(localeDir, `${ns}.json`);
@@ -263,7 +244,8 @@ for (const lang of langs) {
       const existing = existsSync(outPath)
         ? JSON.parse(readFileSync(outPath, 'utf8'))
         : {};
-      const missingKeys = Object.keys(enContent).filter(k => !(k in existing));
+      const toTranslate = missingTranslations(enContent, existing);
+      const missingKeys = catalogLeaves(toTranslate);
 
       if (missingKeys.length === 0) {
         process.stdout.write(`  ✓ ${ns} (up to date)\n`);
@@ -278,10 +260,8 @@ for (const lang of langs) {
 
       try {
         process.stdout.write(`  → ${ns} (+${missingKeys.length} new keys)\n`);
-        const toTranslate = Object.fromEntries(missingKeys.map(k => [k, enContent[k]]));
         const translated = await translateNamespace(toTranslate, lang, ns);
-        // Merge: existing keys first, then new translations appended
-        const merged = { ...existing, ...translated };
+        const merged = mergeMissingTranslations(enContent, existing, translated, { namespace: ns });
         writeFileSync(outPath, JSON.stringify(merged, null, 2) + '\n', 'utf8');
         processed++;
         await sleep(250);
@@ -292,7 +272,7 @@ for (const lang of langs) {
       continue;
     }
 
-    if (!force && existsSync(outPath)) {
+    if (existsSync(outPath)) {
       process.stdout.write(`  ✓ ${ns} (exists)\n`);
       skipped++;
       continue;
@@ -317,7 +297,7 @@ for (const lang of langs) {
 
   // Extension messages
   if (!nsFilter || nsFilter === 'extension') {
-    const extOutPath = join(ROOT, 'extension', 'src', '_locales', lang.code, 'messages.json');
+    const extOutPath = join(ROOT, 'extension', 'src', '_locales', extensionLocaleCode(lang.code), 'messages.json');
     const enMessages = JSON.parse(
       readFileSync(join(ROOT, 'extension', 'src', '_locales', 'en', 'messages.json'), 'utf8'),
     );
@@ -326,7 +306,7 @@ for (const lang of langs) {
       const existing = existsSync(extOutPath)
         ? JSON.parse(readFileSync(extOutPath, 'utf8'))
         : {};
-      const missingKeys = Object.keys(enMessages).filter(k => !(k in existing));
+      const missingKeys = Object.keys(enMessages).filter(k => !Object.hasOwn(existing, k));
 
       if (missingKeys.length === 0) {
         process.stdout.write(`  ✓ extension/messages (up to date)\n`);
@@ -349,7 +329,7 @@ for (const lang of langs) {
           errors++;
         }
       }
-    } else if (!force && existsSync(extOutPath)) {
+    } else if (existsSync(extOutPath)) {
       process.stdout.write(`  ✓ extension/messages (exists)\n`);
       skipped++;
     } else if (dryRun) {
@@ -373,6 +353,8 @@ for (const lang of langs) {
 
 console.log('\n' + '─'.repeat(60));
 console.log(`Done: ${processed} translated, ${skipped} skipped, ${errors} errors`);
+if (processed) console.log('Generated text is not a fluency certification. Run the offline locale checker and obtain fluent human review before release.');
 if (errors > 0) {
-  console.log('Re-run with --force --lang <code> --ns <name> to retry specific failures.');
+  console.log('Re-run with --sync --lang <code> --ns <name> to retry missing translations.');
+  process.exitCode = 1;
 }

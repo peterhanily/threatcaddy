@@ -3,6 +3,8 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { authStorageKey } from '../lib/auth-storage';
 import type { TeamUser } from '../types';
+import { db } from '../db';
+import { markPending, clearPending } from '../lib/pending-changes';
 
 const user: TeamUser = { id: 'alice', email: 'alice@example.com', displayName: 'Alice', role: 'user' };
 const auth = { serverUrl: 'https://team.example', accessToken: 'access-original', refreshToken: 'refresh-original', user };
@@ -25,6 +27,24 @@ afterEach(() => {
 });
 
 describe('AuthProvider shared workspace session lifecycle', () => {
+  it('does not switch accounts or close the current DB while a file or chat draft is unsaved', async () => {
+    await db.open();
+    const pending = Symbol('synthetic unsent work'); markPending(pending);
+    const beforeSelection = sessionStorage.getItem('threatcaddy-active-workspace');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      accessToken: 'new-account-access', refreshToken: 'new-account-refresh', user: { ...user, id: 'other-user' },
+    }))));
+    const changed = vi.fn(); window.addEventListener('workspace-will-switch', changed);
+    try {
+      const view = renderHook(useAuth, { wrapper: AuthProvider });
+      await act(async () => {
+        await expect(view.result.current.login('other@example.com', 'synthetic-password')).rejects.toThrow('Unsent chat drafts or pending file imports require attention');
+      });
+      expect(changed).not.toHaveBeenCalled(); expect(db.isOpen()).toBe(true);
+      expect(sessionStorage.getItem('threatcaddy-active-workspace')).toBe(beforeSelection);
+      expect(JSON.parse(localStorage.getItem(authStorageKey) ?? 'null')).toEqual(auth);
+    } finally { clearPending(pending); window.removeEventListener('workspace-will-switch', changed); }
+  });
   it.each(['login', 'register'] as const)('keeps the %s response deadline active after headers', async operation => {
     vi.useFakeTimers();
     const cancel = vi.fn();

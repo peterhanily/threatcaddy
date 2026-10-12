@@ -7,7 +7,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/vitest.setup.ts'],
-    exclude: ['server/**', 'node_modules/**', 'e2e/**', 'standalone-tests/**', 'dist/**', 'dist-single/**', '.claude/**'],
+    // Node-owned script tests have a separate required CI command; they must not
+    // be loaded into Vitest's jsdom environment or run twice under two runners.
+    exclude: ['server/**', 'node_modules/**', 'e2e/**', 'standalone-tests/**', 'scripts/**/*.test.mjs', 'dist/**', 'dist-single/**', '.claude/**'],
     css: false,
     coverage: {
       provider: 'v8',

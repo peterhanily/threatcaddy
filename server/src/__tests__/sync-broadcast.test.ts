@@ -36,7 +36,7 @@ function createUpdateChain(returningRows: Record<string, unknown>[] = [{ id: 'te
 
 // ─── Mocks ───────────────────────────────────────────────────────
 const mockTxDb = {
-  execute: async () => [],
+  execute: async () => [{ id: 1, cursor: 0n, generation: 'synthetic-history' }],
   select: (...args: unknown[]) => mockSelect(...args),
   insert: (...args: unknown[]) => mockInsert(...args),
   update: (...args: unknown[]) => mockUpdate(...args),

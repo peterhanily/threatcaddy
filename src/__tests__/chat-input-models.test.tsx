@@ -100,6 +100,53 @@ describe('ChatInput', () => {
     expect(textarea).toBeDisabled();
   });
 
+  it('allows the authenticated server route without local credentials and preserves a custom server model', () => {
+    const onModelChange = vi.fn(); const onSend = vi.fn();
+    render(<ChatInput {...defaultProps} extensionAvailable={false} serverRoute provider="openai"
+      configuredProviders={new Set()} model="synthetic-server-model" onModelChange={onModelChange} onSend={onSend} />);
+    expect(screen.getByRole('combobox', { name: 'AI model' })).toHaveValue('synthetic-server-model');
+    expect(screen.getByText('Team server route')).toBeInTheDocument();
+    expect(screen.queryByText('No connection')).not.toBeInTheDocument();
+    const input = screen.getByRole('textbox'); expect(input).toBeEnabled();
+    fireEvent.change(input, { target: { value: 'Synthetic server question' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onSend).toHaveBeenCalledWith('Synthetic server question', expect.any(Function));
+    expect(onModelChange).not.toHaveBeenCalled();
+  });
+
+  it('retains the draft but disables submission when the server route is lost', () => {
+    const onSend = vi.fn(); const props = { ...defaultProps, extensionAvailable: false, onSend };
+    const view = render(<ChatInput {...props} serverRoute />);
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'Retained question' } });
+    view.rerender(<ChatInput {...props} serverRoute={false} />);
+    expect(input).toBeDisabled(); expect(input).toHaveValue('Retained question');
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onSend).not.toHaveBeenCalled();
+  });
+
+  it('does not treat a configured local model as a route for a selected remote provider', () => {
+    const props = { ...defaultProps, extensionAvailable: false, localModelName: 'synthetic-local' };
+    const view = render(<ChatInput {...props} provider="anthropic" />);
+    expect(screen.getByRole('textbox')).toBeDisabled();
+    view.rerender(<ChatInput {...props} provider="local" model="synthetic-local" />);
+    expect(screen.getByRole('textbox')).toBeEnabled();
+    expect(screen.getByText('Local LLM')).toBeInTheDocument();
+  });
+
+  it('does not silently switch an existing server thread to another configured provider after sign-out', () => {
+    const onModelChange = vi.fn();
+    const props = { ...defaultProps, onModelChange, extensionAvailable: false, provider: 'anthropic' as const,
+      model: 'fictional-server-custom-model', configuredProviders: new Set(['local']), localModelName: 'fictional-local-model' };
+    const view = render(<ChatInput {...props} serverRoute />);
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Keep this provider and draft' } });
+    view.rerender(<ChatInput {...props} serverRoute={false} />);
+    expect(onModelChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('combobox')).toHaveValue('fictional-server-custom-model');
+    expect(screen.getByRole('textbox')).toHaveValue('Keep this provider and draft');
+    expect(screen.getByRole('textbox')).toBeDisabled();
+  });
+
   it('shows extension connected indicator', () => {
     render(<ChatInput {...defaultProps} extensionAvailable={true} />);
     expect(screen.getByText('Extension')).toBeInTheDocument();
@@ -116,6 +163,6 @@ describe('ChatInput', () => {
     const textarea = screen.getByRole('textbox');
     fireEvent.change(textarea, { target: { value: '  Hello world  ' } });
     fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
-    expect(onSend).toHaveBeenCalledWith('Hello world');
+    expect(onSend).toHaveBeenCalledWith('Hello world', expect.any(Function));
   });
 });

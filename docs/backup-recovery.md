@@ -4,7 +4,7 @@
 
 ThreatCaddy has three layers of data that can be backed up independently:
 
-1. **Client-side (IndexedDB)** -- Local browser data, encrypted backups managed by the SPA
+1. **Client-side (IndexedDB)** -- Local browser data, exported as a JSON backup or through the separate encrypted-backup flow
 2. **Server-side (encrypted backup files)** -- Entity snapshots uploaded to the server via the backup API
 3. **Database (PostgreSQL)** -- The server's authoritative data store
 
@@ -12,9 +12,142 @@ ThreatCaddy has three layers of data that can be backed up independently:
 
 ## 1. Client-Side Backups (IndexedDB)
 
+### Hosted App: JSON Backup and a Restore Drill
+
+For the hosted app without a team server, use **Save Backup** in the app header
+or **Settings → Export JSON**. Store the downloaded `threatcaddy-backup-*.json`
+outside the browser. This JSON file is **not password-encrypted**; protect it as
+sensitive investigation data, including when local database encryption is enabled.
+
+Verify recovery in a new temporary browser profile before relying on a backup:
+
+1. Export from the browser profile and workspace containing your investigations.
+2. Open the app in a separate, empty profile. Do not clear your working profile.
+3. Import the JSON backup. Use **Replace All** only in that empty profile; it
+   replaces the entity types included in the file at the destination. An empty
+   list clears that type; an omitted type is preserved. The header also offers
+   **Merge** for a populated destination; back that destination up first.
+4. Compare investigation names, note and chat content, classifications, source
+   associations, and any templates or whiteboard content you depend on.
+5. Reload the restored app and check the same records again. Keep the original
+   profile and backup until recovery has been verified.
+
+Normal retention rules still apply after recovery. For example, notes already
+in trash for more than 30 days can be purged when the restored workspace loads.
+Restoring a backup does not reset their trash timestamp or grant a new retention
+period. Keep the original archive if historical trashed content is needed.
+
+A JSON export is an application-data backup, not a copy of the whole browser
+profile or a server/database/files backup. Do not assume browser settings,
+provider credentials, or externally stored server files are included.
+
+Both header restore modes cover the portable entity registry in
+`src/lib/backup-tables.ts`, including templates, agent records, integrations and
+custom slash commands. Merge adds missing records and replaces older revisions;
+it does not remove records. Quick links are separate workspace settings, not
+database entities. Internal sync queues, authentication sessions, browser
+permissions and encryption keys are not portable backup data.
+
+New plain backups carry a `threatcaddy-backup` format marker while retaining
+the flat version-1 JSON layout. Ordinary legacy JSON backups and downloaded
+cloud full-backup envelopes are also accepted. Malformed or unsupported data
+is rejected before entity writes; records are not silently dropped or shortened.
+Resolve pending or failed editor drafts before replacing or merging data.
+Keep the app open while a restore is running, and check any retained draft
+recovery notice before closing it.
+
+### Downloaded Cloud Backups
+
+Download the object from your configured cloud storage, then use **Load Backup**.
+For password-encrypted files, enter the backup password in the import dialog;
+for plain JSON, leave it blank. A failed password or validation check leaves
+the dialog open so you can correct the problem and retry. The password is not
+saved in settings or sent to a server by the import dialog.
+
+Full-workspace files can be restored through this dialog. Scoped server backups
+and verified differentials use the separate server restore flow, which checks
+their declared scope and matching parent; do not flatten or manually edit them.
+Cloud upload status distinguishes complete success, partial delivery and failure.
+If some destinations fail, retain the backup password and check each result
+before relying on remote recovery.
+
+Portable files are limited to **50 MiB on disk**, including the encrypted
+envelope. Base64 encryption increases file size, so a near-limit plain backup
+may be too large to encrypt into a supported portable file. Creation fails
+before download/upload in that case; keep the source data and use appropriately
+scoped backups through the separate server workflow where available. Whiteboard
+embedded files retain their separate 8 MiB per-board limit. These limits are not
+raised or bypassed by manually editing a file.
+
+After a successful restore, any notices about omitted configuration, suspended
+automation or unsaved quick-link settings stay visible in the dialog. The entity
+transaction is already committed at that point; the dialog offers **Close**, not
+another restore. Save the original file until you have reviewed those notices.
+
+#### Supported Cloud Destination URLs
+
+Generated backup filenames require a destination that authorizes multiple objects:
+
+- **OCI:** use a bucket PAR URL ending in `/o/`, or a slash-terminated prefix URL.
+  A prefix-restricted PAR must permit the actual `threatcaddy/` paths appended by
+  the app. The URL alone cannot prove the remote grant's permissions or expiry.
+  See [OCI PAR scopes](https://docs.oracle.com/en-us/iaas/Content/Object/Tasks/usingpreauthenticatedrequests.htm).
+- **Azure:** use a container SAS URL with `sr=c`, a signature, and a container
+  path. Blob-specific, directory and account SAS modes are not supported here.
+  See [Azure signed-resource scopes](https://learn.microsoft.com/en-us/rest/api/storageservices/create-service-sas).
+- **S3 and GCS:** exact-object signed URLs are not supported by this generated-path
+  upload flow. Appending a filename changes the signed resource. They now fail
+  before any upload or connectivity-test write; saved destinations are retained
+  so you can inspect or replace them. See [S3 presigned uploads](https://docs.aws.amazon.com/AmazonS3/latest/userguide/PresignedUrlUploadObject.html)
+  and [GCS signed resource paths](https://docs.cloud.google.com/storage/docs/authentication/canonical-requests).
+
+For supported destinations, **Test writes a small object** at
+`threatcaddy/.connectivity-test` beneath the configured bucket/prefix. It is not a
+read-only check. The app does not repurpose an exact-object backup URL for this
+test. Cloud permissions, expiry, browser CORS and the deployment's allowed
+connection origins still need to permit uploads; a syntactically valid URL is
+not evidence that a backup was delivered.
+
+### Credentials and Automation
+
+Treat every backup as sensitive. Plain JSON is not encrypted, even if the source
+workspace uses encryption at rest. Portable plaintext exports exclude installed
+integration configuration and record this omission in their metadata. The header
+and JSON import dialogs suspend imported automation; the separate server restore
+flow preserves its exact snapshot semantics. Re-enter configuration
+and review imported automation before enabling it. Password-encrypted exports
+can preserve installed integration configuration inside the encrypted payload.
+
+This is not a general-purpose secret scrubber: investigation text, evidence,
+template source and user-defined fields may themselves contain credentials or
+private material. Review a backup before sharing it. Provider settings and
+cloud destination URLs are not included as browser settings.
+
+### Moving from HTTP to HTTPS
+
+Browser storage is origin-specific: `http://threatcaddy.com` and
+`https://threatcaddy.com` have separate IndexedDB databases. An HTTP-to-HTTPS
+redirect does **not** move existing investigations to the HTTPS database.
+
+Before enabling GitHub Pages **Enforce HTTPS**, export any HTTP-only data from
+its original profile and restore/verify it on HTTPS using the drill above.
+If HTTPS already contains data, export that data too and use the header's
+**Merge** option rather than replacing it. Do not remove the original HTTP data
+or backups during migration. If all users already use HTTPS and have no HTTP
+data, no data migration is needed.
+
+After the migration, enable only **Settings → Pages → Enforce HTTPS**, leaving
+the custom domain, DNS, and Pages source unchanged. Confirm that HTTP redirects
+to the HTTPS origin and that HTTPS still loads successfully. Future visits and
+bookmarks should use HTTPS.
+
 ### How It Works
 
-The client builds a backup payload from IndexedDB, encrypts it with a user-provided password, and either saves it locally or uploads it to the server.
+The separate **Server Encrypted Backups** flow builds a payload from IndexedDB,
+encrypts it with a user-provided password, and uploads the encrypted blob to a
+connected team server. These controls require that server; they are not a local
+encrypted-file export for hosted-only users. The format and restore modes below
+describe that flow, not the plain JSON export.
 
 **Relevant files:**
 - `src/lib/backup-data.ts` -- Payload construction
@@ -25,14 +158,14 @@ The client builds a backup payload from IndexedDB, encrypts it with a user-provi
 
 | Type | Description |
 |------|-------------|
-| **Full** | All entities from all tables (or scoped to an investigation/entity) |
-| **Differential** | Only entities modified since `lastBackupAt`, plus tombstone (trashed) IDs |
+| **Full** | Entities from the supported backup tables (or scoped to an investigation/entity) |
+| **Differential** | Snapshot differences against a verified full parent, including removed IDs; the matching full parent is required for restore |
 
 ### Backup Scopes
 
 | Scope | What's Included |
 |-------|----------------|
-| `all` | Every table: notes, tasks, folders, tags, timelineEvents, timelines, whiteboards, standaloneIOCs, chatThreads |
+| `all` | Every supported entity table listed in `src/lib/backup-tables.ts` |
 | `investigation` | A single folder and all its scoped entities (notes, tasks, timeline events, whiteboards, IOCs, chat threads), plus referenced tags and timelines |
 | `entity` | A single entity from a specific table (format: `tableName:entityId`) |
 
@@ -77,15 +210,16 @@ The plaintext payload (before encryption) has this structure:
         "standaloneIOCs": [...],
         "chatThreads": [...]
     },
-    "deletedIds": {
-        "notes": ["id1", "id2"]
-    }
+    "deletedIds": {}
 }
 ```
 
 ### Creating a Client-Side Backup
 
-From the UI, navigate to Settings and use the Export/Backup section. The backup is created in the browser, encrypted with your chosen password, and downloaded as a `.enc` file.
+With a team server connected, use **Settings → Server Encrypted Backups** with
+a password to create and upload an encrypted blob.
+The header's **Save Backup** and Settings' **Export JSON** instead produce the
+plain JSON format described above; they do not prompt for an encryption password.
 
 ### Restoring from a Client-Side Backup
 
@@ -93,10 +227,14 @@ Two restore modes are available:
 
 | Mode | Behavior |
 |------|----------|
-| **Full Replace** | Clears all existing data in each table, then bulk-inserts from backup. Fast but destructive. |
-| **Merge** | For each entity: if it does not exist locally, add it; if it exists and the backup version is newer (`updatedAt` comparison), update it. Tombstoned IDs are deleted. Non-destructive. |
+| **Full Replace** | Replaces records within the full backup's declared scope and included tables. Omitted tables and out-of-scope records are retained; shared references are protected. Replacement can delete existing records, so back up the destination first. |
+| **Merge** | For a full backup, adds missing records and updates existing records when the backup version is newer (`updatedAt` comparison). A verified differential backup applies its recorded changes, including tombstone deletions, to the matching parent state; this is not a non-destructive operation. |
 
-**Important:** If client-side encryption is enabled, the backup will contain already-encrypted field values. Restore will re-insert them as-is through the encryption middleware.
+**Important:** An unlocked workspace's encryption middleware returns decrypted
+application values to backup creation. The separate encrypted-backup flow
+protects that payload with the backup password; plain JSON export does not.
+On restore, the destination workspace's encryption middleware applies its own
+at-rest encryption. Keep the backup password separately from the backup file.
 
 ---
 
@@ -349,9 +487,10 @@ docker compose cp server:/data/files ./files-backup-$(date +%Y%m%d)/
 **Situation:** User forgot their encryption passphrase.
 
 **Recovery options:**
-1. **Recovery phrase**: If the user has their 24-word recovery phrase, they can use it as the passphrase to unwrap the master key.
-2. **Server data**: If connected to a team server, the server has the entity data (though field content may be encrypted client-side). Disabling encryption and re-syncing may recover unencrypted content.
-3. **No recovery possible**: If no recovery phrase and no server, encrypted data in IndexedDB is permanently inaccessible. This is by design.
+1. **Preserve the original**: Do not reset the workspace, clear site storage, remove encryption metadata, or attempt to disable encryption without unlocking it. Preserve the locked database and its workspace-scoped localStorage metadata together; the database alone does not contain the wrapped-key metadata.
+2. **Recovery phrase**: Select the recovery-key mode on the unlock screen and enter the saved 24-word phrase. It uses a separate recovery-wrapped copy of the master key, not the ordinary passphrase wrapping.
+3. **Verified independent copy**: A known-good password-encrypted backup can be restored into a separate workspace using its backup password. Alternatively, if team sync previously completed, verify the required entities are still accessible on that server, then sign in from a separate fresh workspace/browser profile. Sync receives readable entity values; browser encryption at rest is not end-to-end sync encryption. This cannot recover local-only data, untransmitted edits or records the server no longer has. Leave the locked original intact until the recovered copy is checked.
+4. **No usable key or independent copy**: The remaining encrypted data cannot be recovered. Resetting deletes it; it does not decrypt it.
 
 ### Scenario 5: Admin Secret Lost
 
@@ -370,7 +509,7 @@ docker compose cp server:/data/files ./files-backup-$(date +%Y%m%d)/
 
 | What | How Often | Method |
 |------|-----------|--------|
-| Full IndexedDB backup | Weekly | Export encrypted backup from Settings |
+| Application JSON backup | Weekly and before major changes | Save Backup / Export JSON; protect the downloaded plaintext file in secure storage |
 | Investigation-scoped backup | After major updates | Export specific investigation |
 
 ### For Team Deployments
@@ -382,7 +521,7 @@ docker compose cp server:/data/files ./files-backup-$(date +%Y%m%d)/
 | File storage (`/data/files`) | Daily | Cron + tar/rsync | 30 days |
 | Server-side encrypted backups | Users manage their own | Via backup API | Max 50 per user |
 | Admin secret | On change | Copy `.admin-secret` file or record `ADMIN_SECRET` env var | Indefinite |
-| `.env` / environment config | On change | Version control or secret manager | Indefinite |
+| `.env` / environment config | On change | Secret manager or encrypted offline backup; never commit secret-bearing files to source control | Indefinite |
 | JWT key pair (Ed25519) | On initial setup | Secure offline storage | Indefinite |
 
 ### What to Monitor

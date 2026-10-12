@@ -1,4 +1,5 @@
 import { createLabelProxy, createLabelColorProxy, noteColorLabel, iocTableColumnLabel } from './lib/i18n-labels';
+import type { InstalledIntegration, IntegrationTemplate } from './types/integration-types';
 
 /** An investigation note with markdown content, tags, and optional IOC analysis. */
 export interface Note {
@@ -1050,6 +1051,8 @@ export interface PlaybookTemplate {
 }
 
 export interface ExportData {
+  /** Marker for complete portable files; unmarked v1 files remain readable. */
+  format?: 'threatcaddy-backup';
   version: 1;
   exportedAt: number;
   notes: Note[];
@@ -1069,6 +1072,11 @@ export interface ExportData {
   quickLinks?: QuickLink[];
   noteTemplates?: NoteTemplate[];
   playbookTemplates?: PlaybookTemplate[];
+  integrationTemplates?: IntegrationTemplate[];
+  installedIntegrations?: InstalledIntegration[];
+  customSlashCommands?: CustomSlashCommand[];
+  /** Plain files omit all installed configuration, including undeclared secrets. */
+  redactions?: 'installedIntegrations.config'[];
 }
 
 export const TAG_COLORS = [
@@ -1143,9 +1151,13 @@ export interface Post {
   updatedAt: string;
   authorDisplayName?: string;
   authorAvatarUrl?: string | null;
-  reactions?: Record<string, { count: number; userIds: string[] }>;
+  reactions?: Record<string, { count: number; userIds: string[]; reactedByMe?: boolean;
+    /** Explicit summary mode contains only the viewing user, if they reacted. */
+    userIdsScope?: 'viewer'; userIdsComplete?: boolean }>;
   replyCount?: number;
   replies?: Post[];
+  /** Absent on legacy servers, which return the entire thread. */
+  replyPage?: { total: number; limit: number; hasMore: boolean; nextCursor: string | null };
 }
 
 export type NotificationType = 'mention' | 'reply' | 'reaction' | 'invite' | 'entity-update';

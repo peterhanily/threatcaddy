@@ -1,10 +1,13 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useId } from 'react';
+import { useChatComposerDraft } from '../../hooks/useChatComposerDraft';
+import { useMentionSearch } from '../../hooks/useMentionSearch';
+import { beginComposerSubmission, finishComposerSubmission } from '../../lib/chat-composer-drafts';
 import { Send, Square, Wifi, WifiOff, Globe, Search, FileText, CheckSquare, Shield, BarChart3, Clock, Network, ClipboardList, Zap, Link2, AlertTriangle, Terminal, RefreshCw, StopCircle, Wrench, ImagePlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { LLMProvider } from '../../types';
 import { MODELS as STATIC_MODELS } from '../../lib/models';
 import { cn } from '../../lib/utils';
-import { searchMentions, MENTION_CATEGORIES, type MentionSuggestion } from '../../lib/chat-mentions';
+import { MENTION_CATEGORIES, type MentionSuggestion } from '../../lib/chat-mentions';
 
 const SLASH_COMMAND_DEFS = [
   { command: '/fetch', descKey: 'slash.fetch', placeholder: '<url>', icon: Globe },
@@ -23,10 +26,14 @@ const SLASH_COMMAND_DEFS = [
 ] as const;
 
 interface ChatInputProps {
-  onSend: (text: string) => void;
+  /** Acknowledge only after saving the user message; failure retains its draft. */
+  onSend: (text: string, onCommitted: () => void) => void | Promise<void>;
   onStop: () => void;
   isStreaming: boolean;
   extensionAvailable: boolean;
+  /** The selected route uses an authenticated team server, not local API keys. */
+  serverRoute?: boolean;
+  provider?: LLMProvider;
   model: string;
   onModelChange: (model: string, provider: LLMProvider) => void;
   disabled?: boolean;
@@ -39,32 +46,36 @@ interface ChatInputProps {
   onImageAttach?: (files: File[]) => void;
   attachedImages?: { name: string }[];
   onClearImages?: () => void;
+  readingImages?: boolean;
+  draftScope?: string;
 }
 
-export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, model, onModelChange, disabled, localModelName, configuredProviders, onOpenSettings, folderId, customCommands, onImageAttach, attachedImages, onClearImages }: ChatInputProps) {
+export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, serverRoute = false, provider, model, onModelChange, disabled, localModelName, configuredProviders, onOpenSettings, folderId, customCommands, onImageAttach, attachedImages, onClearImages, readingImages, draftScope }: ChatInputProps) {
   const { t } = useTranslation('chat');
-  // Can send if extension is available OR a local LLM is configured (direct fetch, no extension needed)
-  const canSend = extensionAvailable || !!localModelName;
+  const canSend = serverRoute || extensionAvailable || (!!localModelName && (!provider || provider === 'local'));
   const MODELS = useMemo(() => {
     let models = [...STATIC_MODELS];
     if (localModelName) {
       models.push({ label: `Local: ${localModelName}`, value: localModelName, provider: 'local' as LLMProvider, group: 'Local' });
     }
     // Only show models for providers that have an API key configured
-    if (configuredProviders) {
+    if (configuredProviders && !serverRoute) {
       models = models.filter(m => configuredProviders.has(m.provider));
     }
-    return models;
-  }, [localModelName, configuredProviders]);
-
-  // Auto-switch to a valid model when the current one isn't in the filtered list
-  useEffect(() => {
-    if (MODELS.length > 0 && !MODELS.some(m => m.value === model)) {
-      onModelChange(MODELS[0].value, MODELS[0].provider);
+    // Preserve an existing thread's selection even after credentials or route
+    // change. Sending to another provider requires an explicit model choice.
+    if (provider && model && !models.some(item => item.value === model)) {
+      models.push({ label: model, value: model, provider,
+        group: serverRoute ? t('input.serverStatus') : STATIC_MODELS.find(item => item.provider === provider)?.group ?? provider });
     }
-  }, [MODELS, model, onModelChange]);
+    return models;
+  }, [localModelName, configuredProviders, serverRoute, provider, model, t]);
 
-  const [text, setText] = useState('');
+  const fallbackScope = useId();
+  const scope = draftScope ?? fallbackScope;
+  const { text, setText, commit, error: draftError, submitting } = useChatComposerDraft(scope);
+  const [submitErrors, setSubmitErrors] = useState<ReadonlySet<string>>(() => new Set());
+  const submitError = submitErrors.has(scope);
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashIndex, setSlashIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -110,17 +121,15 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
 
   // ── @-mention autocomplete ──────────────────────────────────────────
   const [mentionOpen, setMentionOpen] = useState(false);
-  const [mentionResults, setMentionResults] = useState<MentionSuggestion[]>([]);
   const [mentionIndex, setMentionIndex] = useState(0);
   const [mentionPhase, setMentionPhase] = useState<'category' | 'search'>('category');
   const mentionMenuRef = useRef<HTMLDivElement>(null);
-  /** Debounce handle for the searchMentions call. Reset on every keystroke so
-   *  only the last 200ms-quiescent query hits Dexie — avoids a full-table scan
-   *  per character when the global (no folderId) mention path is used. */
-  const mentionSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (mentionSearchTimerRef.current) clearTimeout(mentionSearchTimerRef.current);
-  }, []);
+  const typedMention = !slashOpen && text.lastIndexOf('@') !== -1
+    ? text.slice(text.lastIndexOf('@') + 1).match(/^(note|ioc|investigation):(.*)$/i) : null;
+  const mentionResults = useMentionSearch({
+    type: mentionOpen && typedMention ? typedMention[1].toLowerCase() as MentionSuggestion['type'] : undefined,
+    query: typedMention?.[2] ?? '', folderId, scope,
+  });
 
   // Detect @-mention trigger
   useEffect(() => {
@@ -136,35 +145,23 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
     // Check if we're in a typed mention (e.g. @note:query)
     const typedMatch = afterAt.match(/^(note|ioc|investigation):(.*)$/i);
     if (typedMatch) {
-      const type = typedMatch[1].toLowerCase() as 'note' | 'ioc' | 'investigation';
-      const query = typedMatch[2];
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMentionPhase('search');
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMentionOpen(true);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMentionIndex(0);
-      if (mentionSearchTimerRef.current) clearTimeout(mentionSearchTimerRef.current);
-      mentionSearchTimerRef.current = setTimeout(() => {
-        searchMentions(type, query, folderId).then(setMentionResults).catch(console.error);
-      }, 200);
       return;
     }
 
     // Just '@' or '@<partial category>' — show categories
     if (afterAt === '' || MENTION_CATEGORIES.some(c => c.type.startsWith(afterAt.toLowerCase()))) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMentionPhase('category');
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMentionOpen(true);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMentionIndex(0);
       return;
     }
 
     if (mentionOpen) setMentionOpen(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, slashOpen, folderId]);
+  }, [text, slashOpen, folderId, scope]);
 
   const selectMentionCategory = (type: 'note' | 'ioc' | 'investigation') => {
     const lastAt = text.lastIndexOf('@');
@@ -206,14 +203,21 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
     textareaRef.current?.focus();
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmed = text.trim();
-    if (!trimmed || isStreaming || disabled) return;
-    onSend(trimmed);
-    setText('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
+    if (!trimmed || !canSend || isStreaming || disabled || readingImages) return;
+    const submission = beginComposerSubmission(scope);
+    if (!submission) return;
+    setSubmitErrors(previous => { const next = new Set(previous); next.delete(scope); return next; });
+    let committed = false;
+    try {
+      await onSend(trimmed, () => {
+        if (committed) return;
+        committed = true;
+        commit();
+      });
+    } catch { setSubmitErrors(previous => new Set([...previous, scope])); }
+    finally { finishComposerSubmission(scope, submission); }
   };
 
   // ── Image paste/drop handling ─────────────────────────────────────
@@ -286,17 +290,18 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
   return (
     <div className="border-t border-border-subtle p-3 space-y-2">
       {/* Model selector + extension status */}
-      <div className="flex items-center gap-2 text-xs">
+      <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs">
         {MODELS.length === 0 ? (
           <span className="text-text-muted text-[10px] italic">{t('input.noApiKeys')}</span>
         ) : (
           <select
+            aria-label={t('input.modelLabel')}
             value={model}
             onChange={(e) => {
               const m = MODELS.find((m) => m.value === e.target.value);
               if (m) onModelChange(m.value, m.provider);
             }}
-            className="bg-bg-deep border border-border-medium rounded px-2 py-1 text-text-secondary focus:outline-none focus:border-purple text-xs"
+            className="min-w-0 max-w-full bg-bg-deep border border-border-medium rounded px-2 py-1 text-text-secondary focus:outline-none focus:border-purple text-xs"
           >
             {Array.from(new Set(MODELS.map(m => m.group))).map(group => (
               <optgroup key={group} label={group}>
@@ -313,9 +318,10 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
           canSend ? 'text-accent-green' : 'text-text-muted'
         )}>
           {canSend ? <Wifi size={10} /> : <WifiOff size={10} />}
-          {extensionAvailable ? t('input.extensionStatus') : localModelName ? t('input.localLlmStatus') : t('input.noConnection')}
+          {serverRoute ? t('input.serverStatus') : extensionAvailable ? t('input.extensionStatus') : canSend && localModelName ? t('input.localLlmStatus') : t('input.noConnection')}
         </div>
       </div>
+      {serverRoute && <p className="text-[10px] text-text-muted">{t('input.serverModelsHelp')}</p>}
 
       {/* Connection required banner */}
       {!canSend && (
@@ -335,6 +341,9 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
         </div>
       )}
 
+      {readingImages && <p role="status" className="text-xs text-text-secondary">{t('input.readingImages')}</p>}
+      {submitError && <p role="alert" className="text-xs text-red-400">{t('input.submitFailed')}</p>}
+      {draftError && <p role="alert" className="text-xs text-red-400">{t(`input.draftError.${draftError}`)}</p>}
       {/* Input area */}
       <div className="relative flex items-end gap-2">
         {/* Slash command menu */}
@@ -465,10 +474,10 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
         {/* Image attach button */}
         {onImageAttach && (
           <>
-            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { if (e.target.files) onImageAttach(Array.from(e.target.files)); e.target.value = ''; }} />
+            <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple className="hidden" onChange={(e) => { if (e.target.files) onImageAttach(Array.from(e.target.files)); e.target.value = ''; }} />
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={!canSend || disabled}
+              disabled={!canSend || disabled || readingImages || submitting}
               className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title={t('input.attachImage')}
             >
@@ -487,7 +496,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, mod
         ) : (
           <button
             onClick={handleSend}
-            disabled={!text.trim() || !canSend || disabled}
+            disabled={!text.trim() || !canSend || disabled || readingImages || submitting}
             className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-purple text-white hover:bg-purple/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             title={t('input.sendMessage')}
           >

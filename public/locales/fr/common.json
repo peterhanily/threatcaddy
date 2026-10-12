@@ -215,5 +215,22 @@
   "error.unexpectedDetail": "Une erreur inattendue s'est produite.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Preuves",
-  "sidebar.products": "Produits"
+  "sidebar.products": "Produits",
+  "syncStatus.screenshareHidden": "La synchronisation demande votre attention. Désactivez le partage d’écran pour consulter les détails.",
+  "syncStatus.review": "Vérifier les paramètres de synchronisation",
+  "draftRecovery.message": "Certaines modifications n’ont pas pu être enregistrées. Les brouillons restent uniquement dans cet onglet. Réessayez ou téléchargez-les avant de le fermer.",
+  "draftRecovery.untitled": "Brouillon non enregistré",
+  "draftRecovery.retry": "Réessayer l’enregistrement",
+  "draftRecovery.download": "Télécharger le brouillon",
+  "draftRecovery.discard": "Abandonner le brouillon",
+  "draftRecovery.discardConfirm": "Abandonner définitivement ce brouillon non enregistré ? Téléchargez-le d’abord si vous avez besoin d’une copie de secours.",
+  "draftRecovery.conflictField": "Vérifier le conflit : {{field}}",
+  "draftRecovery.keepLocal": "Conserver ma valeur : {{field}}",
+  "draftRecovery.useRemote": "Utiliser la valeur distante : {{field}}",
+  "offlineStatus.checking": "Vérification de la prise en charge hors ligne",
+  "offlineStatus.installed": "Prise en charge hors ligne installée",
+  "offlineStatus.unavailable": "Disponibilité hors ligne non confirmée",
+  "offlineStatus.checkingHelp": "Un premier téléchargement volumineux peut prendre plusieurs minutes. Laissez cet onglet ouvert pendant l’installation.",
+  "offlineStatus.unavailableHelp": "Le navigateur n’a pas confirmé l’installation hors ligne. Elle peut ne pas être prise en charge, être encore en cours de téléchargement ou ne pas pouvoir aboutir. Conservez une sauvegarde exportée.",
+  "offlineStatus.caveat": "Il s’agit de l’état du worker du navigateur, pas d’une vérification des fichiers en cache ni de la dernière version. Les données en cache peuvent être effacées ou évincées. Ce n’est pas une sauvegarde. Les serveurs d’équipe, l’IA et les autres services externes nécessitent une connexion."
 }

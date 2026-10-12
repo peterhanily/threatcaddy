@@ -1,5 +1,6 @@
 import Dexie, { type DBCoreTransaction, type DBCoreMutateRequest } from 'dexie';
-import { isSyncEnabled, isSyncSuppressed, isSyncTable, notifyOutboxCommit, revisionKey } from './sync-state';
+import { isSyncSuppressed, isSyncTable, notifyOutboxCommit, revisionKey } from './sync-state';
+import { isSyncWorkspaceIdentity, SYNC_WORKSPACE_KEY } from './sync-capture-policy';
 
 /** Include the durable outbox in every captured entity transaction, including
  * implicit single-table writes. Runs above encryption so queue payloads are
@@ -15,7 +16,7 @@ export function installSyncOutbox(db: Dexie) {
       return {
         ...core,
         transaction(stores, mode, options) {
-          const capture = hasOutbox && mode === 'readwrite' && isSyncEnabled() && stores.some(isSyncTable);
+          const capture = hasOutbox && mode === 'readwrite' && stores.some(isSyncTable);
           const trackPrivacy = hasOutbox && mode === 'readwrite' && stores.includes('folders');
           const names = capture ? [...new Set([...stores, '_syncQueue', '_syncMeta', 'folders'])]
             : trackPrivacy ? [...new Set([...stores, '_syncMeta'])] : stores;
@@ -35,9 +36,13 @@ export function installSyncOutbox(db: Dexie) {
           return {
             ...table,
             async mutate(req: DBCoreMutateRequest) {
-              const capture = captured.has(req.trans);
-              if ((!capture && !(name === 'folders' && privacyTracked.has(req.trans))) || isSyncSuppressed(req.trans)) return table.mutate(req);
+              if ((!captured.has(req.trans) && !(name === 'folders' && privacyTracked.has(req.trans))) || isSyncSuppressed(req.trans)) return table.mutate(req);
               try {
+                // A durable, valid owner authorizes capture, not transmission.
+                // Logout, transport teardown and a different tab cannot disable it.
+                const binding = await core.table('_syncMeta').get({ trans: req.trans, key: SYNC_WORKSPACE_KEY });
+                const capture = captured.has(req.trans) && isSyncWorkspaceIdentity(binding?.value);
+                if (!capture && name !== 'folders') return table.mutate(req);
                 const deleting = req.type === 'delete' || req.type === 'deleteRange';
                 let before: Record<string, unknown>[] = [];
                 if (req.type === 'delete') {

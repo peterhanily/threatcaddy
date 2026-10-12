@@ -14,5 +14,7 @@
   "unarchive": "アーカイブ解除",
   "moveToTrash": "ゴミ箱に移動",
   "restore": "復元",
-  "deletePermanently": "完全に削除"
+  "deletePermanently": "完全に削除",
+  "saveFailed": "変更を保存できませんでした。下書きはこのタブに保持されています。閉じる前に再試行してください。",
+  "retrySave": "保存を再試行"
 }

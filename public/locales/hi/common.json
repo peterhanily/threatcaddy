@@ -215,5 +215,22 @@
   "error.unexpectedDetail": "एक अप्रत्याशित त्रुटि हुई।",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "साक्ष्य",
-  "sidebar.products": "उत्पाद"
+  "sidebar.products": "उत्पाद",
+  "syncStatus.screenshareHidden": "सिंक पर ध्यान देना आवश्यक है। विवरण देखने के लिए स्क्रीन शेयरिंग बंद करें।",
+  "syncStatus.review": "सिंक सेटिंग की समीक्षा करें",
+  "draftRecovery.message": "कुछ बदलाव सहेजे नहीं जा सके। ड्राफ़्ट केवल इस टैब में है। बंद करने से पहले फिर कोशिश करें या ड्राफ़्ट डाउनलोड करें।",
+  "draftRecovery.untitled": "बिना सहेजा ड्राफ़्ट",
+  "draftRecovery.retry": "फिर सहेजें",
+  "draftRecovery.download": "ड्राफ़्ट डाउनलोड करें",
+  "draftRecovery.discard": "ड्राफ़्ट छोड़ें",
+  "draftRecovery.discardConfirm": "यह बिना सहेजा ड्राफ़्ट स्थायी रूप से छोड़ें? यदि रिकवरी प्रति चाहिए तो पहले डाउनलोड करें।",
+  "draftRecovery.conflictField": "{{field}} के टकराव की समीक्षा करें",
+  "draftRecovery.keepLocal": "मेरा {{field}} रखें",
+  "draftRecovery.useRemote": "दूरस्थ {{field}} उपयोग करें",
+  "offlineStatus.checking": "ऑफ़लाइन सहायता जाँची जा रही है",
+  "offlineStatus.installed": "ऑफ़लाइन सहायता इंस्टॉल हो गई",
+  "offlineStatus.unavailable": "ऑफ़लाइन उपलब्धता की पुष्टि नहीं हुई",
+  "offlineStatus.checkingHelp": "पहले बड़े डाउनलोड में कई मिनट लग सकते हैं। इंस्टॉलेशन के दौरान यह टैब खुला रखें।",
+  "offlineStatus.unavailableHelp": "ब्राउज़र ने ऑफ़लाइन इंस्टॉलेशन की पुष्टि नहीं की है। यह समर्थित न हो, अभी डाउनलोड हो रहा हो या पूरा न हो पा रहा हो। निर्यात की गई बैकअप प्रति रखें।",
+  "offlineStatus.caveat": "यह ब्राउज़र के वर्कर की स्थिति है, कैश की गई फ़ाइलों या नवीनतम संस्करण की जाँच नहीं। कैश का डेटा मिटाया या हटाया जा सकता है। यह बैकअप नहीं है। टीम सर्वर, AI और अन्य बाहरी सेवाओं के लिए कनेक्शन चाहिए।"
 }

@@ -6,9 +6,11 @@
     "message": "التقاط سريع لمحتوى الويب وتوجيه طلبات الذكاء الاصطناعي لـ ThreatCaddy لاستخبارات التهديدات. تبقى البيانات محلية على جهازك افتراضيًا."
   },
   "version": {
-    "message": "v1.1.1"
+    "message": "v$VERSION$",
+    "placeholders": {
+      "version": { "content": "$1" }
+    }
   },
-
   "quickStats": {
     "message": "إحصاءات سريعة"
   },
@@ -18,7 +20,6 @@
   "thisWeek": {
     "message": "هذا الأسبوع"
   },
-
   "quickCapture": {
     "message": "التقاط سريع"
   },
@@ -64,7 +65,6 @@
   "saveFailed": {
     "message": "فشل الحفظ. يرجى المحاولة مجددًا."
   },
-
   "recentCaptures": {
     "message": "الالتقاطات الأخيرة"
   },
@@ -74,7 +74,6 @@
   "untitled": {
     "message": "بدون عنوان"
   },
-
   "quickActions": {
     "message": "إجراءات سريعة"
   },
@@ -84,7 +83,6 @@
   "reviewAllCaptures": {
     "message": "مراجعة جميع الالتقاطات"
   },
-
   "permissions": {
     "message": "الأذونات"
   },
@@ -109,7 +107,6 @@
   "allowFileAccessHint": {
     "message": "للتفعيل: انتقل إلى chrome://extensions، ابحث عن ThreatCaddy، وفعّل \"السماح بالوصول إلى عناوين URL للملفات\"."
   },
-
   "howToUse": {
     "message": "طريقة الاستخدام:"
   },
@@ -126,9 +123,8 @@
     "message": "الخصوصية:"
   },
   "privacyText": {
-    "message": "جميع البيانات تبقى محلية على جهازك. مفاتيح API تُرسل فقط إلى مزودك المختار. لا تتبع."
+    "message": "تبقى المقتطفات على هذا الجهاز حتى تسليمها أو تصديرها. قد يرسل الذكاء الاصطناعي الاختياري وجلب عناوين URL واتصالات التطبيقات المعتمدة بيانات إلى الخدمات المحددة."
   },
-
   "settings": {
     "message": "الإعدادات"
   },
@@ -150,37 +146,39 @@
   "save": {
     "message": "حفظ"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "حفظ إلى ThreatCaddy"
   },
-
   "savedToThreatCaddy": {
     "message": "تم الحفظ في ThreatCaddy!"
   },
-
   "justNow": {
     "message": "الآن"
   },
   "minutesAgo": {
     "message": "منذ $count$د",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "منذ $count$س",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "منذ $count$ يوم",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "سياق الإضافة غير صالح. يرجى إعادة تحميل هذه الصفحة."
   },
@@ -190,7 +188,9 @@
   "errorExtensionUnknown": {
     "message": "خطأ في الإضافة: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +199,6 @@
   "errorExtensionError": {
     "message": "خطأ في الإضافة"
   },
-
   "errorInvalidUrl": {
     "message": "رابط غير صالح"
   },
@@ -221,13 +220,17 @@
   "errorBlockedDomain": {
     "message": "محجوب: $hostname$ ليس في قائمة نطاقات الوكيل المسموحة",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "إذن المضيف مطلوب لـ $hostname$",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +239,9 @@
   "errorUnknownProvider": {
     "message": "مزود غير معروف: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +250,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "إذن المضيف مطلوب لـ $hostname$. افتح نافذة إضافة ThreatCaddy وفعّل \"السماح بجلب URL\" ضمن الأذونات.",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +264,320 @@
   "errorInvalidTargetUrl": {
     "message": "رابط الهدف غير صالح"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "privacyLink": {
+    "message": "الخصوصية"
+  },
+  "captureSaveFailed": {
+    "message": "لم يُحفظ المقتطف. تم الاحتفاظ بمسودتك."
+  },
+  "captureChangeFailed": {
+    "message": "لم يُحفظ تعديل المقتطف. حدّث الصفحة وأعد المحاولة."
+  },
+  "approvalTrust": {
+    "message": "لا توافق إلا على تطبيق تثق به. سيتمكن هذا الأصل المحدد (بما فيه المنفذ)، أو الملف المستقل المحدد، من استخدام الإمكانات الممنوحة للإضافة."
+  },
+  "localAIOrigin": {
+    "message": "أصل نقطة نهاية الذكاء الاصطناعي المحلي (اختياري)"
+  },
+  "saveLocalAI": {
+    "message": "حفظ الموافقة على الذكاء الاصطناعي المحلي"
+  },
+  "removeLocalAI": {
+    "message": "إزالة الموافقة على الذكاء الاصطناعي المحلي"
+  },
+  "approveApp": {
+    "message": "الموافقة على التطبيق"
+  },
+  "revokeApps": {
+    "message": "إلغاء الموافقة على جميع التطبيقات"
+  },
+  "revokeAppsQuestion": {
+    "message": "هل تريد قطع اتصال جميع التطبيقات المعتمدة؟ لن تُحذف المقتطفات أو أذونات المتصفح. وافق على التطبيق مجددًا لإعادة وصله."
+  },
+  "localAISavedOrigin": {
+    "message": "محفوظ لهذا التطبيق: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "لم تتم الموافقة على أي نقطة نهاية ذكاء اصطناعي محلي لهذا التطبيق."
+  },
+  "localAIApproveFirst": {
+    "message": "وافق على هذا التطبيق قبل حفظ نقطة نهاية للذكاء الاصطناعي المحلي."
+  },
+  "localAIReadFailed": {
+    "message": "تعذّرت قراءة الموافقة على الذكاء الاصطناعي المحلي: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "يجب أن يستخدم الذكاء الاصطناعي المحلي HTTP(S) دون بيانات اعتماد في عنوان URL"
+  },
+  "localAIPermissionDenied": {
+    "message": "رُفض إذن الذكاء الاصطناعي المحلي؛ لم تتغير الموافقة المحفوظة."
+  },
+  "localAIApprovalFailed": {
+    "message": "فشلت الموافقة على الذكاء الاصطناعي المحلي"
+  },
+  "invalidAppTarget": {
+    "message": "استخدم تطبيق HTTP(S) أو ملفًا مستقلًا محددًا دون بيانات اعتماد"
+  },
+  "appPermissionDenied": {
+    "message": "رُفض إذن الوصول إلى التطبيق"
+  },
+  "appApprovalFailed": {
+    "message": "فشلت الموافقة على التطبيق"
+  },
+  "appApproved": {
+    "message": "تمت الموافقة على التطبيق. أعد تحميل علامة تبويب التطبيق للاتصال."
+  },
+  "appsRevoked": {
+    "message": "أُلغيت جميع اتصالات التطبيقات."
+  },
+  "revokeFailed": {
+    "message": "فشل الإلغاء"
+  },
+  "notificationWaiting": {
+    "message": "بانتظار إذن المتصفح…"
+  },
+  "notificationEnabled": {
+    "message": "إشعارات سطح المكتب مفعّلة"
+  },
+  "notificationEnable": {
+    "message": "تفعيل إشعارات سطح المكتب"
+  },
+  "notificationEnabledDesc": {
+    "message": "إشعارات سطح المكتب مفعّلة. قد تمنع إعدادات نظام التشغيل عرضها رغم ذلك. ألغِ الإذن من إعدادات إضافات المتصفح."
+  },
+  "notificationDisabledDesc": {
+    "message": "إشعارات سطح المكتب معطّلة؛ وتظل التنبيهات داخل التطبيق متاحة."
+  },
+  "notificationCheckFailed": {
+    "message": "تعذّر التحقّق من إذن الإشعارات: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "بانتظار استجابة إذن المتصفح. إن لم تظهر مطالبة، فتحقّق من أذونات الإضافة في المتصفح أو أعد فتح هذه اللوحة."
+  },
+  "notificationRequestFailed": {
+    "message": "فشل طلب إذن الإشعارات: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "تعذّر التحقّق من إذن الإشعارات: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "تظل التنبيهات داخل التطبيق متاحة."
+  },
+  "notificationNotEnabled": {
+    "message": "لم تُفعّل إشعارات سطح المكتب؛ وتظل التنبيهات داخل التطبيق متاحة. تحقّق من أذونات الإضافة في المتصفح إن لم تظهر مطالبة."
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — مراجعة المقتطفات"
+  },
+  "clipReview": {
+    "message": "مراجعة المقتطفات"
+  },
+  "clipReviewSubtitle": {
+    "message": "تصفّح مقتطفاتك المحفوظة وأدرها"
+  },
+  "totalCaptures": {
+    "message": "إجمالي المقتطفات"
+  },
+  "unsent": {
+    "message": "غير مرسل"
+  },
+  "applyAll": {
+    "message": "تطبيق على الكل"
+  },
+  "sendAll": {
+    "message": "إرسال الكل إلى ThreatCaddy"
+  },
+  "refresh": {
+    "message": "تحديث"
+  },
+  "clearAll": {
+    "message": "مسح الكل"
+  },
+  "delete": {
+    "message": "حذف"
+  },
+  "confirm": {
+    "message": "تأكيد"
+  },
+  "cancel": {
+    "message": "إلغاء"
+  },
+  "noCapturesTitle": {
+    "message": "لا توجد مقتطفات بعد"
+  },
+  "noSourceUrl": {
+    "message": "لا يوجد عنوان URL للمصدر"
+  },
+  "importConfirmed": {
+    "message": "تم تأكيد الاستيراد"
+  },
+  "legacySent": {
+    "message": "مرسل (قديم، غير متحقق منه)"
+  },
+  "importPending": {
+    "message": "بانتظار تأكيد الاستيراد"
+  },
+  "importFailedRetained": {
+    "message": "فشل الاستيراد — تم الاحتفاظ بالمقتطف"
+  },
+  "folder": {
+    "message": "المجلد"
+  },
+  "editCaptureMetadata": {
+    "message": "تعديل البيانات الوصفية للمقتطف"
+  },
+  "deleteCaptureTitle": {
+    "message": "حذف المقتطف"
+  },
+  "deleteCaptureQuestion": {
+    "message": "هل أنت متأكد من حذف هذا المقتطف؟"
+  },
+  "captureDeleted": {
+    "message": "حُذف المقتطف"
+  },
+  "preparingDestination": {
+    "message": "جارٍ تجهيز الوجهة…"
+  },
+  "noUnsentCaptures": {
+    "message": "لا توجد مقتطفات غير مرسلة لإرسالها"
+  },
+  "configureTargetFirst": {
+    "message": "يرجى ضبط عنوان URL للوجهة أولًا"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "عنوان URL للوجهة غير صالح — المسموح فقط هو http وhttps وfile://"
+  },
+  "targetPermissionDenied": {
+    "message": "رُفض الإذن — تحتاج الإضافة إلى الوصول إلى هذا الموقع"
+  },
+  "permissionRequestFailed": {
+    "message": "فشل طلب الإذن"
+  },
+  "fileAccessDisabled": {
+    "message": "الوصول إلى عناوين URL للملفات معطّل. تحقّق من إعدادات الوصول إلى الملفات لهذه الإضافة في المتصفح قبل إعادة المحاولة."
+  },
+  "confirmWorkspace": {
+    "message": "تأكيد مساحة عمل الاستيراد"
+  },
+  "importWorkspaceMessage": {
+    "message": "هل تريد استيراد المقتطفات، وعددها $count$، إلى «$label$» ($workspace$) على $url$؟ لن تُعلّم كمُرسلة إلا الواردات التي أكدت قاعدة البيانات حفظها.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "عدد المقتطفات القديمة التي عُلّمت سابقًا كمُرسلة دون التحقّق: $count$؛ وقد ينشئ استيرادها نسخًا مكررة. راجعها أو احذفها أولًا إذا لم تكن متأكدًا.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "استيراد المقتطفات"
+  },
+  "waitingForImport": {
+    "message": "بانتظار تأكيد الاستيراد…"
+  },
+  "importsConfirmed": {
+    "message": "عدد عمليات استيراد المقتطفات المؤكدة: $count$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "تم تأكيد $confirmed$ من أصل $total$ من عمليات الاستيراد. $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "تم الاحتفاظ بالمقتطفات غير المؤكدة."
+  },
+  "sendFailed": {
+    "message": "فشل الإرسال: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "طُبّقت القيم الافتراضية على جميع المقتطفات غير المرسلة"
+  },
+  "clearAllCaptures": {
+    "message": "مسح جميع المقتطفات"
+  },
+  "clearAllQuestion": {
+    "message": "سيؤدي هذا إلى حذف جميع المقتطفات وعددها $count$ نهائيًا. لا يمكن التراجع عن هذا الإجراء.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "مُسحت المقتطفات المؤكدة؛ وتم الاحتفاظ بالمقتطفات الأحدث"
+  },
+  "capturesLoadFailed": {
+    "message": "تعذّر تحميل المقتطفات. أعد فتح هذه الصفحة أو حاول تحديثها مجددًا."
+  },
+  "metadataSaved": {
+    "message": "حُفظت البيانات الوصفية للمقتطف"
+  },
+  "discardMetadataDraft": {
+    "message": "تجاهل مسودة البيانات الوصفية"
+  },
+  "discardMetadataMessage": {
+    "message": "هل تريد تجاهل تعديلات البيانات الوصفية غير المحفوظة لهذا المقتطف وإعادة تحميل بياناته الوصفية المحفوظة حاليًا؟ لن تتغير البيانات الوصفية المحفوظة."
   }
 }

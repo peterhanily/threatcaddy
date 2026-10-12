@@ -67,6 +67,22 @@ describe('autoEnrichImportedIOCs', () => {
   });
   afterEach(() => { vi.restoreAllMocks(); });
 
+  it('stops the batch on workspace cancellation without late status, audit, or completion writes', async () => {
+    const first = makeIOC(); const second = makeIOC({ id: 'second' });
+    await db.standaloneIOCs.bulkAdd([first, second]);
+    runIntegration.mockImplementation(async () => {
+      window.dispatchEvent(new Event('workspace-will-switch'));
+      return { id: 'cancelled-run', status: 'cancelled' };
+    });
+    const addRun = vi.fn(); const onComplete = vi.fn();
+    await expect(autoEnrichImportedIOCs([first, second], {
+      getInstallationsForIOCType: () => [makeMatch({ apiKey: 'fictional-test-token' })], addRun, onComplete,
+    })).rejects.toThrow();
+    expect(runIntegration).toHaveBeenCalledOnce(); expect(addRun).not.toHaveBeenCalled(); expect(onComplete).not.toHaveBeenCalled();
+    expect((await db.standaloneIOCs.get(first.id))?.tags).toContain('auto-enrich:vt:queued');
+    expect(await db.standaloneIOCs.get(second.id)).toEqual(second);
+  });
+
   it('marks extracted evidence IOCs as skipped when VirusTotal is not installed', async () => {
     const ioc = makeIOC();
     await db.standaloneIOCs.add(ioc);

@@ -96,7 +96,26 @@
     "stopGenerating": "Genereren stoppen",
     "sendMessage": "Bericht verzenden (Enter)",
     "noMatchesFound": "Geen overeenkomsten gevonden",
-    "imageLabel": "Afbeelding {{index}}"
+    "imageLabel": "Afbeelding {{index}}",
+    "readingImages": "Afbeeldingen inlezen…",
+    "submitFailed": "Het verzenden van het bericht kon niet worden voltooid. Nog niet opgeslagen tekst en afbeeldingen zijn behouden; controleer het gesprek voordat je het opnieuw probeert.",
+    "memoryDrafts": "Niet-verzonden chatconcepten worden alleen in het geheugen van dit tabblad bewaard, ook in verborgen gesprekken. Verzend of verwijder ze en wacht op lopende verzendingen voordat je van werkruimte wisselt; bij sluiten of opnieuw laden kunnen ze verloren gaan.",
+    "discardAllDrafts": "Alle niet-verzonden chatconcepten verwijderen",
+    "discardAllDraftsConfirm": "Niet-verzonden tekst en afbeeldingen uit alle gesprekken in deze werkruimte verwijderen en het inlezen van afbeeldingen annuleren? Opgeslagen berichten blijven ongewijzigd. Een lopende verzending moet nog worden afgerond en kan het bericht opslaan. Dit kan niet ongedaan worden gemaakt.",
+    "discardDraftsConfirm": "Niet-verzonden concepten verwijderen",
+    "draftError": {
+      "length": "Een concept mag maximaal 200.000 tekens bevatten. Het vorige concept is behouden; verkort of splits het bericht.",
+      "total": "Niet-verzonden chatconcepten mogen samen maximaal 1.000.000 tekens bevatten. Verzend of verwijder eerst andere concepten; het vorige concept is behouden."
+    },
+    "imageError": {
+      "busy": "Wacht tot de huidige reeks afbeeldingen is ingelezen. Je concept is behouden.",
+      "count": "Voeg maximaal 4 afbeeldingen per bericht toe. Je concept en eerdere afbeeldingen zijn behouden.",
+      "type": "Kies PNG-, JPEG-, GIF- of WebP-afbeeldingen. Je concept en eerdere afbeeldingen zijn behouden.",
+      "size": "Elke afbeelding mag maximaal 5 MiB groot zijn. Je concept en eerdere afbeeldingen zijn behouden.",
+      "total": "Afbeeldingen mogen per bericht samen maximaal 10 MiB groot zijn. Je concept en eerdere afbeeldingen zijn behouden.",
+      "global": "Niet-verzonden chatconcepten mogen samen maximaal 16 afbeeldingen en 20 MiB afbeeldingsgegevens bevatten, inclusief lopende leesbewerkingen. Verzend of verwijder eerst andere concepten; eerdere afbeeldingen zijn behouden.",
+      "read": "Een afbeelding kon niet worden gelezen. De nieuwe reeks is niet toegevoegd; je concept en eerdere afbeeldingen zijn behouden. Selecteer de afbeelding opnieuw."
+    }
   },
   "message": {
     "sources": "Bronnen",
@@ -139,5 +158,8 @@
   "cti": {
     "invalidCommand": "Die CTI-opdracht kon niet worden uitgevoerd:",
     "noSources": "Er zijn geen CTI Agent Host-bronnen geconfigureerd. Voeg een CTI-host toe onder Instellingen → AI → Agent Hosts om deze opdracht te gebruiken."
-  }
+  },
+  "input.serverStatus": "Route via teamserver",
+  "input.serverModelsHelp": "Beschikbare aanbieders en modellen hangen af van de configuratie van je teamserver.",
+  "input.modelLabel": "AI-model"
 }

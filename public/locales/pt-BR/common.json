@@ -215,5 +215,22 @@
   "error.unexpectedDetail": "Ocorreu um erro inesperado.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Evidências",
-  "sidebar.products": "Produtos"
+  "sidebar.products": "Produtos",
+  "syncStatus.screenshareHidden": "A sincronização precisa de atenção. Desative o compartilhamento de tela para ver os detalhes.",
+  "syncStatus.review": "Revisar configurações de sincronização",
+  "draftRecovery.message": "Algumas alterações não foram salvas. Os rascunhos ficam apenas nesta aba. Tente novamente ou baixe-os antes de fechá-la.",
+  "draftRecovery.untitled": "Rascunho não salvo",
+  "draftRecovery.retry": "Tentar salvar novamente",
+  "draftRecovery.download": "Baixar rascunho",
+  "draftRecovery.discard": "Descartar rascunho",
+  "draftRecovery.discardConfirm": "Descartar permanentemente este rascunho não salvo? Baixe-o primeiro se precisar de uma cópia de recuperação.",
+  "draftRecovery.conflictField": "Revisar conflito de {{field}}",
+  "draftRecovery.keepLocal": "Manter meu valor de {{field}}",
+  "draftRecovery.useRemote": "Usar valor remoto de {{field}}",
+  "offlineStatus.checking": "Verificando o suporte offline",
+  "offlineStatus.installed": "Suporte offline instalado",
+  "offlineStatus.unavailable": "Disponibilidade offline não confirmada",
+  "offlineStatus.checkingHelp": "Um primeiro download grande pode levar vários minutos. Mantenha esta aba aberta durante a instalação.",
+  "offlineStatus.unavailableHelp": "O navegador não confirmou a instalação offline. Ela pode não ser compatível, ainda estar sendo baixada ou não conseguir ser concluída. Guarde um backup exportado.",
+  "offlineStatus.caveat": "Este é o estado do worker do navegador, não uma verificação dos arquivos em cache nem da versão mais recente. Os dados em cache podem ser apagados ou removidos. Isto não é um backup. Servidores de equipe, IA e outros serviços externos precisam de conexão."
 }

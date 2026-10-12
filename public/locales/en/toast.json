@@ -2,8 +2,19 @@
   "clip": {
     "importWarning": "Imported with {{count}} failed clip(s)",
     "importFailed": "Failed to import clips from extension",
+    "refreshFailed": "Clips were saved, but the view could not refresh. Reload this workspace to see them.",
     "openedAsNote": "Opened \"{{name}}\" as a new note",
-    "openFailed": "Failed to open \"{{name}}\""
+    "openFailed": "Failed to open \"{{name}}\"",
+    "fileRefreshFailed": "The file was saved as a note, but the view could not refresh. Reload this workspace to see it.",
+    "fileTitle": "{{name}} — {{size}} — Modified {{modified}}",
+    "fileError": {
+      "capacity_one": "One file was not queued: only 20 files can wait at once. Reopen it after these imports finish.",
+      "capacity_other": "{{count}} files were not queued: only 20 files can wait at once. Reopen them after these imports finish.",
+      "type": "Could not open \"{{name}}\": choose a Markdown or text file.",
+      "size": "Could not open \"{{name}}\": text files must be 5 MiB or smaller. Reopen a smaller file.",
+      "read": "Could not read \"{{name}}\". Check file access and reopen it to retry.",
+      "import": "Could not save \"{{name}}\" as a note. Check workspace storage and reopen the file to retry."
+    }
   },
   "share": {
     "investigationSaved": "Saved investigation \"{{name}}\" with all entities",

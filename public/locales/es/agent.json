@@ -265,5 +265,12 @@
   "picker.activeCount": "{{count}} activo",
   "panel.loadMore": "Cargar más acciones",
   "cycleSummary.expand": "Mostrar detalles del ciclo",
-  "cycleSummary.collapse": "Ocultar detalles del ciclo"
+  "cycleSummary.collapse": "Ocultar detalles del ciclo",
+  "panel.serverRanActions_many": "El servidor ejecutó {{count}} acciones durante tu ausencia",
+  "panel.serverRanActionsTitle_many": "El bot del servidor ejecutó {{count}} acciones mientras esta pestaña estaba desconectada{{topToolSuffix}}. Revisa el hilo de auditoría o cierra.",
+  "meeting.pendingRequests_many": "{{count}} solicitudes de reunión pendientes de agentes",
+  "cycleSummary.errorsTitle_many": "{{count}} errores",
+  "cycleSummary.turns_many": "{{count}} turnos",
+  "cycleSummary.toolErrors_many": "{{count}} errores de herramienta",
+  "picker.agentsSelected_many": "{{count}} agentes seleccionados"
 }

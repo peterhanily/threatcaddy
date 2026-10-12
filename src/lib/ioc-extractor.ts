@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import type { IOCType, IOCEntry, IOCAnalysis } from '../types';
+import { IOCExtractionCache } from './ioc-extraction-cache';
 
 // Defang patterns — normalize obfuscated indicators back to standard form
 export function defang(text: string): string {
@@ -180,7 +181,7 @@ export function extractSigmaRules(text: string): string[] {
   return results;
 }
 
-const MAX_IOC_INPUT_LEN = 5_000_000; // 5 MB max content to scan
+const MAX_IOC_INPUT_LEN = 5_000_000; // UTF-16 code units; scan behavior is unchanged by caching
 const MAX_IOCS_PER_TYPE = 500;
 const MAX_TOTAL_IOCS = 5_000;
 
@@ -189,25 +190,16 @@ export interface ExtractIOCsOptions {
   defaultConfidence?: string;        // default 'medium'
 }
 
-// Simple LRU-ish cache for extraction results keyed by content + options
-const EXTRACTION_CACHE_MAX = 8;
-const extractionCache: { key: string; result: IOCEntry[] }[] = [];
-
-function makeExtractCacheKey(content: string, options?: ExtractIOCsOptions): string {
-  // Use content length + first/last 200 chars + a hash-like fingerprint to keep keys cheap
-  const prefix = content.slice(0, 200);
-  const suffix = content.slice(-200);
-  const optKey = options ? `${options.enabledTypes?.join(',') ?? ''}|${options.defaultConfidence ?? ''}` : '';
-  return `${content.length}:${prefix}:${suffix}:${optKey}`;
-}
+const extractionCache = new IOCExtractionCache();
 
 export function extractIOCs(content: string, options?: ExtractIOCsOptions): IOCEntry[] {
-  const cacheKey = makeExtractCacheKey(content, options);
-  const cached = extractionCache.find((e) => e.key === cacheKey);
-  if (cached) return cached.result;
+  // Preserve the distinction between all types (null) and no types ([]).
+  // Content is compared exactly by the cache, never by a lossy fingerprint.
+  const optionsKey = JSON.stringify([options?.enabledTypes ?? null, options?.defaultConfidence ?? 'medium']);
+  const cached = extractionCache.get(content, optionsKey);
+  if (cached) return cached;
   const result = extractIOCsUncached(content, options);
-  extractionCache.push({ key: cacheKey, result });
-  if (extractionCache.length > EXTRACTION_CACHE_MAX) extractionCache.shift();
+  extractionCache.set(content, optionsKey, result);
   return result;
 }
 

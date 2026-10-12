@@ -6,9 +6,11 @@
     "message": "Captura rápidamente contenido web y redirige solicitudes de IA para ThreatCaddy Threat Intelligence. Los datos se almacenan localmente en tu dispositivo por defecto."
   },
   "version": {
-    "message": "v1.1.1"
+    "message": "v$VERSION$",
+    "placeholders": {
+      "version": { "content": "$1" }
+    }
   },
-
   "quickStats": {
     "message": "Estadísticas rápidas"
   },
@@ -18,7 +20,6 @@
   "thisWeek": {
     "message": "Esta semana"
   },
-
   "quickCapture": {
     "message": "Captura rápida"
   },
@@ -64,7 +65,6 @@
   "saveFailed": {
     "message": "Error al guardar. Por favor, inténtalo de nuevo."
   },
-
   "recentCaptures": {
     "message": "Capturas recientes"
   },
@@ -74,7 +74,6 @@
   "untitled": {
     "message": "Sin título"
   },
-
   "quickActions": {
     "message": "Acciones rápidas"
   },
@@ -84,7 +83,6 @@
   "reviewAllCaptures": {
     "message": "Revisar todas las capturas"
   },
-
   "permissions": {
     "message": "Permisos"
   },
@@ -109,7 +107,6 @@
   "allowFileAccessHint": {
     "message": "Para activar: ve a chrome://extensions, encuentra ThreatCaddy y activa \"Permitir acceso a URL de archivo\"."
   },
-
   "howToUse": {
     "message": "Cómo usar:"
   },
@@ -126,9 +123,8 @@
     "message": "Privacidad:"
   },
   "privacyText": {
-    "message": "Todos los datos permanecen localmente en tu dispositivo. Las claves API se envían solo a tu proveedor elegido. Sin seguimiento."
+    "message": "Los recortes permanecen en este dispositivo hasta que se entregan o exportan. La IA opcional, la obtención de URL y las conexiones a aplicaciones aprobadas pueden enviar datos a los servicios configurados."
   },
-
   "settings": {
     "message": "Configuración"
   },
@@ -150,37 +146,39 @@
   "save": {
     "message": "Guardar"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "Guardar en ThreatCaddy"
   },
-
   "savedToThreatCaddy": {
     "message": "¡Guardado en ThreatCaddy!"
   },
-
   "justNow": {
     "message": "Ahora mismo"
   },
   "minutesAgo": {
     "message": "hace $count$min",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "hace $count$h",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "hace $count$d",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "Contexto de extensión invalidado. Por favor, recarga esta página."
   },
@@ -190,7 +188,9 @@
   "errorExtensionUnknown": {
     "message": "Error de extensión: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +199,6 @@
   "errorExtensionError": {
     "message": "Error de extensión"
   },
-
   "errorInvalidUrl": {
     "message": "URL no válida"
   },
@@ -221,13 +220,17 @@
   "errorBlockedDomain": {
     "message": "Bloqueado: $hostname$ no está en la lista de dominios proxy permitidos",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "Se requiere permiso de host para $hostname$",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +239,9 @@
   "errorUnknownProvider": {
     "message": "Proveedor desconocido: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +250,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "Se requiere permiso de host para $hostname$. Abre el popup de la extensión ThreatCaddy y activa \"Permitir obtención de URL\" en Permisos.",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +264,320 @@
   "errorInvalidTargetUrl": {
     "message": "URL de destino no válida"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "privacyLink": {
+    "message": "Privacidad"
+  },
+  "captureSaveFailed": {
+    "message": "No se guardó el recorte. Su borrador se conserva."
+  },
+  "captureChangeFailed": {
+    "message": "No se guardó el cambio del recorte. Actualice y reintente."
+  },
+  "approvalTrust": {
+    "message": "Apruebe solo aplicaciones de confianza. Este origen exacto (incluido su puerto), o el archivo local exacto, podrá usar las capacidades concedidas a la extensión."
+  },
+  "localAIOrigin": {
+    "message": "Origen del servidor de IA local (opcional)"
+  },
+  "saveLocalAI": {
+    "message": "Guardar aprobación de IA local"
+  },
+  "removeLocalAI": {
+    "message": "Quitar aprobación de IA local"
+  },
+  "approveApp": {
+    "message": "Aprobar aplicación"
+  },
+  "revokeApps": {
+    "message": "Revocar todas las aplicaciones aprobadas"
+  },
+  "revokeAppsQuestion": {
+    "message": "¿Desconectar todas las aplicaciones aprobadas? No se eliminarán recortes ni permisos del navegador. Apruebe de nuevo una aplicación para reconectarla."
+  },
+  "localAISavedOrigin": {
+    "message": "Guardado para esta aplicación: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "No hay un servidor de IA local aprobado para esta aplicación."
+  },
+  "localAIApproveFirst": {
+    "message": "Apruebe esta aplicación antes de guardar un servidor de IA local."
+  },
+  "localAIReadFailed": {
+    "message": "No se pudo leer la aprobación de IA local: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "La IA local debe usar HTTP(S) sin credenciales en su URL"
+  },
+  "localAIPermissionDenied": {
+    "message": "Se denegó el permiso de IA local; la aprobación guardada no ha cambiado."
+  },
+  "localAIApprovalFailed": {
+    "message": "Falló la aprobación de IA local"
+  },
+  "invalidAppTarget": {
+    "message": "Use una aplicación HTTP(S) o un archivo independiente exacto, sin credenciales"
+  },
+  "appPermissionDenied": {
+    "message": "Se denegó el permiso de acceso a la aplicación"
+  },
+  "appApprovalFailed": {
+    "message": "Falló la aprobación de la aplicación"
+  },
+  "appApproved": {
+    "message": "Aplicación aprobada. Recargue su pestaña para conectar."
+  },
+  "appsRevoked": {
+    "message": "Se revocaron todas las conexiones de aplicaciones."
+  },
+  "revokeFailed": {
+    "message": "Falló la revocación"
+  },
+  "notificationWaiting": {
+    "message": "Esperando permiso del navegador…"
+  },
+  "notificationEnabled": {
+    "message": "Notificaciones de escritorio activadas"
+  },
+  "notificationEnable": {
+    "message": "Activar notificaciones de escritorio"
+  },
+  "notificationEnabledDesc": {
+    "message": "Notificaciones de escritorio activadas. El sistema operativo aún puede impedir su visualización. Revoque el permiso en la configuración de extensiones del navegador."
+  },
+  "notificationDisabledDesc": {
+    "message": "Las notificaciones de escritorio están desactivadas; los avisos dentro de la aplicación siguen disponibles."
+  },
+  "notificationCheckFailed": {
+    "message": "No se pudo comprobar el permiso de notificaciones: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "Esperando la respuesta del navegador. Si no aparece una solicitud, revise los permisos de la extensión o vuelva a abrir este panel."
+  },
+  "notificationRequestFailed": {
+    "message": "Falló la solicitud de permiso de notificaciones: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "No se pudo verificar el permiso de notificaciones: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "Los avisos dentro de la aplicación siguen disponibles."
+  },
+  "notificationNotEnabled": {
+    "message": "No se activaron las notificaciones de escritorio; los avisos internos siguen disponibles. Revise los permisos de la extensión si no apareció ninguna solicitud."
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — Revisión de recortes"
+  },
+  "clipReview": {
+    "message": "Revisión de recortes"
+  },
+  "clipReviewSubtitle": {
+    "message": "Consulte y gestione sus recortes"
+  },
+  "totalCaptures": {
+    "message": "Total de recortes"
+  },
+  "unsent": {
+    "message": "Sin enviar"
+  },
+  "applyAll": {
+    "message": "Aplicar a todos"
+  },
+  "sendAll": {
+    "message": "Enviar todo a ThreatCaddy"
+  },
+  "refresh": {
+    "message": "Actualizar"
+  },
+  "clearAll": {
+    "message": "Borrar todo"
+  },
+  "delete": {
+    "message": "Eliminar"
+  },
+  "confirm": {
+    "message": "Confirmar"
+  },
+  "cancel": {
+    "message": "Cancelar"
+  },
+  "noCapturesTitle": {
+    "message": "Aún no hay recortes"
+  },
+  "noSourceUrl": {
+    "message": "Sin URL de origen"
+  },
+  "importConfirmed": {
+    "message": "Importación confirmada"
+  },
+  "legacySent": {
+    "message": "Enviado (antiguo, sin verificar)"
+  },
+  "importPending": {
+    "message": "Esperando confirmación de importación"
+  },
+  "importFailedRetained": {
+    "message": "Importación fallida — conservado"
+  },
+  "folder": {
+    "message": "Carpeta"
+  },
+  "editCaptureMetadata": {
+    "message": "Editar metadatos del recorte"
+  },
+  "deleteCaptureTitle": {
+    "message": "Eliminar recorte"
+  },
+  "deleteCaptureQuestion": {
+    "message": "¿Seguro que desea eliminar este recorte?"
+  },
+  "captureDeleted": {
+    "message": "Recorte eliminado"
+  },
+  "preparingDestination": {
+    "message": "Preparando destino…"
+  },
+  "noUnsentCaptures": {
+    "message": "No hay recortes pendientes de enviar"
+  },
+  "configureTargetFirst": {
+    "message": "Configure primero una URL de destino"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "URL de destino no válida: solo se permiten http, https y file://"
+  },
+  "targetPermissionDenied": {
+    "message": "Permiso denegado: la extensión necesita acceso a este sitio"
+  },
+  "permissionRequestFailed": {
+    "message": "Falló la solicitud de permiso"
+  },
+  "fileAccessDisabled": {
+    "message": "El acceso a archivos locales está desactivado. Revise el acceso a archivos de esta extensión en su navegador antes de reintentar."
+  },
+  "confirmWorkspace": {
+    "message": "Confirmar espacio de importación"
+  },
+  "importWorkspaceMessage": {
+    "message": "¿Importar $count$ recortes en «$label$» ($workspace$) en $url$? Solo las importaciones confirmadas por la base de datos se marcarán como enviadas.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "$count$ recortes antiguos se marcaron como enviados sin verificación; importarlos puede crear duplicados. Revíselos o elimínelos antes si tiene dudas.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "Importar recortes"
+  },
+  "waitingForImport": {
+    "message": "Esperando confirmación de importación…"
+  },
+  "importsConfirmed": {
+    "message": "Importaciones de recortes confirmadas: $count$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "$confirmed$ de $total$ importaciones confirmadas. $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "Los recortes sin confirmar se conservan."
+  },
+  "sendFailed": {
+    "message": "Falló el envío: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "Valores predeterminados aplicados a todos los recortes no enviados"
+  },
+  "clearAllCaptures": {
+    "message": "Borrar todos los recortes"
+  },
+  "clearAllQuestion": {
+    "message": "Esto eliminará permanentemente los $count$ recortes. No se puede deshacer.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "Se borraron los recortes confirmados; se conservaron los más recientes"
+  },
+  "capturesLoadFailed": {
+    "message": "No se pudieron cargar los recortes. Reabra esta página o pulse Actualizar."
+  },
+  "metadataSaved": {
+    "message": "Metadatos del recorte guardados"
+  },
+  "discardMetadataDraft": {
+    "message": "Descartar borrador de metadatos"
+  },
+  "discardMetadataMessage": {
+    "message": "¿Descartar los cambios de metadatos no guardados de este recorte y recargar sus metadatos guardados actuales? Los metadatos guardados no cambiarán."
   }
 }

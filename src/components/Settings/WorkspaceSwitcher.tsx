@@ -3,6 +3,7 @@ import { db } from '../../db';
 import { activateWorkspace, getActiveWorkspaceId, listWorkspaceProfiles, createLocalWorkspace, preserveEncryptionForNewWorkspace } from '../../lib/workspace-profiles';
 import { withEntityDraftBarrier, hasPendingEntityDrafts } from '../../lib/entity-drafts';
 import { syncEngine } from '../../lib/sync-engine';
+import { hasPendingChanges } from '../../lib/pending-changes';
 
 export function WorkspaceSwitcher() {
   const [profiles] = useState(listWorkspaceProfiles);
@@ -15,6 +16,7 @@ export function WorkspaceSwitcher() {
     try {
       await withEntityDraftBarrier(async () => {
         if (hasPendingEntityDrafts()) throw new Error('Resolve unsaved drafts before switching workspaces.');
+        if (hasPendingChanges()) throw new Error('Finish or discard unsaved work before switching workspaces.');
         const destination = create ? (await createLocalWorkspace()).id : selected;
         if (create) preserveEncryptionForNewWorkspace(destination);
         window.dispatchEvent(new Event('workspace-will-switch'));

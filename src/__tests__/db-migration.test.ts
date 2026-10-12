@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import Dexie from 'dexie';
 import { db } from '../db';
 import { migrateIndexedDB, getLegacyCleanupStatus, prepareLegacyCleanup, removeLegacyDatabase, restoreLegacyRecoveryArchive, LEGACY_DB_NAME, LEGACY_TRANSFER_KEY } from '../lib/db-migration';
 import { decryptBackup } from '../lib/backup-crypto';
@@ -6,6 +7,7 @@ import { encryptField, generateMasterKey, isEncryptedEnvelope } from '../lib/cry
 import { setSessionKey } from '../lib/encryptionMiddleware';
 import { clearEncryptionMeta, setEncryptionMeta } from '../lib/encryptionStore';
 import { disableSync } from '../lib/sync-state';
+import { ensureSyncCaptureCoverage, getSyncPauseReason, SYNC_CAPTURE_KEY } from '../lib/sync-capture-policy';
 
 const note = { id: 'n', title: 'Original analyst content', content: 'Private evidence', tags: [] };
 function deleteRaw(name: string): Promise<void> {
@@ -63,7 +65,7 @@ describe('resumable verified legacy database transfer', () => {
     (await seedLegacy(data, version)).close();
     await migrateIndexedDB();
     for (const [name, rows] of Object.entries(data)) expect(await db.table(name).toArray()).toEqual(rows);
-    expect(db.verno).toBe(33);
+    expect(db.verno).toBe(34);
     expect(db.notes.schema.indexes.some(index => index.name === '[folderId+updatedAt]')).toBe(true);
     expect(await getLegacyCleanupStatus()).toEqual({ exists: true, verified: true, records: 7 });
     expect(await sourceExists()).toBe(true);
@@ -78,6 +80,35 @@ describe('resumable verified legacy database transfer', () => {
     await db.notes.update('n', { title: 'New post-transfer work' });
     await migrateIndexedDB();
     expect((await db.notes.get('n'))?.title).toBe('New post-transfer work');
+  });
+
+  it('reclassifies operational legacy history imported into a previously ready empty workspace', async () => {
+    await db.open(); await ensureSyncCaptureCoverage(db);
+    expect(await getSyncPauseReason(db)).toBeNull();
+    (await seedLegacy({ notes: [note], _syncMeta: [{ key: 'syncCursorV2', value: '0' }] })).close();
+    await migrateIndexedDB();
+    expect(await db.table('_localMigrations').get(SYNC_CAPTURE_KEY)).toMatchObject({ state: 'reconciliation-required' });
+    await ensureSyncCaptureCoverage(db);
+    expect(await getSyncPauseReason(db)).toContain('signed out');
+    expect(await db.notes.get('n')).toEqual(note);
+  });
+
+  it('keeps a peer tab paused between the transfer marker and first operational store copy', async () => {
+    await db.open(); await ensureSyncCaptureCoverage(db);
+    (await seedLegacy({ _syncMeta: [{ key: 'syncCursorV2', value: '0' }], notes: [note] })).close();
+    const fail = () => { throw new Error('Paused before first operational copy'); };
+    db.table('_syncMeta').hook('creating', fail);
+    try { await expect(migrateIndexedDB()).rejects.toThrow('Paused before'); }
+    finally { db.table('_syncMeta').hook('creating').unsubscribe(fail); }
+    expect(await db.table('_syncMeta').count()).toBe(0);
+    const peer = new Dexie(db.name);
+    try {
+      await peer.open(); await ensureSyncCaptureCoverage(peer);
+      expect(await getSyncPauseReason(peer)).toContain('signed out');
+      expect(await peer.table('_localMigrations').get(SYNC_CAPTURE_KEY)).toMatchObject({ state: 'reconciliation-required' });
+    } finally { peer.close(); }
+    await migrateIndexedDB();
+    expect(await getSyncPauseReason(db)).toContain('signed out');
   });
 
   it('refuses identity collisions without overwriting either copy', async () => {
@@ -152,9 +183,12 @@ describe('explicit verified legacy cleanup', () => {
     await expect(restoreLegacyRecoveryArchive('sufficient-recovery-password', receipt.blob, false)).rejects.toThrow('Explicitly confirm');
     await expect(restoreLegacyRecoveryArchive('incorrect-password', receipt.blob, true)).rejects.toThrow('Wrong password');
     expect(await db.notes.count()).toBe(0);
+    await ensureSyncCaptureCoverage(db);
+    expect(await getSyncPauseReason(db)).toBeNull();
     expect(await restoreLegacyRecoveryArchive('sufficient-recovery-password', receipt.blob, true)).toBe(2);
     expect(await db.notes.get('n')).toEqual(note);
     expect(await db.table('_syncQueue').toArray()).toEqual([queue]);
+    expect(await db.table('_localMigrations').get(SYNC_CAPTURE_KEY)).toMatchObject({ state: 'reconciliation-required', reason: 'restored-history' });
   });
 
   it('keeps the source until the backup is saved and deletion is confirmed', async () => {

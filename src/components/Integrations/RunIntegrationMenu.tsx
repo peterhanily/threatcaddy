@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { IntegrationExecutor } from '../../lib/integration-executor';
+import { integrationWrite } from '../../lib/integration-cancellation';
 import type { ExecutionOptions } from '../../lib/integration-executor';
 import { IntegrationResultModal } from './IntegrationResultModal';
 import { db } from '../../db';
@@ -18,10 +19,11 @@ interface RunIntegrationMenuProps {
   matching: Array<{ installation: InstalledIntegration; template: IntegrationTemplate }>;
   addRun: (run: IntegrationRun) => Promise<void>;
   onComplete?: (run: IntegrationRun) => void;
+  onShowResults?: (run: IntegrationRun) => void;
   onOpenSettings?: () => void;
 }
 
-export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onComplete, onOpenSettings }: RunIntegrationMenuProps) {
+export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onComplete, onShowResults, onOpenSettings }: RunIntegrationMenuProps) {
   const { t } = useTranslation('integrations');
   const { t: tt } = useTranslation('toast');
   const { addToast } = useToast();
@@ -69,7 +71,8 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
         match.installation,
         { ioc, investigation },
         {
-          onCreateEntity: async (type, fields) => {
+          onCreateEntity: async (type, fields, signal) => integrationWrite([db.notes, db.standaloneIOCs, db.tasks], signal, async () => {
+            if (!['note', 'ioc', 'task'].includes(type)) throw new Error(`Creating ${type} is not supported by this integration control.`);
             const id = nanoid();
             const now = Date.now();
             switch (type) {
@@ -170,11 +173,12 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
                 break;
             }
             return id;
-          },
-          onUpdateEntity: async (type, id, fields) => {
+          }),
+          onUpdateEntity: async (type, id, fields, signal) => integrationWrite([db.standaloneIOCs], signal, async () => {
+            if (type !== 'ioc') throw new Error(`Updating ${type} is not supported by this integration control.`);
             if (type === 'ioc') {
               const existing = await db.standaloneIOCs.get(id);
-              if (!existing) return;
+              if (!existing || existing.trashed) throw new Error('The IOC update target is missing or in trash.');
               const updates: Partial<StandaloneIOC> = { updatedAt: Date.now() };
               // Copy simple scalar fields
               if (fields.iocStatus !== undefined) updates.iocStatus = fields.iocStatus as string;
@@ -189,9 +193,9 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
                 }
                 updates.enrichment = merged;
               }
-              await db.standaloneIOCs.update(id, updates);
+              if (await db.standaloneIOCs.update(id, updates) !== 1) throw new Error('The IOC update target is no longer available.');
             }
-          },
+          }),
           onNotify: (message) => {
             addToast('info', message);
           },
@@ -208,9 +212,9 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
         addToast('error', tt('integration.failed', { name: match.template.name, error: run.error || run.status }));
       }
 
-      setResultRun(run);
       if (run.displayResults) {
-        setShowResults(true);
+        if (onShowResults) onShowResults(run);
+        else { setResultRun(run); setShowResults(true); }
       }
 
       onComplete?.(run);

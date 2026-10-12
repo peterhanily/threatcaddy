@@ -4,6 +4,8 @@ export const SYNC_TABLES = ['notes', 'tasks', 'folders', 'tags', 'timelineEvents
 export const isSyncTable = (name: string): boolean => (SYNC_TABLES as readonly string[]).includes(name);
 export const revisionKey = (table: string, id: string): string => JSON.stringify(['revision', table, id]);
 
+// Compatibility transport state only. Durable outbox capture must never depend
+// on this flag: signed-out bound workspaces still record their local edits.
 let enabled = false;
 const localOnlyFolders = new Set<string>();
 const suppressed = new WeakSet<object>();

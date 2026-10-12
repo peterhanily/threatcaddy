@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,6 +13,7 @@
 
     body {
       width: 350px;
+      max-width: 100vw;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #030712;
       color: #f9fafb;
@@ -304,7 +305,7 @@
       padding: 2px 0;
       margin-bottom: 0;
       width: auto;
-      text-align: left;
+      text-align: start;
       font-weight: 400;
       transition: color 0.2s;
     }
@@ -362,6 +363,27 @@
     .option-row input::placeholder {
       color: #6b7280;
     }
+    button, input, select { min-height: 44px; }
+    input, textarea, select, .option-row { min-width: 0; }
+    button, p, .help-text, [role="status"], [role="alert"] { overflow-wrap: anywhere; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, a:focus-visible {
+      outline: 2px solid #a5b4fc; outline-offset: 2px;
+    }
+    #settings-btn, #settings-back { min-width: 44px; }
+    [dir="rtl"] #settings-back svg { transform: scaleX(-1); }
+    label:has(.perm-slider) { width: 44px !important; height: 44px !important; }
+    label:has(.perm-slider) input { position: absolute; inset: 0; width: 44px !important; height: 44px !important; }
+    .perm-slider { top: 11px !important; bottom: 11px !important; left: 2px !important; right: 2px !important; pointer-events: none; }
+    input:focus-visible + .perm-slider { outline: 2px solid #a5b4fc; outline-offset: 3px; }
+    .modal-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 12px; background: #000b; }
+    .modal-overlay.hidden { display: none; }
+    .modal { width: 100%; max-height: calc(100vh - 24px); overflow-y: auto; background: #1f2937; border: 1px solid #4b5563; border-radius: 10px; padding: 16px; }
+    .modal h3 { margin-bottom: 12px; }
+    .modal p { font-size: 13px; line-height: 1.5; margin-bottom: 16px; }
+    .modal-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .modal-actions button { flex: 1 1 100px; margin: 0; }
+    .btn-danger { background: #991b1b; color: #fecaca; }
+    .btn-secondary { background: #374151; }
   </style>
 </head>
 <body>
@@ -370,10 +392,10 @@
       <img src="assets/icon.svg" alt="ThreatCaddy" class="header-logo" />
       <div>
         <h1 data-i18n="appName">ThreatCaddy</h1>
-        <div class="version" data-i18n="version">v1.1.1</div>
+        <div class="version" data-i18n="version" data-runtime-version></div>
       </div>
     </div>
-    <button id="settings-btn" style="background:none;border:none;color:#9ca3af;cursor:pointer;padding:4px;margin:0;width:auto;transition:color 0.2s;" data-i18n-title="settingsTooltip" title="Settings">
+    <button id="settings-btn" style="background:none;border:none;color:#9ca3af;cursor:pointer;padding:4px;margin:0;width:auto;transition:color 0.2s;" data-i18n-title="settingsTooltip" data-i18n-label="settings" aria-label="Settings" title="Settings">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
   </header>
@@ -400,15 +422,17 @@
         id="capture-title"
         class="capture-title"
         data-i18n-placeholder="noteTitlePlaceholder"
+        data-i18n-label="noteTitlePlaceholder" aria-label="Note title (optional)"
         placeholder="Note title (optional)"
       />
       <textarea
         id="capture-text"
         class="capture-textarea"
         data-i18n-placeholder="captureTextPlaceholder"
+        data-i18n-label="quickCapture" aria-label="Quick Capture"
         placeholder="Type or paste a note..."
       ></textarea>
-      <button type="button" class="options-toggle" id="options-toggle" data-i18n-options="options">&#9662; Options</button>
+      <button type="button" class="options-toggle" id="options-toggle" data-i18n="options" aria-controls="options-panel" aria-expanded="false">Options</button>
       <div class="options-panel" id="options-panel">
         <div class="option-row">
           <label for="opt-folder" data-i18n="investigation">Investigation</label>
@@ -435,8 +459,8 @@
         </div>
       </div>
       <button id="save-btn" data-i18n="saveNote">Save Note</button>
-      <div class="save-success" id="save-success" data-i18n="saved">Saved!</div>
-      <div class="save-error" id="save-error" data-i18n="saveFailed">Failed to save. Please try again.</div>
+      <div class="save-success" id="save-success" role="status" data-i18n="saved">Saved!</div>
+      <div class="save-error" id="save-error" role="alert" data-i18n="saveFailed">Failed to save. Please try again.</div>
     </div>
   </section>
 
@@ -463,7 +487,7 @@
         <span style="font-size:11px;color:#9ca3af;" data-i18n="allowCaddyAIDesc">Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral).</span>
       </div>
       <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
-        <input type="checkbox" id="ai-perm-toggle" style="opacity:0;width:0;height:0;">
+        <input type="checkbox" id="ai-perm-toggle" data-i18n-label="allowCaddyAI" aria-label="Allow CaddyAI" style="opacity:0;width:0;height:0;">
         <span id="ai-perm-slider" class="perm-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#4b5563;border-radius:11px;transition:background-color .2s;"></span>
       </label>
     </div>
@@ -473,7 +497,7 @@
         <span style="font-size:11px;color:#9ca3af;" data-i18n="allowUrlFetchingDesc">Required for the /fetch command and non-localhost local LLMs.</span>
       </div>
       <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
-        <input type="checkbox" id="url-perm-toggle" style="opacity:0;width:0;height:0;">
+        <input type="checkbox" id="url-perm-toggle" data-i18n-label="allowUrlFetching" aria-label="Allow URL fetching" style="opacity:0;width:0;height:0;">
         <span id="url-perm-slider" class="perm-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#4b5563;border-radius:11px;transition:background-color .2s;"></span>
       </label>
     </div>
@@ -486,21 +510,21 @@
       <span data-i18n="howToUseShortcut">Or use keyboard shortcut:</span> <span class="kbd" id="shortcut-kbd"></span> <span data-i18n="howToUseShortcutSuffix">(clips selection, or full page if nothing selected)</span><br>
       <br>
       <strong data-i18n="privacyLabel">Privacy:</strong><br>
-      <span data-i18n="privacyText">All data stays local on your device. API keys are sent only to your chosen provider. No tracking.</span>
+      <span data-i18n="privacyText">Clips stay on this device until delivered or exported. Optional AI, URL fetching and approved app connections can send data to configured services.</span>
     </div>
   </section>
 
   <footer>
     <a href="https://threatcaddy.com" target="_blank" rel="noopener noreferrer">threatcaddy.com</a>
     <span style="color: #6b7280;">·</span>
-    <a href="https://threatcaddy.com/privacy.html" target="_blank" rel="noopener noreferrer">Privacy</a>
+    <a href="https://threatcaddy.com/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="privacyLink">Privacy</a>
     <span style="color: #6b7280;">·</span>
     <a href="https://github.com/peterhanily/threatcaddy" target="_blank" rel="noopener noreferrer">GitHub</a>
   </footer>
 
   <div id="settings-page" style="display:none;">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-      <button id="settings-back" style="background:none;border:none;color:#9ca3af;cursor:pointer;padding:4px;margin:0;width:auto;" data-i18n-title="back" title="Back">
+      <button id="settings-back" style="background:none;border:none;color:#9ca3af;cursor:pointer;padding:4px;margin:0;width:auto;" data-i18n-title="back" data-i18n-label="back" aria-label="Back" title="Back">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
       </button>
       <h2 style="margin:0;" data-i18n="settings">Settings</h2>
@@ -511,13 +535,16 @@
       <div class="help-text" style="margin-bottom:8px;">
         <span style="font-size:11px;color:#9ca3af;" data-i18n="targetUrlDesc">The ThreatCaddy instance URL this extension connects to.</span>
       </div>
-      <input type="text" id="settings-target-url" class="capture-title" data-i18n-placeholder="targetUrlPlaceholder" placeholder="https://threatcaddy.com" style="margin-bottom:4px;" />
-      <p style="font-size:11px;color:#9ca3af;">Approve only an app you trust. This exact origin (including its port), or exact standalone file, may use the extension's granted capabilities.</p>
-      <label for="settings-local-ai-url" style="font-size:11px;">Local AI endpoint origin (optional)</label>
+      <input type="text" id="settings-target-url" class="capture-title" data-i18n-placeholder="targetUrlPlaceholder" data-i18n-label="targetUrl" aria-label="Target URL" dir="ltr" placeholder="https://threatcaddy.com" style="margin-bottom:4px;" />
+      <p style="font-size:11px;color:#9ca3af;" data-i18n="approvalTrust">Approve only an app you trust. This exact origin (including its port), or exact standalone file, may use the extension's granted capabilities.</p>
+      <label for="settings-local-ai-url" style="font-size:11px;" data-i18n="localAIOrigin">Local AI endpoint origin (optional)</label>
       <input type="url" id="settings-local-ai-url" class="capture-title" placeholder="http://localhost:11434" />
-      <button id="settings-save-url" style="font-size:12px;padding:6px 12px;">Approve app</button>
-      <button id="settings-revoke-apps" style="font-size:12px;padding:6px 12px;">Revoke all approved apps</button>
-      <button id="settings-notifications" aria-describedby="settings-notification-status" style="font-size:12px;padding:6px 12px;">Enable desktop notifications</button>
+      <div id="settings-local-ai-status" role="status" style="font-size:11px;color:#9ca3af;"></div>
+      <button id="settings-save-local-ai" data-i18n="saveLocalAI" style="font-size:12px;padding:6px 12px;">Save local AI approval</button>
+      <button id="settings-remove-local-ai" data-i18n="removeLocalAI" style="font-size:12px;padding:6px 12px;">Remove local AI approval</button>
+      <button id="settings-save-url" data-i18n="approveApp" style="font-size:12px;padding:6px 12px;">Approve app</button>
+      <button id="settings-revoke-apps" data-i18n="revokeApps" style="font-size:12px;padding:6px 12px;">Revoke all approved apps</button>
+      <button id="settings-notifications" data-i18n="notificationEnable" aria-describedby="settings-notification-status" style="font-size:12px;padding:6px 12px;">Enable desktop notifications</button>
       <div id="settings-notification-status" role="status" style="font-size:11px;color:#9ca3af;"></div>
       <div id="settings-approval-status" role="status" style="font-size:11px;color:#9ca3af;"></div>
       <div id="settings-url-saved" class="save-success" data-i18n="saved">Saved!</div>
@@ -531,7 +558,7 @@
           <span style="font-size:11px;color:#9ca3af;" data-i18n="allowCaddyAIDesc">Grants access to AI provider APIs (Anthropic, OpenAI, Google, Mistral).</span>
         </div>
         <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
-          <input type="checkbox" id="settings-ai-toggle" style="opacity:0;width:0;height:0;">
+          <input type="checkbox" id="settings-ai-toggle" data-i18n-label="allowCaddyAI" aria-label="Allow CaddyAI" style="opacity:0;width:0;height:0;">
           <span id="settings-ai-slider" class="perm-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#4b5563;border-radius:11px;transition:background-color .2s;"></span>
         </label>
       </div>
@@ -541,13 +568,24 @@
           <span style="font-size:11px;color:#9ca3af;" data-i18n="allowUrlFetchingDesc">Required for the /fetch command and non-localhost local LLMs.</span>
         </div>
         <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0;">
-          <input type="checkbox" id="settings-url-toggle" style="opacity:0;width:0;height:0;">
+          <input type="checkbox" id="settings-url-toggle" data-i18n-label="allowUrlFetching" aria-label="Allow URL fetching" style="opacity:0;width:0;height:0;">
           <span id="settings-url-slider" class="perm-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#4b5563;border-radius:11px;transition:background-color .2s;"></span>
         </label>
       </div>
     </section>
   </div>
 
+  <div class="modal-overlay hidden" id="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-message">
+      <h3 id="modal-title" data-i18n="confirm">Confirm</h3>
+      <p id="modal-message"></p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="modal-cancel" data-i18n="cancel">Cancel</button>
+        <button class="btn btn-danger" id="modal-confirm" data-i18n="confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+  <script src="ui.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

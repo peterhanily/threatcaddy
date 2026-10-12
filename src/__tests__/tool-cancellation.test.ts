@@ -13,7 +13,7 @@ beforeEach(async () => {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); localStorage.removeItem(workspaceStorageKey('threatcaddy-settings')); });
 
 describe('integration tool cancellation boundaries', () => {
-  it('passes cancellation to enrichment and rejects late entity output callbacks', async () => {
+  it.each(['omitted', 'independent active'] as const)('passes cancellation to enrichment and rejects late entity output callbacks with an %s callback signal', async signalKind => {
     await db.standaloneIOCs.add({ id: 'ioc', type: 'domain', value: 'example.test', confidence: 'medium', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
     await db.integrationTemplates.add({ id: 'template', schemaVersion: '1.0', version: '1.0.0', name: 'Fixture enrichment', description: 'Synthetic', author: 'test', icon: 'search', color: '#000', category: 'enrichment', tags: [], triggers: [{ type: 'manual' }], configSchema: [], steps: [], outputs: [], requiredDomains: [], source: 'user', createdAt: 1, updatedAt: 1 });
     await db.installedIntegrations.add({ id: 'installed', templateId: 'template', name: 'Fixture', enabled: true, config: {}, scopeType: 'all', scopeFolderIds: [], runCount: 0, errorCount: 0, createdAt: 1, updatedAt: 1 });
@@ -21,8 +21,9 @@ describe('integration tool cancellation boundaries', () => {
     vi.spyOn(IntegrationExecutor.prototype, 'run').mockImplementation(async (_template, _installation, _input, callbacks, signal) => {
       expect(signal).toBe(controller.signal);
       controller.abort();
-      await expect(callbacks.onCreateEntity?.('note', { title: 'Late output' })).rejects.toThrow();
-      await expect(callbacks.onUpdateEntity?.('ioc', 'ioc', { value: 'changed.test' })).rejects.toThrow();
+      const writeSignal = signalKind === 'omitted' ? undefined : new AbortController().signal;
+      await expect(callbacks.onCreateEntity?.('note', { title: 'Late output' }, writeSignal)).rejects.toThrow();
+      await expect(callbacks.onUpdateEntity?.('ioc', 'ioc', { value: 'changed.test' }, writeSignal)).rejects.toThrow();
       throw new DOMException('Cancelled', 'AbortError');
     });
     const result = await executeTool(call('enrich_ioc', { iocId: 'ioc' }), undefined, undefined, { signal: controller.signal, allowedTools: new Set(['enrich_ioc']) });

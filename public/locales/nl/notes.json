@@ -83,7 +83,9 @@
     "lockScrollAria": "Scrolsynchronisatie inschakelen",
     "wordsChars": "{{words}} woorden, {{chars}} tekens",
     "created": "Aangemaakt {{date}}",
-    "modified": "Gewijzigd {{date}}"
+    "modified": "Gewijzigd {{date}}",
+    "saveFailed": "Wijzigingen konden niet worden opgeslagen. Je concept blijft in dit tabblad bewaard; probeer het opnieuw voordat je het sluit.",
+    "retrySave": "Opnieuw opslaan"
   },
   "list": {
     "defaultTitle": "Notities",

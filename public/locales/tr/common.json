@@ -215,5 +215,22 @@
   "error.unexpectedDetail": "Beklenmedik bir hata oluştu.",
   "header.caddylabs": "CaddyLabs",
   "sidebar.evidence": "Kanıt",
-  "sidebar.products": "Ürünler"
+  "sidebar.products": "Ürünler",
+  "syncStatus.screenshareHidden": "Eşitleme için işlem gerekiyor. Ayrıntıları görmek için ekran paylaşımını kapatın.",
+  "syncStatus.review": "Eşitleme ayarlarını incele",
+  "draftRecovery.message": "Bazı değişiklikler kaydedilemedi. Taslak yalnızca bu sekmede tutuluyor. Kapatmadan önce yeniden deneyin veya taslağı indirin.",
+  "draftRecovery.untitled": "Kaydedilmemiş taslak",
+  "draftRecovery.retry": "Kaydetmeyi yeniden dene",
+  "draftRecovery.download": "Taslağı indir",
+  "draftRecovery.discard": "Taslağı sil",
+  "draftRecovery.discardConfirm": "Bu kaydedilmemiş taslak kalıcı olarak silinsin mi? Kurtarma kopyası gerekiyorsa önce indirin.",
+  "draftRecovery.conflictField": "{{field}} çakışmasını incele",
+  "draftRecovery.keepLocal": "Benim {{field}} değerimi koru",
+  "draftRecovery.useRemote": "Uzak {{field}} değerini kullan",
+  "offlineStatus.checking": "Çevrimdışı destek denetleniyor",
+  "offlineStatus.installed": "Çevrimdışı destek yüklendi",
+  "offlineStatus.unavailable": "Çevrimdışı kullanılabilirlik doğrulanmadı",
+  "offlineStatus.checkingHelp": "Büyük bir ilk indirme birkaç dakika sürebilir. Yükleme sırasında bu sekmeyi açık tutun.",
+  "offlineStatus.unavailableHelp": "Tarayıcı çevrimdışı yüklemeyi doğrulamadı. Desteklenmiyor, hâlâ indiriliyor veya tamamlanamıyor olabilir. Dışa aktarılmış bir yedek saklayın.",
+  "offlineStatus.caveat": "Bu, tarayıcı çalışanının durumudur; önbellekteki dosyaların veya en son sürümün doğrulaması değildir. Önbellek verileri temizlenebilir veya kaldırılabilir. Bu bir yedek değildir. Ekip sunucuları, yapay zekâ ve diğer harici hizmetler bağlantı gerektirir."
 }

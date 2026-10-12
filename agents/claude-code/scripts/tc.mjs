@@ -9,7 +9,7 @@
 // daemon. Subsequent commands go through a Unix socket — no popup.
 // Daemons auto-exit after 20 minutes idle or when the tab closes.
 
-import { readFileSync, writeFileSync, unlinkSync, existsSync, readdirSync } from 'fs';
+import { readFileSync, unlinkSync, existsSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
@@ -107,7 +107,6 @@ class CDP {
 
   onEvent(method, handler) {
     // Piggyback on the message handler for CDP events
-    const origOnMessage = this.#ws.onmessage;
     this.#ws.onmessage = (ev) => {
       const msg = JSON.parse(ev.data);
       if (msg.method === method) handler(msg.params || {});
@@ -219,7 +218,7 @@ async function runDaemon(targetId, wsUrl) {
     if (!alive) return;
     alive = false;
     server.close();
-    try { unlinkSync(sp); } catch {}
+    try { unlinkSync(sp); } catch { /* Best-effort removal of the task socket. */ }
     cdp.close();
     process.exit(0);
   }
@@ -309,7 +308,7 @@ async function runDaemon(targetId, wsUrl) {
     });
   });
 
-  try { unlinkSync(sp); } catch {}
+  try { unlinkSync(sp); } catch { /* A previous task socket may already be absent. */ }
   server.listen(sp);
 }
 
@@ -327,10 +326,10 @@ async function getOrStartDaemon(targetId, wsUrl) {
   const sp = sockPath(targetId);
 
   // Try existing daemon
-  try { return await connectToSocket(sp); } catch {}
+  try { return await connectToSocket(sp); } catch { /* Fall through to the existing daemon-start path. */ }
 
   // Clean stale socket
-  try { unlinkSync(sp); } catch {}
+  try { unlinkSync(sp); } catch { /* Best-effort stale socket cleanup before startup. */ }
 
   // Spawn daemon as detached background process
   const child = spawn(process.execPath, [process.argv[1], '_daemon', targetId, wsUrl], {
@@ -342,7 +341,7 @@ async function getOrStartDaemon(targetId, wsUrl) {
   // Wait for socket to come up (includes time for user to click Allow on first use)
   for (let i = 0; i < DAEMON_CONNECT_RETRIES; i++) {
     await sleep(DAEMON_CONNECT_DELAY);
-    try { return await connectToSocket(sp); } catch {}
+    try { return await connectToSocket(sp); } catch { /* Retry until the existing startup deadline. */ }
   }
   throw new Error('Daemon failed to start — did you click Allow in Chrome\'s debugging prompt?');
 }
@@ -459,7 +458,7 @@ async function main() {
         await sendCommand(conn, { cmd: 'stop' });
         console.log(`Stopped daemon for ${d.targetId.slice(0, 8)}`);
       } catch {
-        try { unlinkSync(d.socketPath); } catch {}
+        try { unlinkSync(d.socketPath); } catch { /* The stopped task socket may already be absent. */ }
       }
     }
     return;
@@ -477,7 +476,7 @@ async function main() {
         break;
       } catch {
         // Stale socket, clean up
-        try { unlinkSync(d.socketPath); } catch {}
+        try { unlinkSync(d.socketPath); } catch { /* Best-effort cleanup of the unreachable task socket. */ }
       }
     }
   }

@@ -3,8 +3,10 @@ import type { PresenceUser } from '../types';
 import type { SyncResult } from '../lib/server-api';
 import { configureServerApi } from '../lib/server-api';
 import { syncEngine } from '../lib/sync-engine';
-import { enableSync, disableSync } from '../lib/sync-middleware';
 import { WSClient } from '../lib/ws-client';
+import { liveQuery } from 'dexie';
+import { db } from '../db';
+import { getSyncPauseReason } from '../lib/sync-capture-policy';
 
 interface AuthState {
   user?: { id: string } | null;
@@ -42,7 +44,16 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
   const [presenceUsers, setPresenceUsers] = useState<PresenceUser[]>([]);
   const [syncConflicts, setSyncConflicts] = useState<SyncResult[]>([]);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [durablePause, setDurablePause] = useState<string | null>(null);
   const wsClientRef = useRef<WSClient | null>(null);
+
+  // Recovery remains visible while signed out and updates across tabs. Capture
+  // is owned by durable DB identity, never this transport effect's lifetime.
+  useEffect(() => {
+    const subscription = liveQuery(() => db.transaction('r', '_localMigrations', '_syncMeta', () => getSyncPauseReason(db)))
+      .subscribe({ next: setDurablePause, error: () => setDurablePause('Sync safety state could not be read. Local edits remain on this device; reload before syncing.') });
+    return () => subscription.unsubscribe();
+  }, []);
 
   useLayoutEffect(() => {
     callbacks.current = { auth, reloadFns, onFolderInvite };
@@ -64,9 +75,6 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
 
     if (serverUrl && (connected || userId)) {
       configureServerApi(serverUrl, currentAuth.getAccessToken, currentAuth.invalidateAccessToken);
-      // Capture offline edits for a signed-in account even while transport is
-      // unreachable. Reconnection can then deliver the same durable queue.
-      enableSync();
       syncEngine.setErrorHandler(message => { if (current()) setSyncError(message); });
       syncEngine.setWorkspaceIdentity(serverUrl, userId ?? '');
       syncEngine.setConflictHandler((conflicts) => { if (current()) setSyncConflicts(conflicts); });
@@ -143,7 +151,6 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
         if (current()) console.warn('[sync] Failed to get access token for WebSocket:', err);
       });
     } else {
-      disableSync();
       syncEngine.stop();
       syncEngine.setWSClient(null);
       configureServerApi(null, async () => null);
@@ -157,7 +164,6 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
       active = false;
       syncEngine.stop();
       syncEngine.setWSClient(null);
-      disableSync();
       if (wsClientRef.current) {
         wsClientRef.current.disconnect();
         wsClientRef.current = null;
@@ -186,7 +192,7 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
   return {
     presenceUsers: stateScope === scope ? presenceUsers : [],
     syncConflicts: stateScope === scope ? syncConflicts : [],
-    syncError: stateScope === scope ? syncError : null,
+    syncError: durablePause ?? (stateScope === scope ? syncError : null),
     setSyncConflicts,
     handleResolveConflict,
     handleResolveAllConflicts,

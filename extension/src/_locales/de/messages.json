@@ -6,9 +6,11 @@
     "message": "Web-Inhalte schnell erfassen und KI-Anfragen für ThreatCaddy Threat Intelligence proxyen. Daten bleiben standardmäßig lokal auf Ihrem Gerät."
   },
   "version": {
-    "message": "v1.1.1"
+    "message": "v$VERSION$",
+    "placeholders": {
+      "version": { "content": "$1" }
+    }
   },
-
   "quickStats": {
     "message": "Schnellstatistiken"
   },
@@ -18,7 +20,6 @@
   "thisWeek": {
     "message": "Diese Woche"
   },
-
   "quickCapture": {
     "message": "Schnellerfassung"
   },
@@ -64,7 +65,6 @@
   "saveFailed": {
     "message": "Speichern fehlgeschlagen. Bitte erneut versuchen."
   },
-
   "recentCaptures": {
     "message": "Aktuelle Erfassungen"
   },
@@ -74,7 +74,6 @@
   "untitled": {
     "message": "Ohne Titel"
   },
-
   "quickActions": {
     "message": "Schnellaktionen"
   },
@@ -84,7 +83,6 @@
   "reviewAllCaptures": {
     "message": "Alle Erfassungen überprüfen"
   },
-
   "permissions": {
     "message": "Berechtigungen"
   },
@@ -109,7 +107,6 @@
   "allowFileAccessHint": {
     "message": "Zum Aktivieren: Gehe zu chrome://extensions, finde ThreatCaddy und aktiviere \"Zugriff auf Datei-URLs erlauben\"."
   },
-
   "howToUse": {
     "message": "Verwendung:"
   },
@@ -126,9 +123,8 @@
     "message": "Datenschutz:"
   },
   "privacyText": {
-    "message": "Alle Daten bleiben lokal auf Ihrem Gerät. API-Schlüssel werden nur an Ihren gewählten Anbieter gesendet. Kein Tracking."
+    "message": "Clips bleiben auf diesem Gerät, bis sie übermittelt oder exportiert werden. Optionale KI-Funktionen, URL-Abrufe und genehmigte App-Verbindungen können Daten an konfigurierte Dienste senden."
   },
-
   "settings": {
     "message": "Einstellungen"
   },
@@ -150,37 +146,39 @@
   "save": {
     "message": "Speichern"
   },
-
   "contextMenuSaveToThreatCaddy": {
     "message": "In ThreatCaddy speichern"
   },
-
   "savedToThreatCaddy": {
     "message": "In ThreatCaddy gespeichert!"
   },
-
   "justNow": {
     "message": "Gerade eben"
   },
   "minutesAgo": {
     "message": "vor $count$m",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "hoursAgo": {
     "message": "vor $count$h",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "daysAgo": {
     "message": "vor $count$T",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "errorExtensionInvalidated": {
     "message": "Erweiterungskontext ungültig. Bitte diese Seite neu laden."
   },
@@ -190,7 +188,9 @@
   "errorExtensionUnknown": {
     "message": "Erweiterungsfehler: $detail$",
     "placeholders": {
-      "detail": { "content": "$1" }
+      "detail": {
+        "content": "$1"
+      }
     }
   },
   "errorNoResponse": {
@@ -199,7 +199,6 @@
   "errorExtensionError": {
     "message": "Erweiterungsfehler"
   },
-
   "errorInvalidUrl": {
     "message": "Ungültige URL"
   },
@@ -221,13 +220,17 @@
   "errorBlockedDomain": {
     "message": "Blockiert: $hostname$ ist nicht in der Liste der erlaubten Proxy-Domains",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorHostPermissionRequired": {
     "message": "Host-Berechtigung erforderlich für $hostname$",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorCaddyAIPermission": {
@@ -236,7 +239,9 @@
   "errorUnknownProvider": {
     "message": "Unbekannter Anbieter: $provider$",
     "placeholders": {
-      "provider": { "content": "$1" }
+      "provider": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknown": {
@@ -245,7 +250,9 @@
   "errorHostPermissionLocalLLM": {
     "message": "Host-Berechtigung erforderlich für $hostname$. Öffnen Sie das ThreatCaddy-Erweiterungs-Popup und aktivieren Sie \"URL-Abruf zulassen\" unter Berechtigungen.",
     "placeholders": {
-      "hostname": { "content": "$1" }
+      "hostname": {
+        "content": "$1"
+      }
     }
   },
   "errorTimedOutPageLoad": {
@@ -257,8 +264,320 @@
   "errorInvalidTargetUrl": {
     "message": "Ungültige Ziel-URL"
   },
-
   "notificationDefaultTitle": {
     "message": "CaddyAgent"
+  },
+  "privacyLink": {
+    "message": "Datenschutz"
+  },
+  "captureSaveFailed": {
+    "message": "Die Erfassung wurde nicht gespeichert. Ihr Entwurf bleibt erhalten."
+  },
+  "captureChangeFailed": {
+    "message": "Die Änderung der Erfassung wurde nicht gespeichert. Aktualisieren Sie die Ansicht und versuchen Sie es erneut."
+  },
+  "approvalTrust": {
+    "message": "Genehmigen Sie nur eine vertrauenswürdige App. Genau dieser Ursprung einschließlich Port oder genau diese eigenständige Datei darf die erteilten Fähigkeiten der Erweiterung nutzen."
+  },
+  "localAIOrigin": {
+    "message": "Ursprung des lokalen KI-Endpunkts (optional)"
+  },
+  "saveLocalAI": {
+    "message": "Lokale KI-Genehmigung speichern"
+  },
+  "removeLocalAI": {
+    "message": "Lokale KI-Genehmigung entfernen"
+  },
+  "approveApp": {
+    "message": "App genehmigen"
+  },
+  "revokeApps": {
+    "message": "Alle App-Genehmigungen widerrufen"
+  },
+  "revokeAppsQuestion": {
+    "message": "Alle genehmigten Apps trennen? Erfassungen und Browserberechtigungen werden nicht gelöscht. Genehmigen Sie eine App erneut, um sie wieder zu verbinden."
+  },
+  "localAISavedOrigin": {
+    "message": "Für diese App gespeichert: $origin$",
+    "placeholders": {
+      "origin": {
+        "content": "$1"
+      }
+    }
+  },
+  "localAINone": {
+    "message": "Für diese App ist kein lokaler KI-Endpunkt genehmigt."
+  },
+  "localAIApproveFirst": {
+    "message": "Genehmigen Sie diese App, bevor Sie einen lokalen KI-Endpunkt speichern."
+  },
+  "localAIReadFailed": {
+    "message": "Lokale KI-Genehmigung konnte nicht gelesen werden: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "invalidLocalAI": {
+    "message": "Lokale KI muss HTTP(S) ohne Zugangsdaten in der URL verwenden"
+  },
+  "localAIPermissionDenied": {
+    "message": "Die Berechtigung für lokale KI wurde verweigert; die gespeicherte Genehmigung bleibt unverändert."
+  },
+  "localAIApprovalFailed": {
+    "message": "Genehmigung für lokale KI fehlgeschlagen"
+  },
+  "invalidAppTarget": {
+    "message": "Verwenden Sie eine HTTP(S)-App oder eine genaue eigenständige Datei ohne Zugangsdaten"
+  },
+  "appPermissionDenied": {
+    "message": "Die Zugriffsberechtigung für die App wurde verweigert"
+  },
+  "appApprovalFailed": {
+    "message": "App-Genehmigung fehlgeschlagen"
+  },
+  "appApproved": {
+    "message": "App genehmigt. Laden Sie den App-Tab neu, um die Verbindung herzustellen."
+  },
+  "appsRevoked": {
+    "message": "Alle App-Verbindungen wurden widerrufen."
+  },
+  "revokeFailed": {
+    "message": "Widerruf fehlgeschlagen"
+  },
+  "notificationWaiting": {
+    "message": "Warten auf Browserberechtigung…"
+  },
+  "notificationEnabled": {
+    "message": "Desktopbenachrichtigungen aktiviert"
+  },
+  "notificationEnable": {
+    "message": "Desktopbenachrichtigungen aktivieren"
+  },
+  "notificationEnabledDesc": {
+    "message": "Desktopbenachrichtigungen sind aktiviert. Betriebssystemeinstellungen können die Anzeige weiterhin unterdrücken. Widerrufen Sie die Berechtigung in den Erweiterungseinstellungen Ihres Browsers."
+  },
+  "notificationDisabledDesc": {
+    "message": "Desktopbenachrichtigungen sind deaktiviert; Hinweise innerhalb der App bleiben verfügbar."
+  },
+  "notificationCheckFailed": {
+    "message": "Benachrichtigungsberechtigung konnte nicht geprüft werden: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationWaitingDesc": {
+    "message": "Warten auf die Berechtigungsantwort des Browsers. Falls keine Abfrage erscheint, prüfen Sie die Browserberechtigungen der Erweiterung oder öffnen Sie dieses Fenster erneut."
+  },
+  "notificationRequestFailed": {
+    "message": "Anforderung der Benachrichtigungsberechtigung fehlgeschlagen: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "notificationVerifyFailed": {
+    "message": "Benachrichtigungsberechtigung konnte nicht bestätigt werden: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "inAppAlertsAvailable": {
+    "message": "Hinweise innerhalb der App bleiben verfügbar."
+  },
+  "notificationNotEnabled": {
+    "message": "Desktopbenachrichtigungen wurden nicht aktiviert; Hinweise innerhalb der App bleiben verfügbar. Prüfen Sie die Browserberechtigungen der Erweiterung, falls keine Abfrage erschien."
+  },
+  "clipReviewTitle": {
+    "message": "ThreatCaddy — Clip-Prüfung"
+  },
+  "clipReview": {
+    "message": "Clip-Prüfung"
+  },
+  "clipReviewSubtitle": {
+    "message": "Erfasste Clips durchsuchen und verwalten"
+  },
+  "totalCaptures": {
+    "message": "Erfassungen insgesamt"
+  },
+  "unsent": {
+    "message": "Ungesendet"
+  },
+  "applyAll": {
+    "message": "Auf alle anwenden"
+  },
+  "sendAll": {
+    "message": "Alle an ThreatCaddy senden"
+  },
+  "refresh": {
+    "message": "Aktualisieren"
+  },
+  "clearAll": {
+    "message": "Alle löschen"
+  },
+  "delete": {
+    "message": "Löschen"
+  },
+  "confirm": {
+    "message": "Bestätigen"
+  },
+  "cancel": {
+    "message": "Abbrechen"
+  },
+  "noCapturesTitle": {
+    "message": "Noch keine Erfassungen"
+  },
+  "noSourceUrl": {
+    "message": "Keine Quell-URL"
+  },
+  "importConfirmed": {
+    "message": "Import bestätigt"
+  },
+  "legacySent": {
+    "message": "Gesendet (Altbestand, ungeprüft)"
+  },
+  "importPending": {
+    "message": "Warten auf Importbestätigung"
+  },
+  "importFailedRetained": {
+    "message": "Import fehlgeschlagen — behalten"
+  },
+  "folder": {
+    "message": "Ordner"
+  },
+  "editCaptureMetadata": {
+    "message": "Erfassungsmetadaten bearbeiten"
+  },
+  "deleteCaptureTitle": {
+    "message": "Erfassung löschen"
+  },
+  "deleteCaptureQuestion": {
+    "message": "Möchten Sie diese Erfassung wirklich löschen?"
+  },
+  "captureDeleted": {
+    "message": "Erfassung gelöscht"
+  },
+  "preparingDestination": {
+    "message": "Ziel wird vorbereitet…"
+  },
+  "noUnsentCaptures": {
+    "message": "Keine ungesendeten Erfassungen zum Senden"
+  },
+  "configureTargetFirst": {
+    "message": "Konfigurieren Sie zuerst eine Ziel-URL"
+  },
+  "invalidTargetUrlDetail": {
+    "message": "Ungültige Ziel-URL — nur http, https und file:// sind erlaubt"
+  },
+  "targetPermissionDenied": {
+    "message": "Berechtigung verweigert — die Erweiterung benötigt Zugriff auf diese Website"
+  },
+  "permissionRequestFailed": {
+    "message": "Berechtigungsanfrage fehlgeschlagen"
+  },
+  "fileAccessDisabled": {
+    "message": "Zugriff auf Datei-URLs ist deaktiviert. Prüfen Sie vor einem erneuten Versuch die Dateizugriffseinstellungen dieser Erweiterung im Browser."
+  },
+  "confirmWorkspace": {
+    "message": "Import-Arbeitsbereich bestätigen"
+  },
+  "importWorkspaceMessage": {
+    "message": "$count$ Erfassungen in „$label$“ ($workspace$) unter $url$ importieren? Nur von der Datenbank bestätigte Importe werden als gesendet markiert.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "label": {
+        "content": "$2"
+      },
+      "workspace": {
+        "content": "$3"
+      },
+      "url": {
+        "content": "$4"
+      }
+    }
+  },
+  "legacyImportWarning": {
+    "message": "$count$ ältere Erfassungen wurden zuvor ohne Prüfung als gesendet markiert; ihr Import kann Duplikate erzeugen. Prüfen oder löschen Sie sie zuerst, wenn Sie unsicher sind.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importCaptures": {
+    "message": "Erfassungen importieren"
+  },
+  "waitingForImport": {
+    "message": "Warten auf Importbestätigung…"
+  },
+  "importsConfirmed": {
+    "message": "$count$ Clip-Importe bestätigt.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importsPartial": {
+    "message": "$confirmed$ von $total$ Importen bestätigt. $detail$",
+    "placeholders": {
+      "confirmed": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "detail": {
+        "content": "$3"
+      }
+    }
+  },
+  "unconfirmedRetained": {
+    "message": "Unbestätigte Erfassungen bleiben erhalten."
+  },
+  "sendFailed": {
+    "message": "Senden fehlgeschlagen: $detail$",
+    "placeholders": {
+      "detail": {
+        "content": "$1"
+      }
+    }
+  },
+  "defaultsApplied": {
+    "message": "Standardwerte auf alle ungesendeten Clips angewendet"
+  },
+  "clearAllCaptures": {
+    "message": "Alle Erfassungen löschen"
+  },
+  "clearAllQuestion": {
+    "message": "Dadurch werden alle $count$ Erfassungen dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "capturesCleared": {
+    "message": "Bestätigte Erfassungen gelöscht; neuere Erfassungen wurden behalten"
+  },
+  "capturesLoadFailed": {
+    "message": "Erfassungen konnten nicht geladen werden. Öffnen Sie diese Seite erneut oder versuchen Sie erneut zu aktualisieren."
+  },
+  "metadataSaved": {
+    "message": "Erfassungsmetadaten gespeichert"
+  },
+  "discardMetadataDraft": {
+    "message": "Metadatenentwurf verwerfen"
+  },
+  "discardMetadataMessage": {
+    "message": "Ungespeicherte Metadatenänderungen dieser Erfassung verwerfen und die aktuell gespeicherten Metadaten neu laden? Gespeicherte Metadaten bleiben unverändert."
   }
 }

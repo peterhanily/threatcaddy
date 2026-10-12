@@ -5,6 +5,7 @@ import { deflateRawSync } from 'node:zlib'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { standaloneHtml } from './build/standalone-html'
+import { dependencyProvenance } from './build/dependency-provenance'
 
 function stripCSPForSingleFile(): Plugin {
   return {
@@ -98,7 +99,7 @@ function loadCompressedLocales(): Record<string, string> {
 }
 
 export default defineConfig({
-  plugins: [standaloneAssets(), react(), tailwindcss(), stripCSPForSingleFile(), inlineFaviconForSingleFile(), standaloneNotices(), standaloneHtml()],
+  plugins: [standaloneAssets(), react(), tailwindcss(), stripCSPForSingleFile(), inlineFaviconForSingleFile(), standaloneNotices(), dependencyProvenance('standalone'), standaloneHtml()],
   base: './',
   esbuild: { supported: { 'inline-script': true, 'inline-style': true } },
   worker: {

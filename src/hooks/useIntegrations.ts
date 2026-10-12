@@ -4,6 +4,7 @@ import { db } from '../db';
 import type { IntegrationTemplate, InstalledIntegration, IntegrationRun } from '../types/integration-types';
 import { BUILTIN_INTEGRATIONS } from '../lib/builtin-integrations';
 import { syncProxyAllowedDomains } from '../lib/integration-executor';
+import { compileIntegrationPlan, INTEGRATION_LIMITS } from '../lib/integration-plan';
 
 export function useIntegrations() {
   const [templates, setTemplates] = useState<IntegrationTemplate[]>([]);
@@ -41,7 +42,16 @@ export function useIntegrations() {
   // --- Template management ---
 
   const installTemplate = useCallback(async (template: IntegrationTemplate) => {
-    await db.integrationTemplates.put(template);
+    template = compileIntegrationPlan(template).template as unknown as IntegrationTemplate;
+    if (BUILTIN_INTEGRATIONS.some(existing => existing.id === template.id)) {
+      throw new Error('An integration with this ID already exists. Import a JSON copy to keep both definitions; existing definitions are not replaced.');
+    }
+    await db.transaction('rw', [db.integrationTemplates, db.installedIntegrations], async () => {
+      if (await db.integrationTemplates.get(template.id) || await db.installedIntegrations.where('templateId').equals(template.id).count()) {
+        throw new Error('An integration with this ID already exists. Import a JSON copy to keep both definitions; existing definitions are not replaced.');
+      }
+      await db.integrationTemplates.add(template);
+    });
     setTemplates((prev) => {
       const filtered = prev.filter((t) => t.id !== template.id);
       return [...filtered, template];
@@ -73,37 +83,20 @@ export function useIntegrations() {
   }, []);
 
   const importTemplate = useCallback(async (json: string): Promise<IntegrationTemplate> => {
+    if (json.length > INTEGRATION_LIMITS.templateBytes) throw new Error('Integration template exceeds the supported size limit');
     const parsed = JSON.parse(json) as IntegrationTemplate;
 
-    // Validate required fields
-    if (!parsed.id || !parsed.name || !parsed.steps || !parsed.outputs) {
-      throw new Error('Invalid integration template: missing required fields (id, name, steps, outputs)');
-    }
-
-    // Validate step structure
-    const validStepTypes = new Set(['http', 'transform', 'condition', 'loop', 'create-entity', 'update-entity', 'delay', 'set-variable']);
-    for (const step of parsed.steps) {
-      if (!step.id || !step.type || !step.label) {
-        throw new Error(`Invalid step: missing id, type, or label`);
-      }
-      if (!validStepTypes.has(step.type)) {
-        throw new Error(`Invalid step type: ${step.type}`);
-      }
-    }
-
-    // Validate requiredDomains is present and non-empty for templates with HTTP steps
-    const hasHttpSteps = parsed.steps.some((s) => s.type === 'http');
-    if (hasHttpSteps && (!parsed.requiredDomains || parsed.requiredDomains.length === 0)) {
-      throw new Error('Templates with HTTP steps must declare requiredDomains');
-    }
+    const validated = compileIntegrationPlan(parsed).template as unknown as IntegrationTemplate;
 
     const template: IntegrationTemplate = {
-      ...parsed,
+      ...validated,
+      id: nanoid(),
       source: 'user',
+      createdAt: validated.createdAt ?? Date.now(),
       updatedAt: Date.now(),
     };
 
-    await db.integrationTemplates.put(template);
+    await db.integrationTemplates.add(template);
     setTemplates((prev) => {
       const filtered = prev.filter((t) => t.id !== template.id);
       return [...filtered, template];

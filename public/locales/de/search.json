@@ -27,5 +27,6 @@
   "timelineEvents": "Zeitleistenereignisse",
   "whiteboards": "Whiteboards",
   "iocs": "IOCs",
-  "chatThreads": "Chat-Threads"
+  "chatThreads": "Chat-Threads",
+  "evidence": "Beweismaterial"
 }

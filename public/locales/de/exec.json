@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "Ereignisse diese Woche",
   "metrics.aiChats": "KI-Chats",
   "metrics.graphNodes": "Graph-Knoten",
-  "dashboard.backToExecView": "Zurück zur Führungsansicht"
+  "dashboard.backToExecView": "Zurück zur Führungsansicht",
+  "dashboard.switchToLight": "Zum hellen Design wechseln",
+  "dashboard.switchToDark": "Zum dunklen Design wechseln",
+  "dashboard.emptyTitle": "Ihr Arbeitsbereich ist bereit",
+  "dashboard.emptyDescription": "Erstellen Sie im Analystenmodus eine Untersuchung oder importieren Sie Ihre bisherige Arbeit. Dieses Dashboard fasst die in diesem Arbeitsbereich gespeicherte Arbeit zusammen.",
+  "dashboard.emptyAction": "Analystenmodus öffnen"
 }

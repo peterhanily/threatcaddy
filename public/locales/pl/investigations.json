@@ -102,5 +102,7 @@
   "card.entity.iocs": "IOC",
   "card.entity.events": "Zdarzenia",
   "card.entity.whiteboards": "Tablice",
-  "card.entity.chats": "Czaty"
+  "card.entity.chats": "Czaty",
+  "card.members_few": "{{count}} członków",
+  "card.members_many": "{{count}} członków"
 }

@@ -35,6 +35,7 @@ copyFileSync(
   join(rootDir, 'src/popup.js'),
   join(outdir, 'popup.js')
 );
+copyFileSync(join(rootDir, 'src/ui.js'), join(outdir, 'ui.js'));
 
 // Copy background script
 copyFileSync(
@@ -76,7 +77,7 @@ iconSizes.forEach(size => {
   if (existsSync(sourcePath)) {
     copyFileSync(sourcePath, destPath);
   } else {
-    console.warn(`  Warning: ${iconFile} not found. Run 'npm run generate:icons' first.`);
+    throw new Error(`${iconFile} not found. Run 'npm run generate:icons' first.`);
   }
 });
 
@@ -84,7 +85,7 @@ iconSizes.forEach(size => {
 const svgSource = join(rootDir, 'assets/icon.svg');
 if (existsSync(svgSource)) {
   copyFileSync(svgSource, join(outdir, 'assets/icon.svg'));
-}
+} else throw new Error('assets/icon.svg is required');
 
 // Copy _locales directory (chrome.i18n)
 console.log('Copying _locales...');

@@ -145,5 +145,11 @@
   "mitreReport.techniqueCount_other": "{{count}} tecniche",
   "mitreReport.techniqueCoverage": "Copertura tecniche",
   "emptyState": "Nessun evento nella timeline ancora",
-  "createFirstHint": "Usa il pulsante + in alto per aggiungere il tuo primo evento"
+  "createFirstHint": "Usa il pulsante + in alto per aggiungere il tuo primo evento",
+  "eventCard.assetCount_many": "{{count}} asset",
+  "feed.eventCount_many": "{{count}} eventi",
+  "gantt.eventCount_many": "{{count}} eventi",
+  "heatmap.maxEventsPerTechnique_many": "{{count}} max eventi per tecnica",
+  "heatmap.maxActorsPerTechnique_many": "{{count}} max attori per tecnica",
+  "mitreReport.techniqueCount_many": "{{count}} tecniche"
 }

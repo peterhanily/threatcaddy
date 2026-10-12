@@ -33,7 +33,7 @@ export async function scratchDatabase(options: { maxConnections?: number } = {})
   const maxConnections = options.maxConnections ?? 1;
   if (!Number.isInteger(maxConnections) || maxConnections < 1 || maxConnections > 8) throw new Error('Scratch database pool must have 1–8 connections.');
   const coordinatorUrl = testDatabaseUrl(process.env.TEST_DATABASE_URL);
-  const coordinator = connect(coordinatorUrl);
+  let coordinator = connect(coordinatorUrl);
   const name = `tc_it_${process.pid}_${randomBytes(10).toString('hex')}`;
   let created = false;
   let client: TestSql | undefined;
@@ -48,23 +48,33 @@ export async function scratchDatabase(options: { maxConnections?: number } = {})
     const [scratchIdentity] = await client`SELECT current_database() AS name`;
     if (scratchIdentity.name !== name) throw new Error('Scratch database identity mismatch.');
     let closed = false;
+    let closing: Promise<void> | undefined;
     return {
       name, url, sql: client, db: drizzle(client),
       async close() {
         if (closed) return;
-        closed = true;
-        try { await client!.end({ timeout: 5 }); }
-        finally {
-          // This identifier is generated above, never obtained from an environment variable or database row.
-          try { await coordinator`DROP DATABASE ${coordinator(name)} WITH (FORCE)`; }
-          finally { await coordinator.end({ timeout: 5 }); }
-        }
+        if (closing) return closing;
+        closing = (async () => {
+          try { await client!.end({ timeout: 5 }); }
+          finally {
+            // This identifier is generated above, never taken from external data.
+            // Plain DROP handles autovacuum internally, but refuses leaked client
+            // sessions instead of terminating them or needing broader role rights.
+            try { await coordinator`DROP DATABASE ${coordinator(name)}`; closed = true; }
+            finally {
+              await coordinator.end({ timeout: 5 });
+              // A failed drop remains retryable after the caller closes its leak.
+              if (!closed) coordinator = connect(coordinatorUrl);
+            }
+          }
+        })();
+        try { await closing; } finally { closing = undefined; }
       },
     };
   } catch (error) {
     try {
       try { if (client) await client.end({ timeout: 5 }); }
-      finally { if (created) await coordinator`DROP DATABASE ${coordinator(name)} WITH (FORCE)`; }
+      finally { if (created) await coordinator`DROP DATABASE ${coordinator(name)}`; }
     } finally { await coordinator.end({ timeout: 5 }); }
     throw error;
   }

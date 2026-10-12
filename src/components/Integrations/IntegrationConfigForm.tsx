@@ -114,7 +114,7 @@ export function IntegrationConfigForm({ fields, values, onSave, onCancel }: {
               onChange={(event) => updateField(field.key, field.type === 'number' && event.target.value !== '' ? Number(event.target.value) : event.target.value)}
               placeholder={field.placeholder} className={inputClass} />
           )}
-          {invalid.has(field.key) && <p id={errorId} className="text-xs text-red-400">{t('config.requiredField', { defaultValue: '{{label}} is required.', label: field.label })}</p>}
+          {invalid.has(field.key) && <p id={errorId} className="text-xs text-red-400">{t('config.invalidField', { defaultValue: 'Enter a valid value for {{label}}.', label: field.label })}</p>}
         </div>;
       })}
       {saveError && <p role="alert" className="text-xs text-red-400">{t('config.saveFailed', 'Could not save configuration. Your entries are still here; try again.')}</p>}

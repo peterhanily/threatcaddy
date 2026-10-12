@@ -167,5 +167,10 @@
   "metrics.eventsThisWeek": "Zdarzenia w tym tygodniu",
   "metrics.aiChats": "Czaty AI",
   "metrics.graphNodes": "Węzły grafu",
-  "dashboard.backToExecView": "Powrót do Widoku kierownictwa"
+  "dashboard.backToExecView": "Powrót do Widoku kierownictwa",
+  "dashboard.switchToLight": "Włącz jasny motyw",
+  "dashboard.switchToDark": "Włącz ciemny motyw",
+  "dashboard.emptyTitle": "Obszar roboczy jest gotowy",
+  "dashboard.emptyDescription": "Utwórz śledztwo lub zaimportuj swoją pracę w trybie Analityka. Ten pulpit podsumowuje pracę zapisaną w tym obszarze.",
+  "dashboard.emptyAction": "Otwórz tryb Analityka"
 }

@@ -4,6 +4,95 @@ const MAX_CAPTURES = 500;
 const APP_APPROVAL_KEY = 'approvedAppsV1';
 const POLICY_MAX_AGE = 24 * 60 * 60 * 1000;
 const MAX_FETCH_BYTES = 5 * 1024 * 1024;
+const CLIP_STATE_KEY = 'clipDeliveryV2';
+const CLIP_ACK_WAIT_MS = 10000;
+const CLIP_SESSION_AGE_MS = 30 * 60 * 1000;
+function approvalGeneration(approval) {
+  // Existing installations retain their exact approval, but every new approval
+  // receives fresh authority independent of the wall clock.
+  return approval?.generation || (Number.isFinite(approval?.approvedAt) ? `legacy:${approval.approvedAt}` : undefined);
+}
+
+// The background is the only writer of capture and approval state. A rejected
+// write must not poison later operations, and network waits never hold this queue.
+let storageTail = Promise.resolve();
+function serializeStorage(operation) {
+  const next = storageTail.then(operation);
+  storageTail = next.catch(() => {});
+  return next;
+}
+function clipRevision(clip) { return Number.isSafeInteger(clip.revision) && clip.revision > 0 ? clip.revision : 1; }
+function confirmedCapture(clip) { return clip.delivery?.status === 'confirmed' && clip.delivery.revision === clipRevision(clip); }
+function normalizedClip(value) {
+  const result = { id: value.id, revision: clipRevision(value), title: value.title ?? '', content: value.content ?? '',
+    sourceUrl: value.sourceUrl ?? '', sourceTitle: value.sourceTitle ?? '', entityType: value.entityType || 'note',
+    folderName: value.folderName ?? '', clsLevel: value.clsLevel ?? '', createdAt: value.createdAt };
+  if (typeof result.id !== 'string' || !result.id || result.id.length > 128) throw new Error('Invalid capture ID');
+  if (!Number.isSafeInteger(result.createdAt) || result.createdAt < 0 || result.createdAt > 8640000000000000) throw new Error('Invalid capture date');
+  if (!['note', 'task', 'timeline-event'].includes(result.entityType)) throw new Error('Unsupported capture type');
+  const limits = { title: 4096, content: 4 * 1024 * 1024, sourceUrl: 16384, sourceTitle: 4096 };
+  for (const [field, limit] of Object.entries(limits)) {
+    if (typeof result[field] !== 'string' || new TextEncoder().encode(result[field]).length > limit) throw new Error(`Capture ${field} is too large or invalid. The capture is retained.`);
+  }
+  if (typeof result.folderName !== 'string' || result.folderName.length > 256 || typeof result.clsLevel !== 'string' || result.clsLevel.length > 128) throw new Error('Invalid capture options');
+  if (new TextEncoder().encode(JSON.stringify(result)).length > 5 * 1024 * 1024) throw new Error('Capture exceeds 5 MiB. The capture is retained.');
+  return result;
+}
+async function fingerprintClip(clip) {
+  // Byte-for-byte order shared with src/lib/clip-protocol.ts; fingerprint itself
+  // and extension delivery metadata are deliberately excluded.
+  const canonical = { id: clip.id, revision: clip.revision, title: clip.title, content: clip.content,
+    sourceUrl: clip.sourceUrl, sourceTitle: clip.sourceTitle, entityType: clip.entityType,
+    folderName: clip.folderName, clsLevel: clip.clsLevel, createdAt: clip.createdAt };
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(canonical)));
+  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+function deliveryState(stored) {
+  return stored[CLIP_STATE_KEY] || { sourceId: crypto.randomUUID(), sessions: {}, attempts: {} };
+}
+function pruneDeliveryState(state, captures) {
+  const pending = new Set(captures.filter(clip => clip.delivery?.status === 'pending').map(clip => clip.delivery.attemptId));
+  for (const id of Object.keys(state.attempts)) if (!pending.has(id)) delete state.attempts[id];
+  const required = new Set(Object.values(state.attempts).map(attempt => attempt.sessionId));
+  for (const [id, session] of Object.entries(state.sessions)) if (!required.has(id) && Date.now() - session.createdAt > CLIP_SESSION_AGE_MS) delete state.sessions[id];
+  const unused = Object.keys(state.sessions).filter(id => !required.has(id));
+  for (const id of unused.slice(0, Math.max(0, unused.length - 31))) delete state.sessions[id];
+}
+function captureReferences(value) {
+  if (!Array.isArray(value) || value.length > MAX_CAPTURES) throw new Error('Select at most 500 captures');
+  return value.map(item => {
+    if (!item || typeof item.id !== 'string' || !item.id || !Number.isSafeInteger(item.revision) || item.revision < 1) throw new Error('Invalid capture selection; refresh and retry');
+    return { id: item.id, revision: item.revision };
+  });
+}
+function editCapture(clip, values) {
+  for (const [field, value] of Object.entries(values)) {
+    if (!['entityType', 'folderName', 'clsLevel'].includes(field) || typeof value !== 'string') throw new Error('Unsupported capture edit');
+    if (field === 'entityType' && !['note', 'task', 'timeline-event'].includes(value)) throw new Error('Unsupported capture type');
+    if (value.length > (field === 'folderName' ? 256 : 128)) throw new Error('Capture option is too long');
+  }
+  if (Object.entries(values).every(([field, value]) => (clip[field] || '') === value)) return clip;
+  if (clipRevision(clip) >= Number.MAX_SAFE_INTEGER) throw new Error('Capture revision exhausted; save a new capture');
+  const updated = { ...clip, ...values, revision: clipRevision(clip) + 1, sent: false };
+  delete updated.delivery;
+  return updated;
+}
+async function mutateCaptures(message) {
+  return serializeStorage(async () => {
+    const stored = await chrome.storage.local.get(['captures', CLIP_STATE_KEY]);
+    const captures = stored.captures || [];
+    const refs = captureReferences(message.clips);
+    const selected = new Map(refs.map(ref => [ref.id, ref.revision]));
+    // A stale confirmation/edit may never delete or acknowledge a newer revision.
+    if (captures.some(clip => selected.has(clip.id) && selected.get(clip.id) !== clipRevision(clip))) throw new Error('A capture changed in another window. Refresh and retry.');
+    let updated;
+    if (message.type === 'DELETE_CAPTURES') updated = captures.filter(clip => !selected.has(clip.id));
+    else updated = captures.map(clip => selected.has(clip.id) ? editCapture(clip, message.values || {}) : clip);
+    if (stored[CLIP_STATE_KEY]) pruneDeliveryState(stored[CLIP_STATE_KEY], updated);
+    await chrome.storage.local.set({ captures: updated, ...(stored[CLIP_STATE_KEY] ? { [CLIP_STATE_KEY]: stored[CLIP_STATE_KEY] } : {}) });
+    return { success: true };
+  });
+}
 
 function appTargetKey(value) {
   const url = new URL(value);
@@ -63,14 +152,43 @@ async function readBoundedResponse(response, limit = MAX_FETCH_BYTES) {
   } catch (error) { await reader.cancel().catch(() => {}); throw error; }
   finally { reader.releaseLock(); }
 }
-async function boundedFetch(url, options, timeout) {
+async function boundedFetch(url, options, timeout, signal) {
   const controller = new AbortController();
+  const abort = () => controller.abort();
+  if (signal?.aborted) abort();
+  else signal?.addEventListener('abort', abort, { once: true });
   const timer = setTimeout(() => controller.abort(), timeout);
   try {
+    controller.signal.throwIfAborted();
     const response = await fetch(url, { ...options, signal: controller.signal, redirect: 'error', credentials: 'omit' });
-    return { response, text: await readBoundedResponse(response) };
-  } finally { clearTimeout(timer); }
+    const text = await readBoundedResponse(response);
+    controller.signal.throwIfAborted();
+    return { response, text };
+  } finally { clearTimeout(timer); signal?.removeEventListener('abort', abort); }
 }
+
+// Short-lived cancellation records also cover an abort arriving during the
+// request's asynchronous authorization read. They contain no body or credentials.
+const proxyRequests = new Map();
+function proxyRequestKey(message, sender, context) {
+  if (typeof message.requestId !== 'string' || !message.requestId || message.requestId.length > 128
+      || typeof message.documentToken !== 'string' || !message.documentToken || message.documentToken.length > 128) throw new Error('Invalid proxy request identity');
+  return JSON.stringify([context.key, approvalGeneration(context.approval), sender.tab?.id,
+    sender.frameId ?? 0, sender.documentId || '', message.documentToken, message.requestId]);
+}
+function proxyRequest(key) {
+  if (proxyRequests.has(key)) return proxyRequests.get(key);
+  if (proxyRequests.size >= 128) throw new Error('Too many pending proxy requests; wait and retry');
+  const state = { controller: new AbortController(), started: false };
+  state.timer = setTimeout(() => { state.controller.abort(); proxyRequests.delete(key); }, 60000);
+  proxyRequests.set(key, state);
+  return state;
+}
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes[APP_APPROVAL_KEY]) {
+    for (const state of proxyRequests.values()) state.controller.abort();
+  }
+});
 
 // ── Dynamic bridge.js registration (MV3) ────────────────────────────────
 // No app is implicitly trusted. Only explicitly paired targets receive a bridge.
@@ -94,7 +212,13 @@ async function unregisterDynamicBridge() {
   catch { /* Not registered. */ }
 }
 
-async function syncBridgeRegistration() {
+let bridgeRegistrationTail = Promise.resolve();
+function syncBridgeRegistration() {
+  const next = bridgeRegistrationTail.then(reconcileBridgeRegistration);
+  bridgeRegistrationTail = next.catch(() => {});
+  return next;
+}
+async function reconcileBridgeRegistration() {
   const stored = await chrome.storage.local.get([APP_APPROVAL_KEY]);
   const patterns = [...new Set(Object.keys(stored[APP_APPROVAL_KEY] ?? {}).map(targetUrlToMatchPattern).filter(Boolean))];
   await unregisterDynamicBridge();
@@ -136,10 +260,10 @@ async function getSelectionAsMarkdown() {
 
   // Resolve relative URLs to absolute
   div.querySelectorAll('img[src]').forEach(img => {
-    try { img.src = new URL(img.getAttribute('src'), document.baseURI).href; } catch {}
+    try { img.src = new URL(img.getAttribute('src'), document.baseURI).href; } catch { /* Preserve the original attribute if it cannot be resolved. */ }
   });
   div.querySelectorAll('a[href]').forEach(a => {
-    try { a.href = new URL(a.getAttribute('href'), document.baseURI).href; } catch {}
+    try { a.href = new URL(a.getAttribute('href'), document.baseURI).href; } catch { /* Preserve the original attribute if it cannot be resolved. */ }
   });
 
   // Convert images to inline base64 data URIs for offline use
@@ -170,7 +294,7 @@ async function getSelectionAsMarkdown() {
       // Try 1: draw the page's already-loaded image (works for same-origin)
       for (const pi of document.querySelectorAll('img')) {
         if (pi.src === src && pi.complete && pi.naturalWidth > 0) {
-          try { clearTimeout(timer); return resolve(capDataUri(drawToCanvas(pi))); } catch {}
+          try { clearTimeout(timer); return resolve(capDataUri(drawToCanvas(pi))); } catch { /* Try the existing fetch fallback when canvas access is unavailable. */ }
           break;
         }
       }
@@ -478,27 +602,56 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: true }); return;
     }
     const context = await approvedSender(sender);
-    const appMessages = ['PING', 'SET_PROXY_DOMAINS', 'FETCH_URL', 'PROXY_FETCH', 'SEND_NOTIFICATION'];
+    const appMessages = ['PING', 'SET_PROXY_DOMAINS', 'FETCH_URL', 'PROXY_FETCH', 'PROXY_ABORT', 'SEND_NOTIFICATION', 'CLIP_IMPORT_RESULT'];
     if (!context.internal && !appMessages.includes(message.type)) throw new Error('This operation is available only from the extension');
-    if (message.type === 'APPROVE_APP') {
+    if (message.type === 'APPROVE_APP' || message.type === 'UPDATE_LOCAL_LLM_APPROVAL') {
       const key = appTargetKey(message.targetUrl);
-      const stored = await chrome.storage.local.get([APP_APPROVAL_KEY, 'settings']);
-      const localLLMOrigin = message.localLLMUrl ? new URL(message.localLLMUrl).origin : undefined;
+      // Firefox preserves undefined properties while Chrome may omit them.
+      // Only an explicit string updates the approval; '' is explicit removal.
+      const updatesLocalAI = typeof message.localLLMUrl === 'string';
+      if (!updatesLocalAI && message.localLLMUrl !== undefined) throw new Error('Invalid local AI endpoint');
+      let localLLMOrigin = message.localLLMUrl ? new URL(message.localLLMUrl).origin : undefined;
       if (localLLMOrigin && !/^https?:\/\//.test(localLLMOrigin)) throw new Error('Local AI endpoint must be HTTP(S)');
       if (message.localLLMUrl && (new URL(message.localLLMUrl).username || new URL(message.localLLMUrl).password)) throw new Error('Local AI endpoint must not contain credentials');
-      await chrome.storage.local.set({
-        [APP_APPROVAL_KEY]: { ...stored[APP_APPROVAL_KEY], [key]: { approvedAt: Date.now(), localLLMOrigin } },
-        settings: { ...stored.settings, targetUrl: message.targetUrl },
+      await serializeStorage(async () => {
+        const stored = await chrome.storage.local.get([APP_APPROVAL_KEY, 'settings', 'appApprovalSequenceV1']);
+        if (message.type === 'UPDATE_LOCAL_LLM_APPROVAL' && (!stored[APP_APPROVAL_KEY]?.[key] || !updatesLocalAI)) throw new Error('Approve this app first, then explicitly save or remove its local AI endpoint');
+        if (!updatesLocalAI) localLLMOrigin = stored[APP_APPROVAL_KEY]?.[key]?.localLLMOrigin;
+        if (message.type === 'UPDATE_LOCAL_LLM_APPROVAL' && localLLMOrigin
+            && !await chrome.permissions.contains({ origins: [targetUrlToMatchPattern(localLLMOrigin)] })) throw new Error('Local AI host permission was not granted');
+        const approvedAt = Math.max(Date.now(), (stored.appApprovalSequenceV1 || 0) + 1);
+        await chrome.storage.local.set({
+          [APP_APPROVAL_KEY]: { ...stored[APP_APPROVAL_KEY], [key]: { approvedAt, generation: crypto.randomUUID(), localLLMOrigin } },
+          appApprovalSequenceV1: approvedAt,
+          settings: message.type === 'APPROVE_APP' ? { ...stored.settings, targetUrl: message.targetUrl } : stored.settings || {},
+        });
+        await chrome.storage.local.remove('proxyPolicyV1:' + key);
+        await syncBridgeRegistration();
       });
-      await syncBridgeRegistration();
-      await chrome.storage.local.remove('proxyPolicyV1:' + key);
       sendResponse({ success: true });
       return;
     }
+    if (message.type === 'PROXY_ABORT') {
+      const state = proxyRequest(proxyRequestKey(message, sender, context));
+      state.controller.abort();
+      sendResponse({ success: true }); return;
+    }
     if (message.type === 'REVOKE_APPS') {
-      await chrome.storage.local.set({ [APP_APPROVAL_KEY]: {}, proxyPoliciesV1: {} });
+      await serializeStorage(async () => {
+        await chrome.storage.local.set({ [APP_APPROVAL_KEY]: {}, proxyPoliciesV1: {} });
+        await syncBridgeRegistration();
+      });
       sendResponse({ success: true });
       return;
+    }
+    if (['DELETE_CAPTURES', 'UPDATE_CAPTURES'].includes(message.type)) {
+      sendResponse(await mutateCaptures(message)); return;
+    }
+    if (message.type === 'PREPARE_CLIP_DELIVERY') {
+      sendResponse(await prepareClipDelivery(message.targetUrl)); return;
+    }
+    if (message.type === 'CLIP_IMPORT_RESULT') {
+      sendResponse(await acknowledgeClips(message.result, sender, context)); return;
     }
     handleApprovedMessage(message, sender, sendResponse, context);
   })().catch(error => sendResponse({ success: false, loaded: false, error: error.message }));
@@ -513,7 +666,7 @@ function handleApprovedMessage(message, sender, sendResponse, context) {
       }))].slice(0, 100)
       : [];
     // Separate storage keys prevent simultaneous app tabs overwriting each other's policy.
-    chrome.storage.local.set({ ['proxyPolicyV1:' + context.key]: { domains, updatedAt: Date.now(), approvedAt: context.approval?.approvedAt } })
+    chrome.storage.local.set({ ['proxyPolicyV1:' + context.key]: { domains, updatedAt: Date.now(), approvedAt: context.approval?.approvedAt, approvalGeneration: approvalGeneration(context.approval) } })
       .then(() => sendResponse({ success: true }), error => sendResponse({ success: false, error: error.message }));
     return true;
   }
@@ -576,13 +729,19 @@ function handleApprovedMessage(message, sender, sendResponse, context) {
       return;
     }
     const hostname = parsed.hostname;
+    const requestKey = message.requestId === undefined ? undefined : proxyRequestKey(message, sender, context);
+    const request = requestKey ? proxyRequest(requestKey) : undefined;
+    if (request?.started) throw new Error('Proxy request is already running');
+    if (request) request.started = true;
     (async () => {
       try {
+        request?.controller.signal.throwIfAborted();
         // Validate hostname against stored allowed proxy domains
         const policyKey = 'proxyPolicyV1:' + context.key;
         const stored = await chrome.storage.local.get([policyKey]);
         const policy = stored[policyKey];
-        if (!policy || !Number.isFinite(policy.updatedAt) || policy.approvedAt !== context.approval?.approvedAt
+        const policyGeneration = policy?.approvalGeneration || (Number.isFinite(policy?.approvedAt) ? `legacy:${policy.approvedAt}` : undefined);
+        if (!policy || !Number.isFinite(policy.updatedAt) || policyGeneration !== approvalGeneration(context.approval)
             || Date.now() - policy.updatedAt > POLICY_MAX_AGE || !policy.domains?.includes(hostname)) {
             sendResponse({ success: false, error: chrome.i18n.getMessage('errorBlockedDomain', [hostname]) });
             return;
@@ -605,7 +764,10 @@ function handleApprovedMessage(message, sender, sendResponse, context) {
         if (message.body && message.method !== 'GET') {
           fetchOptions.body = message.body;
         }
-        const { response: resp, text } = await boundedFetch(message.url, fetchOptions, 30000);
+        const fresh = await approvedSender(sender);
+        if (approvalGeneration(fresh.approval) !== approvalGeneration(context.approval)) throw new Error('App approval changed; retry from the app');
+        request?.controller.signal.throwIfAborted();
+        const { response: resp, text } = await boundedFetch(message.url, fetchOptions, 30000, request?.controller.signal);
         let data;
         try { data = JSON.parse(text); } catch { data = text; }
         const headers = {};
@@ -623,12 +785,14 @@ function handleApprovedMessage(message, sender, sendResponse, context) {
           ? chrome.i18n.getMessage('errorRequestTimedOut30')
           : (err.message || String(err));
         sendResponse({ success: false, error: msg });
+      } finally {
+        if (requestKey) { clearTimeout(request.timer); proxyRequests.delete(requestKey); }
       }
     })();
     return true;
   } else if (message.type === 'SAVE_NOTE') {
-    saveCapture(message.note).then(() => {
-      sendResponse({ success: true });
+    saveCapture(message.note).then(capture => {
+      sendResponse({ success: true, id: capture.id, revision: capture.revision });
     }).catch(error => {
       console.error('Failed to save:', error);
       sendResponse({ success: false, error: error.message });
@@ -643,7 +807,7 @@ function handleApprovedMessage(message, sender, sendResponse, context) {
     chrome.tabs.create({ url: chrome.runtime.getURL('pages/clips.html') });
     sendResponse({ success: true });
   } else if (message.type === 'SEND_TO_TARGET') {
-    sendToTarget(message.targetUrl, message.captures).then(result => {
+    sendToTarget(message.sessionId, message.clips).then(result => {
       sendResponse(result);
     }).catch(error => {
       sendResponse({ success: false, error: error.message });
@@ -653,7 +817,7 @@ function handleApprovedMessage(message, sender, sendResponse, context) {
     (async () => {
     if (!await chrome.permissions.contains({ permissions: ['notifications'] })) throw new Error('Desktop notifications are disabled. Enable them in extension settings; the in-app alert is retained.');
     const current = await approvedSender(sender);
-    if (current.key !== context.key || current.approval?.approvedAt !== context.approval?.approvedAt) {
+    if (current.key !== context.key || approvalGeneration(current.approval) !== approvalGeneration(context.approval)) {
       throw new Error('App approval changed before notification delivery. Reconnect from extension settings.');
     }
     const id = await chrome.notifications.create({
@@ -675,34 +839,40 @@ function handleApprovedMessage(message, sender, sendResponse, context) {
 chrome.runtime.onConnect.addListener((port) => {
   if (!port.name.startsWith('llm-')) return;
 
-  let abortController = new AbortController();
+  const abortController = new AbortController();
   let portDisconnected = false;
   let running = false;
   const approvalChanged = (changes, area) => {
-    if (area === 'local' && changes[APP_APPROVAL_KEY]) { abortController.abort(); port.disconnect(); }
+    if (area === 'local' && changes[APP_APPROVAL_KEY]) finish();
   };
   chrome.storage.onChanged.addListener(approvalChanged);
 
-  port.onDisconnect.addListener(() => {
+  function finish() {
+    if (portDisconnected) return;
     portDisconnected = true;
     abortController.abort();
     chrome.storage.onChanged.removeListener(approvalChanged);
-  });
+    port.onDisconnect.removeListener(finish);
+    port.onMessage.removeListener(receive);
+    try { port.disconnect(); } catch { /* Already disconnected. */ }
+  }
+  port.onDisconnect.addListener(finish);
 
   // Safe wrapper — silently drops messages if the port already disconnected
   function safeSend(msg) {
     if (portDisconnected) return;
-    try { port.postMessage(msg); } catch { portDisconnected = true; }
+    try { port.postMessage(msg); } catch { finish(); }
   }
 
-  port.onMessage.addListener(async (payload) => {
+  async function receive(payload) {
     let ownsRequest = false;
     try {
-      const context = await approvedSender(port.sender ?? {});
       if (portDisconnected) return;
       if (running) throw new Error('Only one request per streaming connection is allowed');
       running = true;
       ownsRequest = true;
+      const context = await approvedSender(port.sender ?? {});
+      if (portDisconnected) return;
       if (context.internal) throw new Error('LLM streaming requires an approved app tab');
       if (payload.provider === 'local') {
         const origin = new URL(payload.endpoint || 'http://localhost:11434/v1').origin;
@@ -725,16 +895,20 @@ chrome.runtime.onConnect.addListener((port) => {
       if (err.name === 'AbortError') return;
       safeSend({ type: 'error', error: err.message || chrome.i18n.getMessage('errorUnknown') });
     } finally {
-      if (ownsRequest) running = false;
+      if (ownsRequest) finish();
     }
-  });
+  }
+  port.onMessage.addListener(receive);
 });
 
 // Check host permission before making LLM API calls (AI API origins are optional_host_permissions)
-async function ensureLLMPermission(url) {
-  const parsed = new URL(url);
-  const origin = parsed.origin + '/*';
+async function ensureLLMPermission(url, signal) {
+  signal.throwIfAborted();
+  // Native host patterns are portless in Firefox. The app approval still
+  // separately binds the exact endpoint origin, including its port.
+  const origin = targetUrlToMatchPattern(url);
   const has = await chrome.permissions.contains({ origins: [origin] });
+  signal.throwIfAborted();
   if (!has) {
     throw new Error(
       chrome.i18n.getMessage('errorCaddyAIPermission')
@@ -743,7 +917,7 @@ async function ensureLLMPermission(url) {
 }
 
 async function streamAnthropic(send, payload, signal) {
-  await ensureLLMPermission('https://api.anthropic.com/v1/messages');
+  await ensureLLMPermission('https://api.anthropic.com/v1/messages', signal);
 
   // Support both API keys (sk-ant-...) and OAuth/Bearer tokens
   const isApiKey = payload.apiKey.startsWith('sk-ant-');
@@ -854,7 +1028,7 @@ async function streamAnthropic(send, payload, signal) {
           send({ type: 'error', error: `Anthropic mid-stream error: ${msg}` });
           return;
         }
-      } catch {}
+      } catch { /* Preserve the existing tolerant stream behavior for malformed events. */ }
     }
   }
 
@@ -879,7 +1053,7 @@ function parseToolCallsFromText(text, toolNames) {
       if (name && nameSet.has(name)) {
         calls.push({ name, arguments: typeof args === 'string' ? JSON.parse(args) : args });
       }
-    } catch {}
+    } catch { /* This text candidate is not a usable tool-call object. */ }
   }
   if (calls.length > 0) return calls;
 
@@ -893,7 +1067,7 @@ function parseToolCallsFromText(text, toolNames) {
       if (name && nameSet.has(name)) {
         calls.push({ name, arguments: typeof args === 'string' ? JSON.parse(args) : args });
       }
-    } catch {}
+    } catch { /* This text candidate is not a usable tool-call object. */ }
   }
 
   return calls;
@@ -901,7 +1075,7 @@ function parseToolCallsFromText(text, toolNames) {
 
 // Shared streamer for OpenAI-compatible APIs (OpenAI, Mistral, Local/Ollama/vLLM)
 async function streamOpenAICompatible(send, payload, signal, endpoint, headers, providerLabel, options = {}) {
-  await ensureLLMPermission(endpoint);
+  await ensureLLMPermission(endpoint, signal);
 
   const messages = [];
   if (payload.systemPrompt) {
@@ -1016,7 +1190,7 @@ async function streamOpenAICompatible(send, payload, signal, endpoint, headers, 
           send({ type: 'error', error: `API mid-stream error: ${parsed.error.message || String(parsed.error)}` });
           return;
         }
-      } catch {}
+      } catch { /* Preserve the existing tolerant stream behavior for malformed events. */ }
     }
   }
 
@@ -1025,7 +1199,7 @@ async function streamOpenAICompatible(send, payload, signal, endpoint, headers, 
   if (toolEntries.length > 0) {
     for (const tc of toolEntries) {
       let parsedArgs = {};
-      try { parsedArgs = JSON.parse(tc.arguments); } catch {}
+      try { parsedArgs = JSON.parse(tc.arguments); } catch { /* Preserve the existing empty-argument fallback. */ }
       contentBlocks.push({ type: 'tool_use', id: tc.id, name: tc.name, input: parsedArgs });
     }
   }
@@ -1082,7 +1256,7 @@ async function streamLocal(send, payload, signal) {
   // Pairing the local endpoint and granting its browser host permission are separate checks.
   const parsed = new URL(endpoint);
   {
-    const origin = parsed.origin + '/*';
+    const origin = targetUrlToMatchPattern(endpoint);
     const has = await chrome.permissions.contains({ origins: [origin] });
     if (!has) {
       throw new Error(
@@ -1103,7 +1277,7 @@ async function streamLocal(send, payload, signal) {
 }
 
 async function streamGemini(send, payload, signal) {
-  await ensureLLMPermission('https://generativelanguage.googleapis.com/v1beta/models');
+  await ensureLLMPermission('https://generativelanguage.googleapis.com/v1beta/models', signal);
 
   const model = payload.model;
   const apiKey = payload.apiKey;
@@ -1220,7 +1394,7 @@ async function streamGemini(send, payload, signal) {
         if (parsed.usageMetadata) {
           usage = { input: parsed.usageMetadata.promptTokenCount || 0, output: parsed.usageMetadata.candidatesTokenCount || 0 };
         }
-      } catch {}
+      } catch { /* Preserve the existing tolerant stream behavior for malformed events. */ }
     }
   }
 
@@ -1231,10 +1405,36 @@ async function streamGemini(send, payload, signal) {
   send({ type: 'done', stopReason: stopReason || 'end_turn', contentBlocks, usage });
 }
 
-async function sendToTarget(targetUrl, captures) {
+async function readApprovedDeliveryTab(tabId, targetKey, generation) {
+  const tab = await chrome.tabs.get(tabId);
+  // Read authority after the browser await: a revoked/replaced approval must
+  // not survive a delayed navigation lookup.
+  const stored = await chrome.storage.local.get([APP_APPROVAL_KEY]);
+  if (approvalGeneration(stored[APP_APPROVAL_KEY]?.[targetKey]) !== generation) throw new Error('App approval changed. Prepare the destination again.');
+  return tab;
+}
+function deliveryTabMatches(tab, targetKey) {
+  try { return appTargetKey(tab.url) === targetKey; } catch { return false; }
+}
+async function waitForDeliveryNavigation(tabId, targetKey, generation, newlyOpened) {
+  const deadline = Date.now() + 30000;
+  do {
+    const tab = await readApprovedDeliveryTab(tabId, targetKey, generation);
+    if (tab.status === 'complete' && deliveryTabMatches(tab, targetKey)) return;
+    // Firefox may initially report about:blank as complete for tabs.create().
+    // Only a new tab may pass through that state; no bridge is injected there.
+    const initialBlank = newlyOpened && (!tab.url || tab.url === 'about:blank');
+    if (tab.status === 'complete' && !initialBlank) throw new Error('The target navigated to a different app; captures were not sent');
+    if (Date.now() >= deadline) break;
+    await new Promise(resolve => setTimeout(resolve, 250));
+  } while (Date.now() <= deadline);
+  throw new Error('The intended app did not finish loading within 30 seconds. Captures are retained; retry when it is ready.');
+}
+async function prepareClipDelivery(targetUrl) {
   const targetKey = appTargetKey(targetUrl);
   const approved = await chrome.storage.local.get([APP_APPROVAL_KEY]);
   if (!approved[APP_APPROVAL_KEY]?.[targetKey]) throw new Error('Approve this target in extension settings before sending captures');
+  const generation = approvalGeneration(approved[APP_APPROVAL_KEY][targetKey]);
   // Re-validate URL before opening (defense-in-depth; clips page also validates)
   try {
     const parsed = new URL(targetUrl);
@@ -1245,10 +1445,15 @@ async function sendToTarget(targetUrl, captures) {
     throw new Error(chrome.i18n.getMessage('errorInvalidTargetUrl'));
   }
 
-  // Open target URL in a new tab
-  let tab;
+  // Prefer an existing workspace tab, but never infer its workspace from its URL.
+  // The clips page confirms the actual probed workspace before any content leaves.
+  let tab, newlyOpened = false;
   try {
-    tab = await chrome.tabs.create({ url: targetUrl, active: true });
+    const existing = await chrome.tabs.query({});
+    tab = existing.filter(candidate => {
+      try { return appTargetKey(candidate.url) === targetKey; } catch { return false; }
+    }).sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0))[0];
+    if (!tab) { newlyOpened = true; tab = await chrome.tabs.create({ url: targetUrl, active: true }); }
   } catch (err) {
     // Chrome blocks file:// navigation unless "Allow access to file URLs" is enabled
     if (/file url/i.test(err.message) || /local file/i.test(err.message)) {
@@ -1259,80 +1464,198 @@ async function sendToTarget(targetUrl, captures) {
     throw err;
   }
 
-  // Wait for the tab to finish loading
-  await new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      chrome.tabs.onUpdated.removeListener(listener);
-      reject(new Error(chrome.i18n.getMessage('errorTimedOutPageLoad')));
-    }, 30000);
-
-    function listener(tabId, changeInfo) {
-      if (tabId === tab.id && changeInfo.status === 'complete') {
-        chrome.tabs.onUpdated.removeListener(listener);
-        clearTimeout(timeout);
-        resolve();
-      }
-    }
-
-    chrome.tabs.onUpdated.addListener(listener);
-
-    // Handle race: tab may already be complete before listener was attached
-    chrome.tabs.get(tab.id).then(currentTab => {
-      if (currentTab.status === 'complete') {
-        chrome.tabs.onUpdated.removeListener(listener);
-        clearTimeout(timeout);
-        resolve();
-      }
-    });
-  });
-
-  const currentTab = await chrome.tabs.get(tab.id);
-  if (appTargetKey(currentTab.url) !== targetKey) throw new Error('The target redirected to a different app; captures were not sent');
+  await waitForDeliveryNavigation(tab.id, targetKey, generation, newlyOpened);
+  const currentTab = await readApprovedDeliveryTab(tab.id, targetKey, generation);
+  if (currentTab.status !== 'complete' || !deliveryTabMatches(currentTab, targetKey)) throw new Error('The destination tab changed before preparation. Captures are retained.');
   // Proactively inject the bridge into this explicitly approved target.
   // Its duplicate-injection guard safely handles an already registered HTTP(S) bridge.
   try {
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['bridge.js'] });
   } catch { /* restricted page or missing host permission */ }
 
-  // Poll for bridge readiness with exponential backoff instead of a fixed delay.
-  // Send THREATCADDY_PING and wait for THREATCADDY_PONG from the content script.
-  await new Promise(resolve => {
-    const delays = [100, 200, 400, 800, 1600];
-    let attempt = 0;
-    let settled = false;
-    const fallback = setTimeout(() => {
-      if (!settled) { settled = true; resolve(); }
-    }, 3000);
-
-    function poll() {
-      if (settled) return;
-      chrome.tabs.sendMessage(tab.id, { type: 'THREATCADDY_PING' }, (resp) => {
-        if (chrome.runtime.lastError) { /* ignore */ }
-        if (settled) return;
-        if (resp && resp.pong) {
-          settled = true;
-          clearTimeout(fallback);
-          resolve();
-          return;
-        }
-        attempt++;
-        if (attempt < delays.length) {
-          setTimeout(poll, delays[attempt]);
-        }
-        // else: fallback timer will resolve
-      });
+  let ready, observedDocument;
+  const readinessDeadline = Date.now() + 10000;
+  do {
+    const probeTab = await readApprovedDeliveryTab(tab.id, targetKey, generation);
+    if (probeTab.status !== 'complete' || !deliveryTabMatches(probeTab, targetKey)) throw new Error('The destination tab changed during preparation. Captures are retained.');
+    try { ready = await chrome.tabs.sendMessage(tab.id, { type: 'GET_CLIP_IMPORT_TARGET' }, { frameId: 0 }); }
+    catch { ready = undefined; }
+    if (ready?.protocol === 2 && typeof ready.documentToken === 'string' && typeof ready.workspaceId === 'string') {
+      if (observedDocument && (ready.documentToken !== observedDocument.documentToken || ready.workspaceId !== observedDocument.workspaceId)) {
+        throw new Error('The app document or workspace changed during preparation. Prepare it again. Captures are retained.');
+      }
+      observedDocument = { documentToken: ready.documentToken, workspaceId: ready.workspaceId };
     }
-
-    setTimeout(poll, delays[0]);
-  });
-
-  try {
-    await chrome.tabs.sendMessage(tab.id, { type: 'INJECT_CLIPS_TO_PAGE', clips: captures });
-  } catch {
-    throw new Error(chrome.i18n.getMessage('errorDeliverClips'));
+    if (ready?.protocol === 2 && ready.ready === true) break;
+    if (Date.now() >= readinessDeadline) break;
+    await new Promise(resolve => setTimeout(resolve, 250));
+  } while (Date.now() <= readinessDeadline);
+  if (ready?.protocol !== 2 || ready.ready !== true || typeof ready.workspaceId !== 'string'
+      || !ready.workspaceId || ready.workspaceId.length > 128 || typeof ready.documentToken !== 'string') {
+    throw new Error('The app has not confirmed an unlocked workspace. Open or update the app, unlock the intended workspace, and retry. Captures are retained.');
   }
+  return serializeStorage(async () => {
+    const stored = await chrome.storage.local.get([APP_APPROVAL_KEY, CLIP_STATE_KEY, 'captures']);
+    if (approvalGeneration(stored[APP_APPROVAL_KEY]?.[targetKey]) !== generation) throw new Error('App approval changed. Prepare the destination again.');
+    const state = deliveryState(stored);
+    pruneDeliveryState(state, stored.captures || []);
+    const sessionId = crypto.randomUUID();
+    state.sessions[sessionId] = { targetKey, approvalGeneration: generation,
+      tabId: tab.id, documentToken: ready.documentToken, workspaceId: ready.workspaceId,
+      workspaceLabel: String(ready.workspaceLabel || ready.workspaceId).slice(0, 200), createdAt: Date.now() };
+    await chrome.storage.local.set({ [CLIP_STATE_KEY]: state });
+    return { success: true, sessionId, workspaceId: ready.workspaceId, workspaceLabel: state.sessions[sessionId].workspaceLabel };
+  });
+}
 
-  return { success: true };
+const clipWaiters = new Map();
+function waitForClipResult(attemptId) {
+  let timer;
+  const promise = new Promise(resolve => {
+    clipWaiters.set(attemptId, resolve);
+    timer = setTimeout(resolve, CLIP_ACK_WAIT_MS);
+  });
+  return { promise, close() { clearTimeout(timer); clipWaiters.delete(attemptId); } };
+}
+function requireDeliverySession(stored, sessionId) {
+  const session = stored[CLIP_STATE_KEY]?.sessions?.[sessionId];
+  if (!session || Date.now() - session.createdAt > CLIP_SESSION_AGE_MS) throw new Error('Destination confirmation expired. Prepare and confirm the workspace again.');
+  if (approvalGeneration(stored[APP_APPROVAL_KEY]?.[session.targetKey]) !== session.approvalGeneration) throw new Error('App approval changed. Prepare and confirm the destination again.');
+  return session;
+}
+async function waitForConfirmedWorkspace(session) {
+  const deadline = Date.now() + 10000;
+  do {
+    const stored = await chrome.storage.local.get([APP_APPROVAL_KEY]);
+    if (approvalGeneration(stored[APP_APPROVAL_KEY]?.[session.targetKey]) !== session.approvalGeneration) throw new Error('App approval changed. Prepare the destination again.');
+    const ready = await chrome.tabs.sendMessage(session.tabId, { type: 'GET_CLIP_IMPORT_TARGET' }, { frameId: 0 });
+    if (ready?.protocol !== 2 || ready.documentToken !== session.documentToken || ready.workspaceId !== session.workspaceId) {
+      throw new Error('The destination document or workspace changed. Prepare it again. Captures are retained.');
+    }
+    if (ready.ready === true) return;
+    // An ACK proves the DB commit, but the app may still be refreshing its UI.
+    // Wait only for the same confirmed document; no content is sent while busy.
+    if (Date.now() >= deadline) break;
+    await new Promise(resolve => setTimeout(resolve, 250));
+  } while (Date.now() <= deadline);
+  throw new Error('The destination workspace is locked or busy. Unlock it and retry. Captures are retained.');
+}
+async function sendToTarget(sessionId, references) {
+  const refs = captureReferences(references);
+  if (!refs.length) throw new Error('No captures selected');
+  if (new Set(refs.map(ref => ref.id)).size !== refs.length) throw new Error('Duplicate capture selection');
+  const snapshot = await serializeStorage(async () => {
+    const stored = await chrome.storage.local.get([CLIP_STATE_KEY, APP_APPROVAL_KEY, 'captures']);
+    const session = requireDeliverySession(stored, sessionId);
+    const captures = refs.map(ref => {
+      const clip = (stored.captures || []).find(row => row.id === ref.id);
+      if (!clip || clipRevision(clip) !== ref.revision) throw new Error('A capture changed. Refresh and retry.');
+      return clip;
+    });
+    return { session, sourceId: stored[CLIP_STATE_KEY].sourceId, captures };
+  });
+  const batches = [];
+  let batch = [], bytes = 1024;
+  const failures = new Map();
+  for (const capture of snapshot.captures) {
+    try {
+      const clip = normalizedClip(capture);
+      clip.fingerprint = await fingerprintClip(clip);
+      const size = new TextEncoder().encode(JSON.stringify(clip)).length + 1;
+      if (batch.length >= 20 || bytes + size > 8 * 1024 * 1024) { batches.push(batch); batch = []; bytes = 1024; }
+      batch.push(clip); bytes += size;
+    } catch (error) { failures.set(capture.id, error.message); }
+  }
+  if (batch.length) batches.push(batch);
+  let deliveryError;
+  for (const clips of batches) {
+    const attemptId = crypto.randomUUID();
+    let waiter;
+    try {
+      // Recheck document and workspace before persisting/sending this attempt.
+      const tab = await chrome.tabs.get(snapshot.session.tabId);
+      if (appTargetKey(tab.url) !== snapshot.session.targetKey) throw new Error('The destination tab navigated. Prepare it again.');
+      await waitForConfirmedWorkspace(snapshot.session);
+      await serializeStorage(async () => {
+        const stored = await chrome.storage.local.get([CLIP_STATE_KEY, APP_APPROVAL_KEY, 'captures']);
+        requireDeliverySession(stored, sessionId);
+        const state = stored[CLIP_STATE_KEY];
+        const captures = stored.captures || [];
+        for (const clip of clips) {
+          const current = captures.find(row => row.id === clip.id);
+          if (!current || clipRevision(current) !== clip.revision) throw new Error('A capture changed. Refresh and retry.');
+          current.sent = false;
+          current.delivery = { status: 'pending', revision: clip.revision, fingerprint: clip.fingerprint,
+            attemptId, workspaceId: snapshot.session.workspaceId, targetKey: snapshot.session.targetKey };
+        }
+        state.attempts[attemptId] = { sessionId, sourceId: snapshot.sourceId,
+          clips: clips.map(({ id, revision, fingerprint }) => ({ id, revision, fingerprint })) };
+        pruneDeliveryState(state, captures);
+        await chrome.storage.local.set({ captures, [CLIP_STATE_KEY]: state });
+      });
+      waiter = waitForClipResult(attemptId);
+      const response = await chrome.tabs.sendMessage(snapshot.session.tabId, { type: 'INJECT_CLIPS_TO_PAGE',
+        documentToken: snapshot.session.documentToken, envelope: { type: 'THREATCADDY_IMPORT_CLIPS', protocol: 2,
+          sourceId: snapshot.sourceId, attemptId, expectedWorkspaceId: snapshot.session.workspaceId, clips } }, { frameId: 0 });
+      if (response?.delivered !== true) throw new Error(response?.error || 'The app did not accept delivery. Update or unlock it and retry. Captures are retained.');
+      await waiter.promise;
+      const current = await chrome.storage.local.get(['captures']);
+      if (clips.some(clip => (current.captures || []).find(row => row.id === clip.id)?.delivery?.status === 'pending')) {
+        deliveryError = 'Import confirmation is still pending. Captures are retained; retry safely after checking the workspace.';
+        break;
+      }
+    } catch (error) { deliveryError = error.message; break; }
+    finally { waiter?.close(); }
+  }
+  const { captures = [] } = await chrome.storage.local.get(['captures']);
+  const results = refs.map(ref => {
+    const clip = captures.find(row => row.id === ref.id);
+    const delivery = clip?.delivery;
+    const matches = clip && clipRevision(clip) === ref.revision && delivery?.revision === ref.revision
+      && delivery.workspaceId === snapshot.session.workspaceId && delivery.targetKey === snapshot.session.targetKey;
+    const status = failures.has(ref.id) ? 'failed' : matches && confirmedCapture(clip) ? 'confirmed'
+      : matches && delivery.status === 'failed' ? 'failed' : 'pending';
+    return { ...ref, status, ...(failures.has(ref.id) ? { error: failures.get(ref.id) } : {}) };
+  });
+  const confirmed = results.filter(result => result.status === 'confirmed').length;
+  return { success: confirmed === refs.length, status: confirmed === refs.length ? 'success' : confirmed ? 'partial' : 'unconfirmed',
+    confirmed, total: refs.length, results,
+    error: confirmed === refs.length ? undefined : deliveryError || [...failures.values()][0] || 'Some imports were not confirmed. Review the retained captures and retry.' };
+}
+
+async function acknowledgeClips(result, sender, context) {
+  if (context.internal || !result || result.protocol !== 2 || !Array.isArray(result.results) || result.results.length > 20) throw new Error('Invalid clip confirmation');
+  const accepted = await serializeStorage(async () => {
+    const stored = await chrome.storage.local.get([CLIP_STATE_KEY, APP_APPROVAL_KEY, 'captures']);
+    const state = stored[CLIP_STATE_KEY];
+    const attempt = state?.attempts?.[result.attemptId];
+    if (!attempt) return 0; // Repeated/lost-response acknowledgements are harmless.
+    const session = state.sessions[attempt.sessionId];
+    if (!session || sender.tab?.id !== session.tabId || context.key !== session.targetKey
+      || approvalGeneration(context.approval) !== session.approvalGeneration || approvalGeneration(stored[APP_APPROVAL_KEY]?.[context.key]) !== session.approvalGeneration
+      || result.documentToken !== session.documentToken || result.workspaceId !== session.workspaceId || result.sourceId !== attempt.sourceId) {
+      throw new Error('Clip confirmation does not match its approved destination');
+    }
+    const captures = stored.captures || [];
+    let count = 0;
+    for (const receipt of result.results) {
+      const expected = attempt.clips.find(clip => clip.id === receipt?.id && clip.revision === receipt.revision && clip.fingerprint === receipt.fingerprint);
+      if (!expected || !['imported', 'duplicate', 'failed'].includes(receipt.status)) continue;
+      const clip = captures.find(row => row.id === receipt.id);
+      if (!clip || clipRevision(clip) !== receipt.revision || clip.delivery?.attemptId !== result.attemptId || clip.delivery.status !== 'pending') continue;
+      const confirmed = receipt.status === 'imported' || receipt.status === 'duplicate';
+      if (confirmed && (typeof receipt.entityId !== 'string' || !receipt.entityId || receipt.entityId.length > 128 || receipt.entityType !== (clip.entityType || 'note'))) continue;
+      clip.sent = confirmed;
+      clip.delivery = { ...clip.delivery, status: confirmed ? 'confirmed' : 'failed', confirmedAt: confirmed ? Date.now() : undefined,
+        ...(confirmed ? { entityId: receipt.entityId, entityType: receipt.entityType } : { error: String(receipt.error || 'Import failed').slice(0, 300) }) };
+      count++;
+    }
+    pruneDeliveryState(state, captures);
+    await chrome.storage.local.set({ captures, [CLIP_STATE_KEY]: state });
+    return count;
+  });
+  clipWaiters.get(result.attemptId)?.();
+  return { success: true, accepted };
 }
 
 async function captureAndSave(text, tab) {
@@ -1346,7 +1669,18 @@ async function captureAndSave(text, tab) {
     sourceTitle: tab.title || ''
   };
 
-  await saveCapture(note);
+  try { await saveCapture(note); }
+  catch (error) {
+    const message = String(error.message || 'Capture could not be saved').slice(0, 300);
+    // Restricted source pages may not allow a content bubble. An action badge
+    // and popup notice do not require page or native-notification permission.
+    await Promise.allSettled([
+      Promise.resolve().then(() => chrome.action?.setBadgeText({ text: '!' })),
+      Promise.resolve().then(() => chrome.action?.setTitle({ title: `Capture not saved: ${message}` })),
+      serializeStorage(() => chrome.storage.local.set({ captureErrorV1: message })),
+    ]);
+    return false;
+  }
 
   // Skip bubble on extension pages and other restricted URLs
   const url = tab.url || '';
@@ -1385,29 +1719,18 @@ async function captureAndSave(text, tab) {
 }
 
 async function saveCapture(note) {
-  const { captures = [] } = await chrome.storage.local.get(['captures']);
-
-  const capture = {
-    id: Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
-    title: note.title || '',
-    content: note.content || '',
-    sourceUrl: note.sourceUrl || '',
-    sourceTitle: note.sourceTitle || '',
-    entityType: note.entityType || 'note',
-    folderName: note.folderName || '',
-    clsLevel: note.clsLevel || '',
-    createdAt: Date.now(),
-    sent: false
-  };
-
-  captures.push(capture);
-
-  // Trim oldest if over limit
-  if (captures.length > MAX_CAPTURES) {
-    captures.splice(0, captures.length - MAX_CAPTURES);
-  }
-
-  await chrome.storage.local.set({ captures });
+  return serializeStorage(async () => {
+    const { captures = [] } = await chrome.storage.local.get(['captures']);
+    if (captures.length >= MAX_CAPTURES) throw new Error('Capture storage is full (500). Review and explicitly delete captures before saving more. Nothing was removed.');
+    const capture = normalizedClip({ ...note, id: crypto.randomUUID(), revision: 1, createdAt: Date.now() });
+    capture.sent = false;
+    await chrome.storage.local.set({ captures: [...captures, capture] });
+    // The save is already committed: cosmetic cleanup failure must not turn it
+    // into an apparent failure which would encourage a duplicate capture.
+    await Promise.allSettled([Promise.resolve().then(() => chrome.storage.local.remove('captureErrorV1')),
+      Promise.resolve().then(() => chrome.action?.setBadgeText({ text: '' })), Promise.resolve().then(() => chrome.action?.setTitle({ title: 'ThreatCaddy' }))]);
+    return capture;
+  });
 }
 
 async function getStats() {

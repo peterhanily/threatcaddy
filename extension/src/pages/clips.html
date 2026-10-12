@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThreatCaddy — Clip Review</title>
+  <title data-i18n="clipReviewTitle">ThreatCaddy — Clip Review</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -239,7 +239,7 @@
       background: #064e3b;
       padding: 2px 8px;
       border-radius: 4px;
-      margin-left: 8px;
+      margin-inline-start: 8px;
     }
 
     /* Import Options bar */
@@ -484,7 +484,7 @@
     .toast {
       position: fixed;
       bottom: 24px;
-      right: 24px;
+      inset-inline-end: 24px;
       background: #065f46;
       color: #a7f3d0;
       padding: 12px 20px;
@@ -504,44 +504,75 @@
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
+    button, input, select { min-height: 44px; }
+    button, p, h1, h2, h3, .stat-label, .capture-source-title, .meta-badge, [role="status"], [role="alert"] { overflow-wrap: anywhere; }
+    button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid #a5b4fc; outline-offset: 2px; }
+    .stat-card, .capture-meta, .settings-row input, .meta-inline-edit > * { min-width: 0; }
+    .capture-meta { flex: 1; }
+    .capture-card-header { gap: 8px; }
+    .capture-source { max-width: 100%; }
+    .meta-inline-edit, .settings-row, .modal-actions { flex-wrap: wrap; }
+    .meta-inline-edit > * { max-width: 100%; }
+    .meta-badge { display: inline-flex; align-items: center; font-family: inherit; }
+    .meta-badge:not(button) { cursor: default; }
+    .modal { max-height: calc(100vh - 24px); overflow-y: auto; }
+    .toast { max-width: min(480px, calc(100vw - 24px)); }
+    @media (max-width: 560px) {
+      .container { padding: 20px 12px; }
+      .stats-bar { gap: 8px; }
+      .stat-card { padding: 12px 6px; }
+      .settings-section { padding: 14px; }
+      .settings-row { margin-bottom: 12px; }
+      .settings-row label { width: 100%; white-space: normal; }
+      .settings-row input[type="text"], .settings-row input[type="password"] { width: 100%; flex-basis: 100%; }
+      .settings-row button, .controls-bar button, .modal-actions button { flex: 1 1 120px; }
+      .settings-row button { max-width: 100%; }
+      .import-options-bar { display: grid; grid-template-columns: minmax(0, 1fr); }
+      .import-options-bar input, .import-options-bar select { width: 100% !important; }
+      .import-options-bar label { white-space: normal; }
+      .spacer { display: none; }
+      .capture-card { padding: 12px; }
+      .toast { inset-inline-end: 12px; bottom: 12px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="page-header">
       <div>
-        <h1>Clip Review</h1>
-        <div class="subtitle">Browse and manage your captured clips</div>
+        <h1 data-i18n="clipReview">Clip Review</h1>
+        <div class="subtitle" data-i18n="clipReviewSubtitle">Browse and manage your captured clips</div>
       </div>
     </div>
 
     <div class="stats-bar">
       <div class="stat-card">
         <div class="stat-value" id="stat-total">0</div>
-        <div class="stat-label">Total Captures</div>
+        <div class="stat-label" data-i18n="totalCaptures">Total Captures</div>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="stat-week">0</div>
-        <div class="stat-label">This Week</div>
+        <div class="stat-label" data-i18n="thisWeek">This Week</div>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="stat-unsent">0</div>
-        <div class="stat-label">Unsent</div>
+        <div class="stat-label" data-i18n="unsent">Unsent</div>
       </div>
     </div>
 
     <div class="import-options-bar" id="import-options-bar">
-      <label for="import-folder">Investigation:</label>
-      <input type="text" id="import-folder" placeholder="Default: Clips" style="width: 140px;" />
-      <label for="import-entity">Save as:</label>
+      <label for="import-folder" data-i18n="investigation">Investigation</label>
+      <input type="text" id="import-folder" data-i18n-placeholder="defaultClips" placeholder="Default: Clips" style="width: 140px;" />
+      <label for="import-entity" data-i18n="saveAs">Save as</label>
       <select id="import-entity">
-        <option value="note">Note</option>
-        <option value="task">Task</option>
-        <option value="timeline-event">Timeline Event</option>
+        <option value="note" data-i18n="entityNote">Note</option>
+        <option value="task" data-i18n="entityTask">Task</option>
+        <option value="timeline-event" data-i18n="entityTimelineEvent">Timeline Event</option>
       </select>
-      <label for="import-cls">Classification:</label>
+      <label for="import-cls" data-i18n="classification">Classification</label>
       <select id="import-cls">
-        <option value="">None</option>
+        <option value="" data-i18n="classificationNone">None</option>
         <option value="TLP:CLEAR">TLP:CLEAR</option>
         <option value="TLP:GREEN">TLP:GREEN</option>
         <option value="TLP:AMBER">TLP:AMBER</option>
@@ -549,31 +580,38 @@
         <option value="TLP:RED">TLP:RED</option>
       </select>
       <div class="spacer"></div>
-      <button class="btn btn-secondary" id="apply-defaults-btn" style="padding: 6px 14px; font-size: 13px;">Apply to All</button>
+      <button class="btn btn-secondary" id="apply-defaults-btn" data-i18n="applyAll" style="padding: 6px 14px; font-size: 13px;">Apply to All</button>
     </div>
 
     <div class="settings-section">
-      <h2>Settings</h2>
+      <h2 data-i18n="settings">Settings</h2>
       <div class="settings-row">
-        <label for="target-url">Target URL:</label>
-        <input type="text" id="target-url" placeholder="https://threatcaddy.com" />
-        <button class="btn btn-secondary" id="save-settings-btn" style="padding: 8px 14px; font-size: 13px;">Approve app</button>
+        <label for="target-url" data-i18n="targetUrl">Target URL</label>
+        <input type="text" id="target-url" dir="ltr" placeholder="https://threatcaddy.com" />
+        <button class="btn btn-secondary" id="save-settings-btn" data-i18n="approveApp" style="padding: 8px 14px; font-size: 13px;">Approve app</button>
       </div>
-      <div class="settings-saved" id="settings-saved">Settings saved!</div>
+      <div class="settings-saved" id="settings-saved" role="status" data-i18n="appApproved">App approved. Reload the app tab to connect.</div>
+      <div class="settings-row">
+        <label for="local-ai-url" data-i18n="localAIOrigin">Local AI endpoint origin (optional)</label>
+        <input type="text" id="local-ai-url" dir="ltr" placeholder="http://localhost:11434" />
+        <button class="btn btn-secondary" id="save-local-ai-btn" data-i18n="saveLocalAI">Save local AI approval</button>
+        <button class="btn btn-secondary" id="remove-local-ai-btn" data-i18n="removeLocalAI">Remove local AI approval</button>
+      </div>
+      <div id="local-ai-status" role="status"></div>
     </div>
 
     <div class="controls-bar">
-      <button class="btn btn-primary" id="send-all-btn">Send All to ThreatCaddy</button>
-      <button class="btn btn-secondary" id="refresh-btn">Refresh</button>
+      <button class="btn btn-primary" id="send-all-btn" data-i18n="sendAll">Send All to ThreatCaddy</button>
+      <button class="btn btn-secondary" id="refresh-btn" data-i18n="refresh">Refresh</button>
       <div class="spacer"></div>
-      <button class="btn btn-danger" id="clear-all-btn">Clear All</button>
+      <button class="btn btn-danger" id="clear-all-btn" data-i18n="clearAll">Clear All</button>
     </div>
 
     <div class="captures-list" id="captures-list">
       <div class="empty-state">
         <div class="empty-icon">&#128203;</div>
-        <p>No captures yet</p>
-        <p style="font-size: 13px;">Select text on any page and right-click "Save to ThreatCaddy"</p>
+        <p data-i18n="noCapturesTitle">No captures yet</p>
+        <p style="font-size: 13px;" data-i18n="howToUseContextMenu">Select text on any page and right-click "Save to ThreatCaddy"</p>
       </div>
     </div>
 
@@ -581,16 +619,17 @@
 
   <!-- Confirmation Modal -->
   <div class="modal-overlay hidden" id="modal-overlay">
-    <div class="modal">
-      <h3 id="modal-title">Confirm</h3>
-      <p id="modal-message">Are you sure?</p>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-message">
+      <h3 id="modal-title" data-i18n="confirm">Confirm</h3>
+      <p id="modal-message"></p>
       <div class="modal-actions">
-        <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
-        <button class="btn btn-danger" id="modal-confirm">Confirm</button>
+        <button class="btn btn-secondary" id="modal-cancel" data-i18n="cancel">Cancel</button>
+        <button class="btn btn-danger" id="modal-confirm" data-i18n="confirm">Confirm</button>
       </div>
     </div>
   </div>
 
+  <script src="../ui.js"></script>
   <script src="clips.js"></script>
 </body>
 </html>

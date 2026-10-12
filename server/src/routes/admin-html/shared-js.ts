@@ -146,6 +146,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
 document.getElementById('logoutBtn').addEventListener('click', function() { logout(); });
 
 function logout() {
+  resetAiSession();
   token = null;
   currentAdmin = null;
   if (sessionTimerInterval) clearInterval(sessionTimerInterval);
@@ -193,6 +194,7 @@ function showDashboard() {
   }
   startSessionTimer();
   loadAll();
+  if (document.getElementById('tab-ai').classList.contains('active')) loadAiProviders();
 }
 
 var sessionTimerInterval = null;

@@ -83,7 +83,9 @@
     "lockScrollAria": "スクロール同期をロック",
     "wordsChars": "{{words}} 単語、{{chars}} 文字",
     "created": "{{date}} 作成",
-    "modified": "{{date}} 更新"
+    "modified": "{{date}} 更新",
+    "saveFailed": "変更を保存できませんでした。下書きはこのタブに保持されています。閉じる前に再試行してください。",
+    "retrySave": "保存を再試行"
   },
   "list": {
     "defaultTitle": "ノート",

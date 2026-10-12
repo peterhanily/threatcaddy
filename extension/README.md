@@ -34,7 +34,7 @@ Clip text, images, and selections from web pages into ThreatCaddy. Works on Chro
 - **Keyboard shortcut** — `Alt+Shift+X` (Mac: `Ctrl+Shift+X`) to capture the current selection
 - **Rich content** — Preserves formatting, links, and inline images as Markdown
 - **Confirmation bubble** — Visual feedback after each capture
-- **Send to ThreatCaddy** — Transfer all captured clips to the web app with one click
+- **Send to ThreatCaddy** — Confirm the destination workspace and transfer captured clips with per-clip save receipts
 - **LLM Proxy** — Routes CaddyAI API calls from the web app through the extension's background script, bypassing CORS restrictions for Anthropic, OpenAI, Gemini, Mistral, and local LLM endpoints
 
 ## Usage
@@ -43,9 +43,50 @@ After installing, browse any page and select text you want to save. Use the righ
 
 Before connecting an app, open the popup's settings, enter its URL and select **Approve app**. Accept the browser's host-permission prompt, then reload that app tab. No hosted, localhost or standalone app is trusted automatically. HTTP(S) approvals bind the exact origin, including its port; standalone approvals bind the exact file. Use **Revoke app approvals** to disconnect paired apps.
 
-For a local AI service, also enter its exact origin in the local-AI setting before approving the app. The endpoint must match that approval and have browser host permission. App pairing does not grant arbitrary local-network access.
+For a local AI service, select the approved app, enter the service URL in its
+local-AI setting, and explicitly save it. The saved approval is the exact origin
+(including its port); paths are not part of an origin. The endpoint must match
+that approval and have browser host permission. Reopening settings or approving
+the app again preserves its saved local-AI origin without requesting additional
+permission. Use the separate Remove action to revoke that app's local-AI
+approval. App pairing does not grant arbitrary local-network access.
+
+Browser host permissions and ThreatCaddy approvals are separate: the browser
+grant uses the scheme and hostname (all ports), because Firefox does not support
+ports in [host match patterns](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Match_patterns#host).
+ThreatCaddy still checks the saved exact origin, including its port, before
+allowing that app to use a local AI endpoint. Removing an app's local-AI approval
+does not revoke a host grant that another approved app may use; browser extension
+settings can revoke the browser grant itself.
 
 Desktop notifications require the separate **Enable desktop notifications** permission. A successful result means the browser accepted the notification, not that the operating system displayed it. ThreatCaddy provides an in-app warning when delivery is denied, unavailable or times out.
+
+### Reliable clip delivery
+
+The clip review page prepares an approved app tab and shows its actual workspace
+before you confirm a transfer. An app URL does not identify a workspace: an
+existing tab can have a different workspace selected from a newly opened tab.
+Open the intended workspace first and check the destination shown by the review
+page. The extension does not switch workspaces automatically.
+
+A clip is confirmed only after the app commits its entity and a workspace-local
+receipt in the same database transaction. A closed or locked app, a timeout, or
+a partial delivery leaves unconfirmed clips available to retry. Retrying the
+same saved revision in the same workspace does not create a second entity.
+Changing a clip's destination options creates a new revision; it never silently
+overwrites an analyst's existing note, task, or event.
+
+The extension keeps at most 500 clips. Reaching capacity rejects a new capture
+with an error; it does not evict older clips. Delete only clips you have reviewed
+and no longer need. A failed popup save leaves its draft available. Clips marked
+sent by an older extension have no verified commit receipt and remain unverified.
+Updating both the app and extension is necessary for verified delivery.
+
+Receipts contain identifiers, a content fingerprint and commit metadata, not a
+second copy of clip content. They are local to that browser workspace and are
+excluded from portable backups and team synchronization. Keep the extension's
+original clips until you have checked the imported data; a delivery receipt is
+not an independent backup. Deleting browser storage removes its local receipts.
 
 ## Outbound boundaries
 
@@ -64,11 +105,25 @@ npm ci
 npm run build            # Build both Chrome and Firefox → dist/chrome/, dist/firefox/
 npm run build:chrome     # Build Chrome only → dist/chrome/
 npm run build:firefox    # Build Firefox only → dist/firefox/
-npm run package:chrome   # Zip Chrome build → dist/threatcaddy-chrome.zip
-npm run package:firefox  # Zip Firefox build → dist/threatcaddy-firefox.zip
+npm run package:check    # Read-only source/build/release ZIP verification
+# After tests and disposable-browser qualification:
+npm run package:write    # Refresh both extension archives and root download aliases
 ```
 
 The build script reads the `BROWSER` environment variable (`chrome` or `firefox`) and copies the appropriate manifest and source files into `dist/<browser>/`.
+
+Both browser manifests and package metadata use version **1.1.2**. The popup reads
+its version from the installed manifest; translations only format that value.
+Release verification requires exactly 34 regular files, including all 21 locale
+catalogs, with source/build/archive parity. Unexpected files (even stale build
+files), links, duplicate ZIP entries and version mismatches fail verification.
+Archives are inspected without extracting members. Generated PNG encodings may
+vary by platform; only the three validated, correctly sized icons are exempt
+from archive byte equality (not a check of identical rendered pixels). Root
+`chrome.zip` and `firefox.zip` must still match
+their extension archives byte for byte. CI uses `package:check` and never repairs
+archives silently; `package:write` is an explicit local release step, not a
+browser-store publication.
 
 ## Privacy
 

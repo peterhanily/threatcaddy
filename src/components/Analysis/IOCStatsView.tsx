@@ -9,12 +9,21 @@ import { STIXImportModal } from './STIXImportModal';
 import { MISPImportModal } from './MISPImportModal';
 import { IOCDeduplicator } from './IOCDeduplicator';
 import { RunIntegrationMenu } from '../Integrations/RunIntegrationMenu';
+import { IntegrationResultModal } from '../Integrations/IntegrationResultModal';
 import { useIntegrations } from '../../hooks/useIntegrations';
+import { useIntegrationResult } from '../../hooks/useIntegrationResult';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../../contexts/ToastContext';
 import { formatDate } from '../../lib/utils';
 import { EnrichmentLabels } from './EnrichmentLabels';
-import { TableVirtuoso } from 'react-virtuoso';
+import { TableVirtuoso, type TableComponents } from 'react-virtuoso';
+
+const IOC_TABLE_COMPONENTS: TableComponents<UnifiedIOCRow> = {
+  Table: (props) => <table {...props} className="w-full min-w-[700px] text-xs" />,
+  TableHead: forwardRef((props, ref) => <thead ref={ref} {...props} />),
+  TableRow: (props) => <tr {...props} className="border-b border-gray-800/50 group" />,
+  TableBody: forwardRef((props, ref) => <tbody ref={ref} {...props} />),
+};
 
 // ─── Constants ─────────────────────────────────────────────────────
 
@@ -600,6 +609,7 @@ export function IOCStatsView({
           onToggleArchiveIOC={onToggleArchiveIOC}
           defaultFolderId={selectedFolderId}
           currentFolderId={selectedFolderId}
+          resultScope={scopeMode}
           currentFolderName={selectedFolderName}
           onOpenSettings={onOpenSettings}
           onNavigateToSource={onNavigateToSource}
@@ -730,7 +740,7 @@ function AllIOCsTab({
   rows, folders, allTags, allStandaloneIOCs,
   onCreateIOC, onUpdateIOC, onDeleteIOC,
   onTrashIOC, onRestoreIOC, onToggleArchiveIOC,
-  defaultFolderId, currentFolderId, currentFolderName,
+  defaultFolderId, currentFolderId, currentFolderName, resultScope,
   onOpenSettings, onNavigateToSource, investigationMembers,
   iocTableColumns, onUpdateTableColumns,
 }: {
@@ -747,6 +757,7 @@ function AllIOCsTab({
   defaultFolderId?: string;
   currentFolderId?: string;
   currentFolderName?: string;
+  resultScope?: string;
   onOpenSettings?: () => void;
   onNavigateToSource?: (sourceType: 'note' | 'task' | 'event', sourceId: string) => void;
   investigationMembers?: InvestigationMember[];
@@ -754,6 +765,7 @@ function AllIOCsTab({
   onUpdateTableColumns?: (columns: string[]) => void;
 }) {
   const { getInstallationsForIOCType, addRun } = useIntegrations();
+  const { resultRun, showResult, closeResult } = useIntegrationResult(currentFolderId, resultScope);
   const { addToast } = useToast();
   const { t: tt } = useTranslation('toast');
 
@@ -1451,12 +1463,8 @@ function AllIOCsTab({
           <div className="h-full">
             <TableVirtuoso
               data={filteredSortedRows}
-              components={{
-                Table: (props) => <table {...props} className="w-full min-w-[700px] text-xs" />,
-                TableHead: forwardRef((props, ref) => <thead ref={ref} {...props} />),
-                TableRow: (props) => <tr {...props} className="border-b border-gray-800/50 group" />,
-                TableBody: forwardRef((props, ref) => <tbody ref={ref} {...props} />),
-              }}
+              computeItemKey={(_index, row) => row.id}
+              components={IOC_TABLE_COMPONENTS}
               fixedHeaderContent={() => (
                 <tr className="border-b border-gray-800 bg-gray-900">
                   <th className="text-start text-gray-500 font-medium py-2 pe-1 w-8">
@@ -1592,6 +1600,7 @@ function AllIOCsTab({
                               investigation={currentFolderId ? { id: currentFolderId, name: currentFolderName || '' } : undefined}
                               matching={getInstallationsForIOCType(row.standaloneIOC.type)}
                               addRun={addRun}
+                              onShowResults={showResult}
                               onOpenSettings={onOpenSettings}
                             />
                             {onUpdateIOC && (
@@ -1644,6 +1653,7 @@ function AllIOCsTab({
                               investigation={currentFolderId ? { id: currentFolderId, name: currentFolderName || '' } : undefined}
                               matching={getInstallationsForIOCType(row.type)}
                               addRun={addRun}
+                              onShowResults={showResult}
                               onOpenSettings={onOpenSettings}
                             />
                             {onNavigateToSource && (
@@ -1668,6 +1678,7 @@ function AllIOCsTab({
       </div>
 
       {/* Modals */}
+      <IntegrationResultModal open={resultRun !== null} run={resultRun} onClose={closeResult} />
       {onCreateIOC && (
         <>
           <StandaloneIOCForm

@@ -1,4 +1,6 @@
 {
+  "syncStatus.screenshareHidden": "Synchronization needs attention. Turn off screensharing to review the details.",
+  "syncStatus.review": "Review sync settings",
   "draftRecovery.message": "Some changes could not be saved. Drafts are kept only in this tab. Retry or download them before closing it.",
   "draftRecovery.untitled": "Unsaved draft",
   "draftRecovery.retry": "Retry save",
@@ -224,5 +226,11 @@
   "demoModal.startExploring": "Start Exploring",
   "demoModal.guidedTour": "Take the Guided Tour",
   "demoModal.deleteDemo": "Delete Demo & Start Fresh",
-  "demoModal.removeHint": "You can remove the sample data later in Settings."
+  "demoModal.removeHint": "You can remove the sample data later in Settings.",
+  "offlineStatus.checking": "Checking offline support",
+  "offlineStatus.installed": "Offline support installed",
+  "offlineStatus.unavailable": "Offline availability not confirmed",
+  "offlineStatus.checkingHelp": "A large first download may take several minutes. Leave this tab open while installation runs.",
+  "offlineStatus.unavailableHelp": "The browser has not confirmed offline installation. It may be unsupported, still downloading, or unable to finish. Keep an exported backup.",
+  "offlineStatus.caveat": "This is the browser's worker status, not a check of cached files or the latest version. Cached data can be cleared or evicted. This is not a backup. Team servers, AI and other external services need a connection."
 }
