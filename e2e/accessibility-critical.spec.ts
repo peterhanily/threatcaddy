@@ -108,7 +108,7 @@ test('quick-link keyboard actions open only their own dialogs and preserve cance
     await page.keyboard.press(key);
     const editDialog = page.getByRole('dialog', { name: 'Edit Link', exact: true });
     await expect(editDialog).toBeVisible();
-    await editDialog.getByPlaceholder('e.g. VirusTotal').fill('Unsaved keyboard edit');
+    await editDialog.getByPlaceholder('e.g. VirusTotal', { exact: true }).fill('Unsaved keyboard edit');
     await editDialog.getByRole('button', { name: 'Cancel', exact: true }).focus();
     await page.keyboard.press(key);
     await expect(editDialog).toHaveCount(0);
