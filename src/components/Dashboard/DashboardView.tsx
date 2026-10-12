@@ -109,30 +109,35 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
           {links.map((link) => (
             <div
               key={link.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => handlePanelClick(link.url)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handlePanelClick(link.url); } }}
-              className="group relative rounded-lg border border-border-subtle bg-bg-raised p-4 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-border-medium"
+              className="group relative rounded-lg border border-border-subtle bg-bg-raised p-4 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:border-border-medium"
               style={{
                 borderLeftWidth: '4px',
                 borderLeftColor: link.color || '#3b82f6',
                 background: link.color ? `linear-gradient(135deg, ${link.color}08, transparent)` : undefined,
               }}
             >
+              <button
+                type="button"
+                onClick={() => handlePanelClick(link.url)}
+                aria-label={link.title}
+                aria-description={link.description}
+                className="absolute inset-0 w-full rounded-lg cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              />
               {/* Hover actions */}
-              <div className="absolute top-2 right-2 flex gap-1 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+              <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                 <button
-                  onClick={(e) => { e.stopPropagation(); setEditingLink(link); }}
-                  className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300"
+                  type="button"
+                  onClick={() => setEditingLink(link)}
+                  className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   aria-label={`Edit ${link.title}`}
                   title="Edit link"
                 >
                   <Pencil size={14} />
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); setDeletingId(link.id); }}
-                  className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400"
+                  type="button"
+                  onClick={() => setDeletingId(link.id)}
+                  className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   aria-label={`Delete ${link.title}`}
                   title="Delete link"
                 >
@@ -140,20 +145,22 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
                 </button>
               </div>
 
-              {/* Icon */}
-              {link.icon && (
-                <span className="text-2xl block mb-2" role="img" aria-hidden="true">
-                  {link.icon}
-                </span>
-              )}
+              <div className="relative pointer-events-none">
+                {/* Icon */}
+                {link.icon && (
+                  <span className="text-2xl block mb-2" role="img" aria-hidden="true">
+                    {link.icon}
+                  </span>
+                )}
 
-              {/* Title */}
-              <h3 className="text-sm font-semibold text-gray-200 truncate">{link.title}</h3>
+                {/* Title */}
+                <h3 className="text-sm font-semibold text-gray-200 truncate">{link.title}</h3>
 
-              {/* Description */}
-              {link.description && (
-                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{link.description}</p>
-              )}
+                {/* Description */}
+                {link.description && (
+                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">{link.description}</p>
+                )}
+              </div>
             </div>
           ))}
         </div>

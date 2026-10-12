@@ -21,6 +21,7 @@
 ### Usability and accessibility
 
 - Settings tabs support manual keyboard activation, directional navigation, Home/End and RTL layouts. Narrow-screen forms and named controls improve Settings, encryption, Exec and extension workflows.
+- Dashboard quick links have separate keyboard controls for opening, editing and deleting, so editing or deleting cannot accidentally open the destination.
 - Existing CaddyAI conversations retain their selected provider/model when server availability changes, without silently rerouting to a local provider.
 - Product Composer uses localized controls and validation messages while preserving drafts on failed saves. Locale checks cover keys, interpolation and language-specific plural forms across the app and extension; automated checks do not certify translation fluency.
 - Exec views provide useful empty states and return unfiled entity details to their global list.
