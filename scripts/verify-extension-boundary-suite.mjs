@@ -56,18 +56,25 @@ export async function verifyExtensionBoundaries({ runtime, check }, browserName)
     check('unpaired localhost pages have no bridge readiness');
 
     const popup = await runtime.newPage();
-    await popup.goto(runtime.extensionOrigin + '/popup.html');
-    await popup.click('#settings-btn');
-    // Let the real asynchronous initial settings read finish before typing.
-    await until(() => popup.evaluate(async () => {
-      const { settings = {} } = await chrome.storage.local.get('settings');
-      return document.querySelector('#settings-target-url').value === (settings.targetUrl || 'https://threatcaddy.com');
-    }), 'initial target settings loaded');
     const approve = async origin => {
+      // A new popup document starts with fresh feedback, so a previous app's
+      // identical success message cannot acknowledge this approval action.
+      await popup.goto(runtime.extensionOrigin + '/popup.html');
+      await popup.click('#settings-btn');
+      await until(() => popup.evaluate(async () => {
+        const { settings = {} } = await chrome.storage.local.get('settings');
+        return document.querySelector('#settings-target-url').value === (settings.targetUrl || 'https://threatcaddy.com');
+      }), 'initial target settings loaded');
+      assert.equal(await popup.evaluate(() => document.querySelector('#settings-approval-status').textContent), '');
       await popup.fill('#settings-target-url', origin);
       await popup.click('#settings-save-url');
-      await until(() => popup.evaluate(origin => chrome.storage.local.get('approvedAppsV1')
-        .then(data => !!data.approvedAppsV1?.[origin]), origin), 'exact app approval persisted');
+      // Storage is written before bridge registration finishes. The real UI
+      // acknowledgement waits for the whole action before suggesting reload.
+      await until(() => popup.evaluate(async origin => {
+        const data = await chrome.storage.local.get('approvedAppsV1');
+        return !!data.approvedAppsV1?.[origin]
+          && document.querySelector('#settings-approval-status').textContent === chrome.i18n.getMessage('appApproved');
+      }, origin), 'exact app approval persisted and acknowledged');
     };
     await approve(origins[0]);
     await first.goto(origins[0]);

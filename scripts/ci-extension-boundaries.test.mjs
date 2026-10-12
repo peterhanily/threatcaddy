@@ -13,6 +13,44 @@ for (const browser of ['chrome', 'firefox']) {
   });
 }
 
+test('each boundary approval uses fresh UI feedback and awaits action completion before navigation', () => {
+  const source = readFileSync(new URL('./verify-extension-boundary-suite.mjs', import.meta.url), 'utf8');
+  const start = source.indexOf('const approve = async origin => {');
+  const end = source.indexOf('await approve(origins[0])', start);
+  const approval = source.slice(start, end);
+  const freshDocument = approval.indexOf("await popup.goto(runtime.extensionOrigin + '/popup.html')");
+  const openSettings = approval.indexOf("await popup.click('#settings-btn')");
+  const initialSettings = approval.indexOf("'initial target settings loaded'");
+  const fillTarget = approval.indexOf("await popup.fill('#settings-target-url', origin)");
+  const clickApprove = approval.indexOf("await popup.click('#settings-save-url')");
+  const completed = approval.indexOf("'exact app approval persisted and acknowledged'");
+  assert.ok(start >= 0 && end > start && freshDocument >= 0);
+  assert.ok(freshDocument < openSettings && openSettings < initialSettings && initialSettings < fillTarget);
+  assert.ok(fillTarget < clickApprove && clickApprove < completed);
+  assert.match(approval, /assert\.equal\(await popup\.evaluate\(\(\) => document\.querySelector\('#settings-approval-status'\)\.textContent\), ''\)/);
+  assert.match(approval, /return !!data\.approvedAppsV1\?\.\[origin\]\s+&& document\.querySelector\('#settings-approval-status'\)\.textContent === chrome\.i18n\.getMessage\('appApproved'\)/);
+  assert.match(source, /await approve\(origins\[0\]\);\s+await first\.goto\(origins\[0\]\)/);
+  assert.match(source, /await approve\(origins\[1\]\);\s+await second\.goto\(origins\[1\]\)/);
+});
+
+test('clip delivery reapproval cannot complete from an existing stored approval alone', () => {
+  const source = readFileSync(new URL('./verify-clip-delivery-suite.mjs', import.meta.url), 'utf8');
+  const start = source.indexOf('async function approve(popup, origin) {');
+  const end = source.indexOf('async function assertCommitted', start);
+  const approval = source.slice(start, end);
+  const freshDocument = approval.indexOf("await popup.goto((await popup.url()).split('/popup.html')[0] + '/popup.html')");
+  const openSettings = approval.indexOf("await popup.click('#settings-btn')");
+  const initialSettings = approval.indexOf("'initial target settings loaded'");
+  const fillTarget = approval.indexOf("await popup.fill('#settings-target-url', origin)");
+  const clickApprove = approval.indexOf("await popup.click('#settings-save-url')");
+  const completed = approval.indexOf("'exact loopback app approval persisted and acknowledged'");
+  assert.ok(start >= 0 && end > start && freshDocument >= 0);
+  assert.ok(freshDocument < openSettings && openSettings < initialSettings && initialSettings < fillTarget);
+  assert.ok(fillTarget < clickApprove && clickApprove < completed);
+  assert.match(approval, /assert\.equal\(await popup\.evaluate\(\(\) => document\.querySelector\('#settings-approval-status'\)\.textContent\), ''\)/);
+  assert.match(approval, /return !!data\.approvedAppsV1\?\.\[origin\]\s+&& document\.querySelector\('#settings-approval-status'\)\.textContent === chrome\.i18n\.getMessage\('appApproved'\)/);
+});
+
 test('boundary suite uses explicit revocation confirmation and preserves notification assertions', () => {
   const source = readFileSync(new URL('./verify-extension-boundary-suite.mjs', import.meta.url), 'utf8');
   assert.match(source, /await popup\.click\('#modal-cancel'\)/);

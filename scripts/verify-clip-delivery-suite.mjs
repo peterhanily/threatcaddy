@@ -66,10 +66,20 @@ async function appReady(page) {
 async function approve(popup, origin) {
   await popup.goto((await popup.url()).split('/popup.html')[0] + '/popup.html');
   await popup.click('#settings-btn');
+  await until(() => popup.evaluate(async () => {
+    const { settings = {} } = await chrome.storage.local.get('settings');
+    return document.querySelector('#settings-target-url').value === (settings.targetUrl || 'https://threatcaddy.com');
+  }), 'initial target settings loaded');
+  assert.equal(await popup.evaluate(() => document.querySelector('#settings-approval-status').textContent), '');
   await popup.fill('#settings-target-url', origin);
   await popup.click('#settings-save-url');
-  await until(() => popup.evaluate(origin => chrome.storage.local.get('approvedAppsV1')
-    .then(data => !!data.approvedAppsV1?.[origin]), origin), 'exact loopback app approval');
+  // Reapproval may already have a stored entry; only this fresh document's
+  // success feedback acknowledges the current action and bridge registration.
+  await until(() => popup.evaluate(async origin => {
+    const data = await chrome.storage.local.get('approvedAppsV1');
+    return !!data.approvedAppsV1?.[origin]
+      && document.querySelector('#settings-approval-status').textContent === chrome.i18n.getMessage('appApproved');
+  }, origin), 'exact loopback app approval persisted and acknowledged');
 }
 
 async function assertCommitted(popup, app, captures) {
