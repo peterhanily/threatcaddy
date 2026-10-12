@@ -37,6 +37,31 @@ test('required client checks validate every locale without report-only or narrow
   assert.ok(verify.jobs.gate.needs.includes('client-checks'));
 });
 
+test('database verification installs locked root browser types before checking every integration fixture', () => {
+  const job = verify.jobs.database;
+  const steps = stepsOf(job);
+  const setup = steps.findIndex(step => step.uses?.startsWith('pnpm/action-setup@'));
+  const rootInstall = steps.findIndex(step => step.run === 'pnpm install --frozen-lockfile');
+  const serverInstall = steps.findIndex(step => step.run === 'npm --prefix server ci');
+  const build = steps.findIndex(step => step.run === 'npm --prefix server run build');
+  const typecheck = steps.findIndex(step => step.run === 'npm --prefix server run test:integration:types');
+  const runtime = steps.findIndex(step => step.run === 'npm --prefix server run test:integration');
+  assert.ok(setup >= 0 && rootInstall > setup && typecheck > rootInstall);
+  assert.ok(serverInstall >= 0 && build > serverInstall && typecheck > build && runtime > typecheck);
+  for (const index of [setup, rootInstall, serverInstall, build, typecheck, runtime]) {
+    assert.equal(steps[index].if, undefined);
+    assert.equal(steps[index]['continue-on-error'], undefined);
+    assert.equal(steps[index]['working-directory'], undefined);
+  }
+  assert.equal(job.if, undefined);
+  assert.equal(job['continue-on-error'], undefined);
+  assert.ok(verify.jobs.gate.needs.includes('database'));
+  const config = JSON.parse(read('server/tsconfig.integration.json'));
+  assert.ok(config.include.includes('integration/**/*.ts'));
+  assert.deepEqual(config.exclude, ['node_modules', 'dist']);
+  assert.ok(JSON.parse(read('package.json')).devDependencies['@playwright/test']);
+});
+
 test('extension verification checks committed downloads without rewriting or extracting them', () => {
   const step = stepsOf(verify.jobs.extension).find(candidate => candidate.name === 'Build extension and verify committed packages');
   assert.ok(step);

@@ -39,9 +39,16 @@ The startup check stages only `dist`, `package.json` and a link to installed dep
 For diagnostics:
 
 ```sh
+pnpm install --frozen-lockfile
 npm --prefix server run test:integration:types
 TEST_DATABASE_URL=postgres://test_role:test_password@127.0.0.1:55432/threatcaddy_test npm --prefix server run test:integration -- --reporter=verbose
 ```
+
+The full integration typecheck also covers the optional administrative browser
+fixtures below. It needs the root lockfile's Playwright dependency as well as
+the server dependencies; it does not need downloaded browser runtimes. CI
+installs both dependency sets before running that unchanged typecheck and the
+PostgreSQL runtime suite.
 
 The historical fixtures retain the reviewed missing-schema and backwards-timestamp defects. Passing requires the current runner and ordinary build output to repair those cases while preserving data. Do not weaken the assertions, regenerate historical fixtures, or mark a failing migration/startup case as passing.
 
