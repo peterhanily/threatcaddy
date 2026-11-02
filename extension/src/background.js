@@ -570,15 +570,16 @@ function htmlToText(html) {
   // Strip remaining HTML tags
   text = text.replace(/<[^>]+>/g, '');
 
-  // Decode common HTML entities
-  text = text.replace(/&amp;/g, '&');
-  text = text.replace(/&lt;/g, '<');
-  text = text.replace(/&gt;/g, '>');
-  text = text.replace(/&quot;/g, '"');
-  text = text.replace(/&#39;/g, "'");
-  text = text.replace(/&nbsp;/g, ' ');
-  text = text.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
-  text = text.replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+  // Decode one entity layer only; &amp;lt; must remain literal &lt;.
+  // This produces note text, not sanitized HTML. Rendering uses DOMPurify.
+  const entities = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+  text = text.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi, (match, entity) => {
+    if (entity[0] !== '#') return entities[entity.toLowerCase()] ?? match;
+    const hex = entity[1].toLowerCase() === 'x';
+    const code = Number.parseInt(entity.slice(hex ? 2 : 1), hex ? 16 : 10);
+    return code > 0 && code <= 0x10ffff && !(code >= 0xd800 && code <= 0xdfff)
+      ? String.fromCodePoint(code) : '\uFFFD';
+  });
 
   // Clean up whitespace
   text = text.replace(/[ \t]+/g, ' ');

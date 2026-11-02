@@ -1,7 +1,7 @@
 import { workspaceStorageKey } from '../../lib/workspace-profiles';
 import { useState, useCallback, useId, type KeyboardEvent } from 'react';
 import DOMPurify from 'dompurify';
-import { Github, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw, Plus, Pencil, Wrench, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { CodeXml, Download, FlaskConical, Trash2, Bot, X, Shield, RefreshCw, RotateCcw, Plus, Pencil, Wrench, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES } from '../../i18n';
 import { useToast } from '../../contexts/ToastContext';
@@ -481,7 +481,7 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-sm text-accent hover:text-accent-hover transition-colors"
               >
-                <Github size={16} />
+                <CodeXml size={16} />
                 {t('general.github')}
               </a>
               {typeof __STANDALONE__ !== 'undefined' && __STANDALONE__ ? (

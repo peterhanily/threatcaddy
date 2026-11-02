@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Consolidate dependency updates, group routine and security update proposals, and enable repository security/code scanning. Preserve the full verification and exact-artifact publication gates.
+- Keep CTI code values literal when they contain backticks, and decode fetched extension text only once. Extension download artifacts advance to 1.1.3.
+
 ### Interface fixes
 
 - Center sidebar tag, timeline and whiteboard deletion confirmations over the full window instead of clipping them to the sidebar.

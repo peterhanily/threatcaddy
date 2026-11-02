@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import {
   FileText, ListChecks, Clock, Trash2, Briefcase,
   Archive, Settings as SettingsIcon,
-  PanelLeftClose, PanelLeft, Github, Download, Chrome, PenTool, Activity, Network, Search, Shield,
+  PanelLeftClose, PanelLeft, CodeXml, Download, Puzzle, PenTool, Activity, Network, Search, Shield,
   LayoutDashboard, MessageSquare, MessagesSquare, ChevronLeft, Bot, Paperclip, FileOutput,
 } from 'lucide-react';
 import type { Timeline, Whiteboard, ViewMode } from '../../types';
@@ -534,7 +534,7 @@ export function Sidebar({
           rel="noopener noreferrer"
           className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
         >
-          <Github size={16} />
+          <CodeXml size={16} />
           <span>{t('sidebar.github')}</span>
         </a>
         <a
@@ -551,7 +551,7 @@ export function Sidebar({
           rel="noopener noreferrer"
           className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-sm text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
         >
-          <Chrome size={16} />
+          <Puzzle size={16} />
           <span>{t('sidebar.chromeExtension')}</span>
         </a>
         <a

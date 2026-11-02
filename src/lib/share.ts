@@ -1,4 +1,4 @@
-import pako from 'pako';
+import * as pako from 'pako';
 import { sanitizeSharePayload } from './share-data';
 import type { Note, Task, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, Folder, Tag, ChatThread } from '../types';
 

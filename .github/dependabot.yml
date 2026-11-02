@@ -5,24 +5,59 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
     groups:
       vitest:
         patterns: [vitest, '@vitest/*']
+      routine:
+        patterns: ['*']
+        update-types: [minor, patch]
+      security:
+        applies-to: security-updates
+        patterns: ['*']
   - package-ecosystem: npm
     directory: /server
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
+    groups:
+      routine:
+        patterns: ['*']
+        update-types: [minor, patch]
+      security:
+        applies-to: security-updates
+        patterns: ['*']
   - package-ecosystem: npm
     directory: /extension
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
+    groups:
+      routine:
+        patterns: ['*']
+        update-types: [minor, patch]
+      security:
+        applies-to: security-updates
+        patterns: ['*']
   # Preserve full commit-SHA action pins and their readable version comments.
   # Updates still require the normal verification and review gates.
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 2
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ['*']
+        update-types: [minor, patch]
+      security:
+        applies-to: security-updates
+        patterns: ['*']

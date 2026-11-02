@@ -24,6 +24,15 @@ and full audits rather than assuming a tooling version bump removes every
 vulnerable transitive package. Proposals do not bypass verification or authorize
 publication.
 
+Routine minor/patch proposals are grouped per manifest, with a seven-day
+version-update cooldown and smaller open-PR limits. Security proposals have
+separate groups and bypass that cooldown; major upgrades remain individually
+reviewable (the root Vitest/coverage pair stays aligned). The weekly full audit
+is unchanged. Dependabot alerts, security updates and weekly CodeQL analysis
+for JavaScript/TypeScript and Actions were enabled on 2 November 2026.
+See the [dependency and scan review](dependency-security-review.md) for findings,
+compatibility pins and remaining upstream advisories.
+
 ## Version and artifact policy
 
 The client, team server and extension have distinct manifests; their version numbers need not be equal. Coordinate client/server compatibility separately from semantic version numbers. Both browser extension manifests, its package and lockfile metadata must share one version that increases for a new extension release. The displayed extension version comes from its manifest.

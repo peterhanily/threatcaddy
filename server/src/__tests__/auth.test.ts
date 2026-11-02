@@ -6,12 +6,12 @@ import * as jose from 'jose';
 describe('auth middleware', () => {
   let signAccessToken: (user: { id: string; email: string; role: string; displayName: string; avatarUrl: string | null }, family: string) => Promise<string>;
   let verifyAccessToken: (token: string) => Promise<{ id: string; email: string; role: string; displayName: string; avatarUrl: string | null }>;
-  let privateKey: jose.KeyLike;
-  let publicKey: jose.KeyLike;
+  let privateKey: Awaited<ReturnType<typeof jose.generateKeyPair>>['privateKey'];
+  let publicKey: Awaited<ReturnType<typeof jose.generateKeyPair>>['publicKey'];
 
   beforeAll(async () => {
     // Generate keys and set env vars BEFORE importing the auth module
-    const keyPair = await jose.generateKeyPair('EdDSA');
+    const keyPair = await jose.generateKeyPair('EdDSA', { extractable: true });
     privateKey = keyPair.privateKey;
     publicKey = keyPair.publicKey;
 

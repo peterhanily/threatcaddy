@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { waitFor } from '@testing-library/react';
-import pako from 'pako';
+import * as pako from 'pako';
 
 const transport = vi.hoisted(() => ({
   reads: [] as string[],

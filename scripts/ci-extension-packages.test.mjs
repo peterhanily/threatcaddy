@@ -62,7 +62,7 @@ test('the portable release allowlist is exact and includes every locale and runt
 
 test('versions, all locale placeholders and source/build bytes agree', t => {
   const root = fixture(t);
-  assert.deepEqual(verifyBuilds(root), { version: '1.1.2', members: 34, locales: 21 });
+  assert.deepEqual(verifyBuilds(root), { version: '1.1.3', members: 34, locales: 21 });
 });
 
 test('verification rejects stale or extra build files, even benign hidden metadata', t => {

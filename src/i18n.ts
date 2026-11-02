@@ -2,7 +2,7 @@ import { workspaceStorageKey } from './lib/workspace-profiles';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import HttpBackend from 'i18next-http-backend';
-import pako from 'pako';
+import * as pako from 'pako';
 
 // Always-bundled English namespaces — available before any HTTP request.
 // encryption is here because the lock screen renders before lazy namespaces load.
@@ -171,7 +171,7 @@ function _decompressLang(lang: string): Record<string, unknown> {
   const binary = atob(b64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  const json = pako.inflateRaw(bytes, { to: 'string' });
+  const json = pako.inflateRaw(bytes, { toText: true });
   _standaloneLangCache[lang] = JSON.parse(json) as Record<string, unknown>;
   return _standaloneLangCache[lang];
 }

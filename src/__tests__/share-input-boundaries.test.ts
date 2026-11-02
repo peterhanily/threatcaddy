@@ -1,4 +1,4 @@
-import pako from 'pako';
+import * as pako from 'pako';
 import { describe, expect, it } from 'vitest';
 import { decodeSharePayload, encodeSharePayload, inflateShareBody, MAX_SHARE_DECODED_BYTES } from '../lib/share';
 import { sanitizeSharePayload, validateShareTextLengths, MAX_SHARE_TEXT_CHARS } from '../lib/share-data';

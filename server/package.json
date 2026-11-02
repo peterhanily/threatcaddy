@@ -22,21 +22,24 @@
     "test:integration:types": "tsc --project tsconfig.integration.json"
   },
   "dependencies": {
-    "@hono/node-server": "^1.19.17",
-    "@hono/node-ws": "^1.1.0",
+    "@hono/node-server": "^2.1.6",
+    "@hono/node-ws": "1.3.1",
     "argon2": "^0.41.0",
-    "croner": "^10.0.1",
+    "croner": "^11.0.0",
     "dockerode": "^5.0.1",
     "drizzle-orm": "^0.45.1",
     "hono": "^4.13.12",
-    "jose": "^5.10.0",
-    "nanoid": "^5.1.16",
+    "jose": "^6.2.14",
+    "nanoid": "^6.0.2",
     "postgres": "^3.4.0",
     "sharp": "^0.35.5",
     "ssh2": "^1.17.0",
     "zod": "^4.6.7"
   },
   "overrides": {
+    "@hono/node-ws@1.3.1": {
+      "@hono/node-server": "$@hono/node-server"
+    },
     "@esbuild-kit/core-utils": {
       "esbuild": "^0.28.2"
     },
@@ -51,6 +54,6 @@
     "drizzle-kit": "^0.31.11",
     "tsx": "^4.19.0",
     "typescript": "~5.9.3",
-    "vitest": "^4.1.12"
+    "vitest": "5.0.5"
   }
 }

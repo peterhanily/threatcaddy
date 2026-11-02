@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import type { OutputBundle } from 'rollup';
 import type { Plugin } from 'vite';
 
-const expectedVersions: Record<string, string> = { katex: '0.18.2', 'i18next-http-backend': '4.0.2' };
+const expectedVersions: Record<string, string> = { katex: '0.18.2', 'i18next-http-backend': '4.0.6' };
 type PackageInfo = { name: string; version: string };
 type Provenance = { name: string; version: string; modules: string[]; chunks: string[] };
 
