@@ -63,7 +63,12 @@ npm --prefix server run test:resource
 
 This required CI check typechecks its fixture and runs each sync/sync-wide/steps/outputs/
 triggers scenario in a separate worker with a 512 MiB V8 old-space limit and a
-ten-second parent-enforced deadline. The heap flag is not a total RSS limit.
+ten-second parent-enforced deadline (twenty seconds for sync-wide). The heap flag
+is not a total RSS limit. On the November 2 hosted Ubuntu runner, sync-wide returned
+bounded 400 responses in 1,143–1,200 ms each, but the original ten-second deadline
+stopped the eight-round sequence after six requests, including fixture startup and
+GC. Its twenty-second deadline accommodates all eight rounds on that measured host;
+the 512 MiB heap, 2 MiB retained-growth limit and other scenario deadlines are unchanged.
 The fixture exercises the actual routes, authentication, current-role checks and
 body-limit middleware and the sync write service; database, event and audit transports
 are replaced with inert fixtures. The sync-wide scenario contains a single change

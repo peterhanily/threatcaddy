@@ -11,7 +11,7 @@ export default defineConfig({
     maxWorkers: 1,
     fileParallelism: false,
     execArgv: ['--max-old-space-size=512', '--expose-gc'],
-    testTimeout: 9_000,
+    testTimeout: process.env.RESOURCE_SCENARIO === 'sync-wide' ? 19_000 : 9_000,
     deps: { optimizer: { ssr: { include: ['jose'] } } },
   },
 });

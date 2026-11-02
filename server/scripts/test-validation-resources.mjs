@@ -1,5 +1,5 @@
-// Each route gets a disposable 512 MiB worker and an external ten-second
-// deadline. No application environment, live listener or retained database is
+// Each route gets a disposable 512 MiB worker and an external deadline (ten
+// seconds, twenty for eight wide-object rounds). No live or retained database is
 // used. A blocked worker cannot prevent its parent from killing the process group.
 import { spawn, execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -11,6 +11,9 @@ if (scenarios.some(value => !['sync', 'sync-wide', 'steps', 'outputs', 'triggers
 if (process.platform === 'win32') throw new Error('Resource isolation requires POSIX process groups (Linux or macOS)');
 let failed = false;
 for (const scenario of scenarios.length ? scenarios : ['sync', 'sync-wide', 'steps', 'outputs', 'triggers']) {
+  // Hosted Linux measured ~1.2 seconds per wide-object request, before GC and
+  // fixture startup. Allow all eight rounds; keep the external hard kill.
+  const deadlineMs = scenario === 'sync-wide' ? 20_000 : 10_000;
   const started = performance.now();
   const reports = [];
   let output = '', pending = '', workerPid, sampledPeakRssBytes = 0, timedOut = false, sampling = false, samplingAvailable = true;
@@ -61,7 +64,7 @@ for (const scenario of scenarios.length ? scenarios : ['sync', 'sync-wide', 'ste
     if (child.pid) {
       try { process.kill(-child.pid, 'SIGKILL'); } catch (error) { if (error.code !== 'ESRCH') throw error; }
     }
-  }, 10_000);
+  }, deadlineMs);
   const result = await new Promise(resolve => {
     child.once('error', error => resolve({ code: null, signal: null, error: error.message }));
     child.once('close', (code, signal) => resolve({ code, signal }));
@@ -78,7 +81,7 @@ for (const scenario of scenarios.length ? scenarios : ['sync', 'sync-wide', 'ste
   console.log(JSON.stringify({ scenario, pass, ...result, timedOut, requestsCompleted,
     workerSurvived: result.code === 0 && !heapExhausted && !timedOut && !result.signal && complete?.survives === true,
     completedSequence: Boolean(complete?.survives), heapExhausted,
-    elapsedMs: Math.round(performance.now() - started), samplingAvailable, sampledPeakRssBytes, reports }));
+    deadlineMs, elapsedMs: Math.round(performance.now() - started), samplingAvailable, sampledPeakRssBytes, reports }));
   if (!pass) { failed = true; console.error(output); }
 }
 if (failed) process.exitCode = 1;
