@@ -6,6 +6,16 @@ import { BUILTIN_INTEGRATIONS } from '../lib/builtin-integrations';
 import { syncProxyAllowedDomains } from '../lib/integration-executor';
 import { compileIntegrationPlan, INTEGRATION_LIMITS } from '../lib/integration-plan';
 
+// Object order can change in transit through PostgreSQL JSONB. Local provenance
+// does not change execution, but every definition/configuration field does.
+function definitionIdentity(template: IntegrationTemplate): string {
+  const canonical = (value: unknown): unknown => Array.isArray(value) ? value.map(canonical)
+    : value !== null && typeof value === 'object'
+      ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, canonical(item)])) : value;
+  return JSON.stringify(canonical(Object.fromEntries(Object.entries(template)
+    .filter(([key]) => !['source', 'createdAt', 'updatedAt'].includes(key)))));
+}
+
 export function useIntegrations() {
   const [templates, setTemplates] = useState<IntegrationTemplate[]>([]);
   const [installations, setInstallations] = useState<InstalledIntegration[]>([]);
@@ -41,13 +51,19 @@ export function useIntegrations() {
 
   // --- Template management ---
 
-  const installTemplate = useCallback(async (template: IntegrationTemplate) => {
+  const installTemplate = useCallback(async (template: IntegrationTemplate, reuseIdentical = false) => {
     template = compileIntegrationPlan(template).template as unknown as IntegrationTemplate;
     if (BUILTIN_INTEGRATIONS.some(existing => existing.id === template.id)) {
       throw new Error('An integration with this ID already exists. Import a JSON copy to keep both definitions; existing definitions are not replaced.');
     }
     await db.transaction('rw', [db.integrationTemplates, db.installedIntegrations], async () => {
-      if (await db.integrationTemplates.get(template.id) || await db.installedIntegrations.where('templateId').equals(template.id).count()) {
+      const existing = await db.integrationTemplates.get(template.id);
+      const installed = await db.installedIntegrations.where('templateId').equals(template.id).count();
+      if (reuseIdentical && existing && !installed && definitionIdentity(existing) === definitionIdentity(template)) {
+        template = existing;
+        return;
+      }
+      if (existing || installed) {
         throw new Error('An integration with this ID already exists. Import a JSON copy to keep both definitions; existing definitions are not replaced.');
       }
       await db.integrationTemplates.add(template);
@@ -111,7 +127,7 @@ export function useIntegrations() {
     templateId: string,
     config: Record<string, unknown>,
   ): Promise<InstalledIntegration> => {
-    const template = templates.find((t) => t.id === templateId);
+    const template = await db.integrationTemplates.get(templateId) ?? templates.find((t) => t.id === templateId);
     const now = Date.now();
     const installation: InstalledIntegration = {
       id: nanoid(),

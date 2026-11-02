@@ -16,6 +16,14 @@ Enable [private vulnerability reporting](https://docs.github.com/en/code-securit
 
 Review Dependabot alerts and security updates, and [CodeQL default setup](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/configure-code-scanning/configure-code-scanning) for JavaScript/TypeScript. Enabling these services and their notifications or automatic update pull requests is an administrative choice. Do not enable automatic merging of dependency updates. Independently of those settings, CI audits all three complete lockfiles on pull requests, main pushes and its weekly schedule; high/critical advisories and audit-service failures block publication.
 
+The checked-in `.github/dependabot.yml` proposes weekly updates separately for
+root pnpm, server npm, extension npm and GitHub Actions once merged to the
+default branch. Keep action references pinned to full commit SHAs. Root Vitest
+and its coverage packages update together; review resolved dependency versions
+and full audits rather than assuming a tooling version bump removes every
+vulnerable transitive package. Proposals do not bypass verification or authorize
+publication.
+
 ## Version and artifact policy
 
 The client, team server and extension have distinct manifests; their version numbers need not be equal. Coordinate client/server compatibility separately from semantic version numbers. Both browser extension manifests, its package and lockfile metadata must share one version that increases for a new extension release. The displayed extension version comes from its manifest.

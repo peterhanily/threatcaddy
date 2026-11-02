@@ -3,6 +3,10 @@ managePackageManagerVersions: true
 onlyBuiltDependencies:
   - esbuild
 overrides:
+  # Keep these transitive security fixes scoped to their existing upstream
+  # ranges; targeted parent updates otherwise retain the vulnerable lock entries.
+  'jsdom>undici': '7.30.1'
+  'eslint-plugin-react-hooks>zod': '4.6.7'
   # Upstream drawing/diagram packages pin older transitive releases. Keep each
   # compatible API line patched; cover diagrams and whiteboards in acceptance.
   'nanoid@3.3.3': '3.3.18'

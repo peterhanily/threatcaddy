@@ -1,6 +1,6 @@
 # Development and verification
 
-The supported baseline is Node **24.21.0**, pnpm **10.29.1** for the client,
+The supported baseline is Node **24.22.2**, pnpm **10.29.1** for the client,
 and npm **11.19.0** for the server and extension. `.node-version`, `.nvmrc`,
 `packageManager`, and `engines` record this baseline. Keep TypeScript on the
 existing 5.9 line until its compiler and lint dependencies can move together.
@@ -9,12 +9,14 @@ Run these commands from the repository root after selecting the recorded Node
 version (`nvm install` once, then `nvm use`, when using nvm). Running a new login shell in a subdirectory
 can select a different system Node; verify `node --version` and `npm --version`.
 
-The 2 October runtime refresh stays on Node 24 LTS and includes the security
-maintenance after the old 24.13 baseline. Node's bundled OpenSSL/HTTP runtime
+The 30 October runtime refresh stays on Node 24 LTS. Node's bundled OpenSSL/HTTP runtime
 is not covered by npm lockfile audits. See the official
-[24.21.0 release](https://nodejs.org/en/blog/release/v24.21.0) and
-[24.18.1 security release](https://nodejs.org/en/blog/release/v24.18.1).
-Both Docker stages use the verified official 24.21.0 Alpine image digest.
+[24.22.2 release](https://nodejs.org/en/blog/release/v24.22.2).
+Both Docker stages use the verified official 24.22.2 Alpine image digest and
+install the exact recorded npm version. CI selects that npm version before
+server/extension installation and audit. The container gate executes argon2
+hash/verify and a sharp PNG transformation as the non-root runtime user, then
+checks startup and restart against disposable PostgreSQL.
 
 Start with [CONTRIBUTING.md](../CONTRIBUTING.md) for change scope and review,
 [SECURITY.md](../SECURITY.md) for vulnerability reporting, and
@@ -50,6 +52,45 @@ The extension test command uses the client's locked Vitest installation, so
 install the client first. It never downloads a test runner on demand. Normal
 server unit tests only discover `src/**/*.test.ts`; PostgreSQL integration
 tests require the separate command below and an explicit scratch target.
+
+## Request-validation resource regression
+
+After the locked server install, run:
+
+```sh
+npm --prefix server run test:resource
+```
+
+This required CI check typechecks its fixture and runs each sync/sync-wide/steps/outputs/
+triggers scenario in a separate worker with a 512 MiB V8 old-space limit and a
+ten-second parent-enforced deadline. The heap flag is not a total RSS limit.
+The fixture exercises the actual routes, authentication, current-role checks and
+body-limit middleware and the sync write service; database, event and audit transports
+are replaced with inert fixtures. The sync-wide scenario contains a single change
+with 1.35 million data keys below the byte limit, rather than exceeding the batch count.
+It uses no application environment, live listener or retained data.
+
+Each near-byte-limit malformed collection must return 400 with at most 16 KiB
+of response text, preserve zero rejected-request writes/audits/broadcasts, and
+allow a valid follow-up. Above-byte-limit requests must return 413. Each worker
+runs eight rejection/follow-up rounds and compares post-GC heap samples after
+warm-up; retained growth must stay below 2 MiB. Reports include payload bytes,
+status, response bytes, duration, peak RSS and process survival. Timing and RSS
+measurements depend on the host; they are evidence, not portable latency claims.
+The parent timeout and bounded response/memory assertions remain required.
+
+Sync data is checked before Zod cloning and again at the service entry point:
+objects allow 200 fields, top-level data keys allow 128 characters, arrays allow
+5,000 items, traversal depth is at most eight, and a batch allows 100,000 data
+nodes. Existing per-value and asset limits still apply. These structural limits
+avoid copying oversized dictionaries; the byte-limited JSON body must still be parsed.
+
+CI retains resource evidence for fourteen days. Retain before/after measurements
+with the release record; reproduce an old vulnerable revision only in a separate
+disposable process using the same heap and timeout limits. Do not send destructive
+reproduction traffic to live servers. The PostgreSQL suite separately verifies
+packaged HTTP login, normal sync and template storage, rejected-request write
+isolation, successful follow-ups and restart against real disposable storage.
 
 ## Installed-extension clip recovery
 

@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "Некоторые шаблоны команды недействительны и не были загружены.",
+  "catalog.teamUnavailable": "Не удалось загрузить шаблоны команды. Проверьте соединение и обновите.",
   "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
   "builtin.vtIpLookup.description": "Проверка IP-адреса на VirusTotal: репутация, геолокация и статистика анализа.",
   "builtin.vtIpLookup.config.apiKey.label": "API-ключ",

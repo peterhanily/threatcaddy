@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, PenTool, Plus, X } from 'lucide-react';
 import type { Whiteboard } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
@@ -128,7 +129,8 @@ export function WhiteboardSubList({
         </div>
       )}
 
-      <ConfirmDialog
+      {/* Keep the confirmation outside the sidebar's blur and clipping. */}
+      {createPortal(<ConfirmDialog
         open={deletingId !== null}
         onClose={() => setDeletingId(null)}
         onConfirm={() => { if (deletingId) { onDeleteWhiteboard?.(deletingId); setDeletingId(null); } }}
@@ -136,7 +138,7 @@ export function WhiteboardSubList({
         message="This whiteboard will be permanently deleted. This cannot be undone."
         confirmLabel="Delete Whiteboard"
         danger
-      />
+      />, document.body)}
     </div>
   );
 }

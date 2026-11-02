@@ -44,7 +44,11 @@ test('documented push table, identity, version and batch bounds match the route 
   const request = push.requestBody.content['application/json'].schema;
   assert.deepEqual(request.required, ['generation', 'changes']);
   assert.equal(request.properties.generation.format, 'uuid');
-  assert.equal(request.properties.changes.maxItems, Number(route.match(/changes: z\.array\(changeSchema\)\.max\((\d+)\)/)?.[1]));
+  const maximum = route.match(/const MAX_SYNC_CHANGES = (\d+);/);
+  assert.ok(maximum, 'Sync batch limit must have a numeric source of truth');
+  assert.match(route, /changes: z\.array\(changeSchema\)\.max\(MAX_SYNC_CHANGES\)/);
+  assert.match(route, /body\.changes\.length > MAX_SYNC_CHANGES/);
+  assert.equal(request.properties.changes.maxItems, Number(maximum[1]));
   assert.deepEqual(schemas.SyncChange.allOf[0].then.required, ['data']);
   assert.equal(schemas.SyncChange.allOf[0].if.properties.op.const, 'put');
 });

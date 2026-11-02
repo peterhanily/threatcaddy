@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "Beberapa templat tim tidak valid dan tidak dimuat.",
+  "catalog.teamUnavailable": "Templat tim tidak dapat dimuat. Periksa koneksi Anda dan muat ulang.",
   "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
   "builtin.vtIpLookup.description": "Cari alamat IP di VirusTotal untuk mendapatkan reputasi, geolokasi, dan statistik analisis.",
   "builtin.vtIpLookup.config.apiKey.label": "API Key",

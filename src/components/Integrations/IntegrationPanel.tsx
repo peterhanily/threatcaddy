@@ -324,6 +324,8 @@ function CatalogTab({
   onRefreshCatalog,
   teamTemplates,
   teamLoading,
+  teamError,
+  onRefreshTeam,
   isTeamConnected,
   onInstallTeamTemplate,
   onDeleteTeamTemplate,
@@ -340,6 +342,8 @@ function CatalogTab({
   onRefreshCatalog: () => void;
   teamTemplates: IntegrationTemplate[];
   teamLoading: boolean;
+  teamError: string | null;
+  onRefreshTeam: () => void;
   isTeamConnected: boolean;
   onInstallTeamTemplate: (template: IntegrationTemplate) => void;
   onDeleteTeamTemplate: (id: string) => void;
@@ -578,16 +582,20 @@ function CatalogTab({
             {t('catalog.teamTemplates')}
           </h4>
 
+          <button onClick={onRefreshTeam} disabled={teamLoading} className="text-xs text-accent disabled:opacity-50">
+            {t('catalog.refresh')}
+          </button>
+          {teamError && <p role="alert" className="text-xs text-amber-400">{teamError}</p>}
           {teamLoading ? (
             <div className="flex items-center gap-2 py-4 justify-center">
               <Loader2 size={14} className="animate-spin text-gray-500" />
               <span className="text-xs text-gray-500">{t('catalog.loadingTeamTemplates')}</span>
             </div>
-          ) : filteredTeam.length === 0 ? (
+          ) : filteredTeam.length === 0 ? (!teamError && (
             <p className="text-xs text-gray-500 py-2">
               {t('catalog.noTeamTemplates')}
             </p>
-          ) : (
+          )) : (
             <div className="space-y-2">
               {filteredTeam.map((template) => {
                 const isInstalled = installedTemplateIds.has(template.id);
@@ -986,6 +994,8 @@ export function IntegrationPanel() {
   const mounted = useRef(true);
   const [teamTemplates, setTeamTemplates] = useState<IntegrationTemplate[]>([]);
   const [teamLoading, setTeamLoading] = useState(false);
+  const [teamError, setTeamError] = useState<string | null>(null);
+  const teamRequest = useRef(0);
 
   const installedTemplateIds = new Set(installations.map((i) => i.templateId));
 
@@ -1019,16 +1029,22 @@ export function IntegrationPanel() {
   // Fetch team templates
   const loadTeamTemplates = useCallback(async () => {
     if (!isTeamConnected) return;
+    const request = ++teamRequest.current;
     setTeamLoading(true);
+    setTeamError(null);
     try {
-      const raw = await fetchTeamTemplates();
-      setTeamTemplates(raw as IntegrationTemplate[]);
+      const result = await fetchTeamTemplates();
+      if (!mounted.current || request !== teamRequest.current) return;
+      setTeamTemplates(result.templates);
+      if (result.skipped) setTeamError(t('catalog.teamInvalid'));
     } catch {
-      // Silently fail for team templates
+      if (!mounted.current || request !== teamRequest.current) return;
+      setTeamTemplates([]);
+      setTeamError(t('catalog.teamUnavailable'));
     } finally {
-      setTeamLoading(false);
+      if (mounted.current && request === teamRequest.current) setTeamLoading(false);
     }
-  }, [isTeamConnected]);
+  }, [isTeamConnected, t]);
 
   useEffect(() => {
     void loadTeamTemplates();
@@ -1084,7 +1100,7 @@ export function IntegrationPanel() {
   const handleInstallTeamTemplate = async (template: IntegrationTemplate) => {
     try {
       const teamTemplate = { ...template, source: 'team' as const };
-      await installTemplate(teamTemplate);
+      await installTemplate(teamTemplate, true);
       await createInstallation(teamTemplate.id, {});
       addToast('success', tt('integration.installedFromTeam', { name: template.name }));
       if (template.configSchema.length > 0) {
@@ -1198,6 +1214,8 @@ export function IntegrationPanel() {
               onRefreshCatalog={handleRefreshCatalog}
               teamTemplates={teamTemplates}
               teamLoading={teamLoading}
+              teamError={teamError}
+              onRefreshTeam={() => { void loadTeamTemplates(); }}
               isTeamConnected={isTeamConnected}
               onInstallTeamTemplate={handleInstallTeamTemplate}
               onDeleteTeamTemplate={handleDeleteTeamTemplate}

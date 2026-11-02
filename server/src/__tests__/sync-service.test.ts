@@ -63,6 +63,14 @@ beforeEach(() => {
 });
 
 describe('transactional sync writes', () => {
+  it('bounds internal caller data before reading records or preparing writes', async () => {
+    state.rows.push([{ id: 'untouched' }]);
+    await expect(processPush([{ table: 'tags', entityId: 'wide', op: 'put', data:
+      Object.fromEntries(Array.from({ length: 201 }, (_, index) => [`field${index}`, null])) }], 'user-1'))
+      .rejects.toThrow('structure limits');
+    expect(state.rows).toEqual([[{ id: 'untouched' }]]);
+    expect(state.inserts).toEqual([]); expect(state.events).not.toHaveBeenCalled();
+  });
   const current = { id: 'note-1', folderId: 'folder-1', title: 'Saved', content: 'Existing content', version: 3 };
   const patch: SyncChange = { table: 'notes', entityId: current.id, op: 'put', data: { title: 'Edited' }, clientVersion: 3 };
 

@@ -24,4 +24,16 @@ describe('composed API upload limits', () => {
   it('rejects a sync batch beyond its dedicated 16 MiB limit', async () => {
     expect((await app().request('/api/sync/push', { method: 'POST', body: new Uint8Array(16 * 1024 * 1024 + 1) })).status).toBe(413);
   });
+  it.each([false, true])('returns a bounded 413 envelope and closes an unread HTTP/1 body (content-length=%s)', async contentLength => {
+    const server = new Hono();
+    server.use('*', async (c, next) => { c.set('requestId' as never, 'synthetic-request' as never); await next(); });
+    server.use('/api/*', apiBodyLimit);
+    server.post('*', c => c.text('accepted'));
+    const body = new Uint8Array(1024 * 1024 + 1);
+    const response = await server.request('/api/integrations/templates', { method: 'POST', body,
+      headers: contentLength ? { 'content-length': String(body.byteLength) } : {} });
+    expect(response.status).toBe(413);
+    expect(response.headers.get('connection')).toBe('close');
+    expect(await response.json()).toEqual({ error: 'Payload too large', code: 'PAYLOAD_TOO_LARGE', requestId: 'synthetic-request' });
+  });
 });

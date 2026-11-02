@@ -73,7 +73,8 @@ export default defineConfig([
   // warnings and are individually capped by scripts/lint-warning-baseline.json.
   {
     files: ['*.{ts,mts,cts}', 'scripts/**/*.{ts,tsx,mts,cts}', 'server/*.{ts,mts,cts}',
-      'server/src/__tests__/**/*.ts', 'server/integration/**/*.ts', 'e2e/**/*.{ts,tsx}', 'standalone-tests/**/*.{ts,tsx}'],
+      'server/src/__tests__/**/*.ts', 'server/integration/**/*.ts', 'server/resource/**/*.ts',
+      'e2e/**/*.{ts,tsx}', 'standalone-tests/**/*.{ts,tsx}'],
     extends: [js.configs.recommended, tseslint.configs.recommended],
     languageOptions: { ecmaVersion: 'latest', globals: { ...globals.node, ...globals.browser } },
     rules: { '@typescript-eslint/no-non-null-assertion': 'warn', '@typescript-eslint/no-explicit-any': 'warn' },

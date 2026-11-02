@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "Niektóre szablony zespołu są nieprawidłowe i nie zostały wczytane.",
+  "catalog.teamUnavailable": "Nie udało się wczytać szablonów zespołu. Sprawdź połączenie i odśwież.",
   "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
   "builtin.vtIpLookup.description": "Sprawdzanie adresu IP w VirusTotal: reputacja, geolokalizacja i statystyki analizy.",
   "builtin.vtIpLookup.config.apiKey.label": "Klucz API",

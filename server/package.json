@@ -4,7 +4,7 @@
   "type": "module",
   "packageManager": "npm@11.19.0",
   "engines": {
-    "node": ">=24.21.0 <25",
+    "node": ">=24.22.2 <25",
     "npm": ">=11.19.0 <12"
   },
   "scripts": {
@@ -16,6 +16,7 @@
     "sync:rotate-history": "node dist/db/rotate-sync-history-cli.js",
     "db:push": "drizzle-kit push",
     "test": "vitest run",
+    "test:resource": "tsc --project tsconfig.resource.json && node scripts/test-validation-resources.mjs",
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:integration:types": "tsc --project tsconfig.integration.json"
@@ -33,7 +34,7 @@
     "postgres": "^3.4.0",
     "sharp": "^0.35.5",
     "ssh2": "^1.17.0",
-    "zod": "^3.24.0"
+    "zod": "^4.6.7"
   },
   "overrides": {
     "@esbuild-kit/core-utils": {
@@ -50,6 +51,6 @@
     "drizzle-kit": "^0.31.11",
     "tsx": "^4.19.0",
     "typescript": "~5.9.3",
-    "vitest": "^4.0.0"
+    "vitest": "^4.1.12"
   }
 }

@@ -10,18 +10,21 @@ import { db } from '../db/index.js';
 import { investigationMembers } from '../db/schema.js';
 import type { AuthUser } from '../types.js';
 import { ErrorCodes } from '../types/error-codes.js';
+import { boundedValidationDetails, isRequestObject } from '../lib/request-validation.js';
+import { syncDataWithinBudget } from '../lib/sync-data-budget.js';
 
 const app = new Hono<{ Variables: { user: AuthUser } }>();
 app.use('*', requireAuth);
+const MAX_SYNC_CHANGES = 500;
 
 const changeSchema = z.object({
   table: z.enum(['notes', 'tasks', 'folders', 'tags', 'timelineEvents', 'timelines', 'whiteboards', 'standaloneIOCs', 'chatThreads', 'evidenceItems']),
   op: z.enum(['put', 'delete']),
   entityId: z.string().min(1).max(128),
-  data: z.record(z.unknown()).optional(),
+  data: z.record(z.string(), z.unknown()).optional(),
   clientVersion: z.number().int().min(0).max(2147483646).optional(),
 }).refine(change => change.op !== 'put' || change.data !== undefined, 'Put requires entity data');
-const pushSchema = z.object({ generation: z.string().uuid(), changes: z.array(changeSchema).max(500) }).superRefine(({ changes }, ctx) => {
+const pushSchema = z.object({ generation: z.string().uuid(), changes: z.array(changeSchema).max(MAX_SYNC_CHANGES) }).superRefine(({ changes }, ctx) => {
   const identities = new Set<string>();
   for (const change of changes) {
     const key = JSON.stringify([change.table, change.entityId]);
@@ -31,8 +34,22 @@ const pushSchema = z.object({ generation: z.string().uuid(), changes: z.array(ch
 });
 
 app.post('/push', requireRole('admin', 'analyst'), async (c) => {
-  const parsed = pushSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: 'Invalid sync batch', code: ErrorCodes.VALIDATION_FAILED, details: parsed.error.flatten() }, 400);
+  const body: unknown = await c.req.json().catch(() => null);
+  // Check the envelope and count without traversing attacker-controlled elements.
+  // A schema limit alone must not be the boundary for expensive validation.
+  const issue = !isRequestObject(body)
+    ? { path: [], message: 'Expected an object' }
+    : !Array.isArray(body.changes)
+      ? { path: ['changes'], message: 'Expected an array' }
+      : body.changes.length > MAX_SYNC_CHANGES
+        ? { path: ['changes'], message: `At most ${MAX_SYNC_CHANGES} changes are allowed` }
+        : undefined;
+  if (issue) return c.json({ error: 'Invalid sync batch', code: ErrorCodes.VALIDATION_FAILED, details: boundedValidationDetails([issue]) }, 400);
+  if (!syncDataWithinBudget((body as { changes: unknown[] }).changes)) {
+    return c.json({ error: 'Sync data exceeds the supported structure limits', code: ErrorCodes.VALIDATION_FAILED }, 400);
+  }
+  const parsed = pushSchema.safeParse(body);
+  if (!parsed.success) return c.json({ error: 'Invalid sync batch', code: ErrorCodes.VALIDATION_FAILED, details: boundedValidationDetails(parsed.error.issues) }, 400);
   const user = c.get('user');
   const changes = parsed.data.changes;
   if (!changes.length) return c.json({ results: [] });
@@ -43,7 +60,7 @@ app.post('/push', requireRole('admin', 'analyst'), async (c) => {
   try {
     results = await processPush(changes, user.id, { authorize: true, generation: parsed.data.generation });
   } catch (error) {
-    if (error instanceof SyncWriteValidationError) return c.json({ error: error.message, code: ErrorCodes.VALIDATION_FAILED }, 400);
+    if (error instanceof SyncWriteValidationError) return c.json({ error: error.message.slice(0, 200), code: ErrorCodes.VALIDATION_FAILED }, 400);
     if (error instanceof SyncReadError) return c.json({ error: error.message, code: 'SYNC_CURSOR_RESET', resetRequired: true }, error.status);
     throw error;
   }

@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "Một số mẫu của nhóm không hợp lệ và chưa được tải.",
+  "catalog.teamUnavailable": "Không thể tải mẫu của nhóm. Hãy kiểm tra kết nối và làm mới.",
   "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
   "builtin.vtIpLookup.description": "Tra cứu địa chỉ IP trên VirusTotal để lấy danh tiếng, vị trí địa lý và thống kê phân tích.",
   "builtin.vtIpLookup.config.apiKey.label": "Khóa API",

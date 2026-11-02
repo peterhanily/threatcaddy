@@ -44,6 +44,9 @@ jobs:
           node-version-file: .node-version
           package-manager-cache: false
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - name: Use the pinned npm toolchain
+        if: matrix.project != 'root'
+        run: npm install --global npm@11.19.0
       - name: Audit the complete lockfile (high and critical block publication)
         env:
           PROJECT: ${{ matrix.project }}
@@ -169,9 +172,22 @@ jobs:
         with:
           node-version-file: .node-version
           package-manager-cache: false
+      - name: Use the pinned npm toolchain
+        run: npm install --global npm@11.19.0
       - run: npm --prefix server ci
       - run: npm --prefix server run build
       - run: npm --prefix server test
+      - name: Isolated request-validation resource regressions
+        shell: bash
+        run: npm --prefix server run --silent test:resource | tee validation-resource-results.jsonl
+      - name: Preserve resource regression measurements
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: validation-resources-${{ github.sha }}
+          path: validation-resource-results.jsonl
+          if-no-files-found: warn
+          retention-days: 14
 
   database:
     name: Real PostgreSQL migration and packaged startup
@@ -200,6 +216,8 @@ jobs:
         with:
           node-version-file: .node-version
           package-manager-cache: false
+      - name: Use the pinned npm toolchain
+        run: npm install --global npm@11.19.0
       - run: npm --prefix server ci
       - run: npm --prefix server run build
       # The full integration typecheck includes the optional administrative
@@ -286,6 +304,8 @@ jobs:
           package-manager-cache: false
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - run: pnpm install --frozen-lockfile
+      - name: Use the pinned npm toolchain
+        run: npm install --global npm@11.19.0
       - run: npm --prefix extension ci
       - name: Run extension utility tests with the locked root Vitest
         working-directory: extension

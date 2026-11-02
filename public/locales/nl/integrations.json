@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "Sommige teamsjablonen zijn ongeldig en zijn niet geladen.",
+  "catalog.teamUnavailable": "Teamsjablonen konden niet worden geladen. Controleer je verbinding en vernieuw.",
   "builtin.vtIpLookup.name": "VirusTotal IP Lookup",
   "builtin.vtIpLookup.description": "IP-adres opzoeken in VirusTotal: reputatie, geolocatie en analysestatistieken.",
   "builtin.vtIpLookup.config.apiKey.label": "API-sleutel",

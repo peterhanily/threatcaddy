@@ -97,7 +97,7 @@ not an independent backup. Deleting browser storage removes its local receipts.
 
 ## Build
 
-Requires Node.js 24.21.0+ (24.x) and npm 11.19.0+ (11.x).
+Requires Node.js 24.22.2+ (24.x) and npm 11.19.0+ (11.x).
 
 ```bash
 cd extension

@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "Algunas plantillas del equipo no son válidas y no se han cargado.",
+  "catalog.teamUnavailable": "No se pudieron cargar las plantillas del equipo. Comprueba la conexión y actualiza.",
   "builtin.vtIpLookup.name": "Búsqueda de IP en VirusTotal",
   "builtin.vtIpLookup.description": "Buscar una dirección IP en VirusTotal para obtener reputación, geolocalización y estadísticas de análisis.",
   "builtin.vtIpLookup.config.apiKey.label": "Clave API",

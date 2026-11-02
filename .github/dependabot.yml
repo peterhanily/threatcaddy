@@ -1,0 +1,28 @@
+version: 2
+updates:
+  # Each package keeps its own package manager and lockfile.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      vitest:
+        patterns: [vitest, '@vitest/*']
+  - package-ecosystem: npm
+    directory: /server
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: /extension
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  # Preserve full commit-SHA action pins and their readable version comments.
+  # Updates still require the normal verification and review gates.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

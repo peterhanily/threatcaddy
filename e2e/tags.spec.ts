@@ -176,7 +176,7 @@ test.describe('Tag keyboard accessibility', () => {
     await goToApp(page);
   });
 
-  test('delete Enter and Space do not select a tag or change the investigation, and cancel restores focus', async ({ page }) => {
+  test('delete Enter and Space do not select a tag or change the investigation, and cancel restores focus', async ({ page }, testInfo) => {
     const diagnostics: string[] = [];
     page.on('console', message => {
       if (message.type() === 'error' && /cannot be a descendant|cannot contain a nested|validateDOMNesting/i.test(message.text())) {
@@ -193,6 +193,15 @@ test.describe('Tag keyboard accessibility', () => {
     await removeBravo.press('Enter');
     const confirmation = page.getByRole('dialog', { name: 'Delete Tag', exact: true });
     await expect(confirmation).toBeVisible();
+    const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+    await expect.poll(() => confirmation.boundingBox()).toEqual({ x: 0, y: 0, ...viewport });
+    const card = await confirmation.locator(':scope > div').boundingBox();
+    expect(card).not.toBeNull();
+    if (card) {
+      expect(Math.abs(card.x + card.width / 2 - viewport.width / 2)).toBeLessThan(1);
+      expect(Math.abs(card.y + card.height / 2 - viewport.height / 2)).toBeLessThan(1);
+    }
+    await page.screenshot({ path: testInfo.outputPath('tag-delete-dialog.png') });
     await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(confirmation).not.toBeVisible();
     await expect(removeBravo).toBeFocused();

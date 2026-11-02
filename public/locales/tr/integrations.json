@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "Bazı ekip şablonları geçersiz ve yüklenmedi.",
+  "catalog.teamUnavailable": "Ekip şablonları yüklenemedi. Bağlantınızı kontrol edip yenileyin.",
   "builtin.vtIpLookup.name": "VirusTotal IP Sorgusu",
   "builtin.vtIpLookup.description": "İtibar, coğrafi konum ve analiz istatistiklerini almak için VirusTotal'da bir IP adresi sorgulayın.",
   "builtin.vtIpLookup.config.apiKey.label": "API Anahtarı",

@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "เทมเพลตทีมบางรายการไม่ถูกต้องและไม่ได้โหลด",
+  "catalog.teamUnavailable": "ไม่สามารถโหลดเทมเพลตทีมได้ ตรวจสอบการเชื่อมต่อแล้วรีเฟรช",
   "builtin.vtIpLookup.name": "VirusTotal ค้นหา IP",
   "builtin.vtIpLookup.description": "ค้นหาที่อยู่ IP บน VirusTotal เพื่อดึงชื่อเสียง ตำแหน่งทางภูมิศาสตร์ และสถิติการวิเคราะห์",
   "builtin.vtIpLookup.config.apiKey.label": "API Key",

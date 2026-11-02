@@ -2,6 +2,8 @@ import type { Post, Notification, InvestigationMember } from '../types';
 import type { ActivityEntry } from '../components/CaddyShack/ActivityCard';
 import i18n from '../i18n';
 import { cancelServerRequests, fetchServerResponse } from './server-response';
+import { compileIntegrationPlan, isSafeTeamTemplateId } from './integration-plan';
+import type { IntegrationTemplate } from '../types/integration-types';
 
 type GetTokenFn = () => Promise<string | null>;
 type InvalidateTokenFn = () => void;
@@ -609,19 +611,36 @@ export async function deleteBackup(id: string): Promise<void> {
 export async function shareIntegrationTemplate(template: unknown): Promise<void> {
   const resp = await apiFetch('/api/integrations/templates', {
     method: 'POST',
-    body: JSON.stringify(template),
+    body: JSON.stringify({ template }),
   });
-  if (!resp.ok) throw new Error('Failed to share template');
+  if (!resp.ok) throw await apiError(resp, 'Failed to share template');
 }
 
-export async function fetchTeamTemplates(): Promise<unknown[]> {
+export async function fetchTeamTemplates(): Promise<{ templates: IntegrationTemplate[]; skipped: number }> {
   const resp = await apiFetch('/api/integrations/templates');
-  if (!resp.ok) throw new Error('Failed to fetch team templates');
-  return resp.json();
+  if (!resp.ok) throw await apiError(resp, 'Failed to fetch team templates');
+  const body: unknown = await resp.json();
+  if (!body || typeof body !== 'object' || !('templates' in body) || !Array.isArray(body.templates)) {
+    throw new Error('Invalid team template response');
+  }
+  const templates: IntegrationTemplate[] = [];
+  let skipped = 0;
+  for (const row of body.templates as unknown[]) {
+    try {
+      if (!row || typeof row !== 'object' || !('template' in row) || !('id' in row)) {
+        throw new Error('Invalid team template response');
+      }
+      const template = compileIntegrationPlan(row.template).template;
+      if (template.id !== row.id || !isSafeTeamTemplateId(row.id)) throw new Error('Invalid team template identity');
+      templates.push(template as unknown as IntegrationTemplate);
+    } catch { skipped++; }
+  }
+  return { templates, skipped };
 }
 
 export async function deleteTeamTemplate(id: string): Promise<void> {
-  const resp = await apiFetch(`/api/integrations/templates/${id}`, { method: 'DELETE' });
+  if (!isSafeTeamTemplateId(id)) throw new Error('Invalid team template identity');
+  const resp = await apiFetch(`/api/integrations/templates/${encodeURIComponent(id)}`, { method: 'DELETE' });
   if (!resp.ok) throw new Error('Failed to delete template');
 }
 

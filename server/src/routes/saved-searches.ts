@@ -9,7 +9,7 @@ import * as schema from '../db/schema.js';
 const savedSearchSchema = z.object({
   name: z.string().min(1).max(200),
   query: z.string().min(1).max(5000),
-  filters: z.record(z.unknown()).optional().default({}),
+  filters: z.record(z.string(), z.unknown()).optional().default({}),
   isShared: z.boolean().optional().default(false),
 });
 

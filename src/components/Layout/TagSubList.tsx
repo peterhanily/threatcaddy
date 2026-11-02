@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Pencil, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Tag as TagType } from '../../types';
@@ -200,7 +201,8 @@ export function TagSubList({
       )}
       {deleteError && <p role="alert" className="px-2 text-xs text-red-400">{deleteError}</p>}
 
-      <ConfirmDialog
+      {/* Escape the sidebar's backdrop-filter containing block and clipping. */}
+      {createPortal(<ConfirmDialog
         open={deletingId !== null}
         onClose={closeDelete}
         onConfirm={() => { void handleDelete(); }}
@@ -208,7 +210,7 @@ export function TagSubList({
         message={t('sidebar.tagDeleteMessage', { defaultValue: 'This tag will be removed from all investigations and items that use it.' })}
         confirmLabel={t('sidebar.tagDeleteTitle', { defaultValue: 'Delete Tag' })}
         danger
-      />
+      />, document.body)}
     </div>
   );
 }

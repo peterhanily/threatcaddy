@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "一部のチームテンプレートは無効なため読み込まれませんでした。",
+  "catalog.teamUnavailable": "チームテンプレートを読み込めませんでした。接続を確認して更新してください。",
   "builtin.vtIpLookup.name": "VirusTotal IP ルックアップ",
   "builtin.vtIpLookup.description": "IPアドレスをVirusTotalで照会して評判、ジオロケーション、分析統計を取得します。",
   "builtin.vtIpLookup.config.apiKey.label": "APIキー",
