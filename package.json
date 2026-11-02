@@ -50,7 +50,7 @@
     "i18next": "^26.4.2",
     "i18next-http-backend": "4.0.2",
     "leaflet": "^1.9.4",
-    "lucide-react": "^0.575.0",
+    "lucide-react": "^1.65.0",
     "marked": "^17.0.6",
     "minisearch": "^7.2.0",
     "nanoid": "^5.1.16",
