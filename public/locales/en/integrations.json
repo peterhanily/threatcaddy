@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "Some team templates are invalid and were not loaded.",
+  "catalog.teamUnavailable": "Team templates could not be loaded. Check your connection and refresh.",
   "config.selectPlaceholder": "Select...",
   "config.togglePassword": "Show or hide {{label}}",
   "config.requiredField": "{{label}} is required.",

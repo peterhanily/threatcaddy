@@ -7,6 +7,7 @@ import type { SyncChange, SyncResult } from '../types.js';
 import { emitEntityEvent } from '../bots/event-bus.js';
 import { assertInvestigationOwner, InvestigationPolicyError, isEligibleInvestigationOwner } from './investigation-policy.js';
 import { publishInvestigationVisibility, type InvestigationTransaction } from './investigation-lifecycle.js';
+import { syncDataWithinBudget } from '../lib/sync-data-budget.js';
 
 export type SyncMutationAuthorizer = (tx: InvestigationTransaction, change: SyncChange,
   existing: Record<string, unknown> | null, next: Record<string, unknown>) => Promise<void>;
@@ -98,7 +99,7 @@ function stripServerFields(data: Record<string, unknown> | undefined, tableName:
     }
     // Reject unsafe or oversized values
     if (!validateValue(value)) {
-      throw new SyncWriteValidationError(`Sync field "${key}" exceeds the supported value limits`);
+      throw new SyncWriteValidationError('Sync field exceeds the supported value limits');
     }
     const column = getTableColumns(getTable(tableName))?.[key];
     if (column?.dataType === 'date' && value !== null && value !== undefined) {
@@ -195,6 +196,7 @@ export async function processPush(
   userId: string,
   options: { authorize?: boolean; trustedInternal?: boolean; generation?: string; authorizeMutation?: SyncMutationAuthorizer; beforeCommit?: () => void | Promise<void> } = {},
 ): Promise<SyncResult[]> {
+  if (!syncDataWithinBudget(changes)) throw new SyncWriteValidationError('Sync data exceeds the supported structure limits');
   const identities = new Set<string>();
   for (const change of changes) {
     getTable(change.table);

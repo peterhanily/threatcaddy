@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "بعض قوالب الفريق غير صالحة ولم يتم تحميلها.",
+  "catalog.teamUnavailable": "تعذر تحميل قوالب الفريق. تحقق من اتصالك وأعد التحميل.",
   "builtin.vtIpLookup.name": "بحث VirusTotal عن IP",
   "builtin.vtIpLookup.description": "ابحث عن عنوان IP على VirusTotal للحصول على السمعة والموقع الجغرافي وإحصائيات التحليل.",
   "builtin.vtIpLookup.config.apiKey.label": "مفتاح API",

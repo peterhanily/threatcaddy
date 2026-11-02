@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "Certains modèles d’équipe sont invalides et n’ont pas été chargés.",
+  "catalog.teamUnavailable": "Impossible de charger les modèles d’équipe. Vérifiez votre connexion et actualisez.",
   "builtin.vtIpLookup.name": "Recherche IP VirusTotal",
   "builtin.vtIpLookup.description": "Rechercher une adresse IP sur VirusTotal pour obtenir la réputation, la géolocalisation et les statistiques d'analyse.",
   "builtin.vtIpLookup.config.apiKey.label": "Clé API",

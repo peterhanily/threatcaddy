@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "部分团队模板无效，未能加载。",
+  "catalog.teamUnavailable": "无法加载团队模板。请检查网络连接并刷新。",
   "builtin.vtIpLookup.name": "VirusTotal IP 查询",
   "builtin.vtIpLookup.description": "在 VirusTotal 上查询 IP 地址的信誉、地理位置和分析统计数据。",
   "builtin.vtIpLookup.config.apiKey.label": "API 密钥",

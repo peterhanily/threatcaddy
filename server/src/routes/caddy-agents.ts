@@ -38,9 +38,9 @@ const registrationSchema = z.object({
       systemPrompt: z.string().max(10000),
       allowedTools: z.array(z.string().max(100)).max(200).optional(),
       readOnlyEntityTypes: z.array(z.string().max(100)).max(100).optional(),
-      policy: z.record(z.unknown()), model: z.string().max(200).optional(),
+      policy: z.record(z.string(), z.unknown()), model: z.string().max(200).optional(),
     }),
-    policyOverrides: z.record(z.unknown()).optional(), order: z.number().int(),
+    policyOverrides: z.record(z.string(), z.unknown()).optional(), order: z.number().int(),
   })).min(1).max(50),
 });
 

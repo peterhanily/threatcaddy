@@ -639,6 +639,9 @@ paths:
         exact clientVersion baseline (compare-and-swap), not last-writer-wins.
         Each table/entityId pair must occur at most once in a batch. Membership,
         source/destination scope and history generation are checked transactionally.
+        Before schema validation, data objects are limited to 200 fields each,
+        top-level data field names to 128 characters, arrays to 5000 items,
+        traversal depth to eight and total data nodes to 100000 per batch.
       requestBody:
         required: true
         content:
@@ -1344,6 +1347,11 @@ paths:
       operationId: createIntegrationTemplate
       tags: [integrations]
       summary: Create integration template (admin/analyst)
+      description: >-
+        Template IDs must contain 1–128 ASCII letters, digits, underscores or
+        hyphens; absent or empty IDs are generated. Outer description fallbacks
+        must be strings of at most 2000 characters. Existing IDs return 409
+        without replacing a definition or recording a successful share.
       requestBody:
         required: true
         content:

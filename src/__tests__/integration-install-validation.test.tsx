@@ -12,6 +12,24 @@ beforeEach(async () => { await db.integrationTemplates.clear(); await db.install
 afterEach(async () => { await db.integrationTemplates.clear(); await db.installedIntegrations.clear(); });
 
 describe('integration installation validation', () => {
+  it('reuses an identical retained team definition after installation deletion, but refuses changed definitions', async () => {
+    const retained = { ...definition, source: 'team' as const };
+    await db.integrationTemplates.put(retained);
+    const { result, unmount } = renderHook(useIntegrations);
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => {
+      await expect(result.current.installTemplate({ ...retained, name: 'Changed' }, true)).rejects.toThrow('already exists');
+      await result.current.installTemplate({ ...retained, updatedAt: 99 }, true);
+      const installation = await result.current.createInstallation(retained.id, {});
+      expect(installation.name).toBe(retained.name);
+      await result.current.deleteInstallation(installation.id);
+      await result.current.installTemplate(retained, true);
+      await result.current.createInstallation(retained.id, {});
+    });
+    expect(await db.integrationTemplates.get(retained.id)).toEqual(retained);
+    expect(await db.installedIntegrations.count()).toBe(1);
+    unmount();
+  });
   it('retains the existing record when an imported or catalog replacement has invalid shape', async () => {
     await db.integrationTemplates.put(definition);
     const { result, unmount } = renderHook(useIntegrations);

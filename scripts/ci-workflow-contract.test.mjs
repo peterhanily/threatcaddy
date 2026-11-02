@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { load } from 'js-yaml';
@@ -60,6 +60,46 @@ test('database verification installs locked root browser types before checking e
   assert.ok(config.include.includes('integration/**/*.ts'));
   assert.deepEqual(config.exclude, ['node_modules', 'dist']);
   assert.ok(JSON.parse(read('package.json')).devDependencies['@playwright/test']);
+});
+
+test('resource failures block the server gate while preserving measurement evidence', t => {
+  const job = verify.jobs['server-checks'];
+  const step = stepsOf(job).find(candidate => candidate.run?.includes('test:resource'));
+  assert.ok(step, 'server verification must run the isolated resource regressions');
+  assert.equal(step.if, undefined);
+  assert.equal(step['continue-on-error'], undefined);
+  assert.equal(step.shell, 'bash');
+  assert.equal(job.if, undefined);
+  assert.equal(job['continue-on-error'], undefined);
+  assert.ok(verify.jobs.gate.needs.includes('server-checks'));
+  const evidence = stepsOf(job).find(candidate => candidate.uses?.startsWith('actions/upload-artifact@')
+    && candidate.with.path === 'validation-resource-results.jsonl');
+  assert.ok(evidence, 'resource measurements must be retained after a failure');
+  assert.equal(evidence.if, 'always()');
+  assert.equal(evidence.with['retention-days'], 14);
+
+  // Execute the actual CI command with a failing synthetic npm process. This
+  // proves tee cannot turn a failed resource check into successful publication.
+  const folder = temporaryDirectory(t);
+  writeFileSync(join(folder, 'npm'), '#!/bin/sh\nprintf \'%s\\n\' \'{"fixture":"resource-failure"}\'\nexit 42\n', { mode: 0o700 });
+  assert.throws(() => execFileSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', step.run], {
+    cwd: folder, env: { PATH: `${folder}:${process.env.PATH}` }, stdio: ['ignore', 'pipe', 'pipe'],
+  }), error => error.status === 42);
+  assert.deepEqual(JSON.parse(readFileSync(join(folder, evidence.with.path), 'utf8')), { fixture: 'resource-failure' });
+});
+
+test('npm audit and install jobs select the manifest-pinned npm first', () => {
+  const npmPin = JSON.parse(read('server/package.json')).packageManager;
+  assert.equal(npmPin, JSON.parse(read('extension/package.json')).packageManager);
+  assert.match(npmPin, /^npm@\d+\.\d+\.\d+$/);
+  for (const name of ['audit', 'server-checks', 'database', 'extension']) {
+    const steps = stepsOf(verify.jobs[name]);
+    const selection = steps.findIndex(step => step.run === `npm install --global ${npmPin}`);
+    const usage = steps.findIndex(step => /npm --prefix .* (?:ci|audit)\b/.test(step.run ?? ''));
+    assert.ok(selection >= 0 && usage > selection, `${name} must select npm before using a project lockfile`);
+    assert.equal(steps[selection]['continue-on-error'], undefined);
+    assert.equal(steps[selection].if, name === 'audit' ? "matrix.project != 'root'" : undefined);
+  }
 });
 
 test('extension verification checks committed downloads without rewriting or extracting them', () => {

@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "برخی الگوهای تیم نامعتبرند و بارگیری نشدند.",
+  "catalog.teamUnavailable": "الگوهای تیم بارگیری نشدند. اتصال خود را بررسی کنید و دوباره بارگیری کنید.",
   "builtin.vtIpLookup.name": "جستجوی IP در VirusTotal",
   "builtin.vtIpLookup.description": "یک آدرس IP را در VirusTotal برای شهرت، موقعیت جغرافیایی و آمار تحلیل بررسی کنید.",
   "builtin.vtIpLookup.config.apiKey.label": "کلید API",

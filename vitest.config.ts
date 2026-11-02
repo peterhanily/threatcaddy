@@ -9,7 +9,9 @@ export default defineConfig({
     setupFiles: ['./src/vitest.setup.ts'],
     // Node-owned script tests have a separate required CI command; they must not
     // be loaded into Vitest's jsdom environment or run twice under two runners.
-    exclude: ['server/**', 'node_modules/**', 'e2e/**', 'standalone-tests/**', 'scripts/**/*.test.mjs', 'dist/**', 'dist-single/**', '.claude/**'],
+    // Local qualification snapshots and evidence may contain old source trees;
+    // they are not tests for this checkout and must never be executed here.
+    exclude: ['server/**', '**/node_modules/**', 'e2e/**', 'standalone-tests/**', 'scripts/**/*.test.mjs', 'dist/**', 'dist-single/**', '.claude/**', 'plans/**', 'docs/reviews/**', 'test-results/**', 'playwright-report/**'],
     css: false,
     coverage: {
       provider: 'v8',

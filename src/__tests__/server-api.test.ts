@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { configureServerApi, fetchMe, syncPush, syncPull, fetchInvestigations, uploadFile, getFileUrl, updateProfile, fetchServerInfo } from '../lib/server-api';
+import { configureServerApi, fetchMe, syncPush, syncPull, fetchInvestigations, uploadFile, getFileUrl, updateProfile, fetchServerInfo, shareIntegrationTemplate, fetchTeamTemplates, deleteTeamTemplate } from '../lib/server-api';
 
 // ---------------------------------------------------------------------------
 // Mock fetch globally
@@ -313,6 +313,53 @@ describe('server-api', () => {
   });
 
   // ─── Error handling ────────────────────────────────────────────
+
+  describe('team integration template contracts', () => {
+    const template = { id: 'fictional-template', name: 'Fictional template', version: '1.0', schemaVersion: '1.0', description: '', author: 'Test',
+      icon: '', color: '', category: 'utility', tags: [], source: 'user', triggers: [{ type: 'manual' }], configSchema: [], requiredDomains: [],
+      steps: [], outputs: [], createdAt: 1, updatedAt: 1 };
+
+    it('shares the template in the server request envelope without mutating it', async () => {
+      const before = structuredClone(template);
+      await shareIntegrationTemplate(template);
+      expect(mockFetch).toHaveBeenCalledWith('http://test-server/api/integrations/templates', expect.objectContaining({
+        method: 'POST', body: JSON.stringify({ template }),
+      }));
+      expect(template).toEqual(before);
+    });
+
+    it('preserves a rejected share reason and permits a later valid share', async () => {
+      mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Invalid template', code: 'VALIDATION_FAILED' }), { status: 400 }));
+      await expect(shareIntegrationTemplate(template)).rejects.toMatchObject({ message: 'Invalid template', code: 'VALIDATION_FAILED' });
+      await expect(shareIntegrationTemplate(template)).resolves.toBeUndefined();
+    });
+
+    it('unwraps and validates the server template rows before returning them to the catalog', async () => {
+      mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ templates: [{ id: template.id, name: template.name, sharedBy: 'fictional-author', template }] })));
+      expect(await fetchTeamTemplates()).toEqual({ templates: [template], skipped: 0 });
+    });
+
+    it.each([null, [], {}, { templates: {} }])('rejects malformed team response %j', async body => {
+      mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(body)));
+      await expect(fetchTeamTemplates()).rejects.toThrow('Invalid team template response');
+    });
+
+    it('does not return definitions that fail the compiler or disagree with their server identity', async () => {
+      mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ templates: [{ id: template.id, template: { ...template, outputs: {} } }] })));
+      expect(await fetchTeamTemplates()).toEqual({ templates: [], skipped: 1 });
+      mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ templates: [{ id: 'different-server-row', template }] })));
+      expect(await fetchTeamTemplates()).toEqual({ templates: [], skipped: 1 });
+    });
+    it.each(['../users/victim', '..', '.', '%2e%2e', 'id/slash', 'id?query', 'id#hash'])('never fetches an unsafe delete ID %s', async id => {
+      await expect(deleteTeamTemplate(id)).rejects.toThrow('Invalid team template identity');
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+    it('keeps valid rows and counts rejected rows in a mixed catalog', async () => {
+      mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ templates: [null, { id: template.id, template },
+        { id: '../../users/victim', template: { ...template, id: '../../users/victim' } }] })));
+      expect(await fetchTeamTemplates()).toEqual({ templates: [template], skipped: 2 });
+    });
+  });
 
   describe('error handling', () => {
     it('fetchMe throws on non-ok response', async () => {

@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Interface fixes
+
+- Center sidebar tag, timeline and whiteboard deletion confirmations over the full window instead of clipping them to the sidebar.
+
+### Request validation security
+
+- Oversized HTTP bodies return a bounded `PAYLOAD_TOO_LARGE` error and explicitly close the HTTP/1 connection, preventing a follow-up request from reusing a socket that the server is still draining.
+- Sync data now has bounded dictionary width, top-level field-name length, depth and aggregate traversal before schema cloning and service preparation. Service validation messages are bounded as well.
+- Shared template IDs are restricted to safe path segments, and client deletion validates and encodes them. Invalid outer descriptions are rejected; duplicate shares return an explicit conflict without replacing the existing definition.
+- Team catalogs retain valid rows while reporting invalid entries and load failures with a refresh action. Identical retained team definitions can be reinstalled without overwriting changed definitions or credentials.
+- Team sync rejects batches over 500 changes before validating individual records, while retaining the 16 MiB request limit. Integration sharing rejects steps, outputs and triggers above 256 entries before preliminary element validation and still requires full graph compilation before storage.
+- Malformed outer request bodies return validation errors, and validation details have fixed count and text limits. Isolated child-process checks cover large invalid requests, memory retention and successful follow-up requests.
+- Team integration sharing sends the required request envelope and reads validated templates from the server's list response. Failed shares retain the local template and show the server's rejection reason.
+- Update the Node 24 runtime and targeted dependency security patches. Required verification exercises native password hashing and image transformation inside the production server image. Weekly dependency-update proposals supplement the existing full-lockfile audit schedule.
+
 ### Data preservation and recovery
 
 - Portable JSON backups cover all 19 supported entity tables, validate complete records before writes and preserve supported long text without silent truncation. Plaintext exports omit installed integration configuration; explicit encrypted exports can retain it. Restores suspend automation and report settings-only failures separately from committed entity writes.
@@ -35,7 +50,7 @@
 
 ### Upgrade notes
 
-Use the recorded Node 24.21.0 / pnpm 10.29.1 / npm 11.19.0 baseline. Coordinate client and team-server upgrades, preserve the existing credential-encryption key and retain a verified database-and-files backup. Publishing a server image does not update a running deployment. See [deployment](docs/deployment.md), [runtime operations](server/docs/runtime-operations.md), [backup recovery](docs/backup-recovery.md) and [verification](docs/development-verification.md).
+Use the recorded Node 24.22.2 / pnpm 10.29.1 / npm 11.19.0 baseline. Coordinate client and team-server upgrades, preserve the existing credential-encryption key and retain a verified database-and-files backup. Publishing a server image does not update a running deployment. See [deployment](docs/deployment.md), [runtime operations](server/docs/runtime-operations.md), [backup recovery](docs/backup-recovery.md) and [verification](docs/development-verification.md).
 
 ---
 

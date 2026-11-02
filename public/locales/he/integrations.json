@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "חלק מתבניות הצוות אינן תקינות ולא נטענו.",
+  "catalog.teamUnavailable": "לא ניתן לטעון את תבניות הצוות. בדקו את החיבור ורעננו.",
   "builtin.vtIpLookup.name": "בדיקת IP ב-VirusTotal",
   "builtin.vtIpLookup.description": "בדוק כתובת IP ב-VirusTotal לקבלת מוניטין, מיקום גיאוגרפי וסטטיסטיקות ניתוח.",
   "builtin.vtIpLookup.config.apiKey.label": "מפתח API",

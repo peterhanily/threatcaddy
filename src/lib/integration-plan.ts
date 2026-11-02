@@ -1,9 +1,13 @@
 /** Pure validation/graph compilation. Kept identical in the client and server. */
 export const INTEGRATION_LIMITS = Object.freeze({
-  steps: 256, depth: 8, visits: 10_000, iterations: 1_000, logs: 500,
+  steps: 256, collectionItems: 256, depth: 8, visits: 10_000, iterations: 1_000, logs: 500,
   templateBytes: 4 * 1024 * 1024, dataNodes: 50_000,
 });
 type Row = Record<string, unknown>;
+/** Shared catalog IDs are URL path segments, unlike arbitrary local import IDs. */
+export function isSafeTeamTemplateId(value: unknown): value is string {
+  return typeof value === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(value);
+}
 export interface IntegrationPlan {
   template: Row;
   roots: string[];
@@ -17,7 +21,7 @@ function object(value: unknown, path: string): Row {
 function string(value: unknown, path: string, allowEmpty = false): asserts value is string {
   if (typeof value !== 'string' || (!allowEmpty && !value.trim())) fail(path + ' must be a string');
 }
-function list(value: unknown, path: string, max = 256): unknown[] {
+function list(value: unknown, path: string, max = INTEGRATION_LIMITS.collectionItems): unknown[] {
   if (!Array.isArray(value) || value.length > max) fail(path + ' must be a bounded array');
   return value;
 }

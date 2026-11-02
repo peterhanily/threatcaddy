@@ -184,8 +184,8 @@ volumes:
 
 The server Dockerfile (`server/Dockerfile`) uses a multi-stage build:
 
-1. **Build stage**: the official `node:24.21.0-alpine` image pinned by digest in the Dockerfile, installs all dependencies and compiles TypeScript
-2. **Runtime stage**: the same pinned Node 24.21.0 image, installs production dependencies only and copies compiled JS and migrations
+1. **Build stage**: the official `node:24.22.2-alpine` image pinned by digest in the Dockerfile, installs all dependencies and compiles TypeScript
+2. **Runtime stage**: the same pinned Node 24.22.2 image, installs production dependencies only and copies compiled JS and migrations
 3. Runs as non-root user `app`
 4. Exposes ports 3001 and 3002
 
@@ -666,6 +666,45 @@ For a non-container build, run `npm run build`, supply the installation's
 `DATABASE_URL` explicitly, and use `npm run db:migrate` from the server package.
 Do not use schema push, delete migration rows, rewrite historical SQL, or drop
 data to bypass a failure. Follow [migration recovery](../server/docs/migration-recovery.md).
+
+### Request-validation security update
+
+The fixed build rejects sync batches above 500 changes and integration steps,
+outputs or triggers above 256 entries before element validation. The existing
+16 MiB sync and 1 MiB integration body limits still apply. Exercise large invalid
+requests only in an isolated fixture or authorized staging environment.
+
+Before rollout, retain the successful verification run URL, exact source commit,
+audit evidence, resource-regression measurements, immutable artifact IDs and
+checksums, server image ID/registry digest, and tested platform. CI artifacts
+expire after seven days, so preserve approved release records and artifacts
+outside that temporary storage. A dirty local checkout is a development build;
+it is not an artifact approved for publication by the required workflow.
+
+Inventory each intended team server, its operator, installation type, existing
+configuration and recovery material. Keep these states separate in the release
+record: **code verified**, **artifacts published**, and **deployment verified**.
+Unknown installations and servers awaiting an operator remain explicitly
+pending. Publishing an image or client does not establish server rollout.
+
+- Registry installations: update the image reference to the exact verified
+  registry digest, pull it, and recreate only the application container using
+  that installation's actual Compose/service configuration.
+- The default repository Compose installation builds `./server`: update to the
+  tested source, run `docker compose build server`, then
+  `docker compose up -d --no-deps --force-recreate server`. Pulling a registry
+  image alone does not update this installation type.
+
+Preserve the database, managed-file volumes, stable application keys and other
+deployment settings. Confirm the running image identity and OCI revision label
+(for workflow-built images), `node --version`, `/health`, authentication, normal
+sync and a valid template share/list/install cycle. Verify oversized rejection
+in staging before production and record each server's result. Container image
+identity can be checked with `docker inspect` and `docker image inspect`; do not
+identify a running build from a mutable `latest` tag alone.
+
+If rollback requires a database restore, follow the complete procedure below,
+including explicit sync-history rotation before clients reconnect.
 
 ### Rollback and Restore
 

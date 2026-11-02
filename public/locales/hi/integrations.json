@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "टीम के कुछ टेम्पलेट अमान्य हैं और लोड नहीं हुए।",
+  "catalog.teamUnavailable": "टीम के टेम्पलेट लोड नहीं हो सके। अपना कनेक्शन जाँचें और रीफ़्रेश करें।",
   "builtin.vtIpLookup.name": "VirusTotal IP लुकअप",
   "builtin.vtIpLookup.description": "VirusTotal पर एक IP पता देखें — प्रतिष्ठा, जियोलोकेशन, और विश्लेषण आँकड़े प्राप्त करें।",
   "builtin.vtIpLookup.config.apiKey.label": "API कुंजी",

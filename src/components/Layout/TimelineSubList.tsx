@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Clock, Plus, X } from 'lucide-react';
 import type { Timeline } from '../../types';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
@@ -139,7 +140,8 @@ export function TimelineSubList({
         </div>
       )}
 
-      <ConfirmDialog
+      {/* Keep the confirmation outside the sidebar's blur and clipping. */}
+      {createPortal(<ConfirmDialog
         open={deletingId !== null}
         onClose={() => setDeletingId(null)}
         onConfirm={() => { if (deletingId) { onDeleteTimeline?.(deletingId); setDeletingId(null); } }}
@@ -147,7 +149,7 @@ export function TimelineSubList({
         message="This timeline and all its events will be permanently deleted. This cannot be undone."
         confirmLabel="Delete Timeline"
         danger
-      />
+      />, document.body)}
     </div>
   );
 }

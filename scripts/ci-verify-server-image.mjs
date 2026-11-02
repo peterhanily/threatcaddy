@@ -163,6 +163,27 @@ try {
   if (!/^\d+\.\d+\.\d+(?:[-+][a-zA-Z0-9.-]+)?$/.test(expectedVersion)) {
     throw new Error('Image package has no valid version');
   }
+  // Exercise both native modules as the image's non-root runtime user. Merely
+  // importing them or reaching /health does not establish native ABI support.
+  docker(['run', '--rm', ...labels, '--network', 'none', '--entrypoint', 'node', imageId,
+    '--input-type=module', '-e', `
+      import assert from 'node:assert/strict';
+      import argon2 from 'argon2';
+      import sharp from 'sharp';
+      assert.notEqual(process.getuid(), 0, 'Image must run as a non-root user');
+      const hash = await argon2.hash('synthetic-image-acceptance');
+      assert.equal(await argon2.verify(hash, 'synthetic-image-acceptance'), true);
+      assert.equal(await argon2.verify(hash, 'wrong-synthetic-password'), false);
+      const png = await sharp({ create: {
+        width: 2, height: 2, channels: 4, background: '#123456',
+      } }).resize(1, 1).png().toBuffer();
+      const metadata = await sharp(png).metadata();
+      assert.equal(metadata.format, 'png');
+      assert.equal(metadata.width, 1);
+      assert.equal(metadata.height, 1);
+      console.log('Native argon2 and sharp operations passed');
+    `]);
+  console.log('Native argon2 and sharp operations passed as the non-root image user');
   container = docker(['run', '--detach', ...labels,
     ...(isolated ? ['--network', network, '--publish', '127.0.0.1::3001'] : ['--network', 'host']),
     ...['DATABASE_URL', 'NODE_ENV', 'JWT_PRIVATE_KEY', 'JWT_PUBLIC_KEY',

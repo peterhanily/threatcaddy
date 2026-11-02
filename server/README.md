@@ -4,7 +4,7 @@ Backend API server for ThreatCaddy. Handles authentication, real-time sync, soci
 
 ## Prerequisites
 
-- Node.js 24.21.0 (the pinned 24.x runtime) and npm 11.19.x
+- Node.js 24.22.2 (the pinned 24.x runtime) and npm 11.19.x
 - PostgreSQL 17+
 
 ## Setup

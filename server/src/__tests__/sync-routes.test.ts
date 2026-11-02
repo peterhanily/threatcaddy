@@ -26,11 +26,15 @@ vi.mock('../db/index.js', () => ({ db: { select: () => ({ from: () => ({ where: 
 
 import syncRoutes from '../routes/sync.js';
 import { SyncReadError, SyncWriteValidationError } from '../services/sync-service.js';
-const app = new Hono().route('/api/sync', syncRoutes);
+import { apiBodyLimit, MAX_SYNC_BYTES } from '../middleware/api-body-limit.js';
+const app = new Hono().use('/api/*', apiBodyLimit).route('/api/sync', syncRoutes);
 const put = { table: 'notes', op: 'put', entityId: 'note-1', clientVersion: 3, data: { title: 'Edited', folderId: 'folder-1' } };
 const record = { id: 'note-1', title: 'Edited', folderId: 'folder-1', version: 4 };
+function pushBody(body: string) {
+  return app.request('/api/sync/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+}
 function push(changes: unknown) {
-  return app.request('/api/sync/push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ changes, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' }) });
+  return pushBody(JSON.stringify({ changes, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' }));
 }
 beforeEach(() => {
   vi.resetAllMocks(); mocks.user = { id: 'user-1', role: 'analyst' };
@@ -40,6 +44,26 @@ beforeEach(() => {
 });
 
 describe('sync HTTP write boundary', () => {
+  it.each([
+    Object.fromEntries(Array.from({ length: 201 }, (_, index) => [`field${index}`, null])),
+    { ['x'.repeat(129)]: 'value' },
+    { nested: Object.fromEntries(Array.from({ length: 201 }, (_, index) => [`field${index}`, null])) },
+    { items: Array(5001).fill(null) },
+  ])('rejects excessive data structure before invoking the service', async data => {
+    const response = await push([{ ...put, data }]);
+    expect(response.status).toBe(400); expect((await response.text()).length).toBeLessThan(512);
+    expect(mocks.push).not.toHaveBeenCalled(); expect(mocks.audit).not.toHaveBeenCalled();
+    expect((await push([put])).status).toBe(200);
+  });
+  it('bounds aggregate traversal across otherwise individually valid changes', async () => {
+    const response = await push(Array.from({ length: 30 }, (_, index) => ({ ...put, entityId: String(index), data: { items: Array(5000).fill(null) } })));
+    expect(response.status).toBe(400); expect(mocks.push).not.toHaveBeenCalled();
+  });
+  it('bounds unexpected service validation messages', async () => {
+    mocks.push.mockRejectedValue(new SyncWriteValidationError('x'.repeat(10000)));
+    const response = await push([put]); expect(response.status).toBe(400);
+    expect((await response.text()).length).toBeLessThan(512);
+  });
   it('requires authentication and a server write role', async () => {
     mocks.user = null; expect((await push([put])).status).toBe(401);
     mocks.user = { id: 'viewer', role: 'viewer' }; expect((await push([put])).status).toBe(403);
@@ -54,6 +78,65 @@ describe('sync HTTP write boundary', () => {
   it('accepts an empty batch without a transaction', async () => {
     expect(await (await push([])).json()).toEqual({ results: [] });
     expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  it.each([1, 500])('accepts %i distinct valid changes', async count => {
+    const changes = Array.from({ length: count }, (_, index) => ({ ...put, entityId: `note-${index}` }));
+    const results = changes.map(change => ({ table: change.table, entityId: change.entityId, status: 'accepted', serverVersion: 4,
+      serverRecord: { ...record, id: change.entityId } }));
+    mocks.push.mockResolvedValue(results);
+    const response = await push(changes);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ results });
+    expect(mocks.push).toHaveBeenCalledOnce();
+    expect(mocks.push.mock.calls[0][0]).toEqual(changes);
+    expect(mocks.broadcast).toHaveBeenCalledTimes(count);
+  });
+
+  it.each(['null', '[]', 'true', '42', '"body"', '{', ''])('rejects malformed outer JSON %j', async body => {
+    const response = await pushBody(body);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: 'Invalid sync batch', code: 'VALIDATION_FAILED', details: { formErrors: expect.any(Array), fieldErrors: {} } });
+    expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, null, '', 'not-a-uuid', 'aaaaaaaa-aaaa-4aaa-0aaa-aaaaaaaaaaaa'])('rejects invalid generation %j even for an empty batch', async generation => {
+    const response = await pushBody(JSON.stringify({ generation, changes: [] }));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ code: 'VALIDATION_FAILED' });
+    expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  it('rejects oversized malformed collections with one count error and accepts a follow-up', async () => {
+    const response = await push(Array(5001).fill(null));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'Invalid sync batch', code: 'VALIDATION_FAILED',
+      details: { formErrors: [], fieldErrors: { changes: ['At most 500 changes are allowed'] } } });
+    expect(mocks.push).not.toHaveBeenCalled();
+    expect(mocks.broadcast).not.toHaveBeenCalled();
+    expect(mocks.audit).not.toHaveBeenCalled();
+    expect((await push([put])).status).toBe(200);
+    expect(mocks.push).toHaveBeenCalledOnce();
+  });
+
+  it('bounds details for an invalid collection within the accepted count', async () => {
+    const response = await push(Array.from({ length: 500 }, () => ({})));
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.details.formErrors).toEqual([]);
+    expect(body.details.fieldErrors.changes.length).toBeLessThanOrEqual(20);
+    expect(JSON.stringify(body).length).toBeLessThan(8192);
+    expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])('preserves 413 with content-length=%s before JSON parsing', async contentLength => {
+    const response = await app.request('/api/sync/push', { method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(contentLength ? { 'Content-Length': String(MAX_SYNC_BYTES + 1) } : {}) },
+      body: new Uint8Array(MAX_SYNC_BYTES + 1),
+    });
+    expect(response.status).toBe(413);
+    expect(mocks.push).not.toHaveBeenCalled();
+    expect((await push([put])).status).toBe(200);
   });
 
   it('delegates current authorization and revisions to the write transaction', async () => {

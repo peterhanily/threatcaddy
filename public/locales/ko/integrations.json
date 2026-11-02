@@ -1,4 +1,6 @@
 {
+  "catalog.teamInvalid": "일부 팀 템플릿이 유효하지 않아 불러오지 못했습니다.",
+  "catalog.teamUnavailable": "팀 템플릿을 불러올 수 없습니다. 연결을 확인하고 새로 고침하세요.",
   "builtin.vtIpLookup.name": "VirusTotal IP 조회",
   "builtin.vtIpLookup.description": "IP 주소를 VirusTotal에서 조회하여 평판, 지리적 위치, 분석 통계를 가져옵니다.",
   "builtin.vtIpLookup.config.apiKey.label": "API 키",
