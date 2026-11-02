@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import type { OutputBundle, OutputChunk } from 'rollup';
 import { inspectDependencyProvenance } from '../../build/dependency-provenance';
 
-const versions: Record<string, string> = { mermaid: '11.17.2', katex: '0.18.2', 'i18next-http-backend': '4.0.2' };
+const versions: Record<string, string> = { mermaid: '11.17.2', katex: '0.18.2', 'i18next-http-backend': '4.0.6' };
 const readPackage = (directory: string) => { const name = directory.split('/').at(-1) ?? ''; return { name, version: versions[name] }; };
 function fixture(): OutputBundle {
   return Object.fromEntries([

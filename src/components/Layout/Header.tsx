@@ -1,4 +1,4 @@
-import { Menu, Search, Github, Download, Chrome, HardDriveDownload, FolderUp, HelpCircle, Shield, RefreshCw, ChevronDown, Briefcase, FlaskConical } from 'lucide-react';
+import { Menu, Search, CodeXml, Download, Puzzle, HardDriveDownload, FolderUp, HelpCircle, Shield, RefreshCw, ChevronDown, Briefcase, FlaskConical } from 'lucide-react';
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ThemeToggle } from '../Common/ThemeToggle';
@@ -189,7 +189,7 @@ export function Header({
               className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors no-underline"
               onClick={() => setHelpMenuOpen(false)}
             >
-              <Github size={14} />
+              <CodeXml size={14} />
               {t('header.github')}
             </a>
             {typeof __STANDALONE__ !== 'undefined' && __STANDALONE__ ? (
@@ -237,7 +237,7 @@ export function Header({
               className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors no-underline"
               onClick={() => setHelpMenuOpen(false)}
             >
-              <Chrome size={14} />
+              <Puzzle size={14} />
               {t('header.chromeExtension')}
             </a>
             <a

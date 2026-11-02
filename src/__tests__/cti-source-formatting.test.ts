@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { renderMarkdown } from '../lib/markdown';
 import {
   CTI_CENSYS_TOOL,
   CTI_FLASHPOINT_COMMUNITIES_TOOL,
@@ -16,6 +17,13 @@ import {
 } from '../lib/cti-source-formatting';
 
 describe('cti-source-formatting', () => {
+  it.each(['`[link](https://example.test)`', '\\`<img src=x onerror=alert(1)>', '``double``', ' padded ', '   '])(
+    'keeps CTI target text literal inside its rendered code span: %s', target => {
+      const rendered = document.createElement('div');
+      rendered.innerHTML = renderMarkdown(renderCtiRunMarkdown(target, []));
+      expect(rendered.querySelector('h2 code')?.textContent).toBe(target);
+      expect(rendered.querySelector('h2 a, h2 img')).toBeNull();
+    });
   it('parses CTI slash command aliases', () => {
     expect(parseCtiSlashCommand('/vt 8.8.8.8')).toEqual({
       source: 'virustotal',
@@ -275,7 +283,7 @@ describe('cti-source-formatting', () => {
       toolName: CTI_VIRUSTOTAL_TOOL,
       input: { ioc: 'bad.example' },
     });
-    expect(markdown).toContain('`bad\\`example`');
+    expect(markdown).toContain('``bad`example``');
     expect(markdown).toContain('Win32 EXE, 12345 bytes');
     expect(markdown).toContain('1/10 malicious \\(10%\\)');
     expect(markdown).toContain('VendorY: malicious \\(Trojan.Test\\)');

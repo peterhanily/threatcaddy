@@ -100,6 +100,14 @@ function loadBridge(url = 'https://threatcaddy.com/') {
   return { context, messageListeners }
 }
 
+describe('background.js HTML text extraction', () => {
+  it('decodes a single entity layer and preserves Unicode code points', () => {
+    const context = executeSource('background.js');
+    expect(context.htmlToText('<p>&amp;lt;script&amp;gt; &#x1f680; &#128640; &#99999999;</p>').content)
+      .toBe('&lt;script&gt; 🚀 🚀 �');
+  });
+});
+
 describe('background.js targetUrlToMatchPattern', () => {
   let background
   beforeEach(() => { background = executeSource('background.js') })

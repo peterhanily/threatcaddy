@@ -256,8 +256,12 @@ test('privileged jobs preserve source, checksum, latest-main and platform gates 
 
 test('Pages smoke preserves exact source, same artifact, production URL and synthetic evidence', () => {
   const smoke = pages.jobs.smoke;
-  assert.equal(smoke.steps[0].with.ref, expression('inputs.source-sha'));
-  assert.equal(smoke.steps[0].with['persist-credentials'], false);
+  assert.equal(smoke.if, pages.jobs.publish.if);
+  assert.equal(smoke.steps[0].run, 'test "$VERIFIED_SHA" = "$GITHUB_SHA"');
+  assert.equal(smoke.steps[0].env.VERIFIED_SHA, expression('inputs.source-sha'));
+  const checkout = smoke.steps.find(step => step.uses?.startsWith('actions/checkout@'));
+  assert.equal(checkout.with.ref, expression('github.sha'));
+  assert.equal(checkout.with['persist-credentials'], false);
   const check = smoke.steps.find(step => step.run?.startsWith('pnpm test:release '));
   assert.deepEqual(check.env, {
     RELEASE_URL: expression('needs.publish.outputs.page-url'), VERIFIED_SHA: expression('inputs.source-sha'),

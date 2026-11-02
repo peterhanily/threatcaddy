@@ -1,4 +1,4 @@
-import pako from 'pako';
+import * as pako from 'pako';
 import type { EvidenceExtractionStatus, EvidenceKind, EvidenceItem, Note } from '../types';
 
 export const EVIDENCE_TAG = 'evidence';

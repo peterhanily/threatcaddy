@@ -115,10 +115,14 @@ describe('Admin AI Routes', () => {
     const fetch = vi.fn().mockResolvedValue(upstream);
     vi.stubGlobal('fetch', fetch);
     const controller = new AbortController();
-    const response = await app.request(chatRequest(controller.signal));
+    // Keep the synthetic HTTP request alive until its simulated disconnect.
+    // Undici Request finalization can otherwise detach the abort forwarding.
+    const request = chatRequest(controller.signal);
+    const response = await app.request(request);
     const reading = response.text();
     await vi.waitFor(() => expect(upstream.body?.locked).toBe(true));
     controller.abort();
+    expect(request.signal.aborted).toBe(true);
     await reading;
     expect(cancel).toHaveBeenCalledOnce();
     expect(fetch.mock.calls[0][1].signal.aborted).toBe(true);

@@ -1468,7 +1468,15 @@ function formatMarkdownValue(value: CtiEvidenceValue | string, field: Pick<CtiTe
     return value.map(item => formatMarkdownValue(item, { format: field.format })).join(', ');
   }
   const text = String(value ?? 'n/a');
-  if (field.format === 'code') return `\`${text.replace(/`/g, '\\`')}\``;
+  if (field.format === 'code') {
+    // Backslashes do not escape backticks inside a CommonMark code span.
+    // A longer delimiter keeps vendor text (including links/HTML) literal.
+    let longestRun = 0;
+    for (const match of text.matchAll(/`+/g)) longestRun = Math.max(longestRun, match[0].length);
+    const delimiter = '`'.repeat(longestRun + 1);
+    const padding = text.startsWith('`') || text.endsWith('`') || (/^ .* $/.test(text) && /[^ ]/.test(text)) ? ' ' : '';
+    return `${delimiter}${padding}${text}${padding}${delimiter}`;
+  }
   if (field.format === 'multiline') {
     return text.split(/\r?\n/).map(part => escapeMarkdownText(part)).join('<br>');
   }

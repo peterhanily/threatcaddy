@@ -112,7 +112,7 @@ npm run package:write    # Refresh both extension archives and root download ali
 
 The build script reads the `BROWSER` environment variable (`chrome` or `firefox`) and copies the appropriate manifest and source files into `dist/<browser>/`.
 
-Both browser manifests and package metadata use version **1.1.2**. The popup reads
+Both browser manifests and package metadata use version **1.1.3**. The popup reads
 its version from the installed manifest; translations only format that value.
 Release verification requires exactly 34 regular files, including all 21 locale
 catalogs, with source/build/archive parity. Unexpected files (even stale build

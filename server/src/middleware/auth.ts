@@ -5,9 +5,11 @@ import { db } from '../db/index.js';
 import { users, sessions } from '../db/schema.js';
 import type { AuthUser } from '../types.js';
 
-let publicKey: jose.KeyLike | null = null;
+type PublicKey = Awaited<ReturnType<typeof jose.importSPKI>>;
+type PrivateKey = Awaited<ReturnType<typeof jose.importPKCS8>>;
+let publicKey: PublicKey | null = null;
 
-export async function getPublicKey(): Promise<jose.KeyLike> {
+export async function getPublicKey(): Promise<PublicKey> {
   if (publicKey) return publicKey;
   const raw = process.env.JWT_PUBLIC_KEY;
   if (!raw) throw new Error('JWT_PUBLIC_KEY not set');
@@ -15,9 +17,9 @@ export async function getPublicKey(): Promise<jose.KeyLike> {
   return publicKey;
 }
 
-let privateKey: jose.KeyLike | null = null;
+let privateKey: PrivateKey | null = null;
 
-export async function getPrivateKey(): Promise<jose.KeyLike> {
+export async function getPrivateKey(): Promise<PrivateKey> {
   if (privateKey) return privateKey;
   const raw = process.env.JWT_PRIVATE_KEY;
   if (!raw) throw new Error('JWT_PRIVATE_KEY not set');
