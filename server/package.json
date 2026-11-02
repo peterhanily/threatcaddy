@@ -22,7 +22,7 @@
     "test:integration:types": "tsc --project tsconfig.integration.json"
   },
   "dependencies": {
-    "@hono/node-server": "^1.19.17",
+    "@hono/node-server": "^2.1.5",
     "@hono/node-ws": "^1.1.0",
     "argon2": "^0.41.0",
     "croner": "^10.0.1",
