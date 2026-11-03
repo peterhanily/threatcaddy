@@ -56,11 +56,14 @@ openssl genpkey -algorithm Ed25519 -out private.pem
 # Extract public key
 openssl pkey -in private.pem -pubout -out public.pem
 
-# Convert to single-line format for environment variables
-# (replace newlines with literal \n)
-awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' private.pem
-awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' public.pem
 ```
+
+Copy the complete PEM text into quoted multiline values in the protected `.env`
+file, including its BEGIN/END lines. The application expects actual newlines.
+Literal `\n` text passed through Docker's `--env-file` or a process environment
+is not a PEM newline and can make login fail. Compose can decode escaped
+newlines in double-quoted `.env` values, but actual multiline values avoid this
+parser difference. Do not regenerate existing keys during an upgrade.
 
 ### Configure Environment
 
@@ -71,8 +74,12 @@ Create a `.env` file in the project root (same directory as `docker-compose.yml`
 # Fill these from your deployment secret store; do not commit this file.
 POSTGRES_PASSWORD=
 BOT_MASTER_KEY=
-JWT_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nMC4CAQAwBQYDK2VwBCIEI...\n-----END PRIVATE KEY-----\n
-JWT_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA...\n-----END PUBLIC KEY-----\n
+JWT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
+REPLACE_WITH_YOUR_PRIVATE_KEY_BASE64
+-----END PRIVATE KEY-----"
+JWT_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----
+REPLACE_WITH_YOUR_PUBLIC_KEY_BASE64
+-----END PUBLIC KEY-----"
 ALLOWED_ORIGINS=https://your-domain.com
 
 # Optional
@@ -197,8 +204,8 @@ The server Dockerfile (`server/Dockerfile`) uses a multi-stage build:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `JWT_PRIVATE_KEY` | Ed25519 private key in PEM format (single-line, `\n`-escaped) | `-----BEGIN PRIVATE KEY-----\nMC4C...` |
-| `JWT_PUBLIC_KEY` | Corresponding Ed25519 public key in PEM format | `-----BEGIN PUBLIC KEY-----\nMCow...` |
+| `JWT_PRIVATE_KEY` | Complete Ed25519 private PEM with actual newlines in the process environment | Quoted multiline value in `.env` |
+| `JWT_PUBLIC_KEY` | Matching complete Ed25519 public PEM with actual newlines | Quoted multiline value in `.env` |
 | `BOT_MASTER_KEY` | Stable explicit credential-encryption key, 32–1024 characters with no surrounding whitespace. Required at startup; no JWT or ephemeral fallback. Preserve the exact existing value during upgrades. | New installations: generate 32 random bytes encoded as 64 hexadecimal characters |
 | `DATABASE_URL` | Explicit PostgreSQL connection string; Compose supplies it from `POSTGRES_PASSWORD`. No production fallback. | Set through protected deployment configuration |
 | `POSTGRES_PASSWORD` | Required by the supplied Compose file for the database and server connection. | Set through protected deployment configuration |
