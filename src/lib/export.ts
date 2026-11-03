@@ -1,5 +1,5 @@
 import { db } from '../db';
-import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, EvidenceItem, ChatThread, ChatMessage, NoteTemplate, PlaybookTemplate, PlaybookStep, ExportData, TimelineExportData, TimelineEventType, ConfidenceLevel, IOCAnalysis, IOCEntry, IOCRelationship, TaskComment, NoteAnnotation, QuickLink, LLMProvider, IOCType, TemplateSource, PlaybookStepEntity, AgentAction, EvidenceExtractionStatus, EvidenceKind, ProductBaselineAsset, ProductBaselineMetadata, ProductBaselineSourceDocument, ProductBaselineTestFixture } from '../types';
+import type { Note, Task, Folder, Tag, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, EvidenceItem, ChatThread, ChatMessage, NoteTemplate, PlaybookTemplate, PlaybookStep, ExportData, TimelineExportData, TimelineEventType, ConfidenceLevel, IOCAnalysis, IOCEntry, IOCRelationship, TaskComment, NoteAnnotation, EntityComment, ChecklistItem, ToolCallRecord, ChatAttachment, AgentCycleSummary, AgentEntityRef, QuickLink, LLMProvider, IOCType, TemplateSource, PlaybookStepEntity, AgentAction, EvidenceExtractionStatus, EvidenceKind, ProductBaselineAsset, ProductBaselineMetadata, ProductBaselineSourceDocument, ProductBaselineTestFixture } from '../types';
 import { TIMELINE_EVENT_TYPE_LABELS, CONFIDENCE_LEVELS, IOC_TYPE_LABELS } from '../types';
 import { nanoid } from 'nanoid';
 import { workspaceStorageKey } from './workspace-profiles';
@@ -8,7 +8,8 @@ import { withEntityDraftBarrier } from './entity-drafts';
 import { buildFullBackupPayload } from './backup-data';
 import { canonicalBackupJSON, encryptBackup, type BackupPayload } from './backup-crypto';
 import { BACKUP_TABLES, type BackupTable } from './backup-tables';
-import { assertBackupSize, validateBackupQuickLinks, validatePortableTables, type PortableRow } from './backup-records';
+import { assertBackupSize, isBackupObject, validateBackupJSON, validateBackupQuickLinks, validatePortableTables, type PortableRow } from './backup-records';
+import { isBase64Data, isChatImageMime } from './backup-media-validation';
 import { decodePortableBackup, PORTABLE_BACKUP_FORMAT, portableTableCounts, suspendRestoredAutomation } from './portable-backup';
 import { previewRestore, restoreFullReplace, restoreMerge } from './backup-restore';
 
@@ -84,6 +85,10 @@ function num(v: unknown, fallback = 0): number {
 function bool(v: unknown, fallback = false): boolean {
   return typeof v === 'boolean' ? v : fallback;
 }
+/** A representable Date value, matching the backup validator's date rule. */
+function optionalDate(v: unknown): number | undefined {
+  return typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= 8_640_000_000_000_000 ? v : undefined;
+}
 function strArr(v: unknown): string[] {
   return Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string') : [];
 }
@@ -151,6 +156,8 @@ function sanitizeComment(raw: unknown): TaskComment | null {
   return {
     id: str(r.id),
     text: str(r.text),
+    authorId: typeof r.authorId === 'string' ? str(r.authorId) : undefined,
+    authorName: typeof r.authorName === 'string' ? str(r.authorName) : undefined,
     createdAt: num(r.createdAt, Date.now()),
   };
 }
@@ -162,8 +169,39 @@ function sanitizeAnnotation(raw: unknown): NoteAnnotation | null {
   return {
     id: str(r.id),
     text: str(r.text),
+    authorId: typeof r.authorId === 'string' ? str(r.authorId) : undefined,
+    authorName: typeof r.authorName === 'string' ? str(r.authorName) : undefined,
     createdAt: num(r.createdAt, Date.now()),
   };
+}
+
+/** Timeline-event and IOC comments use `content`; `text` is accepted for older inputs. */
+function sanitizeEntityComment(raw: unknown): EntityComment | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const content = typeof r.content === 'string' ? r.content : r.text;
+  if (typeof r.id !== 'string' || typeof content !== 'string') return null;
+  return {
+    id: str(r.id),
+    content: str(content),
+    userId: typeof r.userId === 'string' ? str(r.userId) : undefined,
+    userName: typeof r.userName === 'string' ? str(r.userName) : undefined,
+    createdAt: optionalDate(r.createdAt) ?? Date.now(),
+    updatedAt: optionalDate(r.updatedAt),
+  };
+}
+
+function sanitizeChecklistItem(raw: unknown): ChecklistItem | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.id !== 'string' || typeof r.text !== 'string') return null;
+  return { id: str(r.id), text: str(r.text), done: bool(r.done) };
+}
+
+/** The server stores coordinates as text, so pulled values may be numeric strings. */
+function coordinate(v: unknown, limit: number): number | undefined {
+  const value = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN;
+  return Number.isFinite(value) && value >= -limit && value <= limit ? value : undefined;
 }
 
 export function sanitizeNote(raw: unknown): Note | null {
@@ -219,6 +257,9 @@ export function sanitizeTask(raw: unknown): Task | null {
     iocTypes: Array.isArray(r.iocTypes) ? strArr(r.iocTypes).filter((t) => VALID_IOC_TYPES.includes(t)) as Task['iocTypes'] : undefined,
     comments: Array.isArray(r.comments)
       ? (r.comments as unknown[]).map(sanitizeComment).filter((c): c is TaskComment => c !== null)
+      : undefined,
+    checklist: Array.isArray(r.checklist)
+      ? (r.checklist as unknown[]).map(sanitizeChecklistItem).filter((c): c is ChecklistItem => c !== null)
       : undefined,
     clsLevel: r.clsLevel != null ? str(r.clsLevel) : undefined,
     linkedNoteIds: Array.isArray(r.linkedNoteIds) ? strArr(r.linkedNoteIds) : undefined,
@@ -333,9 +374,9 @@ export function sanitizeTimelineEvent(raw: unknown): TimelineEvent | null {
     clsLevel: r.clsLevel != null ? str(r.clsLevel) : undefined,
     iocAnalysis: sanitizeIOCAnalysis(r.iocAnalysis),
     iocTypes: Array.isArray(r.iocTypes) ? strArr(r.iocTypes).filter((t) => VALID_IOC_TYPES.includes(t)) as TimelineEvent['iocTypes'] : undefined,
-    latitude: typeof r.latitude === 'number' && isFinite(r.latitude) && r.latitude >= -90 && r.latitude <= 90 ? r.latitude : undefined,
-    longitude: typeof r.longitude === 'number' && isFinite(r.longitude) && r.longitude >= -180 && r.longitude <= 180 ? r.longitude : undefined,
-    comments: Array.isArray(r.comments) ? (r.comments as unknown[]).map(sanitizeComment).filter((c): c is TaskComment => c !== null) as unknown as TimelineEvent['comments'] : undefined,
+    latitude: coordinate(r.latitude, 90),
+    longitude: coordinate(r.longitude, 180),
+    comments: Array.isArray(r.comments) ? (r.comments as unknown[]).map(sanitizeEntityComment).filter((c): c is EntityComment => c !== null) : undefined,
     trashed: bool(r.trashed),
     trashedAt: r.trashedAt != null ? num(r.trashedAt) : undefined,
     archived: bool(r.archived),
@@ -348,6 +389,7 @@ export function sanitizeTimeline(raw: unknown): Timeline | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   return {
+    ...provenance(r),
     id: str(r.id),
     name: str(r.name),
     description: r.description != null ? str(r.description) : undefined,
@@ -398,6 +440,7 @@ export function sanitizeStandaloneIOC(raw: unknown): StandaloneIOC | null {
   const type = str(r.type);
   if (!VALID_IOC_TYPES.includes(type)) return null;
   return {
+    ...provenance(r),
     id: str(r.id),
     type: type as IOCType,
     value: str(r.value),
@@ -416,7 +459,7 @@ export function sanitizeStandaloneIOC(raw: unknown): StandaloneIOC | null {
     linkedTaskIds: Array.isArray(r.linkedTaskIds) ? strArr(r.linkedTaskIds) : undefined,
     linkedTimelineEventIds: Array.isArray(r.linkedTimelineEventIds) ? strArr(r.linkedTimelineEventIds) : undefined,
     linkedEvidenceIds: Array.isArray(r.linkedEvidenceIds) ? strArr(r.linkedEvidenceIds) : undefined,
-    comments: Array.isArray(r.comments) ? (r.comments as unknown[]).map(sanitizeComment).filter((c): c is TaskComment => c !== null) as unknown as StandaloneIOC['comments'] : undefined,
+    comments: Array.isArray(r.comments) ? (r.comments as unknown[]).map(sanitizeEntityComment).filter((c): c is EntityComment => c !== null) : undefined,
     enrichment: sanitizeStandaloneIOCEnrichment(r.enrichment, num(r.updatedAt, Date.now())),
     firstSeen: r.firstSeen != null ? num(r.firstSeen) : undefined,
     lastSeen: r.lastSeen != null ? num(r.lastSeen) : undefined,
@@ -778,6 +821,80 @@ function evidenceKindFromBackupFileName(fileName: string): EvidenceKind {
   return 'unknown';
 }
 
+const VALID_CYCLE_OUTCOMES: AgentCycleSummary['outcome'][] = ['success', 'timeout', 'error', 'policyDenied'];
+const VALID_ENTITY_REF_TYPES: AgentEntityRef['type'][] = ['note', 'task', 'ioc', 'timeline', 'folder', 'other'];
+
+function count(v: unknown): number | undefined {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : undefined;
+}
+
+function sanitizeTokenPair(raw: unknown): { input: number; output: number } | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const r = raw as Record<string, unknown>;
+  const input = count(r.input), output = count(r.output);
+  return input === undefined || output === undefined ? undefined : { input, output };
+}
+
+function sanitizeNumberMap(raw: unknown): Record<string, number> {
+  if (!isBackupObject(raw)) return {};
+  return Object.fromEntries(Object.entries(raw).filter((entry): entry is [string, number] =>
+    !['__proto__', 'prototype', 'constructor'].includes(entry[0]) && typeof entry[1] === 'number' && Number.isFinite(entry[1])));
+}
+
+function sanitizeToolCallRecord(raw: unknown): ToolCallRecord | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.id !== 'string' || typeof r.name !== 'string' || !isBackupObject(r.input)) return null;
+  try { validateBackupJSON(r.input); } catch { return null; }
+  return { id: str(r.id), name: str(r.name), input: r.input, result: str(r.result), isError: bool(r.isError) };
+}
+
+/** Same MIME and base64 rules as backup validation, so legacy chat images survive. */
+function sanitizeChatAttachment(raw: unknown): ChatAttachment | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  if (r.type !== 'image' || !isChatImageMime(r.mimeType) || !isBase64Data(r.data, MAX_IMPORT_IMAGE_DATA)) return null;
+  return { type: 'image', data: r.data, mimeType: r.mimeType, name: typeof r.name === 'string' ? str(r.name) : undefined };
+}
+
+function sanitizeEntityRef(raw: unknown): AgentEntityRef | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const type = VALID_ENTITY_REF_TYPES.find(t => t === r.type);
+  if (!type) return null;
+  return { type, id: typeof r.id === 'string' ? str(r.id) : undefined, label: typeof r.label === 'string' ? str(r.label) : undefined };
+}
+
+function sanitizeAgentCycleSummary(raw: unknown): AgentCycleSummary | undefined {
+  if (!isBackupObject(raw)) return undefined;
+  const r = raw;
+  const outcome = VALID_CYCLE_OUTCOMES.find(o => o === r.outcome);
+  if (!outcome) return undefined;
+  // A malformed counter (e.g. NaN usage serialized as null) must not drop the whole audit summary.
+  const tokens = isBackupObject(r.tokens) ? r.tokens : {};
+  const calls = isBackupObject(r.toolCalls) ? r.toolCalls : {};
+  return {
+    startedAt: optionalDate(r.startedAt) ?? 0,
+    durationMs: num(r.durationMs),
+    whyThisCycle: str(r.whyThisCycle),
+    whatIDid: strArr(r.whatIDid),
+    entitiesTouched: Array.isArray(r.entitiesTouched)
+      ? (r.entitiesTouched as unknown[]).map(sanitizeEntityRef).filter((e): e is AgentEntityRef => e !== null)
+      : [],
+    tokens: { input: count(tokens.input) ?? 0, output: count(tokens.output) ?? 0 },
+    costUSD: num(r.costUSD),
+    toolCalls: { executed: count(calls.executed) ?? 0, proposed: count(calls.proposed) ?? 0 },
+    toolHistogram: sanitizeNumberMap(r.toolHistogram),
+    errorHistogram: sanitizeNumberMap(r.errorHistogram),
+    turns: num(r.turns),
+    outcome,
+    error: r.error != null ? str(r.error) : undefined,
+    provider: str(r.provider),
+    model: str(r.model),
+    tasksEscalated: r.tasksEscalated != null ? num(r.tasksEscalated) : undefined,
+  };
+}
+
 function sanitizeChatMessage(raw: unknown): ChatMessage | null {
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
@@ -788,6 +905,15 @@ function sanitizeChatMessage(raw: unknown): ChatMessage | null {
     role: role as 'user' | 'assistant',
     content: str(r.content),
     model: r.model != null ? str(r.model) : undefined,
+    userId: typeof r.userId === 'string' ? str(r.userId) : undefined,
+    toolCalls: Array.isArray(r.toolCalls)
+      ? (r.toolCalls as unknown[]).map(sanitizeToolCallRecord).filter((c): c is ToolCallRecord => c !== null)
+      : undefined,
+    tokenCount: sanitizeTokenPair(r.tokenCount),
+    attachments: Array.isArray(r.attachments)
+      ? (r.attachments as unknown[]).map(sanitizeChatAttachment).filter((a): a is ChatAttachment => a !== null)
+      : undefined,
+    agentCycleSummary: sanitizeAgentCycleSummary(r.agentCycleSummary),
     createdAt: num(r.createdAt, Date.now()),
   };
 }

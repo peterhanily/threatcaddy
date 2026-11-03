@@ -40,6 +40,11 @@ function summarizeInput(input: Record<string, unknown>, noInputLabel: string): s
   return parts.join(', ') || noInputLabel;
 }
 
+/** Tool results can arrive from imports, share links and teammates: render any JSON value as text. */
+function asText(value: unknown): string {
+  return typeof value === 'string' ? value : JSON.stringify(value) ?? '';
+}
+
 function ToolCallBlock({ tc }: { tc: ToolCallRecord }) {
   const { t } = useTranslation('chat');
   const [expanded, setExpanded] = useState(false);
@@ -48,16 +53,16 @@ function ToolCallBlock({ tc }: { tc: ToolCallRecord }) {
   try {
     const parsed = JSON.parse(tc.result);
     if (parsed.error) {
-      resultPreview = t('tool.errorPrefix', { message: parsed.error });
+      resultPreview = t('tool.errorPrefix', { message: asText(parsed.error) });
     } else if (parsed.message) {
-      resultPreview = String(parsed.message);
+      resultPreview = asText(parsed.message);
     } else if (parsed.count !== undefined) {
       resultPreview = t('tool.resultCount', { count: parsed.count });
     } else if (parsed.success) {
       const label = parsed.title || parsed.name || parsed.value || parsed.profile || parsed.noteId || parsed.id || '';
-      resultPreview = label ? t('tool.doneWithLabel', { label }) : t('tool.done');
+      resultPreview = label ? t('tool.doneWithLabel', { label: asText(label) }) : t('tool.done');
     } else if (parsed.title) {
-      resultPreview = parsed.title;
+      resultPreview = asText(parsed.title);
     } else if (Array.isArray(parsed)) {
       resultPreview = parsed.length === 0 ? t('tool.noResults') : t('tool.itemCount', { count: parsed.length });
     } else if (typeof parsed === 'object' && Object.keys(parsed).length === 0) {
@@ -176,6 +181,7 @@ function SourcesFooter({ toolCalls, onEntityClick, sourcesLabel }: { toolCalls: 
         if (result.id && result.title && tc.name === 'read_note') entities.push({ type: 'note', id: result.id, label: result.title });
 
         for (const e of entities) {
+          if (typeof e.id !== 'string' || typeof e.label !== 'string') continue;
           const key = `${e.type}:${e.id}`;
           if (!seen.has(key)) {
             seen.add(key);

@@ -29,6 +29,7 @@ import { useCustomSlashCommands, interpolateTemplate } from '../../hooks/useCust
 import { useToast } from '../../contexts/ToastContext';
 import { supportsVision, describeImage } from '../../lib/image-ocr';
 import { resolveRoutingMode } from '../../lib/llm-router';
+import { chatThreadGroups } from '../../lib/folder-tree';
 import { useImageAttachments } from '../../hooks/useImageAttachments';
 import { hasComposerDrafts, subscribeComposerDrafts, discardAllComposerDrafts } from '../../lib/chat-composer-drafts';
 import { useAuth } from '../../contexts/AuthContext';
@@ -882,9 +883,7 @@ export function ChatView({
             </div>
           ) : (() => {
             // Separate folders and top-level threads, then build ordered list
-            const chatFolders = filteredThreads.filter(t => t.isFolder);
-            const topLevel = filteredThreads.filter(t => !t.isFolder && !t.parentThreadId);
-            const childOf = (fId: string) => filteredThreads.filter(t => !t.isFolder && t.parentThreadId === fId);
+            const { folders: chatFolders, topLevel, childrenOf: childOf } = chatThreadGroups(filteredThreads);
 
             const renderThread = (thread: ChatThread, indented = false) => (
               <div

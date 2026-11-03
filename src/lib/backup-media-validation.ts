@@ -15,11 +15,18 @@ function rasterMime(value: unknown, field: string): string {
   if (typeof value !== 'string' || !RASTER_MIME_TYPES.has(value.toLowerCase().trim())) invalid(field);
   return (value as string).toLowerCase().trim();
 }
-function base64(value: unknown, field: string, max: number): void {
+export function isBase64Data(value: unknown, max: number): value is string {
   if (typeof value !== 'string' || !value || value.length > max || value.length % 4 === 1
-    || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) invalid(field);
+    || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) return false;
   // Accept historical unpadded base64, but not padding in an incomplete group.
-  if ((value as string).includes('=') && (value as string).length % 4 !== 0) invalid(field);
+  return !value.includes('=') || value.length % 4 === 0;
+}
+function base64(value: unknown, field: string, max: number): void {
+  if (!isBase64Data(value, max)) invalid(field);
+}
+/** Chat attachments render only through <img>; any image MIME type is kept. */
+export function isChatImageMime(value: unknown): value is string {
+  return typeof value === 'string' && /^image\/[a-z0-9.+-]+$/i.test(value);
 }
 
 export function validateBackupURL(url: string): void {
@@ -44,7 +51,7 @@ export function validateBackupMedia(name: BackupTable, row: Record<string, unkno
         // The chat picker accepts image/* and renders attachments in <img>.
         // Preserve formats such as SVG/HEIC instead of making an existing
         // conversation impossible to back up; reject non-image MIME values.
-        if (typeof attachment.mimeType !== 'string' || !/^image\/[a-z0-9.+-]+$/i.test(attachment.mimeType)) invalid('chat image MIME type');
+        if (!isChatImageMime(attachment.mimeType)) invalid('chat image MIME type');
         base64(attachment.data, 'chat image data', MAX_BACKUP_BYTES);
       }
     }

@@ -1,7 +1,7 @@
 import { db } from '../db';
 import type { Dexie as DexieType } from 'dexie';
 import { syncPush, syncPull, type SyncChange, type SyncResult } from './server-api';
-import { sanitizeSyncEntity } from './sync-sanitize';
+import { SERVER_UNREPRESENTED_FIELDS, outgoingSyncData, preserveUnsyncedFields, sanitizeSyncEntity } from './sync-sanitize';
 import { SYNC_TABLES, isSyncTable, onOutboxCommit, revisionKey, suppressSyncInCurrentTransaction } from './sync-state';
 import type { WSClient } from './ws-client';
 import { ensureSyncWorkspace } from './sync-workspace';
@@ -197,7 +197,7 @@ export class SyncEngine {
     let bytes = encoder.encode('{"changes":[]}').byteLength;
     for (const entries of ordered) {
       const first = entries[0], last = entries[entries.length - 1];
-      const change: SyncChange = { table: last.table, entityId: last.entityId, op: last.op, data: last.data,
+      const change: SyncChange = { table: last.table, entityId: last.entityId, op: last.op, data: outgoingSyncData(last.table, last.data),
         clientVersion: validVersion(first.clientVersion) ? first.clientVersion : 0 };
       const size = encoder.encode(JSON.stringify(change)).byteLength + 1;
       const hasAsset = (change.table === 'whiteboards' && typeof change.data?.files === 'string')
@@ -333,7 +333,7 @@ export class SyncEngine {
         } else {
           const record = sanitizeSyncEntity(table, change);
           if (!record || record.id !== id) throw new Error('Invalid sync record');
-          await dynamicDb.table(table).put(record);
+          await dynamicDb.table(table).put(await this.withLocalFields(table, change, record, id));
         }
         await dynamicDb.table('_syncMeta').put({ key: revisionKey(table, id), value: version });
         affected.add(table);
@@ -345,6 +345,12 @@ export class SyncEngine {
     });
     if (epoch === this.epoch && affected.size) this.onRemoteChange?.(changes, affected);
     return applied;
+  }
+
+  /** Only tables with fields the server cannot store need the local row. */
+  private async withLocalFields(table: string, incoming: Record<string, unknown>, record: Record<string, unknown>, id: string) {
+    if (!SERVER_UNREPRESENTED_FIELDS[table]) return record;
+    return preserveUnsyncedFields(table, incoming, record, await dynamicDb.table(table).get(id));
   }
 
   /** WS messages are invalidations, never a source of durable entity data. */
@@ -382,7 +388,7 @@ export class SyncEngine {
           } else {
             const record = sanitizeSyncEntity(table, conflict.serverData);
             if (!record || record.id !== conflict.entityId) throw new Error('Invalid conflict record');
-            await dynamicDb.table(table).put(record);
+            await dynamicDb.table(table).put(await this.withLocalFields(table, conflict.serverData, record, conflict.entityId));
           }
           await dynamicDb.table('_syncQueue').bulkDelete(entries.map(e => e.seq!));
           // A pull may have skipped a newer revision while this entity was

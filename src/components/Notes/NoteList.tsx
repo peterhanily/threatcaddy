@@ -8,6 +8,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { formatIOCsJSON, formatIOCsCSV, formatIOCsFlatJSON, formatIOCsFlatCSV } from '../../lib/ioc-export';
 import type { IOCExportEntry, ThreatIntelExportConfig } from '../../lib/ioc-export';
 import { downloadFile } from '../../lib/export';
+import { noteDisplayList } from '../../lib/folder-tree';
 import { Virtuoso } from 'react-virtuoso';
 
 interface NoteListProps {
@@ -56,6 +57,9 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
     }
     return map;
   }, [notes]);
+
+  // Matches noteDisplayList: only notes under a listed folder-note are shown nested.
+  const folderNoteIds = useMemo(() => new Set(notes.filter(n => n.isFolder).map(n => n.id)), [notes]);
 
   const folderMap = useMemo(() => {
     const map = new Map<string, Folder>();
@@ -240,22 +244,10 @@ export function NoteList({ notes, selectedId, onSelect, sort, onSortChange, titl
           </div>
         ) : (
           <Virtuoso
-            data={(() => {
-              // Build display list: top-level notes + expanded folder children
-              const topLevel = notes.filter(n => !n.parentNoteId);
-              const result: Note[] = [];
-              for (const note of topLevel) {
-                result.push(note);
-                if (note.isFolder && expandedFolders.has(note.id)) {
-                  const children = notes.filter(n => n.parentNoteId === note.id);
-                  result.push(...children);
-                }
-              }
-              return result;
-            })()}
+            data={noteDisplayList(notes, expandedFolders)}
             itemContent={(_index, note) => {
               const folder = note.folderId ? folderMap.get(note.folderId) : undefined;
-              const isSubNote = !!note.parentNoteId;
+              const isSubNote = !!note.parentNoteId && folderNoteIds.has(note.parentNoteId);
               const childCount = note.isFolder ? (childCountMap.get(note.id) || 0) : 0;
               return (
                 <div className={cn('pb-1.5', isSubNote && 'ms-4')}>
