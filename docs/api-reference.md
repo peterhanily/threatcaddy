@@ -195,7 +195,7 @@ No authentication required. Returns the configured server name.
 
 #### `POST /api/auth/register`
 
-Create a new user account. May be blocked if registration mode is `invite`.
+Create a new analyst account only when registration mode is `open`. The default `invite` mode closes self-registration; an email allowlist does not grant an exception. Administrators provision users through the admin interface or authenticated admin API. No invitation-email flow is implied.
 
 **Request body:**
 ```json
@@ -336,11 +336,12 @@ All sync endpoints require Bearer authentication.
 
 #### `POST /api/sync/push`
 
-Push entity changes to the server. Each change is authorized against the user's investigation membership.
+Push entity changes to the server. Requires `admin` or `analyst`; each change is authorized against current investigation membership in the write transaction. Obtain the current history `generation` from a cursor pull before pushing.
 
 **Request body:**
 ```json
 {
+  "generation": "123e4567-e89b-42d3-a456-426614174000",
   "changes": [
     {
       "table": "notes",
@@ -353,7 +354,11 @@ Push entity changes to the server. Each change is authorized against the user's 
 }
 ```
 
-**Supported tables:** `folders`, `notes`, `tasks`, `timelineEvents`, `whiteboards`, `standaloneIOCs`, `chatThreads`, `tags`, `timelines` (last two are global, not folder-scoped).
+The UUID above is illustrative; use the generation returned by this server. A batch accepts at most 500 changes and 16 MiB of JSON. Duplicate table/entity pairs and invalid fields return bounded `400 VALIDATION_FAILED` errors before writes; an oversized body returns `413 PAYLOAD_TOO_LARGE`. Empty batches remain valid. Structural limits also bound dictionary width, nested collections and traversal; see [verification](development-verification.md#request-validation-resource-regression).
+
+**Supported tables:** `folders`, `notes`, `tasks`, `timelineEvents`, `whiteboards`, `standaloneIOCs`, `chatThreads`, `evidenceItems`, `tags`, `timelines` (last two are global, not folder-scoped).
+
+A changed history generation returns `409 SYNC_CURSOR_RESET`. Preserve an encrypted archive and follow [sync recovery](../server/docs/sync-recovery.md); do not discard local edits or guess a new cursor.
 
 **Response `200`:**
 ```json
@@ -367,14 +372,19 @@ Push entity changes to the server. Each change is authorized against the user's 
 
 ---
 
-#### `GET /api/sync/pull?since={timestamp}&folderId={id}`
+#### `GET /api/sync/pull?cursor={cursor}&generation={uuid}&folderId={id}`
 
-Pull changes since a timestamp. Without `folderId`, returns changes from all folders the user is a member of.
+Pull a bounded page of authorized changes. Start with `cursor=0` and no generation to discover the current history. Keep `cursor` as a decimal string, retain the returned `generation`, and continue while `hasMore` is true. Without `folderId`, the page covers visible investigations and authorized global entities.
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `since` | Yes | ISO 8601 timestamp |
+| `cursor` | Yes | Non-negative decimal string; do not convert to a JavaScript number |
+| `generation` | After initial discovery | UUID returned by the previous page |
+| `limit` | No | 1–1000 changes; default 200 |
 | `folderId` | No | Scope to a single folder (requires viewer access) |
+| `metadataOnly` | No | `true` requests metadata without content bodies |
+
+The response contains `changes`, `cursor`, `generation`, `hasMore` and `serverTimestamp`. Changed history or a cursor ahead of the server returns `409 SYNC_CURSOR_RESET`. The deprecated `since` form performs a full visible resync; its timestamp is not an incremental lower bound. The [OpenAPI schema](api-reference.yml) describes both response forms.
 
 ---
 
@@ -921,16 +931,28 @@ Share an integration template with the team. Requires `admin` or `analyst` role.
 ```json
 {
   "template": {
+    "schemaVersion": "1.0",
+    "version": "1.0.0",
     "name": "My Integration",
-    "description": "Does something useful",
-    "steps": [{ "type": "http", "url": "https://api.example.com" }],
-    "outputs": {},
-    "triggers": []
+    "description": "A manual local display example",
+    "author": "Example analyst",
+    "icon": "",
+    "color": "",
+    "category": "utility",
+    "tags": [],
+    "source": "user",
+    "configSchema": [],
+    "requiredDomains": [],
+    "steps": [],
+    "outputs": [{ "type": "display", "template": { "text": "Example output" } }],
+    "triggers": [{ "type": "manual" }]
   }
 }
 ```
 
-The `template` field must contain at minimum: `name` (1-200 chars), `steps` (array), and `outputs` (array or object).
+The full template must pass the integration compiler before storage. `steps`, `outputs` and `triggers` are arrays of at most 256 entries each; the preliminary schema's object alternative for outputs does not bypass compilation. Graph, nesting, domain and data-size checks remain mandatory. The HTTP body limit is 1 MiB. See the [integration format](integration-platform.md).
+
+Omitting `template.id` generates an ID. Supplied IDs must be safe path segments of 1–128 alphanumeric, underscore or hyphen characters. An already shared ID returns `409 TEMPLATE_ALREADY_SHARED`; it does not replace the existing template. Sharing stores a definition and does not execute its steps.
 
 **Response `201`:** Returns `{ "template": { ... } }`.
 

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## v2.0.0 — 2026-11-03
+
+Coordinated client/server release. See [upgrade notes](docs/releases/v2.0.0.md) for the sync protocol, account onboarding, credential and rollback changes. The extension is versioned separately at 1.1.3.
+
 - Update reviewed client and server dependencies, including server TypeScript 7, while keeping Node API typings aligned with the supported Node 24 runtime.
 - Consolidate dependency updates, group routine and security update proposals, and enable repository security/code scanning. Preserve the full verification and exact-artifact publication gates.
 - Keep CTI code values literal when they contain backticks, and decode fetched extension text only once. Extension download artifacts advance to 1.1.3.

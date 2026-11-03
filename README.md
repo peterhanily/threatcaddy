@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/peterhanily/threatcaddy/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/version-1.0.0-green.svg" alt="Version 1.0.0" />
+  <img src="https://img.shields.io/badge/version-2.0.0-green.svg" alt="Version 2.0.0" />
   <img src="https://img.shields.io/badge/TypeScript-6%20%2F%207-blue.svg?logo=typescript&logoColor=white" alt="TypeScript 6 (client) / 7 (server)" />
   <img src="https://img.shields.io/badge/React-19-61dafb.svg?logo=react&logoColor=white" alt="React 19" />
   <img src="https://img.shields.io/badge/Vite-7-646cff.svg?logo=vite&logoColor=white" alt="Vite 7" />
@@ -41,6 +41,8 @@ Most investigation tools lock your data in a cloud you don't control, cost per s
 ## Quick Start
 
 **Try it now:** [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loads a sample investigation with a guided walkthrough.
+
+**Download a release:** [GitHub Releases](https://github.com/peterhanily/threatcaddy/releases/latest) provides the tested standalone HTML, browser-extension archives, checksums and source revision. Client and server 2.0.0 form a coordinated upgrade; the extension has its own version, currently 1.1.3. Read the [2.0 upgrade notes](docs/releases/v2.0.0.md) before updating an existing team installation. Browser-store publication is separate from these downloads.
 
 **Self-host the client:**
 
@@ -93,7 +95,7 @@ Set `POSTGRES_PASSWORD`, a stable `BOT_MASTER_KEY`, the Ed25519 `JWT_PRIVATE_KEY
 
 Human-driven conversational AI assistant with a deep toolset for threat investigation.
 
-- **Multi-provider** — Anthropic (Claude Opus 4, Sonnet 4, Haiku 3.5), OpenAI (GPT-5.4, GPT-5.4 Pro, GPT-5.2, GPT-5 Mini, o3, o4-mini, GPT-4.1, GPT-4.1 Mini, GPT-4o), Google Gemini (2.5 Pro, 2.5 Flash), Mistral (Large, Small, Codestral), and local models (Ollama / LM Studio / vLLM)
+- **Multi-provider** — Anthropic, OpenAI, Google Gemini, Mistral and local endpoints such as Ollama, LM Studio and vLLM. Select an available model and configure credentials in Settings; provider availability and model names can change.
 - **58 tools** — 46 core tools to search, read, create, and update all entities; 7 delegation tools for Lead Analyst coordination; 5 executive tools for CISO/Chief of Staff. Covers IOC extraction, URL fetching, report generation, and cross-investigation analysis
 - **Slash commands** — `/fetch`, `/search`, `/note`, `/task`, `/iocs`, `/summary`, `/timeline`, `/report`, `/triage`, `/graph`, `/link`
 - **Customizable system prompt** — Editable in Settings with CTI/IR tradecraft baked into the default (MITRE ATT&CK, Diamond Model, Kill Chain, Pyramid of Pain, estimative language, TLP/PAP)
@@ -104,6 +106,8 @@ Human-driven conversational AI assistant with a deep toolset for threat investig
 ### AgentCaddy — Autonomous Multi-Agent System
 
 Deploy a team of AI analysts that run autonomously in the background, enriching data, building timelines, hunting threats, and briefing stakeholders — while you keep working.
+
+These agents run in the open client. Server-side AgentCaddy handoff and the legacy server integration runner are unavailable; saved definitions and history are retained. Client integration execution and team template sharing remain supported.
 
 #### The 17 Built-in Analyst Profiles
 
@@ -257,7 +261,7 @@ To send clips to an offline `file://` build, enable **"Allow access to file URLs
 
 | Library | Purpose |
 |---------|---------|
-| React 19 + TypeScript 5 | UI framework |
+| React 19 + TypeScript 6 | UI framework |
 | Vite 7 | Build tooling |
 | Tailwind CSS 4 | Styling |
 | Dexie.js | IndexedDB persistence |
@@ -274,6 +278,7 @@ To send clips to an offline `file://` build, enable **"Allow access to file URLs
 | Library | Purpose |
 |---------|---------|
 | Hono | HTTP + WebSocket framework |
+| Node 24 + TypeScript 7 | Runtime and compiler |
 | drizzle-orm + PostgreSQL | Database |
 | argon2 | Password hashing |
 | jose | JWT signing/verification |
