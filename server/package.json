@@ -24,11 +24,11 @@
   "dependencies": {
     "@hono/node-server": "^2.1.6",
     "@hono/node-ws": "1.3.1",
-    "argon2": "^0.41.0",
+    "argon2": "^0.45.1",
     "croner": "^11.0.0",
     "dockerode": "^5.0.1",
-    "drizzle-orm": "^0.45.1",
-    "hono": "^4.13.12",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.14",
     "jose": "^6.2.14",
     "nanoid": "^6.0.2",
     "postgres": "^3.4.0",
@@ -48,12 +48,12 @@
     }
   },
   "devDependencies": {
-    "@types/dockerode": "^4.0.1",
+    "@types/dockerode": "^4.0.2",
     "@types/node": "^24.10.0",
     "@types/ssh2": "^1.15.5",
     "drizzle-kit": "^0.31.11",
     "tsx": "^4.19.0",
-    "typescript": "~5.9.3",
+    "typescript": "~7.0.2",
     "vitest": "5.0.5"
   }
 }

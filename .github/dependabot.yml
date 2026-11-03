@@ -8,6 +8,10 @@ updates:
     open-pull-requests-limit: 3
     cooldown:
       default-days: 7
+    # Keep Node API declarations on the supported Node 24 runtime line.
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       vitest:
         patterns: [vitest, '@vitest/*']
@@ -24,6 +28,10 @@ updates:
     open-pull-requests-limit: 3
     cooldown:
       default-days: 7
+    # A newer runtime major needs a coordinated image/engine/toolchain upgrade.
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       routine:
         patterns: ['*']

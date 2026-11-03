@@ -2,8 +2,14 @@
 
 The supported baseline is Node **24.22.2**, pnpm **10.29.1** for the client,
 and npm **11.19.0** for the server and extension. `.node-version`, `.nvmrc`,
-`packageManager`, and `engines` record this baseline. Keep TypeScript on the
-existing 5.9 line until its compiler and lint dependencies can move together.
+`packageManager`, and `engines` record this baseline. The client uses TypeScript 6
+with its compatible lint tooling; the server uses the TypeScript 7 native CLI.
+Keep their separate lockfiles and compiler dependencies. Server tools that need
+the old TypeScript JavaScript compiler API require a compatibility review before
+adoption; TypeScript 7 editor support may require its language-server extension.
+Both packages keep `@types/node` on the Node 24 line so typechecking describes the
+supported runtime. Dependabot excludes automatic major updates of these typings;
+minor, patch and security checks continue normally.
 
 Run these commands from the repository root after selecting the recorded Node
 version (`nvm install` once, then `nvm use`, when using nvm). Running a new login shell in a subdirectory
