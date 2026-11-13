@@ -13,7 +13,9 @@ oversized and unsupported work in its encrypted outbox.
 2. Restore the matching database and file backup, then run the packaged migration
    command using that installation's `DATABASE_URL`.
 3. Before starting the server, run
-   `npm run sync:rotate-history -- --confirm-restore` in the built server.
+   `node dist/db/rotate-sync-history-cli.js --confirm-restore` in the matching
+   server container. For a native-host build, the equivalent command remains
+   `npm run sync:rotate-history -- --confirm-restore` in the server package.
    This refuses a live application lease and changes only the history generation.
 4. Restart and verify readiness. Clients with the previous generation pause;
    they must not clear IndexedDB, sync metadata or queued work to bypass this.

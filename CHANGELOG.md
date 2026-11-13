@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Remove npm, npx, Yarn and Corepack from the final server image after dependency installation, update its Alpine zlib package to 1.4-r0, and use direct Node commands for container migration and restore maintenance. The build toolchain and native-host npm scripts are unchanged.
 - Preserve device-only task, note, IOC, timeline, whiteboard and chat fields when applying accepted sync responses or resolving conflicts. Warn that team sync is partial, offer a backup before local removal, and allow backups of records carrying legacy server revision metadata.
 - Enforce workspace encryption deadlines in active tabs and on resume, preserve the original deadline across reloads, and honor the selected 24-hour duration. Protect pending edits and interrupted chat output across locking.
 - Revoke server sessions after access-token expiry or invalidation, serialize logout against token rotation, and report when remote revocation cannot be confirmed while completing local sign-out.

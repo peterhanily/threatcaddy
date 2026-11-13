@@ -446,9 +446,11 @@ docker compose cp server:/data/files ./files-backup-$(date +%Y%m%d)/
    provider credentials. Recover current deployment secrets from their separate
    secure custody; never restore a known-compromised historical JWT pair.
 5. With the application still stopped, run
-   `npm run sync:rotate-history -- --confirm-restore` against the recovery
-   database using the matching packaged server. This changes the history
-   generation so clients reconcile before uploading; it preserves entity rows.
+   `node dist/db/rotate-sync-history-cli.js --confirm-restore` in the matching
+   server container against the recovery database. For a native-host build,
+   use `npm run sync:rotate-history -- --confirm-restore` from the matching
+   server package. This changes the history generation so clients reconcile
+   before uploading; it preserves entity rows.
 6. Start the matched application image against the verified recovery pair only
    after reviewing enabled automation and outbound-provider configuration.
    Check `/health`, authentication, a representative investigation and attachment,

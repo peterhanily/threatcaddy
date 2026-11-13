@@ -286,6 +286,40 @@ jobs:
           printf '%s\n' "$GITHUB_SHA" > verified-server/source-sha.txt
           cd verified-server
           sha256sum server-image.tar > server-image.tar.sha256
+      - name: Audit the exact packaged runtime image
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir server-image-audit
+          trivy_root=$(mktemp -d "$RUNNER_TEMP/threatcaddy-trivy.XXXXXX")
+          trap 'if [ -f "$trivy_root/cache/db/metadata.json" ]; then cp "$trivy_root/cache/db/metadata.json" server-image-audit/database-metadata.json; fi; rm -rf -- "$trivy_root"' EXIT
+          # Official v0.76.2 Linux x64 release, independently checked against
+          # https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_checksums.txt
+          curl --fail --location --retry 3 --connect-timeout 10 --max-time 120 \
+            https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_Linux-64bit.tar.gz \
+            --output "$trivy_root/trivy.tar.gz"
+          printf '%s  %s\n' 'bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf' "$trivy_root/trivy.tar.gz" \
+            | tee server-image-audit/scanner-sha256.txt | sha256sum --check
+          tar -xzf "$trivy_root/trivy.tar.gz" -C "$trivy_root" trivy
+          printf '{}\n' > "$trivy_root/config.yaml"
+          "$trivy_root/trivy" image --config "$trivy_root/config.yaml" \
+            --disable-telemetry --no-progress --cache-dir "$trivy_root/cache" --timeout 8m \
+            --db-repository ghcr.io/aquasecurity/trivy-db:2 --offline-scan --skip-check-update --skip-version-check \
+            --scanners vuln --pkg-types os,library --list-all-pkgs \
+            --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL --ignorefile '' --ignore-unfixed=false \
+            --format json --exit-code 0 --output server-image-audit/report.json \
+            --input verified-server/server-image.tar 2> server-image-audit/scanner.log
+          node scripts/ci-audit-server-image.mjs server-image-audit/report.json \
+            verified-server/server-image.id "$GITHUB_SHA" server-image-audit/scanner.log server/package.json \
+            > server-image-audit/policy.json
+      - name: Preserve runtime image audit evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: runtime-image-audit-${{ github.sha }}
+          path: server-image-audit/
+          if-no-files-found: warn
+          retention-days: 14
       - id: upload
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
