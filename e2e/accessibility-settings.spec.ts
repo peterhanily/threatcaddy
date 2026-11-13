@@ -141,7 +141,13 @@ test('filed Exec entity controls expose names and selection through real keyboar
   const exec = catalog('en', 'exec');
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
+  // The header can render before the always-mounted chat view loads its locale.
+  // Complete that request before this fixture deliberately reloads the page.
+  const initialChatNamespace = page.waitForResponse('**/locales/en/chat.json');
   await goToApp(page);
+  const chatNamespace = await initialChatNamespace;
+  expect(chatNamespace.ok()).toBe(true);
+  expect(await chatNamespace.finished()).toBeNull();
   const now = Date.now();
   const folderId = 'filed-keyboard-case';
   await seedRows(page, {

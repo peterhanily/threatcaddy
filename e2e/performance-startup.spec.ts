@@ -63,7 +63,13 @@ test('heavy editors stay out of startup and still render and persist when opened
 
 test('mobile event details load their map only after selecting a coordinate-bearing event', async ({ page, baseURL }, testInfo) => {
   const { requested, errors, loaded } = await observe(page, baseURL);
+  // Finish the initial lazy namespace request before the fixture reload, while
+  // retaining every page error and the existing same-origin network policy.
+  const initialChatNamespace = page.waitForResponse('**/locales/en/chat.json');
   await goToApp(page);
+  const chatNamespace = await initialChatNamespace;
+  expect(chatNamespace.ok()).toBe(true);
+  expect(await chatNamespace.finished()).toBeNull();
   await seedObservation(page);
   await page.setViewportSize({ width: 390, height: 844 });
   requested.clear();

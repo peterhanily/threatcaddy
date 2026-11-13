@@ -269,7 +269,10 @@ Create a new analyst account only when registration mode is `open`. The default 
 
 #### `POST /api/auth/logout`
 
-**Auth:** Bearer token required.
+**Auth:** A valid bearer access token or refresh credential in the request body.
+Refresh proof also permits revocation after access expiry; already revoked
+refresh credentials receive the same success receipt. A valid bearer revokes
+only its own session family. Older server versions require a valid bearer.
 
 **Request body:**
 ```json

@@ -126,6 +126,10 @@ credential receives the same `{ "ok": true }` receipt. A valid bearer access
 token continues to revoke only its own family, regardless of the request body.
 Clients clear local authentication immediately and report when the server cannot
 confirm revocation; disconnecting while offline cannot promise remote revocation.
+For older servers, clients retry a refresh-proof `401` using only the access token
+captured with that refresh credential, within the same deadline. They never
+refresh during logout; an older server still cannot confirm revocation if that
+access token is missing or expired.
 
 ### Sync (`/api/sync`)
 

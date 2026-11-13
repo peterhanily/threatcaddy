@@ -236,7 +236,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const stored = readStoredAuth();
     const identity = identityRef.current;
     const sameIdentity = stored && stored.serverUrl === identity?.serverUrl && stored.user.id === identity.userId;
-    const refreshTokens = [sameIdentity ? stored.refreshToken : null, refreshTokenRef.current].filter((token): token is string => !!token);
+    const credentials = [
+      ...(sameIdentity ? [{ refreshToken: stored.refreshToken, accessToken: stored.accessToken }] : []),
+      ...(refreshTokenRef.current ? [{ refreshToken: refreshTokenRef.current, accessToken: accessTokenRef.current }] : []),
+    ];
     const logoutUrl = identity?.serverUrl;
     ++generationRef.current;
     syncEngine.stop();
@@ -248,7 +251,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     identityRef.current = null;
     // Do not remove a different account's credentials written by another tab.
     if (!stored || sameIdentity) localStorage.removeItem(STORAGE_KEY);
-    if (logoutUrl && refreshTokens.length) await revokeRemoteSessions(logoutUrl, refreshTokens);
+    if (logoutUrl && credentials.length) await revokeRemoteSessions(logoutUrl, credentials);
   }, []);
 
   const invalidateAccessToken = useCallback(() => {
