@@ -103,6 +103,29 @@ export async function revokeSessionFamily(userId: string, family: string): Promi
   notifySessionRevocation({ userId, family });
 }
 
+/** Possession of a refresh credential permits only revocation, never access.
+ * Retained consumed hashes let logout win even if another tab just rotated it.
+ * Lock in the same order as rotation, then reread lineage inside the transaction. */
+export async function revokeSessionByRefreshToken(token: string): Promise<{ userId: string } | null> {
+  if (!/^[A-Za-z0-9_-]{32}$/.test(token)) return null;
+  const tokenCondition = or(eq(sessions.id, hashRefreshToken(token)), eq(sessions.id, token));
+  const [candidate] = await db.select({ userId: sessions.userId }).from(sessions).where(tokenCondition).limit(1);
+  if (!candidate) return null;
+  const revoked = await db.transaction(async tx => {
+    await tx.select({ id: users.id }).from(users).where(eq(users.id, candidate.userId)).for('update');
+    const [session] = await tx.select().from(sessions).where(and(eq(sessions.userId, candidate.userId), tokenCondition)).for('update');
+    if (!session) return null;
+    await tx.delete(sessions).where(session.tokenFamily
+      ? and(eq(sessions.userId, candidate.userId), eq(sessions.tokenFamily, session.tokenFamily))
+      : eq(sessions.id, session.id));
+    return { userId: candidate.userId, family: session.tokenFamily };
+  });
+  // Legacy rows without a family cannot authorize current JWTs or sockets.
+  // Do not disconnect unrelated modern devices when deleting such a row.
+  if (revoked?.family) notifySessionRevocation({ userId: revoked.userId, family: revoked.family });
+  return revoked ? { userId: revoked.userId } : null;
+}
+
 export async function revokeAllSessions(): Promise<number> {
   const count = await db.transaction(async tx => {
     await tx.select({ id: users.id }).from(users).orderBy(asc(users.id)).for('update');

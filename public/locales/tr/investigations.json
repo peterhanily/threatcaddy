@@ -63,7 +63,7 @@
   "detail.localOnly": "Yalnızca yerel",
   "detail.localOnlyDesc": "Bu soruşturma yalnızca cihazınızda kalır",
   "detail.syncedToServer": "Sunucuyla senkronize edildi",
-  "detail.syncedToServerDesc": "Yedeklendi ve ekip paylaşımı için kullanılabilir",
+  "detail.syncedToServerDesc": "Paylaşılan alanlar sunucuyla eşitlenir. Cihaza özel ayrıntılar için ayrı bir yedek tutun.",
   "detail.exportInvestigation": "Soruşturmayı Dışa Aktar",
   "detail.generateReport": "Rapor Oluştur",
   "detail.printSaveAsPdf": "Yazdır / PDF Olarak Kaydet",

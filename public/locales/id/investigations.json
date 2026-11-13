@@ -63,7 +63,7 @@
   "detail.localOnly": "Lokal saja",
   "detail.localOnlyDesc": "Investigasi ini hanya ada di perangkat Anda",
   "detail.syncedToServer": "Tersinkron ke server",
-  "detail.syncedToServerDesc": "Dicadangkan dan tersedia untuk berbagi tim",
+  "detail.syncedToServerDesc": "Kolom bersama disinkronkan ke server. Simpan cadangan terpisah untuk detail khusus perangkat.",
   "detail.exportInvestigation": "Ekspor Investigasi",
   "detail.generateReport": "Buat Laporan",
   "detail.printSaveAsPdf": "Cetak / Simpan sebagai PDF",

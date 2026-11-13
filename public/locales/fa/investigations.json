@@ -63,7 +63,7 @@
   "detail.localOnly": "فقط محلی",
   "detail.localOnlyDesc": "این تحقیق فقط در دستگاه شما می‌ماند",
   "detail.syncedToServer": "همگام‌سازی شده با سرور",
-  "detail.syncedToServerDesc": "پشتیبان گرفته شده و برای اشتراک‌گذاری تیمی در دسترس است",
+  "detail.syncedToServerDesc": "فیلدهای مشترک با سرور همگام می‌شوند. از جزئیات مخصوص دستگاه جداگانه پشتیبان بگیرید.",
   "detail.exportInvestigation": "صدور تحقیق",
   "detail.generateReport": "تولید گزارش",
   "detail.printSaveAsPdf": "چاپ / ذخیره به عنوان PDF",

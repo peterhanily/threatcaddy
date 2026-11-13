@@ -139,11 +139,12 @@ services:
     build: ./server
     ports:
       - "3001:3001"    # API + WebSocket
-      - "3002:3002"    # Admin panel
+      - "127.0.0.1:3002:3002" # Admin panel: host loopback only
     environment:
       DATABASE_URL: postgres://tc:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/threatcaddy
       PORT: "3001"
       ADMIN_PORT: "3002"
+      ADMIN_HOST: "0.0.0.0" # Container binding; host publication stays on loopback
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       FILE_STORAGE_PATH: /data/files
@@ -451,23 +452,14 @@ deployment secrets needed to recover them.
 
 ### 4.3 Admin Panel Access
 
-The admin panel should not be publicly accessible. Options:
+The supplied Compose file publishes administration only on the host's loopback interface. Access it remotely through an SSH tunnel:
 
-1. **Firewall**: Only allow admin port (3002) from management IPs
-2. **Separate domain with IP restriction** (see nginx example above)
-3. **VPN-only access**: Put the admin panel behind a VPN
-4. **Do not expose port 3002** in `docker-compose.yml`:
-   ```yaml
-   server:
-     ports:
-       - "3001:3001"
-       # Remove: - "3002:3002"
-   ```
-   Access admin panel through SSH tunnel instead:
-   ```bash
-   ssh -L 3002:localhost:3002 your-server
-   # Then open http://localhost:3002/admin
-   ```
+```bash
+ssh -L 3002:127.0.0.1:3002 your-server
+# Then open http://localhost:3002/admin
+```
+
+Keep the container network private: `ADMIN_HOST=0.0.0.0` inside the Compose container also permits other containers on that network to connect. A direct Node deployment defaults administration to `127.0.0.1` independently of the API binding. If you deliberately override these defaults for a management proxy or VPN, require private network access and explicit firewall/proxy restrictions. CORS is not a substitute for network isolation.
 
 ### 4.4 Bot Master Key
 

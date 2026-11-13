@@ -63,7 +63,7 @@
   "detail.localOnly": "केवल स्थानीय",
   "detail.localOnlyDesc": "यह जाँच केवल आपके डिवाइस पर रहती है",
   "detail.syncedToServer": "सर्वर पर सिंक",
-  "detail.syncedToServerDesc": "बैकअप और टीम साझाकरण के लिए उपलब्ध",
+  "detail.syncedToServerDesc": "साझा फ़ील्ड सर्वर से सिंक होते हैं। केवल डिवाइस पर मौजूद विवरण का अलग बैकअप रखें।",
   "detail.exportInvestigation": "जाँच निर्यात करें",
   "detail.generateReport": "रिपोर्ट तैयार करें",
   "detail.printSaveAsPdf": "प्रिंट / PDF के रूप में सहेजें",

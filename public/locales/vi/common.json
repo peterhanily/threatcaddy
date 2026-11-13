@@ -232,5 +232,6 @@
   "offlineStatus.unavailable": "Chưa xác nhận khả năng dùng ngoại tuyến",
   "offlineStatus.checkingHelp": "Lần tải đầu tiên có dung lượng lớn có thể mất vài phút. Hãy giữ thẻ này mở trong khi cài đặt.",
   "offlineStatus.unavailableHelp": "Trình duyệt chưa xác nhận việc cài đặt ngoại tuyến. Tính năng có thể không được hỗ trợ, vẫn đang tải hoặc không thể hoàn tất. Hãy giữ một bản sao lưu đã xuất.",
-  "offlineStatus.caveat": "Đây là trạng thái worker của trình duyệt, không phải kết quả kiểm tra các tệp được lưu đệm hay phiên bản mới nhất. Dữ liệu trong bộ nhớ đệm có thể bị xóa hoặc loại bỏ. Đây không phải là bản sao lưu. Máy chủ nhóm, AI và các dịch vụ bên ngoài khác cần kết nối."
+  "offlineStatus.caveat": "Đây là trạng thái worker của trình duyệt, không phải kết quả kiểm tra các tệp được lưu đệm hay phiên bản mới nhất. Dữ liệu trong bộ nhớ đệm có thể bị xóa hoặc loại bỏ. Đây không phải là bản sao lưu. Máy chủ nhóm, AI và các dịch vụ bên ngoài khác cần kết nối.",
+  "sync.backupWarning": "Trước khi xóa dữ liệu cục bộ, hãy lưu và kiểm tra bản sao lưu đầy đủ. Đồng bộ nhóm không thể khôi phục chi tiết chỉ có trên thiết bị, như thư mục ghi chú, danh sách kiểm tra, tiến độ quy trình và kết quả công cụ hoặc hình ảnh trong trò chuyện. Lưu bản sao lưu tải xuống JSON không mã hóa."
 }

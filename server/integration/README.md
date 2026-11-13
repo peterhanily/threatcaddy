@@ -52,6 +52,29 @@ PostgreSQL runtime suite.
 
 The historical fixtures retain the reviewed missing-schema and backwards-timestamp defects. Passing requires the current runner and ordinary build output to repair those cases while preserving data. Do not weaken the assertions, regenerate historical fixtures, or mark a failing migration/startup case as passing.
 
+## Browser sync and backup contract gate
+
+The required database CI job runs this real-client gate after the PostgreSQL
+suite. To run it locally, build the server and install the root lockfile's
+Playwright Chromium runtime:
+
+```sh
+npm --prefix server run build
+TEST_DATABASE_URL=postgres://test_role:test_password@127.0.0.1:55432/threatcaddy_test ./server/node_modules/.bin/tsx server/integration/sync-client.browser.ts
+```
+
+Set `PLAYWRIGHT_BROWSERS_PATH` for a separate browser cache. The runner allocates
+its own guarded scratch database and packages the actual client sync engine,
+IndexedDB, sanitizers, backup exporter and local-cache eviction into a minimal
+test page. Two empty browser contexts use real HTTP and PostgreSQL. It verifies
+accepted server echoes, the precise shared/device-only field boundary, fresh
+device downloads, concurrent conflicts resolved both ways, full JSON backup and
+local-copy removal followed by re-download. External requests, client exceptions
+and HTTP errors fail the gate. Only synthetic records and generated credentials
+are used; the runner never reads application `.env` files. Its temporary evidence
+directory contains the check summary and HTTP status inventory. Browsers, server
+and the newly allocated database are closed afterward.
+
 ## Optional administrative browser gate
 
 With the root Playwright dependency and its Chromium runtime installed, run the

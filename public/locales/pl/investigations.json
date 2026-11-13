@@ -63,7 +63,7 @@
   "detail.localOnly": "Tylko lokalnie",
   "detail.localOnlyDesc": "To dochodzenie jest przechowywane tylko na Twoim urządzeniu",
   "detail.syncedToServer": "Zsynchronizowane z serwerem",
-  "detail.syncedToServerDesc": "Kopia zapasowa utworzona i dostępna do użytku zespołowego",
+  "detail.syncedToServerDesc": "Wspólne pola są synchronizowane z serwerem. Zachowaj osobną kopię szczegółów zapisanych tylko na urządzeniu.",
   "detail.exportInvestigation": "Eksportuj dochodzenie",
   "detail.generateReport": "Generuj raport",
   "detail.printSaveAsPdf": "Drukuj / Zapisz jako PDF",

@@ -181,6 +181,19 @@ describe('ChatMessageBubble', () => {
     expect(screen.getByText('create_note')).toBeInTheDocument();
   });
 
+  it('renders tool results with non-string fields instead of crashing (imported or synced threads)', () => {
+    const toolCalls = [
+      makeToolCall({ id: 'tc-1', name: 'read_note', result: '{"title":{"x":1}}' }),
+      makeToolCall({ id: 'tc-2', name: 'search_notes', result: '{"notes":[{"id":"n","title":{}},{"id":{"x":1},"title":"Odd"}]}' }),
+      makeToolCall({ id: 'tc-3', name: 'create_note', result: '{"success":true,"title":["a"]}' }),
+      makeToolCall({ id: 'tc-4', name: 'noop', result: 'null' }),
+    ];
+    render(<ChatMessageBubble role="assistant" content="Imported thread" toolCalls={toolCalls} />);
+    expect(screen.getByText('read_note')).toBeInTheDocument();
+    expect(screen.getByText('{"x":1}')).toBeInTheDocument();
+    expect(screen.getByText('noop')).toBeInTheDocument();
+  });
+
   it('renders user message as pre-wrap preserving whitespace', () => {
     const { container } = render(
       <ChatMessageBubble role="user" content="Line 1\nLine 2" />,

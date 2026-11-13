@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Preserve device-only task, note, IOC, timeline, whiteboard and chat fields when applying accepted sync responses or resolving conflicts. Warn that team sync is partial, offer a backup before local removal, and allow backups of records carrying legacy server revision metadata.
+- Enforce workspace encryption deadlines in active tabs and on resume, preserve the original deadline across reloads, and honor the selected 24-hour duration. Protect pending edits and interrupted chat output across locking.
+- Revoke server sessions after access-token expiry or invalidation, serialize logout against token rotation, and report when remote revocation cannot be confirmed while completing local sign-out.
+- Bind administration to localhost by default, publish its Compose port only on host loopback, and bound bootstrap request size, attempts and password-hashing concurrency.
+- Patch Hono to 4.13.16 and document independent recovery copies and restore verification. Enable required pull requests and the full publication gate on `main`; independent human approval remains pending a second eligible maintainer.
+
 ## v2.0.0 — 2026-11-03
 
 Coordinated client/server release. See [upgrade notes](docs/releases/v2.0.0.md) for the sync protocol, account onboarding, credential and rollback changes. The extension is versioned separately at 1.1.3.

@@ -33,7 +33,7 @@ Most investigation tools lock your data in a cloud you don't control, cost per s
 
 - **Local-first** — Investigation data is stored in your browser's IndexedDB. No account is required for local use; optional sync, AI, enrichment and backup features can send data to configured services.
 - **Zero setup** — Open the URL and start working. No install, no server required.
-- **Optional team server** — When you need collaboration, spin up a Docker container. Per-investigation sync lets you choose what stays local and what gets shared.
+- **Optional team server** — When you need collaboration, spin up a Docker container. Per-investigation sync lets you choose what stays local and what gets shared. Some details remain device-only; keep a [separate full backup](docs/backup-recovery.md#team-sync-and-backup-cover-different-data).
 - **Encryption at rest** — Optional AES-256-GCM encryption with PBKDF2 key derivation protects covered local content fields while locked; it does not encrypt the whole browser profile or provide end-to-end team sync.
 - **Works offline** — Download a standalone HTML file that runs from `file://`.
 - **AI that works for you** — From a conversational assistant to a full autonomous multi-agent security team, CaddyAI and AgentCaddy meet you where you are.

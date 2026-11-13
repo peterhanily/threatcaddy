@@ -1,3 +1,4 @@
+import { registerLockParticipant, SealedRecovery } from './workspace-lock';
 import type { ChatAttachment } from '../types';
 import { clearPending, markPending } from './pending-changes';
 
@@ -7,6 +8,8 @@ export interface ComposerDraft { readonly text: string; readonly revision: numbe
 const EMPTY: ComposerDraft = { text: '', revision: 0, images: [] };
 let drafts: ReadonlyMap<string, ComposerDraft> = new Map();
 let revision = 0;
+let locked = false;
+const recovery = new SealedRecovery<[string, ComposerDraft][]>();
 const pendingToken = Symbol('unsent chat drafts');
 const listeners = new Set<() => void>();
 const reservations = new Map<symbol, { scope: string; count: number; bytes: number; abort: () => void }>();
@@ -16,7 +19,7 @@ const submissions = new Map<string, symbol>();
  * never written to storage, backups or sync. Navigation must not discard them. */
 export const getComposerDrafts = () => drafts;
 export const getComposerDraft = (scope: string) => drafts.get(scope) ?? EMPTY;
-export const hasComposerDrafts = () => drafts.size > 0 || reservations.size > 0 || submissions.size > 0;
+export const hasComposerDrafts = () => drafts.size > 0 || reservations.size > 0 || submissions.size > 0 || recovery.hasValue();
 export const isComposerSubmitting = (scope: string) => submissions.has(scope);
 export function subscribeComposerDrafts(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
 function notify() {
@@ -26,7 +29,7 @@ function notify() {
 /** Submission ownership survives view remount. Discarding unsent draft text is
  * not cancellation of a database write that may already have committed. */
 export function beginComposerSubmission(scope: string): symbol | null {
-  if (submissions.has(scope)) return null;
+  if (locked || submissions.has(scope)) return null;
   const token = Symbol('chat submission'); submissions.set(scope, token);
   drafts = new Map(drafts); notify(); return token;
 }
@@ -35,6 +38,7 @@ export function finishComposerSubmission(scope: string, token: symbol): void {
   submissions.delete(scope); drafts = new Map(drafts); notify();
 }
 function put(scope: string, draft: ComposerDraft) {
+  if (locked) return;
   const next = new Map(drafts);
   if (draft.text || draft.images.length) next.set(scope, draft); else next.delete(scope);
   drafts = next; notify();
@@ -67,6 +71,7 @@ function imageCapacity(scope: string, count: number, bytes: number): ComposerIma
   return allCount > COMPOSER_LIMITS.allImageCount || allBytes > COMPOSER_LIMITS.allImageBytes ? 'global' : null;
 }
 export function reserveComposerImages(owner: symbol, scope: string, count: number, bytes: number, abort: () => void): ComposerImageError | null {
+  if (locked) return 'total';
   const error = imageCapacity(scope, count, bytes);
   if (error) return error;
   reservations.set(owner, { scope, count, bytes, abort }); notify(); return null;
@@ -81,3 +86,24 @@ export function discardAllComposerDrafts(): void {
   for (const pending of reservations.values()) pending.abort();
   reservations.clear(); drafts = new Map(); ++revision; notify();
 }
+
+registerLockParticipant({
+  seal: key => {
+    locked = true;
+    if (drafts.size && !recovery.hasValue()) recovery.seal([...drafts], key);
+    for (const pending of reservations.values()) pending.abort();
+    reservations.clear();
+    submissions.clear();
+    drafts = new Map();
+    notify();
+  },
+  restore: async (key, current) => {
+    const saved = await recovery.open(key);
+    if (!current()) throw new Error('Workspace locked during composer recovery.');
+    locked = false;
+    // Invalidates acknowledgements from submissions interrupted by the lock.
+    if (saved) drafts = new Map(saved.map(([scope, draft]) => [scope, { ...draft, revision: ++revision }]));
+    recovery.clear();
+    notify();
+  },
+});

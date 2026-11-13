@@ -328,3 +328,150 @@ describe('sync engine persistence contract', () => {
     expect(api.push).not.toHaveBeenCalled();
   });
 });
+
+describe('round trips keep fields the server cannot store', () => {
+  const task = (id: string, title = 'Local task') => ({ id, title, completed: false, priority: 'none', folderId: 'f1', tags: [], status: 'todo', order: 0, trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+  const thread = (id: string) => ({ id, title: 'Thread', messages: [], model: 'm', provider: 'anthropic', folderId: 'f1', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+  const seed = (table: string, row: Record<string, unknown>) => db.transaction('rw', db.table(table), async () => { suppressSyncInCurrentTransaction(); await db.table(table).put(row); });
+  /** What the server change log returns: its own columns only, plus provenance and the revision. */
+  const echo = (table: string, row: Record<string, unknown>, version: number, drop: string[]) => ({
+    ...Object.fromEntries(Object.entries(row).filter(([key]) => !drop.includes(key))), createdBy: 'u1', updatedBy: 'u1', deletedAt: null, table, op: 'put', version,
+  });
+  const checklist = [{ id: 'c1', text: 'Collect proxy logs', done: true }];
+  const rejectionHistory = [{ at: 5, quality: 'needs-redo', reason: 'thin', requestedDelta: 'add sources' }];
+  const comments = [{ id: 'k1', content: 'Matches the C2 list', userId: 'u1', userName: 'Ana', createdAt: 7 }];
+  const message = { id: 'm1', role: 'assistant', content: 'Done', createdAt: 9, userId: 'u1', tokenCount: { input: 10, output: 20 },
+    toolCalls: [{ id: 'tc1', name: 'read_note', input: { id: 'n1' }, result: 'ok', isError: false }],
+    attachments: [{ type: 'image', data: 'iVBORw0KGgo=', mimeType: 'image/png' }] };
+  const rows = {
+    tasks: { ...task('t1'), checklist, escalated: true, rejectionCount: 3, rejectionHistory },
+    notes: { ...note('n1'), parentNoteId: 'n0', isFolder: true, reviewRequired: true },
+    folders: { id: 'f1', name: 'Case', order: 0, createdAt: 1, agentEnabled: true, agentStatus: 'idle', agentThreadId: 'th', agentLastRunAt: 8,
+      agentPolicy: { autoApproveReads: true }, playbookExecution: { templateId: 'p', templateName: 'P', startedAt: 1, steps: [] }, noteTemplateIds: ['tpl'] },
+    chatThreads: { ...thread('ch1'), messages: [message], mode: 'plan', source: 'agent', contextSummary: 'summary', parentThreadId: 'ch0', isFolder: true },
+    standaloneIOCs: { id: 'i1', type: 'domain', value: 'evil.test', confidence: 'high', folderId: 'f1', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1,
+      firstSeen: 2, lastSeen: 3, linkedEvidenceIds: ['ev1'], comments },
+    timelineEvents: { id: 'e1', timestamp: 4, title: 'Beacon', eventType: 'command-and-control', source: 'proxy', confidence: 'high', linkedIOCIds: [], linkedNoteIds: [],
+      linkedTaskIds: [], mitreAttackIds: [], assets: [], tags: [], starred: false, folderId: 'f1', timelineId: 'tl1', trashed: false, archived: false, createdAt: 1, updatedAt: 1,
+      latitude: 51.5072, longitude: -0.1276, comments },
+  } as Record<string, Record<string, unknown>>;
+  const unstored: Record<string, string[]> = {
+    tasks: ['checklist', 'escalated', 'rejectionCount', 'rejectionHistory'], notes: ['parentNoteId', 'isFolder', 'reviewRequired'],
+    folders: ['agentEnabled', 'agentStatus', 'agentThreadId', 'agentLastRunAt', 'agentPolicy', 'playbookExecution', 'noteTemplateIds'],
+    chatThreads: ['mode', 'source', 'contextSummary', 'parentThreadId', 'isFolder'], standaloneIOCs: ['firstSeen', 'lastSeen', 'linkedEvidenceIds'], timelineEvents: [],
+  };
+  const serverEcho = (version: number, overrides: Record<string, Record<string, unknown>> = {}) => Object.entries(rows).map(([table, row]) => {
+    const stored = echo(table, { ...row, ...overrides[table] }, version, unstored[table]);
+    return table === 'timelineEvents' ? { ...stored, latitude: '51.5072', longitude: '-0.1276' } : stored; // TEXT columns
+  });
+
+  it('a pushed row is unchanged after its own accepted echo, apart from server provenance', async () => {
+    for (const [table, row] of Object.entries(rows)) await seed(table, row);
+    for (const [table, row] of Object.entries(rows)) await engine.enqueue(table, row.id as string, 'put', row);
+    api.push.mockImplementation(async (changes: Array<{ table: string; entityId: string }>) => ({
+      results: changes.map(change => ({ table: change.table, entityId: change.entityId, status: 'accepted', serverVersion: 1 })),
+    }));
+    api.pull.mockResolvedValueOnce({ changes: [], cursor: '0', hasMore: false })
+      .mockResolvedValueOnce({ changes: serverEcho(1), cursor: '6', hasMore: false });
+    await engine.sync();
+    expect(api.push).toHaveBeenCalledTimes(1);
+    expect(await db.table('_syncQueue').count()).toBe(0);
+    for (const [table, row] of Object.entries(rows)) {
+      expect(await db.table(table).get(row.id as string), table).toMatchObject({ ...row, createdBy: 'u1' });
+    }
+  });
+
+  it("a teammate's newer revision updates server fields and keeps this device's unstored fields", async () => {
+    for (const [table, row] of Object.entries(rows)) await seed(table, row);
+    for (const [table, row] of Object.entries(rows)) await db.table('_syncMeta').put({ key: revisionKey(table, row.id as string), value: 1 });
+    api.pull.mockResolvedValueOnce({ changes: serverEcho(2, { tasks: { title: 'Renamed by Ben' }, notes: { title: 'Edited by Ben' } }), cursor: '12', hasMore: false });
+    await engine.sync();
+    expect(await db.table('tasks').get('t1')).toMatchObject({ title: 'Renamed by Ben', checklist, escalated: true, rejectionCount: 3 });
+    expect(await db.table('notes').get('n1')).toMatchObject({ title: 'Edited by Ben', parentNoteId: 'n0', isFolder: true });
+    expect(await db.table('chatThreads').get('ch1')).toMatchObject({ mode: 'plan', source: 'agent', messages: [expect.objectContaining({ toolCalls: message.toolCalls })] });
+    expect(await db.table('folders').get('f1')).toMatchObject({ agentEnabled: true, playbookExecution: rows.folders.playbookExecution });
+  });
+
+  it('a concrete server value wins; a null server value means "no value" and keeps the local one', async () => {
+    await seed('tasks', rows.tasks);
+    await db.table('_syncMeta').put({ key: revisionKey('tasks', 't1'), value: 1 });
+    api.pull.mockResolvedValueOnce({ changes: [{ ...echo('tasks', rows.tasks, 2, ['checklist']), escalated: false, rejectionCount: null }], cursor: '2', hasMore: false });
+    await engine.sync();
+    const stored = await db.table('tasks').get('t1');
+    expect(stored.checklist).toEqual(checklist);
+    expect(stored.escalated).toBeUndefined();
+    expect(stored.rejectionCount).toBe(3);
+  });
+
+  it('never takes per-device agent settings from a server change', async () => {
+    await seed('folders', { ...rows.folders, agentEnabled: false, agentStatus: 'paused' });
+    await db.table('_syncMeta').put({ key: revisionKey('folders', 'f1'), value: 1 });
+    const hostile = { ...echo('folders', rows.folders, 2, []), agentEnabled: true, agentStatus: 'running', agentPolicy: { autoApproveCreate: true, autoApproveModify: true } };
+    api.pull.mockResolvedValueOnce({ changes: [hostile, { ...hostile, id: 'f9', name: 'New case' }], cursor: '2', hasMore: false });
+    await engine.sync();
+    expect(await db.table('folders').get('f1')).toMatchObject({ agentEnabled: false, agentStatus: 'paused', agentPolicy: rows.folders.agentPolicy });
+    const fresh = await db.table('folders').get('f9');
+    expect([fresh.agentEnabled, fresh.agentStatus, fresh.agentPolicy]).toEqual([undefined, undefined, undefined]);
+  });
+
+  it('re-downloads an evicted investigation even though its revision keys are still known', async () => {
+    await seed('tasks', rows.tasks);
+    await db.table('_syncMeta').put({ key: revisionKey('tasks', 't1'), value: 3 });
+    await db.table('_syncMeta').put({ key: revisionKey('folders', 'f1'), value: 1 });
+    await evictSyncedFolder('f1');
+    expect(await db.table('tasks').get('t1')).toBeUndefined();
+    api.pull.mockResolvedValue({ changes: [echo('tasks', task('t1', 'Remote'), 3, []), echo('folders', { id: 'f1', name: 'Case', order: 0, createdAt: 1 }, 1, [])], cursor: '2', hasMore: false });
+    await engine.pullFolder('f1');
+    expect(await db.table('tasks').get('t1')).toMatchObject({ title: 'Remote' });
+    expect(await db.table('_syncMeta').get(uncachedFolderKey('f1'))).toBeUndefined();
+  });
+
+  it('Keep theirs replaces server fields but keeps unstored local fields', async () => {
+    await seed('tasks', rows.tasks);
+    await engine.enqueue('tasks', 't1', 'put', { ...rows.tasks, title: 'Mine' });
+    await engine.resolveConflicts([{ table: 'tasks', entityId: 't1', serverVersion: 4, serverData: echo('tasks', { ...rows.tasks, title: 'Theirs' }, 4, unstored.tasks) }], 'theirs');
+    expect(await db.table('tasks').get('t1')).toMatchObject({ title: 'Theirs', checklist, escalated: true, rejectionHistory });
+    expect(await db.table('_syncQueue').count()).toBe(0);
+  });
+
+  it('keeps chat tool calls, images and cycle summaries on this device and out of every push', async () => {
+    const summary = { startedAt: 1, durationMs: 2, whyThisCycle: 'why', whatIDid: [], entitiesTouched: [], tokens: { input: 1, output: 2 }, costUSD: 0,
+      toolCalls: { executed: 1, proposed: 0 }, toolHistogram: {}, errorHistogram: {}, turns: 1, outcome: 'success', provider: 'anthropic', model: 'm' };
+    const detailed = { ...message, agentCycleSummary: summary };
+    const local = { ...rows.chatThreads, messages: [detailed] };
+    await seed('chatThreads', local);
+    await engine.enqueue('chatThreads', 'ch1', 'put', local);
+    api.push.mockImplementation(async (changes: Array<{ table: string; entityId: string }>) => ({
+      results: changes.map(change => ({ table: change.table, entityId: change.entityId, status: 'accepted', serverVersion: 1 })),
+    }));
+    const plain = { id: 'm1', role: 'assistant', content: 'Done', createdAt: 9, userId: 'u1', tokenCount: { input: 10, output: 20 } };
+    const reply = { id: 'm2', role: 'user', content: 'Thanks', createdAt: 10 };
+    api.pull.mockResolvedValueOnce({ changes: [], cursor: '0', hasMore: false })
+      .mockResolvedValueOnce({ changes: [echo('chatThreads', { ...local, messages: [plain] }, 1, unstored.chatThreads)], cursor: '1', hasMore: false })
+      .mockResolvedValueOnce({ changes: [echo('chatThreads', { ...local, messages: [plain, reply] }, 2, unstored.chatThreads)], cursor: '2', hasMore: false });
+    await engine.sync();
+    expect(api.push.mock.calls[0][0][0].data.messages).toEqual([plain]);
+    expect((await db.table('chatThreads').get('ch1')).messages).toEqual([detailed]);
+    await engine.sync(); // a teammate's reply arrives
+    expect((await db.table('chatThreads').get('ch1')).messages).toEqual([detailed, reply]);
+  });
+
+  it("drops a sub-note's parent pointer when a teammate moves it to another investigation", async () => {
+    await seed('notes', { ...note('n1'), parentNoteId: 'p1', reviewRequired: true });
+    await db.table('_syncMeta').put({ key: revisionKey('notes', 'n1'), value: 1 });
+    api.pull.mockResolvedValueOnce({ changes: [echo('notes', { ...note('n1'), folderId: 'f2' }, 2, [])], cursor: '2', hasMore: false });
+    await engine.sync();
+    const moved = await db.table('notes').get('n1');
+    expect(moved).toMatchObject({ folderId: 'f2', reviewRequired: true });
+    expect(moved.parentNoteId).toBeUndefined();
+  });
+
+  it('a row with no local copy gets no device-only fields', async () => {
+    api.pull.mockResolvedValueOnce({ changes: [echo('tasks', task('fresh', 'From server'), 1, [])], cursor: '1', hasMore: false });
+    await engine.sync();
+    const stored = await db.table('tasks').get('fresh');
+    expect(stored).toMatchObject({ title: 'From server', createdBy: 'u1' });
+    expect(stored.checklist).toBeUndefined();
+  });
+});
+

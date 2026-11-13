@@ -93,7 +93,7 @@
   "detail.localOnly": "Local only",
   "detail.localOnlyDesc": "This investigation stays on your device only",
   "detail.syncedToServer": "Synced to server",
-  "detail.syncedToServerDesc": "Backed up and available for team sharing",
+  "detail.syncedToServerDesc": "Shared fields sync to the server. Keep a separate backup for device-only details.",
   "detail.exportInvestigation": "Export Investigation",
   "detail.generateReport": "Generate Report",
   "detail.printSaveAsPdf": "Print / Save as PDF",

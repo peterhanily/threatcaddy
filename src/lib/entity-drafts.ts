@@ -1,3 +1,4 @@
+import { registerLockParticipant, SealedRecovery } from './workspace-lock';
 import { clearPending, markPending, hasPendingChanges, PendingChangesError } from './pending-changes';
 
 export type DraftPatch = Record<string, unknown>;
@@ -49,13 +50,43 @@ export class EntityDraft {
   private onError?: (message: string) => void;
   private attached = 0;
   private requiresReview = false;
+  private suspended = false;
+  private writeGeneration = 0;
+  private recovery = new SealedRecovery<{ snapshot: DraftSnapshot; fields: [string, number][] }>();
+
+  sealForLock(key: CryptoKey): void {
+    this.suspended = true;
+    this.writeGeneration++;
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    if (this.fields.size && !this.recovery.hasValue()) {
+      this.recovery.seal({ snapshot: this.snapshot, fields: [...this.fields] }, key);
+    }
+    this.fields.clear();
+    this.persist = undefined;
+    this.onError = undefined;
+    this.publish({ patch: {}, status: 'idle' });
+  }
+
+  async restoreAfterUnlock(key: CryptoKey, current: () => boolean): Promise<void> {
+    const saved = await this.recovery.open(key);
+    if (!current()) throw new Error('Workspace locked during draft recovery.');
+    this.suspended = false;
+    if (saved) {
+      this.fields = new Map(saved.fields);
+      this.requiresReview = true;
+      this.publish({ ...saved.snapshot, status: 'error',
+        error: 'The workspace locked before this draft was confirmed saved. Review the saved item and this draft before retrying.' });
+      this.recovery.clear();
+    }
+  }
 
   private readonly key: string;
   constructor(key: string) { this.key = key; }
 
   getSnapshot = () => this.snapshot;
-  hasPendingWork = () => this.fields.size > 0 || !!this.inFlight;
-  canDiscard = () => !this.inFlight && !externalDataChange;
+  hasPendingWork = () => this.fields.size > 0 || !!this.inFlight || this.recovery.hasValue();
+  canDiscard = () => !this.suspended && !this.inFlight && !externalDataChange;
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
     return () => { this.listeners.delete(listener); };
@@ -82,7 +113,7 @@ export class EntityDraft {
   }
 
   private releaseIfClean() {
-    if (this.attached === 0 && this.fields.size === 0 && !this.inFlight) {
+    if (!this.suspended && !this.recovery.hasValue() && this.attached === 0 && this.fields.size === 0 && !this.inFlight) {
       if (drafts.get(this.key) === this) drafts.delete(this.key);
       this.persist = undefined;
       this.onError = undefined;
@@ -90,6 +121,7 @@ export class EntityDraft {
   }
 
   queue = (updates: DraftPatch, delay = 500) => {
+    if (this.suspended) throw new Error('Workspace is locked. Unlock before editing.');
     if (Object.keys(updates).length === 0) return;
     const revision = ++this.revision;
     for (const field of Object.keys(updates)) this.fields.set(field, revision);
@@ -170,15 +202,17 @@ export class EntityDraft {
   flush = (retryErrors = false): Promise<boolean> => {
     clearTimeout(this.timer);
     this.timer = undefined;
+    if (this.suspended) return Promise.resolve(false);
     if (this.inFlight) return this.inFlight;
     if (this.requiresReview || (!retryErrors && this.snapshot.status === 'error')) return Promise.resolve(false);
     if (this.fields.size === 0) return Promise.resolve(true);
 
     // Begin on the next microtask so inFlight is installed even for synchronous
     // persistence functions or synchronous exceptions.
+    const generation = this.writeGeneration;
     this.inFlight = Promise.resolve().then(async () => {
       while (this.fields.size > 0) {
-        if (this.requiresReview) return false;
+        if (this.suspended || generation !== this.writeGeneration || this.requiresReview) return false;
         const patch = { ...this.snapshot.patch };
         const revision = this.revision;
         const persist = this.persist;
@@ -187,6 +221,7 @@ export class EntityDraft {
           if (!persist) throw new Error('The editor is not available to save this draft.');
           await persist(patch);
         } catch (error) {
+          if (this.suspended || generation !== this.writeGeneration) return false;
           clearTimeout(this.timer);
           this.timer = undefined;
           const message = error instanceof Error ? error.message : 'The changes could not be saved.';
@@ -194,6 +229,7 @@ export class EntityDraft {
           this.onError?.(message);
           return false;
         }
+        if (this.suspended || generation !== this.writeGeneration) return false;
         const remaining = { ...this.snapshot.patch };
         for (const [field, fieldRevision] of this.fields) {
           if (fieldRevision <= revision) {
@@ -265,3 +301,8 @@ if (typeof window !== 'undefined') {
     if (document.visibilityState === 'hidden') void flushEntityDrafts();
   });
 }
+
+registerLockParticipant({
+  seal: key => { for (const draft of drafts.values()) draft.sealForLock(key); },
+  restore: async (key, current) => { for (const draft of drafts.values()) await draft.restoreAfterUnlock(key, current); },
+});

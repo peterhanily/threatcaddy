@@ -232,5 +232,6 @@
   "offlineStatus.unavailable": "Ketersediaan offline belum dikonfirmasi",
   "offlineStatus.checkingHelp": "Unduhan awal yang besar dapat memerlukan beberapa menit. Biarkan tab ini terbuka selama pemasangan.",
   "offlineStatus.unavailableHelp": "Browser belum mengonfirmasi pemasangan offline. Fitur ini mungkin tidak didukung, masih diunduh, atau tidak dapat diselesaikan. Simpan cadangan yang diekspor.",
-  "offlineStatus.caveat": "Ini adalah status worker browser, bukan pemeriksaan berkas dalam cache atau versi terbaru. Data cache dapat dibersihkan atau dikeluarkan. Ini bukan cadangan. Server tim, AI, dan layanan eksternal lainnya memerlukan koneksi."
+  "offlineStatus.caveat": "Ini adalah status worker browser, bukan pemeriksaan berkas dalam cache atau versi terbaru. Data cache dapat dibersihkan atau dikeluarkan. Ini bukan cadangan. Server tim, AI, dan layanan eksternal lainnya memerlukan koneksi.",
+  "sync.backupWarning": "Sebelum menghapus data lokal, simpan dan verifikasi cadangan lengkap. Sinkronisasi tim tidak dapat memulihkan detail khusus perangkat seperti folder catatan, daftar periksa, progres playbook, serta hasil alat atau gambar obrolan. Simpan Cadangan mengunduh JSON tanpa enkripsi."
 }

@@ -33,6 +33,37 @@ describe('share schema and resource contracts', () => {
     expect(data.folder).not.toHaveProperty('noteTemplateIds');
   });
 
+  it('shares chat content without tool transcripts, images, usage or identities', () => {
+    const thread = sanitizeSharePayload(payload('chat', { id: 'c1', title: 'Thread', createdBy: 'u-ana', updatedBy: 'u-ana', messages: [{
+      id: 'm1', role: 'assistant', content: 'Answer', createdAt: 1, model: 'm', userId: 'u-ana', tokenCount: { input: 1, output: 2 },
+      toolCalls: [{ id: 't', name: 'search_across_investigations', input: {}, result: 'Case B (TLP:RED)', isError: false }],
+      attachments: [{ type: 'image', data: 'iVBORw0KGgo=', mimeType: 'image/png' }],
+      agentCycleSummary: { outcome: 'success', tokens: { input: 1, output: 1 }, toolCalls: { executed: 1, proposed: 0 } },
+    }] })).d as ChatThread;
+    expect(thread).not.toHaveProperty('createdBy');
+    expect(thread.messages).toEqual([{ id: 'm1', role: 'assistant', content: 'Answer', createdAt: 1, model: 'm' }]);
+  });
+
+  it('shares investigation comment and chat text without identities, tool transcripts or images', () => {
+    const data = sanitizeSharePayload(payload('investigation', {
+      folder: { id: 'f', name: 'Case', createdBy: 'u-ana' },
+      notes: [{ id: 'n', title: 'N', annotations: [{ id: 'a', text: 'check', authorId: 'u-ana', authorName: 'Ana', createdAt: 1 }] }],
+      tasks: [{ id: 't', title: 'T', comments: [{ id: 'k', text: 'done', authorId: 'u-ben', authorName: 'Ben', createdAt: 1 }] }],
+      events: [{ id: 'e', title: 'E', comments: [{ id: 'c', content: 'C2 match', userId: 'u-ana', userName: 'Ana (IR Lead)', createdAt: 1 }] }],
+      iocs: [{ id: 'i', type: 'domain', value: 'x.test', createdBy: 'u-cy', comments: [{ id: 'c', content: 'seen', userId: 'u-cy', userName: 'Cy', createdAt: 1 }] }],
+      chatThreads: [{ id: 'ch', title: 'Chat', messages: [{ id: 'm', role: 'assistant', content: 'Answer', createdAt: 1, userId: 'u-ana',
+        toolCalls: [{ id: 't', name: 'search_across_investigations', input: {}, result: 'Case B (TLP:RED)', isError: false }],
+        attachments: [{ type: 'image', data: 'iVBORw0KGgo=', mimeType: 'image/png' }], tokenCount: { input: 1, output: 1 } }] }],
+    })).d as InvestigationBundle;
+    expect(data.chatThreads[0].messages).toEqual([{ id: 'm', role: 'assistant', content: 'Answer', createdAt: 1 }]);
+    expect(data.folder).not.toHaveProperty('createdBy');
+    expect(data.notes[0].annotations).toEqual([{ id: 'a', text: 'check', createdAt: 1 }]);
+    expect(data.tasks[0].comments).toEqual([{ id: 'k', text: 'done', createdAt: 1 }]);
+    expect(data.events[0].comments).toEqual([{ id: 'c', content: 'C2 match', createdAt: 1 }]);
+    expect(data.iocs[0].comments).toEqual([{ id: 'c', content: 'seen', createdAt: 1 }]);
+    expect(data.iocs[0]).not.toHaveProperty('createdBy');
+  });
+
   it.each([
     [], payload('note', []), payload('note', { title: 'Missing ID' }),
     payload('investigation', { folder: { id: 'f' }, notes: {} }),

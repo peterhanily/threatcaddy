@@ -191,9 +191,13 @@ export function stopLoopsForThread(threadId: string): number {
   return count;
 }
 
-if (typeof window !== 'undefined') window.addEventListener('workspace-will-switch', () => {
+const stopWorkspaceLoops = () => {
   for (const id of activeLoops.keys()) stopLoop(id);
-});
+};
+if (typeof window !== 'undefined') {
+  window.addEventListener('workspace-will-switch', stopWorkspaceLoops);
+  window.addEventListener('workspace-will-lock', stopWorkspaceLoops);
+}
 
 export function getLoopsForThread(threadId: string): ChatLoopInfo[] {
   const result: ChatLoopInfo[] = [];

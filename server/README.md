@@ -89,6 +89,7 @@ tests, fixtures, and source maps; unit and integration checks still run separate
 | `JWT_PUBLIC_KEY` | Yes | — | Ed25519 public key (PEM) for verifying tokens |
 | `PORT` | No | `3001` | Main API port |
 | `ADMIN_PORT` | No | `3002` | Admin panel port |
+| `ADMIN_HOST` | No | `127.0.0.1` | Admin bind address, independent of the public API's `HOST` |
 | `ALLOWED_ORIGINS` | No | `*` | Comma-separated CORS origins |
 | `ADMIN_SECRET` | No | auto-generated | Secret for admin panel login |
 | `TRUST_PROXY` | No | `false` | Trust proxy headers (set `true` behind a reverse proxy) |
@@ -117,6 +118,18 @@ tests, fixtures, and source maps; unit and integration checks still run separate
 | GET | `/me` | Get current user |
 | PATCH | `/me` | Update profile |
 | POST | `/change-password` | Change password |
+
+Logout accepts `{ "refreshToken": "..." }` without an access token, so an expired
+or missing access token does not prevent revocation. A current or consumed
+refresh credential revokes its whole session family; an already revoked
+credential receives the same `{ "ok": true }` receipt. A valid bearer access
+token continues to revoke only its own family, regardless of the request body.
+Clients clear local authentication immediately and report when the server cannot
+confirm revocation; disconnecting while offline cannot promise remote revocation.
+For older servers, clients retry a refresh-proof `401` using only the access token
+captured with that refresh credential, within the same deadline. They never
+refresh during logout; an older server still cannot confirm revocation if that
+access token is missing or expired.
 
 ### Sync (`/api/sync`)
 
@@ -224,7 +237,7 @@ tests, fixtures, and source maps; unit and integration checks still run separate
 
 ### Admin (`/admin`)
 
-Served on a separate port (`ADMIN_PORT`).
+Served on a separate port (`ADMIN_PORT`), bound to loopback by default. Bootstrap is limited to five attempts per peer per minute and one expensive password operation at a time.
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -272,7 +285,7 @@ docker compose up --build -d
 ```
 
 This starts:
-- **server** on ports 3001 (API) and 3002 (Admin)
+- **server** on port 3001 (API) and host loopback port 3002 (Admin); Compose binds administration inside the private container network explicitly
 - **PostgreSQL 17** on port 5432
 
 Data is persisted in Docker volumes (`pg-data`, `file-data`).

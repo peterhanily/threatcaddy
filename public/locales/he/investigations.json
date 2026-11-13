@@ -63,7 +63,7 @@
   "detail.localOnly": "מקומי בלבד",
   "detail.localOnlyDesc": "חקירה זו נשארת במכשיר שלך בלבד",
   "detail.syncedToServer": "מסונכרן לשרת",
-  "detail.syncedToServerDesc": "מגובה וזמין לשיתוף צוות",
+  "detail.syncedToServerDesc": "השדות המשותפים מסתנכרנים עם השרת. יש לשמור גיבוי נפרד של הפרטים הקיימים רק במכשיר.",
   "detail.exportInvestigation": "ייצא חקירה",
   "detail.generateReport": "צור דוח",
   "detail.printSaveAsPdf": "הדפס / שמור כ-PDF",

@@ -2,7 +2,8 @@
 import Dexie from 'dexie';
 import type { DBCore, DBCoreTable, DBCoreCursor, DBCoreMutateRequest, DBCoreGetRequest, DBCoreGetManyRequest, DBCoreQueryRequest, DBCoreOpenCursorRequest } from 'dexie';
 import { encryptField, decryptField } from './crypto';
-import { getEncryptionMeta, setEncryptionMeta, clearEncryptionMeta, isEncryptionEnabled } from './encryptionStore';
+import { getEncryptionMeta, setEncryptionMeta, clearEncryptionMeta, isEncryptionEnabled, getEncryptionIdentity, clearSessionCache, getSessionDuration, sessionDeadline, cacheSessionKey } from './encryptionStore';
+import { sealWorkspaceRecovery, restoreWorkspaceRecovery } from './workspace-lock';
 import { suppressSyncInCurrentTransaction } from './sync-state';
 
 export const ENCRYPTION_COVERAGE_VERSION = 2;
@@ -41,37 +42,92 @@ export const ENCRYPTED_FIELDS: Record<string, string[]> = {
 
 let sessionKey: CryptoKey | null = null;
 let sessionKeyRawB64: string | null = null;
-let sessionEnabledAt: number | null = null;
+let sessionIdentity: string | null = null;
+let sessionStartedAt = 0;
+let sessionExpiresAt = 0;
+let sessionGeneration = 0;
+let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+let locking = false;
 const plaintextTransactions = new WeakSet<object>();
 
-export function setSessionKey(key: CryptoKey | null, rawBase64?: string): void {
-  sessionKey = key;
-  sessionEnabledAt = key ? getEncryptionMeta()?.enabledAt ?? null : null;
-  if (rawBase64 !== undefined) sessionKeyRawB64 = rawBase64;
-  if (key === null) sessionKeyRawB64 = null;
+function scheduleExpiry(): void {
+  clearTimeout(expiryTimer);
+  if (sessionKey && sessionExpiresAt) expiryTimer = setTimeout(() => {
+    if (Date.now() >= sessionExpiresAt) lockEncryptionSession();
+    else scheduleExpiry();
+  }, Math.max(0, sessionExpiresAt - Date.now()));
 }
 
-export function getSessionKey(): CryptoKey | null { return sessionKey; }
-export function getSessionKeyRaw(): string | null { return sessionKeyRawB64; }
+export function setSessionKey(key: CryptoKey | null, rawBase64?: string, unlockedAt = Date.now(), expiresAt?: number): void {
+  sessionGeneration++;
+  sessionKey = key;
+  sessionIdentity = key ? getEncryptionIdentity() : null;
+  sessionStartedAt = key ? unlockedAt : 0;
+  sessionExpiresAt = key ? expiresAt ?? sessionDeadline(getSessionDuration(), unlockedAt) : 0;
+  sessionKeyRawB64 = key ? rawBase64 ?? null : null;
+  scheduleExpiry();
+}
+
+/** Revoke synchronously; unsaved snapshots are encrypted without keeping the
+ * workspace usable while provider requests, transactions or crypto settle. */
+export function lockEncryptionSession(): void {
+  if (locking) return;
+  locking = true;
+  const key = sessionKey;
+  sessionGeneration++;
+  let recovered = true;
+  try {
+    if (key) recovered = sealWorkspaceRecovery(key);
+  } finally {
+    setSessionKey(null);
+    try { clearSessionCache(); } catch { recovered = false; }
+    try {
+      window.dispatchEvent(new Event('workspace-will-lock'));
+      window.dispatchEvent(new CustomEvent('workspace-locked', { detail: { recoveryFailed: !recovered } }));
+    } finally { locking = false; }
+  }
+}
+
+export function getSessionGeneration(): number { return sessionGeneration; }
+export function getSessionStartedAt(): number { return sessionStartedAt; }
+export function getSessionKey(): CryptoKey | null { return activeKey(); }
+export function getSessionKeyRaw(): string | null { return activeKey() ? sessionKeyRawB64 : null; }
+export function updateSessionDuration(): void {
+  if (!activeKey()) return;
+  sessionExpiresAt = sessionDeadline(getSessionDuration(), sessionStartedAt);
+  if (sessionKeyRawB64) cacheSessionKey(sessionKeyRawB64, getSessionDuration(), sessionStartedAt);
+  scheduleExpiry();
+  activeKey();
+}
 
 function activeKey(): CryptoKey | null {
-  if (sessionKey && sessionEnabledAt !== null) {
+  if (locking) return null;
+  if (sessionKey && sessionExpiresAt && Date.now() >= sessionExpiresAt) lockEncryptionSession();
+  if (sessionKey && sessionIdentity !== null) {
     const metadata = getEncryptionMeta();
     if (!metadata && !isEncryptionEnabled()) setSessionKey(null);
-    else if (metadata?.enabledAt !== sessionEnabledAt) throw new Error('Encryption settings changed. Unlock the workspace again.');
+    else if (getEncryptionIdentity(metadata) !== sessionIdentity) lockEncryptionSession();
   }
   return sessionKey;
 }
 
-async function transformRow(tableName: string, row: Record<string, unknown>, key: CryptoKey, encrypt: boolean): Promise<Record<string, unknown>> {
+function assertCurrentKey(key: CryptoKey, generation: number): void {
+  if (activeKey() !== key || generation !== sessionGeneration) {
+    throw new Error('Workspace is locked or its encryption session changed. Unlock it before continuing.');
+  }
+}
+
+async function transformRow(tableName: string, row: Record<string, unknown>, key: CryptoKey, encrypt: boolean, generation = sessionGeneration): Promise<Record<string, unknown>> {
+  assertCurrentKey(key, generation);
   const result = { ...row };
   for (const field of ENCRYPTED_FIELDS[tableName] ?? []) {
     if (field in result) result[field] = await (encrypt ? encryptField : decryptField)(result[field], key);
   }
+  assertCurrentKey(key, generation);
   return result;
 }
 
-function decryptedCursor(cursor: DBCoreCursor, tableName: string, key: CryptoKey): DBCoreCursor {
+function decryptedCursor(cursor: DBCoreCursor, tableName: string, key: CryptoKey, generation: number): DBCoreCursor {
   let value: unknown;
   const wrapped: DBCoreCursor = {
     get trans() { return cursor.trans; },
@@ -87,8 +143,8 @@ function decryptedCursor(cursor: DBCoreCursor, tableName: string, key: CryptoKey
     start(onNext) {
       // Hold the transaction across every asynchronous Web Crypto cursor read.
       return Dexie.waitFor(cursor.start(() => {
-        void transformRow(tableName, cursor.value as Record<string, unknown>, key, false)
-          .then(decrypted => { value = decrypted; onNext(); })
+        void transformRow(tableName, cursor.value as Record<string, unknown>, key, false, generation)
+          .then(decrypted => { assertCurrentKey(key, generation); value = decrypted; onNext(); })
           .catch(error => cursor.fail(error));
       }));
     },
@@ -116,34 +172,40 @@ export function installEncryptionMiddleware(db: Dexie): void {
             ...downlevelTable,
             async mutate(req: DBCoreMutateRequest) {
               const key = activeKey();
+              const generation = sessionGeneration;
               if (!key && isEncryptionEnabled()) throw new Error('Workspace is locked. Unlock it before changing data.');
               if (getEncryptionMeta()?.transition === 'decrypting' && !plaintextTransactions.has(req.trans) && (req.trans as IDBTransaction).mode !== 'versionchange') {
                 throw new Error('Encryption is being disabled. Finish preparing the workspace before changing data.');
               }
               if (!key || plaintextTransactions.has(req.trans) || (req.type !== 'add' && req.type !== 'put')) return downlevelTable.mutate(req);
-              const values = await Dexie.waitFor(Promise.all((req.values ?? []).map(value => transformRow(tableName, value as Record<string, unknown>, key, true))));
+              const values = await Dexie.waitFor(Promise.all((req.values ?? []).map(value => transformRow(tableName, value as Record<string, unknown>, key, true, generation))));
+              assertCurrentKey(key, generation);
               return downlevelTable.mutate({ ...req, values });
             },
             async get(req: DBCoreGetRequest) {
               const key = activeKey();
+              const generation = sessionGeneration;
               const result = await downlevelTable.get(req);
-              return !key || !result ? result : Dexie.waitFor(transformRow(tableName, result, key, false));
+              return !key || !result ? result : Dexie.waitFor(transformRow(tableName, result, key, false, generation));
             },
             async getMany(req: DBCoreGetManyRequest) {
               const key = activeKey();
+              const generation = sessionGeneration;
               const results = await downlevelTable.getMany(req);
-              return !key ? results : Dexie.waitFor(Promise.all(results.map(row => row ? transformRow(tableName, row, key, false) : row)));
+              return !key ? results : Dexie.waitFor(Promise.all(results.map(row => row ? transformRow(tableName, row, key, false, generation) : row)));
             },
             async query(req: DBCoreQueryRequest) {
               const key = activeKey();
+              const generation = sessionGeneration;
               const result = await downlevelTable.query(req);
               if (!key || !req.values) return result;
-              return { ...result, result: await Dexie.waitFor(Promise.all(result.result.map(row => row ? transformRow(tableName, row, key, false) : row))) };
+              return { ...result, result: await Dexie.waitFor(Promise.all(result.result.map(row => row ? transformRow(tableName, row, key, false, generation) : row))) };
             },
             async openCursor(req: DBCoreOpenCursorRequest) {
               const key = activeKey();
+              const generation = sessionGeneration;
               const cursor = await downlevelTable.openCursor(req);
-              return cursor && key && req.values ? decryptedCursor(cursor, tableName, key) : cursor;
+              return cursor && key && req.values ? decryptedCursor(cursor, tableName, key, generation) : cursor;
             },
           };
         },
@@ -155,38 +217,72 @@ export function installEncryptionMiddleware(db: Dexie): void {
 type Progress = (progress: { current: number; total: number }) => void;
 
 async function rewriteContent(db: Dexie, encrypt: boolean, onProgress?: Progress): Promise<void> {
-  if (!activeKey()) throw new Error('Unlock the workspace before converting encryption.');
+  const key = activeKey();
+  const generation = sessionGeneration;
+  if (!key) throw new Error('Unlock the workspace before converting encryption.');
   const tables = db.tables.filter(table => ENCRYPTED_FIELDS[table.name]);
-  await db.transaction('rw', tables, async transaction => {
-    suppressSyncInCurrentTransaction();
-    if (!encrypt) plaintextTransactions.add(transaction.idbtrans);
-    let total = 0;
-    let current = 0;
-    for (const table of tables) total += await table.count();
-    onProgress?.({ current, total });
-    for (const table of tables) {
-      // Process one table at a time; the transaction commits every table together.
-      const rows = await table.toArray();
-      for (const row of rows) {
-        await table.put(row);
-        onProgress?.({ current: ++current, total });
+  let abortConversion: (() => void) | undefined;
+  try {
+    await db.transaction('rw', tables, async transaction => {
+      assertCurrentKey(key, generation);
+      abortConversion = () => transaction.abort();
+      window.addEventListener('workspace-will-lock', abortConversion);
+      suppressSyncInCurrentTransaction();
+      if (!encrypt) plaintextTransactions.add(transaction.idbtrans);
+      let total = 0;
+      let current = 0;
+      for (const table of tables) total += await table.count();
+      onProgress?.({ current, total });
+      for (const table of tables) {
+        // Process one table at a time; the transaction commits every table together.
+        const rows = await table.toArray();
+        for (const row of rows) {
+          await table.put(row);
+          onProgress?.({ current: ++current, total });
+        }
       }
-    }
-  });
+      assertCurrentKey(key, generation);
+    });
+    assertCurrentKey(key, generation);
+  } finally {
+    if (abortConversion) window.removeEventListener('workspace-will-lock', abortConversion);
+  }
 }
 
 /** Metadata retains the wrapped key before conversion and on any failure. */
 export async function encryptAllExistingData(db: Dexie, onProgress?: Progress): Promise<void> {
+  const key = activeKey();
+  const generation = sessionGeneration;
+  if (!key) throw new Error('Unlock the workspace before converting encryption.');
   const metadata = getEncryptionMeta();
   if (metadata) setEncryptionMeta({ ...metadata, transition: 'encrypting' });
   await rewriteContent(db, true, onProgress);
-  if (metadata) setEncryptionMeta({ ...metadata, coverageVersion: ENCRYPTION_COVERAGE_VERSION, transition: undefined });
+  assertCurrentKey(key, generation);
+  if (metadata) {
+    const current = getEncryptionMeta();
+    if (!current || getEncryptionIdentity(current) !== getEncryptionIdentity(metadata) || current.transition !== 'encrypting') {
+      throw new Error('Encryption settings changed while preparing the workspace. Unlock again to retry.');
+    }
+    // Keep wrapping and duration updates made while the conversion was running.
+    setEncryptionMeta({ ...current, coverageVersion: ENCRYPTION_COVERAGE_VERSION, transition: undefined });
+  }
 }
 
 export async function decryptAllExistingData(db: Dexie, onProgress?: Progress): Promise<void> {
   const metadata = getEncryptionMeta();
+  const key = activeKey();
+  const generation = sessionGeneration;
+  if (!key) throw new Error('Unlock the workspace before converting encryption.');
   if (metadata) setEncryptionMeta({ ...metadata, transition: 'decrypting' });
   await rewriteContent(db, false, onProgress);
+  // Restore before removing the wrapped key so storage/crypto errors remain
+  // retryable. Only each recovery writer's own transaction may write plaintext;
+  // other writes remain blocked throughout the interrupted disable.
+  await restoreWorkspaceRecovery(key, () => activeKey() === key && sessionGeneration === generation, transaction => {
+    assertCurrentKey(key, generation);
+    plaintextTransactions.add(transaction);
+  });
+  assertCurrentKey(key, generation);
   // If metadata removal fails, keep the key and transition so retry is safe.
   if (metadata) clearEncryptionMeta();
   setSessionKey(null);

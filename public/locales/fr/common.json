@@ -232,5 +232,6 @@
   "offlineStatus.unavailable": "Disponibilité hors ligne non confirmée",
   "offlineStatus.checkingHelp": "Un premier téléchargement volumineux peut prendre plusieurs minutes. Laissez cet onglet ouvert pendant l’installation.",
   "offlineStatus.unavailableHelp": "Le navigateur n’a pas confirmé l’installation hors ligne. Elle peut ne pas être prise en charge, être encore en cours de téléchargement ou ne pas pouvoir aboutir. Conservez une sauvegarde exportée.",
-  "offlineStatus.caveat": "Il s’agit de l’état du worker du navigateur, pas d’une vérification des fichiers en cache ni de la dernière version. Les données en cache peuvent être effacées ou évincées. Ce n’est pas une sauvegarde. Les serveurs d’équipe, l’IA et les autres services externes nécessitent une connexion."
+  "offlineStatus.caveat": "Il s’agit de l’état du worker du navigateur, pas d’une vérification des fichiers en cache ni de la dernière version. Les données en cache peuvent être effacées ou évincées. Ce n’est pas une sauvegarde. Les serveurs d’équipe, l’IA et les autres services externes nécessitent une connexion.",
+  "sync.backupWarning": "Avant de supprimer les données locales, enregistrez et vérifiez une sauvegarde complète. La synchronisation d’équipe ne peut pas restaurer les détails propres à cet appareil, comme les dossiers de notes, listes de contrôle, progression des procédures et résultats d’outils ou images des discussions. Enregistrer une sauvegarde télécharge du JSON non chiffré."
 }

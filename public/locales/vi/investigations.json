@@ -63,7 +63,7 @@
   "detail.localOnly": "Chỉ cục bộ",
   "detail.localOnlyDesc": "Điều tra này chỉ tồn tại trên thiết bị của bạn",
   "detail.syncedToServer": "Đã đồng bộ với máy chủ",
-  "detail.syncedToServerDesc": "Đã sao lưu và có thể chia sẻ với nhóm",
+  "detail.syncedToServerDesc": "Các trường dùng chung được đồng bộ với máy chủ. Giữ bản sao lưu riêng cho chi tiết chỉ có trên thiết bị.",
   "detail.exportInvestigation": "Xuất điều tra",
   "detail.generateReport": "Tạo báo cáo",
   "detail.printSaveAsPdf": "In / Lưu dưới dạng PDF",

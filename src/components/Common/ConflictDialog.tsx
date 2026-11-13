@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AlertTriangle, ChevronDown, ChevronUp, X } from 'lucide-react';
 import type { SyncResult } from '../../lib/server-api';
 import { computeFieldDiffs } from '../../lib/inline-diff';
+import { keepsLocalValue } from '../../lib/sync-sanitize';
 import { FieldDiffView } from './InlineDiffView';
 
 const TABLE_LABELS: Record<string, string> = {
@@ -74,8 +75,10 @@ export function ConflictDialog({ conflicts, onResolve, onResolveAll, onClose }: 
         {expanded && <div className="border-t border-amber-700/30 max-h-[50vh] overflow-y-auto">
           {conflicts.map(conflict => {
             const key = conflictKey(conflict);
-            const diffs = conflict.serverData ? computeFieldDiffs(conflict.localData ?? {}, conflict.serverData) : [];
-            const longFields = longFieldChanges(conflict);
+            // Fields the server cannot supply stay on this device whichever version is kept.
+            const kept = (field: string) => keepsLocalValue(conflict.table ?? '', conflict.serverData, field);
+            const diffs = (conflict.serverData ? computeFieldDiffs(conflict.localData ?? {}, conflict.serverData) : []).filter(diff => !kept(diff.field));
+            const longFields = longFieldChanges(conflict).filter(field => !kept(field));
             return <div key={key} className="border-b border-amber-900/40 px-4 py-2">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-amber-100 truncate flex-1">{label(conflict)}</span>

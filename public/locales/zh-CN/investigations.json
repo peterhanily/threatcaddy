@@ -63,7 +63,7 @@
   "detail.localOnly": "仅本地",
   "detail.localOnlyDesc": "此调查仅保存在您的设备上",
   "detail.syncedToServer": "已同步到服务器",
-  "detail.syncedToServerDesc": "已备份并可供团队共享",
+  "detail.syncedToServerDesc": "共享字段会同步到服务器。请单独备份仅保存在设备上的详情。",
   "detail.exportInvestigation": "导出调查",
   "detail.generateReport": "生成报告",
   "detail.printSaveAsPdf": "打印 / 另存为 PDF",

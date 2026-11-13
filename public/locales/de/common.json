@@ -232,5 +232,6 @@
   "offlineStatus.unavailable": "Offline-Verfügbarkeit nicht bestätigt",
   "offlineStatus.checkingHelp": "Ein großer erster Download kann mehrere Minuten dauern. Lassen Sie diesen Tab während der Installation geöffnet.",
   "offlineStatus.unavailableHelp": "Der Browser hat die Offline-Installation nicht bestätigt. Sie wird möglicherweise nicht unterstützt, noch heruntergeladen oder kann nicht abgeschlossen werden. Bewahren Sie eine exportierte Sicherung auf.",
-  "offlineStatus.caveat": "Dies ist der Status des Browser-Workers, keine Prüfung der zwischengespeicherten Dateien oder der neuesten Version. Zwischengespeicherte Daten können gelöscht oder verdrängt werden. Dies ist keine Sicherung. Teamserver, KI und andere externe Dienste benötigen eine Verbindung."
+  "offlineStatus.caveat": "Dies ist der Status des Browser-Workers, keine Prüfung der zwischengespeicherten Dateien oder der neuesten Version. Zwischengespeicherte Daten können gelöscht oder verdrängt werden. Dies ist keine Sicherung. Teamserver, KI und andere externe Dienste benötigen eine Verbindung.",
+  "sync.backupWarning": "Speichern und prüfen Sie vor dem Entfernen lokaler Daten eine vollständige Sicherung. Die Teamsynchronisierung kann gerätespezifische Details wie Notizordner, Checklisten, Playbook-Fortschritt sowie Tool-Ergebnisse und Bilder im Chat nicht wiederherstellen. „Sicherung speichern“ lädt unverschlüsseltes JSON herunter."
 }

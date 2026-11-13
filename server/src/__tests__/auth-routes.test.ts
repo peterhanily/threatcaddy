@@ -5,12 +5,14 @@ const sessionMocks = vi.hoisted(() => ({
   create: vi.fn(async () => ({ accessToken: 'mock-access-token', refreshToken: 'mock-refresh-token' })),
   rotate: vi.fn(),
   revoke: vi.fn(async () => undefined),
+  revokeRefresh: vi.fn(async () => ({ userId: 'user-1' } as { userId: string } | null)),
   update: vi.fn(async () => []),
 }));
 vi.mock('../services/session-service.js', () => ({
   createTokenPair: sessionMocks.create,
   rotateRefreshToken: sessionMocks.rotate,
   revokeSessionFamily: sessionMocks.revoke,
+  revokeSessionByRefreshToken: sessionMocks.revokeRefresh,
   updateUsersAndRevokeSessions: sessionMocks.update,
   SessionAuthorizationError: class extends Error {},
 }));
@@ -97,6 +99,10 @@ vi.mock('../middleware/auth.js', async () => {
       await next();
     }),
     signAccessToken: (...args: unknown[]) => mockSignAccessToken(...args),
+    verifyAccessToken: async (token: string) => {
+      if (token === 'invalid') throw new Error('Invalid or expired token');
+      return mockUser;
+    },
   };
 });
 
@@ -499,6 +505,30 @@ describe('POST /api/auth/logout', () => {
   it('returns 401 without auth', async () => {
     const res = await postJson(app, '/api/auth/logout', {});
     expect(res.status).toBe(401);
+  });
+
+  it.each([undefined, 'invalid'])('uses refresh proof when the access token is %s', async token => {
+    const credential = 'r'.repeat(32);
+    const response = await postJson(app, '/api/auth/logout', { refreshToken: credential }, token ? authHeader(token) : undefined);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+    expect(sessionMocks.revokeRefresh).toHaveBeenCalledWith(credential);
+    expect(sessionMocks.revoke).not.toHaveBeenCalled();
+    expect(JSON.stringify(mockLogActivity.mock.calls)).not.toContain(credential);
+  });
+
+  it('returns the same receipt for an already revoked refresh credential without another audit event', async () => {
+    sessionMocks.revokeRefresh.mockResolvedValueOnce(null);
+    const response = await postJson(app, '/api/auth/logout', { refreshToken: 'r'.repeat(32) });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+    expect(mockLogActivity).not.toHaveBeenCalled();
+  });
+
+  it.each([null, [], { refreshToken: 7 }, { refreshToken: 'x'.repeat(64) }])('rejects malformed refresh proof without access authorization', async body => {
+    const response = await app.request('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    expect(response.status).toBe(401);
+    expect(sessionMocks.revokeRefresh).not.toHaveBeenCalled();
   });
 });
 

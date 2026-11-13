@@ -12,6 +12,43 @@ ThreatCaddy has three layers of data that can be backed up independently:
 
 ## 1. Client-Side Backups (IndexedDB)
 
+### Team sync and backup cover different data
+
+Team sync shares supported fields across devices. It is not a full backup of
+your browser workspace. The originating device retains the following details
+through normal sync echoes and conflict resolution, but a fresh device cannot
+download them from the team server:
+
+| Entity | Details retained only on the originating device |
+| --- | --- |
+| Notes | Note folder hierarchy (`parentNoteId`, `isFolder`) and review-required flag |
+| Tasks | Checklists, rejection count/history and escalation flag |
+| Investigations | Playbook progress, assigned note templates, agent enabled/status/policy/thread and last-run state |
+| Standalone IOCs | First/last-seen dates and linked evidence IDs |
+| Chat threads | Mode, source, context summary and chat folder hierarchy |
+| Chat messages | Tool calls/results, image attachments and agent cycle summaries |
+
+The sync registry includes notes, tasks, investigations, tags, timeline events,
+timelines, whiteboards, standalone IOCs, chat threads and evidence items. Their
+supported shared fields include IOC/timeline comments and timeline coordinates.
+Agent actions/profiles/deployments/meetings, note/playbook/integration templates,
+installed integrations and custom slash commands are separate local entity
+tables; they are included in full portable backups, not team entity sync.
+Unshared local investigations also require a client backup.
+
+Before **Remove Local Copy**, browser-storage clearing, or **Reset Workspace**,
+save a full backup and verify it in a separate browser profile. Re-downloading a
+synced investigation restores only its shared fields. **Save Backup** downloads
+unencrypted JSON, even when local encryption is enabled. Use the separate
+encrypted-backup flow when a password-protected archive is required. A
+server/PostgreSQL backup cannot recover details that were never uploaded.
+
+The export includes all 19 portable entity tables and flushes registered drafts
+before capturing a consistent snapshot; an unsaved draft that cannot be
+persisted blocks export. Transport revisions are kept separately from portable
+content. Older sync rows with a stored server revision remain exportable without
+discarding supported local fields or authorship metadata.
+
 ### Hosted App: JSON Backup and a Restore Drill
 
 For the hosted app without a team server, use **Save Backup** in the app header
@@ -292,7 +329,7 @@ Backup blobs are stored on disk at `${FILE_STORAGE_PATH}/backups/<id>.enc`. The 
 
 ### Docker Compose Setup
 
-If running the standard `docker-compose.yml`, PostgreSQL data is stored in the `pg-data` named volume.
+If running the standard `docker-compose.yml`, PostgreSQL data is stored in the `pg-data` named volume. A dump alone is only the database portion of recovery. For a consistent recovery snapshot, stop the application server before capturing both the dump and managed files, retain checksums and the matching image identity, then resume it after capture. Keep dump files private and encrypt the off-device copy.
 
 #### Full Database Dump
 
@@ -331,24 +368,21 @@ If running PostgreSQL directly (not in Docker):
 # Full backup
 pg_dump -U tc -h localhost -d threatcaddy --format=custom -f threatcaddy-backup-$(date +%Y%m%d).dump
 
-# With password prompt
-PGPASSWORD=tc pg_dump -U tc -h localhost -d threatcaddy --format=custom -f threatcaddy-backup-$(date +%Y%m%d).dump
+# Prompt for the database password; do not embed it in shell history
+pg_dump -W -U tc -h localhost -d threatcaddy --format=custom -f threatcaddy-backup-$(date +%Y%m%d).dump
 ```
 
-### Automated Backups with Cron
+### Automated Backups
 
-Add to crontab (`crontab -e`):
+Schedule a reviewed backup job that captures a consistent database/file pair,
+checks every command's exit status, and reports failure. Write to a new private
+staging directory for each run and publish its manifest only after capture,
+encryption and remote checksum verification succeed. Keep the last verified
+recovery copy until a newer copy has passed a restore rehearsal. Do not suppress
+backup errors or automatically delete the only known-good copy based on age.
 
-```cron
-# Daily at 2 AM
-0 2 * * * docker compose -f /path/to/docker-compose.yml exec -T db pg_dump -U tc -d threatcaddy --format=custom > /backups/threatcaddy-$(date +\%Y\%m\%d).dump 2>/dev/null
-
-# Weekly full backup (Sundays at 3 AM)
-0 3 * * 0 docker compose -f /path/to/docker-compose.yml exec -T db pg_dump -U tc -d threatcaddy --format=plain | gzip > /backups/threatcaddy-weekly-$(date +\%Y\%m\%d).sql.gz 2>/dev/null
-
-# Cleanup backups older than 30 days
-0 4 * * * find /backups -name "threatcaddy-*.dump" -mtime +30 -delete
-```
+A nightly database dump can supplement this process, but does not replace the
+matching files, off-device encrypted copy and separately recoverable keys.
 
 ### File Storage Backup
 
@@ -397,90 +431,66 @@ docker compose cp server:/data/files ./files-backup-$(date +%Y%m%d)/
 
 **Situation:** PostgreSQL data is corrupted or lost.
 
-**Recovery steps:**
-1. Stop the server:
-   ```bash
-   docker compose down
-   ```
+1. Stop the application server. Preserve the original database and file volumes;
+   do not delete the only copy while investigating corruption.
+2. Retrieve the verified database dump and managed-file snapshot from the same
+   stopped-server capture. Check their SHA-256 manifest before restoring. Use
+   separate, empty recovery volumes/database and a private network so the
+   original deployment remains recoverable.
+3. Restore the custom-format dump with `pg_restore --exit-on-error --no-owner`
+   into the empty recovery database. Restore the matching files into the empty
+   recovery file volume. A database-only restore can leave missing evidence or
+   cause valid files to be quarantined. Do not run the application yet.
+4. Verify every table count, migration history, and referenced file against the
+   snapshot manifest. Retain the same `BOT_MASTER_KEY` to decrypt stored bot and
+   provider credentials. Recover current deployment secrets from their separate
+   secure custody; never restore a known-compromised historical JWT pair.
+5. With the application still stopped, run
+   `npm run sync:rotate-history -- --confirm-restore` against the recovery
+   database using the matching packaged server. This changes the history
+   generation so clients reconcile before uploading; it preserves entity rows.
+6. Start the matched application image against the verified recovery pair only
+   after reviewing enabled automation and outbound-provider configuration.
+   Check `/health`, authentication, a representative investigation and attachment,
+   and a clean client's sync reconciliation. Retain the original volumes until
+   recovery is accepted.
 
-2. Remove the corrupted volume (if needed):
-   ```bash
-   docker volume rm threatcaddy_pg-data
-   ```
+See [deployment rollback and restore](deployment.md#6-upgrading) for the
+Compose commands and compatible-image constraints. A local restore rehearsal
+proves the selected snapshot is readable; it does not prove there is a usable
+copy on another device.
 
-3. Restore from database dump:
-   ```bash
-   # Start only the database
-   docker compose up -d db
+### Independent server recovery copy
 
-   # Wait for it to be healthy
-   docker compose exec db pg_isready -U tc -d threatcaddy
+Capture a new consistent database/file pair with the server stopped, plus the
+exact server image digest/source revision, schema history, table counts, and
+file/checksum manifest. Encrypt the recovery archive using an authenticated
+backup tool before transferring it to an approved off-device destination.
+Keep the archive's decryption identity/key in separate recoverable custody;
+storing it beside the archive defeats that separation. Deployment keys such
+as `BOT_MASTER_KEY` also need a separately recoverable encrypted copy.
 
-   # Restore from custom format dump
-   docker compose cp ./threatcaddy-backup-20260307.dump db:/tmp/backup.dump
-   docker compose exec db pg_restore -U tc -d threatcaddy --clean --if-exists /tmp/backup.dump
-
-   # Or from SQL format
-   docker compose cp ./threatcaddy-backup-20260307.sql db:/tmp/backup.sql
-   docker compose exec db psql -U tc -d threatcaddy -f /tmp/backup.sql
-   ```
-
-4. Restore file storage (if needed):
-   ```bash
-   docker run --rm \
-       -v threatcaddy_file-data:/data \
-       -v $(pwd)/backups:/backup \
-       alpine tar xzf /backup/files-20260307.tar.gz -C /data
-   ```
-
-5. Start the full stack:
-   ```bash
-   docker compose up -d
-   ```
-
-6. The server will run migrations automatically on startup. Verify via health check:
-   ```bash
-   curl http://localhost:3001/health
-   ```
+Download the uploaded ciphertext into a clean recovery environment, verify its
+checksum, decrypt with the independently retrieved key and perform the restore
+steps above. Record the source snapshot time, remote object/version, ciphertext
+checksum, key-custody reference (never the key), image identity, restore counts,
+file verification and cleanup outcome. An uploaded but untested archive, a
+second directory on the same disk, and sync alone do not complete this drill.
 
 ### Scenario 3: Server Migration (Moving to New Host)
 
-1. On the old host, create backups:
-   ```bash
-   # Database
-   docker compose exec db pg_dump -U tc -d threatcaddy --format=custom -f /tmp/backup.dump
-   docker compose cp db:/tmp/backup.dump ./migration-db.dump
-
-   # Files
-   docker compose cp server:/data/files ./migration-files/
-
-   # Environment
-   cp .env ./migration.env
-   ```
-
-2. On the new host:
-   ```bash
-   # Copy files
-   scp migration-db.dump migration.env new-host:~/threatcaddy/
-   scp -r migration-files/ new-host:~/threatcaddy/
-
-   # Set up docker-compose.yml and .env
-   # Start database
-   docker compose up -d db
-
-   # Restore database
-   docker compose cp ./migration-db.dump db:/tmp/backup.dump
-   docker compose exec db pg_restore -U tc -d threatcaddy /tmp/backup.dump
-
-   # Restore files
-   docker compose cp ./migration-files/. server:/data/files/
-
-   # Start everything
-   docker compose up -d
-   ```
-
-3. Update DNS / reverse proxy to point to the new host.
-4. Update `ALLOWED_ORIGINS` in `.env` if the domain changed.
+1. Stop the old application server and capture the consistent database/file pair,
+   manifest and exact image identity described above. Preserve deployment keys
+   in secure custody, including `BOT_MASTER_KEY`; do not print or commit them.
+2. Transfer the encrypted recovery archive to the new host over an authenticated
+   channel. Verify its checksum and restore into empty private volumes using
+   Scenario 2. Keep both application servers stopped while rotating the restored
+   sync history. Configure the new host's access restrictions and allowed origins
+   before starting its application.
+3. Verify health, sign-in, representative records/files and client reconciliation
+   on the new host before switching DNS or the reverse proxy. Retain the stopped
+   old deployment until migration is accepted; do not let both hosts accept writes
+   to diverging copies of the investigation database.
 
 ### Scenario 4: Encryption Key Loss (Client-Side)
 

@@ -79,4 +79,17 @@ describe('ConflictDialog real diff and resolution contracts', () => {
     expect(comparison).not.toHaveTextContent('REMOTE TAIL');
     expect(screen.getByRole('button', { name: 'Download complete comparison (unencrypted JSON)' })).toBeEnabled();
   });
+
+  it('does not show fields that stay on this device as changes', () => {
+    const local: SyncResult = { table: 'tasks', entityId: 't1', status: 'conflict', serverVersion: 4,
+      localData: { title: 'Mine task', checklist: [{ id: 'c', text: 'Collect logs', done: true }], escalated: true }, serverData: { title: 'Theirs task', escalated: null } };
+    const folder: SyncResult = { table: 'folders', entityId: 'f1', status: 'conflict', serverVersion: 2,
+      localData: { name: 'Case', description: 'local text', agentEnabled: false }, serverData: { name: 'Case', description: 'remote text', agentEnabled: true } };
+    render(<ConflictDialog conflicts={[local, folder]} onResolve={vi.fn()} onResolveAll={vi.fn()} onClose={vi.fn()} />);
+    for (const button of screen.getAllByRole('button', { name: 'Diff' })) fireEvent.click(button);
+    const text = document.body.textContent ?? '';
+    expect(text).toMatch(/Mine.*Theirs/);
+    expect(text).toContain('remote');
+    expect(text).not.toMatch(/Collect logs|Checklist|Escalated|Agent Enabled/);
+  });
 });

@@ -1,3 +1,4 @@
+import { persistChatCompletion } from '../../lib/locked-chat-recovery';
 import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, Check, X, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
@@ -29,6 +30,7 @@ import { useCustomSlashCommands, interpolateTemplate } from '../../hooks/useCust
 import { useToast } from '../../contexts/ToastContext';
 import { supportsVision, describeImage } from '../../lib/image-ocr';
 import { resolveRoutingMode } from '../../lib/llm-router';
+import { chatThreadGroups } from '../../lib/folder-tree';
 import { useImageAttachments } from '../../hooks/useImageAttachments';
 import { hasComposerDrafts, subscribeComposerDrafts, discardAllComposerDrafts } from '../../lib/chat-composer-drafts';
 import { useAuth } from '../../contexts/AuthContext';
@@ -585,7 +587,11 @@ export function ChatView({
           tokenCount: usage,
           createdAt: Date.now(),
         };
-        await onAddMessage(activeThread.id, assistantMsg);
+        const completed = await persistChatCompletion(
+          { threadId: activeThread.id, messageId: assistantMessageId, model: activeThread.model, provider: activeThread.provider },
+          assistantMsg, () => onAddMessage(activeThread.id, assistantMsg),
+        );
+        if (!completed) return;
 
         // Trigger entity reload if any write tools were used
         if (usedWriteTool && onEntitiesChanged) {
@@ -604,7 +610,8 @@ export function ChatView({
               .catch(() => { /* ignore title generation failures */ });
           }
         }
-      }
+      },
+      { threadId: activeThread.id, messageId: assistantMessageId, model: activeThread.model, provider: activeThread.provider },
     );
   }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, getProviderLabel, startLoop, stopAllForThread, pendingImages, setPendingImages, readingImages, customCommands, effectiveRoute, t]);
 
@@ -882,9 +889,7 @@ export function ChatView({
             </div>
           ) : (() => {
             // Separate folders and top-level threads, then build ordered list
-            const chatFolders = filteredThreads.filter(t => t.isFolder);
-            const topLevel = filteredThreads.filter(t => !t.isFolder && !t.parentThreadId);
-            const childOf = (fId: string) => filteredThreads.filter(t => !t.isFolder && t.parentThreadId === fId);
+            const { folders: chatFolders, topLevel, childrenOf: childOf } = chatThreadGroups(filteredThreads);
 
             const renderThread = (thread: ChatThread, indented = false) => (
               <div

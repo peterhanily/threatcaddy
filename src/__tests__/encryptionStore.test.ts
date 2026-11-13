@@ -8,6 +8,7 @@ import {
   getSessionDuration,
   cacheSessionKey,
   getCachedSessionKey,
+  getCachedSession,
   clearSessionCache,
   SESSION_DURATION_LABELS,
   type EncryptionMetadata,
@@ -183,13 +184,13 @@ describe('cacheSessionKey', () => {
     expect(cache.expiresAt).toBeGreaterThan(Date.now() + eightHours - 1000);
   });
 
-  it('"24h" is capped at 8h TTL for security', () => {
+  it('"24h" retains the advertised 24 hour TTL', () => {
     cacheSessionKey('mykey', '24h');
 
     const cache = JSON.parse(sessionStorage.getItem('threatcaddy-session-cache')!);
-    const eightHours = 8 * 60 * 60 * 1000;
-    expect(cache.expiresAt).toBeGreaterThan(Date.now() + eightHours - 1000);
-    expect(cache.expiresAt).toBeLessThan(Date.now() + eightHours + 5000);
+    const duration = 24 * 60 * 60 * 1000;
+    expect(cache.expiresAt).toBeGreaterThan(Date.now() + duration - 1000);
+    expect(cache.expiresAt).toBeLessThan(Date.now() + duration + 5000);
   });
 
   it('uses sessionStorage, not localStorage', () => {
@@ -259,4 +260,42 @@ describe('clearSessionCache', () => {
   it('is safe to call when no cache exists', () => {
     expect(() => clearSessionCache()).not.toThrow();
   });
+});
+
+
+describe('cached keys obey current metadata policy', () => {
+  it('caps an older non-expiring cache when another tab selected a timed duration', () => {
+    const start = Date.now();
+    setEncryptionMeta(makeMeta({ sessionDuration: 'tab-close', enabledAt: 1 }));
+    cacheSessionKey('key', 'tab-close', start);
+    setEncryptionMeta(makeMeta({ sessionDuration: '1h', enabledAt: 1 }));
+    expect(getCachedSession()?.expiresAt).toBe(start + 3_600_000);
+  });
+  it('rejects an old cache after another tab selected every-load', () => {
+    cacheSessionKey('key', 'tab-close');
+    setEncryptionMeta(makeMeta({ sessionDuration: 'every-load' }));
+    expect(getCachedSession()).toBeNull();
+  });
+  it('requires reauthentication when a legacy non-expiring cache has no unlock timestamp', () => {
+    sessionStorage.setItem('threatcaddy-session-cache', JSON.stringify({ key: 'key', expiresAt: 0 }));
+    setEncryptionMeta(makeMeta({ sessionDuration: '1h', enabledAt: 1 }));
+    expect(getCachedSession()).toBeNull();
+  });
+  it('does not extend an earlier cached deadline when the metadata duration increases', () => {
+    const start = Date.now(); setEncryptionMeta(makeMeta({ sessionDuration: '1h', enabledAt: 1 })); cacheSessionKey('key', '1h', start);
+    setEncryptionMeta(makeMeta({ sessionDuration: '24h', enabledAt: 1 }));
+    expect(getCachedSession()?.expiresAt).toBe(start + 3_600_000);
+  });
+});
+
+
+it('rejects a cached master key from encryption metadata replaced while the tab was asleep', () => {
+  setEncryptionMeta(makeMeta({ enabledAt: 1 })); cacheSessionKey('old-master-key', 'tab-close');
+  setEncryptionMeta(makeMeta({ enabledAt: 2, recoveryWrappedKey: 'new-master-key-wrap' }));
+  expect(getCachedSession()).toBeNull();
+});
+it('requires one fresh passphrase for legacy encrypted caches without metadata binding', () => {
+  setEncryptionMeta(makeMeta());
+  sessionStorage.setItem('threatcaddy-session-cache', JSON.stringify({ key: 'legacy-key', expiresAt: Date.now() + 3600000, unlockedAt: Date.now() }));
+  expect(getCachedSession()).toBeNull();
 });

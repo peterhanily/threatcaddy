@@ -93,7 +93,7 @@ describe('release hardening: committed chat submission state', () => {
     expect(screen.getByTestId('attachments')).toHaveTextContent('1');
     await act(async () => { await state.input.onSend('Describe attached evidence'); });
     expect(state.addMessage).toHaveBeenCalledWith('thread', expect.objectContaining({ attachments: [expect.objectContaining({ name: 'synthetic.png' })] }));
-    expect(state.send).toHaveBeenCalledWith(expect.objectContaining({ messages: [expect.objectContaining({ content: expect.arrayContaining([expect.objectContaining({ type: 'image' })]) })] }), expect.any(Function), expect.any(Function));
+    expect(state.send).toHaveBeenCalledWith(expect.objectContaining({ messages: [expect.objectContaining({ content: expect.arrayContaining([expect.objectContaining({ type: 'image' })]) })] }), expect.any(Function), expect.any(Function), expect.objectContaining({ threadId: thread.id, messageId: expect.any(String), model: thread.model, provider: thread.provider }));
     expect(screen.getByTestId('attachments')).toHaveTextContent('0');
   });
 
@@ -104,7 +104,7 @@ describe('release hardening: committed chat submission state', () => {
     state.extensionAvailable = false;
     view.rerender(<ChatView {...props} />);
     await act(async () => { await state.input.onSend('Synthetic question'); });
-    expect(state.send).toHaveBeenCalledWith(expect.objectContaining({ useServerProxy: true }), expect.any(Function), expect.any(Function));
+    expect(state.send).toHaveBeenCalledWith(expect.objectContaining({ useServerProxy: true }), expect.any(Function), expect.any(Function), expect.objectContaining({ threadId: thread.id, messageId: expect.any(String), model: thread.model, provider: thread.provider }));
     expect(state.input.serverRoute).toBe(true);
   });
 
@@ -124,7 +124,7 @@ describe('release hardening: committed chat submission state', () => {
     state.commands = [{ name: 'brief', description: 'Synthetic command', template: 'Current: {{input}}' }];
     view.rerender(<ChatView {...props} />);
     await act(async () => { await state.input.onSend('/brief example'); });
-    expect(state.send).toHaveBeenCalledWith(expect.objectContaining({ messages: [{ role: 'user', content: 'Current: example' }] }), expect.any(Function), expect.any(Function));
+    expect(state.send).toHaveBeenCalledWith(expect.objectContaining({ messages: [{ role: 'user', content: 'Current: example' }] }), expect.any(Function), expect.any(Function), expect.objectContaining({ threadId: thread.id, messageId: expect.any(String), model: thread.model, provider: thread.provider }));
   });
 
   it('does not let an earlier investigation prompt populate a later submission', async () => {
@@ -136,7 +136,7 @@ describe('release hardening: committed chat submission state', () => {
     view.rerender(<ChatView {...props} />);
     await act(async () => { releaseOld?.('Context for a'); });
     await act(async () => { await state.input.onSend('Current investigation question'); });
-    expect(state.send).toHaveBeenCalledWith(expect.objectContaining({ systemPrompt: 'Context for b' }), expect.any(Function), expect.any(Function));
+    expect(state.send).toHaveBeenCalledWith(expect.objectContaining({ systemPrompt: 'Context for b' }), expect.any(Function), expect.any(Function), expect.objectContaining({ threadId: thread.id, messageId: expect.any(String), model: thread.model, provider: thread.provider }));
   });
 
   it('does not reuse the currently selected empty thread when starting a new chat', async () => {

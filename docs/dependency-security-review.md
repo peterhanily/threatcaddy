@@ -3,6 +3,18 @@
 Keep the complete audit and publication gates enabled. Settings, repository
 changes, published artifacts and running server deployments are separate states.
 
+## 13 November 2026 remediation update
+
+The server's Hono dependency is pinned to 4.13.16, the maintainer's
+[security release](https://github.com/honojs/hono/releases/tag/v4.13.16).
+This fixes the newly reported middleware-routing, mount-prefix, form-validation,
+CSS interpolation and CSRF advisories. The patch predates the seven-day release
+window; no package-age exception or audit suppression is required. The complete
+server audit is clear after the update. The root audit currently reports two
+moderate and one low finding in the build-time dependencies described below;
+the extension audit is clear. These results are point-in-time checks, not a
+claim that future advisories cannot affect the lockfiles.
+
 ## Compatibility
 
 - Root/server Vitest and root coverage use exactly 5.0.5 to keep tested tooling

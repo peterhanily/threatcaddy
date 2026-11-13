@@ -58,6 +58,28 @@ function entity<T extends { id: string }>(raw: unknown, sanitize: (value: unknow
   return result;
 }
 
+const NESTED_IDENTITY_FIELDS = ['authorId', 'authorName', 'userId', 'userName'];
+const SHARED_MESSAGE_EXCLUDED_FIELDS = ['userId', 'toolCalls', 'attachments', 'tokenCount', 'agentCycleSummary'];
+
+function omit(value: unknown, keys: string[]): unknown {
+  if (!record(value)) return value;
+  const copy = { ...value };
+  for (const key of keys) delete copy[key];
+  return copy;
+}
+
+/** A share carries content, not identities, tool transcripts, images or usage (backups keep those). */
+function contentOnly(row: object): void {
+  const r = row as Record<string, unknown>;
+  delete r.createdBy;
+  delete r.updatedBy;
+  for (const key of ['comments', 'annotations']) {
+    const list = r[key];
+    if (Array.isArray(list)) r[key] = list.map(item => omit(item, NESTED_IDENTITY_FIELDS));
+  }
+  if (Array.isArray(r.messages)) r.messages = r.messages.map(message => omit(message, SHARED_MESSAGE_EXCLUDED_FIELDS));
+}
+
 /** Allowlisted content only; backup/restore has a separate, unchanged contract. */
 export function sanitizeSharePayload(raw: unknown): SharePayload {
   if (!record(raw)) throw new Error('Invalid share payload: not an object');
@@ -110,8 +132,12 @@ export function sanitizeSharePayload(raw: unknown): SharePayload {
         if (row.folderId && row.folderId !== folder.id) throw new Error('Share contains a record from another investigation');
         row.folderId = folder.id;
       }
+      for (const row of [folder, ...data.notes, ...data.tasks, ...data.events, ...data.timelines, ...data.whiteboards, ...data.iocs, ...data.chatThreads, ...data.tags]) {
+        contentOnly(row);
+      }
     }
   }
+  if (raw.s !== 'investigation') contentOnly(data);
   return { v: 1, s: raw.s as ShareScope, t: raw.t, d: data };
 }
 

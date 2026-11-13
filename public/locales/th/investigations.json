@@ -63,7 +63,7 @@
   "detail.localOnly": "เฉพาะในเครื่อง",
   "detail.localOnlyDesc": "การสืบสวนนี้บันทึกเฉพาะในอุปกรณ์ของคุณ",
   "detail.syncedToServer": "ซิงค์กับเซิร์ฟเวอร์แล้ว",
-  "detail.syncedToServerDesc": "สำรองข้อมูลและสามารถแบ่งปันกับทีมได้",
+  "detail.syncedToServerDesc": "ฟิลด์ที่แชร์จะซิงค์กับเซิร์ฟเวอร์ เก็บข้อมูลสำรองแยกสำหรับรายละเอียดที่มีเฉพาะในอุปกรณ์",
   "detail.exportInvestigation": "ส่งออกการสืบสวน",
   "detail.generateReport": "สร้างรายงาน",
   "detail.printSaveAsPdf": "พิมพ์ / บันทึกเป็น PDF",
