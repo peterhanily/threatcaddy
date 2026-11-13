@@ -47,6 +47,9 @@ async function prepareEncryptedNote(page: Page) {
   await page.reload();
   await expect(page.getByPlaceholder('Start writing in markdown...', { exact: true })).toHaveValue(content);
   await enableEncryption(page);
+  // Settings closes the current note selection. Reopen through the real UI
+  // before exercising the session lifetime.
+  await page.getByRole('button', { name: 'Fictional encrypted note', exact: true }).click();
   await expect(page.getByPlaceholder('Start writing in markdown...', { exact: true })).toHaveValue(content);
   const raw = (await readRows(page, ['notes'])).notes.find(row => row.id === noteId);
   expect(raw?.content).toMatchObject({ __enc: 1 });
@@ -76,6 +79,8 @@ test('24-hour sessions survive eight hours and reload, then lock at the original
   const encrypted = await prepareEncryptedNote(page);
   await chooseDuration(page, '24h');
   await page.getByRole('button', { name: 'Close settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Fictional encrypted note', exact: true }).click();
+  await expect(page.getByPlaceholder('Start writing in markdown...', { exact: true })).toHaveValue(content);
   const initial = await cacheDeadline(page);
   if (!initial) throw new Error('Expected an encrypted session cache after selecting its duration');
   expect(initial.expiresAt - initial.unlockedAt).toBe(24 * hour);
@@ -117,6 +122,7 @@ test('shortening an active session below its elapsed age locks immediately and p
   const encrypted = await prepareEncryptedNote(page);
   await chooseDuration(page, '24h');
   await page.getByRole('button', { name: 'Close settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Fictional encrypted note', exact: true }).click();
   await page.clock.fastForward(2 * hour);
   await chooseDuration(page, '1h');
   await expect(page.getByText('Unlock ThreatCaddy', { exact: true })).toBeVisible();
