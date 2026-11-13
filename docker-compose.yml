@@ -3,11 +3,13 @@ services:
     build: ./server
     ports:
       - "3001:3001"
-      - "3002:3002"
+      - "127.0.0.1:3002:3002"
     environment:
       DATABASE_URL: postgres://tc:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/threatcaddy
       PORT: "3001"
       ADMIN_PORT: "3002"
+      # Listen on the container network; the host publication remains loopback-only.
+      ADMIN_HOST: "0.0.0.0"
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       FILE_STORAGE_PATH: /data/files

@@ -63,7 +63,7 @@
   "detail.localOnly": "Только локально",
   "detail.localOnlyDesc": "Это расследование хранится только на вашем устройстве",
   "detail.syncedToServer": "Синхронизировано с сервером",
-  "detail.syncedToServerDesc": "Резервная копия создана и доступна для командного использования",
+  "detail.syncedToServerDesc": "Общие поля синхронизируются с сервером. Сохраняйте отдельную копию сведений, хранящихся только на устройстве.",
   "detail.exportInvestigation": "Экспортировать расследование",
   "detail.generateReport": "Сгенерировать отчёт",
   "detail.printSaveAsPdf": "Печать / Сохранить как PDF",

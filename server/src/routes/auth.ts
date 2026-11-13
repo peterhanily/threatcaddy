@@ -5,13 +5,13 @@ import * as argon2 from 'argon2';
 import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, verifyAccessToken } from '../middleware/auth.js';
 import { getRegistrationMode, ADMIN_SYSTEM_USER_ID } from '../services/admin-secret.js';
 import { logActivity } from '../services/audit-service.js';
 import { isLocked, recordFailedAttempt, resetAttempts } from '../services/login-limiter.js';
 import type { AuthUser } from '../types.js';
 import { ErrorCodes } from '../types/error-codes.js';
-import { createTokenPair, rotateRefreshToken, revokeSessionFamily, updateUsersAndRevokeSessions, SessionAuthorizationError } from '../services/session-service.js';
+import { createTokenPair, rotateRefreshToken, revokeSessionFamily, revokeSessionByRefreshToken, updateUsersAndRevokeSessions, SessionAuthorizationError } from '../services/session-service.js';
 
 const app = new Hono<{ Variables: { user: AuthUser } }>();
 
@@ -193,11 +193,26 @@ app.post('/refresh', async (c) => {
 });
 
 // POST /api/auth/logout
-app.post('/logout', requireAuth, async (c) => {
-  const authUser = c.get('user');
-  if (!authUser.sessionFamily) return c.json({ error: 'Invalid session', code: ErrorCodes.INVALID_REFRESH_TOKEN }, 401);
-  await revokeSessionFamily(authUser.id, authUser.sessionFamily);
-  await logActivity({ userId: authUser.id, category: 'auth', action: 'logout', detail: 'User logged out' });
+app.post('/logout', async (c) => {
+  // Preserve the existing bearer-only contract: a valid access token can revoke
+  // only its own family, regardless of a different token supplied in the body.
+  const authorization = c.req.header('Authorization');
+  let authUser: AuthUser | undefined;
+  if (authorization?.startsWith('Bearer ')) {
+    try { authUser = await verifyAccessToken(authorization.slice(7)); } catch { /* Refresh proof below also works after access expiry. */ }
+  }
+  let revoked: { userId: string } | null;
+  if (authUser?.sessionFamily) {
+    await revokeSessionFamily(authUser.id, authUser.sessionFamily);
+    revoked = { userId: authUser.id };
+  } else {
+    const body: unknown = await c.req.json().catch(() => null);
+    const parsed = z.object({ refreshToken: z.string().regex(/^[A-Za-z0-9_-]{32}$/) }).safeParse(body);
+    if (!parsed.success) return c.json({ error: 'A refresh credential or valid access token is required.', code: ErrorCodes.INVALID_REFRESH_TOKEN }, 401);
+    revoked = await revokeSessionByRefreshToken(parsed.data.refreshToken);
+  }
+  if (revoked) await logActivity({ userId: revoked.userId, category: 'auth', action: 'logout', detail: 'User logged out' });
+  // Unknown/already revoked refresh credentials have the same idempotent reply.
   return c.json({ ok: true });
 });
 

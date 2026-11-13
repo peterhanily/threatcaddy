@@ -24,11 +24,10 @@ import {
   clearEncryptionMeta,
   getSessionDuration,
   cacheSessionKey,
-  clearSessionCache,
   SESSION_DURATION_LABELS,
   type SessionDuration,
 } from '../../lib/encryptionStore';
-import { decryptAllExistingData, setSessionKey, getSessionKeyRaw } from '../../lib/encryptionMiddleware';
+import { decryptAllExistingData, setSessionKey, updateSessionDuration, getSessionKey, getSessionGeneration } from '../../lib/encryptionMiddleware';
 import { db } from '../../db';
 
 export function EncryptionSettings() {
@@ -62,15 +61,7 @@ export function EncryptionSettings() {
     if (meta) {
       setEncryptionMeta({ ...meta, sessionDuration });
     }
-    // Update the cache with new duration
-    if (sessionDuration === 'every-load') {
-      clearSessionCache();
-    } else {
-      const rawB64 = getSessionKeyRaw();
-      if (rawB64) {
-        cacheSessionKey(rawB64, sessionDuration);
-      }
-    }
+    updateSessionDuration();
     setDurationSaved(true);
     setTimeout(() => setDurationSaved(false), 2000);
   };
@@ -117,6 +108,7 @@ export function EncryptionSettings() {
       return;
     }
     setChanging(true);
+    const generation = getSessionGeneration();
     try {
       const meta = getEncryptionMeta();
       if (!meta) return;
@@ -140,13 +132,6 @@ export function EncryptionSettings() {
       const newWrappingKey = await deriveWrappingKey(newPass, newSalt);
       const newWrappedKey = await wrapMasterKey(masterKey, newWrappingKey);
 
-      // Update metadata (keep recovery key unchanged)
-      setEncryptionMeta({
-        ...meta,
-        salt: newSaltStr,
-        wrappedKey: arrayBufferToBase64(newWrappedKey),
-      });
-
       // Update session key to non-extractable version
       const sessionKey = await unwrapMasterKey(
         base64ToArrayBuffer(arrayBufferToBase64(newWrappedKey)),
@@ -154,6 +139,14 @@ export function EncryptionSettings() {
       );
       const rawBytes = await exportKeyRaw(masterKey);
       const rawB64 = arrayBufferToBase64(rawBytes);
+      if (!getSessionKey() || generation !== getSessionGeneration()) throw new Error('Workspace locked during passphrase change.');
+      // Update metadata (keep recovery key unchanged)
+      setEncryptionMeta({
+        ...meta,
+        salt: newSaltStr,
+        wrappedKey: arrayBufferToBase64(newWrappedKey),
+      });
+
       setSessionKey(sessionKey, rawB64);
 
       // Re-cache with new key bytes

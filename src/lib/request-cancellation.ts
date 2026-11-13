@@ -1,9 +1,11 @@
 /** A workspace switch must not leave provider requests attached to old data. */
 const requests = new Set<AbortController>();
 if (typeof window !== 'undefined') {
-  window.addEventListener('workspace-will-switch', () => {
+  const abortAll = () => {
     for (const controller of requests) controller.abort();
-  });
+  };
+  window.addEventListener('workspace-will-switch', abortAll);
+  window.addEventListener('workspace-will-lock', abortAll);
 }
 
 export function cancellableRequest(parent?: AbortSignal) {

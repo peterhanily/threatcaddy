@@ -3,6 +3,8 @@ import type { LLMProvider, ContentBlock, ToolUseBlock, ToolCallRecord } from '..
 import { isWriteTool } from '../lib/llm-tool-defs';
 import { sendViaServer, sendDirectToLocal } from '../lib/llm-router';
 import { nanoid } from 'nanoid';
+import { registerLockParticipant } from '../lib/workspace-lock';
+import { retainLockedChatResult, type ChatRecoveryTarget } from '../lib/locked-chat-recovery';
 import { postMessageOrigin } from '../lib/utils';
 
 interface ToolDef {
@@ -120,6 +122,7 @@ export function useLLM() {
   const [toolActivity, setToolActivity] = useState<ToolActivity[]>([]);
 
   // Refs for managing the agentic loop
+  const recoveryTargetRef = useRef<ChatRecoveryTarget | null>(null);
   const onCompleteRef = useRef<((result: AgentResult) => void) | null>(null);
   const accumulatedRef = useRef('');
   const requestIdRef = useRef<string | null>(null);
@@ -134,15 +137,17 @@ export function useLLM() {
     aborted: boolean;
     signal: AbortSignal;
     pendingTools: number;
+    runningTools: Map<string, ToolUseBlock>;
+    discardOnLock?: boolean;
     completeCancelled?: () => void;
     toolExecutor?: (toolUse: ToolUseBlock, signal: AbortSignal) => Promise<{ result: string; isError: boolean }>;
   } | null>(null);
 
-  const cancelCurrent = useCallback((updateUI = true) => {
+  const cancelCurrent = useCallback((updateUI = true, forLock = false) => {
     const rid = requestIdRef.current;
     const state = agentStateRef.current;
-    if (!rid && !state) return;
-    if (state) state.aborted = true;
+    if (!rid && !state && !forLock) return;
+    if (state) { state.aborted = true; state.discardOnLock = forLock; }
     controllerRef.current?.abort();
     window.postMessage({ type: 'TC_LLM_ABORT', requestId: rid }, postMessageOrigin());
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
@@ -152,7 +157,16 @@ export function useLLM() {
     accumulatedRef.current = '';
     agentStateRef.current = null;
     onCompleteRef.current = null;
-    if (updateUI) { setActiveRequestId(null); setStreamingContent(''); }
+    recoveryTargetRef.current = null;
+    if (updateUI) { setActiveRequestId(null); setStreamingContent(''); setToolActivity([]); }
+    if (forLock) {
+      if (state) {
+        state.opts = { ...state.opts, apiKey: '', messages: [], systemPrompt: undefined, tools: undefined };
+        state.messages = []; state.allToolCalls = []; state.runningTools.clear();
+        state.toolExecutor = undefined; state.completeCancelled = undefined;
+      }
+      return;
+    }
     // Replacement, Stop, and unmount share one finalizer. Capture this request's
     // callback before a successor can replace it; wait for actual tool outcomes.
     const completeCancelled = () => {
@@ -178,6 +192,8 @@ export function useLLM() {
       if (!state) {
         // No agentic state — simple completion
         const finalContent = accumulatedRef.current;
+        accumulatedRef.current = '';
+        recoveryTargetRef.current = null;
         setActiveRequestId(null);
         requestIdRef.current = null;
         onCompleteRef.current?.({ content: finalContent, toolCalls: [], usage: eventUsage });
@@ -200,6 +216,8 @@ export function useLLM() {
       if (!shouldContinue || state.turn >= MAX_TOOL_TURNS || state.aborted) {
         // Done — no more tool calls needed
         const finalContent = accumulatedRef.current;
+        accumulatedRef.current = '';
+        recoveryTargetRef.current = null;
         setActiveRequestId(null);
         requestIdRef.current = null;
         const result = { content: finalContent, toolCalls: [...state.allToolCalls], usage: state.totalUsage.input > 0 ? { ...state.totalUsage } : undefined };
@@ -224,11 +242,17 @@ export function useLLM() {
 
         let result: { result: string; isError: boolean };
         state.pendingTools++;
+        state.runningTools.set(toolUse.id, toolUse);
         try {
           result = state.toolExecutor ? await state.toolExecutor(toolUse, state.signal)
             : { result: JSON.stringify({ error: 'No tool executor configured' }), isError: true };
         } catch (error) { result = { result: JSON.stringify({ error: error instanceof Error ? error.message : 'Tool execution failed.' }), isError: true }; }
 
+        state.runningTools.delete(toolUse.id);
+        if (state.discardOnLock) {
+          state.pendingTools--;
+          return { type: 'tool_result', tool_use_id: toolUse.id, content: 'Cancelled by workspace lock', is_error: true };
+        }
         state.allToolCalls.push({
           id: toolUse.id,
           name: toolUse.name,
@@ -379,6 +403,7 @@ export function useLLM() {
         // Deliver any partial content to the caller rather than silently dropping it
         const partialContent = accumulatedRef.current;
         accumulatedRef.current = '';
+        recoveryTargetRef.current = null;
         const agentState = agentStateRef.current;
         agentStateRef.current = null;
         onCompleteRef.current?.({
@@ -404,6 +429,7 @@ export function useLLM() {
     opts: SendRequestOptions,
     toolExecutor: (toolUse: ToolUseBlock, signal: AbortSignal) => Promise<{ result: string; isError: boolean }>,
     onComplete: (result: AgentResult) => void,
+    recoveryTarget?: ChatRecoveryTarget,
   ): string => {
     const requestId = nanoid();
     cancelCurrent();
@@ -416,6 +442,7 @@ export function useLLM() {
     requestIdRef.current = requestId;
     setActiveRequestId(requestId);
     onCompleteRef.current = onComplete;
+    recoveryTargetRef.current = recoveryTarget ?? null;
 
     // Initialize agentic state
     agentStateRef.current = {
@@ -427,6 +454,7 @@ export function useLLM() {
       aborted: false,
       signal: controller.signal,
       pendingTools: 0,
+      runningTools: new Map(),
       toolExecutor,
     };
 
@@ -434,6 +462,26 @@ export function useLLM() {
 
     return requestId;
   }, [cancelCurrent]);
+
+  useEffect(() => registerLockParticipant({
+    seal: key => {
+      const state = agentStateRef.current;
+      const target = recoveryTargetRef.current;
+      const content = accumulatedRef.current;
+      const toolCalls = [...(state?.allToolCalls ?? []), ...[...(state?.runningTools.values() ?? [])].map(tool => ({
+        id: tool.id, name: tool.name, input: tool.input as Record<string, unknown>,
+        result: 'Interrupted by workspace lock. Check the saved item or checkpoint before retrying this tool.', isError: true,
+      }))];
+      if ((requestIdRef.current || state) && target && (content || toolCalls.length)) retainLockedChatResult(target, {
+        id: target.messageId, role: 'assistant', model: target.model,
+        content: content + '\n\n[Response interrupted when the workspace locked.]',
+        toolCalls: toolCalls.length ? toolCalls : undefined,
+        tokenCount: state?.totalUsage, createdAt: Date.now(),
+      }, key);
+      cancelCurrent(true, true);
+    },
+    restore: async () => {},
+  }), [cancelCurrent]);
 
   const abort = useCallback(() => cancelCurrent(), [cancelCurrent]);
 

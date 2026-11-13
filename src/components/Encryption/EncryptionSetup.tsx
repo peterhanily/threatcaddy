@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '../Common/Modal';
 import { Shield, Copy, Check, Loader2 } from 'lucide-react';
@@ -14,8 +14,8 @@ import {
   arrayBufferToBase64,
   base64ToArrayBuffer,
 } from '../../lib/crypto';
-import { setEncryptionMeta, getEncryptionMeta, getSessionDuration, cacheSessionKey, type EncryptionMetadata } from '../../lib/encryptionStore';
-import { setSessionKey, encryptAllExistingData } from '../../lib/encryptionMiddleware';
+import { setEncryptionMeta, getEncryptionMeta, getSessionDuration, cacheSessionKey, isEncryptionEnabled, type EncryptionMetadata } from '../../lib/encryptionStore';
+import { setSessionKey, getSessionKey, getSessionGeneration, getSessionStartedAt, encryptAllExistingData } from '../../lib/encryptionMiddleware';
 import { db } from '../../db';
 
 interface EncryptionSetupProps {
@@ -26,6 +26,8 @@ interface EncryptionSetupProps {
 
 export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupProps) {
   const fieldId = useId();
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const { t } = useTranslation('encryption');
   const { t: tt } = useTranslation('toast');
   const { addToast } = useToast();
@@ -80,6 +82,8 @@ export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupPro
   const handleFinalize = async () => {
     setEncrypting(true);
     setStep(3);
+    let generation = getSessionGeneration();
+    const current = () => mounted.current && generation === getSessionGeneration();
     try {
       // Generate master key
       const masterKey = await generateMasterKey();
@@ -106,6 +110,7 @@ export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupPro
         enabledAt: Date.now(),
         transition: 'encrypting',
       };
+      if (!current() || isEncryptionEnabled()) throw new Error('Encryption settings changed. Reopen setup to retry.');
       setEncryptionMeta(meta);
 
       // Unwrap as non-extractable for session use
@@ -116,11 +121,14 @@ export function EncryptionSetup({ open, onClose, onEnabled }: EncryptionSetupPro
       // Cache raw key bytes for session persistence
       const rawBytes = await exportKeyRaw(masterKey);
       const rawB64 = arrayBufferToBase64(rawBytes);
+      if (!current() || JSON.stringify(getEncryptionMeta()) !== JSON.stringify(meta)) throw new Error('Encryption settings changed. Unlock again.');
       setSessionKey(sessionMasterKey, rawB64);
+      generation = getSessionGeneration();
 
       // Encrypt all existing records
       await encryptAllExistingData(db, setProgress);
-      cacheSessionKey(rawB64, getSessionDuration());
+      if (!current() || getSessionKey() !== sessionMasterKey) throw new Error('Workspace locked while enabling encryption. Unlock to finish.');
+      cacheSessionKey(rawB64, getSessionDuration(), getSessionStartedAt());
 
       addToast('success', tt('encryption.enabled'));
       onEnabled();

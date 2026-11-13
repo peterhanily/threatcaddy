@@ -232,5 +232,6 @@
   "offlineStatus.unavailable": "Disponibilidade offline não confirmada",
   "offlineStatus.checkingHelp": "Um primeiro download grande pode levar vários minutos. Mantenha esta aba aberta durante a instalação.",
   "offlineStatus.unavailableHelp": "O navegador não confirmou a instalação offline. Ela pode não ser compatível, ainda estar sendo baixada ou não conseguir ser concluída. Guarde um backup exportado.",
-  "offlineStatus.caveat": "Este é o estado do worker do navegador, não uma verificação dos arquivos em cache nem da versão mais recente. Os dados em cache podem ser apagados ou removidos. Isto não é um backup. Servidores de equipe, IA e outros serviços externos precisam de conexão."
+  "offlineStatus.caveat": "Este é o estado do worker do navegador, não uma verificação dos arquivos em cache nem da versão mais recente. Os dados em cache podem ser apagados ou removidos. Isto não é um backup. Servidores de equipe, IA e outros serviços externos precisam de conexão.",
+  "sync.backupWarning": "Antes de remover dados locais, salve e verifique um backup completo. A sincronização da equipe não recupera detalhes exclusivos do dispositivo, como pastas de notas, listas de verificação, progresso de playbooks e resultados de ferramentas ou imagens do chat. Salvar backup baixa JSON sem criptografia."
 }

@@ -232,5 +232,6 @@
   "offlineStatus.unavailable": "Disponibilidad sin conexión no confirmada",
   "offlineStatus.checkingHelp": "Una primera descarga grande puede tardar varios minutos. Mantén esta pestaña abierta mientras se instala.",
   "offlineStatus.unavailableHelp": "El navegador no ha confirmado la instalación sin conexión. Puede no ser compatible, seguir descargándose o no poder completarse. Conserva una copia de seguridad exportada.",
-  "offlineStatus.caveat": "Este es el estado del proceso de servicio del navegador, no una comprobación de los archivos en caché ni de la última versión. Los datos en caché pueden borrarse o desalojarse. Esto no es una copia de seguridad. Los servidores de equipo, la IA y otros servicios externos necesitan conexión."
+  "offlineStatus.caveat": "Este es el estado del proceso de servicio del navegador, no una comprobación de los archivos en caché ni de la última versión. Los datos en caché pueden borrarse o desalojarse. Esto no es una copia de seguridad. Los servidores de equipo, la IA y otros servicios externos necesitan conexión.",
+  "sync.backupWarning": "Antes de eliminar datos locales, guarde y verifique una copia de seguridad completa. La sincronización de equipo no puede recuperar detalles exclusivos del dispositivo, como carpetas de notas, listas de comprobación, progreso de procedimientos y resultados de herramientas o imágenes del chat. Guardar copia de seguridad descarga JSON sin cifrar."
 }

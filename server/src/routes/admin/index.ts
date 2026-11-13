@@ -10,7 +10,8 @@ import { getAdminHtml } from '../admin-html/index.js';
 import { logger } from '../../lib/logger.js';
 import { isLocked, recordFailedAttempt, resetAttempts } from '../../services/login-limiter.js';
 import { requireAdminAuth, logAdminAction, getAdminId } from './shared.js';
-import { bootstrapAdminUser, hasActiveAdmin } from '../../services/admin-session-service.js';
+import { hasActiveAdmin } from '../../services/admin-session-service.js';
+import bootstrapRouter from './bootstrap.js';
 
 import usersRouter from './users.js';
 import investigationsRouter from './investigations.js';
@@ -41,42 +42,7 @@ app.get('/api/setup-status', async (c) => {
 
 // ─── Bootstrap: create first admin account using bootstrap secret ─
 
-app.post('/api/bootstrap', async (c) => {
-  const body = await c.req.json();
-  const { bootstrapSecret, username, displayName, password } = body || {};
-
-  if (!bootstrapSecret || typeof bootstrapSecret !== 'string') {
-    return c.json({ error: 'Missing bootstrap secret' }, 400);
-  }
-  if (!username || typeof username !== 'string' || username.trim().length < 2) {
-    return c.json({ error: 'Username must be at least 2 characters' }, 400);
-  }
-  if (!/^[a-zA-Z0-9._-]+$/.test(username.trim())) {
-    return c.json({ error: 'Username may only contain letters, numbers, dots, hyphens, and underscores' }, 400);
-  }
-  if (!displayName || typeof displayName !== 'string' || displayName.trim().length < 1) {
-    return c.json({ error: 'Display name required' }, 400);
-  }
-  if (!password || typeof password !== 'string' || password.length < 12) {
-    return c.json({ error: 'Password must be at least 12 characters' }, 400);
-  }
-
-  try {
-    const result = await bootstrapAdminUser(bootstrapSecret, username, displayName, password);
-    if ('error' in result) return result.error === 'configured'
-      ? c.json({ error: 'Administrator setup is already complete' }, 409)
-      : c.json({ error: 'Invalid bootstrap secret' }, 401);
-    const { admin } = result;
-    const token = await signAdminToken(admin.id, admin.username, result.passwordHash);
-    logger.info('Admin account created via bootstrap', { username: admin.username });
-    return c.json({ token, admin: { id: admin.id, username: admin.username, displayName: admin.displayName } });
-  } catch (err: unknown) {
-    if (err instanceof Error && err.message.includes('unique')) {
-      return c.json({ error: 'Username already exists' }, 409);
-    }
-    throw err;
-  }
-});
+app.route('/', bootstrapRouter);
 
 // ─── Login ───────────────────────────────────────────────────────
 

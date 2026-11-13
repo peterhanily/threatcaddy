@@ -230,6 +230,12 @@ jobs:
         run: npm --prefix server run test:integration
         env:
           TEST_DATABASE_URL: postgres://tc_test:tc_test_password@127.0.0.1:5432/threatcaddy_test
+      - name: Install Chromium for real client/server sync acceptance
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Verify two-device sync, conflicts and portable backups against PostgreSQL
+        run: ./server/node_modules/.bin/tsx server/integration/sync-client.browser.ts
+        env:
+          TEST_DATABASE_URL: postgres://tc_test:tc_test_password@127.0.0.1:5432/threatcaddy_test
 
   server-artifact:
     name: Server container build, startup and restart

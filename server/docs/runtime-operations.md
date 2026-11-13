@@ -4,9 +4,11 @@ Run exactly one server process per application database. WebSockets, rate limiti
 
 ## HTTP listener bindings
 
-`HOST` optionally sets the public API's bind address. `ADMIN_HOST` optionally sets the administrative listener's address and falls back to `HOST`. With both unset, the existing Node/platform wildcard binding is unchanged; setting a CORS origin does not restrict network listeners. Use `HOST=127.0.0.1 ADMIN_HOST=127.0.0.1` for a local-only server, or set `ADMIN_HOST=127.0.0.1` when only administration must remain local. Ports remain independently configurable through `PORT` and `ADMIN_PORT`.
+`HOST` optionally sets the public API's bind address; without it, Node's platform wildcard binding applies to the API. The administrative listener defaults independently to `127.0.0.1`, even when `HOST` exposes the API. Set `HOST=127.0.0.1` for a local-only server. `ADMIN_HOST` explicitly overrides the administrative binding. Setting a CORS origin does not restrict network listeners. Ports remain independently configurable through `PORT` and `ADMIN_PORT`.
 
-In a container, loopback means that container, not the host or another proxy container. Choose bindings and published ports for your deployment topology, retain firewall/proxy access controls, and do not expose the admin listener publicly. Startup logs include the actual bound address for each listener. The packaged integration harness explicitly binds both listeners to loopback.
+In a container, loopback means that container, not the host or another proxy container. The supplied Compose service sets `ADMIN_HOST=0.0.0.0` inside the container and publishes administration only on the host's `127.0.0.1:3002`. Keep its container network private as other members can reach that listener. Custom `docker run` deployments need the same explicit binding and loopback port publication if host administration is required. Retain firewall/proxy access controls. Startup logs include the actual bound address for each listener. The packaged integration harness verifies the actual loopback administrative socket with `ADMIN_HOST` unset.
+
+Bootstrap setup permits five requests per peer per minute and one password-verification/hash operation at a time per process. Completed setup is rejected before password work. Restarting resets these in-memory limits; the single-process database lease remains required.
 
 ## Upload quotas
 

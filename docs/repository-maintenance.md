@@ -10,6 +10,16 @@ An administrator should review these settings deliberately; this file does not a
 - Require an independent approving review and code-owner review when another eligible maintainer is available. A sole maintainer cannot approve their own pull request; agree the review and emergency-access process before enforcing that requirement. `.github/CODEOWNERS` routes reviews but does not enable protection itself.
 - Review administrator bypass and squash/linear-history policy explicitly. Preserve a documented recovery path; do not enable a merge queue without adding and testing its verification event.
 
+On 13 November 2026, `main` protection was enabled with required pull requests,
+resolved conversations, an up-to-date branch and the exact
+`verify / Publication gate` check from GitHub Actions (app ID 15368). The rule
+applies to administrators; force pushes and branch deletion are disabled.
+Only one collaborator is currently available, so the required independent
+approval count is zero. Add an eligible reviewer and require their approval
+before treating this as independent release oversight. Repository documentation
+and code-owner assignments alone do not enforce these settings; recheck the
+GitHub API or settings after administrative changes.
+
 See GitHub's [branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches) and [code ownership](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) guidance.
 
 Enable [private vulnerability reporting](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository), arrange maintainer notifications and test that the private reporting option is available. Keep [SECURITY.md](../SECURITY.md) aligned with the available channel. Retain secret scanning and push protection; findings still need human review and credential rotation where appropriate.

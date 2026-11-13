@@ -63,7 +63,7 @@
   "detail.localOnly": "ローカルのみ",
   "detail.localOnlyDesc": "この調査はデバイス上にのみ保存されます",
   "detail.syncedToServer": "サーバーに同期済み",
-  "detail.syncedToServerDesc": "バックアップ済みでチーム共有が可能",
+  "detail.syncedToServerDesc": "共有フィールドはサーバーに同期されます。端末固有の詳細は別途バックアップしてください。",
   "detail.exportInvestigation": "調査をエクスポート",
   "detail.generateReport": "レポートを生成",
   "detail.printSaveAsPdf": "印刷 / PDFとして保存",

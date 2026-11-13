@@ -45,6 +45,11 @@ vi.mock('../lib/encryptionMiddleware', () => ({
   encryptAllExistingData: vi.fn(async () => {}),
   decryptAllExistingData: vi.fn(async () => {}),
   getSessionKeyRaw: vi.fn(() => null),
+  getSessionKey: vi.fn(() => ({})),
+  getSessionGeneration: vi.fn(() => 0),
+  getSessionStartedAt: vi.fn(() => 0),
+  updateSessionDuration: vi.fn(),
+  lockEncryptionSession: vi.fn(),
 }));
 
 vi.mock('../db', () => ({
@@ -150,6 +155,12 @@ describe('EncryptionSetup', () => {
 // ── PassphraseDialog ─────────────────────────────────────────────────
 
 describe('PassphraseDialog', () => {
+  it('shows a recovery warning that arrives after the locked dialog mounts', () => {
+    const view = render(<PassphraseDialog onUnlocked={vi.fn()} />);
+    view.rerender(<PassphraseDialog onUnlocked={vi.fn()} initialError="Keep this tab open to recover unsaved work" />);
+    expect(screen.getByText('Keep this tab open to recover unsaved work')).toBeInTheDocument();
+  });
+
   it('serializes unlock attempts and blocks mode changes or reset while key derivation is pending', async () => {
     vi.clearAllMocks();
     mockGetEncryptionMeta.mockReturnValue({ salt: 'synthetic', wrappedKey: 'synthetic' });

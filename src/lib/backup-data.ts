@@ -4,6 +4,7 @@ import { backupFingerprint, backupStateFingerprint, canonicalBackupJSON, type Ba
 import { BACKUP_TABLES, investigationOf, parseEntityScope, type BackupTable } from './backup-tables';
 import { flushEntityDrafts } from './entity-drafts';
 import { validatePortableTables } from './backup-records';
+import { isSyncTable } from './sync-state';
 
 export type BackupRow = Record<string, unknown> & { id: string };
 const INVESTIGATION_TABLES: BackupTable[] = [
@@ -12,6 +13,20 @@ const INVESTIGATION_TABLES: BackupTable[] = [
 ];
 const SHARED_TABLES = new Set<BackupTable>(['tags', 'timelines']);
 
+/** Older sync clients persisted the server revision on entity rows. Project
+ * that transport-only value out without mutating IndexedDB or sanitizing away
+ * supported device-only data. Other unknown fields still fail validation, and
+ * semantic versions in non-sync tables (e.g. integrationTemplates) survive. */
+function portableRows(name: BackupTable, rows: BackupRow[]): BackupRow[] {
+  if (!isSyncTable(name)) return rows;
+  return rows.map(row => {
+    if (!Number.isSafeInteger(row.version) || (row.version as number) <= 0) return row;
+    const portable = { ...row };
+    delete portable.version;
+    return portable;
+  });
+}
+
 /** The same scope projection is used for snapshot creation and restore checks. */
 export function selectBackupData(
   rows: Map<BackupTable, BackupRow[]>,
@@ -19,12 +34,12 @@ export function selectBackupData(
   scopeId?: string,
   allowMissing = false,
 ): BackupPayload['data'] {
-  if (scope === 'all') return Object.fromEntries(BACKUP_TABLES.map(name => [name, rows.get(name) ?? []]));
+  if (scope === 'all') return Object.fromEntries(BACKUP_TABLES.map(name => [name, portableRows(name, rows.get(name) ?? [])]));
   if (scope === 'entity') {
     const { table, id } = parseEntityScope(scopeId);
     const selected = (rows.get(table) ?? []).filter(row => row.id === id);
     if (!allowMissing && !selected.length) throw new Error('Entity not found: ' + scopeId);
-    return { [table]: selected };
+    return { [table]: portableRows(table, selected) };
   }
   if (scope !== 'investigation' || !scopeId?.trim()) throw new Error('scopeId required for investigation scope');
   const selected = new Map(INVESTIGATION_TABLES.map(name => [name,
@@ -39,7 +54,7 @@ export function selectBackupData(
   }
   selected.set('tags', (rows.get('tags') ?? []).filter(row => typeof row.name === 'string' && tagNames.has(row.name)));
   selected.set('timelines', (rows.get('timelines') ?? []).filter(row => timelineIds.has(row.id)));
-  return Object.fromEntries(selected);
+  return Object.fromEntries([...selected].map(([name, records]) => [name, portableRows(name, records)]));
 }
 
 async function collectSnapshot(scope: BackupPayload['scope'], scopeId?: string, allowMissing = false): Promise<BackupPayload> {

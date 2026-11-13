@@ -63,7 +63,7 @@
   "detail.localOnly": "محلي فقط",
   "detail.localOnlyDesc": "يبقى هذا التحقيق على جهازك فقط",
   "detail.syncedToServer": "متزامن مع الخادم",
-  "detail.syncedToServerDesc": "محفوظ احتياطيًا ومتاح لمشاركة الفريق",
+  "detail.syncedToServerDesc": "تتم مزامنة الحقول المشتركة مع الخادم. احتفظ بنسخة احتياطية منفصلة للتفاصيل الخاصة بالجهاز.",
   "detail.exportInvestigation": "تصدير التحقيق",
   "detail.generateReport": "إنشاء تقرير",
   "detail.printSaveAsPdf": "طباعة / حفظ كـ PDF",

@@ -147,14 +147,14 @@ describe('Session key management', () => {
     expect(getSessionKeyRaw()).toBeNull();
   });
 
-  it('setSessionKey without rawBase64 preserves existing raw', async () => {
+  it('setSessionKey without rawBase64 clears bytes belonging to the previous key', async () => {
     const key1 = await generateMasterKey();
     const key2 = await generateMasterKey();
     setSessionKey(key1, 'original');
     setSessionKey(key2); // no rawBase64 arg
 
     expect(getSessionKey()).toBe(key2);
-    expect(getSessionKeyRaw()).toBe('original');
+    expect(getSessionKeyRaw()).toBeNull();
   });
 });
 

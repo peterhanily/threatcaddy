@@ -232,5 +232,6 @@
   "offlineStatus.unavailable": "Offline availability not confirmed",
   "offlineStatus.checkingHelp": "A large first download may take several minutes. Leave this tab open while installation runs.",
   "offlineStatus.unavailableHelp": "The browser has not confirmed offline installation. It may be unsupported, still downloading, or unable to finish. Keep an exported backup.",
-  "offlineStatus.caveat": "This is the browser's worker status, not a check of cached files or the latest version. Cached data can be cleared or evicted. This is not a backup. Team servers, AI and other external services need a connection."
+  "offlineStatus.caveat": "This is the browser's worker status, not a check of cached files or the latest version. Cached data can be cleared or evicted. This is not a backup. Team servers, AI and other external services need a connection.",
+  "sync.backupWarning": "Before removing local data, save and verify a full backup. Team sync cannot recover device-only details such as note folders, checklists, playbook progress and chat tool results/images. Save Backup downloads unencrypted JSON."
 }

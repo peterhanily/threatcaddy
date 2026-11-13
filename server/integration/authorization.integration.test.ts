@@ -1,5 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { generateKeyPairSync } from 'node:crypto';
+import { SignJWT } from 'jose';
 import { Hono } from 'hono';
 import type { WSContext } from 'hono/ws';
 import { scratchDatabase, type ScratchDatabase } from './database.js';
@@ -15,7 +16,7 @@ vi.mock('../src/db/index.js', () => ({
 }));
 
 import { createTokenPair, rotateRefreshToken, hashRefreshToken, revokeUserSessions, revokeSessionFamily, updateUsersAndRevokeSessions, revokeAllSessions } from '../src/services/session-service.js';
-import { verifyAccessToken, requireAuth, requireRole } from '../src/middleware/auth.js';
+import { verifyAccessToken, getPrivateKey, requireAuth, requireRole } from '../src/middleware/auth.js';
 import { checkInvestigationAccess } from '../src/middleware/access.js';
 import { pullChanges } from '../src/services/sync-service.js';
 import { handleWSConnection, handleWSMessage, handleWSClose, broadcastToFolder, revokeUserFolderAccess } from '../src/ws/handler.js';
@@ -190,6 +191,82 @@ describe('current account and investigation authorization in PostgreSQL', () => 
     expect((await verifyAccessToken(other.accessToken)).id).toBe('other');
   });
 
+  it.each(['missing', 'expired'])('revokes refresh lineage with a %s access token and returns an idempotent receipt', async access => {
+    const one = await createTokenPair('editor');
+    const anotherDevice = await createTokenPair('editor');
+    const otherUser = await createTokenPair('other');
+    const family = (await verifyAccessToken(one.accessToken)).sessionFamily;
+    const expired = await new SignJWT({ sub: 'editor', sid: family }).setProtectedHeader({ alg: 'EdDSA' })
+      .setExpirationTime(Math.floor(Date.now() / 1000) - 60).sign(await getPrivateKey());
+    const app = new Hono(); app.route('/auth', authRoutes);
+    const request = () => app.request('/auth/logout', { method: 'POST', headers: {
+      'Content-Type': 'application/json', ...(access === 'expired' ? { Authorization: `Bearer ${expired}` } : {}),
+    }, body: JSON.stringify({ refreshToken: one.refreshToken }) });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response = await request();
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ ok: true });
+    }
+    await expect(verifyAccessToken(one.accessToken)).rejects.toThrow();
+    expect(await rotateRefreshToken(one.refreshToken)).toMatchObject({ error: 'invalid' });
+    expect((await verifyAccessToken(anotherDevice.accessToken)).id).toBe('editor');
+    expect((await verifyAccessToken(otherUser.accessToken)).id).toBe('other');
+    const audits = await database.sql`SELECT detail FROM activity_log WHERE action = 'logout'`;
+    expect(audits).toHaveLength(1);
+    expect(JSON.stringify(audits)).not.toContain(one.refreshToken);
+  });
+
+  it('revokes the current family using a consumed refresh token and closes only its sockets', async () => {
+    const first = await socketFor('editor');
+    const second = await socketFor('editor');
+    const rotated = await rotateRefreshToken(first.tokens.refreshToken);
+    if ('error' in rotated) throw new Error('Expected rotation');
+    const app = new Hono(); app.route('/auth', authRoutes);
+    const response = await app.request('/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken: first.tokens.refreshToken }) });
+    expect(response.status).toBe(200);
+    expect(first.socket.close).toHaveBeenCalled();
+    expect(second.socket.close).not.toHaveBeenCalled();
+    expect(await rotateRefreshToken(rotated.refreshToken)).toMatchObject({ error: 'invalid' });
+    await expect(verifyAccessToken(rotated.accessToken)).rejects.toThrow();
+    expect((await verifyAccessToken(second.tokens.accessToken)).id).toBe('editor');
+  });
+
+  it('serializes refresh-proof logout against rotation while preserving a concurrent new login', async () => {
+    const first = await createTokenPair('editor');
+    const app = new Hono(); app.route('/auth', authRoutes);
+    const [rotated, response, newLogin] = await Promise.all([
+      rotateRefreshToken(first.refreshToken),
+      app.request('/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken: first.refreshToken }) }),
+      createTokenPair('editor'),
+    ]);
+    expect(response.status).toBe(200);
+    await expect(verifyAccessToken(first.accessToken)).rejects.toThrow();
+    if (!('error' in rotated)) {
+      await expect(verifyAccessToken(rotated.accessToken)).rejects.toThrow();
+      expect(await rotateRefreshToken(rotated.refreshToken)).toMatchObject({ error: 'invalid' });
+    }
+    expect((await verifyAccessToken(newLogin.accessToken)).id).toBe('editor');
+    expect(await database.sql`SELECT id FROM sessions WHERE user_id = 'editor'`).toHaveLength(1);
+  });
+
+  it('cleans expired and legacy credentials without accepting stored hashes as bearer proof', async () => {
+    const tokens = await createTokenPair('editor');
+    const app = new Hono(); app.route('/auth', authRoutes);
+    const logout = (refreshToken: string) => app.request('/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken }) });
+    expect((await logout(hashRefreshToken(tokens.refreshToken))).status).toBe(401);
+    expect((await verifyAccessToken(tokens.accessToken)).id).toBe('editor');
+    await database.sql`UPDATE sessions SET expires_at = now() - interval '1 second' WHERE user_id = 'editor'`;
+    expect((await logout(tokens.refreshToken)).status).toBe(200);
+    const liveDevice = await socketFor('editor');
+    const legacy = 'legacy_fixture_refresh_token_001';
+    await database.sql`INSERT INTO sessions (id,user_id,expires_at) VALUES (${legacy},'editor',now()+interval '1 day')`;
+    expect((await logout(legacy)).status).toBe(200);
+    expect(liveDevice.socket.close).not.toHaveBeenCalled();
+    expect((await verifyAccessToken(liveDevice.tokens.accessToken)).id).toBe('editor');
+    expect(await database.sql`SELECT id FROM sessions WHERE user_id = 'editor'`).toHaveLength(1);
+    expect((await logout('u'.repeat(32))).status).toBe(200);
+  });
+
   it('removes every socket subscription and presence when membership is revoked', async () => {
     const first = await socketFor('editor');
     const second = await socketFor('editor');
@@ -281,7 +358,22 @@ describe('current account and investigation authorization in PostgreSQL', () => 
       bootstrapAdminUser(secret, 'recovery-two', 'Recovery Two', 'long-fixture-password'),
     ]);
     expect(results.filter(result => 'admin' in result)).toHaveLength(1);
-    expect(results.filter(result => 'error' in result && result.error === 'configured')).toHaveLength(1);
+    expect(results.filter(result => 'error' in result && result.error === 'busy')).toHaveLength(1);
     expect((await database.sql`SELECT id FROM admin_users WHERE active = true`)).toHaveLength(1);
+    expect(await bootstrapAdminUser(secret, 'retry-admin', 'Retry', 'long-fixture-password')).toMatchObject({ error: 'configured' });
+  });
+
+  it('rejects completed bootstrap without evaluating an invalid stored password hash', async () => {
+    await database.sql`INSERT INTO server_settings (key,value) VALUES ('admin_secret_hash','invalid-argon-hash')`;
+    expect(await bootstrapAdminUser('wrong-secret', 'extra', 'Extra', 'long-fixture-password')).toMatchObject({ error: 'configured' });
+    expect((await database.sql`SELECT id FROM admin_users WHERE active = true`)).toHaveLength(1);
+  });
+
+  it('releases bootstrap admission after a failed credential and accepts a later valid setup', async () => {
+    const secret = 'local-bootstrap-retry-secret';
+    await database.sql`UPDATE admin_users SET active = false`;
+    await database.sql`INSERT INTO server_settings (key,value) VALUES ('admin_secret_hash',${await argon2.hash(secret)})`;
+    expect(await bootstrapAdminUser('wrong-secret', 'recovery', 'Recovery', 'long-fixture-password')).toMatchObject({ error: 'invalid' });
+    expect(await bootstrapAdminUser(secret, 'recovery', 'Recovery', 'long-fixture-password')).toHaveProperty('admin');
   });
 });

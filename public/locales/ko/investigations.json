@@ -63,7 +63,7 @@
   "detail.localOnly": "로컬 전용",
   "detail.localOnlyDesc": "이 조사는 기기에만 저장됩니다",
   "detail.syncedToServer": "서버에 동기화됨",
-  "detail.syncedToServerDesc": "백업되었으며 팀 공유 가능",
+  "detail.syncedToServerDesc": "공유 필드는 서버와 동기화됩니다. 기기에만 있는 세부 정보는 별도로 백업하세요.",
   "detail.exportInvestigation": "조사 내보내기",
   "detail.generateReport": "보고서 생성",
   "detail.printSaveAsPdf": "인쇄 / PDF로 저장",

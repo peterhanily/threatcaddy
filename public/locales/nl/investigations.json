@@ -63,7 +63,7 @@
   "detail.localOnly": "Alleen lokaal",
   "detail.localOnlyDesc": "Dit onderzoek is alleen opgeslagen op uw apparaat",
   "detail.syncedToServer": "Gesynchroniseerd met server",
-  "detail.syncedToServerDesc": "Back-up gemaakt en beschikbaar voor teamgebruik",
+  "detail.syncedToServerDesc": "Gedeelde velden worden met de server gesynchroniseerd. Bewaar een aparte back-up van apparaatspecifieke details.",
   "detail.exportInvestigation": "Onderzoek exporteren",
   "detail.generateReport": "Rapport genereren",
   "detail.printSaveAsPdf": "Afdrukken / Opslaan als PDF",

@@ -1,7 +1,8 @@
+import { registerLockParticipant } from '../lib/workspace-lock';
 import Dexie from 'dexie';
-import { beforeEach, afterEach, describe, expect, it } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { generateMasterKey, isEncryptedEnvelope } from '../lib/crypto';
-import { ENCRYPTED_FIELDS, ENCRYPTION_COVERAGE_VERSION, installEncryptionMiddleware, setSessionKey, getSessionKey, encryptAllExistingData, decryptAllExistingData, ensureEncryptionReady } from '../lib/encryptionMiddleware';
+import { ENCRYPTED_FIELDS, ENCRYPTION_COVERAGE_VERSION, installEncryptionMiddleware, setSessionKey, getSessionKey, lockEncryptionSession, encryptAllExistingData, decryptAllExistingData, ensureEncryptionReady } from '../lib/encryptionMiddleware';
 import { getEncryptionMeta, setEncryptionMeta, clearEncryptionMeta } from '../lib/encryptionStore';
 import { installSyncOutbox } from '../lib/sync-outbox';
 import { disableSync } from '../lib/sync-state';
@@ -183,4 +184,76 @@ describe('atomic and resumable encryption transitions', () => {
     expect((await raw('notes', 'one')).content).toBe('Private analysis');
     expect((await raw('notes', 'two')).content).toBe('Private analysis');
   });
+});
+
+
+it('rolls back a disable conversion when locking after its final plaintext put', async () => {
+  setEncryptionMeta(metadata()); setSessionKey(key);
+  await fixture.table('notes').put(note('conversion-lock'));
+  await expect(decryptAllExistingData(fixture, progress => {
+    if (progress.total && progress.current === progress.total) lockEncryptionSession();
+  })).rejects.toThrow();
+  expect(getSessionKey()).toBeNull();
+  expect(getEncryptionMeta()?.transition).toBe('decrypting');
+  expect(isEncryptedEnvelope((await raw('notes', 'conversion-lock')).title)).toBe(true);
+  setSessionKey(key); await ensureEncryptionReady(fixture);
+  expect(getEncryptionMeta()).toBeNull();
+  expect((await raw('notes', 'conversion-lock')).title).toBe('Private finding');
+});
+
+
+it('retains the wrapped key when recovering unsaved work fails during disable', async () => {
+  setEncryptionMeta(metadata()); setSessionKey(key);
+  await fixture.table('notes').put(note('recovery-failure'));
+  const remove = registerLockParticipant({ seal: () => {}, restore: async () => { throw new Error('Recovery storage unavailable'); } });
+  try {
+    await expect(decryptAllExistingData(fixture)).rejects.toThrow('Recovery storage unavailable');
+    expect(getEncryptionMeta()?.transition).toBe('decrypting');
+    expect(getEncryptionMeta()?.wrappedKey).toBe(metadata().wrappedKey);
+  } finally { remove(); }
+  await ensureEncryptionReady(fixture);
+  expect(getEncryptionMeta()).toBeNull();
+  expect((await fixture.table('notes').get('recovery-failure')).title).toBe('Private finding');
+});
+
+
+function betweenRewriteAndFinalize(callback: () => void): () => void {
+  const original = fixture.transaction;
+  const spy = vi.spyOn(fixture, 'transaction').mockImplementation(((...args: unknown[]) => {
+    const result = Reflect.apply(original, fixture, args) as Promise<unknown>;
+    return result.then(value => {
+      // rewriteContent resumes between these microtasks; its caller resumes
+      // after the second one. Reproduce another settled operation invalidating
+      // the session at that final asynchronous boundary.
+      queueMicrotask(() => queueMicrotask(callback));
+      return value;
+    });
+  }) as typeof fixture.transaction);
+  return () => spy.mockRestore();
+}
+
+it('does not overwrite replacement metadata after rewrite finishes but before encryption finalizes', async () => {
+  setEncryptionMeta(metadata()); setSessionKey(key);
+  await fixture.table('notes').put(note('finalize-race'));
+  const replacement = { ...metadata(), enabledAt: 999, recoveryWrappedKey: 'replacement-master-key' };
+  const restore = betweenRewriteAndFinalize(() => { lockEncryptionSession(); setEncryptionMeta(replacement); });
+  try {
+    await expect(encryptAllExistingData(fixture)).rejects.toThrow(/locked|session changed/);
+    expect(getEncryptionMeta()).toEqual(replacement);
+  } finally { restore(); }
+});
+
+it('preserves contemporaneous wrapping and duration metadata when finishing encryption coverage', async () => {
+  setEncryptionMeta(metadata()); setSessionKey(key);
+  const restore = betweenRewriteAndFinalize(() => {
+    const current = getEncryptionMeta();
+    if (!current) throw new Error('Fixture metadata missing');
+    setEncryptionMeta({ ...current, salt: 'new-passphrase-salt', wrappedKey: 'new-passphrase-wrapped-key', sessionDuration: '24h' });
+  });
+  try {
+    await encryptAllExistingData(fixture);
+    expect(getEncryptionMeta()).toMatchObject({ salt: 'new-passphrase-salt', wrappedKey: 'new-passphrase-wrapped-key',
+      sessionDuration: '24h', coverageVersion: ENCRYPTION_COVERAGE_VERSION });
+    expect(getEncryptionMeta()?.transition).toBeUndefined();
+  } finally { restore(); }
 });

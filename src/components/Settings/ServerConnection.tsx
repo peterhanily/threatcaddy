@@ -142,10 +142,13 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
 
   const handleDisconnect = async () => {
     // Session details already saved via the useEffect above
-    await logout();
+    setError('');
+    setLoading(true);
+    // logout clears local auth synchronously. Finish the local UI transition
+    // before awaiting the remote receipt so a later response cannot clear a new login.
+    const revocation = logout();
     setServerUrl(null);
     onUpdateSettings({ serverUrl: undefined, serverDisplayName: undefined });
-    addToast('info', t('server.disconnectedToast'));
     // Reload last session for reconnect
     const session = getLastSession();
     if (session) {
@@ -158,6 +161,14 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
     setEmail('');
     setPassword('');
     setDisplayName('');
+    try {
+      await revocation;
+      addToast('info', t('server.disconnectedToast'));
+    } catch (err) {
+      const message = (err as Error).message;
+      setError(message);
+      addToast('warning', message, 12_000);
+    } finally { setLoading(false); }
   };
 
   // Connected state

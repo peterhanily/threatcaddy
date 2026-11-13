@@ -425,6 +425,8 @@ const AppInner = memo(function AppInner({
   const inv = useInvestigation();
   const ui = useUIModals();
   const { t: tExec } = useTranslation('exec');
+  const { t: tInvestigations } = useTranslation('investigations');
+  const { t: tCommon } = useTranslation('common');
   const [evidenceSearchSelection, setEvidenceSearchSelection] = useState<{ id: string; request: number }>();
 
   // Destructure frequently-used context values
@@ -2218,9 +2220,11 @@ const AppInner = memo(function AppInner({
           if (confirmUnsyncId) void handleUnsyncConfirmed(confirmUnsyncId).then(() => setConfirmUnsyncId(null))
             .catch(error => addToast('error', error instanceof Error ? error.message : 'Could not remove the offline copy.'));
         }}
-        title="Unsync Investigation"
-        message="This will remove the local copy of this investigation. You can re-sync it later from the server, but details stored only on this device (note sub-folders, task checklists, playbook progress, and chat tool results and images) will not come back."
-        confirmLabel="Unsync"
+        title={tInvestigations('card.removeLocalCopy')}
+        message={tCommon('sync.backupWarning')}
+        confirmLabel={tInvestigations('card.removeLocalCopy')}
+        secondaryAction={handleQuickSave}
+        secondaryLabel={tCommon('header.saveBackup')}
         danger
       />
 

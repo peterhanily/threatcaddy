@@ -69,7 +69,8 @@ export async function bootBuiltServer(database: ScratchDatabase, artifact: Stage
       DATABASE_URL: database.url.toString(),
       DB_POOL_MAX: '2',
       PORT: String(port), ADMIN_PORT: String(adminPort),
-      HOST: '127.0.0.1', ADMIN_HOST: '127.0.0.1',
+      // Assert the administration default through its real socket below.
+      HOST: '127.0.0.1',
       ...artifact.credentials,
       FILE_STORAGE_PATH: resolve(folder, 'files'),
       DOCKER_HOST: `unix://${resolve(folder, 'no-docker.sock')}`,

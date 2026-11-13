@@ -1,3 +1,4 @@
+import { persistChatCompletion } from '../../lib/locked-chat-recovery';
 import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import { Plus, Trash2, MessageSquare, Share2, Pencil, FileText, Key, Puzzle, Shield, ArrowLeft, Square, RefreshCw, Eye, Play, Check, X, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react';
@@ -586,7 +587,11 @@ export function ChatView({
           tokenCount: usage,
           createdAt: Date.now(),
         };
-        await onAddMessage(activeThread.id, assistantMsg);
+        const completed = await persistChatCompletion(
+          { threadId: activeThread.id, messageId: assistantMessageId, model: activeThread.model, provider: activeThread.provider },
+          assistantMsg, () => onAddMessage(activeThread.id, assistantMsg),
+        );
+        if (!completed) return;
 
         // Trigger entity reload if any write tools were used
         if (usedWriteTool && onEntitiesChanged) {
@@ -605,7 +610,8 @@ export function ChatView({
               .catch(() => { /* ignore title generation failures */ });
           }
         }
-      }
+      },
+      { threadId: activeThread.id, messageId: assistantMessageId, model: activeThread.model, provider: activeThread.provider },
     );
   }, [activeThread, settings, selectedFolder, selectedFolderId, sendAgentRequest, onAddMessage, onUpdateThread, onEntitiesChanged, getApiKeyForProvider, getProviderLabel, startLoop, stopAllForThread, pendingImages, setPendingImages, readingImages, customCommands, effectiveRoute, t]);
 

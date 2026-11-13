@@ -63,7 +63,7 @@
   "detail.localOnly": "Nur lokal",
   "detail.localOnlyDesc": "Diese Untersuchung bleibt nur auf Ihrem Gerät",
   "detail.syncedToServer": "Mit Server synchronisiert",
-  "detail.syncedToServerDesc": "Gesichert und für Team-Sharing verfügbar",
+  "detail.syncedToServerDesc": "Gemeinsame Felder werden mit dem Server synchronisiert. Sichern Sie gerätespezifische Details separat.",
   "detail.exportInvestigation": "Untersuchung exportieren",
   "detail.generateReport": "Bericht generieren",
   "detail.printSaveAsPdf": "Drucken / Als PDF speichern",

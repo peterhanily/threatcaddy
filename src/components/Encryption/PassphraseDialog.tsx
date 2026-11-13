@@ -1,9 +1,10 @@
-import { useId, useRef, useState } from 'react';
+import { useId, useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, Lock, AlertTriangle } from 'lucide-react';
 import { deriveWrappingKey, unwrapMasterKey, base64ToArrayBuffer, arrayBufferToBase64, exportKeyRaw } from '../../lib/crypto';
 import { getEncryptionMeta, getSessionDuration, cacheSessionKey, clearEncryptionMeta, clearSessionCache, isEncryptionEnabled } from '../../lib/encryptionStore';
-import { setSessionKey } from '../../lib/encryptionMiddleware';
+import { setSessionKey, getSessionKey, getSessionGeneration, getSessionStartedAt, lockEncryptionSession } from '../../lib/encryptionMiddleware';
+import { restoreWorkspaceRecovery } from '../../lib/workspace-lock';
 import { initializeWorkspace } from '../../lib/workspace-initialization';
 import { db } from '../../db';
 
@@ -15,12 +16,18 @@ interface PassphraseDialogProps {
 export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDialogProps) {
   const { t } = useTranslation('encryption');
   const resetId = useId();
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const resetInFlight = useRef(false);
   const unlockInFlight = useRef(false);
   const [passphrase, setPassphrase] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [useRecovery, setUseRecovery] = useState(false);
   const [error, setError] = useState(initialError);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- recovery failures can arrive after the locked dialog mounts
+    if (initialError) setError(initialError);
+  }, [initialError]);
   const [unlocking, setUnlocking] = useState(false);
   const [showReset, setShowReset] = useState(false);
   const [confirmText, setConfirmText] = useState('');
@@ -33,6 +40,8 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
     setError('');
     setUnlocking(true);
     let keyVerified = false;
+    let generation = getSessionGeneration();
+    const current = () => mounted.current && generation === getSessionGeneration();
     try {
       const meta = getEncryptionMeta();
       if (!meta) {
@@ -56,14 +65,21 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
 
       // Import as non-extractable for actual use
       const sessionKey = await unwrapMasterKey(wrappedKey, wrappingKey);
+      if (!current() || JSON.stringify(getEncryptionMeta()) !== JSON.stringify(meta)) throw new Error('Encryption settings changed. Unlock again.');
       keyVerified = true;
       setSessionKey(sessionKey, rawB64);
+      generation = getSessionGeneration();
       await initializeWorkspace();
-      if (isEncryptionEnabled()) cacheSessionKey(rawB64, getSessionDuration());
-      onUnlocked();
+      const resumingDisable = meta.transition === 'decrypting';
+      if (resumingDisable && !isEncryptionEnabled() && getSessionGeneration() === generation + 1 && !getSessionKey()) generation = getSessionGeneration();
+      await restoreWorkspaceRecovery(sessionKey, () => current() && (getSessionKey() === sessionKey || (resumingDisable && !isEncryptionEnabled())));
+      if (isEncryptionEnabled()) {
+        if (!current() || getSessionKey() !== sessionKey) return;
+        cacheSessionKey(rawB64, getSessionDuration(), getSessionStartedAt());
+      }
+      if (current()) onUnlocked();
     } catch (err) {
-      setSessionKey(null);
-      clearSessionCache();
+      if (current()) lockEncryptionSession();
       setError(keyVerified
         ? t('passphrase.prepareFailed', { defaultValue: 'Your key was accepted, but preparing the workspace failed: {{error}}. Unlock again to retry.', error: err instanceof Error ? err.message : String(err) })
         : useRecovery ? t('passphrase.invalidRecoveryKey') : t('passphrase.wrongPassphrase'));
@@ -109,6 +125,7 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
           <p className="text-sm text-red-400 mb-4 font-medium">
             {t('passphrase.startFreshWarning')}
           </p>
+          <p className="text-sm text-gray-300 mb-4">{t('common:sync.backupWarning')}</p>
 
           <label htmlFor={resetId} className="block text-sm text-gray-400 mb-3">{t('passphrase.confirmDelete', { confirmation: 'DELETE' })}</label>
 

@@ -71,9 +71,9 @@ export function sanitizeSyncEntity(
 ): Record<string, unknown> | null {
   const sanitizer = TABLE_SANITIZERS[tableName];
   if (!sanitizer) return null;
-  const record = sanitizer(normalizeTimestamps(data));
-  if (record && Number.isSafeInteger(data.version) && (data.version as number) > 0) record.version = data.version;
-  return record;
+  // Revisions belong to _syncMeta, where the engine records them separately.
+  // Transport metadata is not part of the portable entity/backup schema.
+  return sanitizer(normalizeTimestamps(data));
 }
 
 /**

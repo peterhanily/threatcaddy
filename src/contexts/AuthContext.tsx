@@ -8,6 +8,7 @@ import { syncEngine } from '../lib/sync-engine';
 import { authStorageKey as STORAGE_KEY, readStoredAuth, withAuthRefreshLock, type StoredAuth } from '../lib/auth-storage';
 import { fetchServerResponse } from '../lib/server-response';
 import { hasPendingChanges } from '../lib/pending-changes';
+import { revokeRemoteSessions } from '../lib/session-logout';
 
 interface AuthState {
   user: TeamUser | null;
@@ -134,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setServerUrl = useCallback((url: string | null) => {
     if (url) url = normalizedWorkspaceIdentity(url, 'endpoint-validation').serverUrl;
+    const previousIdentity = identityRef.current;
     ++generationRef.current;
     // Choosing another endpoint never reuses the previous endpoint's tokens.
     accessTokenRef.current = null;
@@ -150,7 +152,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setConnected(false);
       accessTokenRef.current = null;
       refreshTokenRef.current = null;
-      localStorage.removeItem(STORAGE_KEY);
+      const stored = readStoredAuth();
+      if (!stored || (stored.serverUrl === previousIdentity?.serverUrl && stored.user.id === previousIdentity.userId)) {
+        localStorage.removeItem(STORAGE_KEY);
+      }
     }
   }, []);
 
@@ -228,34 +233,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [serverUrl, persist, selectAuthenticatedWorkspace]);
 
   const logout = useCallback(async () => {
+    const stored = readStoredAuth();
+    const identity = identityRef.current;
+    const sameIdentity = stored && stored.serverUrl === identity?.serverUrl && stored.user.id === identity.userId;
+    const refreshTokens = [sameIdentity ? stored.refreshToken : null, refreshTokenRef.current].filter((token): token is string => !!token);
+    const logoutUrl = identity?.serverUrl;
     ++generationRef.current;
     syncEngine.stop();
-    const refreshToken = refreshTokenRef.current;
-    const accessToken = accessTokenRef.current;
     setUser(null);
     setConnected(false);
     accessTokenRef.current = null;
     refreshTokenRef.current = null;
     refreshPromiseRef.current = null;
     identityRef.current = null;
-    localStorage.removeItem(STORAGE_KEY);
-    if (serverUrl && refreshToken && accessToken) {
-      const logoutController = new AbortController();
-      const timer = setTimeout(() => logoutController.abort(), 5_000);
-      try {
-        await fetch(`${serverUrl}/api/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ refreshToken }),
-          signal: logoutController.signal,
-        });
-      } catch { /* best effort */ }
-      finally { clearTimeout(timer); }
-    }
-  }, [serverUrl]);
+    // Do not remove a different account's credentials written by another tab.
+    if (!stored || sameIdentity) localStorage.removeItem(STORAGE_KEY);
+    if (logoutUrl && refreshTokens.length) await revokeRemoteSessions(logoutUrl, refreshTokens);
+  }, []);
 
   const invalidateAccessToken = useCallback(() => {
     accessTokenRef.current = null;
@@ -280,7 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const stored = readStoredAuth();
         if (!stored || stored.serverUrl !== serverUrl || stored.user.id !== user?.id) return null;
         // Another tab has already rotated this family while we waited.
-        if (stored.refreshToken !== originalRefreshToken) {
+        if (stored.refreshToken !== originalRefreshToken && stored.accessToken) {
           accessTokenRef.current = stored.accessToken;
           refreshTokenRef.current = stored.refreshToken;
           return stored.accessToken;

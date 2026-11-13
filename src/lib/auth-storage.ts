@@ -4,7 +4,7 @@ import { normalizedWorkspaceIdentity, workspaceStorageKey } from './workspace-pr
 export const authStorageKey = workspaceStorageKey('threatcaddy-auth');
 export interface StoredAuth {
   serverUrl: string;
-  accessToken: string;
+  accessToken: string | null;
   refreshToken: string;
   user: TeamUser;
 }
@@ -12,18 +12,20 @@ export interface StoredAuth {
 export function readStoredAuth(key = authStorageKey): StoredAuth | null {
   try {
     const value = JSON.parse(localStorage.getItem(key) ?? 'null') as StoredAuth | null;
-    if (!value || typeof value.accessToken !== 'string' || !value.accessToken
+    if (!value || (value.accessToken != null && typeof value.accessToken !== 'string')
       || typeof value.refreshToken !== 'string' || !value.refreshToken
       || typeof value.user?.id !== 'string' || typeof value.user.email !== 'string'
       || typeof value.user.displayName !== 'string') return null;
-    return { ...value, serverUrl: normalizedWorkspaceIdentity(value.serverUrl, value.user.id).serverUrl };
+    return { ...value, accessToken: value.accessToken || null, serverUrl: normalizedWorkspaceIdentity(value.serverUrl, value.user.id).serverUrl };
   } catch { return null; }
 }
 
 /** Refresh tokens rotate once. All tabs sharing this workspace must serialize
  * their refresh and reread durable credentials inside this lock. Unsupported
  * contexts fail closed instead of replaying a token and revoking its family. */
-export async function withAuthRefreshLock<T>(work: () => Promise<T>): Promise<T> {
+export async function withAuthRefreshLock<T>(work: () => Promise<T>, signal?: AbortSignal): Promise<T> {
   if (!navigator.locks) return Promise.reject(new Error('Session refresh requires a secure browser context with Web Locks. Sign in again.'));
-  return await navigator.locks.request(`${authStorageKey}:refresh`, work);
+  return signal
+    ? await navigator.locks.request(`${authStorageKey}:refresh`, { signal }, work)
+    : await navigator.locks.request(`${authStorageKey}:refresh`, work);
 }
