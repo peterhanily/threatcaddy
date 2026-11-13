@@ -645,7 +645,7 @@ this check or clear local work to make an old client appear compatible.
    # Run only after selecting the release and verifying the paired backups.
    # Skip the build when using an already verified published image.
    docker compose build server
-   docker compose run --rm --no-deps server npm run db:migrate
+   docker compose run --rm --no-deps server node dist/db/migrate-cli.js
    docker compose up -d server
    ```
 
@@ -663,6 +663,8 @@ fails startup rather than guessing a repair.
 
 For a non-container build, run `npm run build`, supply the installation's
 `DATABASE_URL` explicitly, and use `npm run db:migrate` from the server package.
+The final container image has no npm, npx, Yarn or Corepack. Use its packaged
+Node commands for maintenance; rebuild the image to change dependencies.
 Do not use schema push, delete migration rows, rewrite historical SQL, or drop
 data to bypass a failure. Follow [migration recovery](../server/docs/migration-recovery.md).
 
@@ -722,11 +724,11 @@ path. If rollback requires restoring data:
    Then explicitly rotate the restored sync history before accepting clients:
 
    ```bash
-   docker compose run --rm --no-deps server npm run db:migrate
-   docker compose run --rm --no-deps server npm run sync:rotate-history -- --confirm-restore
+   docker compose run --rm --no-deps server node dist/db/migrate-cli.js
+   docker compose run --rm --no-deps server node dist/db/rotate-sync-history-cli.js --confirm-restore
    ```
 
-   Outside Compose, use `npm run sync:rotate-history -- --confirm-restore` in the
+   For a native-host build, use `npm run sync:rotate-history -- --confirm-restore` in the
    built server package. Rotation refuses a live application lease and changes
    only the history generation. It is mandatory after restore: a database copy
    includes the old UUID, so equal or higher restored cursors do not reliably

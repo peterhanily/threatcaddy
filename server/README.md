@@ -290,6 +290,19 @@ This starts:
 
 Data is persisted in Docker volumes (`pg-data`, `file-data`).
 
+The final server image contains Node and the installed application, without npm,
+npx, Yarn or Corepack. With the application stopped and verified recovery copies
+retained, use the packaged commands for container maintenance:
+
+```bash
+docker compose run --rm --no-deps server node dist/db/migrate-cli.js
+# After a database restore, before restarting the application:
+docker compose run --rm --no-deps server node dist/db/rotate-sync-history-cli.js --confirm-restore
+```
+
+Follow the full [upgrade and restore procedure](../docs/deployment.md#6-upgrading).
+Native-host development and maintenance continue to use the npm scripts below.
+
 ## Development
 
 ```bash

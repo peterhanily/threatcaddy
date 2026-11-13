@@ -102,6 +102,74 @@ test('npm audit and install jobs select the manifest-pinned npm first', () => {
   }
 });
 
+test('the full runtime-image audit gates promotion after packaged-image acceptance and preserves failures', () => {
+  const job = verify.jobs['server-artifact'];
+  const steps = stepsOf(job);
+  const acceptance = steps.findIndex(step => step.run === 'node scripts/ci-verify-server-image.mjs');
+  const packaged = steps.findIndex(step => step.name === 'Package tested image with source identity and digest');
+  const audit = steps.findIndex(step => step.name === 'Audit the exact packaged runtime image');
+  const evidence = steps.findIndex(step => step.name === 'Preserve runtime image audit evidence');
+  const promoted = steps.findIndex(step => step.id === 'upload');
+  assert.ok(acceptance >= 0 && packaged > acceptance && audit > packaged && evidence > audit && promoted > evidence);
+  for (const index of [acceptance, packaged, audit, promoted]) {
+    assert.equal(steps[index].if, undefined);
+    assert.equal(steps[index]['continue-on-error'], undefined);
+  }
+  assert.equal(job['continue-on-error'], undefined);
+  assert.ok(verify.jobs.gate.needs.includes('server-artifact'));
+  assert.equal(steps[evidence].if, 'always()');
+  assert.equal(steps[evidence].with.path, 'server-image-audit/');
+  const command = steps[audit].run;
+  assert.match(command, /trivy_0\.76\.2_Linux-64bit\.tar\.gz/);
+  assert.match(command, /bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf/);
+  assert.ok(command.indexOf('sha256sum --check') < command.indexOf('tar -xzf'));
+  assert.match(command, /mktemp -d "\$RUNNER_TEMP\/threatcaddy-trivy\./);
+  assert.match(command, /--disable-telemetry/);
+  assert.match(command, /--db-repository ghcr\.io\/aquasecurity\/trivy-db:2 --offline-scan --skip-check-update --skip-version-check/);
+  assert.match(command, /--pkg-types os,library --list-all-pkgs/);
+  assert.match(command, /--severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL --ignorefile '' --ignore-unfixed=false/);
+  assert.match(command, /--input verified-server\/server-image\.tar/);
+  assert.match(command, /node scripts\/ci-audit-server-image\.mjs/);
+  assert.doesNotMatch(command, /continue-on-error|\|\| true|--skip-db-update|--ignore-unfixed(?:\s|$)/);
+});
+
+test('scanner checksum failure stops before extraction and execution', t => {
+  const folder = temporaryDirectory(t);
+  const step = stepsOf(verify.jobs['server-artifact']).find(step => step.name === 'Audit the exact packaged runtime image');
+  writeFileSync(join(folder, 'curl'), '#!/bin/sh\nexit 0\n', { mode: 0o700 });
+  writeFileSync(join(folder, 'sha256sum'), '#!/bin/sh\ncat >/dev/null\nexit 42\n', { mode: 0o700 });
+  writeFileSync(join(folder, 'tar'), '#!/bin/sh\necho unsafe-extraction >&2\nexit 99\n', { mode: 0o700 });
+  assert.throws(() => execFileSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', step.run], {
+    cwd: folder, env: { PATH: `${folder}:${process.env.PATH}`, RUNNER_TEMP: folder }, stdio: ['ignore', 'pipe', 'pipe'],
+  }), error => error.status === 42 && !String(error.stderr).includes('unsafe-extraction'));
+  assert.match(readFileSync(join(folder, 'server-image-audit/scanner-sha256.txt'), 'utf8'), /^bc0fc726/);
+});
+
+test('a scanner runtime failure blocks policy success while retaining its partial report and diagnostics', t => {
+  const folder = temporaryDirectory(t);
+  const step = stepsOf(verify.jobs['server-artifact']).find(step => step.name === 'Audit the exact packaged runtime image');
+  writeFileSync(join(folder, 'curl'), '#!/bin/sh\nexit 0\n', { mode: 0o700 });
+  writeFileSync(join(folder, 'sha256sum'), '#!/bin/sh\ncat >/dev/null\nexit 0\n', { mode: 0o700 });
+  writeFileSync(join(folder, 'tar'), `#!/bin/sh
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = '-C' ]; then shift; destination="$1"; break; fi
+  shift
+done
+cat > "$destination/trivy" <<'SCANNER'
+#!/bin/sh
+printf '{"SchemaVersion":2}' > server-image-audit/report.json
+printf 'ERROR synthetic scan failure\\n' >&2
+exit 17
+SCANNER
+chmod 700 "$destination/trivy"
+`, { mode: 0o700 });
+  assert.throws(() => execFileSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', step.run], {
+    cwd: folder, env: { PATH: `${folder}:${process.env.PATH}`, RUNNER_TEMP: folder }, stdio: ['ignore', 'pipe', 'pipe'],
+  }), error => error.status === 17);
+  assert.deepEqual(JSON.parse(readFileSync(join(folder, 'server-image-audit/report.json'), 'utf8')), { SchemaVersion: 2 });
+  assert.match(readFileSync(join(folder, 'server-image-audit/scanner.log'), 'utf8'), /ERROR synthetic scan failure/);
+});
+
 test('extension verification checks committed downloads without rewriting or extracting them', () => {
   const step = stepsOf(verify.jobs.extension).find(candidate => candidate.name === 'Build extension and verify committed packages');
   assert.ok(step);

@@ -2,9 +2,10 @@
 
 The server runs `migrateDatabase` before opening HTTP listeners. `npm run build`
 packages all journaled SQL alongside the compiled server; the container uses
-that same build. To migrate separately, build first, supply `DATABASE_URL`
-explicitly, then run `npm run db:migrate`. No example database URL is substituted
-by the migration command.
+that same build. To migrate separately, supply `DATABASE_URL` explicitly and
+run `node dist/db/migrate-cli.js` in the matching server container. For a
+native-host build, build first and use `npm run db:migrate` from the server
+package. No example database URL is substituted by the migration command.
 
 Take and verify an operator-managed PostgreSQL backup before upgrading a live
 installation. The integration suite uses disposable local databases; it does

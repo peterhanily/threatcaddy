@@ -163,6 +163,28 @@ try {
   if (!/^\d+\.\d+\.\d+(?:[-+][a-zA-Z0-9.-]+)?$/.test(expectedVersion)) {
     throw new Error('Image package has no valid version');
   }
+  // The runtime must not retain build-time package managers or executable
+  // shims, including broken symlinks that existsSync would overlook.
+  docker(['run', '--rm', ...labels, '--network', 'none', '--entrypoint', 'node', imageId,
+    '--input-type=module', '-e', `
+      import assert from 'node:assert/strict';
+      import { lstatSync, readdirSync } from 'node:fs';
+      import { join } from 'node:path';
+      const absent = path => {
+        let present = false;
+        try { lstatSync(path); present = true; }
+        catch (error) { if (error.code !== 'ENOENT') throw error; }
+        assert.equal(present, false, 'Runtime package manager remains: ' + path);
+      };
+      for (const directory of process.env.PATH.split(':')) {
+        for (const name of ['npm', 'npx', 'yarn', 'yarnpkg', 'corepack', 'pnpm', 'pnpx']) absent(join(directory, name));
+      }
+      absent('/usr/local/lib/node_modules/npm');
+      absent('/usr/local/lib/node_modules/corepack');
+      assert.equal(readdirSync('/opt').some(name => name.startsWith('yarn-v')), false, 'Global Yarn remains');
+      console.log('Runtime package managers and shims are absent');
+    `]);
+  console.log('Runtime package managers and shims are absent');
   // Exercise both native modules as the image's non-root runtime user. Merely
   // importing them or reaching /health does not establish native ABI support.
   docker(['run', '--rm', ...labels, '--network', 'none', '--entrypoint', 'node', imageId,
@@ -195,6 +217,36 @@ try {
   if (docker(['inspect', '--format', '{{.State.ExitCode}}', container]) !== '0') {
     throw new Error('Healthy image did not shut down cleanly before restart');
   }
+  // Maintenance in an npm-free image uses its packaged Node CLIs. Keep the app
+  // stopped, pass only the synthetic database by environment name, and verify
+  // rotation changes the history token without changing migration records.
+  const maintenance = args => docker(['run', '--rm', ...labels,
+    ...(isolated ? ['--network', network] : ['--network', 'host']),
+    '--env', 'DATABASE_URL', '--entrypoint', 'node', imageId, ...args]);
+  const readHistory = () => JSON.parse(maintenance(['--input-type=module', '-e', `
+    import { sql } from './dist/db/index.js';
+    try {
+      const [clock] = await sql.unsafe('SELECT generation FROM sync_clock WHERE id=1');
+      const [migrations] = await sql.unsafe('SELECT count(*)::int AS count FROM drizzle.__drizzle_migrations');
+      console.log(JSON.stringify({ generation: clock.generation, migrations: migrations.count }));
+    } finally { await sql.end({ timeout: 5 }); }
+  `]));
+  const beforeMaintenance = readHistory();
+  if (!/^[a-f0-9-]{36}$/.test(beforeMaintenance.generation) || beforeMaintenance.migrations < 1) {
+    throw new Error('Packaged image did not initialize migration/history state');
+  }
+  if (!maintenance(['dist/db/migrate-cli.js']).includes('Database migrations complete.')) {
+    throw new Error('Direct Node migration CLI did not complete');
+  }
+  const rotation = maintenance(['dist/db/rotate-sync-history-cli.js', '--confirm-restore']);
+  const afterMaintenance = readHistory();
+  if (!/^[a-f0-9-]{36}$/.test(afterMaintenance.generation)
+      || afterMaintenance.generation === beforeMaintenance.generation
+      || afterMaintenance.migrations !== beforeMaintenance.migrations
+      || !rotation.includes(`Sync history rotated: ${afterMaintenance.generation}.`)) {
+    throw new Error('Direct Node history rotation did not preserve the migrated database');
+  }
+  console.log('Direct Node migration and history-rotation CLIs passed with the server stopped');
   docker(['start', container]);
   refreshServerOrigin();
   await assertReady('Image restart after migration', 2);

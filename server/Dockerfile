@@ -19,12 +19,19 @@ RUN npm run build
 
 FROM node:24.22.2-alpine@sha256:8a32c8cf649a49915a66e81e7a609223c708d0adabf288ee3f4077d765542f85
 
-RUN npm install --global npm@11.19.0
-
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+# Alpine 3.24's zlib 1.4-r0 fixes CVE-2026-4738 without changing the Node baseline.
+# Package managers are installation tools, not part of the runtime interface.
+# Container maintenance invokes the packaged Node CLIs directly.
+RUN apk add --no-cache 'zlib=1.4-r0' && \
+    npm install --global npm@11.19.0 && \
+    npm ci --omit=dev && \
+    rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /opt/yarn-v* && \
+    rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/yarn /usr/local/bin/yarnpkg \
+        /usr/local/bin/corepack /usr/local/bin/pnpm /usr/local/bin/pnpx && \
+    rm -rf /root/.npm /root/.cache/node/corepack /usr/local/share/.cache/yarn
 
 COPY --from=build /app/dist ./dist
 
