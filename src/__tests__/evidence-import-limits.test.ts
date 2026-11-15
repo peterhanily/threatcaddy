@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { deflate, deflateRaw } from 'pako';
+import { deflate, deflateRaw, Inflate } from 'pako';
 import { buildEvidenceItemDrafts } from '../lib/evidence-import';
 import { EVIDENCE_LIMITS } from '../lib/evidence-import-limits';
 
@@ -36,9 +36,20 @@ function concat(parts: Uint8Array[]): Uint8Array<ArrayBuffer> {
 }
 const docx = (entries: Entry[]) => new File([zip(entries)], 'synthetic.docx');
 const pdf = (bytes: Uint8Array) => new File([encode('%PDF-1.4\n1 0 obj\n<< /Filter /FlateDecode >>\nstream\n'), bytes as Uint8Array<ArrayBuffer>, encode('\nendstream\nendobj')], 'synthetic.pdf');
+/** Counts the bytes every pako inflater produces, including output the parser discards. */
+function meterInflatedBytes(): { bytes: number } {
+  const meter = { bytes: 0 };
+  const push = Inflate.prototype.push;
+  vi.spyOn(Inflate.prototype, 'push').mockImplementation(function (this: Inflate, ...args: Parameters<Inflate['push']>) {
+    const onData = this.onData;
+    this.onData = (chunk) => { meter.bytes += chunk.byteLength; onData.call(this, chunk); };
+    return push.apply(this, args);
+  });
+  return meter;
+}
 
 describe('untrusted evidence resource boundaries', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
   it('preserves bounded image previews when workers cannot decode image dimensions', async () => {
     vi.stubGlobal('createImageBitmap', undefined);
@@ -149,6 +160,26 @@ describe('untrusted evidence resource boundaries', () => {
     const [bounded] = await buildEvidenceItemDrafts(pdf(compress(new Uint8Array(EVIDENCE_LIMITS.entryBytes + 1))));
     expect(bounded.extractionStatus).toBe('metadata-only');
     expect(bounded.extractionWarning).toContain('stopped at the decoding limit');
+  });
+
+  it.each([
+    ['a DOCX part', '<w:document><w:body><w:p><w:r><w:t>Kept before the cut.</w:t></w:r></w:p>',
+      (data: Uint8Array) => docx([{ name: 'word/document.xml', data }])],
+    ['a PDF stream', 'BT\n/F1 12 Tf\n(Kept before the cut.) Tj\nET\n', (data: Uint8Array) => pdf(deflate(data))],
+  ])('stops inflating %s inside the inflater at the part limit', async (_name, prefix, build) => {
+    // A ratio bomb with an honest declared size: 32 MiB of padding deflates to about 32 KB.
+    const data = new Uint8Array(4 * EVIDENCE_LIMITS.entryBytes).fill(0x20);
+    data.set(encode(prefix));
+    const file = build(data);
+    expect(file.size).toBeLessThan(100_000);
+    const meter = meterInflatedBytes();
+    const [draft] = await buildEvidenceItemDrafts(file);
+    expect(draft.extractionStatus).toBe('partial');
+    expect(draft.content).toContain('Kept before the cut.');
+    expect(draft.extractionWarning).toContain('decoding limit');
+    // Inflating to the end and discarding the rest would produce all 32 MiB.
+    expect(meter.bytes).toBeGreaterThanOrEqual(EVIDENCE_LIMITS.entryBytes);
+    expect(meter.bytes).toBeLessThanOrEqual(EVIDENCE_LIMITS.entryBytes + 64 * 1024);
   });
 
   it('bounds PDF stream count independently of file size', async () => {
