@@ -4,6 +4,8 @@ import { disableSync, revisionKey } from '../lib/sync-state';
 import { setSessionKey } from '../lib/encryptionMiddleware';
 import { prepareSyncRecovery, reconcileSyncWorkspace, restoreSyncRecovery } from '../lib/sync-recovery';
 import { decryptBackup } from '../lib/backup-crypto';
+import { buildFullBackupPayload } from '../lib/backup-data';
+import { exportJSON } from '../lib/export';
 const api = vi.hoisted(() => ({ pull: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ syncPull: api.pull }));
 const password = 'a separate recovery phrase';
@@ -86,5 +88,27 @@ describe('explicit sync recovery', () => {
     expect(await db.folders.get('f')).toMatchObject({ agentEnabled: false, agentStatus: 'paused' });
     expect((await db.table('_syncQueue').toArray())[0].clientVersion).toBe(8);
     expect(await db.table('_syncMeta').get('syncRecoveryRequiredV2')).toMatchObject({ value: true });
+  });
+  it('restores pending agent approvals as inert, backup-valid history', async () => {
+    const action = { investigationId: 'f', threadId: 't', toolName: 'create_note', toolInput: { title: 'Draft' }, rationale: 'History', createdAt: 1 };
+    await db.agentActions.bulkAdd([
+      { ...action, id: 'pending', status: 'pending', toolBinding: 'binding', idempotencyKey: 'key-1' },
+      { ...action, id: 'approved', status: 'approved', toolBinding: 'binding', idempotencyKey: 'key-2', resultSummary: 'Earlier note' },
+      { ...action, id: 'executed', status: 'executed', toolBinding: 'binding', idempotencyKey: 'key-3', resultSummary: 'Done' },
+    ]);
+    const receipt = await prepareSyncRecovery(password);
+    await db.transaction('rw', db.tables, async () => { for (const table of db.tables) await table.clear(); });
+    await restoreSyncRecovery(password, receipt.blob, true);
+    for (const id of ['pending', 'approved']) {
+      const restored = await db.agentActions.get(id);
+      expect(restored).toMatchObject({ status: 'rejected', resultSummary: expect.stringContaining('Recovered from archive') });
+      expect(restored).not.toHaveProperty('result');
+      expect(restored).not.toHaveProperty('toolBinding');
+      expect(restored).not.toHaveProperty('idempotencyKey');
+    }
+    expect(await db.agentActions.get('executed')).toMatchObject({ status: 'executed', toolBinding: 'binding', idempotencyKey: 'key-3', resultSummary: 'Done' });
+    await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
+    await expect(buildFullBackupPayload('investigation', 'f')).resolves.toBeDefined();
+    await expect(exportJSON()).resolves.toContain('Recovered from archive');
   });
 });

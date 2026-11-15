@@ -7,6 +7,7 @@ import { hasPendingChanges, PendingChangesError } from './pending-changes';
 import { syncPull } from './server-api';
 import { readStoredAuth } from './auth-storage';
 import { ensureSyncCaptureCoverage, markRestoredSyncHistory, SYNC_CAPTURE_KEY, SYNC_RECOVERY_KEY } from './sync-capture-policy';
+import { rejectRestoredAction } from './portable-backup';
 
 const RECOVERY_KEY = SYNC_RECOVERY_KEY;
 type Snapshot = Record<string, Record<string, unknown>[]>;
@@ -142,8 +143,11 @@ export async function restoreSyncRecovery(password: string, blob: EncryptedBacku
       const restored = name === 'agentDeployments' ? rows.map(row => ({ ...row, status: 'paused', serverSideEnabled: false, handoffState: 'client', shift: 'resting' }))
         : name === 'folders' ? rows.map(row => ({ ...row, ...(row.agentEnabled ? { agentEnabled: false, agentStatus: 'paused' } : {}) }))
         : name === 'installedIntegrations' ? rows.map(row => ({ ...row, enabled: false }))
-        : name === 'agentActions' ? rows.map(row => ['approved', 'pending'].includes(String(row.status))
-          ? { ...row, status: 'rejected', result: 'Recovered from archive; request and review a new approval before execution.' } : row)
+        : name === 'agentActions' ? rows.map(row => {
+          const action = { ...row };
+          rejectRestoredAction(action, 'Recovered from archive; request and review a new approval before execution.');
+          return action;
+        })
         : rows;
       await db.table(name).bulkPut(restored);
       count += restored.length;

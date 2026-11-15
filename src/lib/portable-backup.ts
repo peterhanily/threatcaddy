@@ -102,15 +102,18 @@ export function suspendRestoredAutomation(data: BackupPayload['data']): BackupPa
     delete deployment.handoffState;
   }
   for (const row of copy.agentActions ?? []) {
-    const action = row as Record<string, unknown>;
-    if (action.status === 'pending' || action.status === 'approved') {
-      action.status = 'rejected';
-      action.resultSummary = 'Restored from backup; previous approval cannot authorize execution in this workspace. Review and propose a new action.';
-      delete action.toolBinding;
-      delete action.idempotencyKey;
-    }
+    rejectRestoredAction(row as Record<string, unknown>, 'Restored from backup; previous approval cannot authorize execution in this workspace. Review and propose a new action.');
   }
   return copy;
+}
+
+/** A previous approval cannot authorize execution after any restore. Mutates a copied row. */
+export function rejectRestoredAction(action: Record<string, unknown>, resultSummary: string): void {
+  if (action.status !== 'pending' && action.status !== 'approved') return;
+  action.status = 'rejected';
+  action.resultSummary = resultSummary;
+  delete action.toolBinding;
+  delete action.idempotencyKey;
 }
 
 export function portableTableCounts(data: BackupPayload['data']): Record<BackupTable, number> {
