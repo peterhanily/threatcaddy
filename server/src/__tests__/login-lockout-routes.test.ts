@@ -4,7 +4,7 @@ import { Hono } from 'hono';
 const { victim, passwordVerify, verifyAdminUser } = vi.hoisted(() => ({
   victim: { id: 'user-1', email: 'victim@example.com', displayName: 'Victim', avatarUrl: null, passwordHash: 'fixture-hash', role: 'analyst', active: true },
   passwordVerify: vi.fn(async (_hash: string, password: string) => password === 'correct-password'),
-  verifyAdminUser: vi.fn(async (_username: string, _password: string) => null as null | Record<string, string>),
+  verifyAdminUser: vi.fn(async (): Promise<null | Record<string, string>> => null),
 }));
 
 vi.mock('../db/index.js', () => {

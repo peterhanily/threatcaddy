@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 import { Hono } from 'hono';
 
 const { usageInsert, providerFetch } = vi.hoisted(() => ({
-  usageInsert: vi.fn(async (_row: Record<string, unknown>) => undefined),
+  usageInsert: vi.fn(async () => undefined),
   providerFetch: vi.fn(),
 }));
 

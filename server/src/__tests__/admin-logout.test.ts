@@ -57,7 +57,7 @@ describe('administrator sign-out', () => {
     });
     new Script(sharedJs()).runInContext(context);
 
-    handlers.get('logoutBtn:click')!();
+    handlers.get('logoutBtn:click')?.();
     expect(requests[0].url).toBe('https://admin.example/admin/api/logout');
     expect(requests[0].init.method).toBe('POST');
     expect(requests[0].init.headers?.Authorization).toBe('Bearer fixture-session');
