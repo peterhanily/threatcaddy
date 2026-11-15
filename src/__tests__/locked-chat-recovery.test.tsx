@@ -7,6 +7,8 @@ import { setSessionKey, getSessionKey, lockEncryptionSession, decryptAllExisting
 import { restoreWorkspaceRecovery, registerLockParticipant } from '../lib/workspace-lock';
 import { persistChatCompletion } from '../lib/locked-chat-recovery';
 import { useLLM } from '../hooks/useLLM';
+import i18n from '../i18n';
+import deChat from '../../public/locales/de/chat.json';
 
 const target = { threadId: 'lock-test-thread', messageId: 'response', model: 'test-model', provider: 'anthropic' as const };
 let key: CryptoKey;
@@ -57,6 +59,36 @@ it('aborts a stream, seals partial text and running tools, and saves them once a
   expect(saved?.[0].toolCalls?.[0]).toMatchObject({ id: 'pending-tool', isError: true, input: { title: 'Pending note' } });
   await restoreWorkspaceRecovery(key, () => true);
   expect((await db.chatThreads.get(target.threadId))?.messages).toHaveLength(1);
+});
+
+it('stores the lock notices and recovered thread title in the user’s language', async () => {
+  for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+  i18n.addResourceBundle('de', 'chat', deChat, true, true);
+  await act(async () => { await i18n.changeLanguage('de'); });
+  try {
+    const view = renderHook(() => useLLM());
+    let finishTool!: (value: { result: string; isError: boolean }) => void;
+    const executor = vi.fn(() => new Promise<{ result: string; isError: boolean }>(resolve => { finishTool = resolve; }));
+    let requestId = '';
+    act(() => { requestId = view.result.current.sendAgentRequest({ provider: 'anthropic', model: target.model,
+      apiKey: 'synthetic-fixture', messages: [] }, executor, vi.fn(), target); });
+    await act(async () => {
+      post({ type: 'TC_LLM_CHUNK', requestId, content: 'Teilantwort' });
+      post({ type: 'TC_LLM_DONE', requestId, stopReason: 'tool_use', contentBlocks: [
+        { type: 'tool_use', id: 'pending-tool', name: 'create_note', input: { title: 'Notiz' } },
+      ] });
+      await Promise.resolve();
+    });
+    act(() => { lockEncryptionSession(); });
+    view.unmount();
+    await act(async () => { finishTool({ result: 'Cancelled', isError: true }); await Promise.resolve(); });
+    setSessionKey(key); await db.chatThreads.delete(target.threadId);
+    await restoreWorkspaceRecovery(key, () => getSessionKey() === key);
+    const recovered = await db.chatThreads.get('recovered-response');
+    expect(recovered?.title).toBe(deChat.view.recoveredThreadTitle);
+    expect(recovered?.messages[0].content).toBe(`Teilantwort\n\n${deChat.message.lockInterrupted}`);
+    expect(recovered?.messages[0].toolCalls?.[0]).toMatchObject({ id: 'pending-tool', isError: true, result: deChat.tool.lockInterrupted });
+  } finally { await act(async () => { await i18n.changeLanguage('en'); }); }
 });
 
 it.each([false, true])('retains a final response racing a lock without duplicating a committed message (already committed: %s)', async committed => {

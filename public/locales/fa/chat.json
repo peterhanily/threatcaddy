@@ -12,6 +12,7 @@
     "backToThreads": "بازگشت به رشته‌ها",
     "clickToRename": "برای تغییر نام کلیک کنید",
     "threadTitleAria": "عنوان رشته چت",
+    "recoveredThreadTitle": "پاسخ قطع‌شدهٔ بازیابی‌شده",
     "filterThreadsAria": "فیلتر رشته‌ها بر اساس منبع",
     "filterAll": "همه",
     "filterHuman": "انسانی",
@@ -122,6 +123,7 @@
     "branchTitle": "شاخه‌بندی مکالمه از اینجا",
     "rewindTitle": "برگشت به این پیام",
     "undoTitle": "لغو: بازیابی موجودیت‌ها به قبل از این اقدام",
+    "lockInterrupted": "[پاسخ هنگام قفل شدن فضای کاری قطع شد.]",
     "attachmentAlt": "پیوست {{index}}",
     "tokenCount": "{{count}} توکن",
     "tokenCountTitle": "ورودی: {{input}} توکن، خروجی: {{output}} توکن"
@@ -129,6 +131,7 @@
   "tool": {
     "noInput": "(بدون ورودی)",
     "errorPrefix": "خطا: {{message}}",
+    "lockInterrupted": "به دلیل قفل شدن فضای کاری قطع شد. پیش از تلاش دوباره با این ابزار، مورد ذخیره‌شده یا نقطه بازرسی را بررسی کنید.",
     "resultCount_one": "{{count}} نتیجه",
     "resultCount_other": "{{count}} نتیجه",
     "doneWithLabel": "انجام شد: {{label}}",

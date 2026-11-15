@@ -12,6 +12,7 @@
     "backToThreads": "Назад до гілок",
     "clickToRename": "Натисніть для перейменування",
     "threadTitleAria": "Заголовок гілки чату",
+    "recoveredThreadTitle": "Відновлена перервана відповідь",
     "filterThreadsAria": "Фільтрувати гілки за джерелом",
     "filterAll": "усі",
     "filterHuman": "людина",
@@ -124,6 +125,7 @@
     "branchTitle": "Створити розгалуження розмови звідси",
     "rewindTitle": "Перемотати до цього повідомлення",
     "undoTitle": "Скасувати: відновити об'єкти до цієї дії",
+    "lockInterrupted": "[Відповідь перервано під час блокування робочого простору.]",
     "attachmentAlt": "Вкладення {{index}}",
     "tokenCount": "{{count}} токенів",
     "tokenCountTitle": "Введення: {{input}} токенів, Виведення: {{output}} токенів"
@@ -131,6 +133,7 @@
   "tool": {
     "noInput": "(немає вхідних даних)",
     "errorPrefix": "Помилка: {{message}}",
+    "lockInterrupted": "Перервано блокуванням робочого простору. Перш ніж повторити цей інструмент, перевірте збережений елемент або контрольну точку.",
     "resultCount_one": "{{count}} результат",
     "resultCount_other": "{{count}} результатів",
     "doneWithLabel": "Готово: {{label}}",

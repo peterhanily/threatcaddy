@@ -12,6 +12,7 @@
     "backToThreads": "Назад к тредам",
     "clickToRename": "Нажмите для переименования",
     "threadTitleAria": "Заголовок треда чата",
+    "recoveredThreadTitle": "Восстановленный прерванный ответ",
     "filterThreadsAria": "Фильтровать треды по источнику",
     "filterAll": "все",
     "filterHuman": "человек",
@@ -124,6 +125,7 @@
     "branchTitle": "Создать ответвление разговора отсюда",
     "rewindTitle": "Перемотать к этому сообщению",
     "undoTitle": "Отменить: восстановить объекты до этого действия",
+    "lockInterrupted": "[Ответ прерван при блокировке рабочей области.]",
     "attachmentAlt": "Вложение {{index}}",
     "tokenCount": "{{count}} токенов",
     "tokenCountTitle": "Ввод: {{input}} токенов, Вывод: {{output}} токенов"
@@ -131,6 +133,7 @@
   "tool": {
     "noInput": "(нет входных данных)",
     "errorPrefix": "Ошибка: {{message}}",
+    "lockInterrupted": "Прервано блокировкой рабочей области. Перед повторным запуском этого инструмента проверьте сохранённый элемент или контрольную точку.",
     "resultCount_one": "{{count}} результат",
     "resultCount_other": "{{count}} результатов",
     "doneWithLabel": "Готово: {{label}}",

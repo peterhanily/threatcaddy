@@ -12,6 +12,7 @@
     "backToThreads": "Volver a hilos",
     "clickToRename": "Clic para renombrar",
     "threadTitleAria": "Título del hilo de conversación",
+    "recoveredThreadTitle": "Respuesta interrumpida recuperada",
     "filterThreadsAria": "Filtrar hilos por fuente",
     "filterAll": "todos",
     "filterHuman": "humano",
@@ -123,6 +124,7 @@
     "branchTitle": "Bifurcar la conversación desde aquí",
     "rewindTitle": "Rebobinar a este mensaje",
     "undoTitle": "Deshacer: restaurar entidades al estado anterior a esta acción",
+    "lockInterrupted": "[Respuesta interrumpida al bloquearse el espacio de trabajo.]",
     "attachmentAlt": "Adjunto {{index}}",
     "tokenCount": "{{count}} tokens",
     "tokenCountTitle": "Entrada: {{input}} tokens, Salida: {{output}} tokens"
@@ -130,6 +132,7 @@
   "tool": {
     "noInput": "(sin entrada)",
     "errorPrefix": "Error: {{message}}",
+    "lockInterrupted": "Interrumpido por el bloqueo del espacio de trabajo. Compruebe el elemento guardado o el punto de control antes de volver a intentar esta herramienta.",
     "resultCount_one": "{{count}} resultado",
     "resultCount_other": "{{count}} resultados",
     "doneWithLabel": "Hecho: {{label}}",

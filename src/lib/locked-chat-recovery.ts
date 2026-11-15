@@ -3,6 +3,7 @@ import Dexie from 'dexie';
 import type { ChatMessage, LLMProvider } from '../types';
 import { registerLockParticipant, SealedRecovery } from './workspace-lock';
 import { markPending, clearPending } from './pending-changes';
+import i18n from '../i18n';
 
 export interface ChatRecoveryTarget { threadId: string; messageId: string; model: string; provider: LLMProvider }
 type Recovery = { target: ChatRecoveryTarget; message: ChatMessage };
@@ -60,7 +61,7 @@ registerLockParticipant({
           // Preserve the result even if another tab deleted its original thread.
           const id = `recovered-${message.id}`;
           if (!await db.chatThreads.get(id)) await db.chatThreads.add({
-            id, title: 'Recovered interrupted response', messages: [message],
+            id, title: i18n.t('view.recoveredThreadTitle', { ns: 'chat' }), messages: [message],
             model: target.model, provider: target.provider, tags: [], trashed: false,
             archived: false, createdAt: Date.now(), updatedAt: Date.now(),
           });
