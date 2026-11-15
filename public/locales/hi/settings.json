@@ -455,5 +455,7 @@
   "encryption.table.installedIntegrations": "इंस्टॉल किए एकीकरण",
   "encryption.table.customSlashCommands": "कस्टम कमांड",
   "encryption.confirmRestore": "पुनर्स्थापन की पुष्टि करें",
-  "encryption.refreshRestorePreview": "पूर्वावलोकन रीफ़्रेश करें"
+  "encryption.refreshRestorePreview": "पूर्वावलोकन रीफ़्रेश करें",
+  "general.realisticSample": "यथार्थपरक अभ्यास — मेलबॉक्स से समझौता",
+  "general.parodySample": "पैरोडी — FERMENTED PERSISTENCE"
 }

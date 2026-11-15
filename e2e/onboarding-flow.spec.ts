@@ -3,9 +3,10 @@ import { goToApp, createInvestigation, navigateToView, createQuickNote, openNewT
 
 test.describe('Onboarding and investigation flow', () => {
   test.describe('Demo mode', () => {
-    test('demo modal appears on ?demo URL', async ({ page }) => {
-      // Navigate directly to /?demo — skip goToApp which dismisses overlays
-      await page.goto('/?demo');
+    test('parody demo modal appears on ?demo=parody URL', async ({ page }) => {
+      // This workflow checks the original parody; the realistic default is
+      // exercised separately in sample-investigations.spec.ts.
+      await page.goto('/?demo=parody');
 
       // Wait for the app to load
       await page.waitForSelector('[data-tour="header"]', { timeout: 15_000 });

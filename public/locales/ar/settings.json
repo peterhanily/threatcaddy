@@ -487,5 +487,7 @@
   "intel.valuesLoaded_zero": "عدد القيم التي تم تحميلها: {{count}}",
   "intel.valuesLoaded_two": "عدد القيم التي تم تحميلها: {{count}}",
   "intel.valuesLoaded_few": "عدد القيم التي تم تحميلها: {{count}}",
-  "intel.valuesLoaded_many": "عدد القيم التي تم تحميلها: {{count}}"
+  "intel.valuesLoaded_many": "عدد القيم التي تم تحميلها: {{count}}",
+  "general.realisticSample": "تمرين واقعي — اختراق صندوق بريد",
+  "general.parodySample": "محاكاة ساخرة — FERMENTED PERSISTENCE"
 }

@@ -9,5 +9,5 @@ export default defineConfig({
   timeout: 60_000,
   reporter: 'list',
   outputDir: 'test-results/standalone',
-  use: { ...devices['Desktop Chrome'], offline: true, screenshot: 'only-on-failure' },
+  use: { ...devices['Desktop Chrome'], offline: true, screenshot: 'only-on-failure', trace: 'retain-on-failure' },
 });

@@ -26,7 +26,8 @@ import {
 import type { EvidenceItem } from '../../types';
 import { cn, formatDate } from '../../lib/utils';
 import { formatBytes } from '../../lib/file-handler';
-import { EVIDENCE_ACCEPT, findDuplicateEvidenceItemIds, MAX_EVIDENCE_IMPORT_FILES } from '../../lib/evidence-import';
+import { EVIDENCE_ACCEPT, MAX_EVIDENCE_IMPORT_FILES } from '../../lib/evidence-import-constants';
+import { findDuplicateEvidenceItemIds } from '../../lib/evidence-duplicates';
 import {
   extractEvidenceTableIOCCandidates,
   renderEvidenceTableIOCCandidatesText,
@@ -38,7 +39,7 @@ interface EvidenceViewProps {
   folderId?: string;
   folderName?: string;
   items: EvidenceItem[];
-  onImportFiles: (files: File[]) => Promise<EvidenceItem[]>;
+  onImportFiles: (files: File[], signal?: AbortSignal) => Promise<EvidenceItem[]>;
   onDeduplicate?: () => Promise<number>;
   onCreateTableIOCs?: (item: EvidenceItem, candidates: EvidenceTableIOCCandidate[]) => Promise<number>;
   onOpenChat: () => void;
@@ -114,7 +115,13 @@ export function EvidenceView({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inspectScrollRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
-  const [importing, setImporting] = useState(false);
+  const [importTask, setImportTask] = useState<{ folderId?: string; controller: AbortController } | null>(null);
+  const importController = useRef<AbortController | null>(null);
+  const importing = importTask?.folderId === folderId && !!importTask && !importTask.controller.signal.aborted;
+  useEffect(() => () => {
+    importController.current?.abort();
+    importController.current = null;
+  }, [folderId]);
   const [deduping, setDeduping] = useState(false);
   const [creatingTableIOCs, setCreatingTableIOCs] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -255,16 +262,22 @@ export function EvidenceView({
       return;
     }
 
-    setImporting(true);
+    const controller = new AbortController();
+    importController.current = controller;
+    setImportTask({ folderId, controller });
     setError(null);
     try {
-      await onImportFiles(files);
+      await onImportFiles(files, controller.signal);
     } catch (err) {
+      if (controller.signal.aborted) return;
       console.error('Failed to import evidence:', err);
       setError(formatEvidenceImportError(err, t));
     } finally {
-      setImporting(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (importController.current === controller) {
+        importController.current = null;
+        setImportTask(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -373,7 +386,7 @@ export function EvidenceView({
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
               folderId && !importing
-                ? 'bg-accent-blue text-white hover:bg-accent-blue/90'
+                ? 'bg-accent text-white hover:bg-accent-hover'
                 : 'bg-bg-raised text-text-muted cursor-not-allowed',
             )}
           >
@@ -391,7 +404,7 @@ export function EvidenceView({
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4">
         {!folderId ? (
           <div className="h-full min-h-[320px] flex items-center justify-center">
             <div className="text-center max-w-sm">
@@ -425,6 +438,11 @@ export function EvidenceView({
               >
                 {t('dropzone.browse')}
               </button>
+              {importing && <button
+                type="button"
+                onClick={() => { importController.current?.abort(); setImportTask(null); }}
+                className="px-3 py-1.5 rounded-md border border-border-subtle text-xs text-text-primary hover:bg-bg-hover"
+              >{t('common:cancel')}</button>}
             </div>
 
             {error && (
@@ -938,7 +956,7 @@ export function EvidenceView({
             </section>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

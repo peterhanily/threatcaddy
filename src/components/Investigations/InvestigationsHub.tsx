@@ -5,6 +5,7 @@ import type { Folder, InvestigationSummary, InvestigationDataMode, Note, Task, T
 import { cn } from '../../lib/utils';
 import { InvestigationCard } from './InvestigationCard';
 import { SupervisorSummary } from '../Agent/SupervisorSummary';
+import { FirstRunGuide } from './FirstRunGuide';
 
 const ZERO_COUNTS = { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0 };
 
@@ -19,6 +20,9 @@ export interface InvestigationsHubProps {
   onSyncLocally: (folderId: string) => void;
   onUnsync: (folderId: string) => void;
   onCreateInvestigation: () => void;
+  onImportInvestigation?: () => void;
+  onLoadDemo?: () => void;
+  showFirstRunGuide?: boolean;
   onEditInvestigation?: (folderId: string) => void;
   onArchiveInvestigation?: (folderId: string) => void;
   onUnarchiveInvestigation?: (folderId: string) => void;
@@ -58,7 +62,7 @@ function EmptyState({ message, showCreate, onCreate }: { message: string; showCr
       {showCreate && onCreate && (
         <button
           onClick={onCreate}
-          className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple text-white hover:brightness-110 transition-all"
+          className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent text-white hover:bg-accent-hover transition-all"
         >
           <Plus size={14} />
           {t('hub.createInvestigation')}
@@ -102,6 +106,9 @@ export function InvestigationsHub({
   onSyncLocally,
   onUnsync,
   onCreateInvestigation,
+  onImportInvestigation,
+  onLoadDemo,
+  showFirstRunGuide = true,
   onEditInvestigation,
   onArchiveInvestigation,
   onUnarchiveInvestigation,
@@ -163,12 +170,16 @@ export function InvestigationsHub({
           <h1 className="text-xl font-bold text-text-primary">{t('hub.title')}</h1>
           <button
             onClick={onCreateInvestigation}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-purple text-white hover:brightness-110 transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-accent text-white hover:bg-accent-hover transition-all"
           >
             <Plus size={16} />
             {t('hub.newInvestigation')}
           </button>
         </div>
+
+        {showFirstRunGuide && !localLoading && !remoteLoading && localFolders.length === 0 && remoteInvestigations.length === 0 && (onImportInvestigation || onLoadDemo) && (
+          <FirstRunGuide onCreate={onCreateInvestigation} onImport={onImportInvestigation} onLoadDemo={onLoadDemo} />
+        )}
 
         {/* Search & Filter Bar */}
         <div className="flex items-center gap-3 mb-8">

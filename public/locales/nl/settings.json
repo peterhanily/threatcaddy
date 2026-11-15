@@ -455,5 +455,7 @@
   "encryption.table.installedIntegrations": "Geïnstalleerde integraties",
   "encryption.table.customSlashCommands": "Eigen opdrachten",
   "encryption.confirmRestore": "Herstel bevestigen",
-  "encryption.refreshRestorePreview": "Nieuw voorbeeld controleren"
+  "encryption.refreshRestorePreview": "Nieuw voorbeeld controleren",
+  "general.realisticSample": "Realistische oefening — gecompromitteerde mailbox",
+  "general.parodySample": "Parodie — FERMENTED PERSISTENCE"
 }

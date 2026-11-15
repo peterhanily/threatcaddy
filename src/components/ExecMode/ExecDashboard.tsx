@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, type ReactNode } from 'react';
+import { useState, useCallback, useMemo, useEffect, lazy, Suspense, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LayoutDashboard, FolderOpen, Activity, Sun, Moon, Monitor, Shield, ChevronRight, Bot } from 'lucide-react';
 import type { Folder, Note, Task, TimelineEvent, Timeline, Whiteboard, StandaloneIOC, Tag, ActivityLogEntry, ChatThread, ViewMode } from '../../types';
@@ -17,7 +17,7 @@ import { ExecBreadcrumb, type BreadcrumbSegment } from './ExecBreadcrumb';
 import { ExecEntityNav } from './ExecEntityNav';
 import { ExecSearchBar } from './ExecSearchBar';
 import { ExecGlobalList } from './ExecGlobalList';
-import { ShareDialog } from './ShareDialog';
+const ShareDialog = lazy(() => import('./ShareDialog').then(module => ({ default: module.ShareDialog })));
 import type { SharePayload, InvestigationBundle } from '../../lib/share';
 import { db } from '../../db';
 // Agent types used for DB queries in useEffect
@@ -634,7 +634,7 @@ export function ExecDashboard({
       )}
 
       {/* Scrollable content */}
-      <div className="flex-1 min-w-0 overflow-y-auto px-3 sm:px-4 py-4">
+      <main className="flex-1 min-w-0 overflow-y-auto px-3 sm:px-4 py-4">
         {drillDown ? (
           <div className="flex flex-col gap-3">
             <ExecBreadcrumb segments={breadcrumbs} />
@@ -754,7 +754,7 @@ export function ExecDashboard({
             <ExecActivityFeed entries={activityEntries} limit={50} />
           </div>
         )}
-      </div>
+      </main>
 
       {/* Bottom tab bar — hide when drilled in */}
       {!drillDown && (
@@ -778,11 +778,15 @@ export function ExecDashboard({
       )}
 
       {/* Share dialog */}
-      <ShareDialog
-        open={sharePayload !== null}
-        onClose={() => setSharePayload(null)}
-        payload={sharePayload}
-      />
+      {sharePayload !== null && (
+        <Suspense fallback={null}>
+          <ShareDialog
+            open
+            onClose={() => setSharePayload(null)}
+            payload={sharePayload}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

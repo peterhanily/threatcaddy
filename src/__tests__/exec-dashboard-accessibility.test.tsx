@@ -21,6 +21,7 @@ afterEach(async () => { await i18n.changeLanguage('en'); vi.restoreAllMocks(); }
 describe('Exec dashboard accessible entry controls', () => {
   it('names the theme action for each current state and preserves analyst navigation', async () => {
     const view = render(<ExecDashboard {...properties} />);
+    expect(screen.getAllByRole('main')).toHaveLength(1);
     fireEvent.click(screen.getByRole('button', { name: 'Switch to light theme' }));
     expect(properties.onToggleTheme).toHaveBeenCalledOnce();
     view.rerender(<ExecDashboard {...properties} theme="light" />);

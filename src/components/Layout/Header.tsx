@@ -147,7 +147,7 @@ export function Header({
       >
         <Search size={16} className="shrink-0" />
         <span className="hidden sm:inline truncate">{selectedFolderName ? t('header.searchInFolderEllipsis', { name: selectedFolderName }) : t('header.searchAllEllipsis')}</span>
-        <kbd className="hidden sm:inline ms-auto text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-500 border border-gray-600 font-mono shrink-0">Ctrl+K</kbd>
+        <kbd className="hidden sm:inline ms-auto text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-300 border border-gray-600 font-mono shrink-0">Ctrl+K</kbd>
       </button>
 
       {/* Help dropdown — hidden on mobile, shown on md+ (U13) */}

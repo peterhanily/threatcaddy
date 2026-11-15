@@ -455,5 +455,7 @@
   "encryption.table.installedIntegrations": "Installierte Integrationen",
   "encryption.table.customSlashCommands": "Eigene Befehle",
   "encryption.confirmRestore": "Wiederherstellung bestätigen",
-  "encryption.refreshRestorePreview": "Neue Vorschau prüfen"
+  "encryption.refreshRestorePreview": "Neue Vorschau prüfen",
+  "general.realisticSample": "Realistische Übung — Postfachkompromittierung",
+  "general.parodySample": "Parodie — FERMENTED PERSISTENCE"
 }

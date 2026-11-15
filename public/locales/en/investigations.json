@@ -105,5 +105,10 @@
   "detail.deleteMessage": "Delete \"{{name}}\" and all its contents? This cannot be undone.",
   "detail.deleteConfirm": "Delete Investigation",
   "detail.created": "Created {{date}}",
-  "detail.updated": "Updated {{date}}"
+  "detail.updated": "Updated {{date}}",
+  "firstRun.title": "Start with a case, finish with a report",
+  "firstRun.description": "Create a case, import authorized source files, or explore a fictional mailbox incident. No AI setup is needed.",
+  "firstRun.import": "Import source files",
+  "firstRun.demo": "Try the realistic demo",
+  "firstRun.report": "Review evidence, build a timeline, and write a report note. Download the note as Markdown; use Save Backup separately to preserve the full workspace."
 }

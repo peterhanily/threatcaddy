@@ -11,6 +11,9 @@ import labelsEn from '../public/locales/en/labels.json';
 import datesEn from '../public/locales/en/dates.json';
 import analysisEn from '../public/locales/en/analysis.json';
 import encryptionEn from '../public/locales/en/encryption.json';
+import toastEn from '../public/locales/en/toast.json';
+import execEn from '../public/locales/en/exec.json';
+import investigationsEn from '../public/locales/en/investigations.json';
 
 // Remaining namespaces — only bundled in standalone builds (tree-shaken in hosted).
 // In hosted mode these are lazy-loaded via HTTP backend.
@@ -21,18 +24,15 @@ import chatEn from '../public/locales/en/chat.json';
 import dashboardEn from '../public/locales/en/dashboard.json';
 import evidenceEn from '../public/locales/en/evidence.json';
 import productsEn from '../public/locales/en/products.json';
-import execEn from '../public/locales/en/exec.json';
 import graphEn from '../public/locales/en/graph.json';
 import importEn from '../public/locales/en/import.json';
 import integrationsEn from '../public/locales/en/integrations.json';
-import investigationsEn from '../public/locales/en/investigations.json';
 import notesEn from '../public/locales/en/notes.json';
 import playbooksEn from '../public/locales/en/playbooks.json';
 import searchEn from '../public/locales/en/search.json';
 import settingsEn from '../public/locales/en/settings.json';
 import tasksEn from '../public/locales/en/tasks.json';
 import timelineEn from '../public/locales/en/timeline.json';
-import toastEn from '../public/locales/en/toast.json';
 import tourEn from '../public/locales/en/tour.json';
 import trashEn from '../public/locales/en/trash.json';
 import whiteboardEn from '../public/locales/en/whiteboard.json';
@@ -138,7 +138,9 @@ const ALL_NS = [
   'timeline', 'toast', 'tour', 'trash', 'whiteboard',
 ] as const;
 
-const HOSTED_NS = ['common', 'labels', 'dates', 'analysis', 'encryption'] as const;
+// Both shells request these before rendering. Bundling the English fallback
+// avoids serial Suspense/HTTP round trips on an otherwise empty workspace.
+const HOSTED_NS = ['common', 'labels', 'dates', 'analysis', 'encryption', 'toast', 'exec', 'investigations'] as const;
 
 const enResources = isStandalone ? {
   common: commonEn, labels: labelsEn, dates: datesEn, analysis: analysisEn,
@@ -152,6 +154,7 @@ const enResources = isStandalone ? {
 } : {
   common: commonEn, labels: labelsEn, dates: datesEn,
   analysis: analysisEn, encryption: encryptionEn,
+  toast: toastEn, exec: execEn, investigations: investigationsEn,
 };
 
 // Cast needed: enResources is a conditional union type that TS can't narrow to ResourceLanguage

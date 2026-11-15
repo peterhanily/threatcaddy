@@ -102,5 +102,10 @@
   "card.entity.iocs": "IOC",
   "card.entity.events": "イベント",
   "card.entity.whiteboards": "ホワイトボード",
-  "card.entity.chats": "チャット"
+  "card.entity.chats": "チャット",
+  "firstRun.title": "調査からレポートまで",
+  "firstRun.description": "案件を作成し、許可された資料をインポートするか、架空のメール侵害事例を試してください。AI の設定は不要です。",
+  "firstRun.import": "資料をインポート",
+  "firstRun.demo": "実践的なデモを試す",
+  "firstRun.report": "証拠を確認し、タイムラインを作成して、レポートをノートにまとめます。ノートは Markdown でダウンロードし、作業領域全体は別途バックアップを保存してください。"
 }

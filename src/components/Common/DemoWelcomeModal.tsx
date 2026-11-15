@@ -6,16 +6,17 @@ interface DemoWelcomeModalProps {
   onClose: () => void;
   onStartTour: () => void;
   onDeleteDemo: () => void;
+  sampleName?: string;
 }
 
-export function DemoWelcomeModal({ open, onClose, onStartTour, onDeleteDemo }: DemoWelcomeModalProps) {
+export function DemoWelcomeModal({ open, onClose, onStartTour, onDeleteDemo, sampleName = 'Mailbox Compromise — Synthetic Exercise' }: DemoWelcomeModalProps) {
   const { t } = useTranslation('common');
 
   return (
     <Modal open={open} onClose={onClose} title={t('demoModal.title')}>
       <div className="space-y-4">
         <p className="text-sm text-gray-300">
-          {t('demoModal.descriptionPrefix')} <strong className="text-gray-100">"Operation FERMENTED PERSISTENCE"</strong> {t('demoModal.descriptionSuffix')}
+          {t('demoModal.descriptionPrefix')} <strong className="text-gray-100">{sampleName}</strong> {t('demoModal.descriptionSuffix')}
         </p>
 
         <div className="text-sm text-gray-400 space-y-1.5">
@@ -26,6 +27,7 @@ export function DemoWelcomeModal({ open, onClose, onStartTour, onDeleteDemo }: D
             <li>{t('demoModal.tryWhiteboard')}</li>
             <li>{t('demoModal.useLinksPrefix')} <code className="bg-gray-800 px-1 rounded text-xs">[[ThreatCaddyLinks]]</code> {t('demoModal.useLinksSuffix')}</li>
           </ul>
+          <p className="pt-2 text-gray-300">{t('demoModal.reportWorkflow')}</p>
         </div>
 
         <div className="flex flex-col gap-2 pt-2">
@@ -43,13 +45,13 @@ export function DemoWelcomeModal({ open, onClose, onStartTour, onDeleteDemo }: D
           </button>
           <button
             onClick={() => { onDeleteDemo(); onClose(); }}
-            className="w-full px-4 py-2 rounded-lg text-gray-500 hover:text-red-400 text-sm transition-colors"
+            className="w-full min-h-11 px-4 py-2 rounded-lg text-gray-300 hover:text-red-400 text-sm transition-colors"
           >
             {t('demoModal.deleteDemo')}
           </button>
         </div>
 
-        <p className="text-xs text-gray-600 text-center">
+        <p className="text-xs text-gray-400 text-center">
           {t('demoModal.removeHint')}
         </p>
       </div>

@@ -3,9 +3,11 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-accent: #6366f1;
-  --color-accent-hover: #818cf8;
+  /* Filled controls and foreground accents need different contrast pairs. */
+  --color-accent: #4f46e5;
+  --color-accent-hover: #5b50dc;
   --color-accent-dim: #4f46e5;
+  --color-accent-text: #a5b4fc;
 
   /* Purple palette */
   --color-bg-deep: #0d0b14;
@@ -19,6 +21,7 @@
   --color-text-secondary: #9590a8;
   --color-text-muted: #918ba8;
   --color-purple: #7c6bf0;
+  --color-purple-text: #a78bfa;
   --color-accent-blue: #38bdf8;
   --color-accent-green: #4ade80;
   --color-accent-amber: #fbbf24;
@@ -28,8 +31,9 @@
 /* ─── Light mode global overrides ─── */
 .light {
   --color-accent: #4f46e5;
-  --color-accent-hover: #6366f1;
+  --color-accent-hover: #5b50dc;
   --color-accent-dim: #4338ca;
+  --color-accent-text: #4338ca;
   --color-bg-deep: #f8f7fc;
   --color-bg-surface: #f0eef8;
   --color-bg-raised: #e8e5f5;
@@ -38,10 +42,21 @@
   --color-border-subtle: rgba(0,0,0,0.06);
   --color-border-medium: rgba(0,0,0,0.1);
   --color-text-primary: #1a1726;
-  --color-text-secondary: #5f5878;
-  --color-text-muted: #716b88;
+  --color-text-secondary: #524c68;
+  --color-text-muted: #5b536f;
   --color-purple: #6d5ce0;
+  --color-purple-text: #5b21b6;
+  --color-accent-blue: #075985;
+  --color-accent-green: #166534;
+  --color-accent-amber: #78350f;
+  --color-accent-pink: #9d174d;
 }
+
+/* Keep accent copy readable on surfaces without lightening white-text buttons. */
+.text-accent,
+.hover\:text-accent:hover,
+.hover\:text-accent-hover:hover { color: var(--color-accent-text); }
+.text-purple { color: var(--color-purple-text); }
 
 /* ─── CaddyShack semantic tokens (dark) ─── */
 :root {
@@ -73,8 +88,12 @@
 .light .text-gray-200 { color: #1f2937; }
 .light .text-gray-300 { color: #374151; }
 .light .text-gray-400 { color: #4b5563; }
-.light .text-gray-500 { color: #6b7280; }
-.light .text-gray-600 { color: #6b7280; }
+.light .text-gray-500 { color: #59616f; }
+.light .text-gray-600 { color: #59616f; }
+.light .text-green-400 { color: #166534; }
+.light .text-red-400 { color: #b91c1c; }
+.light .text-purple-400 { color: #6b21a8; }
+.light .text-cyan-400 { color: #0e7490; }
 
 /* Background colors */
 .light .bg-gray-950  { background-color: #f8fafc; }

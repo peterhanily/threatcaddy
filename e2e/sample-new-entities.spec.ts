@@ -4,14 +4,14 @@ import { goToApp } from './fixtures';
 // Verifies the demo "FERMENTED PERSISTENCE" investigation now showcases the
 // new surfaces: evidence files, a product baseline + bulletin, enriched IOCs.
 
-test('sample investigation includes evidence, products, and enriched IOCs', async ({ page }) => {
+test('parody sample investigation includes evidence and products', async ({ page }) => {
   await goToApp(page);
 
-  // Settings → General → Load Sample Investigation
+  // These evidence filenames and product baseline belong to the parody, not
+  // the default realistic mailbox case. Select the distinct accessible name.
   await page.getByRole('button', { name: 'Settings' }).first().click();
-  await page.getByRole('button', { name: /Load Sample Investigation/i }).click();
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(1500);
+  await page.getByRole('button', { name: 'Load Sample Investigation — Parody — FERMENTED PERSISTENCE', exact: true }).click();
+  await expect(page.getByPlaceholder('Note title...')).toHaveValue('Executive Summary — FERMENTED PERSISTENCE');
 
   const views = page.locator('nav[aria-label="Views"]');
 

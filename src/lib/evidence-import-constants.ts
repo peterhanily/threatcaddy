@@ -1,0 +1,28 @@
+export const EVIDENCE_TAG = 'evidence';
+export const MAX_EVIDENCE_IMPORT_FILES = 20;
+export const EVIDENCE_ACCEPT = [
+  '.pdf',
+  '.doc',
+  '.docx',
+  '.xls',
+  '.xlsx',
+  '.csv',
+  '.tsv',
+  '.txt',
+  '.rtf',
+  '.rtfs',
+  '.md',
+  '.markdown',
+  '.json',
+  '.log',
+  '.xml',
+  '.yaml',
+  '.yml',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.webp',
+  '.gif',
+  '.bmp',
+  '.avif',
+].join(',');

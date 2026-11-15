@@ -463,5 +463,7 @@
   "data.mdImportButton_two": "ייבא {{count}} הערות",
   "data.mdImportedSuccess_two": "{{count}} הערות יובאו בהצלחה",
   "intel.actorsLoaded_two": "{{count}} גורמים נטענו",
-  "intel.valuesLoaded_two": "{{count}} ערכים נטענו"
+  "intel.valuesLoaded_two": "{{count}} ערכים נטענו",
+  "general.realisticSample": "תרגיל מציאותי — פריצה לתיבת דואר",
+  "general.parodySample": "פרודיה — FERMENTED PERSISTENCE"
 }

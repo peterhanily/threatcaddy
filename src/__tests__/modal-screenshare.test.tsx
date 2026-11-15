@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Modal } from '../components/Common/Modal';
 import { ScreenshareContext } from '../hooks/ScreenshareContext';
@@ -9,11 +9,11 @@ function DraftForm() {
   return <label>Unsaved draft<input value={text} onChange={event => setText(event.target.value)} /></label>;
 }
 
-function NestedEditor({ hideOpener = false }: { hideOpener?: boolean }) {
+function NestedEditor({ hideOpener = false, disableOpener = false }: { hideOpener?: boolean; disableOpener?: boolean }) {
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
   return <>
-    <button hidden={hideOpener && open} onClick={() => setOpen(true)}>Compose draft</button>
+    <button hidden={hideOpener && open} disabled={disableOpener && open} onClick={() => setOpen(true)}>Compose draft</button>
     {open && <Modal open onClose={() => setConfirm(true)} title="Product editor">
       <button onClick={() => setConfirm(true)}>Cancel draft</button>
       <Modal open={confirm} onClose={() => setConfirm(false)} title="Discard confirmation">
@@ -133,7 +133,33 @@ describe('modal screenshare suspension', () => {
     expect(opener).toHaveFocus();
   });
 
-  it('does not restore focus to an opener hidden by screenshare privacy', () => {
+  it('returns focus after closing re-enables the original opener in the same commit', async () => {
+    render(<NestedEditor disableOpener />);
+    const opener = screen.getByRole('button', { name: 'Compose draft' });
+    opener.focus();
+    fireEvent.click(opener);
+    expect(opener).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel draft' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Discard draft' }));
+    expect(screen.queryAllByRole('dialog')).toHaveLength(0);
+    expect(opener).toBeEnabled();
+    await waitFor(() => expect(opener).toHaveFocus());
+  });
+
+  it('does not override a newer focus choice while the opener is being re-enabled', async () => {
+    render(<><NestedEditor disableOpener /><button>Other action</button></>);
+    const opener = screen.getByRole('button', { name: 'Compose draft' });
+    opener.focus();
+    fireEvent.click(opener);
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel draft' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Discard draft' }));
+    const other = screen.getByRole('button', { name: 'Other action' });
+    other.focus();
+    await Promise.resolve();
+    expect(other).toHaveFocus();
+  });
+
+  it('does not restore focus to an opener hidden by screenshare privacy', async () => {
     const ui = (maxLevel: string | null) => <ScreenshareContext.Provider value={{ maxLevel, effectiveLevels: [] }}>
       <NestedEditor hideOpener />
       <button>Safe sharing control</button>
@@ -144,6 +170,7 @@ describe('modal screenshare suspension', () => {
     fireEvent.click(opener);
     const focus = vi.spyOn(opener, 'focus');
     view.rerender(ui('TLP:CLEAR'));
+    await Promise.resolve();
     expect(focus).not.toHaveBeenCalled();
     screen.getByRole('button', { name: 'Safe sharing control' }).focus();
     expect(screen.getByRole('button', { name: 'Safe sharing control' })).toHaveFocus();

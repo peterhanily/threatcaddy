@@ -455,5 +455,7 @@
   "encryption.table.installedIntegrations": "Tích hợp đã cài",
   "encryption.table.customSlashCommands": "Lệnh tùy chỉnh",
   "encryption.confirmRestore": "Xác nhận khôi phục",
-  "encryption.refreshRestorePreview": "Làm mới bản xem trước"
+  "encryption.refreshRestorePreview": "Làm mới bản xem trước",
+  "general.realisticSample": "Bài tập thực tế — hộp thư bị xâm nhập",
+  "general.parodySample": "Châm biếm — FERMENTED PERSISTENCE"
 }

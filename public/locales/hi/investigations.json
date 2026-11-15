@@ -102,5 +102,10 @@
   "card.entity.iocs": "IOCs",
   "card.entity.events": "घटनाएँ",
   "card.entity.whiteboards": "व्हाइटबोर्ड",
-  "card.entity.chats": "बातचीत"
+  "card.entity.chats": "बातचीत",
+  "firstRun.title": "मामले से रिपोर्ट तक",
+  "firstRun.description": "मामला बनाएँ, अधिकृत स्रोत फ़ाइलें आयात करें या काल्पनिक मेलबॉक्स घटना देखें। AI सेटअप आवश्यक नहीं है।",
+  "firstRun.import": "स्रोत फ़ाइलें आयात करें",
+  "firstRun.demo": "यथार्थपरक डेमो आज़माएँ",
+  "firstRun.report": "साक्ष्य देखें, समयरेखा बनाएँ और रिपोर्ट नोट लिखें। नोट को Markdown में डाउनलोड करें; पूरे कार्यक्षेत्र के लिए अलग से बैकअप सहेजें।"
 }

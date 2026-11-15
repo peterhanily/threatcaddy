@@ -58,7 +58,7 @@ export function generateSampleInvestigation(): {
 
 VINEGAR PANDA, a sophisticated state-sponsored APT group previously attributed to campaigns against MustardOps GmbH and the 2024 Mayo Clipper Incident, compromised OpenSlaw.ai's Agentic Coleslaw Optimization Engine through a prompt injection attack. The adversary established persistence via a cron job disguised as the nightly Slaw Freshness Index Recalculation, beaconing to C2 infrastructure hosted on compromised smart refrigerators across Eastern Europe. Over 11 days, 4.2TB of slaw intelligence — including the proprietary Coleslaw Foundation Model — was exfiltrated via DNS TXT records. The attack culminated in a corrupted model update that caused AI agents to autonomously recommend raisins in coleslaw. Stock price dropped 47%. The SEC opened an investigation. Diane wrote a blog post.
 
-This sample investigation demonstrates every ThreatCaddy feature — notes, IOCs, timelines, entity graphs, whiteboards, tasks, data import, and more. **Delete it when done exploring.**`,
+This fictional parody demonstrates notes, IOCs, timelines, entity graphs, whiteboards, tasks and example evidence. Vendor verdicts and chat transcripts are invented, not live intelligence; loading this sample does not query providers or start agents. Do not use these indicators as a real blocklist. **Delete the case when done exploring; reusable tags and templates remain available.**`,
     status: 'active',
     clsLevel: 'TLP:AMBER',
     papLevel: 'PAP:AMBER',
@@ -88,6 +88,8 @@ This sample investigation demonstrates every ThreatCaddy feature — notes, IOCs
       title: 'Executive Summary — FERMENTED PERSISTENCE',
       content: `# Executive Summary — FERMENTED PERSISTENCE
 
+**FICTIONAL PARODY.** Events, attribution, vendor verdicts and chat transcripts are illustrative, not live intelligence. Do not use these indicators as a real blocklist. No provider requests or active agents are started by loading this sample.
+
 ## Incident Overview
 
 On ${new Date(baseTs + 3 * HOUR).toLocaleDateString()}, a junior SOC analyst noticed anomalous 3AM API calls from OpenSlaw.ai's Agentic Coleslaw Optimization Engine to a suspicious endpoint: \`pickle-relay.fermented[.]top\`. The analyst opened a ticket. Nobody read it. Classic.
@@ -111,7 +113,7 @@ Three weeks later, the entire Recipe Recommendation Pipeline had been poisoned. 
 
 ## Related Analysis
 
-See detailed notes on: [Prompt Injection](#), [Malware Analysis](#), [Smart Fridge C2](#), [Model Exfiltration](#), [Recipe Poisoning](#), [Lateral Movement](#), [Threat Actor Profile](#), [Remediation](#)`,
+See detailed notes on: [[Initial Compromise — Prompt Injection via Slaw Advisor]], [[Malware Analysis — Vinegar Conversion Chart Dropper]], [[C2 Infrastructure — Compromised Smart Refrigerators]], [[Exfiltration — The Dressing (4.2TB via DNS)]], [[Impact — The Raisin Catastrophe (Model Poisoning)]], [[Lateral Movement — Recipe Engine to Foundation Model]], [[Threat Actor Profile — VINEGAR PANDA]], [[Remediation Playbook — FERMENTED PERSISTENCE]]`,
       folderId: SAMPLE_FOLDER_ID,
       tags: ['vinegar-panda'],
       pinned: true,

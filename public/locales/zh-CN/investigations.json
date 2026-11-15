@@ -102,5 +102,10 @@
   "card.entity.iocs": "IOC",
   "card.entity.events": "事件",
   "card.entity.whiteboards": "白板",
-  "card.entity.chats": "对话"
+  "card.entity.chats": "对话",
+  "firstRun.title": "从案件到报告",
+  "firstRun.description": "创建案件、导入经授权的源文件，或探索虚构的邮箱事件。无需配置 AI。",
+  "firstRun.import": "导入源文件",
+  "firstRun.demo": "体验真实场景演示",
+  "firstRun.report": "审阅证据、建立时间线并撰写报告笔记。将笔记下载为 Markdown；另行使用“保存备份”保留整个工作区。"
 }

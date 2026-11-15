@@ -60,16 +60,16 @@ export const NoteCard = React.memo(function NoteCard({ note, active, onSelect, o
         <p className="text-xs text-gray-500 mt-1 line-clamp-2">{truncate(preview, 120)}</p>
       )}
       <div className="flex items-center gap-2 mt-2">
-        <span className="text-[10px] text-gray-600">{formatDate(note.updatedAt)}</span>
+        <span className="text-[10px] text-text-muted">{formatDate(note.updatedAt)}</span>
         {note.createdBy && (
-          <span className="text-[10px] text-text-muted/60 truncate max-w-[100px]" title={t('card.createdBy', { name: note.createdBy })}>
+          <span className="text-[10px] text-text-muted truncate max-w-[100px]" title={t('card.createdBy', { name: note.createdBy })}>
             {note.createdBy.startsWith('agent:') ? note.createdBy.slice(6) : note.createdBy}
           </span>
         )}
         {folderName && (
           <span
-            className="text-[10px] px-1.5 rounded-full truncate max-w-[80px]"
-            style={{ backgroundColor: folderColor ? `${folderColor}20` : 'rgba(107,114,128,0.2)', color: folderColor || '#9ca3af' }}
+            className="text-[10px] text-text-primary px-1.5 rounded-full truncate max-w-[80px]"
+            style={{ backgroundColor: folderColor ? `${folderColor}20` : 'rgba(107,114,128,0.2)' }}
           >
             {folderName}
           </span>
@@ -85,7 +85,7 @@ export const NoteCard = React.memo(function NoteCard({ note, active, onSelect, o
           </span>
         )}
         {activeIOCCount > 0 && (
-          <span className="flex items-center gap-0.5 text-[10px] text-accent/70 bg-accent/10 px-1.5 rounded-full">
+          <span className="flex items-center gap-0.5 text-[10px] text-accent bg-accent/10 px-1.5 rounded-full">
             <Search size={9} />
             {activeIOCCount}
           </span>

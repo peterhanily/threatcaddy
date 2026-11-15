@@ -5,13 +5,15 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 1,
+  // A retry is diagnostic evidence, never a substitute for a clean release gate.
+  failOnFlakyTests: !!process.env.CI,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   timeout: 30_000,
   use: {
     baseURL: 'http://localhost:4173',
     screenshot: 'only-on-failure',
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
   },
   projects: [
     {

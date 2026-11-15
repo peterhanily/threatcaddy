@@ -455,5 +455,7 @@
   "encryption.table.installedIntegrations": "설치된 통합",
   "encryption.table.customSlashCommands": "사용자 명령",
   "encryption.confirmRestore": "복원 확인",
-  "encryption.refreshRestorePreview": "미리보기 새로고침"
+  "encryption.refreshRestorePreview": "미리보기 새로고침",
+  "general.realisticSample": "현실적인 연습 — 메일함 침해",
+  "general.parodySample": "패러디 — FERMENTED PERSISTENCE"
 }

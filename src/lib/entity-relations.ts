@@ -1,5 +1,7 @@
 import { db } from '../db';
 import { withEntityDraftBarrier } from './entity-drafts';
+import { integrationWrite } from './integration-cancellation';
+import { markPending, clearPending } from './pending-changes';
 
 export type EntityRecord = Record<string, unknown> & { id: string };
 interface Relation { path: string; target: string; many?: boolean }
@@ -65,45 +67,57 @@ export function mapEntityReferences(table: string, row: EntityRecord, mapper: (t
 }
 
 /** Permanent delete + every known reverse edge is one transaction; trash retains restorable links. */
-export async function deleteEntitiesWithReferences(deletions: Record<string, string[]>, investigationWithContents?: string, onlyExpiredTrashBefore?: number): Promise<void> {
+export async function deleteEntitiesWithReferences(deletions: Record<string, string[]>, investigationWithContents?: string, onlyExpiredTrashBefore?: number, signal?: AbortSignal, assertCurrent: () => void = () => {}): Promise<void> {
   if (!Object.values(deletions).some(ids => ids.length)) return;
-  await lifecycle(async () => db.transaction('rw', Object.keys(ENTITY_RELATIONS).map(name => db.table(name)), async () => {
-    if (onlyExpiredTrashBefore !== undefined) {
-      for (const [name, ids] of Object.entries(deletions)) {
-        const rows = await db.table<EntityRecord>(name).bulkGet(ids);
-        deletions[name] = rows.filter((row): row is EntityRecord => !!row && row.trashed === true && typeof row.trashedAt === 'number' && row.trashedAt < onlyExpiredTrashBefore).map(row => row.id);
-      }
-    }
-    if (investigationWithContents) {
-      for (const name of FOLDER_CONTENT_TABLES) deletions[name] = await db.table(name).where('folderId').equals(investigationWithContents).primaryKeys() as string[];
-      for (const name of ['agentActions', 'agentDeployments', 'agentMeetings']) deletions[name] = await db.table(name).where('investigationId').equals(investigationWithContents).primaryKeys() as string[];
-    }
-    const removed = new Map(Object.entries(deletions).map(([table, ids]) => [table, new Set(ids)]));
-    const iocIds = new Set(removed.get('standaloneIOCs') ?? []);
-    for (const table of ['notes', 'tasks', 'timelineEvents']) {
-      for (const row of await db.table(table).bulkGet(deletions[table] ?? [])) {
-        for (const ioc of row?.iocAnalysis?.iocs ?? []) iocIds.add(ioc.id);
-      }
-    }
-    removed.set('iocs', iocIds);
-    removed.set('playbookEntities', new Set([...(removed.get('notes') ?? []), ...(removed.get('tasks') ?? [])]));
-    for (const [table, ids] of Object.entries(deletions)) {
-      if (!ENTITY_RELATIONS[table]) throw new Error('Unsupported entity deletion: ' + table);
-      await db.table(table).bulkDelete(ids);
-    }
-    const now = Date.now();
-    for (const table of Object.keys(ENTITY_RELATIONS)) {
-      const rows = await db.table<EntityRecord>(table).toArray();
-      for (const row of rows) {
-        let changed = false;
-        const updated = mapEntityReferences(table, row, (target, id) => {
-          if (removed.get(target)?.has(id)) { changed = true; return undefined; }
-          return id;
-        });
-        if (changed) await db.table(table).put({ ...updated, updatedAt: now });
-      }
-    }
-  }));
+  signal?.throwIfAborted();
+  await lifecycle(async () => {
+    signal?.throwIfAborted();
+    // The draft barrier has already drained pending work; do not register this
+    // operation before the barrier or it would reject its own token.
+    const pending = Symbol('entity deletion');
+    markPending(pending);
+    try {
+      await integrationWrite(Object.keys(ENTITY_RELATIONS).map(name => db.table(name)), signal, async () => {
+        assertCurrent();
+        if (onlyExpiredTrashBefore !== undefined) {
+          for (const [name, ids] of Object.entries(deletions)) {
+            const rows = await db.table<EntityRecord>(name).bulkGet(ids);
+            deletions[name] = rows.filter((row): row is EntityRecord => !!row && row.trashed === true && typeof row.trashedAt === 'number' && row.trashedAt < onlyExpiredTrashBefore).map(row => row.id);
+          }
+        }
+        if (investigationWithContents) {
+          for (const name of FOLDER_CONTENT_TABLES) deletions[name] = await db.table(name).where('folderId').equals(investigationWithContents).primaryKeys() as string[];
+          for (const name of ['agentActions', 'agentDeployments', 'agentMeetings']) deletions[name] = await db.table(name).where('investigationId').equals(investigationWithContents).primaryKeys() as string[];
+        }
+        const removed = new Map(Object.entries(deletions).map(([table, ids]) => [table, new Set(ids)]));
+        const iocIds = new Set(removed.get('standaloneIOCs') ?? []);
+        for (const table of ['notes', 'tasks', 'timelineEvents']) {
+          for (const row of await db.table(table).bulkGet(deletions[table] ?? [])) {
+            for (const ioc of row?.iocAnalysis?.iocs ?? []) iocIds.add(ioc.id);
+          }
+        }
+        removed.set('iocs', iocIds);
+        removed.set('playbookEntities', new Set([...(removed.get('notes') ?? []), ...(removed.get('tasks') ?? [])]));
+        for (const [table, ids] of Object.entries(deletions)) {
+          if (!ENTITY_RELATIONS[table]) throw new Error('Unsupported entity deletion: ' + table);
+          await db.table(table).bulkDelete(ids);
+        }
+        const now = Date.now();
+        for (const table of Object.keys(ENTITY_RELATIONS)) {
+          const rows = await db.table<EntityRecord>(table).toArray();
+          for (const row of rows) {
+            let changed = false;
+            const updated = mapEntityReferences(table, row, (target, id) => {
+              if (removed.get(target)?.has(id)) { changed = true; return undefined; }
+              return id;
+            });
+            if (changed) await db.table(table).put({ ...updated, updatedAt: now });
+          }
+        }
+        assertCurrent();
+      });
+    } finally { clearPending(pending); }
+  });
 }
 
 export async function changeTagEverywhere(id: string, replacement?: { name?: string; color?: string }): Promise<void> {

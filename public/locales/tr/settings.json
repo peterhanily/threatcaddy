@@ -455,5 +455,7 @@
   "encryption.table.installedIntegrations": "Kurulu entegrasyonlar",
   "encryption.table.customSlashCommands": "Özel komutlar",
   "encryption.confirmRestore": "Geri yüklemeyi onayla",
-  "encryption.refreshRestorePreview": "Önizlemeyi yenile"
+  "encryption.refreshRestorePreview": "Önizlemeyi yenile",
+  "general.realisticSample": "Gerçekçi alıştırma — posta kutusu ihlali",
+  "general.parodySample": "Parodi — FERMENTED PERSISTENCE"
 }

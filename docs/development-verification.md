@@ -247,7 +247,14 @@ Preserve the existing custom-domain and DNS settings during that one-time
 change. Local development and test commands do not change repository settings
 or publish anything.
 
-The hosted browser suite covers Chromium, Firefox and WebKit. Its offline test
+The hosted browser suite covers Chromium, Firefox and WebKit. CI enables
+`failOnFlakyTests`: the diagnostic retry cannot turn a failing first attempt into
+a successful publication gate. `retain-on-failure` preserves the original failing
+trace, including network and browser diagnostics. Diagnose that evidence before
+changing readiness assertions; do not suppress errors or disable the flaky gate.
+The standalone suite also retains its first failure trace.
+
+The hosted suite's offline test
 stops its own temporary HTTP origin before cached reload and new-tab checks;
 it does not equate browser offline emulation with a verified network outage.
 The standalone suite copies only the assembled download,

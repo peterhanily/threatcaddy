@@ -96,6 +96,11 @@ test('quick-link keyboard actions open only their own dialogs and preserve cance
   const edit = main.getByRole('button', { name: `Edit ${link.title}`, exact: true });
   const remove = main.getByRole('button', { name: `Delete ${link.title}`, exact: true });
   await expect(launch).toBeVisible();
+  for (const action of [edit, remove]) {
+    const bounds = await action.boundingBox();
+    expect(bounds?.width).toBeGreaterThanOrEqual(24);
+    expect(bounds?.height).toBeGreaterThanOrEqual(24);
+  }
   expect(await launch.evaluate(element => element.tagName)).toBe('BUTTON');
   expect(await edit.evaluate(element => element.parentElement?.closest('button, [role="button"]'))).toBeNull();
   const nextControl = browserName === 'webkit' && process.platform === 'darwin' ? 'Alt+Tab' : 'Tab';

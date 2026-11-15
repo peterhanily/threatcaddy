@@ -27,6 +27,16 @@ const pagesPermission = { contents: 'read', pages: 'write', 'id-token': 'write' 
 const pagesCallerPermission = { contents: 'read', actions: 'read', pages: 'write', 'id-token': 'write' };
 const serverPermission = { contents: 'read', packages: 'write' };
 
+test('CI browser failures retain the original trace and cannot pass only through a retry', () => {
+  const config = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e',
+    "import c from './playwright.config.ts'; import s from './playwright.standalone.config.ts'; console.log(JSON.stringify({ flaky: c.failOnFlakyTests, trace: c.use.trace, standaloneTrace: s.use.trace, standaloneRetries: s.retries }));"],
+  { cwd: new URL('../', import.meta.url), env: { ...process.env, CI: 'true' }, encoding: 'utf8' }));
+  assert.equal(config.flaky, true);
+  assert.equal(config.trace, 'retain-on-failure');
+  assert.equal(config.standaloneTrace, 'retain-on-failure');
+  assert.equal(config.standaloneRetries, 0);
+});
+
 test('required client checks validate every locale without report-only or narrowed coverage', () => {
   const localeSteps = stepsOf(verify.jobs['client-checks']).filter(step => step.run === 'pnpm locales:check');
   assert.equal(localeSteps.length, 1);
