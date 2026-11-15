@@ -1232,7 +1232,8 @@ function chunkText(text: string, maxChars: number): string[] {
 function normalizeExtractedText(text: string): string {
   return text
     .replace(/\r\n?/g, '\n')
-    .replace(/[ \t]+\n/g, '\n')
+    // Start only at the beginning of a run: retrying inside a long run is quadratic.
+    .replace(/(?<![ \t])[ \t]+\n/g, '\n')
     .replace(/\n{4,}/g, '\n\n\n')
     .replace(/[ \t]{3,}/g, '  ')
     .trim();

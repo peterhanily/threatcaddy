@@ -55,6 +55,19 @@ function workbook(sheetXml: string, strings: string[] = []): File {
 
 const extractedText = (content: string) => content.split('## Extracted Text\n\n')[1] ?? '';
 
+describe('text normalisation', () => {
+  it('trims padded line ends and stays linear on long whitespace runs', async () => {
+    const [padded] = await buildEvidenceItemDrafts(new File(['alpha \t \nbeta\t\r\ngamma   delta'], 'padded.log'));
+    expect(extractedText(padded.content)).toBe('alpha\nbeta\ngamma  delta');
+    const run = new File([`start${'\t'.repeat(200_000)}end\n${' '.repeat(200_000)}x`], 'columns.log');
+    const started = performance.now();
+    const [draft] = await buildEvidenceItemDrafts(run);
+    // The quadratic pattern needed many seconds here; the linear one needs milliseconds.
+    expect(performance.now() - started).toBeLessThan(1_500);
+    expect(extractedText(draft.content)).toBe('start  end\n  x');
+  });
+});
+
 describe('XLSX cells written by spreadsheet producers', () => {
   it('keeps columns and shared-string values when styled empty cells are self-closing', async () => {
     const strings = ['Hostname', 'Owner', 'IP address', 'alice', '10.1.2.3', 'dc01.corp.example', 'row'];
