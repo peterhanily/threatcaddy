@@ -404,6 +404,7 @@ A cleanup service runs on startup and every 6 hours to enforce retention policie
 | Notifications | 90 days | Yes (server setting) |
 | Audit log entries | 365 days | Yes (server setting) |
 | Soft-deleted entities (tombstones) | 90 days | Yes (server setting) |
+| Sync history (`sync_changes`), including purged investigations | Not pruned | No |
 | Orphaned investigation memberships | Immediate | No |
 | Bot run history | 90 days | No |
 | Expired sessions | Immediate (hourly cleanup) | No |

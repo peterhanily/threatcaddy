@@ -153,7 +153,8 @@ describe('transactional sync writes', () => {
   });
 
   it('creates ownership before children in the same transaction', async () => {
-    state.rows.push([{ active: true, role: 'analyst', email: 'owner@example.invalid' }], [], [], [], [{ id: 'new-folder' }]);
+    // User, memberships, missing folder, no retained folder history, missing child, live folder.
+    state.rows.push([{ active: true, role: 'analyst', email: 'owner@example.invalid' }], [], [], [], [], [{ id: 'new-folder' }]);
     state.returned.push([{ id: 'new-folder', name: 'New', version: 1 }], [{ id: 'child', folderId: 'new-folder', version: 1 }]);
     const result = await processPush([
       { table: 'notes', entityId: 'child', op: 'put', clientVersion: 0, data: { title: 'Child', folderId: 'new-folder' } },
@@ -161,6 +162,13 @@ describe('transactional sync writes', () => {
     ], 'user-1', { authorize: true });
     expect(result.map(row => row.status)).toEqual(['accepted', 'accepted']);
     expect(state.inserts[1]).toMatchObject({ folderId: 'new-folder', userId: 'user-1', role: 'owner' });
+  });
+
+  it('rejects re-creating a purged investigation id whose sync history is retained', async () => {
+    state.rows.push([{ active: true, role: 'analyst', email: 'former-member@example.invalid' }], [], [], [{ cursor: 41n }]);
+    expect(await processPush([{ table: 'folders', entityId: 'purged-folder', op: 'put', clientVersion: 0, data: { name: 'Reused' } }],
+      'user-1', { authorize: true })).toEqual([{ table: 'folders', entityId: 'purged-folder', status: 'rejected' }]);
+    expect(state.inserts).toEqual([]); expect(state.events).not.toHaveBeenCalled();
   });
 
   it('rejects a user without current write membership before returning record contents', async () => {
