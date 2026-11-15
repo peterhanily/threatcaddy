@@ -11,9 +11,12 @@ export const MAX_ATTEMPTS = 5;
  * it has not signed in from, and every further failure from such a source locks
  * it at once. A source that has not failed is not locked out, but shares that
  * one check per interval. Known sources are exempt and keep the per-source limit.
+ * Five, then one per three minutes, holds many addresses to the five checks per
+ * 15 minutes that one account allowed in 2.0.0. At MAX_ATTEMPTS, a single
+ * address is locked before it can take an interval's check.
  */
-export const ACCOUNT_MAX_ATTEMPTS = 20;
-export const ACCOUNT_CHECK_INTERVAL_MS = 60 * 1000;
+export const ACCOUNT_MAX_ATTEMPTS = 5;
+export const ACCOUNT_CHECK_INTERVAL_MS = 3 * 60 * 1000;
 export const WINDOW_MS = 15 * 60 * 1000;   // 15 minutes
 export const LOCKOUT_MS = 15 * 60 * 1000;  // 15 minutes
 /** A source that signed in to an account stays known to it this long after its last sign-in. */

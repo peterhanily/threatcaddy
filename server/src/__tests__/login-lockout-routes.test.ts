@@ -36,7 +36,7 @@ vi.mock('../lib/logger.js', () => ({ logger: { info: vi.fn(), warn: vi.fn(), err
 // Production login routes over the real limiter.
 import authRoutes from '../routes/auth.js';
 import adminRoutes from '../routes/admin/index.js';
-import { _clearAll, stopCleanupTimer, MAX_ATTEMPTS, ACCOUNT_MAX_ATTEMPTS, ACCOUNT_CHECK_INTERVAL_MS } from '../services/login-limiter.js';
+import { _clearAll, stopCleanupTimer, MAX_ATTEMPTS, ACCOUNT_MAX_ATTEMPTS, ACCOUNT_CHECK_INTERVAL_MS, WINDOW_MS } from '../services/login-limiter.js';
 
 const app = new Hono();
 app.route('/api/auth', authRoutes);
@@ -162,6 +162,29 @@ describe('account-wide brake against address rotation', () => {
     expect(victimStatuses).toEqual(Array(120).fill(200));
     // The attackers still got one check per interval and no more.
     expect(passwordVerify.mock.calls.filter(([, password]) => password !== 'correct-password')).toHaveLength(ACCOUNT_MAX_ATTEMPTS + 120);
+  });
+
+  it('holds a many-address attacker to about the five checks per 15 minutes of 2.0.0', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const windows = 8;
+    let next = 0;
+    const fresh = () => `2001:db8:1:${(next++).toString(16)}::1`;
+
+    // Steady: a fresh /64 every 10 seconds for two hours.
+    for (let t = 0; t < windows * WINDOW_MS; t += 10_000) {
+      await userLogin('wrong-password', fresh());
+      vi.setSystemTime(Date.now() + 10_000);
+    }
+    expect(passwordVerify.mock.calls.length).toBeLessThanOrEqual(6 * windows);
+
+    // Bursts: 50 fresh /64s at once, then a pause until the account count has expired.
+    _clearAll();
+    passwordVerify.mockClear();
+    for (let w = 0; w < windows; w++) {
+      for (let i = 0; i < 50; i++) await userLogin('wrong-password', fresh());
+      vi.setSystemTime(Date.now() + WINDOW_MS + 1);
+    }
+    expect(passwordVerify.mock.calls.length).toBeLessThanOrEqual(6 * windows);
   });
 
   it('a known address keeps the per-address limit while the account is braked', async () => {
