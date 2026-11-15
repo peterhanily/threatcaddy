@@ -81,10 +81,11 @@ function pdf(objects: PdfObject[]): File {
 }
 const content = (text: string): PdfObject => ({ dict: '/Filter /FlateDecode', data: deflate(encode(text)) });
 const summary = content('BT /F1 12 Tf 72 712 Td (Incident summary for host dc01.corp.example) Tj ET');
-// Pixel data that would read as a text object if it were ever decoded.
+// Pixel data that would read as a text object if it were ever decoded. The
+// marker ends in whitespace: NUL is not a token boundary for the parser.
 const pixels = (size: number) => {
   const bytes = new Uint8Array(size);
-  bytes.set(encode('BT (decoded image pixels) Tj ET'));
+  bytes.set(encode('BT (decoded image pixels) Tj ET\n'));
   return deflate(bytes);
 };
 const retina = pixels(2880 * 1800 * 3);
@@ -103,6 +104,7 @@ describe('PDF reports with screenshots and many pages', () => {
     expect(draft.content).toContain('Incident summary for host dc01.corp.example');
     expect(draft.content).not.toContain('decoded image pixels');
     expect(draft.content).not.toContain('font program bytes');
+    expect(draft.extractionWarning).not.toContain('stopped at the decoding limit');
   });
 
   it('finds the image dictionary when a nested /DecodeParms dictionary precedes the stream', async () => {
@@ -110,6 +112,7 @@ describe('PDF reports with screenshots and many pages', () => {
     const [draft] = await buildEvidenceItemDrafts(pdf([image, summary]));
     expect(draft.content).toContain('Incident summary for host dc01.corp.example');
     expect(draft.content).not.toContain('decoded image pixels');
+    expect(draft.extractionWarning).not.toContain('stopped at the decoding limit');
   });
 
   it('imports reports whose screenshots together decode past the document budget', async () => {
@@ -117,6 +120,8 @@ describe('PDF reports with screenshots and many pages', () => {
     const [draft] = await buildEvidenceItemDrafts(pdf([summary, ...images]));
     expect(draft.extractionStatus).toBe('partial');
     expect(draft.content).toContain('Incident summary for host dc01.corp.example');
+    expect(draft.content).not.toContain('decoded image pixels');
+    expect(draft.extractionWarning).not.toContain('stopped at the decoding limit');
   });
 
   it('skips large JPEG and other image-codec streams without charging the budget', async () => {
@@ -126,6 +131,7 @@ describe('PDF reports with screenshots and many pages', () => {
     expect(draft.extractionStatus).toBe('partial');
     expect(draft.content).toContain('Incident summary for host dc01.corp.example');
     expect(draft.content).not.toContain('unlabelled codec');
+    expect(draft.extractionWarning).not.toContain('stopped at the decoding limit');
   });
 
   it('returns the pages read so far, with a warning, when the stream count runs out', async () => {
