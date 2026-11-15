@@ -425,6 +425,7 @@
   "data.backupTooLarge": "Sauvegarde trop volumineuse (maximum 50 MB).",
   "data.backupRestoreFailed": "Impossible de restaurer la sauvegarde. Le fichier reste sélectionné ; corrigez le problème et réessayez.",
   "data.backupRestoredWithNotices": "Sauvegarde restaurée avec des avis. Les données sont enregistrées ; vérifiez les détails avant de fermer.",
+  "data.investigationMergedNotice": "Ce fichier ne contient qu’une seule enquête ; il a donc été fusionné au lieu de remplacer l’espace de travail : aucun enregistrement existant n’a été supprimé.",
   "encryption.differentialPasswordNotice": "Utilisez le mot de passe de la sauvegarde complète. Restaurez d’abord la sauvegarde complète correspondante avant d’appliquer ce différentiel.",
   "encryption.replaceScope": "Remplacer dans le périmètre de la sauvegarde",
   "encryption.preparingRestorePreview": "Vérification des enregistrements concernés par cette restauration…",

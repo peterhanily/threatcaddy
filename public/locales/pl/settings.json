@@ -425,6 +425,7 @@
   "data.backupTooLarge": "Kopia jest zbyt duża (maksymalnie 50 MB).",
   "data.backupRestoreFailed": "Nie udało się przywrócić kopii. Plik pozostaje wybrany; usuń problem i spróbuj ponownie.",
   "data.backupRestoredWithNotices": "Kopię przywrócono z uwagami. Dane już zapisano; sprawdź szczegóły przed zamknięciem.",
+  "data.investigationMergedNotice": "Ten plik zawiera tylko jedno dochodzenie, więc został scalony zamiast zastąpić obszar roboczy: nie usunięto żadnych istniejących rekordów.",
   "encryption.differentialPasswordNotice": "Użyj hasła pełnej kopii. Najpierw przywróć odpowiadającą pełną kopię, a potem zastosuj tę różnicową.",
   "encryption.replaceScope": "Zastąp w zakresie kopii",
   "encryption.preparingRestorePreview": "Sprawdzanie rekordów zmienianych przez przywracanie…",

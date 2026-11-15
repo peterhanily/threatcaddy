@@ -425,6 +425,7 @@
   "data.backupTooLarge": "Backup grande demais (máximo 50 MB).",
   "data.backupRestoreFailed": "Não foi possível restaurar o backup. O arquivo continua selecionado; corrija o problema e tente novamente.",
   "data.backupRestoredWithNotices": "Backup restaurado com avisos. Os dados já foram salvos; revise os detalhes antes de fechar.",
+  "data.investigationMergedNotice": "Este arquivo contém uma única investigação, por isso foi mesclado em vez de substituir o espaço de trabalho: nenhum registro existente foi excluído.",
   "encryption.differentialPasswordNotice": "Use a senha do backup completo. Restaure primeiro o backup completo correspondente antes de aplicar este diferencial.",
   "encryption.replaceScope": "Substituir no escopo do backup",
   "encryption.preparingRestorePreview": "Verificando os registros que esta restauração alterará…",

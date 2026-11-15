@@ -425,6 +425,7 @@
   "data.backupTooLarge": "Die Sicherungsdatei ist zu groß (höchstens 50 MB).",
   "data.backupRestoreFailed": "Die Sicherung konnte nicht wiederhergestellt werden. Ihre Datei ist weiterhin ausgewählt; beheben Sie das Problem und versuchen Sie es erneut.",
   "data.backupRestoredWithNotices": "Sicherung mit Hinweisen wiederhergestellt. Die Entitätsdaten wurden gespeichert; prüfen Sie vor dem Schließen die folgenden Details.",
+  "data.investigationMergedNotice": "Diese Datei enthält nur eine Untersuchung und wurde daher zusammengeführt, statt den Arbeitsbereich zu ersetzen: Es wurden keine vorhandenen Datensätze gelöscht.",
   "encryption.differentialPasswordNotice": "Verwenden Sie das Passwort der vollständigen Sicherung. Stellen Sie zuerst die passende vollständige Sicherung wieder her, bevor Sie diese Differenzsicherung anwenden.",
   "encryption.replaceScope": "Im Umfang der Sicherung ersetzen",
   "encryption.preparingRestorePreview": "Die von dieser Wiederherstellung betroffenen Datensätze werden geprüft…",

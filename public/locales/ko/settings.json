@@ -425,6 +425,7 @@
   "data.backupTooLarge": "백업 파일이 너무 큽니다(최대 50 MB).",
   "data.backupRestoreFailed": "백업을 복원할 수 없습니다. 파일은 계속 선택되어 있습니다. 문제를 해결하고 다시 시도하세요.",
   "data.backupRestoredWithNotices": "안내 사항과 함께 백업을 복원했습니다. 엔터티 데이터가 확정되었습니다. 닫기 전에 아래 내용을 확인하세요.",
+  "data.investigationMergedNotice": "이 파일에는 조사가 하나만 있으므로 작업 공간을 교체하지 않고 병합했습니다. 기존 기록은 삭제되지 않았습니다.",
   "encryption.differentialPasswordNotice": "전체 백업의 비밀번호를 사용하세요. 이 차등 백업을 적용하기 전에 일치하는 전체 백업을 복원하세요.",
   "encryption.replaceScope": "백업 범위 내에서 교체",
   "encryption.preparingRestorePreview": "이번 복원으로 변경될 기록을 확인하는 중…",

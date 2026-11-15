@@ -182,6 +182,7 @@
   "data.backupTooLarge": "Backup file too large (maximum 50 MB).",
   "data.backupRestoreFailed": "The backup could not be restored. Your file is still selected; correct the problem and try again.",
   "data.backupRestoredWithNotices": "Backup restored with notices. The entity data has been committed; review the details below before closing.",
+  "data.investigationMergedNotice": "This file holds a single investigation, so it was merged instead of replacing the workspace: no existing records were deleted.",
   "data.importedMarkdown": "Imported {{count}} notes from Markdown",
   "data.mdImportTitle": "Import Markdown",
   "data.mdPreviewTitle": "Preview Import",

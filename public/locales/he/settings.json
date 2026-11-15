@@ -425,6 +425,7 @@
   "data.backupTooLarge": "קובץ הגיבוי גדול מדי (עד 50 MB).",
   "data.backupRestoreFailed": "לא ניתן לשחזר את הגיבוי. הקובץ עדיין נבחר; יש לתקן את הבעיה ולנסות שוב.",
   "data.backupRestoredWithNotices": "הגיבוי שוחזר עם הערות. נתוני הישויות כבר נשמרו; יש לבדוק את הפרטים שלהלן לפני הסגירה.",
+  "data.investigationMergedNotice": "קובץ זה מכיל חקירה אחת בלבד, ולכן הוא מוזג במקום להחליף את סביבת העבודה: לא נמחקו רשומות קיימות.",
   "encryption.differentialPasswordNotice": "יש להשתמש בסיסמת הגיבוי המלא. יש לשחזר תחילה את הגיבוי המלא התואם לפני החלת גיבוי ההפרשים.",
   "encryption.replaceScope": "החלפה בתחום הגיבוי",
   "encryption.preparingRestorePreview": "בדיקת הרשומות שישתנו בשחזור…",

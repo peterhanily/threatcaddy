@@ -425,6 +425,7 @@
   "data.backupTooLarge": "Berkas cadangan terlalu besar (maksimal 50 MB).",
   "data.backupRestoreFailed": "Cadangan tidak dapat dipulihkan. Berkas tetap dipilih; perbaiki masalah lalu coba lagi.",
   "data.backupRestoredWithNotices": "Cadangan dipulihkan dengan pemberitahuan. Data entitas telah disimpan; periksa rincian di bawah sebelum menutup.",
+  "data.investigationMergedNotice": "Berkas ini hanya berisi satu investigasi, jadi digabungkan alih-alih mengganti ruang kerja: tidak ada catatan yang sudah ada yang dihapus.",
   "encryption.differentialPasswordNotice": "Gunakan kata sandi cadangan lengkap. Pulihkan cadangan lengkap yang cocok sebelum menerapkan cadangan diferensial ini.",
   "encryption.replaceScope": "Ganti dalam cakupan cadangan",
   "encryption.preparingRestorePreview": "Memeriksa catatan yang akan berubah akibat pemulihan ini…",

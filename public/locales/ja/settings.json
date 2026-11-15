@@ -425,6 +425,7 @@
   "data.backupTooLarge": "バックアップファイルが大きすぎます（最大 50 MB）。",
   "data.backupRestoreFailed": "バックアップを復元できませんでした。ファイルは選択されたままです。問題を解決して再試行してください。",
   "data.backupRestoredWithNotices": "注意事項付きでバックアップを復元しました。エンティティデータは確定済みです。閉じる前に以下の詳細を確認してください。",
+  "data.investigationMergedNotice": "このファイルには調査が 1 件しか含まれていないため、ワークスペースを置き換えずにマージしました。既存のレコードは削除されていません。",
   "encryption.differentialPasswordNotice": "完全バックアップのパスワードを使用してください。この差分バックアップを適用する前に、対応する完全バックアップを復元してください。",
   "encryption.replaceScope": "バックアップの範囲内で置き換え",
   "encryption.preparingRestorePreview": "この復元で変更されるレコードを確認中…",

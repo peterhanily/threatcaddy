@@ -425,6 +425,7 @@
   "data.backupTooLarge": "备份文件过大（最大 50 MB）。",
   "data.backupRestoreFailed": "无法恢复备份。文件仍保持选中；请解决问题后重试。",
   "data.backupRestoredWithNotices": "备份已恢复并附有提示。实体数据已提交；关闭前请查看下方详情。",
+  "data.investigationMergedNotice": "此文件仅包含一个调查，因此已合并而非替换工作区：未删除任何现有记录。",
   "encryption.differentialPasswordNotice": "请使用完整备份的密码。应用此差异备份前，请先恢复匹配的完整备份。",
   "encryption.replaceScope": "在备份范围内替换",
   "encryption.preparingRestorePreview": "正在检查此次恢复将更改的记录…",

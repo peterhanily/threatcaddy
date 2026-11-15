@@ -425,6 +425,7 @@
   "data.backupTooLarge": "Backup troppo grande (massimo 50 MB).",
   "data.backupRestoreFailed": "Impossibile ripristinare il backup. Il file resta selezionato; correggi il problema e riprova.",
   "data.backupRestoredWithNotices": "Backup ripristinato con avvisi. I dati sono stati salvati; verifica i dettagli prima di chiudere.",
+  "data.investigationMergedNotice": "Questo file contiene una sola indagine, quindi è stato unito invece di sostituire l’area di lavoro: nessun record esistente è stato eliminato.",
   "encryption.differentialPasswordNotice": "Usa la password del backup completo. Ripristina prima il backup completo corrispondente, poi applica questo differenziale.",
   "encryption.replaceScope": "Sostituisci nell’ambito del backup",
   "encryption.preparingRestorePreview": "Verifica dei record che verranno modificati…",

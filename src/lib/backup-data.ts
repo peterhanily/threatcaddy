@@ -16,11 +16,12 @@ const SHARED_TABLES = new Set<BackupTable>(['tags', 'timelines']);
 /** Older sync clients persisted the server revision on entity rows. Project
  * that transport-only value out without mutating IndexedDB or sanitizing away
  * supported device-only data. Other unknown fields still fail validation, and
- * semantic versions in non-sync tables (e.g. integrationTemplates) survive. */
-function portableRows(name: BackupTable, rows: BackupRow[]): BackupRow[] {
+ * semantic versions in non-sync tables (e.g. integrationTemplates) survive.
+ * Imported files get the same projection before validation. */
+export function portableRows(name: BackupTable, rows: BackupRow[]): BackupRow[] {
   if (!isSyncTable(name)) return rows;
   return rows.map(row => {
-    if (!Number.isSafeInteger(row.version) || (row.version as number) <= 0) return row;
+    if (!row || typeof row !== 'object' || !Number.isSafeInteger(row.version) || (row.version as number) <= 0) return row;
     const portable = { ...row };
     delete portable.version;
     return portable;

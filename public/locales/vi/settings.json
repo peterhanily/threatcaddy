@@ -425,6 +425,7 @@
   "data.backupTooLarge": "Tệp sao lưu quá lớn (tối đa 50 MB).",
   "data.backupRestoreFailed": "Không thể khôi phục bản sao lưu. Tệp vẫn được chọn; hãy khắc phục vấn đề rồi thử lại.",
   "data.backupRestoredWithNotices": "Đã khôi phục bản sao lưu kèm thông báo. Dữ liệu thực thể đã được ghi; xem chi tiết bên dưới trước khi đóng.",
+  "data.investigationMergedNotice": "Tệp này chỉ chứa một cuộc điều tra nên đã được gộp thay vì thay thế không gian làm việc: không có bản ghi hiện có nào bị xóa.",
   "encryption.differentialPasswordNotice": "Dùng mật khẩu của bản sao lưu đầy đủ. Khôi phục bản sao lưu đầy đủ tương ứng trước khi áp dụng bản sao lưu vi sai này.",
   "encryption.replaceScope": "Thay thế trong phạm vi bản sao lưu",
   "encryption.preparingRestorePreview": "Đang kiểm tra các bản ghi sẽ thay đổi khi khôi phục…",

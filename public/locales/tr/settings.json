@@ -425,6 +425,7 @@
   "data.backupTooLarge": "Yedek dosyası çok büyük (en fazla 50 MB).",
   "data.backupRestoreFailed": "Yedek geri yüklenemedi. Dosya seçili kalır; sorunu düzeltip yeniden deneyin.",
   "data.backupRestoredWithNotices": "Yedek bildirimlerle geri yüklendi. Varlık verileri kaydedildi; kapatmadan önce aşağıdaki ayrıntıları inceleyin.",
+  "data.investigationMergedNotice": "Bu dosya yalnızca tek bir soruşturma içerdiğinden çalışma alanının yerine geçmek yerine birleştirildi: mevcut hiçbir kayıt silinmedi.",
   "encryption.differentialPasswordNotice": "Tam yedeğin parolasını kullanın. Bu fark yedeğini uygulamadan önce eşleşen tam yedeği geri yükleyin.",
   "encryption.replaceScope": "Yedek kapsamı içinde değiştir",
   "encryption.preparingRestorePreview": "Bu geri yüklemenin değiştireceği kayıtlar inceleniyor…",
