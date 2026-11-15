@@ -221,6 +221,7 @@
   "syncStatus.skippedIncoming": "已跳过团队服务器上的 {{item}}，因为此设备无法读取它（已跳过的项目：{{total}}）。其他内容会继续同步。请在创建它的设备上更正，以便再次同步。",
   "syncStatus.unreadableOutgoing": "{{item}} 未上传，因为其他设备无法读取它（暂缓的项目：{{total}}）。它仍保存在此设备上；请更正后再同步。",
   "syncStatus.oversizedOutgoing": "{{item}} 未上传，因为它超出了团队服务器的限制（暂缓的项目：{{total}}）。它仍保存在此设备上；请缩短后再同步。",
+  "syncStatus.rejectedInvalid": "团队服务器以无效为由拒绝了此更改（{{reason}}）。它仍保存在此设备上；请更正后再同步。",
   "syncStatus.itemType.notes": "笔记",
   "syncStatus.itemType.tasks": "任务",
   "syncStatus.itemType.folders": "调查",

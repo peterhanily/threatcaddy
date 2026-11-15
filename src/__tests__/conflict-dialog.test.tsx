@@ -55,6 +55,14 @@ describe('ConflictDialog real diff and resolution contracts', () => {
     expect(all).not.toHaveBeenCalled();
   });
 
+  it('explains a change the server refused as invalid instead of blaming permissions', () => {
+    const invalid: SyncResult = { ...task, status: 'rejected', reason: 'Evidence image MIME type must be image/png, image/jpeg, image/gif or image/webp' };
+    render(<ConflictDialog conflicts={[invalid]} onResolve={vi.fn()} onResolveAll={vi.fn()} onClose={vi.fn()} />);
+    expect(row('Task: Local task').getByText(/refused this change as invalid \(Evidence image MIME type must be image\/png/)).toBeVisible();
+    expect(screen.queryByText(/permissions/)).toBeNull();
+    expect(row('Task: Local task').queryByRole('button')).toBeNull();
+  });
+
   it('awaits and reports failed bulk resolution without silently dismissing any item', async () => {
     const all = vi.fn().mockRejectedValue(new Error('Bulk resolution rolled back'));
     render(<ConflictDialog conflicts={[note, task]} onResolve={vi.fn()} onResolveAll={all} onClose={vi.fn()} />);

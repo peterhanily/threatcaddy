@@ -221,6 +221,7 @@
   "syncStatus.skippedIncoming": "{{item}} van de teamserver is overgeslagen omdat dit apparaat het niet kan lezen (overgeslagen items: {{total}}). Al het andere blijft synchroniseren. Corrigeer het op het apparaat waarop het is gemaakt om het opnieuw te synchroniseren.",
   "syncStatus.unreadableOutgoing": "{{item}} is niet geüpload omdat andere apparaten het niet zouden kunnen lezen (tegengehouden items: {{total}}). Het blijft op dit apparaat opgeslagen; corrigeer het om het te synchroniseren.",
   "syncStatus.oversizedOutgoing": "{{item}} is niet geüpload omdat het de limieten van de teamserver overschrijdt (tegengehouden items: {{total}}). Het blijft op dit apparaat opgeslagen; maak het korter om het te synchroniseren.",
+  "syncStatus.rejectedInvalid": "De teamserver heeft deze wijziging als ongeldig geweigerd ({{reason}}). Ze blijft op dit apparaat opgeslagen; corrigeer ze om ze te synchroniseren.",
   "syncStatus.itemType.notes": "Notitie",
   "syncStatus.itemType.tasks": "Taak",
   "syncStatus.itemType.folders": "Onderzoek",

@@ -326,6 +326,7 @@
   "syncStatus.skippedIncoming": "이 기기에서 읽을 수 없어 팀 서버의 {{item}} 항목을 건너뛰었습니다(건너뛴 항목: {{total}}). 나머지는 계속 동기화됩니다. 다시 동기화하려면 해당 항목을 만든 기기에서 수정하세요.",
   "syncStatus.unreadableOutgoing": "다른 기기에서 읽을 수 없어 {{item}} 항목을 업로드하지 않았습니다(보류된 항목: {{total}}). 이 기기에는 계속 저장되어 있습니다. 동기화하려면 수정하세요.",
   "syncStatus.oversizedOutgoing": "팀 서버 제한을 초과하여 {{item}} 항목을 업로드하지 않았습니다(보류된 항목: {{total}}). 이 기기에는 계속 저장되어 있습니다. 동기화하려면 줄이세요.",
+  "syncStatus.rejectedInvalid": "팀 서버가 이 변경을 유효하지 않은 것으로 거부했습니다({{reason}}). 이 기기에는 계속 저장되어 있습니다. 동기화하려면 수정하세요.",
   "syncStatus.itemType.notes": "노트",
   "syncStatus.itemType.tasks": "태스크",
   "syncStatus.itemType.folders": "조사",

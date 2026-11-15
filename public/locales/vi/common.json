@@ -221,6 +221,7 @@
   "syncStatus.skippedIncoming": "Đã bỏ qua {{item}} từ máy chủ nhóm vì thiết bị này không đọc được (số mục bị bỏ qua: {{total}}). Mọi thứ khác vẫn tiếp tục đồng bộ. Hãy sửa mục này trên thiết bị đã tạo ra nó để đồng bộ lại.",
   "syncStatus.unreadableOutgoing": "{{item}} chưa được tải lên vì các thiết bị khác sẽ không đọc được (số mục bị giữ lại: {{total}}). Mục này vẫn được lưu trên thiết bị này; hãy sửa để đồng bộ.",
   "syncStatus.oversizedOutgoing": "{{item}} chưa được tải lên vì vượt quá giới hạn của máy chủ nhóm (số mục bị giữ lại: {{total}}). Mục này vẫn được lưu trên thiết bị này; hãy rút gọn để đồng bộ.",
+  "syncStatus.rejectedInvalid": "Máy chủ nhóm đã từ chối thay đổi này vì không hợp lệ ({{reason}}). Thay đổi này vẫn được lưu trên thiết bị này; hãy sửa để đồng bộ.",
   "syncStatus.itemType.notes": "Ghi chú",
   "syncStatus.itemType.tasks": "Nhiệm vụ",
   "syncStatus.itemType.folders": "Cuộc điều tra",

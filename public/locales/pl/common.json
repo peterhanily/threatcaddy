@@ -221,6 +221,7 @@
   "syncStatus.skippedIncoming": "Pominięto {{item}} z serwera zespołu, ponieważ to urządzenie nie może tego odczytać (pominięte elementy: {{total}}). Pozostałe dane nadal się synchronizują. Popraw to na urządzeniu, na którym zostało utworzone, aby ponownie zsynchronizować.",
   "syncStatus.unreadableOutgoing": "{{item}} nie zostało przesłane, ponieważ inne urządzenia nie mogłyby tego odczytać (wstrzymane elementy: {{total}}). Pozostaje zapisane na tym urządzeniu; popraw to, aby zsynchronizować.",
   "syncStatus.oversizedOutgoing": "{{item}} nie zostało przesłane, ponieważ przekracza limity serwera zespołu (wstrzymane elementy: {{total}}). Pozostaje zapisane na tym urządzeniu; skróć to, aby zsynchronizować.",
+  "syncStatus.rejectedInvalid": "Serwer zespołu odrzucił tę zmianę jako nieprawidłową ({{reason}}). Pozostaje zapisana na tym urządzeniu; popraw ją, aby zsynchronizować.",
   "syncStatus.itemType.notes": "Notatka",
   "syncStatus.itemType.tasks": "Zadanie",
   "syncStatus.itemType.folders": "Śledztwo",

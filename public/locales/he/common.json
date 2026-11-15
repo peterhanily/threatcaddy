@@ -221,6 +221,7 @@
   "syncStatus.skippedIncoming": "{{item}} משרת הצוות דולג כי המכשיר הזה לא יכול לקרוא אותו (פריטים שדולגו: {{total}}). כל השאר ממשיך להסתנכרן. תקנו אותו במכשיר שבו נוצר כדי לסנכרן אותו שוב.",
   "syncStatus.unreadableOutgoing": "{{item}} לא הועלה כי מכשירים אחרים לא יוכלו לקרוא אותו (פריטים שעוכבו: {{total}}). הוא נשאר שמור במכשיר הזה; תקנו אותו כדי לסנכרן.",
   "syncStatus.oversizedOutgoing": "{{item}} לא הועלה כי הוא חורג ממגבלות שרת הצוות (פריטים שעוכבו: {{total}}). הוא נשאר שמור במכשיר הזה; קצרו אותו כדי לסנכרן.",
+  "syncStatus.rejectedInvalid": "שרת הצוות דחה את השינוי הזה כלא תקין ({{reason}}). הוא נשאר שמור במכשיר הזה; תקנו אותו כדי לסנכרן.",
   "syncStatus.itemType.notes": "הערה",
   "syncStatus.itemType.tasks": "משימה",
   "syncStatus.itemType.folders": "חקירה",

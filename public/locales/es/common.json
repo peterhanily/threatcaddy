@@ -221,6 +221,7 @@
   "syncStatus.skippedIncoming": "Se omitió {{item}} del servidor del equipo porque este dispositivo no puede leerlo (elementos omitidos: {{total}}). Todo lo demás se sigue sincronizando. Corríjalo en el dispositivo que lo creó para volver a sincronizarlo.",
   "syncStatus.unreadableOutgoing": "{{item}} no se subió porque otros dispositivos no podrían leerlo (elementos retenidos: {{total}}). Sigue guardado en este dispositivo; corríjalo para sincronizarlo.",
   "syncStatus.oversizedOutgoing": "{{item}} no se subió porque supera los límites del servidor del equipo (elementos retenidos: {{total}}). Sigue guardado en este dispositivo; acórtelo para sincronizarlo.",
+  "syncStatus.rejectedInvalid": "El servidor del equipo rechazó este cambio por no ser válido ({{reason}}). Sigue guardado en este dispositivo; corríjalo para sincronizarlo.",
   "syncStatus.itemType.notes": "Nota",
   "syncStatus.itemType.tasks": "Tarea",
   "syncStatus.itemType.folders": "Investigación",

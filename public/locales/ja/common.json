@@ -221,6 +221,7 @@
   "syncStatus.skippedIncoming": "このデバイスでは読み取れないため、チームサーバーの {{item}} をスキップしました（スキップした項目: {{total}}）。その他はすべて同期を続けます。再度同期するには、作成したデバイスで修正してください。",
   "syncStatus.unreadableOutgoing": "他のデバイスで読み取れないため、{{item}} はアップロードされませんでした（保留中の項目: {{total}}）。このデバイスには保存されたままです。同期するには修正してください。",
   "syncStatus.oversizedOutgoing": "チームサーバーの制限を超えているため、{{item}} はアップロードされませんでした（保留中の項目: {{total}}）。このデバイスには保存されたままです。同期するには短くしてください。",
+  "syncStatus.rejectedInvalid": "チームサーバーはこの変更を無効として拒否しました（{{reason}}）。このデバイスには保存されたままです。同期するには修正してください。",
   "syncStatus.itemType.notes": "ノート",
   "syncStatus.itemType.tasks": "タスク",
   "syncStatus.itemType.folders": "調査",

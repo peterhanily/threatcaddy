@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, ChevronDown, ChevronUp, X } from 'lucide-react';
 import type { SyncResult } from '../../lib/server-api';
 import { computeFieldDiffs } from '../../lib/inline-diff';
@@ -44,6 +45,7 @@ interface ConflictDialogProps {
 /** Resolution stays visible until its transaction succeeds. Identity includes
  * table: a note and a task may legitimately share an ID. */
 export function ConflictDialog({ conflicts, onResolve, onResolveAll, onClose }: ConflictDialogProps) {
+  const { t } = useTranslation('common');
   const [expanded, setExpanded] = useState(conflicts.length <= 3);
   const [diffOpen, setDiffOpen] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -88,7 +90,9 @@ export function ConflictDialog({ conflicts, onResolve, onResolveAll, onClose }: 
                   <button disabled={busy} onClick={() => void resolve(() => onResolve(conflict.entityId, 'theirs', conflict.table))} className="px-2 py-1 text-xs text-gray-200">Theirs</button>
                 </>}
               </div>
-              {conflict.status === 'rejected' && <p className="mt-1 text-xs text-amber-200">The server rejected this change. It remains saved locally; check your permissions before retrying.</p>}
+              {conflict.status === 'rejected' && <p className="mt-1 text-xs text-amber-200">{typeof conflict.reason === 'string' && conflict.reason
+                ? t('syncStatus.rejectedInvalid', { reason: conflict.reason.slice(0, 200) })
+                : 'The server rejected this change. It remains saved locally; check your permissions before retrying.'}</p>}
               {diffOpen === key && <div className="pt-2 space-y-3">
                 <FieldDiffView diffs={diffs} />
                 {longFields.slice(0, MAX_LONG_FIELDS).map(field => {
