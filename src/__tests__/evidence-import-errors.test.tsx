@@ -45,6 +45,12 @@ describe('evidence import error messages', () => {
     expect(await screen.findByText(`slow.pdf：${evidenceJa['importError.documentTimeout'].replace('{{seconds}}', '10')}`)).toBeVisible();
   });
 
+  it('keeps the recursion advice for a parser that overflowed the stack in the worker', async () => {
+    // The worker posts the RangeError as extractionFailed with its message.
+    await failImport(new EvidenceImportError('extractionFailed', { fileName: 'deep.docx', message: 'Maximum call stack size exceeded' }));
+    expect(await screen.findByText(`deep.docx：${evidenceJa['toast.importRecursion']}`)).toBeVisible();
+  });
+
   it('shows an import interrupted by the app as an interruption, not DOMException text', async () => {
     await failImport(new DOMException('signal is aborted without reason', 'AbortError'));
     expect(await screen.findByText(evidenceJa['importError.interrupted'])).toBeVisible();

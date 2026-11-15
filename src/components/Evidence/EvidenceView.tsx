@@ -1621,15 +1621,18 @@ function capPreviewText(text: string, maxChars: number): { text: string; truncat
 /** Coded errors (also from the worker) are translated and name their file; an
  * abort the analyst did not request reads as an interruption, not DOMException text. */
 function formatEvidenceImportError(err: unknown, t: TFunction): string {
+  const message = err instanceof Error ? err.message : t('toast.importFailed');
+  const recursion = /too much recursion|maximum call stack/i.test(message);
   const coded = evidenceImportErrorDetails(err);
   if (coded) {
     const params = evidenceImportErrorParams(coded.code);
-    const reason = coded.code === 'fileCount' ? t('toast.tooManyFiles', params) : t(`importError.${coded.code}`, params);
+    // A worker parser's stack overflow arrives as extractionFailed with its message.
+    const reason = recursion ? t('toast.importRecursion')
+      : coded.code === 'fileCount' ? t('toast.tooManyFiles', params) : t(`importError.${coded.code}`, params);
     return coded.fileName ? t('importError.inFile', { fileName: coded.fileName, reason }) : reason;
   }
   if ((err as { name?: unknown } | null)?.name === 'AbortError') return t('importError.interrupted');
-  const message = err instanceof Error ? err.message : t('toast.importFailed');
-  if (/too much recursion|maximum call stack/i.test(message)) {
+  if (recursion) {
     return t('toast.importRecursion');
   }
   return message;
