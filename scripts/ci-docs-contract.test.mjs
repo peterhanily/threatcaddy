@@ -165,4 +165,10 @@ test('sandbox guidance states that Docker API access is host root', () => {
   const deployment = read('docs/deployment.md');
   assert.doesNotMatch(deployment, /only container creation and management/);
   assert.match(deployment, /root on that Docker host/);
+  assert.match(deployment, /^### 4\.6 Docker Socket Security \(Bot Sandbox\)$/m);
+  for (const path of ['docs/architecture.md', 'docs/bot-architecture.md']) {
+    const sandbox = read(path).match(/^###? [^\n]*Sandbox[^\n]*\n([\s\S]*?)(?=^#{1,3} )/m)?.[1] ?? '';
+    assert.match(sandbox, /root on that Docker host/, `${path} sandbox section must state the host-root exposure`);
+    assert.match(sandbox, /\(deployment\.md#46-docker-socket-security-bot-sandbox\)/);
+  }
 });
