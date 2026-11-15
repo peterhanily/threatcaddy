@@ -1089,6 +1089,12 @@ The admin panel is served on port 3002 (configurable via `ADMIN_PORT`). All `/ad
 
 **Response `200`:** Same as bootstrap.
 
+##### `POST /admin/api/logout`
+
+Revokes every admin token issued to the calling administrator. Used by the panel's Sign Out button.
+
+**Response `200`:** `{ "ok": true }`
+
 ---
 
 #### Admin Account Management

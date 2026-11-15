@@ -12,7 +12,7 @@ import { logger } from '../../lib/logger.js';
 import { isUniqueViolation } from '../../lib/db-errors.js';
 import { isLocked, recordFailedAttempt, resetAttempts } from '../../services/login-limiter.js';
 import { requireAdminAuth, logAdminAction, getAdminId } from './shared.js';
-import { hasActiveAdmin } from '../../services/admin-session-service.js';
+import { hasActiveAdmin, revokeAdminSessions } from '../../services/admin-session-service.js';
 import bootstrapRouter from './bootstrap.js';
 
 import usersRouter from './users.js';
@@ -87,6 +87,15 @@ app.post('/api/login', async (c) => {
   catch { return c.json({ error: 'Credentials changed. Sign in again.' }, 401); }
   logger.info('Admin login successful', { username: admin.username, adminId: admin.id });
   return c.json({ token, admin: { id: admin.id, username: admin.username, displayName: admin.displayName } });
+});
+
+// ─── Logout: revoke this administrator's tokens server-side ─────
+
+app.post('/api/logout', requireAdminAuth, async (c) => {
+  const adminId = getAdminId(c);
+  revokeAdminSessions(adminId);
+  logger.info('Admin logout', { adminId });
+  return c.json({ ok: true });
 });
 
 // ─── Admin Accounts Management ──────────────────────────────────
