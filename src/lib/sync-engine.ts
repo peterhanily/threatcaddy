@@ -443,6 +443,20 @@ export class SyncEngine {
     return i18n.t('syncStatus.skippedIncoming', { ns: 'common', item: await this.itemLabel(skipped[0].table, skipped[0].id, skipped[0].folderId), total: skipped.length });
   }
 
+  /** Access to an investigation was revoked: the server no longer sends its rows, so a skipped one can never be corrected. */
+  async forgetSkippedFolder(folderId: string) {
+    const epoch = this.epoch;
+    let forgotten = false;
+    await dynamicDb.transaction('rw', '_syncMeta', '_localMigrations', async () => {
+      await this.assertCurrentWorkspace(epoch);
+      const keys = (await dynamicDb.table('_syncMeta').where('key').startsWith(SKIPPED_PREFIX).toArray())
+        .filter(entry => entry.value?.folderId === folderId).map(entry => entry.key);
+      await dynamicDb.table('_syncMeta').bulkDelete(keys);
+      forgotten = keys.length > 0;
+    });
+    if (forgotten && epoch === this.epoch) this.onError?.(this.heldNotice ?? await this.skippedNotice());
+  }
+
   /** WS messages are invalidations, never a source of durable entity data. */
   async applyRemoteChange(table: string, op: 'put' | 'delete', id: string, data?: Record<string, unknown>) {
     void op; void id; void data;

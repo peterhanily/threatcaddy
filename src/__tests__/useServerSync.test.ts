@@ -33,6 +33,7 @@ const mockSetErrorHandler = vi.fn();
 const mockResolveConflicts = vi.fn();
 const mockSync = vi.fn();
 const mockApplyRemoteChange = vi.fn();
+const mockForgetSkippedFolder = vi.fn<(folderId: string) => Promise<void>>(async () => {});
 
 vi.mock('../lib/sync-engine', () => ({
   syncEngine: {
@@ -47,6 +48,7 @@ vi.mock('../lib/sync-engine', () => ({
     resolveConflicts: (...args: unknown[]) => mockResolveConflicts(...args),
     sync: () => mockSync(),
     applyRemoteChange: (...args: unknown[]) => mockApplyRemoteChange(...args),
+    forgetSkippedFolder: (folderId: string) => mockForgetSkippedFolder(folderId),
   },
 }));
 
@@ -219,6 +221,16 @@ describe('useServerSync', () => {
     const handler = folderInviteCall![1] as (msg: unknown) => void;
     handler({ folderId: 'folder-123' });
     expect(onFolderInvite).toHaveBeenCalledWith('folder-123');
+  });
+
+  it('forgets skipped server rows of an investigation whose access was revoked', async () => {
+    const reloadFns = makeReloadFns();
+    renderHook(() => useServerSync(makeAuth(), reloadFns));
+    await flushPromises();
+    const handler = mockWSOn.mock.calls.find((call) => call[0] === 'access-revoked')?.[1] as ((msg: unknown) => void) | undefined;
+    handler?.({ folderId: 'folder-123' });
+    expect(mockForgetSkippedFolder).toHaveBeenCalledWith('folder-123');
+    expect(reloadFns.folders).toHaveBeenCalled();
   });
 
   it('resolves a single conflict', async () => {

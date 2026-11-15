@@ -7,6 +7,7 @@ import { disableSync, revisionKey, suppressSyncInCurrentTransaction } from '../l
 import { setSessionKey } from '../lib/encryptionMiddleware';
 import { SyncEngine } from '../lib/sync-engine';
 import { ensureSyncWorkspace } from '../lib/sync-workspace';
+import { evictSyncedFolder } from '../lib/sync-cache';
 import { executeTool } from '../lib/llm-tools';
 import { TOOL_DEFINITIONS } from '../lib/llm-tool-defs';
 import { IntegrationExecutor } from '../lib/integration-executor';
@@ -97,6 +98,29 @@ describe('a server row this client cannot read', () => {
     const notice = onError.mock.lastCall?.[0];
     expect(notice).toContain('IOC (Phishing case)');
     expect(notice).not.toMatch(/standaloneIOCs|badabcde/);
+  });
+
+  it('stops naming a skipped item once access to its investigation is revoked', async () => {
+    api.pull.mockResolvedValueOnce({ changes: [remote('standaloneIOCs', ioc('bad', 'ip', '203.0.113.7'), 1)], cursor: '1', hasMore: false });
+    await engine.sync();
+    expect(onError).toHaveBeenLastCalledWith(expect.stringContaining('Phishing case'));
+    await engine.forgetSkippedFolder('f2');
+    expect(onError).toHaveBeenLastCalledWith(expect.stringContaining('Phishing case'));
+    await engine.forgetSkippedFolder('f1');
+    expect(onError).toHaveBeenLastCalledWith(null);
+    onError.mockClear();
+    await engine.sync();
+    expect(onError).toHaveBeenLastCalledWith(null);
+  });
+
+  it('stops naming a skipped item once its investigation is no longer kept offline', async () => {
+    api.pull.mockResolvedValueOnce({ changes: [remote('standaloneIOCs', ioc('bad', 'ip', '203.0.113.7'), 1)], cursor: '1', hasMore: false });
+    await engine.sync();
+    expect(onError).toHaveBeenLastCalledWith(expect.stringContaining('Phishing case'));
+    await evictSyncedFolder('f1');
+    onError.mockClear();
+    await engine.sync();
+    expect(onError).toHaveBeenLastCalledWith(null);
   });
 
   it('skips an unreadable row while re-downloading an investigation', async () => {

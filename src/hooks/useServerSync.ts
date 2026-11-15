@@ -143,6 +143,7 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
             if (!current()) return;
             const { folderId: revokedId } = msg as { folderId?: string };
             if (revokedId) {
+              syncEngine.forgetSkippedFolder(revokedId).catch(() => {});
               callbacks.current.reloadFns.folders();
             }
           });
