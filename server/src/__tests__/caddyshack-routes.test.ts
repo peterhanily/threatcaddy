@@ -109,8 +109,12 @@ vi.mock('../middleware/auth.js', async () => {
       if (header === 'Bearer invalid') {
         return c.json({ error: 'Invalid or expired token' }, 401);
       }
-      const role = header === 'Bearer admin-token' ? 'admin' : 'analyst';
+      const role = header === 'Bearer admin-token' ? 'admin' : header === 'Bearer viewer-token' ? 'viewer' : 'analyst';
       c.set('user', { ...mockUser, role });
+      await next();
+    }),
+    requireRole: (...roles: string[]) => createMiddleware(async (c, next) => {
+      if (!roles.includes(c.get('user').role)) return c.json({ error: 'Insufficient permissions' }, 403);
       await next();
     }),
   };
@@ -266,6 +270,15 @@ describe('POST /api/caddyshack/posts', () => {
     expect(body.id).toBeDefined();
     expect(body.reactions).toEqual({});
     expect(body.replyCount).toBe(0);
+  });
+
+  it('refuses posts and replies from the read-only viewer role', async () => {
+    for (const body of [{ content: 'Broadcast' }, { content: 'Reply', parentId: 'p1' }]) {
+      const res = await app.request(jsonReq('POST', '/api/caddyshack/posts', body, authHeader('viewer-token')));
+      expect(res.status).toBe(403);
+    }
+    const { db } = await import('../db/index.js');
+    expect(db.insert).not.toHaveBeenCalled();
   });
 
   it('returns 400 when content is empty', async () => {
@@ -569,6 +582,17 @@ describe('PATCH /api/caddyshack/posts/:id', () => {
       pinned: true,
     }, authHeader()));
     expect(res.status).toBe(200);
+  });
+
+  it('refuses pinning from the read-only viewer role, even on its own post', async () => {
+    selectQueue.push([{ id: 'p1', authorId: 'user-1', content: 'Original' }]);
+
+    const res = await app.request(jsonReq('PATCH', '/api/caddyshack/posts/p1', {
+      pinned: true,
+    }, authHeader('viewer-token')));
+    expect(res.status).toBe(403);
+    const { db } = await import('../db/index.js');
+    expect(db.update).not.toHaveBeenCalled();
   });
 
   it('returns 400 for invalid pinned value (not boolean)', async () => {

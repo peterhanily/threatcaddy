@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { eq, and, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 import { db } from '../db/index.js';
 import { backups } from '../db/schema.js';
 import type { AuthUser } from '../types.js';
@@ -23,7 +23,7 @@ const app = new Hono<{ Variables: { user: AuthUser } }>();
 app.use('*', requireAuth);
 
 // POST /api/backups — upload encrypted backup (multipart: metadata JSON + blob file)
-app.post('/', async (c) => {
+app.post('/', requireRole('admin', 'analyst'), async (c) => {
   const user = c.get('user');
   const body = await c.req.parseBody();
   let createdPath: string | undefined;

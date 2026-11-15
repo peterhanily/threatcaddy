@@ -162,7 +162,7 @@ Two separate RBAC systems enforce access control:
 **Server roles** (on the users table):
 - admin -- Full server access, can create bots.
 - analyst -- Standard access, can read bots.
-- viewer -- Read-only server access.
+- viewer -- Read-only server access. Viewers cannot post to the feed, pin posts or store server backups; they can react to posts and remove their own posts and backups.
 
 **Investigation roles** (on the investigation_members table):
 - owner -- Full control, can manage members.

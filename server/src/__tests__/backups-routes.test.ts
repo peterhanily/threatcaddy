@@ -49,7 +49,7 @@ const mockUser = {
   id: 'user-1',
   email: 'test@example.com',
   displayName: 'Test User',
-  role: 'member',
+  role: 'analyst',
 };
 
 // ---------------------------------------------------------------------------
@@ -96,7 +96,11 @@ vi.mock('../middleware/auth.js', async () => {
       if (header === 'Bearer invalid') {
         return c.json({ error: 'Invalid or expired token' }, 401);
       }
-      c.set('user', mockUser);
+      c.set('user', header === 'Bearer viewer-token' ? { ...mockUser, role: 'viewer' } : mockUser);
+      await next();
+    }),
+    requireRole: (...roles: string[]) => createMiddleware(async (c, next) => {
+      if (!roles.includes(c.get('user').role)) return c.json({ error: 'Insufficient permissions' }, 403);
       await next();
     }),
   };
@@ -218,6 +222,21 @@ describe('Backup routes — /api/backups', () => {
     const response = await app.request('/api/backups', { method: 'POST', headers: authHeader(), body: makeUploadFormData({}, true, metadata) });
     expect(response.status).toBe(400);
     expect(mockWriteFile).not.toHaveBeenCalled();
+  });
+
+  it('refuses uploads from the read-only viewer role before storing anything', async () => {
+    selectQueue.push([]);
+    const response = await app.request('/api/backups', { method: 'POST', headers: authHeader('viewer-token'), body: makeUploadFormData() });
+    expect(response.status).toBe(403);
+    expect(mockWriteFile).not.toHaveBeenCalled();
+  });
+
+  it('lets the viewer role list and delete its own existing backups', async () => {
+    selectQueue.push([]);
+    expect((await app.request('/api/backups', { headers: authHeader('viewer-token') })).status).toBe(200);
+    selectQueue.push([{ id: 'old', storagePath: 'backups/old.enc' }], []);
+    deleteQueue.push(undefined);
+    expect((await app.request('/api/backups/old', { method: 'DELETE', headers: authHeader('viewer-token') })).status).toBe(200);
   });
 
   it('requires an owned matching parent for a differential upload', async () => {

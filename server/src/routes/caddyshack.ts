@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { eq, and, lt, desc, isNull, or, inArray, count } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 import { checkInvestigationAccess } from '../middleware/access.js';
 import { withCurrentFeedAccess, type FeedVariables } from '../middleware/feed-access.js';
 import { postScopeFolders, visiblePostScope } from '../services/feed-policy.js';
@@ -97,7 +97,7 @@ app.get('/', async (c) => {
 });
 
 // POST /api/caddyshack/posts — create post
-app.post('/posts', async (c) => {
+app.post('/posts', requireRole('admin', 'analyst'), async (c) => {
   const db = c.get('feedDb');
   const user = c.get('user');
   const body = await c.req.json();
@@ -445,6 +445,9 @@ app.patch('/posts/:id', async (c) => {
   if (body.pinned !== undefined) {
     if (typeof body.pinned !== 'boolean') {
       return c.json({ error: 'Pinned must be a boolean', code: ErrorCodes.VALIDATION_FAILED }, 400);
+    }
+    if (user.role !== 'admin' && user.role !== 'analyst') {
+      return c.json({ error: 'Insufficient permissions', code: ErrorCodes.INSUFFICIENT_PERMISSIONS }, 403);
     }
     updates.pinned = body.pinned;
   }
