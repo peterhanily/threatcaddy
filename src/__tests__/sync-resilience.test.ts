@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import { disableSync, revisionKey, suppressSyncInCurrentTransaction } from '../lib/sync-state';
@@ -5,6 +8,9 @@ import { setSessionKey } from '../lib/encryptionMiddleware';
 import { SyncEngine } from '../lib/sync-engine';
 import { ensureSyncWorkspace } from '../lib/sync-workspace';
 import { executeTool } from '../lib/llm-tools';
+import { TOOL_DEFINITIONS } from '../lib/llm-tool-defs';
+import { IntegrationExecutor } from '../lib/integration-executor';
+import { IOC_TYPE_LABELS } from '../types';
 
 const GENERATION = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const api = vi.hoisted(() => ({ push: vi.fn(), pull: vi.fn() }));
@@ -191,5 +197,41 @@ describe('agent delegation and the server user foreign key', () => {
     const update = await executeTool({ type: 'tool_use', id: 'u', name: 'update_task', input: { id: 't2', assigneeId: 'dep-1' } }, 'f1');
     expect(JSON.parse(update.result).error).toContain('delegate_task');
     expect((await db.tasks.get('t2'))?.assigneeId).toBeUndefined();
+  });
+});
+
+describe('IOC types every client can read', () => {
+  it('enrichment output cannot create or retype an IOC with a type other clients skip', async () => {
+    await seed('standaloneIOCs', ioc('i1', 'domain', 'beacon.test'));
+    await db.integrationTemplates.add({ id: 'template', schemaVersion: '1.0', version: '1.0.0', name: 'Fixture enrichment', description: 'Synthetic', author: 'test', icon: 'search', color: '#000', category: 'enrichment', tags: [], triggers: [{ type: 'manual' }], configSchema: [], steps: [], outputs: [], requiredDomains: [], source: 'user', createdAt: 1, updatedAt: 1 });
+    await db.installedIntegrations.add({ id: 'installed', templateId: 'template', name: 'Fixture', enabled: true, config: {}, scopeType: 'all', scopeFolderIds: [], runCount: 0, errorCount: 0, createdAt: 1, updatedAt: 1 });
+    const outputs: PromiseSettledResult<unknown>[] = [];
+    const run = vi.spyOn(IntegrationExecutor.prototype, 'run').mockImplementation(async (_template, _installation, _input, callbacks) => {
+      outputs.push(...await Promise.allSettled([
+        callbacks.onCreateEntity?.('ioc', { type: 'ip', value: '203.0.113.7' }),
+        callbacks.onUpdateEntity?.('ioc', 'i1', { type: 'ip' }),
+      ]));
+      throw new Error('Fixture run finished');
+    });
+    try {
+      await executeTool({ type: 'tool_use', id: 'e', name: 'enrich_ioc', input: { iocId: 'i1' } }, 'f1');
+    } finally { run.mockRestore(); }
+    expect(outputs.map(output => output.status === 'rejected' ? String(output.reason) : output.status)).toEqual([
+      expect.stringContaining('unsupported IOC type'), expect.stringContaining('unsupported IOC type')]);
+    expect((await db.standaloneIOCs.toArray()).map(row => [row.id, row.type])).toEqual([['i1', 'domain']]);
+  });
+
+  it('the server, its bot tool and the AI tool schemas accept exactly the IOC types clients read', () => {
+    const source = (path: string) => readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../..', path), 'utf8');
+    const quoted = (list = '') => [...list.matchAll(/'([^']+)'/g)].map(match => match[1]).sort();
+    const client = Object.keys(IOC_TYPE_LABELS).sort();
+    expect(quoted(source('server/src/services/sync-service.ts').match(/const IOC_TYPES = new Set\(\[([^\]]*)\]\)/)?.[1])).toEqual(client);
+    expect(quoted(source('server/src/bots/bot-tools.ts').match(/name: 'create_ioc'[\s\S]*?type: \{ type: 'string', enum: \[([^\]]*)\]/)?.[1])).toEqual(client);
+    type Schema = { properties: Record<string, { enum?: string[]; items?: Schema }> };
+    const schema = (name: string) => TOOL_DEFINITIONS.find(tool => tool.name === name)?.input_schema as unknown as Schema;
+    for (const types of [schema('create_ioc').properties.type.enum, schema('update_ioc').properties.type.enum,
+      schema('bulk_create_iocs').properties.iocs.items?.properties.type.enum]) {
+      expect([...types ?? []].sort()).toEqual(client);
+    }
   });
 });
