@@ -6,7 +6,7 @@ import { SYNC_TABLES, isSyncTable, onOutboxCommit, revisionKey, suppressSyncInCu
 import type { WSClient } from './ws-client';
 import { ensureSyncWorkspace } from './sync-workspace';
 import { assertSyncCaptureReady, ensureSyncCaptureCoverage, normalizeSyncWorkspaceIdentity, isSyncWorkspaceIdentity,
-  SYNC_WORKSPACE_KEY, SYNC_RECOVERY_KEY, SYNC_HISTORY_MESSAGE } from './sync-capture-policy';
+  isSampleGlobalRecord, SYNC_WORKSPACE_KEY, SYNC_RECOVERY_KEY, SYNC_HISTORY_MESSAGE } from './sync-capture-policy';
 import { uncachedFolderKey, cacheOperationKey, rotateCacheOperation, CACHE_REPLAY_CANCELLED } from './sync-cache';
 
 const dynamicDb = db as unknown as DexieType;
@@ -164,7 +164,7 @@ export class SyncEngine {
       const pending = new Set(queued.map(e => entityKey(e.table, e.entityId)));
       for (const table of SYNC_TABLES) {
         for (const row of await dynamicDb.table(table).toArray()) {
-          if (row.trashed || row.localOnly) continue;
+          if (row.trashed || row.localOnly || isSampleGlobalRecord(table, row.id)) continue;
           if (table === 'folders' ? !folderIds.has(row.id) : !['tags', 'timelines'].includes(table) && !folderIds.has(row.folderId)) continue;
           if (pending.has(entityKey(table, row.id))) continue;
           if ((await dynamicDb.table('_syncMeta').get(revisionKey(table, row.id)))?.value) continue;
