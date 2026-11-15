@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "إغلاق النوافذ المنبثقة",
   "server.teamServer": "خادم الفريق",
   "server.connected": "متصل",
+  "server.unreachableSignedIn": "تعذّر الوصول إلى الخادم. ما زلت مسجّل الدخول.",
   "server.serverLabel": "الخادم",
   "server.userLabel": "المستخدم",
   "server.emailLabel": "البريد الإلكتروني",

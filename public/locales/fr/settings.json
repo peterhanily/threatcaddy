@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "Fermer les fenêtres modales",
   "server.teamServer": "Serveur d'équipe",
   "server.connected": "Connecté",
+  "server.unreachableSignedIn": "Serveur injoignable. Vous êtes toujours connecté à votre compte.",
   "server.serverLabel": "Serveur",
   "server.userLabel": "Utilisateur",
   "server.emailLabel": "E-mail",

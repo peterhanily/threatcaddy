@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "Đóng hộp thoại modal",
   "server.teamServer": "Máy chủ nhóm",
   "server.connected": "Đã kết nối",
+  "server.unreachableSignedIn": "Không thể kết nối tới máy chủ. Bạn vẫn đang đăng nhập.",
   "server.serverLabel": "Máy chủ",
   "server.userLabel": "Người dùng",
   "server.emailLabel": "Email",

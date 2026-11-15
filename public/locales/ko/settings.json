@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "모달 닫기",
   "server.teamServer": "팀 서버",
   "server.connected": "연결됨",
+  "server.unreachableSignedIn": "서버에 연결할 수 없습니다. 아직 로그인되어 있습니다.",
   "server.serverLabel": "서버",
   "server.userLabel": "사용자",
   "server.emailLabel": "이메일",

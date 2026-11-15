@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "Закрыть диалоги",
   "server.teamServer": "Командный сервер",
   "server.connected": "Подключено",
+  "server.unreachableSignedIn": "Сервер недоступен. Вы по-прежнему вошли в систему.",
   "server.serverLabel": "Сервер",
   "server.userLabel": "Пользователь",
   "server.emailLabel": "Email",

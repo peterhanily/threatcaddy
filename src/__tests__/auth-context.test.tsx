@@ -334,6 +334,44 @@ describe('AuthProvider shared workspace session lifecycle', () => {
     expect(JSON.parse(localStorage.getItem(authStorageKey)!).refreshToken).toBe('refresh-original');
   });
 
+  it('signs out the live identity when another endpoint is chosen, so backing out cannot restore it', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"ok":true}')));
+    const view = renderHook(useAuth, { wrapper: AuthProvider });
+    act(() => view.result.current.setReachable(false));
+    act(() => view.result.current.setServerUrl('https://other.example'));
+    expect(localStorage.getItem(authStorageKey)).toBeNull();
+    act(() => view.result.current.setServerUrl(null));
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledWith('https://team.example/api/auth/logout', expect.objectContaining({
+      body: JSON.stringify({ refreshToken: auth.refreshToken }),
+    })));
+    // The previous endpoint's credentials are never sent to the newly chosen one.
+    expect(vi.mocked(fetch).mock.calls.every(([url]) => String(url).startsWith('https://team.example/'))).toBe(true);
+    view.unmount();
+    expect(renderHook(useAuth, { wrapper: AuthProvider }).result.current.user).toBeNull();
+  });
+
+  it('keeps another account written by another tab when this tab chooses another endpoint', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"ok":true}')));
+    const view = renderHook(useAuth, { wrapper: AuthProvider });
+    const other = { ...auth, user: { ...user, id: 'bob' }, refreshToken: 'bob-refresh', accessToken: 'bob-access' };
+    localStorage.setItem(authStorageKey, JSON.stringify(other));
+    act(() => view.result.current.setServerUrl('https://other.example'));
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(JSON.parse(localStorage.getItem(authStorageKey) ?? 'null')).toEqual(other);
+    expect(vi.mocked(fetch).mock.calls.map(([, request]) => JSON.parse(request?.body as string).refreshToken)).toEqual([auth.refreshToken]);
+  });
+
+  it('clears local credentials at once when the previous server cannot confirm revocation', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Synthetic network failure')));
+    const view = renderHook(useAuth, { wrapper: AuthProvider });
+    act(() => view.result.current.setServerUrl('https://other.example'));
+    expect(localStorage.getItem(authStorageKey)).toBeNull();
+    expect(view.result.current.user).toBeNull();
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+    await act(async () => { await Promise.resolve(); });
+    expect(localStorage.getItem(authStorageKey)).toBeNull();
+  });
+
   it('fences a late login response after choosing another endpoint', async () => {
     let resolveLogin!: (response: Response) => void;
     vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(resolve => { resolveLogin = resolve; })));

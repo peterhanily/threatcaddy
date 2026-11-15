@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "ปิดกล่องโต้ตอบ",
   "server.teamServer": "เซิร์ฟเวอร์ทีม",
   "server.connected": "เชื่อมต่อแล้ว",
+  "server.unreachableSignedIn": "ไม่สามารถเข้าถึงเซิร์ฟเวอร์ได้ คุณยังคงลงชื่อเข้าใช้อยู่",
   "server.serverLabel": "เซิร์ฟเวอร์",
   "server.userLabel": "ผู้ใช้",
   "server.emailLabel": "อีเมล",

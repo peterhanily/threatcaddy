@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "סגור חלונות מודאל",
   "server.teamServer": "שרת צוות",
   "server.connected": "מחובר",
+  "server.unreachableSignedIn": "לא ניתן להגיע לשרת. אתה עדיין מחובר לחשבון.",
   "server.serverLabel": "שרת",
   "server.userLabel": "משתמש",
   "server.emailLabel": "אימייל",

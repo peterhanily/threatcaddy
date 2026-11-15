@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "关闭模态框",
   "server.teamServer": "团队服务器",
   "server.connected": "已连接",
+  "server.unreachableSignedIn": "无法访问服务器。您仍处于登录状态。",
   "server.serverLabel": "服务器",
   "server.userLabel": "用户",
   "server.emailLabel": "邮箱",

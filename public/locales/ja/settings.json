@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "モーダルを閉じる",
   "server.teamServer": "チームサーバー",
   "server.connected": "接続済み",
+  "server.unreachableSignedIn": "サーバーに接続できません。サインインしたままです。",
   "server.serverLabel": "サーバー",
   "server.userLabel": "ユーザー",
   "server.emailLabel": "メール",

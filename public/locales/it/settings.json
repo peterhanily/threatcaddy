@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "Chiudi finestre modali",
   "server.teamServer": "Server team",
   "server.connected": "Connesso",
+  "server.unreachableSignedIn": "Server non raggiungibile. L'accesso è ancora attivo.",
   "server.serverLabel": "Server",
   "server.userLabel": "Utente",
   "server.emailLabel": "Email",

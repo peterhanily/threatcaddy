@@ -417,6 +417,7 @@
   "shortcuts.closeModals": "Close modals",
   "server.teamServer": "Team Server",
   "server.connected": "Connected",
+  "server.unreachableSignedIn": "Server unreachable. You are still signed in.",
   "server.serverLabel": "Server",
   "server.userLabel": "User",
   "server.emailLabel": "Email",

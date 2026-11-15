@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "मोडल बंद करें",
   "server.teamServer": "टीम सर्वर",
   "server.connected": "कनेक्टेड",
+  "server.unreachableSignedIn": "सर्वर तक नहीं पहुँचा जा सकता। आप अभी भी साइन इन हैं।",
   "server.serverLabel": "सर्वर",
   "server.userLabel": "उपयोगकर्ता",
   "server.emailLabel": "ईमेल",

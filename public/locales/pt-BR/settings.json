@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "Fechar modais",
   "server.teamServer": "Servidor de equipe",
   "server.connected": "Conectado",
+  "server.unreachableSignedIn": "Servidor inacessível. Sua sessão continua ativa.",
   "server.serverLabel": "Servidor",
   "server.userLabel": "Usuário",
   "server.emailLabel": "E-mail",

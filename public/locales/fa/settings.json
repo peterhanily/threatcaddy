@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "بستن پنجره‌های مودال",
   "server.teamServer": "سرور تیمی",
   "server.connected": "متصل",
+  "server.unreachableSignedIn": "سرور در دسترس نیست. همچنان وارد حساب خود هستید.",
   "server.serverLabel": "سرور",
   "server.userLabel": "کاربر",
   "server.emailLabel": "ایمیل",

@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "Zamknij okna dialogowe",
   "server.teamServer": "Serwer zespołu",
   "server.connected": "Połączono",
+  "server.unreachableSignedIn": "Serwer jest nieosiągalny. Nadal jesteś zalogowany.",
   "server.serverLabel": "Serwer",
   "server.userLabel": "Użytkownik",
   "server.emailLabel": "Email",

@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "Dialoogvensters sluiten",
   "server.teamServer": "Teamserver",
   "server.connected": "Verbonden",
+  "server.unreachableSignedIn": "Server onbereikbaar. U bent nog steeds aangemeld.",
   "server.serverLabel": "Server",
   "server.userLabel": "Gebruiker",
   "server.emailLabel": "E-mail",

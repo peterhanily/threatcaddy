@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "Cerrar modales",
   "server.teamServer": "Servidor de equipo",
   "server.connected": "Conectado",
+  "server.unreachableSignedIn": "Servidor inaccesible. Su sesión sigue iniciada.",
   "server.serverLabel": "Servidor",
   "server.userLabel": "Usuario",
   "server.emailLabel": "Correo",

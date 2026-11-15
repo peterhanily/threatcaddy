@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "Закрити діалоги",
   "server.teamServer": "Командний сервер",
   "server.connected": "Підключено",
+  "server.unreachableSignedIn": "Сервер недоступний. Ви досі в системі.",
   "server.serverLabel": "Сервер",
   "server.userLabel": "Користувач",
   "server.emailLabel": "Email",

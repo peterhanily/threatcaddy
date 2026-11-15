@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "Dialoge schließen",
   "server.teamServer": "Team-Server",
   "server.connected": "Verbunden",
+  "server.unreachableSignedIn": "Server nicht erreichbar. Sie sind weiterhin angemeldet.",
   "server.serverLabel": "Server",
   "server.userLabel": "Benutzer",
   "server.emailLabel": "E-Mail",

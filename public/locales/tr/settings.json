@@ -365,6 +365,7 @@
   "shortcuts.closeModals": "Modalları kapat",
   "server.teamServer": "Ekip Sunucusu",
   "server.connected": "Bağlandı",
+  "server.unreachableSignedIn": "Sunucuya ulaşılamıyor. Oturumunuz hâlâ açık.",
   "server.serverLabel": "Sunucu",
   "server.userLabel": "Kullanıcı",
   "server.emailLabel": "E-posta",
