@@ -8,8 +8,9 @@ import { LOCALE_CACHE_PREFIX } from '../src/lib/locale-cache';
  * translation. The name is stable while translations are unchanged. */
 export function localeCacheName(localesDir: string): string {
   const hash = createHash('sha256');
-  for (const language of readdirSync(localesDir).sort()) {
-    for (const file of readdirSync(join(localesDir, language)).sort()) {
+  const languages = readdirSync(localesDir, { withFileTypes: true }).filter(entry => entry.isDirectory()).map(entry => entry.name);
+  for (const language of languages.sort()) {
+    for (const file of readdirSync(join(localesDir, language)).filter(name => name.endsWith('.json')).sort()) {
       hash.update(`${language}/${file}\0`).update(readFileSync(join(localesDir, language, file))).update('\0');
     }
   }

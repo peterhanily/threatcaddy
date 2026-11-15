@@ -62,6 +62,20 @@ describe('hosted locale caching', () => {
     expect(localeCacheName(resolve(__dirname, '../../public/locales'))).toMatch(/^i18n-locales-[0-9a-f]{16}$/);
   });
 
+  it('ignores stray non-translation files such as .DS_Store', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'tc-locales-'));
+    try {
+      mkdirSync(join(dir, 'de'));
+      writeFileSync(join(dir, 'de', 'common.json'), '{"ok":"OK"}');
+      const clean = localeCacheName(dir);
+      writeFileSync(join(dir, '.DS_Store'), 'finder');
+      writeFileSync(join(dir, 'de', '.DS_Store'), 'finder');
+      expect(localeCacheName(dir)).toBe(clean);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('deletes locale caches from other builds, including the old unversioned cache', async () => {
     const { store, storage } = fakeCaches(['i18n-locales', 'i18n-locales-aaaaaaaaaaaaaaaa', 'i18n-locales-0123456789abcdef', 'workbox-precache-v2-https://threatcaddy.com/', 'lazy-chunks']);
     await purgeStaleLocaleCaches('i18n-locales-0123456789abcdef', storage);
