@@ -42,6 +42,7 @@
   "backup": {
     "exported": "پشتیبان صادر شد",
     "exportFailed": "صدور پشتیبان ناموفق بود",
+    "exportFailedDetail": "صدور پشتیبان ناموفق بود: {{error}}",
     "restored": "پشتیبان بازیابی شد",
     "restoreFailed": "بازیابی پشتیبان ناموفق بود",
     "mergeComplete": "ادغام تکمیل شد: {{added}} اضافه شد، {{updated}} به‌روزرسانی شد، {{skipped}} نادیده گرفته شد",

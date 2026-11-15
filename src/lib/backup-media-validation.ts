@@ -9,7 +9,7 @@ const WHITEBOARD_MIME_TYPES = new Set([...RASTER_MIME_TYPES, 'image/svg+xml', 'i
 const MAX_EVIDENCE_IMAGE_CHARS = 4_250_000;
 const MAX_WHITEBOARD_FILES_BYTES = 8 * 1024 * 1024;
 const MAX_BACKUP_BYTES = 50 * 1024 * 1024;
-function invalid(field: string): never { throw new Error(`Invalid backup media ${field}; nothing was imported.`); }
+function invalid(field: string): never { throw new Error(`Invalid backup media ${field}; no data was changed.`); }
 function object(value: unknown): value is Record<string, unknown> { return !!value && typeof value === 'object' && !Array.isArray(value); }
 function rasterMime(value: unknown, field: string): string {
   if (typeof value !== 'string' || !RASTER_MIME_TYPES.has(value.toLowerCase().trim())) invalid(field);
@@ -34,7 +34,7 @@ export function validateBackupURL(url: string): void {
     const parsed = new URL(url);
     if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return;
   } catch { /* Fall through to the same non-sensitive validation error. */ }
-  throw new Error('Backup quick links require valid HTTP(S) URLs; nothing was imported.');
+  throw new Error('Backup quick links require valid HTTP(S) URLs; no data was changed.');
 }
 
 export function validateBackupMedia(name: BackupTable, row: Record<string, unknown>): void {

@@ -44,6 +44,7 @@
   "backup": {
     "exported": "Kopia zapasowa wyeksportowana",
     "exportFailed": "Nie udało się wyeksportować kopii zapasowej",
+    "exportFailedDetail": "Nie udało się wyeksportować kopii zapasowej: {{error}}",
     "restored": "Kopia zapasowa przywrócona",
     "restoreFailed": "Nie udało się przywrócić kopii zapasowej",
     "mergeComplete": "Scalanie zakończone: {{added}} dodano, {{updated}} zaktualizowano, {{skipped}} pominięto",

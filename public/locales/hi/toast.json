@@ -42,6 +42,7 @@
   "backup": {
     "exported": "बैकअप निर्यात हुआ",
     "exportFailed": "बैकअप निर्यात विफल",
+    "exportFailedDetail": "बैकअप निर्यात विफल: {{error}}",
     "restored": "बैकअप पुनर्स्थापित हुआ",
     "restoreFailed": "बैकअप पुनर्स्थापना विफल",
     "mergeComplete": "मर्ज पूर्ण: {{added}} जोड़े गए, {{updated}} अपडेट हुए, {{skipped}} छोड़े गए",

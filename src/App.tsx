@@ -1261,8 +1261,8 @@ const AppInner = memo(function AppInner({
       const date = new Date().toISOString().slice(0, 10);
       downloadFile(json, `threatcaddy-backup-${date}.json`, 'application/json');
       addToast('success', tt('backup.exported'));
-    } catch {
-      addToast('error', tt('backup.exportFailed'));
+    } catch (error) {
+      addToast('error', error instanceof Error ? tt('backup.exportFailedDetail', { error: error.message }) : tt('backup.exportFailed'));
     }
   }, [addToast, tt]);
 

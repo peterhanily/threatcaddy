@@ -42,6 +42,7 @@
   "backup": {
     "exported": "백업 내보내기됨",
     "exportFailed": "백업 내보내기 실패",
+    "exportFailedDetail": "백업 내보내기 실패: {{error}}",
     "restored": "백업 복원됨",
     "restoreFailed": "백업 복원 실패",
     "mergeComplete": "병합 완료: {{added}}개 추가됨, {{updated}}개 업데이트됨, {{skipped}}개 건너뜀",

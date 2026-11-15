@@ -43,6 +43,7 @@
   "backup": {
     "exported": "Backup esportato",
     "exportFailed": "Impossibile esportare il backup",
+    "exportFailedDetail": "Impossibile esportare il backup: {{error}}",
     "restored": "Backup ripristinato",
     "restoreFailed": "Impossibile ripristinare il backup",
     "mergeComplete": "Unione completata: {{added}} aggiunti, {{updated}} aggiornati, {{skipped}} ignorati",

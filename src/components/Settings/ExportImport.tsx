@@ -40,8 +40,8 @@ export function ExportImport({ notes, onImportComplete }: ExportImportProps) {
       showMessage(t('data.exportSuccess'));
       addToast('success', tt('backup.exported'));
       logActivity('data', 'export', 'Exported JSON backup');
-    } catch {
-      addToast('error', tt('backup.exportFailed'));
+    } catch (error) {
+      addToast('error', error instanceof Error ? tt('backup.exportFailedDetail', { error: error.message }) : tt('backup.exportFailed'));
     }
   };
 

@@ -42,6 +42,7 @@
   "backup": {
     "exported": "Back-up geëxporteerd",
     "exportFailed": "Back-up exporteren mislukt",
+    "exportFailedDetail": "Back-up exporteren mislukt: {{error}}",
     "restored": "Back-up hersteld",
     "restoreFailed": "Back-up herstellen mislukt",
     "mergeComplete": "Samenvoegen voltooid: {{added}} toegevoegd, {{updated}} bijgewerkt, {{skipped}} overgeslagen",

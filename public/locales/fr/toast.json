@@ -43,6 +43,7 @@
   "backup": {
     "exported": "Sauvegarde exportée",
     "exportFailed": "Échec de l'exportation de la sauvegarde",
+    "exportFailedDetail": "Échec de l'exportation de la sauvegarde : {{error}}",
     "restored": "Sauvegarde restaurée",
     "restoreFailed": "Échec de la restauration de la sauvegarde",
     "mergeComplete": "Fusion terminée : {{added}} ajoutés, {{updated}} mis à jour, {{skipped}} ignorés",
