@@ -9,6 +9,7 @@ import { initializeWorkspace } from '../../lib/workspace-initialization';
 import { db } from '../../db';
 import { authStorageKey, readStoredAuth } from '../../lib/auth-storage';
 import { revokeRemoteSessions } from '../../lib/session-logout';
+import { reloadPage } from '../../lib/page-reload';
 
 /** An unreachable team server delays a completed reset at most this long. */
 const RESET_REVOCATION_WAIT_MS = 3_000;
@@ -128,7 +129,7 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
         ]);
         clearTimeout(timer);
       }
-      window.location.reload();
+      reloadPage();
     } catch {
       resetInFlight.current = false;
       setResetError(true);

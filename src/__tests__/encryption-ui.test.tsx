@@ -55,6 +55,7 @@ vi.mock('../lib/encryptionMiddleware', () => ({
 vi.mock('../db', () => ({
   db: { delete: vi.fn(async () => {}) },
 }));
+vi.mock('../lib/page-reload', () => ({ reloadPage: vi.fn() }));
 
 vi.mock('../contexts/ToastContext', () => ({
   useToast: () => ({ addToast: vi.fn(), toasts: [], removeToast: vi.fn() }),
@@ -73,6 +74,7 @@ import { clearEncryptionMeta } from '../lib/encryptionStore';
 import { deriveWrappingKey, wrapMasterKey } from '../lib/crypto';
 import { authStorageKey } from '../lib/auth-storage';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
+import { reloadPage } from '../lib/page-reload';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -253,7 +255,7 @@ describe('PassphraseDialog', () => {
     expect(input).toHaveValue('DELETE'); expect(button).toBeEnabled();
   });
 
-  it('signs the reset workspace out of its team server without waiting for revocation, and keeps other profiles', async () => {
+  it('signs the reset workspace out of its team server, reloads within 3 s while revocation hangs, and keeps other profiles', async () => {
     vi.clearAllMocks();
     const team = { serverUrl: 'https://team.example', accessToken: 'access-fixture', refreshToken: 'refresh-fixture',
       user: { id: 'fixture', email: 'fixture@example.invalid', displayName: 'Fixture', role: 'analyst' } };
@@ -262,18 +264,23 @@ describe('PassphraseDialog', () => {
     localStorage.setItem(otherProfile, JSON.stringify({ ...team, refreshToken: 'other-profile-refresh' }));
     // An unreachable server never answers; local sign-out must not wait for it.
     vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => {})));
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
       render(<PassphraseDialog onUnlocked={vi.fn()} />);
       fireEvent.click(screen.getByText('Forgot passphrase?'));
       changeInput(screen.getByRole('textbox', { name: 'Type DELETE to confirm.' }), 'DELETE');
       await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Delete All Data & Start Fresh' })); });
-      await vi.waitFor(() => expect(fetch).toHaveBeenCalledWith('https://team.example/api/auth/logout', expect.objectContaining({
+      expect(fetch).toHaveBeenCalledWith('https://team.example/api/auth/logout', expect.objectContaining({
         body: JSON.stringify({ refreshToken: 'refresh-fixture' }),
-      })));
+      }));
       expect(localStorage.getItem(authStorageKey)).toBeNull();
       expect(localStorage.getItem(otherProfile)).not.toBeNull();
       expect(clearEncryptionMeta).toHaveBeenCalled();
-    } finally { vi.unstubAllGlobals(); localStorage.removeItem(authStorageKey); localStorage.removeItem(otherProfile); }
+      await act(async () => { vi.advanceTimersByTime(2_999); });
+      expect(reloadPage).not.toHaveBeenCalled();
+      await act(async () => { vi.advanceTimersByTime(1); });
+      expect(reloadPage).toHaveBeenCalledOnce();
+    } finally { vi.useRealTimers(); vi.unstubAllGlobals(); localStorage.removeItem(authStorageKey); localStorage.removeItem(otherProfile); }
   });
 });
 
