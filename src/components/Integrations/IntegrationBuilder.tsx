@@ -197,7 +197,7 @@ function KeyValueEditor({
         ))}
         <button
           onClick={() => onChange([...entries, ['', '']])}
-          className="text-[10px] text-accent hover:text-accent/80 flex items-center gap-1"
+          className="text-[10px] text-accent flex items-center gap-1"
         >
           <Plus size={10} />
           Add
@@ -387,7 +387,7 @@ function TransformStepEditor({
         ))}
         <button
           onClick={addOp}
-          className="text-[10px] text-accent hover:text-accent/80 flex items-center gap-1"
+          className="text-[10px] text-accent flex items-center gap-1"
         >
           <Plus size={10} />
           Add Operation
@@ -776,7 +776,7 @@ export function IntegrationBuilder({ onBack }: IntegrationBuilderProps) {
         <SectionHeader title="Configuration Fields">
           <button
             onClick={addConfigField}
-            className="text-[10px] text-accent hover:text-accent/80 flex items-center gap-1"
+            className="text-[10px] text-accent flex items-center gap-1"
           >
             <Plus size={10} />
             Add Field
@@ -1007,7 +1007,7 @@ export function IntegrationBuilder({ onBack }: IntegrationBuilderProps) {
         <SectionHeader title="Outputs">
           <button
             onClick={addOutput}
-            className="text-[10px] text-accent hover:text-accent/80 flex items-center gap-1"
+            className="text-[10px] text-accent flex items-center gap-1"
           >
             <Plus size={10} />
             Add Output

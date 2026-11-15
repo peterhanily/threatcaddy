@@ -148,7 +148,7 @@ export const TimelineEventCard = React.memo(function TimelineEventCard({
           </span>
         )}
         {event.linkedIOCIds.length > 0 && (
-          <span className="flex items-center gap-0.5 text-[10px] text-accent/70">
+          <span className="flex items-center gap-0.5 text-[10px] text-accent">
             <Search size={9} />{event.linkedIOCIds.length}
           </span>
         )}

@@ -497,7 +497,7 @@ export function ChatInput({ onSend, onStop, isStreaming, extensionAvailable, ser
           <button
             onClick={handleSend}
             disabled={!text.trim() || !canSend || disabled || readingImages || submitting}
-            className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-purple text-white hover:bg-purple/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-accent text-white hover:bg-accent-hover transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             title={t('input.sendMessage')}
           >
             <Send size={16} />

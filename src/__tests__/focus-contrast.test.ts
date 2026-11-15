@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { COLOR_SCHEMES, applyColorScheme } from '../lib/theme-schemes';
 
@@ -83,3 +83,25 @@ describe('keyboard focus indicator contrast (WCAG 1.4.11)', () => {
   });
 });
 
+describe('accent foreground utilities', () => {
+  // --color-accent and --color-purple are fill colours (2.8:1 and 4.0:1 in the
+  // dark theme). Only .text-accent, hover:text-accent(-hover) and .text-purple
+  // are remapped to the readable *-text tokens in index.css.
+  function sources(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+      const path = join(dir, entry.name);
+      return entry.isDirectory() ? sources(path) : entry.name.endsWith('.tsx') ? [path] : [];
+    });
+  }
+  const offenders = (pattern: RegExp) => sources(resolve(__dirname, '../components'))
+    .flatMap(file => readFileSync(file, 'utf8').split('\n').flatMap((line, index) => pattern.test(line) ? [`${file.split('/src/')[1]}:${index + 1}`] : []));
+
+  it('uses no translucent or state variant of the fill colours for text and icons', () => {
+    expect(offenders(/(?<![\w-])(?:[\w-]+:)*text-(?:accent|purple)\/\d+/)).toEqual([]);
+    expect(offenders(/(?<![\w-])(?!hover:)[\w-]+:text-accent(?![\w/-])/)).toEqual([]);
+  });
+
+  it('puts white text on the 4.5:1 accent fill, not the purple fill', () => {
+    expect(offenders(/(?<![\w-])bg-purple(?![\w/-]).*(?<![\w-])text-white(?![\w/-])|(?<![\w-])text-white(?![\w/-]).*(?<![\w-])bg-purple(?![\w/-])/)).toEqual([]);
+  });
+});

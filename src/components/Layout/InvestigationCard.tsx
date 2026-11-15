@@ -50,7 +50,7 @@ export function InvestigationCard({ folder, counts, onEditFolder, synced }: Inve
         </span>
         {synced && (
           <span title="Synced with team server" className="shrink-0">
-            <Cloud size={14} className="text-purple/60" />
+            <Cloud size={14} className="text-purple" />
           </span>
         )}
       </div>

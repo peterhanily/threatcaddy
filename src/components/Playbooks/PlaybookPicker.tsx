@@ -152,7 +152,7 @@ export function PlaybookPicker({ open, onClose, playbooks, onSelect, applyToExis
                   <div className="flex gap-3 mt-1 text-[10px] text-gray-500">
                     <span>{taskCount} tasks</span>
                     <span>{noteCount} notes</span>
-                    {pb.source === 'user' && <span className="text-accent/60">custom</span>}
+                    {pb.source === 'user' && <span className="text-accent">custom</span>}
                   </div>
                 </div>
                 <ChevronRight size={14} className="text-gray-600 shrink-0" />
