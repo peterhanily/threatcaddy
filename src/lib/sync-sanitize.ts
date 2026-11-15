@@ -148,9 +148,16 @@ export function preserveUnsyncedFields(
     else if (DEVICE_LOCAL_FIELDS[tableName]?.includes(field)) record[field] = undefined;
   }
   if (tableName === 'chatThreads' && Array.isArray(record.messages) && Array.isArray(local?.messages)) {
-    const mine = new Map(local.messages.filter(isRecord).map(message => [message.id, message]));
+    // An empty or repeated id (legacy or imported threads) does not identify one message.
+    const uniqueIds = (messages: unknown[]) => {
+      const counts = new Map<unknown, number>();
+      for (const message of messages) if (isRecord(message) && message.id) counts.set(message.id, (counts.get(message.id) ?? 0) + 1);
+      return new Set([...counts].filter(([, count]) => count === 1).map(([id]) => id));
+    };
+    const ours = uniqueIds(local.messages), theirs = uniqueIds(record.messages);
+    const mine = new Map(local.messages.filter(isRecord).filter(message => ours.has(message.id)).map(message => [message.id, message]));
     record.messages = record.messages.map(message => {
-      const kept = isRecord(message) ? mine.get(message.id) : undefined;
+      const kept = isRecord(message) && theirs.has(message.id) ? mine.get(message.id) : undefined;
       if (!kept || !isRecord(message)) return message;
       const merged = { ...message };
       for (const field of DEVICE_LOCAL_MESSAGE_FIELDS) if (merged[field] === undefined && kept[field] !== undefined) merged[field] = kept[field];
