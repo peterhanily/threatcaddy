@@ -11,7 +11,8 @@ function warningDeadline(): number {
 }
 
 /** Non-modal: if it is ignored, or re-entry has not finished, the absolute
- * deadline still locks the workspace. Open form dialogs keep their own trap. */
+ * deadline still locks the workspace. An open form dialog keeps its trap but
+ * includes this warning in its Tab cycle. */
 export function SessionExpiryWarning() {
   const { t, i18n } = useTranslation('encryption');
   const titleId = useId();
@@ -59,7 +60,7 @@ export function SessionExpiryWarning() {
       <h2 id={titleId} className="flex items-center gap-2 text-sm font-semibold text-amber-400">
         <Clock size={16} /> {t('sessionWarning.title')}
       </h2>
-      <p className="mt-2 text-xs text-gray-300">
+      <p role="alert" className="mt-2 text-xs text-gray-300">
         {t('sessionWarning.message', { time: new Date(deadline).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' }) })}
       </p>
       <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); void renew(); }}>

@@ -69,16 +69,23 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
     // part of this dialog, so Escape there must not close (and discard) the form.
     const exempt = (target: EventTarget | null) => target instanceof Element && !!target.closest('[data-modal-focus-exempt]');
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!isTop() || exempt(event.target)) return;
-      if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); onCloseRef.current(); return; }
+      if (!isTop()) return;
+      const active = document.activeElement;
+      const inWarning = exempt(event.target) || exempt(active);
+      if (event.key === 'Escape' && !inWarning) { event.preventDefault(); event.stopImmediatePropagation(); onCloseRef.current(); return; }
       if (event.key !== 'Tab') return;
       const items = focusable(el);
       const first = items[0] ?? el;
       const last = items.at(-1) ?? el;
-      if (!el.contains(document.activeElement) || (event.shiftKey && document.activeElement === first) || (!event.shiftKey && document.activeElement === last)) {
-        event.preventDefault();
-        (event.shiftKey ? last : first).focus();
-      }
+      // Tab continues from this dialog's edges into the warning and back, so a
+      // keyboard user can reach it without leaving the form.
+      const warning = [...document.querySelectorAll<HTMLElement>('[data-modal-focus-exempt]')].flatMap(focusable);
+      let next: HTMLElement | undefined;
+      if (inWarning) {
+        if (active === (event.shiftKey ? warning[0] : warning.at(-1))) next = event.shiftKey ? last : first;
+      } else if (!el.contains(active)) next = event.shiftKey ? last : first;
+      else if (active === (event.shiftKey ? first : last)) next = (event.shiftKey ? warning.at(-1) : warning[0]) ?? (event.shiftKey ? last : first);
+      if (next) { event.preventDefault(); next.focus(); }
     };
     const handleFocus = (event: FocusEvent) => { if (isTop() && !el.contains(event.target as Node) && !exempt(event.target)) focusFirst(); };
     document.addEventListener('keydown', handleKeyDown);

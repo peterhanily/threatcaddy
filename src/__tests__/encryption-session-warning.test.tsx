@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { generateMasterKey, exportKeyRaw, arrayBufferToBase64, base64ToArrayBuffer, deriveWrappingKey, wrapMasterKey, generateSalt } from '../lib/crypto';
 import { setEncryptionMeta, clearEncryptionMeta, cacheSessionKey, getCachedSession, getEncryptionMeta } from '../lib/encryptionStore';
@@ -119,6 +119,24 @@ describe('timed session expiry warning', () => {
     expect(screen.getByLabelText('Task description')).toBeInTheDocument();
   });
 
+  it('is announced and reachable with Tab from an open form dialog, and Tab returns to the form', async () => {
+    app.formOpen = true;
+    await openWorkspace();
+    act(() => { vi.advanceTimersByTime(HOUR - MINUTE); });
+    expect(within(warning()!).getByRole('alert')).toHaveTextContent(/This workspace locks at/);
+    const task = screen.getByLabelText('Task description');
+    const input = screen.getByLabelText('Current passphrase');
+    act(() => { task.focus(); });
+    fireEvent.keyDown(task, { key: 'Tab' });
+    expect(input).toHaveFocus();
+    fireEvent.keyDown(input, { key: 'Tab', shiftKey: true });
+    expect(task).toHaveFocus();
+    fireEvent.keyDown(task, { key: 'Tab' });
+    fireEvent.keyDown(input, { key: 'Tab' });
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
+    expect(screen.getByLabelText('Task description')).toBeInTheDocument();
+  });
+
   it('does not revive the key when the deadline passes while the passphrase is being checked', async () => {
     await openWorkspace();
     act(() => { vi.advanceTimersByTime(HOUR - MINUTE); });
@@ -132,5 +150,16 @@ describe('timed session expiry warning', () => {
     await vi.waitFor(() => expect(getCachedSession()).toBeNull());
     expect(getSessionKey()).toBeNull();
     expect(screen.getByText('Workspace locked')).toBeInTheDocument();
+  });
+
+  it('locks instead of extending when the deadline has passed but its suspended timer has not fired', async () => {
+    await openWorkspace();
+    act(() => { vi.advanceTimersByTime(HOUR - MINUTE); });
+    // A sleeping device: the clock is past the deadline, the expiry timer has not run.
+    vi.setSystemTime(START + HOUR + MINUTE);
+    await submit(PASSPHRASE);
+    await vi.waitFor(() => expect(screen.getByText('Workspace locked')).toBeInTheDocument(), { timeout: 10_000 });
+    expect(getSessionKey()).toBeNull();
+    expect(getCachedSession()).toBeNull();
   });
 });
