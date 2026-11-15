@@ -108,6 +108,18 @@ DOMPurify.addHook('afterSanitizeAttributes', (node) => {
   }
 });
 
+// Keep only the classes this renderer emits (highlight.js, wiki links, chat
+// entity links). Clipped or fetched HTML must not borrow the app's own utility
+// classes, e.g. "fixed inset-0 z-[10000]", to overlay ThreatCaddy.
+const SAFE_CLASS_RE = /^(?:hljs(?:-[\w-]+)?|[a-z]+_+|language-[\w-]+|tclink(?:-broken)?|tc-entity-(?:link|note|task|ioc|event))$/;
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  const value = node.getAttribute('class');
+  if (value === null) return;
+  const kept = value.split(/\s+/).filter((token) => SAFE_CLASS_RE.test(token));
+  if (kept.length > 0) node.setAttribute('class', kept.join(' '));
+  else node.removeAttribute('class');
+});
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

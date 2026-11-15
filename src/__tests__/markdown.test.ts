@@ -183,6 +183,28 @@ describe('renderMarkdown', () => {
     expect(renderMarkdown(clipped)).toContain('Fetched page');
   });
 
+  it('drops app utility classes so clipped HTML cannot overlay the app', () => {
+    const clipped = '<div class="fixed inset-0 z-[10000] bg-gray-950">Fake UI</div>\n\n'
+      + '<a class="fixed inset-0 z-[10000] bg-black/60" href="https://attacker.example/">Continue</a>';
+    for (const html of [renderMarkdown(clipped), sanitizeHtml(clipped)]) {
+      expect(html).not.toMatch(/\bclass=/);
+      expect(html).toContain('Fake UI');
+      expect(html).toContain('href="https://attacker.example/"');
+    }
+    expect(sanitizeHtml('<code class="hljs fixed inset-0">x</code>')).toBe('<code class="hljs">x</code>');
+  });
+
+  it('keeps the classes the renderer and entity links produce', () => {
+    const code = renderMarkdown('```js\nclass A extends B { run() { return 1; } }\n```');
+    expect(code).toContain('class="hljs language-js"');
+    expect(code).toMatch(/class="hljs-title class_"/);
+    expect(code).toMatch(/class="hljs-title class_ inherited__"/);
+    expect(renderMarkdown('See [[Target]]', [{ id: 'n1', title: 'Target' }])).toContain('class="tclink"');
+    expect(renderMarkdown('See [[Missing]]', [])).toContain('class="tclink-broken"');
+    expect(sanitizeHtml('<span class="tc-entity-link tc-entity-ioc" data-entity-type="ioc" data-entity-id="ip">1.2.3.4</span>'))
+      .toContain('class="tc-entity-link tc-entity-ioc"');
+  });
+
   // ── Misc ────────────────────────────────────────────────────────
 
   it('renders ordered lists as <ol>', () => {
