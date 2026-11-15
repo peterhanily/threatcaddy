@@ -276,6 +276,18 @@ describe('useServerSync', () => {
     expect(result.current.syncConflicts).toHaveLength(0);
   });
 
+  it('keeps a conflict whose server version this device cannot read when all are resolved as theirs', async () => {
+    const { result } = renderHook(() => useServerSync(makeAuth(), makeReloadFns()));
+    await flushPromises();
+    const handler = mockSetConflictHandler.mock.calls[0][0] as (conflicts: unknown[]) => void;
+    const unreadable = { entityId: 'i1', table: 'standaloneIOCs', status: 'conflict', serverVersion: 3, serverData: { id: 'i1', type: 'ip', value: '198.51.100.1' } };
+    const readable = { entityId: 'n1', table: 'notes', status: 'conflict', serverVersion: 4, serverData: { id: 'n1', title: 'Theirs' } };
+    await act(async () => { handler([unreadable, readable]); });
+    await act(async () => { await result.current.handleResolveAllConflicts('theirs'); });
+    expect(mockResolveConflicts).toHaveBeenLastCalledWith([readable], 'theirs');
+    expect(result.current.syncConflicts).toEqual([unreadable]);
+  });
+
   it('starts with empty presence users', () => {
     const auth = makeAuth({ serverUrl: null, connected: false });
     const reloadFns = makeReloadFns();

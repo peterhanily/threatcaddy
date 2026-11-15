@@ -222,6 +222,7 @@
   "syncStatus.unreadableOutgoing": "لم يتم رفع {{item}} لأن الأجهزة الأخرى لن تتمكن من قراءته (العناصر المحتجزة: {{total}}). يبقى محفوظًا على هذا الجهاز؛ صحّحه لمزامنته.",
   "syncStatus.oversizedOutgoing": "لم يتم رفع {{item}} لأنه يتجاوز حدود خادم الفريق (العناصر المحتجزة: {{total}}). يبقى محفوظًا على هذا الجهاز؛ اختصره لمزامنته.",
   "syncStatus.rejectedInvalid": "رفض خادم الفريق هذا التغيير لأنه غير صالح ({{reason}}). يبقى محفوظًا على هذا الجهاز؛ صحّحه لمزامنته.",
+  "syncStatus.theirsUnreadable": "لا يستطيع هذا الجهاز قراءة نسخة خادم الفريق، لذا يمكن الاحتفاظ بنسختك فقط.",
   "syncStatus.itemType.notes": "ملاحظة",
   "syncStatus.itemType.tasks": "مهمة",
   "syncStatus.itemType.folders": "تحقيق",

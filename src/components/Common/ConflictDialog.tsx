@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle, ChevronDown, ChevronUp, X } from 'lucide-react';
 import type { SyncResult } from '../../lib/server-api';
 import { computeFieldDiffs } from '../../lib/inline-diff';
-import { keepsLocalValue } from '../../lib/sync-sanitize';
+import { canKeepServerVersion, keepsLocalValue } from '../../lib/sync-sanitize';
 import { FieldDiffView } from './InlineDiffView';
 
 const TABLE_LABELS: Record<string, string> = {
@@ -66,7 +66,7 @@ export function ConflictDialog({ conflicts, onResolve, onResolveAll, onClose }: 
           <span className="text-xs text-amber-200 flex-1">{conflicts.length} sync changes need attention</span>
           {resolvable.length > 1 && <>
             <button disabled={busy} onClick={() => void resolve(() => onResolveAll('mine'))} className="px-2 py-1 text-xs text-blue-200">All Mine</button>
-            <button disabled={busy} onClick={() => void resolve(() => onResolveAll('theirs'))} className="px-2 py-1 text-xs text-gray-200">All Theirs</button>
+            {resolvable.some(canKeepServerVersion) && <button disabled={busy} onClick={() => void resolve(() => onResolveAll('theirs'))} className="px-2 py-1 text-xs text-gray-200">All Theirs</button>}
           </>}
           <button onClick={() => setExpanded(value => !value)} aria-expanded={expanded} aria-label={expanded ? 'Collapse conflicts' : 'Expand conflicts'} className="p-1 text-amber-200">
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -81,15 +81,18 @@ export function ConflictDialog({ conflicts, onResolve, onResolveAll, onClose }: 
             const kept = (field: string) => keepsLocalValue(conflict.table ?? '', conflict.serverData, field);
             const diffs = (conflict.serverData ? computeFieldDiffs(conflict.localData ?? {}, conflict.serverData) : []).filter(diff => !kept(diff.field));
             const longFields = longFieldChanges(conflict).filter(field => !kept(field));
+            // Keeping a server version this device cannot read would leave the local edit queued to conflict again.
+            const keepTheirs = canKeepServerVersion(conflict);
             return <div key={key} className="border-b border-amber-900/40 px-4 py-2">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-amber-100 truncate flex-1">{label(conflict)}</span>
                 {conflict.status === 'conflict' && <>
                   {(diffs.length > 0 || longFields.length > 0) && <button disabled={busy} onClick={() => setDiffOpen(diffOpen === key ? null : key)} aria-expanded={diffOpen === key} className="text-xs text-amber-200">{diffOpen === key ? 'Hide diff' : 'Diff'}</button>}
                   <button disabled={busy} onClick={() => void resolve(() => onResolve(conflict.entityId, 'mine', conflict.table))} className="px-2 py-1 text-xs text-blue-200">Mine</button>
-                  <button disabled={busy} onClick={() => void resolve(() => onResolve(conflict.entityId, 'theirs', conflict.table))} className="px-2 py-1 text-xs text-gray-200">Theirs</button>
+                  {keepTheirs && <button disabled={busy} onClick={() => void resolve(() => onResolve(conflict.entityId, 'theirs', conflict.table))} className="px-2 py-1 text-xs text-gray-200">Theirs</button>}
                 </>}
               </div>
+              {conflict.status === 'conflict' && !keepTheirs && <p className="mt-1 text-xs text-amber-200">{t('syncStatus.theirsUnreadable')}</p>}
               {conflict.status === 'rejected' && <p className="mt-1 text-xs text-amber-200">{typeof conflict.reason === 'string' && conflict.reason
                 ? t('syncStatus.rejectedInvalid', { reason: conflict.reason.slice(0, 200) })
                 : 'The server rejected this change. It remains saved locally; check your permissions before retrying.'}</p>}

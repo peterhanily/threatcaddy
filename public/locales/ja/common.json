@@ -222,6 +222,7 @@
   "syncStatus.unreadableOutgoing": "他のデバイスで読み取れないため、{{item}} はアップロードされませんでした（保留中の項目: {{total}}）。このデバイスには保存されたままです。同期するには修正してください。",
   "syncStatus.oversizedOutgoing": "チームサーバーの制限を超えているため、{{item}} はアップロードされませんでした（保留中の項目: {{total}}）。このデバイスには保存されたままです。同期するには短くしてください。",
   "syncStatus.rejectedInvalid": "チームサーバーはこの変更を無効として拒否しました（{{reason}}）。このデバイスには保存されたままです。同期するには修正してください。",
+  "syncStatus.theirsUnreadable": "このデバイスではチームサーバーのバージョンを読み取れないため、自分のバージョンのみ保持できます。",
   "syncStatus.itemType.notes": "ノート",
   "syncStatus.itemType.tasks": "タスク",
   "syncStatus.itemType.folders": "調査",

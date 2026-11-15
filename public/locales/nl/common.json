@@ -222,6 +222,7 @@
   "syncStatus.unreadableOutgoing": "{{item}} is niet geüpload omdat andere apparaten het niet zouden kunnen lezen (tegengehouden items: {{total}}). Het blijft op dit apparaat opgeslagen; corrigeer het om het te synchroniseren.",
   "syncStatus.oversizedOutgoing": "{{item}} is niet geüpload omdat het de limieten van de teamserver overschrijdt (tegengehouden items: {{total}}). Het blijft op dit apparaat opgeslagen; maak het korter om het te synchroniseren.",
   "syncStatus.rejectedInvalid": "De teamserver heeft deze wijziging als ongeldig geweigerd ({{reason}}). Ze blijft op dit apparaat opgeslagen; corrigeer ze om ze te synchroniseren.",
+  "syncStatus.theirsUnreadable": "Dit apparaat kan de versie van de teamserver niet lezen, dus alleen uw eigen versie kan worden behouden.",
   "syncStatus.itemType.notes": "Notitie",
   "syncStatus.itemType.tasks": "Taak",
   "syncStatus.itemType.folders": "Onderzoek",

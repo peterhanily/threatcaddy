@@ -76,6 +76,18 @@ export function sanitizeSyncEntity(
   return sanitizer(normalizeTimestamps(data));
 }
 
+/** A row this client's sanitizer refuses is server data to skip, not a reason to stop syncing. */
+export function readableSyncRecord(tableName: string, data: Record<string, unknown>, id: string): Record<string, unknown> | null {
+  let record: Record<string, unknown> | null;
+  try { record = sanitizeSyncEntity(tableName, data); } catch { return null; }
+  return record?.id === id ? record : null;
+}
+
+/** Whether "Keep theirs" can apply a conflict's server version on this device. A deletion always can. */
+export function canKeepServerVersion(conflict: { table?: string; entityId: string; serverData?: Record<string, unknown> }): boolean {
+  return !conflict.serverData || !!conflict.serverData.deletedAt || readableSyncRecord(conflict.table ?? '', conflict.serverData, conflict.entityId) !== null;
+}
+
 /**
  * Client fields the team server has no column for (server/src/db/schema.ts).
  * The server's change log never carries them, so a pulled or conflict-accepted

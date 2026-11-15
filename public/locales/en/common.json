@@ -5,6 +5,7 @@
   "syncStatus.unreadableOutgoing": "{{item}} was not uploaded because other devices could not read it (items held back: {{total}}). It stays saved on this device; correct it to sync it.",
   "syncStatus.oversizedOutgoing": "{{item}} was not uploaded because it exceeds the team server's limits (items held back: {{total}}). It stays saved on this device; shorten it to sync it.",
   "syncStatus.rejectedInvalid": "The team server refused this change as invalid ({{reason}}). It remains saved on this device; correct it to sync it.",
+  "syncStatus.theirsUnreadable": "This device cannot read the team server's version, so only your version can be kept.",
   "syncStatus.itemType.notes": "Note",
   "syncStatus.itemType.tasks": "Task",
   "syncStatus.itemType.folders": "Investigation",

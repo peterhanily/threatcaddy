@@ -222,6 +222,7 @@
   "syncStatus.unreadableOutgoing": "{{item}} לא הועלה כי מכשירים אחרים לא יוכלו לקרוא אותו (פריטים שעוכבו: {{total}}). הוא נשאר שמור במכשיר הזה; תקנו אותו כדי לסנכרן.",
   "syncStatus.oversizedOutgoing": "{{item}} לא הועלה כי הוא חורג ממגבלות שרת הצוות (פריטים שעוכבו: {{total}}). הוא נשאר שמור במכשיר הזה; קצרו אותו כדי לסנכרן.",
   "syncStatus.rejectedInvalid": "שרת הצוות דחה את השינוי הזה כלא תקין ({{reason}}). הוא נשאר שמור במכשיר הזה; תקנו אותו כדי לסנכרן.",
+  "syncStatus.theirsUnreadable": "המכשיר הזה לא יכול לקרוא את הגרסה של שרת הצוות, ולכן אפשר לשמור רק את הגרסה שלכם.",
   "syncStatus.itemType.notes": "הערה",
   "syncStatus.itemType.tasks": "משימה",
   "syncStatus.itemType.folders": "חקירה",

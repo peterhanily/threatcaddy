@@ -222,6 +222,7 @@
   "syncStatus.unreadableOutgoing": "{{item}} 未上传，因为其他设备无法读取它（暂缓的项目：{{total}}）。它仍保存在此设备上；请更正后再同步。",
   "syncStatus.oversizedOutgoing": "{{item}} 未上传，因为它超出了团队服务器的限制（暂缓的项目：{{total}}）。它仍保存在此设备上；请缩短后再同步。",
   "syncStatus.rejectedInvalid": "团队服务器以无效为由拒绝了此更改（{{reason}}）。它仍保存在此设备上；请更正后再同步。",
+  "syncStatus.theirsUnreadable": "此设备无法读取团队服务器上的版本，因此只能保留您的版本。",
   "syncStatus.itemType.notes": "笔记",
   "syncStatus.itemType.tasks": "任务",
   "syncStatus.itemType.folders": "调查",

@@ -222,6 +222,7 @@
   "syncStatus.unreadableOutgoing": "{{item}} não foi enviado porque outros dispositivos não conseguiriam lê-lo (itens retidos: {{total}}). Ele continua salvo neste dispositivo; corrija-o para sincronizá-lo.",
   "syncStatus.oversizedOutgoing": "{{item}} não foi enviado porque excede os limites do servidor da equipe (itens retidos: {{total}}). Ele continua salvo neste dispositivo; encurte-o para sincronizá-lo.",
   "syncStatus.rejectedInvalid": "O servidor da equipe recusou esta alteração por ser inválida ({{reason}}). Ela continua salva neste dispositivo; corrija-a para sincronizá-la.",
+  "syncStatus.theirsUnreadable": "Este dispositivo não consegue ler a versão do servidor da equipe, então só a sua versão pode ser mantida.",
   "syncStatus.itemType.notes": "Nota",
   "syncStatus.itemType.tasks": "Tarefa",
   "syncStatus.itemType.folders": "Investigação",

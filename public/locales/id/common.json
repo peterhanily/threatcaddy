@@ -222,6 +222,7 @@
   "syncStatus.unreadableOutgoing": "{{item}} tidak diunggah karena perangkat lain tidak akan dapat membacanya (item yang ditahan: {{total}}). Item ini tetap tersimpan di perangkat ini; perbaiki agar dapat disinkronkan.",
   "syncStatus.oversizedOutgoing": "{{item}} tidak diunggah karena melebihi batas server tim (item yang ditahan: {{total}}). Item ini tetap tersimpan di perangkat ini; persingkat agar dapat disinkronkan.",
   "syncStatus.rejectedInvalid": "Server tim menolak perubahan ini karena tidak valid ({{reason}}). Perubahan ini tetap tersimpan di perangkat ini; perbaiki agar dapat disinkronkan.",
+  "syncStatus.theirsUnreadable": "Perangkat ini tidak dapat membaca versi server tim, jadi hanya versi Anda yang dapat dipertahankan.",
   "syncStatus.itemType.notes": "Catatan",
   "syncStatus.itemType.tasks": "Tugas",
   "syncStatus.itemType.folders": "Investigasi",

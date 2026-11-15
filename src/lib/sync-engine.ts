@@ -2,7 +2,7 @@ import { db } from '../db';
 import i18n from '../i18n';
 import type { Dexie as DexieType } from 'dexie';
 import { syncPush, syncPull, type SyncChange, type SyncResult } from './server-api';
-import { SERVER_UNREPRESENTED_FIELDS, outgoingSyncData, preserveUnsyncedFields, sanitizeSyncEntity } from './sync-sanitize';
+import { SERVER_UNREPRESENTED_FIELDS, outgoingSyncData, preserveUnsyncedFields, readableSyncRecord } from './sync-sanitize';
 import { MAX_SYNC_REQUEST_NODES, outgoingRefusal, syncDataNodes, type OutgoingRefusal } from './sync-push-limits';
 import { SYNC_TABLES, isSyncTable, onOutboxCommit, revisionKey, suppressSyncInCurrentTransaction } from './sync-state';
 import type { WSClient } from './ws-client';
@@ -27,13 +27,6 @@ const SKIPPED_PREFIX = '["syncSkipped",';
 
 interface SyncQueueEntry extends SyncChange { seq?: number; folderId?: string }
 type RemoteChange = Record<string, unknown> & { table: string; op: 'put' | 'delete'; id: string };
-
-/** A row this client's sanitizer refuses is server data to skip, not a reason to stop syncing. */
-function readableRecord(table: string, change: Record<string, unknown>, id: string): Record<string, unknown> | null {
-  let record: Record<string, unknown> | null;
-  try { record = sanitizeSyncEntity(table, change); } catch { return null; }
-  return record?.id === id ? record : null;
-}
 
 /** The server's assigneeId refers to users; an agent deployment id stays on this device. */
 function withoutAgentAssignee(table: string, data: Record<string, unknown> | undefined, agents: ReadonlySet<string>) {
@@ -380,7 +373,7 @@ export class SyncEngine {
         if (op === 'delete') {
           await dynamicDb.table(table).delete(id);
         } else {
-          const record = readableRecord(table, change, id);
+          const record = readableSyncRecord(table, change, id);
           if (!record) {
             // Keep any local copy and leave its revision unrecorded, so a local edit still
             // conflicts with this version. The item is named until a readable revision arrives.
@@ -482,7 +475,7 @@ export class SyncEngine {
           if (!conflict.serverData || conflict.serverData.deletedAt) {
             await dynamicDb.table(table).delete(conflict.entityId);
           } else {
-            const record = readableRecord(table, conflict.serverData, conflict.entityId);
+            const record = readableSyncRecord(table, conflict.serverData, conflict.entityId);
             if (!record) {
               // This client cannot read their version: keep the local row and its queued edit.
               const folderId = conflict.serverData.folderId;

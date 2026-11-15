@@ -222,6 +222,7 @@
   "syncStatus.unreadableOutgoing": "{{item}} chưa được tải lên vì các thiết bị khác sẽ không đọc được (số mục bị giữ lại: {{total}}). Mục này vẫn được lưu trên thiết bị này; hãy sửa để đồng bộ.",
   "syncStatus.oversizedOutgoing": "{{item}} chưa được tải lên vì vượt quá giới hạn của máy chủ nhóm (số mục bị giữ lại: {{total}}). Mục này vẫn được lưu trên thiết bị này; hãy rút gọn để đồng bộ.",
   "syncStatus.rejectedInvalid": "Máy chủ nhóm đã từ chối thay đổi này vì không hợp lệ ({{reason}}). Thay đổi này vẫn được lưu trên thiết bị này; hãy sửa để đồng bộ.",
+  "syncStatus.theirsUnreadable": "Thiết bị này không đọc được phiên bản trên máy chủ nhóm, vì vậy chỉ có thể giữ phiên bản của bạn.",
   "syncStatus.itemType.notes": "Ghi chú",
   "syncStatus.itemType.tasks": "Nhiệm vụ",
   "syncStatus.itemType.folders": "Cuộc điều tra",

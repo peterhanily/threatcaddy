@@ -222,6 +222,7 @@
   "syncStatus.unreadableOutgoing": "{{item}} wurde nicht hochgeladen, weil andere Geräte es nicht lesen könnten (zurückgehaltene Elemente: {{total}}). Es bleibt auf diesem Gerät gespeichert; korrigieren Sie es, um es zu synchronisieren.",
   "syncStatus.oversizedOutgoing": "{{item}} wurde nicht hochgeladen, weil es die Grenzen des Teamservers überschreitet (zurückgehaltene Elemente: {{total}}). Es bleibt auf diesem Gerät gespeichert; kürzen Sie es, um es zu synchronisieren.",
   "syncStatus.rejectedInvalid": "Der Teamserver hat diese Änderung als ungültig abgelehnt ({{reason}}). Sie bleibt auf diesem Gerät gespeichert; korrigieren Sie sie, um sie zu synchronisieren.",
+  "syncStatus.theirsUnreadable": "Dieses Gerät kann die Version des Teamservers nicht lesen, daher kann nur Ihre Version behalten werden.",
   "syncStatus.itemType.notes": "Notiz",
   "syncStatus.itemType.tasks": "Aufgabe",
   "syncStatus.itemType.folders": "Untersuchung",

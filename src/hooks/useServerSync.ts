@@ -7,6 +7,7 @@ import { WSClient } from '../lib/ws-client';
 import { liveQuery } from 'dexie';
 import { db } from '../db';
 import { getSyncPauseReason } from '../lib/sync-capture-policy';
+import { canKeepServerVersion } from '../lib/sync-sanitize';
 
 interface AuthState {
   user?: { id: string } | null;
@@ -184,7 +185,8 @@ export function useServerSync(auth: AuthState, reloadFns: ReloadFns, onFolderInv
 
   const handleResolveAllConflicts = useCallback(async (choice: 'mine' | 'theirs') => {
     if (activeScope.current !== scope || stateScope !== scope) return;
-    const resolvable = syncConflicts.filter(c => c.status === 'conflict');
+    // A server version this device cannot read stays listed; only "Mine" resolves it.
+    const resolvable = syncConflicts.filter(c => c.status === 'conflict' && (choice === 'mine' || canKeepServerVersion(c)));
     await syncEngine.resolveConflicts(resolvable, choice);
     if (activeScope.current === scope) setSyncConflicts(previous => previous.filter(c => !resolvable.includes(c)));
   }, [syncConflicts, scope, stateScope]);
