@@ -69,6 +69,7 @@ import { createProductComposerPersistence } from './lib/product-composer-persist
 import type { ProductComposerSaveInput } from './components/Products/ProductComposer';
 import { getActiveWorkspaceId } from './lib/workspace-profiles';
 import { getSampleFolderId, getSampleRemovalSummary, loadSampleInvestigation, deleteSampleInvestigation, SampleActionError, type SampleInvestigationKind } from './lib/sample-investigation-store';
+import { isUserTimeline } from './lib/sync-capture-policy';
 import { SampleRemovalDialog, type SampleRemovalRequest } from './components/Common/SampleRemovalDialog';
 import { db } from './db';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
@@ -674,7 +675,7 @@ const AppInner = memo(function AppInner({
   useClipDelivery({
     enabledIOCTypes: settings.tiEnabledIOCTypes,
     defaultConfidence: settings.tiDefaultConfidence,
-    defaultTimelineId: allTimelines[0]?.id,
+    defaultTimelineId: allTimelines.find(isUserTimeline)?.id,
     onBusy: busy => setPendingClipImports(busy ? 1 : 0),
     onFailed: count => addToast('warning', tt('clip.importWarning', { count })),
     onRefreshFailed: () => addToast('warning', tt('clip.refreshFailed')),
@@ -1857,7 +1858,7 @@ const AppInner = memo(function AppInner({
             allTags={tags}
             folders={folders}
             onCreateTag={loggedCreateTag}
-            onCreateEvent={(data) => loggedCreateEvent({ ...data, folderId: data.folderId ?? selectedFolderId, clsLevel: data.clsLevel ?? selectedFolder?.clsLevel, timelineId: selectedTimelineId || timelines[0]?.id || '' })}
+            onCreateEvent={(data) => loggedCreateEvent({ ...data, folderId: data.folderId ?? selectedFolderId, clsLevel: data.clsLevel ?? selectedFolder?.clsLevel, timelineId: selectedTimelineId || timelines.find(isUserTimeline)?.id || '' })}
             onUpdateEvent={timeline.updateEvent}
             onDeleteEvent={loggedDeleteEvent}
             onTrashEvent={loggedTrashEvent}

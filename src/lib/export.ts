@@ -12,6 +12,7 @@ import { assertBackupSize, isBackupObject, validateBackupJSON, validateBackupQui
 import { isBase64Data, isChatImageMime } from './backup-media-validation';
 import { decodePortableBackup, PORTABLE_BACKUP_FORMAT, portableTableCounts, suspendRestoredAutomation } from './portable-backup';
 import { previewRestore, restoreFullReplace, restoreMerge } from './backup-restore';
+import { nextTimelineOrder } from './sync-capture-policy';
 
 export async function exportJSON(): Promise<string> {
   const json = JSON.stringify(await portableSnapshot(false), null, 2);
@@ -1444,13 +1445,12 @@ export function parseTimelineImport(json: string): TimelineExportData {
 export async function importTimelineAsNew(parsed: TimelineExportData): Promise<{ timelineId: string; eventCount: number }> {
   const newTimelineId = nanoid();
   const now = Date.now();
-  const maxOrder = (await db.timelines.toArray()).reduce((max, t) => Math.max(max, t.order), 0);
   const timeline: Timeline = {
     id: newTimelineId,
     name: parsed.timeline.name,
     description: parsed.timeline.description,
     color: parsed.timeline.color,
-    order: maxOrder + 1,
+    order: nextTimelineOrder(await db.timelines.toArray()),
     createdAt: now,
     updatedAt: now,
   };

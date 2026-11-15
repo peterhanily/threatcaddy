@@ -12,6 +12,12 @@ export function isSampleGlobalRecord(table: string, id: unknown): boolean {
   return (table === 'tags' || table === 'timelines') && typeof id === 'string' && id.startsWith('sample-');
 }
 
+/** A demo timeline is never the default for real events, and never raises the
+ * order of a new timeline. Older builds stored the realistic one at order 0. */
+export const isUserTimeline = (timeline: { id: string }) => !isSampleGlobalRecord('timelines', timeline.id);
+export const nextTimelineOrder = (timelines: Array<{ id: string; order: number }>) =>
+  timelines.filter(isUserTimeline).reduce((max, timeline) => Math.max(max, timeline.order), 0) + 1;
+
 export interface SyncWorkspaceIdentity { version: 1; serverUrl: string; userId: string }
 export interface SyncCaptureCoverage {
   key: typeof SYNC_CAPTURE_KEY;

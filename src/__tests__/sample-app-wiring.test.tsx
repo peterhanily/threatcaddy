@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import App from '../App';
+import { DataImportModal } from '../components/Import/DataImportModal';
 import { db } from '../db';
 import type { Note } from '../types';
 import { getSampleFolderId, loadSampleInvestigation } from '../lib/sample-investigation-store';
+import { createClipRevision } from '../lib/clip-protocol';
+import { getActiveWorkspaceId } from '../lib/workspace-profiles';
 
 // The whole App, so a change to its wiring cannot bypass the confirmation.
 const REALISTIC = getSampleFolderId('realistic');
@@ -109,5 +112,54 @@ describe('a ?demo link in a workspace with the user’s own investigations', () 
       .getByRole('button', { name: 'Load the demo' }));
     expect(await screen.findByRole('button', { name: 'Delete Demo & Start Fresh' })).toBeInTheDocument();
     expect(await db.folders.get(REALISTIC)).toBeDefined();
+  });
+});
+
+describe('a demo timeline is never the default for real events', () => {
+  // Builds before this fix wrote the realistic demo timeline first in the order.
+  beforeEach(async () => {
+    await loadSampleInvestigation('realistic');
+    await db.timelines.update('sample-realistic-timeline-1', { order: 0 });
+    await db.timelines.add({ id: 'mine', name: 'Mine', order: 1, createdAt: 1, updatedAt: 1 });
+  });
+
+  it('files a new event under the user’s timeline', async () => {
+    render(<App />);
+    fireEvent.click((await screen.findAllByRole('button', { name: /^Timeline/ }))[0]);
+    fireEvent.click(await screen.findByRole('button', { name: 'New event' }));
+    fireEvent.change(await screen.findByLabelText(/^Title/), { target: { value: 'Real event' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create Event' }));
+    await waitFor(async () => expect(await db.timelineEvents.filter(event => event.title === 'Real event').count()).toBe(1));
+    const [event] = await db.timelineEvents.filter(event => event.title === 'Real event').toArray();
+    expect(event.timelineId).toBe('mine');
+  });
+
+  it('files a clipped event under the user’s timeline', async () => {
+    render(<App />);
+    await screen.findByRole('button', { name: 'Settings' });
+    const clip = await createClipRevision({ id: 'clip-event', revision: 1, title: 'Clipped event', content: 'Fictional clip',
+      sourceUrl: 'https://example.com/a', sourceTitle: 'Example', entityType: 'timeline-event', folderName: 'Clips case',
+      clsLevel: '', createdAt: 1 });
+    window.dispatchEvent(new MessageEvent('message', { source: window, origin: window.location.origin, data: {
+      type: 'THREATCADDY_IMPORT_CLIPS', protocol: 2, sourceId: 'test-source', attemptId: 'attempt-1',
+      expectedWorkspaceId: getActiveWorkspaceId(), clips: [clip] } }));
+    await waitFor(async () => expect(await db.timelineEvents.filter(event => event.title === 'Clipped event').count()).toBe(1));
+    const [event] = await db.timelineEvents.filter(event => event.title === 'Clipped event').toArray();
+    expect(event.timelineId).toBe('mine');
+  });
+
+  it('gives imported rows a new timeline when the demo timeline is the only one', async () => {
+    await db.timelines.delete('mine');
+    const demo = await db.timelines.get('sample-realistic-timeline-1');
+    if (!demo) throw new Error('Expected the demo timeline');
+    const onCreateTimeline = vi.fn(async (name: string) => ({ id: 'created', name, order: 1, createdAt: 1, updatedAt: 1 }));
+    render(<DataImportModal open onClose={() => {}} folders={[]} timelines={[demo]} onCreateTimeline={onCreateTimeline}
+      onImportComplete={() => {}} />);
+    fireEvent.change(screen.getByPlaceholderText(/^Paste CSV/), { target: { value: 'timestamp,message\n2026-01-01T00:00:00Z,Imported row' } });
+    fireEvent.click(screen.getByRole('button', { name: /Parse & Preview/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Import 1 rows/ }));
+    await screen.findByText('Import Complete');
+    expect(onCreateTimeline).toHaveBeenCalledExactlyOnceWith('Data Import');
+    expect((await db.timelineEvents.filter(event => event.timelineId === 'created').toArray())).toHaveLength(1);
   });
 });

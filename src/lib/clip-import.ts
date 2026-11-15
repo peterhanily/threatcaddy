@@ -7,6 +7,7 @@ import { isEncryptionEnabled } from './encryptionStore';
 import { extractIOCs, mergeIOCAnalysis } from './ioc-extractor';
 import { getCurrentUserName } from './utils';
 import { installSyncOutbox } from './sync-outbox';
+import { isUserTimeline } from './sync-capture-policy';
 import { getActiveWorkspaceId, getWorkspaceDatabaseName } from './workspace-profiles';
 import { CLIP_LIMITS, clipReceiptKey, failedClipResult, serializeClipContent, validateClip,
   validateClipContent, validateClipIdentifier, type ClipImportResult, type ClipReceipt,
@@ -98,7 +99,7 @@ async function persistClip(connection: Dexie, clip: ClipRevision, options: ClipI
       const timelines = connection.table<Timeline>('timelines');
       let timeline = options.defaultTimelineId ? await timelines.get(options.defaultTimelineId) : undefined;
       if (!timeline && folder.timelineId) timeline = await timelines.get(folder.timelineId);
-      if (!timeline) timeline = (await timelines.toArray()).sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))[0];
+      if (!timeline) timeline = (await timelines.toArray()).filter(isUserTimeline).sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))[0];
       if (!timeline) {
         timeline = { id: nanoid(), name: 'Clips', order: 1, createdAt: now, updatedAt: now };
         await timelines.add(timeline);

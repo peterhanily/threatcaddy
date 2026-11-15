@@ -8,6 +8,12 @@ import { setSessionKey } from '../lib/encryptionMiddleware';
 import { clearEncryptionMeta, setEncryptionMeta } from '../lib/encryptionStore';
 import { getEntityDraft } from '../lib/entity-drafts';
 import { useTimelines } from '../hooks/useTimelines';
+import { usePlaybooks } from '../hooks/usePlaybooks';
+import { importTimelineAsNew } from '../lib/export';
+import { importClipBatch } from '../lib/clip-import';
+import { createClipRevision } from '../lib/clip-protocol';
+import { executeCreateTimelineEvent } from '../lib/llm-tools-write';
+import { getActiveWorkspaceId } from '../lib/workspace-profiles';
 
 const REALISTIC = getSampleFolderId('realistic');
 const userNote = (id: string, folderId: string | null = REALISTIC, extra: Partial<Note> = {}): Note => ({ id, title: 'My exercise work',
@@ -116,6 +122,35 @@ describe('sample tags and timelines stay local and never take over user defaults
     await loadSampleInvestigation('parody');
     const timelines = (await db.timelines.toArray()).sort((a, b) => a.order - b.order);
     expect(timelines.map(timeline => timeline.id)).toEqual(['z-default', 'z-clips', 'sample-realistic-timeline-1', 'sample-timeline-1']);
+  });
+
+  it('orders a timeline imported or created by a playbook after a demo ahead of the demo timelines', async () => {
+    await loadSampleInvestigation('realistic');
+    await loadSampleInvestigation('parody');
+    const { timelineId: imported } = await importTimelineAsNew({ format: 'threatcaddy-timeline', version: 1, exportedAt: 1,
+      timeline: { name: 'Imported' }, events: [] });
+    const folder = { id: 'real', name: 'Real case', order: 0, createdAt: 1 };
+    await db.folders.add(folder);
+    const { result } = renderHook(() => usePlaybooks());
+    await act(async () => {});
+    await act(async () => { await result.current.instantiate('pb-incident-response', folder, []); });
+    const timelines = (await db.timelines.toArray()).sort((a, b) => a.order - b.order);
+    expect(timelines.map(timeline => timeline.id)).toEqual([imported, (await db.folders.get('real'))?.timelineId,
+      'sample-realistic-timeline-1', 'sample-timeline-1']);
+  });
+
+  it('never files a clip or an AI-created event in a real case under a demo timeline', async () => {
+    await loadSampleInvestigation('realistic');
+    // Builds before this fix wrote the demo timeline first in the order.
+    await db.timelines.update('sample-realistic-timeline-1', { order: 0 });
+    await db.folders.add({ id: 'real', name: 'Real case', order: 0, createdAt: 1 });
+    const [clip] = await importClipBatch([await createClipRevision({ id: 'clip-event', revision: 1, title: 'Clipped',
+      content: 'Fictional clip', sourceUrl: 'https://example.com/a', sourceTitle: 'Example', entityType: 'timeline-event',
+      folderName: 'Real case', clsLevel: '', createdAt: 1 })], { sourceId: 'test-source', workspaceId: getActiveWorkspaceId() });
+    const clipTimeline = (await db.timelineEvents.get(clip.entityId ?? ''))?.timelineId;
+    expect(await db.timelines.get(clipTimeline ?? '')).toMatchObject({ name: 'Clips' });
+    const { id } = JSON.parse(await executeCreateTimelineEvent({ title: 'AI event' }, 'real'));
+    expect((await db.timelineEvents.get(id))?.timelineId).toBe(clipTimeline);
   });
 
   it('keeps a demo timeline that a remaining investigation still uses', async () => {
