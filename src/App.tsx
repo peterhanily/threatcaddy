@@ -23,6 +23,7 @@ import { useTimelines } from './hooks/useTimelines';
 import { useWhiteboards } from './hooks/useWhiteboards';
 import { useStandaloneIOCs } from './hooks/useStandaloneIOCs';
 import { useEvidenceItems } from './hooks/useEvidenceItems';
+import { useEvidenceImportFence } from './hooks/useEvidenceImportFence';
 import { useChats } from './hooks/useChats';
 import { useFolders } from './hooks/useFolders';
 import { useTags } from './hooks/useTags';
@@ -60,7 +61,6 @@ import { upsertIOCObservations } from './lib/ioc-observations';
 import { findDuplicateEvidenceItemIds } from './lib/evidence-duplicates';
 import { extractEvidenceFiles } from './lib/evidence-import-client';
 import { createEvidenceImportPersistence } from './lib/evidence-import-persistence';
-import { EvidenceImportError } from './lib/evidence-import-limits';
 import { getSessionGeneration } from './lib/encryptionMiddleware';
 import { cancellableRequest } from './lib/request-cancellation';
 import { markPending, clearPending } from './lib/pending-changes';
@@ -935,45 +935,31 @@ const AppInner = memo(function AppInner({
     () => noteTemplatesHook.templates.filter((tpl) => tpl.productBaseline && (!screenshareMaxLevel || !isAboveClsThreshold(tpl.clsLevel, screenshareMaxLevel, effectiveClsLevels))),
     [noteTemplatesHook.templates, screenshareMaxLevel, effectiveClsLevels]
   );
-  const evidenceImportScope = useMemo(() => ({
+  const evidenceImportFence = useEvidenceImportFence({
     folderId: selectedFolderId,
-    ready: privacyDataReady && investigationMode === 'local' && activeView === 'evidence'
-      && !screenshareMaxLevel && !selectedContextHidden && selectedFolder?.status !== 'archived'
-      && !showSettings && !showTrash && !showArchive,
-  }), [selectedFolderId, privacyDataReady, investigationMode, activeView, screenshareMaxLevel,
-    selectedContextHidden, selectedFolder?.status, showSettings, showTrash, showArchive]);
-  const evidenceImportOwner = useRef<typeof evidenceImportScope | null>(null);
-  const evidenceImportControllers = useRef(new Set<AbortController>());
-  useLayoutEffect(() => {
-    evidenceImportOwner.current = evidenceImportScope;
-    const controllers = evidenceImportControllers.current;
-    return () => {
-      evidenceImportOwner.current = null;
-      for (const controller of controllers) controller.abort();
-    };
-  }, [evidenceImportScope]);
+    visible: investigationMode === 'local' && activeView === 'evidence' && !showSettings && !showTrash && !showArchive,
+    screenshare: !!screenshareMaxLevel || selectedContextHidden,
+    archived: selectedFolder?.status === 'archived',
+    dataReady: privacyDataReady,
+  });
   const handleImportEvidence = useCallback(async (files: File[], signal?: AbortSignal) => {
+    const fence = evidenceImportFence.begin();
     const request = cancellableRequest(signal);
     const pending = Symbol('evidence import');
-    const assertCurrentScope = () => {
-      if (evidenceImportOwner.current !== evidenceImportScope || !evidenceImportScope.ready) {
-        throw new EvidenceImportError('contextChanged');
-      }
-    };
-    evidenceImportControllers.current.add(request.controller);
+    const release = fence.track(request.controller);
     markPending(pending);
     try {
-      const persist = createEvidenceImportPersistence({ folderId: selectedFolderId, signal: request.signal, assertCurrentScope });
+      const persist = createEvidenceImportPersistence({ folderId: selectedFolderId, signal: request.signal, assertCurrentScope: fence.assertCurrentScope });
       const drafts = await extractEvidenceFiles(files, { folderName: selectedFolder?.name }, request.signal);
       const created = await persist(drafts);
       await evidenceItemsHook.reload();
       return created;
     } finally {
       clearPending(pending);
-      evidenceImportControllers.current.delete(request.controller);
+      release();
       request.dispose();
     }
-  }, [evidenceItemsHook, selectedFolderId, selectedFolder?.name, evidenceImportScope]);
+  }, [evidenceItemsHook, selectedFolderId, selectedFolder?.name, evidenceImportFence]);
   const handleDeduplicateEvidence = useCallback(async () => {
     const dupeIds = findDuplicateEvidenceItemIds(evidenceItemsHook.evidenceItems, selectedFolderId);
     for (const id of dupeIds) await evidenceItemsHook.deleteEvidenceItem(id);
@@ -1870,6 +1856,7 @@ const AppInner = memo(function AppInner({
             folderName={selectedFolder?.name}
             items={investigationEvidenceItems}
             onImportFiles={handleImportEvidence}
+            importBlockedReason={evidenceImportFence.blockedReason}
             onDeduplicate={handleDeduplicateEvidence}
             onOpenChat={() => setActiveView('chat')}
           />

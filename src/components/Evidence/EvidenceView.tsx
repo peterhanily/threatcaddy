@@ -24,6 +24,7 @@ import {
   X,
 } from 'lucide-react';
 import type { EvidenceItem } from '../../types';
+import type { EvidenceImportBlockedReason } from '../../hooks/useEvidenceImportFence';
 import { cn, formatDate } from '../../lib/utils';
 import { formatBytes } from '../../lib/file-handler';
 import { EVIDENCE_ACCEPT, MAX_EVIDENCE_IMPORT_FILES } from '../../lib/evidence-import-constants';
@@ -41,6 +42,8 @@ interface EvidenceViewProps {
   folderName?: string;
   items: EvidenceItem[];
   onImportFiles: (files: File[], signal?: AbortSignal) => Promise<EvidenceItem[]>;
+  /** Why imports cannot start here (screenshare mode, archived investigation). */
+  importBlockedReason?: EvidenceImportBlockedReason;
   onDeduplicate?: () => Promise<number>;
   onCreateTableIOCs?: (item: EvidenceItem, candidates: EvidenceTableIOCCandidate[]) => Promise<number>;
   onOpenChat: () => void;
@@ -107,6 +110,7 @@ export function EvidenceView({
   folderName,
   items,
   onImportFiles,
+  importBlockedReason,
   onDeduplicate,
   onCreateTableIOCs,
   onOpenChat,
@@ -257,9 +261,12 @@ export function EvidenceView({
   const handleFiles = async (fileList: FileList | File[]) => {
     const files = Array.from(fileList);
     if (!folderId || files.length === 0 || importing) return;
+    if (importBlockedReason) {
+      setError(t(`importError.${importBlockedReason}`));
+      return;
+    }
     if (files.length > MAX_EVIDENCE_IMPORT_FILES) {
       setError(t('toast.tooManyFiles', { count: MAX_EVIDENCE_IMPORT_FILES }));
-      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
@@ -277,7 +284,6 @@ export function EvidenceView({
       if (importController.current === controller) {
         importController.current = null;
         setImportTask(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
       }
     }
   };
@@ -383,10 +389,10 @@ export function EvidenceView({
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={!folderId || importing}
+            disabled={!folderId || importing || !!importBlockedReason}
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-              folderId && !importing
+              folderId && !importing && !importBlockedReason
                 ? 'bg-accent text-white hover:bg-accent-hover'
                 : 'bg-bg-raised text-text-muted cursor-not-allowed',
             )}
@@ -399,7 +405,13 @@ export function EvidenceView({
             type="file"
             multiple
             accept={EVIDENCE_ACCEPT}
-            onChange={(event) => { if (event.target.files) void handleFiles(event.target.files); }}
+            onChange={(event) => {
+              // Clear the selection at once: if this import is cancelled (for example
+              // by a folder switch), choosing the same file again must fire a change.
+              const files = Array.from(event.target.files ?? []);
+              event.target.value = '';
+              void handleFiles(files);
+            }}
             className="hidden"
           />
         </div>
@@ -435,10 +447,11 @@ export function EvidenceView({
                   inputMiB: EVIDENCE_LIMITS.inputBytes / (1024 * 1024),
                   batchMiB: EVIDENCE_LIMITS.batchBytes / (1024 * 1024),
                 })}</div>
+                {importBlockedReason && <div role="status" className="mt-1 text-xs text-amber-400">{t(`importError.${importBlockedReason}`)}</div>}
               </div>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={importing}
+                disabled={importing || !!importBlockedReason}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border-subtle text-xs font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover disabled:opacity-50 transition-colors"
               >
                 {t('dropzone.browse')}
