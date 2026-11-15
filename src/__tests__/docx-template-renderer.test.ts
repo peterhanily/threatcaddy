@@ -192,7 +192,43 @@ describe('docx template renderer', () => {
     // An under-declared header must not let actual output escape the size caps.
     expect(() => extractDocxTemplateProfile(buildDeflatedZip('word/document.xml', documentXml, 64))).toThrow('declared size');
   });
+
+  it('counts stored template entries at their real size and rejects entries that share local data', () => {
+    const documentXml = '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Baseline</w:t></w:r></w:p></w:body></w:document>';
+    const files = [
+      { path: 'word/document.xml', content: documentXml },
+      { path: 'word/media/a.bin', content: 'x'.repeat(4096) },
+      { path: 'word/media/b.bin', content: 'y'.repeat(4096) },
+    ];
+    expect(() => extractDocxTemplateProfile(buildStoredZip(files))).not.toThrow();
+    // A stored entry that declares 0 bytes would be read in full without counting toward the caps.
+    const underDeclared = buildStoredZip(files);
+    patchCentralEntry(underDeclared, 1, 24, 0);
+    expect(() => extractDocxTemplateProfile(underDeclared)).toThrow('malformed');
+    // Central entries that point at one local entry would read it once per entry.
+    const shared = buildStoredZip(files);
+    patchCentralEntry(shared, 2, 42, readCentralEntry(shared, 1, 42));
+    expect(() => extractDocxTemplateProfile(shared)).toThrow('overlap');
+  });
 });
+
+/** Offset of the index-th central directory record of a ZIP built by the helpers below. */
+function centralEntryOffset(bytes: Uint8Array, index: number): number {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let offset = view.getUint32(bytes.length - 22 + 16, true);
+  for (let current = 0; current < index; current += 1) {
+    offset += 46 + view.getUint16(offset + 28, true) + view.getUint16(offset + 30, true) + view.getUint16(offset + 32, true);
+  }
+  return offset;
+}
+
+function readCentralEntry(bytes: Uint8Array, index: number, field: number): number {
+  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(centralEntryOffset(bytes, index) + field, true);
+}
+
+function patchCentralEntry(bytes: Uint8Array, index: number, field: number, value: number): void {
+  new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).setUint32(centralEntryOffset(bytes, index) + field, value, true);
+}
 
 function buildStoredZip(files: Array<{ path: string; content: string }>): Uint8Array {
   const encoder = new TextEncoder();

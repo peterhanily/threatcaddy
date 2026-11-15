@@ -694,6 +694,7 @@ function unzip(bytes: Uint8Array): ZipEntry[] {
   const totalEntries = view.getUint16(eocdOffset + 10, true);
   let centralOffset = view.getUint32(eocdOffset + 16, true);
   const entries: ZipEntry[] = [];
+  const localOffsets = new Set<number>();
   let totalUncompressed = 0;
 
   for (let index = 0; index < totalEntries; index += 1) {
@@ -714,6 +715,9 @@ function unzip(bytes: Uint8Array): ZipEntry[] {
     const extraLength = view.getUint16(centralOffset + 30, true);
     const commentLength = view.getUint16(centralOffset + 32, true);
     const localOffset = view.getUint32(centralOffset + 42, true);
+    // Entries that share local data would read it once per entry.
+    if (localOffsets.has(localOffset)) throw new Error('Template DOCX entries overlap.');
+    localOffsets.add(localOffset);
     const path = decodeUtf8(bytes.slice(centralOffset + 46, centralOffset + 46 + nameLength));
     const data = readLocalEntry(bytes, localOffset, compressedSize, method, uncompressedSize);
     entries.push({ path, data });
@@ -732,7 +736,13 @@ function readLocalEntry(bytes: Uint8Array, offset: number, compressedSize: numbe
   const extraLength = view.getUint16(offset + 28, true);
   const dataStart = offset + 30 + nameLength + extraLength;
   const compressed = bytes.slice(dataStart, dataStart + compressedSize);
-  if (method === 0) return compressed;
+  if (method === 0) {
+    // Stored data is the entry: it must be exactly the declared size that unzip counted against the caps.
+    if (compressedSize !== declaredSize || compressed.byteLength !== compressedSize) {
+      throw new Error('Template DOCX local file entry is malformed.');
+    }
+    return compressed;
+  }
   if (method === 8) return inflateDeclared(compressed, declaredSize);
   throw new Error(`Unsupported DOCX compression method: ${method}`);
 }
