@@ -5,6 +5,7 @@ import { generateRealisticInvestigation } from '../lib/sample-investigation-real
 import { isSampleEntityForKind } from '../lib/sample-investigation-store';
 import { validatePortableTables } from '../lib/backup-records';
 import { renderMarkdown } from '../lib/markdown';
+import { extractIOCs } from '../lib/ioc-extractor';
 import { MarkdownPreview } from '../components/Notes/MarkdownPreview';
 import { FirstRunGuide } from '../components/Investigations/FirstRunGuide';
 
@@ -78,6 +79,26 @@ describe('sample investigations', () => {
     expect(sample.evidenceItems.every(item => item.content.length === item.size)).toBe(true);
     expect(sample.evidenceItems.map(item => item.chunkIndex)).toEqual([1, 1]);
     expect(sample.timelineEvents.map(event => event.timestamp)).toEqual(sample.timelineEvents.map(event => event.timestamp).sort((a, b) => a - b));
+  });
+
+  it('gives the parody only reserved indicators, impossible CVE ids and invented vendors', () => {
+    const parody = generateSampleInvestigation();
+    const text = JSON.stringify(parody);
+    // RFC 1918 / 5737 addresses and RFC 2606 names; `.age` is not a delegated TLD (the "cabb.age" joke).
+    const reservedHost = (host: string) => /\.(example|test|invalid|age)$/i.test(host);
+    for (const ioc of [...extractIOCs(text), ...parody.standaloneIOCs]) {
+      if (ioc.type === 'ipv4') expect(ioc.value).toMatch(/^(10\.|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)/);
+      if (ioc.type === 'domain') expect(reservedHost(ioc.value), ioc.value).toBe(true);
+      if (ioc.type === 'email') expect(reservedHost(ioc.value.split('@')[1] ?? ''), ioc.value).toBe(true);
+      if (ioc.type === 'cve') expect(ioc.value).toMatch(/^CVE-000\d-\d+$/);
+      if (ioc.type === 'url') {
+        let host = '';
+        try { host = new URL(ioc.value).hostname; } catch { /* not a URL */ }
+        // Dotless hosts are template text such as https://{c2}/, not network names.
+        if (host.includes('.')) expect(reservedHost(host), ioc.value).toBe(true);
+      }
+    }
+    expect(text).not.toMatch(/Samsung|SmartThings|InstaView|Tizen|WebOS|\bLG\b/);
   });
 });
 
