@@ -252,6 +252,7 @@ function AppDataLayer() {
             whiteboards={whiteboards}
             whiteboardsLoading={whiteboardsLoading}
             bulkDataLoading={pendingReloads > 0 || reloadFailed}
+            bulkDataFailed={reloadFailed}
             createWhiteboard={createWhiteboard}
             updateWhiteboard={updateWhiteboard}
             deleteWhiteboard={deleteWhiteboard}
@@ -356,6 +357,7 @@ type AppInnerProps = {
   whiteboards: ReturnType<typeof useWhiteboards>['whiteboards'];
   whiteboardsLoading: boolean;
   bulkDataLoading: boolean;
+  bulkDataFailed: boolean;
   createWhiteboard: ReturnType<typeof useWhiteboards>['createWhiteboard'];
   updateWhiteboard: ReturnType<typeof useWhiteboards>['updateWhiteboard'];
   deleteWhiteboard: ReturnType<typeof useWhiteboards>['deleteWhiteboard'];
@@ -413,7 +415,7 @@ const AppInner = memo(function AppInner({
   addToast, tt,
   notes, tasks, timeline,
   timelines: allTimelines, createTimeline, updateTimeline, deleteTimeline, reloadTimelines,
-  whiteboards, whiteboardsLoading, bulkDataLoading, createWhiteboard, updateWhiteboard, deleteWhiteboard,
+  whiteboards, whiteboardsLoading, bulkDataLoading, bulkDataFailed, createWhiteboard, updateWhiteboard, deleteWhiteboard,
   trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard,
   emptyTrashWhiteboards, getFilteredWhiteboards, reloadWhiteboards,
   standaloneIOCsHook, evidenceItemsHook, chatsHook,
@@ -941,6 +943,8 @@ const AppInner = memo(function AppInner({
     screenshare: !!screenshareMaxLevel || selectedContextHidden,
     archived: selectedFolder?.status === 'archived',
     dataReady: privacyDataReady,
+    dataFailed: bulkDataFailed || (!chatsHook.loading && !chatsHook.loadedSuccessfully)
+      || (!evidenceItemsHook.loading && !evidenceItemsHook.loadedSuccessfully),
   });
   const handleImportEvidence = useCallback(async (files: File[], signal?: AbortSignal) => {
     const fence = evidenceImportFence.begin();

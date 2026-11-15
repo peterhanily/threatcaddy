@@ -132,6 +132,7 @@
   "importError.destinationUnavailable": "Docelowe śledztwo nie jest już dostępne. Wybierz aktywne śledztwo i zaimportuj ponownie.",
   "importError.interrupted": "Import został przerwany, zanim cokolwiek zapisano. Zaimportuj pliki ponownie.",
   "importError.notReady": "Dane śledztwa wciąż się wczytują. Dowody będzie można zaimportować po zakończeniu wczytywania.",
+  "importError.dataUnavailable": "Nie udało się wczytać danych śledztwa. Odśwież stronę, aby zaimportować dowody.",
   "importError.screenshareActive": "Import dowodów jest niedostępny podczas udostępniania ekranu. Wyłącz udostępnianie ekranu, aby zaimportować pliki.",
   "importError.investigationArchived": "To śledztwo jest zarchiwizowane. Przywróć je, aby zaimportować dowody.",
   "imagePrompt.intro": "Gdy ten obraz jest dołączony do CaddyAI, przeanalizuj dowód obrazowy ThreatCaddy: {{fileName}}",

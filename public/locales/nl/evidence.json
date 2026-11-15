@@ -149,6 +149,7 @@
   "importError.destinationUnavailable": "Het doelonderzoek is niet meer beschikbaar. Selecteer een actief onderzoek en importeer opnieuw.",
   "importError.interrupted": "De import is onderbroken voordat er iets is opgeslagen. Importeer de bestanden opnieuw.",
   "importError.notReady": "De onderzoeksgegevens worden nog geladen. Je kunt bewijsmateriaal importeren zodra ze geladen zijn.",
+  "importError.dataUnavailable": "De onderzoeksgegevens konden niet worden geladen. Laad de pagina opnieuw om bewijsmateriaal te importeren.",
   "importError.screenshareActive": "Bewijsmateriaal importeren is niet beschikbaar tijdens schermdelen. Stop met schermdelen om bestanden te importeren.",
   "importError.investigationArchived": "Dit onderzoek is gearchiveerd. Herstel het om bewijsmateriaal te importeren.",
 

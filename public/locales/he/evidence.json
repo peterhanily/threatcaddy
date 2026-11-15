@@ -132,6 +132,7 @@
   "importError.destinationUnavailable": "חקירת היעד אינה זמינה עוד. בחר חקירה פעילה וייבא שוב.",
   "importError.interrupted": "הייבוא נקטע לפני שנשמר דבר. ייבא את הקבצים שוב.",
   "importError.notReady": "נתוני החקירה עדיין נטענים. ניתן יהיה לייבא ראיות לאחר סיום הטעינה.",
+  "importError.dataUnavailable": "לא ניתן היה לטעון את נתוני החקירה. טען מחדש את הדף כדי לייבא ראיות.",
   "importError.screenshareActive": "ייבוא ראיות אינו זמין במצב שיתוף מסך. יש לכבות את שיתוף המסך כדי לייבא קבצים.",
   "importError.investigationArchived": "חקירה זו נמצאת בארכיון. שחזר אותה כדי לייבא ראיות.",
   "imagePrompt.intro": "כאשר תמונה זו מצורפת ל-CaddyAI, נתח את ראיית התמונה של ThreatCaddy: {{fileName}}",

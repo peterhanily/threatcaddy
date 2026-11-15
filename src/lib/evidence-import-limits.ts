@@ -40,6 +40,7 @@ const MESSAGES = {
   destinationUnavailable: 'The destination investigation is no longer available. Select an active investigation and import again.',
   interrupted: 'The evidence import was interrupted before anything was saved. Import the files again.',
   notReady: 'Investigation data is still loading. Import the files again once it has loaded.',
+  dataUnavailable: 'Investigation data could not be loaded. Reload the page to import evidence.',
   screenshareActive: 'Evidence import is unavailable in screenshare mode.',
   investigationArchived: 'This investigation is archived. Restore it to import evidence.',
 } as const;

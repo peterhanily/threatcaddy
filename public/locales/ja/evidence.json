@@ -149,6 +149,7 @@
   "importError.destinationUnavailable": "インポート先の調査は利用できなくなりました。アクティブな調査を選択して、もう一度インポートしてください。",
   "importError.interrupted": "何も保存されないうちにインポートが中断されました。ファイルをもう一度インポートしてください。",
   "importError.notReady": "調査データをまだ読み込んでいます。読み込みが完了すると証拠をインポートできます。",
+  "importError.dataUnavailable": "調査データを読み込めませんでした。証拠をインポートするには、ページを再読み込みしてください。",
   "importError.screenshareActive": "画面共有モードでは証拠をインポートできません。ファイルをインポートするには画面共有をオフにしてください。",
   "importError.investigationArchived": "この調査はアーカイブされています。証拠をインポートするには復元してください。",
 

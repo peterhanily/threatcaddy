@@ -149,6 +149,7 @@
   "importError.destinationUnavailable": "Investigasi tujuan tidak lagi tersedia. Pilih investigasi yang aktif dan impor lagi.",
   "importError.interrupted": "Impor terputus sebelum apa pun disimpan. Impor berkas lagi.",
   "importError.notReady": "Data investigasi masih dimuat. Bukti dapat diimpor setelah pemuatan selesai.",
+  "importError.dataUnavailable": "Data investigasi tidak dapat dimuat. Muat ulang halaman untuk mengimpor bukti.",
   "importError.screenshareActive": "Impor bukti tidak tersedia dalam mode berbagi layar. Matikan berbagi layar untuk mengimpor berkas.",
   "importError.investigationArchived": "Investigasi ini diarsipkan. Pulihkan untuk mengimpor bukti.",
 

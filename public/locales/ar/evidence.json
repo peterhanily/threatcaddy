@@ -132,6 +132,7 @@
   "importError.destinationUnavailable": "لم يعد التحقيق الوجهة متاحًا. اختر تحقيقًا نشطًا واستورد مرة أخرى.",
   "importError.interrupted": "انقطع الاستيراد قبل حفظ أي شيء. استورد الملفات مرة أخرى.",
   "importError.notReady": "لا تزال بيانات التحقيق قيد التحميل. يمكن استيراد الأدلة بعد اكتمال التحميل.",
+  "importError.dataUnavailable": "تعذّر تحميل بيانات التحقيق. أعد تحميل الصفحة لاستيراد الأدلة.",
   "importError.screenshareActive": "استيراد الأدلة غير متاح في وضع مشاركة الشاشة. أوقف مشاركة الشاشة لاستيراد الملفات.",
   "importError.investigationArchived": "هذا التحقيق مؤرشف. استعده لاستيراد الأدلة.",
   "imagePrompt.intro": "عند إرفاق هذه الصورة بـ CaddyAI، حلّل دليل صورة ThreatCaddy: {{fileName}}",

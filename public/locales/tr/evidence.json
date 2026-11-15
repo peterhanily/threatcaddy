@@ -149,6 +149,7 @@
   "importError.destinationUnavailable": "Hedef soruşturma artık kullanılamıyor. Etkin bir soruşturma seçin ve yeniden içe aktarın.",
   "importError.interrupted": "İçe aktarma, hiçbir şey kaydedilmeden kesildi. Dosyaları yeniden içe aktarın.",
   "importError.notReady": "Soruşturma verileri hâlâ yükleniyor. Yükleme tamamlandığında kanıt içe aktarılabilir.",
+  "importError.dataUnavailable": "Soruşturma verileri yüklenemedi. Kanıt içe aktarmak için sayfayı yeniden yükleyin.",
   "importError.screenshareActive": "Ekran paylaşımı modunda kanıt içe aktarılamaz. Dosyaları içe aktarmak için ekran paylaşımını kapatın.",
   "importError.investigationArchived": "Bu soruşturma arşivlendi. Kanıt içe aktarmak için geri yükleyin.",
 

@@ -149,6 +149,7 @@
   "importError.destinationUnavailable": "Cuộc điều tra đích không còn khả dụng. Hãy chọn một cuộc điều tra đang hoạt động và nhập lại.",
   "importError.interrupted": "Quá trình nhập bị gián đoạn trước khi lưu bất kỳ thứ gì. Hãy nhập lại các tệp.",
   "importError.notReady": "Dữ liệu điều tra vẫn đang tải. Có thể nhập bằng chứng sau khi tải xong.",
+  "importError.dataUnavailable": "Không thể tải dữ liệu điều tra. Hãy tải lại trang để nhập bằng chứng.",
   "importError.screenshareActive": "Không thể nhập bằng chứng ở chế độ chia sẻ màn hình. Tắt chia sẻ màn hình để nhập tệp.",
   "importError.investigationArchived": "Cuộc điều tra này đã được lưu trữ. Hãy khôi phục để nhập bằng chứng.",
 

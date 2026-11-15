@@ -132,6 +132,7 @@
   "importError.destinationUnavailable": "L'enquête de destination n'est plus disponible. Sélectionnez une enquête active et importez à nouveau.",
   "importError.interrupted": "L'importation a été interrompue avant tout enregistrement. Importez à nouveau les fichiers.",
   "importError.notReady": "Les données de l'enquête sont encore en cours de chargement. Les preuves pourront être importées une fois le chargement terminé.",
+  "importError.dataUnavailable": "Les données de l'enquête n'ont pas pu être chargées. Rechargez la page pour importer des preuves.",
   "importError.screenshareActive": "L'importation de preuves n'est pas disponible pendant le partage d'écran. Désactivez le partage d'écran pour importer des fichiers.",
   "importError.investigationArchived": "Cette enquête est archivée. Restaurez-la pour importer des preuves.",
   "imagePrompt.intro": "Lorsque cette image est jointe à CaddyAI, analysez la preuve image de ThreatCaddy : {{fileName}}",

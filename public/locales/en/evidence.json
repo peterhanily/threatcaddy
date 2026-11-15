@@ -149,6 +149,7 @@
   "importError.destinationUnavailable": "The destination investigation is no longer available. Select an active investigation and import again.",
   "importError.interrupted": "The import was interrupted before anything was saved. Import the files again.",
   "importError.notReady": "Investigation data is still loading. Evidence can be imported once it has loaded.",
+  "importError.dataUnavailable": "Investigation data could not be loaded. Reload the page to import evidence.",
   "importError.screenshareActive": "Evidence import is unavailable in screenshare mode. Turn off screensharing to import files.",
   "importError.investigationArchived": "This investigation is archived. Restore it to import evidence.",
 

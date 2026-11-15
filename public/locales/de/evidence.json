@@ -149,6 +149,7 @@
   "importError.destinationUnavailable": "Die Zielermittlung ist nicht mehr verfügbar. Wählen Sie eine aktive Ermittlung aus und importieren Sie erneut.",
   "importError.interrupted": "Der Import wurde unterbrochen, bevor etwas gespeichert wurde. Importieren Sie die Dateien erneut.",
   "importError.notReady": "Die Ermittlungsdaten werden noch geladen. Beweismittel können importiert werden, sobald sie geladen sind.",
+  "importError.dataUnavailable": "Die Ermittlungsdaten konnten nicht geladen werden. Laden Sie die Seite neu, um Beweismittel zu importieren.",
   "importError.screenshareActive": "Der Beweismittelimport ist während der Bildschirmfreigabe nicht verfügbar. Beenden Sie die Bildschirmfreigabe, um Dateien zu importieren.",
   "importError.investigationArchived": "Diese Ermittlung ist archiviert. Stellen Sie sie wieder her, um Beweismittel zu importieren.",
 

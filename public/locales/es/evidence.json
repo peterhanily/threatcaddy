@@ -132,6 +132,7 @@
   "importError.destinationUnavailable": "La investigación de destino ya no está disponible. Selecciona una investigación activa e importa de nuevo.",
   "importError.interrupted": "La importación se interrumpió antes de guardar nada. Importa los archivos de nuevo.",
   "importError.notReady": "Los datos de la investigación aún se están cargando. Podrás importar pruebas cuando terminen de cargarse.",
+  "importError.dataUnavailable": "No se pudieron cargar los datos de la investigación. Recarga la página para importar pruebas.",
   "importError.screenshareActive": "La importación de pruebas no está disponible en el modo de pantalla compartida. Desactiva la pantalla compartida para importar archivos.",
   "importError.investigationArchived": "Esta investigación está archivada. Restáurala para importar pruebas.",
   "imagePrompt.intro": "Cuando esta imagen se adjunte a CaddyAI, analiza la prueba de imagen de ThreatCaddy: {{fileName}}",

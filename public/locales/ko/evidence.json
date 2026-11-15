@@ -149,6 +149,7 @@
   "importError.destinationUnavailable": "대상 조사를 더 이상 사용할 수 없습니다. 활성 조사를 선택하고 다시 가져오세요.",
   "importError.interrupted": "아무것도 저장되기 전에 가져오기가 중단되었습니다. 파일을 다시 가져오세요.",
   "importError.notReady": "조사 데이터를 아직 불러오는 중입니다. 불러오기가 끝나면 증거를 가져올 수 있습니다.",
+  "importError.dataUnavailable": "조사 데이터를 불러오지 못했습니다. 증거를 가져오려면 페이지를 새로 고치세요.",
   "importError.screenshareActive": "화면 공유 모드에서는 증거를 가져올 수 없습니다. 파일을 가져오려면 화면 공유를 끄세요.",
   "importError.investigationArchived": "이 조사는 보관되었습니다. 증거를 가져오려면 복원하세요.",
 

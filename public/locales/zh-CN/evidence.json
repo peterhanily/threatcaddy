@@ -149,6 +149,7 @@
   "importError.destinationUnavailable": "目标调查已不可用。请选择一个活动调查后重新导入。",
   "importError.interrupted": "导入在保存任何内容之前被中断。请重新导入文件。",
   "importError.notReady": "调查数据仍在加载。加载完成后即可导入证据。",
+  "importError.dataUnavailable": "无法加载调查数据。请重新加载页面以导入证据。",
   "importError.screenshareActive": "屏幕共享模式下无法导入证据。请关闭屏幕共享后再导入文件。",
   "importError.investigationArchived": "此调查已归档。请将其恢复后再导入证据。",
 
