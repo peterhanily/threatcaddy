@@ -421,6 +421,7 @@
   "data.replaceAll": "모두 교체",
   "data.backupRestoreNotice": "먼저 이 작업 공간을 백업하세요. 모두 교체는 파일에 포함된 엔터티 유형만 교체합니다. 빈 목록은 해당 유형을 지우고 누락된 유형은 유지합니다. 병합은 없는 기록을 추가하고 이전 버전을 업데이트하며 기록을 삭제하지 않습니다.",
   "data.syncBoundRestoreNotice": "이 작업 공간은 팀 서버와 동기화됩니다. 복원해도 팀원에게는 아무것도 전송되지 않습니다. 설정 → 일반 → Sync history recovery에서 차이를 검토할 때까지 동기화가 일시 중지됩니다.",
+  "data.syncUnsentRestoreBlocked": "이 복원을 진행하면 아직 전송되지 않은 동기화 변경 사항이 있는 레코드 {{count}}개가 삭제됩니다({{records}}). 아무것도 복원되지 않았습니다. 로그인하여 동기화가 이를 전송하도록 하거나, 동기화가 일시 중지된 경우 먼저 설정 → 일반 → Sync history recovery를 완료한 후 다시 시도하세요.",
   "data.backupPasswordLabel": "백업 비밀번호(암호화 파일만 해당)",
   "data.backupPasswordNotice": "일반 JSON은 비워 두세요. 이 비밀번호는 로컬에서만 사용되며 저장되거나 서버로 전송되지 않습니다.",
   "data.backupTooLarge": "백업 파일이 너무 큽니다(최대 50 MB).",

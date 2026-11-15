@@ -9,6 +9,7 @@ import { mapEntityReferences } from './entity-relations';
 import { validatePortableTables } from './backup-records';
 import { isSyncTable, suppressSyncInCurrentTransaction } from './sync-state';
 import { isSyncWorkspaceIdentity, markRestoredSyncHistory, SYNC_WORKSPACE_KEY } from './sync-capture-policy';
+import i18n from '../i18n';
 
 type Row = Record<string, unknown> & { id: string };
 type Mode = 'replace' | 'merge';
@@ -249,7 +250,7 @@ async function assertNoUnsentChangesRemoved(operations: Operation[]): Promise<vo
   for (const entry of await db.table('_syncQueue').toArray()) latest.set(JSON.stringify([entry.table, entry.entityId]), entry.op);
   const unsent = operations.flatMap(op => op.deletes.filter(id => latest.get(JSON.stringify([op.table, id])) === 'put').map(id => `${op.table}:${id}`));
   if (unsent.length) {
-    throw new Error(`This restore would delete ${unsent.length} record(s) with unsent sync changes (${unsent.slice(0, 5).join(', ')}). Let sync send them or reconnect first, then retry; nothing was restored.`);
+    throw new Error(i18n.t('data.syncUnsentRestoreBlocked', { ns: 'settings', count: unsent.length, records: unsent.slice(0, 5).join(', ') }));
   }
 }
 

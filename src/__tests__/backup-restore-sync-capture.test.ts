@@ -8,6 +8,8 @@ import { ensureSyncWorkspace } from '../lib/sync-workspace';
 import { getSyncPauseReason, SYNC_CAPTURE_KEY, SYNC_RECOVERY_KEY } from '../lib/sync-capture-policy';
 import { SyncEngine } from '../lib/sync-engine';
 import { prepareSyncRecovery, reconcileSyncWorkspace } from '../lib/sync-recovery';
+import i18n from '../i18n';
+import settingsDe from '../../public/locales/de/settings.json';
 
 const api = vi.hoisted(() => ({ pull: vi.fn(), push: vi.fn() }));
 vi.mock('../lib/server-api', () => ({ syncPull: api.pull, syncPush: api.push }));
@@ -137,6 +139,24 @@ describe('restoring a backup in a team-bound workspace', () => {
     expect(await db.notes.get('local-unsent')).toBeDefined();
     expect(await db.table('_syncQueue').toArray()).toEqual(queued);
     expect(await db.table('_syncMeta').get(SYNC_RECOVERY_KEY)).toBeUndefined();
+  });
+
+  it('explains that refusal in the user language and names the way forward when sync is already paused', async () => {
+    await boundWorkspace();
+    const backup = await exportJSON();
+    await importJSON(backup);
+    await db.notes.add(note('paused-edit', 'Captured while paused'));
+    const args = { ns: 'settings', count: 1, records: 'notes:paused-edit' };
+    await expect(importJSON(backup)).rejects.toThrow('Sync history recovery');
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'settings', settingsDe, true, true);
+    await i18n.changeLanguage('de');
+    try {
+      const german = i18n.t('data.syncUnsentRestoreBlocked', args);
+      expect(german).not.toBe(i18n.getFixedT('en')('data.syncUnsentRestoreBlocked', args));
+      await expect(importJSON(backup)).rejects.toThrow(german);
+    } finally { await i18n.changeLanguage('en'); }
+    expect(await db.notes.get('paused-edit')).toBeDefined();
   });
 
   it('keeps folder privacy bookkeeping in step with restored folders', async () => {
