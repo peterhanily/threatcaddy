@@ -263,6 +263,21 @@ describe('per-change write validation', () => {
     expect(state.inserts).toEqual([]);
   });
 
+  it('rejects only an evidence item whose preview type is refused and commits the rest', async () => {
+    state.rows.push([], []);
+    state.returned.push([{ id: 'small', folderId: 'folder-1', version: 1 }]);
+    const results = await processPush([
+      create('evidenceItems', 'shot', { title: 'Beacon screenshot', imageData: 'Qk0=', imageDataMimeType: 'image/bmp' }),
+      create('notes', 'small', { title: 'Ordinary note' }),
+    ], 'user-1', { rejectInvalidChanges: true });
+    expect(results).toEqual([
+      { table: 'evidenceItems', entityId: 'shot', status: 'rejected', reason: expect.stringContaining('MIME type') },
+      expect.objectContaining({ entityId: 'small', status: 'accepted', serverVersion: 1 }),
+    ]);
+    expect(state.inserts).toEqual([expect.objectContaining({ id: 'small' })]);
+    expect(state.events).toHaveBeenCalledOnce();
+  });
+
   it('accepts the IOC types and whiteboard shapes clients read', async () => {
     state.rows.push([], []);
     state.returned.push([{ id: 'ioc', version: 1 }], [{ id: 'board', version: 1 }]);
