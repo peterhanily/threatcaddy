@@ -67,6 +67,44 @@ describe('team sync across a workspace lock', () => {
     expect(api.push).not.toHaveBeenCalled();
   });
 
+  it('does not report a lock when the session is re-keyed during a push, and retries the held batch', async () => {
+    // 101 changes split into two push batches; the re-key lands between them.
+    await db.notes.bulkAdd(Array.from({ length: 101 }, (_, i) => note(`n${i}`)));
+    const accepted = api.push.getMockImplementation()!;
+    api.push.mockImplementationOnce(async (changes: Change[]) => { setSessionKey(key, raw); return accepted(changes); });
+    const errors: Array<string | null> = []; engine.setErrorHandler(message => { errors.push(message); });
+    const retry = vi.spyOn(engine as unknown as { scheduleSync(): void }, 'scheduleSync');
+    await engine.sync();
+    expect(api.push).toHaveBeenCalledOnce();
+    expect(errors.filter(Boolean)).toEqual([]);
+    expect(retry).toHaveBeenCalled();
+    await engine.sync();
+    expect(api.push).toHaveBeenCalledTimes(2);
+    expect(await db.table('_syncQueue').count()).toBe(0);
+  });
+
+  it('returns a push the server committed before the lock aborted it as a conflict that keeps the edit either way', async () => {
+    await db.notes.add(note('n3', 'Edit made before the lock'));
+    let committed: Change | undefined;
+    api.push.mockImplementationOnce(async (changes: Change[]) => {
+      committed = changes.find(change => change.entityId === 'n3');
+      lockEncryptionSession();
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    });
+    await engine.sync();
+    setSessionKey(key, raw);
+    api.push.mockImplementationOnce(async (changes: Change[]) => ({ results: changes.map(c => ({ table: c.table, entityId: c.entityId, status: 'conflict',
+      serverVersion: 1, serverData: { ...committed?.data, version: 1, createdAt: new Date(1).toISOString(), updatedAt: new Date(2).toISOString() } })) }));
+    const conflicts: Array<{ table?: string; entityId: string; serverVersion?: number; serverData?: Record<string, unknown> }> = [];
+    engine.setConflictHandler(found => { conflicts.push(...found); });
+    await engine.sync();
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0].serverData).toMatchObject({ title: 'Edit made before the lock', content: 'Private body' });
+    await engine.resolveConflicts(conflicts, 'theirs');
+    expect(await db.notes.get('n3')).toMatchObject({ title: 'Edit made before the lock', content: 'Private body' });
+    expect(await db.table('_syncQueue').count()).toBe(0);
+  });
+
   it('stops the shared engine as soon as the workspace is about to lock', () => {
     const stop = vi.spyOn(syncEngine, 'stop');
     try {

@@ -183,8 +183,8 @@ export class SyncEngine {
     // While locked, queued rows read back as ciphertext envelopes and an
     // accepted push could not be acknowledged, so nothing is sent.
     const session = getSessionGeneration();
-    const unlocked = () => !isEncryptionEnabled() || (!!getSessionKey() && session === getSessionGeneration());
-    if (!unlocked()) throw new Error(LOCKED_MESSAGE);
+    const locked = () => isEncryptionEnabled() && !getSessionKey();
+    if (locked()) throw new Error(LOCKED_MESSAGE);
     const history = (await dynamicDb.table('_syncMeta').get(HISTORY_KEY))?.value;
     if (typeof history !== 'string') throw new Error('Server history has not been verified; pending edits were retained.');
     const queue: SyncQueueEntry[] = await dynamicDb.table('_syncQueue').toArray();
@@ -235,7 +235,10 @@ export class SyncEngine {
       const batch = deliverable.map(item => item.entries);
       const changes = deliverable.map(item => item.change);
       await this.assertCurrentWorkspace(epoch);
-      if (!unlocked()) throw new Error(LOCKED_MESSAGE);
+      if (locked()) throw new Error(LOCKED_MESSAGE);
+      // A re-key (passphrase change, enabling encryption) is not a lock, but the
+      // queue was read under the previous session: read it again shortly.
+      if (isEncryptionEnabled() && session !== getSessionGeneration()) { this.scheduleSync(); return; }
       const { results } = await syncPush(changes, history);
       if (epoch !== this.epoch) return;
       await dynamicDb.transaction('rw', '_syncQueue', '_syncMeta', '_localMigrations', async () => {
