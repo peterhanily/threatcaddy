@@ -9,6 +9,7 @@ import { validatePortableTables } from '../lib/backup-records';
 import { BUILTIN_INTEGRATIONS } from '../lib/builtin-integrations';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
 import { restoreFullReplace } from '../lib/backup-restore';
+import { executeTool } from '../lib/llm-tools';
 
 const note = (id = 'note') => ({ id, title: 'Synthetic note', content: 'Complete content', tags: [], pinned: false,
   archived: false, trashed: false, createdAt: 10, updatedAt: 20 });
@@ -55,6 +56,23 @@ describe('portable backup contracts', () => {
     expect(await db.notes.get('note')).toMatchObject({ content, annotations: [{ id: 'annotation', text: content, createdAt: 10 }] });
     expect(await db.tasks.get('task')).toMatchObject({ checklist: [{ id: 'check', text: 'Retained', done: false }] });
     expect(await db.chatThreads.get('chat')).toMatchObject(thread);
+  });
+
+  it('backs up and restores a task an agent delegated, with its device-only agent assignment', async () => {
+    await db.folders.add({ id: 'folder', name: 'Folder', order: 0, createdAt: 10 });
+    await db.agentDeployments.add({ id: 'deployment', investigationId: 'folder', profileId: 'ap-ioc-enricher', status: 'idle', order: 0, createdAt: 10, updatedAt: 20 } as never);
+    const delegated = await executeTool({ type: 'tool_use', id: 'call', name: 'delegate_task',
+      input: { title: 'Enrich the beacon IP', description: 'Synthetic', assignToProfile: 'IOC Enricher' } }, 'folder', { profileId: 'ap-lead-analyst' });
+    const { taskId } = JSON.parse(delegated.result);
+    expect(await db.tasks.get(taskId)).toMatchObject({ assignedDeploymentId: 'deployment' });
+    const full = await buildFullBackupPayload('all');
+    const json = await exportJSON();
+    await clear();
+    await importJSON(json);
+    expect(await db.tasks.get(taskId)).toMatchObject({ title: 'Enrich the beacon IP', assignedDeploymentId: 'deployment' });
+    await clear();
+    await restoreFullReplace(full);
+    expect(await db.tasks.get(taskId)).toMatchObject({ title: 'Enrich the beacon IP', assignedDeploymentId: 'deployment' });
   });
 
   it('retains source provenance, empty nested collections, and false/zero values', async () => {
