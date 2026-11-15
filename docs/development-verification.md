@@ -1,8 +1,9 @@
 # Development and verification
 
-The supported baseline is Node **24.22.2**, pnpm **10.29.1** for the client,
+The supported baseline is Node **24.22.3**, pnpm **10.29.1** for the client,
 and npm **11.19.0** for the server and extension. `.node-version`, `.nvmrc`,
-`packageManager`, and `engines` record this baseline. The client uses TypeScript 6
+`packageManager`, and the server image record this baseline; `engines` still
+accepts Node 24.22.2 or later on the 24 line for local tooling. The client uses TypeScript 6
 with its compatible lint tooling; the server uses the TypeScript 7 native CLI.
 Keep their separate lockfiles and compiler dependencies. Server tools that need
 the old TypeScript JavaScript compiler API require a compatibility review before
@@ -15,10 +16,10 @@ Run these commands from the repository root after selecting the recorded Node
 version (`nvm install` once, then `nvm use`, when using nvm). Running a new login shell in a subdirectory
 can select a different system Node; verify `node --version` and `npm --version`.
 
-The 30 October runtime refresh stays on Node 24 LTS. Node's bundled OpenSSL/HTTP runtime
-is not covered by npm lockfile audits. See the official
-[24.22.2 release](https://nodejs.org/en/blog/release/v24.22.2).
-Both Docker stages use the verified official 24.22.2 Alpine image digest and
+The runtime stays on Node 24 LTS. Node's bundled OpenSSL/HTTP runtime
+is not covered by npm lockfile audits or the image scan's package inventory. See the official
+[24.22.3 security release](https://nodejs.org/en/blog/release/v24.22.3).
+Both Docker stages use the verified official 24.22.3 Alpine image index digest and
 install the exact recorded npm version. CI selects that npm version before
 server/extension installation and audit. The container gate executes argon2
 hash/verify and a sharp PNG transformation as the non-root runtime user, then

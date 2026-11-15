@@ -167,6 +167,11 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
 
   db:
     image: postgres:17-alpine
@@ -182,6 +187,11 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
 
 volumes:
   pg-data:
@@ -192,10 +202,11 @@ volumes:
 
 The server Dockerfile (`server/Dockerfile`) uses a multi-stage build:
 
-1. **Build stage**: the official `node:24.22.2-alpine` image pinned by digest in the Dockerfile, installs all dependencies and compiles TypeScript
-2. **Runtime stage**: the same pinned Node 24.22.2 image, installs production dependencies only and copies compiled JS and migrations
-3. Runs as non-root user `app`
-4. Exposes ports 3001 and 3002
+1. **Build stage**: the official `node:24.22.3-alpine` image pinned by digest in the Dockerfile, installs all dependencies and compiles TypeScript
+2. **Runtime stage**: the same pinned Node 24.22.3 image, upgrades zlib to at least 1.4-r0, installs production dependencies only and copies compiled JS and migrations
+3. Runs as non-root user `app` with `NODE_ENV=production`, so unexpected server errors return a generic message
+4. Declares a `HEALTHCHECK` that requests `/health` on `127.0.0.1:${PORT}` inside the container; Docker reports the result but does not restart the container
+5. Declares ports 3001 and 3002 for the two listeners; only the ports you publish are reachable from the host (the supplied Compose file publishes administration on host loopback only)
 
 ---
 
@@ -548,6 +559,16 @@ WebSocket connection stats are logged every 5 minutes:
 {"timestamp":"...","level":"info","message":"WebSocket stats","connections":5,"uniqueUsers":3,"pendingAuth":0}
 ```
 
+The supplied Compose file rotates both containers' logs with the `json-file`
+driver: at most five 20 MB files per container. Older entries are discarded, so
+ship logs to your retention system if you need a longer history. Custom
+deployments should set equivalent limits; Docker's default driver does not
+rotate.
+
+The image sets `NODE_ENV=production`: unexpected server errors return
+`Internal server error` with a request ID, and the details appear only in the
+server log.
+
 ---
 
 ## 5. Monitoring
@@ -564,17 +585,12 @@ Checks performed:
 - **Database connectivity**: `SELECT 1` query
 - **File storage**: Filesystem access check on `FILE_STORAGE_PATH`
 
-Example Docker Compose health check for the server:
-
-```yaml
-server:
-  healthcheck:
-    test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/health"]
-    interval: 30s
-    timeout: 10s
-    retries: 3
-    start_period: 30s
-```
+The server image declares a Docker `HEALTHCHECK` that runs this request with
+Node inside the container every 30 seconds (60-second start period, three
+retries). `docker ps` and `docker inspect` show the result. Docker does not
+restart an unhealthy container; alert on the status or use an orchestrator that
+acts on it. If you set `HOST` to an address other than the wildcard or
+`127.0.0.1`, override the check in your Compose configuration.
 
 ### What to Monitor
 
