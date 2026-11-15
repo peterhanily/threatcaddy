@@ -10,7 +10,7 @@ import {
 import { getAdminHtml } from '../admin-html/index.js';
 import { logger } from '../../lib/logger.js';
 import { isUniqueViolation } from '../../lib/db-errors.js';
-import { isLocked, recordFailedAttempt, resetAttempts } from '../../services/login-limiter.js';
+import { isLocked, claimPasswordCheck, recordFailedAttempt, resetAttempts } from '../../services/login-limiter.js';
 import { requireAdminAuth, logAdminAction, getAdminId } from './shared.js';
 import { hasActiveAdmin, revokeAdminSessions } from '../../services/admin-session-service.js';
 import bootstrapRouter from './bootstrap.js';
@@ -67,6 +67,12 @@ app.post('/api/login', async (c) => {
     const retryMin = lockStatus.retryAfterMinutes ?? 15;
     c.header('Retry-After', String(retryMin * 60));
     return c.json({ error: `Account temporarily locked. Try again in ${retryMin} minutes.` }, 429);
+  }
+  const check = claimPasswordCheck('admin', username);
+  if (!check.allowed) {
+    const retrySec = check.retryAfterSeconds ?? 60;
+    c.header('Retry-After', String(retrySec));
+    return c.json({ error: `Too many failed sign-ins for this account. Try again in ${retrySec} seconds.` }, 429);
   }
 
   const admin = await verifyAdminUser(username, password);

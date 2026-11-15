@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import {
   isLocked,
+  claimPasswordCheck,
   recordFailedAttempt,
   resetAttempts,
   cleanupExpiredEntries,
@@ -9,6 +10,7 @@ import {
   _trackedCount,
   MAX_ATTEMPTS,
   ACCOUNT_MAX_ATTEMPTS,
+  ACCOUNT_CHECK_INTERVAL_MS,
   MAX_TRACKED,
   WINDOW_MS,
   LOCKOUT_MS,
@@ -128,14 +130,88 @@ describe('login-limiter', () => {
 
   it('locks each further failing source at once after ACCOUNT_MAX_ATTEMPTS failures across sources', () => {
     for (let i = 0; i < ACCOUNT_MAX_ATTEMPTS; i++) {
+      expect(claimPasswordCheck('user', 'testuser').allowed).toBe(true);
       expect(recordFailedAttempt('user', 'testuser', `192.0.2.${i}`).locked).toBe(false);
     }
+    expect(claimPasswordCheck('user', 'testuser').allowed).toBe(true);
     expect(recordFailedAttempt('user', 'testuser', '198.51.100.200').locked).toBe(true);
     expect(isLocked('user', 'testuser', '198.51.100.200').locked).toBe(true);
-    // A source with no failures can still present the correct password.
+    // A source with no failures is not locked out.
     expect(isLocked('user', 'testuser', OTHER_IP).locked).toBe(false);
     // Other accounts are unaffected.
+    expect(claimPasswordCheck('user', 'other').allowed).toBe(true);
     expect(recordFailedAttempt('user', 'other', '198.51.100.201').locked).toBe(false);
+  });
+
+  describe('account brake', () => {
+    function failFromFreshSources(count: number, scope: 'user' | 'admin' = 'user') {
+      for (let i = 0; i < count; i++) {
+        expect(claimPasswordCheck(scope, 'testuser').allowed).toBe(true);
+        recordFailedAttempt(scope, 'testuser', `192.0.2.${i}`);
+      }
+    }
+
+    it('allows one password check per interval past ACCOUNT_MAX_ATTEMPTS', () => {
+      const now = Date.now();
+      vi.spyOn(Date, 'now').mockReturnValue(now);
+      failFromFreshSources(ACCOUNT_MAX_ATTEMPTS);
+      expect(claimPasswordCheck('user', 'testuser').allowed).toBe(true);
+      expect(claimPasswordCheck('user', 'testuser')).toEqual({ allowed: false, retryAfterSeconds: ACCOUNT_CHECK_INTERVAL_MS / 1000 });
+
+      vi.spyOn(Date, 'now').mockReturnValue(now + ACCOUNT_CHECK_INTERVAL_MS - 1);
+      expect(claimPasswordCheck('user', 'testuser')).toEqual({ allowed: false, retryAfterSeconds: 1 });
+      vi.spyOn(Date, 'now').mockReturnValue(now + ACCOUNT_CHECK_INTERVAL_MS);
+      expect(claimPasswordCheck('user', 'testuser').allowed).toBe(true);
+      expect(claimPasswordCheck('user', 'testuser').allowed).toBe(false);
+      // Other accounts and the other scope are unaffected.
+      expect(claimPasswordCheck('user', 'other').allowed).toBe(true);
+      expect(claimPasswordCheck('admin', 'testuser').allowed).toBe(true);
+    });
+
+    it('counts checks when they start, so concurrent checks cannot overshoot', () => {
+      for (let i = 0; i < ACCOUNT_MAX_ATTEMPTS + 1; i++) expect(claimPasswordCheck('user', 'testuser').allowed).toBe(true);
+      expect(claimPasswordCheck('user', 'testuser').allowed).toBe(false);
+    });
+
+    it('does not count successful checks', () => {
+      for (let i = 0; i < ACCOUNT_MAX_ATTEMPTS * 2; i++) {
+        expect(claimPasswordCheck('user', 'testuser').allowed).toBe(true);
+        resetAttempts('user', 'testuser', IP);
+      }
+      failFromFreshSources(ACCOUNT_MAX_ATTEMPTS);
+    });
+
+    it('keeps braking until WINDOW_MS passes without a check', () => {
+      const now = Date.now();
+      vi.spyOn(Date, 'now').mockReturnValue(now);
+      failFromFreshSources(ACCOUNT_MAX_ATTEMPTS);
+      // One check per interval keeps the count alive beyond the first window.
+      for (let t = ACCOUNT_CHECK_INTERVAL_MS; t <= WINDOW_MS + ACCOUNT_CHECK_INTERVAL_MS; t += ACCOUNT_CHECK_INTERVAL_MS) {
+        vi.spyOn(Date, 'now').mockReturnValue(now + t);
+        expect(claimPasswordCheck('user', 'testuser').allowed).toBe(true);
+        expect(claimPasswordCheck('user', 'testuser').allowed).toBe(false);
+      }
+      vi.spyOn(Date, 'now').mockReturnValue(now + 2 * WINDOW_MS + ACCOUNT_CHECK_INTERVAL_MS + 1);
+      cleanupExpiredEntries();
+      expect(_trackedCount()).toBe(0);
+      failFromFreshSources(ACCOUNT_MAX_ATTEMPTS);
+    });
+  });
+
+  it('counts every address in one IPv6 /64 as one source', () => {
+    const addresses = ['2001:db8:a:b::1', '2001:0DB8:000a:000b:ffff:1:2:3', '2001:db8:a:b:0:0:0:7', '2001:db8:a:b::5%eth0', '2001:db8:a:b::198.51.100.1'];
+    for (const address of addresses) recordFailedAttempt('user', 'testuser', address.toLowerCase());
+    expect(isLocked('user', 'testuser', '2001:db8:a:b::abcd').locked).toBe(true);
+    expect(isLocked('user', 'testuser', '2001:db8:a:c::1').locked).toBe(false);
+    expect(isLocked('user', 'testuser', '2001:db8::1').locked).toBe(false);
+  });
+
+  it('keeps distinct IPv4 addresses and short IPv6 prefixes apart', () => {
+    for (let i = 0; i < MAX_ATTEMPTS; i++) recordFailedAttempt('user', 'testuser', '::1');
+    expect(isLocked('user', 'testuser', '::2').locked).toBe(true);
+    expect(isLocked('user', 'testuser', '0:0:0:1::1').locked).toBe(false);
+    for (let i = 0; i < MAX_ATTEMPTS; i++) recordFailedAttempt('user', 'testuser', '198.51.100.1');
+    expect(isLocked('user', 'testuser', '198.51.100.2').locked).toBe(false);
   });
 
   it('bounds the number of tracked records', () => {

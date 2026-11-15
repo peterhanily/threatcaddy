@@ -9,7 +9,7 @@ import { requireAuth, verifyAccessToken } from '../middleware/auth.js';
 import { getClientIp } from '../middleware/rate-limit.js';
 import { getRegistrationMode, ADMIN_SYSTEM_USER_ID } from '../services/admin-secret.js';
 import { logActivity } from '../services/audit-service.js';
-import { isLocked, recordFailedAttempt, resetAttempts } from '../services/login-limiter.js';
+import { isLocked, claimPasswordCheck, recordFailedAttempt, resetAttempts } from '../services/login-limiter.js';
 import type { AuthUser } from '../types.js';
 import { ErrorCodes } from '../types/error-codes.js';
 import { createTokenPair, rotateRefreshToken, revokeSessionFamily, revokeSessionByRefreshToken, updateUsersAndRevokeSessions, SessionAuthorizationError } from '../services/session-service.js';
@@ -114,6 +114,12 @@ app.post('/login', async (c) => {
     const retryMin = lockStatus.retryAfterMinutes ?? 15;
     c.header('Retry-After', String(retryMin * 60));
     return c.json({ error: `Account temporarily locked. Try again in ${retryMin} minutes.`, code: ErrorCodes.ACCOUNT_LOCKED }, 429);
+  }
+  const check = claimPasswordCheck('user', email);
+  if (!check.allowed) {
+    const retrySec = check.retryAfterSeconds ?? 60;
+    c.header('Retry-After', String(retrySec));
+    return c.json({ error: `Too many failed sign-ins for this account. Try again in ${retrySec} seconds.`, code: ErrorCodes.ACCOUNT_LOCKED }, 429);
   }
 
   const result = await db.select().from(users).where(eq(users.email, email)).limit(1);

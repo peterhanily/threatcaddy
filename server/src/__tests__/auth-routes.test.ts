@@ -118,6 +118,7 @@ vi.mock('../services/audit-service.js', () => ({
 
 vi.mock('../services/login-limiter.js', () => ({
   isLocked: (...args: unknown[]) => mockIsLocked(...args),
+  claimPasswordCheck: () => ({ allowed: true }),
   recordFailedAttempt: (...args: unknown[]) => mockRecordFailedAttempt(...args),
   resetAttempts: (...args: unknown[]) => mockResetAttempts(...args),
 }));
