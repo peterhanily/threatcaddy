@@ -1,8 +1,18 @@
+import { readFileSync } from 'node:fs';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import { apiBodyLimit } from '../middleware/api-body-limit.js';
 
 describe('composed API upload limits', () => {
+  it('runs on a Hono release whose bodyLimit does not retain every body chunk (GHSA-39q9-qp46-w8xg)', () => {
+    const read = (path: string) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8')) as {
+      version?: string; dependencies?: Record<string, string>;
+    };
+    const installed = read('../../node_modules/hono/package.json').version ?? '';
+    expect(read('../../package.json').dependencies?.hono).toBe(installed);
+    const [major, minor, patch] = installed.split('.').map(Number);
+    expect(major === 4 && (minor > 13 || (minor === 13 && patch >= 18))).toBe(true);
+  });
   function app() {
     const app = new Hono();
     app.use('/api/*', apiBodyLimit);
