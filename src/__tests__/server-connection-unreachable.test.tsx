@@ -34,4 +34,15 @@ describe('server connection while the server is unreachable', () => {
     cleanup();
     expect(renderHook(useAuth, { wrapper: AuthProvider }).result.current.user).toBeNull();
   });
+
+  it('keeps Quick Reconnect usable while the revocation request to a hanging server is still pending', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => {})));
+    render(<AuthProvider><LoseConnection /><ServerConnection settings={{ serverUrl: auth.serverUrl }} onUpdateSettings={vi.fn()} /></AuthProvider>);
+    fireEvent.click(screen.getByRole('button', { name: 'Fixture: lose connection' }));
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Disconnect & Logout' })); });
+    expect(localStorage.getItem(authStorageKey)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Connecting...' })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'fictional password' } });
+    expect(screen.getByRole('button', { name: 'Reconnect' })).toBeEnabled();
+  });
 });

@@ -143,9 +143,10 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
   const handleDisconnect = async () => {
     // Session details already saved via the useEffect above
     setError('');
-    setLoading(true);
     // logout clears local auth synchronously. Finish the local UI transition
     // before awaiting the remote receipt so a later response cannot clear a new login.
+    // The receipt can take 15 s from an unreachable server, so it does not
+    // hold the reconnect form in its loading state.
     const revocation = logout();
     setServerUrl(null);
     onUpdateSettings({ serverUrl: undefined, serverDisplayName: undefined });
@@ -169,7 +170,7 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
       const message = t('server.remoteLogoutFailed');
       setError(message);
       addToast('warning', message, 12_000);
-    } finally { setLoading(false); }
+    }
   };
 
   // Signed-in state. While the server is unreachable the session is still
