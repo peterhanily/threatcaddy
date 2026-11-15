@@ -162,6 +162,27 @@ describe('PDF reports with screenshots and many pages', () => {
     expect(draft.content).not.toContain('Late appendix marker');
     expect(draft.extractionWarning).toContain('stopped at the decoding limit');
   });
+
+  // About 2,000 characters of readable page text, distinct per page.
+  const pageText = (page: number) => `BT (${`Page ${page} notes: the analyst reviewed host${page}.corp.example and the related logon events for this case. `.repeat(18)}) Tj ET`;
+
+  it('stops reading text streams once the text read is well past the note cap', async () => {
+    // A long report: 600 pages of distinct text, then a stream that would hit the per-stream limit if it were read.
+    const pages = Array.from({ length: 600 }, (_, index) => content(pageText(index + 1)));
+    const lastStream = content(`BT (Appendix) Tj ET${' '.repeat(EVIDENCE_LIMITS.entryBytes)}`);
+    const [draft] = await buildEvidenceItemDrafts(pdf([...pages, lastStream]));
+    expect(draft.extractionStatus).toBe('partial');
+    expect(draft.content).toContain('Page 1 notes');
+    expect(draft.extractionWarning).toContain('was truncated');
+    expect(draft.extractionWarning).not.toContain('stopped at the decoding limit');
+  });
+
+  it('keeps reading past the note cap of repeated boilerplate when little distinct text was read', async () => {
+    const boilerplate = `BT (${'Confidential incident report prepared for the response team. '.repeat(30)}) Tj ET`;
+    const pages = Array.from({ length: 1_500 }, (_, index) => content(`${boilerplate}\nBT (Unique finding ${index + 1} on host${index + 1}.corp.example) Tj ET`));
+    const [draft] = await buildEvidenceItemDrafts(pdf(pages));
+    expect(draft.content).toContain('Unique finding 1500 on host1500.corp.example');
+  });
 });
 
 describe('large and unreadable Office files', () => {

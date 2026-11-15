@@ -309,6 +309,9 @@ async function extractEvidenceText(file: EvidenceFileSource): Promise<ExtractedE
 }
 
 const PDF_TRUNCATED_WARNING = 'PDF extraction stopped at the decoding limit (8 MiB per stream, 32 MiB or 2048 text streams per file); later text was not read.';
+/** Twice the note cap: the text kept is then always cut (with its own warning),
+ * and the readability check still sees more than the text kept. */
+const PDF_TEXT_READ_CHARS = 2 * MAX_NOTE_TEXT_CHARS;
 
 function archiveTruncatedWarning(label: string): string {
   return `Part of this ${label} was not read because it exceeded the decoding limit (8 MiB per part, 32 MiB per file, 250,000 cells per sheet).`;
@@ -775,6 +778,11 @@ function extractPdfText(bytes: Uint8Array): { text: string; rejected: boolean; t
   let streams = 0;
   let truncated = false;
   const budget = { remaining: EVIDENCE_LIMITS.expandedBytes as number };
+  // Distinct text, counted as dedupeTextLines will keep it. Past the note cap
+  // it is cut anyway (and the cut reported), so reading far beyond the cap only
+  // spends the per-document deadline on long reports.
+  const seenText = new Set<string>();
+  let distinctChars = 0;
 
   while (cursor < raw.length) {
     const streamIndex = raw.indexOf('stream', cursor);
@@ -801,6 +809,7 @@ function extractPdfText(bytes: Uint8Array): { text: string; rejected: boolean; t
       truncated = true;
       break;
     }
+    if (distinctChars > PDF_TEXT_READ_CHARS) break;
     streams += 1;
 
     const decoded = decodePdfStream(bytes.subarray(dataStart, dataEnd), dictionary, budget);
@@ -810,6 +819,12 @@ function extractPdfText(bytes: Uint8Array): { text: string; rejected: boolean; t
       const textObjects = extractPdfTextObjects(decoded.text);
       if (textObjects.length > 0) {
         texts.push(...textObjects);
+      }
+      for (const object of textObjects) {
+        const key = textLineKey(object);
+        if (!key || seenText.has(key)) continue;
+        seenText.add(key);
+        distinctChars += object.length + 1;
       }
     }
   }
@@ -1528,12 +1543,16 @@ function dedupeTextLines(values: string[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const value of values) {
-    const key = value.toLowerCase().replace(/\s+/g, ' ').trim();
+    const key = textLineKey(value);
     if (!key || seen.has(key)) continue;
     seen.add(key);
     result.push(value);
   }
   return result;
+}
+
+function textLineKey(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
 function getExtension(name: string): string | undefined {
