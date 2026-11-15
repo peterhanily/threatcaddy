@@ -9,7 +9,7 @@ export const MAX_ATTEMPTS = 5;
  * Unsuccessful password checks for one account from all sources. Beyond it the
  * account gets one password check per ACCOUNT_CHECK_INTERVAL_MS whatever the
  * source, and every further failure locks its source at once. A source that
- * has not failed is never locked out; it waits at most one interval.
+ * has not failed is not locked out, but shares that one check per interval.
  */
 export const ACCOUNT_MAX_ATTEMPTS = 20;
 export const ACCOUNT_CHECK_INTERVAL_MS = 60 * 1000;
