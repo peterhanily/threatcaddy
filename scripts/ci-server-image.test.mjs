@@ -26,9 +26,24 @@ test('Dependabot proposes new Node 24 server base images; the test above makes .
   const updates = load(read('.github/dependabot.yml')).updates;
   const docker = updates.find(update => update['package-ecosystem'] === 'docker' && update.directory === '/server');
   assert.ok(docker, 'Nothing would report a newer node:<version>-alpine base for server/Dockerfile');
-  assert.ok(docker.schedule?.interval);
   assert.ok(docker.ignore?.some(rule => rule['dependency-name'] === 'node'
     && rule['update-types']?.includes('version-update:semver-major')), 'A runtime major needs a coordinated upgrade');
+  // Docker gets no Dependabot security updates, so the version-update delay is the
+  // whole delay for a Node security release. Dependabot's unset cooldown is 3 days.
+  const intervalDays = { daily: 1, weekly: 7 }[docker.schedule?.interval];
+  assert.ok(intervalDays, 'Use a daily or weekly schedule');
+  assert.ok(intervalDays + (docker.cooldown?.['default-days'] ?? 3) <= 3,
+    'A Node security base image must be proposed within about three days');
+});
+
+test('Node base bump guidance names every file the contract tests compare with .node-version', () => {
+  const guidance = read('docs/repository-maintenance.md');
+  const comment = read('.github/dependabot.yml');
+  // .nvmrc and the Dockerfile stages are checked above; README.md by ci-docs-contract.test.mjs.
+  for (const path of ['.node-version', '.nvmrc', 'README.md']) {
+    assert.ok(guidance.includes(`\`${path}\``), `docs/repository-maintenance.md must name ${path}`);
+    assert.ok(comment.includes(path), `.github/dependabot.yml must name ${path}`);
+  }
 });
 
 test('runtime OS packages use minimum-version constraints, never exact revisions Alpine later removes', () => {
