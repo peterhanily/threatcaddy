@@ -620,9 +620,11 @@ function parseWorksheet(xml: string, sharedStrings: string[], budget: { cells: n
   const rows: string[][] = [];
   let cells = 0;
 
-  for (const rowXml of matchAll(xml, /<row\b[^>]*>([\s\S]*?)<\/row>/g)) {
+  // Styled or merged empty cells and rows are self-closing (<c r="A2" s="3"/>);
+  // they must not swallow the next element's markup.
+  for (const rowXml of matchAll(xml, /<row\b[^>]*?(?:\/>|>([\s\S]*?)<\/row>)/g)) {
     const row: string[] = [];
-    for (const cellMatch of rowXml.matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)) {
+    for (const cellMatch of rowXml.matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
       const attrs = cellMatch[1] || '';
       const cellXml = cellMatch[2] || '';
       const ref = attrs.match(/\br="([^"]+)"/)?.[1] || '';
