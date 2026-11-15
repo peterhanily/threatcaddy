@@ -1,4 +1,4 @@
-import { inflateRaw } from 'pako';
+import { Inflate } from 'pako';
 import type { Note, NoteTemplate, ProductBaselineAsset } from '../types';
 
 const DOCX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -715,7 +715,7 @@ function unzip(bytes: Uint8Array): ZipEntry[] {
     const commentLength = view.getUint16(centralOffset + 32, true);
     const localOffset = view.getUint32(centralOffset + 42, true);
     const path = decodeUtf8(bytes.slice(centralOffset + 46, centralOffset + 46 + nameLength));
-    const data = readLocalEntry(bytes, localOffset, compressedSize, method);
+    const data = readLocalEntry(bytes, localOffset, compressedSize, method, uncompressedSize);
     entries.push({ path, data });
     centralOffset += 46 + nameLength + extraLength + commentLength;
   }
@@ -723,7 +723,7 @@ function unzip(bytes: Uint8Array): ZipEntry[] {
   return entries;
 }
 
-function readLocalEntry(bytes: Uint8Array, offset: number, compressedSize: number, method: number): Uint8Array {
+function readLocalEntry(bytes: Uint8Array, offset: number, compressedSize: number, method: number, declaredSize: number): Uint8Array {
   const view = dataView(bytes);
   if (view.getUint32(offset, true) !== LOCAL_FILE_SIGNATURE) {
     throw new Error('Template DOCX local file entry is malformed.');
@@ -733,16 +733,25 @@ function readLocalEntry(bytes: Uint8Array, offset: number, compressedSize: numbe
   const dataStart = offset + 30 + nameLength + extraLength;
   const compressed = bytes.slice(dataStart, dataStart + compressedSize);
   if (method === 0) return compressed;
-  if (method === 8) {
-    // Bound the inflated output as a second line of defence against a header that
-    // under-declares its uncompressed size (the declared size is pre-checked in unzip).
-    const inflated = inflateRaw(compressed);
-    if (inflated.length > MAX_DOCX_ENTRY_BYTES) {
-      throw new Error('Template DOCX entry exceeds the maximum allowed size.');
-    }
-    return inflated;
-  }
+  if (method === 8) return inflateDeclared(compressed, declaredSize);
   throw new Error(`Unsupported DOCX compression method: ${method}`);
+}
+
+/** The declared sizes are checked against the entry and total caps in unzip;
+ * stop inflating as soon as an entry produces more than it declared, so an
+ * under-declared header cannot expand past those caps. */
+function inflateDeclared(compressed: Uint8Array, declaredSize: number): Uint8Array {
+  const inflater = new Inflate({ raw: true, chunkSize: 64 * 1024 });
+  const output = new Uint8Array(declaredSize);
+  let length = 0;
+  inflater.onData = (chunk) => {
+    if (length + chunk.byteLength > declaredSize) throw new Error('Template DOCX entry is larger than its declared size.');
+    output.set(chunk, length);
+    length += chunk.byteLength;
+  };
+  inflater.push(compressed, true);
+  if (inflater.err || !inflater.ended || length !== declaredSize) throw new Error('Template DOCX local file entry is malformed.');
+  return output;
 }
 
 function zipStored(files: ZipEntry[]): Uint8Array {

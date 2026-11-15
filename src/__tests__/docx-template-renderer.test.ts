@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { deflateRaw } from 'pako';
 import { buildTemplateBackedDocxBytes, extractDocxTemplateProfile } from '../lib/docx-template-renderer';
 
 describe('docx template renderer', () => {
@@ -184,6 +185,13 @@ describe('docx template renderer', () => {
     expect(footnotesXml).toContain('<w:sz w:val="13"/>');
     expect(footnotesXml).not.toContain('OLD SOURCE FOOTNOTE');
   });
+
+  it('inflates template entries only up to their declared size', () => {
+    const documentXml = `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>${'Baseline '.repeat(512)}</w:t></w:r></w:p></w:body></w:document>`;
+    expect(() => extractDocxTemplateProfile(buildDeflatedZip('word/document.xml', documentXml))).not.toThrow();
+    // An under-declared header must not let actual output escape the size caps.
+    expect(() => extractDocxTemplateProfile(buildDeflatedZip('word/document.xml', documentXml, 64))).toThrow('declared size');
+  });
 });
 
 function buildStoredZip(files: Array<{ path: string; content: string }>): Uint8Array {
@@ -288,4 +296,26 @@ function crc32(data: Uint8Array): number {
   let crc = 0xffffffff;
   for (const byte of data) crc = CRC32_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
   return (crc ^ 0xffffffff) >>> 0;
+}
+
+function buildDeflatedZip(path: string, content: string, declaredSize?: number): Uint8Array {
+  const name = new TextEncoder().encode(path);
+  const data = new TextEncoder().encode(content);
+  const compressed = deflateRaw(data);
+  const size = declaredSize ?? data.length;
+  const local = new Uint8Array(30 + name.length);
+  const localView = new DataView(local.buffer);
+  localView.setUint32(0, 0x04034b50, true); localView.setUint16(8, 8, true);
+  localView.setUint32(18, compressed.length, true); localView.setUint32(22, size, true); localView.setUint16(26, name.length, true);
+  local.set(name, 30);
+  const central = new Uint8Array(46 + name.length);
+  const centralView = new DataView(central.buffer);
+  centralView.setUint32(0, 0x02014b50, true); centralView.setUint16(10, 8, true);
+  centralView.setUint32(20, compressed.length, true); centralView.setUint32(24, size, true); centralView.setUint16(28, name.length, true);
+  central.set(name, 46);
+  const end = new Uint8Array(22);
+  const endView = new DataView(end.buffer);
+  endView.setUint32(0, 0x06054b50, true); endView.setUint16(8, 1, true); endView.setUint16(10, 1, true);
+  endView.setUint32(12, central.length, true); endView.setUint32(16, local.length + compressed.length, true);
+  return concat([local, compressed, central, end]);
 }
