@@ -1,4 +1,4 @@
-import { createContext, useContext, useLayoutEffect, useRef, useId, type ReactNode } from 'react';
+import { createContext, useContext, useInsertionEffect, useLayoutEffect, useRef, useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { useScreenshare } from '../../hooks/ScreenshareContext';
@@ -47,13 +47,25 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
   const onCloseRef = useRef(onClose);
   useLayoutEffect(() => { onCloseRef.current = onClose; });
 
+  // React applies a child's autoFocus before this component's layout effect.
+  // Insertion effects run earlier in the same commit, while the opener still
+  // has focus. The dialog's own content is never recorded as its opener.
+  const openerRef = useRef<Element | null>(null);
+  // Focus inside the dialog when its effect was last torn down, so a
+  // StrictMode remount or the end of screen sharing returns there.
+  const resumeRef = useRef<Element | null>(null);
+  useInsertionEffect(() => {
+    const active = document.activeElement;
+    if (open && !suspended && !overlayRef.current?.contains(active)) openerRef.current = active;
+  }, [open, suspended]);
+
   // Install the stack, focus trap and Escape handler before the dialog paints.
   // A visible lazy-loaded dialog must already accept its first keyboard action.
   useLayoutEffect(() => {
     const el = overlayRef.current;
     if (!open || suspended || !el) return;
     focusRevision++;
-    const previousFocus = document.activeElement as HTMLElement;
+    const previousFocus = openerRef.current as HTMLElement;
     if (!stack.length) {
       priorOverflow = document.body.style.overflow;
       priorFocus = previousFocus;
@@ -80,10 +92,17 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
     const handleFocus = (event: FocusEvent) => { if (isTop() && !el.contains(event.target as Node)) focusFirst(); };
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('focusin', handleFocus);
-    if (isTop()) focusFirst();
+    // Keep focus a child already placed in the dialog (autoFocus).
+    const resume = resumeRef.current;
+    resumeRef.current = null;
+    if (isTop() && !el.contains(document.activeElement)) {
+      if (resume instanceof HTMLElement && el.contains(resume) && availableForFocus(resume)) resume.focus();
+      else focusFirst();
+    }
     return () => {
       const revision = ++focusRevision;
       const wasTop = isTop();
+      resumeRef.current = el.contains(document.activeElement) ? document.activeElement : null;
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('focusin', handleFocus);
       const index = stack.indexOf(el);
