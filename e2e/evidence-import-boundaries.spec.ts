@@ -60,10 +60,12 @@ test('compressed selected content beyond its bound rejects the whole batch and a
   expect(diagnostics.get(page)?.failedRequests).toEqual([]);
 });
 
-test('a pending real worker can be cancelled while controls remain responsive, without late records', async ({ page }) => {
+test('Cancel terminates a real worker that is still waiting for its document, and a later import works', async ({ page }) => {
   // Delay only delivery at the native Worker boundary. Cancelling a held network
   // route races the browser's own request cancellation; this gate instead keeps
   // the real worker alive and verifies that the app actually terminates it.
+  // The held document is never delivered, so this does not cover cancelling a
+  // parse in progress; late results are covered by evidence-import-client.test.ts.
   await page.evaluate(() => {
     const state = { hold: true, pending: 0, terminated: 0 };
     (window as typeof window & { __evidenceGate: typeof state }).__evidenceGate = state;
