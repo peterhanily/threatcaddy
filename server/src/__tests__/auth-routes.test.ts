@@ -361,7 +361,7 @@ describe('POST /api/auth/login', () => {
     expect(body).toHaveProperty('accessToken');
     expect(body).toHaveProperty('refreshToken');
     expect(body.user.email).toBe('alice@example.com');
-    expect(mockResetAttempts).toHaveBeenCalledWith('alice@example.com');
+    expect(mockResetAttempts).toHaveBeenCalledWith('user', 'alice@example.com', 'unknown');
   });
 
   it('returns 401 for unknown email', async () => {
@@ -382,7 +382,7 @@ describe('POST /api/auth/login', () => {
       email: 'alice@example.com', password: 'WrongPass!',
     });
     expect(res.status).toBe(401);
-    expect(mockRecordFailedAttempt).toHaveBeenCalledWith('alice@example.com');
+    expect(mockRecordFailedAttempt).toHaveBeenCalledWith('user', 'alice@example.com', 'unknown');
   });
 
   it('returns 429 when account is locked', async () => {

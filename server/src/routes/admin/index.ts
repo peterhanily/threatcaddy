@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { randomBytes } from 'node:crypto';
 import { signAdminToken } from '../../middleware/admin-auth.js';
+import { getClientIp } from '../../middleware/rate-limit.js';
 import {
   verifyAdminUser, verifyAdminUserById,
   createAdminUser, listAdminUsers,
@@ -54,9 +55,14 @@ app.post('/api/login', async (c) => {
   if (!username || typeof username !== 'string' || !password || typeof password !== 'string') {
     return c.json({ error: 'Missing username or password' }, 400);
   }
+  // No administrator can have another username format, so such attempts are not counted.
+  if (!/^[a-zA-Z0-9._-]+$/.test(username.trim())) {
+    return c.json({ error: 'Invalid credentials' }, 401);
+  }
+  const clientIp = getClientIp(c);
 
-  // Check if account is locked before verifying credentials
-  const lockStatus = isLocked(username);
+  // Check if this source is locked for the account before verifying credentials
+  const lockStatus = isLocked('admin', username, clientIp);
   if (lockStatus.locked) {
     const retryMin = lockStatus.retryAfterMinutes ?? 15;
     c.header('Retry-After', String(retryMin * 60));
@@ -65,7 +71,7 @@ app.post('/api/login', async (c) => {
 
   const admin = await verifyAdminUser(username, password);
   if (!admin) {
-    const result = recordFailedAttempt(username);
+    const result = recordFailedAttempt('admin', username, clientIp);
     logger.info('Admin login failed', { username });
     if (result.locked) {
       const retryMin = result.retryAfterMinutes ?? 15;
@@ -75,7 +81,7 @@ app.post('/api/login', async (c) => {
     return c.json({ error: 'Invalid credentials' }, 401);
   }
 
-  resetAttempts(username);
+  resetAttempts('admin', username, clientIp);
   let token;
   try { token = await signAdminToken(admin.id, admin.username, admin.passwordHash); }
   catch { return c.json({ error: 'Credentials changed. Sign in again.' }, 401); }

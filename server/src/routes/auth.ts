@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
 import { requireAuth, verifyAccessToken } from '../middleware/auth.js';
+import { getClientIp } from '../middleware/rate-limit.js';
 import { getRegistrationMode, ADMIN_SYSTEM_USER_ID } from '../services/admin-secret.js';
 import { logActivity } from '../services/audit-service.js';
 import { isLocked, recordFailedAttempt, resetAttempts } from '../services/login-limiter.js';
@@ -105,9 +106,10 @@ app.post('/login', async (c) => {
 
   const email = parsed.data.email.trim().toLowerCase();
   const { password } = parsed.data;
+  const clientIp = getClientIp(c);
 
-  // Check if account is locked before verifying credentials
-  const lockStatus = isLocked(email);
+  // Check if this source is locked for the account before verifying credentials
+  const lockStatus = isLocked('user', email, clientIp);
   if (lockStatus.locked) {
     const retryMin = lockStatus.retryAfterMinutes ?? 15;
     c.header('Retry-After', String(retryMin * 60));
@@ -116,7 +118,7 @@ app.post('/login', async (c) => {
 
   const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (result.length === 0) {
-    const failResult = recordFailedAttempt(email);
+    const failResult = recordFailedAttempt('user', email, clientIp);
     await logActivity({ userId: ADMIN_SYSTEM_USER_ID, category: 'auth', action: 'login.failed', detail: `Login failed for unknown email ${email}` });
     if (failResult.locked) {
       const retryMin = failResult.retryAfterMinutes ?? 15;
@@ -137,7 +139,7 @@ app.post('/login', async (c) => {
 
   const valid = await argon2.verify(user.passwordHash, password);
   if (!valid) {
-    const failResult = recordFailedAttempt(email);
+    const failResult = recordFailedAttempt('user', email, clientIp);
     await logActivity({ userId: user.id, category: 'auth', action: 'login.failed', detail: 'Login failed' });
     if (failResult.locked) {
       const retryMin = failResult.retryAfterMinutes ?? 15;
@@ -147,7 +149,7 @@ app.post('/login', async (c) => {
     return c.json({ error: 'Invalid credentials', code: ErrorCodes.INVALID_CREDENTIALS }, 401);
   }
 
-  resetAttempts(email);
+  resetAttempts('user', email, clientIp);
   await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
 
   const authUser: AuthUser = {

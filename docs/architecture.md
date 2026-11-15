@@ -151,7 +151,7 @@ Committed writes wake the sync engine, with periodic retries as a safety net. Pu
 
 **Admin tokens** use a separate HMAC-SHA256 JWT issued on a dedicated admin port (default 3002). They have a 1-hour TTL with an audience claim of `admin-panel`, signed with a random 32-byte key regenerated on each server startup. This intentionally invalidates all admin sessions on restart.
 
-**Passwords** are hashed with Argon2id. Login rate limiting uses progressive lockout after failed attempts (in-memory, per email).
+**Passwords** are hashed with Argon2id. Failed logins are counted in memory per scope (user or admin login), account and client address. Five failures within 15 minutes lock that address out of that account for 15 minutes; an address without failures can still sign in. After 20 failures for one account from any addresses, each further failing address is locked after its first failure. The admin login rejects usernames no administrator can have without counting them. The client address is the socket peer, or the forwarded address when the peer is a trusted proxy (`TRUST_PROXY`, `TRUSTED_PROXY_IPS`); if all clients arrive from one untrusted proxy address, the lock applies to the account as a whole.
 
 **Registration modes**: Invite-only (default, requiring an email in the `allowed_emails` table) or open registration.
 
