@@ -84,6 +84,7 @@
   "passphrase.resetFailed": "Çalışma alanının sıfırlanması tamamlanmadı. Tarayıcı depolamasını elle temizlemeyin; kurtarma bilgilerini saklayıp yeniden deneyin.",
   "setup.resumePreparation": "Güvenle devam etmek için yeniden yükleyip kilidi açın",
   "settings.metadataNotice": "İçerik ve kayıtlı kopyalar şifrelenir. Kimlikler, etiketler, zaman damgaları, durumlar, yazar bilgileri ve ilişkiler okunabilir meta veri olarak kalır. Şifreleme, kilidi açık bir tarayıcı oturumunu korumaz.",
+  "settings.teamSessionNotice": "Kilitlemek ekip sunucusundaki oturumunuzu kapatmaz; ekip oturumu siz bağlantıyı kesene kadar bu tarayıcıda kalır.",
   "settings.disableFailed": "Veri dönüşümü başarısız oldu; anahtarlar ve şifreleme meta verileri korundu. Tamamlamak için yeniden deneyin: {{error}}",
   "passphrase.prepareFailed": "Anahtar kabul edildi ancak çalışma alanı hazırlanamadı: {{error}}. Yeniden denemek için kilidi tekrar açın.",
   "passphrase.metadataUnavailable": "Şifreleme meta verileri okunamıyor. Bu çalışma alanını açmadan önce meta verileri bir yedekten geri yükleyin.",

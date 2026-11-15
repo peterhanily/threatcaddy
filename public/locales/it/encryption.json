@@ -82,6 +82,7 @@
   "passphrase.resetFailed": "Il ripristino iniziale dell’area di lavoro non è terminato. Non cancellare manualmente i dati del browser; conserva le informazioni di recupero e riprova.",
   "setup.resumePreparation": "Ricarica e sblocca per riprendere in sicurezza",
   "settings.metadataNotice": "Il contenuto e le copie salvate sono cifrati. ID, etichette, date, stato, autori e relazioni restano visibili come metadati. La cifratura non protegge una sessione del browser sbloccata.",
+  "settings.teamSessionNotice": "Il blocco non ti disconnette dal server del team; l'accesso al team resta in questo browser finché non ti disconnetti.",
   "settings.disableFailed": "La conversione dei dati è fallita; la chiave e i metadati di cifratura sono conservati. Riprova per terminare: {{error}}",
   "passphrase.prepareFailed": "La chiave è stata accettata, ma la preparazione dell’area di lavoro è fallita: {{error}}. Sblocca di nuovo per riprovare.",
   "passphrase.metadataUnavailable": "Impossibile leggere i metadati di cifratura. Ripristinali da un backup prima di aprire quest’area.",

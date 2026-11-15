@@ -7,6 +7,11 @@ import { setSessionKey, getSessionKey, getSessionGeneration, getSessionStartedAt
 import { restoreWorkspaceRecovery } from '../../lib/workspace-lock';
 import { initializeWorkspace } from '../../lib/workspace-initialization';
 import { db } from '../../db';
+import { authStorageKey, readStoredAuth } from '../../lib/auth-storage';
+import { revokeRemoteSessions } from '../../lib/session-logout';
+
+/** An unreachable team server delays a completed reset at most this long. */
+const RESET_REVOCATION_WAIT_MS = 3_000;
 
 interface PassphraseDialogProps {
   onUnlocked: () => void;
@@ -111,6 +116,18 @@ export function PassphraseDialog({ onUnlocked, initialError = '' }: PassphraseDi
       await db.delete();
       clearEncryptionMeta();
       clearSessionCache();
+      // A fresh workspace must sign in again; it never re-downloads team data
+      // with the previous credentials. Revocation is best effort and bounded.
+      const team = readStoredAuth();
+      localStorage.removeItem(authStorageKey);
+      if (team) {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        await Promise.race([
+          revokeRemoteSessions(team.serverUrl, [{ refreshToken: team.refreshToken, accessToken: team.accessToken }]).catch(() => {}),
+          new Promise(resolve => { timer = setTimeout(resolve, RESET_REVOCATION_WAIT_MS); }),
+        ]);
+        clearTimeout(timer);
+      }
       window.location.reload();
     } catch {
       resetInFlight.current = false;

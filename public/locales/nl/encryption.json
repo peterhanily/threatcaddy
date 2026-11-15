@@ -82,6 +82,7 @@
   "passphrase.resetFailed": "Het opnieuw instellen van de werkruimte is niet voltooid. Wis de browseropslag niet handmatig; bewaar je herstelinformatie en probeer het opnieuw.",
   "setup.resumePreparation": "Opnieuw laden en ontgrendelen om veilig door te gaan",
   "settings.metadataNotice": "Inhoud en opgeslagen kopieën zijn versleuteld. ID's, tags, tijdstempels, status, auteurschap en relaties blijven zichtbaar als metagegevens. Versleuteling beschermt geen ontgrendelde browsersessie.",
+  "settings.teamSessionNotice": "Vergrendelen meldt u niet af bij een teamserver; de teamaanmelding blijft in deze browser bewaard totdat u de verbinding verbreekt.",
   "settings.disableFailed": "De gegevensconversie is mislukt; je sleutel en versleutelingsmetagegevens zijn behouden. Probeer het opnieuw om af te ronden: {{error}}",
   "passphrase.prepareFailed": "Je sleutel is geaccepteerd, maar het voorbereiden van de werkruimte is mislukt: {{error}}. Ontgrendel opnieuw om het nogmaals te proberen.",
   "passphrase.metadataUnavailable": "Versleutelingsmetagegevens konden niet worden gelezen. Herstel ze uit een back-up voordat je deze werkruimte opent.",

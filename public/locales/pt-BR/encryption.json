@@ -82,6 +82,7 @@
   "passphrase.resetFailed": "A redefinição do espaço não terminou. Não limpe o armazenamento do navegador manualmente; preserve suas informações de recuperação e tente novamente.",
   "setup.resumePreparation": "Recarregue e desbloqueie para continuar com segurança",
   "settings.metadataNotice": "O conteúdo e as cópias salvas são criptografados. IDs, etiquetas, datas, status, autoria e relações permanecem visíveis como metadados. A criptografia não protege uma sessão desbloqueada do navegador.",
+  "settings.teamSessionNotice": "Bloquear não encerra sua sessão no servidor da equipe; o login da equipe permanece neste navegador até você desconectar.",
   "settings.disableFailed": "A conversão dos dados falhou; sua chave e os metadados de criptografia foram mantidos. Tente novamente para concluir: {{error}}",
   "passphrase.prepareFailed": "Sua chave foi aceita, mas a preparação do espaço falhou: {{error}}. Desbloqueie novamente para tentar.",
   "passphrase.metadataUnavailable": "Não foi possível ler os metadados de criptografia. Restaure-os de um backup antes de abrir este espaço.",

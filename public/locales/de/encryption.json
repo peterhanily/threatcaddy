@@ -82,6 +82,7 @@
   "passphrase.resetFailed": "Das Zurücksetzen des Arbeitsbereichs wurde nicht abgeschlossen. Löschen Sie den Browserspeicher nicht manuell; bewahren Sie Ihre Wiederherstellungsinformationen auf und versuchen Sie es erneut.",
   "setup.resumePreparation": "Neu laden und entsperren, um sicher fortzufahren",
   "settings.metadataNotice": "Inhalte und gespeicherte Kopien sind verschlüsselt. IDs, Tags, Zeitstempel, Status, Urheberschaft und Beziehungen bleiben als Metadaten sichtbar. Die Verschlüsselung schützt keine entsperrte Browsersitzung.",
+  "settings.teamSessionNotice": "Das Sperren meldet Sie nicht vom Team-Server ab; die Team-Anmeldung bleibt in diesem Browser gespeichert, bis Sie die Verbindung trennen.",
   "settings.disableFailed": "Die Datenkonvertierung ist fehlgeschlagen; Ihr Schlüssel und die Verschlüsselungsmetadaten wurden behalten. Versuchen Sie es erneut, um den Vorgang abzuschließen: {{error}}",
   "passphrase.prepareFailed": "Ihr Schlüssel wurde akzeptiert, aber die Vorbereitung des Arbeitsbereichs ist fehlgeschlagen: {{error}}. Entsperren Sie ihn erneut.",
   "passphrase.metadataUnavailable": "Die Verschlüsselungsmetadaten konnten nicht gelesen werden. Stellen Sie sie aus einer Sicherung wieder her, bevor Sie diesen Arbeitsbereich öffnen.",

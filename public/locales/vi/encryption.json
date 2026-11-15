@@ -84,6 +84,7 @@
   "passphrase.resetFailed": "Chưa hoàn tất đặt lại không gian làm việc. Không tự xóa bộ nhớ trình duyệt; hãy giữ thông tin khôi phục rồi thử lại.",
   "setup.resumePreparation": "Tải lại và mở khóa để tiếp tục an toàn",
   "settings.metadataNotice": "Nội dung và các bản sao đã lưu được mã hóa. ID, thẻ, dấu thời gian, trạng thái, thông tin tác giả và quan hệ vẫn là siêu dữ liệu có thể đọc. Mã hóa không bảo vệ phiên trình duyệt đã mở khóa.",
+  "settings.teamSessionNotice": "Khóa không đăng xuất bạn khỏi máy chủ nhóm; thông tin đăng nhập nhóm vẫn được giữ trong trình duyệt này cho đến khi bạn ngắt kết nối.",
   "settings.disableFailed": "Chuyển đổi dữ liệu thất bại; khóa và siêu dữ liệu mã hóa được giữ lại. Hãy thử lại để hoàn tất: {{error}}",
   "passphrase.prepareFailed": "Đã chấp nhận khóa nhưng không thể chuẩn bị không gian làm việc: {{error}}. Hãy mở khóa lại để thử lại.",
   "passphrase.metadataUnavailable": "Không thể đọc siêu dữ liệu mã hóa. Hãy khôi phục siêu dữ liệu từ bản sao lưu trước khi mở không gian làm việc này.",

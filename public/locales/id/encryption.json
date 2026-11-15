@@ -84,6 +84,7 @@
   "passphrase.resetFailed": "Pengaturan ulang ruang kerja belum selesai. Jangan hapus penyimpanan browser secara manual; simpan informasi pemulihan lalu coba lagi.",
   "setup.resumePreparation": "Muat ulang dan buka kunci untuk melanjutkan dengan aman",
   "settings.metadataNotice": "Konten dan salinan tersimpan dienkripsi. ID, tag, waktu, status, informasi penulis, dan relasi tetap dapat dibaca sebagai metadata. Enkripsi tidak melindungi sesi browser yang sudah terbuka kuncinya.",
+  "settings.teamSessionNotice": "Mengunci tidak mengeluarkan Anda dari server tim; masuk tim tetap tersimpan di browser ini sampai Anda memutuskan sambungan.",
   "settings.disableFailed": "Konversi data gagal; kunci dan metadata enkripsi dipertahankan. Coba lagi untuk menyelesaikannya: {{error}}",
   "passphrase.prepareFailed": "Kunci diterima, tetapi persiapan ruang kerja gagal: {{error}}. Buka kunci lagi untuk mencoba ulang.",
   "passphrase.metadataUnavailable": "Metadata enkripsi tidak dapat dibaca. Pulihkan metadata dari cadangan sebelum membuka ruang kerja ini.",

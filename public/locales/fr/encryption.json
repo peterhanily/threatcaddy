@@ -82,6 +82,7 @@
   "passphrase.resetFailed": "La réinitialisation n’a pas abouti. N’effacez pas manuellement le stockage du navigateur ; conservez vos informations de récupération et réessayez.",
   "setup.resumePreparation": "Rechargez et déverrouillez pour reprendre en toute sécurité",
   "settings.metadataNotice": "Le contenu et les copies enregistrées sont chiffrés. Les identifiants, étiquettes, dates, statuts, auteurs et relations restent visibles comme métadonnées. Le chiffrement ne protège pas une session de navigateur déverrouillée.",
+  "settings.teamSessionNotice": "Le verrouillage ne vous déconnecte pas du serveur d’équipe ; la connexion à l’équipe reste enregistrée dans ce navigateur jusqu’à ce que vous vous déconnectiez.",
   "settings.disableFailed": "La conversion des données a échoué ; votre clé et les métadonnées de chiffrement sont conservées. Réessayez pour terminer : {{error}}",
   "passphrase.prepareFailed": "Votre clé a été acceptée, mais la préparation de l’espace de travail a échoué : {{error}}. Déverrouillez-le à nouveau pour réessayer.",
   "passphrase.metadataUnavailable": "Impossible de lire les métadonnées de chiffrement. Restaurez-les depuis une sauvegarde avant d’ouvrir cet espace.",

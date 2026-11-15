@@ -27,6 +27,7 @@
 
   "settings.encryption": "Encryption",
   "settings.metadataNotice": "Content and saved copies are encrypted. IDs, tags, timestamps, status, authorship and relationships remain visible as metadata. Encryption does not protect an unlocked browser session.",
+  "settings.teamSessionNotice": "Locking does not sign you out of a team server; the team sign-in stays in this browser until you disconnect.",
   "settings.disableFailed": "Data conversion failed; your key and encryption metadata have been retained. Retry to finish: {{error}}",
   "settings.httpsRequired": "Encryption requires HTTPS or localhost. It is unavailable over plain HTTP.",
   "settings.encryptionEnabled": "Encryption is enabled",

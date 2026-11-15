@@ -178,6 +178,7 @@ export function EncryptionSettings() {
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-gray-300">{t('settings.encryption')}</h3>
       <p className="text-xs text-gray-500">{t('settings.metadataNotice', { defaultValue: 'Content and saved copies are encrypted. IDs, tags, timestamps, status, authorship and relationships remain visible as metadata. Encryption does not protect an unlocked browser session.' })}</p>
+      <p className="text-xs text-gray-500">{t('settings.teamSessionNotice')}</p>
       <LegacyDataCleanup />
       <LegacyDataRecovery />
 

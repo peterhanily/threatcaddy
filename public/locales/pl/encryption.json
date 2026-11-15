@@ -82,6 +82,7 @@
   "passphrase.resetFailed": "Resetowanie obszaru roboczego nie zostało ukończone. Nie czyść ręcznie pamięci przeglądarki; zachowaj dane odzyskiwania i spróbuj ponownie.",
   "setup.resumePreparation": "Odśwież i odblokuj, aby bezpiecznie wznowić",
   "settings.metadataNotice": "Treść i zapisane kopie są zaszyfrowane. Identyfikatory, etykiety, daty, statusy, autorstwo i relacje pozostają widoczne jako metadane. Szyfrowanie nie chroni odblokowanej sesji przeglądarki.",
+  "settings.teamSessionNotice": "Zablokowanie nie wylogowuje z serwera zespołu; logowanie do zespołu pozostaje w tej przeglądarce do czasu rozłączenia.",
   "settings.disableFailed": "Konwersja danych nie powiodła się; klucz i metadane szyfrowania zachowano. Ponów próbę, aby zakończyć: {{error}}",
   "passphrase.prepareFailed": "Klucz zaakceptowano, ale przygotowanie obszaru nie powiodło się: {{error}}. Odblokuj ponownie, aby powtórzyć próbę.",
   "passphrase.metadataUnavailable": "Nie udało się odczytać metadanych szyfrowania. Przywróć je z kopii zapasowej przed otwarciem obszaru.",

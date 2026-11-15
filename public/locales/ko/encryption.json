@@ -84,6 +84,7 @@
   "passphrase.resetFailed": "작업 공간 초기화가 완료되지 않았습니다. 브라우저 저장소를 직접 지우지 마세요. 복구 정보를 보관하고 다시 시도하세요.",
   "setup.resumePreparation": "새로고침하고 잠금을 해제하여 안전하게 계속",
   "settings.metadataNotice": "콘텐츠와 저장된 사본은 암호화됩니다. ID, 태그, 타임스탬프, 상태, 작성자 정보와 관계는 읽을 수 있는 메타데이터로 남습니다. 암호화는 잠금 해제된 브라우저 세션을 보호하지 않습니다.",
+  "settings.teamSessionNotice": "잠가도 팀 서버에서 로그아웃되지 않습니다. 연결을 끊을 때까지 팀 로그인 정보가 이 브라우저에 남아 있습니다.",
   "settings.disableFailed": "데이터 변환에 실패했습니다. 키와 암호화 메타데이터는 유지됩니다. 다시 시도하여 완료하세요: {{error}}",
   "passphrase.prepareFailed": "키는 확인했지만 작업 공간 준비에 실패했습니다: {{error}}. 다시 잠금을 해제하여 시도하세요.",
   "passphrase.metadataUnavailable": "암호화 메타데이터를 읽을 수 없습니다. 이 작업 공간을 열기 전에 백업에서 메타데이터를 복원하세요.",

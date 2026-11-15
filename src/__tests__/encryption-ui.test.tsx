@@ -71,6 +71,8 @@ import { EncryptionSettings } from '../components/Encryption/EncryptionSettings'
 import { db } from '../db';
 import { clearEncryptionMeta } from '../lib/encryptionStore';
 import { deriveWrappingKey, wrapMasterKey } from '../lib/crypto';
+import { authStorageKey } from '../lib/auth-storage';
+import { workspaceStorageKey } from '../lib/workspace-profiles';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -250,6 +252,29 @@ describe('PassphraseDialog', () => {
     expect(clearEncryptionMeta).not.toHaveBeenCalled();
     expect(input).toHaveValue('DELETE'); expect(button).toBeEnabled();
   });
+
+  it('signs the reset workspace out of its team server without waiting for revocation, and keeps other profiles', async () => {
+    vi.clearAllMocks();
+    const team = { serverUrl: 'https://team.example', accessToken: 'access-fixture', refreshToken: 'refresh-fixture',
+      user: { id: 'fixture', email: 'fixture@example.invalid', displayName: 'Fixture', role: 'analyst' } };
+    const otherProfile = workspaceStorageKey('threatcaddy-auth', 'other-profile');
+    localStorage.setItem(authStorageKey, JSON.stringify(team));
+    localStorage.setItem(otherProfile, JSON.stringify({ ...team, refreshToken: 'other-profile-refresh' }));
+    // An unreachable server never answers; local sign-out must not wait for it.
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => {})));
+    try {
+      render(<PassphraseDialog onUnlocked={vi.fn()} />);
+      fireEvent.click(screen.getByText('Forgot passphrase?'));
+      changeInput(screen.getByRole('textbox', { name: 'Type DELETE to confirm.' }), 'DELETE');
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Delete All Data & Start Fresh' })); });
+      await vi.waitFor(() => expect(fetch).toHaveBeenCalledWith('https://team.example/api/auth/logout', expect.objectContaining({
+        body: JSON.stringify({ refreshToken: 'refresh-fixture' }),
+      })));
+      expect(localStorage.getItem(authStorageKey)).toBeNull();
+      expect(localStorage.getItem(otherProfile)).not.toBeNull();
+      expect(clearEncryptionMeta).toHaveBeenCalled();
+    } finally { vi.unstubAllGlobals(); localStorage.removeItem(authStorageKey); localStorage.removeItem(otherProfile); }
+  });
 });
 
 // ── EncryptionSettings ───────────────────────────────────────────────
@@ -281,6 +306,7 @@ describe('EncryptionSettings', () => {
 
     render(<EncryptionSettings />);
     expect(screen.getByText('Encryption is enabled')).toBeInTheDocument();
+    expect(screen.getByText(/Locking does not sign you out of a team server/)).toBeInTheDocument();
     expect(screen.getByText('Change Passphrase')).toBeInTheDocument();
     expect(screen.getByText('Disable Encryption')).toBeInTheDocument();
   });
