@@ -221,6 +221,7 @@
   "syncStatus.skippedIncoming": "{{item}} vom Teamserver wurde übersprungen, weil dieses Gerät es nicht lesen kann (übersprungene Elemente: {{total}}). Alles andere wird weiter synchronisiert. Korrigieren Sie es auf dem Gerät, auf dem es erstellt wurde, um es erneut zu synchronisieren.",
   "syncStatus.unreadableOutgoing": "{{item}} wurde nicht hochgeladen, weil andere Geräte es nicht lesen könnten (zurückgehaltene Elemente: {{total}}). Es bleibt auf diesem Gerät gespeichert; korrigieren Sie es, um es zu synchronisieren.",
   "syncStatus.oversizedOutgoing": "{{item}} wurde nicht hochgeladen, weil es die Grenzen des Teamservers überschreitet (zurückgehaltene Elemente: {{total}}). Es bleibt auf diesem Gerät gespeichert; kürzen Sie es, um es zu synchronisieren.",
+  "syncStatus.previewTypeOutgoing": "{{item}} wurde nicht hochgeladen, weil der Teamserver nur Vorschaubilder im Format PNG, JPEG, GIF oder WebP akzeptiert (zurückgehaltene Elemente: {{total}}). Es bleibt auf diesem Gerät gespeichert.",
   "syncStatus.rejectedInvalid": "Der Teamserver hat diese Änderung als ungültig abgelehnt ({{reason}}). Sie bleibt auf diesem Gerät gespeichert; korrigieren Sie sie, um sie zu synchronisieren.",
   "syncStatus.theirsUnreadable": "Dieses Gerät kann die Version des Teamservers nicht lesen, daher kann nur Ihre Version behalten werden.",
   "syncStatus.itemType.notes": "Notiz",

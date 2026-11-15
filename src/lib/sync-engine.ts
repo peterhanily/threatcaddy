@@ -24,6 +24,9 @@ const validVersion = (value: unknown): value is number => Number.isSafeInteger(v
 /** Server rows this client could not read: { version, folderId } only, never their content. */
 const skippedKey = (table: string, id: string) => JSON.stringify(['syncSkipped', table, id]);
 const SKIPPED_PREFIX = '["syncSkipped",';
+const HELD_NOTICES: Readonly<Record<OutgoingRefusal, string>> = {
+  limits: 'syncStatus.oversizedOutgoing', unreadable: 'syncStatus.unreadableOutgoing', previewType: 'syncStatus.previewTypeOutgoing',
+};
 
 interface SyncQueueEntry extends SyncChange { seq?: number; folderId?: string }
 type RemoteChange = Record<string, unknown> & { table: string; op: 'put' | 'delete'; id: string };
@@ -247,7 +250,7 @@ export class SyncEngine {
     }
     if (current.length) batches.push(current);
     const [held] = refused;
-    const notice = held ? i18n.t(held.refusal === 'limits' ? 'syncStatus.oversizedOutgoing' : 'syncStatus.unreadableOutgoing',
+    const notice = held ? i18n.t(HELD_NOTICES[held.refusal],
       { ns: 'common', item: await this.itemLabel(held.table, held.entityId), total: refused.length }) : null;
     if (epoch === this.epoch) {
       // The same notice every cycle leaves the banner untouched. Clear an earlier one only when nothing replaced it.

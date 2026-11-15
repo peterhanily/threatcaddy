@@ -221,6 +221,7 @@
   "syncStatus.skippedIncoming": "{{item}} dari server tim dilewati karena perangkat ini tidak dapat membacanya (item yang dilewati: {{total}}). Semua yang lain tetap disinkronkan. Perbaiki di perangkat yang membuatnya agar dapat disinkronkan lagi.",
   "syncStatus.unreadableOutgoing": "{{item}} tidak diunggah karena perangkat lain tidak akan dapat membacanya (item yang ditahan: {{total}}). Item ini tetap tersimpan di perangkat ini; perbaiki agar dapat disinkronkan.",
   "syncStatus.oversizedOutgoing": "{{item}} tidak diunggah karena melebihi batas server tim (item yang ditahan: {{total}}). Item ini tetap tersimpan di perangkat ini; persingkat agar dapat disinkronkan.",
+  "syncStatus.previewTypeOutgoing": "{{item}} tidak diunggah karena server tim hanya menerima gambar pratinjau PNG, JPEG, GIF, atau WebP (item yang ditahan: {{total}}). Item ini tetap tersimpan di perangkat ini.",
   "syncStatus.rejectedInvalid": "Server tim menolak perubahan ini karena tidak valid ({{reason}}). Perubahan ini tetap tersimpan di perangkat ini; perbaiki agar dapat disinkronkan.",
   "syncStatus.theirsUnreadable": "Perangkat ini tidak dapat membaca versi server tim, jadi hanya versi Anda yang dapat dipertahankan.",
   "syncStatus.itemType.notes": "Catatan",

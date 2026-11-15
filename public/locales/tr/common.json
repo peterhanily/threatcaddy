@@ -221,6 +221,7 @@
   "syncStatus.skippedIncoming": "Bu cihaz okuyamadığı için ekip sunucusundan gelen {{item}} atlandı (atlanan öğe sayısı: {{total}}). Diğer her şey eşitlenmeye devam ediyor. Yeniden eşitlemek için onu oluşturulduğu cihazda düzeltin.",
   "syncStatus.unreadableOutgoing": "Diğer cihazlar okuyamayacağı için {{item}} yüklenmedi (bekletilen öğe sayısı: {{total}}). Bu cihazda kayıtlı kalır; eşitlemek için düzeltin.",
   "syncStatus.oversizedOutgoing": "Ekip sunucusunun sınırlarını aştığı için {{item}} yüklenmedi (bekletilen öğe sayısı: {{total}}). Bu cihazda kayıtlı kalır; eşitlemek için kısaltın.",
+  "syncStatus.previewTypeOutgoing": "Ekip sunucusu yalnızca PNG, JPEG, GIF veya WebP önizleme görüntülerini kabul ettiği için {{item}} yüklenmedi (bekletilen öğe sayısı: {{total}}). Bu cihazda kayıtlı kalır.",
   "syncStatus.rejectedInvalid": "Ekip sunucusu bu değişikliği geçersiz olduğu için reddetti ({{reason}}). Bu cihazda kayıtlı kalır; eşitlemek için düzeltin.",
   "syncStatus.theirsUnreadable": "Bu cihaz ekip sunucusundaki sürümü okuyamıyor; bu nedenle yalnızca sizin sürümünüz korunabilir.",
   "syncStatus.itemType.notes": "Not",

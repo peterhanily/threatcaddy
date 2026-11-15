@@ -221,6 +221,7 @@
   "syncStatus.skippedIncoming": "{{item}} dal server del team è stato ignorato perché questo dispositivo non può leggerlo (elementi ignorati: {{total}}). Tutto il resto continua a sincronizzarsi. Correggilo sul dispositivo che lo ha creato per sincronizzarlo di nuovo.",
   "syncStatus.unreadableOutgoing": "{{item}} non è stato caricato perché gli altri dispositivi non potrebbero leggerlo (elementi trattenuti: {{total}}). Resta salvato su questo dispositivo; correggilo per sincronizzarlo.",
   "syncStatus.oversizedOutgoing": "{{item}} non è stato caricato perché supera i limiti del server del team (elementi trattenuti: {{total}}). Resta salvato su questo dispositivo; accorcialo per sincronizzarlo.",
+  "syncStatus.previewTypeOutgoing": "{{item}} non è stato caricato perché il server del team accetta solo immagini di anteprima PNG, JPEG, GIF o WebP (elementi trattenuti: {{total}}). Resta salvato su questo dispositivo.",
   "syncStatus.rejectedInvalid": "Il server del team ha rifiutato questa modifica perché non valida ({{reason}}). Resta salvata su questo dispositivo; correggila per sincronizzarla.",
   "syncStatus.theirsUnreadable": "Questo dispositivo non può leggere la versione del server del team, quindi si può mantenere solo la tua versione.",
   "syncStatus.itemType.notes": "Nota",

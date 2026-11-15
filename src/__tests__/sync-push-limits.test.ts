@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { MAX_SYNC_REQUEST_NODES, outgoingRefusal, syncDataNodes } from '../lib/sync-push-limits';
 
@@ -34,6 +37,21 @@ describe('client copy of the server write limits', () => {
     const evidence = { id: 'e1', folderId: 'f1', title: 'Shot', fileName: 'shot.png', fileType: 'image', importedAt: 1, imageDataMimeType: 'image/png' };
     expect(outgoingRefusal('evidenceItems', 'e1', { ...evidence, imageData: 'iVBORw0KGgo=' })).toBeNull();
     expect(outgoingRefusal('evidenceItems', 'e1', { ...evidence, imageData: 'not base64!' })).toBe('limits');
+  });
+
+  it('holds back exactly the evidence preview types this client shows but the server refuses', () => {
+    const list = (path: string, name: string) => [...(readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../..', path), 'utf8')
+      .match(new RegExp(`${name} = new Set\\(\\[([^\\]]*)\\]\\)`))?.[1] ?? '').matchAll(/'([^']+)'/g)].map(match => match[1]);
+    const server = list('server/src/services/sync-service.ts', 'EVIDENCE_RASTER_MIME_TYPES');
+    const client = list('src/lib/export.ts', 'VALID_RASTER_IMAGE_MIME_TYPES');
+    expect(server).toContain('image/png');
+    expect(client).toEqual(expect.arrayContaining(['image/bmp', 'image/avif']));
+    const shot = { id: 'e1', folderId: 'f1', title: 'Shot', fileName: 'shot', fileType: 'image', importedAt: 1, imageData: 'Qk0=' };
+    for (const type of client) {
+      expect(outgoingRefusal('evidenceItems', 'e1', { ...shot, imageDataMimeType: type })).toBe(server.includes(type) ? null : 'previewType');
+    }
+    expect(outgoingRefusal('evidenceItems', 'e1', { ...shot, imageDataMimeType: ' IMAGE/PNG ' })).toBeNull();
+    expect(outgoingRefusal('evidenceItems', 'e1', { ...shot, imageData: undefined })).toBeNull();
   });
 
   it('holds back rows other clients cannot read', () => {

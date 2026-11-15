@@ -17,10 +17,12 @@ const MAX_DATA_DEPTH = 8;
 const MAX_FIELD_NAME = 128;
 /** Inline assets are checked by UTF-8 bytes instead of the value limits. */
 const ASSET_BYTES: Readonly<Record<string, Readonly<Record<string, number>>>> = { whiteboards: { files: 8 * 1024 * 1024 }, evidenceItems: { imageData: 4_250_000 } };
+/** Evidence preview types the server stores (EVIDENCE_RASTER_MIME_TYPES). This client also shows BMP and AVIF. */
+const EVIDENCE_PREVIEW_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 /** Values the server visits per request before refusing it. */
 export const MAX_SYNC_REQUEST_NODES = 100_000;
 
-export type OutgoingRefusal = 'unreadable' | 'limits';
+export type OutgoingRefusal = 'unreadable' | 'limits' | 'previewType';
 
 /** Mirrors the server's per-field validateValue. */
 function withinFieldLimits(value: unknown, depth = 0): boolean {
@@ -62,6 +64,7 @@ export function syncDataNodes(data: unknown): number {
  * Why an outgoing put must stay on this device, or null when it can upload.
  * 'unreadable': other clients' sync sanitizer would refuse the row, so it would
  * stop their sync. 'limits': the server would refuse the request.
+ * 'previewType': the server refuses the evidence preview's image type.
  */
 export function outgoingRefusal(table: string, entityId: string, data: Record<string, unknown> | undefined): OutgoingRefusal | null {
   if (!data) return null;
@@ -74,6 +77,8 @@ export function outgoingRefusal(table: string, entityId: string, data: Record<st
     }
     if (!withinFieldLimits(value) || (TIMESTAMP_COLUMNS.has(key) && !validTimestamp(value))) return 'limits';
   }
+  const previewMime = table === 'evidenceItems' ? data.imageDataMimeType : undefined;
+  if (previewMime != null && !(typeof previewMime === 'string' && EVIDENCE_PREVIEW_MIME_TYPES.has(previewMime.toLowerCase().trim()))) return 'previewType';
   try {
     if (!sanitizeSyncEntity(table, { ...data, id: entityId })) return 'unreadable';
   } catch {

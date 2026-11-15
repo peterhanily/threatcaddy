@@ -221,6 +221,7 @@
   "syncStatus.skippedIncoming": "Pominięto {{item}} z serwera zespołu, ponieważ to urządzenie nie może tego odczytać (pominięte elementy: {{total}}). Pozostałe dane nadal się synchronizują. Popraw to na urządzeniu, na którym zostało utworzone, aby ponownie zsynchronizować.",
   "syncStatus.unreadableOutgoing": "{{item}} nie zostało przesłane, ponieważ inne urządzenia nie mogłyby tego odczytać (wstrzymane elementy: {{total}}). Pozostaje zapisane na tym urządzeniu; popraw to, aby zsynchronizować.",
   "syncStatus.oversizedOutgoing": "{{item}} nie zostało przesłane, ponieważ przekracza limity serwera zespołu (wstrzymane elementy: {{total}}). Pozostaje zapisane na tym urządzeniu; skróć to, aby zsynchronizować.",
+  "syncStatus.previewTypeOutgoing": "{{item}} nie zostało przesłane, ponieważ serwer zespołu akceptuje tylko obrazy podglądu PNG, JPEG, GIF lub WebP (wstrzymane elementy: {{total}}). Pozostaje zapisane na tym urządzeniu.",
   "syncStatus.rejectedInvalid": "Serwer zespołu odrzucił tę zmianę jako nieprawidłową ({{reason}}). Pozostaje zapisana na tym urządzeniu; popraw ją, aby zsynchronizować.",
   "syncStatus.theirsUnreadable": "To urządzenie nie może odczytać wersji z serwera zespołu, więc można zachować tylko Twoją wersję.",
   "syncStatus.itemType.notes": "Notatka",

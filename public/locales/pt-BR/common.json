@@ -221,6 +221,7 @@
   "syncStatus.skippedIncoming": "{{item}} do servidor da equipe foi ignorado porque este dispositivo não consegue lê-lo (itens ignorados: {{total}}). Todo o resto continua sincronizando. Corrija-o no dispositivo que o criou para sincronizá-lo novamente.",
   "syncStatus.unreadableOutgoing": "{{item}} não foi enviado porque outros dispositivos não conseguiriam lê-lo (itens retidos: {{total}}). Ele continua salvo neste dispositivo; corrija-o para sincronizá-lo.",
   "syncStatus.oversizedOutgoing": "{{item}} não foi enviado porque excede os limites do servidor da equipe (itens retidos: {{total}}). Ele continua salvo neste dispositivo; encurte-o para sincronizá-lo.",
+  "syncStatus.previewTypeOutgoing": "{{item}} não foi enviado porque o servidor da equipe aceita apenas imagens de pré-visualização PNG, JPEG, GIF ou WebP (itens retidos: {{total}}). Ele continua salvo neste dispositivo.",
   "syncStatus.rejectedInvalid": "O servidor da equipe recusou esta alteração por ser inválida ({{reason}}). Ela continua salva neste dispositivo; corrija-a para sincronizá-la.",
   "syncStatus.theirsUnreadable": "Este dispositivo não consegue ler a versão do servidor da equipe, então só a sua versão pode ser mantida.",
   "syncStatus.itemType.notes": "Nota",
