@@ -74,9 +74,10 @@ test('a pending real worker can be cancelled while controls remain responsive, w
       constructor(url: string | URL, options?: WorkerOptions) {
         super(url, options); this.evidence = String(url).includes('evidence-import.worker');
       }
-      postMessage(message: unknown, transfer: Transferable[] = []) {
+      postMessage(message: unknown, options?: Transferable[] | StructuredSerializeOptions) {
         if (this.evidence && state.hold) { this.waiting = true; state.pending++; return; }
-        super.postMessage(message, transfer);
+        if (Array.isArray(options)) super.postMessage(message, options);
+        else super.postMessage(message, options);
       }
       terminate() {
         if (this.evidence) { state.terminated++; if (this.waiting) state.pending--; }
