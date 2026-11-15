@@ -63,7 +63,7 @@ describe('modal focus with autoFocus content', () => {
     expect(opener).toHaveFocus();
   });
 
-  it('does not treat its own autoFocus field as the opener across a screenshare suspension', () => {
+  it('returns to its autoFocus field after the opener was focused during a screenshare suspension', () => {
     const ui = (maxLevel: string | null) => <ScreenshareContext.Provider value={{ maxLevel, effectiveLevels: [] }}>
       <NewInvestigation />
     </ScreenshareContext.Provider>;
@@ -74,6 +74,22 @@ describe('modal focus with autoFocus content', () => {
     opener.focus();
     view.rerender(ui(null));
     expect(screen.getByLabelText('Name')).toHaveFocus();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(opener).toHaveFocus();
+  });
+
+  it('does not treat its own field as the opener when focus stays inside across a suspension', () => {
+    const ui = (maxLevel: string | null) => <ScreenshareContext.Provider value={{ maxLevel, effectiveLevels: [] }}>
+      <NewInvestigation />
+    </ScreenshareContext.Provider>;
+    const view = render(ui(null));
+    const opener = openWithKeyboardFocus('New investigation');
+    const field = screen.getByLabelText('Name');
+    view.rerender(ui('TLP:CLEAR'));
+    // The resume commit then finds focus inside the dialog itself.
+    expect(field).toHaveFocus();
+    view.rerender(ui(null));
+    expect(field).toHaveFocus();
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(opener).toHaveFocus();
   });
