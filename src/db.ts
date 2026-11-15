@@ -311,10 +311,12 @@ export async function runWorkspaceContentMigrations(): Promise<void> {
  * stripped of its required thread, and recovery restores that wrote `result`.
  * Repaired in place; modification times and sync capture are left alone. */
 async function repairBackupIntegrity(tx: Parameters<NonNullable<Parameters<ReturnType<typeof db.version>['upgrade']>[0]>>[0]) {
+  // Startup depends on this pass: tolerate any stored shape and only zero the
+  // non-finite counters that are present.
+  const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
   const invalidNumber = (value: unknown) => value !== undefined && !(typeof value === 'number' && Number.isFinite(value));
-  const finite = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : 0;
-  const invalidPair = (pair?: { input?: unknown; output?: unknown }) => !!pair && (invalidNumber(pair.input) || invalidNumber(pair.output));
-  const repairPair = (pair?: { input: number; output: number }) => { if (pair) { pair.input = finite(pair.input); pair.output = finite(pair.output); } };
+  const invalidPair = (pair: unknown) => object(pair) && (invalidNumber(pair.input) || invalidNumber(pair.output));
+  const repair = (holder: unknown, ...keys: string[]) => { if (object(holder)) for (const key of keys) if (invalidNumber(holder[key])) holder[key] = 0; };
   for (const name of ['agentActions', 'agentMeetings']) {
     await tx.table(name).filter(row => row.updatedAt !== undefined || row.threadId === undefined || row.result !== undefined).modify(row => {
       delete row.updatedAt;
@@ -325,19 +327,18 @@ async function repairBackupIntegrity(tx: Parameters<NonNullable<Parameters<Retur
       }
     });
   }
-  await tx.table('agentDeployments').filter(row => invalidPair(row.metrics?.tokensUsed) || invalidNumber(row.metrics?.costUSD)).modify(row => {
-    repairPair(row.metrics.tokensUsed);
-    if (row.metrics.costUSD !== undefined) row.metrics.costUSD = finite(row.metrics.costUSD);
+  await tx.table('agentDeployments').filter(row => object(row.metrics) && (invalidPair(row.metrics.tokensUsed) || invalidNumber(row.metrics.costUSD))).modify(row => {
+    repair(row.metrics.tokensUsed, 'input', 'output');
+    repair(row.metrics, 'costUSD');
   });
-  const poisoned = (message: ChatThread['messages'][number]) => invalidPair(message.tokenCount)
-    || invalidPair(message.agentCycleSummary?.tokens) || invalidNumber(message.agentCycleSummary?.costUSD);
+  const poisoned = (message: unknown) => object(message) && (invalidPair(message.tokenCount)
+    || (object(message.agentCycleSummary) && (invalidPair(message.agentCycleSummary.tokens) || invalidNumber(message.agentCycleSummary.costUSD))));
   await tx.table('chatThreads').filter(row => Array.isArray(row.messages) && row.messages.some(poisoned)).modify(row => {
-    for (const message of row.messages as ChatThread['messages']) {
-      repairPair(message.tokenCount);
-      if (message.agentCycleSummary) {
-        repairPair(message.agentCycleSummary.tokens);
-        message.agentCycleSummary.costUSD = finite(message.agentCycleSummary.costUSD);
-      }
+    for (const message of row.messages as unknown[]) {
+      if (!object(message)) continue;
+      repair(message.tokenCount, 'input', 'output');
+      repair(message.agentCycleSummary, 'costUSD');
+      if (object(message.agentCycleSummary)) repair(message.agentCycleSummary.tokens, 'input', 'output');
     }
   });
 }

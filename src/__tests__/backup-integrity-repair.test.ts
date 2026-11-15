@@ -61,6 +61,16 @@ describe('one-time backup integrity repair', () => {
     await expect(exportJSON()).resolves.toContain('threatcaddy-backup');
   });
 
+  it('never blocks startup on unexpected stored shapes', async () => {
+    await db.table('chatThreads').add({ id: 'odd', title: 'Odd', messages: [null, 'text', { id: 'x', tokenCount: 'n/a', agentCycleSummary: 'none' },
+      { id: 'y', tokenCount: { input: NaN }, agentCycleSummary: { tokens: null, costUSD: null } }], model: 'm', provider: 'anthropic', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+    await db.table('agentDeployments').add({ id: 'odd', investigationId: 'f', profileId: 'p', status: 'idle', order: 0, createdAt: 1, updatedAt: 1, metrics: 'none' });
+    await expect(runWorkspaceContentMigrations()).resolves.toBeUndefined();
+    const messages = (await db.table('chatThreads').get('odd')).messages;
+    expect(messages.slice(0, 3)).toEqual([null, 'text', { id: 'x', tokenCount: 'n/a', agentCycleSummary: 'none' }]);
+    expect(messages[3]).toEqual({ id: 'y', tokenCount: { input: 0 }, agentCycleSummary: { tokens: null, costUSD: 0 } });
+  });
+
   it('runs once and never queues sync work', async () => {
     await db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { version: 1, serverUrl: 'https://team.example', userId: 'alice' } });
     await seedAffectedRows();
