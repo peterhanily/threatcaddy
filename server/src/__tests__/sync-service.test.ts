@@ -230,6 +230,64 @@ describe('transactional sync writes', () => {
   });
 });
 
+describe('per-change write validation', () => {
+  const create = (table: string, entityId: string, data: Record<string, unknown>): SyncChange =>
+    ({ table, entityId, op: 'put', clientVersion: 0, data: { folderId: 'folder-1', ...data } });
+
+  it('rejects only the invalid change when the caller asks for per-change results', async () => {
+    state.rows.push([], []);
+    state.returned.push([{ id: 'small', folderId: 'folder-1', version: 1 }]);
+    const results = await processPush([
+      create('notes', 'big', { title: 'Pasted log', content: 'x'.repeat(500_001) }),
+      create('notes', 'small', { title: 'Ordinary note' }),
+    ], 'user-1', { rejectInvalidChanges: true });
+    expect(results).toEqual([
+      { table: 'notes', entityId: 'big', status: 'rejected', reason: 'Sync field exceeds the supported value limits' },
+      expect.objectContaining({ entityId: 'small', status: 'accepted', serverVersion: 1 }),
+    ]);
+    expect(state.inserts).toEqual([expect.objectContaining({ id: 'small' })]);
+    expect(state.events).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ['an IOC type other clients cannot read', create('standaloneIOCs', 'ioc', { type: 'ip', value: '203.0.113.7' }), 'IOC type'],
+    ['whiteboard elements over 500,000 UTF-8 bytes', create('whiteboards', 'board', { name: 'Board', elements: JSON.stringify(['界'.repeat(200_000)]) }), 'elements'],
+    ['whiteboard elements that are not an array', create('whiteboards', 'board', { name: 'Board', elements: '{}' }), 'elements'],
+    ['whiteboard elements that are not JSON', create('whiteboards', 'board', { name: 'Board', elements: '[' }), 'elements'],
+    ['a whiteboard appState that is not an object', create('whiteboards', 'board', { name: 'Board', elements: '[]', appState: '[]' }), 'appState'],
+  ])('refuses %s', async (_label, change, message) => {
+    state.rows.push([]);
+    await expect(processPush([change], 'user-1')).rejects.toThrow(message);
+    state.rows.push([]);
+    expect((await processPush([change], 'user-1', { rejectInvalidChanges: true }))[0]).toMatchObject({ status: 'rejected', reason: expect.stringContaining(message) });
+    expect(state.inserts).toEqual([]);
+  });
+
+  it('accepts the IOC types and whiteboard shapes clients read', async () => {
+    state.rows.push([], []);
+    state.returned.push([{ id: 'ioc', version: 1 }], [{ id: 'board', version: 1 }]);
+    const results = await processPush([
+      create('standaloneIOCs', 'ioc', { type: 'ipv4', value: '203.0.113.7' }),
+      create('whiteboards', 'board', { name: 'Board', elements: JSON.stringify([{ text: '界'.repeat(1000) }]), appState: '{}' }),
+    ], 'user-1', { rejectInvalidChanges: true });
+    expect(results.map(result => result.status)).toEqual(['accepted', 'accepted']);
+  });
+
+  it.each([
+    ['tasks', { title: 'Delegated', assigneeId: 'agent-deployment' }, { assigneeId: null }],
+    ['standaloneIOCs', { type: 'domain', value: 'evil.test', assigneeId: 'agent-deployment', assigneeName: 'IOC Enricher' }, { assigneeId: null, assigneeName: null }],
+  ])('stores an assignee on %s only when it is a user', async (table, data, cleared) => {
+    state.rows.push([], []);
+    state.returned.push([{ id: 'entity', version: 1 }]);
+    expect((await processPush([create(table, 'entity', data)], 'user-1'))[0].status).toBe('accepted');
+    expect(state.inserts[0]).toMatchObject(cleared);
+    state.rows.push([], [{ id: 'user-2' }]);
+    state.returned.push([{ id: 'entity-2', version: 1 }]);
+    await processPush([create(table, 'entity-2', { ...data, assigneeId: 'user-2' })], 'user-1');
+    expect(state.inserts[1]).toMatchObject({ assigneeId: 'user-2' });
+  });
+});
+
 describe('evidence preview sync contract', () => {
   it.each([undefined, 'application/pdf', 'image/tiff', 7])('rejects preview MIME %s before acknowledging bytes', async imageDataMimeType => {
     state.rows.push([]);
