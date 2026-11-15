@@ -1,6 +1,9 @@
 {
   "syncStatus.screenshareHidden": "Synchronization needs attention. Turn off screensharing to review the details.",
   "syncStatus.review": "Review sync settings",
+  "syncStatus.skippedIncoming": "Skipped {{item}} from the team server because this device cannot read it (items skipped: {{total}}). Everything else keeps syncing. Correct it on the device that created it to sync it again.",
+  "syncStatus.unreadableOutgoing": "{{item}} was not uploaded because other devices could not read it (items held back: {{total}}). It stays saved on this device; correct it to sync it.",
+  "syncStatus.oversizedOutgoing": "{{item}} was not uploaded because it exceeds the team server's limits (items held back: {{total}}). It stays saved on this device; shorten it to sync it.",
   "draftRecovery.message": "Some changes could not be saved. Drafts are kept only in this tab. Retry or download them before closing it.",
   "draftRecovery.untitled": "Unsaved draft",
   "draftRecovery.retry": "Retry save",

@@ -1,7 +1,9 @@
 import { db } from '../db';
+import i18n from '../i18n';
 import type { Dexie as DexieType } from 'dexie';
 import { syncPush, syncPull, type SyncChange, type SyncResult } from './server-api';
 import { SERVER_UNREPRESENTED_FIELDS, outgoingSyncData, preserveUnsyncedFields, sanitizeSyncEntity } from './sync-sanitize';
+import { MAX_SYNC_REQUEST_NODES, outgoingRefusal, syncDataNodes, type OutgoingRefusal } from './sync-push-limits';
 import { SYNC_TABLES, isSyncTable, onOutboxCommit, revisionKey, suppressSyncInCurrentTransaction } from './sync-state';
 import type { WSClient } from './ws-client';
 import { ensureSyncWorkspace } from './sync-workspace';
@@ -19,9 +21,27 @@ const MAX_ASSET_PUSH_BYTES = 15 * 1024 * 1024; // Dedicated 16 MiB sync route.
 const RECOVERY_MESSAGE = SYNC_HISTORY_MESSAGE;
 const entityKey = (table: string, id: string) => JSON.stringify([table, id]);
 const validVersion = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0;
+/** Server rows this client could not read: { version, folderId } only, never their content. */
+const skippedKey = (table: string, id: string) => JSON.stringify(['syncSkipped', table, id]);
+const SKIPPED_PREFIX = '["syncSkipped",';
 
 interface SyncQueueEntry extends SyncChange { seq?: number; folderId?: string }
 type RemoteChange = Record<string, unknown> & { table: string; op: 'put' | 'delete'; id: string };
+
+/** A row this client's sanitizer refuses is server data to skip, not a reason to stop syncing. */
+function readableRecord(table: string, change: Record<string, unknown>, id: string): Record<string, unknown> | null {
+  let record: Record<string, unknown> | null;
+  try { record = sanitizeSyncEntity(table, change); } catch { return null; }
+  return record?.id === id ? record : null;
+}
+
+/** The server's assigneeId refers to users; an agent deployment id stays on this device. */
+function withoutAgentAssignee(table: string, data: Record<string, unknown> | undefined, agents: ReadonlySet<string>) {
+  if (table !== 'tasks' || typeof data?.assigneeId !== 'string' || !agents.has(data.assigneeId)) return data;
+  const copy = { ...data };
+  delete copy.assigneeId;
+  return copy;
+}
 
 /** Local mutations and their outgoing operations commit together. Only accepted
  * operations are acknowledged; concurrent local edits remain durable. */
@@ -125,7 +145,7 @@ export class SyncEngine {
           return;
         }
         if (epoch !== this.epoch) return;
-        this.onError?.(null);
+        this.onError?.(await this.skippedNotice());
         // Check an existing history before uploading into a possibly restored
         // server. A reset is a reconciliation decision, not a cursor rewind.
         await this.pull(epoch);
@@ -192,18 +212,29 @@ export class SyncEngine {
     const ordered = [...groups.values()].sort((a, b) => Number(b[0].table === 'folders') - Number(a[0].table === 'folders'));
     const conflicts: SyncResult[] = [];
     const encoder = new TextEncoder();
+    const agents = await this.agentDeploymentIds();
+    const refused: Array<{ table: string; entityId: string; refusal: OutgoingRefusal }> = [];
     const batches: Array<{ entries: SyncQueueEntry[]; change: SyncChange }[]> = [];
     let current: { entries: SyncQueueEntry[]; change: SyncChange }[] = [];
     let bytes = encoder.encode('{"changes":[]}').byteLength;
+    let nodes = 0;
     for (const entries of ordered) {
       const first = entries[0], last = entries[entries.length - 1];
-      const change: SyncChange = { table: last.table, entityId: last.entityId, op: last.op, data: outgoingSyncData(last.table, last.data),
+      const change: SyncChange = { table: last.table, entityId: last.entityId, op: last.op,
+        data: withoutAgentAssignee(last.table, outgoingSyncData(last.table, last.data), agents),
         clientVersion: validVersion(first.clientVersion) ? first.clientVersion : 0 };
+      // A change the server or other clients would refuse stays queued here, so it cannot hold back the rest.
+      const changeNodes = syncDataNodes(change.data);
+      const refusal = change.op !== 'put' ? null : changeNodes > MAX_SYNC_REQUEST_NODES ? 'limits' : outgoingRefusal(change.table, change.entityId, change.data);
+      if (refusal) {
+        refused.push({ table: change.table, entityId: change.entityId, refusal });
+        continue;
+      }
       const size = encoder.encode(JSON.stringify(change)).byteLength + 1;
       const hasAsset = (change.table === 'whiteboards' && typeof change.data?.files === 'string')
         || (change.table === 'evidenceItems' && typeof change.data?.imageData === 'string');
       if (hasAsset && size + 128 <= MAX_ASSET_PUSH_BYTES && size + 128 > MAX_PUSH_BYTES) {
-        if (current.length) { batches.push(current); current = []; bytes = 128; }
+        if (current.length) { batches.push(current); current = []; bytes = 128; nodes = 0; }
         batches.push([{ entries, change }]);
         continue;
       }
@@ -211,12 +242,17 @@ export class SyncEngine {
         this.onError?.('Some local changes are too large to sync and remain saved on this device. Reduce their size or export them separately.');
         continue;
       }
-      if (current.length && (current.length === 100 || bytes + size > MAX_PUSH_BYTES)) {
-        batches.push(current); current = []; bytes = 15;
+      if (current.length && (current.length === 100 || bytes + size > MAX_PUSH_BYTES || nodes + changeNodes > MAX_SYNC_REQUEST_NODES)) {
+        batches.push(current); current = []; bytes = 15; nodes = 0;
       }
-      current.push({ entries, change }); bytes += size;
+      current.push({ entries, change }); bytes += size; nodes += changeNodes;
     }
     if (current.length) batches.push(current);
+    if (refused.length && epoch === this.epoch) {
+      const [held] = refused;
+      this.onError?.(i18n.t(held.refusal === 'limits' ? 'syncStatus.oversizedOutgoing' : 'syncStatus.unreadableOutgoing',
+        { ns: 'common', item: await this.itemLabel(held.table, held.entityId), total: refused.length }));
+    }
     for (const items of batches) {
       if (epoch !== this.epoch) return;
       const deliverable = [];
@@ -301,6 +337,8 @@ export class SyncEngine {
 
   private async applyChanges(changes: RemoteChange[], epoch: number, cursor?: string, generation?: number, expectedCursor?: string, history?: string, cacheFolder?: string, cacheOperation?: string) {
     const affected = new Set<string>();
+    const agents = await this.agentDeploymentIds();
+    let skippedChanged = false;
     const applied = await dynamicDb.transaction('rw', [...SYNC_TABLES, '_syncQueue', '_syncMeta', '_localMigrations'], async () => {
       if (epoch !== this.epoch) return false;
       await this.assertCurrentWorkspace(epoch);
@@ -319,6 +357,7 @@ export class SyncEngine {
       }
       const queue: SyncQueueEntry[] = await dynamicDb.table('_syncQueue').toArray();
       const pending = new Set(queue.map(e => entityKey(e.table, e.entityId)));
+      const skipped = new Set(await dynamicDb.table('_syncMeta').where('key').startsWith(SKIPPED_PREFIX).primaryKeys());
       for (const change of changes) {
         const { table, op, id } = change;
         if (!isSyncTable(table) || typeof id !== 'string' || !['put', 'delete'].includes(op)) throw new Error('Invalid sync entity');
@@ -328,14 +367,26 @@ export class SyncEngine {
         if (!validVersion(version) || version === 0) throw new Error('Sync entity has no server revision');
         const known = (await dynamicDb.table('_syncMeta').get(revisionKey(table, id)))?.value ?? 0;
         if (version < known) continue;
+        const skipKey = skippedKey(table, id);
         if (op === 'delete') {
           await dynamicDb.table(table).delete(id);
         } else {
-          const record = sanitizeSyncEntity(table, change);
-          if (!record || record.id !== id) throw new Error('Invalid sync record');
-          await dynamicDb.table(table).put(await this.withLocalFields(table, change, record, id));
+          const record = readableRecord(table, change, id);
+          if (!record) {
+            // Keep any local copy and leave its revision unrecorded, so a local edit still
+            // conflicts with this version. The item is named until a readable revision arrives.
+            await dynamicDb.table('_syncMeta').put({ key: skipKey, value: { version, folderId: typeof change.folderId === 'string' ? change.folderId : undefined } });
+            skippedChanged = true;
+            continue;
+          }
+          await dynamicDb.table(table).put(await this.withLocalFields(table, change, record, id, agents));
         }
         await dynamicDb.table('_syncMeta').put({ key: revisionKey(table, id), value: version });
+        // A replay that brings the unreadable version back skips it again.
+        if (skipped.has(skipKey)) {
+          await dynamicDb.table('_syncMeta').delete(skipKey);
+          skippedChanged = true;
+        }
         affected.add(table);
       }
       if (cursor !== undefined && generation === this.replayGeneration) await dynamicDb.table('_syncMeta').put({ key: CURSOR_KEY, value: cursor });
@@ -344,13 +395,47 @@ export class SyncEngine {
       return true;
     });
     if (epoch === this.epoch && affected.size) this.onRemoteChange?.(changes, affected);
+    if (epoch === this.epoch && skippedChanged) this.onError?.(await this.skippedNotice());
     return applied;
   }
 
   /** Only tables with fields the server cannot store need the local row. */
-  private async withLocalFields(table: string, incoming: Record<string, unknown>, record: Record<string, unknown>, id: string) {
+  private async withLocalFields(table: string, incoming: Record<string, unknown>, record: Record<string, unknown>, id: string, agents: ReadonlySet<string>) {
     if (!SERVER_UNREPRESENTED_FIELDS[table]) return record;
-    return preserveUnsyncedFields(table, incoming, record, await dynamicDb.table(table).get(id));
+    const local = await dynamicDb.table(table).get(id);
+    const merged = preserveUnsyncedFields(table, incoming, record, local);
+    // Older delegations stored the agent deployment in assigneeId, which never reaches the
+    // server. Keep it in the device-only field rather than letting the echo erase it.
+    if (table === 'tasks' && merged.assigneeId == null && merged.assignedDeploymentId == null
+      && typeof local?.assigneeId === 'string' && agents.has(local.assigneeId)) merged.assignedDeploymentId = local.assigneeId;
+    return merged;
+  }
+
+  /** Agent deployments exist only on this device; their ids are never server user ids. */
+  private async agentDeploymentIds(): Promise<Set<string>> {
+    return new Set((await dynamicDb.table('agentDeployments').toCollection().primaryKeys()).map(String));
+  }
+
+  /** Short label for a banner: the local title, name or value, else the table and id, plus the investigation. */
+  private async itemLabel(table: string, id: string, folderId?: unknown) {
+    const row = await dynamicDb.table(table).get(id);
+    const text = [row?.title, row?.name, row?.value].find((value): value is string => typeof value === 'string' && value.trim() !== '');
+    const folder = table === 'folders' ? undefined : typeof folderId === 'string' ? folderId : row?.folderId;
+    const investigation = typeof folder === 'string' ? (await dynamicDb.table('folders').get(folder))?.name : undefined;
+    const item = text ? text.slice(0, 80) : `${table} ${id.slice(0, 8)}`;
+    return typeof investigation === 'string' && investigation ? `${item} (${investigation})` : item;
+  }
+
+  /** Names the first server row this client skipped, while any remain; otherwise null. */
+  private async skippedNotice(): Promise<string | null> {
+    const skipped: Array<{ table: string; id: string; folderId?: unknown }> = [];
+    for (const entry of await dynamicDb.table('_syncMeta').where('key').startsWith(SKIPPED_PREFIX).toArray()) {
+      const [, table, id] = JSON.parse(entry.key) as [string, string, string];
+      const folderId = entry.value?.folderId;
+      if (!await this.isLocalOnly(table, id, { folderId })) skipped.push({ table, id, folderId });
+    }
+    if (!skipped.length) return null;
+    return i18n.t('syncStatus.skippedIncoming', { ns: 'common', item: await this.itemLabel(skipped[0].table, skipped[0].id, skipped[0].folderId), total: skipped.length });
   }
 
   /** WS messages are invalidations, never a source of durable entity data. */
@@ -365,6 +450,8 @@ export class SyncEngine {
     await this.ensureWorkspace(epoch);
     if (choice === 'theirs') ++this.replayGeneration;
     const affected = new Set<string>();
+    const agents = await this.agentDeploymentIds();
+    let skippedChanged = false;
     await dynamicDb.transaction('rw', [...SYNC_TABLES, '_syncQueue', '_syncMeta', '_localMigrations'], async () => {
       await this.assertCurrentWorkspace(epoch);
       suppressSyncInCurrentTransaction();
@@ -386,9 +473,15 @@ export class SyncEngine {
           if (!conflict.serverData || conflict.serverData.deletedAt) {
             await dynamicDb.table(table).delete(conflict.entityId);
           } else {
-            const record = sanitizeSyncEntity(table, conflict.serverData);
-            if (!record || record.id !== conflict.entityId) throw new Error('Invalid conflict record');
-            await dynamicDb.table(table).put(await this.withLocalFields(table, conflict.serverData, record, conflict.entityId));
+            const record = readableRecord(table, conflict.serverData, conflict.entityId);
+            if (!record) {
+              // This client cannot read their version: keep the local row and its queued edit.
+              const folderId = conflict.serverData.folderId;
+              await dynamicDb.table('_syncMeta').put({ key: skippedKey(table, conflict.entityId), value: { version, folderId: typeof folderId === 'string' ? folderId : undefined } });
+              skippedChanged = true;
+              continue;
+            }
+            await dynamicDb.table(table).put(await this.withLocalFields(table, conflict.serverData, record, conflict.entityId, agents));
           }
           await dynamicDb.table('_syncQueue').bulkDelete(entries.map(e => e.seq!));
           // A pull may have skipped a newer revision while this entity was
@@ -402,6 +495,7 @@ export class SyncEngine {
       await this.assertCurrentWorkspace(epoch);
     });
     if (epoch === this.epoch && affected.size) this.onRemoteChange?.([], affected);
+    if (epoch === this.epoch && skippedChanged) this.onError?.(await this.skippedNotice());
     this.scheduleSync();
   }
 
