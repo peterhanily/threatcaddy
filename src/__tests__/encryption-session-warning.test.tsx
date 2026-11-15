@@ -123,7 +123,7 @@ describe('timed session expiry warning', () => {
     app.formOpen = true;
     await openWorkspace();
     act(() => { vi.advanceTimersByTime(HOUR - MINUTE); });
-    expect(within(warning()!).getByRole('alert')).toHaveTextContent(/This workspace locks at/);
+    expect(within(screen.getByRole('region', { name: 'Workspace locks soon' })).getByRole('alert')).toHaveTextContent(/This workspace locks at/);
     const task = screen.getByLabelText('Task description');
     const input = screen.getByLabelText('Current passphrase');
     act(() => { task.focus(); });

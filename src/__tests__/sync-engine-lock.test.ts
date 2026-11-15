@@ -70,8 +70,8 @@ describe('team sync across a workspace lock', () => {
   it('does not report a lock when the session is re-keyed during a push, and retries the held batch', async () => {
     // 101 changes split into two push batches; the re-key lands between them.
     await db.notes.bulkAdd(Array.from({ length: 101 }, (_, i) => note(`n${i}`)));
-    const accepted = api.push.getMockImplementation()!;
-    api.push.mockImplementationOnce(async (changes: Change[]) => { setSessionKey(key, raw); return accepted(changes); });
+    const accepted = api.push.getMockImplementation();
+    api.push.mockImplementationOnce(async (changes: Change[]) => { setSessionKey(key, raw); return accepted?.(changes); });
     const errors: Array<string | null> = []; engine.setErrorHandler(message => { errors.push(message); });
     const retry = vi.spyOn(engine as unknown as { scheduleSync(): void }, 'scheduleSync');
     await engine.sync();
