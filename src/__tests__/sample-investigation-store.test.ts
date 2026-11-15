@@ -117,6 +117,13 @@ describe('sample tags and timelines stay local and never take over user defaults
     const timelines = (await db.timelines.toArray()).sort((a, b) => a.order - b.order);
     expect(timelines.map(timeline => timeline.id)).toEqual(['z-default', 'z-clips', 'sample-realistic-timeline-1', 'sample-timeline-1']);
   });
+
+  it('keeps a demo timeline that a remaining investigation still uses', async () => {
+    await loadSampleInvestigation('realistic');
+    await db.folders.add({ id: 'real', name: 'Real case', order: 0, createdAt: 1, timelineId: 'sample-realistic-timeline-1' });
+    await deleteSampleInvestigation('realistic');
+    expect(await db.timelines.get('sample-realistic-timeline-1')).toBeDefined();
+  });
 });
 
 describe('sample persistence', () => {
