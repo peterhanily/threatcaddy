@@ -78,15 +78,19 @@ describe('untrusted evidence resource boundaries', () => {
 
   it('rejects a declared oversized selected part and an actual oversized part with a lying header', async () => {
     const oversized = new Uint8Array(EVIDENCE_LIMITS.entryBytes + 1);
-    await expect(buildEvidenceItemDrafts(docx([{ name: 'word/document.xml', data: documentXml, declared: oversized.length }]))).rejects.toThrow('declared content');
-    await expect(buildEvidenceItemDrafts(docx([{ name: 'word/document.xml', data: oversized, declared: 1 }]))).rejects.toThrow('decoded part exceeds 8 MiB');
+    await expect(buildEvidenceItemDrafts(docx([{ name: 'word/document.xml', data: documentXml, declared: oversized.length }]))).rejects.toThrow('does not match its declared size');
+    await expect(buildEvidenceItemDrafts(docx([{ name: 'word/document.xml', data: oversized, declared: 1 }]))).rejects.toThrow('does not match its declared size');
   });
 
   it('enforces an aggregate decoded budget across individually permitted selected parts', async () => {
-    const part = new Uint8Array(7 * 1024 * 1024);
-    const compressed = deflateRaw(part);
-    const entries = Array.from({ length: 5 }, (_, index) => ({ name: `word/header${index + 1}.xml`, data: part, compressed }));
-    await expect(buildEvidenceItemDrafts(docx(entries))).rejects.toThrow('decoded byte limit');
+    // Each part is 7 MiB with its marker at the end; the fifth would pass 32 MiB.
+    const part = (index: number) => encode(`${' '.repeat(7 * 1024 * 1024 - 64)}<w:p><w:t>Header ${index} end</w:t></w:p>`);
+    const entries = Array.from({ length: 5 }, (_, index) => ({ name: `word/header${index + 1}.xml`, data: part(index + 1) }));
+    const [draft] = await buildEvidenceItemDrafts(docx([{ name: 'word/document.xml', data: documentXml }, ...entries]));
+    expect(draft.extractionStatus).toBe('partial');
+    for (const index of [1, 2, 3, 4]) expect(draft.content).toContain(`Header ${index} end`);
+    expect(draft.content).not.toContain('Header 5 end');
+    expect(draft.extractionWarning).toContain('exceeded the decoding limit');
   });
 
   it('rejects oversized central-directory entry counts before walking them', async () => {
@@ -96,21 +100,28 @@ describe('untrusted evidence resource boundaries', () => {
     await expect(buildEvidenceItemDrafts(new File([bytes], 'entries.docx'))).rejects.toThrow('2048 entries');
   });
 
-  it('rejects corrupt selected ZIP entries instead of returning a successful empty draft', async () => {
-    await expect(buildEvidenceItemDrafts(docx([{ name: 'word/document.xml', data: documentXml, compressed: encode('invalid deflate') }]))).rejects.toThrow('DOCX archive is invalid');
-    await expect(buildEvidenceItemDrafts(docx([{ name: 'word/document.xml', data: documentXml, declared: 1 }]))).rejects.toThrow('DOCX archive is invalid');
+  it('keeps the metadata of corrupt selected ZIP entries and rejects size mismatches', async () => {
+    // Unreadable archives import as metadata-only, as they did before the budgets.
+    const [corrupt] = await buildEvidenceItemDrafts(docx([{ name: 'word/document.xml', data: documentXml, compressed: encode('invalid deflate') }]));
+    expect(corrupt.extractionStatus).toBe('metadata-only');
+    expect(corrupt.extractionWarning).toContain('not a readable DOCX archive');
+    await expect(buildEvidenceItemDrafts(docx([{ name: 'word/document.xml', data: documentXml, declared: 1 }]))).rejects.toThrow('does not match its declared size');
   });
 
   it.each([deflateRaw, deflate])('retains normal compressed PDF text and bounds actual output', async compress => {
     const normal = encode('BT\n/F1 12 Tf\n(Synthetic report with useful investigation details.) Tj\nET');
     const [draft] = await buildEvidenceItemDrafts(pdf(compress(normal)));
     expect(draft.content).toContain('Synthetic report with useful investigation details.');
-    await expect(buildEvidenceItemDrafts(pdf(compress(new Uint8Array(EVIDENCE_LIMITS.entryBytes + 1))))).rejects.toThrow('8 MiB');
+    // Output past the per-stream budget is never produced; the file stays importable.
+    const [bounded] = await buildEvidenceItemDrafts(pdf(compress(new Uint8Array(EVIDENCE_LIMITS.entryBytes + 1))));
+    expect(bounded.extractionStatus).toBe('metadata-only');
+    expect(bounded.extractionWarning).toContain('stopped at the decoding limit');
   });
 
   it('bounds PDF stream count independently of file size', async () => {
     const file = new File(['%PDF-1.4\n' + '<<>>\nstream\nx\nendstream\n'.repeat(EVIDENCE_LIMITS.entries + 1)], 'many.pdf');
-    await expect(buildEvidenceItemDrafts(file)).rejects.toThrow('too many PDF streams');
+    const [draft] = await buildEvidenceItemDrafts(file);
+    expect(draft.extractionWarning).toContain('stopped at the decoding limit');
   });
 
   it('rejects sparse XLSX amplification while preserving ordinary cell extraction', async () => {
@@ -118,7 +129,10 @@ describe('untrusted evidence resource boundaries', () => {
     const [normal] = await buildEvidenceItemDrafts(file('<c r="A1" t="inlineStr"><is><t>Normal cell</t></is></c>'));
     expect(normal.content).toContain('Normal cell');
     await expect(buildEvidenceItemDrafts(file('<c r="ZZZZZZ1" t="inlineStr"><is><t>Sparse</t></is></c>'))).rejects.toThrow('spreadsheet dimensions');
+    // Legal but wide rows stop at the cell budget instead of expanding further.
     const rows = '<row><c r="XFD1" t="inlineStr"><is><t>Wide</t></is></c></row>'.repeat(16);
-    await expect(buildEvidenceItemDrafts(new File([zip([{ name: 'xl/worksheets/sheet1.xml', data: encode(`<worksheet>${rows}</worksheet>`) }])], 'wide.xlsx'))).rejects.toThrow('spreadsheet dimensions');
+    const [wide] = await buildEvidenceItemDrafts(new File([zip([{ name: 'xl/worksheets/sheet1.xml', data: encode(`<worksheet>${rows}</worksheet>`) }])], 'wide.xlsx'));
+    expect(wide.extractionStatus).toBe('partial');
+    expect(wide.content.match(/Wide/g)).toHaveLength(Math.floor(EVIDENCE_LIMITS.spreadsheetCells / EVIDENCE_LIMITS.spreadsheetColumns));
   });
 });

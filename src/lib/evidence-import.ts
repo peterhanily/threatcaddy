@@ -71,11 +71,8 @@ interface ImageEvidenceMetadata {
 interface DocxEvidence {
   text: string;
   warning?: string;
-}
-
-interface ZipEntry {
-  name: string;
-  data: Uint8Array;
+  truncated?: boolean;
+  unreadable?: boolean;
 }
 
 export async function buildEvidenceItemDrafts(
@@ -235,30 +232,35 @@ async function extractEvidenceText(file: File): Promise<ExtractedEvidence> {
 
   if (kind === 'pdf') {
     const pdf = extractPdfText(bytes);
+    const truncated = pdf.truncated ? PDF_TRUNCATED_WARNING : undefined;
     return pdf.text
-      ? { text: pdf.text, kind, status: 'partial', warning: 'PDF extraction is best-effort for selectable text objects. Scanned pages, encoded fonts, charts, and images may still require OCR or vision analysis.' }
+      ? { text: pdf.text, kind, status: 'partial', warning: mergeWarnings('PDF extraction is best-effort for selectable text objects. Scanned pages, encoded fonts, charts, and images may still require OCR or vision analysis.', truncated) }
       : {
         text: '',
         kind,
         status: 'metadata-only',
-        warning: pdf.rejected
+        warning: mergeWarnings(pdf.rejected
           ? 'PDF text streams were detected but rejected because they looked encoded or garbled. Use OCR, export selectable text, or analyze page images with a vision-capable CaddyAI provider.'
-          : 'No readable PDF text could be extracted. If this PDF is scanned or uses encoded fonts, import an OCR/text copy or analyze page images with a vision-capable CaddyAI provider.',
+          : 'No readable PDF text could be extracted. If this PDF is scanned or uses encoded fonts, import an OCR/text copy or analyze page images with a vision-capable CaddyAI provider.', truncated),
       };
   }
 
   if (kind === 'docx') {
     const docx = extractDocxEvidence(bytes);
+    if (docx.unreadable) return { text: '', kind, status: 'metadata-only', warning: unreadableArchiveWarning('DOCX') };
+    const truncated = docx.truncated ? archiveTruncatedWarning('DOCX') : undefined;
     return docx.text
-      ? { text: docx.text, kind, status: 'extracted', warning: docx.warning }
-      : { text: '', kind, status: 'metadata-only', warning: 'No document text could be extracted from this DOCX.' };
+      ? { text: docx.text, kind, status: docx.truncated ? 'partial' : 'extracted', warning: mergeWarnings(docx.warning, truncated) }
+      : { text: '', kind, status: 'metadata-only', warning: mergeWarnings('No document text could be extracted from this DOCX.', truncated) };
   }
 
   if (kind === 'xlsx') {
     const workbook = extractXlsxWorkbook(bytes);
+    if (workbook.unreadable) return { text: '', kind, status: 'metadata-only', warning: unreadableArchiveWarning('XLSX') };
+    const truncated = workbook.truncated ? archiveTruncatedWarning('XLSX') : undefined;
     return workbook.text
-      ? { text: workbook.text, kind, status: 'extracted', warning: workbook.warning }
-      : { text: '', kind, status: 'metadata-only', warning: 'No cell text could be extracted from this XLSX.' };
+      ? { text: workbook.text, kind, status: workbook.truncated ? 'partial' : 'extracted', warning: mergeWarnings(workbook.warning, truncated) }
+      : { text: '', kind, status: 'metadata-only', warning: mergeWarnings('No cell text could be extracted from this XLSX.', truncated) };
   }
 
   if (kind === 'doc' || kind === 'xls') {
@@ -272,6 +274,16 @@ async function extractEvidenceText(file: File): Promise<ExtractedEvidence> {
   return fallback
     ? { text: fallback, kind, status: 'partial', warning: 'Unknown file type imported with best-effort text extraction.' }
     : { text: '', kind, status: 'metadata-only', warning: 'Unsupported file type. Only metadata was imported.' };
+}
+
+const PDF_TRUNCATED_WARNING = 'PDF extraction stopped at the decoding limit (8 MiB per stream, 32 MiB or 2048 text streams per file); later text was not read.';
+
+function archiveTruncatedWarning(label: string): string {
+  return `Part of this ${label} was not read because it exceeded the decoding limit (8 MiB per part, 32 MiB per file, 250,000 cells per sheet).`;
+}
+
+function unreadableArchiveWarning(label: string): string {
+  return `This file is not a readable ${label} archive. It may be password-protected, truncated, damaged or use unsupported ZIP64 sizes. Only metadata was imported.`;
 }
 
 function renderEvidenceContent({
@@ -487,7 +499,7 @@ function renderImageMetadata(file: File, metadata?: ImageEvidenceMetadata): stri
 
 function extractDocxEvidence(bytes: Uint8Array): DocxEvidence {
   try {
-    const files = readZip(bytes, name => /^word\/(document|header\d+|footer\d+)\.xml$/.test(name));
+    const { entries: files, truncated } = readZip(bytes, name => /^word\/(document|header\d+|footer\d+)\.xml$/.test(name));
     const documentXmlData = files.get('word/document.xml');
     const parts = [
       documentXmlData,
@@ -499,10 +511,11 @@ function extractDocxEvidence(bytes: Uint8Array): DocxEvidence {
     const sections = parts.map((part) => extractWordXmlText(decodeUtf8(part))).filter(Boolean);
     const text = normalizeExtractedText(sections.join('\n\n'));
     const warning = buildDocxArtifactWarning(files, documentXmlData);
-    return { text, warning };
+    return { text, warning, truncated };
   } catch (error) {
     if (error instanceof EvidenceImportLimitError) throw error;
-    throw new Error('The DOCX archive is invalid or unsupported. No files in this batch were imported.');
+    // Password-protected (OLE), truncated or damaged files keep their metadata.
+    return { text: '', unreadable: true };
   }
 }
 
@@ -537,9 +550,11 @@ function joinHumanList(parts: string[]): string {
   return `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`;
 }
 
-function extractXlsxWorkbook(bytes: Uint8Array): { text: string; warning: string } {
+function extractXlsxWorkbook(bytes: Uint8Array): { text: string; warning?: string; truncated?: boolean; unreadable?: boolean } {
   try {
-    const files = readZip(bytes, name => /^xl\/(sharedStrings\.xml|workbook\.xml|_rels\/workbook\.xml\.rels|worksheets\/sheet\d+\.xml)$/.test(name));
+    const archive = readZip(bytes, name => /^xl\/(sharedStrings\.xml|workbook\.xml|_rels\/workbook\.xml\.rels|worksheets\/sheet\d+\.xml)$/.test(name));
+    const files = archive.entries;
+    let truncated = archive.truncated;
     const shared = parseSharedStrings(files.get('xl/sharedStrings.xml'));
     const sheetNameByPath = parseWorkbookSheets(files.get('xl/workbook.xml'), files.get('xl/_rels/workbook.xml.rels'));
     const chartCount = Array.from(files.keys()).filter((name) => /^xl\/charts\/chart\d+\.xml$/i.test(name)).length;
@@ -550,7 +565,8 @@ function extractXlsxWorkbook(bytes: Uint8Array): { text: string; warning: string
     const worksheetBudget = { cells: EVIDENCE_LIMITS.spreadsheetCells as number, characters: EVIDENCE_LIMITS.entryBytes as number };
 
     const sheets = sheetEntries.map(([name, data], index) => {
-      const rows = parseWorksheet(decodeUtf8(data), shared, worksheetBudget);
+      const { rows, truncated: cut } = parseWorksheet(decodeUtf8(data), shared, worksheetBudget);
+      if (cut) truncated = true;
       if (rows.length === 0) return '';
       const body = rows.map((row) => row.join('\t')).join('\n');
       return `## ${sheetTitle(sheetNameByPath.get(name) || sheetLabel(name, index), index)}\n\n${body}`;
@@ -562,10 +578,11 @@ function extractXlsxWorkbook(bytes: Uint8Array): { text: string; warning: string
       mediaCount > 0 ? `${mediaCount} embedded media object${mediaCount === 1 ? '' : 's'} detected; embedded images are not decoded from workbooks.` : undefined,
     ].filter(Boolean);
 
-    return { text: normalizeExtractedText(sheets.join('\n\n')), warning: warningParts.join(' ') };
+    return { text: normalizeExtractedText(sheets.join('\n\n')), warning: warningParts.join(' '), truncated };
   } catch (error) {
     if (error instanceof EvidenceImportLimitError) throw error;
-    throw new Error('The XLSX archive is invalid or unsupported. No files in this batch were imported.');
+    // Password-protected (OLE), truncated or damaged files keep their metadata.
+    return { text: '', unreadable: true };
   }
 }
 
@@ -616,7 +633,9 @@ function parseWorkbookSheets(workbookData?: Uint8Array, relsData?: Uint8Array): 
   return sheets;
 }
 
-function parseWorksheet(xml: string, sharedStrings: string[], budget: { cells: number; characters: number }): string[][] {
+/** Complete rows are returned until a cell or character budget runs out; the
+ * rest of the workbook is reported as truncated rather than failing the file. */
+function parseWorksheet(xml: string, sharedStrings: string[], budget: { cells: number; characters: number }): { rows: string[][]; truncated: boolean } {
   const rows: string[][] = [];
   let cells = 0;
 
@@ -629,28 +648,27 @@ function parseWorksheet(xml: string, sharedStrings: string[], budget: { cells: n
       const cellXml = cellMatch[2] || '';
       const ref = attrs.match(/\br="([^"]+)"/)?.[1] || '';
       const column = ref ? columnIndexFromRef(ref) : row.length;
-      if (!Number.isSafeInteger(column) || column < 0 || column >= EVIDENCE_LIMITS.spreadsheetColumns
-        || ++cells > EVIDENCE_LIMITS.spreadsheetCells) {
+      // No spreadsheet producer writes a column past XFD: treat it as hostile.
+      if (!Number.isSafeInteger(column) || column < 0 || column >= EVIDENCE_LIMITS.spreadsheetColumns) {
         throw new EvidenceImportLimitError('spreadsheet dimensions exceed the supported limit');
       }
+      if (++cells > EVIDENCE_LIMITS.spreadsheetCells) return { rows, truncated: true };
       const value = parseCellValue(attrs, cellXml, sharedStrings);
-      if (value.length > budget.characters) throw new EvidenceImportLimitError('spreadsheet text exceeds the supported limit');
+      if (value.length > budget.characters) return { rows, truncated: true };
       budget.characters -= value.length;
       row[column] = value;
     }
     if (row.some((cell) => cell?.trim())) {
       // Sparse column references and repeated shared strings can amplify output
       // even when XML byte counts and the number of populated cells are small.
-      if (row.length > budget.cells || row.length + 1 > budget.characters) {
-        throw new EvidenceImportLimitError('spreadsheet dimensions exceed the supported limit');
-      }
+      if (row.length > budget.cells || row.length + 1 > budget.characters) return { rows, truncated: true };
       budget.cells -= row.length;
       budget.characters -= row.length + 1;
       rows.push(trimTrailingEmpty(row).map((cell) => cell || ''));
     }
   }
 
-  return rows;
+  return { rows, truncated: false };
 }
 
 function parseCellValue(attrs: string, cellXml: string, sharedStrings: string[]): string {
@@ -669,18 +687,18 @@ function parseCellValue(attrs: string, cellXml: string, sharedStrings: string[])
   return value;
 }
 
-function extractPdfText(bytes: Uint8Array): { text: string; rejected: boolean } {
+function extractPdfText(bytes: Uint8Array): { text: string; rejected: boolean; truncated: boolean } {
   const raw = bytesToLatin1(bytes);
   const texts: string[] = [];
   let sawPdfTextObject = false;
   let cursor = 0;
   let streams = 0;
+  let truncated = false;
   const budget = { remaining: EVIDENCE_LIMITS.expandedBytes as number };
 
   while (cursor < raw.length) {
     const streamIndex = raw.indexOf('stream', cursor);
     if (streamIndex === -1) break;
-    if (++streams > EVIDENCE_LIMITS.entries) throw new EvidenceImportLimitError('too many PDF streams');
 
     let dataStart = streamIndex + 'stream'.length;
     if (raw[dataStart] === '\r' && raw[dataStart + 1] === '\n') dataStart += 2;
@@ -694,19 +712,26 @@ function extractPdfText(bytes: Uint8Array): { text: string; rejected: boolean } 
       dataEnd -= 1;
     }
 
-    const dictionaryStart = raw.lastIndexOf('<<', streamIndex);
-    const dictionary = dictionaryStart >= 0 ? raw.slice(dictionaryStart, streamIndex) : '';
-    const streamBytes = bytes.subarray(dataStart, dataEnd);
-    const decoded = decodePdfStream(streamBytes, dictionary, budget);
-    if (decoded) {
-      if (containsPdfTextObject(decoded)) sawPdfTextObject = true;
-      const textObjects = extractPdfTextObjects(decoded);
+    const dictionary = pdfStreamDictionary(raw, streamIndex, cursor);
+    cursor = endIndex + 'endstream'.length;
+    // Images, font programs and metadata cannot hold text operators: skip them
+    // without decoding, so screenshots do not use up the budgets below.
+    if (!mayHoldPdfText(dictionary)) continue;
+    if (streams >= EVIDENCE_LIMITS.entries || budget.remaining <= 0) {
+      truncated = true;
+      break;
+    }
+    streams += 1;
+
+    const decoded = decodePdfStream(bytes.subarray(dataStart, dataEnd), dictionary, budget);
+    if (decoded.truncated) truncated = true;
+    if (decoded.text) {
+      if (containsPdfTextObject(decoded.text)) sawPdfTextObject = true;
+      const textObjects = extractPdfTextObjects(decoded.text);
       if (textObjects.length > 0) {
         texts.push(...textObjects);
       }
     }
-
-    cursor = endIndex + 'endstream'.length;
   }
 
   if (texts.length === 0) {
@@ -719,28 +744,52 @@ function extractPdfText(bytes: Uint8Array): { text: string; rejected: boolean } 
 
   const normalized = normalizeExtractedText(dedupeTextLines(texts).join('\n'));
   return looksLikeReadableEvidenceText(normalized)
-    ? { text: normalized, rejected: false }
-    : { text: '', rejected: sawPdfTextObject || normalized.length > 0 };
+    ? { text: normalized, rejected: false, truncated }
+    : { text: '', rejected: sawPdfTextObject || normalized.length > 0, truncated };
 }
 
-function decodePdfStream(data: Uint8Array, dictionary: string, budget: ExpansionBudget): string {
-  const isFlate = /\/FlateDecode\b|\/Fl\b/.test(dictionary);
-  if (!isFlate) {
-    consumeExpansion(data.byteLength, budget);
-    return bytesToLatin1(data);
+/** The dictionary of the object that owns the stream keyword at streamIndex:
+ * the balanced <<...>> ending just before it. A plain lastIndexOf('<<') would
+ * return a nested dictionary such as /DecodeParms. The scan is bounded. */
+function pdfStreamDictionary(raw: string, streamIndex: number, floor: number): string {
+  let end = streamIndex;
+  while (end > floor && /\s/.test(raw[end - 1])) end -= 1;
+  if (raw.slice(end - 2, end) !== '>>') return '';
+  const start = Math.max(floor, end - 4096);
+  let depth = 0;
+  for (let i = end - 2; i >= start; i -= 1) {
+    if (raw[i] === '>' && raw[i + 1] === '>') { depth += 1; i -= 1; }
+    else if (raw[i] === '<' && raw[i + 1] === '<') { depth -= 1; if (depth === 0) return raw.slice(i, end); i -= 1; }
+  }
+  return '';
+}
+
+function mayHoldPdfText(dictionary: string): boolean {
+  return !/\/Subtype\s*\/(?:Image|XML|Type1C|CIDFontType0C|OpenType)\b|\/Type\s*\/(?:Metadata|XRef)\b|\/Length[123]\b|\/(?:DCTDecode|DCT|JPXDecode|JBIG2Decode|CCITTFaxDecode|CCF)\b/.test(dictionary);
+}
+
+/** Decode at most what is left of the per-part and document budgets. A stream
+ * that is longer is cut, and the caller reports the document as partial. */
+function decodePdfStream(data: Uint8Array, dictionary: string, budget: ExpansionBudget): { text: string; truncated: boolean } {
+  const limit = Math.min(EVIDENCE_LIMITS.entryBytes, budget.remaining);
+  if (!/\/FlateDecode\b|\/Fl\b/.test(dictionary)) {
+    const kept = data.subarray(0, limit);
+    budget.remaining -= kept.byteLength;
+    return { text: bytesToLatin1(kept), truncated: kept.byteLength < data.byteLength };
   }
 
-  try {
-    return bytesToLatin1(inflateBounded(data, true, budget));
-  } catch (error) {
-    if (error instanceof EvidenceImportLimitError) throw error;
+  // PDF Flate streams carry a zlib header; try it first so a failed raw attempt
+  // never spends time on output that is thrown away.
+  for (const raw of [false, true]) {
     try {
-      return bytesToLatin1(inflateBounded(data, false, budget));
-    } catch (error) {
-      if (error instanceof EvidenceImportLimitError) throw error;
-      return '';
+      const inflated = inflateBounded(data, raw, limit);
+      budget.remaining -= inflated.data.byteLength;
+      return { text: bytesToLatin1(inflated.data), truncated: inflated.truncated };
+    } catch {
+      // Try the other wrapper; a stream neither can read holds no usable text.
     }
   }
+  return { text: '', truncated: false };
 }
 
 function extractPdfStrings(text: string): string[] {
@@ -1009,36 +1058,44 @@ function decodeRtfUnicode(value: number): string {
 
 interface ExpansionBudget { remaining: number }
 
-function consumeExpansion(size: number, budget: ExpansionBudget): void {
-  if (size > EVIDENCE_LIMITS.entryBytes || size > budget.remaining) {
-    throw new EvidenceImportLimitError('decoded content exceeds the 8 MiB part or 32 MiB document limit');
-  }
-  budget.remaining -= size;
-}
+const STOP_INFLATE = Symbol('stop inflate');
 
 /** Never use one-shot inflate for untrusted evidence: the note-length cap runs
- * later. Abort in onData before retaining a chunk beyond either byte budget. */
-function inflateBounded(data: Uint8Array, raw: boolean, budget: ExpansionBudget): Uint8Array {
+ * later. Output past `limit` is never produced: onData aborts the inflater and
+ * reports a cut, and the caller decides whether a cut part is acceptable. */
+function inflateBounded(data: Uint8Array, raw: boolean, limit: number): { data: Uint8Array; truncated: boolean } {
   const inflator = new pako.Inflate({ raw, chunkSize: 64 * 1024 });
   const chunks: Uint8Array[] = [];
   let total = 0;
+  let truncated = false;
   inflator.onData = chunk => {
-    if (total + chunk.byteLength > EVIDENCE_LIMITS.entryBytes) {
-      throw new EvidenceImportLimitError('a decoded part exceeds 8 MiB');
+    const room = limit - total;
+    if (chunk.byteLength > room) {
+      if (room > 0) { chunks.push(chunk.subarray(0, room)); total += room; }
+      truncated = true;
+      throw STOP_INFLATE;
     }
-    consumeExpansion(chunk.byteLength, budget);
     total += chunk.byteLength;
     chunks.push(chunk);
   };
-  inflator.push(data, true);
-  if (inflator.err || !inflator.ended) throw new Error('Invalid compressed evidence stream');
+  try {
+    inflator.push(data, true);
+  } catch (error) {
+    if (error !== STOP_INFLATE) throw error;
+  }
+  if (!truncated && (inflator.err || !inflator.ended)) throw new Error('Invalid compressed evidence stream');
   const output = new Uint8Array(total);
   let offset = 0;
   for (const chunk of chunks) { output.set(chunk, offset); offset += chunk.byteLength; }
-  return output;
+  return { data: output, truncated };
 }
 
-function readZip(bytes: Uint8Array, include: (name: string) => boolean): Map<string, Uint8Array> {
+interface ZipPart { name: string; method: number; compressedSize: number; expandedSize: number; localOffset: number }
+
+/** Structural problems throw a plain Error (the caller imports metadata only).
+ * EvidenceImportLimitError is kept for bomb shapes: too many entries,
+ * overlapping data, and parts whose output does not match their declared size. */
+function readZip(bytes: Uint8Array, include: (name: string) => boolean): { entries: Map<string, Uint8Array>; truncated: boolean } {
   const entries = new Map<string, Uint8Array>();
   const eocd = findEndOfCentralDirectory(bytes);
   if (eocd < 0) throw new Error('ZIP end of central directory not found');
@@ -1047,14 +1104,14 @@ function readZip(bytes: Uint8Array, include: (name: string) => boolean): Map<str
   const centralDirOffset = u32(bytes, eocd + 16);
   const centralDirEnd = centralDirOffset + u32(bytes, eocd + 12);
   if (entryCount > EVIDENCE_LIMITS.entries) throw new EvidenceImportLimitError('archive contains more than 2048 entries');
+  // Bytes after the end record (appended by some download and signing tools) are ignored.
   if (u16(bytes, eocd + 4) || u16(bytes, eocd + 6) || u16(bytes, eocd + 8) !== entryCount
-    || centralDirEnd > eocd || eocd + 22 + u16(bytes, eocd + 20) !== bytes.byteLength) {
+    || centralDirEnd > eocd || eocd + 22 + u16(bytes, eocd + 20) > bytes.byteLength) {
     throw new Error('Unsupported or invalid ZIP directory');
   }
   let offset = centralDirOffset;
   let compressedTotal = 0;
-  let declaredTotal = 0;
-  const budget = { remaining: EVIDENCE_LIMITS.expandedBytes as number };
+  const selected: ZipPart[] = [];
 
   for (let index = 0; index < entryCount; index += 1) {
     if (offset + 46 > centralDirEnd || u32(bytes, offset) !== 0x02014b50) throw new Error('Invalid ZIP directory entry');
@@ -1072,51 +1129,62 @@ function readZip(bytes: Uint8Array, include: (name: string) => boolean): Map<str
     if (!name || name.includes('\0') || name.startsWith('/') || name.split('/').includes('..') || entries.has(name)) {
       throw new Error('Invalid or duplicate ZIP entry name');
     }
+    if (compressedSize === 0xffffffff || expandedSize === 0xffffffff || localOffset === 0xffffffff) {
+      throw new Error('ZIP64 archives are not supported');
+    }
     compressedTotal += compressedSize;
     if (compressedTotal > EVIDENCE_LIMITS.inputBytes) throw new EvidenceImportLimitError('archive compressed parts exceed 25 MiB');
     // Keep names for the existing chart/media warnings, without decoding data
     // that the document text extractor will never use.
-    if (!include(name)) entries.set(name, new Uint8Array());
-    else {
-      declaredTotal += expandedSize;
-      if (expandedSize > EVIDENCE_LIMITS.entryBytes || declaredTotal > EVIDENCE_LIMITS.expandedBytes) {
-        throw new EvidenceImportLimitError('archive declared content exceeds the decoded byte limit');
-      }
+    entries.set(name, new Uint8Array());
+    if (include(name)) {
       if (u16(bytes, offset + 8) & 1) throw new Error('Encrypted document parts are not supported');
-      const entry = readZipLocalEntry(bytes, localOffset, name, method, compressedSize, centralDirOffset, budget);
-      if (!entry || entry.data.byteLength !== expandedSize) throw new Error('Invalid ZIP entry size or compression');
-      entries.set(entry.name, entry.data);
+      selected.push({ name, method, compressedSize, expandedSize, localOffset });
     }
     offset = next;
   }
   if (offset !== centralDirEnd) throw new Error('Invalid ZIP directory size');
-  return entries;
+
+  // Small parts (workbook, shared strings, headers) first, so large sheets
+  // cannot use up the document budget before the parts every sheet needs.
+  selected.sort((a, b) => a.expandedSize - b.expandedSize);
+  const budget = { remaining: EVIDENCE_LIMITS.expandedBytes as number };
+  let truncated = false;
+  for (const part of selected) {
+    const entry = readZipLocalEntry(bytes, part, centralDirOffset, budget);
+    if (entry.truncated) truncated = true;
+    entries.set(part.name, entry.data);
+  }
+  return { entries, truncated };
 }
 
-function readZipLocalEntry(
-  bytes: Uint8Array,
-  localOffset: number,
-  name: string,
-  method: number,
-  compressedSize: number,
-  dataEnd: number,
-  budget: ExpansionBudget,
-): ZipEntry | null {
-  if (localOffset + 30 > dataEnd || u32(bytes, localOffset) !== 0x04034b50) return null;
+function readZipLocalEntry(bytes: Uint8Array, part: ZipPart, dataEnd: number, budget: ExpansionBudget): { data: Uint8Array; truncated: boolean } {
+  const { name, method, compressedSize, expandedSize, localOffset } = part;
+  if (localOffset + 30 > dataEnd || u32(bytes, localOffset) !== 0x04034b50) throw new Error('Invalid ZIP local header');
   const nameLength = u16(bytes, localOffset + 26);
   const extraLength = u16(bytes, localOffset + 28);
   const dataStart = localOffset + 30 + nameLength + extraLength;
   if (dataStart + compressedSize > dataEnd || u16(bytes, localOffset + 8) !== method
     || (u16(bytes, localOffset + 6) & 1)
-    || decodeUtf8(bytes.subarray(localOffset + 30, localOffset + 30 + nameLength)).replace(/\\/g, '/') !== name) return null;
-  const compressed = bytes.subarray(dataStart, dataStart + compressedSize);
-
-  if (method === 0) {
-    consumeExpansion(compressed.byteLength, budget);
-    return { name, data: compressed };
+    || decodeUtf8(bytes.subarray(localOffset + 30, localOffset + 30 + nameLength)).replace(/\\/g, '/') !== name) {
+    throw new Error('Invalid ZIP local header');
   }
-  if (method === 8) return { name, data: inflateBounded(compressed, true, budget) };
-  return null;
+  if (method !== 0 && method !== 8) throw new Error('Unsupported ZIP compression method');
+  const limit = Math.min(EVIDENCE_LIMITS.entryBytes, budget.remaining);
+  if (limit <= 0) return { data: new Uint8Array(), truncated: true };
+  const compressed = bytes.subarray(dataStart, dataStart + compressedSize);
+  const decoded = method === 0
+    ? { data: compressed.subarray(0, limit), truncated: compressed.byteLength > limit }
+    : inflateBounded(compressed, true, limit);
+  budget.remaining -= decoded.data.byteLength;
+
+  // A part declared larger than the budget is cut on purpose. Any other
+  // difference from the declared size is a lying header: reject the file.
+  if (decoded.truncated && expandedSize > limit) return decoded;
+  if (decoded.truncated || decoded.data.byteLength !== expandedSize) {
+    throw new EvidenceImportLimitError('a compressed part does not match its declared size');
+  }
+  return decoded;
 }
 
 function findEndOfCentralDirectory(bytes: Uint8Array): number {
