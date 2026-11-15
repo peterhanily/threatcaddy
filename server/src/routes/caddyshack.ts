@@ -413,7 +413,7 @@ app.get('/posts/:id', async (c) => {
 });
 
 // PATCH /api/caddyshack/posts/:id — edit post (author or admin only)
-app.patch('/posts/:id', async (c) => {
+app.patch('/posts/:id', requireRole('admin', 'analyst'), async (c) => {
   const db = c.get('feedDb');
   const user = c.get('user');
   const postId = c.req.param('id');
@@ -445,9 +445,6 @@ app.patch('/posts/:id', async (c) => {
   if (body.pinned !== undefined) {
     if (typeof body.pinned !== 'boolean') {
       return c.json({ error: 'Pinned must be a boolean', code: ErrorCodes.VALIDATION_FAILED }, 400);
-    }
-    if (user.role !== 'admin' && user.role !== 'analyst') {
-      return c.json({ error: 'Insufficient permissions', code: ErrorCodes.INSUFFICIENT_PERMISSIONS }, 403);
     }
     updates.pinned = body.pinned;
   }

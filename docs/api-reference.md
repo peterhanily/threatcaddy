@@ -542,7 +542,7 @@ The current web client opts into paging and summaries. Older servers ignore thes
 
 #### `PATCH /api/caddyshack/posts/:id`
 
-Edit a post. Author or admin only. Setting `pinned` requires `admin` or `analyst` role.
+Edit a post. Requires `admin` or `analyst` role. Author or admin only.
 
 **Request body:**
 ```json

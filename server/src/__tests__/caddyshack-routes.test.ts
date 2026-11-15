@@ -595,6 +595,17 @@ describe('PATCH /api/caddyshack/posts/:id', () => {
     expect(db.update).not.toHaveBeenCalled();
   });
 
+  it('refuses edits from the read-only viewer role, even on its own post', async () => {
+    selectQueue.push([{ id: 'p1', authorId: 'user-1', content: 'Original' }]);
+
+    const res = await app.request(jsonReq('PATCH', '/api/caddyshack/posts/p1', {
+      content: 'Edited by a viewer',
+    }, authHeader('viewer-token')));
+    expect(res.status).toBe(403);
+    const { db } = await import('../db/index.js');
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
   it('returns 400 for invalid pinned value (not boolean)', async () => {
     selectQueue.push([{ id: 'p1', authorId: 'user-1', content: 'Original' }]);
 
