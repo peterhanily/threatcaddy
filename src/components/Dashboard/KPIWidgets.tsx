@@ -128,7 +128,7 @@ export function KPIWidgets({ folders, allNotes, allTasks, allEvents, allIOCs, se
           >
             <div className="text-[10px] text-gray-500 uppercase tracking-wider">{kpi.label}</div>
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-2xl font-bold tabular-nums" style={{ color: kpi.color }}>
+              <span className="text-2xl font-bold tabular-nums text-text-primary">
                 {kpi.value}
               </span>
               {kpi.trend === 'up' && <TrendingUp size={14} className="text-red-400" />}

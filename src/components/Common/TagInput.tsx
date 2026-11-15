@@ -91,8 +91,8 @@ export function TagInput({ selectedTags, allTags, onChange, onCreateTag }: TagIn
           return (
             <span
               key={tag}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
-              style={{ backgroundColor: (tagObj?.color || '#6366f1') + '20', color: tagObj?.color || '#6366f1' }}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-text-primary"
+              style={{ backgroundColor: (tagObj?.color || '#6366f1') + '20' }}
             >
               {tag}
               <button onClick={() => removeTag(tag)} className="hover:opacity-70" aria-label={`Remove tag ${tag}`}>

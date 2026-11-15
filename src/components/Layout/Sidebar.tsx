@@ -333,7 +333,7 @@ export function Sidebar({
           icon={<FileText size={16} />}
           label={t('sidebar.notes')}
           badge={investigationScopedCounts ? investigationScopedCounts.notes : noteCounts.total}
-          badgeColor="bg-accent-blue/15 text-accent-blue"
+          badgeColor="bg-accent-blue/15 text-text-primary"
           active={activeView === 'notes' && !showTrash && !showArchive}
           onClick={() => nav(() => navToView('notes'))}
           scopedColor={selectedFolder?.color || undefined}

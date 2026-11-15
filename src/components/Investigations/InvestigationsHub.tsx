@@ -62,7 +62,7 @@ function EmptyState({ message, showCreate, onCreate }: { message: string; showCr
       {showCreate && onCreate && (
         <button
           onClick={onCreate}
-          className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple text-white hover:brightness-110 transition-all"
+          className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-accent text-white hover:bg-accent-hover transition-all"
         >
           <Plus size={14} />
           {t('hub.createInvestigation')}
@@ -170,7 +170,7 @@ export function InvestigationsHub({
           <h1 className="text-xl font-bold text-text-primary">{t('hub.title')}</h1>
           <button
             onClick={onCreateInvestigation}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-purple text-white hover:brightness-110 transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-accent text-white hover:bg-accent-hover transition-all"
           >
             <Plus size={16} />
             {t('hub.newInvestigation')}
