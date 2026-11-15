@@ -126,6 +126,16 @@ test('hosted browser acceptance runs each Playwright project in its own job agai
   });
 });
 
+test('promoted client and server artifacts outlive release preparation and later re-verification', () => {
+  for (const [job, name] of [['client-artifact', 'verified-client-'], ['server-artifact', 'verified-server-']]) {
+    const upload = stepsOf(verify.jobs[job]).find(step => step.id === 'upload');
+    assert.equal(upload.with.name, name + expression('github.sha'));
+    assert.equal(upload.with['if-no-files-found'], 'error');
+    // GitHub's maximum retention for this public repository.
+    assert.equal(upload.with['retention-days'], 90);
+  }
+});
+
 test('required client checks validate every locale without report-only or narrowed coverage', () => {
   const localeSteps = stepsOf(verify.jobs['client-checks']).filter(step => step.run === 'pnpm locales:check');
   assert.equal(localeSteps.length, 1);

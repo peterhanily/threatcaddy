@@ -154,7 +154,7 @@ jobs:
           name: verified-client-${{ github.sha }}
           path: verified-client/
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 90
       # Hosted startup and math checks compare requested chunks with these
       # reports from the same build. They are test inputs, never published.
       - name: Keep the hosted build reports for browser acceptance
@@ -400,7 +400,7 @@ jobs:
           path: verified-server/
           if-no-files-found: error
           compression-level: 1
-          retention-days: 7
+          retention-days: 90
 
   extension:
     name: Extension checks and packages
