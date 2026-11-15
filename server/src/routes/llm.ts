@@ -11,6 +11,8 @@ import { logger } from '../lib/logger.js';
 
 const app = new Hono<{ Variables: { user: AuthUser } }>();
 
+const tokenCount = (value: unknown): number => typeof value === 'number' && Number.isFinite(value) ? value : 0;
+
 app.use('*', requireAuth);
 
 // POST /api/llm/chat — SSE streaming response with usage tracking
@@ -83,7 +85,9 @@ app.post('/chat', requireRole('admin', 'analyst'), async (c) => {
         stream.writeSSE({ data: JSON.stringify({ type: 'chunk', content: text }) });
       },
       onDone: (stopReason, contentBlocks, usage) => {
-        stream.writeSSE({ data: JSON.stringify({ type: 'done', stopReason, contentBlocks: contentBlocks || [], usage: usage || null }) });
+        // Clients read usage as { input, output } and add it to stored metrics.
+        const tokens = usage ? { input: tokenCount(usage.inputTokens), output: tokenCount(usage.outputTokens) } : null;
+        stream.writeSSE({ data: JSON.stringify({ type: 'done', stopReason, contentBlocks: contentBlocks || [], usage: tokens }) });
 
         // Track usage asynchronously
         const latencyMs = Date.now() - startTime;
@@ -92,8 +96,8 @@ app.post('/chat', requireRole('admin', 'analyst'), async (c) => {
           userId: user.id,
           provider: body.provider,
           model: body.model,
-          inputTokens: usage?.inputTokens || 0,
-          outputTokens: usage?.outputTokens || 0,
+          inputTokens: tokens?.input ?? 0,
+          outputTokens: tokens?.output ?? 0,
           latencyMs,
           threadId: null,
         }).catch((err) => logger.error('Failed to log LLM usage', err));
