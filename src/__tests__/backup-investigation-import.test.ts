@@ -8,7 +8,7 @@ import { revisionKey } from '../lib/sync-state';
 
 const base = { tags: [], createdAt: 1, updatedAt: 1, trashed: false, archived: false };
 const note = (id: string, folderId?: string) => ({ ...base, id, title: `Note ${id}`, content: `Body ${id}`, pinned: false, ...(folderId ? { folderId } : {}) });
-const chat = (id: string, folderId?: string) => ({ ...base, id, title: `Chat ${id}`, messages: [], model: 'model', provider: 'anthropic', ...(folderId ? { folderId } : {}) });
+const chat = (id: string, folderId?: string) => ({ ...base, id, title: `Chat ${id}`, messages: [], model: 'model', provider: 'anthropic' as const, ...(folderId ? { folderId } : {}) });
 
 beforeEach(async () => {
   await Promise.all(db.tables.map(table => table.clear()));
@@ -100,7 +100,7 @@ describe('files that carry a legacy sync revision', () => {
     await versionedInvestigation();
     const file = JSON.parse(await exportInvestigationJSON('A'));
     for (const name of ['folders', 'notes', 'chatThreads']) for (const row of file[name]) expect(row, name).not.toHaveProperty('version');
-    expect((await db.notes.get('nA'))?.version).toBe(7);
+    expect((await db.table('notes').get('nA'))?.version).toBe(7);
   });
 
   it('imports legacy full backups and investigation exports whose rows carry version', async () => {
@@ -130,8 +130,8 @@ describe('files that carry a legacy sync revision', () => {
     await db.notes.update('nA', { content: 'Differential edit', updatedAt: 9 });
     const delta = await buildDifferentialPayload('investigation', full, 'parent', 'A');
     await restoreFullReplace(full);
-    for (const row of await db.notes.where('folderId').equals('A').toArray()) await db.notes.update(row.id, { version: 8 });
-    await db.folders.update('A', { version: 8 });
+    for (const row of await db.notes.where('folderId').equals('A').toArray()) await db.table('notes').update(row.id, { version: 8 });
+    await db.table('folders').update('A', { version: 8 });
     await restoreMerge(delta, undefined, full);
     expect((await db.notes.get('nA'))?.content).toBe('Differential edit');
   });

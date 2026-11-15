@@ -10,8 +10,10 @@ type Shape = Record<string, Check>;
 /** Validation runs before any write or download in both directions. Messages
  * carry paths and record IDs only, never field values. */
 class BackupFieldError extends Error {
-  constructor(readonly path: string, record?: string) {
+  readonly path: string;
+  constructor(path: string, record?: string) {
     super(`Invalid backup field ${path}${record ? ` in record ${record}` : ''}; no data was changed.`);
+    this.path = path;
   }
 }
 const invalid = (path: string): never => { throw new BackupFieldError(path); };

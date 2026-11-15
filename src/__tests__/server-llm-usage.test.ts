@@ -37,7 +37,7 @@ describe('team-server LLM proxy usage', () => {
 
   it('never yields non-finite or negative counts', async () => {
     expect(await usageFor({ usage: { input: 'many', outputTokens: -3 } })).toEqual({ input: 0, output: 0 });
-    expect(await usageFor({ usage: { input: null, output: 1e400 } })).toEqual({ input: 0, output: 0 });
+    expect(await usageFor({ usage: { input: null, output: 'NaN' } })).toEqual({ input: 0, output: 0 });
   });
 
   it('keeps usage absent when the server sends none', async () => {

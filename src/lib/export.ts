@@ -1302,10 +1302,10 @@ function holdsSingleInvestigation(decoded: Awaited<ReturnType<typeof prepareJSON
   if (decoded.sourceFormat === 'investigation') return true;
   const data = decoded.payload.data;
   if (decoded.sourceFormat !== 'legacy-json' || decoded.quickLinks !== undefined || data.folders?.length !== 1) return false;
-  const folderId = data.folders[0].id;
+  const folderId = (data.folders[0] as PortableRow).id;
   return BACKUP_TABLES.every(name => ['folders', 'tags', 'timelines', 'agentProfiles'].includes(name)
     || (['noteTemplates', 'playbookTemplates', 'integrationTemplates', 'installedIntegrations', 'customSlashCommands'].includes(name)
-      ? !data[name]?.length : (data[name] ?? []).every(row => investigationOf(name, row) === folderId)));
+      ? !data[name]?.length : (data[name] ?? []).every(row => investigationOf(name, row as PortableRow) === folderId)));
 }
 
 export async function importJSON(json: string, password?: string): Promise<JSONImportResult> {

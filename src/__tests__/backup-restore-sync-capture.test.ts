@@ -105,7 +105,7 @@ describe('restoring a backup in a team-bound workspace', () => {
     await importJSON(backup);
     const engine = new SyncEngine(); engines.push(engine);
     const errors: (string | null)[] = [];
-    engine.onError = message => { errors.push(message); };
+    engine.setErrorHandler(message => { errors.push(message); });
     engine.setWorkspaceIdentity(identity.serverUrl, identity.userId);
     await engine.sync();
     expect(api.push).not.toHaveBeenCalled();
