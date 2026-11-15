@@ -37,6 +37,8 @@ test('both demos coexist, revisiting preserves edits, and removing the displayed
   await page.getByPlaceholder('Note title...').fill('My reviewed mailbox exercise');
   await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible();
 
+  // A nonempty existing case makes stale-array selection validation observable:
+  // importing the second demo must reload records before selecting its first note.
   await page.goto('/?demo=parody');
   const welcome = page.getByRole('dialog', { name: 'Welcome to ThreatCaddy' });
   await expect(welcome).toContainText('FERMENTED PERSISTENCE');

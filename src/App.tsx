@@ -396,7 +396,7 @@ type AppInnerProps = {
   setSyncConflicts: ReturnType<typeof useServerSync>['setSyncConflicts'];
   handleResolveConflict: ReturnType<typeof useServerSync>['handleResolveConflict'];
   handleResolveAllConflicts: ReturnType<typeof useServerSync>['handleResolveAllConflicts'];
-  reloadAll: () => void;
+  reloadAll: () => Promise<void>;
   syncedFolderIds: Set<string>;
   isMobile: boolean;
 };
@@ -1294,10 +1294,14 @@ const AppInner = memo(function AppInner({
     const current = () => workspace === getActiveWorkspaceId() && generation === getSessionGeneration();
     try {
       const result = await loadSampleInvestigation(kind);
+      if (!current()) return false;
+      // Selection validators must see the imported rows before selecting them.
+      // Starting a reload without awaiting it lets an existing nonempty case
+      // list incorrectly clear the new sample's folder and note as missing.
+      await reloadAll();
       // The write may have committed immediately before a lock/switch. Preserve
       // that acknowledgement without navigating or logging into a new session.
       if (!current()) return false;
-      handleImportComplete();
       setSelectedFolderId(result.folder.id);
       navigateTo('notes');
       setSelectedNoteId(result.firstNoteId);
@@ -1310,7 +1314,7 @@ const AppInner = memo(function AppInner({
       if (current()) addToast('error', error instanceof Error ? error.message : tt('import.importFailed'));
       return false;
     }
-  }, [handleImportComplete, navigateTo, activityLog, setSelectedFolderId, setSelectedNoteId, addToast, tt]);
+  }, [reloadAll, navigateTo, activityLog, setSelectedFolderId, setSelectedNoteId, addToast, tt]);
 
   const handleDeleteSample = useCallback(async (kind: SampleInvestigationKind = 'realistic') => {
     const workspace = getActiveWorkspaceId(), generation = getSessionGeneration();

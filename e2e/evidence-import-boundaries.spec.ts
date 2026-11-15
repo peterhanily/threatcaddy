@@ -61,20 +61,37 @@ test('compressed selected content beyond its bound rejects the whole batch and a
 });
 
 test('a pending real worker can be cancelled while controls remain responsive, without late records', async ({ page }) => {
-  const workerPattern = /\/assets\/evidence-import\.worker-[^/]+\.js$/;
-  let release = () => {};
-  const held = new Promise<void>(resolve => { release = resolve; });
-  let observed = () => {};
-  const requested = new Promise<void>(resolve => { observed = resolve; });
-  await page.route(workerPattern, async route => { observed(); await held; await route.continue(); });
-  try {
-    await page.locator('#main-content input[type="file"]').setInputFiles({ name: 'cancelled.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', buffer: evidenceDocx() });
-    await requested;
-    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
-    await page.evaluate(() => new Promise<void>(resolve => { let frames = 0; const tick = () => { if (++frames === 4) resolve(); else requestAnimationFrame(tick); }; requestAnimationFrame(tick); }));
-    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(0);
-  } finally { release(); await page.unroute(workerPattern); }
+  // Delay only delivery at the native Worker boundary. Cancelling a held network
+  // route races the browser's own request cancellation; this gate instead keeps
+  // the real worker alive and verifies that the app actually terminates it.
+  await page.evaluate(() => {
+    const state = { hold: true, pending: 0, terminated: 0 };
+    (window as typeof window & { __evidenceGate: typeof state }).__evidenceGate = state;
+    const OriginalWorker = window.Worker;
+    window.Worker = class extends OriginalWorker {
+      private readonly evidence: boolean;
+      private waiting = false;
+      constructor(url: string | URL, options?: WorkerOptions) {
+        super(url, options); this.evidence = String(url).includes('evidence-import.worker');
+      }
+      postMessage(message: unknown, transfer: Transferable[] = []) {
+        if (this.evidence && state.hold) { this.waiting = true; state.pending++; return; }
+        super.postMessage(message, transfer);
+      }
+      terminate() {
+        if (this.evidence) { state.terminated++; if (this.waiting) state.pending--; }
+        super.terminate();
+      }
+    };
+  });
+  await page.locator('#main-content input[type="file"]').setInputFiles({ name: 'cancelled.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', buffer: evidenceDocx() });
+  await expect.poll(() => page.evaluate(() => (window as typeof window & { __evidenceGate: { pending: number } }).__evidenceGate.pending)).toBe(1);
+  await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+  await page.evaluate(() => new Promise<void>(resolve => { let frames = 0; const tick = () => { if (++frames === 4) resolve(); else requestAnimationFrame(tick); }; requestAnimationFrame(tick); }));
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(0);
+  expect(await page.evaluate(() => (window as typeof window & { __evidenceGate: { pending: number; terminated: number } }).__evidenceGate)).toMatchObject({ pending: 0, terminated: 1 });
+  await page.evaluate(() => { (window as typeof window & { __evidenceGate: { hold: boolean } }).__evidenceGate.hold = false; });
   expect((await readRows(page, ['evidenceItems'])).evidenceItems).toEqual([]);
   await importOrdinaryDocx(page);
   expect((await readRows(page, ['evidenceItems'])).evidenceItems).toHaveLength(1);
