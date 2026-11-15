@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderMarkdown } from '../lib/markdown';
+import { renderMarkdown, sanitizeHtml } from '../lib/markdown';
 import type { WikiLinkTarget } from '../lib/markdown';
 
 describe('renderMarkdown', () => {
@@ -170,6 +170,17 @@ describe('renderMarkdown', () => {
     const html = renderMarkdown('<iframe src="https://evil.com"></iframe>');
     expect(html).not.toContain('<iframe');
     expect(html).not.toContain('evil.com');
+  });
+
+  it('removes style elements so clipped page text cannot restyle the app', () => {
+    const clipped = 'Clipped text <style>body { display: none }</style> continues\n\n'
+      + '<div><style>.sidebar-glass { background: red }</style>Fetched page</div>';
+    for (const html of [renderMarkdown(clipped), sanitizeHtml(`<p>a<style>body{display:none}</style>b</p>`)]) {
+      expect(html).not.toMatch(/<style\b/i);
+      expect(html).not.toContain('display: none');
+      expect(html).not.toContain('display:none');
+    }
+    expect(renderMarkdown(clipped)).toContain('Fetched page');
   });
 
   // ── Misc ────────────────────────────────────────────────────────

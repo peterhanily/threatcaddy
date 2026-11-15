@@ -152,7 +152,7 @@ const SANITIZE_CONFIG = {
   RETURN_DOM: false,
   ADD_TAGS: ['input'],
   ADD_ATTR: ['type', 'checked', 'disabled', 'class', 'data-note-link', 'data-note-id', 'data-entity-type', 'data-entity-id'],
-  FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'base', 'meta', 'link'],
+  FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'base', 'meta', 'link', 'style'],
   FORBID_ATTR: ['style', 'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'onsubmit'],
 };
 
