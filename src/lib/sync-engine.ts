@@ -58,6 +58,8 @@ export class SyncEngine {
   private onRemoteChange: ((changes: Record<string, unknown>[], tables: Set<string>) => void) | null = null;
   private onReady: (() => void) | null = null;
   private onError: ((message: string | null) => void) | null = null;
+  /** The last push's held-back notice, repeated at the next cycle start so the banner does not flicker. */
+  private heldNotice: string | null = null;
   private workspace: { serverUrl: string; userId: string } | null = null;
 
   setConflictHandler(handler: (conflicts: SyncResult[]) => void) { this.onConflict = handler; }
@@ -123,6 +125,7 @@ export class SyncEngine {
     this.timer = this.pushTimer = null;
     this.syncing = null;
     this.rerunRequested = false;
+    this.heldNotice = null;
   }
 
   private scheduleSync() {
@@ -145,7 +148,7 @@ export class SyncEngine {
           return;
         }
         if (epoch !== this.epoch) return;
-        this.onError?.(await this.skippedNotice());
+        this.onError?.(this.heldNotice ?? await this.skippedNotice());
         // Check an existing history before uploading into a possibly restored
         // server. A reset is a reconciliation decision, not a cursor rewind.
         await this.pull(epoch);
@@ -218,6 +221,7 @@ export class SyncEngine {
     let current: { entries: SyncQueueEntry[]; change: SyncChange }[] = [];
     let bytes = encoder.encode('{"changes":[]}').byteLength;
     let nodes = 0;
+    let oversized = false;
     for (const entries of ordered) {
       const first = entries[0], last = entries[entries.length - 1];
       const change: SyncChange = { table: last.table, entityId: last.entityId, op: last.op,
@@ -240,6 +244,7 @@ export class SyncEngine {
       }
       if (size + 15 > MAX_PUSH_BYTES) {
         this.onError?.('Some local changes are too large to sync and remain saved on this device. Reduce their size or export them separately.');
+        oversized = true;
         continue;
       }
       if (current.length && (current.length === 100 || bytes + size > MAX_PUSH_BYTES || nodes + changeNodes > MAX_SYNC_REQUEST_NODES)) {
@@ -248,10 +253,14 @@ export class SyncEngine {
       current.push({ entries, change }); bytes += size; nodes += changeNodes;
     }
     if (current.length) batches.push(current);
-    if (refused.length && epoch === this.epoch) {
-      const [held] = refused;
-      this.onError?.(i18n.t(held.refusal === 'limits' ? 'syncStatus.oversizedOutgoing' : 'syncStatus.unreadableOutgoing',
-        { ns: 'common', item: await this.itemLabel(held.table, held.entityId), total: refused.length }));
+    const [held] = refused;
+    const notice = held ? i18n.t(held.refusal === 'limits' ? 'syncStatus.oversizedOutgoing' : 'syncStatus.unreadableOutgoing',
+      { ns: 'common', item: await this.itemLabel(held.table, held.entityId), total: refused.length }) : null;
+    if (epoch === this.epoch) {
+      // The same notice every cycle leaves the banner untouched. Clear an earlier one only when nothing replaced it.
+      const previous = this.heldNotice;
+      this.heldNotice = notice;
+      if (notice || (previous && !oversized)) this.onError?.(notice ?? await this.skippedNotice());
     }
     for (const items of batches) {
       if (epoch !== this.epoch) return;

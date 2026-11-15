@@ -135,6 +135,23 @@ describe('uploads the server would refuse', () => {
     expect(onError).toHaveBeenLastCalledWith(expect.stringContaining('203.0.113.7'));
   });
 
+  it('keeps the held-back notice steady across sync cycles and clears it once the row uploads', async () => {
+    await seed('standaloneIOCs', ioc('i1', 'ip', '203.0.113.7'));
+    await engine.enqueue('standaloneIOCs', 'i1', 'put', ioc('i1', 'ip', '203.0.113.7'));
+    await engine.sync();
+    const held = onError.mock.lastCall?.[0];
+    expect(held).toContain('203.0.113.7');
+    onError.mockClear();
+    await engine.sync();
+    await engine.sync();
+    // The banner is an alert: clearing and re-adding it each cycle shifts the page and re-announces it.
+    expect(new Set(onError.mock.calls.map(([message]) => message))).toEqual(new Set([held]));
+    await engine.enqueue('standaloneIOCs', 'i1', 'put', ioc('i1', 'ipv4', '203.0.113.7'));
+    await engine.sync();
+    expect(onError).toHaveBeenLastCalledWith(null);
+    expect(await db.table('_syncQueue').count()).toBe(0);
+  });
+
   it('keeps a field over the server value limits on this device instead of failing the whole batch', async () => {
     await seed('notes', { ...note('big', 'Pasted log'), content: 'x'.repeat(500_001) });
     await engine.enqueue('notes', 'big', 'put', { ...note('big', 'Pasted log'), content: 'x'.repeat(500_001) });
