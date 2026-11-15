@@ -96,7 +96,7 @@ export function PlaybookPicker({ open, onClose, playbooks, onSelect, applyToExis
                 autoFocus
                 value={investigationName}
                 onChange={(e) => setInvestigationName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSelect(); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSelect(); } }}
                 placeholder="Enter investigation name..."
                 className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-accent"
               />

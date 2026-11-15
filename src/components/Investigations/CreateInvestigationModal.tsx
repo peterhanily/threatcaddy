@@ -90,7 +90,7 @@ export function CreateInvestigationModal({ open, onClose, onCreate, onOpenNameGe
             maxLength={200}
             value={name}
             onChange={(e) => { setName(e.target.value); if (nameError) setNameError(''); }}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreate(); } }}
             placeholder="e.g. Operation Midnight Storm"
             aria-required="true"
             aria-invalid={!!nameError}
