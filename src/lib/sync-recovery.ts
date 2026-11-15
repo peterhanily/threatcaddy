@@ -6,7 +6,7 @@ import { withEntityDraftBarrier } from './entity-drafts';
 import { hasPendingChanges, PendingChangesError } from './pending-changes';
 import { syncPull } from './server-api';
 import { readStoredAuth } from './auth-storage';
-import { ensureSyncCaptureCoverage, markRestoredSyncHistory, SYNC_CAPTURE_KEY, SYNC_RECOVERY_KEY } from './sync-capture-policy';
+import { ensureSyncCaptureCoverage, isSampleGlobalRecord, markRestoredSyncHistory, SYNC_CAPTURE_KEY, SYNC_RECOVERY_KEY } from './sync-capture-policy';
 
 const RECOVERY_KEY = SYNC_RECOVERY_KEY;
 type Snapshot = Record<string, Record<string, unknown>[]>;
@@ -94,7 +94,8 @@ export async function reconcileSyncWorkspace(receipt: SyncRecoveryReceipt, serve
     const folders = await db.folders.toArray();
     const shared = new Set(folders.filter(folder => !folder.localOnly).map(folder => folder.id));
     for (const table of SYNC_TABLES) for (const row of await db.table(table).toArray()) {
-      if (row.localOnly || (table === 'folders' ? !shared.has(row.id) : !['tags', 'timelines'].includes(table) && !shared.has(row.folderId))) continue;
+      if (row.localOnly || isSampleGlobalRecord(table, row.id)
+        || (table === 'folders' ? !shared.has(row.id) : !['tags', 'timelines'].includes(table) && !shared.has(row.folderId))) continue;
       // The verified current row wins over an older queued payload. Old clients
       // could leave their signed-out edits uncaptured even with a pending put.
       await queue.add({ table, entityId: row.id,

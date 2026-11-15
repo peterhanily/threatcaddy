@@ -51,6 +51,16 @@ describe('explicit sync recovery', () => {
     expect(await db.table('_syncMeta').get('syncRecoveryRequiredV2')).toMatchObject({ value: false });
     await expect(reconcileSyncWorkspace(receipt, identity.serverUrl, identity.userId, confirmed)).rejects.toThrow('Download');
   });
+  it('re-queues team tags and timelines but keeps demo ones on this device', async () => {
+    await db.tags.bulkAdd([{ id: 'sample-realistic-tag-1', name: 'synthetic-training', color: '#6366f1' }, { id: 'team-tag', name: 'phishing', color: '#ef4444' }]);
+    await db.timelines.add({ id: 'sample-realistic-timeline-1', name: 'Mailbox Exercise — UTC', order: 998, createdAt: 1, updatedAt: 1 });
+    const receipt = await prepareSyncRecovery(password);
+    await reconcileSyncWorkspace(receipt, identity.serverUrl, identity.userId, confirmed);
+    const queued: string[] = (await db.table('_syncQueue').toArray()).map(entry => entry.entityId);
+    expect(queued).toContain('team-tag');
+    expect(queued).not.toContain('sample-realistic-tag-1');
+    expect(queued).not.toContain('sample-realistic-timeline-1');
+  });
   it('requires a verified receipt and both confirmations', async () => {
     const receipt = await prepareSyncRecovery(password);
     await expect(reconcileSyncWorkspace({ ...receipt }, identity.serverUrl, identity.userId, confirmed)).rejects.toThrow('Download');
