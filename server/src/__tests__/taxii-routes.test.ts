@@ -63,9 +63,9 @@ describe('TAXII current-state objects', () => {
     expect((await app.request(`${path}?${query}`)).status).toBe(400);
   });
   it.each([
-    ['its own', [ioc('damaged', { enrichment: { stix: 'damaged' } })]],
-    ['a related', [ioc('source', { relationships: [{ targetIOCId: 'damaged', relationshipType: 'related-to' }] })], [ioc('damaged', { enrichment: { stix: 'damaged' } })]],
-  ])('answers %s IOC with damaged marking provenance with a TAXII 422 that names the remedy', async (_label, ...rows) => {
+    ['its own', [[ioc('damaged', { enrichment: { stix: 'damaged' } })]]],
+    ['a related', [[ioc('source', { relationships: [{ targetIOCId: 'damaged', relationshipType: 'related-to' }] })], [ioc('damaged', { enrichment: { stix: 'damaged' } })]]],
+  ])('answers %s IOC with damaged marking provenance with a TAXII 422 that names the remedy', async (_label, rows) => {
     mocks.rows.push([folder], ...rows);
     const response = await app.request(path);
     expect(response.status).toBe(422);
