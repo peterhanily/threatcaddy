@@ -4,6 +4,7 @@ import { db } from '../db';
 import type { Note, TimelineEvent } from '../types';
 import { deleteSampleInvestigation, getSampleFolderId, getSampleRemovalSummary, loadSampleInvestigation } from '../lib/sample-investigation-store';
 import { clearPending, hasPendingChanges, markPending, PendingChangesError } from '../lib/pending-changes';
+import { revisionKey } from '../lib/sync-state';
 import { setSessionKey } from '../lib/encryptionMiddleware';
 import { clearEncryptionMeta, setEncryptionMeta } from '../lib/encryptionStore';
 import { getEntityDraft } from '../lib/entity-drafts';
@@ -119,15 +120,70 @@ describe('sample tags and timelines stay local and never take over user defaults
     expect(queue.filter(entry => entry.table === 'tags' || entry.table === 'timelines')).toEqual([]);
   });
 
-  it('keeps a demo tag or timeline that a record outside the demo still uses', async () => {
+  it('hands a demo tag or timeline that a shared record still uses to the user, so it syncs with that record', async () => {
+    await bindToTeamServer();
     await db.folders.add({ id: 'real', name: 'Real case', order: 0, createdAt: 1 });
+    await loadSampleInvestigation('parody');
+    // A tag picked from the demo's list, and a seeded event moved into a real case.
+    await db.notes.add(userNote('real-note', 'real', { tags: ['remediation'] }));
+    await db.timelineEvents.update('sample-event-1', { folderId: 'real', updatedAt: Date.now() });
+    // An import added the user's own row for one of the moved event's tags.
+    await db.tags.add({ id: 'u-tag', name: 'Initial-Access', color: '#000000' });
+    await deleteSampleInvestigation('parody');
+    const tags = await db.tags.toArray();
+    // The moved event's tags come along without a second row for a name; unused demo tags go.
+    expect(tags.map(tag => tag.name).sort()).toEqual(['Initial-Access', 'remediation', 'vinegar-panda']);
+    expect(tags.filter(tag => tag.id.startsWith('sample-'))).toEqual([]);
+    const tag = tags.find(row => row.name === 'remediation');
+    if (!tag) throw new Error('Expected the remediation tag');
+    expect(tag.color).toBe('#22c55e');
+    const [timeline] = await db.timelines.toArray();
+    expect(timeline).toMatchObject({ name: 'FERMENTED PERSISTENCE Incident Timeline' });
+    expect(timeline.id).not.toMatch(/^sample-/);
+    expect((await db.timelineEvents.get('sample-event-1'))?.timelineId).toBe(timeline.id);
+    const queue: Array<{ table: string; entityId: string; op: string }> = await db.table('_syncQueue').toArray();
+    expect(queue).toEqual(expect.arrayContaining([
+      expect.objectContaining({ table: 'tags', entityId: tag.id, op: 'put' }),
+      expect.objectContaining({ table: 'timelines', entityId: timeline.id, op: 'put' }),
+      expect.objectContaining({ table: 'timelineEvents', entityId: 'sample-event-1', op: 'put' }),
+    ]));
+  });
+
+  it('keeps a demo tag or timeline that only local records still use', async () => {
     await loadSampleInvestigation('realistic');
-    await db.timelineEvents.add(userEvent('real-event', 'real', 'sample-realistic-timeline-1'));
-    await db.notes.add(userNote('real-note', 'real', { tags: ['synthetic-training'] }));
+    await db.folders.add({ id: 'kept', name: 'My work', order: 0, createdAt: 1, localOnly: true });
+    await db.notes.add(userNote('unfiled-note', null, { tags: ['synthetic-training'] }));
+    await db.timelineEvents.add(userEvent('local-event', 'kept', 'sample-realistic-timeline-1'));
     await deleteSampleInvestigation('realistic');
     expect(await db.timelines.get('sample-realistic-timeline-1')).toBeDefined();
     expect(await db.tags.get('sample-realistic-tag-1')).toBeDefined();
-    expect((await db.timelineEvents.get('real-event'))?.timelineId).toBe('sample-realistic-timeline-1');
+  });
+
+  it('syncs a change to a demo tag or timeline the team server already holds', async () => {
+    await bindToTeamServer();
+    await loadSampleInvestigation('realistic');
+    // An older build pushed both rows, so the server shares them with every member.
+    await db.table('_syncMeta').bulkPut([{ key: revisionKey('tags', 'sample-realistic-tag-1'), value: 4 },
+      { key: revisionKey('timelines', 'sample-realistic-timeline-1'), value: 7 }]);
+    await db.tags.update('sample-realistic-tag-1', { color: '#ff0000' });
+    await db.timelines.delete('sample-realistic-timeline-1');
+    const queue: Array<{ table: string; entityId: string }> = await db.table('_syncQueue').toArray();
+    expect(queue).toEqual([
+      expect.objectContaining({ table: 'tags', entityId: 'sample-realistic-tag-1', op: 'put', clientVersion: 4 }),
+      expect.objectContaining({ table: 'timelines', entityId: 'sample-realistic-timeline-1', op: 'delete', clientVersion: 7 }),
+    ]);
+  });
+
+  it('never deletes a demo tag or timeline the team server holds when a demo is removed', async () => {
+    await bindToTeamServer();
+    await loadSampleInvestigation('realistic');
+    await db.table('_syncMeta').bulkPut([{ key: revisionKey('tags', 'sample-realistic-tag-1'), value: 4 },
+      { key: revisionKey('timelines', 'sample-realistic-timeline-1'), value: 7 }]);
+    await deleteSampleInvestigation('realistic');
+    expect(await db.tags.get('sample-realistic-tag-1')).toBeDefined();
+    expect(await db.timelines.get('sample-realistic-timeline-1')).toBeDefined();
+    const queue: Array<{ table: string }> = await db.table('_syncQueue').toArray();
+    expect(queue.filter(entry => entry.table === 'tags' || entry.table === 'timelines')).toEqual([]);
   });
 
   it('reuses an existing tag of the same name instead of adding a duplicate demo tag', async () => {
@@ -191,7 +247,8 @@ describe('sample tags and timelines stay local and never take over user defaults
     await loadSampleInvestigation('realistic');
     await db.folders.add({ id: 'real', name: 'Real case', order: 0, createdAt: 1, timelineId: 'sample-realistic-timeline-1' });
     await deleteSampleInvestigation('realistic');
-    expect(await db.timelines.get('sample-realistic-timeline-1')).toBeDefined();
+    const timelineId = (await db.folders.get('real'))?.timelineId;
+    expect(await db.timelines.get(timelineId ?? '')).toMatchObject({ name: 'Mailbox Exercise — UTC' });
   });
 });
 

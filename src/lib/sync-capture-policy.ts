@@ -7,7 +7,8 @@ export const SYNC_CAPTURE_MESSAGE = 'Sync paused: older sync history may be miss
 export const SYNC_HISTORY_MESSAGE = 'Sync paused because the server history changed or recovery was requested. Your local edits are retained. Use Settings → General → Sync history recovery to download a verified archive and review conflicts before resuming.';
 
 /** Demo tags and timelines are global rows, but like the local-only demo case
- * they stay on this device. User-created ids are random and never `sample-`. */
+ * they stay on this device unless the server already holds them (an older build
+ * pushed them). User-created ids are random and never `sample-`. */
 export function isSampleGlobalRecord(table: string, id: unknown): boolean {
   return (table === 'tags' || table === 'timelines') && typeof id === 'string' && id.startsWith('sample-');
 }

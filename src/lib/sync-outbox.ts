@@ -79,8 +79,9 @@ export function installSyncOutbox(db: Dexie) {
                     if (folder?.localOnly) continue;
                   }
                   if (!folderId && !['tags', 'timelines'].includes(name)) continue;
-                  if (isSampleGlobalRecord(name, id)) continue;
                   const revision = await core.table('_syncMeta').get({ trans: req.trans, key: revisionKey(name, id) });
+                  // A demo row the server already holds (an older build pushed it) syncs like any other.
+                  if (isSampleGlobalRecord(name, id) && !revision?.value) continue;
                   entries.push({ table: name, entityId: id, folderId, op: deleting ? 'delete' : 'put',
                     ...(deleting ? {} : { data: row }), clientVersion: revision?.value ?? 0 });
                 }

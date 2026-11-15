@@ -8,6 +8,7 @@ import { getEncryptionMeta, isEncryptionEnabled } from './encryptionStore';
 import { integrationWrite } from './integration-cancellation';
 import { clearPending, markPending } from './pending-changes';
 import { cancellableRequest } from './request-cancellation';
+import { revisionKey } from './sync-state';
 import { getActiveWorkspaceId } from './workspace-profiles';
 
 export type { SampleInvestigationKind } from './sample-investigation-realistic';
@@ -141,7 +142,8 @@ export async function getSampleRemovalSummary(kind: SampleInvestigationKind): Pr
 /** Delete the selected case's current contents and reverse references. Items
  * moved elsewhere and reusable templates remain user-owned. With
  * `keepUserItemsIn`, items the user added or changed first move to a new
- * local-only case of that name. Demo tags and timelines go once nothing uses them. */
+ * local-only case of that name. Demo tags and timelines go once nothing uses
+ * them; one that shared records use becomes the user's own. */
 export async function deleteSampleInvestigation(kind: SampleInvestigationKind, signal?: AbortSignal,
   options: { keepUserItemsIn?: string } = {}): Promise<{ keptFolder?: Folder }> {
   const request = cancellableRequest(signal);
@@ -176,21 +178,43 @@ export async function deleteSampleInvestigation(kind: SampleInvestigationKind, s
     } : undefined;
     // The real folder cascade also removes user-created contents and agents.
     await deleteEntitiesWithReferences({ folders: [folderId] }, folderId, undefined, request.signal, assertSession, keepUserItems);
-    await integrationWrite([db.tags, db.timelines, ...TAGGED_TABLES.map(table => db.table(table))], request.signal, async () => {
+    await integrationWrite([db.tags, db.timelines, db.table('_syncMeta'), ...TAGGED_TABLES.map(table => db.table(table))], request.signal, async () => {
       assertSession();
+      // An older build may have pushed a demo row; the team server now shares it
+      // with every member, so removing a demo leaves it alone.
+      const serverHolds = async (table: string, id: string) => !!(await db.table('_syncMeta').get(revisionKey(table, id)))?.value;
+      // Only records in shared investigations sync. A demo row they use becomes
+      // the user's own under a fresh id, so it syncs with them.
+      const localFolders = new Set(await db.folders.filter(folder => !!folder.localOnly).primaryKeys());
+      const shared = (row: { folderId?: string }) => !!row.folderId && !localFolders.has(row.folderId);
       const tags = await db.tags.filter(tag => isSampleEntityForKind(tag.id, kind)).toArray();
       if (tags.length) {
-        // Records reference tags by name; keep any demo tag a remaining record still uses.
-        const usedTags = new Set<string>();
+        // Records reference tags by name.
+        const uses = new Map<string, 'shared' | 'local'>();
         for (const table of TAGGED_TABLES) {
-          for (const row of await db.table(table).toArray()) for (const tag of row.tags ?? []) usedTags.add(tag);
+          for (const row of await db.table(table).toArray()) for (const tag of row.tags ?? []) {
+            if (table === 'folders' ? !row.localOnly : shared(row)) uses.set(tag, 'shared');
+            else if (!uses.has(tag)) uses.set(tag, 'local');
+          }
         }
-        await db.tags.bulkDelete(tags.filter(tag => !usedTags.has(tag.name)).map(tag => tag.id));
+        for (const tag of tags) {
+          if (uses.get(tag.name) === 'local' || await serverHolds('tags', tag.id)) continue;
+          const named = await db.tags.filter(other => other.name.toLowerCase() === tag.name.toLowerCase()).count();
+          if (uses.get(tag.name) === 'shared' && named === 1) await db.tags.add({ ...tag, id: nanoid() });
+          await db.tags.delete(tag.id);
+        }
       }
-      // Never delete a timeline still holding events: deleting it elsewhere deletes them too.
       for (const timeline of await db.timelines.filter(timeline => isSampleEntityForKind(timeline.id, kind)).toArray()) {
-        if (await db.timelineEvents.where('timelineId').equals(timeline.id).count()) continue;
-        if (await db.folders.filter(folder => folder.timelineId === timeline.id).count()) continue;
+        if (await serverHolds('timelines', timeline.id)) continue;
+        const events = await db.timelineEvents.where('timelineId').equals(timeline.id).toArray();
+        const folders = await db.folders.filter(folder => folder.timelineId === timeline.id).toArray();
+        if (events.some(shared) || folders.some(folder => !folder.localOnly)) {
+          const id = nanoid(), now = Date.now();
+          await db.timelines.add({ ...timeline, id, updatedAt: now });
+          await db.timelineEvents.where('timelineId').equals(timeline.id).modify({ timelineId: id, updatedAt: now });
+          await db.folders.where(':id').anyOf(folders.map(folder => folder.id)).modify({ timelineId: id, updatedAt: now });
+        // Never delete a timeline still holding events: deleting it elsewhere deletes them too.
+        } else if (events.length || folders.length) continue;
         await db.timelines.delete(timeline.id);
       }
       assertSession();

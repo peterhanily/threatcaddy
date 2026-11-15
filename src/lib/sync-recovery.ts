@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { canonicalBackupJSON, encryptBackup, decryptBackup, type EncryptedBackupBlob } from './backup-crypto';
 import { normalizeSyncWorkspaceIdentity, SYNC_WORKSPACE_KEY } from './sync-workspace';
-import { SYNC_TABLES, isSyncTable, suppressSyncInCurrentTransaction } from './sync-state';
+import { SYNC_TABLES, isSyncTable, revisionKey, suppressSyncInCurrentTransaction } from './sync-state';
 import { withEntityDraftBarrier } from './entity-drafts';
 import { hasPendingChanges, PendingChangesError } from './pending-changes';
 import { syncPull } from './server-api';
@@ -94,7 +94,8 @@ export async function reconcileSyncWorkspace(receipt: SyncRecoveryReceipt, serve
     const folders = await db.folders.toArray();
     const shared = new Set(folders.filter(folder => !folder.localOnly).map(folder => folder.id));
     for (const table of SYNC_TABLES) for (const row of await db.table(table).toArray()) {
-      if (row.localOnly || isSampleGlobalRecord(table, row.id)
+      // A demo row stays on this device unless the server already holds it.
+      if (row.localOnly || (isSampleGlobalRecord(table, row.id) && !(await meta.get(revisionKey(table, row.id)))?.value)
         || (table === 'folders' ? !shared.has(row.id) : !['tags', 'timelines'].includes(table) && !shared.has(row.folderId))) continue;
       // The verified current row wins over an older queued payload. Old clients
       // could leave their signed-out edits uncaptured even with a pending put.

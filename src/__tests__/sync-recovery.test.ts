@@ -61,6 +61,13 @@ describe('explicit sync recovery', () => {
     expect(queued).not.toContain('sample-realistic-tag-1');
     expect(queued).not.toContain('sample-realistic-timeline-1');
   });
+  it('re-queues a demo tag the server already holds like any other synced row', async () => {
+    await db.tags.add({ id: 'sample-tag-8', name: 'remediation', color: '#22c55e' });
+    await db.table('_syncMeta').put({ key: revisionKey('tags', 'sample-tag-8'), value: 3 });
+    const receipt = await prepareSyncRecovery(password);
+    await reconcileSyncWorkspace(receipt, identity.serverUrl, identity.userId, confirmed);
+    expect(await db.table('_syncQueue').toArray()).toContainEqual(expect.objectContaining({ table: 'tags', entityId: 'sample-tag-8', op: 'put' }));
+  });
   it('requires a verified receipt and both confirmations', async () => {
     const receipt = await prepareSyncRecovery(password);
     await expect(reconcileSyncWorkspace({ ...receipt }, identity.serverUrl, identity.userId, confirmed)).rejects.toThrow('Download');
