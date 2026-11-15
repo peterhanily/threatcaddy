@@ -64,6 +64,12 @@ describe('integration control acknowledgements', () => {
     expect(run.error).toContain('not supported');
     expect(await db.timelineEvents.count()).toBe(0);
   });
+  it('refuses to create an IOC with a type other clients skip', async () => {
+    const run = await runControl([{ id: 'create', label: '', type: 'create-entity', entityType: 'ioc', fields: { type: 'ip', value: '203.0.113.7' } }]);
+    expect(run).toMatchObject({ status: 'error', entitiesCreated: 0 });
+    expect(run.error).toContain('unsupported IOC type');
+    expect(await db.standaloneIOCs.count()).toBe(0);
+  });
   it.each(['note', 'task', 'timeline-event'] as const)('rejects unsupported %s updates', async entityType => {
     const run = await runControl([{ id: 'update', label: '', type: 'update-entity', entityType, entityId: 'not-used', fields: { title: 'Not updated' } }]);
     expect(run).toMatchObject({ status: 'error', entitiesCreated: 0, entitiesUpdated: 0 });
