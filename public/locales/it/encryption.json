@@ -73,6 +73,7 @@
   "settings.metadataNotice": "Il contenuto e le copie salvate sono cifrati. ID, etichette, date, stato, autori e relazioni restano visibili come metadati. La cifratura non protegge una sessione del browser sbloccata.",
   "settings.disableFailed": "La conversione dei dati è fallita; la chiave e i metadati di cifratura sono conservati. Riprova per terminare: {{error}}",
   "passphrase.prepareFailed": "La chiave è stata accettata, ma la preparazione dell’area di lavoro è fallita: {{error}}. Sblocca di nuovo per riprovare.",
+  "passphrase.recoveryWarning": "Parte del lavoro non salvato non è stata cifrata per il recupero. Tieni aperta questa scheda e sblocca di nuovo per recuperarlo.",
   "passphrase.metadataUnavailable": "Impossibile leggere i metadati di cifratura. Ripristinali da un backup prima di aprire quest’area.",
   "legacy.title": "Vecchio database conservato",
   "legacy.notice": "Il vecchio database BrowserNotes contiene {{count}} record storici fuori dal ciclo di cifratura di quest’area. Potrebbe contenere dati leggibili. Nulla viene rimosso automaticamente.",

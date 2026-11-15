@@ -75,6 +75,7 @@
   "settings.metadataNotice": "Nội dung và các bản sao đã lưu được mã hóa. ID, thẻ, dấu thời gian, trạng thái, thông tin tác giả và quan hệ vẫn là siêu dữ liệu có thể đọc. Mã hóa không bảo vệ phiên trình duyệt đã mở khóa.",
   "settings.disableFailed": "Chuyển đổi dữ liệu thất bại; khóa và siêu dữ liệu mã hóa được giữ lại. Hãy thử lại để hoàn tất: {{error}}",
   "passphrase.prepareFailed": "Đã chấp nhận khóa nhưng không thể chuẩn bị không gian làm việc: {{error}}. Hãy mở khóa lại để thử lại.",
+  "passphrase.recoveryWarning": "Không thể mã hóa một phần công việc chưa lưu để khôi phục. Hãy giữ tab này mở và mở khóa lại để khôi phục.",
   "passphrase.metadataUnavailable": "Không thể đọc siêu dữ liệu mã hóa. Hãy khôi phục siêu dữ liệu từ bản sao lưu trước khi mở không gian làm việc này.",
   "legacy.title": "Cơ sở dữ liệu cũ được giữ lại",
   "legacy.notice": "Cơ sở dữ liệu BrowserNotes cũ chứa {{count}} bản ghi lịch sử nằm ngoài vòng đời mã hóa của không gian làm việc này. Có thể vẫn chứa nội dung đọc được. Không dữ liệu nào bị tự động xóa.",

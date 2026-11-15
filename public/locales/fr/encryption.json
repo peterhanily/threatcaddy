@@ -73,6 +73,7 @@
   "settings.metadataNotice": "Le contenu et les copies enregistrées sont chiffrés. Les identifiants, étiquettes, dates, statuts, auteurs et relations restent visibles comme métadonnées. Le chiffrement ne protège pas une session de navigateur déverrouillée.",
   "settings.disableFailed": "La conversion des données a échoué ; votre clé et les métadonnées de chiffrement sont conservées. Réessayez pour terminer : {{error}}",
   "passphrase.prepareFailed": "Votre clé a été acceptée, mais la préparation de l’espace de travail a échoué : {{error}}. Déverrouillez-le à nouveau pour réessayer.",
+  "passphrase.recoveryWarning": "Une partie du travail non enregistré n’a pas pu être chiffrée pour la récupération. Gardez cet onglet ouvert et déverrouillez à nouveau pour la récupérer.",
   "passphrase.metadataUnavailable": "Impossible de lire les métadonnées de chiffrement. Restaurez-les depuis une sauvegarde avant d’ouvrir cet espace.",
   "legacy.title": "Ancienne base de données conservée",
   "legacy.notice": "L’ancienne base BrowserNotes contient {{count}} enregistrements historiques hors du cycle de chiffrement de cet espace. Elle peut contenir des données lisibles. Rien n’est supprimé automatiquement.",

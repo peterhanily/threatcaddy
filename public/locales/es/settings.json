@@ -391,6 +391,7 @@
   "server.accountCreated": "Cuenta creada",
   "server.reconnectedToast": "Reconectado al servidor",
   "server.disconnectedToast": "Desconectado del servidor",
+  "server.remoteLogoutFailed": "Se cerró la sesión localmente, pero el servidor no confirmó la revocación de la sesión. Es posible que la sesión anterior del servidor siga activa. Pida a su administrador del servidor que la revoque.",
   "server.savedServers": "Servidores guardados",
   "server.deleteSavedServer": "Eliminar servidor guardado",
   "server.onboarding.welcome": "¡Bienvenido a {{name}}!",

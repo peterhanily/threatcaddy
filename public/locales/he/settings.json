@@ -391,6 +391,7 @@
   "server.accountCreated": "חשבון נוצר",
   "server.reconnectedToast": "התחבר מחדש לשרת",
   "server.disconnectedToast": "נותק מהשרת",
+  "server.remoteLogoutFailed": "התנתקת באופן מקומי, אך השרת לא אישר את ביטול ההפעלה. ייתכן שההפעלה הקודמת בשרת עדיין פעילה. פנה למנהל השרת כדי לבטל אותה.",
   "server.savedServers": "שרתים שמורים",
   "server.deleteSavedServer": "מחק שרת שמור",
   "server.onboarding.welcome": "ברוך הבא ל-{{name}}!",

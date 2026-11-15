@@ -73,6 +73,7 @@
   "settings.metadataNotice": "El contenido y las copias guardadas están cifrados. Los ID, etiquetas, fechas, estados, autorías y relaciones siguen visibles como metadatos. El cifrado no protege una sesión de navegador desbloqueada.",
   "settings.disableFailed": "La conversión de datos falló; se conservan la clave y los metadatos de cifrado. Reintente para finalizar: {{error}}",
   "passphrase.prepareFailed": "Su clave fue aceptada, pero falló la preparación del espacio de trabajo: {{error}}. Desbloquéelo de nuevo para reintentar.",
+  "passphrase.recoveryWarning": "No se pudo cifrar parte del trabajo sin guardar para recuperarlo. Mantenga esta pestaña abierta y desbloquee de nuevo para recuperarlo.",
   "passphrase.metadataUnavailable": "No se pudieron leer los metadatos de cifrado. Restáurelos desde una copia de seguridad antes de abrir este espacio.",
   "legacy.title": "Base de datos antigua conservada",
   "legacy.notice": "La antigua base BrowserNotes contiene {{count}} registros históricos fuera del ciclo de cifrado de este espacio. Puede contener datos legibles. No se elimina nada automáticamente.",

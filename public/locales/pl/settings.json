@@ -391,6 +391,7 @@
   "server.accountCreated": "Konto utworzone",
   "server.reconnectedToast": "Ponownie połączono z serwerem",
   "server.disconnectedToast": "Rozłączono z serwerem",
+  "server.remoteLogoutFailed": "Wylogowano lokalnie, ale serwer nie potwierdził unieważnienia sesji. Poprzednia sesja na serwerze może być nadal aktywna. Skontaktuj się z administratorem serwera, aby ją unieważnić.",
   "server.savedServers": "Zapisane serwery",
   "server.deleteSavedServer": "Usuń zapisany serwer",
   "server.onboarding.welcome": "Witaj w {{name}}!",

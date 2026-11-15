@@ -391,6 +391,7 @@
   "server.accountCreated": "Đã tạo tài khoản",
   "server.reconnectedToast": "Đã kết nối lại với máy chủ",
   "server.disconnectedToast": "Đã ngắt kết nối khỏi máy chủ",
+  "server.remoteLogoutFailed": "Đã đăng xuất cục bộ, nhưng máy chủ không xác nhận việc thu hồi phiên. Phiên máy chủ trước đó có thể vẫn còn hoạt động. Hãy liên hệ quản trị viên máy chủ để thu hồi phiên.",
   "server.savedServers": "Máy chủ đã lưu",
   "server.deleteSavedServer": "Xóa máy chủ đã lưu",
   "server.onboarding.welcome": "Chào mừng đến {{name}}!",

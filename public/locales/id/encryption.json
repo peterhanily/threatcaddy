@@ -75,6 +75,7 @@
   "settings.metadataNotice": "Konten dan salinan tersimpan dienkripsi. ID, tag, waktu, status, informasi penulis, dan relasi tetap dapat dibaca sebagai metadata. Enkripsi tidak melindungi sesi browser yang sudah terbuka kuncinya.",
   "settings.disableFailed": "Konversi data gagal; kunci dan metadata enkripsi dipertahankan. Coba lagi untuk menyelesaikannya: {{error}}",
   "passphrase.prepareFailed": "Kunci diterima, tetapi persiapan ruang kerja gagal: {{error}}. Buka kunci lagi untuk mencoba ulang.",
+  "passphrase.recoveryWarning": "Sebagian pekerjaan yang belum disimpan tidak dapat dienkripsi untuk pemulihan. Biarkan tab ini tetap terbuka dan buka kunci lagi untuk memulihkannya.",
   "passphrase.metadataUnavailable": "Metadata enkripsi tidak dapat dibaca. Pulihkan metadata dari cadangan sebelum membuka ruang kerja ini.",
   "legacy.title": "Basis data lama yang dipertahankan",
   "legacy.notice": "Basis data BrowserNotes lama berisi {{count}} catatan historis di luar siklus enkripsi ruang kerja ini. Konten mungkin masih dapat dibaca. Tidak ada data yang dihapus otomatis.",

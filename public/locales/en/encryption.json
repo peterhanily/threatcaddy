@@ -59,6 +59,7 @@
 
   "passphrase.unlockThreatCaddy": "Unlock ThreatCaddy",
   "passphrase.prepareFailed": "Your key was accepted, but preparing the workspace failed: {{error}}. Unlock again to retry.",
+  "passphrase.recoveryWarning": "Some unsaved work could not be encrypted for recovery. Keep this tab open and unlock again to recover it.",
   "passphrase.metadataUnavailable": "Encryption metadata could not be read. Restore it from a backup before opening this workspace.",
   "passphrase.enterRecoveryKey": "Enter your 24-word recovery key to unlock your encrypted data.",
   "passphrase.enterPassphrase": "Enter your passphrase to unlock your encrypted data.",

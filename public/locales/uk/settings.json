@@ -391,6 +391,7 @@
   "server.accountCreated": "Акаунт створено",
   "server.reconnectedToast": "Перепідключено до сервера",
   "server.disconnectedToast": "Відключено від сервера",
+  "server.remoteLogoutFailed": "Вихід виконано локально, але сервер не підтвердив відкликання сеансу. Попередній сеанс на сервері може залишатися активним. Зверніться до адміністратора сервера, щоб відкликати його.",
   "server.savedServers": "Збережені сервери",
   "server.deleteSavedServer": "Видалити збережений сервер",
   "server.onboarding.welcome": "Ласкаво просимо до {{name}}!",

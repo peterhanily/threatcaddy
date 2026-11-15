@@ -391,6 +391,7 @@
   "server.accountCreated": "Hesap oluşturuldu",
   "server.reconnectedToast": "Sunucuya yeniden bağlandı",
   "server.disconnectedToast": "Sunucu bağlantısı kesildi",
+  "server.remoteLogoutFailed": "Yerel olarak oturum kapatıldı, ancak sunucu oturumun iptalini onaylamadı. Önceki sunucu oturumu hâlâ etkin olabilir. İptal ettirmek için sunucu yöneticinize başvurun.",
   "server.savedServers": "Kaydedilmiş Sunucular",
   "server.deleteSavedServer": "Kaydedilmiş sunucuyu sil",
   "server.onboarding.welcome": "{{name}}'e Hoş Geldiniz!",

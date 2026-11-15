@@ -75,6 +75,7 @@
   "settings.metadataNotice": "内容和保存的副本均已加密。ID、标签、时间戳、状态、作者信息和关联仍作为元数据可见。加密无法保护已解锁的浏览器会话。",
   "settings.disableFailed": "数据转换失败；密钥和加密元数据已保留。请重试以完成：{{error}}",
   "passphrase.prepareFailed": "密钥已接受，但准备工作区失败：{{error}}。请再次解锁后重试。",
+  "passphrase.recoveryWarning": "部分未保存的工作无法加密以供恢复。请保持此标签页打开，然后再次解锁以恢复。",
   "passphrase.metadataUnavailable": "无法读取加密元数据。打开此工作区前，请从备份恢复元数据。",
   "legacy.title": "保留的旧数据库",
   "legacy.notice": "旧 BrowserNotes 数据库包含 {{count}} 条历史记录，不受此工作区的加密生命周期管理。其中可能含有可读内容。不会自动删除任何数据。",

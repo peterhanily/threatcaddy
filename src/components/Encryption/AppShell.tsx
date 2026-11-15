@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import App from '../../App';
 import { PassphraseDialog } from './PassphraseDialog';
 import { isEncryptionEnabled, getEncryptionMeta, getCachedSession, encryptionStorageKey } from '../../lib/encryptionStore';
@@ -16,6 +17,9 @@ export function AppShell() {
   const [ready, setReady] = useState(!initialUnlocked && !cached);
   const [isUnlocked, setIsUnlocked] = useState(initialUnlocked);
   const [preparationError, setPreparationError] = useState('');
+  const { t } = useTranslation('encryption');
+  // English is bundled for the lock screen, so this never shows a raw key.
+  const shownError = preparationError === RECOVERY_WARNING ? t('passphrase.recoveryWarning') : preparationError;
 
   useEffect(() => {
     const locked = (event: Event) => {
@@ -84,10 +88,10 @@ export function AppShell() {
   if (!ready) return <div className="min-h-screen bg-gray-950 dark:bg-gray-950" />;
   if (!isUnlocked) {
     if (!isEncryptionEnabled()) return <div className="min-h-screen bg-gray-950 p-6 text-gray-100" role="alert">
-      <p>{preparationError || 'The workspace could not be prepared.'}</p>
+      <p>{shownError || 'The workspace could not be prepared.'}</p>
       <button className="mt-4 underline" onClick={() => window.location.reload()}>Reload to retry</button>
     </div>;
-    return <PassphraseDialog initialError={preparationError} onUnlocked={() => {
+    return <PassphraseDialog initialError={shownError} onUnlocked={() => {
       if (!isEncryptionEnabled() || getSessionKey()) setIsUnlocked(true);
     }} />;
   }

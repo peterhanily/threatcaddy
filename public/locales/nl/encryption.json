@@ -73,6 +73,7 @@
   "settings.metadataNotice": "Inhoud en opgeslagen kopieën zijn versleuteld. ID's, tags, tijdstempels, status, auteurschap en relaties blijven zichtbaar als metagegevens. Versleuteling beschermt geen ontgrendelde browsersessie.",
   "settings.disableFailed": "De gegevensconversie is mislukt; je sleutel en versleutelingsmetagegevens zijn behouden. Probeer het opnieuw om af te ronden: {{error}}",
   "passphrase.prepareFailed": "Je sleutel is geaccepteerd, maar het voorbereiden van de werkruimte is mislukt: {{error}}. Ontgrendel opnieuw om het nogmaals te proberen.",
+  "passphrase.recoveryWarning": "Een deel van het niet-opgeslagen werk kon niet worden versleuteld voor herstel. Houd dit tabblad open en ontgrendel opnieuw om het te herstellen.",
   "passphrase.metadataUnavailable": "Versleutelingsmetagegevens konden niet worden gelezen. Herstel ze uit een back-up voordat je deze werkruimte opent.",
   "legacy.title": "Bewaarde oude database",
   "legacy.notice": "De oude BrowserNotes-database bevat {{count}} historische records buiten de versleutelingslevenscyclus van deze werkruimte. Deze kunnen leesbare inhoud bevatten. Er wordt niets automatisch verwijderd.",

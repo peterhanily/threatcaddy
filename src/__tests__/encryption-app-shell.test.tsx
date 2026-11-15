@@ -12,6 +12,10 @@ vi.mock('../lib/workspace-lock', () => ({ restoreWorkspaceRecovery: vi.fn(async 
 vi.mock('../lib/workspace-initialization', () => ({ initializeWorkspace: mocks.prepare }));
 
 import { AppShell } from '../components/Encryption/AppShell';
+import { createInstance } from 'i18next';
+import { I18nextProvider } from 'react-i18next';
+import encryptionEn from '../../public/locales/en/encryption.json';
+import encryptionDe from '../../public/locales/de/encryption.json';
 
 beforeEach(() => { vi.clearAllMocks(); mocks.enabled.mockReturnValue(true); mocks.importKey.mockResolvedValue({}); });
 
@@ -32,6 +36,22 @@ describe('cached-key workspace preparation', () => {
     expect(screen.queryByText('Workspace ready')).not.toBeInTheDocument();
     expect(mocks.setKey).toHaveBeenLastCalledWith(null);
     expect(mocks.clearCache).toHaveBeenCalled();
+  });
+
+  it('shows the unsaved-work recovery warning in the interface language', async () => {
+    const locale = createInstance();
+    await locale.init({ lng: 'de', fallbackLng: 'en', defaultNS: 'encryption', interpolation: { escapeValue: false },
+      resources: { en: { encryption: encryptionEn }, de: { encryption: encryptionDe } } });
+    mocks.prepare.mockResolvedValue(undefined);
+    render(<I18nextProvider i18n={locale}><AppShell /></I18nextProvider>);
+    expect(await screen.findByText('Workspace ready')).toBeInTheDocument();
+    await act(async () => {
+      mocks.setKey(null);
+      window.dispatchEvent(new CustomEvent('workspace-locked', { detail: { recoveryFailed: true } }));
+    });
+    const german = (encryptionDe as Record<string, string>)['passphrase.recoveryWarning'];
+    expect(german).toBeTruthy();
+    expect(screen.getByText(`Workspace locked ${german}`)).toBeInTheDocument();
   });
 
   it('requires fresh initialization after encryption is disabled in another tab', async () => {

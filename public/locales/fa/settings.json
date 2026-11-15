@@ -391,6 +391,7 @@
   "server.accountCreated": "حساب ایجاد شد",
   "server.reconnectedToast": "مجدداً به سرور متصل شد",
   "server.disconnectedToast": "از سرور قطع شد",
+  "server.remoteLogoutFailed": "خروج به‌صورت محلی انجام شد، اما سرور لغو نشست را تأیید نکرد. ممکن است نشست قبلی سرور هنوز فعال باشد. برای لغو آن با مدیر سرور تماس بگیرید.",
   "server.savedServers": "سرورهای ذخیره شده",
   "server.deleteSavedServer": "حذف سرور ذخیره شده",
   "server.onboarding.welcome": "به {{name}} خوش آمدید!",

@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { ServerProfiles } from './ServerProfiles';
 import { upsertServerProfile, type ServerProfile } from '../../lib/server-profiles';
+import { REMOTE_LOGOUT_FAILED } from '../../lib/session-logout';
 
 const LAST_SESSION_KEY = workspaceStorageKey('threatcaddy-last-session');
 
@@ -165,7 +166,9 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
       await revocation;
       addToast('info', t('server.disconnectedToast'));
     } catch (err) {
-      const message = (err as Error).message;
+      // The unconfirmed-revocation warning is translated; other server errors pass through.
+      const reported = (err as Error).message;
+      const message = reported === REMOTE_LOGOUT_FAILED ? t('server.remoteLogoutFailed') : reported;
       setError(message);
       addToast('warning', message, 12_000);
     } finally { setLoading(false); }

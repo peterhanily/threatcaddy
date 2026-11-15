@@ -73,6 +73,7 @@
   "settings.metadataNotice": "Inhalte und gespeicherte Kopien sind verschlüsselt. IDs, Tags, Zeitstempel, Status, Urheberschaft und Beziehungen bleiben als Metadaten sichtbar. Die Verschlüsselung schützt keine entsperrte Browsersitzung.",
   "settings.disableFailed": "Die Datenkonvertierung ist fehlgeschlagen; Ihr Schlüssel und die Verschlüsselungsmetadaten wurden behalten. Versuchen Sie es erneut, um den Vorgang abzuschließen: {{error}}",
   "passphrase.prepareFailed": "Ihr Schlüssel wurde akzeptiert, aber die Vorbereitung des Arbeitsbereichs ist fehlgeschlagen: {{error}}. Entsperren Sie ihn erneut.",
+  "passphrase.recoveryWarning": "Einige ungespeicherte Arbeiten konnten nicht für die Wiederherstellung verschlüsselt werden. Lassen Sie diesen Tab geöffnet und entsperren Sie erneut, um sie wiederherzustellen.",
   "passphrase.metadataUnavailable": "Die Verschlüsselungsmetadaten konnten nicht gelesen werden. Stellen Sie sie aus einer Sicherung wieder her, bevor Sie diesen Arbeitsbereich öffnen.",
   "legacy.title": "Beibehaltene Altdatenbank",
   "legacy.notice": "Die alte BrowserNotes-Datenbank enthält {{count}} historische Datensätze außerhalb des Verschlüsselungslebenszyklus dieses Arbeitsbereichs. Sie kann lesbare Inhalte enthalten. Nichts wird automatisch entfernt.",

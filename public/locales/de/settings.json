@@ -391,6 +391,7 @@
   "server.accountCreated": "Konto erstellt",
   "server.reconnectedToast": "Erneut mit Server verbunden",
   "server.disconnectedToast": "Vom Server getrennt",
+  "server.remoteLogoutFailed": "Lokal abgemeldet, aber der Server hat den Widerruf der Sitzung nicht bestätigt. Die bisherige Serversitzung ist möglicherweise noch aktiv. Bitten Sie Ihre Serveradministration, sie zu widerrufen.",
   "server.savedServers": "Gespeicherte Server",
   "server.deleteSavedServer": "Gespeicherten Server löschen",
   "server.onboarding.welcome": "Willkommen bei {{name}}!",

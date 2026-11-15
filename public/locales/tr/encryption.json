@@ -75,6 +75,7 @@
   "settings.metadataNotice": "İçerik ve kayıtlı kopyalar şifrelenir. Kimlikler, etiketler, zaman damgaları, durumlar, yazar bilgileri ve ilişkiler okunabilir meta veri olarak kalır. Şifreleme, kilidi açık bir tarayıcı oturumunu korumaz.",
   "settings.disableFailed": "Veri dönüşümü başarısız oldu; anahtarlar ve şifreleme meta verileri korundu. Tamamlamak için yeniden deneyin: {{error}}",
   "passphrase.prepareFailed": "Anahtar kabul edildi ancak çalışma alanı hazırlanamadı: {{error}}. Yeniden denemek için kilidi tekrar açın.",
+  "passphrase.recoveryWarning": "Kaydedilmemiş çalışmanın bir kısmı kurtarma için şifrelenemedi. Kurtarmak için bu sekmeyi açık tutun ve kilidi yeniden açın.",
   "passphrase.metadataUnavailable": "Şifreleme meta verileri okunamıyor. Bu çalışma alanını açmadan önce meta verileri bir yedekten geri yükleyin.",
   "legacy.title": "Korunan eski veritabanı",
   "legacy.notice": "Eski BrowserNotes veritabanında bu çalışma alanının şifreleme yaşam döngüsü dışında kalan {{count}} geçmiş kayıt var. Okunabilir içerik barındırabilir. Hiçbir veri otomatik olarak silinmez.",

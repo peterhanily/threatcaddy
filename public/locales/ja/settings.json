@@ -391,6 +391,7 @@
   "server.accountCreated": "アカウントを作成しました",
   "server.reconnectedToast": "サーバーに再接続しました",
   "server.disconnectedToast": "サーバーから切断しました",
+  "server.remoteLogoutFailed": "ローカルではサインアウトしましたが、サーバーがセッションの無効化を確認しませんでした。以前のサーバー セッションがまだ有効な可能性があります。サーバー管理者に連絡して無効化を依頼してください。",
   "server.savedServers": "保存されたサーバー",
   "server.deleteSavedServer": "保存されたサーバーを削除",
   "server.onboarding.welcome": "{{name}} へようこそ！",

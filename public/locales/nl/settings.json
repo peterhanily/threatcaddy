@@ -391,6 +391,7 @@
   "server.accountCreated": "Account aangemaakt",
   "server.reconnectedToast": "Opnieuw verbonden met server",
   "server.disconnectedToast": "Verbinding met server verbroken",
+  "server.remoteLogoutFailed": "Lokaal uitgelogd, maar de server heeft de intrekking van de sessie niet bevestigd. De vorige serversessie is mogelijk nog actief. Neem contact op met je serverbeheerder om die in te trekken.",
   "server.savedServers": "Opgeslagen servers",
   "server.deleteSavedServer": "Opgeslagen server verwijderen",
   "server.onboarding.welcome": "Welkom bij {{name}}!",

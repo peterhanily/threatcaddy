@@ -443,6 +443,7 @@
   "server.accountCreated": "Account created",
   "server.reconnectedToast": "Reconnected to server",
   "server.disconnectedToast": "Disconnected from server",
+  "server.remoteLogoutFailed": "Signed out locally, but the server did not confirm session revocation. The previous server session may still be active. Contact your server administrator to revoke it.",
   "server.savedServers": "Saved Servers",
   "server.deleteSavedServer": "Delete saved server",
   "server.onboarding.welcome": "Welcome to {{name}}!",

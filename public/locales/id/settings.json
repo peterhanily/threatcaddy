@@ -391,6 +391,7 @@
   "server.accountCreated": "Akun dibuat",
   "server.reconnectedToast": "Terhubung kembali ke server",
   "server.disconnectedToast": "Terputus dari server",
+  "server.remoteLogoutFailed": "Keluar secara lokal, tetapi server tidak mengonfirmasi pencabutan sesi. Sesi server sebelumnya mungkin masih aktif. Hubungi administrator server untuk mencabutnya.",
   "server.savedServers": "Server Tersimpan",
   "server.deleteSavedServer": "Hapus server tersimpan",
   "server.onboarding.welcome": "Selamat datang di {{name}}!",
