@@ -420,6 +420,7 @@
   "data.loadBackupTitle": "Sicherung laden",
   "data.replaceAll": "Alles ersetzen",
   "data.backupRestoreNotice": "Sichern Sie zuerst diesen Arbeitsbereich. „Alles ersetzen“ ersetzt nur die in der Datei enthaltenen Entitätstypen; eine leere Liste leert den jeweiligen Typ, ein fehlender Typ bleibt erhalten. „Zusammenführen“ ergänzt fehlende Datensätze und aktualisiert ältere Versionen, ohne Datensätze zu entfernen.",
+  "data.syncBoundRestoreNotice": "Dieser Arbeitsbereich wird mit einem Teamserver synchronisiert. Eine Wiederherstellung sendet nichts an Teammitglieder: Die Synchronisierung pausiert, bis Sie die Unterschiede unter Einstellungen → Allgemein → Sync history recovery prüfen.",
   "data.backupPasswordLabel": "Sicherungspasswort (nur für verschlüsselte Dateien)",
   "data.backupPasswordNotice": "Bei normalen JSON-Dateien leer lassen. Dieses Passwort wird nur lokal verwendet und weder gespeichert noch an einen Server gesendet.",
   "data.backupTooLarge": "Die Sicherungsdatei ist zu groß (höchstens 50 MB).",

@@ -420,6 +420,7 @@
   "data.loadBackupTitle": "Muat Cadangan",
   "data.replaceAll": "Ganti Semua",
   "data.backupRestoreNotice": "Cadangkan ruang kerja ini terlebih dahulu. Ganti Semua hanya mengganti jenis entitas yang ada dalam berkas; daftar kosong menghapus jenis tersebut, sedangkan jenis yang tidak disertakan dipertahankan. Gabungkan menambah catatan yang belum ada dan memperbarui versi lama tanpa menghapus catatan.",
+  "data.syncBoundRestoreNotice": "Ruang kerja ini disinkronkan dengan server tim. Pemulihan tidak mengirim apa pun ke rekan tim: sinkronisasi dijeda hingga Anda meninjau perbedaannya di Pengaturan → Umum → Sync history recovery.",
   "data.backupPasswordLabel": "Kata sandi cadangan (hanya untuk berkas terenkripsi)",
   "data.backupPasswordNotice": "Kosongkan untuk JSON biasa. Kata sandi ini digunakan secara lokal, tidak disimpan atau dikirim ke server.",
   "data.backupTooLarge": "Berkas cadangan terlalu besar (maksimal 50 MB).",

@@ -420,6 +420,7 @@
   "data.loadBackupTitle": "Carica backup",
   "data.replaceAll": "Sostituisci tutto",
   "data.backupRestoreNotice": "Esegui prima un backup dell’area. Sostituisci tutto sostituisce solo i tipi inclusi nel file; un elenco vuoto cancella quel tipo e un tipo omesso viene conservato. Unisci aggiunge i record mancanti e aggiorna le versioni precedenti senza eliminare record.",
+  "data.syncBoundRestoreNotice": "Quest’area di lavoro è sincronizzata con un server del team. Il ripristino non invia nulla ai colleghi: la sincronizzazione resta in pausa finché non esamini le differenze in Impostazioni → Generale → Sync history recovery.",
   "data.backupPasswordLabel": "Password del backup (solo file cifrati)",
   "data.backupPasswordNotice": "Lascia vuoto per i normali file JSON. La password viene usata localmente, senza salvarla o inviarla a un server.",
   "data.backupTooLarge": "Backup troppo grande (massimo 50 MB).",

@@ -420,6 +420,7 @@
   "data.loadBackupTitle": "Charger une sauvegarde",
   "data.replaceAll": "Tout remplacer",
   "data.backupRestoreNotice": "Sauvegardez d’abord cet espace. Tout remplacer ne remplace que les types inclus dans le fichier ; une liste vide efface ce type et un type absent est conservé. La fusion ajoute les enregistrements manquants et actualise les anciennes versions sans supprimer de données.",
+  "data.syncBoundRestoreNotice": "Cet espace de travail est synchronisé avec un serveur d’équipe. La restauration n’envoie rien à vos coéquipiers : la synchronisation est suspendue jusqu’à ce que vous examiniez les différences dans Paramètres → Général → Sync history recovery.",
   "data.backupPasswordLabel": "Mot de passe de sauvegarde (fichiers chiffrés uniquement)",
   "data.backupPasswordNotice": "Laissez vide pour un fichier JSON ordinaire. Ce mot de passe est utilisé localement, sans être enregistré ni envoyé à un serveur.",
   "data.backupTooLarge": "Sauvegarde trop volumineuse (maximum 50 MB).",

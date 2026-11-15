@@ -420,6 +420,7 @@
   "data.loadBackupTitle": "Carregar backup",
   "data.replaceAll": "Substituir tudo",
   "data.backupRestoreNotice": "Faça um backup deste espaço primeiro. Substituir tudo troca apenas os tipos incluídos no arquivo; uma lista vazia limpa esse tipo e um tipo omitido é preservado. Mesclar adiciona registros ausentes e atualiza versões antigas sem remover registros.",
+  "data.syncBoundRestoreNotice": "Este espaço de trabalho sincroniza com um servidor de equipe. A restauração não envia nada aos colegas: a sincronização fica pausada até você revisar as diferenças em Configurações → Geral → Sync history recovery.",
   "data.backupPasswordLabel": "Senha do backup (somente arquivos criptografados)",
   "data.backupPasswordNotice": "Deixe em branco para arquivos JSON comuns. A senha é usada localmente, sem ser salva ou enviada a um servidor.",
   "data.backupTooLarge": "Backup grande demais (máximo 50 MB).",

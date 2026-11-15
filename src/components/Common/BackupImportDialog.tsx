@@ -1,6 +1,7 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from './Modal';
+import { useSyncWorkspaceBound } from '../../hooks/useSyncWorkspaceBound';
 
 interface BackupImportDialogProps {
   file: File;
@@ -20,6 +21,7 @@ export function BackupImportDialog({ file, onClose, onImport, allowMerge = true 
 
 function BackupImportSession({ file, onClose, onImport, allowMerge }: BackupImportDialogProps) {
   const { t } = useTranslation('settings');
+  const syncBound = useSyncWorkspaceBound();
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -62,6 +64,7 @@ function BackupImportSession({ file, onClose, onImport, allowMerge }: BackupImpo
       <div aria-busy={busy}>
         <p className="mb-4 text-gray-300">{t(notices.length ? 'data.backupRestoredWithNotices' : 'data.backupRestoreNotice')}</p>
         <p className="mb-4 break-all text-sm text-gray-400">{file.name}</p>
+        {syncBound && notices.length === 0 && <p className="mb-4 text-sm text-amber-200">{t('data.syncBoundRestoreNotice')}</p>}
         {notices.length > 0 ? <>
           <div role="status" className="space-y-2 text-sm text-amber-200">{notices.map((notice, index) => <p key={index}>{notice}</p>)}</div>
           <div className="mt-6 flex justify-end"><button onClick={close} className="rounded-lg bg-gray-700 px-4 py-2 text-gray-200">{t('common:close')}</button></div>

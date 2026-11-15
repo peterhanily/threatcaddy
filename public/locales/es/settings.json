@@ -420,6 +420,7 @@
   "data.loadBackupTitle": "Cargar copia de seguridad",
   "data.replaceAll": "Sustituir todo",
   "data.backupRestoreNotice": "Haga primero una copia de este espacio. Sustituir todo solo reemplaza los tipos incluidos en el archivo; una lista vacía borra ese tipo y un tipo omitido se conserva. Combinar añade registros faltantes y actualiza versiones antiguas sin borrar registros.",
+  "data.syncBoundRestoreNotice": "Este espacio de trabajo se sincroniza con un servidor de equipo. La restauración no envía nada a sus compañeros: la sincronización se pausa hasta que revise las diferencias en Configuración → General → Sync history recovery.",
   "data.backupPasswordLabel": "Contraseña de la copia (solo archivos cifrados)",
   "data.backupPasswordNotice": "Déjela vacía para archivos JSON normales. La contraseña se usa localmente y no se guarda ni envía a un servidor.",
   "data.backupTooLarge": "Copia demasiado grande (máximo 50 MB).",

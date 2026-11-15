@@ -177,6 +177,7 @@
   "data.loadBackupTitle": "Load Backup",
   "data.replaceAll": "Replace All",
   "data.backupRestoreNotice": "Back up this workspace first. Replace All replaces only the entity types included in the file; an empty list clears that type and an omitted type is preserved. Merge adds missing records and updates older versions without removing records.",
+  "data.syncBoundRestoreNotice": "This workspace syncs with a team server. Restoring sends nothing to teammates: sync pauses until you review the differences in Settings → General → Sync history recovery.",
   "data.backupPasswordLabel": "Backup password (only for encrypted files)",
   "data.backupPasswordNotice": "Leave blank for ordinary JSON files. This password is used locally and is not saved or sent to a server.",
   "data.backupTooLarge": "Backup file too large (maximum 50 MB).",

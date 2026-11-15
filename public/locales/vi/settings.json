@@ -420,6 +420,7 @@
   "data.loadBackupTitle": "Tải bản sao lưu",
   "data.replaceAll": "Thay thế tất cả",
   "data.backupRestoreNotice": "Sao lưu không gian làm việc này trước. Thay thế tất cả chỉ thay các loại thực thể có trong tệp; danh sách trống xóa loại tương ứng, loại bị bỏ qua được giữ lại. Hợp nhất thêm bản ghi còn thiếu và cập nhật phiên bản cũ, không xóa bản ghi.",
+  "data.syncBoundRestoreNotice": "Không gian làm việc này đồng bộ với máy chủ nhóm. Việc khôi phục không gửi gì cho đồng đội: đồng bộ tạm dừng cho đến khi bạn xem xét các khác biệt trong Cài đặt → Chung → Sync history recovery.",
   "data.backupPasswordLabel": "Mật khẩu sao lưu (chỉ dành cho tệp mã hóa)",
   "data.backupPasswordNotice": "Để trống với JSON thông thường. Mật khẩu này chỉ dùng cục bộ, không được lưu hoặc gửi đến máy chủ.",
   "data.backupTooLarge": "Tệp sao lưu quá lớn (tối đa 50 MB).",

@@ -5,8 +5,9 @@ import type { BackupPayload } from '../lib/backup-crypto';
 
 const mocks = vi.hoisted(() => ({
   list: vi.fn(), download: vi.fn(), create: vi.fn(), remove: vi.fn(), decrypt: vi.fn(), encrypt: vi.fn(),
-  full: vi.fn(), differential: vi.fn(), preview: vi.fn(), replace: vi.fn(), merge: vi.fn(), toast: vi.fn(),
+  full: vi.fn(), differential: vi.fn(), preview: vi.fn(), replace: vi.fn(), merge: vi.fn(), toast: vi.fn(), bound: vi.fn(),
 }));
+vi.mock('../lib/sync-workspace', () => ({ isSyncWorkspaceBound: mocks.bound }));
 vi.mock('../hooks/useSettings', () => ({ useSettings: () => ({ settings: { serverUrl: 'http://localhost' } }) }));
 vi.mock('../contexts/ToastContext', () => ({ useToast: () => ({ addToast: mocks.toast }) }));
 vi.mock('../lib/server-api', () => ({ listBackups: mocks.list, downloadBackup: mocks.download, createBackup: mocks.create, deleteBackup: mocks.remove }));
@@ -31,6 +32,7 @@ beforeEach(() => {
   mocks.encrypt.mockResolvedValue({ v: 1, salt: 'salt', iv: 'iv', ct: 'ciphertext' });
   mocks.preview.mockResolvedValue(preview);
   mocks.merge.mockResolvedValue({ added: 1, updated: 0, deleted: 0, tables: ['notes'] });
+  mocks.bound.mockResolvedValue(false);
 });
 
 async function selectDifferential() {
@@ -110,5 +112,20 @@ describe('server backup parent orchestration and cancellation', () => {
     await act(async () => { finish(preview); });
     expect(screen.getByPlaceholderText('Enter backup password')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Confirm restore' })).not.toBeInTheDocument();
+  });
+
+  it('shows no sync pause notice for an unbound workspace', async () => {
+    render(<ServerBackup />);
+    await decryptSelected();
+    await screen.findByRole('button', { name: 'Confirm restore' });
+    expect(screen.queryByText(/syncs with a team server/)).not.toBeInTheDocument();
+  });
+
+  it('states in the restore preview that a team-bound workspace pauses sync instead of sending the restore', async () => {
+    mocks.bound.mockResolvedValue(true);
+    render(<ServerBackup />);
+    await decryptSelected();
+    await screen.findByRole('button', { name: 'Confirm restore' });
+    expect(screen.getByText(/syncs with a team server/)).toHaveTextContent('Sync history recovery');
   });
 });

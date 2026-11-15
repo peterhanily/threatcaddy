@@ -420,6 +420,7 @@
   "data.loadBackupTitle": "Wczytaj kopię zapasową",
   "data.replaceAll": "Zastąp wszystko",
   "data.backupRestoreNotice": "Najpierw wykonaj kopię tego obszaru. Zastąp wszystko zastępuje tylko typy z pliku: pusta lista usuwa rekordy danego typu, a pominięty typ pozostaje bez zmian. Scalanie dodaje brakujące rekordy i aktualizuje starsze wersje bez usuwania rekordów.",
+  "data.syncBoundRestoreNotice": "Ten obszar roboczy synchronizuje się z serwerem zespołu. Przywracanie nie wysyła niczego członkom zespołu: synchronizacja jest wstrzymana, dopóki nie przejrzysz różnic w Ustawienia → Ogólne → Sync history recovery.",
   "data.backupPasswordLabel": "Hasło kopii (tylko pliki zaszyfrowane)",
   "data.backupPasswordNotice": "Pozostaw puste dla zwykłych plików JSON. Hasło jest używane lokalnie i nie jest zapisywane ani wysyłane na serwer.",
   "data.backupTooLarge": "Kopia jest zbyt duża (maksymalnie 50 MB).",

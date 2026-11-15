@@ -420,6 +420,7 @@
   "data.loadBackupTitle": "Back-up laden",
   "data.replaceAll": "Alles vervangen",
   "data.backupRestoreNotice": "Maak eerst een back-up van deze werkruimte. Alles vervangen vervangt alleen de entiteitstypen in het bestand; een lege lijst wist dat type en een weggelaten type blijft behouden. Samenvoegen voegt ontbrekende records toe en werkt oudere versies bij zonder records te verwijderen.",
+  "data.syncBoundRestoreNotice": "Deze werkruimte synchroniseert met een teamserver. Herstellen stuurt niets naar teamgenoten: synchronisatie pauzeert totdat je de verschillen bekijkt in Instellingen → Algemeen → Sync history recovery.",
   "data.backupPasswordLabel": "Back-upwachtwoord (alleen voor versleutelde bestanden)",
   "data.backupPasswordNotice": "Laat dit leeg voor gewone JSON-bestanden. Dit wachtwoord wordt lokaal gebruikt en niet opgeslagen of naar een server gestuurd.",
   "data.backupTooLarge": "Back-upbestand te groot (maximaal 50 MB).",
