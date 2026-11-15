@@ -78,7 +78,7 @@
   "detail.updated": "Aggiornata {{date}}",
   "sample.removeTitle": "Rimuovere l'indagine di esempio?",
   "sample.removeMessage": "Tutto il contenuto di \"{{name}}\", incluse le modifiche che hai apportato, verrà eliminato definitivamente. Questa azione non può essere annullata.",
-  "sample.removeMessageWithUserItems": "\"{{name}}\" contiene elementi che hai aggiunto ({{number}} in totale). Conservali spostandoli in una nuova indagine, oppure elimina tutto definitivamente, incluse le modifiche che hai apportato.",
+  "sample.removeMessageWithUserItems": "\"{{name}}\" contiene elementi che hai aggiunto o modificato ({{number}} in totale). Conservali spostandoli in una nuova indagine, oppure elimina tutto definitivamente.",
   "sample.removeConfirm": "Rimuovi esempio",
   "sample.deleteEverything": "Elimina tutto",
   "sample.keepUserItems": "Conserva i miei elementi",

@@ -78,7 +78,7 @@
   "detail.updated": "Aktualisiert {{date}}",
   "sample.removeTitle": "Beispieluntersuchung entfernen?",
   "sample.removeMessage": "Alles in \"{{name}}\", einschließlich Ihrer Änderungen, wird dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.",
-  "sample.removeMessageWithUserItems": "\"{{name}}\" enthält Elemente, die Sie hinzugefügt haben (insgesamt {{number}}). Behalten Sie sie, indem Sie sie in eine neue Untersuchung verschieben, oder löschen Sie alles dauerhaft, einschließlich Ihrer Änderungen.",
+  "sample.removeMessageWithUserItems": "\"{{name}}\" enthält Elemente, die Sie hinzugefügt oder geändert haben (insgesamt {{number}}). Behalten Sie sie, indem Sie sie in eine neue Untersuchung verschieben, oder löschen Sie alles dauerhaft.",
   "sample.removeConfirm": "Beispiel entfernen",
   "sample.deleteEverything": "Alles löschen",
   "sample.keepUserItems": "Meine Elemente behalten",

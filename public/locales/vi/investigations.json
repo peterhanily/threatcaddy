@@ -78,7 +78,7 @@
   "detail.updated": "Đã cập nhật {{date}}",
   "sample.removeTitle": "Xóa điều tra mẫu?",
   "sample.removeMessage": "Mọi nội dung trong \"{{name}}\", bao gồm các thay đổi bạn đã thực hiện, sẽ bị xóa vĩnh viễn. Không thể hoàn tác.",
-  "sample.removeMessageWithUserItems": "\"{{name}}\" chứa các mục bạn đã thêm (tổng cộng {{number}}). Giữ chúng bằng cách chuyển sang một điều tra mới, hoặc xóa vĩnh viễn mọi thứ, bao gồm các thay đổi bạn đã thực hiện.",
+  "sample.removeMessageWithUserItems": "\"{{name}}\" chứa các mục bạn đã thêm hoặc thay đổi (tổng cộng {{number}}). Giữ chúng bằng cách chuyển sang một điều tra mới, hoặc xóa vĩnh viễn mọi thứ.",
   "sample.removeConfirm": "Xóa mẫu",
   "sample.deleteEverything": "Xóa tất cả",
   "sample.keepUserItems": "Giữ các mục của tôi",

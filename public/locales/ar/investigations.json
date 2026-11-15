@@ -78,7 +78,7 @@
   "detail.updated": "تم التحديث {{date}}",
   "sample.removeTitle": "إزالة التحقيق النموذجي؟",
   "sample.removeMessage": "سيُحذف كل ما في \"{{name}}\" نهائيًا، بما في ذلك أي تغييرات أجريتها. لا يمكن التراجع عن هذا الإجراء.",
-  "sample.removeMessageWithUserItems": "يحتوي \"{{name}}\" على عناصر أضفتها ({{number}} إجمالًا). احتفظ بها بنقلها إلى تحقيق جديد، أو احذف كل شيء نهائيًا، بما في ذلك أي تغييرات أجريتها.",
+  "sample.removeMessageWithUserItems": "يحتوي \"{{name}}\" على عناصر أضفتها أو غيّرتها ({{number}} إجمالًا). احتفظ بها بنقلها إلى تحقيق جديد، أو احذف كل شيء نهائيًا.",
   "sample.removeConfirm": "إزالة النموذج",
   "sample.deleteEverything": "حذف كل شيء",
   "sample.keepUserItems": "الاحتفاظ بعناصري",

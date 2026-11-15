@@ -78,7 +78,7 @@
   "detail.updated": "{{date}} güncellendi",
   "sample.removeTitle": "Örnek soruşturma kaldırılsın mı?",
   "sample.removeMessage": "\"{{name}}\" içindeki her şey, yaptığınız değişiklikler dahil, kalıcı olarak silinecek. Bu işlem geri alınamaz.",
-  "sample.removeMessageWithUserItems": "\"{{name}}\" eklediğiniz öğeleri içeriyor (toplam {{number}}). Bunları yeni bir soruşturmaya taşıyarak saklayın veya yaptığınız değişiklikler dahil her şeyi kalıcı olarak silin.",
+  "sample.removeMessageWithUserItems": "\"{{name}}\" eklediğiniz veya değiştirdiğiniz öğeleri içeriyor (toplam {{number}}). Bunları yeni bir soruşturmaya taşıyarak saklayın veya her şeyi kalıcı olarak silin.",
   "sample.removeConfirm": "Örneği kaldır",
   "sample.deleteEverything": "Her şeyi sil",
   "sample.keepUserItems": "Öğelerimi sakla",

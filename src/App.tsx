@@ -1354,7 +1354,10 @@ const AppInner = memo(function AppInner({
       activityLog.log('data', 'delete', `Removed ${kind} sample investigation`);
       addToast('success', keptFolder ? tt('investigation.sampleKept', { name: keptFolder.name }) : tt('investigation.sampleRemoved'));
     } catch (error) {
-      if (current()) addToast('error', sampleErrorMessage(error));
+      if (!current()) return;
+      addToast('error', sampleErrorMessage(error));
+      // The case may already be gone when a later cleanup step fails; show what remains.
+      await reloadAll();
     }
   }, [reloadAll, selectedFolderId, activityLog, setSelectedFolderId, setSelectedNoteId, addToast, tt, tInvestigations, sampleErrorMessage]);
 

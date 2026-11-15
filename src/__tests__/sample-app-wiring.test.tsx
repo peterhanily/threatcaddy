@@ -56,14 +56,16 @@ describe('every sample removal entry point asks first', () => {
     expect(await db.notes.count()).toBe(0);
   });
 
-  it('names what the user added from Settings and keeps it when asked', async () => {
+  it('names what the user added or rewrote from Settings and keeps it when asked', async () => {
     await loadSampleInvestigation('realistic');
     await db.notes.add(userNote);
+    // The guide asks the user to rewrite the seeded draft report.
+    await db.notes.update('sample-realistic-note-6', { content: 'My reviewed assessment', updatedAt: Date.now() });
     render(<App />);
     await openSettings();
     fireEvent.click(screen.getByRole('button', { name: 'Remove Sample Investigation' }));
     let dialog = await removalDialog();
-    expect(dialog).toHaveTextContent('(1 in total)');
+    expect(dialog).toHaveTextContent('(2 in total)');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: REMOVE_TITLE })).toBeNull());
     expect(await db.notes.count()).toBe(7);
@@ -74,7 +76,23 @@ describe('every sample removal entry point asks first', () => {
     const [kept] = await db.folders.toArray();
     expect(kept).toMatchObject({ name: 'My work from Mailbox Compromise — Synthetic Exercise', localOnly: true });
     expect((await db.notes.get('u-note'))?.folderId).toBe(kept.id);
-    expect(await db.notes.count()).toBe(1);
+    expect(await db.notes.get('sample-realistic-note-6')).toMatchObject({ folderId: kept.id, content: 'My reviewed assessment' });
+    expect(await db.notes.count()).toBe(2);
+  });
+
+  it('shows the removed case as gone when a cleanup step after the cascade fails', async () => {
+    await loadSampleInvestigation('realistic');
+    const fail = () => { throw new Error('Simulated disk failure'); };
+    db.timelines.hook('deleting', fail);
+    try {
+      render(<App />);
+      await openSettings();
+      fireEvent.click(screen.getByRole('button', { name: 'Remove Sample Investigation' }));
+      fireEvent.click(within(await removalDialog()).getByRole('button', { name: 'Remove sample' }));
+      expect(await screen.findByText('Simulated disk failure')).toBeInTheDocument();
+      expect(await db.folders.get(REALISTIC)).toBeUndefined();
+      expect(await screen.findByRole('button', { name: 'Load Sample Investigation' })).toBeInTheDocument();
+    } finally { db.timelines.hook('deleting').unsubscribe(fail); }
   });
 
   it('asks before the parody Remove button deletes the parody', async () => {

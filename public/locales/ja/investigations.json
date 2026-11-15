@@ -78,7 +78,7 @@
   "detail.updated": "{{date}} に更新",
   "sample.removeTitle": "サンプル調査を削除しますか？",
   "sample.removeMessage": "「{{name}}」の内容は、あなたが加えた変更も含めてすべて完全に削除されます。この操作は元に戻せません。",
-  "sample.removeMessageWithUserItems": "「{{name}}」には、あなたが追加した項目があります（合計 {{number}} 件）。新しい調査に移動して保持するか、あなたが加えた変更も含めてすべて完全に削除してください。",
+  "sample.removeMessageWithUserItems": "「{{name}}」には、あなたが追加または変更した項目があります（合計 {{number}} 件）。新しい調査に移動して保持するか、すべて完全に削除してください。",
   "sample.removeConfirm": "サンプルを削除",
   "sample.deleteEverything": "すべて削除",
   "sample.keepUserItems": "自分の項目を保持",

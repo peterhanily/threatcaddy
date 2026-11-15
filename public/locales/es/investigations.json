@@ -78,7 +78,7 @@
   "detail.updated": "Actualizada {{date}}",
   "sample.removeTitle": "¿Eliminar la investigación de ejemplo?",
   "sample.removeMessage": "Todo lo que hay en \"{{name}}\", incluidos los cambios que hayas hecho, se eliminará de forma permanente. Esta acción no se puede deshacer.",
-  "sample.removeMessageWithUserItems": "\"{{name}}\" contiene elementos que añadiste ({{number}} en total). Consérvalos moviéndolos a una nueva investigación, o elimina todo de forma permanente, incluidos los cambios que hayas hecho.",
+  "sample.removeMessageWithUserItems": "\"{{name}}\" contiene elementos que añadiste o cambiaste ({{number}} en total). Consérvalos moviéndolos a una nueva investigación, o elimina todo de forma permanente.",
   "sample.removeConfirm": "Eliminar ejemplo",
   "sample.deleteEverything": "Eliminar todo",
   "sample.keepUserItems": "Conservar mis elementos",

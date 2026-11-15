@@ -78,7 +78,7 @@
   "detail.updated": "Diperbarui {{date}}",
   "sample.removeTitle": "Hapus investigasi sampel?",
   "sample.removeMessage": "Semua isi \"{{name}}\", termasuk perubahan yang Anda buat, akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.",
-  "sample.removeMessageWithUserItems": "\"{{name}}\" berisi item yang Anda tambahkan (total {{number}}). Simpan item tersebut dengan memindahkannya ke investigasi baru, atau hapus semuanya secara permanen, termasuk perubahan yang Anda buat.",
+  "sample.removeMessageWithUserItems": "\"{{name}}\" berisi item yang Anda tambahkan atau ubah (total {{number}}). Simpan item tersebut dengan memindahkannya ke investigasi baru, atau hapus semuanya secara permanen.",
   "sample.removeConfirm": "Hapus sampel",
   "sample.deleteEverything": "Hapus semuanya",
   "sample.keepUserItems": "Simpan item saya",

@@ -78,7 +78,7 @@
   "detail.updated": "更新于 {{date}}",
   "sample.removeTitle": "移除示例调查？",
   "sample.removeMessage": "\"{{name}}\"中的所有内容（包括您所做的更改）都将被永久删除。此操作无法撤销。",
-  "sample.removeMessageWithUserItems": "\"{{name}}\"包含您添加的项目（共 {{number}} 项）。可将其移至新调查以保留，或永久删除所有内容（包括您所做的更改）。",
+  "sample.removeMessageWithUserItems": "\"{{name}}\"包含您添加或更改的项目（共 {{number}} 项）。可将其移至新调查以保留，或永久删除所有内容。",
   "sample.removeConfirm": "移除示例",
   "sample.deleteEverything": "全部删除",
   "sample.keepUserItems": "保留我的项目",

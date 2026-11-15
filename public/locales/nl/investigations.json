@@ -78,7 +78,7 @@
   "detail.updated": "Bijgewerkt {{date}}",
   "sample.removeTitle": "Voorbeeldonderzoek verwijderen?",
   "sample.removeMessage": "Alles in \"{{name}}\", inclusief uw wijzigingen, wordt permanent verwijderd. Dit kan niet ongedaan worden gemaakt.",
-  "sample.removeMessageWithUserItems": "\"{{name}}\" bevat items die u hebt toegevoegd ({{number}} in totaal). Bewaar ze door ze naar een nieuw onderzoek te verplaatsen, of verwijder alles permanent, inclusief uw wijzigingen.",
+  "sample.removeMessageWithUserItems": "\"{{name}}\" bevat items die u hebt toegevoegd of gewijzigd ({{number}} in totaal). Bewaar ze door ze naar een nieuw onderzoek te verplaatsen, of verwijder alles permanent.",
   "sample.removeConfirm": "Voorbeeld verwijderen",
   "sample.deleteEverything": "Alles verwijderen",
   "sample.keepUserItems": "Mijn items bewaren",

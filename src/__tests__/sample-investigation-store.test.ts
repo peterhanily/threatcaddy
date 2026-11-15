@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { db } from '../db';
 import type { Note, TimelineEvent } from '../types';
 import { deleteSampleInvestigation, getSampleFolderId, getSampleRemovalSummary, loadSampleInvestigation } from '../lib/sample-investigation-store';
-import { hasPendingChanges } from '../lib/pending-changes';
+import { clearPending, hasPendingChanges, markPending, PendingChangesError } from '../lib/pending-changes';
 import { setSessionKey } from '../lib/encryptionMiddleware';
 import { clearEncryptionMeta, setEncryptionMeta } from '../lib/encryptionStore';
 import { getEntityDraft } from '../lib/entity-drafts';
@@ -32,7 +32,6 @@ describe('removing a sample never loses work silently', () => {
     await loadSampleInvestigation('realistic');
     await loadSampleInvestigation('parody');
     expect(await getSampleRemovalSummary('realistic')).toEqual({ name: 'Mailbox Compromise — Synthetic Exercise', userItems: 0 });
-    await db.notes.update('sample-realistic-note-6', { content: 'My reviewed assessment' });
     await db.notes.add(userNote('u-note'));
     await db.notes.update('sample-note-1', { folderId: REALISTIC });
     await db.timelineEvents.add(userEvent('u-event', REALISTIC, 'sample-realistic-timeline-1'));
@@ -40,6 +39,41 @@ describe('removing a sample never loses work silently', () => {
     expect((await getSampleRemovalSummary('parody'))?.userItems).toBe(0);
     await deleteSampleInvestigation('realistic');
     expect(await getSampleRemovalSummary('realistic')).toBeUndefined();
+  });
+
+  it('counts and keeps demo records the user changed, as the guide asks for the draft report', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: Date.UTC(2026, 10, 12) });
+    try {
+      await loadSampleInvestigation('realistic');
+      await loadSampleInvestigation('parody');
+      // A day later. Every app edit stamps updatedAt; the seeded stamps are fixed
+      // (realistic) or relative to loading (parody), so untouched parody rows still match.
+      vi.setSystemTime(Date.UTC(2026, 10, 13));
+      expect((await getSampleRemovalSummary('parody'))?.userItems).toBe(0);
+      await db.notes.update('sample-realistic-note-6', { content: 'My reviewed assessment', updatedAt: Date.now() });
+      await db.notes.add(userNote('u-note'));
+      await db.tasks.update('sample-task-5', { status: 'done', updatedAt: Date.now() });
+      expect((await getSampleRemovalSummary('realistic'))?.userItems).toBe(2);
+      expect((await getSampleRemovalSummary('parody'))?.userItems).toBe(1);
+      const { keptFolder } = await deleteSampleInvestigation('realistic', undefined, { keepUserItemsIn: 'My work from the demo' });
+      expect((await db.notes.where('folderId').equals(keptFolder?.id ?? '').primaryKeys()).sort()).toEqual(['sample-realistic-note-6', 'u-note']);
+      expect((await db.notes.get('sample-realistic-note-6'))?.content).toBe('My reviewed assessment');
+      expect(await db.notes.get('sample-realistic-note-5')).toBeUndefined();
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('moves nothing when pending work refuses the removal', async () => {
+    await loadSampleInvestigation('realistic');
+    await db.notes.add(userNote('u-note'));
+    const unsent = Symbol('unsent chat draft');
+    markPending(unsent);
+    try {
+      await expect(deleteSampleInvestigation('realistic', undefined, { keepUserItemsIn: 'My work from the demo' }))
+        .rejects.toBeInstanceOf(PendingChangesError);
+    } finally { clearPending(unsent); }
+    expect((await db.folders.toArray()).map(folder => folder.id)).toEqual([REALISTIC]);
+    expect((await db.notes.get('u-note'))?.folderId).toBe(REALISTIC);
+    expect(await db.notes.count()).toBe(7);
   });
 
   it('moves added items to a new local-only investigation when asked, then removes the seeded case', async () => {

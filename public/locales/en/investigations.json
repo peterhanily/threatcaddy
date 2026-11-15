@@ -108,7 +108,7 @@
   "detail.updated": "Updated {{date}}",
   "sample.removeTitle": "Remove sample investigation?",
   "sample.removeMessage": "Everything in \"{{name}}\", including any changes you made, will be permanently deleted. This cannot be undone.",
-  "sample.removeMessageWithUserItems": "\"{{name}}\" contains items you added ({{number}} in total). Keep them by moving them to a new investigation, or delete everything permanently, including any changes you made.",
+  "sample.removeMessageWithUserItems": "\"{{name}}\" contains items you added or changed ({{number}} in total). Keep them by moving them to a new investigation, or delete everything permanently.",
   "sample.removeConfirm": "Remove sample",
   "sample.deleteEverything": "Delete everything",
   "sample.keepUserItems": "Keep my items",

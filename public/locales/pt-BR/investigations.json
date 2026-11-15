@@ -78,7 +78,7 @@
   "detail.updated": "Atualizada {{date}}",
   "sample.removeTitle": "Remover a investigação de exemplo?",
   "sample.removeMessage": "Tudo em \"{{name}}\", incluindo as alterações que você fez, será excluído permanentemente. Essa ação não pode ser desfeita.",
-  "sample.removeMessageWithUserItems": "\"{{name}}\" contém itens que você adicionou ({{number}} no total). Mantenha-os movendo-os para uma nova investigação ou exclua tudo permanentemente, incluindo as alterações que você fez.",
+  "sample.removeMessageWithUserItems": "\"{{name}}\" contém itens que você adicionou ou alterou ({{number}} no total). Mantenha-os movendo-os para uma nova investigação ou exclua tudo permanentemente.",
   "sample.removeConfirm": "Remover exemplo",
   "sample.deleteEverything": "Excluir tudo",
   "sample.keepUserItems": "Manter meus itens",

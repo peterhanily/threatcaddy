@@ -78,7 +78,7 @@
   "detail.updated": "{{date}} को अपडेट हुआ",
   "sample.removeTitle": "नमूना जाँच हटाएं?",
   "sample.removeMessage": "«{{name}}» में मौजूद सब कुछ, आपके किए गए बदलावों सहित, स्थायी रूप से हटा दिया जाएगा। यह क्रिया पूर्ववत नहीं की जा सकती।",
-  "sample.removeMessageWithUserItems": "«{{name}}» में आपके जोड़े गए आइटम हैं (कुल {{number}})। उन्हें एक नई जाँच में ले जाकर रखें, या आपके किए गए बदलावों सहित सब कुछ स्थायी रूप से हटा दें।",
+  "sample.removeMessageWithUserItems": "«{{name}}» में आपके जोड़े या बदले गए आइटम हैं (कुल {{number}})। उन्हें एक नई जाँच में ले जाकर रखें, या सब कुछ स्थायी रूप से हटा दें।",
   "sample.removeConfirm": "नमूना हटाएं",
   "sample.deleteEverything": "सब कुछ हटाएं",
   "sample.keepUserItems": "मेरे आइटम रखें",

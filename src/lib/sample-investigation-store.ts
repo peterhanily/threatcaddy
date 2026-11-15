@@ -46,6 +46,10 @@ function currentSession() {
   };
 }
 
+const generateSample = async (kind: SampleInvestigationKind) => kind === 'realistic'
+  ? (await import('./sample-investigation-realistic')).generateRealisticInvestigation()
+  : (await import('./sample-investigation')).generateSampleInvestigation();
+
 /** Rows whose seeded id survives elsewhere (moved, imported) are left where they are. */
 async function absent<T extends { id: string }>(table: { bulkGet(keys: string[]): Promise<(T | undefined)[]> }, rows: T[]): Promise<T[]> {
   const existing = await table.bulkGet(rows.map(row => row.id));
@@ -61,9 +65,7 @@ export async function loadSampleInvestigation(kind: SampleInvestigationKind, sig
   try {
     const assertSession = currentSession();
     request.signal.throwIfAborted();
-    const data = kind === 'realistic'
-      ? (await import('./sample-investigation-realistic')).generateRealisticInvestigation()
-      : (await import('./sample-investigation')).generateSampleInvestigation();
+    const data = await generateSample(kind);
     request.signal.throwIfAborted();
     assertSession();
     const tables = [db.folders, db.timelines, db.tags, db.notes, db.tasks, db.timelineEvents,
@@ -100,23 +102,37 @@ export async function loadSampleInvestigation(kind: SampleInvestigationKind, sig
   }
 }
 
-async function userItemIds(kind: SampleInvestigationKind): Promise<Record<string, string[]>> {
+interface SampleSeed { createdAt: number; updatedAt: Map<string, number> }
+async function sampleSeed(kind: SampleInvestigationKind): Promise<SampleSeed> {
+  const data = await generateSample(kind);
+  const rows = [...data.notes, ...data.tasks, ...data.timelineEvents, ...data.standaloneIOCs, ...data.evidenceItems,
+    data.whiteboard, ...data.chatThreads];
+  return { createdAt: data.folder.createdAt, updatedAt: new Map(rows.map(row => [row.id, row.updatedAt])) };
+}
+
+/** Items the user added to a demo case, and seeded items they changed: every
+ * edit stamps updatedAt, while seeded stamps are fixed (realistic) or relative
+ * to loading (parody), so shift the fresh seed onto the stored case. */
+async function userItemIds(kind: SampleInvestigationKind, seed: SampleSeed): Promise<Record<string, string[]>> {
   const folderId = getSampleFolderId(kind);
+  const shift = ((await db.folders.get(folderId))?.createdAt ?? seed.createdAt) - seed.createdAt;
   const ids: Record<string, string[]> = {};
   for (const name of FOLDER_CONTENT_TABLES) {
-    const keys = await db.table(name).where('folderId').equals(folderId).primaryKeys() as string[];
-    ids[name] = keys.filter(id => !isSampleEntityForKind(id, kind));
+    const rows: Array<{ id: string; updatedAt?: number }> = await db.table(name).where('folderId').equals(folderId).toArray();
+    ids[name] = rows.filter(row => !isSampleEntityForKind(row.id, kind)
+      || row.updatedAt !== (seed.updatedAt.get(row.id) ?? NaN) + shift).map(row => row.id);
   }
   return ids;
 }
 
-/** What a removal confirmation must name: the case and how many items the user added to it. */
+/** What a removal confirmation must name: the case and how many items the user added or changed in it. */
 export async function getSampleRemovalSummary(kind: SampleInvestigationKind): Promise<{ name: string; userItems: number } | undefined> {
   const assertSession = currentSession();
+  const seed = await sampleSeed(kind);
   return db.transaction('r', [db.folders, ...FOLDER_CONTENT_TABLES.map(name => db.table(name))], async () => {
     const folder = await db.folders.get(getSampleFolderId(kind));
     if (!folder) return undefined;
-    const userItems = Object.values(await userItemIds(kind)).reduce((total, ids) => total + ids.length, 0);
+    const userItems = Object.values(await userItemIds(kind, seed)).reduce((total, ids) => total + ids.length, 0);
     assertSession();
     return { name: folder.name, userItems };
   });
@@ -124,8 +140,8 @@ export async function getSampleRemovalSummary(kind: SampleInvestigationKind): Pr
 
 /** Delete the selected case's current contents and reverse references. Items
  * moved elsewhere and reusable templates remain user-owned. With
- * `keepUserItemsIn`, items the user added first move to a new local-only case
- * of that name. Demo tags and timelines go once nothing uses them. */
+ * `keepUserItemsIn`, items the user added or changed first move to a new
+ * local-only case of that name. Demo tags and timelines go once nothing uses them. */
 export async function deleteSampleInvestigation(kind: SampleInvestigationKind, signal?: AbortSignal,
   options: { keepUserItemsIn?: string } = {}): Promise<{ keptFolder?: Folder }> {
   const request = cancellableRequest(signal);
@@ -133,32 +149,33 @@ export async function deleteSampleInvestigation(kind: SampleInvestigationKind, s
     const assertSession = currentSession();
     request.signal.throwIfAborted();
     const folderId = getSampleFolderId(kind);
+    const name = options.keepUserItemsIn;
+    const seed = name === undefined ? undefined : await sampleSeed(kind);
+    request.signal.throwIfAborted();
     let keptFolder: Folder | undefined;
-    if (options.keepUserItemsIn !== undefined) {
-      const name = options.keepUserItemsIn;
-      const agentTables = ['agentActions', 'agentDeployments', 'agentMeetings'];
-      keptFolder = await integrationWrite([db.folders, ...[...FOLDER_CONTENT_TABLES, ...agentTables].map(table => db.table(table))], request.signal, async () => {
-        assertSession();
-        const sample = await db.folders.get(folderId);
-        const items = await userItemIds(kind);
-        if (!sample || !Object.values(items).some(ids => ids.length)) return undefined;
-        const now = Date.now();
-        const order = (await db.folders.toArray()).reduce((max, folder) => Math.max(max, folder.order), 0) + 1;
-        // The sample case never synced; keep the user's items just as private.
-        const folder: Folder = { id: nanoid(), name, order, status: 'active', localOnly: true, createdAt: now, updatedAt: now,
-          ...(sample.clsLevel ? { clsLevel: sample.clsLevel } : {}), ...(sample.papLevel ? { papLevel: sample.papLevel } : {}) };
-        await db.folders.add(folder);
-        for (const [table, ids] of Object.entries(items)) {
-          if (ids.length) await db.table(table).where(':id').anyOf(ids).modify({ folderId: folder.id, updatedAt: now });
-        }
-        // Agents work on behalf of the user's case, not the seeded demo records.
-        for (const table of agentTables) await db.table(table).where('investigationId').equals(folderId).modify({ investigationId: folder.id });
-        assertSession();
-        return folder;
-      });
-    }
+    // Kept items move in the cascade's own transaction, behind its draft barrier,
+    // so a refused or failed removal moves nothing.
+    const keepUserItems = seed && name !== undefined ? async () => {
+      const sample = await db.folders.get(folderId);
+      const items = await userItemIds(kind, seed);
+      if (!sample || !Object.values(items).some(ids => ids.length)) return;
+      const now = Date.now();
+      const order = (await db.folders.toArray()).reduce((max, folder) => Math.max(max, folder.order), 0) + 1;
+      // The sample case never synced; keep the user's items just as private.
+      const folder: Folder = { id: nanoid(), name, order, status: 'active', localOnly: true, createdAt: now, updatedAt: now,
+        ...(sample.clsLevel ? { clsLevel: sample.clsLevel } : {}), ...(sample.papLevel ? { papLevel: sample.papLevel } : {}) };
+      await db.folders.add(folder);
+      for (const [table, ids] of Object.entries(items)) {
+        if (ids.length) await db.table(table).where(':id').anyOf(ids).modify({ folderId: folder.id, updatedAt: now });
+      }
+      // Agents work on behalf of the user's case, not the seeded demo records.
+      for (const table of ['agentActions', 'agentDeployments', 'agentMeetings']) {
+        await db.table(table).where('investigationId').equals(folderId).modify({ investigationId: folder.id });
+      }
+      keptFolder = folder;
+    } : undefined;
     // The real folder cascade also removes user-created contents and agents.
-    await deleteEntitiesWithReferences({ folders: [folderId] }, folderId, undefined, request.signal, assertSession);
+    await deleteEntitiesWithReferences({ folders: [folderId] }, folderId, undefined, request.signal, assertSession, keepUserItems);
     await integrationWrite([db.tags, db.timelines, ...TAGGED_TABLES.map(table => db.table(table))], request.signal, async () => {
       assertSession();
       const tags = await db.tags.filter(tag => isSampleEntityForKind(tag.id, kind)).toArray();

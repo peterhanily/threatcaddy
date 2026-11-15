@@ -78,7 +78,7 @@
   "detail.updated": "{{date}}에 업데이트됨",
   "sample.removeTitle": "샘플 조사를 제거하시겠습니까?",
   "sample.removeMessage": "\"{{name}}\"의 모든 내용이 변경 사항을 포함하여 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
-  "sample.removeMessageWithUserItems": "\"{{name}}\"에 사용자가 추가한 항목이 있습니다(총 {{number}}개). 새 조사로 옮겨 보관하거나, 변경 사항을 포함한 모든 항목을 영구적으로 삭제하세요.",
+  "sample.removeMessageWithUserItems": "\"{{name}}\"에 사용자가 추가하거나 변경한 항목이 있습니다(총 {{number}}개). 새 조사로 옮겨 보관하거나, 모든 항목을 영구적으로 삭제하세요.",
   "sample.removeConfirm": "샘플 제거",
   "sample.deleteEverything": "모두 삭제",
   "sample.keepUserItems": "내 항목 보관",

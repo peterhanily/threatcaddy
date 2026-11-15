@@ -78,7 +78,7 @@
   "detail.updated": "עודכן {{date}}",
   "sample.removeTitle": "להסיר את חקירת הדוגמה?",
   "sample.removeMessage": "כל התוכן ב-\"{{name}}\", כולל שינויים שביצעת, יימחק לצמיתות. לא ניתן לבטל פעולה זו.",
-  "sample.removeMessageWithUserItems": "\"{{name}}\" מכילה פריטים שהוספת ({{number}} בסך הכול). שמור אותם על ידי העברתם לחקירה חדשה, או מחק הכול לצמיתות, כולל שינויים שביצעת.",
+  "sample.removeMessageWithUserItems": "\"{{name}}\" מכילה פריטים שהוספת או שינית ({{number}} בסך הכול). שמור אותם על ידי העברתם לחקירה חדשה, או מחק הכול לצמיתות.",
   "sample.removeConfirm": "הסר דוגמה",
   "sample.deleteEverything": "מחק הכול",
   "sample.keepUserItems": "שמור את הפריטים שלי",

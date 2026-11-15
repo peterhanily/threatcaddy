@@ -27,7 +27,9 @@ describe('sample removal confirmation', () => {
   it('names the items the user added and offers to keep them', () => {
     const onRemove = vi.fn();
     const { unmount } = render(<SampleRemovalDialog request={request(3)} onClose={vi.fn()} onRemove={onRemove} />);
-    expect(screen.getByRole('dialog')).toHaveTextContent('3 in total');
+    // Changed demo records are counted and kept too, so the copy must not say they are lost either way.
+    expect(screen.getByRole('dialog')).toHaveTextContent('contains items you added or changed (3 in total)');
+    expect(screen.getByRole('dialog')).not.toHaveTextContent('including any changes you made');
     fireEvent.click(screen.getByRole('button', { name: 'Keep my items' }));
     expect(onRemove).toHaveBeenCalledExactlyOnceWith(request(3), true);
     unmount();
