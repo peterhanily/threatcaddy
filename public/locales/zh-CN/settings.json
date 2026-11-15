@@ -392,6 +392,7 @@
   "server.accountCreated": "账户已创建",
   "server.reconnectedToast": "已重新连接到服务器",
   "server.disconnectedToast": "已断开与服务器的连接",
+  "server.remoteLogoutFailed": "已在本地退出登录，但服务器未确认撤销会话。之前的服务器会话可能仍然有效。请联系服务器管理员将其撤销。",
   "server.savedServers": "已保存的服务器",
   "server.deleteSavedServer": "删除已保存的服务器",
   "server.onboarding.welcome": "欢迎来到 {{name}}！",

@@ -164,8 +164,9 @@ export function ServerConnection({ settings, onUpdateSettings }: ServerConnectio
     try {
       await revocation;
       addToast('info', t('server.disconnectedToast'));
-    } catch (err) {
-      const message = (err as Error).message;
+    } catch {
+      // logout() rejects only when the server did not confirm revocation.
+      const message = t('server.remoteLogoutFailed');
       setError(message);
       addToast('warning', message, 12_000);
     } finally { setLoading(false); }

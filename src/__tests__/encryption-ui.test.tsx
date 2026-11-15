@@ -70,7 +70,7 @@ import { PassphraseDialog } from '../components/Encryption/PassphraseDialog';
 import { EncryptionSettings } from '../components/Encryption/EncryptionSettings';
 import { db } from '../db';
 import { clearEncryptionMeta } from '../lib/encryptionStore';
-import { deriveWrappingKey } from '../lib/crypto';
+import { deriveWrappingKey, wrapMasterKey } from '../lib/crypto';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -283,6 +283,35 @@ describe('EncryptionSettings', () => {
     expect(screen.getByText('Encryption is enabled')).toBeInTheDocument();
     expect(screen.getByText('Change Passphrase')).toBeInTheDocument();
     expect(screen.getByText('Disable Encryption')).toBeInTheDocument();
+  });
+
+  it('reports an unfinished passphrase change separately from a wrong current passphrase', async () => {
+    mockIsEncryptionEnabled.mockReturnValue(true);
+    mockGetEncryptionMeta.mockReturnValue({ version: 1, salt: 'salt', wrappedKey: 'key', recoverySalt: 'rsalt', recoveryWrappedKey: 'rkey', enabledAt: 1 });
+    const unwrap = vi.spyOn(crypto.subtle, 'unwrapKey').mockResolvedValue({} as CryptoKey);
+    vi.mocked(wrapMasterKey).mockRejectedValueOnce(new Error('Synthetic wrapping failure'));
+    try {
+      render(<EncryptionSettings />);
+      fireEvent.click(screen.getByText('Change Passphrase'));
+      changeInput(screen.getByLabelText('Current passphrase'), 'fictional current passphrase');
+      changeInput(screen.getByLabelText('New passphrase (min 8 characters)'), 'fictional new passphrase');
+      changeInput(screen.getByLabelText('Confirm new passphrase'), 'fictional new passphrase');
+      await act(async () => { fireEvent.click(screen.getAllByRole('button', { name: 'Change Passphrase' }).at(-1)!); });
+      expect(screen.getByText(/current passphrase was accepted, but the change did not finish: Synthetic wrapping failure/)).toBeInTheDocument();
+      expect(screen.queryByText('Wrong current passphrase.')).not.toBeInTheDocument();
+    } finally { unwrap.mockRestore(); }
+  });
+
+  it('reports unreadable metadata when disabling and keeps the dialog closable', async () => {
+    mockIsEncryptionEnabled.mockReturnValue(true);
+    mockGetEncryptionMeta.mockReturnValue({ version: 1, salt: 'salt', wrappedKey: 'key', recoverySalt: 'rsalt', recoveryWrappedKey: 'rkey', enabledAt: 1 });
+    render(<EncryptionSettings />);
+    fireEvent.click(screen.getByText('Disable Encryption'));
+    mockGetEncryptionMeta.mockReturnValue(null);
+    changeInput(screen.getByPlaceholderText('Enter passphrase...'), 'fictional passphrase');
+    await act(async () => { fireEvent.click(screen.getAllByRole('button', { name: 'Disable Encryption' }).at(-1)!); });
+    expect(screen.getByText('Encryption metadata could not be read. Restore it from a backup before opening this workspace.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
   });
 
   it('shows session duration selector when enabled', () => {

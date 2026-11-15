@@ -392,6 +392,7 @@
   "server.accountCreated": "Аккаунт создан",
   "server.reconnectedToast": "Переподключено к серверу",
   "server.disconnectedToast": "Отключено от сервера",
+  "server.remoteLogoutFailed": "Выход выполнен локально, но сервер не подтвердил отзыв сессии. Предыдущая сессия на сервере может оставаться активной. Обратитесь к администратору сервера, чтобы отозвать её.",
   "server.savedServers": "Сохранённые серверы",
   "server.deleteSavedServer": "Удалить сохранённый сервер",
   "server.onboarding.welcome": "Добро пожаловать в {{name}}!",

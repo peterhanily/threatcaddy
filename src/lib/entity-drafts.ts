@@ -133,11 +133,13 @@ export class EntityDraft {
       if (conflicts?.[field]) conflicts[field] = { ...conflicts[field], local: updates[field] };
     }
     if (externalDataChange || this.requiresReview) {
+      // Keep the reason a draft already needs review, such as a workspace lock.
+      const pendingReview = this.requiresReview && !externalDataChange ? this.snapshot.error : undefined;
       this.requiresReview = true;
       this.timer = undefined;
       this.publish({ ...this.snapshot, patch, conflicts, status: 'error', error: conflicts && Object.keys(conflicts).length
         ? 'Local and remote changes overlap. Review each conflicting field before saving.'
-        : 'Data was being replaced. Reopen the item and review this draft before retrying.' });
+        : pendingReview ?? 'Data was being replaced. Reopen the item and review this draft before retrying.' });
       return;
     }
     this.publish({ patch, status: this.inFlight ? 'saving' : 'dirty' });

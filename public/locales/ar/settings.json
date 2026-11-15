@@ -392,6 +392,7 @@
   "server.accountCreated": "تم إنشاء الحساب",
   "server.reconnectedToast": "تمت إعادة الاتصال بالخادم",
   "server.disconnectedToast": "تم قطع الاتصال بالخادم",
+  "server.remoteLogoutFailed": "تم تسجيل الخروج محليًا، لكن الخادم لم يؤكد إلغاء الجلسة. قد تظل جلسة الخادم السابقة نشطة. تواصل مع مسؤول الخادم لإلغائها.",
   "server.savedServers": "الخوادم المحفوظة",
   "server.deleteSavedServer": "حذف الخادم المحفوظ",
   "server.onboarding.welcome": "مرحبًا في {{name}}!",

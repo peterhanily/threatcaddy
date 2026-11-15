@@ -61,6 +61,7 @@
   "settings.newPassMinLength": "New passphrase must be at least 8 characters.",
   "settings.newPassMismatch": "New passphrases do not match.",
   "settings.wrongCurrentPass": "Wrong current passphrase.",
+  "settings.changeFailed": "The current passphrase was accepted, but the change did not finish: {{error}}",
 
   "passphrase.unlockThreatCaddy": "Unlock ThreatCaddy",
   "passphrase.prepareFailed": "Your key was accepted, but preparing the workspace failed: {{error}}. Unlock again to retry.",
@@ -73,6 +74,7 @@
   "passphrase.unlocking": "Unlocking...",
   "passphrase.invalidRecoveryKey": "Invalid recovery key.",
   "passphrase.wrongPassphrase": "Wrong passphrase.",
+  "passphrase.sessionChanged": "The encryption session changed while unlocking, for example because settings were saved in another tab. Unlock again.",
   "passphrase.usePassphraseInstead": "Use passphrase instead",
   "passphrase.useRecoveryKey": "Use recovery key",
   "passphrase.forgotPassphrase": "Forgot passphrase?",
@@ -84,6 +86,10 @@
   "passphrase.deleteAllData": "Delete All Data & Start Fresh",
 
   "appShell.placeholder": "",
+  "appShell.recoveryWarning": "Some unsaved work could not be encrypted for recovery. Keep this tab open and unlock again to recover it.",
+  "appShell.settingsChanged": "Encryption settings changed in another tab. Reload to prepare this workspace.",
+  "appShell.prepareFailed": "The workspace could not be prepared.",
+  "appShell.reload": "Reload to retry",
   "legacy.title": "Retained legacy database",
   "legacy.notice": "The old BrowserNotes database contains {{count}} historical records outside this workspace’s encryption lifecycle. It may contain readable content. Nothing is removed automatically.",
   "legacy.unverified": "Complete and verify the legacy transfer before cleanup. Keep both copies if records conflict.",

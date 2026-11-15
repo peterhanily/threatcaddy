@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
+import i18n from '../i18n';
+import deEncryption from '../../public/locales/de/encryption.json';
 
 const mocks = vi.hoisted(() => ({ prepare: vi.fn(), importKey: vi.fn(), setKey: vi.fn(), clearCache: vi.fn(), enabled: vi.fn() }));
 vi.mock('../App', () => ({ default: () => <div>Workspace ready</div> }));
@@ -8,7 +10,7 @@ vi.mock('../components/Encryption/PassphraseDialog', () => ({ PassphraseDialog: 
 vi.mock('../lib/encryptionStore', () => ({ encryptionStorageKey: 'threatcaddy-encryption', isEncryptionEnabled: mocks.enabled, getEncryptionMeta: () => ({}), getCachedSession: () => ({ key: 'cached-fixture-key', unlockedAt: 1, expiresAt: 0 }), clearSessionCache: mocks.clearCache }));
 vi.mock('../lib/crypto', () => ({ importSessionKey: mocks.importKey, base64ToArrayBuffer: () => new ArrayBuffer(32) }));
 vi.mock('../lib/encryptionMiddleware', () => ({ setSessionKey: mocks.setKey, getSessionKey: () => mocks.importKey.mock.results[0]?.value, getSessionGeneration: () => 0, getSessionExpiresAt: () => 0, lockEncryptionSession: () => { mocks.setKey(null); mocks.clearCache(); window.dispatchEvent(new Event('workspace-locked')); } }));
-vi.mock('../lib/workspace-lock', () => ({ restoreWorkspaceRecovery: vi.fn(async () => {}), RECOVERY_WARNING: 'Recovery warning' }));
+vi.mock('../lib/workspace-lock', () => ({ restoreWorkspaceRecovery: vi.fn(async () => {}) }));
 vi.mock('../lib/workspace-initialization', () => ({ initializeWorkspace: mocks.prepare }));
 
 import { AppShell } from '../components/Encryption/AppShell';
@@ -45,5 +47,22 @@ describe('cached-key workspace preparation', () => {
     expect(screen.queryByText('Workspace ready')).not.toBeInTheDocument();
     expect(screen.getByText('Reload to retry')).toBeInTheDocument();
     expect(mocks.setKey).toHaveBeenLastCalledWith(null);
+  });
+
+  it('shows lock-screen messages in the selected language', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'encryption', deEncryption, true, true);
+    await act(async () => { await i18n.changeLanguage('de'); });
+    try {
+      mocks.prepare.mockResolvedValue(undefined);
+      render(<AppShell />);
+      expect(await screen.findByText('Workspace ready')).toBeInTheDocument();
+      await act(async () => {
+        mocks.enabled.mockReturnValue(false);
+        window.dispatchEvent(new StorageEvent('storage', { key: 'threatcaddy-encryption' }));
+      });
+      expect(screen.getByText(deEncryption['appShell.settingsChanged'])).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: deEncryption['appShell.reload'] })).toBeInTheDocument();
+    } finally { await act(async () => { await i18n.changeLanguage('en'); }); }
   });
 });

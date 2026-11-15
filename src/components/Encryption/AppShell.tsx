@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import App from '../../App';
 import { PassphraseDialog } from './PassphraseDialog';
 import { SessionExpiryWarning } from './SessionExpiryWarning';
 import { isEncryptionEnabled, getEncryptionMeta, getCachedSession, encryptionStorageKey } from '../../lib/encryptionStore';
 import { importSessionKey, base64ToArrayBuffer } from '../../lib/crypto';
 import { setSessionKey, getSessionKey, getSessionGeneration, lockEncryptionSession } from '../../lib/encryptionMiddleware';
-import { restoreWorkspaceRecovery, RECOVERY_WARNING } from '../../lib/workspace-lock';
+import { restoreWorkspaceRecovery } from '../../lib/workspace-lock';
 import { initializeWorkspace } from '../../lib/workspace-initialization';
 
 function getInitialState() {
@@ -13,6 +14,7 @@ function getInitialState() {
 }
 
 export function AppShell() {
+  const { t } = useTranslation('encryption');
   const [{ unlocked: initialUnlocked, cached }] = useState(getInitialState);
   const [ready, setReady] = useState(!initialUnlocked && !cached);
   const [isUnlocked, setIsUnlocked] = useState(initialUnlocked);
@@ -21,13 +23,13 @@ export function AppShell() {
   useEffect(() => {
     const locked = (event: Event) => {
       setIsUnlocked(false); setReady(true);
-      setPreparationError((event as CustomEvent<{ recoveryFailed?: boolean }>).detail?.recoveryFailed ? RECOVERY_WARNING : '');
+      setPreparationError((event as CustomEvent<{ recoveryFailed?: boolean }>).detail?.recoveryFailed ? t('appShell.recoveryWarning') : '');
     };
-    const recoveryWarning = () => setPreparationError(RECOVERY_WARNING);
+    const recoveryWarning = () => setPreparationError(t('appShell.recoveryWarning'));
     const changed = (event: StorageEvent) => {
       if (event.key !== null && event.key !== encryptionStorageKey) return;
       lockEncryptionSession();
-      if (!isEncryptionEnabled()) setPreparationError('Encryption settings changed in another tab. Reload to prepare this workspace.');
+      if (!isEncryptionEnabled()) setPreparationError(t('appShell.settingsChanged'));
     };
     // Timers can be suspended by the OS. Recheck the absolute deadline before
     // resuming work, including a page restored from the browser's back cache.
@@ -46,7 +48,7 @@ export function AppShell() {
       window.removeEventListener('pageshow', resumed);
       document.removeEventListener('visibilitychange', resumed);
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (isEncryptionEnabled() && !cached) return;
@@ -85,8 +87,8 @@ export function AppShell() {
   if (!ready) return <div className="min-h-screen bg-gray-950 dark:bg-gray-950" />;
   if (!isUnlocked) {
     if (!isEncryptionEnabled()) return <div className="min-h-screen bg-gray-950 p-6 text-gray-100" role="alert">
-      <p>{preparationError || 'The workspace could not be prepared.'}</p>
-      <button className="mt-4 underline" onClick={() => window.location.reload()}>Reload to retry</button>
+      <p>{preparationError || t('appShell.prepareFailed')}</p>
+      <button className="mt-4 underline" onClick={() => window.location.reload()}>{t('appShell.reload')}</button>
     </div>;
     return <PassphraseDialog initialError={preparationError} onUnlocked={() => {
       if (!isEncryptionEnabled() || getSessionKey()) setIsUnlocked(true);

@@ -392,6 +392,7 @@
   "server.accountCreated": "สร้างบัญชีแล้ว",
   "server.reconnectedToast": "เชื่อมต่อกับเซิร์ฟเวอร์ใหม่แล้ว",
   "server.disconnectedToast": "ตัดการเชื่อมต่อจากเซิร์ฟเวอร์แล้ว",
+  "server.remoteLogoutFailed": "ออกจากระบบในเครื่องแล้ว แต่เซิร์ฟเวอร์ไม่ได้ยืนยันการเพิกถอนเซสชัน เซสชันเซิร์ฟเวอร์ก่อนหน้าอาจยังใช้งานอยู่ โปรดติดต่อผู้ดูแลเซิร์ฟเวอร์เพื่อเพิกถอน",
   "server.savedServers": "เซิร์ฟเวอร์ที่บันทึก",
   "server.deleteSavedServer": "ลบเซิร์ฟเวอร์ที่บันทึก",
   "server.onboarding.welcome": "ยินดีต้อนรับสู่ {{name}}!",

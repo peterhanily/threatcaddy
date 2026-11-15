@@ -72,7 +72,11 @@ export function EncryptionSettings() {
     let keyVerified = false;
     try {
       const meta = getEncryptionMeta();
-      if (!meta) return;
+      if (!meta) {
+        setDisableError(t('passphrase.metadataUnavailable'));
+        setDisabling(false);
+        return;
+      }
       const salt = base64ToArrayBuffer(meta.salt);
       const wrappedKey = base64ToArrayBuffer(meta.wrappedKey);
       const wrappingKey = await deriveWrappingKey(disablePass, salt);
@@ -109,9 +113,10 @@ export function EncryptionSettings() {
     }
     setChanging(true);
     const generation = getSessionGeneration();
+    let keyVerified = false;
     try {
       const meta = getEncryptionMeta();
-      if (!meta) return;
+      if (!meta) { setChangeError(t('passphrase.metadataUnavailable')); return; }
       // Verify current passphrase and get master key (extractable for re-wrap)
       const oldSalt = base64ToArrayBuffer(meta.salt);
       const oldWrappingKey = await deriveWrappingKey(currentPass, oldSalt);
@@ -125,6 +130,7 @@ export function EncryptionSettings() {
         true, // extractable for re-wrapping
         ['encrypt', 'decrypt'],
       );
+      keyVerified = true;
 
       // Wrap with new passphrase
       const newSaltStr = generateSalt();
@@ -157,8 +163,10 @@ export function EncryptionSettings() {
       setNewPass('');
       setConfirmPass('');
       addToast('success', tt('encryption.passphraseChanged'));
-    } catch {
-      setChangeError(t('settings.wrongCurrentPass'));
+    } catch (error) {
+      setChangeError(keyVerified
+        ? t('settings.changeFailed', { error: error instanceof Error ? error.message : String(error) })
+        : t('settings.wrongCurrentPass'));
     } finally {
       setChanging(false);
     }

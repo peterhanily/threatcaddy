@@ -392,6 +392,7 @@
   "server.accountCreated": "खाता बना",
   "server.reconnectedToast": "सर्वर से पुनः कनेक्ट हुआ",
   "server.disconnectedToast": "सर्वर से डिस्कनेक्ट हुआ",
+  "server.remoteLogoutFailed": "स्थानीय रूप से साइन आउट हो गया, लेकिन सर्वर ने सत्र निरस्तीकरण की पुष्टि नहीं की। पिछला सर्वर सत्र अभी भी सक्रिय हो सकता है। इसे निरस्त करने के लिए अपने सर्वर व्यवस्थापक से संपर्क करें।",
   "server.savedServers": "सहेजे गए सर्वर",
   "server.deleteSavedServer": "सहेजा सर्वर हटाएं",
   "server.onboarding.welcome": "{{name}} में आपका स्वागत है!",

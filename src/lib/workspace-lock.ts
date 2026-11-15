@@ -12,7 +12,6 @@ export function registerLockParticipant(participant: LockParticipant): () => voi
   participants.add(participant);
   return () => { participants.delete(participant); };
 }
-export const RECOVERY_WARNING = 'Some unsaved work could not be encrypted for recovery. Keep this tab open and unlock again to recover it.';
 function warnRecovery(): void {
   window.dispatchEvent(new Event('workspace-recovery-warning'));
 }
