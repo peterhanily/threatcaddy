@@ -7,7 +7,7 @@ export async function isSyncWorkspaceBound(): Promise<boolean> {
   return isSyncWorkspaceIdentity((await db.table('_syncMeta').get(SYNC_WORKSPACE_KEY))?.value);
 }
 
-const RECONCILE ='Your local data and queued edits are preserved. Export a local backup and reconnect the original server/account, or select its workspace in Settings → General. Use Sync history recovery there for unverified legacy history, after coordinating with your administrator.';
+const RECONCILE = 'Your local data and queued edits are preserved. Export a local backup and reconnect the original server/account, or select its workspace in Settings → General. Use Sync history recovery there for unverified legacy history, after coordinating with your administrator.';
 
 /** A workspace has one durable sync destination. Unknown legacy history is not
  * evidence of ownership, so only an empty queue and metadata store may bind.
