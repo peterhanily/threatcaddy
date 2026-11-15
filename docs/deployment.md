@@ -601,6 +601,25 @@ ship logs to your retention system if you need a longer history. Custom
 deployments should set equivalent limits; Docker's default driver does not
 rotate.
 
+The per-service `driver: json-file` takes precedence over a `log-driver` set in
+`/etc/docker/daemon.json`. If the daemon already ships container logs, for
+example with `journald`, `syslog`, `fluentd` or `awslogs`, name that driver
+again in an override file. When the override names a different driver, Compose
+replaces the whole logging block, including the `json-file` size options, so add
+any options your driver needs. Logging settings apply when a container is
+recreated.
+
+```yaml
+# docker-compose.override.yml
+services:
+  server:
+    logging:
+      driver: journald
+  db:
+    logging:
+      driver: journald
+```
+
 The image sets `NODE_ENV=production`: unexpected server errors return
 `Internal server error` with a request ID, and the details appear only in the
 server log.
@@ -752,7 +771,10 @@ pending. Publishing an image or client does not establish server rollout.
   `docker compose up -d --no-deps --force-recreate server`. Pulling a registry
   image alone does not update this installation type. The tracked Compose file
   already sets `ADMIN_HOST` and loopback-only admin publication; check that a
-  local override file does not publish port 3002 on every interface.
+  local override file does not publish port 3002 on every interface. From
+  2.0.1 it also sets the `json-file` log driver for both services, which
+  replaces a daemon-wide log driver; to keep shipping logs through yours, add
+  the override in [4.8 Logging](#48-logging) before recreating the containers.
 
 Images from 2.0.1 also differ in ways that affect custom deployments: they run
 with `NODE_ENV=production` (generic messages for unexpected server errors), have

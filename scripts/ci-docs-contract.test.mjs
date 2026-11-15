@@ -161,6 +161,24 @@ test('upgrade guidance rebuilds the supplied Compose server and has one canonica
   assert.match(deployment, /ADMIN_HOST=0\.0\.0\.0[\s\S]{0,400}127\.0\.0\.1:3002:3002/);
 });
 
+test('a Compose log driver comes with a way back to the daemon-wide driver', () => {
+  const services = Object.entries(load(read('docker-compose.yml')).services)
+    .filter(([, service]) => service.logging?.driver);
+  if (!services.length) return;
+  const deployment = read('docs/deployment.md');
+  // A per-service driver silently wins over log-driver in daemon.json, e.g. a SIEM shipper.
+  assert.match(deployment, /daemon\.json/);
+  // Compose replaces the whole logging block, options included, when an override names a different driver.
+  const overrides = [...deployment.matchAll(/```yaml\n# docker-compose\.override\.yml[^\n]*\n([\s\S]*?)```/g)]
+    .map(match => load(match[1]));
+  assert.ok(overrides.some(override => services.every(([name, service]) => {
+    const driver = override?.services?.[name]?.logging?.driver;
+    return driver && driver !== service.logging.driver;
+  })), 'Show an override that names another driver for every service that sets one');
+  const upgrade = deployment.slice(deployment.indexOf('\n## 6. Upgrading\n'));
+  assert.match(upgrade, /\(#48-logging\)/, 'Upgrade notes must point Compose operators at the logging override');
+});
+
 test('sandbox guidance states that Docker API access is host root', () => {
   const deployment = read('docs/deployment.md');
   assert.doesNotMatch(deployment, /only container creation and management/);
