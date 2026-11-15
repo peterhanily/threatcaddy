@@ -139,7 +139,6 @@
   "importError.archiveCompressedBytes": "Arşivin sıkıştırılmış parçalarının toplamı {{mib}} MiB sınırını aşıyor. Bu gruptaki hiçbir dosya içe aktarılmadı.",
   "importError.archiveSizeMismatch": "Sıkıştırılmış bir parça, bildirilen boyutuyla eşleşmiyor. Bu gruptaki hiçbir dosya içe aktarılmadı.",
   "importError.spreadsheetColumns": "Bir elektronik tablo hücresi desteklenen son sütunun ötesinde. Bu gruptaki hiçbir dosya içe aktarılmadı.",
-  "importError.imagePixels": "Görüntü {{megapixels}} milyon pikselden büyük. Bu gruptaki hiçbir dosya içe aktarılmadı.",
   "importError.documentTimeout": "Dosyanın okunması {{seconds}} saniyeden uzun sürdü. Bu gruptaki hiçbir dosya içe aktarılmadı.",
   "importError.batchTimeout": "Seçilen dosyaların okunması {{seconds}} saniyeden uzun sürdü. Bu gruptaki hiçbir dosya içe aktarılmadı.",
   "importError.workerUnavailable": "Kanıt içe aktarma bir arka plan çalışanı gerektirir ve bu tarayıcı onu başlatamadı. Hiçbir dosya içe aktarılmadı.",

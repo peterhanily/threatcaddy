@@ -122,7 +122,6 @@
   "importError.archiveCompressedBytes": "החלקים הדחוסים בארכיון גדולים יחד מ-{{mib}} MiB. אף קובץ מהאצווה הזו לא יובא.",
   "importError.archiveSizeMismatch": "חלק דחוס אינו תואם לגודל שהוצהר עבורו. אף קובץ מהאצווה הזו לא יובא.",
   "importError.spreadsheetColumns": "תא בגיליון האלקטרוני נמצא מעבר לעמודה האחרונה הנתמכת. אף קובץ מהאצווה הזו לא יובא.",
-  "importError.imagePixels": "התמונה גדולה מ-{{megapixels}} מיליון פיקסלים. אף קובץ מהאצווה הזו לא יובא.",
   "importError.documentTimeout": "קריאת הקובץ נמשכה יותר מ-{{seconds}} שניות. אף קובץ מהאצווה הזו לא יובא.",
   "importError.batchTimeout": "קריאת הקבצים שנבחרו נמשכה יותר מ-{{seconds}} שניות. אף קובץ מהאצווה הזו לא יובא.",
   "importError.workerUnavailable": "ייבוא ראיות דורש תהליך רקע, והדפדפן הזה לא הצליח להפעיל אותו. לא יובאו קבצים.",

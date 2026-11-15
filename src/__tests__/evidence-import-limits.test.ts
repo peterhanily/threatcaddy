@@ -50,14 +50,19 @@ describe('untrusted evidence resource boundaries', () => {
     expect(draft.extractionWarning).toContain('Image dimensions could not be read');
   });
 
-  it('rejects an image whose header declares too many pixels before decoding it', async () => {
+  it('imports a full-page screenshot over the pixel bound as metadata only, without decoding it', async () => {
     const decode = vi.fn();
     vi.stubGlobal('createImageBitmap', decode);
+    // A retina full-page capture of a long page: 2880 x 16384, about 47 megapixels.
     const header = new Uint8Array(33);
     header.set([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82]);
-    new DataView(header.buffer).setUint32(16, 10_000); new DataView(header.buffer).setUint32(20, 10_000);
-    await expect(buildEvidenceItemDrafts(new File([header], 'bomb.png', { type: 'image/png' }))).rejects.toThrow('32 million pixels');
+    new DataView(header.buffer).setUint32(16, 2880); new DataView(header.buffer).setUint32(20, 16_384);
+    const [draft] = await buildEvidenceItemDrafts(new File([header], 'full-page.png', { type: 'image/png' }));
     expect(decode).not.toHaveBeenCalled();
+    expect(draft.extractionStatus).toBe('metadata-only');
+    expect([draft.imageWidth, draft.imageHeight, draft.imagePixelCount]).toEqual([2880, 16_384, 2880 * 16_384]);
+    expect(draft.imageData).toBeUndefined();
+    expect(draft.extractionWarning).toContain('larger than 32 million pixels');
   });
 
   it.each([
@@ -75,11 +80,14 @@ describe('untrusted evidence resource boundaries', () => {
     expect([draft.imageWidth, draft.imageHeight]).toEqual([800, 600]);
   });
 
-  it('closes decoded image resources and rejects pixel dimensions beyond the supported bound', async () => {
+  it('closes decoded image resources and stores no preview beyond the pixel bound', async () => {
     const close = vi.fn();
     vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue({ width: 8192, height: 8192, close }));
-    await expect(buildEvidenceItemDrafts(new File(['synthetic'], 'large.png', { type: 'image/png' }))).rejects.toThrow('32 million pixels');
+    const [draft] = await buildEvidenceItemDrafts(new File(['synthetic'], 'large.png', { type: 'image/png' }));
     expect(close).toHaveBeenCalledOnce();
+    expect([draft.imageWidth, draft.imageHeight]).toEqual([8192, 8192]);
+    expect(draft.imageData).toBeUndefined();
+    expect(draft.extractionWarning).toContain('larger than 32 million pixels');
   });
   it('rejects raw oversized input before reading it', async () => {
     const text = vi.fn();

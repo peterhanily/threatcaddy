@@ -139,7 +139,6 @@
   "importError.archiveCompressedBytes": "アーカイブ内の圧縮パートの合計が {{mib}} MiB を超えています。このバッチのファイルは 1 件もインポートされませんでした。",
   "importError.archiveSizeMismatch": "圧縮パートのサイズが宣言されたサイズと一致しません。このバッチのファイルは 1 件もインポートされませんでした。",
   "importError.spreadsheetColumns": "スプレッドシートのセルがサポートされる最後の列を超えています。このバッチのファイルは 1 件もインポートされませんでした。",
-  "importError.imagePixels": "画像が {{megapixels}} メガピクセルを超えています。このバッチのファイルは 1 件もインポートされませんでした。",
   "importError.documentTimeout": "ファイルの読み取りに {{seconds}} 秒以上かかりました。このバッチのファイルは 1 件もインポートされませんでした。",
   "importError.batchTimeout": "選択したファイルの読み取りに {{seconds}} 秒以上かかりました。このバッチのファイルは 1 件もインポートされませんでした。",
   "importError.workerUnavailable": "証拠のインポートにはバックグラウンド ワーカーが必要ですが、このブラウザーでは起動できませんでした。ファイルはインポートされませんでした。",

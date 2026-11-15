@@ -122,7 +122,6 @@
   "importError.archiveCompressedBytes": "Skompresowane części archiwum mają łącznie ponad {{mib}} MiB. Nie zaimportowano żadnego pliku z tej partii.",
   "importError.archiveSizeMismatch": "Skompresowana część nie odpowiada zadeklarowanemu rozmiarowi. Nie zaimportowano żadnego pliku z tej partii.",
   "importError.spreadsheetColumns": "Komórka arkusza kalkulacyjnego leży poza ostatnią obsługiwaną kolumną. Nie zaimportowano żadnego pliku z tej partii.",
-  "importError.imagePixels": "Obraz ma więcej niż {{megapixels}} mln pikseli. Nie zaimportowano żadnego pliku z tej partii.",
   "importError.documentTimeout": "Odczyt pliku trwał dłużej niż {{seconds}} s. Nie zaimportowano żadnego pliku z tej partii.",
   "importError.batchTimeout": "Odczyt wybranych plików trwał dłużej niż {{seconds}} s. Nie zaimportowano żadnego pliku z tej partii.",
   "importError.workerUnavailable": "Import dowodów wymaga procesu w tle, którego ta przeglądarka nie mogła uruchomić. Nie zaimportowano żadnych plików.",

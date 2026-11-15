@@ -139,7 +139,6 @@
   "importError.archiveCompressedBytes": "Total bagian terkompresi dalam arsip melebihi {{mib}} MiB. Tidak ada berkas dalam batch ini yang diimpor.",
   "importError.archiveSizeMismatch": "Sebuah bagian terkompresi tidak sesuai dengan ukuran yang dinyatakan. Tidak ada berkas dalam batch ini yang diimpor.",
   "importError.spreadsheetColumns": "Sebuah sel lembar kerja berada di luar kolom terakhir yang didukung. Tidak ada berkas dalam batch ini yang diimpor.",
-  "importError.imagePixels": "Gambar lebih besar dari {{megapixels}} juta piksel. Tidak ada berkas dalam batch ini yang diimpor.",
   "importError.documentTimeout": "Membaca berkas memakan waktu lebih dari {{seconds}} detik. Tidak ada berkas dalam batch ini yang diimpor.",
   "importError.batchTimeout": "Membaca berkas yang dipilih memakan waktu lebih dari {{seconds}} detik. Tidak ada berkas dalam batch ini yang diimpor.",
   "importError.workerUnavailable": "Impor bukti memerlukan worker latar belakang, dan browser ini tidak dapat memulainya. Tidak ada berkas yang diimpor.",

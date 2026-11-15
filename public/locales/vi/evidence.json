@@ -139,7 +139,6 @@
   "importError.archiveCompressedBytes": "Tổng các phần nén của tệp lưu trữ vượt quá {{mib}} MiB. Không tệp nào trong lô này được nhập.",
   "importError.archiveSizeMismatch": "Một phần nén không khớp với kích thước đã khai báo. Không tệp nào trong lô này được nhập.",
   "importError.spreadsheetColumns": "Một ô bảng tính nằm ngoài cột cuối cùng được hỗ trợ. Không tệp nào trong lô này được nhập.",
-  "importError.imagePixels": "Hình ảnh lớn hơn {{megapixels}} triệu điểm ảnh. Không tệp nào trong lô này được nhập.",
   "importError.documentTimeout": "Việc đọc tệp mất hơn {{seconds}} giây. Không tệp nào trong lô này được nhập.",
   "importError.batchTimeout": "Việc đọc các tệp đã chọn mất hơn {{seconds}} giây. Không tệp nào trong lô này được nhập.",
   "importError.workerUnavailable": "Nhập bằng chứng cần một worker chạy nền, nhưng trình duyệt này không khởi động được. Không tệp nào được nhập.",

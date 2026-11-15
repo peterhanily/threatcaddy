@@ -122,7 +122,6 @@
   "importError.archiveCompressedBytes": "يتجاوز مجموع الأجزاء المضغوطة في الأرشيف {{mib}} MiB. لم يُستورد أي ملف من هذه الدفعة.",
   "importError.archiveSizeMismatch": "أحد الأجزاء المضغوطة لا يطابق حجمه المُعلن. لم يُستورد أي ملف من هذه الدفعة.",
   "importError.spreadsheetColumns": "توجد خلية في جدول البيانات بعد آخر عمود مدعوم. لم يُستورد أي ملف من هذه الدفعة.",
-  "importError.imagePixels": "الصورة أكبر من {{megapixels}} مليون بكسل. لم يُستورد أي ملف من هذه الدفعة.",
   "importError.documentTimeout": "استغرقت قراءة الملف أكثر من {{seconds}} ثانية. لم يُستورد أي ملف من هذه الدفعة.",
   "importError.batchTimeout": "استغرقت قراءة الملفات المحددة أكثر من {{seconds}} ثانية. لم يُستورد أي ملف من هذه الدفعة.",
   "importError.workerUnavailable": "يتطلب استيراد الأدلة عاملًا في الخلفية، ولم يتمكن هذا المتصفح من تشغيله. لم يُستورد أي ملف.",

@@ -122,7 +122,6 @@
   "importError.archiveCompressedBytes": "As partes compactadas do arquivo somam mais de {{mib}} MiB. Nenhum arquivo deste lote foi importado.",
   "importError.archiveSizeMismatch": "Uma parte compactada não corresponde ao tamanho declarado. Nenhum arquivo deste lote foi importado.",
   "importError.spreadsheetColumns": "Uma célula da planilha está além da última coluna compatível. Nenhum arquivo deste lote foi importado.",
-  "importError.imagePixels": "A imagem tem mais de {{megapixels}} milhões de pixels. Nenhum arquivo deste lote foi importado.",
   "importError.documentTimeout": "A leitura do arquivo levou mais de {{seconds}} segundos. Nenhum arquivo deste lote foi importado.",
   "importError.batchTimeout": "A leitura dos arquivos selecionados levou mais de {{seconds}} segundos. Nenhum arquivo deste lote foi importado.",
   "importError.workerUnavailable": "A importação de evidências precisa de um worker em segundo plano, e este navegador não conseguiu iniciá-lo. Nenhum arquivo foi importado.",

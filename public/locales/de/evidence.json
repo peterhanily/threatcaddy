@@ -139,7 +139,6 @@
   "importError.archiveCompressedBytes": "Die komprimierten Teile des Archivs sind zusammen größer als {{mib}} MiB. Keine Datei dieses Stapels wurde importiert.",
   "importError.archiveSizeMismatch": "Ein komprimierter Teil entspricht nicht seiner angegebenen Größe. Keine Datei dieses Stapels wurde importiert.",
   "importError.spreadsheetColumns": "Eine Tabellenzelle liegt hinter der letzten unterstützten Spalte. Keine Datei dieses Stapels wurde importiert.",
-  "importError.imagePixels": "Das Bild hat mehr als {{megapixels}} Millionen Pixel. Keine Datei dieses Stapels wurde importiert.",
   "importError.documentTimeout": "Das Lesen der Datei dauerte länger als {{seconds}} Sekunden. Keine Datei dieses Stapels wurde importiert.",
   "importError.batchTimeout": "Das Lesen der ausgewählten Dateien dauerte länger als {{seconds}} Sekunden. Keine Datei dieses Stapels wurde importiert.",
   "importError.workerUnavailable": "Der Beweismittelimport benötigt einen Hintergrund-Worker, den dieser Browser nicht starten konnte. Es wurden keine Dateien importiert.",

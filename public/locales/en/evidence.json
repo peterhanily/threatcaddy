@@ -139,7 +139,6 @@
   "importError.archiveCompressedBytes": "The archive's compressed parts add up to more than {{mib}} MiB. No files in this batch were imported.",
   "importError.archiveSizeMismatch": "A compressed part does not match its declared size. No files in this batch were imported.",
   "importError.spreadsheetColumns": "A spreadsheet cell lies beyond the last supported column. No files in this batch were imported.",
-  "importError.imagePixels": "The image is larger than {{megapixels}} million pixels. No files in this batch were imported.",
   "importError.documentTimeout": "Reading the file took longer than {{seconds}} seconds. No files in this batch were imported.",
   "importError.batchTimeout": "Reading the selected files took longer than {{seconds}} seconds. No files in this batch were imported.",
   "importError.workerUnavailable": "Evidence import needs a background worker, and this browser could not start one. No files were imported.",

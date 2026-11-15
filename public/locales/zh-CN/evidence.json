@@ -139,7 +139,6 @@
   "importError.archiveCompressedBytes": "压缩包中压缩部件的总大小超过 {{mib}} MiB。此批次中的文件均未导入。",
   "importError.archiveSizeMismatch": "某个压缩部件与其声明的大小不符。此批次中的文件均未导入。",
   "importError.spreadsheetColumns": "电子表格中有单元格超出最后一个受支持的列。此批次中的文件均未导入。",
-  "importError.imagePixels": "图像超过 {{megapixels}} 百万像素。此批次中的文件均未导入。",
   "importError.documentTimeout": "读取文件耗时超过 {{seconds}} 秒。此批次中的文件均未导入。",
   "importError.batchTimeout": "读取所选文件耗时超过 {{seconds}} 秒。此批次中的文件均未导入。",
   "importError.workerUnavailable": "证据导入需要后台工作线程，但此浏览器无法启动。未导入任何文件。",

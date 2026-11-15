@@ -139,7 +139,6 @@
   "importError.archiveCompressedBytes": "De gecomprimeerde onderdelen van het archief zijn samen groter dan {{mib}} MiB. Er is geen enkel bestand uit deze batch geïmporteerd.",
   "importError.archiveSizeMismatch": "Een gecomprimeerd onderdeel komt niet overeen met de opgegeven grootte. Er is geen enkel bestand uit deze batch geïmporteerd.",
   "importError.spreadsheetColumns": "Een spreadsheetcel ligt voorbij de laatste ondersteunde kolom. Er is geen enkel bestand uit deze batch geïmporteerd.",
-  "importError.imagePixels": "De afbeelding is groter dan {{megapixels}} miljoen pixels. Er is geen enkel bestand uit deze batch geïmporteerd.",
   "importError.documentTimeout": "Het lezen van het bestand duurde langer dan {{seconds}} seconden. Er is geen enkel bestand uit deze batch geïmporteerd.",
   "importError.batchTimeout": "Het lezen van de geselecteerde bestanden duurde langer dan {{seconds}} seconden. Er is geen enkel bestand uit deze batch geïmporteerd.",
   "importError.workerUnavailable": "Voor het importeren van bewijsmateriaal is een achtergrondworker nodig, en deze browser kon die niet starten. Er zijn geen bestanden geïmporteerd.",

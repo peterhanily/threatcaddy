@@ -122,7 +122,6 @@
   "importError.archiveCompressedBytes": "Las partes comprimidas del archivo suman más de {{mib}} MiB. No se importó ningún archivo de este lote.",
   "importError.archiveSizeMismatch": "Una parte comprimida no coincide con su tamaño declarado. No se importó ningún archivo de este lote.",
   "importError.spreadsheetColumns": "Una celda de la hoja de cálculo está más allá de la última columna admitida. No se importó ningún archivo de este lote.",
-  "importError.imagePixels": "La imagen supera los {{megapixels}} millones de píxeles. No se importó ningún archivo de este lote.",
   "importError.documentTimeout": "La lectura del archivo tardó más de {{seconds}} segundos. No se importó ningún archivo de este lote.",
   "importError.batchTimeout": "La lectura de los archivos seleccionados tardó más de {{seconds}} segundos. No se importó ningún archivo de este lote.",
   "importError.workerUnavailable": "La importación de pruebas necesita un proceso en segundo plano y este navegador no pudo iniciarlo. No se importó ningún archivo.",

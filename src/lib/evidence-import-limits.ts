@@ -27,7 +27,6 @@ const LIMIT_REASONS = {
   archiveCompressedBytes: `archive compressed parts exceed ${EVIDENCE_LIMITS.inputBytes / MIB} MiB`,
   archiveSizeMismatch: 'a compressed part does not match its declared size',
   spreadsheetColumns: 'spreadsheet dimensions exceed the supported limit',
-  imagePixels: `image dimensions exceed ${EVIDENCE_LIMITS.imagePixels / 1_000_000} million pixels`,
   documentTimeout: `document parsing exceeded ${EVIDENCE_LIMITS.documentTimeoutMs / 1000} seconds`,
   batchTimeout: `batch parsing exceeded ${EVIDENCE_LIMITS.batchTimeoutMs / 1000} seconds`,
 } as const;
@@ -64,7 +63,6 @@ export function evidenceImportErrorParams(code: EvidenceImportErrorCode): Eviden
     case 'batchBytes': return { mib: EVIDENCE_LIMITS.batchBytes / MIB };
     case 'fileCount': return { count: MAX_EVIDENCE_IMPORT_FILES };
     case 'archiveEntries': return { limit: EVIDENCE_LIMITS.entries };
-    case 'imagePixels': return { megapixels: EVIDENCE_LIMITS.imagePixels / 1_000_000 };
     case 'documentTimeout': return { seconds: EVIDENCE_LIMITS.documentTimeoutMs / 1000 };
     case 'batchTimeout': return { seconds: EVIDENCE_LIMITS.batchTimeoutMs / 1000 };
     default: return {};

@@ -411,7 +411,10 @@ async function extractImageMetadata(file: EvidenceFileSource): Promise<ImageEvid
   const warnings: string[] = [];
   let data: string | undefined;
 
-  if (file.size <= MAX_IMAGE_ANALYSIS_BYTES) {
+  if (pixelCount && pixelCount > EVIDENCE_LIMITS.imagePixels) {
+    // Every viewer would decode a stored preview; keep the dimensions only.
+    warnings.push(`Image is larger than ${EVIDENCE_LIMITS.imagePixels / 1_000_000} million pixels, so only metadata was stored for import/export safety.`);
+  } else if (file.size <= MAX_IMAGE_ANALYSIS_BYTES) {
     try {
       data = bytesToBase64(file.bytes);
     } catch {
@@ -437,23 +440,17 @@ async function extractImageMetadata(file: EvidenceFileSource): Promise<ImageEvid
 }
 
 async function readImageDimensions(file: EvidenceFileSource): Promise<{ width?: number; height?: number }> {
-  // Check the declared size before any decode allocates the bitmap.
+  // An image whose header declares more pixels than the bound is never decoded.
   const header = readImageHeaderDimensions(file.bytes);
-  if (header && header.width * header.height > EVIDENCE_LIMITS.imagePixels) {
-    throw new EvidenceImportLimitError('imagePixels');
-  }
+  if (header && header.width * header.height > EVIDENCE_LIMITS.imagePixels) return header;
   const blob = new Blob([file.bytes as Uint8Array<ArrayBuffer>], { type: file.type });
   if (typeof createImageBitmap === 'function') {
     try {
       const bitmap = await createImageBitmap(blob);
       const dimensions = { width: bitmap.width, height: bitmap.height };
       bitmap.close();
-      if (dimensions.width * dimensions.height > EVIDENCE_LIMITS.imagePixels) {
-        throw new EvidenceImportLimitError('imagePixels');
-      }
       return dimensions;
-    } catch (error) {
-      if (error instanceof EvidenceImportLimitError) throw error;
+    } catch {
       // Fall back to the HTMLImageElement path below.
     }
   }
@@ -462,15 +459,11 @@ async function readImageDimensions(file: EvidenceFileSource): Promise<{ width?: 
   if (header) return header;
   if (typeof Image === 'undefined' || typeof URL === 'undefined') return {};
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const url = URL.createObjectURL(blob);
     const image = new Image();
     image.onload = () => {
       URL.revokeObjectURL(url);
-      if (image.naturalWidth * image.naturalHeight > EVIDENCE_LIMITS.imagePixels) {
-        reject(new EvidenceImportLimitError('imagePixels'));
-        return;
-      }
       resolve({ width: image.naturalWidth, height: image.naturalHeight });
     };
     image.onerror = () => {

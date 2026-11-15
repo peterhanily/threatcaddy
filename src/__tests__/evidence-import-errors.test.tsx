@@ -13,7 +13,7 @@ import commonJa from '../../public/locales/ja/common.json';
 
 const catalogs = import.meta.glob<{ default: Record<string, string> }>('../../public/locales/*/evidence.json', { eager: true });
 const CODES: EvidenceImportErrorCode[] = ['inputBytes', 'batchBytes', 'archiveEntries', 'archiveCompressedBytes', 'archiveSizeMismatch',
-  'spreadsheetColumns', 'imagePixels', 'documentTimeout', 'batchTimeout', 'workerUnavailable', 'workerFailed', 'extractionFailed',
+  'spreadsheetColumns', 'documentTimeout', 'batchTimeout', 'workerUnavailable', 'workerFailed', 'extractionFailed',
   'sessionChanged', 'contextChanged', 'destinationUnavailable', 'interrupted', 'notReady', 'screenshareActive', 'investigationArchived'];
 
 async function locale(lng: string): Promise<I18n> {
