@@ -103,6 +103,23 @@ describe('accent foreground utilities', () => {
   // --color-accent and --color-purple are fill colours (2.8:1 and 4.0:1 in the
   // dark theme). Only .text-accent, hover:text-accent(-hover) and .text-purple
   // are remapped to the readable *-text tokens in index.css.
+  for (const scheme of COLOR_SCHEMES) {
+    for (const theme of ['dark', 'light'] as const) {
+      it(`${scheme.id} ${theme}: accent and purple text follow the scheme and reach 4.5:1 on every surface`, () => {
+        const token = (name: string) => scheme[theme][name] ?? defaults[theme][name];
+        const backgrounds = Object.entries(grays[theme]).filter(([name]) => !name.startsWith('border-'));
+        const against = { ...Object.fromEntries(surfaces.map(surface => [surface, token(surface)])), ...Object.fromEntries(backgrounds) };
+        for (const name of ['--color-accent-text', '--color-purple-text']) {
+          // A scheme that recolours the accent must not fall back to indigo text.
+          if (scheme[theme]['--color-accent']) expect(scheme[theme][name], `${name} override`).toBeDefined();
+          for (const [surface, color] of Object.entries(against)) {
+            expect(contrast(token(name), color), `${name} ${token(name)} on ${surface} ${color}`).toBeGreaterThanOrEqual(4.5);
+          }
+        }
+      });
+    }
+  }
+
   it('uses no translucent or state variant of the fill colours for text and icons', () => {
     expect(offenders(/(?<![\w-])(?:[\w-]+:)*text-(?:accent|purple)\/\d+/)).toEqual([]);
     expect(offenders(/(?<![\w-])(?!hover:)[\w-]+:text-accent(?![\w/-])/)).toEqual([]);
