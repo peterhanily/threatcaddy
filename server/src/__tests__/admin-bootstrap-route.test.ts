@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { DrizzleQueryError } from 'drizzle-orm';
 
 const { bootstrap, sign } = vi.hoisted(() => ({ bootstrap: vi.fn(), sign: vi.fn() }));
 vi.mock('../services/admin-session-service.js', () => ({ bootstrapAdminUser: bootstrap }));
@@ -56,6 +57,18 @@ describe('administrator bootstrap production route', () => {
     expect(busy.headers.get('Retry-After')).toBe('1');
     expect((await request(valid)).status).toBe(409);
     expect(sign).not.toHaveBeenCalled();
+  });
+
+  it('maps a database duplicate-username violation to 409 without echoing the failed query', async () => {
+    const hash = '$argon2id$v=19$m=65536,t=3,p=4$Zml4dHVyZXNhbHQ$fixture-hash';
+    bootstrap.mockRejectedValue(new DrizzleQueryError('insert into "admin_users" ("id", "username", "display_name", "password_hash") values ($1, $2, $3, $4)',
+      ['admin-id', 'admin', 'Administrator', hash],
+      Object.assign(new Error('duplicate key value violates unique constraint "admin_users_username_unique"'), { code: '23505' })));
+    const response = await request(valid);
+    expect(response.status).toBe(409);
+    const text = await response.text();
+    expect(JSON.parse(text)).toEqual({ error: 'Username already exists' });
+    expect(text).not.toContain(hash);
   });
 
   it('returns only the public account and signed token after successful setup', async () => {

@@ -8,6 +8,7 @@ import {
 } from '../../services/admin-secret.js';
 import { getAdminHtml } from '../admin-html/index.js';
 import { logger } from '../../lib/logger.js';
+import { isUniqueViolation } from '../../lib/db-errors.js';
 import { isLocked, recordFailedAttempt, resetAttempts } from '../../services/login-limiter.js';
 import { requireAdminAuth, logAdminAction, getAdminId } from './shared.js';
 import { hasActiveAdmin } from '../../services/admin-session-service.js';
@@ -112,7 +113,7 @@ app.post('/api/admin-accounts', requireAdminAuth, async (c) => {
     await logAdminAction(adminId, 'admin-account.create', `Created admin account "${admin.username}"`);
     return c.json({ ok: true, admin }, 201);
   } catch (err: unknown) {
-    if (err instanceof Error && err.message.includes('unique')) {
+    if (isUniqueViolation(err)) {
       return c.json({ error: 'Username already exists' }, 409);
     }
     throw err;
