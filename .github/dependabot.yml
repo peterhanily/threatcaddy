@@ -39,6 +39,20 @@ updates:
       security:
         applies-to: security-updates
         patterns: ['*']
+  # Lockfile audits and the image scan do not inventory the Node binary, so this
+  # reports new node:<version>-alpine releases and digests for server/Dockerfile.
+  # A version proposal fails scripts/ci-server-image.test.mjs until .node-version
+  # and .nvmrc are updated with it.
+  - package-ecosystem: docker
+    directory: /server
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2
+    cooldown:
+      default-days: 7
+    ignore:
+      - dependency-name: node
+        update-types: ['version-update:semver-major']
   - package-ecosystem: npm
     directory: /extension
     schedule:
