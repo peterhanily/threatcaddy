@@ -18,6 +18,7 @@ const ModalSuspensionContext = createContext(false);
 const stack: HTMLElement[] = [];
 let priorOverflow = '';
 let priorFocus: HTMLElement | null = null;
+let focusRevision = 0;
 function availableForFocus(element: HTMLElement): boolean {
   if (!element.isConnected || element.matches(':disabled')) return false;
   for (let parent: HTMLElement | null = element; parent; parent = parent.parentElement) {
@@ -51,6 +52,7 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
   useLayoutEffect(() => {
     const el = overlayRef.current;
     if (!open || suspended || !el) return;
+    focusRevision++;
     const previousFocus = document.activeElement as HTMLElement;
     if (!stack.length) {
       priorOverflow = document.body.style.overflow;
@@ -80,6 +82,7 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
     document.addEventListener('focusin', handleFocus);
     if (isTop()) focusFirst();
     return () => {
+      const revision = ++focusRevision;
       const wasTop = isTop();
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('focusin', handleFocus);
@@ -93,6 +96,17 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
         const opener = priorFocus;
         priorFocus = null;
         if (opener && availableForFocus(opener)) opener.focus();
+        else if (opener) {
+          // Layout cleanup precedes the rest of React's DOM mutations. The
+          // opener may still be disabled until this closing commit finishes.
+          // Recheck afterward without stealing a newer modal or user focus.
+          queueMicrotask(() => {
+            if (stack.length || focusRevision !== revision || !availableForFocus(opener)) return;
+            const active = document.activeElement;
+            if (active && active !== document.body && active !== opener && active.isConnected) return;
+            opener.focus();
+          });
+        }
       } else if (wasTop) {
         const next = stack.at(-1);
         if (previousFocus && availableForFocus(previousFocus) && next?.contains(previousFocus)) previousFocus.focus();
