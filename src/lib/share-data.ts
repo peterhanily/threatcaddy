@@ -59,6 +59,7 @@ function entity<T extends { id: string }>(raw: unknown, sanitize: (value: unknow
 }
 
 const NESTED_IDENTITY_FIELDS = ['authorId', 'authorName', 'userId', 'userName'];
+const ASSIGNMENT_FIELDS = ['assigneeId', 'assigneeName', 'assignedDeploymentId'];
 const SHARED_MESSAGE_EXCLUDED_FIELDS = ['userId', 'toolCalls', 'attachments', 'tokenCount', 'agentCycleSummary'];
 
 function omit(value: unknown, keys: string[]): unknown {
@@ -73,6 +74,8 @@ function contentOnly(row: object): void {
   const r = row as Record<string, unknown>;
   delete r.createdBy;
   delete r.updatedBy;
+  for (const key of ASSIGNMENT_FIELDS) delete r[key];
+  if (Array.isArray(r.rejectionHistory)) r.rejectionHistory = r.rejectionHistory.map(item => omit(item, ['byAgentId']));
   for (const key of ['comments', 'annotations']) {
     const list = r[key];
     if (Array.isArray(list)) r[key] = list.map(item => omit(item, NESTED_IDENTITY_FIELDS));
@@ -135,6 +138,10 @@ export function sanitizeSharePayload(raw: unknown): SharePayload {
       for (const row of [folder, ...data.notes, ...data.tasks, ...data.events, ...data.timelines, ...data.whiteboards, ...data.iocs, ...data.chatThreads, ...data.tags]) {
         contentOnly(row);
       }
+      // Only the tags the shared records use: other names can describe unrelated cases.
+      const used = new Set([folder, ...data.notes, ...data.tasks, ...data.events, ...data.whiteboards, ...data.iocs, ...data.chatThreads]
+        .flatMap(row => (row as { tags?: unknown }).tags).filter((tag): tag is string => typeof tag === 'string'));
+      data.tags = data.tags.filter(tag => used.has(tag.name));
     }
   }
   if (raw.s !== 'investigation') contentOnly(data);
