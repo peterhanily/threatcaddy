@@ -135,7 +135,9 @@ test('the full runtime-image audit gates promotion after packaged-image acceptan
   assert.ok(command.indexOf('sha256sum --check') < command.indexOf('tar -xzf'));
   assert.match(command, /mktemp -d "\$RUNNER_TEMP\/threatcaddy-trivy\./);
   assert.match(command, /--disable-telemetry/);
-  assert.match(command, /--db-repository ghcr\.io\/aquasecurity\/trivy-db:2 --offline-scan --skip-check-update --skip-version-check/);
+  // Trivy tries the repositories in order and moves on after a temporary
+  // registry error (rate limit, 5xx), so one registry outage cannot block publication.
+  assert.match(command, /--db-repository ghcr\.io\/aquasecurity\/trivy-db:2 --db-repository mirror\.gcr\.io\/aquasec\/trivy-db:2 \\\n\s+--offline-scan --skip-check-update --skip-version-check/);
   assert.match(command, /--pkg-types os,library --list-all-pkgs/);
   assert.match(command, /--severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL --ignorefile '' --ignore-unfixed=false/);
   assert.match(command, /--input verified-server\/server-image\.tar/);
