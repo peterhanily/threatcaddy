@@ -414,6 +414,9 @@ async function extractImageMetadata(file: EvidenceFileSource): Promise<ImageEvid
   if (pixelCount && pixelCount > EVIDENCE_LIMITS.imagePixels) {
     // Every viewer would decode a stored preview; keep the dimensions only.
     warnings.push(`Image is larger than ${EVIDENCE_LIMITS.imagePixels / 1_000_000} million pixels, so only metadata was stored for import/export safety.`);
+  } else if (!pixelCount) {
+    // Without a size the pixel bound cannot be checked for later viewers either.
+    warnings.push('Image dimensions could not be read from the file header, so only metadata was stored for import/export safety.');
   } else if (file.size <= MAX_IMAGE_ANALYSIS_BYTES) {
     try {
       data = bytesToBase64(file.bytes);
@@ -422,10 +425,6 @@ async function extractImageMetadata(file: EvidenceFileSource): Promise<ImageEvid
     }
   } else {
     warnings.push(`Image is larger than ${formatBytes(MAX_IMAGE_ANALYSIS_BYTES)}, so only metadata was stored for import/export safety.`);
-  }
-
-  if (!dimensions.width || !dimensions.height) {
-    warnings.push('Image dimensions could not be read by the browser.');
   }
 
   return {
@@ -440,47 +439,34 @@ async function extractImageMetadata(file: EvidenceFileSource): Promise<ImageEvid
 }
 
 async function readImageDimensions(file: EvidenceFileSource): Promise<{ width?: number; height?: number }> {
-  // An image whose header declares more pixels than the bound is never decoded.
+  // Only an image whose header gives a size within the bound is decoded; one
+  // without a readable header or with more pixels than the bound never is.
   const header = readImageHeaderDimensions(file.bytes);
-  if (header && header.width * header.height > EVIDENCE_LIMITS.imagePixels) return header;
-  const blob = new Blob([file.bytes as Uint8Array<ArrayBuffer>], { type: file.type });
+  if (!header || header.width * header.height > EVIDENCE_LIMITS.imagePixels) return header ?? {};
   if (typeof createImageBitmap === 'function') {
     try {
-      const bitmap = await createImageBitmap(blob);
+      const bitmap = await createImageBitmap(new Blob([file.bytes as Uint8Array<ArrayBuffer>], { type: file.type }));
       const dimensions = { width: bitmap.width, height: bitmap.height };
       bitmap.close();
       return dimensions;
     } catch {
-      // Fall back to the HTMLImageElement path below.
+      // WebKit workers on file:// cannot decode a Blob; the header size stands.
     }
   }
-
-  // Workers have no Image; WebKit workers on file:// cannot decode a Blob either.
-  if (header) return header;
-  if (typeof Image === 'undefined' || typeof URL === 'undefined') return {};
-
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(blob);
-    const image = new Image();
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve({ width: image.naturalWidth, height: image.naturalHeight });
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve({});
-    };
-    image.src = url;
-  });
+  return header;
 }
 
-/** Width and height from a PNG, GIF, BMP, WebP or JPEG header, without decoding. */
+/** Width and height from a PNG, GIF, BMP, WebP, JPEG or AVIF header, without decoding. */
 function readImageHeaderDimensions(bytes: Uint8Array): { width: number; height: number } | undefined {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const ascii = (offset: number, length: number) => String.fromCharCode(...bytes.subarray(offset, offset + length));
   const u24 = (offset: number) => bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16);
   const size = (width: number, height: number) => (width > 0 && height > 0 ? { width, height } : undefined);
   if (bytes.length >= 24 && ascii(1, 3) === 'PNG' && ascii(12, 4) === 'IHDR') return size(view.getUint32(16), view.getUint32(20));
+  if (bytes.length >= 16 && ascii(4, 4) === 'ftyp') {
+    const extent = readAvifExtent(bytes, view);
+    return extent && size(extent.width, extent.height);
+  }
   if (bytes.length >= 10 && ascii(0, 3) === 'GIF') return size(view.getUint16(6, true), view.getUint16(8, true));
   if (bytes.length >= 26 && ascii(0, 2) === 'BM') return size(Math.abs(view.getInt32(18, true)), Math.abs(view.getInt32(22, true)));
   if (bytes.length >= 30 && ascii(0, 4) === 'RIFF' && ascii(8, 4) === 'WEBP') {
@@ -509,6 +495,35 @@ function readImageHeaderDimensions(bytes: Uint8Array): { width: number; height: 
     }
   }
   return undefined;
+}
+
+/** The largest image spatial extent ('ispe' in meta > iprp > ipco) of an AVIF
+ * file. Every AVIF image item has one; decoders reject frames that differ. */
+function readAvifExtent(bytes: Uint8Array, view: DataView): { width: number; height: number } | undefined {
+  const code = (fourcc: string) => Array.from(fourcc).reduce((value, char) => value * 256 + char.charCodeAt(0), 0);
+  /** Child boxes of the given type, as [contentStart, end], skipping `header` bytes of each parent. */
+  const children = (parents: Array<[number, number]>, wanted: string, header = 0) => parents.flatMap(([start, end]) => {
+    const found: Array<[number, number]> = [];
+    for (let offset = start + header, type = code(wanted); offset + 8 <= end;) {
+      const length = view.getUint32(offset);
+      if (length < 8 || offset + length > end) break;
+      if (view.getUint32(offset + 4) === type) found.push([offset + 8, offset + length]);
+      offset += length;
+    }
+    return found;
+  });
+  // ftyp comes first: major brand, minor version, then compatible brands.
+  const ftypEnd = Math.min(view.getUint32(0), bytes.length);
+  const brands = [code('avif'), code('avis')];
+  let avif = false;
+  for (let offset = 8; offset + 4 <= ftypEnd && !avif; offset += 4) avif = offset !== 12 && brands.includes(view.getUint32(offset));
+  if (!avif) return undefined;
+  // meta is a full box: its version and flags come before its children.
+  const extents = children(children(children(children([[0, bytes.length]], 'meta'), 'iprp', 4), 'ipco'), 'ispe')
+    .filter(([start, end]) => end - start >= 12)
+    .map(([start]) => ({ width: view.getUint32(start + 4), height: view.getUint32(start + 8) }));
+  return extents.reduce<{ width: number; height: number } | undefined>(
+    (largest, extent) => (!largest || extent.width * extent.height > largest.width * largest.height ? extent : largest), undefined);
 }
 
 function bytesToBase64(bytes: Uint8Array): string {

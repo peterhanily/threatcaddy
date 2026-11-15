@@ -34,6 +34,14 @@ function concat(parts: Uint8Array[]): Uint8Array<ArrayBuffer> {
   for (const part of parts) { result.set(part, offset); offset += part.length; }
   return result;
 }
+const u32be = (value: number) => { const bytes = new Uint8Array(4); new DataView(bytes.buffer).setUint32(0, value); return bytes; };
+const box = (type: string, ...parts: Uint8Array[]) => { const body = concat(parts); return concat([u32be(8 + body.length), encode(type), body]); };
+/** A minimal HEIF header: ftyp, then meta > iprp > ipco with one ispe property per size. */
+const heif = (brand: string, ...sizes: Array<[number, number]>) => concat([
+  box('ftyp', encode(brand), u32be(0), encode('mif1'), encode('miaf')),
+  box('meta', u32be(0), box('iprp', box('ipco', ...sizes.map(([width, height]) => box('ispe', u32be(0), u32be(width), u32be(height)))))),
+]);
+const avif = (...sizes: Array<[number, number]>) => heif('avif', ...sizes);
 const docx = (entries: Entry[]) => new File([zip(entries)], 'synthetic.docx');
 const pdf = (bytes: Uint8Array) => new File([encode('%PDF-1.4\n1 0 obj\n<< /Filter /FlateDecode >>\nstream\n'), bytes as Uint8Array<ArrayBuffer>, encode('\nendstream\nendobj')], 'synthetic.pdf');
 /** Counts the bytes every pako inflater produces, including output the parser discards. */
@@ -51,14 +59,29 @@ function meterInflatedBytes(): { bytes: number } {
 describe('untrusted evidence resource boundaries', () => {
   afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
-  it('preserves bounded image previews when workers cannot decode image dimensions', async () => {
-    vi.stubGlobal('createImageBitmap', undefined);
-    vi.stubGlobal('Image', undefined);
-    const image = new File([new Uint8Array([137, 80, 78, 71])], 'synthetic.png', { type: 'image/png' });
+  it.each([
+    ['a truncated PNG', new File([new Uint8Array([137, 80, 78, 71])], 'synthetic.png', { type: 'image/png' })],
+    ['an image type without a header reader', new File([encode('II*\0synthetic scan')], 'scan.tiff', { type: 'image/tiff' })],
+    ['a HEIF image that is not AVIF', new File([heif('heic', [800, 600])], 'photo.heic', { type: 'image/heic' })],
+  ])('neither decodes nor stores %s whose size the header does not give', async (_name, image) => {
+    // Without a size the pixel bound cannot be checked before decoding, nor for later viewers.
+    const decode = vi.fn();
+    vi.stubGlobal('createImageBitmap', decode);
     const [draft] = await buildEvidenceItemDrafts(image);
     expect(draft.fileType).toBe('image');
-    expect(draft.imageData).toBe('iVBORw==');
+    expect(decode).not.toHaveBeenCalled();
+    expect(draft.imageData).toBeUndefined();
     expect(draft.extractionWarning).toContain('Image dimensions could not be read');
+  });
+
+  it('reads an AVIF size from its largest ispe property and never decodes one over the pixel bound', async () => {
+    const decode = vi.fn();
+    vi.stubGlobal('createImageBitmap', decode);
+    const [draft] = await buildEvidenceItemDrafts(new File([avif([512, 512], [10_000, 10_000])], 'huge.avif', { type: 'image/avif' }));
+    expect(decode).not.toHaveBeenCalled();
+    expect([draft.imageWidth, draft.imageHeight]).toEqual([10_000, 10_000]);
+    expect(draft.imageData).toBeUndefined();
+    expect(draft.extractionWarning).toContain('larger than 32 million pixels');
   });
 
   it('imports a full-page screenshot over the pixel bound as metadata only, without decoding it', async () => {
@@ -84,17 +107,22 @@ describe('untrusted evidence resource boundaries', () => {
     ['webp', [...encode('RIFF'), 0, 0, 0, 0, ...encode('WEBPVP8L'), 0, 0, 0, 0, 0x2f, 0x1f, 0xc3, 0x95, 0x00, 0, 0, 0, 0, 0]],
     ['webp', [...encode('RIFF'), 0, 0, 0, 0, ...encode('WEBPVP8 '), 0, 0, 0, 0, 0, 0, 0, 0x9d, 0x01, 0x2a, 32, 3, 88, 2]],
     ['jpg', [0xff, 0xd8, 0xff, 0xe0, 0, 4, 0, 0, 0xff, 0xc2, 0, 11, 8, 2, 88, 3, 32, 1, 1, 17, 0]],
+    ['avif', [...avif([800, 600])]],
   ])('reads %s dimensions from the header when the worker cannot decode the image', async (extension, bytes) => {
     vi.stubGlobal('createImageBitmap', vi.fn().mockRejectedValue(new Error('NotReadableError')));
     vi.stubGlobal('Image', undefined);
     const [draft] = await buildEvidenceItemDrafts(new File([new Uint8Array(bytes)], `shot.${extension}`));
     expect([draft.imageWidth, draft.imageHeight]).toEqual([800, 600]);
+    // The bounded preview is kept, as WebKit workers on file:// cannot decode.
+    expect(draft.imageData).toBeDefined();
   });
 
   it('closes decoded image resources and stores no preview beyond the pixel bound', async () => {
     const close = vi.fn();
     vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue({ width: 8192, height: 8192, close }));
-    const [draft] = await buildEvidenceItemDrafts(new File(['synthetic'], 'large.png', { type: 'image/png' }));
+    // The header is within the bound; the decoded size is what counts.
+    const header = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 3, 32, 0, 0, 2, 88, 8, 2, 0, 0, 0]);
+    const [draft] = await buildEvidenceItemDrafts(new File([header], 'large.png', { type: 'image/png' }));
     expect(close).toHaveBeenCalledOnce();
     expect([draft.imageWidth, draft.imageHeight]).toEqual([8192, 8192]);
     expect(draft.imageData).toBeUndefined();
