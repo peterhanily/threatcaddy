@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
 import { DrizzleQueryError } from 'drizzle-orm';
-import { globalErrorHandler } from '../middleware/error-handler.js';
+import { errorLogFields, globalErrorHandler } from '../middleware/error-handler.js';
 
 const HASH = '$argon2id$v=19$m=65536,t=3,p=4$Zml4dHVyZXNhbHQ$fixture-hash-of-typed-password';
 
@@ -67,5 +67,18 @@ describe('globalErrorHandler', () => {
     const response = await appThrowing(Object.assign(new Error('Forbidden here'), { status: 403 })).request('/boom', { method: 'POST' });
     expect(response.status).toBe(403);
     expect(JSON.parse(logged.trim()).statusCode).toBe(403);
+  });
+});
+
+describe('errorLogFields', () => {
+  it('bounds a rejection reason that is not an Error', () => {
+    expect(errorLogFields('plain reason')).toEqual({ error: 'plain reason' });
+    expect(String(errorLogFields(`start ${'x'.repeat(5_000)} tail`).error).length).toBeLessThanOrEqual(1_025);
+  });
+
+  it('logs a failed query by SQLSTATE and driver message only', () => {
+    const fields = errorLogFields(uniqueViolation());
+    expect(JSON.stringify(fields)).not.toContain(HASH);
+    expect(fields).toMatchObject({ errorName: 'DrizzleQueryError', sqlState: '23505', stack: undefined });
   });
 });

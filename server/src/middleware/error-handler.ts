@@ -2,7 +2,7 @@ import type { Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { DrizzleQueryError } from 'drizzle-orm';
 import { logger } from '../lib/logger.js';
-import { sqlState } from '../lib/db-errors.js';
+import { describeError, sqlState } from '../lib/db-errors.js';
 import { ErrorCodes } from '../types/error-codes.js';
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -16,7 +16,8 @@ const truncate = (text: string) => text.length > MAX_LOGGED_MESSAGE ? `${text.sl
  * text and every bound parameter (row contents, password hashes), so for it
  * only the driver error's SQLSTATE, constraint and message are logged.
  */
-export function errorLogFields(err: Error): Record<string, unknown> {
+export function errorLogFields(err: unknown): Record<string, unknown> {
+  if (!(err instanceof Error)) return { error: describeError(err) };
   const queryError = err instanceof DrizzleQueryError;
   const source: unknown = queryError ? err.cause : err;
   const constraint = (source as { constraint_name?: unknown } | undefined)?.constraint_name;

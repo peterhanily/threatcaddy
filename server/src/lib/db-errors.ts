@@ -14,3 +14,18 @@ export function sqlState(err: unknown): string | undefined {
 export function isUniqueViolation(err: unknown): boolean {
   return sqlState(err) === '23505';
 }
+
+const MAX_DESCRIBED = 1024;
+
+/**
+ * String(err) for logs and stored run errors, capped at 1 KB. A failed query is
+ * named by its SQLSTATE and driver message only, never its SQL or parameters.
+ */
+export function describeError(err: unknown): string {
+  let text = String(err);
+  if (err instanceof DrizzleQueryError) {
+    const state = sqlState(err);
+    text = `DrizzleQueryError${state ? ` ${state}` : ''}: ${err.cause instanceof Error ? err.cause.message : 'query failed'}`;
+  }
+  return text.length > MAX_DESCRIBED ? `${text.slice(0, MAX_DESCRIBED)}…` : text;
+}
