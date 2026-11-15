@@ -70,6 +70,15 @@ describe('InvestigationsHub', () => {
     vi.clearAllMocks();
   });
 
+  it('hides first-run guidance when privacy or data hydration suppresses it', () => {
+    const props = { ...defaultHubProps, onLoadDemo: vi.fn() };
+    const { rerender } = render(<InvestigationsHub {...props} />);
+    expect(screen.getByRole('button', { name: 'Try the realistic demo' })).toBeVisible();
+    rerender(<InvestigationsHub {...props} showFirstRunGuide={false} />);
+    expect(screen.queryByRole('button', { name: 'Try the realistic demo' })).not.toBeInTheDocument();
+    expect(props.onLoadDemo).not.toHaveBeenCalled();
+  });
+
   it('renders "My Investigations" section with local folder cards', () => {
     render(
       <InvestigationsHub

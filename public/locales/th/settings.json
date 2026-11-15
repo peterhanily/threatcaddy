@@ -455,5 +455,7 @@
   "encryption.table.installedIntegrations": "การเชื่อมต่อที่ติดตั้งแล้ว",
   "encryption.table.customSlashCommands": "คำสั่งกำหนดเอง",
   "encryption.confirmRestore": "ยืนยันการกู้คืน",
-  "encryption.refreshRestorePreview": "รีเฟรชตัวอย่าง"
+  "encryption.refreshRestorePreview": "รีเฟรชตัวอย่าง",
+  "general.realisticSample": "แบบฝึกสมจริง — กล่องจดหมายถูกบุกรุก",
+  "general.parodySample": "เรื่องล้อเลียน — FERMENTED PERSISTENCE"
 }

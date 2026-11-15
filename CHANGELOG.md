@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## v2.0.1 — 2026-11-15
+
+See [upgrade and channel notes](docs/releases/v2.0.1.md). This patch brings the tagged downloads up to the qualified client/server fixes; the extension remains independently versioned at 1.1.3.
+
+- Bound document input and decompression, skip unused ZIP media and parse in cancellable workers. Commit imported evidence atomically and reject expired workspace/session ownership.
+- Improve actionable contrast, quick-link targets, landmarks and heading structure. Bundle startup locales and defer unopened sharing UI to reduce mobile startup work.
+- Add a realistic, local synthetic mailbox investigation with working cross-links and a first-investigation guide; retain the separate parody sample.
+- Preserve first-attempt browser failure traces and fail CI when an acceptance test only passes on retry. Install modal keyboard handling before the first visible frame.
+- Verify versioned download bytes, source, successful CI, immutable release assets and server image identity with a release-channel checker.
+
 - Remove npm, npx, Yarn and Corepack from the final server image after dependency installation, update its Alpine zlib package to 1.4-r0, and use direct Node commands for container migration and restore maintenance. The build toolchain and native-host npm scripts are unchanged.
 - Preserve device-only task, note, IOC, timeline, whiteboard and chat fields when applying accepted sync responses or resolving conflicts. Warn that team sync is partial, offer a backup before local removal, and allow backups of records carrying legacy server revision metadata.
 - Enforce workspace encryption deadlines in active tabs and on resume, preserve the original deadline across reloads, and honor the selected 24-hour duration. Protect pending edits and interrupted chat output across locking.

@@ -5,6 +5,7 @@ import type { Folder, InvestigationSummary, InvestigationDataMode, Note, Task, T
 import { cn } from '../../lib/utils';
 import { InvestigationCard } from './InvestigationCard';
 import { SupervisorSummary } from '../Agent/SupervisorSummary';
+import { FirstRunGuide } from './FirstRunGuide';
 
 const ZERO_COUNTS = { notes: 0, tasks: 0, iocs: 0, events: 0, whiteboards: 0, chats: 0 };
 
@@ -19,6 +20,9 @@ export interface InvestigationsHubProps {
   onSyncLocally: (folderId: string) => void;
   onUnsync: (folderId: string) => void;
   onCreateInvestigation: () => void;
+  onImportInvestigation?: () => void;
+  onLoadDemo?: () => void;
+  showFirstRunGuide?: boolean;
   onEditInvestigation?: (folderId: string) => void;
   onArchiveInvestigation?: (folderId: string) => void;
   onUnarchiveInvestigation?: (folderId: string) => void;
@@ -102,6 +106,9 @@ export function InvestigationsHub({
   onSyncLocally,
   onUnsync,
   onCreateInvestigation,
+  onImportInvestigation,
+  onLoadDemo,
+  showFirstRunGuide = true,
   onEditInvestigation,
   onArchiveInvestigation,
   onUnarchiveInvestigation,
@@ -169,6 +176,10 @@ export function InvestigationsHub({
             {t('hub.newInvestigation')}
           </button>
         </div>
+
+        {showFirstRunGuide && !localLoading && !remoteLoading && localFolders.length === 0 && remoteInvestigations.length === 0 && (onImportInvestigation || onLoadDemo) && (
+          <FirstRunGuide onCreate={onCreateInvestigation} onImport={onImportInvestigation} onLoadDemo={onLoadDemo} />
+        )}
 
         {/* Search & Filter Bar */}
         <div className="flex items-center gap-3 mb-8">

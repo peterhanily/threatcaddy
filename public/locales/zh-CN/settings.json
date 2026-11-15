@@ -455,5 +455,7 @@
   "encryption.table.installedIntegrations": "已安装的集成",
   "encryption.table.customSlashCommands": "自定义命令",
   "encryption.confirmRestore": "确认恢复",
-  "encryption.refreshRestorePreview": "重新查看预览"
+  "encryption.refreshRestorePreview": "重新查看预览",
+  "general.realisticSample": "真实场景练习 — 邮箱失陷",
+  "general.parodySample": "戏仿 — FERMENTED PERSISTENCE"
 }

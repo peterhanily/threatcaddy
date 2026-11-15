@@ -1,8 +1,8 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DashboardView } from '../components/Dashboard/DashboardView';
-import type { QuickLink } from '../types';
+import type { QuickLink, Whiteboard } from '../types';
 
 const link: QuickLink = {
   id: 'fictional-quick-link', title: 'Fictional reference',
@@ -10,6 +10,31 @@ const link: QuickLink = {
 };
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+
+it('offers first-run actions only for a loaded, empty workspace', () => {
+  const onCreateInvestigation = vi.fn();
+  const onImportInvestigation = vi.fn();
+  const onLoadDemo = vi.fn();
+  const props = {
+    links: [link], onUpdateLinks: vi.fn(), folders: [], allNotes: [], allTasks: [],
+    allEvents: [], allWhiteboards: [], allIOCs: [],
+    onCreateInvestigation, onImportInvestigation, onLoadDemo,
+  };
+  const { rerender } = render(<DashboardView {...props} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Create Investigation' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Import source files' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Try the realistic demo' }));
+  expect(onCreateInvestigation).toHaveBeenCalledOnce();
+  expect(onImportInvestigation).toHaveBeenCalledOnce();
+  expect(onLoadDemo).toHaveBeenCalledOnce();
+
+  rerender(<DashboardView {...props} showFirstRunGuide={false} />);
+  expect(screen.queryByRole('button', { name: 'Create Investigation' })).not.toBeInTheDocument();
+  rerender(<DashboardView {...props} allWhiteboards={[{ id: 'unfiled-board' } as Whiteboard]} />);
+  expect(screen.queryByRole('button', { name: 'Create Investigation' })).not.toBeInTheDocument();
+  rerender(<DashboardView {...props} allWhiteboards={undefined} />);
+  expect(screen.queryByRole('button', { name: 'Create Investigation' })).not.toBeInTheDocument();
+});
 
 for (const [name, key] of [['Enter', '{Enter}'], ['Space', ' ']]) {
   describe(`${name} activation`, () => {

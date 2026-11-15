@@ -471,5 +471,7 @@
   "intel.actorsLoaded_few": "Завантажених акторів: {{count}}",
   "intel.actorsLoaded_many": "Завантажено {{count}} акторів",
   "intel.valuesLoaded_few": "Завантажено {{count}} значення",
-  "intel.valuesLoaded_many": "Завантажено {{count}} значень"
+  "intel.valuesLoaded_many": "Завантажено {{count}} значень",
+  "general.realisticSample": "Реалістична вправа — злам пошти",
+  "general.parodySample": "Пародія — FERMENTED PERSISTENCE"
 }

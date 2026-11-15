@@ -455,5 +455,7 @@
   "encryption.table.installedIntegrations": "インストール済みの連携",
   "encryption.table.customSlashCommands": "カスタムコマンド",
   "encryption.confirmRestore": "復元を確認",
-  "encryption.refreshRestorePreview": "プレビューを更新"
+  "encryption.refreshRestorePreview": "プレビューを更新",
+  "general.realisticSample": "実践演習 — メールボックス侵害",
+  "general.parodySample": "パロディ — FERMENTED PERSISTENCE"
 }

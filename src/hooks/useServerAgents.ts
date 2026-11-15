@@ -1,7 +1,9 @@
 /**
- * useServerAgents — manages the heartbeat handoff protocol with the team server.
- * When enabled, sends heartbeats every 30s. When the tab closes, the server
- * takes over running agents after a 90s grace period.
+ * useServerAgents — retains the client handoff protocol for compatibility.
+ * Current team servers explicitly disable AgentCaddy execution until server
+ * tool restrictions, read-only policies and durable approvals have parity.
+ * The unavailable response must leave ownership with the open client; this
+ * hook does not provide background takeover when a tab closes.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -16,9 +18,8 @@ import {
 } from '../lib/agent-handoff';
 
 const HEARTBEAT_INTERVAL_MS = 30_000; // 30 seconds
-/** Consecutive heartbeat failures before we flip deployments to handoff-pending.
- *  Two misses = ~60s gap, well under the server's 90s grace so we stop the
- *  local loop *before* the server starts its takeover. */
+/** Legacy protocol threshold for compatible servers: two missed heartbeats
+ *  precede the proposed 90s takeover grace. Current servers disable takeover. */
 const HEARTBEAT_FAIL_THRESHOLD = 2;
 
 interface UseServerAgentsOptions {
@@ -264,7 +265,8 @@ export function useServerAgents({ investigationId, deployments, profiles, enable
         if (mountedRef.current) setError((err as Error).message);
         // Consecutive-failure tracking: after HEARTBEAT_FAIL_THRESHOLD misses
         // (~60s), pre-emptively flip deployments into handoff-pending so the
-        // local cycle loop stops before the server's 90s grace elapses.
+        // local loop stops before a compatible server's proposed 90s grace.
+        // Current servers reject registration and do not enter this protocol.
         failureCountRef.current += 1;
         if (failureCountRef.current >= HEARTBEAT_FAIL_THRESHOLD) {
           try {

@@ -57,13 +57,18 @@ const SearchOverlay = lazy(() => import('./components/Search/SearchOverlay').the
 import { extractIOCs, mergeIOCAnalysis } from './lib/ioc-extractor';
 import { autoEnrichImportedIOCs } from './lib/ioc-auto-enrichment';
 import { upsertIOCObservations } from './lib/ioc-observations';
-import { buildEvidenceItemDrafts, findDuplicateEvidenceItemIds } from './lib/evidence-import';
+import { findDuplicateEvidenceItemIds } from './lib/evidence-duplicates';
+import { extractEvidenceFiles } from './lib/evidence-import-client';
+import { createEvidenceImportPersistence } from './lib/evidence-import-persistence';
+import { getSessionGeneration } from './lib/encryptionMiddleware';
+import { cancellableRequest } from './lib/request-cancellation';
+import { markPending, clearPending } from './lib/pending-changes';
 import { parseProductBaselinePackage, PRODUCT_NOTE_TAG } from './lib/product-baselines';
 import { prepareProductComposerNote, type ProductComposerSnapshot } from './lib/product-composer';
 import { createProductComposerPersistence } from './lib/product-composer-persistence';
 import type { ProductComposerSaveInput } from './components/Products/ProductComposer';
 import { getActiveWorkspaceId } from './lib/workspace-profiles';
-import { generateSampleInvestigation, isSampleEntity } from './lib/sample-investigation';
+import { getSampleFolderId, loadSampleInvestigation, deleteSampleInvestigation, type SampleInvestigationKind } from './lib/sample-investigation-store';
 import { db } from './db';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { ActiveFilterBar } from './components/Common/ActiveFilterBar';
@@ -929,12 +934,45 @@ const AppInner = memo(function AppInner({
     () => noteTemplatesHook.templates.filter((tpl) => tpl.productBaseline && (!screenshareMaxLevel || !isAboveClsThreshold(tpl.clsLevel, screenshareMaxLevel, effectiveClsLevels))),
     [noteTemplatesHook.templates, screenshareMaxLevel, effectiveClsLevels]
   );
-  const handleImportEvidence = useCallback(async (files: File[]) => {
-    const drafts = (await Promise.all(files.map((file) => buildEvidenceItemDrafts(file, { folderName: selectedFolder?.name })))).flat();
-    const created = await Promise.all(drafts.map((draft) => evidenceItemsHook.createEvidenceItem({ ...draft, folderId: selectedFolderId })));
-    await evidenceItemsHook.reload();
-    return created;
-  }, [evidenceItemsHook, selectedFolderId, selectedFolder?.name]);
+  const evidenceImportScope = useMemo(() => ({
+    folderId: selectedFolderId,
+    ready: privacyDataReady && investigationMode === 'local' && activeView === 'evidence'
+      && !screenshareMaxLevel && !selectedContextHidden && selectedFolder?.status !== 'archived'
+      && !showSettings && !showTrash && !showArchive,
+  }), [selectedFolderId, privacyDataReady, investigationMode, activeView, screenshareMaxLevel,
+    selectedContextHidden, selectedFolder?.status, showSettings, showTrash, showArchive]);
+  const evidenceImportOwner = useRef<typeof evidenceImportScope | null>(null);
+  const evidenceImportControllers = useRef(new Set<AbortController>());
+  useLayoutEffect(() => {
+    evidenceImportOwner.current = evidenceImportScope;
+    const controllers = evidenceImportControllers.current;
+    return () => {
+      evidenceImportOwner.current = null;
+      for (const controller of controllers) controller.abort();
+    };
+  }, [evidenceImportScope]);
+  const handleImportEvidence = useCallback(async (files: File[], signal?: AbortSignal) => {
+    const request = cancellableRequest(signal);
+    const pending = Symbol('evidence import');
+    const assertCurrentScope = () => {
+      if (evidenceImportOwner.current !== evidenceImportScope || !evidenceImportScope.ready) {
+        throw new Error('The investigation context changed. Select the destination and import the files again.');
+      }
+    };
+    evidenceImportControllers.current.add(request.controller);
+    markPending(pending);
+    try {
+      const persist = createEvidenceImportPersistence({ folderId: selectedFolderId, signal: request.signal, assertCurrentScope });
+      const drafts = await extractEvidenceFiles(files, { folderName: selectedFolder?.name }, request.signal);
+      const created = await persist(drafts);
+      await evidenceItemsHook.reload();
+      return created;
+    } finally {
+      clearPending(pending);
+      evidenceImportControllers.current.delete(request.controller);
+      request.dispose();
+    }
+  }, [evidenceItemsHook, selectedFolderId, selectedFolder?.name, evidenceImportScope]);
   const handleDeduplicateEvidence = useCallback(async () => {
     const dupeIds = findDuplicateEvidenceItemIds(evidenceItemsHook.evidenceItems, selectedFolderId);
     for (const id of dupeIds) await evidenceItemsHook.deleteEvidenceItem(id);
@@ -1246,76 +1284,66 @@ const AppInner = memo(function AppInner({
     }
   }, [handleImportComplete, addToast, tt]);
 
-  // Sample investigation
-  const sampleLoaded = useMemo(() => folders.some((f) => f.id === 'sample-investigation'), [folders]);
-
-  const handleLoadSample = useCallback(async () => {
-    const data = generateSampleInvestigation();
-    // Write all entities to DB
-    await db.folders.put(data.folder);
-    await db.timelines.put(data.timeline);
-    await db.tags.bulkPut(data.tags);
-    await db.notes.bulkPut(data.notes);
-    await db.tasks.bulkPut(data.tasks);
-    await db.timelineEvents.bulkPut(data.timelineEvents);
-    await db.standaloneIOCs.bulkPut(data.standaloneIOCs);
-    await db.evidenceItems.bulkPut(data.evidenceItems);
-    await db.noteTemplates.bulkPut(data.noteTemplates);
-    await db.whiteboards.bulkPut([data.whiteboard]);
-    if (data.chatThreads) await db.chatThreads.bulkPut(data.chatThreads);
-    // Reload all hooks
-    handleImportComplete();
-    // Navigate to sample and open first note
-    setSelectedFolderId('sample-investigation');
-    navigateTo('notes');
-    setSelectedNoteId(data.notes[0]?.id);
-    activityLog.log('data', 'import', 'Loaded sample investigation "Operation FERMENTED PERSISTENCE"');
-    addToast('success', tt('investigation.sampleLoaded'));
-  }, [handleImportComplete, navigateTo, activityLog, setSelectedFolderId, addToast]);
-
-  const handleDeleteSample = useCallback(async () => {
-    // Delete sample entities using filter() on primary key — avoids loading entire tables into memory.
-    // Dexie's filter() on a Collection still iterates the index but only pulls matching keys,
-    // which is far cheaper than .toArray() + in-memory filter + bulkDelete.
-    const tables = [
-      db.notes, db.tasks, db.timelineEvents, db.standaloneIOCs,
-      db.evidenceItems, db.noteTemplates,
-      db.whiteboards, db.timelines, db.tags, db.chatThreads,
-    ] as const;
-    await Promise.all(
-      tables.map(table =>
-        table.filter(item => isSampleEntity(item.id)).delete()
-      )
-    );
-    await db.folders.delete('sample-investigation');
-
-    handleImportComplete();
-    if (selectedFolderId === 'sample-investigation') {
-      setSelectedFolderId(undefined);
+  // Each sample has a separate identity; reopening it preserves analyst edits.
+  const sampleLoaded = useMemo(() => folders.some(f => f.id === getSampleFolderId('realistic')), [folders]);
+  const parodyLoaded = useMemo(() => folders.some(f => f.id === getSampleFolderId('parody')), [folders]);
+  const [demoKind, setDemoKind] = useState<SampleInvestigationKind>('realistic');
+  const [demoName, setDemoName] = useState<string>();
+  const handleLoadSample = useCallback(async (kind: SampleInvestigationKind = 'realistic') => {
+    const workspace = getActiveWorkspaceId(), generation = getSessionGeneration();
+    const current = () => workspace === getActiveWorkspaceId() && generation === getSessionGeneration();
+    try {
+      const result = await loadSampleInvestigation(kind);
+      // The write may have committed immediately before a lock/switch. Preserve
+      // that acknowledgement without navigating or logging into a new session.
+      if (!current()) return false;
+      handleImportComplete();
+      setSelectedFolderId(result.folder.id);
+      navigateTo('notes');
+      setSelectedNoteId(result.firstNoteId);
+      setDemoKind(kind);
+      setDemoName(result.folder.name);
+      if (result.created) activityLog.log('data', 'import', `Loaded sample investigation "${result.folder.name}"`);
+      addToast('success', tt('investigation.sampleLoaded'));
+      return true;
+    } catch (error) {
+      if (current()) addToast('error', error instanceof Error ? error.message : tt('import.importFailed'));
+      return false;
     }
-    activityLog.log('data', 'delete', 'Removed sample investigation "Operation FERMENTED PERSISTENCE"');
-    addToast('success', tt('investigation.sampleRemoved'));
-  }, [handleImportComplete, selectedFolderId, activityLog, setSelectedFolderId, addToast]);
+  }, [handleImportComplete, navigateTo, activityLog, setSelectedFolderId, setSelectedNoteId, addToast, tt]);
 
-  // ?demo URL parameter handling
+  const handleDeleteSample = useCallback(async (kind: SampleInvestigationKind = 'realistic') => {
+    const workspace = getActiveWorkspaceId(), generation = getSessionGeneration();
+    const current = () => workspace === getActiveWorkspaceId() && generation === getSessionGeneration();
+    try {
+      await deleteSampleInvestigation(kind);
+      if (!current()) return;
+      handleImportComplete();
+      if (selectedFolderId === getSampleFolderId(kind)) {
+        setSelectedFolderId(undefined);
+        setSelectedNoteId(undefined);
+      }
+      activityLog.log('data', 'delete', `Removed ${kind} sample investigation`);
+      addToast('success', tt('investigation.sampleRemoved'));
+    } catch (error) {
+      if (current()) addToast('error', error instanceof Error ? error.message : tt('import.importFailed'));
+    }
+  }, [handleImportComplete, selectedFolderId, activityLog, setSelectedFolderId, setSelectedNoteId, addToast, tt]);
+
+  // The default demo is a realistic synthetic case; ?demo=parody retains the original.
   useEffect(() => {
-    if (demoProcessedRef.current) return;
+    if (demoProcessedRef.current || !privacyDataReady || screenshareMaxLevel) return;
     const params = new URLSearchParams(window.location.search);
     if (!params.has('demo')) return;
     demoProcessedRef.current = true;
-    // Clean the ?demo param from the URL so it doesn't linger
+    const kind = params.get('demo') === 'parody' ? 'parody' : 'realistic';
     const url = new URL(window.location.href);
     url.searchParams.delete('demo');
     window.history.replaceState({}, '', url.pathname + url.search + url.hash);
-    if (sampleLoaded) {
-      setSelectedFolderId('sample-investigation');
-      navigateTo('notes');
-      setSelectedNoteId('sample-note-1');
-      setShowDemoModal(true);
-    } else {
-      handleLoadSample().then(() => setShowDemoModal(true));
-    }
-  }, [sampleLoaded, handleLoadSample, navigateTo, setSelectedFolderId]);
+    // Start URL-driven storage hydration after this initial effect commits;
+    // ordinary button actions can still invoke the same handler directly.
+    void Promise.resolve<SampleInvestigationKind>(kind).then(handleLoadSample).then(loaded => { if (loaded) setShowDemoModal(true); });
+  }, [privacyDataReady, screenshareMaxLevel, handleLoadSample, setShowDemoModal]);
 
   // Keyboard shortcuts
   // Search overlay navigation callbacks
@@ -1654,8 +1682,11 @@ const AppInner = memo(function AppInner({
             notes={notes.notes}
             onImportComplete={handleImportComplete}
             sampleLoaded={sampleLoaded}
-            onLoadSample={handleLoadSample}
-            onDeleteSample={handleDeleteSample}
+            onLoadSample={async () => { await handleLoadSample(); }}
+            onDeleteSample={() => handleDeleteSample()}
+            parodyLoaded={parodyLoaded}
+            onLoadParody={async () => { await handleLoadSample('parody'); }}
+            onDeleteParody={() => handleDeleteSample('parody')}
             onClose={() => { closeSettings(); }}
             activeTab={(settingsInitialTab || 'general') as SettingsTab}
             onTabChange={openSettings}
@@ -1715,6 +1746,11 @@ const AppInner = memo(function AppInner({
           />
         ) : activeView === 'dashboard' ? (
           <DashboardView
+            showFirstRunGuide={!screenshareMaxLevel && privacyDataReady}
+            onCreateInvestigation={() => setShowCreateInvestigationModal(true)}
+            onImportInvestigation={() => setShowDataImport(true)}
+            onLoadDemo={() => { void handleLoadSample(); }}
+            allWhiteboards={screensafeWhiteboards}
             links={settings.quickLinks ?? DEFAULT_QUICK_LINKS}
             onUpdateLinks={(links) => updateSettings({ quickLinks: links })}
             onViewChange={navigateTo}
@@ -1838,6 +1874,9 @@ const AppInner = memo(function AppInner({
           null
         ) : activeView === 'investigations' ? (
           <InvestigationsHub
+            showFirstRunGuide={!screenshareMaxLevel && privacyDataReady}
+            onImportInvestigation={() => setShowDataImport(true)}
+            onLoadDemo={() => { void handleLoadSample(); }}
             localFolders={folders}
             remoteInvestigations={remoteInvestigations}
             syncedFolderIds={syncedFolderIds}
@@ -2241,7 +2280,8 @@ const AppInner = memo(function AppInner({
         open={showDemoModal}
         onClose={() => setShowDemoModal(false)}
         onStartTour={() => tour.start(activeView)}
-        onDeleteDemo={handleDeleteSample}
+        sampleName={demoName}
+        onDeleteDemo={() => handleDeleteSample(demoKind)}
       /></Suspense>
 
       <Suspense fallback={null}><SearchOverlay

@@ -36,6 +36,18 @@ afterEach(() => {
 });
 
 describe('locale ownership before any unlocked app or settings hook mounts', () => {
+  it('renders English shell namespaces without HTTP while optional chat stays lazy', async () => {
+    const { default: instance } = await import('../i18n');
+    await instance.loadNamespaces(['toast', 'exec', 'investigations']);
+    expect(transport.reads).toEqual([]);
+    for (const namespace of ['toast', 'exec', 'investigations']) {
+      expect(instance.hasResourceBundle('en', namespace)).toBe(true);
+    }
+    expect(instance.hasResourceBundle('en', 'chat')).toBe(false);
+    await instance.loadNamespaces('chat');
+    expect(transport.reads).toEqual(['en/chat']);
+  });
+
   it.each([
     ['ar-EG', 'ar', 'rtl'], ['he-IL', 'he', 'rtl'], ['fa', 'fa', 'rtl'],
     ['DE-de', 'de', 'ltr'], ['pt_BR', 'pt-BR', 'ltr'], ['zh_CN', 'zh-CN', 'ltr'],

@@ -53,6 +53,51 @@ The four checked-in extension downloads are release artifacts: `chrome.zip` and 
 
 ## Publication and recovery
 
+### Versioned downloads
+
+Every release correction needs a new version and tag. The README names the
+supported stable download explicitly; update its badge, download link and release
+notes with the coordinated client/server version. Preserve historical tags and
+asset bytes. Browser stores and retained team servers remain separate rollouts.
+
+After the exact main revision passes CI and hosted smoke, download its immutable
+verified client/server artifacts by ID and check the GitHub archive digests,
+source files, packaged tar hashes and server config/revision. Copy the standalone
+from that client archive and the checked extension ZIPs from the same source.
+Create a release manifest with the source, versions, successful CI URL/run ID,
+artifact IDs/hashes, asset sizes/hashes and immutable GHCR image reference.
+Generate `SHA256SUMS` over the three downloads and `release-manifest.json`, with
+sorted filenames. Enable GitHub immutable releases, assemble all assets in a
+draft and verify them before publishing. Do not use asset replacement or move a
+historical tag to repair a release.
+
+After publication, fetch the published release metadata, resolve its tag to a
+commit, and download all five assets again. Run:
+
+```bash
+node scripts/verify-release-channel.mjs RECEIPT.json DOWNLOAD_DIRECTORY
+```
+
+The JSON receipt supplies independently retrieved `release` and `run` API
+objects; `sourceSHA`, `tagSourceSHA`, `version`, `extensionVersion`;
+`artifactDirectory` pointing to the verified client archive; its numeric
+`clientArtifactId` and `serverArtifactId`; `serverArchiveHash`, `serverImageId`
+and registry `serverDigest`; and `extensionHashes` keyed by the two ZIP filenames.
+The checker reads the actual downloaded manifest/assets and fails on stale
+versions/source, mutable/draft releases, CI identity mismatch, substituted
+artifacts/images, wrong download hashes or incomplete checksums. Its adversarial
+contracts run in the required `pnpm test:ci` suite.
+
+Also execute the downloaded standalone in an isolated offline browser. A matching
+hash ties it to the qualified artifact; runtime checks confirm the user-facing
+download route and operation. Retain the verification receipt outside the
+repository with the dated release record. A hosted-only update is not evidence
+that the versioned download was updated.
+
+See GitHub's [immutable release documentation](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases#immutable-releases).
+
+### Hosted and server promotion
+
 Follow [Development and verification](development-verification.md#publication) for the required workflow. Publication promotes the same immutable artifact IDs from the successful verification run, checks source identity and SHA-256 digests, and rejects a superseded main revision. Do not rebuild in a privileged publication job or substitute files after verification.
 
 Retain the verified client archive, source SHA and checksum, and the server image ID/digest and source identity as approved release records before short-lived CI artifacts expire. A checksum confirms byte identity, not publisher trust or an independent security audit. Verify it against a trusted release record.

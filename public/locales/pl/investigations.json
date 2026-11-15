@@ -104,5 +104,10 @@
   "card.entity.whiteboards": "Tablice",
   "card.entity.chats": "Czaty",
   "card.members_few": "{{count}} członków",
-  "card.members_many": "{{count}} członków"
+  "card.members_many": "{{count}} członków",
+  "firstRun.title": "Od sprawy do raportu",
+  "firstRun.description": "Utwórz sprawę, importuj dozwolone pliki źródłowe lub poznaj fikcyjny incydent pocztowy. Konfiguracja AI nie jest potrzebna.",
+  "firstRun.import": "Importuj pliki źródłowe",
+  "firstRun.demo": "Wypróbuj realistyczne demo",
+  "firstRun.report": "Przejrzyj dowody, utwórz oś czasu i napisz notatkę z raportem. Pobierz ją jako Markdown; osobno zapisz kopię zapasową całego obszaru roboczego."
 }

@@ -471,5 +471,7 @@
   "intel.actorsLoaded_few": "Загружено {{count}} актора",
   "intel.actorsLoaded_many": "Загружено {{count}} акторов",
   "intel.valuesLoaded_few": "Загружено {{count}} значения",
-  "intel.valuesLoaded_many": "Загружено {{count}} значений"
+  "intel.valuesLoaded_many": "Загружено {{count}} значений",
+  "general.realisticSample": "Реалистичное упражнение — взлом почты",
+  "general.parodySample": "Пародия — FERMENTED PERSISTENCE"
 }

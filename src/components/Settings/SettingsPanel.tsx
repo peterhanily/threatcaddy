@@ -90,6 +90,9 @@ interface SettingsPanelProps {
   sampleLoaded?: boolean;
   onLoadSample?: () => void;
   onDeleteSample?: () => void;
+  parodyLoaded?: boolean;
+  onLoadParody?: () => void;
+  onDeleteParody?: () => void;
   onClose?: () => void;
   initialTab?: SettingsTab;
   activeTab?: SettingsTab;
@@ -239,7 +242,7 @@ function CustomSlashCommandsEditor() {
 
 const TAB_KEYS: SettingsTab[] = ['general', 'appearance', 'ai', 'agents', 'data', 'templates', 'intel', 'integrations', 'shortcuts'];
 
-export function SettingsPanel({ settings, onUpdateSettings, notes, onImportComplete, sampleLoaded, onLoadSample, onDeleteSample, onClose, initialTab, activeTab: controlledTab, onTabChange, templateProps, playbookProps }: SettingsPanelProps) {
+export function SettingsPanel({ settings, onUpdateSettings, notes, onImportComplete, sampleLoaded, onLoadSample, onDeleteSample, parodyLoaded, onLoadParody, onDeleteParody, onClose, initialTab, activeTab: controlledTab, onTabChange, templateProps, playbookProps }: SettingsPanelProps) {
   const { t } = useTranslation('settings');
   const { addToast } = useToast();
   const fieldId = useId();
@@ -445,11 +448,12 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
               <p className="text-xs text-gray-500">
                 {t('general.sampleDataDesc')}
               </p>
+              <p className="text-sm text-gray-300">{t('general.realisticSample')}</p>
               {sampleLoaded ? (
                 <button
                   data-tour="load-sample"
                   onClick={onDeleteSample}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/15 text-red-400 hover:bg-red-600/25 text-sm font-medium transition-colors"
+                  className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-lg bg-red-600/15 text-red-400 hover:bg-red-600/25 text-sm font-medium transition-colors"
                 >
                   <Trash2 size={16} />
                   {t('general.removeSample')}
@@ -458,11 +462,24 @@ export function SettingsPanel({ settings, onUpdateSettings, notes, onImportCompl
                 <button
                   data-tour="load-sample"
                   onClick={onLoadSample}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 text-sm font-medium transition-colors"
+                  className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-lg bg-accent/15 text-accent hover:bg-accent/25 text-sm font-medium transition-colors"
                 >
                   <FlaskConical size={16} />
                   {t('general.loadSample')}
                 </button>
+              )}
+              {(onLoadParody || onDeleteParody) && (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-300">{t('general.parodySample')}</p>
+                  <button
+                    onClick={parodyLoaded ? onDeleteParody : onLoadParody}
+                    className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-gray-200 hover:bg-gray-700 text-sm font-medium transition-colors"
+                    aria-label={`${t(parodyLoaded ? 'general.removeSample' : 'general.loadSample')} — ${t('general.parodySample')}`}
+                  >
+                    {parodyLoaded ? <Trash2 size={16} /> : <FlaskConical size={16} />}
+                    {t(parodyLoaded ? 'general.removeSample' : 'general.loadSample')}
+                  </button>
+                </div>
               )}
             </div>
           )}

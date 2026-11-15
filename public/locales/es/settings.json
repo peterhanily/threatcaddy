@@ -463,5 +463,7 @@
   "data.mdImportButton_many": "Importar {{count}} notas",
   "data.mdImportedSuccess_many": "{{count}} notas importadas con éxito",
   "intel.actorsLoaded_many": "{{count}} actores cargados",
-  "intel.valuesLoaded_many": "{{count}} valores cargados"
+  "intel.valuesLoaded_many": "{{count}} valores cargados",
+  "general.realisticSample": "Ejercicio realista — cuenta de correo comprometida",
+  "general.parodySample": "Parodia — FERMENTED PERSISTENCE"
 }

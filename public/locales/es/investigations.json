@@ -103,5 +103,10 @@
   "card.entity.events": "Eventos",
   "card.entity.whiteboards": "Pizarras",
   "card.entity.chats": "Chats",
-  "card.members_many": "{{count}} miembros"
+  "card.members_many": "{{count}} miembros",
+  "firstRun.title": "Del caso al informe",
+  "firstRun.description": "Cree un caso, importe archivos fuente autorizados o explore un incidente ficticio de correo. No necesita configurar IA.",
+  "firstRun.import": "Importar archivos fuente",
+  "firstRun.demo": "Probar la demo realista",
+  "firstRun.report": "Revise las pruebas, cree una cronología y redacte una nota de informe. Descárguela como Markdown; use Guardar copia por separado para conservar todo el espacio de trabajo."
 }

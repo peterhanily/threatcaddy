@@ -102,5 +102,10 @@
   "card.entity.iocs": "IOC",
   "card.entity.events": "Olaylar",
   "card.entity.whiteboards": "Beyaz tahtalar",
-  "card.entity.chats": "Sohbetler"
+  "card.entity.chats": "Sohbetler",
+  "firstRun.title": "Vakadan rapora",
+  "firstRun.description": "Bir vaka oluşturun, yetkili kaynak dosyalarını içe aktarın veya kurgusal bir posta olayını inceleyin. Yapay zekâ kurulumu gerekmez.",
+  "firstRun.import": "Kaynak dosyalarını içe aktar",
+  "firstRun.demo": "Gerçekçi demoyu dene",
+  "firstRun.report": "Kanıtları inceleyin, zaman çizelgesi oluşturun ve rapor notu yazın. Notu Markdown olarak indirin; tüm çalışma alanını korumak için ayrıca yedek kaydedin."
 }

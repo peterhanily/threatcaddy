@@ -455,5 +455,7 @@
   "encryption.table.installedIntegrations": "Integrasi terpasang",
   "encryption.table.customSlashCommands": "Perintah khusus",
   "encryption.confirmRestore": "Konfirmasi pemulihan",
-  "encryption.refreshRestorePreview": "Segarkan pratinjau"
+  "encryption.refreshRestorePreview": "Segarkan pratinjau",
+  "general.realisticSample": "Latihan realistis — kompromi kotak surel",
+  "general.parodySample": "Parodi — FERMENTED PERSISTENCE"
 }

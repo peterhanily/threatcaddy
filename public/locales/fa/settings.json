@@ -455,5 +455,7 @@
   "encryption.table.installedIntegrations": "یکپارچه‌سازی‌های نصب‌شده",
   "encryption.table.customSlashCommands": "فرمان‌های سفارشی",
   "encryption.confirmRestore": "تأیید بازیابی",
-  "encryption.refreshRestorePreview": "بررسی پیش‌نمایش تازه"
+  "encryption.refreshRestorePreview": "بررسی پیش‌نمایش تازه",
+  "general.realisticSample": "تمرین واقع‌گرایانه — نفوذ به صندوق ایمیل",
+  "general.parodySample": "نمونه طنز — FERMENTED PERSISTENCE"
 }

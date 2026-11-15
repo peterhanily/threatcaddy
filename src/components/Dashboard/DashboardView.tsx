@@ -6,6 +6,7 @@ import type { QuickLink, ViewMode, Folder, Note, Task, TimelineEvent, Whiteboard
 import { QuickLinkForm } from './QuickLinkForm';
 import { ConfirmDialog } from '../Common/ConfirmDialog';
 import { KPIWidgets } from './KPIWidgets';
+import { FirstRunGuide } from '../Investigations/FirstRunGuide';
 
 const INTERNAL_TOOLS: { view: ViewMode; labelKey: string; descKey: string; icon: typeof FileText; color: string }[] = [
   { view: 'notes', labelKey: 'view.notes', descKey: 'view.notesDesc', icon: FileText, color: '#38bdf8' },
@@ -30,13 +31,19 @@ interface DashboardViewProps {
   allIOCs?: StandaloneIOC[];
   dashboardKPIs?: KPIMetricId[];
   onUpdateKPIs?: (kpis: KPIMetricId[]) => void;
+  onCreateInvestigation?: () => void;
+  onImportInvestigation?: () => void;
+  onLoadDemo?: () => void;
+  showFirstRunGuide?: boolean;
 }
 
-export function DashboardView({ links, onUpdateLinks, onViewChange, folders, allNotes, allTasks, allEvents, allIOCs, dashboardKPIs, onUpdateKPIs }: DashboardViewProps) {
+export function DashboardView({ links, onUpdateLinks, onViewChange, folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs, dashboardKPIs, onUpdateKPIs, onCreateInvestigation, onImportInvestigation, onLoadDemo, showFirstRunGuide = true }: DashboardViewProps) {
   const { t } = useTranslation('dashboard');
   const [formOpen, setFormOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<QuickLink | undefined>();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const workspaceIsEmpty = [folders, allNotes, allTasks, allEvents, allWhiteboards, allIOCs]
+    .every(entities => entities !== undefined && entities.length === 0);
 
   const handleAdd = (data: Partial<QuickLink>) => {
     const newLink: QuickLink = {
@@ -75,6 +82,11 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
 
   return (
     <div className="flex-1 overflow-y-auto">
+      {showFirstRunGuide && workspaceIsEmpty && onCreateInvestigation && (
+        <div className="px-6 pt-6">
+          <FirstRunGuide onCreate={onCreateInvestigation} onImport={onImportInvestigation} onLoadDemo={onLoadDemo} />
+        </div>
+      )}
       {/* KPI Widgets */}
       {folders && allNotes && allTasks && allEvents && allIOCs && onUpdateKPIs && (
         <KPIWidgets
@@ -123,12 +135,12 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
                 aria-description={link.description}
                 className="absolute inset-0 w-full rounded-lg cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               />
-              {/* Hover actions */}
-              <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-40 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+              {/* Separate, persistent editing controls */}
+              <div className="absolute top-2 right-2 z-10 flex gap-1">
                 <button
                   type="button"
                   onClick={() => setEditingLink(link)}
-                  className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="min-h-8 min-w-8 inline-flex items-center justify-center rounded bg-bg-raised hover:bg-gray-700 text-gray-400 hover:text-gray-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   aria-label={`Edit ${link.title}`}
                   title="Edit link"
                 >
@@ -137,7 +149,7 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
                 <button
                   type="button"
                   onClick={() => setDeletingId(link.id)}
-                  className="p-1 rounded hover:bg-gray-700 text-gray-500 hover:text-red-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="min-h-8 min-w-8 inline-flex items-center justify-center rounded bg-bg-raised hover:bg-gray-700 text-gray-400 hover:text-red-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   aria-label={`Delete ${link.title}`}
                   title="Delete link"
                 >
@@ -145,7 +157,7 @@ export function DashboardView({ links, onUpdateLinks, onViewChange, folders, all
                 </button>
               </div>
 
-              <div className="relative pointer-events-none">
+              <div className="relative pointer-events-none pe-16">
                 {/* Icon */}
                 {link.icon && (
                   <span className="text-2xl block mb-2" role="img" aria-hidden="true">

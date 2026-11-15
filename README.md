@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/peterhanily/threatcaddy/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/version-2.0.0-green.svg" alt="Version 2.0.0" />
+  <img src="https://img.shields.io/badge/version-2.0.1-green.svg" alt="Version 2.0.1" />
   <img src="https://img.shields.io/badge/TypeScript-6%20%2F%207-blue.svg?logo=typescript&logoColor=white" alt="TypeScript 6 (client) / 7 (server)" />
   <img src="https://img.shields.io/badge/React-19-61dafb.svg?logo=react&logoColor=white" alt="React 19" />
   <img src="https://img.shields.io/badge/Vite-7-646cff.svg?logo=vite&logoColor=white" alt="Vite 7" />
@@ -42,7 +42,7 @@ Most investigation tools lock your data in a cloud you don't control, cost per s
 
 **Try it now:** [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loads a sample investigation with a guided walkthrough.
 
-**Download a release:** [GitHub Releases](https://github.com/peterhanily/threatcaddy/releases/latest) provides the tested standalone HTML, browser-extension archives, checksums and source revision. Client and server 2.0.0 form a coordinated upgrade; the extension has its own version, currently 1.1.3. Read the [2.0 upgrade notes](docs/releases/v2.0.0.md) before updating an existing team installation. Browser-store publication is separate from these downloads.
+**Download a release:** [Stable 2.0.1 downloads](https://github.com/peterhanily/threatcaddy/releases/tag/v2.0.1) provide the tested standalone HTML, browser-extension archives, checksums and source revision. Client and server 2.0.1 include the preservation/session fixes missing from the historical 2.0.0 download. The extension has its own version, currently 1.1.3. Read the [2.0.1 upgrade and channel notes](docs/releases/v2.0.1.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
 
 **Self-host the client:**
 

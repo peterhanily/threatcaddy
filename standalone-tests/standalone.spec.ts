@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createQuickNote, navigateToView } from '../e2e/fixtures';
+import { importOrdinaryDocx, openEvidenceCase } from '../e2e/evidence-import-fixtures';
 
 let directory: string | undefined;
 let fileURL: string;
@@ -88,6 +89,15 @@ test('simple and advanced search remain available if the browser disables worker
   await expect(search.getByText('Standalone sentinel', { exact: true })).toBeVisible();
   await search.getByRole('button', { name: 'Regex', exact: true }).click();
   await expect(search.getByText(/Regex search requires a working search worker/)).toBeVisible();
+  expect(failures).toEqual([]);
+});
+
+test('copied HTML imports DOCX through its embedded evidence worker without sibling assets or network', async ({ page }) => {
+  const workers: string[] = [];
+  page.on('worker', worker => workers.push(worker.url()));
+  await openEvidenceCase(page);
+  await importOrdinaryDocx(page);
+  expect(workers.some(url => url.startsWith('blob:') || url.startsWith('data:'))).toBe(true);
   expect(failures).toEqual([]);
 });
 

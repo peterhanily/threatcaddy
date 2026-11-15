@@ -455,5 +455,7 @@
   "server.onboarding.realTimeSyncDesc": "Your notes, tasks, and IOCs sync automatically across all connected team members.",
   "server.onboarding.presence": "Presence",
   "server.onboarding.presenceDesc": "See who's online and what investigations they're working on.",
-  "server.onboarding.getStarted": "Get Started"
+  "server.onboarding.getStarted": "Get Started",
+  "general.realisticSample": "Realistic exercise — mailbox compromise",
+  "general.parodySample": "Parody — FERMENTED PERSISTENCE"
 }

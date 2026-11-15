@@ -471,5 +471,7 @@
   "intel.actorsLoaded_few": "Załadowano {{count}} aktorów",
   "intel.actorsLoaded_many": "Załadowano {{count}} aktorów",
   "intel.valuesLoaded_few": "Załadowano {{count}} wartości",
-  "intel.valuesLoaded_many": "Załadowano {{count}} wartości"
+  "intel.valuesLoaded_many": "Załadowano {{count}} wartości",
+  "general.realisticSample": "Realistyczne ćwiczenie — przejęcie skrzynki pocztowej",
+  "general.parodySample": "Parodia — FERMENTED PERSISTENCE"
 }

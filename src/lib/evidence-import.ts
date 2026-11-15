@@ -1,34 +1,10 @@
 import * as pako from 'pako';
-import type { EvidenceExtractionStatus, EvidenceKind, EvidenceItem, Note } from '../types';
+import type { EvidenceExtractionStatus, EvidenceKind, Note } from '../types';
+import { assertEvidenceInput, EVIDENCE_LIMITS, EvidenceImportLimitError } from './evidence-import-limits';
 
-export const EVIDENCE_TAG = 'evidence';
-export const MAX_EVIDENCE_IMPORT_FILES = 20;
-export const EVIDENCE_ACCEPT = [
-  '.pdf',
-  '.doc',
-  '.docx',
-  '.xls',
-  '.xlsx',
-  '.csv',
-  '.tsv',
-  '.txt',
-  '.rtf',
-  '.rtfs',
-  '.md',
-  '.markdown',
-  '.json',
-  '.log',
-  '.xml',
-  '.yaml',
-  '.yml',
-  '.png',
-  '.jpg',
-  '.jpeg',
-  '.webp',
-  '.gif',
-  '.bmp',
-  '.avif',
-].join(',');
+import { EVIDENCE_TAG } from './evidence-import-constants';
+export { EVIDENCE_TAG, EVIDENCE_ACCEPT, MAX_EVIDENCE_IMPORT_FILES } from './evidence-import-constants';
+export { evidenceFileKeyFromFile, evidenceFileKeyFromItem, evidenceDuplicateGroupKey, findDuplicateEvidenceItemIds } from './evidence-duplicates';
 
 const MAX_NOTE_TEXT_CHARS = 450_000;
 const MAX_IMAGE_ANALYSIS_BYTES = 3 * 1024 * 1024;
@@ -70,7 +46,7 @@ export interface EvidenceNoteDraft {
   tags: string[];
 }
 
-interface EvidenceDraftOptions {
+export interface EvidenceDraftOptions {
   folderName?: string;
   importedAt?: number;
 }
@@ -100,49 +76,6 @@ interface DocxEvidence {
 interface ZipEntry {
   name: string;
   data: Uint8Array;
-}
-
-export function evidenceFileKeyFromFile(file: File): string {
-  return evidenceFileIdentityKey({
-    fileName: file.name,
-    size: file.size,
-    lastModified: file.lastModified || undefined,
-  });
-}
-
-export function evidenceFileKeyFromItem(item: Pick<EvidenceItem, 'folderId' | 'fileName' | 'size' | 'lastModified'>): string {
-  return `${item.folderId || ''}|${evidenceFileIdentityKey(item)}`;
-}
-
-export function evidenceDuplicateGroupKey(item: EvidenceItem): string {
-  return [
-    evidenceFileKeyFromItem(item),
-    item.chunkIndex || 1,
-    item.chunkCount || 1,
-    hashString(item.content || ''),
-  ].join('|');
-}
-
-export function findDuplicateEvidenceItemIds(items: EvidenceItem[], folderId?: string): string[] {
-  const activeItems = items
-    .filter((item) => !item.trashed && !item.archived)
-    .filter((item) => !folderId || item.folderId === folderId);
-
-  const groups = new Map<string, EvidenceItem[]>();
-  for (const item of activeItems) {
-    const key = evidenceDuplicateGroupKey(item);
-    const group = groups.get(key);
-    if (group) group.push(item);
-    else groups.set(key, [item]);
-  }
-
-  const duplicateIds: string[] = [];
-  for (const group of groups.values()) {
-    if (group.length <= 1) continue;
-    const sorted = [...group].sort(compareEvidenceKeepPriority);
-    duplicateIds.push(...sorted.slice(1).map((item) => item.id));
-  }
-  return duplicateIds;
 }
 
 export async function buildEvidenceItemDrafts(
@@ -274,6 +207,7 @@ export function isLegacyEvidenceNote(note: Note): boolean {
 }
 
 async function extractEvidenceText(file: File): Promise<ExtractedEvidence> {
+  assertEvidenceInput(file);
   const kind = detectEvidenceKind(file);
 
   if (kind === 'text' || kind === 'spreadsheet') {
@@ -390,43 +324,6 @@ function renderEvidenceContent({
   return `${metadata}${imageBlock}\n\n## Extracted Text\n\n${text.trim()}`;
 }
 
-function evidenceFileIdentityKey(item: Pick<EvidenceItem, 'fileName' | 'size' | 'lastModified'>): string {
-  return [
-    item.fileName.trim().toLowerCase(),
-    item.size,
-    item.lastModified || 0,
-  ].join('|');
-}
-
-function compareEvidenceKeepPriority(a: EvidenceItem, b: EvidenceItem): number {
-  const richnessA = evidenceRichnessScore(a);
-  const richnessB = evidenceRichnessScore(b);
-  if (richnessA !== richnessB) return richnessB - richnessA;
-  if (a.importedAt !== b.importedAt) return a.importedAt - b.importedAt;
-  return a.createdAt - b.createdAt;
-}
-
-function evidenceRichnessScore(item: EvidenceItem): number {
-  return [
-    (item.linkedIOCIds?.length || 0) * 100,
-    item.imageAnalysis?.trim() ? 40 : 0,
-    item.imageOcrText?.trim() ? 35 : 0,
-    item.imageData ? 30 : 0,
-    item.extractionWarning?.trim() ? 5 : 0,
-    item.clsLevel?.trim() ? 3 : 0,
-    item.tags.length,
-  ].reduce((total, score) => total + score, 0);
-}
-
-function hashString(value: string): string {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < value.length; i += 1) {
-    hash ^= value.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193) >>> 0;
-  }
-  return hash.toString(36);
-}
-
 function detectEvidenceKind(file: File): EvidenceKind {
   const name = file.name.toLowerCase();
   const type = file.type.toLowerCase();
@@ -501,19 +398,27 @@ async function readImageDimensions(file: File): Promise<{ width?: number; height
       const bitmap = await createImageBitmap(file);
       const dimensions = { width: bitmap.width, height: bitmap.height };
       bitmap.close();
+      if (dimensions.width * dimensions.height > EVIDENCE_LIMITS.imagePixels) {
+        throw new EvidenceImportLimitError('image dimensions exceed 32 million pixels');
+      }
       return dimensions;
-    } catch {
+    } catch (error) {
+      if (error instanceof EvidenceImportLimitError) throw error;
       // Fall back to the HTMLImageElement path below.
     }
   }
 
   if (typeof Image === 'undefined' || typeof URL === 'undefined') return {};
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const image = new Image();
     image.onload = () => {
       URL.revokeObjectURL(url);
+      if (image.naturalWidth * image.naturalHeight > EVIDENCE_LIMITS.imagePixels) {
+        reject(new EvidenceImportLimitError('image dimensions exceed 32 million pixels'));
+        return;
+      }
       resolve({ width: image.naturalWidth, height: image.naturalHeight });
     };
     image.onerror = () => {
@@ -582,7 +487,7 @@ function renderImageMetadata(file: File, metadata?: ImageEvidenceMetadata): stri
 
 function extractDocxEvidence(bytes: Uint8Array): DocxEvidence {
   try {
-    const files = readZip(bytes);
+    const files = readZip(bytes, name => /^word\/(document|header\d+|footer\d+)\.xml$/.test(name));
     const documentXmlData = files.get('word/document.xml');
     const parts = [
       documentXmlData,
@@ -595,8 +500,9 @@ function extractDocxEvidence(bytes: Uint8Array): DocxEvidence {
     const text = normalizeExtractedText(sections.join('\n\n'));
     const warning = buildDocxArtifactWarning(files, documentXmlData);
     return { text, warning };
-  } catch {
-    return { text: '' };
+  } catch (error) {
+    if (error instanceof EvidenceImportLimitError) throw error;
+    throw new Error('The DOCX archive is invalid or unsupported. No files in this batch were imported.');
   }
 }
 
@@ -633,7 +539,7 @@ function joinHumanList(parts: string[]): string {
 
 function extractXlsxWorkbook(bytes: Uint8Array): { text: string; warning: string } {
   try {
-    const files = readZip(bytes);
+    const files = readZip(bytes, name => /^xl\/(sharedStrings\.xml|workbook\.xml|_rels\/workbook\.xml\.rels|worksheets\/sheet\d+\.xml)$/.test(name));
     const shared = parseSharedStrings(files.get('xl/sharedStrings.xml'));
     const sheetNameByPath = parseWorkbookSheets(files.get('xl/workbook.xml'), files.get('xl/_rels/workbook.xml.rels'));
     const chartCount = Array.from(files.keys()).filter((name) => /^xl\/charts\/chart\d+\.xml$/i.test(name)).length;
@@ -641,9 +547,10 @@ function extractXlsxWorkbook(bytes: Uint8Array): { text: string; warning: string
     const sheetEntries = Array.from(files.entries())
       .filter(([name]) => /^xl\/worksheets\/sheet\d+\.xml$/.test(name))
       .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }));
+    const worksheetBudget = { cells: EVIDENCE_LIMITS.spreadsheetCells as number, characters: EVIDENCE_LIMITS.entryBytes as number };
 
     const sheets = sheetEntries.map(([name, data], index) => {
-      const rows = parseWorksheet(decodeUtf8(data), shared);
+      const rows = parseWorksheet(decodeUtf8(data), shared, worksheetBudget);
       if (rows.length === 0) return '';
       const body = rows.map((row) => row.join('\t')).join('\n');
       return `## ${sheetTitle(sheetNameByPath.get(name) || sheetLabel(name, index), index)}\n\n${body}`;
@@ -656,8 +563,9 @@ function extractXlsxWorkbook(bytes: Uint8Array): { text: string; warning: string
     ].filter(Boolean);
 
     return { text: normalizeExtractedText(sheets.join('\n\n')), warning: warningParts.join(' ') };
-  } catch {
-    return { text: '', warning: 'XLSX extraction failed.' };
+  } catch (error) {
+    if (error instanceof EvidenceImportLimitError) throw error;
+    throw new Error('The XLSX archive is invalid or unsupported. No files in this batch were imported.');
   }
 }
 
@@ -708,8 +616,9 @@ function parseWorkbookSheets(workbookData?: Uint8Array, relsData?: Uint8Array): 
   return sheets;
 }
 
-function parseWorksheet(xml: string, sharedStrings: string[]): string[][] {
+function parseWorksheet(xml: string, sharedStrings: string[], budget: { cells: number; characters: number }): string[][] {
   const rows: string[][] = [];
+  let cells = 0;
 
   for (const rowXml of matchAll(xml, /<row\b[^>]*>([\s\S]*?)<\/row>/g)) {
     const row: string[] = [];
@@ -718,9 +627,23 @@ function parseWorksheet(xml: string, sharedStrings: string[]): string[][] {
       const cellXml = cellMatch[2] || '';
       const ref = attrs.match(/\br="([^"]+)"/)?.[1] || '';
       const column = ref ? columnIndexFromRef(ref) : row.length;
-      row[column] = parseCellValue(attrs, cellXml, sharedStrings);
+      if (!Number.isSafeInteger(column) || column < 0 || column >= EVIDENCE_LIMITS.spreadsheetColumns
+        || ++cells > EVIDENCE_LIMITS.spreadsheetCells) {
+        throw new EvidenceImportLimitError('spreadsheet dimensions exceed the supported limit');
+      }
+      const value = parseCellValue(attrs, cellXml, sharedStrings);
+      if (value.length > budget.characters) throw new EvidenceImportLimitError('spreadsheet text exceeds the supported limit');
+      budget.characters -= value.length;
+      row[column] = value;
     }
     if (row.some((cell) => cell?.trim())) {
+      // Sparse column references and repeated shared strings can amplify output
+      // even when XML byte counts and the number of populated cells are small.
+      if (row.length > budget.cells || row.length + 1 > budget.characters) {
+        throw new EvidenceImportLimitError('spreadsheet dimensions exceed the supported limit');
+      }
+      budget.cells -= row.length;
+      budget.characters -= row.length + 1;
       rows.push(trimTrailingEmpty(row).map((cell) => cell || ''));
     }
   }
@@ -749,10 +672,13 @@ function extractPdfText(bytes: Uint8Array): { text: string; rejected: boolean } 
   const texts: string[] = [];
   let sawPdfTextObject = false;
   let cursor = 0;
+  let streams = 0;
+  const budget = { remaining: EVIDENCE_LIMITS.expandedBytes as number };
 
   while (cursor < raw.length) {
     const streamIndex = raw.indexOf('stream', cursor);
     if (streamIndex === -1) break;
+    if (++streams > EVIDENCE_LIMITS.entries) throw new EvidenceImportLimitError('too many PDF streams');
 
     let dataStart = streamIndex + 'stream'.length;
     if (raw[dataStart] === '\r' && raw[dataStart + 1] === '\n') dataStart += 2;
@@ -769,7 +695,7 @@ function extractPdfText(bytes: Uint8Array): { text: string; rejected: boolean } 
     const dictionaryStart = raw.lastIndexOf('<<', streamIndex);
     const dictionary = dictionaryStart >= 0 ? raw.slice(dictionaryStart, streamIndex) : '';
     const streamBytes = bytes.subarray(dataStart, dataEnd);
-    const decoded = decodePdfStream(streamBytes, dictionary);
+    const decoded = decodePdfStream(streamBytes, dictionary, budget);
     if (decoded) {
       if (containsPdfTextObject(decoded)) sawPdfTextObject = true;
       const textObjects = extractPdfTextObjects(decoded);
@@ -795,16 +721,21 @@ function extractPdfText(bytes: Uint8Array): { text: string; rejected: boolean } 
     : { text: '', rejected: sawPdfTextObject || normalized.length > 0 };
 }
 
-function decodePdfStream(data: Uint8Array, dictionary: string): string {
+function decodePdfStream(data: Uint8Array, dictionary: string, budget: ExpansionBudget): string {
   const isFlate = /\/FlateDecode\b|\/Fl\b/.test(dictionary);
-  if (!isFlate) return bytesToLatin1(data);
+  if (!isFlate) {
+    consumeExpansion(data.byteLength, budget);
+    return bytesToLatin1(data);
+  }
 
   try {
-    return bytesToLatin1(pako.inflateRaw(data) as Uint8Array);
-  } catch {
+    return bytesToLatin1(inflateBounded(data, true, budget));
+  } catch (error) {
+    if (error instanceof EvidenceImportLimitError) throw error;
     try {
-      return bytesToLatin1(pako.inflate(data) as Uint8Array);
-    } catch {
+      return bytesToLatin1(inflateBounded(data, false, budget));
+    } catch (error) {
+      if (error instanceof EvidenceImportLimitError) throw error;
       return '';
     }
   }
@@ -1074,32 +1005,89 @@ function decodeRtfUnicode(value: number): string {
   }
 }
 
-function readZip(bytes: Uint8Array): Map<string, Uint8Array> {
+interface ExpansionBudget { remaining: number }
+
+function consumeExpansion(size: number, budget: ExpansionBudget): void {
+  if (size > EVIDENCE_LIMITS.entryBytes || size > budget.remaining) {
+    throw new EvidenceImportLimitError('decoded content exceeds the 8 MiB part or 32 MiB document limit');
+  }
+  budget.remaining -= size;
+}
+
+/** Never use one-shot inflate for untrusted evidence: the note-length cap runs
+ * later. Abort in onData before retaining a chunk beyond either byte budget. */
+function inflateBounded(data: Uint8Array, raw: boolean, budget: ExpansionBudget): Uint8Array {
+  const inflator = new pako.Inflate({ raw, chunkSize: 64 * 1024 });
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  inflator.onData = chunk => {
+    if (total + chunk.byteLength > EVIDENCE_LIMITS.entryBytes) {
+      throw new EvidenceImportLimitError('a decoded part exceeds 8 MiB');
+    }
+    consumeExpansion(chunk.byteLength, budget);
+    total += chunk.byteLength;
+    chunks.push(chunk);
+  };
+  inflator.push(data, true);
+  if (inflator.err || !inflator.ended) throw new Error('Invalid compressed evidence stream');
+  const output = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) { output.set(chunk, offset); offset += chunk.byteLength; }
+  return output;
+}
+
+function readZip(bytes: Uint8Array, include: (name: string) => boolean): Map<string, Uint8Array> {
   const entries = new Map<string, Uint8Array>();
   const eocd = findEndOfCentralDirectory(bytes);
   if (eocd < 0) throw new Error('ZIP end of central directory not found');
 
   const entryCount = u16(bytes, eocd + 10);
   const centralDirOffset = u32(bytes, eocd + 16);
+  const centralDirEnd = centralDirOffset + u32(bytes, eocd + 12);
+  if (entryCount > EVIDENCE_LIMITS.entries) throw new EvidenceImportLimitError('archive contains more than 2048 entries');
+  if (u16(bytes, eocd + 4) || u16(bytes, eocd + 6) || u16(bytes, eocd + 8) !== entryCount
+    || centralDirEnd > eocd || eocd + 22 + u16(bytes, eocd + 20) !== bytes.byteLength) {
+    throw new Error('Unsupported or invalid ZIP directory');
+  }
   let offset = centralDirOffset;
+  let compressedTotal = 0;
+  let declaredTotal = 0;
+  const budget = { remaining: EVIDENCE_LIMITS.expandedBytes as number };
 
   for (let index = 0; index < entryCount; index += 1) {
-    if (u32(bytes, offset) !== 0x02014b50) break;
+    if (offset + 46 > centralDirEnd || u32(bytes, offset) !== 0x02014b50) throw new Error('Invalid ZIP directory entry');
 
     const method = u16(bytes, offset + 10);
     const compressedSize = u32(bytes, offset + 20);
+    const expandedSize = u32(bytes, offset + 24);
     const nameLength = u16(bytes, offset + 28);
     const extraLength = u16(bytes, offset + 30);
     const commentLength = u16(bytes, offset + 32);
     const localOffset = u32(bytes, offset + 42);
+    const next = offset + 46 + nameLength + extraLength + commentLength;
+    if (next > centralDirEnd || nameLength > 1024) throw new Error('Invalid ZIP entry name');
     const name = decodeUtf8(bytes.subarray(offset + 46, offset + 46 + nameLength)).replace(/\\/g, '/');
-
-    const entry = readZipLocalEntry(bytes, localOffset, name, method, compressedSize);
-    if (entry) entries.set(entry.name, entry.data);
-
-    offset += 46 + nameLength + extraLength + commentLength;
+    if (!name || name.includes('\0') || name.startsWith('/') || name.split('/').includes('..') || entries.has(name)) {
+      throw new Error('Invalid or duplicate ZIP entry name');
+    }
+    compressedTotal += compressedSize;
+    if (compressedTotal > EVIDENCE_LIMITS.inputBytes) throw new EvidenceImportLimitError('archive compressed parts exceed 25 MiB');
+    // Keep names for the existing chart/media warnings, without decoding data
+    // that the document text extractor will never use.
+    if (!include(name)) entries.set(name, new Uint8Array());
+    else {
+      declaredTotal += expandedSize;
+      if (expandedSize > EVIDENCE_LIMITS.entryBytes || declaredTotal > EVIDENCE_LIMITS.expandedBytes) {
+        throw new EvidenceImportLimitError('archive declared content exceeds the decoded byte limit');
+      }
+      if (u16(bytes, offset + 8) & 1) throw new Error('Encrypted document parts are not supported');
+      const entry = readZipLocalEntry(bytes, localOffset, name, method, compressedSize, centralDirOffset, budget);
+      if (!entry || entry.data.byteLength !== expandedSize) throw new Error('Invalid ZIP entry size or compression');
+      entries.set(entry.name, entry.data);
+    }
+    offset = next;
   }
-
+  if (offset !== centralDirEnd) throw new Error('Invalid ZIP directory size');
   return entries;
 }
 
@@ -1109,15 +1097,23 @@ function readZipLocalEntry(
   name: string,
   method: number,
   compressedSize: number,
+  dataEnd: number,
+  budget: ExpansionBudget,
 ): ZipEntry | null {
-  if (u32(bytes, localOffset) !== 0x04034b50) return null;
+  if (localOffset + 30 > dataEnd || u32(bytes, localOffset) !== 0x04034b50) return null;
   const nameLength = u16(bytes, localOffset + 26);
   const extraLength = u16(bytes, localOffset + 28);
   const dataStart = localOffset + 30 + nameLength + extraLength;
+  if (dataStart + compressedSize > dataEnd || u16(bytes, localOffset + 8) !== method
+    || (u16(bytes, localOffset + 6) & 1)
+    || decodeUtf8(bytes.subarray(localOffset + 30, localOffset + 30 + nameLength)).replace(/\\/g, '/') !== name) return null;
   const compressed = bytes.subarray(dataStart, dataStart + compressedSize);
 
-  if (method === 0) return { name, data: compressed };
-  if (method === 8) return { name, data: pako.inflateRaw(compressed) as Uint8Array };
+  if (method === 0) {
+    consumeExpansion(compressed.byteLength, budget);
+    return { name, data: compressed };
+  }
+  if (method === 8) return { name, data: inflateBounded(compressed, true, budget) };
   return null;
 }
 

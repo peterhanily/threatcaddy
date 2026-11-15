@@ -102,5 +102,10 @@
   "card.entity.iocs": "IOCs",
   "card.entity.events": "Ereignisse",
   "card.entity.whiteboards": "Whiteboards",
-  "card.entity.chats": "Chats"
+  "card.entity.chats": "Chats",
+  "firstRun.title": "Vom Fall zum Bericht",
+  "firstRun.description": "Erstellen Sie einen Fall, importieren Sie freigegebene Quelldateien oder erkunden Sie einen fiktiven Postfachvorfall. Keine KI-Einrichtung nötig.",
+  "firstRun.import": "Quelldateien importieren",
+  "firstRun.demo": "Realistische Demo ausprobieren",
+  "firstRun.report": "Prüfen Sie Belege, erstellen Sie eine Zeitleiste und schreiben Sie eine Berichtsnotiz. Laden Sie diese als Markdown herunter; sichern Sie den gesamten Arbeitsbereich separat mit „Backup speichern“."
 }

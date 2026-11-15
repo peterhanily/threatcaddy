@@ -106,5 +106,10 @@
   "card.members_zero": "عدد الأعضاء: {{count}}",
   "card.members_two": "عضوان ({{count}})",
   "card.members_few": "{{count}} أعضاء",
-  "card.members_many": "{{count}} عضوًا"
+  "card.members_many": "{{count}} عضوًا",
+  "firstRun.title": "من القضية إلى التقرير",
+  "firstRun.description": "أنشئ قضية أو استورد ملفات مصدر مصرحًا بها أو استكشف حادث بريد خياليًا. لا يلزم إعداد الذكاء الاصطناعي.",
+  "firstRun.import": "استيراد ملفات المصدر",
+  "firstRun.demo": "تجربة العرض الواقعي",
+  "firstRun.report": "راجع الأدلة وأنشئ خطًا زمنيًا واكتب ملاحظة تقرير. نزّلها بصيغة Markdown؛ واحفظ نسخة احتياطية منفصلة لمساحة العمل كاملة."
 }

@@ -240,15 +240,15 @@ export function ProductView({
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4">
         <div className="mx-auto max-w-6xl space-y-4">
           <section className="rounded-lg border border-border-subtle bg-bg-surface p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <div className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-text-primary">
                   <Layers size={16} className="text-accent-blue" />
                   {t('baselines.title')}
-                </div>
+                </h2>
                 <p className="mt-1 max-w-2xl text-xs text-text-muted">
                   {t('baselines.description')}
                 </p>
@@ -378,7 +378,7 @@ export function ProductView({
             )}
           </section>
         </div>
-      </main>
+      </div>
 
       {composer && onSaveDraft && <ProductComposer
         suspended={!composerActive}

@@ -103,5 +103,10 @@
   "card.entity.events": "Événements",
   "card.entity.whiteboards": "Tableaux",
   "card.entity.chats": "Discussions",
-  "card.members_many": "{{count}} membres"
+  "card.members_many": "{{count}} membres",
+  "firstRun.title": "Du dossier au rapport",
+  "firstRun.description": "Créez un dossier, importez des fichiers sources autorisés ou explorez un incident de messagerie fictif. Aucune configuration IA nécessaire.",
+  "firstRun.import": "Importer des fichiers sources",
+  "firstRun.demo": "Essayer la démo réaliste",
+  "firstRun.report": "Examinez les preuves, créez une chronologie et rédigez une note de rapport. Téléchargez-la en Markdown ; utilisez séparément Enregistrer la sauvegarde pour conserver tout l’espace de travail."
 }

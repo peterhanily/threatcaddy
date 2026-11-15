@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useId, type ReactNode } from 'react';
+import { createContext, useContext, useLayoutEffect, useRef, useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { useScreenshare } from '../../hooks/ScreenshareContext';
@@ -44,9 +44,11 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
 
   // Stable ref for onClose so the keydown listener doesn't churn
   const onCloseRef = useRef(onClose);
-  useEffect(() => { onCloseRef.current = onClose; });
+  useLayoutEffect(() => { onCloseRef.current = onClose; });
 
-  useEffect(() => {
+  // Install the stack, focus trap and Escape handler before the dialog paints.
+  // A visible lazy-loaded dialog must already accept its first keyboard action.
+  useLayoutEffect(() => {
     const el = overlayRef.current;
     if (!open || suspended || !el) return;
     const previousFocus = document.activeElement as HTMLElement;
