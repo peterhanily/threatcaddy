@@ -52,7 +52,7 @@ test('compressed selected content beyond its bound rejects the whole batch and a
     { name: 'valid-first.txt', mimeType: 'text/plain', buffer: Buffer.from('This must not persist when the next file is rejected.') },
     { name: 'bounded-attack.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', buffer: evidenceDocx('', true) },
   ]);
-  await expect(page.getByText(/decoded part exceeds 8 MiB/)).toBeVisible();
+  await expect(page.getByText('bounded-attack.docx: A compressed part does not match its declared size. No files in this batch were imported.')).toBeVisible();
   expect((await readRows(page, ['evidenceItems'])).evidenceItems).toEqual([]);
   await importOrdinaryDocx(page);
   expect(diagnostics.get(page)?.console).toHaveLength(1);

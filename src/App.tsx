@@ -60,6 +60,7 @@ import { upsertIOCObservations } from './lib/ioc-observations';
 import { findDuplicateEvidenceItemIds } from './lib/evidence-duplicates';
 import { extractEvidenceFiles } from './lib/evidence-import-client';
 import { createEvidenceImportPersistence } from './lib/evidence-import-persistence';
+import { EvidenceImportError } from './lib/evidence-import-limits';
 import { getSessionGeneration } from './lib/encryptionMiddleware';
 import { cancellableRequest } from './lib/request-cancellation';
 import { markPending, clearPending } from './lib/pending-changes';
@@ -956,7 +957,7 @@ const AppInner = memo(function AppInner({
     const pending = Symbol('evidence import');
     const assertCurrentScope = () => {
       if (evidenceImportOwner.current !== evidenceImportScope || !evidenceImportScope.ready) {
-        throw new Error('The investigation context changed. Select the destination and import the files again.');
+        throw new EvidenceImportError('contextChanged');
       }
     };
     evidenceImportControllers.current.add(request.controller);

@@ -53,6 +53,34 @@ describe('isolated evidence import lifecycle', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('names the file that stopped a batch and keeps the worker error code', async () => {
+    const files = [new File(['one'], 'first.txt'), new File(['two'], 'second.docx')];
+    const promise = extractEvidenceFiles(files);
+    const rejection = expect(promise).rejects.toMatchObject({ code: 'archiveSizeMismatch', fileName: 'second.docx' });
+    respond(0, { ok: true, drafts: [{ title: 'first' }] });
+    await tick();
+    respond(1, { ok: false, code: 'archiveSizeMismatch', error: 'Evidence import stopped: a compressed part does not match its declared size.' });
+    await rejection;
+    // Unknown codes from the worker never reach the translation table.
+    const unknown = extractEvidenceFiles([new File(['x'], 'odd.pdf')]);
+    const unknownRejection = expect(unknown).rejects.toMatchObject({ code: 'extractionFailed', fileName: 'odd.pdf' });
+    respond(2, { ok: false, code: 'constructor', error: 'odd' });
+    await unknownRejection;
+  });
+
+  it('names the file for timeouts, worker failures and oversized input', async () => {
+    const timeout = extractEvidenceFiles([new File(['x'], 'slow.pdf')]);
+    const timeoutRejection = expect(timeout).rejects.toMatchObject({ code: 'documentTimeout', fileName: 'slow.pdf' });
+    await vi.advanceTimersByTimeAsync(EVIDENCE_LIMITS.documentTimeoutMs);
+    await timeoutRejection;
+    const crashed = extractEvidenceFiles([new File(['x'], 'crash.docx')]);
+    const crashRejection = expect(crashed).rejects.toMatchObject({ code: 'workerFailed', fileName: 'crash.docx' });
+    workers.instances[1].onerror?.({ preventDefault: vi.fn() } as unknown as ErrorEvent);
+    await crashRejection;
+    await expect(extractEvidenceFiles([{ name: 'huge.log', size: EVIDENCE_LIMITS.inputBytes + 1 } as File])).rejects.toMatchObject({ code: 'inputBytes', fileName: 'huge.log' });
+    await expect(extractEvidenceFiles(Array.from({ length: 3 }, (_, i) => ({ name: `part${i}.log`, size: EVIDENCE_LIMITS.inputBytes } as File)))).rejects.toMatchObject({ code: 'batchBytes', fileName: undefined });
+  });
+
   it('transfers the bytes read on the main thread instead of posting the File', async () => {
     // WebKit workers at a file:// origin cannot read a posted File or Blob.
     const selected = new File(['Synthetic evidence'], 'report.txt', { type: 'text/plain', lastModified: 1234 });

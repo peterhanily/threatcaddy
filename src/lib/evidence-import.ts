@@ -440,7 +440,7 @@ async function readImageDimensions(file: EvidenceFileSource): Promise<{ width?: 
   // Check the declared size before any decode allocates the bitmap.
   const header = readImageHeaderDimensions(file.bytes);
   if (header && header.width * header.height > EVIDENCE_LIMITS.imagePixels) {
-    throw new EvidenceImportLimitError('image dimensions exceed 32 million pixels');
+    throw new EvidenceImportLimitError('imagePixels');
   }
   const blob = new Blob([file.bytes as Uint8Array<ArrayBuffer>], { type: file.type });
   if (typeof createImageBitmap === 'function') {
@@ -449,7 +449,7 @@ async function readImageDimensions(file: EvidenceFileSource): Promise<{ width?: 
       const dimensions = { width: bitmap.width, height: bitmap.height };
       bitmap.close();
       if (dimensions.width * dimensions.height > EVIDENCE_LIMITS.imagePixels) {
-        throw new EvidenceImportLimitError('image dimensions exceed 32 million pixels');
+        throw new EvidenceImportLimitError('imagePixels');
       }
       return dimensions;
     } catch (error) {
@@ -468,7 +468,7 @@ async function readImageDimensions(file: EvidenceFileSource): Promise<{ width?: 
     image.onload = () => {
       URL.revokeObjectURL(url);
       if (image.naturalWidth * image.naturalHeight > EVIDENCE_LIMITS.imagePixels) {
-        reject(new EvidenceImportLimitError('image dimensions exceed 32 million pixels'));
+        reject(new EvidenceImportLimitError('imagePixels'));
         return;
       }
       resolve({ width: image.naturalWidth, height: image.naturalHeight });
@@ -722,7 +722,7 @@ function parseWorksheet(xml: string, sharedStrings: string[], budget: { cells: n
       const column = ref ? columnIndexFromRef(ref) : row.length;
       // No spreadsheet producer writes a column past XFD: treat it as hostile.
       if (!Number.isSafeInteger(column) || column < 0 || column >= EVIDENCE_LIMITS.spreadsheetColumns) {
-        throw new EvidenceImportLimitError('spreadsheet dimensions exceed the supported limit');
+        throw new EvidenceImportLimitError('spreadsheetColumns');
       }
       if (++cells > EVIDENCE_LIMITS.spreadsheetCells) return { rows, truncated: true };
       const value = parseCellValue(attrs, cellXml, sharedStrings);
@@ -1175,7 +1175,7 @@ function readZip(bytes: Uint8Array, include: (name: string) => boolean): { entri
   const entryCount = u16(bytes, eocd + 10);
   const centralDirOffset = u32(bytes, eocd + 16);
   const centralDirEnd = centralDirOffset + u32(bytes, eocd + 12);
-  if (entryCount > EVIDENCE_LIMITS.entries) throw new EvidenceImportLimitError('archive contains more than 2048 entries');
+  if (entryCount > EVIDENCE_LIMITS.entries) throw new EvidenceImportLimitError('archiveEntries');
   // Bytes after the end record (appended by some download and signing tools) are ignored.
   if (u16(bytes, eocd + 4) || u16(bytes, eocd + 6) || u16(bytes, eocd + 8) !== entryCount
     || centralDirEnd > eocd || eocd + 22 + u16(bytes, eocd + 20) > bytes.byteLength) {
@@ -1205,7 +1205,7 @@ function readZip(bytes: Uint8Array, include: (name: string) => boolean): { entri
       throw new Error('ZIP64 archives are not supported');
     }
     compressedTotal += compressedSize;
-    if (compressedTotal > EVIDENCE_LIMITS.inputBytes) throw new EvidenceImportLimitError('archive compressed parts exceed 25 MiB');
+    if (compressedTotal > EVIDENCE_LIMITS.inputBytes) throw new EvidenceImportLimitError('archiveCompressedBytes');
     // Keep names for the existing chart/media warnings, without decoding data
     // that the document text extractor will never use.
     entries.set(name, new Uint8Array());
@@ -1254,7 +1254,7 @@ function readZipLocalEntry(bytes: Uint8Array, part: ZipPart, dataEnd: number, bu
   // difference from the declared size is a lying header: reject the file.
   if (decoded.truncated && expandedSize > limit) return decoded;
   if (decoded.truncated || decoded.data.byteLength !== expandedSize) {
-    throw new EvidenceImportLimitError('a compressed part does not match its declared size');
+    throw new EvidenceImportLimitError('archiveSizeMismatch');
   }
   return decoded;
 }

@@ -27,6 +27,7 @@ import type { EvidenceItem } from '../../types';
 import { cn, formatDate } from '../../lib/utils';
 import { formatBytes } from '../../lib/file-handler';
 import { EVIDENCE_ACCEPT, MAX_EVIDENCE_IMPORT_FILES } from '../../lib/evidence-import-constants';
+import { EVIDENCE_LIMITS, evidenceImportErrorDetails, evidenceImportErrorParams } from '../../lib/evidence-import-limits';
 import { findDuplicateEvidenceItemIds } from '../../lib/evidence-duplicates';
 import {
   extractEvidenceTableIOCCandidates,
@@ -429,7 +430,11 @@ export function EvidenceView({
               </div>
               <div className="min-w-0 flex-1 text-center sm:text-start">
                 <div className="text-sm font-medium text-text-primary">{t('dropzone.label')}</div>
-                <div className="mt-0.5 text-xs text-text-muted">{t('dropzone.hint', { count: MAX_EVIDENCE_IMPORT_FILES })}</div>
+                <div className="mt-0.5 text-xs text-text-muted">{t('dropzone.hint', {
+                  count: MAX_EVIDENCE_IMPORT_FILES,
+                  inputMiB: EVIDENCE_LIMITS.inputBytes / (1024 * 1024),
+                  batchMiB: EVIDENCE_LIMITS.batchBytes / (1024 * 1024),
+                })}</div>
               </div>
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -1600,7 +1605,16 @@ function capPreviewText(text: string, maxChars: number): { text: string; truncat
   return { text: text.slice(0, maxChars), truncated: true };
 }
 
+/** Coded errors (also from the worker) are translated and name their file; an
+ * abort the analyst did not request reads as an interruption, not DOMException text. */
 function formatEvidenceImportError(err: unknown, t: TFunction): string {
+  const coded = evidenceImportErrorDetails(err);
+  if (coded) {
+    const params = evidenceImportErrorParams(coded.code);
+    const reason = coded.code === 'fileCount' ? t('toast.tooManyFiles', params) : t(`importError.${coded.code}`, params);
+    return coded.fileName ? t('importError.inFile', { fileName: coded.fileName, reason }) : reason;
+  }
+  if ((err as { name?: unknown } | null)?.name === 'AbortError') return t('importError.interrupted');
   const message = err instanceof Error ? err.message : t('toast.importFailed');
   if (/too much recursion|maximum call stack/i.test(message)) {
     return t('toast.importRecursion');
