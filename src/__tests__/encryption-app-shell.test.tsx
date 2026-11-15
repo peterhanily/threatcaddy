@@ -7,7 +7,7 @@ vi.mock('../db', () => ({ db: {} }));
 vi.mock('../components/Encryption/PassphraseDialog', () => ({ PassphraseDialog: ({ initialError }: { initialError?: string }) => <div>Workspace locked {initialError}</div> }));
 vi.mock('../lib/encryptionStore', () => ({ encryptionStorageKey: 'threatcaddy-encryption', isEncryptionEnabled: mocks.enabled, getEncryptionMeta: () => ({}), getCachedSession: () => ({ key: 'cached-fixture-key', unlockedAt: 1, expiresAt: 0 }), clearSessionCache: mocks.clearCache }));
 vi.mock('../lib/crypto', () => ({ importSessionKey: mocks.importKey, base64ToArrayBuffer: () => new ArrayBuffer(32) }));
-vi.mock('../lib/encryptionMiddleware', () => ({ setSessionKey: mocks.setKey, getSessionKey: () => mocks.importKey.mock.results[0]?.value, getSessionGeneration: () => 0, lockEncryptionSession: () => { mocks.setKey(null); mocks.clearCache(); window.dispatchEvent(new Event('workspace-locked')); } }));
+vi.mock('../lib/encryptionMiddleware', () => ({ setSessionKey: mocks.setKey, getSessionKey: () => mocks.importKey.mock.results[0]?.value, getSessionGeneration: () => 0, getSessionExpiresAt: () => 0, lockEncryptionSession: () => { mocks.setKey(null); mocks.clearCache(); window.dispatchEvent(new Event('workspace-locked')); } }));
 vi.mock('../lib/workspace-lock', () => ({ restoreWorkspaceRecovery: vi.fn(async () => {}), RECOVERY_WARNING: 'Recovery warning' }));
 vi.mock('../lib/workspace-initialization', () => ({ initializeWorkspace: mocks.prepare }));
 

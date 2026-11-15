@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import App from '../../App';
 import { PassphraseDialog } from './PassphraseDialog';
+import { SessionExpiryWarning } from './SessionExpiryWarning';
 import { isEncryptionEnabled, getEncryptionMeta, getCachedSession, encryptionStorageKey } from '../../lib/encryptionStore';
 import { importSessionKey, base64ToArrayBuffer } from '../../lib/crypto';
 import { setSessionKey, getSessionKey, getSessionGeneration, lockEncryptionSession } from '../../lib/encryptionMiddleware';
@@ -91,5 +92,5 @@ export function AppShell() {
       if (!isEncryptionEnabled() || getSessionKey()) setIsUnlocked(true);
     }} />;
   }
-  return <App />;
+  return <><App /><SessionExpiryWarning /></>;
 }

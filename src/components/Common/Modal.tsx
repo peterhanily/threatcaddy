@@ -65,8 +65,11 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
     updateStack();
     const isTop = () => stack.at(-1) === el;
     const focusFirst = () => (focusable(el)[0] ?? el).focus();
+    // The workspace-lock warning must stay usable over an open form; it is not
+    // part of this dialog, so Escape there must not close (and discard) the form.
+    const exempt = (target: EventTarget | null) => target instanceof Element && !!target.closest('[data-modal-focus-exempt]');
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!isTop()) return;
+      if (!isTop() || exempt(event.target)) return;
       if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); onCloseRef.current(); return; }
       if (event.key !== 'Tab') return;
       const items = focusable(el);
@@ -77,7 +80,7 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
         (event.shiftKey ? last : first).focus();
       }
     };
-    const handleFocus = (event: FocusEvent) => { if (isTop() && !el.contains(event.target as Node)) focusFirst(); };
+    const handleFocus = (event: FocusEvent) => { if (isTop() && !el.contains(event.target as Node) && !exempt(event.target)) focusFirst(); };
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('focusin', handleFocus);
     if (isTop()) focusFirst();
