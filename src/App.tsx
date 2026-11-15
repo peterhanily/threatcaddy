@@ -1861,7 +1861,7 @@ const AppInner = memo(function AppInner({
             allTags={tags}
             folders={folders}
             onCreateTag={loggedCreateTag}
-            onCreateEvent={(data) => loggedCreateEvent({ ...data, folderId: data.folderId ?? selectedFolderId, clsLevel: data.clsLevel ?? selectedFolder?.clsLevel, timelineId: selectedTimelineId || timelines.find(isUserTimeline)?.id || '' })}
+            onCreateEvent={(data) => loggedCreateEvent({ ...data, folderId: data.folderId ?? selectedFolderId, clsLevel: data.clsLevel ?? selectedFolder?.clsLevel, timelineId: selectedTimelineId || folders.find(folder => folder.id === (data.folderId ?? selectedFolderId))?.timelineId || timelines.find(isUserTimeline)?.id || '' })}
             onUpdateEvent={timeline.updateEvent}
             onDeleteEvent={loggedDeleteEvent}
             onTrashEvent={loggedTrashEvent}

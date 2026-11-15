@@ -152,6 +152,21 @@ describe('a demo timeline is never the default for real events', () => {
     expect(event.timelineId).toBe('mine');
   });
 
+  it('files an event created inside the demo case under the demo case’s timeline', async () => {
+    render(<App />);
+    fireEvent.click((await screen.findAllByRole('button', { name: /^Investigations/ }))[0]);
+    fireEvent.click(await screen.findByRole('group', { name: 'Mailbox Compromise — Synthetic Exercise' }));
+    fireEvent.click((await screen.findAllByRole('button', { name: /^Timeline/ }))[0]);
+    // With no timeline selected, the case's own timeline still applies.
+    fireEvent.click(await screen.findByRole('button', { name: /^All Events/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'New event' }));
+    fireEvent.change(await screen.findByLabelText(/^Title/), { target: { value: 'Exercise event' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create Event' }));
+    await waitFor(async () => expect(await db.timelineEvents.filter(event => event.title === 'Exercise event').count()).toBe(1));
+    const [event] = await db.timelineEvents.filter(event => event.title === 'Exercise event').toArray();
+    expect(event).toMatchObject({ folderId: REALISTIC, timelineId: 'sample-realistic-timeline-1' });
+  });
+
   it('files a clipped event under the user’s timeline', async () => {
     render(<App />);
     await screen.findByRole('button', { name: 'Settings' });
