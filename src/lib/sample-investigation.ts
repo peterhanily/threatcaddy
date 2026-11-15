@@ -7,10 +7,6 @@ function sampleId(prefix: string, n: number): string {
   return `sample-${prefix}-${n}`;
 }
 
-export function isSampleEntity(id: string): boolean {
-  return id.startsWith('sample-');
-}
-
 export function generateSampleInvestigation(): {
   folder: Folder;
   notes: Note[];
@@ -58,7 +54,7 @@ export function generateSampleInvestigation(): {
 
 VINEGAR PANDA, a sophisticated state-sponsored APT group previously attributed to campaigns against MustardOps GmbH and the 2024 Mayo Clipper Incident, compromised OpenSlaw.ai's Agentic Coleslaw Optimization Engine through a prompt injection attack. The adversary established persistence via a cron job disguised as the nightly Slaw Freshness Index Recalculation, beaconing to C2 infrastructure hosted on compromised smart refrigerators across Eastern Europe. Over 11 days, 4.2TB of slaw intelligence — including the proprietary Coleslaw Foundation Model — was exfiltrated via DNS TXT records. The attack culminated in a corrupted model update that caused AI agents to autonomously recommend raisins in coleslaw. Stock price dropped 47%. The SEC opened an investigation. Diane wrote a blog post.
 
-This fictional parody demonstrates notes, IOCs, timelines, entity graphs, whiteboards, tasks and example evidence. Vendor verdicts and chat transcripts are invented, not live intelligence; loading this sample does not query providers or start agents. Do not use these indicators as a real blocklist. **Delete the case when done exploring; reusable tags and templates remain available.**`,
+This fictional parody demonstrates notes, IOCs, timelines, entity graphs, whiteboards, tasks and example evidence. Vendor verdicts and chat transcripts are invented, not live intelligence; loading this sample does not query providers or start agents. Do not use these indicators as a real blocklist. **Delete the case when done exploring; reusable templates and any tags you still use remain available.**`,
     status: 'active',
     clsLevel: 'TLP:AMBER',
     papLevel: 'PAP:AMBER',
@@ -75,7 +71,7 @@ This fictional parody demonstrates notes, IOCs, timelines, entity graphs, whiteb
     name: 'FERMENTED PERSISTENCE Incident Timeline',
     description: 'From initial prompt injection through model exfiltration, recipe poisoning, and the raisin catastrophe',
     color: '#22c55e',
-    order: 1,
+    order: 999,
     createdAt: baseTs,
     updatedAt: now,
   };

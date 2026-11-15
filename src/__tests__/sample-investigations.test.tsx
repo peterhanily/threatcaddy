@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { generateSampleInvestigation } from '../lib/sample-investigation';
-import { generateRealisticInvestigation, isSampleEntityForKind } from '../lib/sample-investigation-realistic';
+import { generateRealisticInvestigation } from '../lib/sample-investigation-realistic';
+import { isSampleEntityForKind } from '../lib/sample-investigation-store';
 import { validatePortableTables } from '../lib/backup-records';
 import { renderMarkdown } from '../lib/markdown';
 import { MarkdownPreview } from '../components/Notes/MarkdownPreview';
@@ -14,7 +15,7 @@ function portable(sample: ReturnType<typeof generateSampleInvestigation>) {
 }
 
 describe('sample investigations', () => {
-  it('keeps both cases portable and every entity within its own deletion scope', () => {
+  it('keeps both cases portable and tells each demo\'s seeded records apart from user additions', () => {
     const realistic = portable(generateRealisticInvestigation());
     const parody = portable(generateSampleInvestigation());
     expect(() => validatePortableTables(realistic)).not.toThrow();
@@ -75,6 +76,7 @@ describe('sample investigations', () => {
       }
     }
     expect(sample.evidenceItems.every(item => item.content.length === item.size)).toBe(true);
+    expect(sample.evidenceItems.map(item => item.chunkIndex)).toEqual([1, 1]);
     expect(sample.timelineEvents.map(event => event.timestamp)).toEqual(sample.timelineEvents.map(event => event.timestamp).sort((a, b) => a - b));
   });
 });
