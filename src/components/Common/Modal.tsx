@@ -49,14 +49,16 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
 
   // React applies a child's autoFocus before this component's layout effect.
   // Insertion effects run earlier in the same commit, while the opener still
-  // has focus. The dialog's own content is never recorded as its opener.
+  // has focus. The dialog's own content is never recorded as its opener, and
+  // neither is <body>, where a browser leaves focus while screen sharing hides it.
   const openerRef = useRef<Element | null>(null);
   // Focus inside the dialog when its effect was last torn down, so a
   // StrictMode remount or the end of screen sharing returns there.
   const resumeRef = useRef<Element | null>(null);
   useInsertionEffect(() => {
+    if (!open) { openerRef.current = null; return; }
     const active = document.activeElement;
-    if (open && !suspended && !overlayRef.current?.contains(active)) openerRef.current = active;
+    if (!suspended && active && active !== document.body && !overlayRef.current?.contains(active)) openerRef.current = active;
   }, [open, suspended]);
 
   // Install the stack, focus trap and Escape handler before the dialog paints.

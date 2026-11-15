@@ -72,6 +72,22 @@ describe('modal focus with autoFocus content', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(opener).toHaveFocus();
   });
+
+  it('keeps the opener when focus falls to body while a screenshare hides the dialog', () => {
+    const ui = (maxLevel: string | null) => <ScreenshareContext.Provider value={{ maxLevel, effectiveLevels: [] }}>
+      <NewInvestigation />
+    </ScreenshareContext.Provider>;
+    const view = render(ui(null));
+    const opener = openWithKeyboardFocus('New investigation');
+    view.rerender(ui('TLP:CLEAR'));
+    // A browser drops focus from the hidden dialog to <body>.
+    (document.activeElement as HTMLElement | null)?.blur();
+    expect(document.activeElement).toBe(document.body);
+    view.rerender(ui(null));
+    expect(screen.getByLabelText('Name')).toHaveFocus();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(opener).toHaveFocus();
+  });
 });
 
 describe('modal keyboard handling before paint (UX-07)', () => {
