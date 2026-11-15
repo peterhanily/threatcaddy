@@ -101,6 +101,12 @@ describe('accent foreground utilities', () => {
     expect(offenders(/(?<![\w-])(?!hover:)[\w-]+:text-accent(?![\w/-])/)).toEqual([]);
   });
 
+  it('lets checked toggle labels change colour', () => {
+    // .dark/.light .text-gray-N remaps are unlayered, so they always beat a
+    // peer-checked:text-* utility and the checked label would never recolour.
+    expect(offenders(/(?<![\w:-])text-gray-\d+(?![\w/-]).*peer-checked:text-|peer-checked:text-.*(?<![\w:-])text-gray-\d+(?![\w/-])/)).toEqual([]);
+  });
+
   it('puts white text on the 4.5:1 accent fill, not the purple fill', () => {
     expect(offenders(/(?<![\w-])bg-purple(?![\w/-]).*(?<![\w-])text-white(?![\w/-])|(?<![\w-])text-white(?![\w/-]).*(?<![\w-])bg-purple(?![\w/-])/)).toEqual([]);
   });

@@ -831,7 +831,7 @@ export function NoteEditor({
           <label className="relative inline-flex items-center cursor-pointer" title={defangPreview ? t('editor.showOriginalIOCs') : t('editor.defangIOCs')}>
             <input type="checkbox" checked={defangPreview} onChange={() => setDefangPreview(!defangPreview)} className="sr-only peer" />
             <div className="w-7 h-4 bg-gray-700 peer-checked:bg-accent/60 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 peer-checked:after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3" />
-            <span className="ms-1.5 text-[10px] text-gray-500 peer-checked:text-accent-text select-none">{t('editor.defang')}</span>
+            <span className="ms-1.5 text-[10px] text-text-muted peer-checked:text-accent-text select-none">{t('editor.defang')}</span>
           </label>
         )}
 
