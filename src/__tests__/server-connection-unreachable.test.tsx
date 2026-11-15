@@ -13,10 +13,9 @@ const auth = {
   serverUrl: 'https://team.example', accessToken: 'access-fixture', refreshToken: 'refresh-fixture',
   user: { id: 'fixture', email: 'fixture@example.invalid', displayName: 'Fixture', role: 'analyst' },
 };
-let setReachable: (reachable: boolean) => void = () => {};
-function Reachability() {
-  setReachable = useAuth().setReachable;
-  return null;
+function LoseConnection() {
+  const { setReachable } = useAuth();
+  return <button onClick={() => setReachable(false)}>Fixture: lose connection</button>;
 }
 
 beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); localStorage.setItem(authStorageKey, JSON.stringify(auth)); });
@@ -25,8 +24,8 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); localStorage.clear(); });
 describe('server connection while the server is unreachable', () => {
   it('keeps the signed-in card with Disconnect, and clears local credentials even when revocation fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Synthetic network failure')));
-    render(<AuthProvider><Reachability /><ServerConnection settings={{ serverUrl: auth.serverUrl }} onUpdateSettings={vi.fn()} /></AuthProvider>);
-    act(() => setReachable(false));
+    render(<AuthProvider><LoseConnection /><ServerConnection settings={{ serverUrl: auth.serverUrl }} onUpdateSettings={vi.fn()} /></AuthProvider>);
+    fireEvent.click(screen.getByRole('button', { name: 'Fixture: lose connection' }));
     expect(screen.getByText('Server unreachable. You are still signed in.')).toBeInTheDocument();
     expect(screen.queryByText('Connected')).not.toBeInTheDocument();
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Disconnect & Logout' })); });

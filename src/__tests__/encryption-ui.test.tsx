@@ -322,7 +322,8 @@ describe('EncryptionSettings', () => {
       changeInput(screen.getByLabelText('Current passphrase'), 'fictional current passphrase');
       changeInput(screen.getByLabelText('New passphrase (min 8 characters)'), 'fictional new passphrase');
       changeInput(screen.getByLabelText('Confirm new passphrase'), 'fictional new passphrase');
-      await act(async () => { fireEvent.click(screen.getAllByRole('button', { name: 'Change Passphrase' }).at(-1)!); });
+      const [, submit] = screen.getAllByRole('button', { name: 'Change Passphrase' });
+      await act(async () => { fireEvent.click(submit); });
       expect(screen.getByText(/current passphrase was accepted, but the change did not finish: Synthetic wrapping failure/)).toBeInTheDocument();
       expect(screen.queryByText('Wrong current passphrase.')).not.toBeInTheDocument();
     } finally { unwrap.mockRestore(); }
@@ -335,7 +336,8 @@ describe('EncryptionSettings', () => {
     fireEvent.click(screen.getByText('Disable Encryption'));
     mockGetEncryptionMeta.mockReturnValue(null);
     changeInput(screen.getByPlaceholderText('Enter passphrase...'), 'fictional passphrase');
-    await act(async () => { fireEvent.click(screen.getAllByRole('button', { name: 'Disable Encryption' }).at(-1)!); });
+    const [, submit] = screen.getAllByRole('button', { name: 'Disable Encryption' });
+    await act(async () => { fireEvent.click(submit); });
     expect(screen.getByText('Encryption metadata could not be read. Restore it from a backup before opening this workspace.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
   });
