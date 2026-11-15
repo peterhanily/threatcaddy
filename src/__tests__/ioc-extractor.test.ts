@@ -929,3 +929,65 @@ describe('extractIOCs - large input', () => {
     expect(ipv4s).toHaveLength(50);
   });
 });
+
+// ── extractIOCs - linear-time patterns ──────────────────────────────
+
+describe('extractIOCs - bounded email and domain patterns', () => {
+  const pairs = (text: string) => extractIOCs(text).map((ioc) => `${ioc.type}:${ioc.value}`);
+
+  it('keeps extraction results on representative text', () => {
+    const text = [
+      'Contact alice.smith+ir@corp.example.com or bob_99@mail.evil.net; mailto:carol@example.org.',
+      'Beacon to hxxps://c2.badguy[.]xyz/gate.php?id=1 and http://203.0.113.5:8080/x then dave@sub.domain.co.uk',
+      'Domains: evil.com, www.evil-site.org, *.wildcard.ru, .leading.io, deep.sub.domain.example.info, a..odd.net',
+      'No domain in user_evil.com or in file.exe; IPs 198.51.100.23 and 2001:db8:85a3:0:0:8a2e:370:7334',
+      'Hashes 44d88612fea8a8f36de82e1278abb02f 3395856ce81f2b7382dee72602f798b642f14140',
+      '275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f CVE-2024-3094 T1059.001 C:\\Windows\\System32\\evil.dll',
+    ].join('\n');
+    expect(pairs(text)).toEqual([
+      'sha256:275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f',
+      'sha1:3395856ce81f2b7382dee72602f798b642f14140',
+      'md5:44d88612fea8a8f36de82e1278abb02f',
+      'cve:CVE-2024-3094',
+      'mitre-attack:T1059.001',
+      'url:https://c2.badguy.xyz/gate.php?id=1',
+      'url:http://203.0.113.5:8080/x',
+      'email:alice.smith+ir@corp.example.com',
+      'email:bob_99@mail.evil.net',
+      'email:carol@example.org',
+      'email:dave@sub.domain.co.uk',
+      'ipv6:2001:db8:85a3:0:0:8a2e:370:7334',
+      'ipv4:203.0.113.5',
+      'ipv4:198.51.100.23',
+      'domain:evil.com',
+      'domain:www.evil-site.org',
+      'domain:wildcard.ru',
+      'domain:leading.io',
+      'domain:deep.sub.domain.example.info',
+      'domain:odd.net',
+      'file-path:C:\\Windows\\System32\\evil.dll',
+    ]);
+  });
+
+  it('extracts long but valid email local parts and domain labels', () => {
+    const local = 'l'.repeat(64);
+    const label = 'd'.repeat(63);
+    expect(pairs(`${local}@${label}.example.com and ${label}.${label}.net`)).toEqual([
+      `email:${local}@${label}.example.com`,
+      `domain:${label}.${label}.net`,
+    ]);
+  });
+
+  it.each([
+    ['continuous hex', () => Array.from({ length: 200_000 }, (_, i) => '0123456789abcdef'[(i * 7) % 16]).join('')],
+    ['dotted labels', () => 'a.'.repeat(100_000)],
+    ['base64url', () => Array.from({ length: 200_000 }, (_, i) => 'AZaz09-_'[(i * 5) % 8]).join('')],
+    ['hyphenated labels', () => 'a-'.repeat(100_000)],
+  ])('stays linear on 200k characters of %s', (_name, build) => {
+    const text = build();
+    const started = performance.now();
+    extractIOCs(text, { enabledTypes: ['email', 'domain'] });
+    // The unbounded patterns took seconds to minutes on these inputs.
+    expect(performance.now() - started).toBeLessThan(1_500);
+  });
+});

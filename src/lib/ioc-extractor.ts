@@ -62,10 +62,11 @@ const IOC_PATTERNS: { type: IOCType; pattern: RegExp; validate?: (match: string)
     type: 'url',
     pattern: /https?:\/\/[^\s"'<>)\]]+/gi,
   },
-  // Emails
+  // Emails. Start only at the beginning of a local-part run and bound each part
+  // (RFC 5321 limits), or long hex/base64url runs make the scan quadratic.
   {
     type: 'email',
-    pattern: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+    pattern: /(?<![\w.%+-])[\w.%+-]{1,64}@[a-zA-Z0-9.-]{1,253}\.[a-zA-Z]{2,63}/g,
   },
   // IPv6 (simplified — common compressed/full forms)
   {
@@ -82,10 +83,13 @@ const IOC_PATTERNS: { type: IOCType; pattern: RegExp; validate?: (match: string)
       return !ignore.includes(m);
     },
   },
-  // Domain names (after URLs/emails so we can dedup)
+  // Domain names (after URLs/emails so we can dedup). Never start inside a run of
+  // labels (after a label character, or after one followed by a dot) and bound
+  // the label count, so dotted or hyphenated runs stay linear. '*.example.com'
+  // and '.example.com' still yield example.com.
   {
     type: 'domain',
-    pattern: /\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+(?:com|net|org|io|gov|edu|mil|info|biz|co|us|uk|de|ru|cn|br|in|au|xyz|online|site|top|onion|tk|pw)\b/gi,
+    pattern: /(?<![\w-])(?<![\w-]\.)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.){1,127}(?:com|net|org|io|gov|edu|mil|info|biz|co|us|uk|de|ru|cn|br|in|au|xyz|online|site|top|onion|tk|pw)\b/gi,
   },
   // File paths (Unix, Windows with backslash or forward slash, UNC)
   {

@@ -168,6 +168,23 @@ describe('evidence import helpers', () => {
     expect(candidates[0].notes).toContain('Description: C2 server');
     expect(candidates[0].notes).toContain('Notes: Observed in beacon table');
   });
+
+  it('builds table IOC candidates quickly when a row holds a long undelimited blob', () => {
+    const blob = Array.from({ length: 100_000 }, (_, i) => '0123456789abcdef'[(i * 7) % 16]).join('');
+    const content = [
+      '# Evidence: blobs.csv',
+      '',
+      '## Extracted Text',
+      '',
+      'IP\tPayload',
+      `203.0.113.44\t${blob}`,
+    ].join('\n');
+    const started = performance.now();
+    const candidates = extractEvidenceTableIOCCandidates(content);
+    // The Evidence view runs this on the main thread for the selected item.
+    expect(performance.now() - started).toBeLessThan(1_500);
+    expect(candidates.map((candidate) => `${candidate.type}:${candidate.value}`)).toEqual(['ipv4:203.0.113.44']);
+  });
 });
 
 function makePdfWithStream(stream: string): string {
