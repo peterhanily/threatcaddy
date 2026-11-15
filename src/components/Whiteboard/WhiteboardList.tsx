@@ -96,7 +96,7 @@ export function WhiteboardList({ whiteboards, folders, onSelect, onCreate, onDel
                       }}
                       onBlur={() => commitRename(wb.id)}
                       onClick={(e) => e.stopPropagation()}
-                      className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:border-accent"
+                      className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm text-gray-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
                     />
                   ) : (
                     <h3 className="text-sm font-medium text-gray-200 truncate">{wb.name}</h3>

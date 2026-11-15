@@ -106,7 +106,7 @@ function ShareLinkTab({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter password..."
-              className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-accent"
+              className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
             />
           )}
 
@@ -272,12 +272,12 @@ function TeamTab({ folderId }: { folderId: string }) {
               onChange={(e) => setInviteEmail(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleInvite(); }}
               placeholder="Email address..."
-              className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-accent"
+              className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
             />
             <select
               value={inviteRole}
               onChange={(e) => setInviteRole(e.target.value)}
-              className="bg-gray-800 border border-gray-600 rounded-lg px-2 py-1.5 text-sm text-gray-100 focus:outline-none focus:border-accent"
+              className="bg-gray-800 border border-gray-600 rounded-lg px-2 py-1.5 text-sm text-gray-100 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
             >
               <option value="viewer">Viewer</option>
               <option value="editor">Editor</option>
@@ -319,7 +319,7 @@ function TeamTab({ folderId }: { folderId: string }) {
                   <select
                     value={m.role}
                     onChange={(e) => handleRoleChange(m.userId, e.target.value as InvestigationMember['role'])}
-                    className="bg-gray-800 border border-gray-600 rounded px-1.5 py-0.5 text-xs text-gray-200 focus:outline-none focus:border-accent"
+                    className="bg-gray-800 border border-gray-600 rounded px-1.5 py-0.5 text-xs text-gray-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
                   >
                     <option value="viewer">Viewer</option>
                     <option value="editor">Editor</option>

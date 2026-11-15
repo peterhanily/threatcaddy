@@ -46,6 +46,16 @@ const grays: Record<Theme, Record<string, string>> = {
 };
 const surfaces = ['--color-bg-deep', '--color-bg-surface', '--color-bg-raised', '--color-bg-hover'];
 
+function sources(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+    const path = join(dir, entry.name);
+    return entry.isDirectory() ? sources(path) : entry.name.endsWith('.tsx') ? [path] : [];
+  });
+}
+/** Component source lines (file:line) matching a class pattern. */
+const offenders = (pattern: RegExp) => sources(resolve(__dirname, '../components'))
+  .flatMap(file => readFileSync(file, 'utf8').split('\n').flatMap((line, index) => pattern.test(line) ? [`${file.split('/src/')[1]}:${index + 1}`] : []));
+
 afterEach(() => applyColorScheme('indigo', 'dark'));
 
 describe('keyboard focus indicator contrast (WCAG 1.4.11)', () => {
@@ -75,6 +85,12 @@ describe('keyboard focus indicator contrast (WCAG 1.4.11)', () => {
     expect(css).toMatch(/\.focus-visible\\:outline-accent:focus-visible\s*\{\s*outline-color:\s*var\(--color-focus-ring\);/);
   });
 
+  it('adds a ring to outline-less inputs whose unfocused border is gray-600', () => {
+    // The focus token reaches only 1.96-2.96:1 against a gray-600 border in
+    // several schemes, so recolouring that 1px border is not enough.
+    expect(offenders(/^(?=.*(?<![\w:-])border-gray-600(?![\w/-]))(?=.*focus:outline-none)(?=.*focus:border-accent)(?!.*focus:ring-[12] focus:ring-accent(?![\w-]))/)).toEqual([]);
+  });
+
   it('clears a scheme focus ring when switching back to the default scheme', () => {
     applyColorScheme('ocean', 'dark');
     expect(document.documentElement.style.getPropertyValue('--color-focus-ring')).not.toBe('');
@@ -87,15 +103,6 @@ describe('accent foreground utilities', () => {
   // --color-accent and --color-purple are fill colours (2.8:1 and 4.0:1 in the
   // dark theme). Only .text-accent, hover:text-accent(-hover) and .text-purple
   // are remapped to the readable *-text tokens in index.css.
-  function sources(dir: string): string[] {
-    return readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
-      const path = join(dir, entry.name);
-      return entry.isDirectory() ? sources(path) : entry.name.endsWith('.tsx') ? [path] : [];
-    });
-  }
-  const offenders = (pattern: RegExp) => sources(resolve(__dirname, '../components'))
-    .flatMap(file => readFileSync(file, 'utf8').split('\n').flatMap((line, index) => pattern.test(line) ? [`${file.split('/src/')[1]}:${index + 1}`] : []));
-
   it('uses no translucent or state variant of the fill colours for text and icons', () => {
     expect(offenders(/(?<![\w-])(?:[\w-]+:)*text-(?:accent|purple)\/\d+/)).toEqual([]);
     expect(offenders(/(?<![\w-])(?!hover:)[\w-]+:text-accent(?![\w/-])/)).toEqual([]);
