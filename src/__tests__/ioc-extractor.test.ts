@@ -978,11 +978,32 @@ describe('extractIOCs - bounded email and domain patterns', () => {
     ]);
   });
 
+  it('keeps the registered domain after underscore and hyphen labels, as before the bound', () => {
+    // SRV, DMARC and DKIM names, an underscore host and labels that cannot start
+    // or end a host name: the unbounded pattern found the domain after each one.
+    const text = [
+      '10.0.0.5 query _ldap._tcp.dc._msdcs.contoso.com SRV',
+      '_dmarc.example.com TXT; selector1._domainkey.example.net TXT',
+      'my_host.corp.org -evil.com foo-.bad.io x_.worse.co.uk',
+    ].join('\n');
+    expect(pairs(text).filter((pair) => pair.startsWith('domain:'))).toEqual([
+      'domain:contoso.com',
+      'domain:example.com',
+      'domain:example.net',
+      'domain:corp.org',
+      'domain:evil.com',
+      'domain:bad.io',
+      'domain:worse.co.uk',
+    ]);
+  });
+
   it.each([
     ['continuous hex', () => Array.from({ length: 200_000 }, (_, i) => '0123456789abcdef'[(i * 7) % 16]).join('')],
     ['dotted labels', () => 'a.'.repeat(100_000)],
     ['base64url', () => Array.from({ length: 200_000 }, (_, i) => 'AZaz09-_'[(i * 5) % 8]).join('')],
     ['hyphenated labels', () => 'a-'.repeat(100_000)],
+    // Every hyphen is a word boundary; the label-count bound alone took seconds here.
+    ['63-character hyphenated labels', () => `${'a-'.repeat(31)}a.`.repeat(3_200)],
   ])('stays linear on 200k characters of %s', (_name, build) => {
     const text = build();
     const started = performance.now();

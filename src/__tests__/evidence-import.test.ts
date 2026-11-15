@@ -169,6 +169,24 @@ describe('evidence import helpers', () => {
     expect(candidates[0].notes).toContain('Notes: Observed in beacon table');
   });
 
+  it('extracts the domains of SRV and DKIM names from DNS log tables', () => {
+    const content = [
+      '# Evidence: dns.csv',
+      '',
+      '## Extracted Text',
+      '',
+      'Client\tQuery\tType',
+      '10.0.0.5\t_ldap._tcp.dc._msdcs.contoso.com\tSRV',
+      '10.0.0.9\tselector1._domainkey.example.net\tTXT',
+    ].join('\n');
+    expect(extractEvidenceTableIOCCandidates(content).map((candidate) => `${candidate.type}:${candidate.value}`)).toEqual([
+      'ipv4:10.0.0.5',
+      'domain:contoso.com',
+      'ipv4:10.0.0.9',
+      'domain:example.net',
+    ]);
+  });
+
   it('builds table IOC candidates quickly when a row holds a long undelimited blob', () => {
     const blob = Array.from({ length: 100_000 }, (_, i) => '0123456789abcdef'[(i * 7) % 16]).join('');
     const content = [
