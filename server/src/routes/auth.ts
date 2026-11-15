@@ -115,7 +115,7 @@ app.post('/login', async (c) => {
     c.header('Retry-After', String(retryMin * 60));
     return c.json({ error: `Account temporarily locked. Try again in ${retryMin} minutes.`, code: ErrorCodes.ACCOUNT_LOCKED }, 429);
   }
-  const check = claimPasswordCheck('user', email);
+  const check = claimPasswordCheck('user', email, clientIp);
   if (!check.allowed) {
     const retrySec = check.retryAfterSeconds ?? 60;
     c.header('Retry-After', String(retrySec));

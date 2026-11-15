@@ -144,4 +144,34 @@ describe('account-wide brake against address rotation', () => {
     for (let i = 0; i < 30; i++) await adminLogin('root', 'wrong-password', `198.18.3.${i}`);
     expect(verifyAdminUser).toHaveBeenCalledTimes(ACCOUNT_MAX_ATTEMPTS + 1);
   });
+
+  it('a rotating address pool cannot keep the user out of an address they signed in from before', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    expect((await userLogin('correct-password', VICTIM_IP)).status).toBe(200);
+
+    // 19 /64s from one /56: four cross the account threshold, fifteen take every check slot in rotation.
+    const pool = Array.from({ length: 19 }, (_, i) => `2001:db8:0:${i.toString(16)}::1`);
+    for (const address of pool.slice(0, 4)) for (let i = 0; i < MAX_ATTEMPTS; i++) await userLogin('wrong-password', address);
+    const rotation = pool.slice(4);
+    const victimStatuses = [];
+    for (let minute = 0; minute < 120; minute++) {
+      await userLogin('wrong-password', rotation[minute % rotation.length]);
+      victimStatuses.push((await userLogin('correct-password', VICTIM_IP)).status);
+      vi.setSystemTime(Date.now() + ACCOUNT_CHECK_INTERVAL_MS);
+    }
+    expect(victimStatuses).toEqual(Array(120).fill(200));
+    // The attackers still got one check per interval and no more.
+    expect(passwordVerify.mock.calls.filter(([, password]) => password !== 'correct-password')).toHaveLength(ACCOUNT_MAX_ATTEMPTS + 120);
+  });
+
+  it('a known address keeps the per-address limit while the account is braked', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    expect((await userLogin('correct-password', VICTIM_IP)).status).toBe(200);
+    for (let i = 0; i <= ACCOUNT_MAX_ATTEMPTS; i++) await userLogin('wrong-password', `198.18.4.${i}`);
+
+    const statuses = [];
+    for (let i = 0; i < MAX_ATTEMPTS + 1; i++) statuses.push((await userLogin('wrong-password', VICTIM_IP)).status);
+    expect(statuses).toEqual([401, 401, 401, 401, 429, 429]);
+    expect((await userLogin('correct-password', VICTIM_IP)).status).toBe(429);
+  });
 });

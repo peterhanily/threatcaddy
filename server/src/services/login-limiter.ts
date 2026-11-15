@@ -7,15 +7,24 @@ import { logger } from '../lib/logger.js';
 export const MAX_ATTEMPTS = 5;
 /**
  * Unsuccessful password checks for one account from all sources. Beyond it the
- * account gets one password check per ACCOUNT_CHECK_INTERVAL_MS whatever the
- * source, and every further failure locks its source at once. A source that
- * has not failed is not locked out, but shares that one check per interval.
+ * account gets one password check per ACCOUNT_CHECK_INTERVAL_MS from sources
+ * it has not signed in from, and every further failure from such a source locks
+ * it at once. A source that has not failed is not locked out, but shares that
+ * one check per interval. Known sources are exempt and keep the per-source limit.
  */
 export const ACCOUNT_MAX_ATTEMPTS = 20;
 export const ACCOUNT_CHECK_INTERVAL_MS = 60 * 1000;
 export const WINDOW_MS = 15 * 60 * 1000;   // 15 minutes
 export const LOCKOUT_MS = 15 * 60 * 1000;  // 15 minutes
-/** Accounts and addresses are attacker-chosen; past this many records the oldest is dropped. */
+/** A source that signed in to an account stays known to it this long after its last sign-in. */
+export const KNOWN_SOURCE_MS = 30 * 24 * 60 * 60 * 1000;
+/** Known sources kept per account; the least recently used is dropped. */
+export const MAX_KNOWN_SOURCES = 10;
+/**
+ * Accounts and addresses are attacker-chosen, so each map holds at most this many
+ * records. A full map drops its oldest record that restricts nothing; while every
+ * record locks a source or brakes an account, new keys are not tracked.
+ */
 export const MAX_TRACKED = 100_000;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -42,6 +51,8 @@ interface AccountRecord {
 
 const sources = new Map<string, AttemptRecord>();
 const accounts = new Map<string, AccountRecord>();
+/** Per account: source address -> time of its last successful sign-in, least recent first. */
+const knownSources = new Map<string, Map<string, number>>();
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -74,6 +85,23 @@ function isAccountExpired(record: AccountRecord, now: number): boolean {
   return now - record.lastAttemptAt > WINDOW_MS;
 }
 
+function isKnownSource(scope: LoginScope, account: string, clientIp: string, now: number): boolean {
+  const signedInAt = knownSources.get(accountKey(scope, account))?.get(sourceAddress(clientIp));
+  return signedInAt !== undefined && now - signedInAt <= KNOWN_SOURCE_MS;
+}
+
+/** Room for one more record: drops the oldest record that restricts nothing. False when every record still restricts. */
+function makeRoom<T>(map: Map<string, T>, restricts: (record: T) => boolean): boolean {
+  if (map.size < MAX_TRACKED) return true;
+  for (const [key, record] of map) {
+    if (!restricts(record)) {
+      map.delete(key);
+      return true;
+    }
+  }
+  return false;
+}
+
 /** The current record for a key, starting a new window once the previous one or its lockout has expired. */
 function currentRecord(map: Map<string, AttemptRecord>, key: string, now: number): AttemptRecord {
   let record = map.get(key);
@@ -82,9 +110,8 @@ function currentRecord(map: Map<string, AttemptRecord>, key: string, now: number
     record = undefined;
   }
   if (!record) {
-    if (map.size >= MAX_TRACKED) map.delete(map.keys().next().value as string);
     record = { attempts: 0, firstAttemptAt: now, lockedUntil: null };
-    map.set(key, record);
+    if (makeRoom(map, tracked => tracked.lockedUntil !== null && !isExpired(tracked, now))) map.set(key, record);
   }
   return record;
 }
@@ -96,11 +123,21 @@ function currentAccount(key: string, now: number): AccountRecord {
     record = undefined;
   }
   if (!record) {
-    if (accounts.size >= MAX_TRACKED) accounts.delete(accounts.keys().next().value as string);
     record = { attempts: 0, lastAttemptAt: now, nextCheckAt: 0 };
-    accounts.set(key, record);
+    if (makeRoom(accounts, tracked => tracked.attempts >= ACCOUNT_MAX_ATTEMPTS && !isAccountExpired(tracked, now))) accounts.set(key, record);
   }
   return record;
+}
+
+function rememberSource(key: string, address: string, now: number): void {
+  const known = knownSources.get(key) ?? new Map<string, number>();
+  // Most recent last in both maps, so the first entry is the least recently used.
+  knownSources.delete(key);
+  if (knownSources.size >= MAX_TRACKED) knownSources.delete(knownSources.keys().next().value as string);
+  knownSources.set(key, known);
+  known.delete(address);
+  known.set(address, now);
+  if (known.size > MAX_KNOWN_SOURCES) known.delete(known.keys().next().value as string);
 }
 
 // ─── Public API ─────────────────────────────────────────────────
@@ -126,11 +163,12 @@ export function isLocked(scope: LoginScope, account: string, clientIp: string): 
  * Counts the check against the account when it starts, so concurrent requests
  * cannot overshoot. Past ACCOUNT_MAX_ATTEMPTS it lets one check through per
  * ACCOUNT_CHECK_INTERVAL_MS, so rotating addresses cannot raise the guessing rate.
+ * A source that signed in to the account before is not held to that interval.
  */
-export function claimPasswordCheck(scope: LoginScope, account: string): { allowed: boolean; retryAfterSeconds?: number } {
+export function claimPasswordCheck(scope: LoginScope, account: string, clientIp: string): { allowed: boolean; retryAfterSeconds?: number } {
   const now = Date.now();
   const record = currentAccount(accountKey(scope, account), now);
-  if (record.attempts >= ACCOUNT_MAX_ATTEMPTS) {
+  if (record.attempts >= ACCOUNT_MAX_ATTEMPTS && !isKnownSource(scope, account, clientIp, now)) {
     if (now < record.nextCheckAt) return { allowed: false, retryAfterSeconds: Math.ceil((record.nextCheckAt - now) / 1000) };
     record.nextCheckAt = now + ACCOUNT_CHECK_INTERVAL_MS;
   }
@@ -153,7 +191,7 @@ export function recordFailedAttempt(scope: LoginScope, account: string, clientIp
   const accountAttempts = accounts.get(accountKey(scope, account))?.attempts ?? 0;
   record.attempts++;
 
-  if (record.attempts >= MAX_ATTEMPTS || accountAttempts > ACCOUNT_MAX_ATTEMPTS) {
+  if (record.attempts >= MAX_ATTEMPTS || (accountAttempts > ACCOUNT_MAX_ATTEMPTS && !isKnownSource(scope, account, clientIp, now))) {
     record.lockedUntil = now + LOCKOUT_MS;
     const retryAfterMinutes = Math.ceil(LOCKOUT_MS / 60_000);
     logger.warn('Login source locked due to too many failed login attempts', {
@@ -165,11 +203,15 @@ export function recordFailedAttempt(scope: LoginScope, account: string, clientIp
   return { locked: false };
 }
 
-/** After a successful login, forget that source's failures and stop counting this check; other failures stay. */
+/**
+ * After a successful login, forget that source's failures, stop counting this
+ * check and remember the source as known to the account; other failures stay.
+ */
 export function resetAttempts(scope: LoginScope, account: string, clientIp: string): void {
   sources.delete(sourceKey(scope, account, clientIp));
   const record = accounts.get(accountKey(scope, account));
   if (record && record.attempts > 0) record.attempts--;
+  if (isIP(clientIp)) rememberSource(accountKey(scope, account), sourceAddress(clientIp), Date.now());
 }
 
 // ─── Cleanup ────────────────────────────────────────────────────
@@ -181,6 +223,12 @@ export function cleanupExpiredEntries(): void {
   }
   for (const [key, record] of accounts) {
     if (isAccountExpired(record, now)) accounts.delete(key);
+  }
+  for (const [key, known] of knownSources) {
+    for (const [address, signedInAt] of known) {
+      if (now - signedInAt > KNOWN_SOURCE_MS) known.delete(address);
+    }
+    if (known.size === 0) knownSources.delete(key);
   }
 }
 
@@ -208,11 +256,14 @@ export function stopCleanupTimer(): void {
 export function _clearAll(): void {
   sources.clear();
   accounts.clear();
+  knownSources.clear();
 }
 
-/** Number of tracked source and account records (for testing only) */
+/** Number of tracked source, account and known-source records (for testing only) */
 export function _trackedCount(): number {
-  return sources.size + accounts.size;
+  let known = 0;
+  for (const addresses of knownSources.values()) known += addresses.size;
+  return sources.size + accounts.size + known;
 }
 
 // Start cleanup on module load

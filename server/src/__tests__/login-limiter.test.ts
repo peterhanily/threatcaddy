@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
+
+vi.mock('../lib/logger.js', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
+
 import {
   isLocked,
   claimPasswordCheck,
@@ -12,6 +15,8 @@ import {
   ACCOUNT_MAX_ATTEMPTS,
   ACCOUNT_CHECK_INTERVAL_MS,
   MAX_TRACKED,
+  MAX_KNOWN_SOURCES,
+  KNOWN_SOURCE_MS,
   WINDOW_MS,
   LOCKOUT_MS,
 } from '../services/login-limiter.js';
@@ -130,23 +135,23 @@ describe('login-limiter', () => {
 
   it('locks each further failing source at once after ACCOUNT_MAX_ATTEMPTS failures across sources', () => {
     for (let i = 0; i < ACCOUNT_MAX_ATTEMPTS; i++) {
-      expect(claimPasswordCheck('user', 'testuser').allowed).toBe(true);
+      expect(claimPasswordCheck('user', 'testuser', `192.0.2.${i}`).allowed).toBe(true);
       expect(recordFailedAttempt('user', 'testuser', `192.0.2.${i}`).locked).toBe(false);
     }
-    expect(claimPasswordCheck('user', 'testuser').allowed).toBe(true);
+    expect(claimPasswordCheck('user', 'testuser', '198.51.100.200').allowed).toBe(true);
     expect(recordFailedAttempt('user', 'testuser', '198.51.100.200').locked).toBe(true);
     expect(isLocked('user', 'testuser', '198.51.100.200').locked).toBe(true);
     // A source with no failures is not locked out.
     expect(isLocked('user', 'testuser', OTHER_IP).locked).toBe(false);
     // Other accounts are unaffected.
-    expect(claimPasswordCheck('user', 'other').allowed).toBe(true);
+    expect(claimPasswordCheck('user', 'other', '198.51.100.201').allowed).toBe(true);
     expect(recordFailedAttempt('user', 'other', '198.51.100.201').locked).toBe(false);
   });
 
   describe('account brake', () => {
     function failFromFreshSources(count: number, scope: 'user' | 'admin' = 'user') {
       for (let i = 0; i < count; i++) {
-        expect(claimPasswordCheck(scope, 'testuser').allowed).toBe(true);
+        expect(claimPasswordCheck(scope, 'testuser', `192.0.2.${i}`).allowed).toBe(true);
         recordFailedAttempt(scope, 'testuser', `192.0.2.${i}`);
       }
     }
@@ -155,30 +160,86 @@ describe('login-limiter', () => {
       const now = Date.now();
       vi.spyOn(Date, 'now').mockReturnValue(now);
       failFromFreshSources(ACCOUNT_MAX_ATTEMPTS);
-      expect(claimPasswordCheck('user', 'testuser').allowed).toBe(true);
-      expect(claimPasswordCheck('user', 'testuser')).toEqual({ allowed: false, retryAfterSeconds: ACCOUNT_CHECK_INTERVAL_MS / 1000 });
+      expect(claimPasswordCheck('user', 'testuser', OTHER_IP).allowed).toBe(true);
+      expect(claimPasswordCheck('user', 'testuser', OTHER_IP)).toEqual({ allowed: false, retryAfterSeconds: ACCOUNT_CHECK_INTERVAL_MS / 1000 });
 
       vi.spyOn(Date, 'now').mockReturnValue(now + ACCOUNT_CHECK_INTERVAL_MS - 1);
-      expect(claimPasswordCheck('user', 'testuser')).toEqual({ allowed: false, retryAfterSeconds: 1 });
+      expect(claimPasswordCheck('user', 'testuser', OTHER_IP)).toEqual({ allowed: false, retryAfterSeconds: 1 });
       vi.spyOn(Date, 'now').mockReturnValue(now + ACCOUNT_CHECK_INTERVAL_MS);
-      expect(claimPasswordCheck('user', 'testuser').allowed).toBe(true);
-      expect(claimPasswordCheck('user', 'testuser').allowed).toBe(false);
+      expect(claimPasswordCheck('user', 'testuser', OTHER_IP).allowed).toBe(true);
+      expect(claimPasswordCheck('user', 'testuser', OTHER_IP).allowed).toBe(false);
       // Other accounts and the other scope are unaffected.
-      expect(claimPasswordCheck('user', 'other').allowed).toBe(true);
-      expect(claimPasswordCheck('admin', 'testuser').allowed).toBe(true);
+      expect(claimPasswordCheck('user', 'other', OTHER_IP).allowed).toBe(true);
+      expect(claimPasswordCheck('admin', 'testuser', OTHER_IP).allowed).toBe(true);
     });
 
     it('counts checks when they start, so concurrent checks cannot overshoot', () => {
-      for (let i = 0; i < ACCOUNT_MAX_ATTEMPTS + 1; i++) expect(claimPasswordCheck('user', 'testuser').allowed).toBe(true);
-      expect(claimPasswordCheck('user', 'testuser').allowed).toBe(false);
+      for (let i = 0; i < ACCOUNT_MAX_ATTEMPTS + 1; i++) expect(claimPasswordCheck('user', 'testuser', OTHER_IP).allowed).toBe(true);
+      expect(claimPasswordCheck('user', 'testuser', OTHER_IP).allowed).toBe(false);
     });
 
     it('does not count successful checks', () => {
       for (let i = 0; i < ACCOUNT_MAX_ATTEMPTS * 2; i++) {
-        expect(claimPasswordCheck('user', 'testuser').allowed).toBe(true);
+        expect(claimPasswordCheck('user', 'testuser', IP).allowed).toBe(true);
         resetAttempts('user', 'testuser', IP);
       }
       failFromFreshSources(ACCOUNT_MAX_ATTEMPTS);
+    });
+
+    it('exempts a source that signed in to the account before', () => {
+      expect(claimPasswordCheck('user', 'testuser', IP).allowed).toBe(true);
+      resetAttempts('user', 'testuser', IP);
+      failFromFreshSources(ACCOUNT_MAX_ATTEMPTS);
+      expect(claimPasswordCheck('user', 'testuser', '198.51.100.250').allowed).toBe(true);
+      expect(claimPasswordCheck('user', 'testuser', '198.51.100.251').allowed).toBe(false);
+      for (let i = 0; i < 3; i++) expect(claimPasswordCheck('user', 'testuser', IP).allowed).toBe(true);
+      // Only for that account and scope.
+      failFromFreshSources(ACCOUNT_MAX_ATTEMPTS + 1, 'admin');
+      expect(claimPasswordCheck('admin', 'testuser', IP).allowed).toBe(false);
+    });
+
+    it('remembers a known IPv6 source by its /64', () => {
+      resetAttempts('user', 'testuser', '2001:db8:1:2::1');
+      failFromFreshSources(ACCOUNT_MAX_ATTEMPTS + 1);
+      expect(claimPasswordCheck('user', 'testuser', '2001:db8:1:2:aaaa::9').allowed).toBe(true);
+      expect(claimPasswordCheck('user', 'testuser', '2001:db8:1:3::1').allowed).toBe(false);
+    });
+
+    it('never remembers an unknown client address', () => {
+      resetAttempts('user', 'testuser', 'unknown');
+      failFromFreshSources(ACCOUNT_MAX_ATTEMPTS + 1);
+      expect(claimPasswordCheck('user', 'testuser', 'unknown').allowed).toBe(false);
+    });
+
+    it(`keeps the ${MAX_KNOWN_SOURCES} most recent known sources per account`, () => {
+      for (let i = 0; i <= MAX_KNOWN_SOURCES; i++) resetAttempts('user', 'testuser', `198.51.100.${i}`);
+      failFromFreshSources(ACCOUNT_MAX_ATTEMPTS + 1);
+      expect(claimPasswordCheck('user', 'testuser', '198.51.100.0').allowed).toBe(false);
+      expect(claimPasswordCheck('user', 'testuser', '198.51.100.1').allowed).toBe(true);
+      expect(claimPasswordCheck('user', 'testuser', `198.51.100.${MAX_KNOWN_SOURCES}`).allowed).toBe(true);
+    });
+
+    it('forgets a known source KNOWN_SOURCE_MS after its last sign-in', () => {
+      const now = Date.now();
+      vi.spyOn(Date, 'now').mockReturnValue(now);
+      resetAttempts('user', 'testuser', IP);
+      vi.spyOn(Date, 'now').mockReturnValue(now + KNOWN_SOURCE_MS);
+      failFromFreshSources(ACCOUNT_MAX_ATTEMPTS + 1);
+      expect(claimPasswordCheck('user', 'testuser', IP).allowed).toBe(true);
+      vi.spyOn(Date, 'now').mockReturnValue(now + KNOWN_SOURCE_MS + 1);
+      expect(claimPasswordCheck('user', 'testuser', IP).allowed).toBe(false);
+    });
+
+    it('locks a known source only after its own MAX_ATTEMPTS failures', () => {
+      resetAttempts('user', 'testuser', IP);
+      failFromFreshSources(ACCOUNT_MAX_ATTEMPTS + 1);
+      for (let i = 1; i < MAX_ATTEMPTS; i++) {
+        expect(claimPasswordCheck('user', 'testuser', IP).allowed).toBe(true);
+        expect(recordFailedAttempt('user', 'testuser', IP).locked).toBe(false);
+      }
+      expect(claimPasswordCheck('user', 'testuser', IP).allowed).toBe(true);
+      expect(recordFailedAttempt('user', 'testuser', IP).locked).toBe(true);
+      expect(isLocked('user', 'testuser', IP).locked).toBe(true);
     });
 
     it('keeps braking until WINDOW_MS passes without a check', () => {
@@ -188,8 +249,8 @@ describe('login-limiter', () => {
       // One check per interval keeps the count alive beyond the first window.
       for (let t = ACCOUNT_CHECK_INTERVAL_MS; t <= WINDOW_MS + ACCOUNT_CHECK_INTERVAL_MS; t += ACCOUNT_CHECK_INTERVAL_MS) {
         vi.spyOn(Date, 'now').mockReturnValue(now + t);
-        expect(claimPasswordCheck('user', 'testuser').allowed).toBe(true);
-        expect(claimPasswordCheck('user', 'testuser').allowed).toBe(false);
+        expect(claimPasswordCheck('user', 'testuser', OTHER_IP).allowed).toBe(true);
+        expect(claimPasswordCheck('user', 'testuser', OTHER_IP).allowed).toBe(false);
       }
       vi.spyOn(Date, 'now').mockReturnValue(now + 2 * WINDOW_MS + ACCOUNT_CHECK_INTERVAL_MS + 1);
       cleanupExpiredEntries();
@@ -222,6 +283,28 @@ describe('login-limiter', () => {
     // The newest records survive.
     for (let i = 0; i < MAX_ATTEMPTS - 1; i++) recordFailedAttempt('user', `user${MAX_TRACKED + 9}@example.com`, IP);
     expect(isLocked('user', `user${MAX_TRACKED + 9}@example.com`, IP).locked).toBe(true);
+  });
+
+  it('never drops a locked source or a braked account to make room', () => {
+    for (let i = 0; i < MAX_ATTEMPTS; i++) recordFailedAttempt('user', 'victim@example.com', IP);
+    for (let i = 0; i <= ACCOUNT_MAX_ATTEMPTS; i++) claimPasswordCheck('user', 'victim@example.com', `192.0.2.${i}`);
+    for (let i = 0; i < MAX_TRACKED; i++) {
+      claimPasswordCheck('user', `user${i}@example.com`, IP);
+      recordFailedAttempt('user', `user${i}@example.com`, IP);
+    }
+    expect(_trackedCount()).toBeLessThanOrEqual(2 * MAX_TRACKED);
+    expect(isLocked('user', 'victim@example.com', IP).locked).toBe(true);
+    expect(claimPasswordCheck('user', 'victim@example.com', OTHER_IP).allowed).toBe(false);
+  });
+
+  it('stops tracking new sources while every tracked source is locked', () => {
+    for (let i = 0; i < MAX_TRACKED; i++) {
+      for (let j = 0; j < MAX_ATTEMPTS; j++) recordFailedAttempt('user', `user${i}@example.com`, IP);
+    }
+    for (let j = 0; j < MAX_ATTEMPTS; j++) recordFailedAttempt('user', 'late@example.com', IP);
+    expect(_trackedCount()).toBe(MAX_TRACKED);
+    expect(isLocked('user', 'user0@example.com', IP).locked).toBe(true);
+    expect(isLocked('user', 'late@example.com', IP).locked).toBe(false);
   });
 
   it('unlocks after lockout period expires', () => {
@@ -303,6 +386,22 @@ describe('login-limiter', () => {
         recordFailedAttempt('user', 'testuser', IP);
       }
       expect(isLocked('user', 'testuser', IP).locked).toBe(true);
+    });
+
+    it('removes known sources older than KNOWN_SOURCE_MS', () => {
+      const now = Date.now();
+      vi.spyOn(Date, 'now').mockReturnValue(now);
+      resetAttempts('user', 'testuser', IP);
+      vi.spyOn(Date, 'now').mockReturnValue(now + KNOWN_SOURCE_MS);
+      resetAttempts('user', 'testuser', OTHER_IP);
+      expect(_trackedCount()).toBe(2);
+
+      vi.spyOn(Date, 'now').mockReturnValue(now + KNOWN_SOURCE_MS + 1);
+      cleanupExpiredEntries();
+      expect(_trackedCount()).toBe(1);
+      vi.spyOn(Date, 'now').mockReturnValue(now + 2 * KNOWN_SOURCE_MS + 1);
+      cleanupExpiredEntries();
+      expect(_trackedCount()).toBe(0);
     });
   });
 });
