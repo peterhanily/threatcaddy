@@ -151,6 +151,7 @@
   "importError.notReady": "Soruşturma verileri hâlâ yükleniyor. Yükleme tamamlandığında kanıt içe aktarılabilir.",
   "importError.dataUnavailable": "Soruşturma verileri yüklenemedi. Kanıt içe aktarmak için sayfayı yeniden yükleyin.",
   "importError.screenshareActive": "Ekran paylaşımı modunda kanıt içe aktarılamaz. Dosyaları içe aktarmak için ekran paylaşımını kapatın.",
+  "importError.remoteInvestigation": "Bu soruşturma ekip sunucusundan görüntüleniyor ve yerel olarak depolanmıyor. Kanıt içe aktarmak için yerel olarak eşitleyin.",
   "importError.investigationArchived": "Bu soruşturma arşivlendi. Kanıt içe aktarmak için geri yükleyin.",
 
   "imagePrompt.intro": "Bu görüntü CaddyAI'ye eklendiğinde, ThreatCaddy görüntü kanıtını analiz edin: {{fileName}}",

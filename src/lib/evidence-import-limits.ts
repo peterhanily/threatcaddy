@@ -42,6 +42,7 @@ const MESSAGES = {
   notReady: 'Investigation data is still loading. Import the files again once it has loaded.',
   dataUnavailable: 'Investigation data could not be loaded. Reload the page to import evidence.',
   screenshareActive: 'Evidence import is unavailable in screenshare mode.',
+  remoteInvestigation: 'This investigation is viewed from the team server and is not stored locally. Sync it locally to import evidence.',
   investigationArchived: 'This investigation is archived. Restore it to import evidence.',
 } as const;
 

@@ -151,6 +151,7 @@
   "importError.notReady": "Die Ermittlungsdaten werden noch geladen. Beweismittel können importiert werden, sobald sie geladen sind.",
   "importError.dataUnavailable": "Die Ermittlungsdaten konnten nicht geladen werden. Laden Sie die Seite neu, um Beweismittel zu importieren.",
   "importError.screenshareActive": "Der Beweismittelimport ist während der Bildschirmfreigabe nicht verfügbar. Beenden Sie die Bildschirmfreigabe, um Dateien zu importieren.",
+  "importError.remoteInvestigation": "Diese Ermittlung wird vom Team-Server angezeigt und ist nicht lokal gespeichert. Synchronisieren Sie sie lokal, um Beweismittel zu importieren.",
   "importError.investigationArchived": "Diese Ermittlung ist archiviert. Stellen Sie sie wieder her, um Beweismittel zu importieren.",
 
   "imagePrompt.intro": "Wenn dieses Bild an CaddyAI angehängt ist, analysieren Sie das ThreatCaddy-Bildbeweismittel: {{fileName}}",

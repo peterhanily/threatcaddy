@@ -151,6 +151,7 @@
   "importError.notReady": "Dữ liệu điều tra vẫn đang tải. Có thể nhập bằng chứng sau khi tải xong.",
   "importError.dataUnavailable": "Không thể tải dữ liệu điều tra. Hãy tải lại trang để nhập bằng chứng.",
   "importError.screenshareActive": "Không thể nhập bằng chứng ở chế độ chia sẻ màn hình. Tắt chia sẻ màn hình để nhập tệp.",
+  "importError.remoteInvestigation": "Cuộc điều tra này được xem từ máy chủ nhóm và không được lưu cục bộ. Hãy đồng bộ cục bộ để nhập bằng chứng.",
   "importError.investigationArchived": "Cuộc điều tra này đã được lưu trữ. Hãy khôi phục để nhập bằng chứng.",
 
   "imagePrompt.intro": "Khi hình ảnh này được đính kèm vào CaddyAI, hãy phân tích bằng chứng hình ảnh ThreatCaddy: {{fileName}}",

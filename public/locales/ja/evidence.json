@@ -151,6 +151,7 @@
   "importError.notReady": "調査データをまだ読み込んでいます。読み込みが完了すると証拠をインポートできます。",
   "importError.dataUnavailable": "調査データを読み込めませんでした。証拠をインポートするには、ページを再読み込みしてください。",
   "importError.screenshareActive": "画面共有モードでは証拠をインポートできません。ファイルをインポートするには画面共有をオフにしてください。",
+  "importError.remoteInvestigation": "この調査はチームサーバーから表示されており、ローカルには保存されていません。証拠をインポートするにはローカルに同期してください。",
   "importError.investigationArchived": "この調査はアーカイブされています。証拠をインポートするには復元してください。",
 
   "imagePrompt.intro": "この画像が CaddyAI に添付されたら、ThreatCaddy の画像証拠を分析してください: {{fileName}}",

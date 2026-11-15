@@ -1,18 +1,20 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { EvidenceImportError } from '../lib/evidence-import-limits';
 
-export type EvidenceImportBlockedReason = 'screenshareActive' | 'investigationArchived' | 'dataUnavailable' | 'notReady';
+export type EvidenceImportBlockedReason = 'screenshareActive' | 'remoteInvestigation' | 'investigationArchived' | 'dataUnavailable' | 'notReady';
 
 /** Owns in-flight evidence imports for one destination. The fence identity is
- * what an import writes into or exposes: folder, visible view, screenshare and
- * archive state. Data readiness (hydration, screenshare redaction) is checked
- * when an import starts but is not part of the identity: chat and evidence
- * reloads clear it briefly, and AgentCaddy cycles or sync pulls reload them
- * while a batch is parsing. */
-export function useEvidenceImportFence({ folderId, visible, screenshare, archived, dataReady, dataFailed }: {
+ * what an import writes into or exposes: folder, visible view, remote mode,
+ * screenshare and archive state. Data readiness (hydration, screenshare
+ * redaction) is checked when an import starts but is not part of the identity:
+ * chat and evidence reloads clear it briefly, and AgentCaddy cycles or sync
+ * pulls reload them while a batch is parsing. */
+export function useEvidenceImportFence({ folderId, visible, remote, screenshare, archived, dataReady, dataFailed }: {
   folderId?: string;
-  /** Local investigation, Evidence view showing, no settings/trash/archive overlay. */
+  /** Evidence view showing, no settings/trash/archive overlay. */
   visible: boolean;
+  /** The investigation is viewed from the team server and not stored locally. */
+  remote: boolean;
   /** Screenshare mode is on, or it hides the selected investigation. */
   screenshare: boolean;
   archived: boolean;
@@ -20,7 +22,7 @@ export function useEvidenceImportFence({ folderId, visible, screenshare, archive
   /** A data load failed, so waiting will not make the data ready. */
   dataFailed: boolean;
 }) {
-  const scope = useMemo(() => ({ folderId, writable: visible && !screenshare && !archived }), [folderId, visible, screenshare, archived]);
+  const scope = useMemo(() => ({ folderId, writable: visible && !remote && !screenshare && !archived }), [folderId, visible, remote, screenshare, archived]);
   const owner = useRef<typeof scope | null>(null);
   const controllers = useRef(new Set<AbortController>());
   useLayoutEffect(() => {
@@ -41,6 +43,7 @@ export function useEvidenceImportFence({ folderId, visible, screenshare, archive
   if (dataReady && !loadedOnce) setLoadedOnce(true);
 
   const blockedReason: EvidenceImportBlockedReason | undefined = screenshare ? 'screenshareActive'
+    : remote ? 'remoteInvestigation'
     : archived ? 'investigationArchived'
       : dataFailed ? 'dataUnavailable'
         : loadedOnce ? undefined : 'notReady';

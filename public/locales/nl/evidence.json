@@ -151,6 +151,7 @@
   "importError.notReady": "De onderzoeksgegevens worden nog geladen. Je kunt bewijsmateriaal importeren zodra ze geladen zijn.",
   "importError.dataUnavailable": "De onderzoeksgegevens konden niet worden geladen. Laad de pagina opnieuw om bewijsmateriaal te importeren.",
   "importError.screenshareActive": "Bewijsmateriaal importeren is niet beschikbaar tijdens schermdelen. Stop met schermdelen om bestanden te importeren.",
+  "importError.remoteInvestigation": "Dit onderzoek wordt vanaf de teamserver bekeken en is niet lokaal opgeslagen. Synchroniseer het lokaal om bewijsmateriaal te importeren.",
   "importError.investigationArchived": "Dit onderzoek is gearchiveerd. Herstel het om bewijsmateriaal te importeren.",
 
   "imagePrompt.intro": "Wanneer deze afbeelding aan CaddyAI wordt gekoppeld, analyseer dan het ThreatCaddy-beeldbewijs: {{fileName}}",

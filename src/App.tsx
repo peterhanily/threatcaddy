@@ -939,7 +939,8 @@ const AppInner = memo(function AppInner({
   );
   const evidenceImportFence = useEvidenceImportFence({
     folderId: selectedFolderId,
-    visible: investigationMode === 'local' && activeView === 'evidence' && !showSettings && !showTrash && !showArchive,
+    visible: activeView === 'evidence' && !showSettings && !showTrash && !showArchive,
+    remote: investigationMode === 'remote',
     screenshare: !!screenshareMaxLevel || selectedContextHidden,
     archived: selectedFolder?.status === 'archived',
     dataReady: privacyDataReady,

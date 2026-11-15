@@ -134,6 +134,7 @@
   "importError.notReady": "Dane śledztwa wciąż się wczytują. Dowody będzie można zaimportować po zakończeniu wczytywania.",
   "importError.dataUnavailable": "Nie udało się wczytać danych śledztwa. Odśwież stronę, aby zaimportować dowody.",
   "importError.screenshareActive": "Import dowodów jest niedostępny podczas udostępniania ekranu. Wyłącz udostępnianie ekranu, aby zaimportować pliki.",
+  "importError.remoteInvestigation": "To śledztwo jest wyświetlane z serwera zespołu i nie jest przechowywane lokalnie. Zsynchronizuj je lokalnie, aby zaimportować dowody.",
   "importError.investigationArchived": "To śledztwo jest zarchiwizowane. Przywróć je, aby zaimportować dowody.",
   "imagePrompt.intro": "Gdy ten obraz jest dołączony do CaddyAI, przeanalizuj dowód obrazowy ThreatCaddy: {{fileName}}",
   "imagePrompt.instruction": "Zidentyfikuj, co przedstawia obraz, przepisz widoczny tekst, wyodrębnij wszelkie IOC lub istotne pod względem bezpieczeństwa obiekty i wskaż niepewności.",

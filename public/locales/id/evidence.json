@@ -151,6 +151,7 @@
   "importError.notReady": "Data investigasi masih dimuat. Bukti dapat diimpor setelah pemuatan selesai.",
   "importError.dataUnavailable": "Data investigasi tidak dapat dimuat. Muat ulang halaman untuk mengimpor bukti.",
   "importError.screenshareActive": "Impor bukti tidak tersedia dalam mode berbagi layar. Matikan berbagi layar untuk mengimpor berkas.",
+  "importError.remoteInvestigation": "Investigasi ini dilihat dari server tim dan tidak disimpan secara lokal. Sinkronkan secara lokal untuk mengimpor bukti.",
   "importError.investigationArchived": "Investigasi ini diarsipkan. Pulihkan untuk mengimpor bukti.",
 
   "imagePrompt.intro": "Saat gambar ini dilampirkan ke CaddyAI, analisis bukti gambar ThreatCaddy: {{fileName}}",

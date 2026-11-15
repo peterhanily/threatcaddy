@@ -134,6 +134,7 @@
   "importError.notReady": "Los datos de la investigación aún se están cargando. Podrás importar pruebas cuando terminen de cargarse.",
   "importError.dataUnavailable": "No se pudieron cargar los datos de la investigación. Recarga la página para importar pruebas.",
   "importError.screenshareActive": "La importación de pruebas no está disponible en el modo de pantalla compartida. Desactiva la pantalla compartida para importar archivos.",
+  "importError.remoteInvestigation": "Esta investigación se consulta desde el servidor del equipo y no está almacenada localmente. Sincronízala localmente para importar pruebas.",
   "importError.investigationArchived": "Esta investigación está archivada. Restáurala para importar pruebas.",
   "imagePrompt.intro": "Cuando esta imagen se adjunte a CaddyAI, analiza la prueba de imagen de ThreatCaddy: {{fileName}}",
   "imagePrompt.instruction": "Identifica lo que muestra la imagen, transcribe el texto visible, extrae cualquier IOC o entidad relevante para la seguridad y señala la incertidumbre.",

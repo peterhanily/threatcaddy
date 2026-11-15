@@ -151,6 +151,7 @@
   "importError.notReady": "조사 데이터를 아직 불러오는 중입니다. 불러오기가 끝나면 증거를 가져올 수 있습니다.",
   "importError.dataUnavailable": "조사 데이터를 불러오지 못했습니다. 증거를 가져오려면 페이지를 새로 고치세요.",
   "importError.screenshareActive": "화면 공유 모드에서는 증거를 가져올 수 없습니다. 파일을 가져오려면 화면 공유를 끄세요.",
+  "importError.remoteInvestigation": "이 조사는 팀 서버에서 표시되며 로컬에 저장되어 있지 않습니다. 증거를 가져오려면 로컬로 동기화하세요.",
   "importError.investigationArchived": "이 조사는 보관되었습니다. 증거를 가져오려면 복원하세요.",
 
   "imagePrompt.intro": "이 이미지가 CaddyAI에 첨부되면 ThreatCaddy 이미지 증거를 분석하세요: {{fileName}}",

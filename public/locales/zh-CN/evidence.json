@@ -151,6 +151,7 @@
   "importError.notReady": "调查数据仍在加载。加载完成后即可导入证据。",
   "importError.dataUnavailable": "无法加载调查数据。请重新加载页面以导入证据。",
   "importError.screenshareActive": "屏幕共享模式下无法导入证据。请关闭屏幕共享后再导入文件。",
+  "importError.remoteInvestigation": "此调查从团队服务器查看，未存储在本地。请将其同步到本地后再导入证据。",
   "importError.investigationArchived": "此调查已归档。请将其恢复后再导入证据。",
 
   "imagePrompt.intro": "当此图像附加到 CaddyAI 时,分析该 ThreatCaddy 图像证据:{{fileName}}",

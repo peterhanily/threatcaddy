@@ -134,6 +134,7 @@
   "importError.notReady": "Les données de l'enquête sont encore en cours de chargement. Les preuves pourront être importées une fois le chargement terminé.",
   "importError.dataUnavailable": "Les données de l'enquête n'ont pas pu être chargées. Rechargez la page pour importer des preuves.",
   "importError.screenshareActive": "L'importation de preuves n'est pas disponible pendant le partage d'écran. Désactivez le partage d'écran pour importer des fichiers.",
+  "importError.remoteInvestigation": "Cette enquête est consultée depuis le serveur d'équipe et n'est pas stockée localement. Synchronisez-la localement pour importer des preuves.",
   "importError.investigationArchived": "Cette enquête est archivée. Restaurez-la pour importer des preuves.",
   "imagePrompt.intro": "Lorsque cette image est jointe à CaddyAI, analysez la preuve image de ThreatCaddy : {{fileName}}",
   "imagePrompt.instruction": "Identifiez ce que montre l'image, transcrivez le texte visible, extrayez tout IOC ou toute entité pertinente pour la sécurité, et signalez les incertitudes.",

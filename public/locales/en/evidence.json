@@ -151,6 +151,7 @@
   "importError.notReady": "Investigation data is still loading. Evidence can be imported once it has loaded.",
   "importError.dataUnavailable": "Investigation data could not be loaded. Reload the page to import evidence.",
   "importError.screenshareActive": "Evidence import is unavailable in screenshare mode. Turn off screensharing to import files.",
+  "importError.remoteInvestigation": "This investigation is viewed from the team server and is not stored locally. Sync it locally to import evidence.",
   "importError.investigationArchived": "This investigation is archived. Restore it to import evidence.",
 
   "imagePrompt.intro": "When this image is attached to CaddyAI, analyze the ThreatCaddy image evidence: {{fileName}}",

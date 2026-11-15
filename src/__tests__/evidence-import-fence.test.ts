@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { useEvidenceImportFence } from '../hooks/useEvidenceImportFence';
 
 type Input = Parameters<typeof useEvidenceImportFence>[0];
-const ready: Input = { folderId: 'case', visible: true, screenshare: false, archived: false, dataReady: true, dataFailed: false };
+const ready: Input = { folderId: 'case', visible: true, remote: false, screenshare: false, archived: false, dataReady: true, dataFailed: false };
 
 function startImport(input: Input = ready) {
   const view = renderHook(props => useEvidenceImportFence(props), { initialProps: input });
@@ -27,6 +27,7 @@ describe('evidence import ownership', () => {
   it.each([
     ['a folder switch', { folderId: 'other' }],
     ['leaving the Evidence view', { visible: false }],
+    ['opening it from the team server', { remote: true }],
     ['screenshare mode', { screenshare: true }],
     ['archiving the investigation', { archived: true }],
   ])('interrupts an in-flight import on %s with a typed reason', (_name, change) => {
@@ -49,6 +50,7 @@ describe('evidence import ownership', () => {
 
   it.each([
     [{ screenshare: true }, 'screenshareActive'],
+    [{ remote: true }, 'remoteInvestigation'],
     [{ archived: true }, 'investigationArchived'],
     [{ dataReady: false }, 'notReady'],
     [{ dataReady: false, dataFailed: true }, 'dataUnavailable'],

@@ -134,6 +134,7 @@
   "importError.notReady": "נתוני החקירה עדיין נטענים. ניתן יהיה לייבא ראיות לאחר סיום הטעינה.",
   "importError.dataUnavailable": "לא ניתן היה לטעון את נתוני החקירה. טען מחדש את הדף כדי לייבא ראיות.",
   "importError.screenshareActive": "ייבוא ראיות אינו זמין במצב שיתוף מסך. יש לכבות את שיתוף המסך כדי לייבא קבצים.",
+  "importError.remoteInvestigation": "חקירה זו מוצגת משרת הצוות ואינה מאוחסנת מקומית. סנכרן אותה מקומית כדי לייבא ראיות.",
   "importError.investigationArchived": "חקירה זו נמצאת בארכיון. שחזר אותה כדי לייבא ראיות.",
   "imagePrompt.intro": "כאשר תמונה זו מצורפת ל-CaddyAI, נתח את ראיית התמונה של ThreatCaddy: {{fileName}}",
   "imagePrompt.instruction": "זהה את מה שהתמונה מציגה, תמלל טקסט גלוי, חלץ IOCs או ישויות רלוונטיות לאבטחה, והצבע על אי-ודאות.",

@@ -134,6 +134,7 @@
   "importError.notReady": "I dati dell'indagine sono ancora in caricamento. Potrai importare le evidence al termine del caricamento.",
   "importError.dataUnavailable": "Non è stato possibile caricare i dati dell'indagine. Ricarica la pagina per importare le evidence.",
   "importError.screenshareActive": "L'importazione delle evidence non è disponibile durante la condivisione dello schermo. Disattiva la condivisione dello schermo per importare file.",
+  "importError.remoteInvestigation": "Questa indagine è visualizzata dal server del team e non è archiviata localmente. Sincronizzala localmente per importare le evidence.",
   "importError.investigationArchived": "Questa indagine è archiviata. Ripristinala per importare evidence.",
   "imagePrompt.intro": "Quando questa immagine è allegata a CaddyAI, analizza l'evidence immagine di ThreatCaddy: {{fileName}}",
   "imagePrompt.instruction": "Identifica ciò che mostra l'immagine, trascrivi il testo visibile, estrai eventuali IOC o entità rilevanti per la sicurezza e segnala l'incertezza.",
