@@ -50,6 +50,31 @@ describe('untrusted evidence resource boundaries', () => {
     expect(draft.extractionWarning).toContain('Image dimensions could not be read');
   });
 
+  it('rejects an image whose header declares too many pixels before decoding it', async () => {
+    const decode = vi.fn();
+    vi.stubGlobal('createImageBitmap', decode);
+    const header = new Uint8Array(33);
+    header.set([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82]);
+    new DataView(header.buffer).setUint32(16, 10_000); new DataView(header.buffer).setUint32(20, 10_000);
+    await expect(buildEvidenceItemDrafts(new File([header], 'bomb.png', { type: 'image/png' }))).rejects.toThrow('32 million pixels');
+    expect(decode).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['png', [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 3, 32, 0, 0, 2, 88, 8, 2, 0, 0, 0]],
+    ['gif', [71, 73, 70, 56, 57, 97, 32, 3, 88, 2, 0, 0, 0]],
+    ['bmp', [66, 77, 0, 0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 40, 0, 0, 0, 32, 3, 0, 0, 168, 253, 255, 255, 1, 0, 24, 0]],
+    ['webp', [...encode('RIFF'), 0, 0, 0, 0, ...encode('WEBPVP8X'), 10, 0, 0, 0, 0, 0, 0, 0, 31, 3, 0, 87, 2, 0]],
+    ['webp', [...encode('RIFF'), 0, 0, 0, 0, ...encode('WEBPVP8L'), 0, 0, 0, 0, 0x2f, 0x1f, 0xc3, 0x95, 0x00, 0, 0, 0, 0, 0]],
+    ['webp', [...encode('RIFF'), 0, 0, 0, 0, ...encode('WEBPVP8 '), 0, 0, 0, 0, 0, 0, 0, 0x9d, 0x01, 0x2a, 32, 3, 88, 2]],
+    ['jpg', [0xff, 0xd8, 0xff, 0xe0, 0, 4, 0, 0, 0xff, 0xc2, 0, 11, 8, 2, 88, 3, 32, 1, 1, 17, 0]],
+  ])('reads %s dimensions from the header when the worker cannot decode the image', async (extension, bytes) => {
+    vi.stubGlobal('createImageBitmap', vi.fn().mockRejectedValue(new Error('NotReadableError')));
+    vi.stubGlobal('Image', undefined);
+    const [draft] = await buildEvidenceItemDrafts(new File([new Uint8Array(bytes)], `shot.${extension}`));
+    expect([draft.imageWidth, draft.imageHeight]).toEqual([800, 600]);
+  });
+
   it('closes decoded image resources and rejects pixel dimensions beyond the supported bound', async () => {
     const close = vi.fn();
     vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue({ width: 8192, height: 8192, close }));

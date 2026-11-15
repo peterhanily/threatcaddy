@@ -42,13 +42,40 @@ describe('isolated evidence import lifecycle', () => {
 
   it('returns all drafts only after every document succeeds and cleans up workers', async () => {
     const promise = extractEvidenceFiles([file(), file()], { folderName: 'Synthetic' });
-    expect(workers.instances[0].postMessage).toHaveBeenCalledWith({ file: expect.any(File), options: { folderName: 'Synthetic' } });
+    await tick();
+    expect(workers.instances[0].postMessage).toHaveBeenCalledWith(
+      { source: expect.objectContaining({ name: 'report.txt' }), options: { folderName: 'Synthetic' } }, [expect.any(ArrayBuffer)]);
     respond(0, { ok: true, drafts: [{ title: 'one' }] });
     await tick();
     respond(1, { ok: true, drafts: [{ title: 'two' }] });
     await expect(promise).resolves.toEqual([{ title: 'one' }, { title: 'two' }]);
     expect(workers.instances.every(worker => worker.terminate.mock.calls.length === 1)).toBe(true);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('transfers the bytes read on the main thread instead of posting the File', async () => {
+    // WebKit workers at a file:// origin cannot read a posted File or Blob.
+    const selected = new File(['Synthetic evidence'], 'report.txt', { type: 'text/plain', lastModified: 1234 });
+    const promise = extractEvidenceFiles([selected]);
+    await tick();
+    const [message, transfer] = workers.instances[0].postMessage.mock.calls[0] as unknown as [{ source: Record<string, unknown> }, ArrayBuffer[]];
+    expect(Object.values(message.source).some(value => value instanceof Blob)).toBe(false);
+    expect(message.source).toMatchObject({ name: 'report.txt', type: 'text/plain', size: 18, lastModified: 1234 });
+    expect(new TextDecoder().decode(message.source.bytes as Uint8Array)).toBe('Synthetic evidence');
+    expect(transfer).toEqual([(message.source.bytes as Uint8Array).buffer]);
+    respond(0, { ok: true, drafts: [] });
+    await expect(promise).resolves.toEqual([]);
+  });
+
+  it('does not post bytes to a worker that was cancelled while the file was being read', async () => {
+    const controller = new AbortController();
+    const promise = extractEvidenceFiles([file()], {}, controller.signal);
+    const rejection = expect(promise).rejects.toMatchObject({ name: 'AbortError' });
+    controller.abort();
+    await rejection;
+    await tick();
+    expect(workers.instances[0].postMessage).not.toHaveBeenCalled();
+    expect(workers.instances[0].terminate).toHaveBeenCalledOnce();
   });
 
   it('cancels an active worker and ignores its late result without starting another document', async () => {

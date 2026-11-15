@@ -1,5 +1,5 @@
 import EvidenceWorker from '../workers/evidence-import.worker?worker';
-import type { EvidenceDraftOptions, EvidenceItemDraft } from './evidence-import';
+import type { EvidenceDraftOptions, EvidenceFileSource, EvidenceItemDraft } from './evidence-import';
 import { MAX_EVIDENCE_IMPORT_FILES } from './evidence-import-constants';
 import { assertEvidenceInput, EVIDENCE_LIMITS, EvidenceImportLimitError } from './evidence-import-limits';
 
@@ -39,8 +39,13 @@ function parseDocument(file: File, options: EvidenceDraftOptions, signal: AbortS
     signal.addEventListener('abort', abort, { once: true });
     // A signal may already have changed while the worker was being constructed.
     if (signal.aborted) { abort(); return; }
-    try { worker.postMessage({ file, options }); }
-    catch (error) { finish(error); }
+    // WebKit workers at a file:// origin cannot read a posted File or Blob, so
+    // read the size-checked file here and transfer its bytes.
+    file.arrayBuffer().then(buffer => {
+      if (finished) return;
+      const source: EvidenceFileSource = { name: file.name, type: file.type, size: buffer.byteLength, lastModified: file.lastModified, bytes: new Uint8Array(buffer) };
+      worker.postMessage({ source, options }, [buffer]);
+    }).catch(error => finish(error));
   });
 }
 

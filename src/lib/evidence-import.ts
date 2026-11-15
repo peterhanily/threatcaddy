@@ -51,6 +51,16 @@ export interface EvidenceDraftOptions {
   importedAt?: number;
 }
 
+/** File bytes read on the main thread. WebKit workers at a file:// origin
+ * cannot read a posted File or Blob, so the bytes are transferred instead. */
+export interface EvidenceFileSource {
+  name: string;
+  type: string;
+  size: number;
+  lastModified: number;
+  bytes: Uint8Array;
+}
+
 interface ExtractedEvidence {
   text: string;
   kind: EvidenceKind;
@@ -76,10 +86,11 @@ interface DocxEvidence {
 }
 
 export async function buildEvidenceItemDrafts(
-  file: File,
+  input: File | EvidenceFileSource,
   options: EvidenceDraftOptions = {},
 ): Promise<EvidenceItemDraft[]> {
   const importedAt = options.importedAt ?? Date.now();
+  const file = await readEvidenceSource(input);
   const extracted = await extractEvidenceText(file);
   const imageMetadata = extracted.kind === 'image' ? await extractImageMetadata(file) : undefined;
   const capped = capExtractedText(extracted.text);
@@ -154,10 +165,11 @@ export async function buildEvidenceItemDrafts(
 }
 
 export async function buildEvidenceNoteDrafts(
-  file: File,
+  input: File | EvidenceFileSource,
   options: EvidenceDraftOptions = {},
 ): Promise<EvidenceNoteDraft[]> {
   const importedAt = options.importedAt ?? Date.now();
+  const file = await readEvidenceSource(input);
   const extracted = await extractEvidenceText(file);
   const imageMetadata = extracted.kind === 'image' ? await extractImageMetadata(file) : undefined;
   const capped = capExtractedText(extracted.text);
@@ -203,17 +215,37 @@ export function isLegacyEvidenceNote(note: Note): boolean {
     Boolean(note.tags?.includes('source:file') || note.tags?.some((tag) => tag.startsWith('extraction:')) || note.title.startsWith('Evidence -'));
 }
 
-async function extractEvidenceText(file: File): Promise<ExtractedEvidence> {
-  assertEvidenceInput(file);
+/** Check the size before reading anything, then read the bytes once. */
+async function readEvidenceSource(input: File | EvidenceFileSource): Promise<EvidenceFileSource> {
+  assertEvidenceInput(input);
+  if (isTransferredSource(input)) {
+    assertEvidenceInput({ size: input.bytes.byteLength });
+    return input;
+  }
+  return {
+    name: input.name,
+    type: input.type,
+    size: input.size,
+    lastModified: input.lastModified,
+    bytes: new Uint8Array(await input.arrayBuffer()),
+  };
+}
+
+// Blob.bytes() is a method; a transferred source carries the bytes themselves.
+function isTransferredSource(input: File | EvidenceFileSource): input is EvidenceFileSource {
+  return ArrayBuffer.isView((input as { bytes?: unknown }).bytes);
+}
+
+async function extractEvidenceText(file: EvidenceFileSource): Promise<ExtractedEvidence> {
   const kind = detectEvidenceKind(file);
 
   if (kind === 'text' || kind === 'spreadsheet') {
-    const text = await file.text();
+    const text = decodeUtf8(file.bytes);
     return { text: normalizeExtractedText(text), kind, status: 'extracted' };
   }
 
   if (kind === 'rtf') {
-    const text = extractRtfText(await file.text());
+    const text = extractRtfText(decodeUtf8(file.bytes));
     return text
       ? { text, kind, status: 'extracted' }
       : { text: '', kind, status: 'metadata-only', warning: 'No readable text could be extracted from this RTF file.' };
@@ -228,7 +260,7 @@ async function extractEvidenceText(file: File): Promise<ExtractedEvidence> {
     };
   }
 
-  const bytes = new Uint8Array(await file.arrayBuffer());
+  const bytes = file.bytes;
 
   if (kind === 'pdf') {
     const pdf = extractPdfText(bytes);
@@ -298,7 +330,7 @@ function renderEvidenceContent({
   partCount,
   text,
 }: {
-  file: File;
+  file: EvidenceFileSource;
   kind: EvidenceKind;
   status: EvidenceExtractionStatus;
   warning?: string;
@@ -336,7 +368,7 @@ function renderEvidenceContent({
   return `${metadata}${imageBlock}\n\n## Extracted Text\n\n${text.trim()}`;
 }
 
-function detectEvidenceKind(file: File): EvidenceKind {
+function detectEvidenceKind(file: EvidenceFileSource): EvidenceKind {
   const name = file.name.toLowerCase();
   const type = file.type.toLowerCase();
 
@@ -371,7 +403,7 @@ function imageDraftFields(metadata?: ImageEvidenceMetadata): Partial<EvidenceIte
   };
 }
 
-async function extractImageMetadata(file: File): Promise<ImageEvidenceMetadata> {
+async function extractImageMetadata(file: EvidenceFileSource): Promise<ImageEvidenceMetadata> {
   const dimensions = await readImageDimensions(file);
   const mimeType = rasterImageMimeType(file.type, file.name);
   const pixelCount = dimensions.width && dimensions.height ? dimensions.width * dimensions.height : undefined;
@@ -381,7 +413,7 @@ async function extractImageMetadata(file: File): Promise<ImageEvidenceMetadata> 
 
   if (file.size <= MAX_IMAGE_ANALYSIS_BYTES) {
     try {
-      data = await readFileAsBase64(file);
+      data = bytesToBase64(file.bytes);
     } catch {
       warnings.push('Image preview payload could not be stored for later vision analysis.');
     }
@@ -404,10 +436,16 @@ async function extractImageMetadata(file: File): Promise<ImageEvidenceMetadata> 
   };
 }
 
-async function readImageDimensions(file: File): Promise<{ width?: number; height?: number }> {
+async function readImageDimensions(file: EvidenceFileSource): Promise<{ width?: number; height?: number }> {
+  // Check the declared size before any decode allocates the bitmap.
+  const header = readImageHeaderDimensions(file.bytes);
+  if (header && header.width * header.height > EVIDENCE_LIMITS.imagePixels) {
+    throw new EvidenceImportLimitError('image dimensions exceed 32 million pixels');
+  }
+  const blob = new Blob([file.bytes as Uint8Array<ArrayBuffer>], { type: file.type });
   if (typeof createImageBitmap === 'function') {
     try {
-      const bitmap = await createImageBitmap(file);
+      const bitmap = await createImageBitmap(blob);
       const dimensions = { width: bitmap.width, height: bitmap.height };
       bitmap.close();
       if (dimensions.width * dimensions.height > EVIDENCE_LIMITS.imagePixels) {
@@ -420,10 +458,12 @@ async function readImageDimensions(file: File): Promise<{ width?: number; height
     }
   }
 
+  // Workers have no Image; WebKit workers on file:// cannot decode a Blob either.
+  if (header) return header;
   if (typeof Image === 'undefined' || typeof URL === 'undefined') return {};
 
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
+    const url = URL.createObjectURL(blob);
     const image = new Image();
     image.onload = () => {
       URL.revokeObjectURL(url);
@@ -441,9 +481,41 @@ async function readImageDimensions(file: File): Promise<{ width?: number; height
   });
 }
 
-async function readFileAsBase64(file: File): Promise<string> {
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  return bytesToBase64(bytes);
+/** Width and height from a PNG, GIF, BMP, WebP or JPEG header, without decoding. */
+function readImageHeaderDimensions(bytes: Uint8Array): { width: number; height: number } | undefined {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const ascii = (offset: number, length: number) => String.fromCharCode(...bytes.subarray(offset, offset + length));
+  const u24 = (offset: number) => bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16);
+  const size = (width: number, height: number) => (width > 0 && height > 0 ? { width, height } : undefined);
+  if (bytes.length >= 24 && ascii(1, 3) === 'PNG' && ascii(12, 4) === 'IHDR') return size(view.getUint32(16), view.getUint32(20));
+  if (bytes.length >= 10 && ascii(0, 3) === 'GIF') return size(view.getUint16(6, true), view.getUint16(8, true));
+  if (bytes.length >= 26 && ascii(0, 2) === 'BM') return size(Math.abs(view.getInt32(18, true)), Math.abs(view.getInt32(22, true)));
+  if (bytes.length >= 30 && ascii(0, 4) === 'RIFF' && ascii(8, 4) === 'WEBP') {
+    const chunk = ascii(12, 4);
+    if (chunk === 'VP8X') return size(u24(24) + 1, u24(27) + 1);
+    if (chunk === 'VP8L' && bytes[20] === 0x2f) {
+      const bits = view.getUint32(21, true);
+      return size((bits & 0x3fff) + 1, ((bits >>> 14) & 0x3fff) + 1);
+    }
+    if (chunk === 'VP8 ') return size(view.getUint16(26, true) & 0x3fff, view.getUint16(28, true) & 0x3fff);
+    return undefined;
+  }
+  if (bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8) {
+    let offset = 2;
+    while (offset + 9 <= bytes.length && bytes[offset] === 0xff) {
+      const marker = bytes[offset + 1];
+      if (marker === 0xff) { offset += 1; continue; }
+      if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd8)) { offset += 2; continue; }
+      // Start-of-frame markers, excluding DHT (C4), JPG (C8) and DAC (CC).
+      if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+        return size(view.getUint16(offset + 7), view.getUint16(offset + 5));
+      }
+      const length = view.getUint16(offset + 2);
+      if (length < 2) return undefined;
+      offset += 2 + length;
+    }
+  }
+  return undefined;
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -487,7 +559,7 @@ function gcd(a: number, b: number): number {
   return x || 1;
 }
 
-function renderImageMetadata(file: File, metadata?: ImageEvidenceMetadata): string {
+function renderImageMetadata(file: EvidenceFileSource, metadata?: ImageEvidenceMetadata): string {
   return [
     metadata?.width && metadata.height ? `**Dimensions:** ${metadata.width} x ${metadata.height}px` : undefined,
     metadata?.aspectRatio ? `**Aspect ratio:** ${metadata.aspectRatio}` : undefined,
