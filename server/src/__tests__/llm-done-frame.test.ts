@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Hono } from 'hono';
+import { DrizzleQueryError } from 'drizzle-orm';
 
 const { usageInsert, providerFetch } = vi.hoisted(() => ({
   usageInsert: vi.fn(async () => undefined),
@@ -24,6 +25,7 @@ vi.stubGlobal('fetch', providerFetch);
 
 // The production route over the real Anthropic adapter; only the provider HTTP call is faked.
 import llmRoutes from '../routes/llm.js';
+import { logger } from '../lib/logger.js';
 
 const app = new Hono();
 app.route('/api/llm', llmRoutes);
@@ -72,5 +74,17 @@ describe('LLM proxy done frame', () => {
   it('sends null usage when the provider reported none', async () => {
     providerFetch.mockResolvedValue(anthropicStream(0, 0));
     expect((await doneFrame()).usage).toBeNull();
+  });
+
+  it('logs a failed usage insert without the query or its parameters', async () => {
+    const cause = Object.assign(new Error('relation "llm_usage" does not exist'), { code: '42P01' });
+    usageInsert.mockRejectedValueOnce(new DrizzleQueryError('insert into "llm_usage" values ($1, $2)', ['user-1', 'private-model-name'], cause));
+    providerFetch.mockResolvedValue(anthropicStream(12, 3));
+    await doneFrame();
+    await vi.waitFor(() => expect(logger.error).toHaveBeenCalled());
+    const [message, fields] = vi.mocked(logger.error).mock.calls[0];
+    expect(message).toBe('Failed to log LLM usage');
+    expect(fields).toMatchObject({ errorName: 'DrizzleQueryError', sqlState: '42P01', error: 'relation "llm_usage" does not exist' });
+    expect(JSON.stringify(fields)).not.toMatch(/private-model-name|insert into/);
   });
 });

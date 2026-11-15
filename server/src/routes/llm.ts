@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { nanoid } from 'nanoid';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { errorLogFields } from '../middleware/error-handler.js';
 import { streamLLM, getAvailableProviders } from '../services/llm-service.js';
 import type { AuthUser, LLMChatRequest } from '../types.js';
 import { db } from '../db/index.js';
@@ -100,7 +101,7 @@ app.post('/chat', requireRole('admin', 'analyst'), async (c) => {
           outputTokens: tokens?.output ?? 0,
           latencyMs,
           threadId: null,
-        }).catch((err) => logger.error('Failed to log LLM usage', err));
+        }).catch((err: Error) => logger.error('Failed to log LLM usage', errorLogFields(err)));
       },
       onError: (error) => {
         stream.writeSSE({ data: JSON.stringify({ type: 'error', error }) });

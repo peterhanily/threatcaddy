@@ -16,7 +16,7 @@ const truncate = (text: string) => text.length > MAX_LOGGED_MESSAGE ? `${text.sl
  * text and every bound parameter (row contents, password hashes), so for it
  * only the driver error's SQLSTATE, constraint and message are logged.
  */
-function errorLogFields(err: Error): Record<string, unknown> {
+export function errorLogFields(err: Error): Record<string, unknown> {
   const queryError = err instanceof DrizzleQueryError;
   const source: unknown = queryError ? err.cause : err;
   const constraint = (source as { constraint_name?: unknown } | undefined)?.constraint_name;
