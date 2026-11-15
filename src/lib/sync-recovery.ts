@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { db, repairBackupIntegrity } from '../db';
 import { canonicalBackupJSON, encryptBackup, decryptBackup, type EncryptedBackupBlob } from './backup-crypto';
 import { normalizeSyncWorkspaceIdentity, SYNC_WORKSPACE_KEY } from './sync-workspace';
 import { SYNC_TABLES, isSyncTable, suppressSyncInCurrentTransaction } from './sync-state';
@@ -134,7 +134,7 @@ export async function restoreSyncRecovery(password: string, blob: EncryptedBacku
   const binding = archive.data._syncMeta.find(row => row.key === SYNC_WORKSPACE_KEY)?.value as { serverUrl?: string; userId?: string } | undefined;
   const auth = readStoredAuth();
   if (auth && (binding?.serverUrl !== auth.serverUrl || binding.userId !== auth.user.id)) throw new Error('Recovery archive belongs to another server or account.');
-  return withEntityDraftBarrier(() => db.transaction('rw', db.tables, async () => {
+  return withEntityDraftBarrier(() => db.transaction('rw', db.tables, async tx => {
     if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work first.');
     suppressSyncInCurrentTransaction();
     for (const table of db.tables) if (table.name !== '_localMigrations' && await table.count()) throw new Error('Recovery requires an empty workspace; existing data was not changed.');
@@ -152,6 +152,7 @@ export async function restoreSyncRecovery(password: string, blob: EncryptedBacku
       await db.table(name).bulkPut(restored);
       count += restored.length;
     }
+    await repairBackupIntegrity(tx);
     await markRestoredSyncHistory(db);
     if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work first.');
     return count;

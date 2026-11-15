@@ -309,8 +309,9 @@ export async function runWorkspaceContentMigrations(): Promise<void> {
 /** Rows written before the 2.0.1 writer fixes made every backup fail: NaN token
  * usage from the team-server proxy, agent history stamped with updatedAt or
  * stripped of its required thread, and recovery restores that wrote `result`.
- * Repaired in place; modification times and sync capture are left alone. */
-async function repairBackupIntegrity(tx: Parameters<NonNullable<Parameters<ReturnType<typeof db.version>['upgrade']>[0]>>[0]) {
+ * Repaired in place; modification times and sync capture are left alone.
+ * Recovery archive restores rerun it: their rows can predate the marker. */
+export async function repairBackupIntegrity(tx: Parameters<NonNullable<Parameters<ReturnType<typeof db.version>['upgrade']>[0]>>[0]) {
   // Startup depends on this pass: tolerate any stored shape and only zero the
   // non-finite counters that are present.
   const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);

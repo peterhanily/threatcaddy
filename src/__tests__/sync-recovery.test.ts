@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { db } from '../db';
+import { db, runWorkspaceContentMigrations } from '../db';
 import { disableSync, revisionKey } from '../lib/sync-state';
 import { setSessionKey } from '../lib/encryptionMiddleware';
 import { prepareSyncRecovery, reconcileSyncWorkspace, restoreSyncRecovery } from '../lib/sync-recovery';
@@ -110,5 +110,31 @@ describe('explicit sync recovery', () => {
     await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
     await expect(buildFullBackupPayload('investigation', 'f')).resolves.toBeDefined();
     await expect(exportJSON()).resolves.toContain('Recovered from archive');
+  });
+  it('repairs backup-blocking rows from an older archive even after the one-time repair already ran', async () => {
+    // Rows a pre-2.0.1 build wrote: NaN usage, a stamped meeting, a meeting without its thread and an action holding `result`.
+    const action = { investigationId: 'f', threadId: 't', toolName: 'create_note', toolInput: { title: 'Draft' }, rationale: 'History', createdAt: 1 };
+    await db.chatThreads.add({ id: 't', title: 'Audit', messages: [{ id: 'm', role: 'assistant', content: 'Turn', createdAt: 1, tokenCount: { input: NaN, output: 2 } }],
+      model: 'model', provider: 'anthropic', folderId: 'f', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+    await db.agentDeployments.add({ id: 'd', investigationId: 'f', profileId: 'p', status: 'idle', order: 0, createdAt: 1, updatedAt: 1,
+      metrics: { cyclesRun: 1, toolCallsExecuted: 0, toolCallsProposed: 0, tasksCompleted: 0, tasksRejected: 0, tokensUsed: { input: NaN, output: NaN }, lastCycleAt: 1, costUSD: NaN } });
+    await db.table('agentMeetings').bulkAdd([
+      { id: 'stamped', investigationId: 'f', participantDeploymentIds: [], threadId: 't', agenda: 'A', status: 'completed', roundsCompleted: 1, maxRounds: 1, createdAt: 1, updatedAt: 9 },
+      { id: 'threadless', investigationId: 'f', participantDeploymentIds: [], agenda: 'B', status: 'completed', roundsCompleted: 1, maxRounds: 1, createdAt: 1 },
+    ]);
+    await db.table('agentActions').add({ ...action, id: 'old', status: 'rejected', result: 'Recovered from archive' });
+    const receipt = await prepareSyncRecovery(password);
+    // A fresh workspace on this build has already recorded the one-time repair.
+    await db.transaction('rw', db.tables, async () => { for (const table of db.tables) await table.clear(); });
+    await runWorkspaceContentMigrations();
+    expect(await db.table('_localMigrations').get('backup-integrity-v1')).toBeDefined();
+    await restoreSyncRecovery(password, receipt.blob, true);
+    expect((await db.agentDeployments.get('d'))?.metrics).toMatchObject({ tokensUsed: { input: 0, output: 0 }, costUSD: 0 });
+    expect((await db.chatThreads.get('t'))?.messages[0].tokenCount).toEqual({ input: 0, output: 2 });
+    expect(await db.agentMeetings.get('stamped')).not.toHaveProperty('updatedAt');
+    expect(await db.agentMeetings.get('threadless')).toMatchObject({ threadId: '' });
+    expect(await db.agentActions.get('old')).toMatchObject({ resultSummary: 'Recovered from archive' });
+    await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
+    await expect(exportJSON()).resolves.toContain('threatcaddy-backup');
   });
 });
