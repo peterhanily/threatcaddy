@@ -425,13 +425,13 @@ export class SyncEngine {
     return new Set((await dynamicDb.table('agentDeployments').toCollection().primaryKeys()).map(String));
   }
 
-  /** Short label for a banner: the local title, name or value, else the table and id, plus the investigation. */
+  /** Short label for a banner: the local title, name or value, else the item type, plus the investigation. */
   private async itemLabel(table: string, id: string, folderId?: unknown) {
     const row = await dynamicDb.table(table).get(id);
     const text = [row?.title, row?.name, row?.value].find((value): value is string => typeof value === 'string' && value.trim() !== '');
     const folder = table === 'folders' ? undefined : typeof folderId === 'string' ? folderId : row?.folderId;
     const investigation = typeof folder === 'string' ? (await dynamicDb.table('folders').get(folder))?.name : undefined;
-    const item = text ? text.slice(0, 80) : `${table} ${id.slice(0, 8)}`;
+    const item = text ? text.slice(0, 80) : i18n.t(`syncStatus.itemType.${table}`, { ns: 'common' });
     return typeof investigation === 'string' && investigation ? `${item} (${investigation})` : item;
   }
 

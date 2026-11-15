@@ -91,6 +91,14 @@ describe('a server row this client cannot read', () => {
     expect(onError).toHaveBeenLastCalledWith(null);
   });
 
+  it('names a skipped item this device never had by its type, not by its table key or id', async () => {
+    api.pull.mockResolvedValueOnce({ changes: [remote('standaloneIOCs', ioc('badabcdef', 'ip', '203.0.113.7'), 1)], cursor: '1', hasMore: false });
+    await engine.sync();
+    const notice = onError.mock.lastCall?.[0];
+    expect(notice).toContain('IOC (Phishing case)');
+    expect(notice).not.toMatch(/standaloneIOCs|badabcde/);
+  });
+
   it('skips an unreadable row while re-downloading an investigation', async () => {
     api.pull.mockImplementation(async (_since, folderId, cursor) => folderId
       ? { changes: [remote('standaloneIOCs', ioc('bad', 'hash', 'abc'), 1), remote('notes', note('n2'), 2)], cursor: '2', hasMore: false }
