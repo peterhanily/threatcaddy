@@ -68,7 +68,8 @@ import { prepareProductComposerNote, type ProductComposerSnapshot } from './lib/
 import { createProductComposerPersistence } from './lib/product-composer-persistence';
 import type { ProductComposerSaveInput } from './components/Products/ProductComposer';
 import { getActiveWorkspaceId } from './lib/workspace-profiles';
-import { getSampleFolderId, loadSampleInvestigation, deleteSampleInvestigation, type SampleInvestigationKind } from './lib/sample-investigation-store';
+import { getSampleFolderId, getSampleRemovalSummary, loadSampleInvestigation, deleteSampleInvestigation, SampleActionError, type SampleInvestigationKind } from './lib/sample-investigation-store';
+import { SampleRemovalDialog, type SampleRemovalRequest } from './components/Common/SampleRemovalDialog';
 import { db } from './db';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { ActiveFilterBar } from './components/Common/ActiveFilterBar';
@@ -1289,6 +1290,11 @@ const AppInner = memo(function AppInner({
   const parodyLoaded = useMemo(() => folders.some(f => f.id === getSampleFolderId('parody')), [folders]);
   const [demoKind, setDemoKind] = useState<SampleInvestigationKind>('realistic');
   const [demoName, setDemoName] = useState<string>();
+  const [sampleRemoval, setSampleRemoval] = useState<SampleRemovalRequest | null>(null);
+  const [pendingDemoKind, setPendingDemoKind] = useState<SampleInvestigationKind | null>(null);
+  const sampleErrorMessage = useCallback((error: unknown) => error instanceof SampleActionError
+    ? tt(error.code === 'locked' ? 'investigation.sampleLocked' : 'investigation.sampleSessionChanged')
+    : error instanceof Error ? error.message : tt('import.importFailed'), [tt]);
   const handleLoadSample = useCallback(async (kind: SampleInvestigationKind = 'realistic') => {
     const workspace = getActiveWorkspaceId(), generation = getSessionGeneration();
     const current = () => workspace === getActiveWorkspaceId() && generation === getSessionGeneration();
@@ -1311,28 +1317,48 @@ const AppInner = memo(function AppInner({
       addToast('success', tt('investigation.sampleLoaded'));
       return true;
     } catch (error) {
-      if (current()) addToast('error', error instanceof Error ? error.message : tt('import.importFailed'));
+      if (current()) addToast('error', sampleErrorMessage(error));
       return false;
     }
-  }, [reloadAll, navigateTo, activityLog, setSelectedFolderId, setSelectedNoteId, addToast, tt]);
+  }, [reloadAll, navigateTo, activityLog, setSelectedFolderId, setSelectedNoteId, addToast, tt, sampleErrorMessage]);
 
-  const handleDeleteSample = useCallback(async (kind: SampleInvestigationKind = 'realistic') => {
+  // Removal is permanent: every entry point asks first and names what the user added.
+  const requestDeleteSample = useCallback(async (kind: SampleInvestigationKind = 'realistic') => {
     const workspace = getActiveWorkspaceId(), generation = getSessionGeneration();
     const current = () => workspace === getActiveWorkspaceId() && generation === getSessionGeneration();
     try {
-      await deleteSampleInvestigation(kind);
+      const summary = await getSampleRemovalSummary(kind);
       if (!current()) return;
-      handleImportComplete();
+      if (summary) setSampleRemoval({ kind, ...summary });
+      else handleImportComplete();
+    } catch (error) {
+      if (current()) addToast('error', sampleErrorMessage(error));
+    }
+  }, [handleImportComplete, addToast, sampleErrorMessage]);
+
+  const handleDeleteSample = useCallback(async ({ kind, name }: SampleRemovalRequest, keepUserItems: boolean) => {
+    const workspace = getActiveWorkspaceId(), generation = getSessionGeneration();
+    const current = () => workspace === getActiveWorkspaceId() && generation === getSessionGeneration();
+    try {
+      const { keptFolder } = await deleteSampleInvestigation(kind, undefined,
+        keepUserItems ? { keepUserItemsIn: tInvestigations('sample.keptFolderName', { name }) } : undefined);
+      if (!current()) return;
+      // Selection validators must see the kept case before it is selected.
+      await reloadAll();
+      if (!current()) return;
       if (selectedFolderId === getSampleFolderId(kind)) {
-        setSelectedFolderId(undefined);
+        setSelectedFolderId(keptFolder?.id);
         setSelectedNoteId(undefined);
       }
       activityLog.log('data', 'delete', `Removed ${kind} sample investigation`);
-      addToast('success', tt('investigation.sampleRemoved'));
+      addToast('success', keptFolder ? tt('investigation.sampleKept', { name: keptFolder.name }) : tt('investigation.sampleRemoved'));
     } catch (error) {
-      if (current()) addToast('error', error instanceof Error ? error.message : tt('import.importFailed'));
+      if (current()) addToast('error', sampleErrorMessage(error));
     }
-  }, [handleImportComplete, selectedFolderId, activityLog, setSelectedFolderId, setSelectedNoteId, addToast, tt]);
+  }, [reloadAll, selectedFolderId, activityLog, setSelectedFolderId, setSelectedNoteId, addToast, tt, tInvestigations, sampleErrorMessage]);
+
+  const openDemo = useCallback((kind: SampleInvestigationKind) =>
+    handleLoadSample(kind).then(loaded => { if (loaded) setShowDemoModal(true); }), [handleLoadSample, setShowDemoModal]);
 
   // The default demo is a realistic synthetic case; ?demo=parody retains the original.
   useEffect(() => {
@@ -1344,10 +1370,14 @@ const AppInner = memo(function AppInner({
     const url = new URL(window.location.href);
     url.searchParams.delete('demo');
     window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+    // A link must not write a demo into a workspace that holds the user's own
+    // investigations without asking first.
+    const ask = !allFolders.some(folder => folder.id === getSampleFolderId(kind))
+      && allFolders.some(folder => folder.id !== getSampleFolderId('realistic') && folder.id !== getSampleFolderId('parody'));
     // Start URL-driven storage hydration after this initial effect commits;
     // ordinary button actions can still invoke the same handler directly.
-    void Promise.resolve<SampleInvestigationKind>(kind).then(handleLoadSample).then(loaded => { if (loaded) setShowDemoModal(true); });
-  }, [privacyDataReady, screenshareMaxLevel, handleLoadSample, setShowDemoModal]);
+    void Promise.resolve<SampleInvestigationKind>(kind).then(ask ? setPendingDemoKind : openDemo);
+  }, [privacyDataReady, screenshareMaxLevel, allFolders, openDemo]);
 
   // Keyboard shortcuts
   // Search overlay navigation callbacks
@@ -1687,10 +1717,10 @@ const AppInner = memo(function AppInner({
             onImportComplete={handleImportComplete}
             sampleLoaded={sampleLoaded}
             onLoadSample={async () => { await handleLoadSample(); }}
-            onDeleteSample={() => handleDeleteSample()}
+            onDeleteSample={() => { void requestDeleteSample(); }}
             parodyLoaded={parodyLoaded}
             onLoadParody={async () => { await handleLoadSample('parody'); }}
-            onDeleteParody={() => handleDeleteSample('parody')}
+            onDeleteParody={() => { void requestDeleteSample('parody'); }}
             onClose={() => { closeSettings(); }}
             activeTab={(settingsInitialTab || 'general') as SettingsTab}
             onTabChange={openSettings}
@@ -2271,6 +2301,21 @@ const AppInner = memo(function AppInner({
         danger
       />
 
+      <SampleRemovalDialog
+        request={sampleRemoval}
+        onClose={() => setSampleRemoval(null)}
+        onRemove={(request, keepUserItems) => { void handleDeleteSample(request, keepUserItems); }}
+      />
+
+      <ConfirmDialog
+        open={pendingDemoKind !== null}
+        onClose={() => setPendingDemoKind(null)}
+        onConfirm={() => { if (pendingDemoKind) void openDemo(pendingDemoKind); }}
+        title={tInvestigations('sample.loadTitle')}
+        message={tInvestigations('sample.loadMessage')}
+        confirmLabel={tInvestigations('sample.loadConfirm')}
+      />
+
       <Suspense fallback={null}><ShareDialog
         open={shareLinkPayload !== null}
         onClose={() => setShareLinkPayload(null)}
@@ -2285,7 +2330,7 @@ const AppInner = memo(function AppInner({
         onClose={() => setShowDemoModal(false)}
         onStartTour={() => tour.start(activeView)}
         sampleName={demoName}
-        onDeleteDemo={() => handleDeleteSample(demoKind)}
+        onDeleteDemo={() => { void requestDeleteSample(demoKind); }}
       /></Suspense>
 
       <Suspense fallback={null}><SearchOverlay

@@ -62,6 +62,9 @@
   "investigation": {
     "sampleLoaded": "Przykładowe dochodzenie załadowane",
     "sampleRemoved": "Przykładowe dochodzenie usunięte",
+    "sampleKept": "Przykładowe dochodzenie usunięte. Twoje elementy są w „{{name}}”",
+    "sampleLocked": "Odblokuj obszar roboczy przed zmianą danych przykładowych.",
+    "sampleSessionChanged": "Sesja obszaru roboczego uległa zmianie. Po odblokowaniu ponów działanie na przykładzie.",
     "trashEmptied": "Kosz opróżniony",
     "savedAsTemplate": "„{{name}}\" zapisane jako szablon",
     "playbookRan": "Playbooek „{{playbook}}\" uruchomiony dla „{{investigation}}\"",

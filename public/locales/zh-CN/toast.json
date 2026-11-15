@@ -60,6 +60,9 @@
   "investigation": {
     "sampleLoaded": "示例调查已加载",
     "sampleRemoved": "示例调查已移除",
+    "sampleKept": "示例调查已移除。您的项目位于\"{{name}}\"",
+    "sampleLocked": "请先解锁工作区，再更改示例数据。",
+    "sampleSessionChanged": "工作区会话已更改。请在解锁后重试示例操作。",
     "trashEmptied": "回收站已清空",
     "savedAsTemplate": "已将\"{{name}}\"保存为模板",
     "playbookRan": "已在\"{{investigation}}\"上运行\"{{playbook}}\"剧本",

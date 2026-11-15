@@ -64,6 +64,9 @@
   "investigation": {
     "sampleLoaded": "تم تحميل التحقيق النموذجي",
     "sampleRemoved": "تمت إزالة التحقيق النموذجي",
+    "sampleKept": "تمت إزالة التحقيق النموذجي. عناصرك موجودة في \"{{name}}\"",
+    "sampleLocked": "افتح قفل مساحة العمل قبل تغيير البيانات النموذجية.",
+    "sampleSessionChanged": "تغيّرت جلسة مساحة العمل. أعد محاولة إجراء النموذج بعد فتح القفل.",
     "trashEmptied": "تم إفراغ المهملات",
     "savedAsTemplate": "تم حفظ \"{{name}}\" كقالب",
     "playbookRan": "تم تشغيل دليل التشغيل \"{{playbook}}\" على \"{{investigation}}\"",

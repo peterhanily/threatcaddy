@@ -60,6 +60,9 @@
   "investigation": {
     "sampleLoaded": "Đã tải điều tra mẫu",
     "sampleRemoved": "Đã xóa điều tra mẫu",
+    "sampleKept": "Đã xóa điều tra mẫu. Các mục của bạn nằm trong \"{{name}}\"",
+    "sampleLocked": "Mở khóa không gian làm việc trước khi thay đổi dữ liệu mẫu.",
+    "sampleSessionChanged": "Phiên không gian làm việc đã thay đổi. Hãy thử lại thao tác mẫu sau khi mở khóa.",
     "trashEmptied": "Đã làm sạch thùng rác",
     "savedAsTemplate": "Đã lưu \"{{name}}\" dưới dạng mẫu",
     "playbookRan": "Đang chạy playbook \"{{playbook}}\" trên \"{{investigation}}\"",

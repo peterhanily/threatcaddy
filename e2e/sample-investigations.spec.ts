@@ -54,6 +54,10 @@ test('both demos coexist, revisiting preserves edits, and removing the displayed
   await expect(page.getByPlaceholder('Note title...')).toHaveValue('My reviewed mailbox exercise');
   await page.goto('/?demo');
   await welcome.getByRole('button', { name: 'Delete Demo & Start Fresh', exact: true }).click();
+  // Removal is permanent, so it always asks first; an edited title is not an added item.
+  const confirm = page.getByRole('dialog', { name: 'Remove sample investigation?' });
+  await expect(confirm).toContainText('including any changes you made, will be permanently deleted');
+  await confirm.getByRole('button', { name: 'Remove sample', exact: true }).click();
   await navigateToView(page, 'Investigations');
   await expect(page.getByRole('group', { name: 'FERMENTED PERSISTENCE — OpenSlaw.ai Compromise (Sample)', exact: true })).toBeVisible();
   await expect(page.getByRole('group', { name: 'Mailbox Compromise — Synthetic Exercise', exact: true })).toHaveCount(0);

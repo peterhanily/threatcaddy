@@ -61,6 +61,9 @@
   "investigation": {
     "sampleLoaded": "חקירת דוגמה נטענה",
     "sampleRemoved": "חקירת דוגמה הוסרה",
+    "sampleKept": "חקירת הדוגמה הוסרה. הפריטים שלך נמצאים ב-\"{{name}}\"",
+    "sampleLocked": "בטל את נעילת סביבת העבודה לפני שינוי נתוני הדוגמה.",
+    "sampleSessionChanged": "ההפעלה של סביבת העבודה השתנתה. נסה שוב את פעולת הדוגמה לאחר ביטול הנעילה.",
     "trashEmptied": "האשפה רוקנה",
     "savedAsTemplate": "\"{{name}}\" נשמר כתבנית",
     "playbookRan": "פלייבוק \"{{playbook}}\" הורץ על \"{{investigation}}\"",

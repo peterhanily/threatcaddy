@@ -60,6 +60,9 @@
   "investigation": {
     "sampleLoaded": "โหลดการสืบสวนตัวอย่างแล้ว",
     "sampleRemoved": "ลบการสืบสวนตัวอย่างแล้ว",
+    "sampleKept": "ลบการสืบสวนตัวอย่างแล้ว รายการของคุณอยู่ใน \"{{name}}\"",
+    "sampleLocked": "ปลดล็อกพื้นที่ทำงานก่อนเปลี่ยนข้อมูลตัวอย่าง",
+    "sampleSessionChanged": "เซสชันพื้นที่ทำงานเปลี่ยนไป ลองดำเนินการกับตัวอย่างอีกครั้งหลังปลดล็อก",
     "trashEmptied": "เปิดถังขยะแล้ว",
     "savedAsTemplate": "บันทึก \"{{name}}\" เป็นเทมเพลตแล้ว",
     "playbookRan": "เรียกใช้ Playbook \"{{playbook}}\" บน \"{{investigation}}\" แล้ว",

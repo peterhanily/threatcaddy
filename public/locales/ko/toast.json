@@ -60,6 +60,9 @@
   "investigation": {
     "sampleLoaded": "샘플 조사 로드됨",
     "sampleRemoved": "샘플 조사 제거됨",
+    "sampleKept": "샘플 조사가 제거되었습니다. 항목은 \"{{name}}\"에 있습니다",
+    "sampleLocked": "샘플 데이터를 변경하기 전에 작업 공간 잠금을 해제하세요.",
+    "sampleSessionChanged": "작업 공간 세션이 변경되었습니다. 잠금 해제 후 샘플 작업을 다시 시도하세요.",
     "trashEmptied": "휴지통 비워짐",
     "savedAsTemplate": "\"{{name}}\"이/가 템플릿으로 저장됨",
     "playbookRan": "\"{{investigation}}\"에서 \"{{playbook}}\" 플레이북 실행됨",
