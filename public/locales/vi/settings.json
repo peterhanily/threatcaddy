@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "Kết nối với máy chủ nhóm để sử dụng bản sao lưu được mã hóa.",
   "encryption.description": "Bản sao lưu được bảo vệ bằng mật khẩu, lưu trữ trên máy chủ. Ngay cả quản trị viên cũng không thể đọc được.",
   "encryption.createBackup": "Tạo bản sao lưu",
+  "encryption.viewerCannotCreate": "Với vai trò Người xem, bạn không thể lưu bản sao lưu trên máy chủ. Bạn vẫn có thể khôi phục hoặc xóa các bản sao lưu hiện có.",
   "encryption.scope": "Phạm vi",
   "encryption.scopeAll": "Tất cả dữ liệu",
   "encryption.scopeInvestigation": "Điều tra",

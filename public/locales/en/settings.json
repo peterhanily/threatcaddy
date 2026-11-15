@@ -200,6 +200,7 @@
   "encryption.connectPrompt": "Connect to a team server to use encrypted backups.",
   "encryption.description": "Password-protected backups stored on the server. Even admins cannot read them.",
   "encryption.createBackup": "Create Backup",
+  "encryption.viewerCannotCreate": "Your viewer role cannot store backups on the server. You can still restore or delete your existing backups.",
   "encryption.scope": "Scope",
   "encryption.scopeAll": "All Data",
   "encryption.scopeInvestigation": "Investigation",

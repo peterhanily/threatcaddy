@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "Verbind met de teamserver om versleutelde back-ups te gebruiken.",
   "encryption.description": "Met wachtwoord beveiligde back-ups opgeslagen op de server. Zelfs beheerders kunnen ze niet lezen.",
   "encryption.createBackup": "Back-up aanmaken",
+  "encryption.viewerCannotCreate": "Met de rol Weergever kunt u geen back-ups op de server opslaan. U kunt uw bestaande back-ups nog wel herstellen of verwijderen.",
   "encryption.scope": "Bereik",
   "encryption.scopeAll": "Alle gegevens",
   "encryption.scopeInvestigation": "Onderzoek",

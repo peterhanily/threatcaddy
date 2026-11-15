@@ -1,6 +1,7 @@
 {
   "view.title": "团队动态",
   "view.connectToServer": "连接到团队服务器以使用团队动态。",
+  "view.viewerReadOnly": "查看者角色可以阅读帖子并添加反应，但不能发帖、回复、编辑或置顶。",
   "view.loading": "加载中...",
   "view.noPostsYet": "暂无帖子。成为第一个分享更新的人！",
   "view.noTeamActivity": "暂无团队活动。",

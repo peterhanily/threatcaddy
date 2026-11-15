@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "Connectez-vous à un serveur d'équipe pour utiliser les sauvegardes chiffrées.",
   "encryption.description": "Sauvegardes protégées par mot de passe stockées sur le serveur. Même les administrateurs ne peuvent pas les lire.",
   "encryption.createBackup": "Créer une sauvegarde",
+  "encryption.viewerCannotCreate": "Avec le rôle Lecteur, vous ne pouvez pas stocker de sauvegardes sur le serveur. Vous pouvez toujours restaurer ou supprimer vos sauvegardes existantes.",
   "encryption.scope": "Portée",
   "encryption.scopeAll": "Toutes les données",
   "encryption.scopeInvestigation": "Enquête",

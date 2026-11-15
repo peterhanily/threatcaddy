@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "Hubungkan ke server tim untuk menggunakan cadangan terenkripsi.",
   "encryption.description": "Cadangan yang dilindungi kata sandi disimpan di server. Bahkan admin tidak dapat membacanya.",
   "encryption.createBackup": "Buat Cadangan",
+  "encryption.viewerCannotCreate": "Dengan peran Penampil, Anda tidak dapat menyimpan cadangan di server. Anda tetap dapat memulihkan atau menghapus cadangan yang sudah ada.",
   "encryption.scope": "Cakupan",
   "encryption.scopeAll": "Semua Data",
   "encryption.scopeInvestigation": "Investigasi",

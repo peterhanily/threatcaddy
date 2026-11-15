@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "暗号化バックアップを使用するにはチームサーバーに接続してください。",
   "encryption.description": "サーバーに保存されたパスワード保護バックアップ。管理者でも読めません。",
   "encryption.createBackup": "バックアップを作成",
+  "encryption.viewerCannotCreate": "閲覧者ロールではサーバーにバックアップを保存できません。既存のバックアップの復元と削除は引き続き可能です。",
   "encryption.scope": "スコープ",
   "encryption.scopeAll": "すべてのデータ",
   "encryption.scopeInvestigation": "調査",

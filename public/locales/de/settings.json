@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "Mit einem Team-Server verbinden, um verschlüsselte Backups zu verwenden.",
   "encryption.description": "Passwortgeschützte Backups auf dem Server gespeichert. Selbst Administratoren können sie nicht lesen.",
   "encryption.createBackup": "Backup erstellen",
+  "encryption.viewerCannotCreate": "Mit der Rolle Betrachter können Sie keine Backups auf dem Server speichern. Vorhandene Backups können Sie weiterhin wiederherstellen oder löschen.",
   "encryption.scope": "Umfang",
   "encryption.scopeAll": "Alle Daten",
   "encryption.scopeInvestigation": "Untersuchung",

@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "Conecte-se a um servidor de equipe para usar backups criptografados.",
   "encryption.description": "Backups protegidos por senha armazenados no servidor. Nem os administradores conseguem lê-los.",
   "encryption.createBackup": "Criar backup",
+  "encryption.viewerCannotCreate": "Com a função Leitor, você não pode armazenar backups no servidor. Você ainda pode restaurar ou excluir seus backups existentes.",
   "encryption.scope": "Escopo",
   "encryption.scopeAll": "Todos os dados",
   "encryption.scopeInvestigation": "Investigação",

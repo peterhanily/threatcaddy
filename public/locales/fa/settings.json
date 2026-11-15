@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "برای استفاده از پشتیبان‌های رمزنگاری شده به سرور تیمی متصل شوید.",
   "encryption.description": "پشتیبان‌های محافظت شده با رمز عبور ذخیره شده در سرور. حتی مدیران نمی‌توانند آن‌ها را بخوانند.",
   "encryption.createBackup": "ایجاد پشتیبان",
+  "encryption.viewerCannotCreate": "با نقش بیننده نمی‌توانید پشتیبان روی سرور ذخیره کنید. همچنان می‌توانید پشتیبان‌های موجود خود را بازیابی یا حذف کنید.",
   "encryption.scope": "دامنه",
   "encryption.scopeAll": "همه داده‌ها",
   "encryption.scopeInvestigation": "تحقیق",

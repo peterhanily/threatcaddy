@@ -1,6 +1,7 @@
 {
   "view.title": "Kanał zespołu",
   "view.connectToServer": "Połącz się z serwerem zespołu, aby korzystać z Kanału zespołu.",
+  "view.viewerReadOnly": "Rola Czytelnik pozwala czytać posty i dodawać reakcje, ale nie pozwala publikować, odpowiadać, edytować ani przypinać.",
   "view.loading": "Ładowanie...",
   "view.noPostsYet": "Brak postów. Bądź pierwszym, który podzieli się aktualizacją!",
   "view.noTeamActivity": "Brak aktywności zespołu.",

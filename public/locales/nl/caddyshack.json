@@ -1,6 +1,7 @@
 {
   "view.title": "Teamfeed",
   "view.connectToServer": "Maak verbinding met een teamserver om Teamfeed te gebruiken.",
+  "view.viewerReadOnly": "Met de rol Weergever kunt u berichten lezen en erop reageren, maar niet posten, antwoorden, bewerken of vastmaken.",
   "view.loading": "Laden...",
   "view.noPostsYet": "Nog geen berichten. Wees de eerste die een update deelt!",
   "view.noTeamActivity": "Nog geen teamactiviteit.",

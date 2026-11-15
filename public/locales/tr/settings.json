@@ -183,6 +183,7 @@
   "encryption.connectPrompt": "Şifreli yedekler kullanmak için bir ekip sunucusuna bağlanın.",
   "encryption.description": "Sunucuda saklanan şifreyle korunan yedekler. Yöneticiler bile okuyamaz.",
   "encryption.createBackup": "Yedek Oluştur",
+  "encryption.viewerCannotCreate": "Görüntüleyici rolüyle sunucuda yedek saklayamazsınız. Mevcut yedeklerinizi yine de geri yükleyebilir veya silebilirsiniz.",
   "encryption.scope": "Kapsam",
   "encryption.scopeAll": "Tüm Veriler",
   "encryption.scopeInvestigation": "Soruşturma",
