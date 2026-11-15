@@ -19,7 +19,6 @@ const HISTORY_KEY = 'syncHistoryGenerationV1';
 const MAX_PUSH_BYTES = 900_000; // Leave room beneath the server's 1 MiB body limit.
 const MAX_ASSET_PUSH_BYTES = 15 * 1024 * 1024; // Dedicated 16 MiB sync route.
 const RECOVERY_MESSAGE = SYNC_HISTORY_MESSAGE;
-const LOCKED_MESSAGE = 'Sync paused: the workspace is locked. Local edits are retained.';
 const entityKey = (table: string, id: string) => JSON.stringify([table, id]);
 const validVersion = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 0;
 
@@ -181,10 +180,12 @@ export class SyncEngine {
 
   private async push(epoch: number) {
     // While locked, queued rows read back as ciphertext envelopes and an
-    // accepted push could not be acknowledged, so nothing is sent.
+    // accepted push could not be acknowledged, so nothing is sent. A real lock
+    // stops the engine; enabling encryption stores metadata before the key, so
+    // the push waits quietly for the next interval instead of reporting a lock.
     const session = getSessionGeneration();
     const locked = () => isEncryptionEnabled() && !getSessionKey();
-    if (locked()) throw new Error(LOCKED_MESSAGE);
+    if (locked()) return;
     const history = (await dynamicDb.table('_syncMeta').get(HISTORY_KEY))?.value;
     if (typeof history !== 'string') throw new Error('Server history has not been verified; pending edits were retained.');
     const queue: SyncQueueEntry[] = await dynamicDb.table('_syncQueue').toArray();
@@ -235,7 +236,7 @@ export class SyncEngine {
       const batch = deliverable.map(item => item.entries);
       const changes = deliverable.map(item => item.change);
       await this.assertCurrentWorkspace(epoch);
-      if (locked()) throw new Error(LOCKED_MESSAGE);
+      if (locked()) return;
       // A re-key (passphrase change, enabling encryption) is not a lock, but the
       // queue was read under the previous session: read it again shortly.
       if (isEncryptionEnabled() && session !== getSessionGeneration()) { this.scheduleSync(); return; }

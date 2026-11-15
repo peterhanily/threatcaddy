@@ -48,7 +48,8 @@ describe('team sync across a workspace lock', () => {
     const errors: Array<string | null> = []; engine.setErrorHandler(message => { errors.push(message); });
     await engine.sync();
     expect(api.push).not.toHaveBeenCalled();
-    expect(errors.filter(Boolean).at(-1)).toMatch(/locked/i);
+    // A real lock stops the shared engine; the push pauses without a banner.
+    expect(errors.filter(Boolean)).toEqual([]);
     setSessionKey(key, raw);
     expect(await db.table('_syncQueue').count()).toBeGreaterThan(0);
     await engine.sync();
@@ -65,6 +66,21 @@ describe('team sync across a workspace lock', () => {
     });
     await engine.sync();
     expect(api.push).not.toHaveBeenCalled();
+  });
+
+  it('does not report a lock while encryption is being enabled, and pushes once the key is set', async () => {
+    // EncryptionSetup stores the metadata before it installs the session key.
+    clearEncryptionMeta(); setSessionKey(null);
+    await db.notes.add(note('n4', 'Edit made before enabling'));
+    setEncryptionMeta(metadata);
+    const errors: Array<string | null> = []; engine.setErrorHandler(message => { errors.push(message); });
+    await engine.sync();
+    expect(api.push).not.toHaveBeenCalled();
+    expect(errors.filter(Boolean)).toEqual([]);
+    setSessionKey(key, raw);
+    await engine.sync();
+    const sent = api.push.mock.calls.flatMap(call => call[0] as Change[]).find(change => change.entityId === 'n4');
+    expect(sent?.data).toMatchObject({ title: 'Edit made before enabling' });
   });
 
   it('does not report a lock when the session is re-keyed during a push, and retries the held batch', async () => {
