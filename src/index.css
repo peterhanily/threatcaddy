@@ -55,12 +55,6 @@
   --color-accent-pink: #9d174d;
 }
 
-/* Keep accent copy readable on surfaces without lightening white-text buttons. */
-.text-accent,
-.hover\:text-accent:hover,
-.hover\:text-accent-hover:hover { color: var(--color-accent-text); }
-.text-purple { color: var(--color-purple-text); }
-
 /* ─── CaddyShack semantic tokens (dark) ─── */
 :root {
   --bg-primary: #111827;
@@ -97,6 +91,13 @@
 .light .text-red-400 { color: #b91c1c; }
 .light .text-purple-400 { color: #6b21a8; }
 .light .text-cyan-400 { color: #0e7490; }
+
+/* Keep accent copy readable on surfaces without lightening white-text buttons.
+   After the gray remaps, so hover:text-accent wins the equal-specificity tie. */
+.text-accent,
+.hover\:text-accent:hover,
+.hover\:text-accent-hover:hover { color: var(--color-accent-text); }
+.text-purple { color: var(--color-purple-text); }
 
 /* Background colors */
 .light .bg-gray-950  { background-color: #f8fafc; }

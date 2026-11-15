@@ -131,6 +131,15 @@ describe('accent foreground utilities', () => {
     expect(offenders(/(?<![\w:-])text-gray-\d+(?![\w/-]).*peer-checked:text-|peer-checked:text-.*(?<![\w:-])text-gray-\d+(?![\w/-])/)).toEqual([]);
   });
 
+  it('lets hover:text-accent recolour remapped gray text', () => {
+    // .dark/.light .text-gray-N have the same specificity as
+    // .hover\:text-accent:hover, so the hover rule must come later.
+    const lastGrayRemap = Math.max(...[...css.matchAll(/^\.(?:dark|light) \.text-gray-\d+\s*\{/gm)].map(match => match.index));
+    for (const selector of ['.hover\\:text-accent:hover', '.hover\\:text-accent-hover:hover']) {
+      expect(css.indexOf(selector), selector).toBeGreaterThan(lastGrayRemap);
+    }
+  });
+
   it('puts white text on the 4.5:1 accent fill, not the purple fill', () => {
     expect(offenders(/(?<![\w-])bg-purple(?![\w/-]).*(?<![\w-])text-white(?![\w/-])|(?<![\w-])text-white(?![\w/-]).*(?<![\w-])bg-purple(?![\w/-])/)).toEqual([]);
   });
