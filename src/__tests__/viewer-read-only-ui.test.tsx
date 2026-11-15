@@ -16,9 +16,9 @@ vi.mock('../lib/server-api', () => ({
   listBackups: api.list, downloadBackup: vi.fn(), createBackup: vi.fn(), deleteBackup: vi.fn(),
 }));
 vi.mock('../components/CaddyShack/PostComposer', () => ({ PostComposer: () => <output data-testid="composer" /> }));
-vi.mock('../components/CaddyShack/PostCard', () => ({ PostCard: ({ post, onReply, onEdit, onPin, onDelete }: {
-  post: Post; onReply?: unknown; onEdit?: unknown; onPin?: unknown; onDelete?: unknown;
-}) => <article>{post.content} {JSON.stringify({ reply: !!onReply, edit: !!onEdit, pin: !!onPin, delete: !!onDelete })}</article> }));
+vi.mock('../components/CaddyShack/PostCard', () => ({ PostCard: ({ post, onReply, onEdit, onPin, onDelete, onClick }: {
+  post: Post; onReply?: unknown; onEdit?: unknown; onPin?: unknown; onDelete?: unknown; onClick?: (postId: string) => void;
+}) => <article onClick={() => onClick?.(post.id)}>{post.content} {JSON.stringify({ reply: !!onReply, edit: !!onEdit, pin: !!onPin, delete: !!onDelete })}</article> }));
 
 const post = (id: string, replies: Post[] = []): Post => ({ id, content: `Post ${id}`, authorId: 'user-1', authorDisplayName: 'Synthetic viewer',
   attachments: [], mentions: [], pinned: false, deleted: false, replies, createdAt: '2026-10-04T00:00:00Z', updatedAt: '2026-10-04T00:00:00Z' });
@@ -48,6 +48,16 @@ describe('viewer role: the SPA offers only what the server accepts', () => {
     expect(await screen.findByText(/Post p1/)).toHaveTextContent('{"reply":true,"edit":true,"pin":true,"delete":true}');
     expect(screen.getByTestId('composer')).toBeInTheDocument();
     expect(screen.queryByText(readOnlyHint)).not.toBeInTheDocument();
+  });
+
+  it('opens a post from the feed as a read-only thread for viewers', async () => {
+    api.role = 'viewer';
+    render(<CaddyShackView />);
+    fireEvent.click(await screen.findByText(/Post p1/));
+    expect(await screen.findByText(/Post r1/)).toHaveTextContent('{"reply":false,"edit":false,"pin":false,"delete":true}');
+    expect(api.page).toHaveBeenCalledWith('p1');
+    expect(screen.queryByTestId('composer')).not.toBeInTheDocument();
+    expect(screen.getByText(readOnlyHint)).toBeInTheDocument();
   });
 
   it('hides the reply composer and reply targets in a read-only thread', async () => {
