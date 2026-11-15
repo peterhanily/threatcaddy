@@ -85,7 +85,7 @@ export function sanitizeSyncEntity(
  */
 export const SERVER_UNREPRESENTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
   notes: ['parentNoteId', 'isFolder', 'reviewRequired'],
-  tasks: ['checklist', 'rejectionCount', 'rejectionHistory', 'escalated'],
+  tasks: ['checklist', 'rejectionCount', 'rejectionHistory', 'escalated', 'assignedDeploymentId'],
   folders: ['playbookExecution', 'noteTemplateIds', 'agentEnabled', 'agentPolicy', 'agentStatus', 'agentThreadId', 'agentLastRunAt'],
   standaloneIOCs: ['firstSeen', 'lastSeen', 'linkedEvidenceIds'],
   chatThreads: ['mode', 'source', 'contextSummary', 'parentThreadId', 'isFolder'],

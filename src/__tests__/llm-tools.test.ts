@@ -289,6 +289,20 @@ describe('executeTool — write tools', () => {
     expect(stored!.analystNotes).toBe('Known C2');
   });
 
+  it('refuses IOC types other clients cannot read, writing nothing', async () => {
+    await db.standaloneIOCs.add({ id: 'known', type: 'domain', value: 'evil.com', confidence: 'high', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
+    for (const call of [
+      makeToolUse('create_ioc', { type: 'ip', value: '203.0.113.7' }),
+      makeToolUse('update_ioc', { id: 'known', type: 'hash' }),
+      makeToolUse('bulk_create_iocs', { iocs: [{ type: 'ipv4', value: '203.0.113.8' }, { type: 'ip', value: '203.0.113.9' }] }),
+    ]) {
+      const parsed = JSON.parse((await executeTool(call, 'f1')).result);
+      expect(parsed.error).toContain('Unsupported IOC type');
+      expect(parsed.error).toContain('ipv4');
+    }
+    expect((await db.standaloneIOCs.toArray()).map(ioc => [ioc.id, ioc.type])).toEqual([['known', 'domain']]);
+  });
+
   it('create_timeline_event persists and parses timestamp', async () => {
     const { result, isError } = await executeTool(
       makeToolUse('create_timeline_event', {

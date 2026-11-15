@@ -122,7 +122,7 @@ export async function executeReadTask(input: Record<string, unknown>, folderId?:
   return JSON.stringify({
     id: task.id, title: task.title, description: task.description || '',
     status: task.status, priority: task.priority, completed: task.completed,
-    assigneeId: task.assigneeId, tags: task.tags,
+    assigneeId: task.assigneeId, assignedDeploymentId: task.assignedDeploymentId, tags: task.tags,
     comments: task.comments || [],
     dueDate: task.dueDate ? new Date(task.dueDate).toISOString() : undefined,
     createdAt: task.createdAt, updatedAt: task.updatedAt,

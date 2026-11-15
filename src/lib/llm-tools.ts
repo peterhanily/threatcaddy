@@ -35,7 +35,7 @@ import {
   executeCreateNote, executeUpdateNote, executeCreateTask, executeUpdateTask,
   executeCreateIOC, executeUpdateIOC, executeBulkCreateIOCs,
   executeCreateTimelineEvent, executeUpdateTimelineEvent,
-  executeLinkEntities, executeGenerateReport, executeCreateInInvestigation,
+  executeLinkEntities, executeGenerateReport, executeCreateInInvestigation, isIOCType,
 } from './llm-tools-write';
 
 // Analysis tools
@@ -632,7 +632,7 @@ async function executeDelegateTask(inp: Record<string, unknown>, folderId?: stri
     priority: priority as 'low' | 'medium' | 'high',
     completed: false,
     tags: ['agent-delegated'],
-    assigneeId: targetDeploymentId,
+    assignedDeploymentId: targetDeploymentId,
     createdBy: 'agent:lead',
     trashed: false,
     archived: false,
@@ -767,9 +767,11 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string,
                 createdAt: Date.now(), updatedAt: Date.now(),
               });
             } else if (type === 'ioc' || type === 'standaloneIOC') {
+              // Other clients skip an IOC whose type they do not know.
+              if (!isIOCType(fields.type)) throw new Error('The integration returned an unsupported IOC type.');
               await db.standaloneIOCs.add({
                 id: entityId,
-                type: String(fields.type || 'unknown') as import('../types').IOCType,
+                type: fields.type,
                 value: String(fields.value || ''),
                 confidence: String(fields.confidence || 'medium') as import('../types').ConfidenceLevel,
                 folderId,
@@ -784,6 +786,7 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string,
             if (type !== 'ioc' && type !== 'standaloneIOC') throw new Error('This enrichment caller only supports updating IOCs.');
             const existing = await db.standaloneIOCs.get(id);
             if (!existing || existing.trashed) throw new Error('The IOC target is missing or deleted.');
+            if (fields.type !== undefined && !isIOCType(fields.type)) throw new Error('The integration returned an unsupported IOC type.');
             if (await db.standaloneIOCs.update(id, { ...fields, updatedAt: Date.now() }) !== 1) throw new Error('The IOC update was not saved.');
           }),
         },
