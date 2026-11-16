@@ -195,6 +195,17 @@ describe('recovery refusals carry a code the panel translates and keep their Eng
     expect(single).toMatchObject({ code: 'ambiguousRows', params: { count: 1, records: '["notes","gone-0"]' } });
     expect(english(`syncRecovery.error.${single.code}`, single.params)).toBe(single.message);
   });
+  it('codes a local edit made while the server handshake is in flight', async () => {
+    const receipt = await prepareSyncRecovery(password);
+    api.pull.mockImplementationOnce(async () => {
+      await db.notes.update('n', { title: 'Edited during the handshake' });
+      return { changes: [], cursor: '1', generation };
+    });
+    await expect(reconcileSyncWorkspace(receipt, identity.serverUrl, identity.userId, confirmed))
+      .rejects.toMatchObject({ code: 'localDataChanged', message: 'Local data changed after backup. Download a new recovery archive before reconciling.' });
+    expect(api.pull).toHaveBeenCalledOnce();
+    expect((await db.table('_syncQueue').toArray())[0].clientVersion).toBe(8);
+  });
   it('codes archive restore refusals', async () => {
     const receipt = await prepareSyncRecovery(password);
     await expect(restoreSyncRecovery(password, receipt.blob, true))
