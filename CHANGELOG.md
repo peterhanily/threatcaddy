@@ -8,9 +8,9 @@ First release since 2.0.0. Version 2.0.1 was deployed to threatcaddy.com and pub
 
 ### Backup, restore and data safety
 
-- Backups work in every workspace state again. A one-time local repair runs after unlock for workspaces affected by non-numeric AI token usage, deleted meeting minutes or agent threads, or workspace-recovery restores; restored recovery archives are repaired immediately.
+- Backups work again in workspaces affected by non-numeric AI token usage, deleted meeting minutes or agent threads, or workspace-recovery restores (within the 50 MiB backup limit). A one-time local repair runs after unlock, and restored recovery archives are repaired immediately.
 - Restoring or importing a backup in a workspace connected to a team server never sends deletions or rollbacks to teammates. Sync pauses until the user reconciles in Settings → General → Sync history recovery; a restore that would delete records with unsent sync changes is refused and changes nothing.
-- Export Investigation files carry a `threatcaddy-investigation` format marker and, like older single-investigation files, always merge: importing one can no longer delete other investigations. 2.0.0 rejects the marked files.
+- Export Investigation files carry a `threatcaddy-investigation` format marker and, like older single-investigation files, always merge: importing one can no longer delete other investigations. 2.0.0 rejects the marked files, and backups that contain AI-delegated tasks.
 - Backups and investigation exports that carry sync revision metadata import again, and failed backups name the table, field and record that blocked them.
 - Accepted sync responses and conflict resolution keep device-only task, note, IOC, timeline, whiteboard and chat fields. The app warns that team sync is partial and offers a backup before local removal.
 
@@ -24,7 +24,7 @@ First release since 2.0.0. Version 2.0.1 was deployed to threatcaddy.com and pub
 ### Evidence import
 
 - Document parsing runs in cancellable workers with input, entry and decompression budgets, and a batch is committed atomically.
-- PDFs with screenshots or many images, very long PDFs and large workbooks import again, partially with a warning, instead of failing the whole batch. Encrypted, damaged or truncated Office files and images over 32 megapixels import as metadata only. Decompression bombs are still rejected.
+- PDFs with screenshots or many images, very long PDFs and large workbooks import again, partially with a warning, instead of failing the whole batch. Encrypted, damaged or truncated Office files and images over 32 megapixels import as metadata only. Decompression stays bounded: oversized parts are cut, and archives with too many entries, too much compressed data or sizes that do not match their contents reject the batch.
 - Evidence import works in the standalone file in Safari and other WebKit browsers.
 - Imports are no longer cancelled when AI agents, CaddyAI or a sync pull reload chats or evidence. Errors are translated and name the file; the drop zone states the limits (20 files and 50 MiB per import, 25 MiB per file).
 - Spreadsheets with styled or merged empty cells keep their columns, and IOC extraction stays fast on long encoded strings.
@@ -37,17 +37,17 @@ First release since 2.0.0. Version 2.0.1 was deployed to threatcaddy.com and pub
 
 ### Encryption and sessions
 
-- Encryption locks at its real deadline, including after resume, and the selected 24-hour session lasts 24 hours (2.0.0 silently capped it at 8). A timed session warns two minutes before it locks and accepts the passphrase to stay unlocked.
+- Timed sessions (1, 8 or 24 hours) now lock open tabs at their deadline, including after resume; in 2.0.0 they only limited unlocking after a reload, to at most 8 hours. A two-minute warning accepts the passphrase to stay unlocked.
 - Unsaved note and whiteboard drafts, chat drafts and interrupted chat output survive a lock; other unsaved form input is lost unless the passphrase is re-entered when the warning appears.
 - Logout revokes server sessions after access-token expiry and reports when remote revocation cannot be confirmed. Choosing another server signs out of the previous one, Disconnect stays available while the server is unreachable, and Start Fresh on the lock screen also signs out of the team server.
 
 ### Team server and operations
 
-- The server image runs on the Node 24.22.3 security release with Hono 4.13.18 (GHSA-39q9-qp46-w8xg) and Alpine zlib 1.4-r0 or later. It contains no npm, npx, Yarn or Corepack (use the packaged `node dist/...` commands), sets `NODE_ENV=production` and declares a `/health` HEALTHCHECK. The tracked Compose file rotates server and database logs with the `json-file` driver.
-- File, backup and sync uploads are authenticated before their bodies are buffered. Unexpected server errors return a generic message, and errors and logs never include SQL text or parameters; a duplicate admin username returns 409.
-- Login lockout counts failures per account and client address, so a stranger can no longer lock an account for 15 minutes; a per-account limit still slows distributed guessing (see the known limitation in the upgrade notes).
+- The server image runs on the Node 24.22.3 security release with Hono 4.13.18 (GHSA-39q9-qp46-w8xg) and Alpine zlib 1.4-r0 or later. It contains no npm, npx, Yarn or Corepack (use the packaged `node dist/...` commands), sets `NODE_ENV=production` (error responses no longer echo exception messages, including for client errors) and declares a `/health` HEALTHCHECK. The tracked Compose file rotates server and database logs with the `json-file` driver.
+- File, backup and sync uploads are authenticated before their bodies are buffered. Request errors return a generic message, and request error logs record a failed query's SQLSTATE and driver message instead of its SQL text and parameters; a duplicate admin username returns 409.
+- Login lockout counts failures per account and client address, so a stranger can no longer lock an account for 15 minutes when the server sees each client's own address (behind a proxy, set `TRUSTED_PROXY_IPS`). A per-account limit still slows distributed guessing (see the known limitations in the upgrade notes).
 - The read-only viewer role can no longer post, pin, edit posts or upload server backups, and the app hides those controls. Downloads of files with non-Latin names work. Admin Sign Out revokes that administrator's tokens on the server.
-- Administration binds to localhost by default and the Compose file publishes it only on host loopback. Container deployments that do not use the tracked Compose file must set `ADMIN_HOST=0.0.0.0` and publish `127.0.0.1:3002:3002`. Startup warns when `ADMIN_SECRET` is shorter than 24 characters, and the deployment guide no longer proxies administration publicly.
+- Administration binds to localhost by default and the Compose file publishes it only on host loopback. Docker deployments that do not use the tracked Compose file and need the admin panel must set `ADMIN_HOST=0.0.0.0` and publish `127.0.0.1:3002:3002`; on Kubernetes, leave `ADMIN_HOST` unset and use `kubectl port-forward`. Startup warns when `ADMIN_SECRET` is shorter than 24 characters, and the deployment guide no longer proxies administration publicly.
 - A purged investigation's ID can no longer be re-created through sync. A purge still does not erase sync history, audit entries or database backups.
 - The team-server AI proxy reports token usage as numbers, so agent cost counters no longer become invalid.
 
@@ -55,7 +55,7 @@ First release since 2.0.0. Version 2.0.1 was deployed to threatcaddy.com and pub
 
 - Keyboard focus indicators reach 3:1 in every colour scheme and theme, and scheme-coloured text stays readable on selected items. Dialogs keep the cursor in their first field and return focus to the button that opened them.
 - Contrast, quick-link targets, landmarks and headings are corrected; startup locales are bundled and unopened sharing UI is deferred.
-- Returning visitors get the Privacy Policy page (also offline) instead of the app, and translation updates reach non-English users after a deploy.
+- Returning visitors who open the Privacy Policy now see it (also offline) instead of the app, and translation updates reach non-English users after a deploy.
 - Whiteboards drop generated-HTML `iframe` elements, and notes, clips and fetched pages can no longer inject `<style>` or arbitrary class names into the app.
 
 ### CI and release

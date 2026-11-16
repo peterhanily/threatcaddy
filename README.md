@@ -165,7 +165,7 @@ Connect any REST API as an agent skill source:
 - **IOC dashboard** — Aggregate stats: type/confidence distribution, top actors, timeline, frequency tables
 - **TLP/PAP classification** — Traffic Light Protocol and Permissible Actions Protocol levels on entities and investigations
 - **Export** — JSON, CSV (grouped or flat), STIX 2.1 bundles; push to OCI object storage
-- **Evidence import** — PDF, Word, RTF, Excel, CSV, JSON, XML, logs, text and screenshots: up to 20 files and 50 MiB per import, 25 MiB per file. Parsing runs in a cancellable worker; very large documents import partially with a warning, unreadable or encrypted Office files import as metadata only, and a batch containing a decompression bomb is rejected without saving anything
+- **Evidence import** — PDF, Word, RTF, Excel, CSV, JSON, XML, logs, text and screenshots: up to 20 files and 50 MiB per import, 25 MiB per file. Parsing runs in a cancellable worker; very large documents import partially with a warning, unreadable or encrypted Office files import as metadata only, and decompression is bounded: oversized parts are cut, while archives with too many entries, too much compressed data or sizes that do not match their contents reject the batch without saving anything
 
 ### Timeline & Whiteboard
 
@@ -342,4 +342,4 @@ Local use needs no account. Optional AI, enrichment, URL fetching, map tiles, ca
 
 ## License
 
-ThreatCaddy's own code is MIT-licensed. Bundled third-party packages keep their own licences. Notices that must accompany redistributed copies are in [`public/licenses/`](public/licenses) (served at `/licenses/` and embedded in the standalone file), including react-leaflet under the Hippocratic License 2.1.
+ThreatCaddy's own code is MIT-licensed. Bundled third-party packages keep their own licences. [`public/licenses/`](public/licenses) (served at `/licenses/` and embedded in the standalone file) holds the notices for the bundled Excalidraw fonts, the OASIS STIX common objects and react-leaflet (Hippocratic License 2.1); a complete third-party notice file is planned.

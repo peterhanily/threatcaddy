@@ -253,7 +253,7 @@ The plaintext payload (before encryption) has this structure:
 
 ### Creating a Client-Side Backup
 
-With a team server connected, use **Settings → Server Encrypted Backups** with
+With a team server connected, use **Settings → Data → Server Encrypted Backups** with
 a password to create and upload an encrypted blob.
 The header's **Save Backup** and Settings' **Export JSON** instead produce the
 plain JSON format described above; they do not prompt for an encryption password.
@@ -275,7 +275,8 @@ review. A restore that would delete records with unsent sync changes is refused
 and changes nothing. **Export Investigation** files, and older single-investigation
 files, are always merged: they never delete other investigations or records.
 Files exported by 2.0.2 carry a `threatcaddy-investigation` format marker that
-2.0.0 rejects; they are not a full workspace backup.
+2.0.0 rejects; they are not a full workspace backup. 2.0.0 also rejects 2.0.2
+backups that contain AI-delegated tasks.
 
 **Important:** An unlocked workspace's encryption middleware returns decrypted
 application values to backup creation. The separate encrypted-backup flow
@@ -432,7 +433,8 @@ docker compose cp server:/data/files ./files-backup-$(date +%Y%m%d)/
 2. Use the header **Load Backup**, or **Settings → Data → Import JSON Backup**
 3. Select the saved `threatcaddy-backup-*.json` file, or a downloaded encrypted
    cloud backup (it asks for its password)
-4. Choose restore mode
+4. With **Load Backup**, choose Full Replace or Merge. **Import JSON Backup**
+   always performs Full Replace (Export Investigation files are always merged)
 
 **Recovery via server sync (if connected to team server):**
 1. Open ThreatCaddy and connect to the team server

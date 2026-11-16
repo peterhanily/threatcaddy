@@ -212,7 +212,7 @@ The server Dockerfile (`server/Dockerfile`) uses a multi-stage build:
 
 1. **Build stage**: the official `node:24.22.3-alpine` image pinned by digest in the Dockerfile, installs all dependencies and compiles TypeScript
 2. **Runtime stage**: the same pinned Node 24.22.3 image, upgrades zlib to at least 1.4-r0, installs production dependencies only and copies compiled JS and migrations
-3. Runs as non-root user `app` with `NODE_ENV=production`, so unexpected server errors return a generic message
+3. Runs as non-root user `app` with `NODE_ENV=production`, so error responses never echo exception messages (server errors were already generic)
 4. Declares a `HEALTHCHECK` that requests `/health` on `127.0.0.1:${PORT}` inside the container; Docker reports the result but does not restart the container
 5. Declares ports 3001 and 3002 for the two listeners; only the ports you publish are reachable from the host (the supplied Compose file publishes administration on host loopback only)
 
@@ -467,7 +467,7 @@ Keep the container network private: `ADMIN_HOST=0.0.0.0` inside the Compose cont
 
 Since the images published after 2.0.0 (GHCR `latest` from 13 November 2026,
 and every 2.0.1 or later image), the image no longer listens for administration
-on every interface by default. A custom Compose file, `docker run` command or Kubernetes manifest
+on every interface by default. A custom Compose file or `docker run` command
 that does not set `ADMIN_HOST` binds administration to the container's own
 loopback interface, where a published port 3002 cannot reach it (`/health`
 stays green). To keep host administration, set `ADMIN_HOST=0.0.0.0` in the
@@ -621,8 +621,9 @@ services:
       driver: journald
 ```
 
-The image sets `NODE_ENV=production`: unexpected server errors return
-`Internal server error` with a request ID, and the details appear only in the
+The image sets `NODE_ENV=production`: error responses, including client (4xx)
+errors, no longer echo exception messages. Server errors already return
+`Internal server error` with a request ID; the details appear only in the
 server log.
 
 ---
@@ -750,8 +751,8 @@ requests only in an isolated fixture or authorized staging environment.
 Before rollout, retain the successful verification run URL, exact source commit,
 audit evidence, resource-regression measurements, immutable artifact IDs and
 checksums, server image ID/registry digest, and tested platform. CI keeps the
-verified client and server artifacts for 90 days and other evidence for 14
-days or less, so preserve approved release records and artifacts outside that
+verified client and server artifacts and the client build reports for 90 days
+and other test evidence for 7 to 14 days, so preserve approved release records and artifacts outside that
 temporary storage. A dirty local checkout is a development build;
 it is not an artifact approved for publication by the required workflow.
 
@@ -777,12 +778,16 @@ pending. Publishing an image or client does not establish server rollout.
   2.0.2 it also sets the `json-file` log driver for both services, which
   replaces a daemon-wide log driver; to keep shipping logs through yours, add
   the override in [4.8 Logging](#48-logging) before recreating the containers.
+  Recreate the database container once (`docker compose up -d db`) to apply its
+  log rotation; the server-only command above does not.
 
 Later images also differ in ways that affect custom deployments: since 2.0.1
 they have no npm, npx, Yarn or Corepack (use the packaged `node dist/...`
 commands), and since 2.0.2 they run on Node 24.22.3 with
-`NODE_ENV=production` (generic messages for unexpected server errors) and
-declare a `HEALTHCHECK` against `/health`.
+`NODE_ENV=production` (error responses no longer echo exception messages) and
+declare a `HEALTHCHECK` against `/health`. On Kubernetes, leave `ADMIN_HOST`
+unset and reach administration with `kubectl port-forward`; do not expose port
+3002 through a Service.
 
 Preserve the database, managed-file volumes, stable application keys and other
 deployment settings. Confirm the running image identity and OCI revision label

@@ -63,9 +63,10 @@ The four checked-in extension downloads are release artifacts: `chrome.zip` and 
 
 ### Versioned downloads
 
-Every release correction needs a new version and tag. The README names the
-supported stable download explicitly; update its badge, download link and release
-notes with the coordinated client/server version. Preserve historical tags and
+Every release correction needs a new version and tag. The README links to the
+latest stable release; update its version badge and release-notes link with the
+coordinated client/server version, and publish the release promptly after the
+merge so that link does not keep pointing at the previous release. Preserve historical tags and
 asset bytes. Browser stores and retained team servers remain separate rollouts.
 
 After the exact main revision passes CI and hosted smoke, download its immutable
