@@ -58,16 +58,18 @@ export function InlineConflictBanner({
   return (
     <div className="shrink-0 border-b border-amber-700/30">
       {/* Compact single-line banner */}
+      {/* Its dark amber tint stays dark in both themes, so its amber text uses the
+          Tailwind shades directly instead of the light theme's dark text-amber-* remap. */}
       <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-950/60">
-        <AlertTriangle size={14} className="text-amber-400 shrink-0" />
-        <span className="text-xs text-amber-200 flex-1 truncate">
-          Edited by <span className="font-medium text-amber-100">{userLabel}</span> while you were editing
+        <AlertTriangle size={14} className="text-[var(--color-amber-400)] shrink-0" />
+        <span className="text-xs text-[var(--color-amber-200)] flex-1 truncate">
+          Edited by <span className="font-medium text-[var(--color-amber-100)]">{userLabel}</span> while you were editing
         </span>
         <div className="flex items-center gap-1 shrink-0">
           {hasDiff && (
             <button
               onClick={toggleDiff}
-              className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded bg-amber-600/20 text-amber-200 hover:bg-amber-600/40 transition-colors"
+              className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded bg-amber-600/20 text-[var(--color-amber-200)] hover:bg-amber-600/40 transition-colors"
               title={showDiff ? 'Hide changes' : 'View changes'}
             >
               {showDiff ? <EyeOff size={10} /> : <Eye size={10} />}

@@ -91,6 +91,15 @@
 .light .text-red-400 { color: #b91c1c; }
 .light .text-purple-400 { color: #6b21a8; }
 .light .text-cyan-400 { color: #0e7490; }
+/* Amber 100-500 is 1.06-2.04:1 on light surfaces; #78350f (the light
+   --color-accent-amber) is 4.8:1 or more on every scheme's light page, panel
+   and hover surfaces. Text on surfaces that stay dark amber uses
+   text-[var(--color-amber-N)] instead. */
+.light .text-amber-100 { color: #78350f; }
+.light .text-amber-200 { color: #78350f; }
+.light .text-amber-300 { color: #78350f; }
+.light .text-amber-400 { color: #78350f; }
+.light .text-amber-500 { color: #78350f; }
 
 /* Keep accent copy readable on surfaces without lightening white-text buttons.
    After the gray remaps, so hover:text-accent wins the equal-specificity tie. */

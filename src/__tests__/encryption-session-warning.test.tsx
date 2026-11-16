@@ -156,6 +156,21 @@ describe('timed session expiry warning', () => {
     expect(screen.getByLabelText('Task description')).toBeInTheDocument();
   });
 
+  it('lifts aria-modal from an open form dialog while the warning is shown, and restores it afterwards', async () => {
+    // Screen readers that honour aria-modal treat the warning, outside the dialog, as inert.
+    app.formOpen = true;
+    await openWorkspace();
+    const dialog = screen.getByRole('dialog', { name: 'Edit task' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    act(() => { vi.advanceTimersByTime(HOUR - MINUTE); });
+    expect(warning()).toBeInTheDocument();
+    expect(document.querySelectorAll('[aria-modal="true"]')).toHaveLength(0);
+    await submit(PASSPHRASE);
+    await vi.waitFor(() => expect(warning()).not.toBeInTheDocument(), { timeout: 10_000 });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(screen.getByLabelText('Task description')).toBeInTheDocument();
+  });
+
   it('does not revive the key when the deadline passes while the passphrase is being checked', async () => {
     await openWorkspace();
     act(() => { vi.advanceTimersByTime(HOUR - MINUTE); });

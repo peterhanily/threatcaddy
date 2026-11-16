@@ -58,20 +58,22 @@ export function ConflictDialog({ conflicts, onResolve, onResolveAll, onClose }: 
   };
   if (!conflicts.length) return null;
   const resolvable = conflicts.filter(conflict => conflict.status === 'conflict');
+  // The panel stays dark amber in both themes, so its amber text uses the
+  // Tailwind shades directly instead of the light theme's dark text-amber-* remap.
   return <section aria-label="Sync conflicts" className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none">
     <div className="max-w-3xl mx-auto px-4 pt-2 pointer-events-auto">
       <div className="bg-amber-950/95 border border-amber-700/50 rounded-lg shadow-lg overflow-hidden">
         <div className="flex items-center gap-3 px-4 py-2">
-          <AlertTriangle size={14} aria-hidden="true" className="text-amber-400 shrink-0" />
-          <span className="text-xs text-amber-200 flex-1">{conflicts.length} sync changes need attention</span>
+          <AlertTriangle size={14} aria-hidden="true" className="text-[var(--color-amber-400)] shrink-0" />
+          <span className="text-xs text-[var(--color-amber-200)] flex-1">{conflicts.length} sync changes need attention</span>
           {resolvable.length > 1 && <>
             <button disabled={busy} onClick={() => void resolve(() => onResolveAll('mine'))} className="px-2 py-1 text-xs text-blue-200">All Mine</button>
             {resolvable.some(canKeepServerVersion) && <button disabled={busy} onClick={() => void resolve(() => onResolveAll('theirs'))} className="px-2 py-1 text-xs text-gray-200">All Theirs</button>}
           </>}
-          <button onClick={() => setExpanded(value => !value)} aria-expanded={expanded} aria-label={expanded ? 'Collapse conflicts' : 'Expand conflicts'} className="p-1 text-amber-200">
+          <button onClick={() => setExpanded(value => !value)} aria-expanded={expanded} aria-label={expanded ? 'Collapse conflicts' : 'Expand conflicts'} className="p-1 text-[var(--color-amber-200)]">
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
-          <button disabled={busy} onClick={onClose} aria-label="Dismiss conflict notice" className="p-1 text-amber-200"><X size={14} /></button>
+          <button disabled={busy} onClick={onClose} aria-label="Dismiss conflict notice" className="p-1 text-[var(--color-amber-200)]"><X size={14} /></button>
         </div>
         {error && <p role="alert" className="px-4 pb-2 text-xs text-red-200">{error}</p>}
         {expanded && <div className="border-t border-amber-700/30 max-h-[50vh] overflow-y-auto">
@@ -85,15 +87,15 @@ export function ConflictDialog({ conflicts, onResolve, onResolveAll, onClose }: 
             const keepTheirs = canKeepServerVersion(conflict);
             return <div key={key} className="border-b border-amber-900/40 px-4 py-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-amber-100 truncate flex-1">{label(conflict)}</span>
+                <span className="text-xs text-[var(--color-amber-100)] truncate flex-1">{label(conflict)}</span>
                 {conflict.status === 'conflict' && <>
-                  {(diffs.length > 0 || longFields.length > 0) && <button disabled={busy} onClick={() => setDiffOpen(diffOpen === key ? null : key)} aria-expanded={diffOpen === key} className="text-xs text-amber-200">{diffOpen === key ? 'Hide diff' : 'Diff'}</button>}
+                  {(diffs.length > 0 || longFields.length > 0) && <button disabled={busy} onClick={() => setDiffOpen(diffOpen === key ? null : key)} aria-expanded={diffOpen === key} className="text-xs text-[var(--color-amber-200)]">{diffOpen === key ? 'Hide diff' : 'Diff'}</button>}
                   <button disabled={busy} onClick={() => void resolve(() => onResolve(conflict.entityId, 'mine', conflict.table))} className="px-2 py-1 text-xs text-blue-200">Mine</button>
                   {keepTheirs && <button disabled={busy} onClick={() => void resolve(() => onResolve(conflict.entityId, 'theirs', conflict.table))} className="px-2 py-1 text-xs text-gray-200">Theirs</button>}
                 </>}
               </div>
-              {conflict.status === 'conflict' && !keepTheirs && <p className="mt-1 text-xs text-amber-200">{t('syncStatus.theirsUnreadable')}</p>}
-              {conflict.status === 'rejected' && <p className="mt-1 text-xs text-amber-200">{typeof conflict.reason === 'string' && conflict.reason
+              {conflict.status === 'conflict' && !keepTheirs && <p className="mt-1 text-xs text-[var(--color-amber-200)]">{t('syncStatus.theirsUnreadable')}</p>}
+              {conflict.status === 'rejected' && <p className="mt-1 text-xs text-[var(--color-amber-200)]">{typeof conflict.reason === 'string' && conflict.reason
                 ? t('syncStatus.rejectedInvalid', { reason: conflict.reason.slice(0, 200) })
                 : 'The server rejected this change. It remains saved locally; check your permissions before retrying.'}</p>}
               {diffOpen === key && <div className="pt-2 space-y-3">
@@ -101,16 +103,16 @@ export function ConflictDialog({ conflicts, onResolve, onResolveAll, onClose }: 
                 {longFields.slice(0, MAX_LONG_FIELDS).map(field => {
                   const mine = textValue(conflict.localData?.[field]); const theirs = textValue(conflict.serverData?.[field]);
                   return <section key={field} aria-label={`${field} comparison`} className="space-y-1 text-xs">
-                    <h3 className="font-medium text-amber-100">{field}</h3>
+                    <h3 className="font-medium text-[var(--color-amber-100)]">{field}</h3>
                     <div className="grid gap-2 sm:grid-cols-2">
                       <div><h4 className="text-red-200">Local</h4><pre className="whitespace-pre-wrap break-words max-h-48 overflow-auto text-red-100">{mine.slice(0, LONG_VALUE_PREVIEW) || '(empty)'}</pre></div>
                       <div><h4 className="text-green-200">Remote</h4><pre className="whitespace-pre-wrap break-words max-h-48 overflow-auto text-green-100">{theirs.slice(0, LONG_VALUE_PREVIEW) || '(empty)'}</pre></div>
                     </div>
-                    {(mine.length > LONG_VALUE_PREVIEW || theirs.length > LONG_VALUE_PREVIEW) && <p className="text-amber-200">Preview limited to the first 20,000 characters per value. Download the complete comparison before resolving changes beyond this preview.</p>}
+                    {(mine.length > LONG_VALUE_PREVIEW || theirs.length > LONG_VALUE_PREVIEW) && <p className="text-[var(--color-amber-200)]">Preview limited to the first 20,000 characters per value. Download the complete comparison before resolving changes beyond this preview.</p>}
                   </section>;
                 })}
-                {longFields.length > MAX_LONG_FIELDS && <p className="text-xs text-amber-200">Only the first 10 long fields are shown. Download the complete comparison to review every field.</p>}
-                {longFields.length > 0 && <button disabled={busy} onClick={() => downloadFullComparison(conflict)} className="text-xs underline text-amber-200">Download complete comparison (unencrypted JSON)</button>}
+                {longFields.length > MAX_LONG_FIELDS && <p className="text-xs text-[var(--color-amber-200)]">Only the first 10 long fields are shown. Download the complete comparison to review every field.</p>}
+                {longFields.length > 0 && <button disabled={busy} onClick={() => downloadFullComparison(conflict)} className="text-xs underline text-[var(--color-amber-200)]">Download complete comparison (unencrypted JSON)</button>}
               </div>}
             </div>;
           })}

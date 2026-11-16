@@ -1,7 +1,14 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { createElement } from 'react';
+import { render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { COLOR_SCHEMES, applyColorScheme } from '../lib/theme-schemes';
+import { SyncErrorBanner } from '../components/Common/SyncErrorBanner';
+
+vi.mock('../contexts/UIModalContext', () => ({
+  useUIModals: () => ({ screenshareMaxLevel: null, openSettings: () => {}, setForceAnalystMode: () => {}, setMobileSidebarOpen: () => {} }),
+}));
 
 type Theme = 'dark' | 'light';
 // Vitest runs with css: false, so a ?raw CSS import would be empty.
@@ -146,5 +153,61 @@ describe('accent foreground utilities', () => {
 
   it('puts white text on the 4.5:1 accent fill, not the purple fill', () => {
     expect(offenders(/(?<![\w-])bg-purple(?![\w/-]).*(?<![\w-])text-white(?![\w/-])|(?<![\w-])text-white(?![\w/-]).*(?<![\w-])bg-purple(?![\w/-])/)).toEqual([]);
+  });
+});
+
+describe('light-theme amber text', () => {
+  // Tailwind's amber 100-500 is 1.06-2.04:1 on light surfaces, so every plain
+  // text-amber-N utility in the app needs a .light remap.
+  const plainAmber = /(?<![\w:/-])text-amber-\d+(?![\w/-])/g;
+  const srcDir = resolve(__dirname, '..');
+  const shades = [...new Set(readdirSync(srcDir, { encoding: 'utf8', recursive: true })
+    .filter(path => /\.tsx?$/.test(path) && !/(^|\/)__tests__\/|\.test\.tsx?$/.test(path))
+    .flatMap(path => readFileSync(join(srcDir, path), 'utf8').match(plainAmber) ?? []))].sort();
+  // Remapped gray fills and the CaddyShack --bg-* surfaces (e.g. the server
+  // connection card). Selected-item --color-bg-active fills are not text surfaces here.
+  const lightBackgrounds = {
+    ...Object.fromEntries(['950', '900', '800', '700'].map(shade => [`gray-${shade}`, lightRemap(`.bg-gray-${shade}`, 'background-color')])),
+    ...Object.fromEntries([...(/\n\.light\s*\{([^}]*--bg-primary[^}]*)\}/.exec(css)?.[1] ?? '').matchAll(/(--bg-[a-z]+):\s*(#[0-9a-f]{6});/gi)].map(match => [match[1], match[2].toLowerCase()])),
+  };
+
+  /** The light colour of the nearest text or background palette utility on the element or an ancestor. */
+  function lightPaint(element: Element, kind: 'text' | 'bg'): string {
+    const utility = new RegExp(`^${kind}-[a-z]+-\\d+$`);
+    for (let node: Element | null = element; node; node = node.parentElement) {
+      const name = [...node.classList].find(item => utility.test(item));
+      if (name) return lightRemap(`.${name}`, kind === 'text' ? 'color' : 'background-color');
+    }
+    throw new Error(`No ${kind} colour on or above ${element.tagName}`);
+  }
+
+  for (const scheme of COLOR_SCHEMES) {
+    it(`${scheme.id} light: every amber text shade in use reaches 4.5:1 on every light surface`, () => {
+      expect(shades.length).toBeGreaterThan(0);
+      const token = (name: string) => scheme.light[name] ?? defaults.light[name];
+      const against = { ...Object.fromEntries(surfaces.map(name => [name, token(name)])), ...lightBackgrounds };
+      for (const shade of shades) {
+        const color = lightRemap(`.${shade}`, 'color');
+        for (const [surface, background] of Object.entries(against)) {
+          expect(contrast(color, background), `${shade} ${color} on ${surface} ${background}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    });
+  }
+
+  it('keeps the sync error banner message and its Review button readable', () => {
+    render(createElement(SyncErrorBanner, { error: 'Synthetic held-back note notice' }));
+    for (const element of [screen.getByText('Synthetic held-back note notice'), screen.getByRole('button', { name: 'Review sync settings' })]) {
+      const [text, background] = [lightPaint(element, 'text'), lightPaint(element, 'bg')];
+      expect(contrast(text, background), `${element.tagName} ${text} on ${background}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('keeps the dark-theme amber on surfaces that stay dark amber in the light theme', () => {
+    // bg-amber-950 at 50% or more stays dark in both themes, where the dark
+    // light-theme remap would be 1.4-2.1:1.
+    const darkAmber = sources(resolve(__dirname, '../components')).filter(file => /(?<![\w:-])bg-amber-950\/[5-9]\d(?!\d)/.test(readFileSync(file, 'utf8')));
+    expect(darkAmber.flatMap(file => readFileSync(file, 'utf8').split('\n')
+      .flatMap((line, index) => line.match(plainAmber) ? [`${file.split('/src/')[1]}:${index + 1}`] : []))).toEqual([]);
   });
 });
