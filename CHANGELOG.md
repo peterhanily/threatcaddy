@@ -8,8 +8,9 @@ First release since 2.0.0. Version 2.0.1 was deployed to threatcaddy.com and pub
 
 ### Backup, restore and data safety
 
-- Backups work again in workspaces affected by non-numeric AI token usage, deleted meeting minutes or agent threads, or workspace-recovery restores (within the 50 MiB backup limit). A one-time local repair runs after unlock, and restored recovery archives are repaired immediately.
-- Restoring or importing a backup in a workspace connected to a team server never sends deletions or rollbacks to teammates. Sync pauses until the user reconciles in Settings → General → Sync history recovery; a restore that would delete records with unsent sync changes is refused and changes nothing.
+- Backups work again in workspaces affected by non-numeric AI token usage, deleted meeting minutes or agent threads, workspace-recovery restores, or unsupported values written by AI tools (within the 50 MiB backup limit). A one-time local repair runs after unlock, never blocks the workspace from opening, and restored recovery archives are repaired immediately. An IOC whose stored type cannot be mapped is named in the backup error so the analyst can correct it.
+- AI tools normalise spellings such as 'High' or 'lateral_movement' and refuse other unsupported priorities, statuses, confidence levels and event types instead of storing them. Export Investigation refuses to write a file its own import would refuse, including over 50 MiB.
+- Restoring or importing a backup in a workspace connected to a team server never sends deletions or rollbacks to teammates. Sync pauses until the user reconciles in Settings → General → Sync history recovery; a restore that would delete records with unsent sync changes, or items sync is holding back on this device, is refused, names them and says how to proceed. The Sync history recovery panel and sync pause messages are translated.
 - Export Investigation files carry a `threatcaddy-investigation` format marker and, like older single-investigation files, always merge: importing one can no longer delete other investigations. 2.0.0 rejects the marked files, and backups that contain AI-delegated tasks.
 - Backups and investigation exports that carry sync revision metadata import again, and failed backups name the table, field and record that blocked them.
 - Accepted sync responses and conflict resolution keep device-only task, note, IOC, timeline, whiteboard and chat fields. The app warns that team sync is partial and offers a backup before local removal.
@@ -33,7 +34,7 @@ First release since 2.0.0. Version 2.0.1 was deployed to threatcaddy.com and pub
 
 - A realistic synthetic mailbox investigation is the default sample, with a first-investigation guide; the parody sample remains available and now uses reserved IP addresses and domains.
 - Removing a sample always asks first and can keep the items the user added or changed by moving them to a new local investigation. A `?demo` link asks before adding a sample to a workspace that has the user's own investigations.
-- Sample tags and timelines stay on the device and never become the default timeline for new events, clips or imports.
+- Sample tags and timelines stay on the device, including ones an older build had queued, and never become the default timeline for new events, clips or imports.
 
 ### Encryption and sessions
 
@@ -53,14 +54,14 @@ First release since 2.0.0. Version 2.0.1 was deployed to threatcaddy.com and pub
 
 ### Accessibility and interface
 
-- Keyboard focus indicators reach 3:1 in every colour scheme and theme, and scheme-coloured text stays readable on selected items. Dialogs keep the cursor in their first field and return focus to the button that opened them.
+- Keyboard focus indicators reach 3:1 in every colour scheme and theme, and scheme-coloured text stays readable on selected items. In the light theme, amber notices and the sync banner are readable, and while the session-lock warning is shown, open dialogs stop hiding the rest of the page from assistive technology. Dialogs keep the cursor in their first field and return focus to the button that opened them.
 - Contrast, quick-link targets, landmarks and headings are corrected; startup locales are bundled and unopened sharing UI is deferred.
 - Returning visitors who open the Privacy Policy now see it (also offline) instead of the app, and translation updates reach non-English users after a deploy.
 - Whiteboards drop generated-HTML `iframe` elements, and notes, clips and fetched pages can no longer inject `<style>` or arbitrary class names into the app.
 
 ### CI and release
 
-- Browser acceptance runs as one job per browser with timing margin, keeps original failure traces and still fails when a test passes only on retry. Verified client and server artifacts are kept for 90 days.
+- Browser acceptance runs as one job per browser with timing margin, keeps original failure traces and still fails when a test passes only on retry. The standalone file is tested in Chromium and WebKit. Verified client and server artifacts are kept for 90 days.
 - The image audit fails on fixable findings of unknown severity and on a vulnerability database older than 48 hours, and Dependabot proposes new Node base images. A release-channel checker verifies downloaded assets against the qualified build.
 
 ## v2.0.0 — 2026-11-03

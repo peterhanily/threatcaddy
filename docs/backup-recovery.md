@@ -272,7 +272,12 @@ server never sends deletions or rollbacks to teammates. Team sync pauses after
 the restore until you reconcile in **Settings → General → Sync history
 recovery**, where records shared with the team come back as conflicts to
 review. A restore that would delete records with unsent sync changes is refused
-and changes nothing. **Export Investigation** files, and older single-investigation
+and changes nothing; sign in and let sync upload them first. A restore that
+would delete items sync keeps on this device because the team server cannot
+accept them (for example evidence with a BMP or AVIF preview, or very long
+text) is refused too and names them: delete them permanently, edit them so they
+can upload, or restore with Merge from the header **Load Backup** instead.
+Sync history recovery does not upload held items. **Export Investigation** files, and older single-investigation
 files, are always merged: they never delete other investigations or records.
 Files exported by 2.0.2 carry a `threatcaddy-investigation` format marker that
 2.0.0 rejects; they are not a full workspace backup. 2.0.0 also rejects 2.0.2
