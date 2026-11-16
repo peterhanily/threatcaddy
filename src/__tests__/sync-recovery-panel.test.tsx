@@ -69,10 +69,13 @@ describe('sync history recovery in the interface language', () => {
   });
 
   it('confirms the archive and the reconciliation in the interface language', async () => {
-    mocks.prepare.mockResolvedValue({ blob: { fixture: true }, filename: 'recovery.json' });
+    let prepared!: (receipt: unknown) => void;
+    mocks.prepare.mockReturnValue(new Promise(resolve => { prepared = resolve; }));
     await renderGerman();
     enterPassphrase();
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: de('syncRecovery.prepare') })); });
+    expect(screen.getByRole('status')).toHaveTextContent(de('syncRecovery.verifying'));
+    await act(async () => { prepared({ blob: { fixture: true }, filename: 'recovery.json' }); });
     expect(screen.getByRole('status')).toHaveTextContent(de('syncRecovery.prepared'));
     expect(mocks.download).toHaveBeenCalledExactlyOnceWith(JSON.stringify({ fixture: true }), 'recovery.json', 'application/json');
     fireEvent.click(screen.getByRole('checkbox', { name: de('syncRecovery.savedConfirm') }));
@@ -151,9 +154,18 @@ describe('sync history recovery in the interface language', () => {
 
 describe('sync history recovery navigation names the panel heading in every locale', () => {
   const locales = Object.keys(settings).map(path => path.split('/').at(-2) as string);
+  const catalogs = import.meta.glob<{ default: Record<string, unknown> }>('../../public/locales/*/*.json', { eager: true });
+  const leaves = (value: unknown, key: string): [string, string][] => typeof value === 'string' ? [[key, value]]
+    : Object.entries(value as Record<string, unknown>).flatMap(([child, nested]) => leaves(nested, `${key}${key.endsWith(':') ? '' : '.'}${child}`));
+  // Every text of a locale, keyed `namespace:key`, so a new key cannot escape the check below.
+  const texts = (lng: string) => Object.entries(catalogs).filter(([path]) => path.split('/').at(-2) === lng)
+    .flatMap(([path, module]) => leaves(module.default, `${path.split('/').at(-1)?.replace('.json', '')}:`));
+  const englishMentions = texts('en').filter(([, text]) => text.includes('Sync history recovery')).map(([key]) => key);
 
-  it('covers all 21 interface languages', () => {
+  it('covers all 21 interface languages and every English mention of the panel', () => {
     expect(locales).toHaveLength(21);
+    expect(englishMentions).toEqual(expect.arrayContaining(['settings:syncRecovery.title', 'settings:data.syncBoundRestoreNotice',
+      'settings:data.syncUnsentRestoreBlocked', 'common:syncStatus.pausedCapture', 'common:syncStatus.pausedHistory']));
   });
 
   it.each(locales)('%s', lng => {
@@ -161,7 +173,9 @@ describe('sync history recovery navigation names the panel heading in every loca
     const commonCatalog = catalog(common, lng, 'common');
     const panel = settingsCatalog['syncRecovery.title'];
     expect(panel).toEqual(expect.any(String));
-    if (lng !== 'en') expect(panel).not.toBe('Sync history recovery');
+    const translated = new Map(texts(lng));
+    for (const key of englishMentions) expect(translated.get(key), key).toContain(panel);
+    if (lng !== 'en') expect(texts(lng).filter(([, text]) => text.includes('Sync history recovery'))).toEqual([]);
     const arrow = ['ar', 'fa', 'he'].includes(lng) ? '←' : '→';
     const path = [settingsCatalog.title, settingsCatalog['tabs.general'], panel].join(` ${arrow} `);
     for (const [ns, key, text] of [
