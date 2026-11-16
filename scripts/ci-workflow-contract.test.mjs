@@ -32,7 +32,7 @@ const playwrightConfig = ci => {
   delete env.CI;
   if (ci) env.CI = 'true';
   return JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e',
-    "import c from './playwright.config.ts'; import s from './playwright.standalone.config.ts'; console.log(JSON.stringify({ flaky: c.failOnFlakyTests, retries: c.retries, workers: c.workers ?? null, maxFailures: c.maxFailures, globalTimeout: c.globalTimeout, timeout: c.timeout, projects: c.projects.map(project => project.name), trace: c.use.trace, standaloneTrace: s.use.trace, standaloneRetries: s.retries }));"],
+    "import c from './playwright.config.ts'; import s from './playwright.standalone.config.ts'; console.log(JSON.stringify({ flaky: c.failOnFlakyTests, retries: c.retries, workers: c.workers ?? null, maxFailures: c.maxFailures, globalTimeout: c.globalTimeout, timeout: c.timeout, projects: c.projects.map(project => project.name), trace: c.use.trace, standaloneTrace: s.use.trace, standaloneRetries: s.retries, standaloneBrowsers: s.projects.map(project => ({ ...s.use, ...project.use })).map(use => use.channel ?? use.browserName ?? use.defaultBrowserType ?? 'chromium') }));"],
   { cwd: new URL('../', import.meta.url), env, encoding: 'utf8' }));
 };
 
@@ -124,6 +124,21 @@ test('hosted browser acceptance runs each Playwright project in its own job agai
   assert.deepEqual(buildSteps[kept].with, {
     name: `client-build-reports-${expression('github.sha')}`, path: 'client-build-reports/', 'if-no-files-found': 'error', 'retention-days': 90,
   });
+});
+
+test('the client job installs, with system libraries, the browser of every standalone project it runs', () => {
+  const steps = stepsOf(verify.jobs['client-artifact']);
+  const installs = steps.map((step, index) => [step, index]).filter(([step]) => step.run?.startsWith('pnpm exec playwright install'));
+  const standalone = steps.findIndex(step => step.run === 'pnpm exec playwright test --config playwright.standalone.config.ts');
+  assert.equal(installs.length, 1);
+  assert.ok(installs[0][1] < standalone, 'every standalone project runs, after the install');
+  const args = installs[0][0].run.trim().split(/\s+/).slice(4);
+  assert.deepEqual(args.filter(arg => arg.startsWith('-')), ['--with-deps']);
+  // A bare install would also fetch Firefox, which the standalone suite never runs.
+  const installed = args.filter(arg => !arg.startsWith('-'));
+  const browsers = playwrightConfig(true).standaloneBrowsers;
+  assert.ok(installed.length > 0 && browsers.length > 0);
+  for (const browser of browsers) assert.ok(installed.includes(browser), `client-artifact must install ${browser}`);
 });
 
 test('promoted client and server artifacts outlive release preparation and later re-verification', () => {

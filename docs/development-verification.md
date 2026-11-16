@@ -275,7 +275,8 @@ or publish anything.
 
 The hosted browser suite covers Chromium, Firefox and WebKit, in one job per
 Playwright project. The client job builds once, runs the standalone
-acceptance and uploads `verified-client-<sha>`. Each browser job downloads that
+acceptance in Chromium and WebKit and uploads `verified-client-<sha>`. Each
+browser job downloads that
 artifact by ID, checks its download digest, source revision and archive checksum,
 and serves those exact bytes with `pnpm preview`. It also receives the hosted
 build's startup-budget and dependency-provenance reports, which some checks
