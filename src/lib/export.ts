@@ -1385,6 +1385,8 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
   // Same transport-revision projection as every workspace backup.
   const record = data as unknown as Record<string, unknown>;
   for (const name of BACKUP_TABLES) if (Array.isArray(record[name])) record[name] = portableRows(name, record[name] as BackupRow[]);
+  // Never write a file its own import refuses: the same check as every backup.
+  validatePortableTables(Object.fromEntries(BACKUP_TABLES.filter(name => Array.isArray(record[name])).map(name => [name, record[name]])));
 
   return JSON.stringify(data, null, 2);
   });
