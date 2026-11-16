@@ -42,6 +42,7 @@
   "backup": {
     "exported": "Sicherung exportiert",
     "exportFailed": "Sicherung konnte nicht exportiert werden",
+    "exportFailedDetail": "Sicherung konnte nicht exportiert werden: {{error}}",
     "restored": "Sicherung wiederhergestellt",
     "restoreFailed": "Sicherung konnte nicht wiederhergestellt werden",
     "mergeComplete": "Zusammenführung abgeschlossen: {{added}} hinzugefügt, {{updated}} aktualisiert, {{skipped}} übersprungen",

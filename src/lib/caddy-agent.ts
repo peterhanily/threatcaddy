@@ -23,7 +23,7 @@ import { SUPERVISOR_ACTION_PROFILE, SUPERVISOR_TOOLS, getSupervisorToolPermissio
 import { resolveRoutingMode, sendViaExtension, sendViaServer, sendDirectToLocal } from './llm-router';
 import { DEFAULT_MODEL_PER_PROVIDER, MODEL_PROVIDER_MAP } from './models';
 import { getHostToolDefinitions } from './agent-hosts';
-import { calculateCost } from './model-pricing';
+import { calculateCost, tokenCount } from './model-pricing';
 import { cancellableRequest } from './request-cancellation';
 import { getToolBinding } from './tool-binding';
 
@@ -765,8 +765,8 @@ async function _runAgentCycleInner(
       // Accumulate cycle telemetry
       turnsUsed = turn + 1;
       if (response.usage) {
-        tokensIn += response.usage.input;
-        tokensOut += response.usage.output;
+        tokensIn += tokenCount(response.usage.input);
+        tokensOut += tokenCount(response.usage.output);
       }
       if (response.content) lastAssistantText = response.content;
 

@@ -42,6 +42,7 @@
   "backup": {
     "exported": "Đã xuất bản sao lưu",
     "exportFailed": "Xuất bản sao lưu thất bại",
+    "exportFailedDetail": "Xuất bản sao lưu thất bại: {{error}}",
     "restored": "Đã khôi phục bản sao lưu",
     "restoreFailed": "Khôi phục bản sao lưu thất bại",
     "mergeComplete": "Gộp hoàn tất: {{added}} đã thêm, {{updated}} đã cập nhật, {{skipped}} bỏ qua",

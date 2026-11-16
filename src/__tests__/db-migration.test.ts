@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Dexie from 'dexie';
-import { db } from '../db';
+import { db, runWorkspaceContentMigrations } from '../db';
 import { migrateIndexedDB, getLegacyCleanupStatus, prepareLegacyCleanup, removeLegacyDatabase, restoreLegacyRecoveryArchive, LEGACY_DB_NAME, LEGACY_TRANSFER_KEY } from '../lib/db-migration';
 import { decryptBackup } from '../lib/backup-crypto';
 import { encryptField, generateMasterKey, isEncryptedEnvelope } from '../lib/crypto';
@@ -189,6 +189,25 @@ describe('explicit verified legacy cleanup', () => {
     expect(await db.notes.get('n')).toEqual(note);
     expect(await db.table('_syncQueue').toArray()).toEqual([queue]);
     expect(await db.table('_localMigrations').get(SYNC_CAPTURE_KEY)).toMatchObject({ state: 'reconciliation-required', reason: 'restored-history' });
+  });
+
+  it('repairs backup-blocking agent history from a legacy archive restored after the one-time repair ran', async () => {
+    const meeting = { investigationId: 'f', participantDeploymentIds: [], agenda: 'A', status: 'completed', roundsCompleted: 1, maxRounds: 1, createdAt: 1 };
+    (await seedLegacy({
+      agentMeetings: [{ ...meeting, id: 'stamped', threadId: 't', updatedAt: 9 }, { ...meeting, id: 'threadless' }],
+      agentDeployments: [{ id: 'd', investigationId: 'f', profileId: 'p', status: 'idle', order: 0, createdAt: 1, updatedAt: 1,
+        metrics: { cyclesRun: 1, toolCallsExecuted: 0, toolCallsProposed: 0, tasksCompleted: 0, tasksRejected: 0, tokensUsed: { input: NaN, output: 3 }, lastCycleAt: 1, costUSD: NaN } }],
+    })).close();
+    await migrateIndexedDB();
+    const receipt = await prepareLegacyCleanup('sufficient-recovery-password');
+    await removeLegacyDatabase(receipt, { backupSaved: true, deleteConfirmed: true });
+    await db.transaction('rw', db.tables, async () => { for (const table of db.tables) await table.clear(); });
+    await runWorkspaceContentMigrations();
+    expect(await db.table('_localMigrations').get('backup-integrity-v1')).toBeDefined();
+    expect(await restoreLegacyRecoveryArchive('sufficient-recovery-password', receipt.blob, true)).toBe(3);
+    expect(await db.agentMeetings.get('stamped')).not.toHaveProperty('updatedAt');
+    expect(await db.agentMeetings.get('threadless')).toMatchObject({ threadId: '' });
+    expect((await db.agentDeployments.get('d'))?.metrics).toMatchObject({ tokensUsed: { input: 0, output: 3 }, costUSD: 0 });
   });
 
   it('keeps the source until the backup is saved and deletion is confirmed', async () => {

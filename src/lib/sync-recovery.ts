@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { db, repairBackupIntegrity } from '../db';
 import { canonicalBackupJSON, encryptBackup, decryptBackup, type EncryptedBackupBlob } from './backup-crypto';
 import { normalizeSyncWorkspaceIdentity, SYNC_WORKSPACE_KEY } from './sync-workspace';
 import { SYNC_TABLES, isSyncTable, suppressSyncInCurrentTransaction } from './sync-state';
@@ -7,6 +7,7 @@ import { hasPendingChanges, PendingChangesError } from './pending-changes';
 import { syncPull } from './server-api';
 import { readStoredAuth } from './auth-storage';
 import { ensureSyncCaptureCoverage, markRestoredSyncHistory, SYNC_CAPTURE_KEY, SYNC_RECOVERY_KEY } from './sync-capture-policy';
+import { rejectRestoredAction } from './portable-backup';
 
 const RECOVERY_KEY = SYNC_RECOVERY_KEY;
 type Snapshot = Record<string, Record<string, unknown>[]>;
@@ -133,7 +134,7 @@ export async function restoreSyncRecovery(password: string, blob: EncryptedBacku
   const binding = archive.data._syncMeta.find(row => row.key === SYNC_WORKSPACE_KEY)?.value as { serverUrl?: string; userId?: string } | undefined;
   const auth = readStoredAuth();
   if (auth && (binding?.serverUrl !== auth.serverUrl || binding.userId !== auth.user.id)) throw new Error('Recovery archive belongs to another server or account.');
-  return withEntityDraftBarrier(() => db.transaction('rw', db.tables, async () => {
+  return withEntityDraftBarrier(() => db.transaction('rw', db.tables, async tx => {
     if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work first.');
     suppressSyncInCurrentTransaction();
     for (const table of db.tables) if (table.name !== '_localMigrations' && await table.count()) throw new Error('Recovery requires an empty workspace; existing data was not changed.');
@@ -142,12 +143,16 @@ export async function restoreSyncRecovery(password: string, blob: EncryptedBacku
       const restored = name === 'agentDeployments' ? rows.map(row => ({ ...row, status: 'paused', serverSideEnabled: false, handoffState: 'client', shift: 'resting' }))
         : name === 'folders' ? rows.map(row => ({ ...row, ...(row.agentEnabled ? { agentEnabled: false, agentStatus: 'paused' } : {}) }))
         : name === 'installedIntegrations' ? rows.map(row => ({ ...row, enabled: false }))
-        : name === 'agentActions' ? rows.map(row => ['approved', 'pending'].includes(String(row.status))
-          ? { ...row, status: 'rejected', result: 'Recovered from archive; request and review a new approval before execution.' } : row)
+        : name === 'agentActions' ? rows.map(row => {
+          const action = { ...row };
+          rejectRestoredAction(action, 'Recovered from archive; request and review a new approval before execution.');
+          return action;
+        })
         : rows;
       await db.table(name).bulkPut(restored);
       count += restored.length;
     }
+    await repairBackupIntegrity(tx);
     await markRestoredSyncHistory(db);
     if (hasPendingChanges()) throw new PendingChangesError('Resolve pending work first.');
     return count;

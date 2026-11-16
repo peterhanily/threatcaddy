@@ -43,6 +43,7 @@
   "backup": {
     "exported": "גיבוי יוצא",
     "exportFailed": "ייצוא גיבוי נכשל",
+    "exportFailedDetail": "ייצוא גיבוי נכשל: {{error}}",
     "restored": "גיבוי שוחזר",
     "restoreFailed": "שחזור גיבוי נכשל",
     "mergeComplete": "מיזוג הושלם: {{added}} נוספו, {{updated}} עודכנו, {{skipped}} דולגו",

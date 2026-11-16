@@ -1051,8 +1051,8 @@ export interface PlaybookTemplate {
 }
 
 export interface ExportData {
-  /** Marker for complete portable files; unmarked v1 files remain readable. */
-  format?: 'threatcaddy-backup';
+  /** Marker for complete portable files or single-investigation exports; unmarked v1 files remain readable. */
+  format?: 'threatcaddy-backup' | 'threatcaddy-investigation';
   version: 1;
   exportedAt: number;
   notes: Note[];

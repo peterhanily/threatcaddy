@@ -1,6 +1,11 @@
 import { db } from '../db';
-import { normalizeSyncWorkspaceIdentity, SYNC_WORKSPACE_KEY, isOnlyLocalPrivacyMetadata, ensureSyncCaptureCoverage } from './sync-capture-policy';
+import { normalizeSyncWorkspaceIdentity, SYNC_WORKSPACE_KEY, isOnlyLocalPrivacyMetadata, ensureSyncCaptureCoverage, isSyncWorkspaceIdentity } from './sync-capture-policy';
 export { normalizeSyncWorkspaceIdentity, SYNC_WORKSPACE_KEY, type SyncWorkspaceIdentity } from './sync-capture-policy';
+
+/** A restore in a bound workspace pauses sync for reconciliation (backup-restore.ts). */
+export async function isSyncWorkspaceBound(): Promise<boolean> {
+  return isSyncWorkspaceIdentity((await db.table('_syncMeta').get(SYNC_WORKSPACE_KEY))?.value);
+}
 
 const RECONCILE = 'Your local data and queued edits are preserved. Export a local backup and reconnect the original server/account, or select its workspace in Settings → General. Use Sync history recovery there for unverified legacy history, after coordinating with your administrator.';
 

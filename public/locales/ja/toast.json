@@ -42,6 +42,7 @@
   "backup": {
     "exported": "バックアップをエクスポートしました",
     "exportFailed": "バックアップのエクスポートに失敗しました",
+    "exportFailedDetail": "バックアップのエクスポートに失敗しました: {{error}}",
     "restored": "バックアップを復元しました",
     "restoreFailed": "バックアップの復元に失敗しました",
     "mergeComplete": "マージ完了: {{added}} 件追加、{{updated}} 件更新、{{skipped}} 件スキップ",

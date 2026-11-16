@@ -297,6 +297,51 @@ export async function runWorkspaceContentMigrations(): Promise<void> {
     await restoreFalsePositiveEvidenceNotes(tx);
     await markers.add({ key: 'content-v1', completedAt: Date.now() });
   });
+  await db.transaction('rw', ['agentActions', 'agentMeetings', 'agentDeployments', 'chatThreads', '_localMigrations'], async tx => {
+    suppressSyncInCurrentTransaction();
+    const markers = tx.table('_localMigrations');
+    if (await markers.get('backup-integrity-v1')) return;
+    await repairBackupIntegrity(tx);
+    await markers.add({ key: 'backup-integrity-v1', completedAt: Date.now() });
+  });
+}
+
+/** Rows written before the 2.0.1 writer fixes made every backup fail: NaN token
+ * usage from the team-server proxy, agent history stamped with updatedAt or
+ * stripped of its required thread, and recovery restores that wrote `result`.
+ * Repaired in place; modification times and sync capture are left alone.
+ * Recovery archive restores rerun it: their rows can predate the marker. */
+export async function repairBackupIntegrity(tx: Parameters<NonNullable<Parameters<ReturnType<typeof db.version>['upgrade']>[0]>>[0]) {
+  // Startup depends on this pass: tolerate any stored shape and only zero the
+  // non-finite counters that are present.
+  const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
+  const invalidNumber = (value: unknown) => value !== undefined && !(typeof value === 'number' && Number.isFinite(value));
+  const invalidPair = (pair: unknown) => object(pair) && (invalidNumber(pair.input) || invalidNumber(pair.output));
+  const repair = (holder: unknown, ...keys: string[]) => { if (object(holder)) for (const key of keys) if (invalidNumber(holder[key])) holder[key] = 0; };
+  for (const name of ['agentActions', 'agentMeetings']) {
+    await tx.table(name).filter(row => row.updatedAt !== undefined || row.threadId === undefined || row.result !== undefined).modify(row => {
+      delete row.updatedAt;
+      row.threadId ??= '';
+      if (row.result !== undefined) {
+        if (typeof row.result === 'string' && row.resultSummary === undefined) row.resultSummary = row.result;
+        delete row.result;
+      }
+    });
+  }
+  await tx.table('agentDeployments').filter(row => object(row.metrics) && (invalidPair(row.metrics.tokensUsed) || invalidNumber(row.metrics.costUSD))).modify(row => {
+    repair(row.metrics.tokensUsed, 'input', 'output');
+    repair(row.metrics, 'costUSD');
+  });
+  const poisoned = (message: unknown) => object(message) && (invalidPair(message.tokenCount)
+    || (object(message.agentCycleSummary) && (invalidPair(message.agentCycleSummary.tokens) || invalidNumber(message.agentCycleSummary.costUSD))));
+  await tx.table('chatThreads').filter(row => Array.isArray(row.messages) && row.messages.some(poisoned)).modify(row => {
+    for (const message of row.messages as unknown[]) {
+      if (!object(message)) continue;
+      repair(message.tokenCount, 'input', 'output');
+      repair(message.agentCycleSummary, 'costUSD');
+      if (object(message.agentCycleSummary)) repair(message.agentCycleSummary.tokens, 'input', 'output');
+    }
+  });
 }
 
 function evidenceKindFromExtension(value: string): EvidenceKind {

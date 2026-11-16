@@ -42,6 +42,7 @@
   "backup": {
     "exported": "Yedek dışa aktarıldı",
     "exportFailed": "Yedek dışa aktarılamadı",
+    "exportFailedDetail": "Yedek dışa aktarılamadı: {{error}}",
     "restored": "Yedek geri yüklendi",
     "restoreFailed": "Yedek geri yüklenemedi",
     "mergeComplete": "Birleştirme tamamlandı: {{added}} eklendi, {{updated}} güncellendi, {{skipped}} atlandı",

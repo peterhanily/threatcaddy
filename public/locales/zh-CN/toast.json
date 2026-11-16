@@ -42,6 +42,7 @@
   "backup": {
     "exported": "备份已导出",
     "exportFailed": "导出备份失败",
+    "exportFailedDetail": "导出备份失败：{{error}}",
     "restored": "备份已恢复",
     "restoreFailed": "恢复备份失败",
     "mergeComplete": "合并完成：{{added}} 个已添加，{{updated}} 个已更新，{{skipped}} 个已跳过",

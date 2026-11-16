@@ -3,6 +3,7 @@ import { Shield, Loader2, Trash2, Download, Upload, AlertCircle, CheckCircle, Lo
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '../../hooks/useSettings';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSyncWorkspaceBound } from '../../hooks/useSyncWorkspaceBound';
 import { useToast } from '../../contexts/ToastContext';
 import { db } from '../../db';
 import { encryptBackup, decryptBackup, type BackupPayload, type EncryptedBackupBlob } from '../../lib/backup-crypto';
@@ -32,6 +33,7 @@ export function ServerBackup() {
   const { settings } = useSettings();
   const { addToast } = useToast();
   const { user } = useAuth();
+  const syncBound = useSyncWorkspaceBound();
   const isConnected = !!settings.serverUrl;
   // The server refuses backup uploads from the read-only viewer role.
   const readOnly = user?.role === 'viewer';
@@ -499,6 +501,7 @@ export function ServerBackup() {
                   </ul>
                   {restorePreview.sharedPreserved > 0 && <p>{t('encryption.sharedPreserved', { count: restorePreview.sharedPreserved })}</p>}
                   <p>{t(restoreMode === 'replace' ? 'encryption.restoreScopeNotice' : 'encryption.mergeScopeNotice')}</p>
+                  {syncBound && <p className="text-amber-200">{t('data.syncBoundRestoreNotice')}</p>}
                   <button
                     onClick={() => handleRestore(restoreMode)}
                     className={`${btnClass} bg-red-600/80 hover:bg-red-600 text-white`}

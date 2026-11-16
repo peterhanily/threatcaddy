@@ -49,6 +49,11 @@ export function calculateCost(model: string | undefined, inputTokens: number, ou
   return (inputTokens / 1_000_000) * price.inputPerM + (outputTokens / 1_000_000) * price.outputPerM;
 }
 
+/** Stored token and cost counters must stay finite and non-negative to remain backup-valid. */
+export function tokenCount(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0;
+}
+
 /** Format a USD cost with sensible precision for the UI. */
 export function formatUSD(cost: number): string {
   if (cost === 0) return '$0';

@@ -46,6 +46,7 @@
   "backup": {
     "exported": "تم تصدير النسخة الاحتياطية",
     "exportFailed": "فشل تصدير النسخة الاحتياطية",
+    "exportFailedDetail": "فشل تصدير النسخة الاحتياطية: {{error}}",
     "restored": "تمت استعادة النسخة الاحتياطية",
     "restoreFailed": "فشل استعادة النسخة الاحتياطية",
     "mergeComplete": "اكتمل الدمج: {{added}} مضاف، {{updated}} محدَّث، {{skipped}} تم تخطيه",

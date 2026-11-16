@@ -63,7 +63,7 @@ export async function ensureSyncCaptureCoverage(database: Dexie): Promise<void> 
  * another tab pausing recovery. Initialization is deliberately separate. */
 export async function getSyncPauseReason(database: Dexie): Promise<string | null> {
   const marker: SyncCaptureCoverage | undefined = await database.table('_localMigrations').get(SYNC_CAPTURE_KEY);
-  if (marker?.version !== 1 || marker.state !== 'ready') return SYNC_CAPTURE_MESSAGE;
+  if (marker?.version !== 1 || marker.state !== 'ready') return marker?.reason === 'restored-history' ? SYNC_HISTORY_MESSAGE : SYNC_CAPTURE_MESSAGE;
   return (await database.table('_syncMeta').get(SYNC_RECOVERY_KEY))?.value ? SYNC_HISTORY_MESSAGE : null;
 }
 
