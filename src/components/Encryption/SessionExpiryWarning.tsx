@@ -4,6 +4,7 @@ import { Clock } from 'lucide-react';
 import { deriveWrappingKey, base64ToArrayBuffer, arrayBufferToBase64, exportKeyRaw } from '../../lib/crypto';
 import { getEncryptionMeta } from '../../lib/encryptionStore';
 import { getSessionExpiresAt, getSessionGeneration, renewSession, SESSION_WARNING_MS } from '../../lib/encryptionMiddleware';
+import { useModalFocusExemptRegion } from '../../hooks/useModalFocusExemption';
 
 function warningDeadline(): number {
   const expiresAt = getSessionExpiresAt();
@@ -26,6 +27,8 @@ export function SessionExpiryWarning() {
     window.addEventListener('workspace-session-deadline', update);
     return () => window.removeEventListener('workspace-session-deadline', update);
   }, []);
+  // Open dialogs drop aria-modal while this warning is shown.
+  useModalFocusExemptRegion(!!deadline);
 
   if (!deadline) return null;
 

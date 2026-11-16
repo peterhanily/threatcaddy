@@ -2,6 +2,7 @@ import { createContext, useContext, useInsertionEffect, useLayoutEffect, useRef,
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { useScreenshare } from '../../hooks/ScreenshareContext';
+import { useModalFocusExemptRegionShown } from '../../hooks/useModalFocusExemption';
 
 interface ModalProps {
   open: boolean;
@@ -40,6 +41,7 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
   const { maxLevel } = useScreenshare();
   const inheritedSuspension = useContext(ModalSuspensionContext);
   const suspended = maxLevel !== null || requestedSuspension || inheritedSuspension;
+  const exemptRegionShown = useModalFocusExemptRegionShown();
   const overlayRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
 
@@ -163,7 +165,10 @@ export function Modal({ open, onClose, title, children, wide, extraWide, suspend
       className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 p-4"
       onClick={(e) => { if (e.target === overlayRef.current && stack.at(-1) === overlayRef.current) onClose(); }}
       role="dialog"
-      aria-modal="true"
+      // The workspace-lock warning sits outside every dialog. While it is shown,
+      // aria-modal would hide it from screen readers; the focus trap above still
+      // bridges Tab to it.
+      aria-modal={!exemptRegionShown}
       aria-labelledby={titleId}
     >
       <div className={`bg-gray-900 dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-700 w-full ${extraWide ? 'max-w-5xl' : wide ? 'max-w-2xl' : 'max-w-md'} max-h-[90vh] flex flex-col`}>
