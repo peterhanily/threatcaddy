@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { generateMasterKey, exportKeyRaw, arrayBufferToBase64, base64ToArrayBuffer, deriveWrappingKey, wrapMasterKey, generateSalt } from '../lib/crypto';
+import { generateMasterKey, exportKeyRaw, arrayBufferToBase64, base64ToArrayBuffer, deriveWrappingKey, wrapMasterKey, generateSalt, importSessionKey } from '../lib/crypto';
 import { setEncryptionMeta, clearEncryptionMeta, cacheSessionKey, getCachedSession, getEncryptionMeta } from '../lib/encryptionStore';
 import { getSessionKey, setSessionKey } from '../lib/encryptionMiddleware';
 
@@ -25,6 +25,8 @@ vi.mock('../App', async () => {
 vi.mock('../components/Encryption/PassphraseDialog', () => ({ PassphraseDialog: () => <div>Workspace locked</div> }));
 vi.mock('../lib/workspace-initialization', () => ({ initializeWorkspace: vi.fn(async () => {}) }));
 import { AppShell } from '../components/Encryption/AppShell';
+import { SessionExpiryWarning } from '../components/Encryption/SessionExpiryWarning';
+import { useLayoutEffect } from 'react';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -50,6 +52,11 @@ afterEach(() => { cleanup(); app.formOpen = false; vi.restoreAllMocks(); vi.useR
 async function openWorkspace() {
   render(<AppShell />);
   await screen.findByText('Private workspace content');
+  // Let React finish that render's passive effects (scheduled on a later
+  // event-loop turn) before the clock is faked; a slow CI runner lags behind.
+  await act(async () => {
+    for (let turn = 0; turn < 2; turn++) await new Promise(resolve => setTimeout(resolve, 0));
+  });
   // Run the session timers on the fake clock from the original unlock time.
   vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] }); vi.setSystemTime(START);
   act(() => { setSessionKey(getSessionKey(), raw, START); });
@@ -184,6 +191,23 @@ describe('timed session expiry warning', () => {
     await vi.waitFor(() => expect(getCachedSession()).toBeNull());
     expect(getSessionKey()).toBeNull();
     expect(screen.getByText('Workspace locked')).toBeInTheDocument();
+  });
+
+  it('shows the warning when the deadline event fires before the warning has subscribed', async () => {
+    // Layout effects run before passive ones: this sibling moves the clock into
+    // the warning window and fires the deadline event before the warning's
+    // passive subscription exists, the gap a slow device can hit after a render.
+    function EarlyDeadline() {
+      useLayoutEffect(() => {
+        vi.setSystemTime(START + HOUR - MINUTE);
+        window.dispatchEvent(new Event('workspace-session-deadline'));
+      }, []);
+      return null;
+    }
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] }); vi.setSystemTime(START);
+    setSessionKey(await importSessionKey(base64ToArrayBuffer(raw)), raw, START);
+    render(<><SessionExpiryWarning /><EarlyDeadline /></>);
+    expect(warning()).toBeInTheDocument();
   });
 
   it('locks instead of extending when the deadline has passed but its suspended timer has not fired', async () => {

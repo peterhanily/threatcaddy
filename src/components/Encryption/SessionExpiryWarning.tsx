@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useId, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Clock } from 'lucide-react';
 import { deriveWrappingKey, base64ToArrayBuffer, arrayBufferToBase64, exportKeyRaw } from '../../lib/crypto';
@@ -11,22 +11,24 @@ function warningDeadline(): number {
   return expiresAt && Date.now() >= expiresAt - SESSION_WARNING_MS ? expiresAt : 0;
 }
 
+function subscribeToDeadline(onChange: () => void): () => void {
+  window.addEventListener('workspace-session-deadline', onChange);
+  return () => window.removeEventListener('workspace-session-deadline', onChange);
+}
+
 /** Non-modal: if it is ignored, or re-entry has not finished, the absolute
  * deadline still locks the workspace. An open form dialog keeps its trap but
  * includes this warning in its Tab cycle. */
 export function SessionExpiryWarning() {
   const { t, i18n } = useTranslation('encryption');
   const titleId = useId();
-  const [deadline, setDeadline] = useState(warningDeadline);
+  // React re-reads the deadline when it subscribes, so a deadline event that
+  // fires between this render and the subscription is not lost.
+  const deadline = useSyncExternalStore(subscribeToDeadline, warningDeadline);
   const [passphrase, setPassphrase] = useState('');
   const [error, setError] = useState('');
   const [renewing, setRenewing] = useState(false);
 
-  useEffect(() => {
-    const update = () => setDeadline(warningDeadline());
-    window.addEventListener('workspace-session-deadline', update);
-    return () => window.removeEventListener('workspace-session-deadline', update);
-  }, []);
   // Open dialogs drop aria-modal while this warning is shown.
   useModalFocusExemptRegion(!!deadline);
 
