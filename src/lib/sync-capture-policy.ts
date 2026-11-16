@@ -72,17 +72,20 @@ export async function ensureSyncCaptureCoverage(database: Dexie): Promise<void> 
   });
 }
 
+/** A stable code the banner translates; thrown errors keep the English messages above. */
+export type SyncPauseReason = 'capture' | 'history';
+
 /** Call inside the same transaction as destructive writes to serialize against
  * another tab pausing recovery. Initialization is deliberately separate. */
-export async function getSyncPauseReason(database: Dexie): Promise<string | null> {
+export async function getSyncPauseReason(database: Dexie): Promise<SyncPauseReason | null> {
   const marker: SyncCaptureCoverage | undefined = await database.table('_localMigrations').get(SYNC_CAPTURE_KEY);
-  if (marker?.version !== 1 || marker.state !== 'ready') return marker?.reason === 'restored-history' ? SYNC_HISTORY_MESSAGE : SYNC_CAPTURE_MESSAGE;
-  return (await database.table('_syncMeta').get(SYNC_RECOVERY_KEY))?.value ? SYNC_HISTORY_MESSAGE : null;
+  if (marker?.version !== 1 || marker.state !== 'ready') return marker?.reason === 'restored-history' ? 'history' : 'capture';
+  return (await database.table('_syncMeta').get(SYNC_RECOVERY_KEY))?.value ? 'history' : null;
 }
 
 export async function assertSyncCaptureReady(database: Dexie): Promise<void> {
   const reason = await getSyncPauseReason(database);
-  if (reason) throw new Error(reason);
+  if (reason) throw new Error(reason === 'history' ? SYNC_HISTORY_MESSAGE : SYNC_CAPTURE_MESSAGE);
 }
 
 export async function markRestoredSyncHistory(database: Dexie): Promise<void> {

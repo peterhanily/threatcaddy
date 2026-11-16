@@ -6,7 +6,7 @@ import { clearEncryptionMeta } from '../lib/encryptionStore';
 import { disableSync, enableSync, revisionKey, suppressSyncInCurrentTransaction } from '../lib/sync-state';
 import { installSyncOutbox } from '../lib/sync-outbox';
 import { ensureSyncWorkspace } from '../lib/sync-workspace';
-import { ensureSyncCaptureCoverage, getSyncPauseReason, SYNC_CAPTURE_KEY, SYNC_WORKSPACE_KEY, SYNC_RECOVERY_KEY } from '../lib/sync-capture-policy';
+import { assertSyncCaptureReady, ensureSyncCaptureCoverage, getSyncPauseReason, SYNC_CAPTURE_KEY, SYNC_CAPTURE_MESSAGE, SYNC_WORKSPACE_KEY, SYNC_RECOVERY_KEY } from '../lib/sync-capture-policy';
 import { SyncEngine } from '../lib/sync-engine';
 import { evictSyncedFolder } from '../lib/sync-cache';
 import { prepareSyncRecovery, reconcileSyncWorkspace, restoreSyncRecovery } from '../lib/sync-recovery';
@@ -142,7 +142,9 @@ describe('durable signed-out capture and non-destructive coverage migration', ()
     await oldWorkspace(); await ensureSyncCaptureCoverage(db);
     await db.notes.update('n', { title: 'New quarantined edit' });
     expect(await db.table('_syncQueue').toArray()).toEqual([expect.objectContaining({ data: expect.objectContaining({ title: 'New quarantined edit' }) })]);
-    expect(await getSyncPauseReason(db)).toContain('signed out');
+    expect(await getSyncPauseReason(db)).toBe('capture');
+    // Thrown errors keep the stable English message; only the banner translates the code.
+    await expect(assertSyncCaptureReady(db)).rejects.toThrow(SYNC_CAPTURE_MESSAGE);
   });
 
   it('fails closed on unknown marker versions and rolls marker creation back atomically', async () => {
@@ -152,7 +154,7 @@ describe('durable signed-out capture and non-destructive coverage migration', ()
     expect(await db.table('_localMigrations').count()).toBe(0);
     await db.table('_localMigrations').put({ key: SYNC_CAPTURE_KEY, version: 9, state: 'ready' });
     await ensureSyncCaptureCoverage(db);
-    expect(await getSyncPauseReason(db)).toContain('Sync paused');
+    expect(await getSyncPauseReason(db)).toBe('capture');
     expect((await db.table('_localMigrations').get(SYNC_CAPTURE_KEY)).version).toBe(9);
   });
 });
@@ -215,7 +217,7 @@ describe('capture-gap transport and recovery boundaries', () => {
     await expect(reconcileSyncWorkspace(receipt, identity.serverUrl, identity.userId, confirmed)).rejects.toThrow('["notes","missing"]');
     expect(api.pull).not.toHaveBeenCalled();
     expect(await db.table('_syncQueue').toArray()).toEqual(before);
-    expect(await getSyncPauseReason(db)).toContain('Sync paused');
+    expect(await getSyncPauseReason(db)).toBe('capture');
     expect(await db.notes.get('missing')).toBeUndefined();
   });
 

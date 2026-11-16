@@ -5,6 +5,9 @@ import { setSessionKey } from '../lib/encryptionMiddleware';
 import { SyncEngine } from '../lib/sync-engine';
 import { ensureSyncWorkspace } from '../lib/sync-workspace';
 import { evictSyncedFolder, uncachedFolderKey, cacheOperationKey } from '../lib/sync-cache';
+import i18n from '../i18n';
+import commonEn from '../../public/locales/en/common.json';
+import commonDe from '../../public/locales/de/common.json';
 
 const api = vi.hoisted(() => ({ push: vi.fn(), pull: vi.fn(), snapshot: vi.fn() }));
 vi.mock('../lib/server-api', () => ({
@@ -136,6 +139,30 @@ describe('sync engine persistence contract', () => {
     expect(api.pull).not.toHaveBeenCalled();
     expect(await db.table('_syncQueue').count()).toBe(1);
     expect(handler).toHaveBeenCalledWith(expect.stringContaining('different server/account'));
+  });
+  it('explains a workspace binding pause in the interface language at start and on each sync', async () => {
+    for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
+    i18n.addResourceBundle('de', 'common', commonDe, true, true);
+    await i18n.changeLanguage('de');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      for (const [key, prepare] of [
+        ['syncStatus.pausedWorkspaceMismatch', () => engine.setWorkspaceIdentity('https://test.invalid', 'u2')],
+        ['syncStatus.pausedUnboundHistory', async () => { engine.setWorkspaceIdentity('https://test.invalid', 'u1'); await db.table('_syncMeta').delete('syncWorkspaceIdentityV1'); }],
+      ] as const) {
+        const german = (commonDe as Record<string, string>)[key];
+        expect(german, key).not.toBe((commonEn as Record<string, string>)[key]);
+        await prepare();
+        const handler = vi.fn(); engine.setErrorHandler(handler);
+        engine.start();
+        await vi.waitFor(() => expect(handler).toHaveBeenCalledWith(german));
+        handler.mockClear();
+        await engine.sync();
+        expect(handler).toHaveBeenCalledExactlyOnceWith(german);
+        engine.stop();
+      }
+    } finally { warn.mockRestore(); await i18n.changeLanguage('en'); }
+    expect(api.pull).not.toHaveBeenCalled();
   });
   it('retains queued and remote changes when their investigation becomes local-only', async () => {
     await seedNote(note('n1'));

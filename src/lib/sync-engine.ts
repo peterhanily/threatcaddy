@@ -7,7 +7,7 @@ import { MAX_SYNC_REQUEST_NODES, type OutgoingRefusal } from './sync-push-limits
 import { MAX_PUSH_BYTES, agentDeploymentIds, outgoingChange, syncItemLabel, validVersion, type SyncQueueEntry } from './sync-outgoing';
 import { SYNC_TABLES, isSyncTable, onOutboxCommit, revisionKey, suppressSyncInCurrentTransaction } from './sync-state';
 import type { WSClient } from './ws-client';
-import { ensureSyncWorkspace } from './sync-workspace';
+import { ensureSyncWorkspace, type SyncWorkspacePause } from './sync-workspace';
 import { assertSyncCaptureReady, ensureSyncCaptureCoverage, normalizeSyncWorkspaceIdentity, isSyncWorkspaceIdentity,
   isSampleGlobalRecord, SYNC_WORKSPACE_KEY, SYNC_RECOVERY_KEY, SYNC_HISTORY_MESSAGE } from './sync-capture-policy';
 import { uncachedFolderKey, cacheOperationKey, rotateCacheOperation, CACHE_REPLAY_CANCELLED } from './sync-cache';
@@ -27,6 +27,15 @@ const SKIPPED_PREFIX = '["syncSkipped",';
 const HELD_NOTICES: Readonly<Record<OutgoingRefusal, string>> = {
   limits: 'syncStatus.oversizedOutgoing', unreadable: 'syncStatus.unreadableOutgoing', previewType: 'syncStatus.previewTypeOutgoing',
 };
+const WORKSPACE_NOTICES: Readonly<Record<SyncWorkspacePause, string>> = {
+  workspaceMismatch: 'syncStatus.pausedWorkspaceMismatch', unboundHistory: 'syncStatus.pausedUnboundHistory',
+};
+/** A workspace binding pause reads in the interface language; any other failure keeps its message. */
+function failureNotice(error: unknown, fallback: string): string {
+  const code = (error as { code?: unknown } | null)?.code;
+  if (code === 'workspaceMismatch' || code === 'unboundHistory') return i18n.t(WORKSPACE_NOTICES[code], { ns: 'common' });
+  return error instanceof Error ? error.message : fallback;
+}
 
 type RemoteChange = Record<string, unknown> & { table: string; op: 'put' | 'delete'; id: string };
 
@@ -96,7 +105,7 @@ export class SyncEngine {
     this.initialSync(epoch).then(() => {
       if (this.epoch === epoch) return this.sync();
     }).catch(error => {
-      if (this.epoch === epoch) this.onError?.(error instanceof Error ? error.message : 'Sync initialization failed; local edits are retained.');
+      if (this.epoch === epoch) this.onError?.(failureNotice(error, 'Sync initialization failed; local edits are retained.'));
       console.warn('[sync] Initial sync failed:', error);
     });
     this.timer = setInterval(() => { void this.sync(); }, 30_000);
@@ -146,7 +155,7 @@ export class SyncEngine {
         if (epoch === this.epoch && (error as { code?: string }).code === 'SYNC_CURSOR_RESET') {
           await dynamicDb.table('_syncMeta').put({ key: RECOVERY_KEY, value: true });
         }
-        if (epoch === this.epoch) this.onError?.(error instanceof Error ? error.message : 'Sync failed; local edits are retained.');
+        if (epoch === this.epoch) this.onError?.(failureNotice(error, 'Sync failed; local edits are retained.'));
         if (!(error instanceof Error && error.message.includes('Not connected'))) console.warn('[sync] Synchronization failed:', error);
       }
     })();

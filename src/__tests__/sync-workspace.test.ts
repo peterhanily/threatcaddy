@@ -3,6 +3,7 @@ import { db } from '../db';
 import { disableSync, revisionKey } from '../lib/sync-state';
 import { setSessionKey } from '../lib/encryptionMiddleware';
 import { ensureSyncWorkspace, normalizeSyncWorkspaceIdentity, SYNC_WORKSPACE_KEY } from '../lib/sync-workspace';
+import i18n from '../i18n';
 
 beforeEach(async () => {
   disableSync();
@@ -79,6 +80,16 @@ describe('durable sync workspace identity', () => {
       expect(await snapshot()).toEqual(before);
     },
   );
+
+  it('codes each pause for the banner to translate and keeps the English message', async () => {
+    const english = i18n.getFixedT('en', 'common');
+    await db.table('_syncQueue').add({ table: 'notes', entityId: 'n', op: 'delete', clientVersion: 2 });
+    await expect(ensureSyncWorkspace('https://team.example', 'analyst'))
+      .rejects.toMatchObject({ code: 'unboundHistory', message: english('syncStatus.pausedUnboundHistory') });
+    await db.table('_syncMeta').put({ key: SYNC_WORKSPACE_KEY, value: { version: 1, serverUrl: 'https://team.example', userId: 'other' } });
+    await expect(ensureSyncWorkspace('https://team.example', 'analyst'))
+      .rejects.toMatchObject({ code: 'workspaceMismatch', message: english('syncStatus.pausedWorkspaceMismatch') });
+  });
 
   it('serializes competing first connections so only one account can bind', async () => {
     const results = await Promise.allSettled([
