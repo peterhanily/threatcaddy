@@ -6,7 +6,7 @@ import { installSyncOutbox } from './lib/sync-outbox';
 import { isEncryptionEnabled } from './lib/encryptionStore';
 import { suppressSyncInCurrentTransaction } from './lib/sync-state';
 import { getWorkspaceDatabaseName } from './lib/workspace-profiles';
-import { CONFIDENCE_VALUES, normalizeEnum, TASK_PRIORITIES, TASK_STATUSES, TIMELINE_EVENT_TYPES } from './lib/entity-enums';
+import { AGENT_COMPETITIVENESS, CONFIDENCE_VALUES, normalizeEnum, TASK_PRIORITIES, TASK_STATUSES, TIMELINE_EVENT_TYPES } from './lib/entity-enums';
 
 const db = new Dexie(getWorkspaceDatabaseName()) as Dexie & {
   notes: EntityTable<Note, 'id'>;
@@ -385,6 +385,12 @@ export async function repairBackupIntegrity(tx: Parameters<NonNullable<Parameter
     coerce(row, 'eventType', TIMELINE_EVENT_TYPES, 'other');
     coerce(row, 'confidence', CONFIDENCE_VALUES, 'low');
     repairExtraction(row);
+  });
+  // Like the import sanitizer, an unknown agent mode is dropped; agents read a missing one as cooperative.
+  await tx.table('agentDeployments').filter(row => row.competitiveness !== undefined && offEnum(row.competitiveness, AGENT_COMPETITIVENESS)).modify(row => {
+    const competitiveness = normalizeEnum(row.competitiveness, AGENT_COMPETITIVENESS);
+    if (competitiveness) row.competitiveness = competitiveness;
+    else delete row.competitiveness;
   });
 }
 

@@ -39,6 +39,10 @@ async function seedOffEnumRows() {
     { ...event, id: 'phish', eventType: 'phishing', confidence: 'Medium' },
   ]);
   await db.table('notes').add({ ...entity, id: 'note', title: 'Note', content: 'Body', pinned: false, iocAnalysis: extracted('low', 'Medium', 7) });
+  await db.table('agentDeployments').bulkAdd([
+    { id: 'cased-mode', investigationId: 'f', profileId: 'p', status: 'idle', order: 0, createdAt: 1, updatedAt: 5, competitiveness: 'Competitive' },
+    { id: 'unknown-mode', investigationId: 'f', profileId: 'p', status: 'idle', order: 1, createdAt: 1, updatedAt: 5, competitiveness: 'aggressive' },
+  ]);
 }
 
 /** enrich_ioc stored one object per provider before 2.0.2, where every reader expects a snapshot list. */
@@ -113,7 +117,10 @@ describe('one-time backup integrity repair', () => {
     expect(confidences(await db.timelineEvents.get('pivot'))).toEqual(['confirmed']);
     expect(await db.timelineEvents.get('phish')).toMatchObject({ eventType: 'other', confidence: 'medium' });
     expect(confidences(await db.notes.get('note'))).toEqual(['low', 'medium', 'low']);
-    for (const table of [db.tasks, db.standaloneIOCs, db.timelineEvents, db.notes] as const) {
+    // Like the import sanitizer, an unknown mode is dropped; agents read a missing one as cooperative.
+    expect((await db.agentDeployments.get('cased-mode'))?.competitiveness).toBe('competitive');
+    expect(await db.agentDeployments.get('unknown-mode')).not.toHaveProperty('competitiveness');
+    for (const table of [db.tasks, db.standaloneIOCs, db.timelineEvents, db.notes, db.agentDeployments] as const) {
       for (const row of await table.toArray()) expect(row.updatedAt).toBe(5);
     }
 

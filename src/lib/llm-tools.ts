@@ -37,7 +37,7 @@ import {
   executeCreateTimelineEvent, executeUpdateTimelineEvent,
   executeLinkEntities, executeGenerateReport, executeCreateInInvestigation, isIOCType, enumInput,
 } from './llm-tools-write';
-import { CONFIDENCE_VALUES, normalizeEnum, TASK_PRIORITIES } from './entity-enums';
+import { AGENT_COMPETITIVENESS, CONFIDENCE_VALUES, normalizeEnum, TASK_PRIORITIES } from './entity-enums';
 import { mergeEnrichment } from './ioc-enrichment-persistence';
 
 // Analysis tools
@@ -1410,7 +1410,8 @@ async function executeDeployAgent(inp: Record<string, unknown>, folderId?: strin
   }
 
   const existing = await db.agentDeployments.filter(d => d.investigationId === folderId).toArray();
-  const competitiveness = String(inp.competitiveness || 'cooperative') as 'cooperative' | 'competitive' | 'independent';
+  const competitiveness = enumInput(inp.competitiveness, 'competitiveness', AGENT_COMPETITIVENESS);
+  if (competitiveness.error) return competitiveness.error;
 
   const deploymentId = nanoid();
   const threadId = nanoid();
@@ -1432,7 +1433,7 @@ async function executeDeployAgent(inp: Record<string, unknown>, folderId?: strin
     profileId: profile.id,
     threadId,
     status: 'idle',
-    competitiveness,
+    competitiveness: competitiveness.value ?? 'cooperative',
     shift: 'active',
     order: existing.length,
     createdAt: now,
@@ -1534,9 +1535,10 @@ async function executeRunAgentCycle(folderId?: string): Promise<string> {
 async function executeSpawnAgent(inp: Record<string, unknown>, folderId?: string): Promise<string> {
   const profileName = String(inp.profileName || '');
   const reason = String(inp.reason || '');
-  const competitiveness = String(inp.competitiveness || 'cooperative') as 'cooperative' | 'competitive' | 'independent';
+  const competitiveness = enumInput(inp.competitiveness, 'competitiveness', AGENT_COMPETITIVENESS);
   if (!profileName || !reason) return JSON.stringify({ error: 'profileName and reason are required' });
   if (!folderId) return JSON.stringify({ error: 'No active investigation' });
+  if (competitiveness.error) return competitiveness.error;
 
   // Find matching profile (builtin + user)
   const profiles = await getAllAgentProfiles();
@@ -1557,7 +1559,7 @@ async function executeSpawnAgent(inp: Record<string, unknown>, folderId?: string
     investigationId: folderId,
     profileId: profile.id,
     status: 'idle',
-    competitiveness,
+    competitiveness: competitiveness.value ?? 'cooperative',
     shift: 'active',
     order: existing.length,
     createdAt: Date.now(),

@@ -50,7 +50,15 @@ describe('AI write tools store only values every backup accepts', () => {
     const delegated = await run('delegate_task', { title: 'Hunt', description: 'Sweep hosts', assignToProfile: 'Threat Hunter', priority: 'HIGH' });
     expect((await db.tasks.get(delegated.taskId))?.priority).toBe('high');
 
+    const deployed = await run('deploy_agent', { profileName: 'Threat Hunter', competitiveness: 'Competitive' });
+    expect((await db.agentDeployments.get(deployed.deploymentId))?.competitiveness).toBe('competitive');
+    const spawned = await run('spawn_agent', { profileName: 'Threat Hunter', reason: 'Coverage', competitiveness: 'INDEPENDENT' });
+    expect((await db.agentDeployments.get(spawned.deploymentId))?.competitiveness).toBe('independent');
+    const unspecified = await run('spawn_agent', { profileName: 'Threat Hunter', reason: 'Coverage' });
+    expect((await db.agentDeployments.get(unspecified.deploymentId))?.competitiveness).toBe('cooperative');
+
     await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
+    await expect(exportInvestigationJSON('f1')).resolves.toContain('"competitiveness": "competitive"');
   });
 
   it('files a critical ticket as a high-priority local task when no ticketing system is configured', async () => {
@@ -83,6 +91,8 @@ describe('AI write tools store only values every backup accepts', () => {
     ['create_in_investigation', { investigationId: 'f1', entityType: 'ioc', data: { type: 'domain', value: 'x.example', confidence: 'certain' } }, 'confidence'],
     ['create_ticket', { title: 'X', description: 'Y', priority: 'p1' }, 'priority'],
     ['delegate_task', { title: 'X', description: 'Y', assignToProfile: 'Threat Hunter', priority: 'critical' }, 'priority'],
+    ['deploy_agent', { profileName: 'Threat Hunter', competitiveness: 'aggressive' }, 'competitiveness'],
+    ['spawn_agent', { profileName: 'Threat Hunter', reason: 'Coverage', competitiveness: 'aggressive' }, 'competitiveness'],
   ])('%s refuses an unsupported value and writes nothing (%#)', async (name, input, field) => {
     const before = await buildFullBackupPayload('all');
     const result = await executeTool(call(name, input), 'f1');
