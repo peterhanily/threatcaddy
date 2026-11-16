@@ -794,7 +794,7 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string,
             const now = Date.now();
             const updates: Partial<import('../types').StandaloneIOC> = { updatedAt: now };
             if (isIOCType(fields.type)) updates.type = fields.type;
-            if (fields.iocStatus !== undefined) updates.iocStatus = String(fields.iocStatus);
+            if (fields.iocStatus !== undefined && fields.iocStatus !== null) updates.iocStatus = String(fields.iocStatus);
             const confidence = normalizeEnum(fields.confidence, CONFIDENCE_VALUES);
             if (confidence) updates.confidence = confidence;
             const enrichment = fields.enrichment !== undefined ? mergeEnrichment(existing, fields.enrichment, now) : undefined;

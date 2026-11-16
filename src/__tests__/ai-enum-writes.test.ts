@@ -137,6 +137,13 @@ describe('enrich_ioc stores integration output every backup accepts', () => {
     await expect(exportInvestigationJSON('f1')).resolves.toContain('c2.example');
   });
 
+  it('keeps the stored IOC status when an output sets it to null, instead of storing the text "null"', async () => {
+    await db.standaloneIOCs.update('i1', { iocStatus: 'suspicious' });
+    await install([{ type: 'update-ioc', template: { id: '{{ioc.id}}', iocStatus: null } }]);
+    expect((await run('enrich_ioc', { iocId: 'i1' })).results).toEqual([expect.objectContaining({ status: 'success' })]);
+    expect((await db.standaloneIOCs.get('i1'))?.iocStatus).toBe('suspicious');
+  });
+
   it('keeps the stored confidence, or the default for a new IOC, when the output has no supported value', async () => {
     await install([
       { type: 'update-ioc', template: { id: '{{ioc.id}}', confidence: 'score-7' } },

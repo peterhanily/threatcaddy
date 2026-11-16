@@ -1,6 +1,7 @@
 /** Non-mutating validation for portable records. Never truncate a successful backup. */
 import { BACKUP_TABLES, type BackupTable } from './backup-tables';
 import { validateBackupMedia, validateBackupURL } from './backup-media-validation';
+import { IOC_TYPES } from './entity-enums';
 
 export const MAX_BACKUP_BYTES = 50 * 1024 * 1024;
 export const MAX_BACKUP_ITEMS = 100_000;
@@ -85,7 +86,7 @@ const priority = oneOf('none', 'low', 'medium', 'high');
 const taskStatus = oneOf('todo', 'in-progress', 'done');
 const agentStatus = oneOf('idle', 'running', 'waiting', 'paused', 'error');
 const source = oneOf('builtin', 'user', 'team');
-const iocType = oneOf('ipv4', 'ipv6', 'domain', 'url', 'email', 'md5', 'sha1', 'sha256', 'file-path', 'cve', 'mitre-attack', 'yara-rule', 'sigma-rule');
+const iocType = oneOf(...IOC_TYPES);
 const relationship = object(fields('targetIOCId relationshipType'), 'targetIOCId relationshipType');
 const comment = object(fields('id text authorId authorName', '', '', '', 'createdAt'), 'id text createdAt');
 const entityComment = object(fields('id userId userName content', '', '', '', 'createdAt updatedAt'), 'id content createdAt');

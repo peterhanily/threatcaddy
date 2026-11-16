@@ -128,6 +128,25 @@ describe('one-time backup integrity repair', () => {
     await expect(exportJSON()).resolves.toContain('threatcaddy-backup');
   });
 
+  it('maps unambiguous IOC type spellings and stores IOC status as text, leaving unmappable types for the analyst', async () => {
+    await db.table('standaloneIOCs').bulkAdd([
+      { ...entity, id: 'typed', type: 'IPv4', value: '192.0.2.10', confidence: 'low', iocStatus: 7 },
+      { ...entity, id: 'hashed', type: 'SHA256', value: 'a'.repeat(64), confidence: 'low', iocStatus: null },
+      { ...entity, id: 'vague', type: 'unknown', value: 'c.example', confidence: 'low' },
+    ]);
+    await runWorkspaceContentMigrations();
+
+    expect(await db.standaloneIOCs.get('typed')).toMatchObject({ type: 'ipv4', iocStatus: '7', updatedAt: 5 });
+    const hashed = await db.standaloneIOCs.get('hashed');
+    expect(hashed).toMatchObject({ type: 'sha256', updatedAt: 5 });
+    expect(hashed).not.toHaveProperty('iocStatus');
+    // Relabelling an indicator would corrupt evidence: the backup names it instead.
+    expect((await db.standaloneIOCs.get('vague'))?.type).toBe('unknown');
+    await expect(buildFullBackupPayload('all')).rejects.toThrow('standaloneIOCs.type in record standaloneIOCs:vague');
+    await db.standaloneIOCs.delete('vague');
+    await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
+  });
+
   it('turns enrichment stored as one object per provider into a snapshot list, keeping earlier snapshots', async () => {
     await seedEnrichedIOC();
     await expect(buildFullBackupPayload('all')).rejects.toThrow('standaloneIOCs.enrichment');

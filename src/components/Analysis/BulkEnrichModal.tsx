@@ -300,7 +300,7 @@ export function BulkEnrichModal({
                         const existing = await db.standaloneIOCs.get(id);
                         if (!existing || existing.trashed) throw new Error('The IOC target is missing or deleted.');
                         const updates: Partial<StandaloneIOC> = { updatedAt: Date.now() };
-                        if (fields.iocStatus !== undefined) updates.iocStatus = String(fields.iocStatus);
+                        if (fields.iocStatus !== undefined && fields.iocStatus !== null) updates.iocStatus = String(fields.iocStatus);
                         // An unsupported value keeps the stored one: every backup refuses it.
                         const confidence = normalizeEnum(fields.confidence, CONFIDENCE_VALUES);
                         if (confidence) updates.confidence = confidence;

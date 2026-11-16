@@ -6,7 +6,7 @@ import { installSyncOutbox } from './lib/sync-outbox';
 import { isEncryptionEnabled } from './lib/encryptionStore';
 import { suppressSyncInCurrentTransaction } from './lib/sync-state';
 import { getWorkspaceDatabaseName } from './lib/workspace-profiles';
-import { AGENT_COMPETITIVENESS, CONFIDENCE_VALUES, normalizeEnum, TASK_PRIORITIES, TASK_STATUSES, TIMELINE_EVENT_TYPES } from './lib/entity-enums';
+import { AGENT_COMPETITIVENESS, CONFIDENCE_VALUES, IOC_TYPES, normalizeEnum, TASK_PRIORITIES, TASK_STATUSES, TIMELINE_EVENT_TYPES } from './lib/entity-enums';
 
 const db = new Dexie(getWorkspaceDatabaseName()) as Dexie & {
   notes: EntityTable<Note, 'id'>;
@@ -371,8 +371,19 @@ export async function repairBackupIntegrity(tx: Parameters<NonNullable<Parameter
   // enrich_ioc stored one object per provider where every reader expects a snapshot list.
   const offShapeEnrichment = (value: unknown) => value !== undefined
     && (!object(value) || Object.values(value).some(snapshots => !Array.isArray(snapshots) || !snapshots.every(object)));
-  await tx.table('standaloneIOCs').filter(row => offEnum(row.confidence, CONFIDENCE_VALUES) || offShapeEnrichment(row.enrichment)).modify(row => {
+  // Only unambiguous spellings ('IPv4', 'SHA256') are mapped: relabelling an
+  // indicator as another type would corrupt evidence, so an unmappable type
+  // stays, and the backup error names the record for the analyst to fix.
+  const mappableType = (value: unknown) => offEnum(value, IOC_TYPES) && normalizeEnum(value, IOC_TYPES) !== undefined;
+  const nonTextStatus = (value: unknown) => value !== undefined && typeof value !== 'string';
+  await tx.table('standaloneIOCs').filter(row => offEnum(row.confidence, CONFIDENCE_VALUES) || offShapeEnrichment(row.enrichment)
+    || mappableType(row.type) || nonTextStatus(row.iocStatus)).modify(row => {
     coerce(row, 'confidence', CONFIDENCE_VALUES, 'low');
+    if (mappableType(row.type)) row.type = normalizeEnum(row.type, IOC_TYPES);
+    if (nonTextStatus(row.iocStatus)) {
+      if (row.iocStatus === null) delete row.iocStatus;
+      else row.iocStatus = String(row.iocStatus);
+    }
     if (!offShapeEnrichment(row.enrichment)) return;
     if (!object(row.enrichment)) { delete row.enrichment; return; }
     for (const [provider, snapshots] of Object.entries(row.enrichment)) {
