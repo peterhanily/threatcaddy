@@ -12,7 +12,7 @@ const embeddedIOCs = [relation('iocAnalysis.iocs.*.relationships.*.targetIOCId',
 /** Explicit relationships only: never rewrite IDs buried in analyst prose or tool input. */
 export const ENTITY_RELATIONS: Record<string, Relation[]> = {
   notes: [folder, ...links, ...embeddedIOCs, relation('parentNoteId', 'notes')],
-  tasks: [folder, ...links, ...embeddedIOCs],
+  tasks: [folder, ...links, ...embeddedIOCs, relation('assignedDeploymentId', 'agentDeployments')],
   timelineEvents: [folder, ...links, ...embeddedIOCs, relation('timelineId', 'timelines'), relation('linkedIOCIds', 'iocs', true)],
   standaloneIOCs: [folder, ...links, relation('linkedEvidenceIds', 'evidenceItems', true), relation('relationships.*.targetIOCId', 'iocs')],
   evidenceItems: [folder, relation('linkedIOCIds', 'iocs', true)],

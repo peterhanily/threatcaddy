@@ -6,6 +6,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { IntegrationExecutor } from '../../lib/integration-executor';
 import { integrationWrite } from '../../lib/integration-cancellation';
+import { isIOCType } from '../../lib/llm-tools-write';
 import type { ExecutionOptions } from '../../lib/integration-executor';
 import { IntegrationResultModal } from './IntegrationResultModal';
 import { db } from '../../db';
@@ -139,10 +140,13 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
                 pendingNoteId = id;
                 break;
               }
-              case 'ioc':
+              case 'ioc': {
+                const iocType = fields.type || 'domain';
+                // Other clients skip an IOC whose type they do not know.
+                if (!isIOCType(iocType)) throw new Error('The integration returned an unsupported IOC type.');
                 await db.standaloneIOCs.add({
                   id,
-                  type: (fields.type as string) || 'domain',
+                  type: iocType,
                   value: (fields.value as string) || '',
                   confidence: (fields.confidence as string) || 'medium',
                   tags: (fields.tags as string[]) || [],
@@ -153,6 +157,7 @@ export function RunIntegrationMenu({ ioc, investigation, matching, addRun, onCom
                   updatedAt: now,
                 } as never);
                 break;
+              }
               case 'task':
                 await db.tasks.add({
                   id,

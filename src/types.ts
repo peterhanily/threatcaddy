@@ -119,6 +119,8 @@ export interface Task {
   trashedAt?: number;
   archived: boolean;
   assigneeId?: string;
+  /** Agent deployment the task was delegated to. Device-only: the team server's assigneeId refers to users. */
+  assignedDeploymentId?: string;
   createdBy?: string;
   updatedBy?: string;
   /** Lead-agent rejection count — incremented each time review_completed_task sends it back. */

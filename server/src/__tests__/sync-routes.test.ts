@@ -141,14 +141,14 @@ describe('sync HTTP write boundary', () => {
 
   it('delegates current authorization and revisions to the write transaction', async () => {
     expect((await push([put])).status).toBe(200);
-    expect(mocks.push).toHaveBeenCalledWith([put], 'user-1', { authorize: true, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' });
+    expect(mocks.push).toHaveBeenCalledWith([put], 'user-1', { authorize: true, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', rejectInvalidChanges: true });
     expect(mocks.broadcast).toHaveBeenCalledWith('folder-1', expect.objectContaining({ type: 'entity-change', data: record }), 'user-1');
     expect(mocks.audit).toHaveBeenCalledOnce();
   });
 
   it('does not enable internal trust from request fields', async () => {
     await push([{ ...put, trustedInternal: true }]);
-    expect(mocks.push).toHaveBeenCalledWith([put], 'user-1', { authorize: true, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' });
+    expect(mocks.push).toHaveBeenCalledWith([put], 'user-1', { authorize: true, generation: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', rejectInvalidChanges: true });
   });
 
   it('returns a clear validation failure when a field exceeds sync limits', async () => {

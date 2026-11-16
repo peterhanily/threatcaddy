@@ -41,8 +41,24 @@ const MAX_STRING_LENGTH = 500_000; // 500KB — covers large note content
 const MAX_ARRAY_LENGTH = 5_000;    // e.g. tags, linkedIds
 const MAX_OBJECT_DEPTH = 5;
 
+/** IOC types every client can read (src/types.ts IOCType). Clients skip a row with any other type. */
+const IOC_TYPES = new Set(['ipv4', 'ipv6', 'domain', 'url', 'email', 'md5', 'sha1', 'sha256', 'cve', 'mitre-attack', 'yara-rule', 'sigma-rule', 'file-path']);
+/** Clients refuse whiteboard elements/appState over this many UTF-8 bytes (src/lib/export.ts). */
+const MAX_WHITEBOARD_JSON_BYTES = 500_000;
+
 export class SyncWriteValidationError extends Error {}
 const EVIDENCE_RASTER_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
+
+/** Elements must be a serialized JSON array and appState a serialized JSON object, as clients require. */
+function validateWhiteboardJSON(field: 'elements' | 'appState', value: unknown): void {
+  let parsed: unknown;
+  try {
+    if (typeof value === 'string' && Buffer.byteLength(value) <= MAX_WHITEBOARD_JSON_BYTES) parsed = JSON.parse(value);
+  } catch { /* reported below */ }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) !== (field === 'elements')) {
+    throw new SyncWriteValidationError(`Whiteboard ${field} must be a serialized JSON ${field === 'elements' ? 'array' : 'object'} of at most ${MAX_WHITEBOARD_JSON_BYTES} bytes`);
+  }
+}
 
 /** Validate the resulting PATCH state, not just fields present in this request.
  * Accepted preview bytes must survive the client's raster-only sanitizer. */
@@ -100,6 +116,12 @@ function stripServerFields(data: Record<string, unknown> | undefined, tableName:
     // Reject unsafe or oversized values
     if (!validateValue(value)) {
       throw new SyncWriteValidationError('Sync field exceeds the supported value limits');
+    }
+    if (tableName === 'standaloneIOCs' && key === 'type' && !(typeof value === 'string' && IOC_TYPES.has(value))) {
+      throw new SyncWriteValidationError('Unsupported IOC type');
+    }
+    if (tableName === 'whiteboards' && (key === 'elements' || key === 'appState') && value !== null && value !== undefined) {
+      validateWhiteboardJSON(key, value);
     }
     const column = getTableColumns(getTable(tableName))?.[key];
     if (column?.dataType === 'date' && value !== null && value !== undefined) {
@@ -194,7 +216,9 @@ export async function bulkLookupEntityFolderIds(
 export async function processPush(
   changes: SyncChange[],
   userId: string,
-  options: { authorize?: boolean; trustedInternal?: boolean; generation?: string; authorizeMutation?: SyncMutationAuthorizer; beforeCommit?: () => void | Promise<void> } = {},
+  options: { authorize?: boolean; trustedInternal?: boolean; generation?: string; authorizeMutation?: SyncMutationAuthorizer; beforeCommit?: () => void | Promise<void>;
+    /** Report a change that fails validation as rejected, so the rest of the batch still commits. */
+    rejectInvalidChanges?: boolean } = {},
 ): Promise<SyncResult[]> {
   if (!syncDataWithinBudget(changes)) throw new SyncWriteValidationError('Sync data exceeds the supported structure limits');
   const identities = new Set<string>();
@@ -291,7 +315,21 @@ export async function processPush(
         if (!live) { result[index] = { table: change.table, entityId, status: 'rejected' }; continue; }
       }
       const serverVersion = (current?.version as number | undefined) ?? 0;
-      const cleanData = stripServerFields(change.data, change.table);
+      // Validation runs before this change writes anything, so rejecting it leaves the transaction usable.
+      const rejectInvalid = (error: unknown) => {
+        if (!options.rejectInvalidChanges || !(error instanceof SyncWriteValidationError)) throw error;
+        result[index] = { table: change.table, entityId, status: 'rejected', reason: error.message.slice(0, 200) };
+      };
+      let cleanData: Record<string, unknown>;
+      try { cleanData = stripServerFields(change.data, change.table); } catch (error) { rejectInvalid(error); continue; }
+      // assignee_id references users. Any other id (such as a client's agent deployment) would fail the whole batch.
+      if (op === 'put' && (change.table === 'tasks' || change.table === 'standaloneIOCs') && typeof cleanData.assigneeId === 'string') {
+        const [assignee] = await tx.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.id, cleanData.assigneeId));
+        if (!assignee) {
+          cleanData.assigneeId = null;
+          if (change.table === 'standaloneIOCs') cleanData.assigneeName = null;
+        }
+      }
       const now = new Date();
       await options.authorizeMutation?.(tx, change, current ?? null, {
         ...current, ...(op === 'put' ? cleanData : {}), id: entityId,
@@ -304,7 +342,9 @@ export async function processPush(
         result[index] = { table: change.table, entityId, status: 'conflict', serverVersion, serverData: current };
         continue;
       }
-      if (change.table === 'evidenceItems' && op === 'put') validateEvidencePreview(cleanData, current);
+      if (change.table === 'evidenceItems' && op === 'put') {
+        try { validateEvidencePreview(cleanData, current); } catch (error) { rejectInvalid(error); continue; }
+      }
       let record: Record<string, unknown>;
       if (!current) {
         const [inserted] = await tx.insert(table).values({ ...cleanData, id: entityId, createdBy: userId, updatedBy: userId, version: 1, createdAt: now, updatedAt: now }).returning();

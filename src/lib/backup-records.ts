@@ -168,7 +168,7 @@ const serialized = (arrayShape: boolean, byteLimit = MAX_BACKUP_BYTES): Check =>
 
 const RECORDS: Record<BackupTable, Shape> = {
   notes: { ...common, ...links, ...analyzed, ...fields('title content sourceUrl sourceTitle color parentNoteId', '', 'pinned isFolder reviewRequired'), annotations: array(comment) },
-  tasks: { ...common, ...links, ...analyzed, ...fields('title description dueDate assigneeId', 'order rejectionCount', 'completed escalated', '', 'completedAt'),
+  tasks: { ...common, ...links, ...analyzed, ...fields('title description dueDate assigneeId assignedDeploymentId', 'order rejectionCount', 'completed escalated', '', 'completedAt'),
     priority, status: taskStatus, comments: array(comment), checklist: array(object(fields('id text', '', 'done'), 'id text done')),
     rejectionHistory: array(object({ ...fields('byAgentId reason requestedDelta', '', '', '', 'at'), quality: oneOf('needs-redo', 'serious-failure') }, 'at quality reason requestedDelta')) },
   folders: { ...fields('id name icon color description clsLevel papLevel timelineId closedReason agentThreadId createdBy updatedBy', 'order', 'localOnly agentEnabled',

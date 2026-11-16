@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 import DOMPurify from 'dompurify';
 import { db } from '../db';
+import { IOC_TYPE_LABELS } from '../types';
 import type {
   IOCType, ConfidenceLevel, TimelineEventType, Priority, TaskStatus,
   Note, Task, StandaloneIOC, TimelineEvent,
@@ -18,6 +19,20 @@ function sanitizeText(text: string): string {
 function snippet(text: string, maxLen = MAX_SNIPPET): string {
   if (text.length <= maxLen) return text;
   return text.slice(0, maxLen) + '…';
+}
+
+/** Other clients skip an IOC whose type they do not know, so only these types are written. */
+const IOC_TYPES = Object.keys(IOC_TYPE_LABELS);
+export const isIOCType = (type: unknown): type is IOCType => typeof type === 'string' && IOC_TYPES.includes(type);
+function iocTypeError(type: unknown): string | undefined {
+  if (type == null || type === '' || isIOCType(type)) return undefined;
+  return JSON.stringify({ error: `Unsupported IOC type "${String(type).slice(0, 40)}". Use one of: ${IOC_TYPES.join(', ')}.` });
+}
+
+/** The team server's assigneeId refers to users; agents are assigned with delegate_task. */
+async function agentAssigneeError(assigneeId: unknown): Promise<string | undefined> {
+  if (!assigneeId || !await db.agentDeployments.get(String(assigneeId))) return undefined;
+  return JSON.stringify({ error: 'assigneeId must be a team member user ID. Use delegate_task to assign work to an agent.' });
 }
 
 export async function executeCreateNote(input: Record<string, unknown>, folderId?: string): Promise<string> {
@@ -56,6 +71,8 @@ export async function executeUpdateNote(input: Record<string, unknown>): Promise
 }
 
 export async function executeCreateTask(input: Record<string, unknown>, folderId?: string): Promise<string> {
+  const refused = await agentAssigneeError(input.assigneeId);
+  if (refused) return refused;
   const now = Date.now();
   const count = folderId
     ? await db.tasks.where('folderId').equals(folderId).count()
@@ -87,6 +104,8 @@ export async function executeUpdateTask(input: Record<string, unknown>): Promise
 
   const task = await db.tasks.get(id);
   if (!task) return JSON.stringify({ error: 'Task not found' });
+  const refused = await agentAssigneeError(input.assigneeId);
+  if (refused) return refused;
 
   const updates: Partial<Task> = { updatedAt: Date.now() };
   if (input.title !== undefined) updates.title = String(input.title);
@@ -103,6 +122,8 @@ export async function executeUpdateTask(input: Record<string, unknown>): Promise
 }
 
 export async function executeCreateIOC(input: Record<string, unknown>, folderId?: string): Promise<string> {
+  const refused = iocTypeError(input.type);
+  if (refused) return refused;
   const now = Date.now();
   const ioc = {
     id: nanoid(),
@@ -127,9 +148,11 @@ export async function executeUpdateIOC(input: Record<string, unknown>): Promise<
 
   const ioc = await db.standaloneIOCs.get(id);
   if (!ioc) return JSON.stringify({ error: 'IOC not found' });
+  const refused = iocTypeError(input.type);
+  if (refused) return refused;
 
   const updates: Partial<StandaloneIOC> = { updatedAt: Date.now() };
-  if (input.type !== undefined) updates.type = input.type as IOCType;
+  if (input.type) updates.type = input.type as IOCType;
   if (input.value !== undefined) updates.value = String(input.value);
   if (input.confidence !== undefined) updates.confidence = input.confidence as ConfidenceLevel;
   if (input.analystNotes !== undefined) updates.analystNotes = sanitizeText(String(input.analystNotes));
@@ -145,6 +168,10 @@ export async function executeBulkCreateIOCs(input: Record<string, unknown>, fold
   const iocInputs = input.iocs as Array<Record<string, unknown>>;
   if (!Array.isArray(iocInputs) || iocInputs.length === 0) {
     return JSON.stringify({ error: 'iocs array is required and must not be empty' });
+  }
+  for (const iocInput of iocInputs) {
+    const refused = iocTypeError(iocInput?.type);
+    if (refused) return refused;
   }
 
   const now = Date.now();

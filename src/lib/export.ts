@@ -273,6 +273,7 @@ export function sanitizeTask(raw: unknown): Task | null {
     archived: bool(r.archived),
     completedAt: r.completedAt != null ? num(r.completedAt) : undefined,
     assigneeId: r.assigneeId != null ? str(r.assigneeId) : undefined,
+    assignedDeploymentId: r.assignedDeploymentId != null ? str(r.assignedDeploymentId) : undefined,
     rejectionCount: r.rejectionCount != null ? num(r.rejectionCount) : undefined,
     rejectionHistory: Array.isArray(r.rejectionHistory)
       ? (r.rejectionHistory as unknown[]).map((rh) => {

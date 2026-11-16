@@ -72,12 +72,15 @@ it('packaged HTTP validation preserves authenticated sync and sharing without re
       { generation, changes: [{ ...change('wide-data'), data: { folderId: 'validation-folder',
         ...Object.fromEntries(Array.from({ length: 201 }, (_, index) => [`field-${index}`, null])) } }] },
       { generation, changes: [{ ...change('long-key'), data: { folderId: 'validation-folder', ['x'.repeat(1024 * 1024)]: 'y'.repeat(500_001) } }] },
-      { generation, changes: [{ ...change('long-value'), data: { folderId: 'validation-folder', content: 'y'.repeat(500_001) } }] },
     ]) {
       const response = await push(invalid);
       expect(response.status).toBe(400);
       expect(await response.json()).toMatchObject({ code: 'VALIDATION_FAILED' });
     }
+    // A value over the field limits is refused per change, so it cannot hold back the rest of a batch.
+    const refused = await push({ generation, changes: [{ ...change('long-value'), data: { folderId: 'validation-folder', content: 'y'.repeat(500_001) } }] });
+    expect(refused.status).toBe(200);
+    expect((await refused.json()).results).toEqual([{ table: 'notes', entityId: 'long-value', status: 'rejected', reason: 'Sync field exceeds the supported value limits' }]);
     for (const invalid of [null, [], false, { template: null },
       { template: { ...definition, id: '../../users/validation-user' } },
       { template: { ...definition, id: 'invalid-description' }, description: { invalid: true } },

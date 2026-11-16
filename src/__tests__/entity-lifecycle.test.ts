@@ -74,6 +74,17 @@ describe('portable investigation graph', () => {
     expect((await db.whiteboards.where('folderId').equals(imported.folderId).first())?.files).toContain('data:image/png');
     expect(await db.notes.get('child')).toBeDefined();
   });
+  it('points an imported delegated task at the imported agent, and clears it when that agent is deleted', async () => {
+    await graph();
+    await db.tasks.update('task', { assignedDeploymentId: 'subordinate' });
+    const imported = await importInvestigationJSON(await exportInvestigationJSON('f'));
+    const subordinate = await db.agentDeployments.where('investigationId').equals(imported.folderId).filter(row => row.order === 1).first();
+    const task = await db.tasks.where('folderId').equals(imported.folderId).first();
+    expect(subordinate?.id).not.toBe('subordinate');
+    expect(task?.assignedDeploymentId).toBe(subordinate?.id);
+    await deleteEntitiesWithReferences({ agentDeployments: ['subordinate'] });
+    expect((await db.tasks.get('task'))?.assignedDeploymentId).toBeUndefined();
+  });
   it('rolls back the entire graph if any imported collection fails', async () => {
     await graph();
     const json = await exportInvestigationJSON('f');

@@ -58,7 +58,7 @@ app.post('/push', requireRole('admin', 'analyst'), async (c) => {
   // holding the same transaction used for revision checks and writes.
   let results;
   try {
-    results = await processPush(changes, user.id, { authorize: true, generation: parsed.data.generation });
+    results = await processPush(changes, user.id, { authorize: true, generation: parsed.data.generation, rejectInvalidChanges: true });
   } catch (error) {
     if (error instanceof SyncWriteValidationError) return c.json({ error: error.message.slice(0, 200), code: ErrorCodes.VALIDATION_FAILED }, 400);
     if (error instanceof SyncReadError) return c.json({ error: error.message, code: 'SYNC_CURSOR_RESET', resetRequired: true }, error.status);

@@ -212,6 +212,8 @@ export interface SyncResult {
   serverVersion?: number;
   serverData?: Record<string, unknown>;
   localData?: Record<string, unknown>;
+  /** Why the server refused the change in validation; absent for permission and scope rejections. */
+  reason?: string;
 }
 
 export async function syncPush(changes: SyncChange[], generation: string): Promise<{ results: SyncResult[] }> {

@@ -76,6 +76,18 @@ export function sanitizeSyncEntity(
   return sanitizer(normalizeTimestamps(data));
 }
 
+/** A row this client's sanitizer refuses is server data to skip, not a reason to stop syncing. */
+export function readableSyncRecord(tableName: string, data: Record<string, unknown>, id: string): Record<string, unknown> | null {
+  let record: Record<string, unknown> | null;
+  try { record = sanitizeSyncEntity(tableName, data); } catch { return null; }
+  return record?.id === id ? record : null;
+}
+
+/** Whether "Keep theirs" can apply a conflict's server version on this device. A deletion always can. */
+export function canKeepServerVersion(conflict: { table?: string; entityId: string; serverData?: Record<string, unknown> }): boolean {
+  return !conflict.serverData || !!conflict.serverData.deletedAt || readableSyncRecord(conflict.table ?? '', conflict.serverData, conflict.entityId) !== null;
+}
+
 /**
  * Client fields the team server has no column for (server/src/db/schema.ts).
  * The server's change log never carries them, so a pulled or conflict-accepted
@@ -85,7 +97,7 @@ export function sanitizeSyncEntity(
  */
 export const SERVER_UNREPRESENTED_FIELDS: Readonly<Record<string, readonly string[]>> = {
   notes: ['parentNoteId', 'isFolder', 'reviewRequired'],
-  tasks: ['checklist', 'rejectionCount', 'rejectionHistory', 'escalated'],
+  tasks: ['checklist', 'rejectionCount', 'rejectionHistory', 'escalated', 'assignedDeploymentId'],
   folders: ['playbookExecution', 'noteTemplateIds', 'agentEnabled', 'agentPolicy', 'agentStatus', 'agentThreadId', 'agentLastRunAt'],
   standaloneIOCs: ['firstSeen', 'lastSeen', 'linkedEvidenceIds'],
   chatThreads: ['mode', 'source', 'contextSummary', 'parentThreadId', 'isFolder'],
@@ -148,9 +160,16 @@ export function preserveUnsyncedFields(
     else if (DEVICE_LOCAL_FIELDS[tableName]?.includes(field)) record[field] = undefined;
   }
   if (tableName === 'chatThreads' && Array.isArray(record.messages) && Array.isArray(local?.messages)) {
-    const mine = new Map(local.messages.filter(isRecord).map(message => [message.id, message]));
+    // An empty or repeated id (legacy or imported threads) does not identify one message.
+    const uniqueIds = (messages: unknown[]) => {
+      const counts = new Map<unknown, number>();
+      for (const message of messages) if (isRecord(message) && message.id) counts.set(message.id, (counts.get(message.id) ?? 0) + 1);
+      return new Set([...counts].filter(([, count]) => count === 1).map(([id]) => id));
+    };
+    const ours = uniqueIds(local.messages), theirs = uniqueIds(record.messages);
+    const mine = new Map(local.messages.filter(isRecord).filter(message => ours.has(message.id)).map(message => [message.id, message]));
     record.messages = record.messages.map(message => {
-      const kept = isRecord(message) ? mine.get(message.id) : undefined;
+      const kept = isRecord(message) && theirs.has(message.id) ? mine.get(message.id) : undefined;
       if (!kept || !isRecord(message)) return message;
       const merged = { ...message };
       for (const field of DEVICE_LOCAL_MESSAGE_FIELDS) if (merged[field] === undefined && kept[field] !== undefined) merged[field] = kept[field];

@@ -33,6 +33,7 @@ const mockSetErrorHandler = vi.fn();
 const mockResolveConflicts = vi.fn();
 const mockSync = vi.fn();
 const mockApplyRemoteChange = vi.fn();
+const mockForgetSkippedFolder = vi.fn<(folderId: string) => Promise<void>>(async () => {});
 
 vi.mock('../lib/sync-engine', () => ({
   syncEngine: {
@@ -47,6 +48,7 @@ vi.mock('../lib/sync-engine', () => ({
     resolveConflicts: (...args: unknown[]) => mockResolveConflicts(...args),
     sync: () => mockSync(),
     applyRemoteChange: (...args: unknown[]) => mockApplyRemoteChange(...args),
+    forgetSkippedFolder: (folderId: string) => mockForgetSkippedFolder(folderId),
   },
 }));
 
@@ -221,6 +223,16 @@ describe('useServerSync', () => {
     expect(onFolderInvite).toHaveBeenCalledWith('folder-123');
   });
 
+  it('forgets skipped server rows of an investigation whose access was revoked', async () => {
+    const reloadFns = makeReloadFns();
+    renderHook(() => useServerSync(makeAuth(), reloadFns));
+    await flushPromises();
+    const handler = mockWSOn.mock.calls.find((call) => call[0] === 'access-revoked')?.[1] as ((msg: unknown) => void) | undefined;
+    handler?.({ folderId: 'folder-123' });
+    expect(mockForgetSkippedFolder).toHaveBeenCalledWith('folder-123');
+    expect(reloadFns.folders).toHaveBeenCalled();
+  });
+
   it('resolves a single conflict', async () => {
     const auth = makeAuth();
     const reloadFns = makeReloadFns();
@@ -274,6 +286,18 @@ describe('useServerSync', () => {
 
     expect(mockResolveConflicts).toHaveBeenCalledWith(conflicts, 'theirs');
     expect(result.current.syncConflicts).toHaveLength(0);
+  });
+
+  it('keeps a conflict whose server version this device cannot read when all are resolved as theirs', async () => {
+    const { result } = renderHook(() => useServerSync(makeAuth(), makeReloadFns()));
+    await flushPromises();
+    const handler = mockSetConflictHandler.mock.calls[0][0] as (conflicts: unknown[]) => void;
+    const unreadable = { entityId: 'i1', table: 'standaloneIOCs', status: 'conflict', serverVersion: 3, serverData: { id: 'i1', type: 'ip', value: '198.51.100.1' } };
+    const readable = { entityId: 'n1', table: 'notes', status: 'conflict', serverVersion: 4, serverData: { id: 'n1', title: 'Theirs' } };
+    await act(async () => { handler([unreadable, readable]); });
+    await act(async () => { await result.current.handleResolveAllConflicts('theirs'); });
+    expect(mockResolveConflicts).toHaveBeenLastCalledWith([readable], 'theirs');
+    expect(result.current.syncConflicts).toEqual([unreadable]);
   });
 
   it('starts with empty presence users', () => {
