@@ -199,11 +199,22 @@ export class SyncEngine {
     const queue: SyncQueueEntry[] = await dynamicDb.table('_syncQueue').toArray();
     if (epoch !== this.epoch) return;
     const groups = new Map<string, SyncQueueEntry[]>();
+    const samples: SyncQueueEntry[] = [];
     for (const entry of queue) {
       if (!isSyncTable(entry.table)) continue; // retain unsupported legacy work
+      // Older builds queued demo tags and timelines; like capture, keep them on this device unless the server holds them.
+      if (entry.op === 'put' && isSampleGlobalRecord(entry.table, entry.entityId)
+        && !(await dynamicDb.table('_syncMeta').get(revisionKey(entry.table, entry.entityId)))?.value) { samples.push(entry); continue; }
       if (await this.isLocalOnly(entry.table, entry.entityId, entry.data, entry.folderId, true)) continue;
       const key = entityKey(entry.table, entry.entityId);
       groups.set(key, [...(groups.get(key) ?? []), entry]);
+    }
+    if (samples.length) {
+      await dynamicDb.transaction('rw', '_syncQueue', '_syncMeta', '_localMigrations', async () => {
+        await this.assertCurrentWorkspace(epoch);
+        suppressSyncInCurrentTransaction();
+        await dynamicDb.table('_syncQueue').bulkDelete(samples.map(entry => entry.seq).filter((seq): seq is number => seq !== undefined));
+      });
     }
     // Parents are accepted before their child entities.
     const ordered = [...groups.values()].sort((a, b) => Number(b[0].table === 'folders') - Number(a[0].table === 'folders'));
