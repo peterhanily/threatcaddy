@@ -7,6 +7,11 @@ import { setSessionKey } from '../lib/encryptionMiddleware';
 import { generateMasterKey, isEncryptedEnvelope } from '../lib/crypto';
 import { disableSync } from '../lib/sync-state';
 
+const workspace = vi.hoisted(() => ({ id: 'default' }));
+vi.mock('../lib/workspace-profiles', async importOriginal => ({
+  ...await importOriginal<typeof import('../lib/workspace-profiles')>(), getActiveWorkspaceId: () => workspace.id,
+}));
+
 const metadata = { version: 1 as const, salt: 'fixture', wrappedKey: 'fixture', recoverySalt: 'fixture', recoveryWrappedKey: 'fixture', enabledAt: 1 };
 const draft = (name: string): EvidenceItemDraft => ({ title: name, fileName: name, fileType: 'text', size: 8,
   content: 'Synthetic evidence', tags: [], extractionStatus: 'extracted', importedAt: 1, chunkIndex: 1, chunkCount: 1 });
@@ -14,6 +19,7 @@ const persist = (signal = new AbortController().signal, assertCurrentScope = () 
   createEvidenceImportPersistence({ folderId: 'case', signal, assertCurrentScope });
 
 beforeEach(async () => {
+  workspace.id = 'default';
   clearEncryptionMeta(); setSessionKey(null); disableSync();
   await db.table('_syncMeta').clear(); await db.table('_syncQueue').clear();
   await db.evidenceItems.clear(); await db.folders.clear();
@@ -56,6 +62,26 @@ describe('evidence import commit boundary', () => {
   it('refuses parsing ownership in a locked workspace', () => {
     setEncryptionMeta(metadata);
     expect(() => persist()).toThrow('session changed');
+  });
+
+  it('rejects a commit after the active workspace switched while parsing', async () => {
+    const write = persist();
+    workspace.id = 'f'.repeat(64);
+    await expect(write([draft('one.txt')])).rejects.toMatchObject({ code: 'sessionChanged' });
+    expect(await db.evidenceItems.count()).toBe(0);
+  });
+
+  it('rejects a commit after the encryption metadata changed under the same session key', async () => {
+    setEncryptionMeta(metadata); setSessionKey(await generateMasterKey());
+    const write = persist();
+    setEncryptionMeta({ ...metadata, wrappedKey: 'rewrapped-fixture' });
+    await expect(write([draft('one.txt')])).rejects.toMatchObject({ code: 'sessionChanged' });
+    expect(await db.evidenceItems.count()).toBe(0);
+  });
+
+  it('refuses parsing ownership while an encryption transition is in progress', async () => {
+    setEncryptionMeta({ ...metadata, transition: 'encrypting' }); setSessionKey(await generateMasterKey());
+    expect(() => persist()).toThrow(expect.objectContaining({ code: 'sessionChanged' }));
   });
 
   it('rolls back every chunk and outbox entry if cancellation arrives during persistence', async () => {

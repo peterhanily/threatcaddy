@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { deflateRaw } from 'pako';
 import { buildTemplateBackedDocxBytes, extractDocxTemplateProfile } from '../lib/docx-template-renderer';
 
 describe('docx template renderer', () => {
@@ -184,7 +185,50 @@ describe('docx template renderer', () => {
     expect(footnotesXml).toContain('<w:sz w:val="13"/>');
     expect(footnotesXml).not.toContain('OLD SOURCE FOOTNOTE');
   });
+
+  it('inflates template entries only up to their declared size', () => {
+    const documentXml = `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>${'Baseline '.repeat(512)}</w:t></w:r></w:p></w:body></w:document>`;
+    expect(() => extractDocxTemplateProfile(buildDeflatedZip('word/document.xml', documentXml))).not.toThrow();
+    // An under-declared header must not let actual output escape the size caps.
+    expect(() => extractDocxTemplateProfile(buildDeflatedZip('word/document.xml', documentXml, 64))).toThrow('declared size');
+  });
+
+  it('counts stored template entries at their real size and rejects entries that share local data', () => {
+    const documentXml = '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Baseline</w:t></w:r></w:p></w:body></w:document>';
+    const files = [
+      { path: 'word/document.xml', content: documentXml },
+      { path: 'word/media/a.bin', content: 'x'.repeat(4096) },
+      { path: 'word/media/b.bin', content: 'y'.repeat(4096) },
+    ];
+    expect(() => extractDocxTemplateProfile(buildStoredZip(files))).not.toThrow();
+    // A stored entry that declares 0 bytes would be read in full without counting toward the caps.
+    const underDeclared = buildStoredZip(files);
+    patchCentralEntry(underDeclared, 1, 24, 0);
+    expect(() => extractDocxTemplateProfile(underDeclared)).toThrow('malformed');
+    // Central entries that point at one local entry would read it once per entry.
+    const shared = buildStoredZip(files);
+    patchCentralEntry(shared, 2, 42, readCentralEntry(shared, 1, 42));
+    expect(() => extractDocxTemplateProfile(shared)).toThrow('overlap');
+  });
 });
+
+/** Offset of the index-th central directory record of a ZIP built by the helpers below. */
+function centralEntryOffset(bytes: Uint8Array, index: number): number {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let offset = view.getUint32(bytes.length - 22 + 16, true);
+  for (let current = 0; current < index; current += 1) {
+    offset += 46 + view.getUint16(offset + 28, true) + view.getUint16(offset + 30, true) + view.getUint16(offset + 32, true);
+  }
+  return offset;
+}
+
+function readCentralEntry(bytes: Uint8Array, index: number, field: number): number {
+  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(centralEntryOffset(bytes, index) + field, true);
+}
+
+function patchCentralEntry(bytes: Uint8Array, index: number, field: number, value: number): void {
+  new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).setUint32(centralEntryOffset(bytes, index) + field, value, true);
+}
 
 function buildStoredZip(files: Array<{ path: string; content: string }>): Uint8Array {
   const encoder = new TextEncoder();
@@ -288,4 +332,26 @@ function crc32(data: Uint8Array): number {
   let crc = 0xffffffff;
   for (const byte of data) crc = CRC32_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
   return (crc ^ 0xffffffff) >>> 0;
+}
+
+function buildDeflatedZip(path: string, content: string, declaredSize?: number): Uint8Array {
+  const name = new TextEncoder().encode(path);
+  const data = new TextEncoder().encode(content);
+  const compressed = deflateRaw(data);
+  const size = declaredSize ?? data.length;
+  const local = new Uint8Array(30 + name.length);
+  const localView = new DataView(local.buffer);
+  localView.setUint32(0, 0x04034b50, true); localView.setUint16(8, 8, true);
+  localView.setUint32(18, compressed.length, true); localView.setUint32(22, size, true); localView.setUint16(26, name.length, true);
+  local.set(name, 30);
+  const central = new Uint8Array(46 + name.length);
+  const centralView = new DataView(central.buffer);
+  centralView.setUint32(0, 0x02014b50, true); centralView.setUint16(10, 8, true);
+  centralView.setUint32(20, compressed.length, true); centralView.setUint32(24, size, true); centralView.setUint16(28, name.length, true);
+  central.set(name, 46);
+  const end = new Uint8Array(22);
+  const endView = new DataView(end.buffer);
+  endView.setUint32(0, 0x06054b50, true); endView.setUint16(8, 1, true); endView.setUint16(10, 1, true);
+  endView.setUint32(12, central.length, true); endView.setUint32(16, local.length + compressed.length, true);
+  return concat([local, compressed, central, end]);
 }

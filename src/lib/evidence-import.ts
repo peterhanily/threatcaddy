@@ -51,6 +51,16 @@ export interface EvidenceDraftOptions {
   importedAt?: number;
 }
 
+/** File bytes read on the main thread. WebKit workers at a file:// origin
+ * cannot read a posted File or Blob, so the bytes are transferred instead. */
+export interface EvidenceFileSource {
+  name: string;
+  type: string;
+  size: number;
+  lastModified: number;
+  bytes: Uint8Array;
+}
+
 interface ExtractedEvidence {
   text: string;
   kind: EvidenceKind;
@@ -71,18 +81,16 @@ interface ImageEvidenceMetadata {
 interface DocxEvidence {
   text: string;
   warning?: string;
-}
-
-interface ZipEntry {
-  name: string;
-  data: Uint8Array;
+  truncated?: boolean;
+  unreadable?: boolean;
 }
 
 export async function buildEvidenceItemDrafts(
-  file: File,
+  input: File | EvidenceFileSource,
   options: EvidenceDraftOptions = {},
 ): Promise<EvidenceItemDraft[]> {
   const importedAt = options.importedAt ?? Date.now();
+  const file = await readEvidenceSource(input);
   const extracted = await extractEvidenceText(file);
   const imageMetadata = extracted.kind === 'image' ? await extractImageMetadata(file) : undefined;
   const capped = capExtractedText(extracted.text);
@@ -157,10 +165,11 @@ export async function buildEvidenceItemDrafts(
 }
 
 export async function buildEvidenceNoteDrafts(
-  file: File,
+  input: File | EvidenceFileSource,
   options: EvidenceDraftOptions = {},
 ): Promise<EvidenceNoteDraft[]> {
   const importedAt = options.importedAt ?? Date.now();
+  const file = await readEvidenceSource(input);
   const extracted = await extractEvidenceText(file);
   const imageMetadata = extracted.kind === 'image' ? await extractImageMetadata(file) : undefined;
   const capped = capExtractedText(extracted.text);
@@ -206,17 +215,37 @@ export function isLegacyEvidenceNote(note: Note): boolean {
     Boolean(note.tags?.includes('source:file') || note.tags?.some((tag) => tag.startsWith('extraction:')) || note.title.startsWith('Evidence -'));
 }
 
-async function extractEvidenceText(file: File): Promise<ExtractedEvidence> {
-  assertEvidenceInput(file);
+/** Check the size before reading anything, then read the bytes once. */
+async function readEvidenceSource(input: File | EvidenceFileSource): Promise<EvidenceFileSource> {
+  assertEvidenceInput(input);
+  if (isTransferredSource(input)) {
+    assertEvidenceInput({ size: input.bytes.byteLength });
+    return input;
+  }
+  return {
+    name: input.name,
+    type: input.type,
+    size: input.size,
+    lastModified: input.lastModified,
+    bytes: new Uint8Array(await input.arrayBuffer()),
+  };
+}
+
+// Blob.bytes() is a method; a transferred source carries the bytes themselves.
+function isTransferredSource(input: File | EvidenceFileSource): input is EvidenceFileSource {
+  return ArrayBuffer.isView((input as { bytes?: unknown }).bytes);
+}
+
+async function extractEvidenceText(file: EvidenceFileSource): Promise<ExtractedEvidence> {
   const kind = detectEvidenceKind(file);
 
   if (kind === 'text' || kind === 'spreadsheet') {
-    const text = await file.text();
+    const text = decodeUtf8(file.bytes);
     return { text: normalizeExtractedText(text), kind, status: 'extracted' };
   }
 
   if (kind === 'rtf') {
-    const text = extractRtfText(await file.text());
+    const text = extractRtfText(decodeUtf8(file.bytes));
     return text
       ? { text, kind, status: 'extracted' }
       : { text: '', kind, status: 'metadata-only', warning: 'No readable text could be extracted from this RTF file.' };
@@ -231,34 +260,39 @@ async function extractEvidenceText(file: File): Promise<ExtractedEvidence> {
     };
   }
 
-  const bytes = new Uint8Array(await file.arrayBuffer());
+  const bytes = file.bytes;
 
   if (kind === 'pdf') {
     const pdf = extractPdfText(bytes);
+    const truncated = pdf.truncated ? PDF_TRUNCATED_WARNING : undefined;
     return pdf.text
-      ? { text: pdf.text, kind, status: 'partial', warning: 'PDF extraction is best-effort for selectable text objects. Scanned pages, encoded fonts, charts, and images may still require OCR or vision analysis.' }
+      ? { text: pdf.text, kind, status: 'partial', warning: mergeWarnings('PDF extraction is best-effort for selectable text objects. Scanned pages, encoded fonts, charts, and images may still require OCR or vision analysis.', truncated) }
       : {
         text: '',
         kind,
         status: 'metadata-only',
-        warning: pdf.rejected
+        warning: mergeWarnings(pdf.rejected
           ? 'PDF text streams were detected but rejected because they looked encoded or garbled. Use OCR, export selectable text, or analyze page images with a vision-capable CaddyAI provider.'
-          : 'No readable PDF text could be extracted. If this PDF is scanned or uses encoded fonts, import an OCR/text copy or analyze page images with a vision-capable CaddyAI provider.',
+          : 'No readable PDF text could be extracted. If this PDF is scanned or uses encoded fonts, import an OCR/text copy or analyze page images with a vision-capable CaddyAI provider.', truncated),
       };
   }
 
   if (kind === 'docx') {
     const docx = extractDocxEvidence(bytes);
+    if (docx.unreadable) return { text: '', kind, status: 'metadata-only', warning: unreadableArchiveWarning('DOCX') };
+    const truncated = docx.truncated ? archiveTruncatedWarning('DOCX') : undefined;
     return docx.text
-      ? { text: docx.text, kind, status: 'extracted', warning: docx.warning }
-      : { text: '', kind, status: 'metadata-only', warning: 'No document text could be extracted from this DOCX.' };
+      ? { text: docx.text, kind, status: docx.truncated ? 'partial' : 'extracted', warning: mergeWarnings(docx.warning, truncated) }
+      : { text: '', kind, status: 'metadata-only', warning: mergeWarnings('No document text could be extracted from this DOCX.', truncated) };
   }
 
   if (kind === 'xlsx') {
     const workbook = extractXlsxWorkbook(bytes);
+    if (workbook.unreadable) return { text: '', kind, status: 'metadata-only', warning: unreadableArchiveWarning('XLSX') };
+    const truncated = workbook.truncated ? archiveTruncatedWarning('XLSX') : undefined;
     return workbook.text
-      ? { text: workbook.text, kind, status: 'extracted', warning: workbook.warning }
-      : { text: '', kind, status: 'metadata-only', warning: 'No cell text could be extracted from this XLSX.' };
+      ? { text: workbook.text, kind, status: workbook.truncated ? 'partial' : 'extracted', warning: mergeWarnings(workbook.warning, truncated) }
+      : { text: '', kind, status: 'metadata-only', warning: mergeWarnings('No cell text could be extracted from this XLSX.', truncated) };
   }
 
   if (kind === 'doc' || kind === 'xls') {
@@ -274,6 +308,19 @@ async function extractEvidenceText(file: File): Promise<ExtractedEvidence> {
     : { text: '', kind, status: 'metadata-only', warning: 'Unsupported file type. Only metadata was imported.' };
 }
 
+const PDF_TRUNCATED_WARNING = 'PDF extraction stopped at the decoding limit (8 MiB per stream, 32 MiB or 2048 text streams per file); later text was not read.';
+/** Twice the note cap: the text kept is then always cut (with its own warning),
+ * and the readability check still sees more than the text kept. */
+const PDF_TEXT_READ_CHARS = 2 * MAX_NOTE_TEXT_CHARS;
+
+function archiveTruncatedWarning(label: string): string {
+  return `Part of this ${label} was not read because it exceeded the decoding limit (8 MiB per part, 32 MiB per file, 250,000 cells per sheet).`;
+}
+
+function unreadableArchiveWarning(label: string): string {
+  return `This file is not a readable ${label} archive. It may be password-protected, truncated, damaged or use unsupported ZIP64 sizes. Only metadata was imported.`;
+}
+
 function renderEvidenceContent({
   file,
   kind,
@@ -286,7 +333,7 @@ function renderEvidenceContent({
   partCount,
   text,
 }: {
-  file: File;
+  file: EvidenceFileSource;
   kind: EvidenceKind;
   status: EvidenceExtractionStatus;
   warning?: string;
@@ -324,7 +371,7 @@ function renderEvidenceContent({
   return `${metadata}${imageBlock}\n\n## Extracted Text\n\n${text.trim()}`;
 }
 
-function detectEvidenceKind(file: File): EvidenceKind {
+function detectEvidenceKind(file: EvidenceFileSource): EvidenceKind {
   const name = file.name.toLowerCase();
   const type = file.type.toLowerCase();
 
@@ -359,7 +406,7 @@ function imageDraftFields(metadata?: ImageEvidenceMetadata): Partial<EvidenceIte
   };
 }
 
-async function extractImageMetadata(file: File): Promise<ImageEvidenceMetadata> {
+async function extractImageMetadata(file: EvidenceFileSource): Promise<ImageEvidenceMetadata> {
   const dimensions = await readImageDimensions(file);
   const mimeType = rasterImageMimeType(file.type, file.name);
   const pixelCount = dimensions.width && dimensions.height ? dimensions.width * dimensions.height : undefined;
@@ -367,18 +414,20 @@ async function extractImageMetadata(file: File): Promise<ImageEvidenceMetadata> 
   const warnings: string[] = [];
   let data: string | undefined;
 
-  if (file.size <= MAX_IMAGE_ANALYSIS_BYTES) {
+  if (pixelCount && pixelCount > EVIDENCE_LIMITS.imagePixels) {
+    // Every viewer would decode a stored preview; keep the dimensions only.
+    warnings.push(`Image is larger than ${EVIDENCE_LIMITS.imagePixels / 1_000_000} million pixels, so only metadata was stored for import/export safety.`);
+  } else if (!pixelCount) {
+    // Without a size the pixel bound cannot be checked for later viewers either.
+    warnings.push('Image dimensions could not be read from the file header, so only metadata was stored for import/export safety.');
+  } else if (file.size <= MAX_IMAGE_ANALYSIS_BYTES) {
     try {
-      data = await readFileAsBase64(file);
+      data = bytesToBase64(file.bytes);
     } catch {
       warnings.push('Image preview payload could not be stored for later vision analysis.');
     }
   } else {
     warnings.push(`Image is larger than ${formatBytes(MAX_IMAGE_ANALYSIS_BYTES)}, so only metadata was stored for import/export safety.`);
-  }
-
-  if (!dimensions.width || !dimensions.height) {
-    warnings.push('Image dimensions could not be read by the browser.');
   }
 
   return {
@@ -392,46 +441,92 @@ async function extractImageMetadata(file: File): Promise<ImageEvidenceMetadata> 
   };
 }
 
-async function readImageDimensions(file: File): Promise<{ width?: number; height?: number }> {
+async function readImageDimensions(file: EvidenceFileSource): Promise<{ width?: number; height?: number }> {
+  // Only an image whose header gives a size within the bound is decoded; one
+  // without a readable header or with more pixels than the bound never is.
+  const header = readImageHeaderDimensions(file.bytes);
+  if (!header || header.width * header.height > EVIDENCE_LIMITS.imagePixels) return header ?? {};
   if (typeof createImageBitmap === 'function') {
     try {
-      const bitmap = await createImageBitmap(file);
+      const bitmap = await createImageBitmap(new Blob([file.bytes as Uint8Array<ArrayBuffer>], { type: file.type }));
       const dimensions = { width: bitmap.width, height: bitmap.height };
       bitmap.close();
-      if (dimensions.width * dimensions.height > EVIDENCE_LIMITS.imagePixels) {
-        throw new EvidenceImportLimitError('image dimensions exceed 32 million pixels');
-      }
       return dimensions;
-    } catch (error) {
-      if (error instanceof EvidenceImportLimitError) throw error;
-      // Fall back to the HTMLImageElement path below.
+    } catch {
+      // WebKit workers on file:// cannot decode a Blob; the header size stands.
     }
   }
-
-  if (typeof Image === 'undefined' || typeof URL === 'undefined') return {};
-
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      if (image.naturalWidth * image.naturalHeight > EVIDENCE_LIMITS.imagePixels) {
-        reject(new EvidenceImportLimitError('image dimensions exceed 32 million pixels'));
-        return;
-      }
-      resolve({ width: image.naturalWidth, height: image.naturalHeight });
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve({});
-    };
-    image.src = url;
-  });
+  return header;
 }
 
-async function readFileAsBase64(file: File): Promise<string> {
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  return bytesToBase64(bytes);
+/** Width and height from a PNG, GIF, BMP, WebP, JPEG or AVIF header, without decoding. */
+function readImageHeaderDimensions(bytes: Uint8Array): { width: number; height: number } | undefined {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const ascii = (offset: number, length: number) => String.fromCharCode(...bytes.subarray(offset, offset + length));
+  const u24 = (offset: number) => bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16);
+  const size = (width: number, height: number) => (width > 0 && height > 0 ? { width, height } : undefined);
+  if (bytes.length >= 24 && ascii(1, 3) === 'PNG' && ascii(12, 4) === 'IHDR') return size(view.getUint32(16), view.getUint32(20));
+  if (bytes.length >= 16 && ascii(4, 4) === 'ftyp') {
+    const extent = readAvifExtent(bytes, view);
+    return extent && size(extent.width, extent.height);
+  }
+  if (bytes.length >= 10 && ascii(0, 3) === 'GIF') return size(view.getUint16(6, true), view.getUint16(8, true));
+  if (bytes.length >= 26 && ascii(0, 2) === 'BM') return size(Math.abs(view.getInt32(18, true)), Math.abs(view.getInt32(22, true)));
+  if (bytes.length >= 30 && ascii(0, 4) === 'RIFF' && ascii(8, 4) === 'WEBP') {
+    const chunk = ascii(12, 4);
+    if (chunk === 'VP8X') return size(u24(24) + 1, u24(27) + 1);
+    if (chunk === 'VP8L' && bytes[20] === 0x2f) {
+      const bits = view.getUint32(21, true);
+      return size((bits & 0x3fff) + 1, ((bits >>> 14) & 0x3fff) + 1);
+    }
+    if (chunk === 'VP8 ') return size(view.getUint16(26, true) & 0x3fff, view.getUint16(28, true) & 0x3fff);
+    return undefined;
+  }
+  if (bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8) {
+    let offset = 2;
+    while (offset + 9 <= bytes.length && bytes[offset] === 0xff) {
+      const marker = bytes[offset + 1];
+      if (marker === 0xff) { offset += 1; continue; }
+      if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd8)) { offset += 2; continue; }
+      // Start-of-frame markers, excluding DHT (C4), JPG (C8) and DAC (CC).
+      if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+        return size(view.getUint16(offset + 7), view.getUint16(offset + 5));
+      }
+      const length = view.getUint16(offset + 2);
+      if (length < 2) return undefined;
+      offset += 2 + length;
+    }
+  }
+  return undefined;
+}
+
+/** The largest image spatial extent ('ispe' in meta > iprp > ipco) of an AVIF
+ * file. Every AVIF image item has one; decoders reject frames that differ. */
+function readAvifExtent(bytes: Uint8Array, view: DataView): { width: number; height: number } | undefined {
+  const code = (fourcc: string) => Array.from(fourcc).reduce((value, char) => value * 256 + char.charCodeAt(0), 0);
+  /** Child boxes of the given type, as [contentStart, end], skipping `header` bytes of each parent. */
+  const children = (parents: Array<[number, number]>, wanted: string, header = 0) => parents.flatMap(([start, end]) => {
+    const found: Array<[number, number]> = [];
+    for (let offset = start + header, type = code(wanted); offset + 8 <= end;) {
+      const length = view.getUint32(offset);
+      if (length < 8 || offset + length > end) break;
+      if (view.getUint32(offset + 4) === type) found.push([offset + 8, offset + length]);
+      offset += length;
+    }
+    return found;
+  });
+  // ftyp comes first: major brand, minor version, then compatible brands.
+  const ftypEnd = Math.min(view.getUint32(0), bytes.length);
+  const brands = [code('avif'), code('avis')];
+  let avif = false;
+  for (let offset = 8; offset + 4 <= ftypEnd && !avif; offset += 4) avif = offset !== 12 && brands.includes(view.getUint32(offset));
+  if (!avif) return undefined;
+  // meta is a full box: its version and flags come before its children.
+  const extents = children(children(children(children([[0, bytes.length]], 'meta'), 'iprp', 4), 'ipco'), 'ispe')
+    .filter(([start, end]) => end - start >= 12)
+    .map(([start]) => ({ width: view.getUint32(start + 4), height: view.getUint32(start + 8) }));
+  return extents.reduce<{ width: number; height: number } | undefined>(
+    (largest, extent) => (!largest || extent.width * extent.height > largest.width * largest.height ? extent : largest), undefined);
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -475,7 +570,7 @@ function gcd(a: number, b: number): number {
   return x || 1;
 }
 
-function renderImageMetadata(file: File, metadata?: ImageEvidenceMetadata): string {
+function renderImageMetadata(file: EvidenceFileSource, metadata?: ImageEvidenceMetadata): string {
   return [
     metadata?.width && metadata.height ? `**Dimensions:** ${metadata.width} x ${metadata.height}px` : undefined,
     metadata?.aspectRatio ? `**Aspect ratio:** ${metadata.aspectRatio}` : undefined,
@@ -487,7 +582,7 @@ function renderImageMetadata(file: File, metadata?: ImageEvidenceMetadata): stri
 
 function extractDocxEvidence(bytes: Uint8Array): DocxEvidence {
   try {
-    const files = readZip(bytes, name => /^word\/(document|header\d+|footer\d+)\.xml$/.test(name));
+    const { entries: files, truncated } = readZip(bytes, name => /^word\/(document|header\d+|footer\d+)\.xml$/.test(name));
     const documentXmlData = files.get('word/document.xml');
     const parts = [
       documentXmlData,
@@ -499,10 +594,11 @@ function extractDocxEvidence(bytes: Uint8Array): DocxEvidence {
     const sections = parts.map((part) => extractWordXmlText(decodeUtf8(part))).filter(Boolean);
     const text = normalizeExtractedText(sections.join('\n\n'));
     const warning = buildDocxArtifactWarning(files, documentXmlData);
-    return { text, warning };
+    return { text, warning, truncated };
   } catch (error) {
     if (error instanceof EvidenceImportLimitError) throw error;
-    throw new Error('The DOCX archive is invalid or unsupported. No files in this batch were imported.');
+    // Password-protected (OLE), truncated or damaged files keep their metadata.
+    return { text: '', unreadable: true };
   }
 }
 
@@ -537,9 +633,11 @@ function joinHumanList(parts: string[]): string {
   return `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`;
 }
 
-function extractXlsxWorkbook(bytes: Uint8Array): { text: string; warning: string } {
+function extractXlsxWorkbook(bytes: Uint8Array): { text: string; warning?: string; truncated?: boolean; unreadable?: boolean } {
   try {
-    const files = readZip(bytes, name => /^xl\/(sharedStrings\.xml|workbook\.xml|_rels\/workbook\.xml\.rels|worksheets\/sheet\d+\.xml)$/.test(name));
+    const archive = readZip(bytes, name => /^xl\/(sharedStrings\.xml|workbook\.xml|_rels\/workbook\.xml\.rels|worksheets\/sheet\d+\.xml)$/.test(name));
+    const files = archive.entries;
+    let truncated = archive.truncated;
     const shared = parseSharedStrings(files.get('xl/sharedStrings.xml'));
     const sheetNameByPath = parseWorkbookSheets(files.get('xl/workbook.xml'), files.get('xl/_rels/workbook.xml.rels'));
     const chartCount = Array.from(files.keys()).filter((name) => /^xl\/charts\/chart\d+\.xml$/i.test(name)).length;
@@ -550,7 +648,8 @@ function extractXlsxWorkbook(bytes: Uint8Array): { text: string; warning: string
     const worksheetBudget = { cells: EVIDENCE_LIMITS.spreadsheetCells as number, characters: EVIDENCE_LIMITS.entryBytes as number };
 
     const sheets = sheetEntries.map(([name, data], index) => {
-      const rows = parseWorksheet(decodeUtf8(data), shared, worksheetBudget);
+      const { rows, truncated: cut } = parseWorksheet(decodeUtf8(data), shared, worksheetBudget);
+      if (cut) truncated = true;
       if (rows.length === 0) return '';
       const body = rows.map((row) => row.join('\t')).join('\n');
       return `## ${sheetTitle(sheetNameByPath.get(name) || sheetLabel(name, index), index)}\n\n${body}`;
@@ -562,10 +661,11 @@ function extractXlsxWorkbook(bytes: Uint8Array): { text: string; warning: string
       mediaCount > 0 ? `${mediaCount} embedded media object${mediaCount === 1 ? '' : 's'} detected; embedded images are not decoded from workbooks.` : undefined,
     ].filter(Boolean);
 
-    return { text: normalizeExtractedText(sheets.join('\n\n')), warning: warningParts.join(' ') };
+    return { text: normalizeExtractedText(sheets.join('\n\n')), warning: warningParts.join(' '), truncated };
   } catch (error) {
     if (error instanceof EvidenceImportLimitError) throw error;
-    throw new Error('The XLSX archive is invalid or unsupported. No files in this batch were imported.');
+    // Password-protected (OLE), truncated or damaged files keep their metadata.
+    return { text: '', unreadable: true };
   }
 }
 
@@ -616,39 +716,42 @@ function parseWorkbookSheets(workbookData?: Uint8Array, relsData?: Uint8Array): 
   return sheets;
 }
 
-function parseWorksheet(xml: string, sharedStrings: string[], budget: { cells: number; characters: number }): string[][] {
+/** Complete rows are returned until a cell or character budget runs out; the
+ * rest of the workbook is reported as truncated rather than failing the file. */
+function parseWorksheet(xml: string, sharedStrings: string[], budget: { cells: number; characters: number }): { rows: string[][]; truncated: boolean } {
   const rows: string[][] = [];
   let cells = 0;
 
-  for (const rowXml of matchAll(xml, /<row\b[^>]*>([\s\S]*?)<\/row>/g)) {
+  // Styled or merged empty cells and rows are self-closing (<c r="A2" s="3"/>);
+  // they must not swallow the next element's markup.
+  for (const rowXml of matchAll(xml, /<row\b[^>]*?(?:\/>|>([\s\S]*?)<\/row>)/g)) {
     const row: string[] = [];
-    for (const cellMatch of rowXml.matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)) {
+    for (const cellMatch of rowXml.matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
       const attrs = cellMatch[1] || '';
       const cellXml = cellMatch[2] || '';
       const ref = attrs.match(/\br="([^"]+)"/)?.[1] || '';
       const column = ref ? columnIndexFromRef(ref) : row.length;
-      if (!Number.isSafeInteger(column) || column < 0 || column >= EVIDENCE_LIMITS.spreadsheetColumns
-        || ++cells > EVIDENCE_LIMITS.spreadsheetCells) {
-        throw new EvidenceImportLimitError('spreadsheet dimensions exceed the supported limit');
+      // No spreadsheet producer writes a column past XFD: treat it as hostile.
+      if (!Number.isSafeInteger(column) || column < 0 || column >= EVIDENCE_LIMITS.spreadsheetColumns) {
+        throw new EvidenceImportLimitError('spreadsheetColumns');
       }
+      if (++cells > EVIDENCE_LIMITS.spreadsheetCells) return { rows, truncated: true };
       const value = parseCellValue(attrs, cellXml, sharedStrings);
-      if (value.length > budget.characters) throw new EvidenceImportLimitError('spreadsheet text exceeds the supported limit');
+      if (value.length > budget.characters) return { rows, truncated: true };
       budget.characters -= value.length;
       row[column] = value;
     }
     if (row.some((cell) => cell?.trim())) {
       // Sparse column references and repeated shared strings can amplify output
       // even when XML byte counts and the number of populated cells are small.
-      if (row.length > budget.cells || row.length + 1 > budget.characters) {
-        throw new EvidenceImportLimitError('spreadsheet dimensions exceed the supported limit');
-      }
+      if (row.length > budget.cells || row.length + 1 > budget.characters) return { rows, truncated: true };
       budget.cells -= row.length;
       budget.characters -= row.length + 1;
       rows.push(trimTrailingEmpty(row).map((cell) => cell || ''));
     }
   }
 
-  return rows;
+  return { rows, truncated: false };
 }
 
 function parseCellValue(attrs: string, cellXml: string, sharedStrings: string[]): string {
@@ -667,18 +770,23 @@ function parseCellValue(attrs: string, cellXml: string, sharedStrings: string[])
   return value;
 }
 
-function extractPdfText(bytes: Uint8Array): { text: string; rejected: boolean } {
+function extractPdfText(bytes: Uint8Array): { text: string; rejected: boolean; truncated: boolean } {
   const raw = bytesToLatin1(bytes);
   const texts: string[] = [];
   let sawPdfTextObject = false;
   let cursor = 0;
   let streams = 0;
+  let truncated = false;
   const budget = { remaining: EVIDENCE_LIMITS.expandedBytes as number };
+  // Distinct text, counted as dedupeTextLines will keep it. Past the note cap
+  // it is cut anyway (and the cut reported), so reading far beyond the cap only
+  // spends the per-document deadline on long reports.
+  const seenText = new Set<string>();
+  let distinctChars = 0;
 
   while (cursor < raw.length) {
     const streamIndex = raw.indexOf('stream', cursor);
     if (streamIndex === -1) break;
-    if (++streams > EVIDENCE_LIMITS.entries) throw new EvidenceImportLimitError('too many PDF streams');
 
     let dataStart = streamIndex + 'stream'.length;
     if (raw[dataStart] === '\r' && raw[dataStart + 1] === '\n') dataStart += 2;
@@ -692,19 +800,33 @@ function extractPdfText(bytes: Uint8Array): { text: string; rejected: boolean } 
       dataEnd -= 1;
     }
 
-    const dictionaryStart = raw.lastIndexOf('<<', streamIndex);
-    const dictionary = dictionaryStart >= 0 ? raw.slice(dictionaryStart, streamIndex) : '';
-    const streamBytes = bytes.subarray(dataStart, dataEnd);
-    const decoded = decodePdfStream(streamBytes, dictionary, budget);
-    if (decoded) {
-      if (containsPdfTextObject(decoded)) sawPdfTextObject = true;
-      const textObjects = extractPdfTextObjects(decoded);
+    const dictionary = pdfStreamDictionary(raw, streamIndex, cursor);
+    cursor = endIndex + 'endstream'.length;
+    // Images, font programs and metadata cannot hold text operators: skip them
+    // without decoding, so screenshots do not use up the budgets below.
+    if (!mayHoldPdfText(dictionary)) continue;
+    if (streams >= EVIDENCE_LIMITS.entries || budget.remaining <= 0) {
+      truncated = true;
+      break;
+    }
+    if (distinctChars > PDF_TEXT_READ_CHARS) break;
+    streams += 1;
+
+    const decoded = decodePdfStream(bytes.subarray(dataStart, dataEnd), dictionary, budget);
+    if (decoded.truncated) truncated = true;
+    if (decoded.text) {
+      if (containsPdfTextObject(decoded.text)) sawPdfTextObject = true;
+      const textObjects = extractPdfTextObjects(decoded.text);
       if (textObjects.length > 0) {
         texts.push(...textObjects);
       }
+      for (const object of textObjects) {
+        const key = textLineKey(object);
+        if (!key || seenText.has(key)) continue;
+        seenText.add(key);
+        distinctChars += object.length + 1;
+      }
     }
-
-    cursor = endIndex + 'endstream'.length;
   }
 
   if (texts.length === 0) {
@@ -717,28 +839,52 @@ function extractPdfText(bytes: Uint8Array): { text: string; rejected: boolean } 
 
   const normalized = normalizeExtractedText(dedupeTextLines(texts).join('\n'));
   return looksLikeReadableEvidenceText(normalized)
-    ? { text: normalized, rejected: false }
-    : { text: '', rejected: sawPdfTextObject || normalized.length > 0 };
+    ? { text: normalized, rejected: false, truncated }
+    : { text: '', rejected: sawPdfTextObject || normalized.length > 0, truncated };
 }
 
-function decodePdfStream(data: Uint8Array, dictionary: string, budget: ExpansionBudget): string {
-  const isFlate = /\/FlateDecode\b|\/Fl\b/.test(dictionary);
-  if (!isFlate) {
-    consumeExpansion(data.byteLength, budget);
-    return bytesToLatin1(data);
+/** The dictionary of the object that owns the stream keyword at streamIndex:
+ * the balanced <<...>> ending just before it. A plain lastIndexOf('<<') would
+ * return a nested dictionary such as /DecodeParms. The scan is bounded. */
+function pdfStreamDictionary(raw: string, streamIndex: number, floor: number): string {
+  let end = streamIndex;
+  while (end > floor && /\s/.test(raw[end - 1])) end -= 1;
+  if (raw.slice(end - 2, end) !== '>>') return '';
+  const start = Math.max(floor, end - 4096);
+  let depth = 0;
+  for (let i = end - 2; i >= start; i -= 1) {
+    if (raw[i] === '>' && raw[i + 1] === '>') { depth += 1; i -= 1; }
+    else if (raw[i] === '<' && raw[i + 1] === '<') { depth -= 1; if (depth === 0) return raw.slice(i, end); i -= 1; }
+  }
+  return '';
+}
+
+function mayHoldPdfText(dictionary: string): boolean {
+  return !/\/Subtype\s*\/(?:Image|XML|Type1C|CIDFontType0C|OpenType)\b|\/Type\s*\/(?:Metadata|XRef)\b|\/Length[123]\b|\/(?:DCTDecode|DCT|JPXDecode|JBIG2Decode|CCITTFaxDecode|CCF)\b/.test(dictionary);
+}
+
+/** Decode at most what is left of the per-part and document budgets. A stream
+ * that is longer is cut, and the caller reports the document as partial. */
+function decodePdfStream(data: Uint8Array, dictionary: string, budget: ExpansionBudget): { text: string; truncated: boolean } {
+  const limit = Math.min(EVIDENCE_LIMITS.entryBytes, budget.remaining);
+  if (!/\/FlateDecode\b|\/Fl\b/.test(dictionary)) {
+    const kept = data.subarray(0, limit);
+    budget.remaining -= kept.byteLength;
+    return { text: bytesToLatin1(kept), truncated: kept.byteLength < data.byteLength };
   }
 
-  try {
-    return bytesToLatin1(inflateBounded(data, true, budget));
-  } catch (error) {
-    if (error instanceof EvidenceImportLimitError) throw error;
+  // PDF Flate streams carry a zlib header; try it first so a failed raw attempt
+  // never spends time on output that is thrown away.
+  for (const raw of [false, true]) {
     try {
-      return bytesToLatin1(inflateBounded(data, false, budget));
-    } catch (error) {
-      if (error instanceof EvidenceImportLimitError) throw error;
-      return '';
+      const inflated = inflateBounded(data, raw, limit);
+      budget.remaining -= inflated.data.byteLength;
+      return { text: bytesToLatin1(inflated.data), truncated: inflated.truncated };
+    } catch {
+      // Try the other wrapper; a stream neither can read holds no usable text.
     }
   }
+  return { text: '', truncated: false };
 }
 
 function extractPdfStrings(text: string): string[] {
@@ -1007,36 +1153,44 @@ function decodeRtfUnicode(value: number): string {
 
 interface ExpansionBudget { remaining: number }
 
-function consumeExpansion(size: number, budget: ExpansionBudget): void {
-  if (size > EVIDENCE_LIMITS.entryBytes || size > budget.remaining) {
-    throw new EvidenceImportLimitError('decoded content exceeds the 8 MiB part or 32 MiB document limit');
-  }
-  budget.remaining -= size;
-}
+const STOP_INFLATE = Symbol('stop inflate');
 
 /** Never use one-shot inflate for untrusted evidence: the note-length cap runs
- * later. Abort in onData before retaining a chunk beyond either byte budget. */
-function inflateBounded(data: Uint8Array, raw: boolean, budget: ExpansionBudget): Uint8Array {
+ * later. Output past `limit` is never produced: onData aborts the inflater and
+ * reports a cut, and the caller decides whether a cut part is acceptable. */
+function inflateBounded(data: Uint8Array, raw: boolean, limit: number): { data: Uint8Array; truncated: boolean } {
   const inflator = new pako.Inflate({ raw, chunkSize: 64 * 1024 });
   const chunks: Uint8Array[] = [];
   let total = 0;
+  let truncated = false;
   inflator.onData = chunk => {
-    if (total + chunk.byteLength > EVIDENCE_LIMITS.entryBytes) {
-      throw new EvidenceImportLimitError('a decoded part exceeds 8 MiB');
+    const room = limit - total;
+    if (chunk.byteLength > room) {
+      if (room > 0) { chunks.push(chunk.subarray(0, room)); total += room; }
+      truncated = true;
+      throw STOP_INFLATE;
     }
-    consumeExpansion(chunk.byteLength, budget);
     total += chunk.byteLength;
     chunks.push(chunk);
   };
-  inflator.push(data, true);
-  if (inflator.err || !inflator.ended) throw new Error('Invalid compressed evidence stream');
+  try {
+    inflator.push(data, true);
+  } catch (error) {
+    if (error !== STOP_INFLATE) throw error;
+  }
+  if (!truncated && (inflator.err || !inflator.ended)) throw new Error('Invalid compressed evidence stream');
   const output = new Uint8Array(total);
   let offset = 0;
   for (const chunk of chunks) { output.set(chunk, offset); offset += chunk.byteLength; }
-  return output;
+  return { data: output, truncated };
 }
 
-function readZip(bytes: Uint8Array, include: (name: string) => boolean): Map<string, Uint8Array> {
+interface ZipPart { name: string; method: number; compressedSize: number; expandedSize: number; localOffset: number }
+
+/** Structural problems throw a plain Error (the caller imports metadata only).
+ * EvidenceImportLimitError is kept for bomb shapes: too many entries,
+ * overlapping data, and parts whose output does not match their declared size. */
+function readZip(bytes: Uint8Array, include: (name: string) => boolean): { entries: Map<string, Uint8Array>; truncated: boolean } {
   const entries = new Map<string, Uint8Array>();
   const eocd = findEndOfCentralDirectory(bytes);
   if (eocd < 0) throw new Error('ZIP end of central directory not found');
@@ -1044,15 +1198,15 @@ function readZip(bytes: Uint8Array, include: (name: string) => boolean): Map<str
   const entryCount = u16(bytes, eocd + 10);
   const centralDirOffset = u32(bytes, eocd + 16);
   const centralDirEnd = centralDirOffset + u32(bytes, eocd + 12);
-  if (entryCount > EVIDENCE_LIMITS.entries) throw new EvidenceImportLimitError('archive contains more than 2048 entries');
+  if (entryCount > EVIDENCE_LIMITS.entries) throw new EvidenceImportLimitError('archiveEntries');
+  // Bytes after the end record (appended by some download and signing tools) are ignored.
   if (u16(bytes, eocd + 4) || u16(bytes, eocd + 6) || u16(bytes, eocd + 8) !== entryCount
-    || centralDirEnd > eocd || eocd + 22 + u16(bytes, eocd + 20) !== bytes.byteLength) {
+    || centralDirEnd > eocd || eocd + 22 + u16(bytes, eocd + 20) > bytes.byteLength) {
     throw new Error('Unsupported or invalid ZIP directory');
   }
   let offset = centralDirOffset;
   let compressedTotal = 0;
-  let declaredTotal = 0;
-  const budget = { remaining: EVIDENCE_LIMITS.expandedBytes as number };
+  const selected: ZipPart[] = [];
 
   for (let index = 0; index < entryCount; index += 1) {
     if (offset + 46 > centralDirEnd || u32(bytes, offset) !== 0x02014b50) throw new Error('Invalid ZIP directory entry');
@@ -1070,51 +1224,62 @@ function readZip(bytes: Uint8Array, include: (name: string) => boolean): Map<str
     if (!name || name.includes('\0') || name.startsWith('/') || name.split('/').includes('..') || entries.has(name)) {
       throw new Error('Invalid or duplicate ZIP entry name');
     }
+    if (compressedSize === 0xffffffff || expandedSize === 0xffffffff || localOffset === 0xffffffff) {
+      throw new Error('ZIP64 archives are not supported');
+    }
     compressedTotal += compressedSize;
-    if (compressedTotal > EVIDENCE_LIMITS.inputBytes) throw new EvidenceImportLimitError('archive compressed parts exceed 25 MiB');
+    if (compressedTotal > EVIDENCE_LIMITS.inputBytes) throw new EvidenceImportLimitError('archiveCompressedBytes');
     // Keep names for the existing chart/media warnings, without decoding data
     // that the document text extractor will never use.
-    if (!include(name)) entries.set(name, new Uint8Array());
-    else {
-      declaredTotal += expandedSize;
-      if (expandedSize > EVIDENCE_LIMITS.entryBytes || declaredTotal > EVIDENCE_LIMITS.expandedBytes) {
-        throw new EvidenceImportLimitError('archive declared content exceeds the decoded byte limit');
-      }
+    entries.set(name, new Uint8Array());
+    if (include(name)) {
       if (u16(bytes, offset + 8) & 1) throw new Error('Encrypted document parts are not supported');
-      const entry = readZipLocalEntry(bytes, localOffset, name, method, compressedSize, centralDirOffset, budget);
-      if (!entry || entry.data.byteLength !== expandedSize) throw new Error('Invalid ZIP entry size or compression');
-      entries.set(entry.name, entry.data);
+      selected.push({ name, method, compressedSize, expandedSize, localOffset });
     }
     offset = next;
   }
   if (offset !== centralDirEnd) throw new Error('Invalid ZIP directory size');
-  return entries;
+
+  // Small parts (workbook, shared strings, headers) first, so large sheets
+  // cannot use up the document budget before the parts every sheet needs.
+  selected.sort((a, b) => a.expandedSize - b.expandedSize);
+  const budget = { remaining: EVIDENCE_LIMITS.expandedBytes as number };
+  let truncated = false;
+  for (const part of selected) {
+    const entry = readZipLocalEntry(bytes, part, centralDirOffset, budget);
+    if (entry.truncated) truncated = true;
+    entries.set(part.name, entry.data);
+  }
+  return { entries, truncated };
 }
 
-function readZipLocalEntry(
-  bytes: Uint8Array,
-  localOffset: number,
-  name: string,
-  method: number,
-  compressedSize: number,
-  dataEnd: number,
-  budget: ExpansionBudget,
-): ZipEntry | null {
-  if (localOffset + 30 > dataEnd || u32(bytes, localOffset) !== 0x04034b50) return null;
+function readZipLocalEntry(bytes: Uint8Array, part: ZipPart, dataEnd: number, budget: ExpansionBudget): { data: Uint8Array; truncated: boolean } {
+  const { name, method, compressedSize, expandedSize, localOffset } = part;
+  if (localOffset + 30 > dataEnd || u32(bytes, localOffset) !== 0x04034b50) throw new Error('Invalid ZIP local header');
   const nameLength = u16(bytes, localOffset + 26);
   const extraLength = u16(bytes, localOffset + 28);
   const dataStart = localOffset + 30 + nameLength + extraLength;
   if (dataStart + compressedSize > dataEnd || u16(bytes, localOffset + 8) !== method
     || (u16(bytes, localOffset + 6) & 1)
-    || decodeUtf8(bytes.subarray(localOffset + 30, localOffset + 30 + nameLength)).replace(/\\/g, '/') !== name) return null;
-  const compressed = bytes.subarray(dataStart, dataStart + compressedSize);
-
-  if (method === 0) {
-    consumeExpansion(compressed.byteLength, budget);
-    return { name, data: compressed };
+    || decodeUtf8(bytes.subarray(localOffset + 30, localOffset + 30 + nameLength)).replace(/\\/g, '/') !== name) {
+    throw new Error('Invalid ZIP local header');
   }
-  if (method === 8) return { name, data: inflateBounded(compressed, true, budget) };
-  return null;
+  if (method !== 0 && method !== 8) throw new Error('Unsupported ZIP compression method');
+  const limit = Math.min(EVIDENCE_LIMITS.entryBytes, budget.remaining);
+  if (limit <= 0) return { data: new Uint8Array(), truncated: true };
+  const compressed = bytes.subarray(dataStart, dataStart + compressedSize);
+  const decoded = method === 0
+    ? { data: compressed.subarray(0, limit), truncated: compressed.byteLength > limit }
+    : inflateBounded(compressed, true, limit);
+  budget.remaining -= decoded.data.byteLength;
+
+  // A part declared larger than the budget is cut on purpose. Any other
+  // difference from the declared size is a lying header: reject the file.
+  if (decoded.truncated && expandedSize > limit) return decoded;
+  if (decoded.truncated || decoded.data.byteLength !== expandedSize) {
+    throw new EvidenceImportLimitError('archiveSizeMismatch');
+  }
+  return decoded;
 }
 
 function findEndOfCentralDirectory(bytes: Uint8Array): number {
@@ -1230,7 +1395,8 @@ function chunkText(text: string, maxChars: number): string[] {
 function normalizeExtractedText(text: string): string {
   return text
     .replace(/\r\n?/g, '\n')
-    .replace(/[ \t]+\n/g, '\n')
+    // Start only at the beginning of a run: retrying inside a long run is quadratic.
+    .replace(/(?<![ \t])[ \t]+\n/g, '\n')
     .replace(/\n{4,}/g, '\n\n\n')
     .replace(/[ \t]{3,}/g, '  ')
     .trim();
@@ -1377,12 +1543,16 @@ function dedupeTextLines(values: string[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const value of values) {
-    const key = value.toLowerCase().replace(/\s+/g, ' ').trim();
+    const key = textLineKey(value);
     if (!key || seen.has(key)) continue;
     seen.add(key);
     result.push(value);
   }
   return result;
+}
+
+function textLineKey(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
 function getExtension(name: string): string | undefined {

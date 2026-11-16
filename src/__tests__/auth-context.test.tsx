@@ -249,6 +249,10 @@ describe('AuthProvider shared workspace session lifecycle', () => {
     () => Promise.resolve(new Response('{"ok":true}', { status: 500 })),
     () => Promise.resolve(new Response('{}')),
     () => Promise.resolve(new Response('{"ok":true}', { headers: { 'Content-Length': '20000' } })),
+    // A streamed receipt has no Content-Length; the read loop must still cap it.
+    () => Promise.resolve(new Response(new ReadableStream({ start(stream) {
+      stream.enqueue(new TextEncoder().encode(`{"ok":true,"padding":"${'x'.repeat(16_384)}"}`)); stream.close();
+    } }))),
     () => Promise.reject(new Error('transport diagnostic with sensitive content')),
   ])('reports unconfirmed remote revocation without restoring credentials or exposing transport details', async response => {
     vi.stubGlobal('fetch', vi.fn(response));

@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid';
 import { db } from '../db';
 import type { EvidenceItem } from '../types';
 import type { EvidenceItemDraft } from './evidence-import';
+import { EvidenceImportError } from './evidence-import-limits';
 import { getSessionGeneration, getSessionKey } from './encryptionMiddleware';
 import { getEncryptionMeta, isEncryptionEnabled } from './encryptionStore';
 import { getActiveWorkspaceId } from './workspace-profiles';
@@ -25,7 +26,7 @@ export function createEvidenceImportPersistence({ folderId, signal, assertCurren
     if (workspace !== getActiveWorkspaceId() || key !== getSessionKey()
       || generation !== getSessionGeneration() || metadata !== JSON.stringify(currentMetadata)
       || (isEncryptionEnabled() && (!key || !currentMetadata || currentMetadata.transition))) {
-      throw new Error('The workspace session changed. Unlock the workspace and import the files again.');
+      throw new EvidenceImportError('sessionChanged');
     }
   };
   assertOwner();
@@ -47,7 +48,7 @@ export function createEvidenceImportPersistence({ folderId, signal, assertCurren
         if (folderId) {
           const folder = await db.folders.get(folderId);
           if (!folder || folder.status === 'archived') {
-            throw new Error('The destination investigation is no longer available. Select an active investigation and import again.');
+            throw new EvidenceImportError('destinationUnavailable');
           }
           // A peer may have reclassified the folder while the worker ran.
           for (const item of items) item.clsLevel = folder.clsLevel;

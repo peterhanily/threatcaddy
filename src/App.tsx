@@ -23,6 +23,7 @@ import { useTimelines } from './hooks/useTimelines';
 import { useWhiteboards } from './hooks/useWhiteboards';
 import { useStandaloneIOCs } from './hooks/useStandaloneIOCs';
 import { useEvidenceItems } from './hooks/useEvidenceItems';
+import { useEvidenceImportFence } from './hooks/useEvidenceImportFence';
 import { useChats } from './hooks/useChats';
 import { useFolders } from './hooks/useFolders';
 import { useTags } from './hooks/useTags';
@@ -251,6 +252,7 @@ function AppDataLayer() {
             whiteboards={whiteboards}
             whiteboardsLoading={whiteboardsLoading}
             bulkDataLoading={pendingReloads > 0 || reloadFailed}
+            bulkDataFailed={reloadFailed}
             createWhiteboard={createWhiteboard}
             updateWhiteboard={updateWhiteboard}
             deleteWhiteboard={deleteWhiteboard}
@@ -355,6 +357,7 @@ type AppInnerProps = {
   whiteboards: ReturnType<typeof useWhiteboards>['whiteboards'];
   whiteboardsLoading: boolean;
   bulkDataLoading: boolean;
+  bulkDataFailed: boolean;
   createWhiteboard: ReturnType<typeof useWhiteboards>['createWhiteboard'];
   updateWhiteboard: ReturnType<typeof useWhiteboards>['updateWhiteboard'];
   deleteWhiteboard: ReturnType<typeof useWhiteboards>['deleteWhiteboard'];
@@ -412,7 +415,7 @@ const AppInner = memo(function AppInner({
   addToast, tt,
   notes, tasks, timeline,
   timelines: allTimelines, createTimeline, updateTimeline, deleteTimeline, reloadTimelines,
-  whiteboards, whiteboardsLoading, bulkDataLoading, createWhiteboard, updateWhiteboard, deleteWhiteboard,
+  whiteboards, whiteboardsLoading, bulkDataLoading, bulkDataFailed, createWhiteboard, updateWhiteboard, deleteWhiteboard,
   trashWhiteboard, restoreWhiteboard, toggleArchiveWhiteboard,
   emptyTrashWhiteboards, getFilteredWhiteboards, reloadWhiteboards,
   standaloneIOCsHook, evidenceItemsHook, chatsHook,
@@ -934,45 +937,34 @@ const AppInner = memo(function AppInner({
     () => noteTemplatesHook.templates.filter((tpl) => tpl.productBaseline && (!screenshareMaxLevel || !isAboveClsThreshold(tpl.clsLevel, screenshareMaxLevel, effectiveClsLevels))),
     [noteTemplatesHook.templates, screenshareMaxLevel, effectiveClsLevels]
   );
-  const evidenceImportScope = useMemo(() => ({
+  const evidenceImportFence = useEvidenceImportFence({
     folderId: selectedFolderId,
-    ready: privacyDataReady && investigationMode === 'local' && activeView === 'evidence'
-      && !screenshareMaxLevel && !selectedContextHidden && selectedFolder?.status !== 'archived'
-      && !showSettings && !showTrash && !showArchive,
-  }), [selectedFolderId, privacyDataReady, investigationMode, activeView, screenshareMaxLevel,
-    selectedContextHidden, selectedFolder?.status, showSettings, showTrash, showArchive]);
-  const evidenceImportOwner = useRef<typeof evidenceImportScope | null>(null);
-  const evidenceImportControllers = useRef(new Set<AbortController>());
-  useLayoutEffect(() => {
-    evidenceImportOwner.current = evidenceImportScope;
-    const controllers = evidenceImportControllers.current;
-    return () => {
-      evidenceImportOwner.current = null;
-      for (const controller of controllers) controller.abort();
-    };
-  }, [evidenceImportScope]);
+    visible: activeView === 'evidence' && !showSettings && !showTrash && !showArchive,
+    remote: investigationMode === 'remote',
+    screenshare: !!screenshareMaxLevel || selectedContextHidden,
+    archived: selectedFolder?.status === 'archived',
+    dataReady: privacyDataReady,
+    dataFailed: bulkDataFailed || (!chatsHook.loading && !chatsHook.loadedSuccessfully)
+      || (!evidenceItemsHook.loading && !evidenceItemsHook.loadedSuccessfully),
+  });
   const handleImportEvidence = useCallback(async (files: File[], signal?: AbortSignal) => {
+    const fence = evidenceImportFence.begin();
     const request = cancellableRequest(signal);
     const pending = Symbol('evidence import');
-    const assertCurrentScope = () => {
-      if (evidenceImportOwner.current !== evidenceImportScope || !evidenceImportScope.ready) {
-        throw new Error('The investigation context changed. Select the destination and import the files again.');
-      }
-    };
-    evidenceImportControllers.current.add(request.controller);
+    const release = fence.track(request.controller);
     markPending(pending);
     try {
-      const persist = createEvidenceImportPersistence({ folderId: selectedFolderId, signal: request.signal, assertCurrentScope });
+      const persist = createEvidenceImportPersistence({ folderId: selectedFolderId, signal: request.signal, assertCurrentScope: fence.assertCurrentScope });
       const drafts = await extractEvidenceFiles(files, { folderName: selectedFolder?.name }, request.signal);
       const created = await persist(drafts);
       await evidenceItemsHook.reload();
       return created;
     } finally {
       clearPending(pending);
-      evidenceImportControllers.current.delete(request.controller);
+      release();
       request.dispose();
     }
-  }, [evidenceItemsHook, selectedFolderId, selectedFolder?.name, evidenceImportScope]);
+  }, [evidenceItemsHook, selectedFolderId, selectedFolder?.name, evidenceImportFence]);
   const handleDeduplicateEvidence = useCallback(async () => {
     const dupeIds = findDuplicateEvidenceItemIds(evidenceItemsHook.evidenceItems, selectedFolderId);
     for (const id of dupeIds) await evidenceItemsHook.deleteEvidenceItem(id);
@@ -1869,6 +1861,7 @@ const AppInner = memo(function AppInner({
             folderName={selectedFolder?.name}
             items={investigationEvidenceItems}
             onImportFiles={handleImportEvidence}
+            importBlockedReason={evidenceImportFence.blockedReason}
             onDeduplicate={handleDeduplicateEvidence}
             onOpenChat={() => setActiveView('chat')}
           />
