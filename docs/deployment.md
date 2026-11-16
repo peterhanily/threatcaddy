@@ -465,8 +465,9 @@ ssh -L 3002:127.0.0.1:3002 your-server
 
 Keep the container network private: `ADMIN_HOST=0.0.0.0` inside the Compose container also permits other containers on that network to connect. A direct Node deployment defaults administration to `127.0.0.1` independently of the API binding. If you deliberately override these defaults for a management proxy or VPN, require private network access and explicit firewall/proxy restrictions. CORS is not a substitute for network isolation.
 
-Since 2.0.1 the image no longer listens for administration on every interface
-by default. A custom Compose file, `docker run` command or Kubernetes manifest
+Since the images published after 2.0.0 (GHCR `latest` from 13 November 2026,
+and every 2.0.1 or later image), the image no longer listens for administration
+on every interface by default. A custom Compose file, `docker run` command or Kubernetes manifest
 that does not set `ADMIN_HOST` binds administration to the container's own
 loopback interface, where a published port 3002 cannot reach it (`/health`
 stays green). To keep host administration, set `ADMIN_HOST=0.0.0.0` in the
@@ -748,9 +749,10 @@ requests only in an isolated fixture or authorized staging environment.
 
 Before rollout, retain the successful verification run URL, exact source commit,
 audit evidence, resource-regression measurements, immutable artifact IDs and
-checksums, server image ID/registry digest, and tested platform. CI artifacts
-expire after seven days, so preserve approved release records and artifacts
-outside that temporary storage. A dirty local checkout is a development build;
+checksums, server image ID/registry digest, and tested platform. CI keeps the
+verified client and server artifacts for 90 days and other evidence for 14
+days or less, so preserve approved release records and artifacts outside that
+temporary storage. A dirty local checkout is a development build;
 it is not an artifact approved for publication by the required workflow.
 
 Inventory each intended team server, its operator, installation type, existing
@@ -762,7 +764,7 @@ pending. Publishing an image or client does not establish server rollout.
 - Registry installations: update the image reference to the exact verified
   registry digest, pull it, and recreate only the application container using
   that installation's actual Compose/service configuration. Before moving a
-  configuration written for 2.0.0 to a 2.0.1 or later image, set
+  configuration written for 2.0.0 to a later image, set
   `ADMIN_HOST=0.0.0.0` in the container and change its admin publication to
   `127.0.0.1:3002:3002`; without `ADMIN_HOST` the admin panel becomes
   unreachable (see [4.3 Admin Panel Access](#43-admin-panel-access)).
@@ -772,13 +774,14 @@ pending. Publishing an image or client does not establish server rollout.
   image alone does not update this installation type. The tracked Compose file
   already sets `ADMIN_HOST` and loopback-only admin publication; check that a
   local override file does not publish port 3002 on every interface. From
-  2.0.1 it also sets the `json-file` log driver for both services, which
+  2.0.2 it also sets the `json-file` log driver for both services, which
   replaces a daemon-wide log driver; to keep shipping logs through yours, add
   the override in [4.8 Logging](#48-logging) before recreating the containers.
 
-Images from 2.0.1 also differ in ways that affect custom deployments: they run
-with `NODE_ENV=production` (generic messages for unexpected server errors), have
-no npm, npx, Yarn or Corepack (use the packaged `node dist/...` commands), and
+Later images also differ in ways that affect custom deployments: since 2.0.1
+they have no npm, npx, Yarn or Corepack (use the packaged `node dist/...`
+commands), and since 2.0.2 they run on Node 24.22.3 with
+`NODE_ENV=production` (generic messages for unexpected server errors) and
 declare a `HEALTHCHECK` against `/health`.
 
 Preserve the database, managed-file volumes, stable application keys and other

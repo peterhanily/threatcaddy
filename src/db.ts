@@ -306,7 +306,7 @@ export async function runWorkspaceContentMigrations(): Promise<void> {
   });
 }
 
-/** Rows written before the 2.0.1 writer fixes made every backup fail: NaN token
+/** Rows written before the 2.0.2 writer fixes made every backup fail: NaN token
  * usage from the team-server proxy, agent history stamped with updatedAt or
  * stripped of its required thread, and recovery restores that wrote `result`.
  * Repaired in place; modification times and sync capture are left alone.

@@ -36,6 +36,7 @@ test.beforeEach(async ({ page }) => {
   const notices = JSON.parse(await page.locator('#standalone-third-party-notices').textContent() || '{}');
   expect(notices['excalidraw-fonts.txt']).toContain('Xiaolai');
   expect(notices['oasis-stix-common-objects.txt']).toBeTruthy();
+  expect(notices['react-leaflet.txt']).toContain('Hippocratic License Version Number: 2.1');
 });
 test.afterEach(async ({}, info) => {
   await info.attach('standalone-browser-errors', { body: JSON.stringify(failures), contentType: 'application/json' });

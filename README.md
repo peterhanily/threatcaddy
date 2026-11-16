@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/peterhanily/threatcaddy/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
-  <img src="https://img.shields.io/badge/version-2.0.1-green.svg" alt="Version 2.0.1" />
+  <img src="https://img.shields.io/badge/version-2.0.2-green.svg" alt="Version 2.0.2" />
   <img src="https://img.shields.io/badge/TypeScript-6%20%2F%207-blue.svg?logo=typescript&logoColor=white" alt="TypeScript 6 (client) / 7 (server)" />
   <img src="https://img.shields.io/badge/React-19-61dafb.svg?logo=react&logoColor=white" alt="React 19" />
   <img src="https://img.shields.io/badge/Vite-7-646cff.svg?logo=vite&logoColor=white" alt="Vite 7" />
@@ -42,7 +42,7 @@ Most investigation tools lock your data in a cloud you don't control, cost per s
 
 **Try it now:** [threatcaddy.com/?demo=1](https://threatcaddy.com/?demo=1) loads a sample investigation with a guided walkthrough.
 
-**Download a release:** [Stable 2.0.1 downloads](https://github.com/peterhanily/threatcaddy/releases/tag/v2.0.1) provide the tested standalone HTML, browser-extension archives, checksums and source revision. Client and server 2.0.1 include the preservation/session fixes missing from the historical 2.0.0 download. The extension has its own version, currently 1.1.3. Read the [2.0.1 upgrade and channel notes](docs/releases/v2.0.1.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
+**Download a release:** [Latest stable downloads](https://github.com/peterhanily/threatcaddy/releases/latest) provide the tested standalone HTML, browser-extension archives, checksums and source revision. Client and server 2.0.2 include the data-preservation, backup, session and evidence-import fixes missing from the historical 2.0.0 download. The extension has its own version, currently 1.1.3. Read the [2.0.2 upgrade and channel notes](docs/releases/v2.0.2.md) before updating. Browser-store publication and upgrades of running team servers are separate from these downloads.
 
 **Self-host the client:**
 
@@ -165,6 +165,7 @@ Connect any REST API as an agent skill source:
 - **IOC dashboard** — Aggregate stats: type/confidence distribution, top actors, timeline, frequency tables
 - **TLP/PAP classification** — Traffic Light Protocol and Permissible Actions Protocol levels on entities and investigations
 - **Export** — JSON, CSV (grouped or flat), STIX 2.1 bundles; push to OCI object storage
+- **Evidence import** — PDF, Word, RTF, Excel, CSV, JSON, XML, logs, text and screenshots: up to 20 files and 50 MiB per import, 25 MiB per file. Parsing runs in a cancellable worker; very large documents import partially with a warning, unreadable or encrypted Office files import as metadata only, and a batch containing a decompression bomb is rejected without saving anything
 
 ### Timeline & Whiteboard
 
@@ -341,4 +342,4 @@ Local use needs no account. Optional AI, enrichment, URL fetching, map tiles, ca
 
 ## License
 
-MIT
+ThreatCaddy's own code is MIT-licensed. Bundled third-party packages keep their own licences. Notices that must accompany redistributed copies are in [`public/licenses/`](public/licenses) (served at `/licenses/` and embedded in the standalone file), including react-leaflet under the Hippocratic License 2.1.

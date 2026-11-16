@@ -3,8 +3,8 @@
 The upgrade, rollback and restore procedure is maintained in one place:
 [deployment guide, section 6 (Upgrading)](../docs/deployment.md#6-upgrading).
 Read it before changing a running server. It covers the standard upgrade,
-registry and repository Compose installations, the 2.0.1 administration
-binding change, and [rollback and restore](../docs/deployment.md#rollback-and-restore).
+registry and repository Compose installations, the administration binding
+change in images published after 2.0.0, and [rollback and restore](../docs/deployment.md#rollback-and-restore).
 
 Pulling images is not enough for the supplied Compose installation: its server
 service builds `./server`, so pulling and restarting keeps running the
