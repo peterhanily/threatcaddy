@@ -95,6 +95,15 @@ describe('integration control acknowledgements', () => {
     expect(await db.tasks.toArray()).toEqual([expect.objectContaining({ title: 'Persisted task' })]);
     expect(await db.timelineEvents.count()).toBe(0);
   });
+  it.each([['High', 'high'], ['score-7', 'medium']])('stores an integration confidence of %s as %s, a value every backup accepts', async (value, stored) => {
+    await db.standaloneIOCs.add(indicator);
+    const run = await runControl([
+      { id: 'update', label: '', type: 'update-entity', entityType: 'ioc', entityId: indicator.id, fields: { confidence: value } },
+      { id: 'create', label: '', type: 'create-entity', entityType: 'ioc', fields: { type: 'domain', value: 'created.example', confidence: value } },
+    ]);
+    expect(run).toMatchObject({ status: 'success', entitiesUpdated: 1, entitiesCreated: 1 });
+    expect((await db.standaloneIOCs.toArray()).map(ioc => ioc.confidence)).toEqual([stored, stored]);
+  });
 });
 
 describe('integration result presentation ownership', () => {

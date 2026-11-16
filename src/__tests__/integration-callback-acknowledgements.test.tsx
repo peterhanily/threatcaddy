@@ -126,6 +126,15 @@ describe.each(['bulk', 'tool'] as const)('%s create callback acknowledgements', 
   });
 });
 
+describe.each(['bulk', 'tool'] as const)('%s integration confidence', caller => {
+  it.each([['High', 'high'], ['score-7', 'medium']])('stores %s as %s, a value every backup accepts', async (value, stored) => {
+    const run = await invoke(caller, definition([{ id: 'update', label: 'Update', type: 'update-entity',
+      entityType: 'ioc', entityId: subject.id, fields: { confidence: value } }]));
+    expect(run).toMatchObject({ status: 'success', entitiesUpdated: 1 });
+    expect((await db.standaloneIOCs.get(subject.id))?.confidence).toBe(stored);
+  });
+});
+
 it('keeps bulk note creation deliberately disabled without claiming a created entity', async () => {
   const template = definition();
   template.outputs = [{ type: 'create-note', template: { title: 'Local fixture' } }];
