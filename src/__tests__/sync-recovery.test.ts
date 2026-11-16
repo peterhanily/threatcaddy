@@ -3,7 +3,7 @@ import { db, runWorkspaceContentMigrations } from '../db';
 import { disableSync, revisionKey } from '../lib/sync-state';
 import { setSessionKey } from '../lib/encryptionMiddleware';
 import { prepareSyncRecovery, reconcileSyncWorkspace, restoreSyncRecovery } from '../lib/sync-recovery';
-import { decryptBackup } from '../lib/backup-crypto';
+import { decryptBackup, encryptBackup } from '../lib/backup-crypto';
 import { buildFullBackupPayload } from '../lib/backup-data';
 import { exportJSON } from '../lib/export';
 const api = vi.hoisted(() => ({ pull: vi.fn() }));
@@ -153,5 +153,50 @@ describe('explicit sync recovery', () => {
     expect(await db.agentActions.get('old')).toMatchObject({ resultSummary: 'Recovered from archive' });
     await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
     await expect(exportJSON()).resolves.toContain('threatcaddy-backup');
+  });
+});
+
+describe('recovery refusals carry a code the panel translates and keep their English message', () => {
+  const clear = () => db.transaction('rw', db.tables, async () => { for (const table of db.tables) await table.clear(); });
+  it('codes reconciliation refusals', async () => {
+    const receipt = await prepareSyncRecovery(password);
+    await expect(reconcileSyncWorkspace(receipt, identity.serverUrl, 'bob', confirmed))
+      .rejects.toMatchObject({ code: 'accountChanged', message: 'The signed-in account changed; recovery was not applied.' });
+    api.pull.mockResolvedValueOnce({ changes: [], cursor: '1' });
+    await expect(reconcileSyncWorkspace(receipt, identity.serverUrl, identity.userId, confirmed))
+      .rejects.toMatchObject({ code: 'serverUnsupported', message: 'This server does not support safe history recovery.' });
+    await db.notes.update('n', { title: 'A later edit' });
+    await expect(reconcileSyncWorkspace(receipt, identity.serverUrl, identity.userId, confirmed))
+      .rejects.toMatchObject({ code: 'localDataChanged', message: 'Local data changed after backup. Download a new recovery archive before reconciling.' });
+  });
+  it('codes a foreign binding and queued updates without a current record', async () => {
+    await db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { ...identity, userId: 'bob' } });
+    await expect(reconcileSyncWorkspace(await prepareSyncRecovery(password), identity.serverUrl, identity.userId, confirmed))
+      .rejects.toMatchObject({ code: 'otherAccount', message: 'This workspace belongs to another account. Switch workspaces instead of rebinding it.' });
+    await db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: identity });
+    await db.table('_syncQueue').add({ table: 'notes', entityId: 'gone', folderId: 'f', op: 'put', data: { ...note, id: 'gone' }, clientVersion: 3 });
+    await expect(reconcileSyncWorkspace(await prepareSyncRecovery(password), identity.serverUrl, identity.userId, confirmed)).rejects.toMatchObject({
+      code: 'ambiguousRows', params: { count: 1, records: '["notes","gone"]' },
+      message: expect.stringContaining('Reconciliation is blocked: 1 queued update(s) have no current local record: ["notes","gone"].'),
+    });
+  });
+  it('codes archive restore refusals', async () => {
+    const receipt = await prepareSyncRecovery(password);
+    await expect(restoreSyncRecovery(password, receipt.blob, true))
+      .rejects.toMatchObject({ code: 'notEmpty', message: 'Recovery requires an empty workspace; existing data was not changed.' });
+    const archive = await decryptBackup<{ data: Record<string, unknown[]> }>(password, receipt.blob);
+    await clear();
+    await expect(restoreSyncRecovery('a different recovery phrase', receipt.blob, true))
+      .rejects.toMatchObject({ code: 'wrongPassword', message: 'Wrong password or corrupted backup' });
+    await expect(restoreSyncRecovery(password, { v: 2 } as never, true))
+      .rejects.toMatchObject({ code: 'wrongPassword', message: 'Unsupported backup format version' });
+    await expect(restoreSyncRecovery(password, await encryptBackup(password, { ...archive, kind: 'threatcaddy-backup' }), true))
+      .rejects.toMatchObject({ code: 'unsupportedArchive', message: 'Unsupported workspace recovery archive.' });
+    await expect(restoreSyncRecovery(password, await encryptBackup(password, { ...archive, data: { ...archive.data, notes: [note, note] } }), true))
+      .rejects.toMatchObject({ code: 'unsupportedArchive', message: 'Invalid or duplicate recovery identity.' });
+    localStorage.setItem('threatcaddy-auth', JSON.stringify({ serverUrl: identity.serverUrl, accessToken: 'synthetic', refreshToken: 'synthetic-refresh', user: { id: 'bob', displayName: 'Bob', email: 'bob@example.invalid', role: 'analyst' } }));
+    await expect(restoreSyncRecovery(password, receipt.blob, true))
+      .rejects.toMatchObject({ code: 'archiveAccount', message: 'Recovery archive belongs to another server or account.' });
+    expect(await db.notes.count()).toBe(0);
   });
 });

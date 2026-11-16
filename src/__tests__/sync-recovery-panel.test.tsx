@@ -3,6 +3,8 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createInstance } from 'i18next';
 import { I18nextProvider } from 'react-i18next';
 import { SyncRecoveryPanel } from '../components/Settings/SyncRecoveryPanel';
+import { SYNC_RECOVERY_ERROR_CODES } from '../lib/sync-recovery';
+import { PendingChangesError } from '../lib/pending-changes';
 import settingsEn from '../../public/locales/en/settings.json';
 import settingsDe from '../../public/locales/de/settings.json';
 
@@ -12,7 +14,8 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => mocks.auth }));
 vi.mock('../lib/export', () => ({ downloadFile: mocks.download }));
-vi.mock('../lib/sync-recovery', () => ({ prepareSyncRecovery: mocks.prepare, reconcileSyncWorkspace: mocks.reconcile, restoreSyncRecovery: mocks.restore }));
+vi.mock('../lib/sync-recovery', async importOriginal => ({ ...await importOriginal<typeof import('../lib/sync-recovery')>(),
+  prepareSyncRecovery: mocks.prepare, reconcileSyncWorkspace: mocks.reconcile, restoreSyncRecovery: mocks.restore }));
 vi.mock('../lib/sync-engine', () => ({ syncEngine: { start: mocks.start, stop: mocks.stop } }));
 
 const settings = import.meta.glob<{ default: Record<string, string> }>('../../public/locales/*/settings.json', { eager: true });
@@ -114,6 +117,35 @@ describe('sync history recovery in the interface language', () => {
     mocks.restore.mockRejectedValue('synthetic non-error failure');
     await chooseArchive(new File(['{}'], 'recovery.json'));
     expect(screen.getByRole('alert')).toHaveTextContent(de('syncRecovery.failed'));
+  });
+
+  it.each(SYNC_RECOVERY_ERROR_CODES)('shows the %s refusal in the interface language', async code => {
+    const params = { count: 2, records: '["notes","a"], ["notes","b"]' };
+    const locale = await renderGerman();
+    fireEvent.click(screen.getByRole('checkbox', { name: de('syncRecovery.reconcileConfirm') }));
+    enterPassphrase();
+    mocks.restore.mockRejectedValue(Object.assign(new Error('Synthetic English refusal'), { code, params }));
+    await chooseArchive(new File(['{}'], 'recovery.json'));
+    const key = `syncRecovery.error.${code}`;
+    expect(de(key)).not.toBe((settingsEn as Record<string, string>)[key]);
+    expect(screen.getByRole('alert')).toHaveTextContent(locale.t(key, params));
+    expect(screen.getByRole('alert')).not.toHaveTextContent('Synthetic English refusal');
+    expect(screen.getByRole('alert')).not.toHaveTextContent('{{');
+  });
+
+  it('shows pending work and an unreadable file in the interface language, and keeps other failures as reported', async () => {
+    await renderGerman();
+    fireEvent.click(screen.getByRole('checkbox', { name: de('syncRecovery.reconcileConfirm') }));
+    enterPassphrase();
+    mocks.restore.mockRejectedValueOnce(new PendingChangesError('Resolve pending work first.'));
+    await chooseArchive(new File(['{}'], 'recovery.json'));
+    expect(screen.getByRole('alert')).toHaveTextContent(de('syncRecovery.error.pendingWork'));
+    await chooseArchive(new File(['not a recovery archive'], 'recovery.json'));
+    expect(screen.getByRole('alert')).toHaveTextContent(de('syncRecovery.error.unsupportedArchive'));
+    expect(mocks.restore).toHaveBeenCalledOnce();
+    mocks.restore.mockRejectedValueOnce(Object.assign(new Error('Synthetic server failure'), { code: 'SYNC_CURSOR_RESET' }));
+    await chooseArchive(new File(['{}'], 'recovery.json'));
+    expect(screen.getByRole('alert')).toHaveTextContent('Synthetic server failure');
   });
 });
 

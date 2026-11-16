@@ -2,8 +2,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { downloadFile } from '../../lib/export';
-import { prepareSyncRecovery, reconcileSyncWorkspace, restoreSyncRecovery, type SyncRecoveryReceipt } from '../../lib/sync-recovery';
+import { prepareSyncRecovery, reconcileSyncWorkspace, restoreSyncRecovery, SYNC_RECOVERY_ERROR_CODES, type SyncRecoveryErrorCode, type SyncRecoveryReceipt } from '../../lib/sync-recovery';
 import { syncEngine } from '../../lib/sync-engine';
+import { PendingChangesError } from '../../lib/pending-changes';
+import type { EncryptedBackupBlob } from '../../lib/backup-crypto';
+
+const isRecoveryErrorCode = (code: unknown): code is SyncRecoveryErrorCode => (SYNC_RECOVERY_ERROR_CODES as readonly unknown[]).includes(code);
 
 export function SyncRecoveryPanel() {
   const { t } = useTranslation('settings');
@@ -16,10 +20,17 @@ export function SyncRecoveryPanel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  // Coded refusals read in the interface language; any other failure keeps its message.
+  const describeError = (cause: unknown) => {
+    if (cause instanceof PendingChangesError) return t('syncRecovery.error.pendingWork');
+    const { code, params } = Object(cause) as { code?: unknown; params?: Record<string, string | number> };
+    if (isRecoveryErrorCode(code)) return t(`syncRecovery.error.${code}`, params);
+    return cause instanceof Error ? cause.message : t('syncRecovery.failed');
+  };
   const work = async (action: () => Promise<void>) => {
     setBusy(true); setError(''); setNotice('');
     try { await action(); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : t('syncRecovery.failed')); }
+    catch (cause) { setError(describeError(cause)); }
     finally { setBusy(false); }
   };
   const prepare = () => work(async () => {
@@ -41,7 +52,10 @@ export function SyncRecoveryPanel() {
     if (!confirmed) throw new Error(t('syncRecovery.confirmRestoreFirst'));
     if (file.size > 512 * 1024 * 1024) throw new Error(t('syncRecovery.archiveTooLarge'));
     syncEngine.stop();
-    const count = await restoreSyncRecovery(password, JSON.parse(await file.text()), confirmed);
+    const text = await file.text();
+    let archive: EncryptedBackupBlob;
+    try { archive = JSON.parse(text); } catch { throw new Error(t('syncRecovery.error.unsupportedArchive')); }
+    const count = await restoreSyncRecovery(password, archive, confirmed);
     setPassword(''); setRepeat('');
     setNotice(t('syncRecovery.restored', { count }));
   });
