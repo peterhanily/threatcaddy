@@ -15,8 +15,8 @@ test('hosted startup and a lazy dialog have no CSP diagnostics or browser errors
   await expect(page.locator('nav[aria-label="Views"]')).toBeVisible();
   await openNewTaskForm(page);
   await expect(page.getByRole('dialog')).toBeVisible();
-  // The dialog moves focus as it installs its keyboard handling.
-  await expect(page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true })).toBeFocused();
+  // The dialog moves focus to its autoFocus field as it installs its keyboard handling.
+  await expect(page.getByRole('dialog').locator('#task-title')).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(diagnostics).toEqual([]);
