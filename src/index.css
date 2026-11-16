@@ -8,6 +8,8 @@
   --color-accent-hover: #5b50dc;
   --color-accent-dim: #4f46e5;
   --color-accent-text: #a5b4fc;
+  /* Keyboard focus indicators need 3:1 against every surface and border. */
+  --color-focus-ring: #818cf8;
 
   /* Purple palette */
   --color-bg-deep: #0d0b14;
@@ -34,6 +36,7 @@
   --color-accent-hover: #5b50dc;
   --color-accent-dim: #4338ca;
   --color-accent-text: #4338ca;
+  --color-focus-ring: #4f46e5;
   --color-bg-deep: #f8f7fc;
   --color-bg-surface: #f0eef8;
   --color-bg-raised: #e8e5f5;
@@ -51,12 +54,6 @@
   --color-accent-amber: #78350f;
   --color-accent-pink: #9d174d;
 }
-
-/* Keep accent copy readable on surfaces without lightening white-text buttons. */
-.text-accent,
-.hover\:text-accent:hover,
-.hover\:text-accent-hover:hover { color: var(--color-accent-text); }
-.text-purple { color: var(--color-purple-text); }
 
 /* ─── CaddyShack semantic tokens (dark) ─── */
 :root {
@@ -95,6 +92,13 @@
 .light .text-purple-400 { color: #6b21a8; }
 .light .text-cyan-400 { color: #0e7490; }
 
+/* Keep accent copy readable on surfaces without lightening white-text buttons.
+   After the gray remaps, so hover:text-accent wins the equal-specificity tie. */
+.text-accent,
+.hover\:text-accent:hover,
+.hover\:text-accent-hover:hover { color: var(--color-accent-text); }
+.text-purple { color: var(--color-purple-text); }
+
 /* Background colors */
 .light .bg-gray-950  { background-color: #f8fafc; }
 .light .bg-gray-900  { background-color: #ffffff; }
@@ -121,9 +125,10 @@
 .light .placeholder-gray-500::placeholder { color: #9ca3af; }
 .light .placeholder-gray-600::placeholder { color: #9ca3af; }
 
-/* Focus ring */
-.light .focus\:border-accent:focus { border-color: #4f46e5; }
-.light .focus\:ring-accent:focus { --tw-ring-color: #4f46e5; }
+/* Focus indicators use the focus token, never the darker filled-control accent. */
+.focus\:border-accent:focus { border-color: var(--color-focus-ring); }
+.focus\:ring-accent:focus { --tw-ring-color: var(--color-focus-ring); }
+.focus-visible\:outline-accent:focus-visible { outline-color: var(--color-focus-ring); }
 
 /* ─── Respect reduced motion preference ─── */
 @media (prefers-reduced-motion: reduce) {
@@ -142,7 +147,7 @@ html {
 
 /* ─── Global focus-visible outline ─── */
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
 }
 

@@ -1,4 +1,5 @@
 import { workspaceStorageKey } from './lib/workspace-profiles';
+import { purgeStaleLocaleCaches } from './lib/locale-cache';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import HttpBackend from 'i18next-http-backend';
@@ -198,6 +199,8 @@ if (isStandalone) {
   i18n.use(standaloneBackend);
 } else {
   i18n.use(HttpBackend);
+  // Translations from an earlier deploy must not outlive it.
+  if (typeof __LOCALE_CACHE__ === 'string') void purgeStaleLocaleCaches(__LOCALE_CACHE__).catch(() => {});
 }
 
 i18n.init({

@@ -90,7 +90,7 @@ export function CreateInvestigationModal({ open, onClose, onCreate, onOpenNameGe
             maxLength={200}
             value={name}
             onChange={(e) => { setName(e.target.value); if (nameError) setNameError(''); }}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCreate(); } }}
             placeholder="e.g. Operation Midnight Storm"
             aria-required="true"
             aria-invalid={!!nameError}
@@ -109,7 +109,7 @@ export function CreateInvestigationModal({ open, onClose, onCreate, onOpenNameGe
             className={cn(
               'mt-4 w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all',
               name.trim()
-                ? 'bg-purple text-white hover:brightness-110'
+                ? 'bg-accent text-white hover:brightness-110'
                 : 'bg-bg-deep text-text-muted cursor-not-allowed',
             )}
           >

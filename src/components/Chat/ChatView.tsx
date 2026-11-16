@@ -816,7 +816,7 @@ export function ChatView({
           <button
             onClick={handleNewChat}
             disabled={!canChat}
-            className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg bg-purple text-white text-xs font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
+            className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg bg-accent text-white text-xs font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
             title={canChat ? t('view.startChatTitle') : t('view.extensionOrServerRequired')}
           >
             <Plus size={14} />
@@ -1162,7 +1162,7 @@ export function ChatView({
                   <p className="text-sm font-medium">{t('view.emptyTitle')}</p>
                   <p className="text-xs mt-1">{t('view.emptySubtitle')}</p>
                   {selectedFolder && (
-                    <p className="text-xs mt-1 text-purple/70">
+                    <p className="text-xs mt-1 text-purple">
                       {t('view.emptyFolderContext', { name: selectedFolder.name })}
                     </p>
                   )}

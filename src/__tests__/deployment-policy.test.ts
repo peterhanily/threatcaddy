@@ -32,6 +32,8 @@ describe('explicit deployment privacy and connection policy', () => {
     expect(connectSources).not.toContain('https://*.oraclecloud.com');
     expect(policy).toContain("object-src 'none'");
     expect(policy).toContain("frame-src 'none'");
+    // srcdoc frames inherit this policy; frame-src does not stop their forms.
+    expect(policy).toContain("form-action 'none'");
   });
   it('ships no analytics script or analytics origins by default', () => {
     expect(applyDeploymentPolicy(html, {})).not.toContain('cloudflareinsights');

@@ -23,7 +23,7 @@ export function ExecBreadcrumb({ segments }: ExecBreadcrumbProps) {
             ) : (
               <button
                 onClick={seg.onTap}
-                className="text-xs text-text-muted active:text-accent transition-colors max-w-[120px] truncate"
+                className="text-xs text-text-muted active:text-accent-text transition-colors max-w-[120px] truncate"
               >
                 {seg.label}
               </button>
