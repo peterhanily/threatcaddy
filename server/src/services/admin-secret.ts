@@ -12,11 +12,16 @@ import { encryptSecret, decryptSecret } from '../bots/secret-store.js';
 export const ADMIN_SYSTEM_USER_ID = '__system_admin__';
 
 const SETTINGS_KEY = 'admin_secret_hash';
+const RECOMMENDED_ADMIN_SECRET_LENGTH = 24;
 
 export async function initAdminSecret(): Promise<void> {
   const envSecret = process.env.ADMIN_SECRET?.trim();
 
   if (envSecret) {
+    // Warn only: refusing to start would break existing installations on upgrade.
+    if (envSecret.length < RECOMMENDED_ADMIN_SECRET_LENGTH) {
+      logger.warn(`ADMIN_SECRET is shorter than ${RECOMMENDED_ADMIN_SECRET_LENGTH} characters; replace it with a long random value such as the output of: openssl rand -base64 32`);
+    }
     // Env var provided — hash and upsert
     const hash = await argon2.hash(envSecret, { type: argon2.argon2id });
     const existing = await db.select().from(serverSettings).where(eq(serverSettings.key, SETTINGS_KEY)).limit(1);

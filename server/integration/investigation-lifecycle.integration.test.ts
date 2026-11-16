@@ -294,4 +294,25 @@ describe('investigation soft deletion and committed purge in real PostgreSQL', (
     expect(await removeCommittedBlobs(directory, purged!.folderFiles)).toBe(0);
     await expect(readFile(join(directory, blob))).rejects.toMatchObject({ code: 'ENOENT' });
   });
+
+  it.each(['user', 'admin', 'retention'] as const)('rejects re-creating the investigation id after a %s purge', async path => {
+    if (path === 'retention') {
+      await database.sql`UPDATE folders SET deleted_at='2000-01-01' WHERE id='shared'`;
+      expect(await purgeExpiredInvestigation('shared', new Date('2020-01-01'))).not.toBeNull();
+    } else {
+      const response = await app.request(path === 'user' ? '/investigations/shared' : '/admin/api/investigations/shared/content', {
+        method: 'DELETE', headers: path === 'user' ? userHeaders : adminHeaders,
+        ...(path === 'admin' ? { body: JSON.stringify({ confirmName: 'Fictional retained case' }) } : {}),
+      });
+      expect(response.status).toBe(200);
+    }
+    await assertPurgeCommitted();
+    // A former member reusing the id must not become owner of the retained history.
+    expect(await processPush([{ table: 'folders', entityId: 'shared', op: 'put', clientVersion: 0, data: { name: 'Reused id' } }],
+      'editor', { authorize: true })).toEqual([{ table: 'folders', entityId: 'shared', status: 'rejected' }]);
+    expect(await database.sql`SELECT id FROM folders WHERE id='shared'`).toEqual([]);
+    expect(await database.sql`SELECT id FROM investigation_members WHERE folder_id='shared'`).toEqual([]);
+    expect(await processPush([{ table: 'folders', entityId: 'fresh-case', op: 'put', clientVersion: 0, data: { name: 'New id' } }],
+      'editor', { authorize: true })).toMatchObject([{ status: 'accepted' }]);
+  });
 });

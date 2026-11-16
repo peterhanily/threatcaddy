@@ -153,6 +153,8 @@ Some validation errors include additional detail:
 #### `GET /health`
 
 No authentication required. Checks database and file storage connectivity.
+The response also reports the server version, process uptime in seconds and
+memory use in MiB, so expose it only to monitoring systems.
 
 **Response `200`:**
 ```json
@@ -160,6 +162,9 @@ No authentication required. Checks database and file storage connectivity.
   "status": "ok",
   "db": "connected",
   "storage": "accessible",
+  "version": "2.0.1",
+  "uptime": 3600,
+  "memory": { "rss": 180, "heapUsed": 60, "heapTotal": 90 },
   "timestamp": "2026-03-07T12:00:00.000Z"
 }
 ```
@@ -170,6 +175,9 @@ No authentication required. Checks database and file storage connectivity.
   "status": "degraded",
   "db": "disconnected",
   "storage": "accessible",
+  "version": "2.0.1",
+  "uptime": 3600,
+  "memory": { "rss": 180, "heapUsed": 60, "heapTotal": 90 },
   "timestamp": "2026-03-07T12:00:00.000Z"
 }
 ```
@@ -477,7 +485,7 @@ Invite a member by email. **Owner only.**
 
 #### `DELETE /api/investigations/:id`
 
-Permanently delete an investigation and all its content. **Owner only.** Deletes notes, tasks, timeline events, whiteboards, IOCs, chat threads, posts, files, notifications, and memberships.
+Permanently delete an investigation and all its content. **Owner only.** Deletes notes, tasks, timeline events, whiteboards, IOCs, chat threads, posts, files, notifications, and memberships. The server's sync history, audit entries and database backups still hold earlier copies; the investigation ID cannot be re-created afterwards.
 
 ---
 

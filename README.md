@@ -46,7 +46,7 @@ Most investigation tools lock your data in a cloud you don't control, cost per s
 
 **Self-host the client:**
 
-Use Node **24.22.2** and pnpm **10.29.1** (npm **11.19.0** for the server and extension). See [development and verification](docs/development-verification.md) for the complete setup and checks.
+Use Node **24.22.3** and pnpm **10.29.1** (npm **11.19.0** for the server and extension). See [development and verification](docs/development-verification.md) for the complete setup and checks.
 
 ```bash
 pnpm install --frozen-lockfile

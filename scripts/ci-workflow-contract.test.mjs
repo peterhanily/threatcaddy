@@ -234,12 +234,54 @@ test('the full runtime-image audit gates promotion after packaged-image acceptan
   assert.ok(command.indexOf('sha256sum --check') < command.indexOf('tar -xzf'));
   assert.match(command, /mktemp -d "\$RUNNER_TEMP\/threatcaddy-trivy\./);
   assert.match(command, /--disable-telemetry/);
-  assert.match(command, /--db-repository ghcr\.io\/aquasecurity\/trivy-db:2 --offline-scan --skip-check-update --skip-version-check/);
+  // Trivy tries the repositories in order and moves on after a temporary
+  // registry error (rate limit, 5xx), so one registry outage cannot block publication.
+  assert.match(command, /--db-repository ghcr\.io\/aquasecurity\/trivy-db:2 --db-repository mirror\.gcr\.io\/aquasec\/trivy-db:2 \\\n\s+--offline-scan --skip-check-update --skip-version-check/);
   assert.match(command, /--pkg-types os,library --list-all-pkgs/);
   assert.match(command, /--severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL --ignorefile '' --ignore-unfixed=false/);
   assert.match(command, /--input verified-server\/server-image\.tar/);
   assert.match(command, /node scripts\/ci-audit-server-image\.mjs/);
+  assert.ok(command.indexOf('cp "$trivy_root/cache/db/metadata.json" server-image-audit/database-metadata.json')
+    < command.indexOf('node scripts/ci-audit-server-image.mjs'));
+  assert.match(command, /server\/package\.json \\\n\s+server-image-audit\/database-metadata\.json > server-image-audit\/policy\.json/);
+  assert.ok(command.indexOf('passed === true') > command.indexOf('> server-image-audit/policy.json'));
   assert.doesNotMatch(command, /continue-on-error|\|\| true|--skip-db-update|--ignore-unfixed(?:\s|$)/);
+});
+
+test('the image audit step fails unless the written policy records passed:true', t => {
+  const step = stepsOf(verify.jobs['server-artifact']).find(step => step.name === 'Audit the exact packaged runtime image');
+  for (const [policy, expected] of [['', 1], ['{"passed": false}', 1], ['{"passed": true}', 0]]) {
+    const folder = temporaryDirectory(t);
+    writeFileSync(join(folder, 'curl'), '#!/bin/sh\nexit 0\n', { mode: 0o700 });
+    writeFileSync(join(folder, 'sha256sum'), '#!/bin/sh\ncat >/dev/null\nexit 0\n', { mode: 0o700 });
+    writeFileSync(join(folder, 'tar'), `#!/bin/sh
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = '-C' ]; then shift; destination="$1"; break; fi
+  shift
+done
+cat > "$destination/trivy" <<'SCANNER'
+#!/bin/sh
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = '--cache-dir' ]; then shift; mkdir -p "$1/db"; printf '{"UpdatedAt":"2026-11-15T12:50:00Z"}' > "$1/db/metadata.json"; fi
+  shift
+done
+printf '{"SchemaVersion":2}' > server-image-audit/report.json
+SCANNER
+chmod 700 "$destination/trivy"
+`, { mode: 0o700 });
+    // A stand-in for the audit CLI that silently writes this policy and exits 0.
+    mkdirSync(join(folder, 'scripts'));
+    writeFileSync(join(folder, 'scripts/ci-audit-server-image.mjs'), `process.stdout.write(${JSON.stringify(policy)});\n`);
+    let status = 0;
+    try {
+      execFileSync('bash', ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', step.run], {
+        cwd: folder, env: { PATH: `${folder}:${process.env.PATH}`, RUNNER_TEMP: folder, GITHUB_SHA: 'b'.repeat(40) },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+    } catch (error) { status = error.status; }
+    assert.equal(status, expected, `policy ${JSON.stringify(policy)}`);
+    assert.deepEqual(JSON.parse(readFileSync(join(folder, 'server-image-audit/database-metadata.json'), 'utf8')), { UpdatedAt: '2026-11-15T12:50:00Z' });
+  }
 });
 
 test('scanner checksum failure stops before extraction and execution', t => {

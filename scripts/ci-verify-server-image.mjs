@@ -47,7 +47,7 @@ const keys = generateKeyPairSync('ed25519', {
 });
 Object.assign(process.env, {
   DATABASE_URL: databaseUrl,
-  NODE_ENV: 'production',
+  // NODE_ENV is deliberately not passed: acceptance exercises the image default.
   JWT_PRIVATE_KEY: keys.privateKey,
   JWT_PUBLIC_KEY: keys.publicKey,
   BOT_MASTER_KEY: randomBytes(32).toString('hex'),
@@ -208,7 +208,7 @@ try {
   console.log('Native argon2 and sharp operations passed as the non-root image user');
   container = docker(['run', '--detach', ...labels,
     ...(isolated ? ['--network', network, '--publish', '127.0.0.1::3001'] : ['--network', 'host']),
-    ...['DATABASE_URL', 'NODE_ENV', 'JWT_PRIVATE_KEY', 'JWT_PUBLIC_KEY',
+    ...['DATABASE_URL', 'JWT_PRIVATE_KEY', 'JWT_PUBLIC_KEY',
       'BOT_MASTER_KEY', 'ADMIN_SECRET', 'PORT', 'ADMIN_PORT', 'FILE_STORAGE_PATH', 'SERVER_NAME']
       .flatMap((name) => ['--env', name]), imageId]);
   refreshServerOrigin();

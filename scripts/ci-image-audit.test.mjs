@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { auditServerImage, TRIVY_VERSION } from './ci-audit-server-image.mjs';
 
 const imageId = `sha256:${'a'.repeat(64)}`;
 const revision = 'b'.repeat(40);
-const options = { imageId, revision, dependencies: ['hono', 'postgres'] };
+const now = Date.parse('2026-11-15T18:00:00Z');
+const options = { imageId, revision, dependencies: ['hono', 'postgres'], database: { UpdatedAt: '2026-11-15T12:50:00Z' }, now };
 const vulnerability = Severity => ({ VulnerabilityID: 'CVE-fixture', PkgName: 'synthetic-package', InstalledVersion: '1.0.0', Severity });
 function report() {
   return { SchemaVersion: 2, Trivy: { Version: TRIVY_VERSION }, ArtifactType: 'container_image',
@@ -63,6 +64,22 @@ for (const [name, change] of [
   assert.throws(() => auditServerImage(input, options), /Image audit rejected/);
 });
 
+test('blocks unscored findings that already have a fixed version, but keeps counting unscored unfixed ones', () => {
+  const fixed = report();
+  fixed.Results[0].Vulnerabilities = [{ ...vulnerability('UNKNOWN'), FixedVersion: '1.0.1' }];
+  assert.throws(() => auditServerImage(fixed, options), /UNKNOWN-severity vulnerabilities with an available fix remain/);
+  const unfixed = report();
+  unfixed.Results[0].Vulnerabilities = [vulnerability('UNKNOWN'), { ...vulnerability('UNKNOWN'), FixedVersion: '' }];
+  assert.equal(auditServerImage(unfixed, options).vulnerabilities.UNKNOWN, 2);
+});
+
+test('requires a vulnerability database built within the last 48 hours', () => {
+  assert.equal(auditServerImage(report(), options).databaseUpdatedAt, '2026-11-15T12:50:00.000Z');
+  for (const database of [undefined, {}, { UpdatedAt: 'not a date' }, { UpdatedAt: '2026-11-13T17:59:59Z' }, { UpdatedAt: '2026-11-15T19:00:01Z' }]) {
+    assert.throws(() => auditServerImage(report(), { ...options, database }), /Image audit rejected: vulnerability database/);
+  }
+});
+
 test('rejects scanner errors and unreviewed warnings even if JSON looks complete', () => {
   for (const diagnostics of ['2026-11-13T00:00:00Z\tERROR\tLayer analysis failed', 'WARN Unable to analyze packages']) {
     assert.throws(() => auditServerImage(report(), { ...options, diagnostics }), /scanner diagnostics/);
@@ -79,8 +96,20 @@ test('the CLI exits nonzero and records rejection for malformed JSON', t => {
   writeFileSync(join(folder, 'image.id'), imageId);
   writeFileSync(join(folder, 'manifest.json'), JSON.stringify({ dependencies: { hono: '1' } }));
   writeFileSync(join(folder, 'scanner.log'), '');
+  writeFileSync(join(folder, 'database.json'), JSON.stringify({ UpdatedAt: new Date().toISOString() }));
   assert.throws(() => execFileSync(process.execPath, [new URL('./ci-audit-server-image.mjs', import.meta.url).pathname,
-    join(folder, 'report.json'), join(folder, 'image.id'), revision, join(folder, 'scanner.log'), join(folder, 'manifest.json')],
-  { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }), error => error.status === 1 && JSON.parse(error.stdout).passed === false);
+    join(folder, 'report.json'), join(folder, 'image.id'), revision, join(folder, 'scanner.log'), join(folder, 'manifest.json'),
+    join(folder, 'database.json')],
+  { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }), error => error.status === 1
+    && JSON.parse(error.stdout).passed === false && /JSON/.test(JSON.parse(error.stdout).error));
   assert.equal(readFileSync(join(folder, 'report.json'), 'utf8'), '{');
+});
+
+test('the CLI still runs and fails closed when invoked through a symlinked checkout path', t => {
+  const folder = mkdtempSync(join(tmpdir(), 'threatcaddy-image-audit-link-'));
+  t.after(() => rmSync(folder, { recursive: true, force: true }));
+  symlinkSync(new URL('.', import.meta.url).pathname, join(folder, 'scripts'), 'dir');
+  assert.throws(() => execFileSync(process.execPath, [join(folder, 'scripts', 'ci-audit-server-image.mjs')],
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }),
+  error => error.status === 1 && JSON.parse(error.stdout).passed === false);
 });

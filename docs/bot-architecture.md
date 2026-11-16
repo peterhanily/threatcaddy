@@ -231,6 +231,8 @@ Supported languages and their images:
 
 Images can be overridden via `SANDBOX_PYTHON_IMAGE`, `SANDBOX_NODE_IMAGE`, `SANDBOX_BASH_IMAGE` env vars. A `prePullSandboxImages()` function is available for pre-pulling at server startup.
 
+These controls confine the sandboxed code, not the server that starts it. The server needs a Docker API, and Docker API access is root on that Docker host: mounting the host's Docker socket into the API container turns any compromise of the Node process into host root, and a socket proxy that permits container creation does not change that. Prefer a dedicated sandbox daemon reached through `DOCKER_HOST`; see [Docker Socket Security](deployment.md#46-docker-socket-security-bot-sandbox).
+
 ### Secret Encryption
 
 Bot configuration secrets (API keys, tokens, passwords) are encrypted at rest using AES-256-GCM.

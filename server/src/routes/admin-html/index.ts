@@ -148,7 +148,7 @@ ${adminStyles()}
 
     <div class="settings-section">
       <h2>Change Bootstrap Secret</h2>
-      <p style="color:#8b949e;font-size:0.85rem;margin-bottom:0.5rem;">The bootstrap secret is used to create the first admin account on new deployments.</p>
+      <p style="color:#8b949e;font-size:0.85rem;margin-bottom:0.5rem;">The bootstrap secret is used to create the first admin account on new deployments. If the server's ADMIN_SECRET environment variable is set, it replaces this secret at every server restart.</p>
       <div class="setting-row">
         <label>Current secret</label>
         <input type="password" id="currentSecret" placeholder="Current secret" autocomplete="off">

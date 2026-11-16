@@ -122,7 +122,7 @@ function openInvestigationDetail(invId) {
     // Danger Zone
     var totalEntities = ec.notes + ec.tasks + ec.timelineEvents + ec.whiteboards + ec.standaloneIOCs + ec.chatThreads + ec.files + ec.evidenceItems;
     html += '<div class="danger-zone"><h4>Danger Zone</h4>';
-    html += '<p>Permanently delete this investigation, its memberships and all retained content (' + totalEntities + ' listed entities). This cannot be undone.</p>';
+    html += '<p>Permanently delete this investigation, its memberships and all retained content (' + totalEntities + ' listed entities). This cannot be undone. Sync history, audit entries and database backups still hold earlier copies.</p>';
     html += '<button class="btn btn-danger btn-sm" id="openPurgeBtn">Permanently Delete Investigation</button>';
     html += '</div>';
 

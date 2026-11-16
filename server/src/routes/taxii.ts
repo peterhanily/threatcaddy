@@ -28,6 +28,12 @@ const collection = (folder: typeof folders.$inferSelect) => ({ id: folder.id, ti
   description: folder.description || '', can_read: true, can_write: false, media_types: [STIX_MEDIA_TYPE] });
 const liveIOCs = (folderId: string) => and(eq(standaloneIOCs.folderId, folderId), isNull(standaloneIOCs.deletedAt),
   eq(standaloneIOCs.trashed, false), eq(standaloneIOCs.archived, false));
+// The projection refuses damaged marking provenance with a deliberate 422. Answer it
+// as a TAXII error here: the global handler hides error messages in production.
+function projectionRefusal(error: unknown): string {
+  if (error instanceof Error && (error as { status?: unknown }).status === 422) return error.message;
+  throw error;
+}
 
 app.get('/', c => c.json({ title: 'ThreatCaddy TAXII Server', description: 'Read-only current-state investigation IOC export',
   default: '/api/taxii/', api_roots: ['/api/taxii/'], versions: [TAXII_MEDIA_TYPE], max_content_length: 1024 * 1024 }));
@@ -109,7 +115,8 @@ app.get('/collections/:id/objects/', async c => {
       scanned++;
       const date = ioc.cursorDate;
       const start = !exclusive && position?.id === ioc.id && position.date === date ? position.offset : 0;
-      let objects = stixIOC(ioc);
+      let objects: STIXObject[];
+      try { objects = stixIOC(ioc); } catch (error) { return c.json({ title: projectionRefusal(error) }, 422); }
       const relationships = Array.isArray(ioc.relationships) ? ioc.relationships as Array<{ targetIOCId?: string; relationshipType?: string }> : [];
       if (relationships.length > 1000) return c.json({ title: 'IOC exceeds the supported relationship limit' }, 422);
       const ids = [...new Set(relationships.map(rel => rel.targetIOCId).filter((id): id is string => typeof id === 'string' && !!id))];
@@ -117,8 +124,11 @@ app.get('/collections/:id/objects/', async c => {
         const targets = await db.select().from(standaloneIOCs).where(and(liveIOCs(folderId), inArray(standaloneIOCs.id, ids)));
         for (const rel of relationships) {
           const target = targets.find(row => row.id === rel.targetIOCId && row.folderId === folderId);
-          if (target && typeof rel.relationshipType === 'string') objects.push(...stixRelationship(ioc,
-            { ...target, clsLevel: target.clsLevel || folder.clsLevel }, rel.relationshipType));
+          if (target && typeof rel.relationshipType === 'string') {
+            try {
+              objects.push(...stixRelationship(ioc, { ...target, clsLevel: target.clsLevel || folder.clsLevel }, rel.relationshipType));
+            } catch (error) { return c.json({ title: projectionRefusal(error) }, 422); }
+          }
         }
       }
       objects = objects.filter(matches);

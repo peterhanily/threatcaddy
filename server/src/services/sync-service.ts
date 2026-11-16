@@ -250,6 +250,13 @@ export async function processPush(
         if (!isEligibleInvestigationOwner(actor)) {
           result[index] = { table: change.table, entityId, status: 'rejected' }; continue;
         }
+        // A purge removes the folder row but not its sync history. Re-creating
+        // that id would make the caller owner of every retained revision.
+        const [history] = await tx.select({ cursor: schema.syncChanges.cursor }).from(schema.syncChanges)
+          .where(and(eq(schema.syncChanges.tableName, 'folders'), eq(schema.syncChanges.entityId, entityId))).limit(1);
+        if (history) {
+          result[index] = { table: change.table, entityId, status: 'rejected' }; continue;
+        }
       }
       if (options.authorize && !GLOBAL_SYNC_TABLES.has(change.table)) {
         const isNewFolder = change.table === 'folders' && !current && op === 'put';

@@ -1,6 +1,7 @@
 import { bodyLimit } from 'hono/body-limit';
 import type { Context, MiddlewareHandler } from 'hono';
 import { ErrorCodes } from '../types/error-codes.js';
+import { requireAuth } from './auth.js';
 
 export const MAX_FILE_BYTES = 50 * 1024 * 1024;
 export const MAX_BACKUP_BYTES = 100 * 1024 * 1024;
@@ -19,10 +20,20 @@ const file = bodyLimit({ maxSize: MAX_FILE_BYTES + MULTIPART_OVERHEAD_BYTES, onE
 const backup = bodyLimit({ maxSize: MAX_BACKUP_BYTES + MULTIPART_OVERHEAD_BYTES, onError: payloadTooLarge });
 const sync = bodyLimit({ maxSize: MAX_SYNC_BYTES, onError: payloadTooLarge });
 
+function largeLimit(c: Context): MiddlewareHandler | undefined {
+  if (c.req.method === 'POST' && c.req.path === '/api/files/upload') return file;
+  if (c.req.method === 'POST' && /^\/api\/backups\/?$/.test(c.req.path)) return backup;
+  if (c.req.method === 'POST' && c.req.path === '/api/sync/push') return sync;
+}
+
 // One selected limit: stacking these middlewares also enforces the smallest one.
-export const apiBodyLimit: MiddlewareHandler = (c, next) => {
-  if (c.req.method === 'POST' && c.req.path === '/api/files/upload') return file(c, next);
-  if (c.req.method === 'POST' && /^\/api\/backups\/?$/.test(c.req.path)) return backup(c, next);
-  if (c.req.method === 'POST' && c.req.path === '/api/sync/push') return sync(c, next);
-  return ordinary(c, next);
+// bodyLimit buffers a body without Content-Length up to its limit before next(),
+// and this runs before the route rate limiters. A large limit therefore applies
+// only after authentication; anonymous requests never exceed the ordinary limit.
+export const apiBodyLimit: MiddlewareHandler = async (c, next) => {
+  const limit = largeLimit(c);
+  if (!limit) return ordinary(c, next);
+  let limited: Response | void = undefined;
+  const denied = await requireAuth(c, async () => { limited = await limit(c, next); });
+  return denied ?? limited;
 };

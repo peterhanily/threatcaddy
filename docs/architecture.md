@@ -346,6 +346,8 @@ Code execution for bots runs in ephemeral Docker containers with strict isolatio
 
 Supported languages: Python 3.12, Node.js 22, Bash (Alpine).
 
+These controls confine the sandboxed code, not the server that starts it. The server needs a Docker API, and Docker API access is root on that Docker host: mounting the host's Docker socket into the API container turns any compromise of the Node process into host root, and a socket proxy that permits container creation does not change that. Prefer a dedicated sandbox daemon reached through `DOCKER_HOST`; see [Docker Socket Security](deployment.md#46-docker-socket-security-bot-sandbox).
+
 ### 9.6 SSRF Protection for Bot HTTP Requests
 
 Bots making outbound HTTP requests are subject to:
@@ -404,6 +406,7 @@ A cleanup service runs on startup and every 6 hours to enforce retention policie
 | Notifications | 90 days | Yes (server setting) |
 | Audit log entries | 365 days | Yes (server setting) |
 | Soft-deleted entities (tombstones) | 90 days | Yes (server setting) |
+| Sync history (`sync_changes`), including purged investigations | Not pruned | No |
 | Orphaned investigation memberships | Immediate | No |
 | Bot run history | 90 days | No |
 | Expired sessions | Immediate (hourly cleanup) | No |
