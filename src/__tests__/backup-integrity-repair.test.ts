@@ -1,7 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db, runWorkspaceContentMigrations } from '../db';
 import { buildFullBackupPayload } from '../lib/backup-data';
 import { exportJSON } from '../lib/export';
+import { generateMasterKey } from '../lib/crypto';
+import { setSessionKey } from '../lib/encryptionMiddleware';
+import { clearEncryptionMeta, setEncryptionMeta } from '../lib/encryptionStore';
+import { initializeWorkspace, isWorkspaceInitialized } from '../lib/workspace-initialization';
 
 const action = { investigationId: 'f', toolName: 'create_note', toolInput: { title: 'Draft' }, rationale: 'History', createdAt: 1 };
 const summary = { startedAt: 1, durationMs: 1, whyThisCycle: 'Cycle', whatIDid: [], entitiesTouched: [], tokens: { input: NaN, output: 2 }, costUSD: NaN,
@@ -11,6 +15,31 @@ beforeEach(async () => {
   await Promise.all(db.tables.map(table => table.clear()));
   await db.folders.add({ id: 'f', name: 'Case', order: 0, createdAt: 1 });
 });
+afterEach(() => { vi.restoreAllMocks(); });
+
+const entity = { folderId: 'f', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 5 };
+const extracted = (...confidence: unknown[]) => ({ extractedAt: 1, iocs: confidence.map((value, index) =>
+  ({ id: `x${index}`, type: 'domain', value: `x${index}.example`, confidence: value, firstSeen: 1, dismissed: false })) });
+const event = { ...entity, timestamp: 1, title: 'Event', source: 'CaddyAI', linkedIOCIds: [], linkedNoteIds: [], linkedTaskIds: [], mitreAttackIds: [], assets: [], starred: false, timelineId: 'tl' };
+
+/** Enum values AI tool writes stored before 2.0.2 checked them. */
+async function seedOffEnumRows() {
+  await db.table('tasks').bulkAdd([
+    { ...entity, id: 'ticket', title: 'Ticket', completed: false, priority: 'critical', status: 'todo', order: 0 },
+    { ...entity, id: 'spelled', title: 'Spelled', completed: false, priority: 'High', status: 'IN_PROGRESS', order: 1 },
+    { ...entity, id: 'finished', title: 'Finished', completed: false, priority: 'low', status: 'Done', order: 2 },
+    { ...entity, id: 'closed', title: 'Closed', completed: true, priority: 'urgent', status: 'complete', order: 3, iocAnalysis: extracted('High', 'sure') },
+  ]);
+  await db.table('standaloneIOCs').bulkAdd([
+    { ...entity, id: 'cased', type: 'domain', value: 'a.example', confidence: 'High' },
+    { ...entity, id: 'unknown', type: 'domain', value: 'b.example', confidence: 'certain' },
+  ]);
+  await db.table('timelineEvents').bulkAdd([
+    { ...event, id: 'pivot', eventType: 'lateral_movement', confidence: 'maybe', iocAnalysis: extracted('CONFIRMED') },
+    { ...event, id: 'phish', eventType: 'phishing', confidence: 'Medium' },
+  ]);
+  await db.table('notes').add({ ...entity, id: 'note', title: 'Note', content: 'Body', pinned: false, iocAnalysis: extracted('low', 'Medium', 7) });
+}
 
 /** Rows already written by 2.0.0/2.0.1 before the writers were fixed. */
 async function seedAffectedRows() {
@@ -61,6 +90,65 @@ describe('one-time backup integrity repair', () => {
     await expect(exportJSON()).resolves.toContain('threatcaddy-backup');
   });
 
+  it('turns off-enum values into what the fixed tools store, else the sync sanitizer default, without touching modification times', async () => {
+    await seedOffEnumRows();
+    await expect(buildFullBackupPayload('all')).rejects.toThrow();
+    await runWorkspaceContentMigrations();
+
+    const confidences = (row: { iocAnalysis?: { iocs: { confidence: string }[] } } | undefined) => row?.iocAnalysis?.iocs.map(ioc => ioc.confidence);
+    const tasks = Object.fromEntries((await db.tasks.toArray()).map(task => [task.id, task]));
+    expect(tasks.ticket).toMatchObject({ priority: 'high', status: 'todo', completed: false });
+    expect(tasks.spelled).toMatchObject({ priority: 'high', status: 'in-progress', completed: false });
+    expect(tasks.finished).toMatchObject({ priority: 'low', status: 'done', completed: true });
+    expect(tasks.closed).toMatchObject({ priority: 'none', status: 'done', completed: true });
+    expect(confidences(tasks.closed)).toEqual(['high', 'low']);
+    expect((await db.standaloneIOCs.toArray()).map(ioc => [ioc.id, ioc.confidence])).toEqual([['cased', 'high'], ['unknown', 'low']]);
+    expect(await db.timelineEvents.get('pivot')).toMatchObject({ eventType: 'lateral-movement', confidence: 'low' });
+    expect(confidences(await db.timelineEvents.get('pivot'))).toEqual(['confirmed']);
+    expect(await db.timelineEvents.get('phish')).toMatchObject({ eventType: 'other', confidence: 'medium' });
+    expect(confidences(await db.notes.get('note'))).toEqual(['low', 'medium', 'low']);
+    for (const table of [db.tasks, db.standaloneIOCs, db.timelineEvents, db.notes] as const) {
+      for (const row of await table.toArray()) expect(row.updatedAt).toBe(5);
+    }
+
+    await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
+    await expect(exportJSON()).resolves.toContain('threatcaddy-backup');
+  });
+
+  it('repairs encrypted fields such as extracted IOC confidence once the workspace is unlocked', async () => {
+    setEncryptionMeta({ version: 1, salt: '', wrappedKey: '', recoverySalt: '', recoveryWrappedKey: '', enabledAt: 1 });
+    setSessionKey(await generateMasterKey());
+    try {
+      await seedOffEnumRows();
+      await runWorkspaceContentMigrations();
+      expect((await db.notes.get('note'))?.iocAnalysis?.iocs.map(ioc => ioc.confidence)).toEqual(['low', 'medium', 'low']);
+      expect((await db.tasks.get('closed'))?.iocAnalysis?.iocs.map(ioc => ioc.confidence)).toEqual(['high', 'low']);
+      expect((await db.tasks.get('closed'))?.title).toBe('Closed');
+    } finally {
+      setSessionKey(null);
+      clearEncryptionMeta();
+    }
+  });
+
+  it('does not block initialization when the repair fails, and retries on the next load', async () => {
+    await seedOffEnumRows();
+    const transaction = db.transaction.bind(db) as (...args: unknown[]) => unknown;
+    const failing = vi.spyOn(db, 'transaction').mockImplementation(((...args: unknown[]) => Array.isArray(args[1]) && args[1].includes('agentMeetings')
+      ? Promise.reject(new Error('Private stored detail')) : transaction(...args)) as typeof db.transaction);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await expect(initializeWorkspace()).resolves.toBeUndefined();
+    expect(isWorkspaceInitialized()).toBe(true);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('retry'), 'Error');
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('Private stored detail');
+    expect(await db.table('_localMigrations').get('backup-integrity-v1')).toBeUndefined();
+
+    failing.mockRestore();
+    await initializeWorkspace();
+    expect(await db.table('_localMigrations').get('backup-integrity-v1')).toBeDefined();
+    await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
+  });
+
   it('never blocks startup on unexpected stored shapes', async () => {
     await db.table('chatThreads').add({ id: 'odd', title: 'Odd', messages: [null, 'text', { id: 'x', tokenCount: 'n/a', agentCycleSummary: 'none' },
       { id: 'y', tokenCount: { input: NaN }, agentCycleSummary: { tokens: null, costUSD: null } }], model: 'm', provider: 'anthropic', tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 });
@@ -74,6 +162,7 @@ describe('one-time backup integrity repair', () => {
   it('runs once and never queues sync work', async () => {
     await db.table('_syncMeta').put({ key: 'syncWorkspaceIdentityV1', value: { version: 1, serverUrl: 'https://team.example', userId: 'alice' } });
     await seedAffectedRows();
+    await seedOffEnumRows();
     await db.table('_syncQueue').clear();
     await runWorkspaceContentMigrations();
     expect(await db.table('_syncQueue').count()).toBe(0);
