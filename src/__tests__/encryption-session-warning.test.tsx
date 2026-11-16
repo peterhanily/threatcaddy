@@ -119,6 +119,25 @@ describe('timed session expiry warning', () => {
     expect(screen.getByLabelText('Task description')).toBeInTheDocument();
   });
 
+  it('keeps Escape typed in the warning away from the global Escape shortcut', async () => {
+    // useKeyboardShortcuts listens on window and closes app views such as
+    // Settings, which would unmount an open editor and lose its text.
+    const globalEscape = vi.fn();
+    const listener = (event: KeyboardEvent) => { if (event.key === 'Escape') globalEscape(); };
+    window.addEventListener('keydown', listener);
+    try {
+      await openWorkspace();
+      act(() => { vi.advanceTimersByTime(HOUR - MINUTE); });
+      fireEvent.keyDown(screen.getByText('Private workspace content'), { key: 'Escape' });
+      expect(globalEscape).toHaveBeenCalledTimes(1);
+      fireEvent.keyDown(screen.getByLabelText('Current passphrase'), { key: 'Escape' });
+      expect(globalEscape).toHaveBeenCalledTimes(1);
+      expect(warning()).toBeInTheDocument();
+    } finally {
+      window.removeEventListener('keydown', listener);
+    }
+  });
+
   it('is announced and reachable with Tab from an open form dialog, and Tab returns to the form', async () => {
     app.formOpen = true;
     await openWorkspace();

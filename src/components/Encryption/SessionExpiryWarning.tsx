@@ -55,6 +55,9 @@ export function SessionExpiryWarning() {
     <section
       aria-labelledby={titleId}
       data-modal-focus-exempt=""
+      // Escape here must not reach the app's global Escape shortcut (window
+      // listener), which closes views such as Settings and loses open editors.
+      onKeyDown={(event) => { if (event.key === 'Escape') event.stopPropagation(); }}
       className="fixed bottom-4 end-4 z-[20000] w-[min(24rem,calc(100vw-2rem))] rounded-lg border border-amber-600/50 bg-gray-900 p-4 text-gray-100 shadow-2xl"
     >
       <h2 id={titleId} className="flex items-center gap-2 text-sm font-semibold text-amber-400">
