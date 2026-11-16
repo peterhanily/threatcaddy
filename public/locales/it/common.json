@@ -222,6 +222,7 @@
   "syncStatus.unreadableOutgoing": "{{item}} non è stato caricato perché gli altri dispositivi non potrebbero leggerlo (elementi trattenuti: {{total}}). Resta salvato su questo dispositivo; correggilo per sincronizzarlo.",
   "syncStatus.oversizedOutgoing": "{{item}} non è stato caricato perché supera i limiti del server del team (elementi trattenuti: {{total}}). Resta salvato su questo dispositivo; accorcialo per sincronizzarlo.",
   "syncStatus.previewTypeOutgoing": "{{item}} non è stato caricato perché il server del team accetta solo immagini di anteprima PNG, JPEG, GIF o WebP (elementi trattenuti: {{total}}). Resta salvato su questo dispositivo.",
+  "syncStatus.heldBlocksLocalCopyRemoval": "La copia locale non è stata rimossa: {{count}} elemento/i di questa indagine hanno modifiche che la sincronizzazione trattiene su questo dispositivo perché il server del team non può accettarle ({{items}}). Eliminali definitivamente (spostarli nel cestino non basta) oppure modificali in modo che possano essere caricati (ad esempio, accorcia un testo molto lungo), poi riprova.",
   "syncStatus.rejectedInvalid": "Il server del team ha rifiutato questa modifica perché non valida ({{reason}}). Resta salvata su questo dispositivo; correggila per sincronizzarla.",
   "syncStatus.theirsUnreadable": "Questo dispositivo non può leggere la versione del server del team, quindi si può mantenere solo la tua versione.",
   "syncStatus.itemType.notes": "Nota",

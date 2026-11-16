@@ -222,6 +222,7 @@
   "syncStatus.unreadableOutgoing": "{{item}} não foi enviado porque outros dispositivos não conseguiriam lê-lo (itens retidos: {{total}}). Ele continua salvo neste dispositivo; corrija-o para sincronizá-lo.",
   "syncStatus.oversizedOutgoing": "{{item}} não foi enviado porque excede os limites do servidor da equipe (itens retidos: {{total}}). Ele continua salvo neste dispositivo; encurte-o para sincronizá-lo.",
   "syncStatus.previewTypeOutgoing": "{{item}} não foi enviado porque o servidor da equipe aceita apenas imagens de pré-visualização PNG, JPEG, GIF ou WebP (itens retidos: {{total}}). Ele continua salvo neste dispositivo.",
+  "syncStatus.heldBlocksLocalCopyRemoval": "A cópia local não foi removida: {{count}} item(ns) desta investigação têm alterações que a sincronização retém neste dispositivo porque o servidor da equipe não pode aceitá-las ({{items}}). Exclua-os permanentemente (movê-los para a lixeira não basta) ou edite-os para que possam ser enviados (por exemplo, encurte textos muito longos) e tente novamente.",
   "syncStatus.rejectedInvalid": "O servidor da equipe recusou esta alteração por ser inválida ({{reason}}). Ela continua salva neste dispositivo; corrija-a para sincronizá-la.",
   "syncStatus.theirsUnreadable": "Este dispositivo não consegue ler a versão do servidor da equipe, então só a sua versão pode ser mantida.",
   "syncStatus.itemType.notes": "Nota",

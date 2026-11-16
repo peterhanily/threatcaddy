@@ -222,6 +222,7 @@
   "syncStatus.unreadableOutgoing": "{{item}} nie zostało przesłane, ponieważ inne urządzenia nie mogłyby tego odczytać (wstrzymane elementy: {{total}}). Pozostaje zapisane na tym urządzeniu; popraw to, aby zsynchronizować.",
   "syncStatus.oversizedOutgoing": "{{item}} nie zostało przesłane, ponieważ przekracza limity serwera zespołu (wstrzymane elementy: {{total}}). Pozostaje zapisane na tym urządzeniu; skróć to, aby zsynchronizować.",
   "syncStatus.previewTypeOutgoing": "{{item}} nie zostało przesłane, ponieważ serwer zespołu akceptuje tylko obrazy podglądu PNG, JPEG, GIF lub WebP (wstrzymane elementy: {{total}}). Pozostaje zapisane na tym urządzeniu.",
+  "syncStatus.heldBlocksLocalCopyRemoval": "Nie usunięto lokalnej kopii: elementy w tym śledztwie mają zmiany, które synchronizacja wstrzymuje na tym urządzeniu, ponieważ serwer zespołu nie może ich przyjąć (liczba: {{count}}; {{items}}). Usuń je trwale (przeniesienie do kosza nie wystarczy) lub edytuj je tak, aby można je było przesłać (na przykład skróć bardzo długi tekst), a następnie spróbuj ponownie.",
   "syncStatus.rejectedInvalid": "Serwer zespołu odrzucił tę zmianę jako nieprawidłową ({{reason}}). Pozostaje zapisana na tym urządzeniu; popraw ją, aby zsynchronizować.",
   "syncStatus.theirsUnreadable": "To urządzenie nie może odczytać wersji z serwera zespołu, więc można zachować tylko Twoją wersję.",
   "syncStatus.itemType.notes": "Notatka",

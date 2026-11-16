@@ -136,10 +136,49 @@ describe('restoring a backup in a team-bound workspace', () => {
     await db.notes.add(note('local-unsent', 'Not yet pushed'));
     const queued = await db.table('_syncQueue').toArray();
     expect(queued).toEqual([expect.objectContaining({ entityId: 'local-unsent', op: 'put' })]);
-    await expect(importJSON(backup)).rejects.toThrow('unsent');
+    const refusal = await importJSON(backup).then(() => null, (error: Error) => error.message);
+    expect(refusal).toContain('not yet uploaded');
+    expect(refusal).toContain('Not yet pushed (Shared case)');
+    expect(refusal).toContain('Sign in and let sync upload them');
+    expect(refusal).not.toContain('notes:local-unsent');
     expect(await db.notes.get('local-unsent')).toBeDefined();
     expect(await db.table('_syncQueue').toArray()).toEqual(queued);
     expect(await db.table('_syncMeta').get(SYNC_RECOVERY_KEY)).toBeUndefined();
+  });
+
+  const shot = { id: 'e1', title: 'Beacon screenshot', folderId: 'f1', fileName: 'beacon.bmp', fileType: 'image', size: 2, imageData: 'Qk0=', imageDataMimeType: 'image/bmp',
+    content: '', extractionStatus: 'metadata-only', importedAt: 1, chunkIndex: 1, chunkCount: 1, tags: [], trashed: false, archived: false, createdAt: 1, updatedAt: 1 };
+  it.each([
+    ['an evidence preview type the server refuses', 'evidenceItems', shot, 'Beacon screenshot'],
+    ['a field over the server value limits', 'notes', { ...note('big', 'Pasted log'), content: 'x'.repeat(500_001) }, 'Pasted log'],
+    ['a change too large for any upload request', 'notes', { ...note('wide', 'Wide log'), content: 'é'.repeat(460_000) }, 'Wide log'],
+  ] as const)('names an item sync holds back (%s) and gives a remedy that clears the block', async (_label, table, row, title) => {
+    await boundWorkspace();
+    const backup = await exportJSON();
+    await teammateChanges();
+    await db.table(table).add(row);
+    const queued = await db.table('_syncQueue').toArray();
+    expect(queued).toEqual([expect.objectContaining({ entityId: row.id, op: 'put' })]);
+    const refusal = await importJSON(backup).then(() => null, (error: Error) => error.message);
+    expect(refusal).toContain(`${title} (Shared case)`);
+    expect(refusal).toContain('Signing in or Sync history recovery will not upload them');
+    expect(refusal).toContain('Delete them permanently');
+    expect(refusal).not.toContain(`${table}:${row.id}`);
+    expect(await db.table(table).get(row.id)).toBeDefined();
+    expect(await db.table('_syncQueue').toArray()).toEqual(queued);
+    expect(await db.table('_syncMeta').get(SYNC_RECOVERY_KEY)).toBeUndefined();
+    // Merge deletes nothing, so it restores with the item kept.
+    await mergeImportJSON(backup);
+    expect(await db.table(table).get(row.id)).toBeDefined();
+    // Deleting the item permanently queues a delete; Replace All then restores and recovery reconciles.
+    await db.table(table).delete(row.id);
+    await importJSON(backup);
+    expect(await getSyncPauseReason(db)).toBe(SYNC_HISTORY_MESSAGE);
+    localStorage.setItem('threatcaddy-auth', JSON.stringify({ serverUrl: identity.serverUrl, accessToken: 'fixture', refreshToken: 'fixture',
+      user: { id: identity.userId, displayName: 'Alice', email: 'alice@example.invalid', role: 'analyst' } }));
+    const receipt = await prepareSyncRecovery('synthetic recovery passphrase');
+    await reconcileSyncWorkspace(receipt, identity.serverUrl, identity.userId, { backupSaved: true, reconcileConfirmed: true });
+    expect(await getSyncPauseReason(db)).toBeNull();
   });
 
   it('explains that refusal in the user language and names the way forward when sync is already paused', async () => {
@@ -147,7 +186,7 @@ describe('restoring a backup in a team-bound workspace', () => {
     const backup = await exportJSON();
     await importJSON(backup);
     await db.notes.add(note('paused-edit', 'Captured while paused'));
-    const args = { ns: 'settings', count: 1, records: 'notes:paused-edit' };
+    const args = { ns: 'settings', count: 1, records: 'Captured while paused (Shared case)' };
     await expect(importJSON(backup)).rejects.toThrow('Sync history recovery');
     for (const [namespace, values] of Object.entries(i18n.getDataByLanguage('en') ?? {})) i18n.addResourceBundle('de', namespace, values, true, false);
     i18n.addResourceBundle('de', 'settings', settingsDe, true, true);
