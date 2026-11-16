@@ -1388,7 +1388,9 @@ export async function exportInvestigationJSON(folderId: string): Promise<string>
   // Never write a file its own import refuses: the same check as every backup.
   validatePortableTables(Object.fromEntries(BACKUP_TABLES.filter(name => Array.isArray(record[name])).map(name => [name, record[name]])));
 
-  return JSON.stringify(data, null, 2);
+  const json = JSON.stringify(data, null, 2);
+  assertBackupSize(json);
+  return json;
   });
 }
 
