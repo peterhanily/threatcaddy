@@ -37,7 +37,8 @@ import {
   executeCreateTimelineEvent, executeUpdateTimelineEvent,
   executeLinkEntities, executeGenerateReport, executeCreateInInvestigation, isIOCType, enumInput,
 } from './llm-tools-write';
-import { TASK_PRIORITIES } from './entity-enums';
+import { CONFIDENCE_VALUES, normalizeEnum, TASK_PRIORITIES } from './entity-enums';
+import { mergeEnrichment } from './ioc-enrichment-persistence';
 
 // Analysis tools
 import {
@@ -775,7 +776,7 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string,
                 id: entityId,
                 type: fields.type,
                 value: String(fields.value || ''),
-                confidence: String(fields.confidence || 'medium') as import('../types').ConfidenceLevel,
+                confidence: normalizeEnum(fields.confidence, CONFIDENCE_VALUES) ?? 'medium',
                 folderId,
                 tags: ['agent-enrichment'],
                 trashed: false, archived: false,
@@ -789,7 +790,16 @@ async function executeEnrichIOC(inp: Record<string, unknown>, folderId?: string,
             const existing = await db.standaloneIOCs.get(id);
             if (!existing || existing.trashed) throw new Error('The IOC target is missing or deleted.');
             if (fields.type !== undefined && !isIOCType(fields.type)) throw new Error('The integration returned an unsupported IOC type.');
-            if (await db.standaloneIOCs.update(id, { ...fields, updatedAt: Date.now() }) !== 1) throw new Error('The IOC update was not saved.');
+            // Only fields every backup accepts; earlier enrichment snapshots are kept.
+            const now = Date.now();
+            const updates: Partial<import('../types').StandaloneIOC> = { updatedAt: now };
+            if (isIOCType(fields.type)) updates.type = fields.type;
+            if (fields.iocStatus !== undefined) updates.iocStatus = String(fields.iocStatus);
+            const confidence = normalizeEnum(fields.confidence, CONFIDENCE_VALUES);
+            if (confidence) updates.confidence = confidence;
+            const enrichment = fields.enrichment !== undefined ? mergeEnrichment(existing, fields.enrichment, now) : undefined;
+            if (enrichment) updates.enrichment = enrichment;
+            if (await db.standaloneIOCs.update(id, updates) !== 1) throw new Error('The IOC update was not saved.');
           }),
         },
         signal,

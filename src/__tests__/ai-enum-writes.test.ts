@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../db';
 import { buildFullBackupPayload } from '../lib/backup-data';
+import { exportInvestigationJSON } from '../lib/export';
 import { executeTool, TOOL_DEFINITIONS } from '../lib/llm-tools';
 import { workspaceStorageKey } from '../lib/workspace-profiles';
 import type { ToolUseBlock } from '../types';
+import type { IntegrationTemplate } from '../types/integration-types';
 
 // Tool errors go to the model as JSON, not to users, so they are not localized.
 const call = (name: string, input: Record<string, unknown>): ToolUseBlock => ({ type: 'tool_use', id: `tool-${name}`, name, input });
@@ -93,5 +95,46 @@ describe('AI write tools store only values every backup accepts', () => {
     const bulk = TOOL_DEFINITIONS.find(tool => tool.name === 'bulk_create_iocs');
     const items = (bulk?.input_schema.properties.iocs as { items: { properties: Record<string, { enum?: string[] }> } }).items;
     expect(items.properties.confidence.enum).toEqual(['low', 'medium', 'high', 'confirmed']);
+  });
+});
+
+describe('enrich_ioc stores integration output every backup accepts', () => {
+  async function install(outputs: IntegrationTemplate['outputs']) {
+    await db.integrationTemplates.add({ id: 'template', schemaVersion: '1.0', version: '1.0.0', name: 'Fixture enrichment', description: 'Synthetic',
+      author: 'test', icon: 'search', color: '#000', category: 'enrichment', tags: [], triggers: [{ type: 'manual' }], configSchema: [],
+      steps: [], outputs, requiredDomains: [], source: 'user', createdAt: 1, updatedAt: 1 });
+    await db.installedIntegrations.add({ id: 'installed', templateId: 'template', name: 'Fixture', enabled: true, config: {},
+      scopeType: 'all', scopeFolderIds: [], runCount: 0, errorCount: 0, createdAt: 1, updatedAt: 1 });
+  }
+
+  it('adds a snapshot beside earlier ones, normalises confidence and stores only supported fields', async () => {
+    await db.standaloneIOCs.update('i1', { enrichment: { shodan: [{ org: 'Example', ts: 1 }] } });
+    await install([
+      // Shaped like the built-in VirusTotal, AbuseIPDB and URLhaus outputs.
+      { type: 'update-ioc', template: { id: '{{ioc.id}}', enrichment: { virusTotal: { malicious: '3' } } } },
+      { type: 'update-ioc', template: { id: '{{ioc.id}}', iocStatus: 'malicious', confidence: 'High', verdict: 'unsupported' } },
+      { type: 'create-ioc', template: { type: 'domain', value: 'c2.example', confidence: 'High' } },
+    ]);
+    expect((await run('enrich_ioc', { iocId: 'i1' })).results).toEqual([expect.objectContaining({ status: 'success' })]);
+
+    const ioc = await db.standaloneIOCs.get('i1');
+    expect(ioc).toMatchObject({ iocStatus: 'malicious', confidence: 'high' });
+    expect(ioc).not.toHaveProperty('verdict');
+    expect(ioc?.enrichment?.shodan).toEqual([expect.objectContaining({ org: 'Example', ts: 1 })]);
+    expect(ioc?.enrichment?.virusTotal).toEqual([expect.objectContaining({ malicious: '3', ts: expect.any(Number) })]);
+    expect((await db.standaloneIOCs.toArray()).find(row => row.value === 'c2.example')?.confidence).toBe('high');
+    await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
+    await expect(exportInvestigationJSON('f1')).resolves.toContain('c2.example');
+  });
+
+  it('keeps the stored confidence, or the default for a new IOC, when the output has no supported value', async () => {
+    await install([
+      { type: 'update-ioc', template: { id: '{{ioc.id}}', confidence: 'score-7' } },
+      { type: 'create-ioc', template: { type: 'domain', value: 'c2.example', confidence: '7' } },
+    ]);
+    expect((await run('enrich_ioc', { iocId: 'i1' })).results).toEqual([expect.objectContaining({ status: 'success' })]);
+    expect((await db.standaloneIOCs.get('i1'))?.confidence).toBe('low');
+    expect((await db.standaloneIOCs.toArray()).find(row => row.value === 'c2.example')?.confidence).toBe('medium');
+    await expect(buildFullBackupPayload('all')).resolves.toBeDefined();
   });
 });

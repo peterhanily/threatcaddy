@@ -92,7 +92,7 @@ export function normalizeIOCEnrichment(
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
-function mergeEnrichment(
+export function mergeEnrichment(
   existing: StandaloneIOC | undefined,
   incoming: unknown,
   now: number,
